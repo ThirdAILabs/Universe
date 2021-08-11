@@ -1,4 +1,4 @@
-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 
 cc_library(
     name = "hello-greet",
@@ -13,4 +13,11 @@ cc_binary(
         ":hello-greet",
         "//lib:hello-time",
     ],
+)
+
+cc_test(
+  name = "hello_world_test",
+  size = "small",
+  srcs = ["hello_world_test.cc"],
+  deps = ["@com_google_googletest//:gtest_main"],
 )
