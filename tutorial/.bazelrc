@@ -1,0 +1,4 @@
+# Setup toolchain and cpu flag for openmpi
+build:mpi_config --crosstool_top=//tools:mpi_toolchain
+build:mpi_config --cpu=openmpi
+build:mpi_config --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
