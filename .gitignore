@@ -1,1 +1,5 @@
+# Bazel output directories and files
 bazel-*
+
+# VSCode settings
+.vscode/*

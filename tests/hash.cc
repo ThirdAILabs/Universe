@@ -11,18 +11,17 @@ using std::chrono::milliseconds;
 using std::chrono::seconds;
 using std::chrono::system_clock;
 
-std::string generate_random_string(int length)
+std::string generate_random_string()
 {
-    std::string possible_characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    std::random_device rd;
-    std::mt19937 engine(rd());
-    std::uniform_int_distribution<> dist(0, possible_characters.size()-1);
-    std::string ret = "";
-    for(int i = 0; i < length; i++){
-        int random_index = dist(engine); //get index between 0 and possible_characters.size()-1
-        ret += possible_characters[random_index];
-    }
-    return ret;
+    std::string str = "AAAAAA";
+    str[0] = rand() % 26 + 65;
+    str[1] = rand() % 26 + 65;
+    str[2] = rand() % 26 + 65;
+
+    str[3] = rand() % 10 + 48;
+    str[4] = rand() % 10 + 48;
+    str[5] = rand() % 10 + 48;
+    return str;
 }
 
 int main(int argc, char** argv) {
@@ -36,28 +35,31 @@ int main(int argc, char** argv) {
   srand(seed);
   for (int i = 0; i < 100000; i++) {
     int_keys[i] = (uint64_t) rand() % 256;
-    str_keys[i] = generate_random_string(100).c_str();
+    str_keys[i] = generate_random_string().c_str();
   }
 
-  // Allocate 128 bits for hash output. TODO(alan): Reused for now. Avalanche testing later.
-  uint64_t hash_otpt[2];
-
+  // Allocate 64 bits for murmurhash output of both keys. TODO(alan): Reused for now. Avalanche testing later.
+  uint32_t murmurhash_output[2];
   // Test speed of MurmurHash.
   auto start = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
   for (int i = 0; i < 100000; i++) {
-    MurmurHash3_x64_128(str_keys[i], (uint64_t)strlen(str_keys[i]), seed, hash_otpt);
-    MurmurHash3_x64_128((void *)&(int_keys[i]), sizeof(uint64_t), seed, hash_otpt);
+    MurmurHash3_x86_32(str_keys[i], (uint64_t)strlen(str_keys[i]), seed, &(murmurhash_output[0]));
+    MurmurHash3_x86_32((void *)&(int_keys[i]), sizeof(uint64_t), seed, &(murmurhash_output[1]));
   }
   auto end = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  std::cout << "MurmurHash output ex: " << murmurhash_output[0] << " " << murmurhash_output[1] << std::endl;
   std::cout << "MurmurHash time (ms): " << end - start << std::endl;
   
+  // Allocate 64 bits for tabulation hash output of both keys. TODO(alan): Reused for now. Avalanche testing later.
+  uint32_t tabulation_output[2];
   // Test speed of Tabulation Hashing.
   start = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
   for (int i = 0; i < 100000; i++) {
-    universal_hash.gethash(std::string(str_keys[i]));
-    universal_hash.gethash(int_keys[i]);
+    tabulation_output[0] = universal_hash.gethash(str_keys[i]);
+    tabulation_output[1] = universal_hash.gethash(int_keys[i]);
   }
   end = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  std::cout << "Tabulation output ex: " << tabulation_output[0] << " " << tabulation_output[1] << std::endl;
   std::cout << "Tabulation Hash time (ms): " << end - start << std::endl;
   return 0;
 }
