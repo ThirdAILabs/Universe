@@ -15,25 +15,26 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    name: Build tcmalloc
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
+
     steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
+    # the rest of the steps
+    - uses: actions/checkout@v2
 
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Setup bazel
-      uses: jwlawson/actions-setup-bazel@v1
+    # Caches and restores the bazel build directory.
+    - name: Cache bazel build results
+      uses: actions/cache@v2.0.0
+      env:
+        cache-name: bazel-cache
       with:
-        bazel-version: '2.0.0'
+        path: ~/.cache/bazel
+        key: ${{ runner.os }}-${{ env.cache-name }}-${{ github.ref }}
+        restore-keys: |
+          ${{ runner.os }}-${{ env.cache-name }}-master
+    - name: Build the code
+      run: bazel build ...
 
-    - name: Setup cache
-      uses: actions/cache@v2
-      with:
-        path: "/home/runner/.cache/bazel"
-        key: bazel
-
-    - name: Build
-      run: bazel build //...
+    - name: Test the code
+      run: bazel test --test_output=errors --test_tag_filters=-integration-test 
