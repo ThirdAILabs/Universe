@@ -39,5 +39,7 @@ jobs:
     steps:
     - name: Setup bazel
       uses: jwlawson/actions-setup-bazel@v1
+      with:
+        bazel-version: '2.0.0'
     - name: Use bazel
       run: bazel --version
