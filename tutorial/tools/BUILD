@@ -7,6 +7,7 @@ cc_toolchain_suite(
 	name = "mpi_toolchain",
 	toolchains = {
 		"openmpi": ":cc-compiler-amd64_openmpi",
+        'k8': ":cc-compiler-amd64_openmpi",
 	}
 )
 
