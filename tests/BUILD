@@ -4,8 +4,8 @@ cc_binary(
     name = "hash",
     srcs = ["hash.cc"],
     deps = [
-        "//murmurhash:MurmurHash3",
-        "//tabulationhash:UniversalHash",
+        "//tests/murmurhash:MurmurHash3",
+        "//tests/tabulationhash:UniversalHash",
     ],
 )
 
@@ -15,7 +15,7 @@ cc_test(
   srcs = ["hash_test.cc"],
   deps = [
         "@com_google_googletest//:gtest_main",
-        "//murmurhash:MurmurHash3",
-        "//tabulationhash:UniversalHash",
+        "//tests/murmurhash:MurmurHash3",
+        "//tests/tabulationhash:UniversalHash",
   ],
 )
