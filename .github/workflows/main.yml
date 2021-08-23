@@ -16,7 +16,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   build:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
 
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
@@ -34,7 +34,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-${{ env.cache-name }}-master
     - name: Build the code
-      run: bazel build ...
+      run: cd tutorials && bazel build ...
 
     - name: Test the code
-      run: bazel test --test_output=errors --test_tag_filters=-integration-test 
+      run: cd tutorials && bazel test --test_output=errors --test_tag_filters=-integration-test 
