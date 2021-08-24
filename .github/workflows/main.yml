@@ -40,6 +40,8 @@ jobs:
     - name: Build mpi-example
       run: bazel build --config=mpi_config //mpi-example:all
     - name: Build rest of the code
-      run: bazel build //tests:hash
+      run: |
+        bazel build //tests:all
     - name: Test the code
-      run: bazel test --test_output=errors --test_tag_filters=-integration-test //tests:hash_test
+      run: |
+        bazel test --test_output=errors --test_tag_filters=-integration-test //tests:hash_test
