@@ -19,7 +19,7 @@ cc_binary(
 cc_test(
   name = "all_test",
   deps = [
-    "//tests:all",
+    "//tests:hash_test",
   ],
   testonly = True
 )
