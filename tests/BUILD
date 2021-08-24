@@ -7,6 +7,7 @@ cc_binary(
         "//tests/murmurhash:MurmurHash3",
         "//tests/tabulationhash:UniversalHash",
     ],
+    visibility = ["//visibility:public"],
 )
 
 cc_test(
@@ -18,4 +19,5 @@ cc_test(
         "//tests/murmurhash:MurmurHash3",
         "//tests/tabulationhash:UniversalHash",
   ],
+  visibility = ["//visibility:public"],
 )

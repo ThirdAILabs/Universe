@@ -11,3 +11,9 @@ http_archive(
   urls = ["https://github.com/bazelbuild/rules_cc/archive/40548a2974f1aea06215272d9c2b47a14a24e556.zip"],
   strip_prefix = "rules_cc-40548a2974f1aea06215272d9c2b47a14a24e556",
 )
+
+http_archive(
+    name = "com_grail_bazel_compdb",
+    strip_prefix = "bazel-compilation-database-master",
+    urls = ["https://github.com/grailbio/bazel-compilation-database/archive/master.tar.gz"],
+)
