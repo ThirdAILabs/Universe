@@ -14,13 +14,14 @@ on:
 jobs:
   clang-format-job:
     runs-on: ubuntu-latest
+    
     steps:
-    - name: Install clang-format 
-      run: |
-        sudo apt install clang-format
-        clang-format --version
     - uses: actions/checkout@v2
-    - name: Check format for all files in all directories
-      run: |
-        chmod +x ./clang-format.sh
-        ./clang-format.sh
+    - name: Run clang-format
+      uses: HorstBaerbel/action-clang-format@1.5
+      # These are optional (defaults displayed)
+      with:
+        scandir: '.'
+        excludedirs: 'build'
+        extensions: 'c,h,C,H,cpp,hpp,cc,hh,c++,h++,cxx,hxx'
+        style: 'file'
