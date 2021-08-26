@@ -17,11 +17,9 @@ jobs:
     
     steps:
     - uses: actions/checkout@v2
-    - name: Run clang-format
-      uses: HorstBaerbel/action-clang-format@1.5
-      # These are optional (defaults displayed)
+    - uses: DoozyX/clang-format-lint-action@v0.12
       with:
-        scandir: '.'
-        excludedirs: 'build'
-        extensions: 'c,h,C,H,cpp,hpp,cc,hh,c++,h++,cxx,hxx'
-        style: 'file'
+        source: '.'
+        exclude: './third_party ./external'
+        clangFormatVersion: 10
+        style: file
