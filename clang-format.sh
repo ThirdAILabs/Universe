@@ -1,11 +1,11 @@
 find . -iname '*.h' -o -iname '*.cc' | xargs clang-format -i -style=file
 
 # Check git diff for any changes
-if git diff-index --quiet HEAD --
-then
+if git diff-index --quiet HEAD; then
     # No changes
     echo "No changes"
 else
     # Changes
+    echo "Clang changes needed"
     exit 1
 fi
