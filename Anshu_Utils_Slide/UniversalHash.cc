@@ -1,7 +1,7 @@
 #pragma once
 #include "UniversalHash.h"
 #include <stdio.h>
-#include    <stdlib.h>
+#include <stdlib.h>
 #include <string>
 
 namespace ThirdAI {
