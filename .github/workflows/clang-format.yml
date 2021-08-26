@@ -22,5 +22,5 @@ jobs:
     - uses: actions/checkout@v2
     - name: Check format for all files in all directories
       run: |
-        find . -iname '*.h' -o -iname '*.cc' | xargs clang-format -i -style=file
-        git diff
+        chmod +x "${GITHUB_WORKSPACE}/.github/clang-format.sh"
+        "${GITHUB_WORKSPACE}/.github/clang-format.sh"
