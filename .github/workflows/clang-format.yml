@@ -23,4 +23,4 @@ jobs:
     - name: Check format for all files in all directories
       run: |
         find . -iname '*.h' -o -iname '*.cc' | xargs clang-format -i -style=file
-        git diff
+        git diff-index --quiet HEAD --
