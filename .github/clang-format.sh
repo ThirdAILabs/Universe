@@ -5,7 +5,7 @@ find . -iname '*.h' -o -iname '*.cc' | xargs clang-format -i -style=file
 if git diff-index --quiet HEAD --
 then
     # No changes
-    echo "No changes"
+    continue
 else
     # Changes
     exit 1
