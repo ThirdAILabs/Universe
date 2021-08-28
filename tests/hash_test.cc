@@ -128,7 +128,7 @@ TEST_F(HashTest, MurmurHashStringKeyAvalancheTest) {
   for (int j = 0; j < 48; j++) {
     for (int k = 0; k < 32; k++) {
       // Expect ~0.5 probability over all 100000 keys.
-      EXPECT_NEAR(res[j][k], 50000, 1000);
+      EXPECT_NEAR(res[j][k], 50000, 1500);
     }
   }
 }
@@ -179,7 +179,7 @@ TEST_F(HashTest, TabulationHashStringKeyAvalancheTest) {
   for (int j = 0; j < 48; j++) {
     for (int k = 0; k < 32; k++) {
       // Expect ~0.5 probability over all 100000 keys.
-      EXPECT_NEAR(res[j][k], 50000, 1000);
+      EXPECT_NEAR(res[j][k], 50000, 1500);
     }
   }
 }
