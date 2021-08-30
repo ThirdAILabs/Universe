@@ -1,3 +1,9 @@
-Checks:          '*,-llvm-header-guard,-google-build-using-namespace,-clang-analyzer-alpha.clone.CloneChecker,-google-runtime-int,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-clang-analyzer-alpha.deadcode.UnreachableCode,-misc-use-after-move,-cppcoreguidelines-pro-type-vararg,-modernize-use-emplace,-cert-err60-cpp,-cppcoreguidelines-pro-bounds-constant-array-index, -llvm*, -clang-diagnostic-missing-braces, -cert-err58-cpp, -cppcoreguidelines-*, -modernize-use-trailing-return-type, -fuchsia-statically-constructed-objects'
-WarningsAsErrors: '*,-llvm-header-guard,-google-build-using-namespace,-clang-analyzer-alpha.clone.CloneChecker,-google-runtime-int,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-clang-analyzer-alpha.deadcode.UnreachableCode,-misc-use-after-move,-cppcoreguidelines-pro-type-vararg,-modernize-use-emplace,-cert-err60-cpp,-cppcoreguidelines-pro-bounds-constant-array-index, -llvm*, -clang-diagnostic-missing-braces, -cert-err58-cpp, -cppcoreguidelines-*, -modernize-use-trailing-return-type, -fuchsia-statically-constructed-objects, -readability-magic-numbers'
-FormatStyle: file
+Checks: "-*, 
+          abseil-*, bugprone-*, cert-*, 
+          cppcoreguidelines-*, 
+          google-*, misc-*, 
+          modernize-*, -modernize-loop-convert, -modernize-use-trailing-return-type, -modernize-avoid-c-arrays, 
+          performance-*, openmp-*, readability-*
+          clang-diagnostic-*, -clang-diagnostic-missing-*,
+          clang-analyzer-*, -clang-analyzer-security*"
+WarningsAsErrors: "*, -cert-*, -bugprone-*, -cppcoreguidelines-*"
