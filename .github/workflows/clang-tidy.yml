@@ -16,7 +16,34 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: clang-tidy check
-        uses: smay1613/clang-tidy-action@master
-    env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions/checkout@v2
+    - name: Install clang-tidy
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-tidy
+    - name: Prepare compile_commands.json
+      run: |
+        chmod +x ./generate_compile_commands.sh
+        ./generate_compile_commands.sh
+    - name: Create results directory
+      run: |
+        mkdir clang-tidy-result
+    - name: Analyze
+      run: |
+        git diff -U0 HEAD^ HEAD | clang-tidy-diff -p1 -path build -export-fixes clang-tidy-result/fixes.yml
+    - name: Run clang-tidy-pr-comments action
+      # Don't run this Action if fixes.yml doesn't exist - clang-tidy may not generate it in some cases
+      if: ${{ hashFiles( 'clang-tidy-result/fixes.yml' ) != '' }}
+      uses: platisd/clang-tidy-pr-comments@master
+      with:
+        # The GitHub token (or a personal access token)
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        # The path to the clang-tidy fixes generated previously
+        clang_tidy_fixes: clang-tidy-result/fixes.yml
+        # Optionally set to true if you want the Action to request
+        # changes in case warnings are found
+        request_changes: true
+        # Optionally set the number of comments per review
+        # to avoid GitHub API timeouts for heavily loaded
+        # pull requests
+        suggestions_per_comment: 10
