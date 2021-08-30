@@ -36,7 +36,7 @@ jobs:
         sudo apt install -y mpich libmpich-dev
         sudo apt install -y openmpi-bin openmpi-doc libopenmpi-dev
     - name: Build mpi-example
-      run: bazel build --config=mpi_config //mpi-example:all
+      run: bazel build --config=mpi_config //examples/mpi-example:all
     - name: Build rest of the code
       run: |
         bazel build //examples:all
