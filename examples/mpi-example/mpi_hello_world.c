@@ -2,6 +2,8 @@
 #include <stdio.h>
 
 int main(int argc, char** argv) {
+  (void)argc;
+  (void)argv;
   // Initialize the MPI environment
   MPI_Init(NULL, NULL);
 

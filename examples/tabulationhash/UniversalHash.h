@@ -1,3 +1,4 @@
+#include <array>
 #include <string>
 
 namespace ThirdAI {
@@ -6,7 +7,10 @@ namespace ThirdAI {
  */
 class UniversalHash {
  private:
-  uint32_t _seed, T[8][256];
+  const int num_keys = 8;
+  const int num_buckets = 256;
+  uint32_t _seed;
+  uint32_t T[8][256];
 
  public:
   UniversalHash(uint32_t seed);

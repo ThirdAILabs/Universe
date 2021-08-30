@@ -1,7 +1,7 @@
 #include "UniversalHash.h"
+#include <cstdio>
+#include <cstdlib>
 #include <random>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string>
 
 namespace ThirdAI {
