@@ -13,7 +13,7 @@ using std::chrono::milliseconds;
 using std::chrono::seconds;
 using std::chrono::system_clock;
 
-namespace ThirdAI {
+namespace thirdAI {
 class HashTest : public testing::Test {
  private:
   static std::string generate_random_string() {
@@ -206,4 +206,4 @@ TEST_F(HashTest, TabulationHashIntegerKeyAvalancheTest) {
     }
   }
 }
-}  // namespace ThirdAI
+}  // namespace thirdAI
