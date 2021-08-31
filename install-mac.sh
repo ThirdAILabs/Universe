@@ -20,3 +20,7 @@ ln -s /opt/homebrew/bin/g++-11 gcc
 
 # Install bazel
 brew install bazel
+
+# Git line endings
+git config --global core.eol lf 
+git config --global core.autocrlf input
