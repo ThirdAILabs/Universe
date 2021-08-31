@@ -49,9 +49,9 @@ class HashTest : public testing::Test {
 
  public:
   // Converts input string to bitstring (bitset).
-  std::string convert_to_bitstring(std::string str) {
+  std::string convert_to_bitstring(const std::string& str) {
     std::string bitstring = "";
-    for (char& _c : str) {
+    for (const char& _c : str) {
       bitstring += std::bitset<8>(_c).to_string();
     }
     return bitstring;
