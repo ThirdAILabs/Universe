@@ -2,13 +2,13 @@ From within the outermost directory (with WORKSPACE file):
 
 Run the following for build results on hash example.
 ```
-bazel build //examples/:hash
+bazel build //examples:hash
 bazel-bin/examples/hash
 ```
 
 Run the following for MurmurHash and Tabulation Hash test results.
 ```
-bazel test //examples/:hash_test
+bazel test //examples:hash_test
 bazel-bin/examples/hash_test
 ```
 

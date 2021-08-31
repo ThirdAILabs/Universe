@@ -39,7 +39,7 @@ class HashTest : public testing::Test {
     srand(seed);
     std::random_device rd;
     std::mt19937_64 gen(rd());
-    std::uniform_int_distribution<unsigned long long> dis;
+    std::uniform_int_distribution<uint64_t> dis;
     // Generate 100000 random integer and char * keys
     for (int i = 0; i < 100000; i++) {
       int_keys[i] = dis(gen);
@@ -60,7 +60,7 @@ class HashTest : public testing::Test {
 
 uint64_t HashTest::int_keys[100000];
 std::string HashTest::str_keys[100000];
-UniversalHash HashTest::universal_hash(time(NULL));
+UniversalHash HashTest::universal_hash(time(nullptr));
 
 TEST_F(HashTest, MurmurHashTimeTest) {
   // Allocate 64 bits for output of both keys.
@@ -71,10 +71,10 @@ TEST_F(HashTest, MurmurHashTimeTest) {
           .count();
   for (int i = 0; i < 100000; i++) {
     MurmurHash3_x86_32(str_keys[i].c_str(),
-                       (uint64_t)strlen(str_keys[i].c_str()), seed,
+                       static_cast<uint64_t>(strlen(str_keys[i].c_str())), seed,
                        &(murmurhash_output[0]));
-    MurmurHash3_x86_32((void*)&(int_keys[i]), sizeof(uint64_t), seed,
-                       &(murmurhash_output[1]));
+    MurmurHash3_x86_32(static_cast<void*>(&(int_keys[i])), sizeof(uint64_t),
+                       seed, &(murmurhash_output[1]));
   }
   auto end = duration_cast<milliseconds>(system_clock::now().time_since_epoch())
                  .count();
@@ -109,7 +109,7 @@ TEST_F(HashTest, MurmurHashStringKeyAvalancheTest) {
   uint32_t res[48][32] = {0};
   for (int i = 0; i < 100000; i++) {
     MurmurHash3_x86_32(str_keys[i].c_str(),
-                       (uint64_t)strlen(str_keys[i].c_str()), seed,
+                       static_cast<uint64_t>(strlen(str_keys[i].c_str())), seed,
                        &(murmurhash_output[0]));
     for (int j = 0; j < 48; j++) {
       std::bitset<48> str_key_flipped_bitarray(
@@ -117,8 +117,8 @@ TEST_F(HashTest, MurmurHashStringKeyAvalancheTest) {
       std::string str_key_flipped =
           str_key_flipped_bitarray.flip(j).to_string();
       MurmurHash3_x86_32(str_key_flipped.c_str(),
-                         (uint64_t)strlen(str_key_flipped.c_str()), seed,
-                         &(murmurhash_output[1]));
+                         static_cast<uint64_t>(strlen(str_key_flipped.c_str())),
+                         seed, &(murmurhash_output[1]));
       for (int k = 0; k < 32; k++) {
         res[j][k] += ((murmurhash_output[0] ^ murmurhash_output[1]) >> k) & 1;
       }
@@ -138,12 +138,12 @@ TEST_F(HashTest, MurmurHashIntegerKeyAvalancheTest) {
   uint32_t murmurhash_output[2];
   uint32_t res[64][32] = {0};
   for (int i = 0; i < 100000; i++) {
-    MurmurHash3_x86_32((void*)&(int_keys[i]), sizeof(uint64_t), seed,
-                       &(murmurhash_output[1]));
+    MurmurHash3_x86_32(static_cast<void*>(&(int_keys[i])), sizeof(uint64_t),
+                       seed, &(murmurhash_output[1]));
     for (int j = 0; j < 64; j++) {
       uint64_t int_key_flipped = int_keys[i] ^ (1 << j);
-      MurmurHash3_x86_32((void*)&(int_key_flipped), sizeof(uint64_t), seed,
-                         &(murmurhash_output[1]));
+      MurmurHash3_x86_32(static_cast<void*>(&(int_key_flipped)),
+                         sizeof(uint64_t), seed, &(murmurhash_output[1]));
       for (int k = 0; k < 32; k++) {
         res[j][k] += ((murmurhash_output[0] ^ murmurhash_output[1]) >> k) & 1;
       }

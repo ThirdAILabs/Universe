@@ -7,13 +7,11 @@ namespace ThirdAI {
  */
 class UniversalHash {
  private:
-  const int num_keys = 8;
-  const int num_buckets = 256;
   uint32_t _seed;
   uint32_t T[8][256];
 
  public:
-  explicit UniversalHash(uint32_t seed);
+  UniversalHash(uint32_t seed);
   // uint32_t gethash(uint8_t key);
   uint32_t gethash(std::string key);
   // uint32_t gethash(uint32_t key);
