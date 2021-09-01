@@ -99,9 +99,13 @@ struct Batch {
 
 class Dataset {
   public:
-  Dataset(uint64_t target_batch_size, uint64_t target_batch_num_per_read)
+  /**
+   * target_batch_num_per_read is the number of batches loaded from file each time.
+   * set to 0 to load entire file.
+   */
+  Dataset(uint64_t target_batch_size, uint64_t target_batch_num_per_load)
   : _target_batch_size(target_batch_size), 
-    _target_batch_num_per_read(target_batch_num_per_read){};
+    _target_batch_num_per_load(target_batch_num_per_load){};
 
   const Batch& operator[](uint64_t i) const {
     assert(i <= _numBatches);
@@ -127,7 +131,7 @@ class Dataset {
     delete[] _batches; 
   }
   
-  const uint64_t _target_batch_size, _target_batch_num_per_read;
+  const uint64_t _target_batch_size, _target_batch_num_per_load;
   uint64_t _numBatches;
   Batch* _batches;
 };
