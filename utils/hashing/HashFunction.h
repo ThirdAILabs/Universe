@@ -13,11 +13,11 @@ class HashFunction {
    * i * num_hashes to i * (num_hashes) - 1.
    *
    */
-  void hashBatch(Batch &batch, uint64_t num_hashes, uint32_t* output) const {
+  void hashBatch(Batch& batch, uint64_t num_hashes, uint32_t* output) const {
     if (batch._type == BATCH_TYPE::SPARSE ||
         batch._type == BATCH_TYPE::SPARSE_LABELED) {
-      hashSparse(batch._batch_size, batch._indices, batch._values,
-                 batch._lens, num_hashes, output);
+      hashSparse(batch._batch_size, batch._indices, batch._values, batch._lens,
+                 num_hashes, output);
     } else {
       hashDense(batch._batch_size, batch._dim, batch._values, num_hashes,
                 output);

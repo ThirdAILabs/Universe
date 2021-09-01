@@ -2,12 +2,12 @@
 
 #include <cassert>
 #include <cstdint>
-#include <optional>
-#include <string>
-#include <vector>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <sstream>
+#include <string>
+#include <vector>
 
 namespace thirdai::utils {
 
@@ -98,18 +98,18 @@ struct Batch {
 };
 
 class Dataset {
-  public:
+ public:
   /**
-   * target_batch_num_per_read is the number of batches loaded from file each time.
-   * set to 0 to load entire file.
+   * target_batch_num_per_read is the number of batches loaded from file each
+   * time. set to 0 to load entire file.
    */
   Dataset(uint64_t target_batch_size, uint64_t target_batch_num_per_load)
-  : _target_batch_size(target_batch_size), 
-    _target_batch_num_per_load(target_batch_num_per_load){};
+      : _target_batch_size(target_batch_size),
+        _target_batch_num_per_load(target_batch_num_per_load){};
 
   /**
    * The batch is only going to exist until the next call to loadNextBatchSet();
-   */ 
+   */
   const Batch& operator[](uint64_t i) const {
     assert(i <= _num_batches);
     return _batches[i];
@@ -123,14 +123,12 @@ class Dataset {
 
   /**
    * Number of batches currently loaded
-   */ 
+   */
   uint64_t numBatches() { return _num_batches; };
 
-  ~Dataset() { 
-    delete[] _batches; 
-  }
-  
-  protected:
+  ~Dataset() { delete[] _batches; }
+
+ protected:
   const uint64_t _target_batch_size, _target_batch_num_per_load;
   uint64_t _num_batches;
   Batch* _batches;
