@@ -3,3 +3,4 @@ bazel-*
 
 # VSCode settings
 .vscode/*
+compile_commands.json
