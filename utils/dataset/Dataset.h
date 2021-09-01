@@ -5,6 +5,9 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 namespace thirdai::utils {
 
@@ -95,14 +98,40 @@ struct Batch {
 };
 
 class Dataset {
- public:
+  public:
+  Dataset(uint64_t target_batch_size, uint64_t target_batch_num_per_read)
+  : _target_batch_size(target_batch_size), 
+    _target_batch_num_per_read(target_batch_num_per_read){};
+
+  const Batch& operator[](uint64_t i) const {
+    assert(i <= _numBatches);
+    return _batches[i];
+  }
+
   /**
-   * Returns nullptr if there are no more batches, and otherwise
-   * a pointer to the next batch). The caller is responsible for checking
-   * if the Batch is a nullptr and also freeing the Batch memory when it no
-   * longer needs it.
+   * Load n batches from file
    */
-  virtual Batch* getNextBatch() = 0;
+  virtual void loadFromFile() = 0;
+
+  /**
+   * Number of batches loaded
+   */ 
+  virtual uint64_t numBatches() = 0;
+
+  /**
+   * Return next batch from loaded batches
+   */
+  virtual Batch* nextBatch() = 0;
+
+  ~Dataset() { 
+    delete[] _batches; 
+  }
+
+  friend std::ostream& operator<<(std::ostream& out, const Dataset& data);
+
+  const uint64_t _target_batch_size, _target_batch_num_per_read;
+  uint64_t _numBatches;
+  Batch* _batches;
 };
 
 }  // namespace thirdai::utils
