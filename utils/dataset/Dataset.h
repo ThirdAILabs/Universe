@@ -1,8 +1,8 @@
 #pragma once
 
-#include <optional>
 #include <cassert>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -96,9 +96,8 @@ struct Batch {
 
 class Dataset {
  public:
-
   /**
-   * Returns NONE if there are no more batches, and otherwise 
+   * Returns NONE if there are no more batches, and otherwise
    * SOME(the next batch). This should be the only copy of the batch, so
    * the caller can free the Batch's memory by just letting it get out of
    * scope.
