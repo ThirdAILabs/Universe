@@ -11,13 +11,14 @@ class HashFunction {
    * the output array. The output array should be of size
    * num_hashes * batch_size, and vector i's hashes are stored in positions
    * i * num_hashes to i * (num_hashes) - 1.
-   * 
-   * Should return all of the first hashes, followed by all of the second hashes, 
-   * etc, instead of all of the first vectors’ hashes, all of the second vectors’ 
-   * hashes, etc.
+   *
+   * Should return all of the first hashes, followed by all of the second
+   * hashes, etc, instead of all of the first vectors’ hashes, all of the second
+   * vectors’ hashes, etc.
    *
    */
-  void hashBatch(const Batch& batch, uint64_t num_hashes, uint32_t* output) const {
+  void hashBatch(const Batch& batch, uint64_t num_hashes,
+                 uint32_t* output) const {
     if (batch._type == BATCH_TYPE::SPARSE ||
         batch._type == BATCH_TYPE::SPARSE_LABELED) {
       hashSparse(batch._batch_size, batch._indices, batch._values, batch._lens,
