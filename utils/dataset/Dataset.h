@@ -97,12 +97,12 @@ struct Batch {
 class Dataset {
  public:
   /**
-   * Returns NONE if there are no more batches, and otherwise
-   * SOME(the next batch). This should be the only copy of the batch, so
-   * the caller can free the Batch's memory by just letting it get out of
-   * scope.
+   * Returns nullptr if there are no more batches, and otherwise
+   * a pointer to the next batch). The caller is responsible for checking
+   * if the Batch is a nullptr and also freeing the Batch memory when it no longer
+   * needs it.
    */
-  virtual std::optional<Batch> getNextBatch() = 0;
+  virtual Batch *getNextBatch() = 0;
 };
 
 }  // namespace thirdai::utils

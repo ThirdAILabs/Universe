@@ -9,4 +9,3 @@ Checks: "-*,
           clang-analyzer-*, -clang-analyzer-security*"
 WarningsAsErrors: "*, -cert-*, -bugprone-*, -cppcoreguidelines-*, 
                   -misc-non-private-member-variables-in-classes"
-ExtraArgs: ["-std=c++17"]
