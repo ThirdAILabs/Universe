@@ -99,10 +99,10 @@ class Dataset {
   /**
    * Returns nullptr if there are no more batches, and otherwise
    * a pointer to the next batch). The caller is responsible for checking
-   * if the Batch is a nullptr and also freeing the Batch memory when it no longer
-   * needs it.
+   * if the Batch is a nullptr and also freeing the Batch memory when it no
+   * longer needs it.
    */
-  virtual Batch *getNextBatch() = 0;
+  virtual Batch* getNextBatch() = 0;
 };
 
 }  // namespace thirdai::utils
