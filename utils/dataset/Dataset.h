@@ -126,9 +126,7 @@ class Dataset {
   ~Dataset() { 
     delete[] _batches; 
   }
-
-  friend std::ostream& operator<<(std::ostream& out, const Dataset& data);
-
+  
   const uint64_t _target_batch_size, _target_batch_num_per_read;
   uint64_t _numBatches;
   Batch* _batches;
