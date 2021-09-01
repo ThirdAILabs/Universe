@@ -1,0 +1,9 @@
+Checks: "-*, 
+          abseil-*, bugprone-*, cert-*, 
+          cppcoreguidelines-*, 
+          google-*, misc-*, 
+          modernize-*, -modernize-loop-convert, -modernize-use-trailing-return-type, -modernize-avoid-c-arrays, 
+          performance-*, openmp-*, readability-*
+          clang-diagnostic-*, -clang-diagnostic-missing-*,
+          clang-analyzer-*, -clang-analyzer-security*"
+WarningsAsErrors: "*, -cert-*, -bugprone-*, -cppcoreguidelines-*"

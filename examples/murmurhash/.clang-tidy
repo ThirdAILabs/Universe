@@ -1,0 +1,2 @@
+# This is a hack, but we need some random check to avoid an error
+Checks: '-*, cppcoreguidelines-avoid-goto'

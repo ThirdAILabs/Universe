@@ -12,14 +12,14 @@ compilation_database(
 cc_binary(
   name = "all_binary",
   deps = [
-    "//tests:hash",
+    "//examples:hash",
   ],
 )
 
 cc_test(
   name = "all_test",
   deps = [
-    "//tests:hash_test",
+    "//examples:hash_test",
   ],
   testonly = True
 )
