@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace thirdAIUtils {
+namespace thirdai::utils {
 
 class HashFunction {
   /**
@@ -16,24 +16,24 @@ class HashFunction {
    * i * num_hashes to i * (num_hashes) - 1.
    *
    */
-  void getBatchHashes(Batch batch, uint64_t num_hashes, uint32_t* output) {
-    if (batch._type == FORMAT_TYPE::SPARSE ||
-        batch._type == FORMAT_TYPE::SPARSE_LABELED) {
-      getSparseHashes(batch._batch_size, batch._indices, batch._values,
-                      batch._lens, num_hashes, output);
+  void hashBatch(Batch batch, uint64_t num_hashes, uint32_t* output) const {
+    if (batch._type == BATCH_TYPE::SPARSE ||
+        batch._type == BATCH_TYPE::SPARSE_LABELED) {
+      hashSparse(batch._batch_size, batch._indices, batch._values, batch._lens,
+                 num_hashes, output);
     } else {
-      getDenseHashes(batch._batch_size, batch._dim, batch._values, num_hashes,
-                     output);
+      hashDense(batch._batch_size, batch._dim, batch._values, num_hashes,
+                output);
     }
   }
 
   // TODO: Add comments
-  virtual void getSparseHashes(uint64_t numVectors, uint32_t** indices,
-                               float** values, uint32_t* lengths,
-                               uint64_t num_hashes, uint32_t* output) = 0;
+  virtual void hashSparse(uint64_t numVectors, uint32_t** indices,
+                          float** values, uint32_t* lengths,
+                          uint64_t num_hashes, uint32_t* output) const = 0;
 
-  virtual void getDenseHashes(uint64_t numVectors, uint64_t dim, float** values,
-                              uint32_t numHashes, uint32_t* output) = 0;
+  virtual void hashDense(uint64_t numVectors, uint64_t dim, float** values,
+                         uint32_t numHashes, uint32_t* output) const = 0;
 };
 
-}  // namespace thirdAIUtils
+}  // namespace thirdai::utils

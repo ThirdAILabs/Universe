@@ -13,6 +13,7 @@ cc_binary(
   name = "all_binary",
   deps = [
     "//examples:hash",
+    "//utils:utils"
   ],
 )
 

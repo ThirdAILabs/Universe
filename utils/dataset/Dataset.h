@@ -1,13 +1,14 @@
 #pragma once
 
+#include <optional>
 #include <cassert>
 #include <cstdint>
 #include <string>
 #include <vector>
 
-namespace thirdAIUtils {
+namespace thirdai::utils {
 
-enum class FORMAT_TYPE { SPARSE, SPARSE_LABELED, DENSE, DENSE_LABELED };
+enum class BATCH_TYPE { SPARSE, SPARSE_LABELED, DENSE, DENSE_LABELED };
 
 struct Batch {
  public:
@@ -18,11 +19,11 @@ struct Batch {
   uint32_t* _lens{nullptr};
   uint32_t** _labels{nullptr};
   uint32_t* _label_lens{nullptr};
-  FORMAT_TYPE _type;
+  BATCH_TYPE _type;
   uint32_t _dim;
 
   /** Creates a new Batch object with a size, data dimension, and data type */
-  Batch(uint64_t batch_size, FORMAT_TYPE type, uint32_t dim) {
+  Batch(uint64_t batch_size, BATCH_TYPE type, uint32_t dim) {
     assert(_dim != 0);
 
     _type = type;
@@ -30,12 +31,12 @@ struct Batch {
     _values = new float*[_batch_size];
     _dim = dim;
 
-    if (_type == FORMAT_TYPE::SPARSE || _type == FORMAT_TYPE::SPARSE_LABELED) {
+    if (_type == BATCH_TYPE::SPARSE || _type == BATCH_TYPE::SPARSE_LABELED) {
       _indices = new uint32_t*[_batch_size];
       _lens = new uint32_t[_batch_size];
     }
-    if (_type == FORMAT_TYPE::SPARSE_LABELED ||
-        _type == FORMAT_TYPE::DENSE_LABELED) {
+    if (_type == BATCH_TYPE::SPARSE_LABELED ||
+        _type == BATCH_TYPE::DENSE_LABELED) {
       _labels = new uint32_t*[_batch_size];
       _label_lens = new uint32_t[_batch_size];
     }
@@ -95,18 +96,14 @@ struct Batch {
 
 class Dataset {
  public:
-  explicit Dataset(uint64_t batch_size) : _target_batch_size(batch_size) {}
 
   /**
-   * Returns a pointer to the next batch. This is the only pointer to the batch,
-   * and the callee is responsible for deleting it.
+   * Returns NONE if there are no more batches, and otherwise 
+   * SOME(the next batch). This should be the only copy of the batch, so
+   * the caller can free the Batch's memory by just letting it get out of
+   * scope.
    */
-  virtual Batch* loadNextBatch() = 0;
-
- private:
-  virtual void readDataset(const std::string& filename) = 0;
-
-  uint64_t _target_batch_size;
+  virtual std::optional<Batch> getNextBatch() = 0;
 };
 
-}  // namespace thirdAIUtils
+}  // namespace thirdai::utils
