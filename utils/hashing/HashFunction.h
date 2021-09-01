@@ -9,8 +9,7 @@ class HashFunction {
   /**
    * Populates num_hashes number of hashes for each element in the dataset into
    * the output array. The output array should be of size
-   * num_hashes * batch_size, and vector i's hashes are stored in positions
-   * i * num_hashes to i * (num_hashes) - 1.
+   * num_hashes * batch_size.
    *
    * Should return all of the first hashes, followed by all of the second
    * hashes, etc, instead of all of the first vectors’ hashes, all of the second
