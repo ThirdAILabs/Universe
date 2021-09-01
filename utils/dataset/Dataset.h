@@ -107,32 +107,32 @@ class Dataset {
   : _target_batch_size(target_batch_size), 
     _target_batch_num_per_load(target_batch_num_per_load){};
 
+  /**
+   * The batch is only going to exist until the next call to loadNextBatchSet();
+   */ 
   const Batch& operator[](uint64_t i) const {
-    assert(i <= _numBatches);
+    assert(i <= _num_batches);
     return _batches[i];
   }
 
   /**
    * Load n batches from file
+   * Frees any memory for currently existing batches and updates _numBatches.
    */
-  virtual void loadFromFile() = 0;
+  virtual void loadNextBatchSet() = 0;
 
   /**
-   * Number of batches loaded
+   * Number of batches currently loaded
    */ 
-  virtual uint64_t numBatches() = 0;
-
-  /**
-   * Return next batch from loaded batches
-   */
-  virtual Batch* nextBatch() = 0;
+  uint64_t numBatches() { return _num_batches; };
 
   ~Dataset() { 
     delete[] _batches; 
   }
   
+  protected:
   const uint64_t _target_batch_size, _target_batch_num_per_load;
-  uint64_t _numBatches;
+  uint64_t _num_batches;
   Batch* _batches;
 };
 
