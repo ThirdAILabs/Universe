@@ -1,0 +1,14 @@
+bin
+py_bin
+
+bazel*
+
+py_build
+
+bolt
+thirdai.so
+shuffle
+
+*.dSYM
+.vscode
+testing

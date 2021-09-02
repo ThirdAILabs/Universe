@@ -4,3 +4,15 @@ bazel-*
 # VSCode settings
 .vscode/*
 compile_commands.json
+
+bin
+py_bin
+
+py_build
+
+bolt
+thirdai.so
+shuffle
+
+*.dSYM
+testing

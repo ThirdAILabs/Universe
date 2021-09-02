@@ -13,6 +13,7 @@ cc_binary(
   name = "all_binary",
   deps = [
     "//examples:hash",
+    "//Bolt:bolt"
   ],
 )
 
@@ -20,6 +21,7 @@ cc_test(
   name = "all_test",
   deps = [
     "//examples:hash_test",
+    "//Bolt:bolt"
   ],
   testonly = True
 )
