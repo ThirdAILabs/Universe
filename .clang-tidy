@@ -1,9 +1,11 @@
 Checks: "-*, 
           abseil-*, bugprone-*, cert-*, 
-          cppcoreguidelines-*, 
+          cppcoreguidelines-*, -cppcoreguidelines-pro-bounds-array-to-pointer-decay, 
+          -cppcoreguidelines-owning-memory, # We maybe want to add this one back if we start using UniquePointers
           google-*, misc-*, 
           modernize-*, -modernize-loop-convert, -modernize-use-trailing-return-type, -modernize-avoid-c-arrays, 
           performance-*, openmp-*, readability-*
           clang-diagnostic-*, -clang-diagnostic-missing-*,
           clang-analyzer-*, -clang-analyzer-security*"
-WarningsAsErrors: "*, -cert-*, -bugprone-*, -cppcoreguidelines-*"
+WarningsAsErrors: "*, -cert-*, -bugprone-*, -cppcoreguidelines-*, 
+                  -misc-non-private-member-variables-in-classes"
