@@ -6,7 +6,7 @@ cc_binary(
         "bolt.cpp"
     ],
     deps = [
-        "//src:bolt_lib"
+        "//Bolt/src:bolt_lib"
     ],
     visibility = ["//visibility:public"]
 )
