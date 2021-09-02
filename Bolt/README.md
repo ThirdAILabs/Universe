@@ -3,9 +3,6 @@ Big Ol' Layer Training
 
 ## Instructions 
 
-### Running in Bazel
-1. CD into the bolt directory `cd Bolt` and run `bazel build bolt --config=bolt_config`.
-
 ### Running in C++
 1. Run `$ make` to compile the executable `bolt`.
 2. The bolt executable takes in a single argument which is the name of the config file to use. e.g `$ ./bolt ./configs/mnist.cfg`
