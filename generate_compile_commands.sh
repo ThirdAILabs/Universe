@@ -12,3 +12,4 @@ outfile="build/compile_commands.json"
 
 rm -f compile_commands.json
 cp ${outfile} compile_commands.json 
+rm -rf build
