@@ -284,7 +284,7 @@ def main():
 
     # Fill the queue with files.
     for name in files:
-      if "external" not in name:
+      if "build/_deps" not in name:
         task_queue.put(name)
 
 
