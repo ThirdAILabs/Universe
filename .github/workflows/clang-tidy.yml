@@ -27,4 +27,4 @@ jobs:
         chmod +x ./generate_compile_commands.sh
         ./generate_compile_commands.sh
     - name: Run clang-tidy on all files
-      run: python3 run-clang-tidy.py
+      run: python3 run-clang-tidy.py files ./examples* ./utils*
