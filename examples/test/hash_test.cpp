@@ -1,5 +1,5 @@
-#include "murmurhash/MurmurHash3.h"
-#include "tabulationhash/UniversalHash.h"
+#include "../murmurhash/MurmurHash3.h"
+#include "../tabulationhash/UniversalHash.h"
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <bitset>

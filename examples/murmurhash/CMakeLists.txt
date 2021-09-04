@@ -1,0 +1,1 @@
+add_library(murmurhash3_lib STATIC MurmurHash3.cpp)
