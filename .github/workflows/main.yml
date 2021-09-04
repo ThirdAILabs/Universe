@@ -1,4 +1,4 @@
-name: CI
+name: Build and Test
 
 # Controls when the workflow will run
 on:

@@ -1,4 +1,4 @@
-name: clang-tidy
+name: Clang Tidy
 
 # Controls when the workflow will run
 on:
@@ -7,24 +7,31 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-jobs:
-  clang-tidy-job:
-    runs-on: ubuntu-latest
     
+jobs:
+  clang-tidy:
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - name: Install clang-tidy
       run: |
         sudo apt-get update
-        sudo apt-get install -y clang-tidy-12
-        sudo ln -s /usr/bin/clang-tidy-12 /usr/bin/clang-tidy
+        sudo apt-get install -y clang-tidy
     - name: Prepare compile_commands.json
       run: |
-        chmod +x ./generate_compile_commands.sh
-        ./generate_compile_commands.sh
-    - name: Run clang-tidy on all files
-      run: python3 run-clang-tidy.py files "^((?!build/_deps).)*$"
+        cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    - name: Create results directory
+      run: |
+        mkdir clang-tidy-result
+    - name: Analyze
+      run: |
+        git diff -U0 HEAD^ | clang-tidy-diff -p1 -path build -export-fixes clang-tidy-result/fixes.yml
+    - name: Save PR metadata
+      run: |
+        echo ${{ github.event.number }} > clang-tidy-result/pr-id.txt
+        echo ${{ github.event.pull_request.head.repo.full_name }} > clang-tidy-result/pr-head-repo.txt
+        echo ${{ github.event.pull_request.head.ref }} > clang-tidy-result/pr-head-ref.txt
+    - uses: actions/upload-artifact@v2
+      with:
+        name: clang-tidy-result
+        path: clang-tidy-result/
