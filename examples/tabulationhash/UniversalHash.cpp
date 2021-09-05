@@ -67,4 +67,4 @@ void UniversalHash::getBatchHash(const uint64_t* keys, const uint32_t* hashes,
 void UniversalHash::getBatchHash(const char* keys, const uint32_t* hashes,
                                  uint32_t batchSize, uint32_t numHashes) {}
 
-}  // namespace thirdAI
+}  // namespace thirdai

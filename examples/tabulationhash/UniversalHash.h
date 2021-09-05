@@ -26,4 +26,4 @@ class UniversalHash {
                     uint32_t batchSize, uint32_t numHashes);
 };
 
-}  // namespace thirdAI
+}  // namespace thirdai

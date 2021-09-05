@@ -13,6 +13,8 @@ using std::chrono::milliseconds;
 using std::chrono::seconds;
 using std::chrono::system_clock;
 
+using namespace thirdai;
+
 class HashTest : public testing::Test {
  private:
   static std::string generate_random_string() {
