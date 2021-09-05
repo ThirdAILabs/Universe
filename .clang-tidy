@@ -5,7 +5,7 @@ Checks: "-*,
           google-*, misc-*, 
           modernize-*, -modernize-loop-convert, -modernize-use-trailing-return-type, -modernize-avoid-c-arrays, 
           performance-*, openmp-*, readability-*
-          clang-diagnostic-*, -clang-diagnostic-missing-*, -clang-diagnostic-error,
+          -clang-diagnostic-*, -clang-diagnostic-missing-*, -clang-diagnostic-error,
           clang-analyzer-*, -clang-analyzer-security*"
 WarningsAsErrors: "*, -cert-*, -bugprone-*, -cppcoreguidelines-*, 
                   -misc-non-private-member-variables-in-classes"
