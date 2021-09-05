@@ -7,6 +7,7 @@ add_executable(
 
 target_link_libraries(
   hash_test
+  PRIVATE
   universal_hash_lib
   murmurhash3_lib
   gtest_main

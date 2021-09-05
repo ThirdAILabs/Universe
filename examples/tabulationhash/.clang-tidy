@@ -4,13 +4,8 @@ Checks: "-*,
           -cppcoreguidelines-owning-memory, # We maybe want to add this one back if we start using UniquePointers
           google-*, misc-*, 
           modernize-*, -modernize-loop-convert, -modernize-use-trailing-return-type, -modernize-avoid-c-arrays, 
-          performance-*, openmp-*, readability-*,
+          performance-*, openmp-*, readability-*, -readability-magic-numbers,
           clang-diagnostic-*, -clang-diagnostic-missing-*,
           clang-analyzer-*, -clang-analyzer-security*"
-CheckOptions:
-  - key:    readability-magic-numbers.IgnorePowersOf2IntegerValues
-    value:  'true'
-  - key:    readability-magic-numbers.IgnoredIntegerValues
-    value:  '0:1:2:3:4:10'
 WarningsAsErrors: "*, -cert-*, -bugprone-*, -cppcoreguidelines-*, 
                   -misc-non-private-member-variables-in-classes"

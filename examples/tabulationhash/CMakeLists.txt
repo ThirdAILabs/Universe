@@ -1,1 +1,1 @@
-add_library(universal_hash_lib UniversalHash.cpp)
+add_library(universal_hash_lib STATIC UniversalHash.cpp)

@@ -1,4 +1,4 @@
-name: Build all Targets
+name: Build Targets
 
 # Controls when the workflow will run
 on:
@@ -25,7 +25,7 @@ jobs:
         sudo apt install gcc g++
         sudo apt install -y mpich libmpich-dev
         sudo apt install -y openmpi-bin openmpi-doc libopenmpi-dev
-    - name: Build all targets
+    - name: Build Targets
       run: |
         cmake -S . -B build
         cmake --build build
