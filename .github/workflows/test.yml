@@ -25,11 +25,11 @@ jobs:
         sudo apt install gcc g++
         sudo apt install -y mpich libmpich-dev
         sudo apt install -y openmpi-bin openmpi-doc libopenmpi-dev
-    - name: Run Tests
+    - name: Build Tests
       run: |
         cmake -S . -B build
         cmake --build build
-    - name: Test the code
+    - name: Run Tests
       run: |
         cd build 
         ctest --output-on-failure --verbose
