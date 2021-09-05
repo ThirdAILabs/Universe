@@ -8,5 +8,5 @@ Checks: "-*,
           -clang-diagnostic-*, -clang-diagnostic-missing-*, -clang-diagnostic-error,
           clang-analyzer-*, -clang-analyzer-security*"
 WarningsAsErrors: "*, -cert-*, -bugprone-*, -cppcoreguidelines-*, 
-                  -misc-non-private-member-variables-in-classes",
-                  -clang-diagnostic-*
+                  -misc-non-private-member-variables-in-classes,
+                  -clang-diagnostic-*"
