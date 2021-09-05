@@ -1,7 +1,7 @@
 #include <array>
 #include <string>
 
-namespace thirdAI {
+namespace thirdai {
 /*
  * Cheaper Hash functions, if you need 64 bit hash use murmurhash or xxhash
  */

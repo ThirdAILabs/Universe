@@ -4,7 +4,7 @@
 #include <random>
 #include <string>
 
-namespace thirdAI {
+namespace thirdai {
 
 UniversalHash::UniversalHash(uint32_t seed) {
   _seed = seed;
