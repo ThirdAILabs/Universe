@@ -7,5 +7,5 @@ Checks: "-*,
           performance-*, openmp-*, readability-*
           clang-diagnostic-*, -clang-diagnostic-missing-*,
           clang-analyzer-*, -clang-analyzer-security*"
-WarningsAsErrors: "*, -cert-*, -bugprone-*, -cppcoreguidelines-*, clang-diagnostic-error, 
+WarningsAsErrors: "*, -cert-*, -bugprone-*, -cppcoreguidelines-*, clang-diagnostic-*, 
                   -misc-non-private-member-variables-in-classes"
