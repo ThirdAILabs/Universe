@@ -13,7 +13,9 @@ UniversalHash::UniversalHash(uint32_t seed) {
   std::mt19937_64 gen(rd());
   std::uniform_int_distribution<uint64_t> dis;
   for (int i = 0; i < 8; i++) {
-    for (int j = 0; j < 256; j++) T[i][j] = dis(gen);
+    for (int j = 0; j < 256; j++) {
+      T[i][j] = dis(gen);
+    }
   }
 }
 
