@@ -2,7 +2,7 @@ enable_testing()
 
 add_executable(
   hash_test
-  hash_test.cpp
+  hash_test.cc
 )
 
 target_link_libraries(

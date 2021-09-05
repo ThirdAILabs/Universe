@@ -16,7 +16,8 @@ ln -s "$(brew --prefix llvm)/bin/clang-apply-replacements" "/usr/local/bin/clang
 
 # Install gcc
 brew install gcc@11
-ln -s /opt/homebrew/bin/g++-11 gcc
+ln -s /opt/homebrew/bin/gcc-11 /opt/homebrew/bin/gcc
+ln -s /opt/homebrew/bin/g++-11 /opt/homebrew/bin/g++
 
 # Install bazel
 brew install cmake
