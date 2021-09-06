@@ -6,22 +6,6 @@
 
 namespace thirdai::bolt {
 
-class SeededRandomEngine {
- private:
-  static constexpr unsigned int SEED = 459386;
-
- public:
-  SeededRandomEngine() { srand(SEED); }
-
-  typedef unsigned int result_type;
-
-  result_type min() { return std::numeric_limits<result_type>::min(); }
-
-  result_type max() { return std::numeric_limits<result_type>::max(); }
-
-  result_type operator()() { return rand(); }
-};
-
 constexpr uint32_t DEFAULT_BINSIZE = 8;
 
 DWTAHashFunction::DWTAHashFunction(uint32_t input_dim, uint32_t _K, uint32_t _L,

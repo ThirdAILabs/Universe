@@ -1,9 +1,8 @@
 #pragma once
 
-#include <stdint.h>
-
 #include "DWTA.h"
 #include "HashTable.h"
+#include <stdint.h>
 
 namespace thirdai::bolt {
 
@@ -18,7 +17,8 @@ struct SamplingConfig {
 
   SamplingConfig() : K(0), L(0), range_pow(0), reservoir_size(0) {}
 
-  SamplingConfig(uint32_t K, uint32_t L, uint32_t range_pow, uint32_t reservoir_size)
+  SamplingConfig(uint32_t K, uint32_t L, uint32_t range_pow,
+                 uint32_t reservoir_size)
       : K(K), L(L), range_pow(range_pow), reservoir_size(reservoir_size) {}
 };
 
@@ -26,24 +26,26 @@ class Layer {
  public:
   Layer() {}
 
-  // TODO: leave copy constructor and copy assignment as deleted, write save move constructor and
-  // move assignment that zeros pointers
+  // TODO: leave copy constructor and copy assignment as deleted, write save
+  // move constructor and move assignment that zeros pointers
   Layer(const Layer&) = delete;
   Layer(Layer&&) = delete;
   Layer& operator=(const Layer&) = delete;
   Layer& operator=(Layer&&) = delete;
 
-  Layer(uint64_t _dim, uint64_t _prev_dim, float _sparsity, ActivationFunc _act_func,
-        SamplingConfig _sampling_config);
+  Layer(uint64_t _dim, uint64_t _prev_dim, float _sparsity,
+        ActivationFunc _act_func, SamplingConfig _sampling_config);
 
-  void ForwardPass(uint32_t batch_indx, const uint32_t* indices, const float* values, uint32_t len,
+  void ForwardPass(uint32_t batch_indx, const uint32_t* indices,
+                   const float* values, uint32_t len,
                    uint32_t* labels = nullptr, uint32_t label_len = 0);
 
   template <bool FIRST_LAYER>
-  void BackPropagate(uint32_t batch_indx, const uint32_t* indices, const float* values,
-                     float* errors, uint32_t len);
+  void BackPropagate(uint32_t batch_indx, const uint32_t* indices,
+                     const float* values, float* errors, uint32_t len);
 
-  void ComputeErrors(uint32_t batch_indx, const uint32_t* labels, uint32_t label_len);
+  void ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
+                     uint32_t label_len);
 
   void UpdateParameters(float learning_rate, uint32_t iter, float beta1 = BETA1,
                         float beta2 = BETA2, float eps = EPS);
@@ -60,9 +62,13 @@ class Layer {
 
   uint32_t GetLen(uint32_t batch_indx) { return active_lens[batch_indx]; }
 
-  const uint32_t* GetIndices(uint32_t batch_indx) { return active_neurons[batch_indx]; }
+  const uint32_t* GetIndices(uint32_t batch_indx) {
+    return active_neurons[batch_indx];
+  }
 
-  const float* GetValues(uint32_t batch_indx) { return activations[batch_indx]; }
+  const float* GetValues(uint32_t batch_indx) {
+    return activations[batch_indx];
+  }
 
   float* GetErrors(uint32_t batch_indx) { return errors[batch_indx]; }
 
@@ -73,8 +79,9 @@ class Layer {
   ~Layer();
 
  private:
-  void SelectActiveNeurons(uint32_t batch_indx, const uint32_t* indices, const float* values,
-                           uint32_t len, uint32_t* labels, uint32_t label_len);
+  void SelectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
+                           const float* values, uint32_t len, uint32_t* labels,
+                           uint32_t label_len);
 
   uint64_t dim, prev_dim, batch_size, sparse_dim;
   float sparsity;
@@ -104,4 +111,4 @@ class Layer {
   uint32_t* rand_neurons;
 };
 
-}  // namespace bolt
+}  // namespace thirdai::bolt
