@@ -31,6 +31,7 @@ endif()
 
 add_subdirectory(examples)
 add_subdirectory(bolt)
+add_subdirectory(utils)
 
 file(GLOB BOLT_SOURCES bolt/src/*.cc)
 pybind11_add_module(thirdai python_bindings/thirdai.cc ${BOLT_SOURCES})
