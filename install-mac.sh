@@ -15,11 +15,12 @@ ln -s "$(brew --prefix llvm)/bin/clang-tidy" "/usr/local/bin/clang-tidy"
 ln -s "$(brew --prefix llvm)/bin/clang-apply-replacements" "/usr/local/bin/clang-apply-replacements"
 
 # Install gcc
-brew install brew
-ln -s /opt/homebrew/bin/g++-11 gcc
+brew install gcc@11
+ln -s /opt/homebrew/bin/gcc-11 /opt/homebrew/bin/gcc
+ln -s /opt/homebrew/bin/g++-11 /opt/homebrew/bin/g++
 
 # Install bazel
-brew install bazel
+brew install cmake
 
 # Git line endings
 git config --global core.eol lf 

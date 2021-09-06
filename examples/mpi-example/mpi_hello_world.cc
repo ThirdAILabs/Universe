@@ -1,11 +1,11 @@
+#include <cstdio>
 #include <mpi.h>
-#include <stdio.h>
 
 int main(int argc, char** argv) {
   (void)argc;
   (void)argv;
   // Initialize the MPI environment
-  MPI_Init(NULL, NULL);
+  MPI_Init(nullptr, nullptr);
 
   // Get the number of processes
   int world_size;

@@ -1,0 +1,1 @@
+add_library(universal_hash_lib STATIC UniversalHash.cc)

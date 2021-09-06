@@ -4,7 +4,7 @@
 #include <random>
 #include <string>
 
-namespace thirdAI {
+namespace thirdai {
 
 UniversalHash::UniversalHash(uint32_t seed) {
   _seed = seed;
@@ -13,7 +13,9 @@ UniversalHash::UniversalHash(uint32_t seed) {
   std::mt19937_64 gen(rd());
   std::uniform_int_distribution<uint64_t> dis;
   for (int i = 0; i < 8; i++) {
-    for (int j = 0; j < 256; j++) T[i][j] = dis(gen);
+    for (int j = 0; j < 256; j++) {
+      T[i][j] = dis(gen);
+    }
   }
 }
 
@@ -65,4 +67,4 @@ void UniversalHash::getBatchHash(const uint64_t* keys, const uint32_t* hashes,
 void UniversalHash::getBatchHash(const char* keys, const uint32_t* hashes,
                                  uint32_t batchSize, uint32_t numHashes) {}
 
-}  // namespace thirdAI
+}  // namespace thirdai

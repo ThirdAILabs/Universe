@@ -1,4 +1,4 @@
-name: CI
+name: Run Tests
 
 # Controls when the workflow will run
 on:
@@ -13,33 +13,23 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
     # the rest of the steps
     - uses: actions/checkout@v2
 
-    # Caches and restores the bazel build directory.
-    - name: Cache bazel build results
-      uses: actions/cache@v2.0.0
-      env:
-        cache-name: bazel-cache
-      with:
-        path: ~/.cache/bazel
-        key: ${{ runner.os }}-${{ env.cache-name }}-${{ github.ref }}
-        restore-keys: |
-          ${{ runner.os }}-${{ env.cache-name }}-master
     - name: download-openmpi
       run: |
         sudo apt install gcc g++
         sudo apt install -y mpich libmpich-dev
         sudo apt install -y openmpi-bin openmpi-doc libopenmpi-dev
-    - name: Build mpi-example
-      run: bazel build --config=mpi_config //examples/mpi-example:all
-    - name: Build rest of the code
+    - name: Build Tests
       run: |
-        bazel build //examples:all
-    - name: Test the code
+        cmake -S . -B build
+        cmake --build build
+    - name: Run Tests
       run: |
-        bazel test --test_output=errors --test_tag_filters=-integration-test //examples:all
+        cd build 
+        ctest --output-on-failure --verbose

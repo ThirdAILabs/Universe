@@ -1,5 +1,5 @@
-#include "murmurhash/MurmurHash3.h"
-#include "tabulationhash/UniversalHash.h"
+#include "../murmurhash/MurmurHash3.h"
+#include "../tabulationhash/UniversalHash.h"
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <bitset>
@@ -13,7 +13,8 @@ using std::chrono::milliseconds;
 using std::chrono::seconds;
 using std::chrono::system_clock;
 
-namespace thirdAI {
+using namespace thirdai;
+
 class HashTest : public testing::Test {
  private:
   static std::string generate_random_string() {
@@ -49,8 +50,8 @@ class HashTest : public testing::Test {
 
  public:
   // Converts input string to bitstring (bitset).
-  std::string convert_to_bitstring(const std::string& str) {
-    std::string bitstring = "";
+  static std::string convert_to_bitstring(const std::string& str) {
+    std::string bitstring;
     for (const char& _c : str) {
       bitstring += std::bitset<8>(_c).to_string();
     }
@@ -206,4 +207,3 @@ TEST_F(HashTest, TabulationHashIntegerKeyAvalancheTest) {
     }
   }
 }
-}  // namespace thirdAI
