@@ -99,7 +99,7 @@ class StrValue final : public ConfigValue {
 
 class ConfigReader {
  public:
-  ConfigReader(std::string filename)
+  ConfigReader(const std::string& filename)
       : key_re(key_re_str),
         int_re(int_re_str),
         decimal_re(decimal_re_str),
@@ -111,18 +111,18 @@ class ConfigReader {
 
   void PrintConfigVals();
 
-  uint64_t IntVal(std::string key, uint32_t index = 0) const;
+  uint64_t IntVal(const std::string& key, uint32_t index = 0) const;
 
-  double DoubleVal(std::string key, uint32_t index = 0) const;
+  double DoubleVal(const std::string& key, uint32_t index = 0) const;
 
-  float FloatVal(std::string key, uint32_t index = 0) const;
+  float FloatVal(const std::string& key, uint32_t index = 0) const;
 
-  const std::string& StrVal(std::string key, uint32_t index = 0) const;
+  const std::string& StrVal(const std::string& key, uint32_t index = 0) const;
 
-  bool ValExists(std::string key) const;
+  bool ValExists(const std::string& key) const;
 
  private:
-  void ParseConfig(std::string filename);
+  void ParseConfig(const std::string& filename);
 
   std::regex key_re, int_re, decimal_re, string_re, comment_re, empty_re;
 

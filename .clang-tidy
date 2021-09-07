@@ -1,15 +1,19 @@
 Checks: "-*, 
           abseil-*, bugprone-*, cert-*, 
           cppcoreguidelines-*, -cppcoreguidelines-pro-bounds-array-to-pointer-decay, 
+          -cppcoreguidelines-init-variables,
           -cppcoreguidelines-owning-memory, # We maybe want to add this one back if we start using UniquePointers
           google-*, misc-*, 
           modernize-*, -modernize-loop-convert, -modernize-use-trailing-return-type, -modernize-avoid-c-arrays, 
-          performance-*, openmp-*, readability-*, -readability-magic-numbers,
+          -modernize-use-auto,
+          performance-*, openmp-*, readability-*, -readability-magic-numbers, 
+          -readability-function-cognitive-complexity, -readability-implicit-bool-conversion,-warnings-as-errors,
           -cppcoreguidelines-avoid-magic-numbers,
           -cppcoreguidelines-pro-bounds-constant-array-index,
           -cppcoreguidelines-pro-bounds-pointer-arithmetic,
           clang-diagnostic-*, -clang-diagnostic-missing-*,
           clang-analyzer-*, -clang-analyzer-security*"
+          
 CheckOptions:
   - key:    readability-magic-numbers.IgnorePowersOf2IntegerValues
     value:  'true'

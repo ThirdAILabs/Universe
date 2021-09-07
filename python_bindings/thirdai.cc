@@ -12,7 +12,7 @@ namespace thirdai::python {
 class PyNetwork final : public Network {
  public:
   PyNetwork(std::vector<bolt::LayerConfig> configs, uint64_t input_dim)
-      : Network(configs, input_dim) {}
+      : Network(std::move(configs), input_dim) {}
 
   py::array_t<float> GetWeightMatrix(uint32_t layer_index) {
     if (layer_index >= num_layers) {

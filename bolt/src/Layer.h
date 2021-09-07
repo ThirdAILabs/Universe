@@ -47,8 +47,8 @@ class Layer {
   void ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
                      uint32_t label_len);
 
-  void UpdateParameters(float learning_rate, uint32_t iter, float beta1 = BETA1,
-                        float beta2 = BETA2, float eps = EPS);
+  void UpdateParameters(float lr, uint32_t iter, float B1 = BETA1,
+                        float B2 = BETA2, float eps = EPS);
 
   void BuildHashTables();
 

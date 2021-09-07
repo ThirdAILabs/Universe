@@ -1,6 +1,6 @@
 #include "HashTable.h"
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 #include <iostream>
 #include <unordered_map>
 #include <vector>

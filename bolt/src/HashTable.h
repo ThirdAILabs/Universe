@@ -21,9 +21,24 @@ class QueryResult {
   }
 
   QueryResult(const QueryResult& other) = delete;
+
   QueryResult& operator=(const QueryResult& other) = delete;
-  QueryResult(QueryResult&& other) = default;
-  QueryResult& operator=(QueryResult&& other) = default;
+
+  QueryResult(QueryResult&& other)
+      : results(other.results), lens(other.lens), n(other.n), k(other.k) {
+    other.results = nullptr;
+    other.lens = nullptr;
+  }
+
+  QueryResult& operator=(QueryResult&& other) {
+    results = other.results;
+    lens = other.lens;
+    n = other.n;
+    k = other.k;
+
+    other.results = nullptr;
+    other.lens = nullptr;
+  }
 
   uint64_t len() const { return n; }
 
@@ -64,7 +79,42 @@ class HashTable {
 
  public:
   HashTable(uint64_t _num_tables, uint64_t _reservoir_size, uint64_t _range_pow,
-            uint64_t _maxRand = DefaultMaxRand);
+            uint64_t _max_rand = DefaultMaxRand);
+
+  HashTable(const HashTable& other) = delete;
+
+  HashTable& operator=(const HashTable& other) = delete;
+
+  HashTable(HashTable&& other)
+      : num_tables(other.num_tables),
+        reservoir_size(other.reservoir_size),
+        range_pow(other.range_pow),
+        range(other.range),
+        max_rand(other.max_rand),
+        mask(other.mask),
+        data(other.data),
+        counters(other.counters),
+        gen_rand(other.gen_rand) {
+    other.data = nullptr;
+    other.counters = nullptr;
+    other.gen_rand = nullptr;
+  }
+
+  HashTable& operator=(HashTable&& other) {
+    num_tables = other.num_tables;
+    reservoir_size = other.reservoir_size;
+    range_pow = other.range_pow;
+    range = other.range;
+    max_rand = other.max_rand;
+    mask = other.mask;
+    data = other.data;
+    counters = other.counters;
+    gen_rand = other.gen_rand;
+
+    other.data = nullptr;
+    other.counters = nullptr;
+    other.gen_rand = nullptr;
+  }
 
   void Insert(uint64_t n, Label_t* labels, Hash_t* hashes);
 

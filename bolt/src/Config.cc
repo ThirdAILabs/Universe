@@ -15,7 +15,7 @@ std::vector<std::string> Split(const std::string& line, char delimeter) {
   return output;
 }
 
-void ConfigReader::ParseConfig(std::string filename) {
+void ConfigReader::ParseConfig(const std::string& filename) {
   std::ifstream file(filename);
 
   std::string line;
@@ -100,35 +100,36 @@ void ConfigReader::ParseConfig(std::string filename) {
   file.close();
 }
 
-uint64_t ConfigReader::IntVal(std::string key, uint32_t index) const {
+uint64_t ConfigReader::IntVal(const std::string& key, uint32_t index) const {
   if (!config_vars.count(key)) {
     throw std::logic_error("Invaid key in config file: '" + key + "'");
   }
   return config_vars.at(key)->IntVal(index);
 }
 
-float ConfigReader::FloatVal(std::string key, uint32_t index) const {
+float ConfigReader::FloatVal(const std::string& key, uint32_t index) const {
   if (!config_vars.count(key)) {
     throw std::logic_error("Invaid key in config file: '" + key + "'");
   }
   return static_cast<float>(config_vars.at(key)->DoubleVal(index));
 }
 
-double ConfigReader::DoubleVal(std::string key, uint32_t index) const {
+double ConfigReader::DoubleVal(const std::string& key, uint32_t index) const {
   if (!config_vars.count(key)) {
     throw std::logic_error("Invaid key in config file: '" + key + "'");
   }
   return config_vars.at(key)->DoubleVal(index);
 }
 
-const std::string& ConfigReader::StrVal(std::string key, uint32_t index) const {
+const std::string& ConfigReader::StrVal(const std::string& key,
+                                        uint32_t index) const {
   if (!config_vars.count(key)) {
     throw std::logic_error("Invaid key in config file: '" + key + "'");
   }
   return config_vars.at(key)->StrVal(index);
 }
 
-bool ConfigReader::ValExists(std::string key) const {
+bool ConfigReader::ValExists(const std::string& key) const {
   return config_vars.count(key);
 }
 

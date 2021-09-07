@@ -8,7 +8,7 @@
 namespace thirdai::bolt {
 
 SvmDataset::SvmDataset(const std::string& filename, uint64_t _batch_size)
-    : target_batch_size(_batch_size) {
+    : target_batch_size(_batch_size), num_vecs(0) {
   auto start = std::chrono::high_resolution_clock::now();
 
   ReadDataset(filename);
@@ -46,7 +46,7 @@ void SvmDataset::ReadDataset(const std::string& filename) {
     std::string labelstr;
     stream >> labelstr;
     size_t pos;
-    while ((pos = labelstr.find(",")) != std::string::npos) {
+    while ((pos = labelstr.find(',')) != std::string::npos) {
       labels.push_back(atoi(labelstr.substr(0, pos).c_str()));
       labelstr = labelstr.substr(pos + 1);
     }
@@ -55,7 +55,7 @@ void SvmDataset::ReadDataset(const std::string& filename) {
     markers.push_back(indices.size());
     std::string nonzero;
     while (stream >> nonzero) {
-      pos = nonzero.find(":");
+      pos = nonzero.find(':');
       indices.push_back(atoi(nonzero.substr(0, pos).c_str()));
       values.push_back(atof(nonzero.substr(pos + 1).c_str()));
     }

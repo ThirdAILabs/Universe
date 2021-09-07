@@ -1,6 +1,6 @@
 #include "Layer.h"
 #include <algorithm>
-#include <math.h>
+#include <cmath>
 #include <random>
 #include <unordered_set>
 
@@ -178,7 +178,9 @@ void Layer::SelectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
 
     uint32_t cnt = 0;
     for (uint32_t i = 0; i < label_len; i++) {
-      if (cnt >= sparse_dim) break;
+      if (cnt >= sparse_dim) {
+        break;
+      }
       active_neurons[batch_indx][cnt++] = labels[i];
       active_set.erase(labels[i]);
     }
@@ -292,7 +294,7 @@ void Layer::SetSparsity(float new_sparsity) {
 
 void Layer::ShuffleRandNeurons() {
   if (sparsity < 1.0) {
-    std::random_shuffle(rand_neurons, rand_neurons + dim);
+    std::shuffle(rand_neurons, rand_neurons + dim, std::random_device{});
   }
 }
 

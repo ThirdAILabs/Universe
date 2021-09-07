@@ -124,7 +124,8 @@ void DWTAHashFunction::HashSparseVector(const uint32_t* indices,
   delete[] hashes;
 }
 
-void DWTAHashFunction::DensifyHashes(uint32_t* hashes, uint32_t* final_hashes) {
+void DWTAHashFunction::DensifyHashes(const uint32_t* hashes,
+                                     uint32_t* final_hashes) {
   // TODO: this could cause exceed max stack size, but is cheaper than memory
   // allocation
   uint32_t* hash_array = new uint32_t[num_hashes]();
@@ -142,8 +143,9 @@ void DWTAHashFunction::DensifyHashes(uint32_t* hashes, uint32_t* final_hashes) {
       uint32_t index = std::min(RandDoubleHash(i, count), num_hashes);
 
       next = hashes[index];
-      if (count > 100)  // Densification failure.
+      if (count > 100) {  // Densification failure.
         break;
+      }
     }
     hash_array[i] = next;
   }

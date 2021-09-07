@@ -12,14 +12,14 @@ class DWTAHashFunction {
   uint32_t* positions;
   uint32_t rand_double_hash_seed;
 
-  constexpr uint32_t RandDoubleHash(int binid, int count) {
+  constexpr uint32_t RandDoubleHash(uint32_t binid, uint32_t count) {
     uint32_t tohash = ((binid + 1) << 6) + count;
     uint32_t result =
         (rand_double_hash_seed * tohash << 3) >> (32 - this->log_num_hashes);
     return result;
   }
 
-  void DensifyHashes(uint32_t* hashes, uint32_t* final_hashes);
+  void DensifyHashes(const uint32_t* hashes, uint32_t* final_hashes);
 
  public:
   DWTAHashFunction(uint32_t input_dim, uint32_t _K, uint32_t _L,
