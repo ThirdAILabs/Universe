@@ -80,9 +80,9 @@ class Network {
 
   uint32_t ProcessTestBatch(const Batch& batch);
 
-  void Train(uint32_t batch_size, const std::string& train_data, const std::string& test_data,
-             float learning_rate, uint32_t epochs, uint32_t rehash = 0,
-             uint32_t rebuild = 0,
+  void Train(uint32_t batch_size, const std::string& train_data,
+             const std::string& test_data, float learning_rate, uint32_t epochs,
+             uint32_t rehash = 0, uint32_t rebuild = 0,
              uint32_t max_test_batches = std::numeric_limits<uint32_t>::max());
 
   uint32_t* PredictClasses(const Batch& batch, uint64_t batch_size);

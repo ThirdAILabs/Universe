@@ -134,8 +134,8 @@ uint32_t Network::ProcessTestBatch(const Batch& batch) {
 }
 
 void Network::Train(uint32_t batch_size, const std::string& train_data,
-                    const std::string& test_data, float learning_rate, uint32_t epochs,
-                    uint32_t rehash_in, uint32_t rebuild_in,
+                    const std::string& test_data, float learning_rate,
+                    uint32_t epochs, uint32_t rehash_in, uint32_t rebuild_in,
                     uint32_t max_test_batches) {
   SvmDataset train(train_data, batch_size);
   SvmDataset test(test_data, batch_size);
