@@ -38,6 +38,8 @@ class QueryResult {
 
     other.results = nullptr;
     other.lens = nullptr;
+
+    return *this;
   }
 
   uint64_t len() const { return n; }
@@ -114,6 +116,8 @@ class HashTable {
     other.data = nullptr;
     other.counters = nullptr;
     other.gen_rand = nullptr;
+
+    return *this;
   }
 
   void Insert(uint64_t n, Label_t* labels, Hash_t* hashes);

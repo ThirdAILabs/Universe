@@ -12,7 +12,13 @@ Checks: "-*,
           -cppcoreguidelines-pro-bounds-constant-array-index,
           -cppcoreguidelines-pro-bounds-pointer-arithmetic,
           clang-diagnostic-*, -clang-diagnostic-missing-*,
-          clang-analyzer-*, -clang-analyzer-security*"
+          clang-analyzer-*, -clang-analyzer-security*",
+
+          -performance-type-promotion-in-math-fn,
+
+          #fix from expansion of pybind11 call
+          -readability-else-after-return,
+          -readability-isolate-declaration
           
 CheckOptions:
   - key:    readability-magic-numbers.IgnorePowersOf2IntegerValues

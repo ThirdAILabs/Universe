@@ -148,7 +148,7 @@ std::ostream& operator<<(std::ostream& out, const ConfigValue& val) {
   return val.Print(out);
 }
 
-std::ostream& operator<<(std::ostream& out, std::shared_ptr<ConfigValue> val) {
+std::ostream& operator<<(std::ostream& out, const std::shared_ptr<ConfigValue>& val) {
   return val->Print(out);
 }
 

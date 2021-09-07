@@ -39,7 +39,7 @@ class ConfigValue {
   friend std::ostream& operator<<(std::ostream& out, const ConfigValue& val);
 
   friend std::ostream& operator<<(std::ostream& out,
-                                  std::shared_ptr<ConfigValue> val);
+                                  const std::shared_ptr<ConfigValue>& val);
 
   virtual ~ConfigValue() {}
 };

@@ -25,11 +25,11 @@ int main(int argc, char** argv) {
     if (l == num_layers - 1) {
       func = bolt::ActivationFunc::Softmax;
     }
-    layers.push_back(
-        {config.IntVal("dims", l), config.FloatVal("sparsity", l), func,
-         bolt::SamplingConfig(config.IntVal("K", l), config.IntVal("L", l),
-                              config.IntVal("range_pow", l),
-                              config.IntVal("reservoir_size", l))});
+    layers.emplace_back(
+        config.IntVal("dims", l), config.FloatVal("sparsity", l), func,
+        bolt::SamplingConfig(config.IntVal("K", l), config.IntVal("L", l),
+                             config.IntVal("range_pow", l),
+                             config.IntVal("reservoir_size", l)));
   }
 
   bolt::Network network(layers, config.IntVal("input_dim"));

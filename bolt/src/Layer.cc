@@ -185,7 +185,9 @@ void Layer::SelectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
       active_set.erase(labels[i]);
     }
     for (auto x : active_set) {
-      if (cnt >= sparse_dim) break;
+      if (cnt >= sparse_dim) {
+        break;
+      }
       active_neurons[batch_indx][cnt++] = x;
     }
   }
