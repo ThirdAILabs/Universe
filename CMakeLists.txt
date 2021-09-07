@@ -5,7 +5,7 @@ set(CMAKE_C_COMPILER "gcc")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -Ofast -fPIC -ffast-math -funroll-loops -ftree-vectorize")
 
 project(ThirdAI LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -18,4 +18,19 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
+FetchContent_Declare(
+    pybind11
+    GIT_REPOSITORY https://github.com/pybind/pybind11
+    GIT_TAG        v2.2.3
+)
+FetchContent_GetProperties(pybind11)
+if(NOT pybind11_POPULATED)
+    FetchContent_Populate(pybind11)
+    add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
+endif()
+
 add_subdirectory(examples)
+add_subdirectory(bolt)
+
+file(GLOB BOLT_SOURCES bolt/src/*.cc)
+pybind11_add_module(thirdai python_bindings/thirdai.cc ${BOLT_SOURCES})
