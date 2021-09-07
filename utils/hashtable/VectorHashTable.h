@@ -16,25 +16,26 @@ class VectorHashTable : public HashTable<Label_t> {
                         uint32_t const* hashes) override;
 
   void queryBySet(uint32_t const* hashes,
-                  const std::unordered_set<Label_t>& store) override;
+                  std::unordered_set<Label_t>& store) const override;
 
   void queryByCount(uint32_t const* hashes,
-                    const std::vector<Label_t>& counts) override;
+                    std::vector<Label_t>& counts) const override;
 
   void queryByVector(uint32_t const* hashes,
-                     const std::vector<Label_t>& results) override;
+                     std::vector<Label_t>& results) const override;
 
   void clearTables() override;
 
-  uint64_t numTables() override;
+  uint64_t numTables() const override;
 
-  uint64_t tableRange() override;
+  uint64_t tableRange() const override;
 
+  /** Sorts the contents of each bucket */
   void sortBuckets();
 
  private:
-  constexpr uint64_t getBucket(uint64_t table, uint64_t hash) {
-    return tables[table * tableRange() + hash];
+  constexpr uint64_t getBucketIndex(uint64_t table, uint64_t hash) const {
+    return table * tableRange() + hash;
   }
 
   std::vector<std::vector<Label_t>> tables;
