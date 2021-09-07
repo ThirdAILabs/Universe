@@ -9,7 +9,11 @@ namespace bolt {
 
 SparseRandomProjection::SparseRandomProjection(uint32_t input_dim, uint32_t K,
                                                uint32_t L, uint32_t range_pow)
-    : _K(K), _L(L), _num_hashes(K * L), _range(1 << range_pow), _dim(input_dim) {
+    : _K(K),
+      _L(L),
+      _num_hashes(K * L),
+      _range(1 << range_pow),
+      _dim(input_dim) {
   _sample_size = ceil(1.0 * _dim / _ratio);
 
   uint32_t* a = new uint32_t[_dim];

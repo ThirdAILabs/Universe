@@ -24,8 +24,7 @@ class SeededRandomEngine {
 
 constexpr uint32_t DEFAULT_BINSIZE = 8;
 
-FastSRP::FastSRP(uint32_t input_dim, uint32_t K, uint32_t L,
-                 uint32_t range_pow)
+FastSRP::FastSRP(uint32_t input_dim, uint32_t K, uint32_t L, uint32_t range_pow)
     : _K(K),
       _L(L),
       _num_hashes(K * L),
