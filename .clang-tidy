@@ -14,8 +14,6 @@ Checks: "-*,
           clang-diagnostic-*, -clang-diagnostic-missing-*,
           clang-analyzer-*, -clang-analyzer-security*,
           -performance-type-promotion-in-math-fn,
-
-          #fix from expansion of pybind11 call
           -readability-else-after-return,
           -readability-isolate-declaration"
           
