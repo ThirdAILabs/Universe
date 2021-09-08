@@ -20,9 +20,9 @@ class GlobalFreq {
   std::unordered_map<std::string, int> _idfMap;
 
  public:
-  GlobalFreq(std::string[]);
+  GlobalFreq(std::vector<std::string> files);
 
-  inline int getIdf(std::string word);
+  inline int getIdf(std::string word);  // Should have a default value
 
   // Can have a parallel version of getIdf like:
   void getIdfPar(std::vector<std::string> wordvec, int* freqs);
@@ -30,7 +30,7 @@ class GlobalFreq {
   ~GlobalFreq();
 };
 
-GlobalFreq::GlobalFreq(std::string files[]) {}
+GlobalFreq::GlobalFreq(std::vector<std::string> files) {}
 
 GlobalFreq::~GlobalFreq() {}
 
