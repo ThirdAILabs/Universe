@@ -19,7 +19,7 @@ brew install gcc@11
 ln -s /opt/homebrew/bin/gcc-11 /opt/homebrew/bin/gcc
 ln -s /opt/homebrew/bin/g++-11 /opt/homebrew/bin/g++
 
-# Install bazel
+# Install cmake
 brew install cmake
 
 # Git line endings
