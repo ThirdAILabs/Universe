@@ -30,9 +30,6 @@ void VectorHashTable<Label_t>::insert(uint64_t n, Label_t const* labels,
   }
 };
 
-/**
- * Testings 123
- */
 template <typename Label_t>
 void VectorHashTable<Label_t>::insertSequential(uint64_t n, Label_t start,
                                                 uint32_t const* hashes) {
