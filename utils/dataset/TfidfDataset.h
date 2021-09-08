@@ -8,6 +8,8 @@
 
 namespace thirdai::utils {
 
+enum class TFIDF_FILE_TYPE{ FILE, SINGLE_SENTENCE, PARAGRAPH, N_SENTENCE };
+
 class TfidfDataset : public Dataset {
  private:
   // TODO: Store a hash function(eg. murmurHash) that maps tokens to token ids
@@ -28,7 +30,7 @@ class TfidfDataset : public Dataset {
     _globalFreq = globalFreq;
   };
 
-  void readDataset(std::string files[]);
+  void readDataset(std::vector<std::string> files, TFIDF_FILE_TYPE type);
   void loadNextBatchSet();
 };
 
