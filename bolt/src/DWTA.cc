@@ -8,12 +8,11 @@ namespace thirdai::bolt {
 
 constexpr uint32_t DEFAULT_BINSIZE = 8;
 
-DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
-                                   uint32_t _num_hashes_per_table,
-                                   uint32_t _num_tables, uint32_t range_pow)
-    : num_hashes_per_table(_num_hashes_per_table),
-      num_tables(_num_tables),
-      num_hashes(num_hashes_per_table * num_tables),
+DWTAHashFunction::DWTAHashFunction(uint32_t input_dim, uint32_t _K, uint32_t _L,
+                                   uint32_t range_pow)
+    : K(_K),
+      L(_L),
+      num_hashes(K * L),
       range(1 << range_pow),
       dim(input_dim),
       binsize(DEFAULT_BINSIZE) {
@@ -52,7 +51,7 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
 }
 
 uint32_t* DWTAHashFunction::HashVector(const float* data, uint32_t len) {
-  uint32_t* final_hashes = new uint32_t[num_tables];
+  uint32_t* final_hashes = new uint32_t[L];
   HashVector(data, len, final_hashes);
   return final_hashes;
 }
@@ -90,7 +89,7 @@ void DWTAHashFunction::HashVector(const float* data, uint32_t len,
 uint32_t* DWTAHashFunction::HashSparseVector(const uint32_t* indices,
                                              const float* values,
                                              uint32_t len) {
-  uint32_t* final_hashes = new uint32_t[num_tables];
+  uint32_t* final_hashes = new uint32_t[L];
   HashSparseVector(indices, values, len, final_hashes);
   return final_hashes;
 }
@@ -151,11 +150,11 @@ void DWTAHashFunction::DensifyHashes(const uint32_t* hashes,
     hash_array[i] = next;
   }
 
-  for (uint32_t i = 0; i < num_tables; i++) {
+  for (uint32_t i = 0; i < L; i++) {
     uint32_t index = 0;
-    for (uint32_t j = 0; j < num_hashes_per_table; j++) {
-      uint32_t h = hash_array[i * num_hashes_per_table + j];
-      index += h << ((num_hashes_per_table - 1 - j) * log_binsize);
+    for (uint32_t j = 0; j < K; j++) {
+      uint32_t h = hash_array[i * K + j];
+      index += h << ((K - 1 - j) * log_binsize);
     }
     final_hashes[i] = index;
   }
