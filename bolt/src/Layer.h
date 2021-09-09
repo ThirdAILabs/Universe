@@ -26,6 +26,11 @@ class Layer {
  public:
   Layer() {}
 
+<<<<<<< HEAD
+=======
+  // TODO: leave copy constructor and copy assignment as deleted, write save
+  // move constructor and move assignment that zeros pointers
+>>>>>>> 980c70d04712b972e3858d5a9feb018582254c95
   Layer(const Layer&) = delete;
   Layer(Layer&&) = delete;
   Layer& operator=(const Layer&) = delete;
@@ -81,8 +86,11 @@ class Layer {
                            const float* values, uint32_t len, uint32_t* labels,
                            uint32_t label_len);
 
+<<<<<<< HEAD
   constexpr float ActFuncDerivative(float x);
 
+=======
+>>>>>>> 980c70d04712b972e3858d5a9feb018582254c95
   uint64_t dim, prev_dim, batch_size, sparse_dim;
   float sparsity;
   ActivationFunc act_func;
@@ -104,6 +112,10 @@ class Layer {
 
   bool* is_active;
 
+<<<<<<< HEAD
+=======
+  // TODO: make these not pointers?
+>>>>>>> 980c70d04712b972e3858d5a9feb018582254c95
   SamplingConfig sampling_config;
   DWTAHashFunction* hasher;
   HashTable<uint32_t, uint32_t>* hash_table;
