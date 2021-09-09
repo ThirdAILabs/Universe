@@ -21,17 +21,18 @@ class SparseRandomProjection : public HashFunction {
                         const uint32_t* lengths, uint64_t num_hashes,
                         uint32_t* output);
 
+  void CompactHashes(uint32_t* hashes, uint32_t* final_hashes);
+
  public:
   SparseRandomProjection(uint32_t input_dim, uint32_t _K, uint32_t _L,
                          uint32_t range_pow);
 
   void hashSparse(uint64_t num_vectors, uint32_t** indices, float** values,
-                  uint32_t* lengths, uint64_t num_hashes, uint32_t* output);
+                  uint32_t* lengths, uint64_t num_hashes,
+                  uint32_t* output) const override;
 
   void hashDense(uint64_t num_vectors, uint64_t dim, float** values,
-                 uint32_t num_hashes, uint32_t* output);
-
-  void CompactHashes(uint32_t* hashes, uint32_t* final_hashes);
+                 uint32_t num_hashes, uint32_t* output) const override;
 
   ~SparseRandomProjection();
 };
