@@ -18,8 +18,7 @@ class HashFunction {
    */
   void hashBatch(const Batch& batch, uint64_t num_hashes,
                  uint32_t* output) const {
-    if (batch._type == BATCH_TYPE::SPARSE ||
-        batch._type == BATCH_TYPE::SPARSE_LABELED) {
+    if (batch._batch_type == BATCH_TYPE::SPARSE) {
       hashSparse(batch._batch_size, batch._indices, batch._values, batch._lens,
                  num_hashes, output);
     } else {
