@@ -1,6 +1,8 @@
 # Universe 
 Main Repository (follow monorepositry) 
 
+[Repository Setup Instructions](https://docs.google.com/document/d/196ajXaVUUqpTFigkMmBhdlhTAiKy7LxgYS95xqpB2Ys/edit?usp=sharing)
+
 ## Development
 1. Clone this repository and navigate into it.
 2. `$ mkdir build && cd build`

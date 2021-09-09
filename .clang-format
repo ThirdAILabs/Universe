@@ -12,14 +12,14 @@ IncludeCategories:
 # Matches common headers first, but sorts them after project includes
 - Regex: '^\"'
   Priority: 1500
+- Regex: '^<bolt/*'
+  Priority: 1700
 - Regex: '^<datasets/*'
   Priority: 2000
 - Regex: '^<hashing/*'
   Priority: 2100
 - Regex: '^<search/*'
   Priority: 2200
-- Regex: '^<slide/*'
-  Priority: 2300
 - Regex: '^<.*/.*'
   Priority: 4000
 - Regex: '^<[^/]*>'
