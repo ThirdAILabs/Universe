@@ -7,9 +7,9 @@
 #    for a commented out way to do this)
 # bugprone-reserved-identifier: 
 #    Violating reserved identifiers is undefined behavior, not good
+#    TODO: Add this one back in
 Checks: >
          -*, 
          abseil-*,
-         bugprone-reserved-identifier
 HeaderFilterRegex: ".*"
 WarningsAsErrors: "*"
