@@ -1,26 +1,15 @@
-Checks: "-*, 
-          abseil-*, bugprone-*, cert-*, 
-          cppcoreguidelines-*, -cppcoreguidelines-pro-bounds-array-to-pointer-decay, 
-          -cppcoreguidelines-init-variables,
-          -cppcoreguidelines-owning-memory, # We maybe want to add this one back if we start using UniquePointers
-          google-*, misc-*, 
-          modernize-*, -modernize-loop-convert, -modernize-use-trailing-return-type, -modernize-avoid-c-arrays, 
-          -modernize-use-auto,
-          performance-*, openmp-*, readability-*, -readability-magic-numbers, 
-          -readability-function-cognitive-complexity, -readability-implicit-bool-conversion,-warnings-as-errors,
-          -cppcoreguidelines-avoid-magic-numbers,
-          -cppcoreguidelines-pro-bounds-constant-array-index,
-          -cppcoreguidelines-pro-bounds-pointer-arithmetic,
-          clang-diagnostic-*, -clang-diagnostic-missing-*,
-          clang-analyzer-*, -clang-analyzer-security*,
-          -performance-type-promotion-in-math-fn,
-          -readability-else-after-return,
-          -readability-isolate-declaration"
-          
-CheckOptions:
-  - key:    readability-magic-numbers.IgnorePowersOf2IntegerValues
-    value:  'true'
-  - key:    readability-magic-numbers.IgnoredIntegerValues
-    value:  '0:1:2:3:4:10'
-WarningsAsErrors: "*, -cert-*, -bugprone-*, -cppcoreguidelines-*, 
-                  -misc-non-private-member-variables-in-classes"
+# TODO: Add more
+
+# Explanations (if you can figure out how to get these in line be my guest):
+# abseil-*: 
+#    We want all abseil checks, if we get any of these
+#    we should start using abseil (see the CMakeLists.txt
+#    for a commented out way to do this)
+# bugprone-reserved-identifier: 
+#    Violating reserved identifiers is undefined behavior, not good
+#    TODO: Add this one back
+Checks: >
+         -*, 
+         abseil-*,
+HeaderFilterRegex: ".*"
+WarningsAsErrors: "*"
