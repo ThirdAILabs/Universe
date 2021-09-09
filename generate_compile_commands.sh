@@ -14,6 +14,6 @@ rm -f compile_commands.json
 
 # This is kinda ugly but it works, maybe theres a better way in cmake, see below,
 # but it is kind of non standard with pybind11.
-# Trick clang-tidy into thinking anything in /opt/thirdparty/include is a system header
+# Trick clang-tidy into thinking anything all includes are system headers
 sed 's/-I/-isystem /g' ${outfile} > compile_commands.json 
 
