@@ -4,10 +4,7 @@
 #include <chrono>
 #include <iostream>
 #include <limits>
-<<<<<<< HEAD
 #include <stdexcept>
-=======
->>>>>>> 980c70d04712b972e3858d5a9feb018582254c95
 
 namespace thirdai::bolt {
 
