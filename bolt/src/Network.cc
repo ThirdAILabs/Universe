@@ -4,6 +4,7 @@
 #include <chrono>
 #include <iostream>
 #include <limits>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -16,6 +17,17 @@ Network::Network(std::vector<LayerConfig> configs, uint64_t input_dim)
 
   for (uint32_t i = 0; i < num_layers; i++) {
     uint64_t prev_dim = (i > 0) ? configs[i - 1].dim : input_dim;
+    if (i < num_layers - 1) {
+      if (configs[i].act_func == ActivationFunc::Softmax) {
+        throw std::invalid_argument(
+            "Softmax activation function is not supported for hidden layers.");
+      }
+    } else {
+      if (configs[i].act_func == ActivationFunc::ReLU) {
+        throw std::invalid_argument(
+            "Softmax activation function is required for output layer.");
+      }
+    }
     layers[i] = new Layer(configs[i].dim, prev_dim, configs[i].sparsity,
                           configs[i].act_func, configs[i].sampling_config);
   }

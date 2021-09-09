@@ -105,6 +105,15 @@ void Layer::ForwardPass(uint32_t batch_indx, const uint32_t* indices,
   }
 }
 
+constexpr float Layer::ActFuncDerivative(float x) {
+  switch (act_func) {
+    case ActivationFunc::ReLU:
+      return x > 0 ? 1.0 : 0.0;
+    case ActivationFunc::Softmax:
+      return 1.0;
+  }
+}
+
 template void Layer::BackPropagate<true>(uint32_t, const uint32_t*,
                                          const float*, float*, uint32_t);
 
@@ -116,16 +125,14 @@ void Layer::BackPropagate(uint32_t batch_indx, const uint32_t* indices,
                           const float* values, float* prev_errors,
                           uint32_t len) {
   for (uint64_t n = 0; n < active_lens[batch_indx]; n++) {
+    errors[batch_indx][n] *= ActFuncDerivative(activations[batch_indx][n]);
     for (uint64_t i = 0; i < len; i++) {
-      // TODO: generalize to other activation functions/their derivatives
-      if (values[i] > 0) {
-        w_gradient[active_neurons[batch_indx][n] * prev_dim + indices[i]] +=
-            errors[batch_indx][n] * values[i];
-        if (!FIRST_LAYER) {
-          prev_errors[i] +=
-              errors[batch_indx][n] *
-              weights[active_neurons[batch_indx][n] * prev_dim + indices[i]];
-        }
+      w_gradient[active_neurons[batch_indx][n] * prev_dim + indices[i]] +=
+          errors[batch_indx][n] * values[i];
+      if (!FIRST_LAYER) {
+        prev_errors[i] +=
+            errors[batch_indx][n] *
+            weights[active_neurons[batch_indx][n] * prev_dim + indices[i]];
       }
     }
     b_gradient[active_neurons[batch_indx][n]] += errors[batch_indx][n];

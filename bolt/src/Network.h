@@ -91,6 +91,34 @@ class Network {
 
   void BuildHashTables();
 
+  uint32_t GetNumLayers() { return num_layers; }
+
+  uint32_t GetInputDim() { return input_dim; }
+
+  std::vector<uint32_t> GetLayerSizes() {
+    std::vector<uint32_t> layer_sizes;
+    for (const auto& c : configs) {
+      layer_sizes.push_back(c.dim);
+    }
+    return layer_sizes;
+  }
+
+  std::vector<std::string> GetActivationFunctions() {
+    std::vector<std::string> funcs;
+    for (const auto& c : configs) {
+      switch (c.act_func) {
+        case ActivationFunc::ReLU:
+          funcs.emplace_back("ReLU");
+          break;
+
+        case ActivationFunc::Softmax:
+          funcs.emplace_back("Softmax");
+          break;
+      }
+    }
+    return funcs;
+  }
+
   ~Network();
 
  protected:

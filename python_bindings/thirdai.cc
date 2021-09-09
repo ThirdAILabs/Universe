@@ -77,5 +77,10 @@ PYBIND11_MODULE(thirdai, m) {
       .def("GetWeightMatrix", &thirdai::python::PyNetwork::GetWeightMatrix,
            py::arg("layer_index"))
       .def("GetBiasVector", &thirdai::python::PyNetwork::GetBiasVector,
-           py::arg("layer_index"));
+           py::arg("layer_index"))
+      .def("GetNumLayers", &thirdai::python::PyNetwork::GetNumLayers)
+      .def("GetLayerSizes", &thirdai::python::PyNetwork::GetLayerSizes)
+      .def("GetInputDim", &thirdai::python::PyNetwork::GetInputDim)
+      .def("GetActivationFunctions",
+           &thirdai::python::PyNetwork::GetActivationFunctions);
 }
