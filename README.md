@@ -9,6 +9,10 @@ Main Repository (follow monorepositry)
 5. All executables will be in their corresponding directory within the build directory. e.g. the mpi_example executable will be in `Universe/build/examples/mpi-example/mpi_example`.
 6. To run tests simply run `$ ctest` from within the build directory after compiling all of the targets, or optionally pass a regular expression to filter tests (or provide an explicit test names) `$ ctest -R <test filter expression>`. 
 
+## Installing python bindings
+1. The building target `thirdai` will compile the `thirdai.so` library in the build directory.
+2. Alternatively, running `pip3 install .` from the root of the Universe directory will compile and install the python bindings on whatever machine you are using. This is recommended because once they are installed with pip they can be imported and used anywhere on that machine. 
+
 ## Using cmake
 To understand how to setup a executable, library, or test using cmake please see the examples in the `examples` directory. For more context here are a few things to know: 
 1. `add_library` - this creates a library of the specified name using the given targets. The `SHARED` or `STATIC` identifier means that the library will be either shared and dynamically loaded or static and linked in to other binaries that depend on it. For our purposes we should probably just use `STATIC`. 

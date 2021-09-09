@@ -112,6 +112,9 @@ constexpr float Layer::ActFuncDerivative(float x) {
     case ActivationFunc::Softmax:
       return 1.0;
   }
+  // This is impossible to reach, but the compiler gave a warning saying it
+  // reached the end of a non void function wihtout it.
+  return 0.0;
 }
 
 template void Layer::BackPropagate<true>(uint32_t, const uint32_t*,
