@@ -7,7 +7,7 @@ namespace thirdai::utils {
 template <typename Label_t>
 class VectorHashTable : public HashTable<Label_t> {
  public:
-  VectorHashTable(uint64_t num_tables, uint64_t table_range);
+  VectorHashTable(uint32_t num_tables, uint64_t table_range);
 
   void insert(uint64_t n, Label_t const* labels,
               uint32_t const* hashes) override;
@@ -19,14 +19,14 @@ class VectorHashTable : public HashTable<Label_t> {
                   std::unordered_set<Label_t>& store) const override;
 
   void queryByCount(uint32_t const* hashes,
-                    std::vector<Label_t>& counts) const override;
+                    std::vector<uint32_t>& counts) const override;
 
   void queryByVector(uint32_t const* hashes,
                      std::vector<Label_t>& results) const override;
 
   void clearTables() override;
 
-  uint64_t numTables() const override;
+  uint32_t numTables() const override;
 
   uint64_t tableRange() const override;
 
@@ -40,7 +40,8 @@ class VectorHashTable : public HashTable<Label_t> {
 
   std::vector<std::vector<Label_t>> tables;
 
-  uint64_t _num_tables, _table_range;
+  uint32_t _num_tables;
+  uint64_t _table_range;
 };
 
 }  // namespace thirdai::utils

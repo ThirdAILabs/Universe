@@ -43,7 +43,7 @@ class HashTable {
                           std::unordered_set<Label_t>& store) const = 0;
 
   virtual void queryByCount(uint32_t const* hashes,
-                            std::vector<Label_t>& counts) const = 0;
+                            std::vector<uint32_t>& counts) const = 0;
 
   /**
    * Same as queryBySet, except adds to the results vector all labels that are
@@ -57,7 +57,7 @@ class HashTable {
   virtual void clearTables() = 0;
 
   /** Returns the total number of tables */
-  virtual uint64_t numTables() const = 0;
+  virtual uint32_t numTables() const = 0;
 
   /* Returns the range (number of buckets) of each table */
   virtual uint64_t tableRange() const = 0;

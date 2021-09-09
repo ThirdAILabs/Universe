@@ -6,8 +6,6 @@
 
 using namespace thirdai::utils;
 
-class VectorHashTableTest : public testing::Test {};
-
 // TODO: Abstract some of the logic from this test out and make the test smaller
 /**
  * This test creates a VectorHashTable with N tables and a hash range of R,
@@ -16,7 +14,7 @@ class VectorHashTableTest : public testing::Test {};
  * and as a normal batch, then makes sure they can be succesfully retrieved
  * the correct number of times with all query methods.
  */
-TEST_F(VectorHashTableTest, ExactRetrievalTest) {
+TEST(VectorHashTableTest, ExactRetrievalTest) {
   uint32_t num_tables = 5;
   uint32_t table_range = 100;
   uint32_t start_label = 0;
@@ -79,13 +77,14 @@ TEST_F(VectorHashTableTest, ExactRetrievalTest) {
  * table, calling sort, and ensuring that the vector of returned elements
  * is as expected.
  */
-TEST_F(VectorHashTableTest, SortAndClearBucketsTest) {
+TEST(VectorHashTableTest, SortAndClearBucketsTest) {
   // Create a hash table with a single table
   uint32_t num_tables = 1;
   uint32_t table_range = 10;
   VectorHashTable<uint8_t> test_table(num_tables, table_range);
 
-  // Add 5 items
+  // Add 5 items. Using a single table ensures they are inserted in the order
+  // we intend even with a parallel insert.
   uint32_t hashes[] = {1, 1, 1, 2, 2};
   uint8_t labels[] = {5, 4, 3, 2, 1};
   test_table.insert(5, labels, hashes);
@@ -98,7 +97,6 @@ TEST_F(VectorHashTableTest, SortAndClearBucketsTest) {
   uint32_t test_hashes_1[] = {1};
   test_table.queryByVector(test_hashes_1, result);
   assert(result.size() == 3);
-  printf("%d %d %d", result[0], result[1], result[2]);
   assert(result[0] == 3 && result[1] == 4 && result[2] == 5);
 
   // Do query in bucket 2
