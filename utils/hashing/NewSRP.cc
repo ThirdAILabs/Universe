@@ -24,10 +24,11 @@ class SeededRandomEngine {
 
 constexpr uint32_t DEFAULT_BINSIZE = 8;
 
-FastSRP::FastSRP(uint32_t input_dim, uint32_t K, uint32_t L, uint32_t range_pow)
-    : _K(K),
-      _L(L),
-      _num_hashes(K * L),
+FastSRP::FastSRP(uint32_t input_dim, uint32_t num_hashes_per_table,
+                 uint32_t num_tables, uint32_t range_pow)
+    : _num_hashes_per_table(num_hashes_per_table),
+      _num_tables(num_tables),
+      _num_hashes(num_hashes_per_table * num_tables),
       _dim(input_dim),
       _binsize(DEFAULT_BINSIZE) {
   (void)range_pow;
@@ -77,7 +78,7 @@ FastSRP::FastSRP(uint32_t input_dim, uint32_t K, uint32_t L, uint32_t range_pow)
 }
 
 uint32_t* FastSRP::HashVector(const float* data, uint32_t len) {
-  uint32_t* final_hashes = new uint32_t[_L];
+  uint32_t* final_hashes = new uint32_t[_num_tables];
   HashVector(data, len, final_hashes);
   return final_hashes;
 }
@@ -118,7 +119,7 @@ void FastSRP::HashVector(const float* data, uint32_t len,
 
 uint32_t* FastSRP::HashSparseVector(const uint32_t* indices,
                                     const float* values, uint32_t len) {
-  uint32_t* final_hashes = new uint32_t[_L];
+  uint32_t* final_hashes = new uint32_t[_num_tables];
   HashSparseVector(indices, values, len, final_hashes);
   return final_hashes;
 }
@@ -181,11 +182,11 @@ void FastSRP::DensifyHashes(uint32_t* hashes, uint32_t* final_hashes) {
     hash_array[i] = next;
   }
 
-  for (uint32_t i = 0; i < _L; i++) {
+  for (uint32_t i = 0; i < _num_tables; i++) {
     uint32_t index = 0;
-    for (uint32_t j = 0; j < _K; j++) {
-      uint32_t h = hash_array[i * _K + j];
-      index += h << (_K - 1 - j);
+    for (uint32_t j = 0; j < _num_hashes_per_table; j++) {
+      uint32_t h = hash_array[i * _num_hashes_per_table + j];
+      index += h << (_num_hashes_per_table - 1 - j);
     }
     final_hashes[i] = index;
   }

@@ -7,11 +7,13 @@
 
 namespace bolt {
 
-SparseRandomProjection::SparseRandomProjection(uint32_t input_dim, uint32_t K,
-                                               uint32_t L, uint32_t range_pow)
-    : _K(K),
-      _L(L),
-      _num_hashes(K * L),
+SparseRandomProjection::SparseRandomProjection(uint32_t input_dim,
+                                               uint32_t num_hashes_per_table,
+                                               uint32_t num_tables,
+                                               uint32_t range_pow)
+    : _num_hashes_per_table(num_hashes_per_table),
+      _num_tables(num_tables),
+      _num_hashes(num_hashes_per_table * num_tables),
       _range(1 << range_pow),
       _dim(input_dim) {
   _sample_size = ceil(1.0 * _dim / _ratio);
@@ -68,7 +70,7 @@ void SparseRandomProjection::HashVector(const float* data, uint32_t len,
 }
 
 uint32_t* SparseRandomProjection::HashVector(const float* data, uint32_t len) {
-  uint32_t* final_hashes = new uint32_t[_L];
+  uint32_t* final_hashes = new uint32_t[_num_tables];
   HashVector(data, len, final_hashes);
   return final_hashes;
 }
@@ -107,18 +109,18 @@ void SparseRandomProjection::HashSparseVector(const uint32_t* indices,
 uint32_t* SparseRandomProjection::HashSparseVector(const uint32_t* indices,
                                                    const float* values,
                                                    uint32_t len) {
-  uint32_t* final_hashes = new uint32_t[_L];
+  uint32_t* final_hashes = new uint32_t[_num_tables];
   HashSparseVector(indices, values, len, final_hashes);
   return final_hashes;
 }
 
 void SparseRandomProjection::CompactHashes(uint32_t* hashes,
                                            uint32_t* final_hashes) {
-  for (uint32_t i = 0; i < _L; i++) {
+  for (uint32_t i = 0; i < _num_tables; i++) {
     uint32_t index = 0;
-    for (uint32_t j = 0; j < _K; j++) {
-      uint32_t h = hashes[_K * i + j];
-      index += h << (_K - 1 - j);
+    for (uint32_t j = 0; j < _num_hashes_per_table; j++) {
+      uint32_t h = hashes[_num_hashes_per_table * i + j];
+      index += h << (_num_hashes_per_table - 1 - j);
     }
 
     final_hashes[i] = index % _range;

@@ -16,6 +16,15 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+# If we need to add abseil for a warning, we can uncomment this:
+# FetchContent_Declare(
+#        abseil
+#        GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
+#        GIT_TAG 20210324.2
+# )
+# FetchContent_MakeAvailable(abseil)
+
+
 enable_testing()
 
 FetchContent_Declare(
