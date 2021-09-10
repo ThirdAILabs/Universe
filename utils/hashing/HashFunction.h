@@ -18,8 +18,7 @@ class HashFunction {
    */
   void hashBatch(const Batch& batch, uint64_t num_hashes,
                  uint32_t* output) const {
-    if (batch._type == BATCH_TYPE::SPARSE ||
-        batch._type == BATCH_TYPE::SPARSE_LABELED) {
+    if (batch._batch_type == BATCH_TYPE::SPARSE) {
       hashSparse(batch._batch_size, batch._indices, batch._values, batch._lens,
                  num_hashes, output);
     } else {
@@ -40,12 +39,12 @@ class HashFunction {
   }
 
   // TODO: Add comments
-  virtual void hashSparse(uint64_t numVectors, uint32_t** indices,
+  virtual void hashSparse(uint64_t num_vectors, uint32_t** indices,
                           float** values, uint32_t* lengths,
                           uint64_t num_hashes, uint32_t* output) const = 0;
 
-  virtual void hashDense(uint64_t numVectors, uint64_t dim, float** values,
-                         uint32_t numHashes, uint32_t* output) const = 0;
+  virtual void hashDense(uint64_t num_vectors, uint64_t dim, float** values,
+                         uint32_t num_hashes, uint32_t* output) const = 0;
 };
 
 }  // namespace thirdai::utils
