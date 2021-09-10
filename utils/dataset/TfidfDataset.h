@@ -43,7 +43,8 @@ class TfidfDataset : public Dataset {
   /*
     Want to assume that the strings in the files are cleaned and good
   */
-  void readDataset(const std::vector<std::string> & filenames, TFIDF_FILE_TYPE fileType,
+  void readDataset(const std::vector<std::string>& filenames,
+                   TFIDF_FILE_TYPE fileType,
                    TOKEN_TYPE tokenType = TOKEN_TYPE::UNI_GRAM);
   void loadNextBatchSet();
   void calcTf(std::string filename, std::unordered_map<std::string, int>& map,
