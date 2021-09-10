@@ -1,4 +1,4 @@
-name: clang-tidy
+name: Build Targets
 
 # Controls when the workflow will run
 on:
@@ -11,21 +11,21 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  clang-tidy-job:
+  build:
     runs-on: ubuntu-latest
-    
     steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
+    # the rest of the steps
     - uses: actions/checkout@v2
-    - name: Install clang-tidy
+
+    - name: download-openmpi
       run: |
-        sudo apt-get update
+        sudo apt install gcc g++
         sudo apt install -y mpich libmpich-dev
-        sudo apt-get install -y clang-tidy-12
-        sudo ln -s /usr/bin/clang-tidy-12 /usr/bin/clang-tidy
-    - name: Prepare compile_commands.json
+        sudo apt install -y openmpi-bin openmpi-doc libopenmpi-dev
+    - name: Build Targets
       run: |
-        chmod +x ./generate_compile_commands.sh
-        ./generate_compile_commands.sh
-    - name: Run clang-tidy on all files
-      run: python3 run-clang-tidy.py
+        cmake -S . -B build
+        cmake --build build

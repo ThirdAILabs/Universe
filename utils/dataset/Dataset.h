@@ -11,7 +11,8 @@
 
 namespace thirdai::utils {
 
-enum class BATCH_TYPE { SPARSE, SPARSE_LABELED, DENSE, DENSE_LABELED };
+enum class BATCH_TYPE { SPARSE, DENSE };
+enum class LABEL_TYPE { LABELED, UNLABELED };
 
 struct Batch {
  public:
@@ -22,24 +23,26 @@ struct Batch {
   uint32_t* _lens{nullptr};
   uint32_t** _labels{nullptr};
   uint32_t* _label_lens{nullptr};
-  BATCH_TYPE _type;
+  BATCH_TYPE _batch_type;
+  LABEL_TYPE _label_type;
   uint32_t _dim;
 
   /** Creates a new Batch object with a size, data dimension, and data type */
-  Batch(uint64_t batch_size, BATCH_TYPE type, uint32_t dim) {
+  Batch(uint64_t batch_size, BATCH_TYPE batch_type, LABEL_TYPE label_type,
+        uint32_t dim) {
     assert(_dim != 0);
 
-    _type = type;
+    _batch_type = batch_type;
+    _label_type = label_type;
     _batch_size = batch_size;
     _values = new float*[_batch_size];
     _dim = dim;
 
-    if (_type == BATCH_TYPE::SPARSE || _type == BATCH_TYPE::SPARSE_LABELED) {
+    if (_batch_type == BATCH_TYPE::SPARSE) {
       _indices = new uint32_t*[_batch_size];
       _lens = new uint32_t[_batch_size];
     }
-    if (_type == BATCH_TYPE::SPARSE_LABELED ||
-        _type == BATCH_TYPE::DENSE_LABELED) {
+    if (_label_type == LABEL_TYPE::LABELED) {
       _labels = new uint32_t*[_batch_size];
       _label_lens = new uint32_t[_batch_size];
     }
@@ -56,7 +59,8 @@ struct Batch {
         _lens(other._lens),
         _labels(other._labels),
         _label_lens(other._label_lens),
-        _type(other._type),
+        _batch_type(other._batch_type),
+        _label_type(other._label_type),
         _dim(other._dim) {
     // Set fields to null so we do not delete the fields of our current object
     other._batch_size = 0;
