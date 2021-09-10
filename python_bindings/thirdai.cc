@@ -53,8 +53,8 @@ PYBIND11_MODULE(thirdai, m) {
   auto submodule = m.def_submodule("bolt");
 
   py::class_<thirdai::bolt::SamplingConfig>(submodule, "SamplingConfig")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(), py::arg("K"),
-           py::arg("L"), py::arg("range_pow"), py::arg("reservoir_size"))
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(), py::arg("hashes_per_table"),
+           py::arg("num_tables"), py::arg("range_pow"), py::arg("reservoir_size"))
       .def(py::init<>());
 
   py::class_<thirdai::bolt::LayerConfig>(submodule, "LayerConfig")

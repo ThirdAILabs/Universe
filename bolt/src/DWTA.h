@@ -6,7 +6,7 @@ namespace thirdai::bolt {
 
 class DWTAHashFunction {
  private:
-  uint32_t K, L, num_hashes, log_num_hashes, range, dim, binsize, log_binsize,
+  uint32_t hashes_per_table, num_tables, num_hashes, log_num_hashes, range, dim, binsize, log_binsize,
       permute;
   uint32_t* bin_map;
   uint32_t* positions;
@@ -22,7 +22,7 @@ class DWTAHashFunction {
   void DensifyHashes(const uint32_t* hashes, uint32_t* final_hashes);
 
  public:
-  DWTAHashFunction(uint32_t input_dim, uint32_t _K, uint32_t _L,
+  DWTAHashFunction(uint32_t input_dim, uint32_t _hashes_per_table, uint32_t _num_tables,
                    uint32_t range_pow);
 
   uint32_t* HashSparseVector(const uint32_t* indices, const float* values,

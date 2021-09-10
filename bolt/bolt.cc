@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
     }
     layers.emplace_back(
         config.IntVal("dims", l), config.FloatVal("sparsity", l), func,
-        bolt::SamplingConfig(config.IntVal("K", l), config.IntVal("L", l),
+        bolt::SamplingConfig(config.IntVal("hashes_per_table", l), config.IntVal("num_tables", l),
                              config.IntVal("range_pow", l),
                              config.IntVal("reservoir_size", l)));
   }

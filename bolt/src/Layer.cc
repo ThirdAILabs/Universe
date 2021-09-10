@@ -41,11 +41,11 @@ Layer::Layer(uint64_t _dim, uint64_t _prev_dim, float _sparsity,
   std::generate(biases, biases + dim, [&]() { return dist(eng); });
 
   if (sparsity < 1.0) {
-    hasher = new DWTAHashFunction(prev_dim, sampling_config.K,
-                                  sampling_config.L, sampling_config.range_pow);
+    hasher = new DWTAHashFunction(prev_dim, sampling_config.hashes_per_table,
+                                  sampling_config.num_tables, sampling_config.range_pow);
 
     hash_table = new HashTable<uint32_t, uint32_t>(
-        sampling_config.L, sampling_config.reservoir_size,
+        sampling_config.num_tables, sampling_config.reservoir_size,
         sampling_config.range_pow);
 
     BuildHashTables();
@@ -265,7 +265,7 @@ void Layer::ReBuildHashFunction() {
   }
   delete hasher;
 
-  hasher = new DWTAHashFunction(prev_dim, sampling_config.K, sampling_config.L,
+  hasher = new DWTAHashFunction(prev_dim, sampling_config.hashes_per_table, sampling_config.num_tables,
                                 sampling_config.range_pow);
 }
 

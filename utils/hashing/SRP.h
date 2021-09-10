@@ -8,7 +8,7 @@ namespace thirdai::utils {
 
 class SparseRandomProjection : public HashFunction {
  private:
-  uint32_t _K, _L, _num_hashes, _range, _dim;
+  uint32_t _hashes_per_table, _num_tables, _num_hashes, _range, _dim;
   uint32_t _sample_size;
   short** _random_bits;
   uint32_t** _hash_indices;
@@ -24,7 +24,7 @@ class SparseRandomProjection : public HashFunction {
   void CompactHashes(uint32_t* hashes, uint32_t* final_hashes);
 
  public:
-  SparseRandomProjection(uint32_t input_dim, uint32_t _K, uint32_t _L,
+  SparseRandomProjection(uint32_t input_dim, uint32_t _hashes_per_table, uint32_t _num_tables,
                          uint32_t range_pow);
 
   void hashSparse(uint64_t num_vectors, uint32_t** indices, float** values,
