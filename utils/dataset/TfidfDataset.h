@@ -10,7 +10,7 @@ namespace thirdai::utils {
 
 #define MAX_LEN 50;
 
-enum class TFIDF_FILE_TYPE{ FILE, SINGLE_SENTENCE, PARAGRAPH, N_SENTENCE };
+enum class TFIDF_FILE_TYPE { FILE, SINGLE_SENTENCE, PARAGRAPH, N_SENTENCE };
 enum class TOKEN_TYPE { UNI_GRAM, TRI_GRAM };
 
 class TfidfDataset : public Dataset {
@@ -39,12 +39,17 @@ class TfidfDataset : public Dataset {
     _idfDefault = idfDefault;
     _globalFreq = globalFreq;
   };
- 
+
   /*
     Want to assume that the strings in the files are cleaned and good
   */
-  void readDataset(std::vector<std::string> files, TFIDF_FILE_TYPE fileType, TOKEN_TYPE tokenType = TOKEN_TYPE::UNI_GRAM);
+  void readDataset(const std::vector<std::string> & filenames, TFIDF_FILE_TYPE fileType,
+                   TOKEN_TYPE tokenType = TOKEN_TYPE::UNI_GRAM);
   void loadNextBatchSet();
+  void calcTf(std::string filename, std::unordered_map<std::string, int>& map,
+              TOKEN_TYPE tokenType = TOKEN_TYPE::UNI_GRAM);
+  void tokenize(std::string bulk, std::vector<std::string>& dest,
+                TOKEN_TYPE tokenType = TOKEN_TYPE::UNI_GRAM);
 };
 
 }  // namespace thirdai::utils

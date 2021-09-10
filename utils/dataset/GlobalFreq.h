@@ -22,7 +22,7 @@ class GlobalFreq {
  public:
   GlobalFreq(std::vector<std::string> files);
 
-  inline int getIdf(std::string word);  // Should have a default value
+  int getIdf(std::string word);  // Should have a default value
 
   // Can have a parallel version of getIdf like:
   void getIdfPar(std::vector<std::string> wordvec, int* freqs);
