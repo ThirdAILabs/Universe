@@ -42,7 +42,8 @@ Layer::Layer(uint64_t _dim, uint64_t _prev_dim, float _sparsity,
 
   if (sparsity < 1.0) {
     hasher = new DWTAHashFunction(prev_dim, sampling_config.hashes_per_table,
-                                  sampling_config.num_tables, sampling_config.range_pow);
+                                  sampling_config.num_tables,
+                                  sampling_config.range_pow);
 
     hash_table = new HashTable<uint32_t, uint32_t>(
         sampling_config.num_tables, sampling_config.reservoir_size,
@@ -265,7 +266,8 @@ void Layer::ReBuildHashFunction() {
   }
   delete hasher;
 
-  hasher = new DWTAHashFunction(prev_dim, sampling_config.hashes_per_table, sampling_config.num_tables,
+  hasher = new DWTAHashFunction(prev_dim, sampling_config.hashes_per_table,
+                                sampling_config.num_tables,
                                 sampling_config.range_pow);
 }
 

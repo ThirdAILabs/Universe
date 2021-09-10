@@ -24,8 +24,8 @@ class SparseRandomProjection : public HashFunction {
   void CompactHashes(uint32_t* hashes, uint32_t* final_hashes);
 
  public:
-  SparseRandomProjection(uint32_t input_dim, uint32_t _hashes_per_table, uint32_t _num_tables,
-                         uint32_t range_pow);
+  SparseRandomProjection(uint32_t input_dim, uint32_t _hashes_per_table,
+                         uint32_t _num_tables, uint32_t range_pow);
 
   void hashSparse(uint64_t num_vectors, uint32_t** indices, float** values,
                   uint32_t* lengths, uint64_t num_hashes,

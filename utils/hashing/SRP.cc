@@ -7,8 +7,10 @@
 
 namespace thirdai::utils {
 
-SparseRandomProjection::SparseRandomProjection(uint32_t input_dim, uint32_t hashes_per_table,
-                                               uint32_t num_tables, uint32_t range_pow)
+SparseRandomProjection::SparseRandomProjection(uint32_t input_dim,
+                                               uint32_t hashes_per_table,
+                                               uint32_t num_tables,
+                                               uint32_t range_pow)
     : _hashes_per_table(hashes_per_table),
       _num_tables(num_tables),
       _num_hashes(hashes_per_table * num_tables),
@@ -83,8 +85,8 @@ void SparseRandomProjection::hashSparse(uint64_t num_vectors,
                                         uint32_t* lengths, uint64_t num_hashes,
                                         uint32_t* output) {
   for (uint32_t i = 0; i < num_vectors; i++) {
-    SparseRandomProjection::hashSparseVector(i, indices, values, lengths,
-                                             num_hashes, output + i * _num_tables);
+    SparseRandomProjection::hashSparseVector(
+        i, indices, values, lengths, num_hashes, output + i * _num_tables);
   }
 }
 void SparseRandomProjection::hashSparseVector(

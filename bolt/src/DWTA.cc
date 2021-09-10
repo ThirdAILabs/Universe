@@ -8,8 +8,9 @@ namespace thirdai::bolt {
 
 constexpr uint32_t DEFAULT_BINSIZE = 8;
 
-DWTAHashFunction::DWTAHashFunction(uint32_t input_dim, uint32_t _hashes_per_table, uint32_t _num_tables,
-                                   uint32_t range_pow)
+DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
+                                   uint32_t _hashes_per_table,
+                                   uint32_t _num_tables, uint32_t range_pow)
     : hashes_per_table(_hashes_per_table),
       num_tables(_num_tables),
       num_hashes(hashes_per_table * num_tables),
