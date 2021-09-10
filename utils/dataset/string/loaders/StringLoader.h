@@ -1,14 +1,14 @@
-#include <string>
 #include <fstream>
 #include <iostream>
+#include <string>
 
 namespace thirdai::utils {
-  class StringLoader {
-    public:
-    // StringLoader(std::string &filename): _file(filename) {};
-    virtual bool loadNextString(std::string &str_buf) {};
+class StringLoader {
+ public:
+  // StringLoader(std::string &filename): _file(filename) {};
+  virtual bool loadNextString(std::string& str_buf){};
 
-    protected:
-    // std::ifstream _file;
-  };
-}
+ protected:
+  // std::ifstream _file;
+};
+}  // namespace thirdai::utils
