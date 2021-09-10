@@ -5,11 +5,23 @@
 #    We want all abseil checks, if we get any of these
 #    we should start using abseil (see the CMakeLists.txt
 #    for a commented out way to do this)
-# bugprone-reserved-identifier: 
-#    Violating reserved identifiers is undefined behavior, not good
-#    TODO: Add this one back
+# bugprone-*, -bugprone-narrowing-conversions:
+#    We want all the bugprone checks, but we turn off the one for narrowing
+#    conversions because it is annoying.
+# cert-*-cpp, -cert-err58-cpp, -cert-msc50-cpp:
+#    It is good practice to follow the c cert recommendations, but err58 is 
+#    flagged by google test macros, and we don't care about the limited 
+#    randomness of rand() called out by cert-msc50-cpp or warning about 
+#    random seeding from cert-msc51-cpp
+# cert-*-c, -cert-err34-c, -cert-msc30-c, -cert-msc32-c:
+#    We don't care about limited randomness or seeds (cert-msc30-c, -cert-msc32-c),
+#    TODO: Add back cert-err34-c, it is good, just requires non trivial code changes
+#    
 Checks: >
          -*, 
          abseil-*,
+         bugprone-*, -bugprone-narrowing-conversions,
+         cert-*-cpp, -cert-err58-cpp, -cert-msc50-cpp, -cert-msc51-cpp, 
+         cert-*-c, -cert-err34-c, -cert-msc30-c, -cert-msc32-c
 HeaderFilterRegex: ".*"
 WarningsAsErrors: "*"

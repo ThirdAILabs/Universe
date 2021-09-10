@@ -13,13 +13,17 @@ constexpr float EPS = 0.0000001;
 enum class ActivationFunc { ReLU, Softmax };
 
 struct SamplingConfig {
-  uint32_t K, L, range_pow, reservoir_size;
+  uint32_t hashes_per_table, num_tables, range_pow, reservoir_size;
 
-  SamplingConfig() : K(0), L(0), range_pow(0), reservoir_size(0) {}
+  SamplingConfig()
+      : hashes_per_table(0), num_tables(0), range_pow(0), reservoir_size(0) {}
 
-  SamplingConfig(uint32_t K, uint32_t L, uint32_t range_pow,
-                 uint32_t reservoir_size)
-      : K(K), L(L), range_pow(range_pow), reservoir_size(reservoir_size) {}
+  SamplingConfig(uint32_t hashes_per_table, uint32_t num_tables,
+                 uint32_t range_pow, uint32_t reservoir_size)
+      : hashes_per_table(hashes_per_table),
+        num_tables(num_tables),
+        range_pow(range_pow),
+        reservoir_size(reservoir_size) {}
 };
 
 class Layer {

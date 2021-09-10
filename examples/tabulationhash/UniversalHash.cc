@@ -27,7 +27,7 @@ uint32_t UniversalHash::gethash(std::string key) {
   // Not really a great hash, but will be faster.
   uint32_t res = 0;
   for (size_t i = 0; i < key.length(); i++) {
-    char temp = key.at(i);
+    uint8_t temp = key.at(i);
     res ^= T[temp & 7][static_cast<uint32_t>(temp)];
   }
   return res;
