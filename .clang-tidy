@@ -16,8 +16,9 @@
 # cert-*-c, -cert-err34-c, -cert-msc30-c, -cert-msc32-c:
 #    We don't care about limited randomness or seeds (cert-msc30-c, -cert-msc32-c),
 #    TODO: Add back cert-err34-c, it is good, just requires non trivial code changes
-# google-*:
-#    Checks all Google coding conventions.
+# google-*, -google-runtime-references:
+#    Checks all Google coding conventions. Ignore some non-const parameters for errors in
+#    HashTable.h.
 # llvm-*, llvmlibc-*, -llvm-header-guard, -llvm-include-order:
 #    Checks all LLVM coding conventions. Ignoring header guard check since we have #pragma once.
 #    Also ignoring include order since we are using Google formatting.
