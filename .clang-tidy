@@ -45,7 +45,7 @@ Checks: >
          misc-*, -misc-non-private-member-variables-in-classes,
          openmp-*, mpi-*,
          performance-*, -performance-noexcept-move-constructor,
-         readability-*, -readability-redundant-member-init, -readability-implicit-bool-conversion, -readability-isolate-declaration. -readability-function-cognitive-complexity
+         readability-*, -readability-redundant-member-init, -readability-implicit-bool-conversion, -readability-isolate-declaration, -readability-function-cognitive-complexity
 HeaderFilterRegex: ".*"
 CheckOptions:
   - key:    readability-magic-numbers.IgnorePowersOf2IntegerValues
