@@ -18,7 +18,7 @@ using thirdai::examples::UniversalHash;
 class HashTest : public testing::Test {
  private:
   static std::string generate_random_string() {
-    const int32_t num_chars = 26;
+    const uint32_t num_chars = 26;
     const uint32_t starting_ascii = 65;
     std::string str = "AAAAAA";
     str[0] = rand() % num_chars + starting_ascii;
