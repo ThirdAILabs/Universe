@@ -19,7 +19,7 @@
 # google-*, -google-runtime-references:
 #    Checks all Google coding conventions. Ignore some non-const parameters for errors in
 #    HashTable.h.
-# llvm-*, llvmlibc-*, -llvm-header-guard, -llvm-include-order:
+# llvm-*, -llvm-header-guard, -llvm-include-order:
 #    Checks all LLVM coding conventions. Ignoring header guard check since we have #pragma once.
 #    Also ignoring include order since we are using Google formatting.
 # misc-*, -misc-non-private-member-variables-in-classes:
@@ -41,7 +41,7 @@ Checks: >
          cert-*-cpp, -cert-err58-cpp, -cert-msc50-cpp, -cert-msc51-cpp, 
          cert-*-c, -cert-err34-c, -cert-msc30-c, -cert-msc32-c,
          google-*, -google-runtime-references,
-         llvm-*, llvmlibc-*, -llvm-header-guard, -llvm-include-order,
+         llvm-*, -llvm-header-guard, -llvm-include-order,
          misc-*, -misc-non-private-member-variables-in-classes,
          openmp-*, mpi-*,
          performance-*, -performance-noexcept-move-constructor,
