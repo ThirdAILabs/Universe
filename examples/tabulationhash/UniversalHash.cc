@@ -44,14 +44,9 @@ uint32_t UniversalHash::gethash(std::string key) {
 
 uint32_t UniversalHash::gethash(uint64_t key) {
   uint32_t res = 0;
-  res ^= T[0][static_cast<char>(key)];
-  res ^= T[1][static_cast<char>(key >> (1 << 3))];
-  res ^= T[2][static_cast<char>(key >> (2 << 3))];
-  res ^= T[3][static_cast<char>(key >> (3 << 3))];
-  res ^= T[4][static_cast<char>(key >> (4 << 3))];
-  res ^= T[5][static_cast<char>(key >> (5 << 3))];
-  res ^= T[6][static_cast<char>(key >> (6 << 3))];
-  res ^= T[7][static_cast<char>(key >> (7 << 3))];
+  for (uint32_t i = 0; i < 8; i++) {
+    res ^= T[i][static_cast<char>(key >> (i << 3))];
+  }
   return res;
 }
 
