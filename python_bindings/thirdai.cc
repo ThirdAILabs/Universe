@@ -51,7 +51,7 @@ class PyNetwork final : public Network {
 
 }  // namespace thirdai::python
 
-PYBIND11_MODULE(thirdai, m) {
+PYBIND11_MODULE(thirdai, m) {  // NOLINT
   auto submodule = m.def_submodule("bolt");
 
   py::class_<thirdai::bolt::SamplingConfig>(submodule, "SamplingConfig")

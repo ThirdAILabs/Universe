@@ -30,7 +30,7 @@
 # performance-*, -performance-noexcept-move-constructor:
 #    Include all performance checks.
 #    TODO: Look into adding back noexcept check.
-# readability-*, -readability-magic-numbers, -readability-redundant-member-init, -readability-implicit-bool-conversion, -readability-isolate-declaration:
+# readability-*, -readability-magic-numbers, -readability-redundant-member-init, -readability-implicit-bool-conversion, -readability-isolate-declaration, -readability-function-cognitive-complexity:
 #    Overall, the most of the readability checks are necessary and 
 #    good practice to include. Magic numbers, implicit bool conversion, and 
 #    others may be a bit tedious to fix for our use cases.
@@ -45,7 +45,7 @@ Checks: >
          misc-*, -misc-non-private-member-variables-in-classes,
          openmp-*, mpi-*,
          performance-*, -performance-noexcept-move-constructor,
-         readability-*, -readability-redundant-member-init, -readability-implicit-bool-conversion, -readability-isolate-declaration
+         readability-*, -readability-redundant-member-init, -readability-implicit-bool-conversion, -readability-isolate-declaration. -readability-function-cognitive-complexity
 HeaderFilterRegex: ".*"
 CheckOptions:
   - key:    readability-magic-numbers.IgnorePowersOf2IntegerValues
