@@ -166,8 +166,9 @@ void Network::Train(uint32_t batch_size, const std::string& train_data,
       correct += ProcessTestBatch(test[batch]);
     }
     std::cout << "\033[1;32mBefore training accuracy: "
-              << ((double)correct / intermediate_test_vecs) << " (" << correct
-              << "/" << intermediate_test_vecs << ")\033[0m" << std::endl;
+              << (static_cast<double>(correct) / intermediate_test_vecs) << " ("
+              << correct << "/" << intermediate_test_vecs << ")\033[0m"
+              << std::endl;
   }
 
   uint32_t rebuild_batch = rebuild / batch_size;
@@ -231,8 +232,9 @@ void Network::Train(uint32_t batch_size, const std::string& train_data,
               << " seconds\033[0m" << std::endl;
 
     std::cout << "\033[1;32mAccuracy: "
-              << ((double)correct / intermediate_test_vecs) << " (" << correct
-              << "/" << intermediate_test_vecs << ")\033[0m" << std::endl;
+              << (static_cast<double>(correct) / intermediate_test_vecs) << " ("
+              << correct << "/" << intermediate_test_vecs << ")\033[0m"
+              << std::endl;
   }
 
   uint64_t num_test_batches = test.NumBatches();
@@ -242,8 +244,9 @@ void Network::Train(uint32_t batch_size, const std::string& train_data,
   }
 
   std::cout << "\033[1;32mAfter training accuracy: "
-            << ((double)final_correct / test.NumVecs()) << " (" << final_correct
-            << "/" << test.NumVecs() << ")\033[0m" << std::endl;
+            << (static_cast<double>(final_correct) / test.NumVecs()) << " ("
+            << final_correct << "/" << test.NumVecs() << ")\033[0m"
+            << std::endl;
 }
 
 uint32_t* Network::PredictClasses(const Batch& batch, uint64_t batch_size) {

@@ -28,17 +28,17 @@ class HashFunction {
   }
 
   void hashSingleSparse(uint32_t* indices, float* values, uint32_t length,
-                        uint64_t num_hashes, uint32_t* output) {
+                        uint64_t num_hashes, uint32_t* output) const {
     uint32_t lengths[1] = {length};
     hashSparse(1, &indices, &values, lengths, num_hashes, output);
   }
 
   void hashSingleDense(float* values, uint32_t dim, uint64_t num_hashes,
-                       uint32_t* output) {
+                       uint32_t* output) const {
     hashDense(1, dim, &values, num_hashes, output);
   }
 
-  // TODO: Add comments
+  // TODO(any): Add comments
   virtual void hashSparse(uint64_t num_vectors, uint32_t** indices,
                           float** values, uint32_t* lengths,
                           uint64_t num_hashes, uint32_t* output) const = 0;

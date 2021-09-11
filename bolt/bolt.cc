@@ -6,7 +6,7 @@
 #include <iostream>
 #include <vector>
 
-using namespace thirdai;
+namespace bolt = thirdai::bolt;
 
 int main(int argc, char** argv) {
   if (argc != 2) {

@@ -5,7 +5,7 @@
 
 namespace py = pybind11;
 
-using namespace thirdai::bolt;
+using thirdai::bolt::Network;
 
 namespace thirdai::python {
 
@@ -21,7 +21,8 @@ class PyNetwork final : public Network {
 
     float* mem = layers[layer_index]->GetWeights();
 
-    py::capsule free_when_done(mem, [](void* ptr) { delete (float*)ptr; });
+    py::capsule free_when_done(
+        mem, [](void* ptr) { delete static_cast<float*>(ptr); });
 
     size_t dim = configs[layer_index].dim;
     size_t prev_dim =
@@ -39,7 +40,8 @@ class PyNetwork final : public Network {
 
     float* mem = layers[layer_index]->GetBiases();
 
-    py::capsule free_when_done(mem, [](void* ptr) { delete (float*)ptr; });
+    py::capsule free_when_done(
+        mem, [](void* ptr) { delete static_cast<float*>(ptr); });
 
     size_t dim = configs[layer_index].dim;
 
