@@ -16,35 +16,34 @@ class HashFunction {
    * vectors’ hashes, etc.
    *
    */
-  void hashBatch(const Batch& batch, uint64_t num_hashes,
-                 uint32_t* output) const {
+  void hashBatch(const Batch& batch, uint32_t* output) const {
     if (batch._batch_type == BATCH_TYPE::SPARSE) {
-      hashSparse(batch._batch_size, batch._indices, batch._values, batch._lens,
-                 num_hashes, output);
+      hashSparse(batch._batch_size, batch._indices, batch._values, batch._lens, output);
     } else {
-      hashDense(batch._batch_size, batch._dim, batch._values, num_hashes,
-                output);
+      hashDense(batch._batch_size, batch._dim, batch._values, output);
     }
   }
 
-  void hashSingleSparse(uint32_t* indices, float* values, uint32_t length,
-                        uint64_t num_hashes, uint32_t* output) const {
+  void hashSingleSparse(uint32_t* indices, float* values, uint32_t length, uint32_t* output) const {
     uint32_t lengths[1] = {length};
-    hashSparse(1, &indices, &values, lengths, num_hashes, output);
+    hashSparse(1, &indices, &values, lengths, output);
   }
 
-  void hashSingleDense(float* values, uint32_t dim, uint64_t num_hashes,
-                       uint32_t* output) const {
-    hashDense(1, dim, &values, num_hashes, output);
+  void hashSingleDense(float* values, uint32_t dim, uint32_t* output) const {
+    hashDense(1, dim, &values, output);
   }
 
   // TODO(any): Add comments
   virtual void hashSparse(uint64_t num_vectors, uint32_t** indices,
                           float** values, uint32_t* lengths,
-                          uint64_t num_hashes, uint32_t* output) const = 0;
+                          uint32_t* output) const = 0;
 
   virtual void hashDense(uint64_t num_vectors, uint64_t dim, float** values,
-                         uint32_t num_hashes, uint32_t* output) const = 0;
+                         uint32_t* output) const = 0;
+
+  virtual uint32_t numTables() const = 0;
+
+  virtual uint32_t range() const = 0;
 };
 
 }  // namespace thirdai::utils
