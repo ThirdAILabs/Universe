@@ -16,12 +16,42 @@
 # cert-*-c, -cert-err34-c, -cert-msc30-c, -cert-msc32-c:
 #    We don't care about limited randomness or seeds (cert-msc30-c, -cert-msc32-c),
 #    TODO: Add back cert-err34-c, it is good, just requires non trivial code changes
-#    
+# google-*, -google-runtime-references:
+#    Checks all Google coding conventions. Ignore some non-const parameters for errors in
+#    HashTable.h.
+# llvm-*, -llvm-header-guard, -llvm-include-order:
+#    Checks all LLVM coding conventions. Ignoring header guard check since we have #pragma once.
+#    Also ignoring include order since we are using Google formatting.
+# misc-*, -misc-non-private-member-variables-in-classes:
+#    Misc checks. Currently ignoring private checks on non-static class fields, since we
+#    aren't too worried about the visibility for now.
+# openmp-*, mpi-*:
+#    Include all openmp and mpi checks.
+# performance-*, -performance-noexcept-move-constructor:
+#    Include all performance checks.
+#    TODO: Look into adding back noexcept check.
+# readability-*, -readability-magic-numbers, -readability-redundant-member-init, -readability-implicit-bool-conversion, -readability-isolate-declaration, -readability-function-cognitive-complexity:
+#    Overall, the most of the readability checks are necessary and 
+#    good practice to include. Magic numbers, implicit bool conversion, and 
+#    others may be a bit tedious to fix for our use cases.
 Checks: >
          -*, 
          abseil-*,
          bugprone-*, -bugprone-narrowing-conversions,
          cert-*-cpp, -cert-err58-cpp, -cert-msc50-cpp, -cert-msc51-cpp, 
-         cert-*-c, -cert-err34-c, -cert-msc30-c, -cert-msc32-c
+         cert-*-c, -cert-err34-c, -cert-msc30-c, -cert-msc32-c,
+         google-*, -google-runtime-references,
+         llvm-*, -llvm-header-guard, -llvm-include-order,
+         misc-*, -misc-non-private-member-variables-in-classes,
+         openmp-*, mpi-*,
+         performance-*, -performance-noexcept-move-constructor,
+         readability-*, -readability-redundant-member-init, -readability-implicit-bool-conversion, -readability-isolate-declaration, -readability-function-cognitive-complexity
 HeaderFilterRegex: ".*"
+CheckOptions:
+  - key:    readability-magic-numbers.IgnorePowersOf2IntegerValues
+    value:  '1'
+  - key:    readability-magic-numbers.IgnoredIntegerValues
+    value:  '0;1;2;3;4;5;6;7;10;100;999;1000'
+  - key:    readability-magic-numbers.IgnoreAllFloatingPointValues
+    value:  '1'
 WarningsAsErrors: "*"

@@ -23,7 +23,7 @@ struct Batch {
         labels(nullptr),
         label_lens(nullptr) {}
 
-  Batch(uint64_t _batch_size) : batch_size(_batch_size) {
+  explicit Batch(uint64_t _batch_size) : batch_size(_batch_size) {
     indices = new uint32_t*[batch_size];
     values = new float*[batch_size];
     lens = new uint32_t[batch_size];
@@ -85,9 +85,9 @@ class SvmDataset {
     return batches[i];
   }
 
-  uint64_t NumBatches() { return num_batches; }
+  uint64_t NumBatches() const { return num_batches; }
 
-  uint64_t NumVecs() { return num_vecs; }
+  uint64_t NumVecs() const { return num_vecs; }
 
   ~SvmDataset() { delete[] batches; }
 

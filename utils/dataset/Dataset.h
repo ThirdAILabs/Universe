@@ -16,7 +16,7 @@ enum class LABEL_TYPE { LABELED, UNLABELED };
 
 struct Batch {
  public:
-  // TODO: Comment these methods
+  // TODO(any): Comment these methods
   uint32_t _batch_size{0};
   uint32_t** _indices{nullptr};
   float** _values{nullptr};
@@ -128,7 +128,7 @@ class Dataset {
   /**
    * Number of batches currently loaded
    */
-  uint64_t numBatches() { return _num_batches; };
+  uint64_t numBatches() const { return _num_batches; };
 
   ~Dataset() { delete[] _batches; }
 

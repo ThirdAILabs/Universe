@@ -2,25 +2,25 @@
 
 #include <stdint.h>
 
-namespace bolt {
+namespace thirdai::utils {
 
 class FastSRP {
  private:
-  uint32_t _hashes_per_table, _num_tables, num_hashes, _log_num_hashes, _dim,
+  uint32_t _hashes_per_table, _num_tables, _num_hashes, _log_num_hashes, _dim,
       _binsize, _permute;
   uint32_t* _bin_map;
   uint32_t* _positions;
   uint32_t _rand_double_hash_seed;
-  short* _rand_bits;
+  uint16_t* _rand_bits;
 
-  constexpr uint32_t RandDoubleHash(int binid, int count) {
+  constexpr uint32_t RandDoubleHash(int binid, int count) const {
     uint32_t tohash = ((binid + 1) << 6) + count;
     uint32_t result =
         (_rand_double_hash_seed * tohash << 3) >> (32 - _log_num_hashes);
     return result;
   }
 
-  void DensifyHashes(uint32_t* hashes, uint32_t* final_hashes);
+  void DensifyHashes(const uint32_t* hashes, uint32_t* final_hashes);
 
  public:
   FastSRP(uint32_t input_dim, uint32_t _hashes_per_table, uint32_t _num_tables,
@@ -39,4 +39,4 @@ class FastSRP {
   ~FastSRP();
 };
 
-}  // namespace bolt
+}  // namespace thirdai::utils
