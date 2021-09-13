@@ -7,6 +7,9 @@
 #include <stdexcept>
 
 namespace thirdai::bolt {
+constexpr uint32_t RehashAutoTuneThreshold = 100000;
+constexpr uint32_t RehashAutoTuneFactor1 = 100;
+constexpr uint32_t RehashAutoTuneFactor2 = 20;
 
 Network::Network(std::vector<LayerConfig> configs, uint64_t input_dim)
     : configs(configs), input_dim(input_dim), batch_size_hint(0), iter(0) {
@@ -152,7 +155,14 @@ void Network::Train(uint32_t batch_size, const std::string& train_data,
   SvmDataset train(train_data, batch_size);
   SvmDataset test(test_data, batch_size);
 
-  uint32_t rehash = rehash_in != 0 ? rehash_in : (train.NumVecs() / 100);
+  uint32_t rehash = rehash_in;
+  if (rehash_in == 0) {
+    if (train.NumVecs() < RehashAutoTuneThreshold) {
+      rehash = train.NumVecs() / RehashAutoTuneFactor2;
+    } else {
+      rehash = train.NumVecs() / RehashAutoTuneFactor1;
+    }
+  }
   uint32_t rebuild = rebuild_in != 0 ? rebuild_in : (train.NumVecs() / 4);
 
   uint64_t intermediate_test_batches =
@@ -166,8 +176,9 @@ void Network::Train(uint32_t batch_size, const std::string& train_data,
       correct += ProcessTestBatch(test[batch]);
     }
     std::cout << "\033[1;32mBefore training accuracy: "
-              << ((double)correct / intermediate_test_vecs) << " (" << correct
-              << "/" << intermediate_test_vecs << ")\033[0m" << std::endl;
+              << (static_cast<double>(correct) / intermediate_test_vecs) << " ("
+              << correct << "/" << intermediate_test_vecs << ")\033[0m"
+              << std::endl;
   }
 
   uint32_t rebuild_batch = rebuild / batch_size;
@@ -231,8 +242,9 @@ void Network::Train(uint32_t batch_size, const std::string& train_data,
               << " seconds\033[0m" << std::endl;
 
     std::cout << "\033[1;32mAccuracy: "
-              << ((double)correct / intermediate_test_vecs) << " (" << correct
-              << "/" << intermediate_test_vecs << ")\033[0m" << std::endl;
+              << (static_cast<double>(correct) / intermediate_test_vecs) << " ("
+              << correct << "/" << intermediate_test_vecs << ")\033[0m"
+              << std::endl;
   }
 
   uint64_t num_test_batches = test.NumBatches();
@@ -242,8 +254,9 @@ void Network::Train(uint32_t batch_size, const std::string& train_data,
   }
 
   std::cout << "\033[1;32mAfter training accuracy: "
-            << ((double)final_correct / test.NumVecs()) << " (" << final_correct
-            << "/" << test.NumVecs() << ")\033[0m" << std::endl;
+            << (static_cast<double>(final_correct) / test.NumVecs()) << " ("
+            << final_correct << "/" << test.NumVecs() << ")\033[0m"
+            << std::endl;
 }
 
 uint32_t* Network::PredictClasses(const Batch& batch, uint64_t batch_size) {

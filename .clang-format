@@ -20,6 +20,8 @@ IncludeCategories:
   Priority: 2100
 - Regex: '^<search/*'
   Priority: 2200
+- Regex: '^<gtest/*'
+  Priority: 2300
 - Regex: '^<.*/.*'
   Priority: 4000
 - Regex: '^<[^/]*>'

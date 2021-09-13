@@ -31,7 +31,7 @@ Layer::Layer(uint64_t _dim, uint64_t _prev_dim, float _sparsity,
   b_momentum = new float[dim]();
   b_velocity = new float[dim]();
 
-  is_active = new bool[dim]();  // TODO: bitvector?
+  is_active = new bool[dim]();  // TODO(nicholas): bitvector?
 
   std::random_device rd;
   std::default_random_engine eng(rd());
@@ -97,7 +97,8 @@ void Layer::ForwardPass(uint32_t batch_indx, const uint32_t* indices,
   if (act_func == ActivationFunc::Softmax) {
     float total = 0;
     for (uint64_t n = 0; n < active_lens[batch_indx]; n++) {
-      activations[batch_indx][n] = exp(activations[batch_indx][n] - max_act);
+      activations[batch_indx][n] =
+          std::exp(activations[batch_indx][n] - max_act);
       total += activations[batch_indx][n];
     }
     for (uint64_t n = 0; n < active_lens[batch_indx]; n++) {
@@ -222,8 +223,8 @@ void Layer::UpdateParameters(float lr, uint32_t iter, float B1, float B2,
       w_momentum[indx] = B1 * w_momentum[indx] + (1 - B1) * grad;
       w_velocity[indx] = B2 * w_velocity[indx] + (1 - B2) * grad * grad;
 
-      weights[indx] +=
-          lr * (w_momentum[indx] / B1_) / (sqrt(w_velocity[indx] / B2_) + eps);
+      weights[indx] += lr * (w_momentum[indx] / B1_) /
+                       (std::sqrt(w_velocity[indx] / B2_) + eps);
 
       w_gradient[indx] = 0;
     }
@@ -232,7 +233,8 @@ void Layer::UpdateParameters(float lr, uint32_t iter, float B1, float B2,
     b_momentum[n] = B1 * b_momentum[n] + (1 - B1) * grad;
     b_velocity[n] = B2 * b_velocity[n] + (1 - B2) * grad * grad;
 
-    biases[n] += lr * (b_momentum[n] / B1_) / (sqrt(b_velocity[n] / B2_) + eps);
+    biases[n] +=
+        lr * (b_momentum[n] / B1_) / (std::sqrt(b_velocity[n] / B2_) + eps);
 
     b_gradient[n] = 0;
     is_active[n] = false;
@@ -244,8 +246,8 @@ void Layer::BuildHashTables() {
     return;
   }
   uint64_t num_tables = hash_table->GetNumTables();
-  // TODO: hashes could be array with size max(batch size, dim) that is
-  // allocated once
+  // TODO(nicholas): hashes could be array with size max(batch size, dim) that
+  // is allocated once
   uint32_t* hashes = new uint32_t[num_tables * dim];
 
 #pragma omp parallel for default(none) shared(num_tables, hashes)
