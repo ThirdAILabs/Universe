@@ -12,7 +12,7 @@ class DWTAHashFunction {
   uint32_t* positions;
   uint32_t rand_double_hash_seed;
 
-  constexpr uint32_t RandDoubleHash(uint32_t binid, uint32_t count) {
+  constexpr uint32_t RandDoubleHash(uint32_t binid, uint32_t count) const {
     uint32_t tohash = ((binid + 1) << 6) + count;
     uint32_t result =
         (rand_double_hash_seed * tohash << 3) >> (32 - this->log_num_hashes);

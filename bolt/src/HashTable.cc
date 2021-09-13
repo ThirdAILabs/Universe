@@ -25,7 +25,7 @@ HashTable<Label_t, Hash_t>::HashTable(uint64_t _num_tables,
 
   srand(32);
   for (uint64_t i = 1; i < max_rand; i++) {
-    gen_rand[i] = ((uint32_t)rand()) % (i + 1);
+    gen_rand[i] = (static_cast<uint32_t>(rand())) % (i + 1);
   }
 
   counters = new std::atomic<uint32_t>[num_tables * range]();
@@ -75,7 +75,7 @@ void HashTable<Label_t, Hash_t>::InsertSequential(uint64_t n, Label_t start,
 template <typename Label_t, typename Hash_t>
 void HashTable<Label_t, Hash_t>::GetCandidates(
     Hash_t* hashes, std::unordered_set<Label_t>& store) {
-  // TODO: start at random table?
+  // TODO(nicholas): start at random table?
   for (uint64_t table = 0; table < num_tables; table++) {
     Hash_t row_index = HashMod(hashes[table]);
     uint32_t counter = counters[CounterIdx(table, row_index)];
