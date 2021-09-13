@@ -152,7 +152,14 @@ void Network::Train(uint32_t batch_size, const std::string& train_data,
   SvmDataset train(train_data, batch_size);
   SvmDataset test(test_data, batch_size);
 
-  uint32_t rehash = rehash_in != 0 ? rehash_in : (train.NumVecs() / 100);
+  uint32_t rehash = rehash_in;
+  if (rehash_in == 0) {
+    if (train.NumVecs() < 100000) {
+      rehash = train.NumVecs() / 20;
+    } else {
+      rehash = train.NumVecs() / 100;
+    }
+  }
   uint32_t rebuild = rebuild_in != 0 ? rebuild_in : (train.NumVecs() / 4);
 
   uint64_t intermediate_test_batches =

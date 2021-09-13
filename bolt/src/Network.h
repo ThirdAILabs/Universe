@@ -61,7 +61,7 @@ struct LayerConfig {
     act_func = ActivationFuncFromStr(act_func_str);
     CheckSparsity(sparsity);
     if (sparsity < 1.0) {
-      uint32_t rp = (log2(dim) / 3) * 3;
+      uint32_t rp = ((uint32_t)log2(dim) / 3) * 3;
       uint32_t k = rp / 3;
       uint32_t rs = (dim * 4) / (1 << rp);
       uint32_t l = sparsity < 0.1 ? 256 : 64;
