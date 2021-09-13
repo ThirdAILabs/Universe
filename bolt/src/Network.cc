@@ -7,6 +7,9 @@
 #include <stdexcept>
 
 namespace thirdai::bolt {
+constexpr uint32_t RehashAutoTuneThreshold = 100000;
+constexpr uint32_t RehashAutoTuneFactor1 = 100;
+constexpr uint32_t RehashAutoTuneFactor2 = 20;
 
 Network::Network(std::vector<LayerConfig> configs, uint64_t input_dim)
     : configs(configs), input_dim(input_dim), batch_size_hint(0), iter(0) {
@@ -152,7 +155,14 @@ void Network::Train(uint32_t batch_size, const std::string& train_data,
   SvmDataset train(train_data, batch_size);
   SvmDataset test(test_data, batch_size);
 
-  uint32_t rehash = rehash_in != 0 ? rehash_in : (train.NumVecs() / 100);
+  uint32_t rehash = rehash_in;
+  if (rehash_in == 0) {
+    if (train.NumVecs() < RehashAutoTuneThreshold) {
+      rehash = train.NumVecs() / RehashAutoTuneFactor2;
+    } else {
+      rehash = train.NumVecs() / RehashAutoTuneFactor1;
+    }
+  }
   uint32_t rebuild = rebuild_in != 0 ? rebuild_in : (train.NumVecs() / 4);
 
   uint64_t intermediate_test_batches =
