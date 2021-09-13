@@ -29,7 +29,7 @@ SparseRandomProjection::SparseRandomProjection(uint32_t input_dim,
   // TODO(alan, patrick): Fix global seed.
   srand(time(0));
 
-  _random_bits = new short[_total_num_srps * _sample_size];
+  _random_bits = new int16_t[_total_num_srps * _sample_size];
   _hash_indices = new uint32_t[_total_num_srps * _sample_size];
 
   for (uint32_t i = 0; i < _total_num_srps; i++) {
@@ -51,7 +51,7 @@ void SparseRandomProjection::hashDense(uint64_t num_vectors, uint64_t dim,
 
   memset(output, 0, _num_tables);
 
-// TODO: Is this the loop we want parallelism on? I(Josh) think yes
+// TODO(josh): Is this the loop we want parallelism on? I(Josh) think yes
 #pragma omp parallel for default(none) shared(num_vectors, values, output)
   for (uint32_t vec = 0; vec < num_vectors; vec++) {
     for (uint32_t table = 0; table < _num_tables; table++) {

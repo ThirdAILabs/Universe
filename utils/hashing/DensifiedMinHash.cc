@@ -8,11 +8,10 @@
 #include <random>
 #include <stdint.h>
 #include <vector>
-using namespace std;
 
-namespace bolt {
+namespace thirdai::utils {
 
-typedef pair<uint32_t, float> PAIR;
+typedef std::pair<uint32_t, float> PAIR;
 
 struct cmp {
   bool operator()(const PAIR& a, const PAIR& b) {
@@ -29,18 +28,19 @@ class SeededRandomEngine {
 
   typedef unsigned int result_type;
 
-  result_type min() { return std::numeric_limits<result_type>::min(); }
+  static result_type min() { return std::numeric_limits<result_type>::min(); }
 
-  result_type max() { return std::numeric_limits<result_type>::max(); }
+  static result_type max() { return std::numeric_limits<result_type>::max(); }
 
   result_type operator()() { return rand(); }
 };
 
-DensifiedMinHash::DensifiedMinHash(uint32_t input_dim, uint32_t K, uint32_t L,
-                                   uint32_t range_pow)
-    : _K(K),
-      _L(L),
-      _num_hashes(K * L),
+DensifiedMinHash::DensifiedMinHash(uint32_t input_dim,
+                                   uint32_t hashes_per_table,
+                                   uint32_t num_tables, uint32_t range_pow)
+    : _hashes_per_table(hashes_per_table),
+      _num_tables(num_tables),
+      _num_hashes(hashes_per_table * num_tables),
       _range(1 << range_pow),
       _binsize(ceil(1.0 * _range / _num_hashes)) {
   _log_num_hashes = log2(_num_hashes);
@@ -58,22 +58,30 @@ DensifiedMinHash::DensifiedMinHash(uint32_t input_dim, uint32_t K, uint32_t L,
   _rand_double_hash_seed = dis(gen);
 
   _randa = dis(gen);
-  if (_randa % 2 == 0) _randa++;
+  if (_randa % 2 == 0) {
+    _randa++;
+  }
 
   _random_hash = new uint32_t[2];
   _random_hash[0] = dis(gen);
 
-  if (_random_hash[0] % 2 == 0) _random_hash[0]++;
+  if (_random_hash[0] % 2 == 0) {
+    _random_hash[0]++;
+  }
   _random_hash[1] = dis(gen);
-  if (_random_hash[1] % 2 == 0) _random_hash[1]++;
+  if (_random_hash[1] % 2 == 0) {
+    _random_hash[1]++;
+  }
 
   _binids = new uint32_t[_num_hashes];
 
   _rand1 = new uint32_t[_num_hashes];
 
-  for (uint32_t i = 0; i < _num_hashes * _L; i++) {
+  for (uint32_t i = 0; i < _num_hashes * _num_tables; i++) {
     _rand1[i] = dis(gen);
-    if (_rand1[i] % 2 == 0) _rand1[i]++;
+    if (_rand1[i] % 2 == 0) {
+      _rand1[i]++;
+    }
   }
 
   // int _range = 1 << this->range_power;
@@ -85,10 +93,11 @@ DensifiedMinHash::DensifiedMinHash(uint32_t input_dim, uint32_t K, uint32_t L,
     h ^= h >> 13;
     h *= 0x85ebca6b;
 
-    uint32_t curhash =
-        MurmurHash((char*)&i, (uint32_t)sizeof(i), (uint32_t)_randa);
+    uint32_t curhash = MurmurHash(reinterpret_cast<char*>(&i),
+                                  static_cast<uint32_t>(sizeof(i)),
+                                  static_cast<uint32_t>(_randa));
     curhash = curhash & (_range - 1);
-    _binids[i] = (uint32_t)floor(curhash / _binsize);
+    _binids[i] = static_cast<uint32_t>(floor(curhash / _binsize));
     ;
   }
 
@@ -96,7 +105,7 @@ DensifiedMinHash::DensifiedMinHash(uint32_t input_dim, uint32_t K, uint32_t L,
 }
 
 uint32_t* DensifiedMinHash::HashVector(const float* data, uint32_t len) {
-  uint32_t* final_hashes = new uint32_t[_L];
+  uint32_t* final_hashes = new uint32_t[_num_tables];
   HashVector(data, len, final_hashes);
   return final_hashes;
 }
@@ -109,7 +118,7 @@ void DensifiedMinHash::HashVector(const float* data, uint32_t len,
   // key and values as priority value, get TOPK index O(1) and apply minhash on
   // retuned index.
 
-  priority_queue<PAIR, vector<PAIR>, cmp> pq;
+  std::priority_queue<PAIR, std::vector<PAIR>, cmp> pq;
 
   for (uint32_t i = 0; i < _topK; i++) {
     pq.push(std::make_pair(i, data[i]));
@@ -143,7 +152,7 @@ void DensifiedMinHash::HashVector(const float* data, uint32_t len,
 uint32_t* DensifiedMinHash::HashSparseVector(const uint32_t* indices,
                                              const float* values,
                                              uint32_t len) {
-  uint32_t* final_hashes = new uint32_t[_L];
+  uint32_t* final_hashes = new uint32_t[_num_tables];
   HashSparseVector(indices, values, len, final_hashes);
   return final_hashes;
 }
@@ -170,10 +179,10 @@ void DensifiedMinHash::HashSparseVector(const uint32_t* indices,
   (void)values;
 }
 
-void DensifiedMinHash::DensifyHashes(uint32_t* hashes, uint32_t* final_hashes) {
-  // TODO: this could cause exceed max stack size, but is cheaper than memory
-  // allocation
-  uint32_t hash_array[_num_hashes] = {0};
+void DensifiedMinHash::DensifyHashes(const uint32_t * hashes, uint32_t* final_hashes) {
+  // TODO(patrick): this could cause exceed max stack size, but is cheaper than
+  // memory allocation
+  uint32_t hash_array[_num_hashes];
 
   for (uint32_t i = 0; i < _num_hashes; i++) {
     uint32_t next = hashes[i];
@@ -188,20 +197,21 @@ void DensifiedMinHash::DensifyHashes(uint32_t* hashes, uint32_t* final_hashes) {
       uint32_t index = std::min(RandDoubleHash(i, count), _num_hashes);
 
       next = hashes[index];
-      if (count > 100)  // Densification failure.
+      if (count > 100) {  // Densification failure.
         break;
+      }
     }
     hash_array[i] = next;
   }
 
-  for (uint32_t i = 0; i < _L; i++) {
+  for (uint32_t i = 0; i < _num_tables; i++) {
     uint32_t index = 0;
-    for (uint32_t j = 0; j < _K; j++) {
-      uint32_t h = _rand1[_K * i + j];
-      h *= _rand1[_K * i + j];
+    for (uint32_t j = 0; j < _hashes_per_table; j++) {
+      uint32_t h = _rand1[_hashes_per_table * i + j];
+      h *= _rand1[_hashes_per_table * i + j];
       h ^= h >> 13;
-      h ^= _rand1[_K * i + j];
-      index += h * hash_array[_K * i + j];
+      h ^= _rand1[_hashes_per_table * i + j];
+      index += h * hash_array[_hashes_per_table * i + j];
     }
 
     index = index & (_range - 1);
@@ -215,4 +225,4 @@ DensifiedMinHash::~DensifiedMinHash() {
   delete[] _binids;
 }
 
-}  // namespace bolt
+}  // namespace thirdai::utils

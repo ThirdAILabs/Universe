@@ -1,1 +1,1 @@
-add_library(hash_function_lib STATIC MurmurHash.cc NewSRP.cc SRP.cc)
+add_library(hash_function_lib STATIC MurmurHash.cc NewSRP.cc SRP.cc DensifiedMinHash.cc)

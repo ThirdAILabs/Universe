@@ -10,7 +10,7 @@ class SparseRandomProjection : public HashFunction {
  private:
   const uint32_t _srps_per_table, _num_tables, _total_num_srps, _range, _dim,
       _sample_size;
-  short* _random_bits;
+  int16_t* _random_bits;
   uint32_t* _hash_indices;
   double _ratio = 0.3;
 
