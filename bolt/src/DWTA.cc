@@ -17,7 +17,7 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
       range(1 << range_pow),
       dim(input_dim),
       binsize(DEFAULT_BINSIZE) {
-  this->permute = ceil(((double)num_hashes * binsize) / dim);
+  this->permute = ceil((static_cast<double>(num_hashes) * binsize) / dim);
   this->log_num_hashes = log2(num_hashes);
   this->log_binsize = floor(log2(binsize));
 
@@ -59,8 +59,8 @@ uint32_t* DWTAHashFunction::HashVector(const float* data, uint32_t len) {
 
 void DWTAHashFunction::HashVector(const float* data, uint32_t len,
                                   uint32_t* final_hashes) {
-  // TODO: this could cause exceed max stack size, but is cheaper than memory
-  // allocation
+  // TODO(nicholas): this could cause exceed max stack size, but is cheaper than
+  // memory allocation
   uint32_t* hashes = new uint32_t[num_hashes];
   float* bin_values = new float[num_hashes];
 
@@ -98,8 +98,8 @@ uint32_t* DWTAHashFunction::HashSparseVector(const uint32_t* indices,
 void DWTAHashFunction::HashSparseVector(const uint32_t* indices,
                                         const float* values, uint32_t len,
                                         uint32_t* final_hashes) {
-  // TODO: this could cause exceed max stack size, but is cheaper than memory
-  // allocation
+  // TODO(nicholas): this could cause exceed max stack size, but is cheaper than
+  // memory allocation
   uint32_t* hashes = new uint32_t[num_hashes];
   float* bin_values = new float[num_hashes];
 
@@ -127,8 +127,8 @@ void DWTAHashFunction::HashSparseVector(const uint32_t* indices,
 
 void DWTAHashFunction::DensifyHashes(const uint32_t* hashes,
                                      uint32_t* final_hashes) {
-  // TODO: this could cause exceed max stack size, but is cheaper than memory
-  // allocation
+  // TODO(nicholas): this could cause exceed max stack size, but is cheaper than
+  // memory allocation
   uint32_t* hash_array = new uint32_t[num_hashes]();
 
   for (uint32_t i = 0; i < num_hashes; i++) {

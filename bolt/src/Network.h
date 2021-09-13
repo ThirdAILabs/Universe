@@ -19,14 +19,14 @@ struct LayerConfig {
   static ActivationFunc ActivationFuncFromStr(const std::string& str) {
     if (str == "ReLU") {
       return ActivationFunc::ReLU;
-    } else if (str == "Softmax") {
-      return ActivationFunc::Softmax;
-    } else {
-      throw std::invalid_argument(
-          "'" + str +
-          "' is not a valid activation function. Supported activation "
-          "functions: 'ReLU', 'Softmax'");
     }
+    if (str == "Softmax") {
+      return ActivationFunc::Softmax;
+    }
+    throw std::invalid_argument(
+        "'" + str +
+        "' is not a valid activation function. Supported activation "
+        "functions: 'ReLU', 'Softmax'");
   }
 
   static void CheckSparsity(float sparsity) {
@@ -43,25 +43,25 @@ struct LayerConfig {
         act_func(_act_func),
         sampling_config(_config) {}
 
-  LayerConfig(uint64_t _dim, float _sparsity, std::string act_func_str,
+  LayerConfig(uint64_t _dim, float _sparsity, const std::string& act_func_str,
               SamplingConfig _config)
       : dim(_dim), sparsity(_sparsity), sampling_config(_config) {
     act_func = ActivationFuncFromStr(act_func_str);
     CheckSparsity(sparsity);
   }
 
-  LayerConfig(uint64_t _dim, std::string act_func_str)
+  LayerConfig(uint64_t _dim, const std::string& act_func_str)
       : dim(_dim), sparsity(1.0), sampling_config(SamplingConfig()) {
     act_func = ActivationFuncFromStr(act_func_str);
     CheckSparsity(sparsity);
   }
 
-  LayerConfig(uint64_t _dim, float _sparsity, std::string act_func_str)
+  LayerConfig(uint64_t _dim, float _sparsity, const std::string& act_func_str)
       : dim(_dim), sparsity(_sparsity) {
     act_func = ActivationFuncFromStr(act_func_str);
     CheckSparsity(sparsity);
     if (sparsity < 1.0) {
-      uint32_t rp = (log2(dim) / 3) * 3;
+      uint32_t rp = (static_cast<uint32_t>(log2(dim)) / 3) * 3;
       uint32_t k = rp / 3;
       uint32_t rs = (dim * 4) / (1 << rp);
       uint32_t l = sparsity < 0.1 ? 256 : 64;
@@ -91,9 +91,9 @@ class Network {
 
   void BuildHashTables();
 
-  uint32_t GetNumLayers() { return num_layers; }
+  uint32_t GetNumLayers() const { return num_layers; }
 
-  uint32_t GetInputDim() { return input_dim; }
+  uint32_t GetInputDim() const { return input_dim; }
 
   std::vector<uint32_t> GetLayerSizes() {
     std::vector<uint32_t> layer_sizes;

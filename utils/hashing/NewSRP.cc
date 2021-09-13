@@ -4,7 +4,7 @@
 #include <limits>
 #include <random>
 
-namespace bolt {
+namespace thirdai::utils {
 
 class SeededRandomEngine {
  private:
@@ -15,9 +15,9 @@ class SeededRandomEngine {
 
   typedef unsigned int result_type;
 
-  result_type min() { return std::numeric_limits<result_type>::min(); }
+  static result_type min() { return std::numeric_limits<result_type>::min(); }
 
-  result_type max() { return std::numeric_limits<result_type>::max(); }
+  static result_type max() { return std::numeric_limits<result_type>::max(); }
 
   result_type operator()() { return rand(); }
 };
@@ -33,7 +33,7 @@ FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
       _binsize(DEFAULT_BINSIZE) {
   (void)range_pow;
 
-  _permute = ceil(((double)_num_hashes * _binsize) / _dim);
+  _permute = ceil((static_cast<double>(_num_hashes) * _binsize) / _dim);
   _log_num_hashes = log2(_num_hashes);
 
 #ifndef SEEDED_HASHING
@@ -46,7 +46,7 @@ FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
   uint32_t* n_array = new uint32_t[_dim];
   _bin_map = new uint32_t[_dim * _permute];
   _positions = new uint32_t[_dim * _permute];
-  _rand_bits = new short[_dim * _permute];
+  _rand_bits = new uint16_t[_dim * _permute];
 
   for (uint32_t i = 0; i < _dim; i++) {
     n_array[i] = i;
@@ -85,8 +85,8 @@ uint32_t* FastSRP::HashVector(const float* data, uint32_t len) {
 
 void FastSRP::HashVector(const float* data, uint32_t len,
                          uint32_t* final_hashes) {
-  // TODO: this could cause exceed max stack size, but is cheaper than memory
-  // allocation
+  // TODO(patrick): this could cause exceed max stack size, but is cheaper than
+  // memory allocation
   uint32_t hashes[_num_hashes];
   float bin_values[_num_hashes];
 
@@ -126,8 +126,8 @@ uint32_t* FastSRP::HashSparseVector(const uint32_t* indices,
 
 void FastSRP::HashSparseVector(const uint32_t* indices, const float* values,
                                uint32_t len, uint32_t* final_hashes) {
-  // TODO: this could cause exceed max stack size, but is cheaper than memory
-  // allocation
+  // TODO(patrick): this could cause exceed max stack size, but is cheaper than
+  // memory allocation
   uint32_t hashes[_num_hashes];
   float bin_values[_num_hashes];
 
@@ -158,10 +158,10 @@ void FastSRP::HashSparseVector(const uint32_t* indices, const float* values,
   DensifyHashes(hashes, final_hashes);
 }
 
-void FastSRP::DensifyHashes(uint32_t* hashes, uint32_t* final_hashes) {
-  // TODO: this could cause exceed max stack size, but is cheaper than memory
-  // allocation
-  uint32_t hash_array[_num_hashes] = {0};
+void FastSRP::DensifyHashes(const uint32_t* hashes, uint32_t* final_hashes) {
+  // TODO(patrick): this could cause exceed max stack size, but is cheaper than
+  // memory allocation
+  uint32_t hash_array[_num_hashes];
 
   for (uint32_t i = 0; i < _num_hashes; i++) {
     uint32_t next = hashes[i];
@@ -176,8 +176,9 @@ void FastSRP::DensifyHashes(uint32_t* hashes, uint32_t* final_hashes) {
       uint32_t index = std::min(RandDoubleHash(i, count), _num_hashes);
 
       next = hashes[index];
-      if (count > 100)  // Densification failure.
+      if (count > 100) {  // Densification failure.
         break;
+      }
     }
     hash_array[i] = next;
   }
@@ -197,4 +198,4 @@ FastSRP::~FastSRP() {
   delete[] _positions;
 }
 
-}  // namespace bolt
+}  // namespace thirdai::utils
