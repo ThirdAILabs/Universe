@@ -1,3 +1,4 @@
+#pragma once
 #include "StringLoader.h"
 #include <fstream>
 #include <iostream>
