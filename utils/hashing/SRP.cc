@@ -10,7 +10,7 @@
 namespace thirdai::utils {
 
 // TODO(josh). TEST THIS CLASS. I didn't test this implementation
-// of SRP hashing, but I want to commit it before people work more on the 
+// of SRP hashing, but I want to commit it before people work more on the
 // hash functions so that we comply with tidy restrictions. If we want to
 // we can revert this back, but I think an implementation with a single
 // array for the bits and indices should be significanlty faster.
