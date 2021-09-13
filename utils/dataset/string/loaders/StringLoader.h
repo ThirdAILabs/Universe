@@ -1,14 +1,22 @@
-#include <string>
+#pragma once
 #include <fstream>
 #include <iostream>
+#include <string>
 
 namespace thirdai::utils {
-  class StringLoader {
-    public:
-    // StringLoader(std::string &filename): _file(filename) {};
-    virtual bool loadNextString(std::string &str_buf) {};
-
-    protected:
-    // std::ifstream _file;
-  };
-}
+/**
+ * Interface to open text files and extract strings of a certain type,
+ * such as sentences, paragraphs, or the whole file.
+ */
+class StringLoader {
+ public:
+  /**
+   * Loads the next string (sentence, paragraph, or the whole file) from a file
+   * and into 'str_buf', overwriting the string.
+   * The string can only contain lower case characters, numbers, and space. 
+   * All punctuation marks must be stripped off.
+   * Returns whether the next string is loaded successfully. 
+   */
+  virtual bool loadNextString(std::string& str_buf){};
+};
+}  // namespace thirdai::utils
