@@ -23,6 +23,20 @@ class StringDataset : public Dataset {
                 uint64_t target_batch_num_per_load)
       : Dataset(target_batch_size, target_batch_num_per_load) {
 
+    // The sentence loaders have not been fully implemented yet
+    switch (vector_type) {
+      case STRING_TYPE::SENTENCE:
+        _loader = SentenceLoader(filename);
+        break;
+      default:
+        std::cerr << "The chosen loader has not been implemented. Defaulting "
+                     "to sentence loader."
+                  << std::endl;
+        _loader = SentenceLoader(filename);
+        break;
+    }
+
+    // Only the character trigram vectorizer has been fully implemented for now.
     switch (token_type) {
       case TOKEN_TYPE::CHAR_TRIGRAM:
         _vectorizer = TriGramVectorizer();
@@ -35,18 +49,6 @@ class StringDataset : public Dataset {
         break;
     };
     _dim = _vectorizer.getDimension();
-
-    switch (vector_type) {
-      case STRING_TYPE::SENTENCE:
-        _loader = SentenceLoader(filename);
-        break;
-      default:
-        std::cerr << "The chosen loader has not been implemented. Defaulting "
-                     "to sentence loader."
-                  << std::endl;
-        _loader = SentenceLoader(filename);
-        break;
-    }
     _initialized = false;
   };
 
