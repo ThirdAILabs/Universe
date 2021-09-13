@@ -69,18 +69,17 @@ void SparseRandomProjection::hashDense(uint64_t num_vectors, uint64_t dim,
   }
 }
 
-
 void SparseRandomProjection::hashSparse(uint64_t num_vectors,
                                         uint32_t** indices, float** values,
-                                        uint32_t* lengths, uint32_t* output) const {
+                                        uint32_t* lengths,
+                                        uint32_t* output) const {
 #pragma omp parallel for default(none) \
     shared(indices, values, lengths, output, num_vectors)
   for (uint32_t vec = 0; vec < num_vectors; vec++) {
     for (uint32_t table = 0; table < _num_tables; table++) {
       for (uint32_t srp = 0; srp < _srps_per_table; srp++) {
-        
         double s = 0;
-        
+
         uint32_t* current_indices = indices[vec];
         uint32_t indices_index = 0;
         float* current_vals = values[vec];
@@ -90,10 +89,12 @@ void SparseRandomProjection::hashSparse(uint64_t num_vectors,
           uint32_t bit_index = table * _srps_per_table * _sample_size +
                                srp * _sample_size + srp_part;
           uint32_t hash_index = _hash_indices[bit_index];
-          while (indices_index < current_length && hash_index > current_indices[indices_index]) {
+          while (indices_index < current_length &&
+                 hash_index > current_indices[indices_index]) {
             indices_index++;
           }
-          if (indices_index < current_length && hash_index == current_indices[indices_index]) {
+          if (indices_index < current_length &&
+              hash_index == current_indices[indices_index]) {
             s += _random_bits[bit_index] * current_vals[indices_index];
           }
         }

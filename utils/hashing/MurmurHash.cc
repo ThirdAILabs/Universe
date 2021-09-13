@@ -12,7 +12,8 @@ uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed) {
   uint32_t n = 0xe6546b64;
   uint32_t h = 0;
   uint32_t k = 0;
-  const uint8_t* d = reinterpret_cast<const uint8_t*>(key);  // 32 bit extract from `key'
+  const uint8_t* d =
+      reinterpret_cast<const uint8_t*>(key);  // 32 bit extract from `key'
   const uint32_t* chunks = NULL;
   const uint8_t* tail = NULL;  // tail - last 8 bytes
   int i = 0;
@@ -21,7 +22,8 @@ uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed) {
   h = seed;
 
   chunks = reinterpret_cast<const uint32_t*>(d + l * 4);  // body
-  tail = reinterpret_cast<const uint8_t*>(d + l * 4);     // last 8 byte chunk of `key'
+  tail = reinterpret_cast<const uint8_t*>(d +
+                                          l * 4);  // last 8 byte chunk of `key'
 
   // for each 4 byte chunk of `key'
   for (i = -l; i != 0; ++i) {

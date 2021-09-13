@@ -18,13 +18,15 @@ class HashFunction {
    */
   void hashBatch(const Batch& batch, uint32_t* output) const {
     if (batch._batch_type == BATCH_TYPE::SPARSE) {
-      hashSparse(batch._batch_size, batch._indices, batch._values, batch._lens, output);
+      hashSparse(batch._batch_size, batch._indices, batch._values, batch._lens,
+                 output);
     } else {
       hashDense(batch._batch_size, batch._dim, batch._values, output);
     }
   }
 
-  void hashSingleSparse(uint32_t* indices, float* values, uint32_t length, uint32_t* output) const {
+  void hashSingleSparse(uint32_t* indices, float* values, uint32_t length,
+                        uint32_t* output) const {
     uint32_t lengths[1] = {length};
     hashSparse(1, &indices, &values, lengths, output);
   }

@@ -179,7 +179,8 @@ void DensifiedMinHash::HashSparseVector(const uint32_t* indices,
   (void)values;
 }
 
-void DensifiedMinHash::DensifyHashes(const uint32_t * hashes, uint32_t* final_hashes) {
+void DensifiedMinHash::DensifyHashes(const uint32_t* hashes,
+                                     uint32_t* final_hashes) {
   // TODO(patrick): this could cause exceed max stack size, but is cheaper than
   // memory allocation
   uint32_t hash_array[_num_hashes];

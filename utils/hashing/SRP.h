@@ -25,6 +25,10 @@ class SparseRandomProjection : public HashFunction {
                  uint32_t* output) const override;
 
   ~SparseRandomProjection();
+
+  uint32_t numTables() const override { return _num_tables; }
+
+  uint32_t range() const override { return _range; }
 };
 
 }  // namespace thirdai::utils
