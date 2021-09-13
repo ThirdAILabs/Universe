@@ -19,17 +19,20 @@ constexpr const char* empty_re_str = "^\\s*$";
 
 class ConfigValue {
  public:
-  virtual uint64_t IntVal(uint32_t) const {
+  virtual uint64_t IntVal(uint32_t index) const {
+    (void)index;
     throw std::logic_error(
         "Attempted to call IntVal on non integer config var.");
   }
 
-  virtual double DoubleVal(uint32_t) const {
+  virtual double DoubleVal(uint32_t index) const {
+    (void)index;
     throw std::logic_error(
         "Attempted to call DoubleVal on non double config var.");
   }
 
-  virtual const std::string& StrVal(uint32_t) const {
+  virtual const std::string& StrVal(uint32_t index) const {
+    (void)index;
     throw std::logic_error(
         "Attempted to call StrVal on non string config var.");
   }
@@ -46,7 +49,7 @@ class ConfigValue {
 
 class IntValue final : public ConfigValue {
  public:
-  IntValue(std::vector<uint64_t>&& values) : values(values) {}
+  explicit IntValue(std::vector<uint64_t>&& values) : values(values) {}
 
   uint64_t IntVal(uint32_t index) const override { return values.at(index); }
 
@@ -63,7 +66,7 @@ class IntValue final : public ConfigValue {
 
 class DoubleValue final : public ConfigValue {
  public:
-  DoubleValue(std::vector<double>&& values) : values(values) {}
+  explicit DoubleValue(std::vector<double>&& values) : values(values) {}
 
   double DoubleVal(uint32_t index) const override { return values.at(index); }
 
@@ -80,7 +83,7 @@ class DoubleValue final : public ConfigValue {
 
 class StrValue final : public ConfigValue {
  public:
-  StrValue(std::vector<std::string>&& values) : values(values) {}
+  explicit StrValue(std::vector<std::string>&& values) : values(values) {}
 
   const std::string& StrVal(uint32_t index) const override {
     return values.at(index);
@@ -99,7 +102,7 @@ class StrValue final : public ConfigValue {
 
 class ConfigReader {
  public:
-  ConfigReader(const std::string& filename)
+  explicit ConfigReader(const std::string& filename)
       : key_re(key_re_str),
         int_re(int_re_str),
         decimal_re(decimal_re_str),

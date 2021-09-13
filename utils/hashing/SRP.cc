@@ -23,15 +23,15 @@ SparseRandomProjection::SparseRandomProjection(uint32_t input_dim,
     a[i] = i;
   }
 
-  // TODO: Fix global seed.
+  // TODO(alan, patrick): Fix global seed.
   srand(time(0));
 
-  _random_bits = new short*[_num_hashes];
+  _random_bits = new uint16_t*[_num_hashes];
   _hash_indices = new uint32_t*[_num_hashes];
 
   for (uint32_t i = 0; i < _num_hashes; i++) {
     std::random_shuffle(a, a + _dim);
-    _random_bits[i] = new short[_sample_size];
+    _random_bits[i] = new uint16_t[_sample_size];
     _hash_indices[i] = new uint32_t[_sample_size];
     for (uint32_t j = 0; j < _sample_size; j++) {
       _hash_indices[i][j] = a[j];
@@ -49,7 +49,7 @@ SparseRandomProjection::SparseRandomProjection(uint32_t input_dim,
 
 void SparseRandomProjection::hashDense(uint64_t num_vectors, uint64_t dim,
                                        float** values, uint32_t num_hashes,
-                                       uint32_t* output) {
+                                       uint32_t* output) const {
   for (uint32_t i = 0; i < num_vectors; i++) {
     SparseRandomProjection::hashDenseVector(i, values, num_hashes,
                                             output + i * _num_tables);
@@ -59,7 +59,7 @@ void SparseRandomProjection::hashDense(uint64_t num_vectors, uint64_t dim,
 
 void SparseRandomProjection::hashDenseVector(uint32_t index, float** values,
                                              uint32_t num_hashes,
-                                             uint32_t* output) {
+                                             uint32_t* output) const {
   // length should be = to this->_dim
   uint32_t hashes[_num_hashes];
 
@@ -83,7 +83,7 @@ void SparseRandomProjection::hashDenseVector(uint32_t index, float** values,
 void SparseRandomProjection::hashSparse(uint64_t num_vectors,
                                         uint32_t** indices, float** values,
                                         uint32_t* lengths, uint64_t num_hashes,
-                                        uint32_t* output) {
+                                        uint32_t* output) const {
   for (uint32_t i = 0; i < num_vectors; i++) {
     SparseRandomProjection::hashSparseVector(
         i, indices, values, lengths, num_hashes, output + i * _num_tables);
@@ -91,7 +91,7 @@ void SparseRandomProjection::hashSparse(uint64_t num_vectors,
 }
 void SparseRandomProjection::hashSparseVector(
     uint32_t index, uint32_t** indices, float** values, const uint32_t* lengths,
-    uint64_t num_hashes, uint32_t* output) {
+    uint64_t num_hashes, uint32_t* output) const {
   uint32_t hashes[_num_hashes];
 
   for (uint32_t p = 0; p < _num_hashes; p++) {
@@ -121,8 +121,8 @@ void SparseRandomProjection::hashSparseVector(
   (void)num_hashes;
 }
 
-void SparseRandomProjection::CompactHashes(uint32_t* hashes,
-                                           uint32_t* final_hashes) {
+void SparseRandomProjection::CompactHashes(const uint32_t* hashes,
+                                           uint32_t* final_hashes) const {
   for (uint32_t i = 0; i < _num_tables; i++) {
     uint32_t index = 0;
     for (uint32_t j = 0; j < _hashes_per_table; j++) {

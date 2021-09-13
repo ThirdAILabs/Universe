@@ -1,7 +1,7 @@
 #include <array>
 #include <string>
 
-namespace thirdai {
+namespace thirdai::examples {
 /*
  * Cheaper Hash functions, if you need 64 bit hash use murmurhash or xxhash
  */
@@ -26,4 +26,4 @@ class UniversalHash {
                     uint32_t batchSize, uint32_t numHashes);
 };
 
-}  // namespace thirdai
+}  // namespace thirdai::examples

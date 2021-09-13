@@ -4,9 +4,10 @@
 #include <algorithm>
 #include <cassert>
 
-using namespace thirdai::utils;
+using thirdai::utils::VectorHashTable;
 
-// TODO: Abstract some of the logic from this test out and make the test smaller
+// TODO(josh): Abstract some of the logic from this test out and make the test
+// smaller
 /**
  * This test creates a VectorHashTable with N tables and a hash range of R,
  * then inserts m elements, where element i has hashes i % R, (i + 1) % R,
