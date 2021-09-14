@@ -1,0 +1,1 @@
+add_library(dwta_lib STATIC DWTA.cc)
