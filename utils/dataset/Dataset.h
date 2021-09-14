@@ -27,8 +27,8 @@ struct Batch {
   LABEL_TYPE _label_type;
   uint32_t _dim;
 
-  /** 
-   * Creates a new Batch object with a size, data dimension, and data type 
+  /**
+   * Creates a new Batch object with a size, data dimension, and data type
    * If sparse, dimension can be set to 0.
    */
   Batch(uint64_t batch_size, BATCH_TYPE batch_type, LABEL_TYPE label_type,
@@ -139,7 +139,8 @@ class Dataset {
  protected:
   const uint64_t _target_batch_size, _target_batch_num_per_load;
   uint64_t _num_batches;
-  // In the future, we may need two batch arrays if we want to read in parallel while processing
+  // In the future, we may need two batch arrays if we want to read in parallel
+  // while processing
   Batch* _batches;
 };
 
