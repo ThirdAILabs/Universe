@@ -18,10 +18,11 @@ class SparseRandomProjection : public HashFunction {
   SparseRandomProjection(uint32_t input_dim, uint32_t srps_per_table,
                          uint32_t num_tables, uint32_t range_pow);
 
-  void hashSparse(uint64_t num_vectors, uint32_t** indices, float** values,
-                  uint32_t* lengths, uint32_t* output) const override;
+  void hashSparse(uint64_t num_vectors, const uint32_t* const* indices,
+                  const float* const* values, const uint32_t* lengths,
+                  uint32_t* output) const override;
 
-  void hashDense(uint64_t num_vectors, uint64_t dim, float** values,
+  void hashDense(uint64_t num_vectors, uint64_t dim, const float* const* values,
                  uint32_t* output) const override;
 
   ~SparseRandomProjection();

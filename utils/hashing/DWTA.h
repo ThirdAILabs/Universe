@@ -31,10 +31,11 @@ class DWTAHashFunction final : public HashFunction {
   DWTAHashFunction(uint32_t input_dim, uint32_t _hashes_per_table,
                    uint32_t _num_tables, uint32_t range_pow);
 
-  void hashSparse(uint64_t num_vectors, uint32_t** indices, float** values,
-                  uint32_t* lengths, uint32_t* output) const override;
+  void hashSparse(uint64_t num_vectors, const uint32_t* const* indices,
+                  const float* const* values, const uint32_t* lengths,
+                  uint32_t* output) const override;
 
-  void hashDense(uint64_t num_vectors, uint64_t dim, float** values,
+  void hashDense(uint64_t num_vectors, uint64_t dim, const float* const* values,
                  uint32_t* output) const override;
 
   uint32_t numTables() const { return _num_tables; }

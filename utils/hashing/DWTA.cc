@@ -47,8 +47,10 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
   _rand_double_hash_seed = dis(gen);
 }
 
-void DWTAHashFunction::hashSparse(uint64_t num_vectors, uint32_t** indices,
-                                  float** values, uint32_t* lengths,
+void DWTAHashFunction::hashSparse(uint64_t num_vectors,
+                                  const uint32_t* const* indices,
+                                  const float* const* values,
+                                  const uint32_t* lengths,
                                   uint32_t* output) const {
   for (uint64_t i = 0; i < num_vectors; i++) {
     hashSparseVector(indices[i], values[i], lengths[i],
@@ -57,7 +59,8 @@ void DWTAHashFunction::hashSparse(uint64_t num_vectors, uint32_t** indices,
 }
 
 void DWTAHashFunction::hashDense(uint64_t num_vectors, uint64_t dim,
-                                 float** values, uint32_t* output) const {
+                                 const float* const* values,
+                                 uint32_t* output) const {
   for (uint64_t i = 0; i < num_vectors; i++) {
     hashDenseVector(values[i], dim, output + i * _num_tables);
   }

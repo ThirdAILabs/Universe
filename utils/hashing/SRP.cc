@@ -52,7 +52,8 @@ SparseRandomProjection::SparseRandomProjection(uint32_t input_dim,
 }
 
 void SparseRandomProjection::hashDense(uint64_t num_vectors, uint64_t dim,
-                                       float** values, uint32_t* output) const {
+                                       const float* const* values,
+                                       uint32_t* output) const {
   assert(dim == _dim);
 
   memset(output, 0, _num_tables);
@@ -76,8 +77,9 @@ void SparseRandomProjection::hashDense(uint64_t num_vectors, uint64_t dim,
 }
 
 void SparseRandomProjection::hashSparse(uint64_t num_vectors,
-                                        uint32_t** indices, float** values,
-                                        uint32_t* lengths,
+                                        const uint32_t* const* indices,
+                                        const float* const* values,
+                                        const uint32_t* lengths,
                                         uint32_t* output) const {
 #pragma omp parallel for default(none) \
     shared(indices, values, lengths, output, num_vectors)
@@ -86,9 +88,9 @@ void SparseRandomProjection::hashSparse(uint64_t num_vectors,
       for (uint32_t srp = 0; srp < _srps_per_table; srp++) {
         double s = 0;
 
-        uint32_t* current_indices = indices[vec];
+        const uint32_t* current_indices = indices[vec];
         uint32_t indices_index = 0;
-        float* current_vals = values[vec];
+        const float* current_vals = values[vec];
         uint32_t current_length = lengths[vec];
 
         for (uint32_t srp_part = 0; srp_part < _sample_size; srp_part++) {
