@@ -140,7 +140,7 @@ TEST(DWTATest, SparseHashing) {
       }
     }
 
-    std::cout << "Sim = " << similarity(vecs.first, vecs.second, false)
+    std::cout << "Sim = " << cosine_similarity(vecs.first, vecs.second, false)
               << " matches: " << matches << std::endl;
 
     ASSERT_GE(matches, last);
@@ -158,8 +158,6 @@ TEST(DWTATest, DenseHashing) {
     float sim = 0.1 * x;
     auto vecs = genRandDenseVectors(dim, sim);
 
-    std::cout << similarity(vecs.first, vecs.second, true) << std::endl;
-
     float* values[2] = {vecs.first.values.data(), vecs.second.values.data()};
     uint32_t lens[2] = {vecs.first.len, vecs.second.len};
 
@@ -174,7 +172,8 @@ TEST(DWTATest, DenseHashing) {
       }
     }
 
-    std::cout << "Sim = " << sim << " matches: " << matches << std::endl;
+    std::cout << "Sim = " << cosine_similarity(vecs.first, vecs.second, true)
+              << " matches: " << matches << std::endl;
 
     ASSERT_GE(matches, last);
     last = matches;
