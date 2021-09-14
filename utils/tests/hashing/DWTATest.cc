@@ -120,7 +120,8 @@ TEST(DWTATest, SparseHashing) {
   thirdai::utils::DWTAHashFunction hash(dim, 6, num_tables, 18);
 
   uint32_t last = 0;
-  for (float sim = 0.5; sim < 1.0; sim += 0.1) {
+  for (uint32_t x = 5; x < 10; x++) {
+    float sim = 0.1 * x;
     auto vecs = genRandSparseVectors(dim, 0.5, sim);
 
     uint32_t* indices[2] = {vecs.first.indices.data(),
@@ -153,7 +154,8 @@ TEST(DWTATest, DenseHashing) {
   thirdai::utils::DWTAHashFunction hash(dim, 6, num_tables, 18);
 
   uint32_t last = 0;
-  for (float sim = 0.5; sim < 1.0; sim += 0.1) {
+  for (uint32_t x = 5; x < 10; x++) {
+    float sim = 0.1 * x;
     auto vecs = genRandDenseVectors(dim, sim);
 
     std::cout << similarity(vecs.first, vecs.second, true) << std::endl;
