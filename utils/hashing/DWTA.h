@@ -6,8 +6,8 @@ namespace thirdai::utils {
 
 class DWTAHashFunction final : public HashFunction {
  private:
-  uint32_t _hashes_per_table, _num_tables, _num_hashes, _log_num_hashes, _range, _dim,
-      _binsize, _log_binsize, _permute;
+  uint32_t _hashes_per_table, _num_tables, _num_hashes, _log_num_hashes, _range,
+      _dim, _binsize, _log_binsize, _permute;
   uint32_t* _bin_map;
   uint32_t* _positions;
   uint32_t _rand_double_hash_seed;
@@ -32,11 +32,10 @@ class DWTAHashFunction final : public HashFunction {
                    uint32_t _num_tables, uint32_t range_pow);
 
   void hashSparse(uint64_t num_vectors, uint32_t** indices, float** values,
-                  uint32_t* lengths, uint64_t num_hashes,
-                  uint32_t* output) const override;
+                  uint32_t* lengths, uint32_t* output) const override;
 
   void hashDense(uint64_t num_vectors, uint64_t dim, float** values,
-                 uint32_t num_hashes, uint32_t* output) const override;
+                 uint32_t* output) const override;
 
   ~DWTAHashFunction();
 };
