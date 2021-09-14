@@ -41,9 +41,9 @@ Layer::Layer(uint64_t _dim, uint64_t _prev_dim, float _sparsity,
   std::generate(biases, biases + dim, [&]() { return dist(eng); });
 
   if (sparsity < 1.0) {
-    hasher = new DWTAHashFunction(prev_dim, sampling_config.hashes_per_table,
-                                  sampling_config.num_tables,
-                                  sampling_config.range_pow);
+    hasher = new utils::DWTAHashFunction(
+        prev_dim, sampling_config.hashes_per_table, sampling_config.num_tables,
+        sampling_config.range_pow);
 
     hash_table = new HashTable<uint32_t, uint32_t>(
         sampling_config.num_tables, sampling_config.reservoir_size,
@@ -173,7 +173,8 @@ void Layer::SelectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
       active_set.insert(labels[i]);
     }
 
-    uint32_t* hashes = hasher->HashSparseVector(indices, values, len);
+    uint32_t* hashes = new uint32_t[hash_table->GetNumTables()];
+    hasher->hashSingleSparse(indices, values, len, hashes);
     hash_table->GetCandidates(hashes, active_set);
     delete[] hashes;
 
@@ -252,8 +253,8 @@ void Layer::BuildHashTables() {
 
 #pragma omp parallel for default(none) shared(num_tables, hashes)
   for (uint64_t n = 0; n < dim; n++) {
-    hasher->HashVector(weights + n * prev_dim, prev_dim,
-                       hashes + n * num_tables);
+    hasher->hashSingleDense(weights + n * prev_dim, prev_dim,
+                            hashes + n * num_tables);
   }
 
   hash_table->ClearTables();
@@ -268,9 +269,9 @@ void Layer::ReBuildHashFunction() {
   }
   delete hasher;
 
-  hasher = new DWTAHashFunction(prev_dim, sampling_config.hashes_per_table,
-                                sampling_config.num_tables,
-                                sampling_config.range_pow);
+  hasher = new utils::DWTAHashFunction(
+      prev_dim, sampling_config.hashes_per_table, sampling_config.num_tables,
+      sampling_config.range_pow);
 }
 
 void Layer::SetBatchSize(uint64_t new_batch_size) {
