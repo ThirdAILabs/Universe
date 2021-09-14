@@ -6,19 +6,19 @@ Main Repository (follow monorepositry)
 ## Development Scripts
 There are some script in the bin folder that allow you to easily build, test,
 and lint you code.
-1. Run `$ bin/build` from anywhere to have cmake build everything in universe.
+1. Run `$ bin/build.sh` from anywhere to have cmake build everything in universe.
 All executables will be in their corresponding directory within the build 
 directory. e.g. the mpi_example executable will be in 
 `Universe/build/examples/mpi-example/mpi_example`.
-2. Run `$ bin/tests` from anywhere to have cmake run all tests. To run specific
+2. Run `$ bin/tests.sh` from anywhere to have cmake run all tests. To run specific
 tests, you can also cd to the build directory and pass a regular expression to 
 filter tests (or provide an explicit test names):
 `$ ctest -R <test filter expression>`. 
 3. Run `$ generate_compile_commands.sh` from anywhere to generate the compile
 commands database (needed for 4 and 5).
-4. Run `$ bin/clang-format` from anywhere to format all code.
-5. Run `$ bin/tidy-check` from anywhere to run clang-tidy checks on all code. 
-6. Run `$ bin/clang-check` to run 3, 4, and 5.
+4. Run `$ bin/clang-format.sh` from anywhere to format all code.
+5. Run `$ bin/tidy-check.sh` from anywhere to run clang-tidy checks on all code. 
+6. Run `$ bin/clang-check.sh` to run 3, 4, and 5.
 
 
 ## Development (Deprecated, use scripts in bin, see above)
