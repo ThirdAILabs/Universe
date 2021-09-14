@@ -27,5 +27,4 @@ jobs:
         sudo apt install -y openmpi-bin openmpi-doc libopenmpi-dev
     - name: Build Targets
       run: |
-        cmake -S . -B build
-        cmake --build build
+        bin/build
