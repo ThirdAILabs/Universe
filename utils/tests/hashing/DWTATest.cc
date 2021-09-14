@@ -130,7 +130,7 @@ TEST(DWTATest, SparseHashing) {
 
     uint32_t hashes[2 * num_tables];
 
-    hash.hashSparse(2, indices, values, lens, 0, hashes);
+    hash.hashSparse(2, indices, values, lens, hashes);
 
     uint32_t matches = 0;
     for (uint32_t i = 0; i < num_tables; i++) {
@@ -163,7 +163,7 @@ TEST(DWTATest, DenseHashing) {
 
     uint32_t hashes[2 * num_tables];
 
-    hash.hashDense(2, dim, values, 0, hashes);
+    hash.hashDense(2, dim, values, hashes);
 
     uint32_t matches = 0;
     for (uint32_t i = 0; i < num_tables; i++) {

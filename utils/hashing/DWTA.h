@@ -37,6 +37,10 @@ class DWTAHashFunction final : public HashFunction {
   void hashDense(uint64_t num_vectors, uint64_t dim, float** values,
                  uint32_t* output) const override;
 
+  uint32_t numTables() const { return _num_tables; }
+
+  uint32_t range() const { return _range; }
+
   ~DWTAHashFunction();
 };
 
