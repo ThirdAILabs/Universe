@@ -11,7 +11,8 @@ struct TestVector {
   uint32_t len;
 };
 
-float similarity(const TestVector& a, const TestVector& b, bool is_dense) {
+float cosine_similarity(const TestVector& a, const TestVector& b,
+                        bool is_dense) {
   if (is_dense) {
     float total = 0, ma = 0, mb = 0;
     for (uint32_t i = 0; i < a.len; i++) {
@@ -20,31 +21,30 @@ float similarity(const TestVector& a, const TestVector& b, bool is_dense) {
       mb += b.values[i] * b.values[i];
     }
 
-    return total / (sqrt(ma) * sqrt(mb));
-  } else {
-    float total = 0, ma = 0, mb = 0;
-    uint32_t ia = 0, ib = 0;
-    while (ia < a.len && ib < b.len) {
-      if (a.indices[ia] == b.indices[ib]) {
-        total += a.values[ia] * b.values[ib];
-        ia++;
-        ib++;
-      } else if (a.indices[ia] < b.indices[ib]) {
-        ia++;
-      } else {
-        ib++;
-      }
-    }
-    for (uint32_t i = 0; i < a.len; i++) {
-      ma += a.values[i] * a.values[i];
-    }
-
-    for (uint32_t i = 0; i < b.len; i++) {
-      mb += b.values[i] * b.values[i];
-    }
-
-    return total / (sqrt(ma) * sqrt(mb));
+    return total / (std::sqrt(ma) * std::sqrt(mb));
   }
+  float total = 0, ma = 0, mb = 0;
+  uint32_t ia = 0, ib = 0;
+  while (ia < a.len && ib < b.len) {
+    if (a.indices[ia] == b.indices[ib]) {
+      total += a.values[ia] * b.values[ib];
+      ia++;
+      ib++;
+    } else if (a.indices[ia] < b.indices[ib]) {
+      ia++;
+    } else {
+      ib++;
+    }
+  }
+  for (uint32_t i = 0; i < a.len; i++) {
+    ma += a.values[i] * a.values[i];
+  }
+
+  for (uint32_t i = 0; i < b.len; i++) {
+    mb += b.values[i] * b.values[i];
+  }
+
+  return total / (std::sqrt(ma) * std::sqrt(mb));
 }
 
 std::pair<TestVector, TestVector> genRandSparseVectors(uint32_t max_dim,
