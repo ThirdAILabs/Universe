@@ -96,6 +96,8 @@ std::pair<TestVector, TestVector> genRandDenseVectors(uint32_t dim, float sim) {
 
   for (uint32_t i = 0; i < dim; i++) {
     float x = dist_vals(rd);
+    v1.indices.push_back(i);
+    v2.indices.push_back(i);
     v1.values.push_back(x);
     v2.values.push_back(x);
   }
@@ -179,4 +181,31 @@ TEST(DWTATest, DenseHashing) {
     last = matches;
   }
   ASSERT_GE(last, 300);
+}
+
+TEST(DWTATest, DenseSparseMatch) {
+  uint32_t dim = 10000, num_tables = 1000;
+  thirdai::utils::DWTAHashFunction hash(dim, 6, num_tables, 18);
+
+  for (uint32_t x = 5; x < 10; x++) {
+    float sim = 0.1 * x;
+    auto vecs = genRandDenseVectors(dim, sim);
+
+    uint32_t* indices[2] = {vecs.first.indices.data(),
+                            vecs.second.indices.data()};
+    float* values[2] = {vecs.first.values.data(), vecs.second.values.data()};
+    uint32_t lens[2] = {vecs.first.len, vecs.second.len};
+
+    uint32_t dense_hashes[2 * num_tables];
+    uint32_t sparse_hashes[2 * num_tables];
+
+    hash.hashDense(2, dim, values, dense_hashes);
+
+    hash.hashSparse(2, indices, values, lens, sparse_hashes);
+
+    uint32_t matches = 0;
+    for (uint32_t i = 0; i < 2 * num_tables; i++) {
+      ASSERT_EQ(dense_hashes[i], sparse_hashes[i]);
+    }
+  }
 }
