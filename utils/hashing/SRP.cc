@@ -1,22 +1,31 @@
 #include "SRP.h"
-// #include "config.h"
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <iostream>
+#include <random>
 
 namespace thirdai::utils {
 
+// TODO(josh). TEST THIS CLASS. I didn't test this implementation
+// of SRP hashing, but I want to commit it before people work more on the
+// hash functions so that we comply with tidy restrictions. If we want to
+// we can revert this back, but I think an implementation with a single
+// array for the bits and indices should be significanlty faster.
+
 SparseRandomProjection::SparseRandomProjection(uint32_t input_dim,
-                                               uint32_t hashes_per_table,
+                                               uint32_t srps_per_table,
                                                uint32_t num_tables,
                                                uint32_t range_pow)
-    : _hashes_per_table(hashes_per_table),
+    : _srps_per_table(srps_per_table),
       _num_tables(num_tables),
-      _num_hashes(hashes_per_table * num_tables),
+      _total_num_srps(srps_per_table * num_tables),
       _range(1 << range_pow),
-      _dim(input_dim) {
-  _sample_size = ceil(1.0 * _dim / _ratio);
+      _dim(input_dim),
+      _sample_size(ceil(_dim * _ratio)) {
+  assert(srps_per_table < 32);
 
   uint32_t* a = new uint32_t[_dim];
   for (uint32_t i = 0; i < _dim; i++) {
@@ -26,119 +35,83 @@ SparseRandomProjection::SparseRandomProjection(uint32_t input_dim,
   // TODO(alan, patrick): Fix global seed.
   srand(time(0));
 
-  _random_bits = new uint16_t*[_num_hashes];
-  _hash_indices = new uint32_t*[_num_hashes];
+  _random_bits = new int16_t[_total_num_srps * _sample_size];
+  _hash_indices = new uint32_t[_total_num_srps * _sample_size];
 
-  for (uint32_t i = 0; i < _num_hashes; i++) {
-    std::random_shuffle(a, a + _dim);
-    _random_bits[i] = new uint16_t[_sample_size];
-    _hash_indices[i] = new uint32_t[_sample_size];
+  for (uint32_t i = 0; i < _total_num_srps; i++) {
+    std::shuffle(a, a + _dim, std::default_random_engine(rand()));
     for (uint32_t j = 0; j < _sample_size; j++) {
-      _hash_indices[i][j] = a[j];
+      _hash_indices[i * _sample_size + j] = a[j];
       uint32_t curr = rand();
-      if (curr % 2 == 0) {
-        _random_bits[i][j] = 1;
-      } else {
-        _random_bits[i][j] = -1;
-      }
+      _random_bits[i * _sample_size + j] = (curr % 2) * 2 - 1;
     }
-    std::sort(_hash_indices[i], _hash_indices[i] + _sample_size);
+    std::sort(_hash_indices + i * _sample_size,
+              _hash_indices + (i + 1) * _sample_size);
   }
   delete[] a;
 }
 
 void SparseRandomProjection::hashDense(uint64_t num_vectors, uint64_t dim,
-                                       float** values, uint32_t num_hashes,
-                                       uint32_t* output) const {
-  for (uint32_t i = 0; i < num_vectors; i++) {
-    SparseRandomProjection::hashDenseVector(i, values, num_hashes,
-                                            output + i * _num_tables);
-  }
-  (void)dim;
-}
+                                       float** values, uint32_t* output) const {
+  assert(dim == _dim);
 
-void SparseRandomProjection::hashDenseVector(uint32_t index, float** values,
-                                             uint32_t num_hashes,
-                                             uint32_t* output) const {
-  // length should be = to this->_dim
-  uint32_t hashes[_num_hashes];
+  memset(output, 0, _num_tables);
 
-  // #pragma omp parallel for
-  for (uint32_t i = 0; i < _num_hashes; i++) {
-    double s = 0;
-    for (uint32_t j = 0; j < _sample_size; j++) {
-      float v = values[index][_hash_indices[i][j]];
-      if (_random_bits[i][j] >= 0) {
-        s += v;
-      } else {
-        s -= v;
+// TODO(josh): Is this the loop we want parallelism on? I(Josh) think yes
+#pragma omp parallel for default(none) shared(num_vectors, values, output)
+  for (uint32_t vec = 0; vec < num_vectors; vec++) {
+    for (uint32_t table = 0; table < _num_tables; table++) {
+      for (uint32_t srp = 0; srp < _srps_per_table; srp++) {
+        double s = 0;
+        for (uint32_t srp_part = 0; srp_part < _sample_size; srp_part++) {
+          uint32_t bit_index = table * _srps_per_table * _sample_size +
+                               srp * _sample_size + srp_part;
+          s += _random_bits[bit_index] * values[vec][_hash_indices[bit_index]];
+        }
+        uint32_t to_add = (s > 0) << srp;
+        output[table] += to_add;
       }
     }
-    hashes[i] = (s >= 0 ? 0 : 1);
   }
-  CompactHashes(hashes, output + index * _num_tables);
-  (void)num_hashes;
 }
 
 void SparseRandomProjection::hashSparse(uint64_t num_vectors,
                                         uint32_t** indices, float** values,
-                                        uint32_t* lengths, uint64_t num_hashes,
+                                        uint32_t* lengths,
                                         uint32_t* output) const {
-  for (uint32_t i = 0; i < num_vectors; i++) {
-    SparseRandomProjection::hashSparseVector(
-        i, indices, values, lengths, num_hashes, output + i * _num_tables);
-  }
-}
-void SparseRandomProjection::hashSparseVector(
-    uint32_t index, uint32_t** indices, float** values, const uint32_t* lengths,
-    uint64_t num_hashes, uint32_t* output) const {
-  uint32_t hashes[_num_hashes];
+#pragma omp parallel for default(none) \
+    shared(indices, values, lengths, output, num_vectors)
+  for (uint32_t vec = 0; vec < num_vectors; vec++) {
+    for (uint32_t table = 0; table < _num_tables; table++) {
+      for (uint32_t srp = 0; srp < _srps_per_table; srp++) {
+        double s = 0;
 
-  for (uint32_t p = 0; p < _num_hashes; p++) {
-    double s = 0;
-    uint32_t i = 0;
-    uint32_t j = 0;
-    while ((i < *lengths) & (j < _sample_size)) {
-      if (indices[index][i] == _hash_indices[p][j]) {
-        float v = values[index][i];
-        if (_random_bits[p][j] >= 0) {
-          s += v;
-        } else {
-          s -= v;
+        uint32_t* current_indices = indices[vec];
+        uint32_t indices_index = 0;
+        float* current_vals = values[vec];
+        uint32_t current_length = lengths[vec];
+
+        for (uint32_t srp_part = 0; srp_part < _sample_size; srp_part++) {
+          uint32_t bit_index = table * _srps_per_table * _sample_size +
+                               srp * _sample_size + srp_part;
+          uint32_t hash_index = _hash_indices[bit_index];
+          while (indices_index < current_length &&
+                 hash_index > current_indices[indices_index]) {
+            indices_index++;
+          }
+          if (indices_index < current_length &&
+              hash_index == current_indices[indices_index]) {
+            s += _random_bits[bit_index] * current_vals[indices_index];
+          }
         }
-        i++;
-        j++;
-      } else if (indices[index][i] < _hash_indices[p][j]) {
-        i++;
-      } else {
-        j++;
+        uint32_t to_add = (s > 0) << srp;
+        output[table] += to_add;
       }
     }
-    hashes[p] = (s >= 0 ? 0 : 1);
-  }
-
-  CompactHashes(hashes, output + index * _num_tables);
-  (void)num_hashes;
-}
-
-void SparseRandomProjection::CompactHashes(const uint32_t* hashes,
-                                           uint32_t* final_hashes) const {
-  for (uint32_t i = 0; i < _num_tables; i++) {
-    uint32_t index = 0;
-    for (uint32_t j = 0; j < _hashes_per_table; j++) {
-      uint32_t h = hashes[_hashes_per_table * i + j];
-      index += h << (_hashes_per_table - 1 - j);
-    }
-
-    final_hashes[i] = index % _range;
   }
 }
 
 SparseRandomProjection::~SparseRandomProjection() {
-  for (uint32_t i = 0; i < _num_hashes; i++) {
-    delete[] _random_bits[i];
-    delete[] _hash_indices[i];
-  }
   delete[] _random_bits;
   delete[] _hash_indices;
 }
