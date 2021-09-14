@@ -6,6 +6,9 @@
 namespace thirdai::utils {
 class SentenceLoader : public StringLoader {
  public:
+  /**
+   * Inherits String Loader.
+   */
   SentenceLoader(std::string& filename) : _file(filename){};
   virtual bool loadNextString(std::string& str_buf) {
     while (_lb_idx == _line_buffer.length()) {
