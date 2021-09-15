@@ -13,17 +13,16 @@ class StringVectorizer {
   /**
    * Returns the dimension of the vector.
    */
-  uint64_t getDimension() { return _dim; };
+  uint64_t getDimension() const { return _dim; };
 
   /**
-   * Takes in a string 'str' and fills out 'indices' and 'values' vectors, 
+   * Takes in a string 'str' and fills out 'indices' and 'values' vectors,
    * corresponding with the indices and values arrays of a sparse vector.
-   * 'indices' and 'values' are not necessarily empty so this method has 
+   * 'indices' and 'values' are not necessarily empty so this method has
    * to ensure that 'indices' and 'values' are overwritten.
    */
-  virtual void vectorize(const std::string& str,
-                           std::vector<uint32_t>& indices,
-                           std::vector<float>& values){};
+  virtual void vectorize(const std::string& str, std::vector<uint32_t>& indices,
+                         std::vector<float>& values) = 0;
 
  protected:
   /**

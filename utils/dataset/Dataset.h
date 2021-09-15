@@ -27,6 +27,9 @@ struct Batch {
   LABEL_TYPE _label_type;
   uint32_t _dim;
 
+  /** Default constructor */
+  Batch(){};
+
   /** Creates a new Batch object with a size, data dimension, and data type */
   Batch(uint64_t batch_size, BATCH_TYPE batch_type, LABEL_TYPE label_type,
         uint32_t dim) {
