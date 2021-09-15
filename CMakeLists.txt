@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 
 set(CMAKE_CXX_COMPILER "g++")
 set(CMAKE_C_COMPILER "gcc")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -Ofast -fPIC -ffast-math -funroll-loops -ftree-vectorize")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -fopenmp -fPIC -ffast-math -funroll-loops -ftree-vectorize")
 
 project(ThirdAI LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
@@ -38,9 +38,11 @@ if(NOT pybind11_POPULATED)
     add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
 endif()
 
+find_package(OpenMP REQUIRED)
+
 add_subdirectory(examples)
 add_subdirectory(bolt)
 add_subdirectory(utils)
 
-file(GLOB BOLT_SOURCES bolt/src/*.cc utils/hashing/DWTA.cc)
+file(GLOB BOLT_SOURCES bolt/src/*.cc utils/hashing/DWTA.cc utils/hashtable/SampledHashTable.cc)
 pybind11_add_module(thirdai python_bindings/thirdai.cc ${BOLT_SOURCES})

@@ -45,7 +45,7 @@ Layer::Layer(uint64_t _dim, uint64_t _prev_dim, float _sparsity,
         prev_dim, sampling_config.hashes_per_table, sampling_config.num_tables,
         sampling_config.range_pow);
 
-    hash_table = new HashTable<uint32_t, uint32_t>(
+    hash_table = new utils::SampledHashTable<uint32_t>(
         sampling_config.num_tables, sampling_config.reservoir_size,
         sampling_config.range_pow);
 
@@ -173,9 +173,9 @@ void Layer::SelectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
       active_set.insert(labels[i]);
     }
 
-    uint32_t* hashes = new uint32_t[hash_table->GetNumTables()];
+    uint32_t* hashes = new uint32_t[hash_table->numTables()];
     hasher->hashSingleSparse(indices, values, len, hashes);
-    hash_table->GetCandidates(hashes, active_set);
+    hash_table->queryBySet(hashes, active_set);
     delete[] hashes;
 
     if (active_set.size() < sparse_dim) {
@@ -246,7 +246,7 @@ void Layer::BuildHashTables() {
   if (sparsity >= 1.0) {
     return;
   }
-  uint64_t num_tables = hash_table->GetNumTables();
+  uint64_t num_tables = hash_table->numTables();
   // TODO(nicholas): hashes could be array with size max(batch size, dim) that
   // is allocated once
   uint32_t* hashes = new uint32_t[num_tables * dim];
@@ -257,8 +257,8 @@ void Layer::BuildHashTables() {
                             hashes + n * num_tables);
   }
 
-  hash_table->ClearTables();
-  hash_table->InsertSequential(dim, 0, hashes);
+  hash_table->clearTables();
+  hash_table->insertSequential(dim, 0, hashes);
 
   delete[] hashes;
 }

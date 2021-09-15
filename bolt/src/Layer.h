@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../utils/hashing/DWTA.h"
-#include "HashTable.h"
+#include "../../utils/hashtable/SampledHashTable.h"
 #include <stdint.h>
 
 namespace thirdai::bolt {
@@ -110,7 +110,7 @@ class Layer {
 
   SamplingConfig sampling_config;
   utils::DWTAHashFunction* hasher;
-  HashTable<uint32_t, uint32_t>* hash_table;
+  utils::SampledHashTable<uint32_t>* hash_table;
   uint32_t* rand_neurons;
 };
 
