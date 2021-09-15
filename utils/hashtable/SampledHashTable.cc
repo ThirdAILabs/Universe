@@ -1,5 +1,4 @@
 #include "SampledHashTable.h"
-
 #include <random>
 
 namespace thirdai::utils {
@@ -76,7 +75,8 @@ void SampledHashTable<Label_t>::queryBySet(
     uint32_t row_index = HashMod(hashes[table]);
     uint32_t counter = _counters[CounterIdx(table, row_index)];
 
-    for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size); i++) {
+    for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size);
+         i++) {
       store.insert(_data[DataIdx(table, row_index, i)]);
     }
   }
@@ -89,7 +89,8 @@ void SampledHashTable<Label_t>::queryByCount(
     uint32_t row_index = HashMod(hashes[table]);
     uint32_t counter = _counters[CounterIdx(table, row_index)];
 
-    for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size); i++) {
+    for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size);
+         i++) {
       counts[_data[DataIdx(table, row_index, i)]]++;
     }
   }
@@ -102,7 +103,8 @@ void SampledHashTable<Label_t>::queryByVector(
     uint32_t row_index = HashMod(hashes[table]);
     uint32_t counter = _counters[CounterIdx(table, row_index)];
 
-    for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size); i++) {
+    for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size);
+         i++) {
       results.push_back(_data[DataIdx(table, row_index, i)]);
     }
   }
