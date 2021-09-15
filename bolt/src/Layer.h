@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DWTA.h"
+#include "../../utils/hashing/DWTA.h"
 #include "HashTable.h"
 #include <stdint.h>
 
@@ -109,7 +109,7 @@ class Layer {
   bool* is_active;
 
   SamplingConfig sampling_config;
-  DWTAHashFunction* hasher;
+  utils::DWTAHashFunction* hasher;
   HashTable<uint32_t, uint32_t>* hash_table;
   uint32_t* rand_neurons;
 };

@@ -14,7 +14,7 @@ extern "C" {
  * using the MurmurHash3 algorithm
  */
 
-uint32_t MurmurHash(const char*, uint32_t, uint32_t);
+uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed);
 
 #ifdef __cplusplus
 }

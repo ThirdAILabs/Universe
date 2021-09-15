@@ -34,6 +34,9 @@
 #    Overall, the most of the readability checks are necessary and 
 #    good practice to include. Magic numbers, implicit bool conversion, and 
 #    others may be a bit tedious to fix for our use cases.
+#    TODO: Magic numbers can be added back in if we can just entirely ignore the
+#    hashing directory (adding a nested .clang-tidy file, which before we 
+#    thought worked, does not import the rest of the checks in this file).
 Checks: >
          -*, 
          abseil-*,
@@ -45,13 +48,15 @@ Checks: >
          misc-*, -misc-non-private-member-variables-in-classes,
          openmp-*, mpi-*,
          performance-*, -performance-noexcept-move-constructor,
-         readability-*, -readability-redundant-member-init, -readability-implicit-bool-conversion, -readability-isolate-declaration, -readability-function-cognitive-complexity
+         readability-*, -readability-redundant-member-init, -readability-implicit-bool-conversion, -readability-isolate-declaration, -readability-function-cognitive-complexity, -readability-magic-numbers,
 HeaderFilterRegex: ".*"
-CheckOptions:
-  - key:    readability-magic-numbers.IgnorePowersOf2IntegerValues
-    value:  '1'
-  - key:    readability-magic-numbers.IgnoredIntegerValues
-    value:  '0;1;2;3;4;5;6;7;10;100;999;1000'
-  - key:    readability-magic-numbers.IgnoreAllFloatingPointValues
-    value:  '1'
+# TODO: Add these back in if we can figure out how to exclude the hashing 
+# directory from magic numbers checks
+# CheckOptions:
+#   - key:    readability-magic-numbers.IgnorePowersOf2IntegerValues
+#     value:  '1'
+#   - key:    readability-magic-numbers.IgnoredIntegerValues
+#     value:  '0;1;2;3;4;5;6;7;10;100;999;1000'
+#   - key:    readability-magic-numbers.IgnoreAllFloatingPointValues
+#     value:  '1'
 WarningsAsErrors: "*"
