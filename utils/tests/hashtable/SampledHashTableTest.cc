@@ -1,15 +1,12 @@
 #include "../../hashtable/SampledHashTable.h"
 #include <gtest/gtest.h>
-#include <omp.h>
 #include <random>
 #include <unordered_map>
+#include <algorithm>
 #include <unordered_set>
 #include <vector>
 
 TEST(SampledHashTableTest, InsertionQueryWithoutReservoirSampling) {
-  int threads = omp_get_num_threads();
-  omp_set_num_threads(1);
-
   uint32_t num_tables = 100, range_pow = 10, reservoir_size = 100,
            num_inserts = 10000;
   uint32_t range = 1 << range_pow;
@@ -79,6 +76,9 @@ TEST(SampledHashTableTest, InsertionQueryWithoutReservoirSampling) {
 
     std::vector<uint32_t> vec_results;
     table.queryByVector(query_hashes, vec_results);
+    std::sort(vec_results.begin(), vec_results.end());
+    std::sort(exp_vec_results.begin(), exp_vec_results.end());
+
     ASSERT_EQ(vec_results.size(), exp_vec_results.size());
     for (uint32_t i = 0; i < vec_results.size(); i++) {
       ASSERT_EQ(vec_results[i], exp_vec_results[i]);
@@ -94,14 +94,9 @@ TEST(SampledHashTableTest, InsertionQueryWithoutReservoirSampling) {
       ASSERT_TRUE(set_results.count(x));
     }
   }
-
-  omp_set_num_threads(threads);
 }
 
 TEST(SampledHashTableTest, InsertionQueryWithReservoirSampling) {
-  int threads = omp_get_num_threads();
-  omp_set_num_threads(1);
-
   uint32_t num_tables = 100, range_pow = 10, reservoir_size = 10,
            num_inserts = 10000;
   uint32_t range = 1 << range_pow;
@@ -173,6 +168,4 @@ TEST(SampledHashTableTest, InsertionQueryWithReservoirSampling) {
       ASSERT_TRUE(exp_set_results.count(x));
     }
   }
-
-  omp_set_num_threads(threads);
 }

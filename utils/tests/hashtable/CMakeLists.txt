@@ -22,7 +22,6 @@ target_link_libraries(
   PRIVATE
   sampled_hash_table_lib
   gtest_main
-  OpenMP::OpenMP_CXX
 )
 
 include(GoogleTest)
