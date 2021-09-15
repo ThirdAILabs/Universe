@@ -17,8 +17,6 @@ add_executable(
   SampledHashTableTest.cc
 )
 
-find_package(OpenMP REQUIRED)
-
 target_link_libraries(
   sampled_hash_table_test
   PRIVATE
