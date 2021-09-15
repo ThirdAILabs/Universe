@@ -11,21 +11,21 @@
 namespace thirdai::utils {
 
 enum class TOKEN_TYPE { CHAR_TRIGRAM, WORD_UNIGRAM, WORD_BIGRAM };
-enum class STRING_TYPE { SENTENCE, PARAGRAPH, DOCUMENT };
+enum class LOAD_TYPE { SENTENCE, PARAGRAPH, DOCUMENT };
 
 class StringDataset : public Dataset {
  public:
 
   StringDataset(std::string filename, 
                 TOKEN_TYPE token_type, 
-                STRING_TYPE vector_type,
+                LOAD_TYPE load_type,
                 uint64_t target_batch_size,
                 uint64_t target_batch_num_per_load)
       : Dataset(target_batch_size, target_batch_num_per_load) {
 
     // The sentence loaders have not been fully implemented yet
-    switch (vector_type) {
-      case STRING_TYPE::SENTENCE:
+    switch (load_type) {
+      case LOAD_TYPE::SENTENCE:
         _loader = SentenceLoader(filename);
         break;
       default:
