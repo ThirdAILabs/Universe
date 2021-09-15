@@ -1,8 +1,8 @@
 #pragma once
+#include "../GlobalFreq.h"
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "../GlobalFreq.h"
 
 namespace thirdai::utils {
 /**
@@ -11,10 +11,7 @@ namespace thirdai::utils {
  */
 class StringVectorizer {
  public:
-
-  StringVectorizer(GlobalFreq* globalFreq){
-    _globalFreq = globalFreq;
-  }
+  StringVectorizer(GlobalFreq* globalFreq) { _globalFreq = globalFreq; }
 
   /**
    * Returns the dimension of the vector.
@@ -22,14 +19,13 @@ class StringVectorizer {
   uint64_t getDimension() { return _dim; };
 
   /**
-   * Takes in a string 'str' and fills out 'indices' and 'values' vectors, 
+   * Takes in a string 'str' and fills out 'indices' and 'values' vectors,
    * corresponding with the indices and values arrays of a sparse vector.
-   * 'indices' and 'values' are not necessarily empty so this method has 
+   * 'indices' and 'values' are not necessarily empty so this method has
    * to ensure that 'indices' and 'values' are overwritten.
    */
-  virtual void vectorize(const std::string& str,
-                           std::vector<uint32_t>& indices,
-                           std::vector<float>& values, VECTOR_TYPE vector_type){};
+  virtual void vectorize(const std::string& str, std::vector<uint32_t>& indices,
+                         std::vector<float>& values, VECTOR_TYPE vector_type){};
 
   GlobalFreq* _globalFreq;
 
@@ -39,4 +35,4 @@ class StringVectorizer {
    */
   uint32_t _dim;
 };
-}  // namespace thirdai::utils
+}  // namespace thirdai::utils%                      
