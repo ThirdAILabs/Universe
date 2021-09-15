@@ -10,7 +10,8 @@ TEST(SampledHashTableTest, InsertionQueryWithoutReservoirSampling) {
   int threads = omp_get_num_threads();
   omp_set_num_threads(1);
 
-  uint32_t num_tables = 100, range_pow = 10, reservoir_size = 100, num_inserts = 10000;
+  uint32_t num_tables = 100, range_pow = 10, reservoir_size = 100,
+           num_inserts = 10000;
   uint32_t range = 1 << range_pow;
   thirdai::utils::SampledHashTable<uint32_t> table(num_tables, reservoir_size,
                                                    range_pow);
