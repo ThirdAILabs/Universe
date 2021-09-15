@@ -10,6 +10,13 @@ namespace thirdai::utils {
 
 constexpr uint64_t DefaultMaxRand = 10000;
 
+/**
+ * This class implements the hash table interface for a sampled hash table where
+ * reservoirs are inserted into via the reservoir sampling algorithm when full.
+ *
+ * This allows for reservoirs to be preallocated and makes insertion and
+ * querying fast.
+ */
 template <typename Label_t>
 class SampledHashTable final : public HashTable<Label_t> {
  private:
@@ -37,6 +44,13 @@ class SampledHashTable final : public HashTable<Label_t> {
   constexpr uint32_t HashMod(uint32_t hash) const { return hash & _mask; }
 
  public:
+  /**
+   * num_tables: number of hash tables
+   * reservoir_size: the size of each reservoir
+   * range_pow: log base 2 of the range of the table
+   * max_rand: optional parameter, controls how many pre-generated random values
+   * are created for reservoir sampling
+   */
   SampledHashTable(uint64_t num_tables, uint64_t reservoir_size,
                    uint64_t range_pow, uint64_t max_rand = DefaultMaxRand);
 
@@ -77,18 +91,36 @@ class SampledHashTable final : public HashTable<Label_t> {
     return *this;
   }
 
+  /**
+   * Inserts n elements with the specified labels.
+   */
   void insert(uint64_t n, const Label_t* labels,
               const uint32_t* hashes) override;
 
+  /**
+   * Inserts n elements with consecutive labels starting at start.
+   */
   void insertSequential(uint64_t n, Label_t start,
                         const uint32_t* hashes) override;
 
+  /**
+   * Queries the table and returns a set that is the union of the reservoirs
+   * specified by the hashes.
+   */
   void queryBySet(uint32_t const* hashes,
                   std::unordered_set<Label_t>& store) const override;
 
+  /**
+   * Queries the table and returns the counts of elements in the union of the
+   * reservoirs specified by the hashes.
+   */
   void queryByCount(uint32_t const* hashes,
                     std::vector<uint32_t>& counts) const override;
 
+  /**
+   * Queries the table and returns a vector containing the contents of the
+   * reservoirs specified by the hashes.
+   */
   void queryByVector(uint32_t const* hashes,
                      std::vector<Label_t>& results) const override;
 
@@ -97,22 +129,6 @@ class SampledHashTable final : public HashTable<Label_t> {
   uint32_t numTables() const { return _num_tables; };
 
   uint64_t tableRange() const { return _range; };
-
-  void Dump() {
-    for (uint64_t table = 0; table < _num_tables; table++) {
-      std::cout << "Table: " << table << std::endl;
-      for (uint64_t row = 0; row < _range; row++) {
-        uint32_t cnt = _counters[CounterIdx(table, row)];
-        std::cout << "[ " << row << " :: " << cnt << " ]";
-        for (uint64_t i = 0; i < std::min<uint64_t>(cnt, _reservoir_size);
-             i++) {
-          std::cout << "\t" << _data[DataIdx(table, row, i)];
-        }
-        std::cout << std::endl;
-      }
-      std::cout << std::endl;
-    }
-  }
 
   ~SampledHashTable();
 };
