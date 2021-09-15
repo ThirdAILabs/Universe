@@ -1,8 +1,8 @@
 #include "../../hashtable/SampledHashTable.h"
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <random>
 #include <unordered_map>
-#include <algorithm>
 #include <unordered_set>
 #include <vector>
 
