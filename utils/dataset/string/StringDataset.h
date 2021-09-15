@@ -12,16 +12,22 @@ namespace thirdai::utils {
 
 enum class TOKEN_TYPE { CHAR_TRIGRAM, WORD_UNIGRAM, WORD_BIGRAM };
 enum class LOAD_TYPE { SENTENCE, PARAGRAPH, DOCUMENT };
+enum class VECTOR_TYPE { TFIDF, MURMUR };
 
 class StringDataset : public Dataset {
  public:
 
+  VECTOR_TYPE _vectorType;
+
   StringDataset(std::string filename, 
                 TOKEN_TYPE token_type, 
                 LOAD_TYPE load_type,
+                VECTOR_TYPE vector_type,
                 uint64_t target_batch_size,
                 uint64_t target_batch_num_per_load)
       : Dataset(target_batch_size, target_batch_num_per_load) {
+
+    _vectorType = vector_type;
 
     // The sentence loaders have not been fully implemented yet
     switch (load_type) {
@@ -109,7 +115,7 @@ class StringDataset : public Dataset {
     for (size_t vec_i = 0; vec_i < vec_count; vec_i++) {
       size_t batch_i = vec_i / _target_batch_size;
       size_t batch_vec_i = vec_i - (batch_i * _target_batch_size);
-      _vectorizer.vectorize(strings_to_be_vectorized[vec_i], _indices[vec_i], _values[vec_i]);
+      _vectorizer.vectorize(strings_to_be_vectorized[vec_i], _indices[vec_i], _values[vec_i], _vectorType);
       _batches[batch_i]._lens[batch_vec_i] = _indices[vec_i].size();
       // This prevents us from having to malloc and delete arrays each time.
       // This works because vectors are guaranteed to store its contents in contiguous memory.
