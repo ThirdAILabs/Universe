@@ -2,7 +2,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "GlobalFreq.h"
+#include "../GlobalFreq.h"
 
 namespace thirdai::utils {
 /**
