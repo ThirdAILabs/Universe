@@ -11,4 +11,4 @@ class UnigramVectorizer : public StringVectorizer {
                          std::vector<float>& values, VECTOR_TYPE vector_type);
 };
 
-}  // namespace thirdai::utils%            
+}  // namespace thirdai::utils

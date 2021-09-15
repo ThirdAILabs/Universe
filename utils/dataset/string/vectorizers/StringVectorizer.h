@@ -35,4 +35,4 @@ class StringVectorizer {
    */
   uint32_t _dim;
 };
-}  // namespace thirdai::utils%                      
+}  // namespace thirdai::utils

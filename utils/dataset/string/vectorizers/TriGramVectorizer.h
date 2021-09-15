@@ -58,4 +58,4 @@ class TriGramVectorizer : public StringVectorizer {
     }
   };
 };
-}  // namespace thirdai::utils% 
+}  // namespace thirdai::utils

@@ -5,9 +5,9 @@ namespace thirdai::utils {
 UnigramVectorizer::~UnigramVectorizer() {}
 
 virtual void UnigramVectorizer::vectorize(const std::string& str,
-                                  std::vector<uint32_t>& indices,
-                                  std::vector<float>& values,
-                                  VECTOR_TYPE vector_type) {
+                                          std::vector<uint32_t>& indices,
+                                          std::vector<float>& values,
+                                          VECTOR_TYPE vector_type) {
   switch (vector_type) {
     case VECTOR_TYPE::MURMUR:
       /* code */
@@ -39,4 +39,4 @@ virtual void UnigramVectorizer::vectorize(const std::string& str,
       break;
   }
 }
-}  // namespace thirdai::utils%        
+}  // namespace thirdai::utils

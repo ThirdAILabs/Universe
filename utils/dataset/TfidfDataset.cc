@@ -12,7 +12,7 @@ void TfidfDataset::readDataset(const std::vector<std::string>& filenames,
   // stream and read
   // TODO: Use a switch statement
   if (fileType == TFIDF_FILE_TYPE::FILE) {
-    // TODO: We should parallelize this so an array would be better. 
+    // TODO: We should parallelize this so an array would be better.
     for (auto const& filename : filenames) {
       std::ifstream file(filename);
       if (file.bad() || file.fail() || !file.good() || !file.is_open()) {
