@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-​
+
 uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed) {
   uint32_t c1 = 0xcc9e2d51;
   uint32_t c2 = 0x1b873593;
@@ -18,31 +18,31 @@ uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed) {
   const uint8_t* tail = NULL;  // tail - last 8 bytes
   int i = 0;
   int l = len / 4;  // chunk length
-​
+
   h = seed;
-​
+
   chunks = reinterpret_cast<const uint32_t*>(d + l * 4);  // body
   tail = reinterpret_cast<const uint8_t*>(d +
                                           l * 4);  // last 8 byte chunk of `key'
-​
+
   // for each 4 byte chunk of `key'
   for (i = -l; i != 0; ++i) {
     // next 4 byte chunk of `key'
     k = chunks[i];
-​
+
     // encode next 4 byte chunk of `key'
     k *= c1;
     k = (k << r1) | (k >> (32 - r1));
     k *= c2;
-​
+
     // append to hash
     h ^= k;
     h = (h << r2) | (h >> (32 - r2));
     h = h * m + n;
   }
-​
+
   k = 0;
-​
+
   // remainder
   switch (len & 3) {  // `len % 4'
     case 3:
@@ -69,14 +69,14 @@ uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed) {
       k *= c2;
       h ^= k;
   }
-​
+
   h ^= len;
-​
+
   h ^= (h >> 16);
   h *= 0x85ebca6b;
   h ^= (h >> 13);
   h *= 0xc2b2ae35;
   h ^= (h >> 16);
-​
+
   return h;
 }
