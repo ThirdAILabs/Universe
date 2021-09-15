@@ -5,11 +5,14 @@ add_executable(
   VectorHashTableTest.cc
 )
 
+find_package(OpenMP REQUIRED)
+
 target_link_libraries(
   vector_hash_table_test
   PRIVATE
   hash_table_lib
   gtest_main
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(
