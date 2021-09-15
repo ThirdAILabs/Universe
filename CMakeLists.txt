@@ -6,6 +6,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -Ofast -fPIC -ffast-math -funro
 
 project(ThirdAI LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
+find_package(PythonLibs REQUIRED)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -23,7 +24,6 @@ FetchContent_MakeAvailable(googletest)
 #        GIT_TAG 20210324.2
 # )
 # FetchContent_MakeAvailable(abseil)
-
 
 enable_testing()
 
