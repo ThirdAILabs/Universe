@@ -4,7 +4,7 @@ namespace thirdai::utils {
 
 UnigramVectorizer::~UnigramVectorizer() {}
 
-void UnigramVectorizer::vectorize(const std::string& str,
+virtual void UnigramVectorizer::vectorize(const std::string& str,
                                   std::vector<uint32_t>& indices,
                                   std::vector<float>& values,
                                   VECTOR_TYPE vector_type) {
