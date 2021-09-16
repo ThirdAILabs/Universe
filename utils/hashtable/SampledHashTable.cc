@@ -69,17 +69,30 @@ void SampledHashTable<Label_t>::insertSequential(uint64_t n, Label_t start,
   }
 }
 template <typename Label_t>
-void SampledHashTable<Label_t>::queryBySet(
-    const uint32_t* hashes, std::unordered_set<Label_t>& store) const {
-  for (uint64_t table = 0; table < _num_tables; table++) {
+void SampledHashTable<Label_t>::queryBySet(const uint32_t* hashes,
+                                           std::unordered_set<Label_t>& store,
+                                           uint32_t noElements) const {
+  uint64_t start = rand() % _num_tables;
+  for (uint64_t table = start; table <= _num_tables + start; table++) {
+    if (table >= _num_tables) table -= _num_tables;
     uint32_t row_index = HashMod(hashes[table]);
     uint32_t counter = _counters[CounterIdx(table, row_index)];
-
     for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size);
          i++) {
       store.insert(_data[DataIdx(table, row_index, i)]);
+      if (store.size() == noElements) break;
     }
+    if (store.size() == noElements) break;
   }
+  //  for (uint64_t table = 0; table < _num_tables; table++) {
+  //    uint32_t row_index = HashMod(hashes[table]);
+  //    uint32_t counter = _counters[CounterIdx(table, row_index)];
+
+  //    for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size);
+  //         i++) {
+  //      store.insert(_data[DataIdx(table, row_index, i)]);
+  //    }
+  //  }
 }
 
 template <typename Label_t>

@@ -44,13 +44,16 @@ void VectorHashTable<Label_t>::insertSequential(uint64_t n, Label_t start,
 };
 
 template <typename Label_t>
-void VectorHashTable<Label_t>::queryBySet(
-    uint32_t const* hashes, std::unordered_set<Label_t>& store) const {
+void VectorHashTable<Label_t>::queryBySet(uint32_t const* hashes,
+                                          std::unordered_set<Label_t>& store,
+                                          uint32_t noElements) const {
   for (uint32_t table = 0; table < _num_tables; table++) {
     uint32_t hash = hashes[table];
     for (Label_t label : tables[getBucketIndex(table, hash)]) {
       store.insert(label);
+      if (store.size() == noElements) break;
     }
+    if (store.size() == noElements) break;
   }
 }
 

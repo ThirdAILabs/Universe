@@ -40,7 +40,8 @@ class HashTable {
    * across all tables.
    */
   virtual void queryBySet(uint32_t const* hashes,
-                          std::unordered_set<Label_t>& store) const = 0;
+                          std::unordered_set<Label_t>& store,
+                          uint32_t noElements = UINT32_MAX) const = 0;
 
   virtual void queryByCount(uint32_t const* hashes,
                             std::vector<uint32_t>& counts) const = 0;

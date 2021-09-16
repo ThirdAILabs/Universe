@@ -180,7 +180,7 @@ void SparseLayer::SelectActiveNeurons(uint32_t batch_indx,
 
     uint32_t* hashes = new uint32_t[hash_table->numTables()];
     hasher->hashSingleSparse(indices, values, len, hashes);
-    hash_table->queryBySet(hashes, active_set);
+    hash_table->queryBySet(hashes, active_set, sparse_dim - label_len);
     delete[] hashes;
 
     if (active_set.size() < sparse_dim) {
@@ -195,17 +195,17 @@ void SparseLayer::SelectActiveNeurons(uint32_t batch_indx,
     active_lens[batch_indx] = active_len;
 
     uint32_t cnt = 0;
-    for (uint32_t i = 0; i < label_len; i++) {
-      if (cnt >= sparse_dim) {
-        break;
-      }
-      active_neurons[batch_indx][cnt++] = labels[i];
-      active_set.erase(labels[i]);
-    }
+    // for (uint32_t i = 0; i < label_len; i++) {
+    //  if (cnt >= sparse_dim) {
+    //   break;
+    // }
+    // active_neurons[batch_indx][cnt++] = labels[i];
+    // active_set.erase(labels[i]);
+    //}
     for (auto x : active_set) {
-      if (cnt >= sparse_dim) {
-        break;
-      }
+      // if (cnt >= sparse_dim) {
+      //  break;
+      //}
       active_neurons[batch_indx][cnt++] = x;
     }
   }
