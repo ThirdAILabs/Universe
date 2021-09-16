@@ -72,8 +72,8 @@ template <typename Label_t>
 void SampledHashTable<Label_t>::queryBySet(const uint32_t* hashes,
                                            std::unordered_set<Label_t>& store,
                                            uint32_t noElements) const {
-  uint64_t start = rand() % _num_tables;
-  for (uint64_t i = start; i <= _num_tables + start; i++) {
+  uint64_t table = rand() % _num_tables;
+  for (uint64_t i = table; i <= _num_tables + table; i++) {
     if (i >= _num_tables) 
       table = i - _num_tables;
     else
