@@ -16,7 +16,7 @@ Network::Network(std::vector<LayerConfig> configs, uint64_t input_dim)
   auto start = std::chrono::high_resolution_clock::now();
 
   num_layers = configs.size();
-  layers = new Layer*[num_layers];
+  layers = new SparseLayer*[num_layers];
 
   for (uint32_t i = 0; i < num_layers; i++) {
     uint64_t prev_dim = (i > 0) ? configs[i - 1].dim : input_dim;
@@ -31,8 +31,9 @@ Network::Network(std::vector<LayerConfig> configs, uint64_t input_dim)
             "Softmax activation function is required for output layer.");
       }
     }
-    layers[i] = new Layer(configs[i].dim, prev_dim, configs[i].sparsity,
-                          configs[i].act_func, configs[i].sampling_config);
+    layers[i] =
+        new SparseLayer(configs[i].dim, prev_dim, configs[i].sparsity,
+                        configs[i].act_func, configs[i].sampling_config);
   }
 
   auto end = std::chrono::high_resolution_clock::now();
@@ -57,14 +58,15 @@ void Network::ProcessTrainingBatch(const Batch& batch, float lr) {
     /**
      * 1. Feed Forward
      */
-    layers[0]->ForwardPass(b, batch.indices[b], batch.values[b], batch.lens[b]);
+    layers[0]->FeedForward(b, batch.indices[b], batch.values[b], batch.lens[b],
+                           nullptr, 0);
 
     for (uint32_t l = 1; l < num_layers - 1; l++) {
-      layers[l]->ForwardPass(b, layers[l - 1]->GetIndices(b),
+      layers[l]->FeedForward(b, layers[l - 1]->GetIndices(b),
                              layers[l - 1]->GetValues(b),
-                             layers[l - 1]->GetLen(b));
+                             layers[l - 1]->GetLen(b), nullptr, 0);
     }
-    layers[num_layers - 1]->ForwardPass(
+    layers[num_layers - 1]->FeedForward(
         b, layers[num_layers - 2]->GetIndices(b),
         layers[num_layers - 2]->GetValues(b), layers[num_layers - 2]->GetLen(b),
         batch.labels[b], batch.label_lens[b]);
@@ -80,18 +82,18 @@ void Network::ProcessTrainingBatch(const Batch& batch, float lr) {
      */
 
     for (uint32_t l = num_layers - 1; l > 0; l--) {
-      layers[l]->BackPropagate<false>(
+      layers[l]->Backpropagate(
           b, layers[l - 1]->GetIndices(b), layers[l - 1]->GetValues(b),
           layers[l - 1]->GetErrors(b), layers[l - 1]->GetLen(b));
     }
 
-    layers[0]->BackPropagate<true>(b, batch.indices[b], batch.values[b],
-                                   nullptr, batch.lens[b]);
+    layers[0]->BackpropagateFirstLayer(b, batch.indices[b], batch.values[b],
+                                       nullptr, batch.lens[b]);
   }
 
   ++iter;
   for (uint32_t layer = 0; layer < num_layers; layer++) {
-    layers[layer]->UpdateParameters(lr, iter);
+    layers[layer]->UpdateParameters(lr, iter, BETA1, BETA2, EPS);
   }
 }
 
@@ -112,14 +114,15 @@ uint32_t Network::ProcessTestBatch(const Batch& batch) {
 
 #pragma omp parallel for default(none) shared(batch, batch_size, correct)
   for (uint32_t b = 0; b < batch_size; b++) {
-    layers[0]->ForwardPass(b, batch.indices[b], batch.values[b], batch.lens[b]);
+    layers[0]->FeedForward(b, batch.indices[b], batch.values[b], batch.lens[b],
+                           nullptr, 0);
 
     for (uint32_t l = 1; l < num_layers - 1; l++) {
-      layers[l]->ForwardPass(b, layers[l - 1]->GetIndices(b),
+      layers[l]->FeedForward(b, layers[l - 1]->GetIndices(b),
                              layers[l - 1]->GetValues(b),
-                             layers[l - 1]->GetLen(b));
+                             layers[l - 1]->GetLen(b), nullptr, 0);
     }
-    layers[num_layers - 1]->ForwardPass(
+    layers[num_layers - 1]->FeedForward(
         b, layers[num_layers - 2]->GetIndices(b),
         layers[num_layers - 2]->GetValues(b), layers[num_layers - 2]->GetLen(b),
         batch.labels[b], batch.label_lens[b]);
@@ -275,14 +278,15 @@ uint32_t* Network::PredictClasses(const Batch& batch, uint64_t batch_size) {
 
 #pragma omp parallel for default(none) shared(batch, batch_size, predictions)
   for (uint32_t b = 0; b < batch_size; b++) {
-    layers[0]->ForwardPass(b, batch.indices[b], batch.values[b], batch.lens[b]);
+    layers[0]->FeedForward(b, batch.indices[b], batch.values[b], batch.lens[b],
+                           nullptr, 0);
 
     for (uint32_t l = 1; l < num_layers - 1; l++) {
-      layers[l]->ForwardPass(b, layers[l - 1]->GetIndices(b),
+      layers[l]->FeedForward(b, layers[l - 1]->GetIndices(b),
                              layers[l - 1]->GetValues(b),
-                             layers[l - 1]->GetLen(b));
+                             layers[l - 1]->GetLen(b), nullptr, 0);
     }
-    layers[num_layers - 1]->ForwardPass(
+    layers[num_layers - 1]->FeedForward(
         b, layers[num_layers - 2]->GetIndices(b),
         layers[num_layers - 2]->GetValues(b), layers[num_layers - 2]->GetLen(b),
         batch.labels[b], batch.label_lens[b]);
