@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 namespace thirdai::bolt {
 
 constexpr float BETA1 = 0.9;
