@@ -20,8 +20,8 @@ class SparseLayer final : public Layer {
               ActivationFunc _act_func, SamplingConfig _sampling_config);
 
   void FeedForward(uint32_t batch_indx, const uint32_t* indices,
-                   const float* values, uint32_t len,
-                   uint32_t* labels = nullptr, uint32_t label_len = 0) override;
+                   const float* values, uint32_t len, uint32_t* labels,
+                   uint32_t label_len) override;
 
   void Backpropagate(uint32_t batch_indx, const uint32_t* indices,
                      const float* values, float* errors, uint32_t len) {
@@ -37,8 +37,8 @@ class SparseLayer final : public Layer {
   void ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
                      uint32_t label_len) override;
 
-  void UpdateParameters(float lr, uint32_t iter, float B1 = BETA1,
-                        float B2 = BETA2, float eps = EPS) override;
+  void UpdateParameters(float lr, uint32_t iter, float B1, float B2,
+                        float eps) override;
 
   void BuildHashTables() override;
 
