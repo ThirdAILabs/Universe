@@ -29,6 +29,7 @@ FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
     : _hashes_per_table(hashes_per_table),
       _num_tables(num_tables),
       _num_hashes(hashes_per_table * num_tables),
+      _range(1 << range_pow),
       _dim(input_dim),
       _binsize(DEFAULT_BINSIZE) {
   (void)range_pow;
@@ -77,14 +78,24 @@ FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
   _rand_double_hash_seed = dis(gen);
 }
 
-uint32_t* FastSRP::HashVector(const float* data, uint32_t len) {
-  uint32_t* final_hashes = new uint32_t[_num_tables];
-  HashVector(data, len, final_hashes);
-  return final_hashes;
+void FastSRP::hashDense(uint64_t num_vectors, uint64_t dim,
+                        const float* const* values, uint32_t* output) const {
+  for (uint64_t i = 0; i < num_vectors; i++) {
+    hashDenseVector(values[i], dim, output + i * _num_tables);
+  }
 }
 
-void FastSRP::HashVector(const float* data, uint32_t len,
-                         uint32_t* final_hashes) {
+void FastSRP::hashSparse(uint64_t num_vectors, const uint32_t* const* indices,
+                         const float* const* values, const uint32_t* lengths,
+                         uint32_t* output) const {
+  for (uint64_t i = 0; i < num_vectors; i++) {
+    hashSparseVector(indices[i], values[i], lengths[i],
+                     output + i * _num_tables);
+  }
+}
+
+void FastSRP::hashDenseVector(const float* data, uint32_t len,
+                              uint32_t* final_hashes) const {
   // TODO(patrick): this could cause exceed max stack size, but is cheaper than
   // memory allocation
   uint32_t hashes[_num_hashes];
@@ -114,18 +125,11 @@ void FastSRP::HashVector(const float* data, uint32_t len,
     }
   }
 
-  DensifyHashes(hashes, final_hashes);
+  densifyHashes(hashes, final_hashes);
 }
 
-uint32_t* FastSRP::HashSparseVector(const uint32_t* indices,
-                                    const float* values, uint32_t len) {
-  uint32_t* final_hashes = new uint32_t[_num_tables];
-  HashSparseVector(indices, values, len, final_hashes);
-  return final_hashes;
-}
-
-void FastSRP::HashSparseVector(const uint32_t* indices, const float* values,
-                               uint32_t len, uint32_t* final_hashes) {
+void FastSRP::hashSparseVector(const uint32_t* indices, const float* values,
+                               uint32_t len, uint32_t* final_hashes) const {
   // TODO(patrick): this could cause exceed max stack size, but is cheaper than
   // memory allocation
   uint32_t hashes[_num_hashes];
@@ -155,10 +159,11 @@ void FastSRP::HashSparseVector(const uint32_t* indices, const float* values,
     }
   }
 
-  DensifyHashes(hashes, final_hashes);
+  densifyHashes(hashes, final_hashes);
 }
 
-void FastSRP::DensifyHashes(const uint32_t* hashes, uint32_t* final_hashes) {
+void FastSRP::densifyHashes(const uint32_t* hashes,
+                            uint32_t* final_hashes) const {
   // TODO(patrick): this could cause exceed max stack size, but is cheaper than
   // memory allocation
   uint32_t hash_array[_num_hashes];
