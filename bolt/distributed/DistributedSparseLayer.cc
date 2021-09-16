@@ -29,9 +29,11 @@ DistributedSparseLayer::DistributedSparseLayer(uint64_t dim, uint64_t prev_dim,
                                  sampling_config);
 }
 
+constexpr const void* SAFE_MPI_IN_PLACE = (const void*)static_cast<uintptr_t>(-1);
+
 void DistributedSparseLayer::ReduceErrors() {
   for (uint32_t b = 0; b < _batch_size; b++) {
-    MPI_Allreduce(MPI_IN_PLACE, _errors[b], _total_active_lens[b], MPI_FLOAT,
+    MPI_Allreduce(SAFE_MPI_IN_PLACE, _errors[b], _total_active_lens[b], MPI_FLOAT,
                   MPI_SUM, MPI_COMM_WORLD);
 
     float* start = _errors[b] + _active_offsets[b][_rank];
@@ -43,7 +45,7 @@ void DistributedSparseLayer::ReduceErrors() {
 void DistributedSparseLayer::GatherActivations() {
   for (uint32_t b = 0; b < _batch_size; b++) {
     _active_lens[b][_rank] = _local_layer->GetLen(b);
-    MPI_Allgather(MPI_IN_PLACE, 1, MPI_INT, _active_lens[b] + _rank, 1, MPI_INT,
+    MPI_Allgather(SAFE_MPI_IN_PLACE, 1, MPI_INT, _active_lens[b] + _rank, 1, MPI_INT,
                   MPI_COMM_WORLD);
 
     _active_offsets[b][0] = 0;
@@ -64,7 +66,7 @@ void DistributedSparseLayer::GatherActivations() {
               _local_layer->GetValues(b) + _local_layer->GetLen(b),
               _activations[b] + _active_offsets[b][_rank]);
 
-    MPI_Allgatherv(MPI_IN_PLACE, len, MPI_UNSIGNED, _active_neurons[b],
+    MPI_Allgatherv(SAFE_MPI_IN_PLACE, len, MPI_UNSIGNED, _active_neurons[b],
                    _active_lens[b], _active_offsets[b], MPI_UNSIGNED,
                    MPI_COMM_WORLD);
 
