@@ -62,6 +62,8 @@ class SparseLayer final : public Layer {
     return activations[batch_indx];
   }
 
+  float* GetValuesMut(uint32_t batch_indx) { return activations[batch_indx]; }
+
   float* GetErrors(uint32_t batch_indx) override { return errors[batch_indx]; }
 
   float* GetWeights();

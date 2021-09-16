@@ -43,7 +43,7 @@ void DistributedSparseLayer::ReduceErrors() {
 void DistributedSparseLayer::GatherActivations() {
   for (uint32_t b = 0; b < _batch_size; b++) {
     _active_lens[b][_rank] = _local_layer->GetLen(b);
-    MPI_Allgather(MPI_IN_PLACE, 1, MPI_UNSIGNED, _active_lens[b], 1,
+    MPI_Allgather(MPI_IN_PLACE, 1, MPI_UNSIGNED, _active_lens[b] + _rank, 1,
                   MPI_UNSIGNED, MPI_COMM_WORLD);
 
     _active_offsets[b][0] = 0;
@@ -68,7 +68,7 @@ void DistributedSparseLayer::GatherActivations() {
                    _active_lens[b], _active_offsets[b], MPI_UNSIGNED,
                    MPI_COMM_WORLD);
 
-    float* local_activations = (float*)_local_layer->GetValues(b);
+    float* local_activations = _local_layer->GetValuesMut(b);
     if (_act_func == ActivationFunc::Softmax) {
       // 1. Get local max activation
       float max_act = 0;
@@ -84,7 +84,7 @@ void DistributedSparseLayer::GatherActivations() {
       // 3. Compute local total activation and raise local values to exponent
       float total = 0;
       for (uint32_t i = 0; i < len; i++) {
-        float new_act = exp(local_activations[i] - overall_max_act);
+        float new_act = std::exp(local_activations[i] - overall_max_act);
         local_activations[i] = new_act;
         total += new_act;
       }
