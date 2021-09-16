@@ -73,11 +73,10 @@ void SampledHashTable<Label_t>::queryBySet(const uint32_t* hashes,
                                            std::unordered_set<Label_t>& store,
                                            uint32_t noElements) const {
   uint64_t table = rand() % _num_tables;
-  for (uint64_t i = table; i <= _num_tables + table; i++) {
-    if (i >= _num_tables) 
-      table = i - _num_tables;
-    else
-      table =i;   
+  for (uint64_t i = 0; i <= _num_tables; i++) {
+    
+    if (table >= _num_tables) 
+      table -= _num_tables;  
     uint32_t row_index = HashMod(hashes[table]);
     uint32_t counter = _counters[CounterIdx(table, row_index)];
     for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size);
@@ -86,6 +85,7 @@ void SampledHashTable<Label_t>::queryBySet(const uint32_t* hashes,
       if (store.size() == noElements) break;
     }
     if (store.size() == noElements) break;
+    table++;
   }
   //  for (uint64_t table = 0; table < _num_tables; table++) {
   //    uint32_t row_index = HashMod(hashes[table]);
