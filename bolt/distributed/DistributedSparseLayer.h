@@ -15,7 +15,7 @@ class DistributedSparseLayer final : public Layer {
                    const float* values, uint32_t len, uint32_t* labels,
                    uint32_t label_len) override {
     _local_layer->FeedForward(batch_indx, indices, values, len, labels,
-                             label_len);
+                              label_len);
     // Must call GatherActivations after FeedForward
   }
 
@@ -33,7 +33,7 @@ class DistributedSparseLayer final : public Layer {
                                uint32_t len) override {
     // Must call ReduceErrors before BackpropagateFirstLayer
     _local_layer->BackpropagateFirstLayer(batch_indx, indices, values, errors,
-                                         len);
+                                          len);
   }
 
   void ReduceErrors();
