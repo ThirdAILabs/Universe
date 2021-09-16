@@ -29,8 +29,7 @@ DistributedSparseLayer::DistributedSparseLayer(uint64_t dim, uint64_t prev_dim,
                                  sampling_config);
 }
 
-constexpr const void* SAFE_MPI_IN_PLACE =
-    (const void*)static_cast<uintptr_t>(-1);
+const void* SAFE_MPI_IN_PLACE = reinterpret_cast<const void*>(-1);
 
 void DistributedSparseLayer::ReduceErrors() {
   for (uint32_t b = 0; b < _batch_size; b++) {
