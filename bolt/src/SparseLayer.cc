@@ -121,15 +121,18 @@ constexpr float SparseLayer::ActFuncDerivative(float x) {
 }
 
 template void SparseLayer::BackPropagateImpl<true>(uint32_t, const uint32_t*,
-                                               const float*, float*, uint32_t);
+                                                   const float*, float*,
+                                                   uint32_t);
 
 template void SparseLayer::BackPropagateImpl<false>(uint32_t, const uint32_t*,
-                                                const float*, float*, uint32_t);
+                                                    const float*, float*,
+                                                    uint32_t);
 
 template <bool FIRST_LAYER>
-void SparseLayer::BackPropagateImpl(uint32_t batch_indx, const uint32_t* indices,
-                                const float* values, float* prev_errors,
-                                uint32_t len) {
+void SparseLayer::BackPropagateImpl(uint32_t batch_indx,
+                                    const uint32_t* indices,
+                                    const float* values, float* prev_errors,
+                                    uint32_t len) {
   for (uint64_t n = 0; n < active_lens[batch_indx]; n++) {
     errors[batch_indx][n] *= ActFuncDerivative(activations[batch_indx][n]);
     for (uint64_t i = 0; i < len; i++) {
