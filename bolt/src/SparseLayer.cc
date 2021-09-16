@@ -1,4 +1,4 @@
-#include "Layer.h"
+#include "SparseLayer.h"
 #include <algorithm>
 #include <cmath>
 #include <random>
@@ -6,8 +6,9 @@
 
 namespace thirdai::bolt {
 
-Layer::Layer(uint64_t _dim, uint64_t _prev_dim, float _sparsity,
-             ActivationFunc _act_func, SamplingConfig _sampling_config)
+SparseLayer::SparseLayer(uint64_t _dim, uint64_t _prev_dim, float _sparsity,
+                         ActivationFunc _act_func,
+                         SamplingConfig _sampling_config)
     : dim(_dim),
       prev_dim(_prev_dim),
       batch_size(0),
@@ -64,9 +65,9 @@ Layer::Layer(uint64_t _dim, uint64_t _prev_dim, float _sparsity,
   }
 }
 
-void Layer::ForwardPass(uint32_t batch_indx, const uint32_t* indices,
-                        const float* values, uint32_t len, uint32_t* labels,
-                        uint32_t label_len) {
+void SparseLayer::FeedForward(uint32_t batch_indx, const uint32_t* indices,
+                              const float* values, uint32_t len,
+                              uint32_t* labels, uint32_t label_len) {
   SelectActiveNeurons(batch_indx, indices, values, len, labels, label_len);
 
   float max_act = 0;
@@ -107,7 +108,7 @@ void Layer::ForwardPass(uint32_t batch_indx, const uint32_t* indices,
   }
 }
 
-constexpr float Layer::ActFuncDerivative(float x) {
+constexpr float SparseLayer::ActFuncDerivative(float x) {
   switch (act_func) {
     case ActivationFunc::ReLU:
       return x > 0 ? 1.0 : 0.0;
@@ -119,16 +120,19 @@ constexpr float Layer::ActFuncDerivative(float x) {
   return 0.0;
 }
 
-template void Layer::BackPropagate<true>(uint32_t, const uint32_t*,
-                                         const float*, float*, uint32_t);
+template void SparseLayer::BackPropagateImpl<true>(uint32_t, const uint32_t*,
+                                                   const float*, float*,
+                                                   uint32_t);
 
-template void Layer::BackPropagate<false>(uint32_t, const uint32_t*,
-                                          const float*, float*, uint32_t);
+template void SparseLayer::BackPropagateImpl<false>(uint32_t, const uint32_t*,
+                                                    const float*, float*,
+                                                    uint32_t);
 
 template <bool FIRST_LAYER>
-void Layer::BackPropagate(uint32_t batch_indx, const uint32_t* indices,
-                          const float* values, float* prev_errors,
-                          uint32_t len) {
+void SparseLayer::BackPropagateImpl(uint32_t batch_indx,
+                                    const uint32_t* indices,
+                                    const float* values, float* prev_errors,
+                                    uint32_t len) {
   for (uint64_t n = 0; n < active_lens[batch_indx]; n++) {
     errors[batch_indx][n] *= ActFuncDerivative(activations[batch_indx][n]);
     for (uint64_t i = 0; i < len; i++) {
@@ -144,8 +148,8 @@ void Layer::BackPropagate(uint32_t batch_indx, const uint32_t* indices,
   }
 }
 
-void Layer::ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
-                          uint32_t label_len) {
+void SparseLayer::ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
+                                uint32_t label_len) {
   float frac = 1.0 / label_len;
 
   for (uint64_t n = 0; n < active_lens[batch_indx]; n++) {
@@ -158,9 +162,10 @@ void Layer::ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
   }
 }
 
-void Layer::SelectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
-                                const float* values, uint32_t len,
-                                uint32_t* labels, uint32_t label_len) {
+void SparseLayer::SelectActiveNeurons(uint32_t batch_indx,
+                                      const uint32_t* indices,
+                                      const float* values, uint32_t len,
+                                      uint32_t* labels, uint32_t label_len) {
   if (sparsity == 1.0) {
     active_lens[batch_indx] = dim;
     for (uint32_t i = 0; i < dim; i++) {
@@ -207,8 +212,8 @@ void Layer::SelectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
   std::fill_n(errors[batch_indx], dim, 0);
 }
 
-void Layer::UpdateParameters(float lr, uint32_t iter, float B1, float B2,
-                             float eps) {
+void SparseLayer::UpdateParameters(float lr, uint32_t iter, float B1, float B2,
+                                   float eps) {
   float B1_ = 1 - pow(B1, iter);
   float B2_ = 1 - pow(B2, iter);
 
@@ -242,7 +247,7 @@ void Layer::UpdateParameters(float lr, uint32_t iter, float B1, float B2,
   }
 }
 
-void Layer::BuildHashTables() {
+void SparseLayer::BuildHashTables() {
   if (sparsity >= 1.0) {
     return;
   }
@@ -263,7 +268,7 @@ void Layer::BuildHashTables() {
   delete[] hashes;
 }
 
-void Layer::ReBuildHashFunction() {
+void SparseLayer::ReBuildHashFunction() {
   if (sparsity >= 1.0) {
     return;
   }
@@ -274,7 +279,7 @@ void Layer::ReBuildHashFunction() {
       sampling_config.range_pow);
 }
 
-void Layer::SetBatchSize(uint64_t new_batch_size) {
+void SparseLayer::SetBatchSize(uint64_t new_batch_size) {
   if (new_batch_size == batch_size) {
     return;
   }
@@ -304,32 +309,32 @@ void Layer::SetBatchSize(uint64_t new_batch_size) {
   }
 }
 
-void Layer::SetSparsity(float new_sparsity) {
+void SparseLayer::SetSparsity(float new_sparsity) {
   sparsity = new_sparsity;
   sparse_dim = sparsity * dim;
 }
 
-void Layer::ShuffleRandNeurons() {
+void SparseLayer::ShuffleRandNeurons() {
   if (sparsity < 1.0) {
     std::shuffle(rand_neurons, rand_neurons + dim, std::random_device{});
   }
 }
 
-float* Layer::GetWeights() {
+float* SparseLayer::GetWeights() {
   float* weights_copy = new float[dim * prev_dim];
   std::copy(weights, weights + dim * prev_dim, weights_copy);
 
   return weights_copy;
 }
 
-float* Layer::GetBiases() {
+float* SparseLayer::GetBiases() {
   float* biases_copy = new float[dim];
   std::copy(biases, biases + dim, biases_copy);
 
   return biases_copy;
 }
 
-Layer::~Layer() {
+SparseLayer::~SparseLayer() {
   for (uint64_t batch = 0; batch < batch_size; batch++) {
     delete[] active_neurons[batch];
     delete[] activations[batch];
