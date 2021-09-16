@@ -34,7 +34,7 @@ class SentenceLoader : public StringLoader {
 
  private:
   std::ifstream _file;
-  std::string _line_buffer = "";
+  std::string _line_buffer;
   size_t _lb_idx = 0;
 
   void cleanUpLineBuffer(){};
