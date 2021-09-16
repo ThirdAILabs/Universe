@@ -1,5 +1,9 @@
 #pragma once
 
+#include "../../utils/hashing/DWTA.h"
+#include "../../utils/hashtable/SampledHashTable.h"
+#include <stdint.h>
+
 namespace thirdai::bolt {
 
 constexpr float BETA1 = 0.9;
@@ -24,45 +28,90 @@ struct SamplingConfig {
 
 class Layer {
  public:
-  virtual void FeedForward(uint32_t batch_indx, const uint32_t* indices,
-                           const float* values, uint32_t len,
-                           uint32_t* labels = nullptr,
-                           uint32_t label_len = 0) = 0;
+  Layer() {}
 
-  virtual void Backpropagate(uint32_t batch_indx, const uint32_t* indices,
-                             const float* values, float* errors,
-                             uint32_t len) = 0;
+  Layer(const Layer&) = delete;
+  Layer(Layer&&) = delete;
+  Layer& operator=(const Layer&) = delete;
+  Layer& operator=(Layer&&) = delete;
 
-  virtual void BackpropagateFirstLayer(uint32_t batch_indx,
-                                       const uint32_t* indices,
-                                       const float* values, float* errors,
-                                       uint32_t len) = 0;
+  Layer(uint64_t _dim, uint64_t _prev_dim, float _sparsity,
+        ActivationFunc _act_func, SamplingConfig _sampling_config);
 
-  virtual void ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
-                             uint32_t label_len) = 0;
+  void ForwardPass(uint32_t batch_indx, const uint32_t* indices,
+                   const float* values, uint32_t len,
+                   uint32_t* labels = nullptr, uint32_t label_len = 0);
 
-  virtual void UpdateParameters(float lr, uint32_t iter, float B1 = BETA1,
-                                float B2 = BETA2, float eps = EPS) = 0;
+  template <bool FIRST_LAYER>
+  void BackPropagate(uint32_t batch_indx, const uint32_t* indices,
+                     const float* values, float* errors, uint32_t len);
 
-  virtual uint32_t GetLen(uint32_t batch_indx) const = 0;
+  void ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
+                     uint32_t label_len);
 
-  virtual const uint32_t* GetIndices(uint32_t batch_indx) const = 0;
+  void UpdateParameters(float lr, uint32_t iter, float B1 = BETA1,
+                        float B2 = BETA2, float eps = EPS);
 
-  virtual const float* GetValues(uint32_t batch_indx) const = 0;
+  void BuildHashTables();
 
-  virtual float* GetErrors(uint32_t batch_indx) = 0;
+  void ReBuildHashFunction();
 
-  virtual void BuildHashTables() = 0;
+  void SetSparsity(float new_sparsity);
 
-  virtual void ReBuildHashFunction() = 0;
+  void SetBatchSize(uint64_t new_batch_size);
 
-  virtual void SetSparsity(float new_sparsity) = 0;
+  void ShuffleRandNeurons();
 
-  virtual void SetBatchSize(uint64_t new_batch_size) = 0;
+  uint32_t GetLen(uint32_t batch_indx) { return active_lens[batch_indx]; }
 
-  virtual void ShuffleRandNeurons() = 0;
+  const uint32_t* GetIndices(uint32_t batch_indx) {
+    return active_neurons[batch_indx];
+  }
 
-  virtual ~Layer() {}
+  const float* GetValues(uint32_t batch_indx) {
+    return activations[batch_indx];
+  }
+
+  float* GetErrors(uint32_t batch_indx) { return errors[batch_indx]; }
+
+  float* GetWeights();
+
+  float* GetBiases();
+
+  ~Layer();
+
+ private:
+  void SelectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
+                           const float* values, uint32_t len, uint32_t* labels,
+                           uint32_t label_len);
+
+  constexpr float ActFuncDerivative(float x);
+
+  uint64_t dim, prev_dim, batch_size, sparse_dim;
+  float sparsity;
+  ActivationFunc act_func;
+
+  uint32_t* active_lens;
+  uint32_t** active_neurons;
+  float** activations;
+  float** errors;
+
+  float* weights;
+  float* w_gradient;
+  float* w_momentum;
+  float* w_velocity;
+
+  float* biases;
+  float* b_gradient;
+  float* b_momentum;
+  float* b_velocity;
+
+  bool* is_active;
+
+  SamplingConfig sampling_config;
+  utils::DWTAHashFunction* hasher;
+  utils::SampledHashTable<uint32_t>* hash_table;
+  uint32_t* rand_neurons;
 };
 
 }  // namespace thirdai::bolt
