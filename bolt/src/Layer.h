@@ -6,7 +6,7 @@ constexpr float BETA1 = 0.9;
 constexpr float BETA2 = 0.999;
 constexpr float EPS = 0.0000001;
 
-enum class ActivationFunc { ReLU, Softmax };
+enum class ActivationFunc { ReLU, Softmax, DistributedSoftmax };
 
 struct SamplingConfig {
   uint32_t hashes_per_table, num_tables, range_pow, reservoir_size;

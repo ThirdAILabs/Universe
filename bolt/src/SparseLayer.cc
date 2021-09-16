@@ -92,6 +92,10 @@ void SparseLayer::FeedForward(uint32_t batch_indx, const uint32_t* indices,
           max_act = act;
         }
         break;
+      case ActivationFunc::DistributedSoftmax:
+        // No-Op to allow for distributed layer to compute global max activation
+        // and then evaluate softmax activation function.
+        break;
     }
   }
 
@@ -113,6 +117,7 @@ constexpr float SparseLayer::ActFuncDerivative(float x) {
     case ActivationFunc::ReLU:
       return x > 0 ? 1.0 : 0.0;
     case ActivationFunc::Softmax:
+    case ActivationFunc::DistributedSoftmax:
       return 1.0;
   }
   // This is impossible to reach, but the compiler gave a warning saying it
