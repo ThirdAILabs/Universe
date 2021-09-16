@@ -11,6 +11,7 @@ namespace thirdai::utils {
 
 enum class TOKEN_TYPE { CHAR_TRIGRAM, WORD_UNIGRAM, WORD_BIGRAM };
 enum class LOAD_TYPE { SENTENCE, PARAGRAPH, DOCUMENT };
+enum class VECTOR_TYPE { TFIDF, MURMUR };
 
 /**
  * TODO(geordie): 

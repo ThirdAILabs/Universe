@@ -1,5 +1,6 @@
 #pragma once
 
+#include "StringDataset.h"
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -20,17 +21,19 @@ class GlobalFreq {
   std::unordered_map<std::string, int> _idfMap;
 
  public:
-  GlobalFreq(std::vector<std::string> files);
+  GlobalFreq(std::vector<std::string>& files, LOAD_TYPE load_type);
 
-  int getIdf(std::string word);  // Should have a default value
+  int getIdf(std::string& token);  // Should have a default value
+  int getTF(std::string& token, std::string& doc);
+  int getTokenID(std::string& token);
 
   // Can have a parallel version of getIdf like:
-  void getIdfPar(std::vector<std::string> wordvec, int* freqs);
+  void getIdfPar(std::vector<std::string> tokenvec, int* freqs);
 
   ~GlobalFreq();
 };
 
-GlobalFreq::GlobalFreq(std::vector<std::string> files) {}
+GlobalFreq::GlobalFreq(std::vector<std::string>& files, LOAD_TYPE load_type) {}
 
 GlobalFreq::~GlobalFreq() {}
 

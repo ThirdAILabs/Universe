@@ -1,4 +1,5 @@
 #pragma once
+#include "../GlobalFreq.h"
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -10,6 +11,8 @@ namespace thirdai::utils {
  */
 class StringVectorizer {
  public:
+  StringVectorizer(GlobalFreq* globalFreq) { _globalFreq = globalFreq; }
+
   /**
    * Returns the dimension of the vector.
    */
@@ -22,7 +25,9 @@ class StringVectorizer {
    * to ensure that 'indices' and 'values' are overwritten.
    */
   virtual void vectorize(const std::string& str, std::vector<uint32_t>& indices,
-                         std::vector<float>& values) = 0;
+                         std::vector<float>& values, VECTOR_TYPE vector_type){};
+
+  GlobalFreq* _globalFreq;
 
  protected:
   /**
