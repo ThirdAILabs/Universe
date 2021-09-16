@@ -43,8 +43,8 @@ void DistributedSparseLayer::ReduceErrors() {
 void DistributedSparseLayer::GatherActivations() {
   for (uint32_t b = 0; b < _batch_size; b++) {
     _active_lens[b][_rank] = _local_layer->GetLen(b);
-    MPI_Allgather(MPI_IN_PLACE, 1, MPI_UNSIGNED, _active_lens[b] + _rank, 1,
-                  MPI_UNSIGNED, MPI_COMM_WORLD);
+    MPI_Allgather(MPI_IN_PLACE, 1, MPI_INT, _active_lens[b] + _rank, 1, MPI_INT,
+                  MPI_COMM_WORLD);
 
     _active_offsets[b][0] = 0;
     _total_active_lens[b] = _active_lens[b][0];
