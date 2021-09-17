@@ -13,6 +13,11 @@ class SVMDataset : public Dataset {
 
   virtual void loadNextBatchSet();
 
+  virtual ~SVMDataset() {
+    // File is not manually closed.
+    delete[] _batches;
+  }
+
  private:
   std::ifstream _file;
   std::vector<uint32_t> _label_markers;
@@ -25,8 +30,6 @@ class SVMDataset : public Dataset {
   void readDataset();
 
   void createBatches();
-
-  virtual ~SVMDataset() { delete[] _batches; }
 };
 
 }  // namespace thirdai::utils

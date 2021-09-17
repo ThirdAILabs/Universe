@@ -8,6 +8,7 @@ SVMDataset::SVMDataset(const std::string& filename, uint64_t target_batch_size,
     throw std::runtime_error("Unable to open file '" + filename + "'");
   }
 };
+
 void SVMDataset::loadNextBatchSet() {
   readDataset();
   _num_batches = (_num_vecs + _target_batch_size - 1) / _target_batch_size;
