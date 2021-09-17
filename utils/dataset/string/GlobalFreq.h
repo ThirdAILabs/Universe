@@ -21,7 +21,7 @@ class GlobalFreq {
   std::unordered_map<std::string, int> _idfMap;
 
  public:
-  GlobalFreq(std::vector<std::string>& files, LOAD_TYPE load_type);
+  GlobalFreq(std::vector<std::string>& files, STRING_TYPE load_type);
 
   int getIdf(std::string& token);  // Should have a default value
   int getTF(std::string& token, std::string& doc);
@@ -33,7 +33,7 @@ class GlobalFreq {
   ~GlobalFreq();
 };
 
-GlobalFreq::GlobalFreq(std::vector<std::string>& files, LOAD_TYPE load_type) {}
+GlobalFreq::GlobalFreq(std::vector<std::string>& files, STRING_TYPE load_type) {}
 
 GlobalFreq::~GlobalFreq() {}
 

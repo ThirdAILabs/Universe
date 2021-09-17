@@ -44,13 +44,13 @@
 
 
 namespace thirdai::utils {
-StringDataset::StringDataset(std::string filename, TOKEN_TYPE token_type,
-                             LOAD_TYPE load_type, uint64_t target_batch_size,
-                             uint64_t target_batch_num_per_load)
+StringDataset::StringDataset(std::string filename,
+                             STRING_TYPE load_type, uint64_t target_batch_size,
+                             uint64_t target_batch_num_per_load, GlobalFreq *global_freq)
     : Dataset(target_batch_size, target_batch_num_per_load) {
   // The sentence loaders have not been fully implemented yet
   switch (load_type) {
-    case LOAD_TYPE::SENTENCE:
+    case STRING_TYPE::SENTENCE:
       _loader = new SentenceLoader(filename);
       break;
     default:
@@ -60,19 +60,7 @@ StringDataset::StringDataset(std::string filename, TOKEN_TYPE token_type,
       _loader = new SentenceLoader(filename);
       break;
   }
-
-  // Only the character trigram vectorizer has been fully implemented for now.
-  switch (token_type) {
-    case TOKEN_TYPE::CHAR_TRIGRAM:
-      _vectorizer = new TriGramVectorizer();
-      break;
-    default:
-      std::cerr << "The chosen tokenizer has not been implemented. "
-                   "Defaulting to character trigram."
-                << std::endl;
-      _vectorizer = new TriGramVectorizer();
-      break;
-  };
+  _tri_gram_vectorizer
   _dim = _vectorizer->getDimension();
   _initialized = false;
 };
@@ -138,13 +126,13 @@ void StringDataset::loadNextBatchSet() {
   for (size_t vec_i = 0; vec_i < vec_count; vec_i++) {
     size_t batch_i = vec_i / _target_batch_size;
     size_t batch_vec_i = vec_i - (batch_i * _target_batch_size);
-    _vectorizer->vectorize(strings_to_be_vectorized[vec_i], _indices[vec_i],
+    trigram->vectorize(strings_to_be_vectorized[vec_i], _indices[vec_i],
                            _values[vec_i]);
     _batches[batch_i]._lens[batch_vec_i] = _indices[vec_i].size();
     // This prevents us from having to malloc and delete arrays each time.
     // This works because vectors are guaranteed to store its contents in
     // contiguous memory.
-    _batches[batch_i]._indices[batch_vec_i] = &(_indices[vec_i][0]);
+    _batches[batch_i]._indices[batch_vec_i] = &(_indices[vec_i][0]); // can use _indices[vec_i].data()
     _batches[batch_i]._values[batch_vec_i] = &(_values[vec_i][0]);
   }
 }

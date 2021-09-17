@@ -9,8 +9,7 @@
 
 namespace thirdai::utils {
 
-enum class TOKEN_TYPE { CHAR_TRIGRAM, WORD_UNIGRAM, WORD_BIGRAM };
-enum class LOAD_TYPE { SENTENCE, PARAGRAPH, DOCUMENT };
+enum class STRING_TYPE { SENTENCE, PARAGRAPH, DOCUMENT };
 enum class VECTOR_TYPE { TFIDF, MURMUR };
 
 /**
@@ -34,16 +33,15 @@ enum class VECTOR_TYPE { TFIDF, MURMUR };
 
 class StringDataset : public Dataset {
  public:
-  StringDataset(std::string filename, TOKEN_TYPE token_type,
-                LOAD_TYPE load_type, uint64_t target_batch_size,
-                uint64_t target_batch_num_per_load);
+  StringDataset(std::string filename, STRING_TYPE load_type, uint64_t target_batch_size,
+                uint64_t target_batch_num_per_load, GlobalFreq *global_freq);
 
   virtual void loadNextBatchSet();
 
  private:
   std::vector<uint32_t>* _indices;
   std::vector<float>* _values;
-  StringVectorizer* _vectorizer;
+  TriGramVectorizer _tri_gram_vectorizer;
   StringLoader* _loader;
   bool _initialized;
   uint32_t _dim;

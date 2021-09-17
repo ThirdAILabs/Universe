@@ -1,7 +1,7 @@
 #include "TriGramVectorizer.h"
 
 namespace thirdai::utils {
-TriGramVectorizer::TriGramVectorizer() {
+TriGramVectorizer::TriGramVectorizer(GlobalFreq* globalFreq): StringVectorizer(globalFreq) {
   _dim = 50653;  // 37 ^ 3; 26 letters in the alphabet, 10 numbers, and space.
                  // 3 characters per token.
                  
@@ -38,7 +38,7 @@ void TriGramVectorizer::vectorize(const std::string& str,
     hash += _hashC[char_int_ptr[0]] << 6;
     hash += _37x[_hashC[char_int_ptr[1]]];
     hash += _37x37x[_hashC[char_int_ptr[2]]];
-    ids[hash]++;
+    ids[hash] += _globalFreq->getIdf(1);
   }
   // Resize the vector to the number of unique token IDs.
   indices.resize(ids.size());
