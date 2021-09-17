@@ -11,7 +11,7 @@ class HashFunction {
    * the output array. The output array should be of size
    * num_hashes * batch_size.
    *
-   * The output array should be in vector major order. It should return all of 
+   * The output array should be in vector major order. It should return all of
    * the hashes from the first vector, all of the hashes from the second, and
    * so on.
    */
