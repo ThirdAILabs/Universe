@@ -145,7 +145,21 @@ void DensifiedMinHash::HashVector(const float* data, uint32_t len,
     }
   }
 
-  DensifyHashes(hashes, final_hashes);
+  for (uint32_t i = 0; i < _num_tables; i++) {
+    uint32_t index = 0;
+    for (uint32_t j = 0; j < _hashes_per_table; j++) {
+      uint32_t h = _rand1[_hashes_per_table * i + j];
+      h *= _rand1[_hashes_per_table * i + j];
+      h ^= h >> 13;
+      h ^= _rand1[_hashes_per_table * i + j];
+      index += h * hashes[_hashes_per_table * i + j];
+    }
+
+    index = index & (_range - 1);
+    final_hashes[i] = index;
+  }
+
+ // DensifyHashes(hashes, final_hashes);
   // return final_hashes;
 }
 
