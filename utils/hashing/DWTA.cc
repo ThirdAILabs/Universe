@@ -10,7 +10,8 @@ constexpr uint32_t DEFAULT_BINSIZE = 8;
 
 DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
                                    uint32_t hashes_per_table,
-                                   uint32_t num_tables, uint32_t range_pow)
+                                   uint32_t num_tables, uint32_t range_pow,
+                                   uint32_t seed)
     : _hashes_per_table(hashes_per_table),
       _num_tables(num_tables),
       _num_hashes(hashes_per_table * num_tables),
@@ -21,9 +22,7 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
   _log_num_hashes = log2(_num_hashes);
   _log_binsize = floor(log2(_binsize));
 
-  std::random_device rd;
-
-  std::mt19937 gen(rd());
+  std::mt19937 gen(seed);
   uint32_t* n_array = new uint32_t[_dim];
   _bin_map = new uint32_t[_dim * _permute];
   _positions = new uint32_t[_dim * _permute];
@@ -32,7 +31,7 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
     n_array[i] = i;
   }
   for (uint32_t p = 0; p < _permute; p++) {
-    std::shuffle(n_array, n_array + _dim, rd);
+    std::shuffle(n_array, n_array + _dim, gen);
     for (uint32_t j = 0; j < _dim; j++) {
       _bin_map[p * _dim + n_array[j]] = (p * _dim + j) / _binsize;
       _positions[p * _dim + n_array[j]] = (p * _dim + j) % _binsize;

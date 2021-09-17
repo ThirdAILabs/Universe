@@ -1,5 +1,4 @@
 #include "DensifiedMinHash.h"
-//#include "config.h"
 #include <algorithm>
 #include <climits>
 #include <iostream>
@@ -19,25 +18,10 @@ struct cmp {
   };
 };
 
-class SeededRandomEngine {
- private:
-  static constexpr unsigned int SEED = 459386;
-
- public:
-  SeededRandomEngine() { srand(SEED); }
-
-  typedef unsigned int result_type;
-
-  static result_type min() { return std::numeric_limits<result_type>::min(); }
-
-  static result_type max() { return std::numeric_limits<result_type>::max(); }
-
-  result_type operator()() { return rand(); }
-};
-
 DensifiedMinHash::DensifiedMinHash(uint32_t input_dim,
                                    uint32_t hashes_per_table,
-                                   uint32_t num_tables, uint32_t range_pow)
+                                   uint32_t num_tables, uint32_t range_pow,
+                                   uint32_t seed)
     : _hashes_per_table(hashes_per_table),
       _num_tables(num_tables),
       _num_hashes(hashes_per_table * num_tables),
@@ -45,13 +29,7 @@ DensifiedMinHash::DensifiedMinHash(uint32_t input_dim,
       _binsize(ceil(1.0 * _range / _num_hashes)) {
   _log_num_hashes = log2(_num_hashes);
 
-#ifndef SEEDED_HASHING
-  std::random_device rd;
-#else
-  SeededRandomEngine rd;
-#endif
-
-  std::mt19937 gen(rd());
+  std::mt19937 gen(seed);
   std::uniform_int_distribution<uint32_t> dis(
       1, std::numeric_limits<uint32_t>::max() - 1);
 

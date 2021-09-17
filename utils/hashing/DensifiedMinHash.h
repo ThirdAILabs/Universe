@@ -30,7 +30,7 @@ class DensifiedMinHash : public HashFunction {
   }
 
   DensifiedMinHash(uint32_t input_dim, uint32_t hashes_per_table,
-                   uint32_t num_tables, uint32_t range_pow);
+                   uint32_t num_tables, uint32_t range_pow, uint32_t seed);
 
   void hashSparse(uint64_t num_vectors, const uint32_t* const* indices,
                   const float* const* values, const uint32_t* lengths,
