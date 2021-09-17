@@ -13,10 +13,11 @@ class SVMDataset : public Dataset {
 
   virtual void loadNextBatchSet();
 
-  virtual ~SVMDataset() {
-    // File is not manually closed.
-    // delete[] _batches;
-  }
+  virtual ~SVMDataset(){
+      // No need to explicitly delete _batches because it is not initialized in
+      // the constructor.
+      // Destructor automatically deletes it.
+  };
 
  private:
   std::ifstream _file;
@@ -27,7 +28,8 @@ class SVMDataset : public Dataset {
   std::vector<float> _values;
   uint64_t _num_vecs;
   // uint64_t _line_count;
-  uint64_t _num_loads;
+  uint64_t _last_num_batch;
+  // uint64_t _num_loads;
 
   void readDataset();
 

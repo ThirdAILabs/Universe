@@ -27,8 +27,7 @@ static std::string format_vector_as_svm_line(const Batch& batch,
     line << " ";
     line << batch._indices[vec_i][0] << ":" << batch._values[vec_i][0];
   }
-  for (size_t nonzero_i = 1; nonzero_i < batch._lens[vec_i];
-       nonzero_i++) {
+  for (size_t nonzero_i = 1; nonzero_i < batch._lens[vec_i]; nonzero_i++) {
     line << " " << batch._indices[vec_i][nonzero_i] << ":"
          << batch._values[vec_i][nonzero_i];
   }
@@ -75,10 +74,10 @@ static uint64_t get_expected_batch_size(uint64_t target_batch_size,
   // Only the last batch can have size < target_batch_size. So assume all
   // previous batches have size = target_batch_size.
   return std::min(target_batch_size, vec_num -
-                                           (number_of_times_loaded - 1) *
-                                               target_batch_number *
-                                               target_batch_size -
-                                           batch_i_in_load * target_batch_size);
+                                         (number_of_times_loaded - 1) *
+                                             target_batch_number *
+                                             target_batch_size -
+                                         batch_i_in_load * target_batch_size);
 }
 
 static void evaluate_load(SVMDataset& Data, uint64_t target_batch_size,
@@ -88,8 +87,11 @@ static void evaluate_load(SVMDataset& Data, uint64_t target_batch_size,
   uint64_t expected_num_batches = get_expected_num_batches(
       target_batch_size, target_batch_number, number_of_times_loaded, vec_num);
   if (Data.numBatches() != expected_num_batches) {
-    std::cout << "Num batches expected: " << expected_num_batches << " got: " << Data.numBatches() << std::endl
-      << " Config: bn = " << target_batch_number << " bs = " << target_batch_size << " successful loads = " << number_of_times_loaded << std::endl;
+    std::cout << "Num batches expected: " << expected_num_batches
+              << " got: " << Data.numBatches() << std::endl
+              << " Config: bn = " << target_batch_number
+              << " bs = " << target_batch_size
+              << " successful loads = " << number_of_times_loaded << std::endl;
   }
   ASSERT_EQ(Data.numBatches(), expected_num_batches);
   for (size_t batch_i = 0; batch_i < Data.numBatches(); batch_i++) {
@@ -98,8 +100,12 @@ static void evaluate_load(SVMDataset& Data, uint64_t target_batch_size,
         get_expected_batch_size(target_batch_size, target_batch_number,
                                 number_of_times_loaded, vec_num, batch_i);
     if (Data[batch_i]._batch_size != expected_batch_size) {
-      std::cout << "Batch size expected: " << expected_batch_size << " got: " << Data[batch_i]._batch_size << std::endl
-        << " Config: bn = " << target_batch_number << " bs = " << target_batch_size << " successful loads = " << number_of_times_loaded << " batch_i = " << batch_i << std::endl;
+      std::cout << "Batch size expected: " << expected_batch_size
+                << " got: " << Data[batch_i]._batch_size << std::endl
+                << " Config: bn = " << target_batch_number
+                << " bs = " << target_batch_size
+                << " successful loads = " << number_of_times_loaded
+                << " batch_i = " << batch_i << std::endl;
     }
     ASSERT_EQ(Data[batch_i]._batch_size, expected_batch_size);
   }
@@ -128,7 +134,8 @@ TEST(SVMDatasetTest, BatchSizeAndNumber) {
     }
   }
   _file.close();
-  std::cout << "Expect " << expected_vec_num << " vectors in this dataset." << std::endl;
+  std::cout << "Expect " << expected_vec_num << " vectors in this dataset."
+            << std::endl;
 
   uint64_t batch_sizes[] = {150, 100, 50, 30};
   uint64_t batch_nums[] = {150, 100, 50};
@@ -157,8 +164,9 @@ TEST(SVMDatasetTest, BatchSizeAndNumber) {
       uint64_t expected_num_loads =
           (expected_vec_num + (bs * bn) - 1) / (bs * bn);
       if (successful_loads != expected_num_loads) {
-        std::cout << "Num loads expected: " << expected_num_loads << " got: " << successful_loads << std::endl
-        << " Config: bn = " << bn << " bs = " << bs << std::endl;
+        std::cout << "Num loads expected: " << expected_num_loads
+                  << " got: " << successful_loads << std::endl
+                  << " Config: bn = " << bn << " bs = " << bs << std::endl;
       }
       ASSERT_EQ(successful_loads, expected_num_loads);
     }
@@ -189,7 +197,8 @@ TEST(SVMDatasetTest, CompareRewrittenFile) {
       for (size_t batch_i = 0; batch_i < Data.numBatches(); batch_i++) {
         for (size_t vec_i = 0; vec_i < Data[batch_i]._batch_size; vec_i++) {
           std::getline(file, line_from_file);
-          std::string vector_svm_line = format_vector_as_svm_line(Data[batch_i], vec_i);
+          std::string vector_svm_line =
+              format_vector_as_svm_line(Data[batch_i], vec_i);
           if (vector_svm_line != line_from_file) {
             std::cout << "Line " << line_num << std::endl;
           }
@@ -202,7 +211,8 @@ TEST(SVMDatasetTest, CompareRewrittenFile) {
         for (size_t batch_i = 0; batch_i < Data.numBatches(); batch_i++) {
           for (size_t vec_i = 0; vec_i < Data[batch_i]._batch_size; vec_i++) {
             std::getline(file, line_from_file);
-            std::string vector_svm_line = format_vector_as_svm_line(Data[batch_i], vec_i);
+            std::string vector_svm_line =
+                format_vector_as_svm_line(Data[batch_i], vec_i);
             if (vector_svm_line != line_from_file) {
               std::cout << "Line " << line_num << std::endl;
             }

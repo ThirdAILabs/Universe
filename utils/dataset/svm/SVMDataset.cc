@@ -7,29 +7,46 @@ SVMDataset::SVMDataset(const std::string& filename, uint64_t target_batch_size,
   if (_file.bad() || _file.fail() || !_file.good() || !_file.is_open()) {
     throw std::runtime_error("Unable to open file '" + filename + "'");
   }
-  _num_loads = 0;
+  _num_batches = 0;
 };
 
 void SVMDataset::loadNextBatchSet() {
   readDataset();
+  _last_num_batch = _num_batches;
   _num_batches = (_num_vecs + _target_batch_size - 1) / _target_batch_size;
-  _batches = new Batch[_num_batches];
 
-  // At each subsequent load, delete the previous batch array. 
-  // Another way to do this is by keeping the previous array and just 
-  // modifying it as necessary.
-  if (_num_loads > 0) {
-    delete[] _batches;
-  }
-  _batches = new Batch[_num_batches];
+  // Option 1. At each subsequent load, delete the previous batch array.
+  // if (_last_num_batch > 0) {
+  //   delete[] _batches;
+  // }
+  // _batches = new Batch[_num_batches];
 
-  for (uint64_t i = 0; i < _num_batches; i++) {
-    uint32_t batch_size =
-        std::min(_target_batch_size, _num_vecs - i * _target_batch_size);
-    _batches[i] = Batch(batch_size, BATCH_TYPE::SPARSE, LABEL_TYPE::LABELED, 0);
+  // for (uint64_t i = 0; i < _num_batches; i++) {
+  //   uint32_t batch_size =
+  //       std::min(_target_batch_size, _num_vecs - i * _target_batch_size);
+  //   _batches[i] = Batch(batch_size, BATCH_TYPE::SPARSE, LABEL_TYPE::LABELED,
+  //   0);
+  // }
+
+  // Option 2. Keep the previous array and just modify it as necessary.
+  if (_last_num_batch > 0) {
+    uint32_t last_batch_size =
+        std::min(_target_batch_size,
+                 _num_vecs - (_num_batches - 1) * _target_batch_size);
+    _batches[_num_batches - 1] =
+        Batch(last_batch_size, BATCH_TYPE::SPARSE, LABEL_TYPE::LABELED, 0);
+  } else {
+    _batches = new Batch[_num_batches];
+
+    for (uint64_t i = 0; i < _num_batches; i++) {
+      uint32_t batch_size =
+          std::min(_target_batch_size, _num_vecs - i * _target_batch_size);
+      _batches[i] =
+          Batch(batch_size, BATCH_TYPE::SPARSE, LABEL_TYPE::LABELED, 0);
+    }
   }
+
   createBatches();
-  _num_loads++;
 };
 
 void SVMDataset::readDataset() {
@@ -40,25 +57,22 @@ void SVMDataset::readDataset() {
   _markers.clear();
   _indices.clear();
   _values.clear();
-  while (
-         ((_target_batch_num_per_load > 0 &&
+  while (((_target_batch_num_per_load > 0 &&
            _num_vecs < _target_batch_num_per_load * _target_batch_size) ||
-          _target_batch_num_per_load == 0) && std::getline(_file, line)) {
-    std::stringstream stream(line); 
-    
-    _label_markers.push_back(_labels.size()); 
-                                              
-    std::string labelstr;                     
-    stream >> labelstr;  
+          _target_batch_num_per_load == 0) &&
+         std::getline(_file, line)) {
+    std::stringstream stream(line);
+
+    _label_markers.push_back(_labels.size());
+
+    std::string labelstr;
+    stream >> labelstr;
     size_t pos;
-    while ((pos = labelstr.find(',')) !=
-           std::string::npos) {
-      _labels.push_back(atoi(
-          labelstr.substr(0, pos)
-              .c_str()));
+    while ((pos = labelstr.find(',')) != std::string::npos) {
+      _labels.push_back(atoi(labelstr.substr(0, pos).c_str()));
       labelstr = labelstr.substr(pos + 1);
     }
-    _labels.push_back(atoi(labelstr.c_str())); 
+    _labels.push_back(atoi(labelstr.c_str()));
 
     _markers.push_back(_indices.size());
     std::string nonzero;
