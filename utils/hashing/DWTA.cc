@@ -89,8 +89,16 @@ void DWTAHashFunction::hashDenseVector(const float* data, uint32_t len,
 
   delete[] bin_values;
 
-  densifyHashes(hashes, final_hashes);
+  // densifyHashes(hashes, final_hashes);
 
+  for (uint32_t i = 0; i < _num_tables; i++) {
+      uint32_t index = 0;
+      for (uint32_t j = 0; j < _hashes_per_table; j++) {
+        uint32_t h = hashes[i * _hashes_per_table + j];
+        index += h << ((_hashes_per_table - 1 - j) * _log_binsize);
+      }
+      final_hashes[i] = index;
+    }
   delete[] hashes;
 }
 
