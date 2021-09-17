@@ -11,10 +11,9 @@ class HashFunction {
    * the output array. The output array should be of size
    * num_hashes * batch_size.
    *
-   * Should return all of the first hashes, followed by all of the second
-   * hashes, etc, instead of all of the first vectors’ hashes, all of the second
-   * vectors’ hashes, etc.
-   *
+   * The output array should be in vector major order. It should return all of 
+   * the hashes from the first vector, all of the hashes from the second, and
+   * so on.
    */
   void hashBatch(const Batch& batch, uint32_t* output) const {
     if (batch._batch_type == BATCH_TYPE::SPARSE) {
