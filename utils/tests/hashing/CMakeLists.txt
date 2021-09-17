@@ -11,19 +11,18 @@ target_link_libraries(
   gtest_main
 )
 
-
 add_executable(
-  dwta_test
-  DWTATest.cc
+  cosine_test
+  SRPTest.cc
 )
 
 target_link_libraries(
-  dwta_test
+  cosine_test
   PRIVATE
-  dwta_lib
+  hash_function_lib
   lsh_test_helper_lib
   gtest_main
 )
 
 include(GoogleTest)
-gtest_discover_tests(dwta_test)
+gtest_discover_tests(cosine_test)

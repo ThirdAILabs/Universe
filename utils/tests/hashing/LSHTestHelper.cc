@@ -3,205 +3,100 @@
 
 namespace thirdai::utils::lsh_testing {
 
-float cosine_similarity(const TestVector& a, const TestVector& b,
-                        bool is_dense) {
-  if (is_dense) {
-    float total = 0, ma = 0, mb = 0;
-    for (uint32_t i = 0; i < a.len; i++) {
-      total += a.values[i] * b.values[i];
-      ma += a.values[i] * a.values[i];
-      mb += b.values[i] * b.values[i];
-    }
+// TODO(josh) can abstract out some of the redundancy in runSparseTest and
+// runDenseTest
 
-    return total / (std::sqrt(ma) * std::sqrt(mb));
-  }
-  float total = 0, ma = 0, mb = 0;
-  uint32_t ia = 0, ib = 0;
-  while (ia < a.len && ib < b.len) {
-    if (a.indices[ia] == b.indices[ib]) {
-      total += a.values[ia] * b.values[ib];
-      ia++;
-      ib++;
-    } else if (a.indices[ia] < b.indices[ib]) {
-      ia++;
-    } else {
-      ib++;
+float getMeasuredSim(const uint32_t* hashes, uint32_t num_tables) {
+  uint32_t matches = 0;
+  for (uint32_t i = 0; i < num_tables; i++) {
+    if (hashes[i] == hashes[i + num_tables]) {
+      matches++;
     }
   }
-  for (uint32_t i = 0; i < a.len; i++) {
-    ma += a.values[i] * a.values[i];
-  }
-
-  for (uint32_t i = 0; i < b.len; i++) {
-    mb += b.values[i] * b.values[i];
-  }
-
-  return total / (std::sqrt(ma) * std::sqrt(mb));
+  return matches / static_cast<float>(num_tables);
 }
 
-std::pair<TestVector, TestVector> genRandSparseVectors(uint32_t max_dim,
-                                                       float sparsity,
-                                                       float approx_sim) {
-  uint32_t nonzeros = max_dim * sparsity;
-  std::set<uint32_t> indices;
+void runSparseSimilarityTest(const thirdai::utils::HashFunction& hash,
+                             Similarity& sim, uint32_t dim, uint32_t num_tables,
+                             uint32_t num_tests, float sparsity, float max_diff,
+                             float max_avg_diff) {
+  uint32_t denominator = num_tests + 1;
+  float total_diff = 0;
+  uint32_t num_non_zeros = sparsity * dim;
+  for (uint32_t numerator = 1; numerator < denominator; numerator++) {
+    float input_sim = static_cast<float>(numerator) / denominator;
+    auto sparse_result =
+        sim.getRandomSparseVectors(input_sim, num_non_zeros, dim);
+    float actual_sim = sparse_result.sim;
 
-  std::default_random_engine rd;
-  std::uniform_int_distribution<uint32_t> dist_indices(0, max_dim);
-  while (indices.size() < nonzeros) {
-    uint32_t x = dist_indices(rd);
-    if (!indices.count(x)) {
-      indices.insert(x);
-    }
-  }
-
-  std::uniform_real_distribution<float> dist_vals(-10, 10);
-  TestVector v1, v2;
-  v1.len = nonzeros;
-  v2.len = nonzeros;
-
-  for (auto x : indices) {
-    v1.indices.push_back(x);
-    v2.indices.push_back(x);
-    float y = dist_vals(rd);
-    v1.values.push_back(y);
-    v2.values.push_back(y);
-  }
-
-  std::uniform_int_distribution<uint32_t> dist_change(0, nonzeros);
-  std::set<uint32_t> indices_to_change;
-  uint32_t change = nonzeros * (1 - approx_sim);
-  while (indices_to_change.size() < change) {
-    uint32_t x = dist_change(rd);
-    if (!indices_to_change.count(x)) {
-      indices_to_change.insert(x);
-    }
-  }
-
-  for (auto x : indices_to_change) {
-    v1.values[x] = dist_vals(rd);
-    v2.values[x] = dist_vals(rd);
-  }
-
-  return {std::move(v1), std::move(v2)};
-}
-
-std::pair<TestVector, TestVector> genRandDenseVectors(uint32_t dim,
-                                                      float approx_sim) {
-  std::default_random_engine rd;
-  std::uniform_real_distribution<float> dist_vals(-10, 10);
-  TestVector v1, v2;
-  v1.len = dim;
-  v2.len = dim;
-
-  for (uint32_t i = 0; i < dim; i++) {
-    float x = dist_vals(rd);
-    v1.indices.push_back(i);
-    v2.indices.push_back(i);
-    v1.values.push_back(x);
-    v2.values.push_back(x);
-  }
-
-  std::uniform_int_distribution<uint32_t> dist_change(0, dim);
-  std::set<uint32_t> indices_to_change;
-  uint32_t change = dim * (1 - approx_sim);
-  while (indices_to_change.size() < change) {
-    uint32_t x = dist_change(rd);
-    if (!indices_to_change.count(x)) {
-      indices_to_change.insert(x);
-    }
-  }
-
-  for (auto x : indices_to_change) {
-    v1.values[x] = dist_vals(rd);
-    v2.values[x] = dist_vals(rd);
-  }
-
-  return {std::move(v1), std::move(v2)};
-}
-
-void runSparseTest(const thirdai::utils::HashFunction& hash, uint32_t dim,
-                   uint32_t num_tables) {
-  uint32_t last = 0;
-  for (uint32_t x = 5; x < 10; x++) {
-    float sim = 0.1 * x;
-    auto vecs = genRandSparseVectors(dim, 0.5, sim);
-
-    uint32_t* indices[2] = {vecs.first.indices.data(),
-                            vecs.second.indices.data()};
-    float* values[2] = {vecs.first.values.data(), vecs.second.values.data()};
-    uint32_t lens[2] = {vecs.first.len, vecs.second.len};
+    uint32_t* indices[2] = {sparse_result.v1.indices.data(),
+                            sparse_result.v2.indices.data()};
+    float* values[2] = {sparse_result.v1.values.data(),
+                        sparse_result.v2.values.data()};
+    uint32_t lens[2] = {num_non_zeros, num_non_zeros};
 
     uint32_t hashes[2 * num_tables];
-
     hash.hashSparse(2, indices, values, lens, hashes);
+    float measured_sim = getMeasuredSim(hashes, num_tables);
 
-    uint32_t matches = 0;
-    for (uint32_t i = 0; i < num_tables; i++) {
-      if (hashes[i] == hashes[i + num_tables]) {
-        matches++;
-      }
-    }
-
-    std::cout << "Sim = " << cosine_similarity(vecs.first, vecs.second, false)
-              << " matches: " << matches << std::endl;
-
-    ASSERT_GE(matches, last);
-    last = matches;
+    float sim_diff = measured_sim - actual_sim;
+    total_diff += sim_diff;
+    EXPECT_LE(std::abs(sim_diff), max_diff);
   }
-  uint32_t threshold = 0.3 * num_tables;
-  ASSERT_GE(last, threshold);
+
+  float avg_diff = total_diff / num_tests;
+  EXPECT_LE(std::abs(avg_diff), max_avg_diff);
 }
 
-void runDenseTest(const thirdai::utils::HashFunction& hash, uint32_t dim,
-                  uint32_t num_tables) {
-  uint32_t last = 0;
-  for (uint32_t x = 5; x < 10; x++) {
-    float sim = 0.1 * x;
-    auto vecs = genRandDenseVectors(dim, sim);
+void runDenseSimilarityTest(const thirdai::utils::HashFunction& hash,
+                            Similarity& sim, uint32_t dim, uint32_t num_tables,
+                            uint32_t num_tests, float max_diff,
+                            float max_avg_diff) {
+  uint32_t denominator = num_tests + 1;
+  float total_diff = 0;
+  for (uint32_t numerator = 1; numerator < denominator; numerator++) {
+    float input_sim = static_cast<float>(numerator) / denominator;
+    auto dense_result = sim.getRandomDenseVectors(input_sim, dim);
+    float actual_sim = dense_result.sim;
 
-    float* values[2] = {vecs.first.values.data(), vecs.second.values.data()};
-    uint32_t lens[2] = {vecs.first.len, vecs.second.len};
+    float* values[2] = {dense_result.v1.values.data(),
+                        dense_result.v2.values.data()};
 
     uint32_t hashes[2 * num_tables];
-
     hash.hashDense(2, dim, values, hashes);
+    float measured_sim = getMeasuredSim(hashes, num_tables);
 
-    uint32_t matches = 0;
-    for (uint32_t i = 0; i < num_tables; i++) {
-      if (hashes[i] == hashes[i + num_tables]) {
-        matches++;
-      }
-    }
-
-    std::cout << "Sim = " << cosine_similarity(vecs.first, vecs.second, true)
-              << " matches: " << matches << std::endl;
-
-    ASSERT_GE(matches, last);
-    last = matches;
+    float sim_diff = measured_sim - actual_sim;
+    total_diff += sim_diff;
+    EXPECT_LE(std::abs(sim_diff), max_diff);
   }
-  uint32_t threshold = 0.3 * num_tables;
-  ASSERT_GE(last, threshold);
+
+  float avg_diff = total_diff / num_tests;
+  EXPECT_LE(std::abs(avg_diff), max_avg_diff);
 }
 
 void runSparseDenseEqTest(const thirdai::utils::HashFunction& hash,
-                          uint32_t dim, uint32_t num_tables) {
-  for (uint32_t x = 5; x < 10; x++) {
-    float sim = 0.1 * x;
-    auto vecs = genRandDenseVectors(dim, sim);
+                          Similarity& sim, uint32_t dim, uint32_t num_tables,
+                          uint32_t num_tests) {
+  uint32_t denominator = num_tests + 1;
+  for (uint32_t numerator = 1; numerator < denominator; numerator++) {
+    float input_sim = static_cast<float>(numerator) / denominator;
+    auto vecs = sim.getRandomDenseVectors(input_sim, dim);
 
-    uint32_t* indices[2] = {vecs.first.indices.data(),
-                            vecs.second.indices.data()};
-    float* values[2] = {vecs.first.values.data(), vecs.second.values.data()};
-    uint32_t lens[2] = {vecs.first.len, vecs.second.len};
+    // Create increasing indices vector
+    std::vector<uint32_t> indices_vec(dim);
+    std::iota(indices_vec.begin(), indices_vec.end(), 0);
+
+    uint32_t* indices[2] = {indices_vec.data(), indices_vec.data()};
+    float* values[2] = {vecs.v1.values.data(), vecs.v2.values.data()};
+    uint32_t lens[2] = {dim, dim};
 
     uint32_t dense_hashes[2 * num_tables];
     uint32_t sparse_hashes[2 * num_tables];
 
     hash.hashDense(2, dim, values, dense_hashes);
-
     hash.hashSparse(2, indices, values, lens, sparse_hashes);
 
-    uint32_t matches = 0;
     for (uint32_t i = 0; i < 2 * num_tables; i++) {
       ASSERT_EQ(dense_hashes[i], sparse_hashes[i]);
     }

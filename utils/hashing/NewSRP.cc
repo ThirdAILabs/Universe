@@ -25,14 +25,13 @@ class SeededRandomEngine {
 constexpr uint32_t DEFAULT_BINSIZE = 8;
 
 FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
-                 uint32_t num_tables, uint32_t range_pow, uint32_t seed)
+                 uint32_t num_tables, uint32_t seed)
     : _hashes_per_table(hashes_per_table),
       _num_tables(num_tables),
       _num_hashes(hashes_per_table * num_tables),
-      _range(1 << range_pow),
       _dim(input_dim),
       _binsize(DEFAULT_BINSIZE) {
-  (void)range_pow;
+  assert(hashes_per_table < 32);
 
   _permute = ceil((static_cast<double>(_num_hashes) * _binsize) / _dim);
   _log_num_hashes = log2(_num_hashes);

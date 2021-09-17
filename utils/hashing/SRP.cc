@@ -18,12 +18,10 @@ namespace thirdai::utils {
 SparseRandomProjection::SparseRandomProjection(uint32_t input_dim,
                                                uint32_t srps_per_table,
                                                uint32_t num_tables,
-                                               uint32_t range_pow,
                                                uint32_t seed)
     : _srps_per_table(srps_per_table),
       _num_tables(num_tables),
       _total_num_srps(srps_per_table * num_tables),
-      _range(1 << range_pow),
       _dim(input_dim),
       _sample_size(ceil(_dim * 0.3)) {
   assert(srps_per_table < 32);
