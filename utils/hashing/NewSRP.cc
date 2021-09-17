@@ -25,7 +25,7 @@ class SeededRandomEngine {
 constexpr uint32_t DEFAULT_BINSIZE = 8;
 
 FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
-                 uint32_t num_tables, uint32_t range_pow)
+                 uint32_t num_tables, uint32_t range_pow, uint32_t seed)
     : _hashes_per_table(hashes_per_table),
       _num_tables(num_tables),
       _num_hashes(hashes_per_table * num_tables),
@@ -37,13 +37,8 @@ FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
   _permute = ceil((static_cast<double>(_num_hashes) * _binsize) / _dim);
   _log_num_hashes = log2(_num_hashes);
 
-#ifndef SEEDED_HASHING
-  std::random_device rd;
-#else
-  SeededRandomEngine rd;
-#endif
+  std::mt19937 gen(seed);
 
-  std::mt19937 gen(rd());
   uint32_t* n_array = new uint32_t[_dim];
   _bin_map = new uint32_t[_dim * _permute];
   _positions = new uint32_t[_dim * _permute];
@@ -63,7 +58,7 @@ FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
   }
 
   for (uint32_t p = 0; p < _permute; p++) {
-    std::shuffle(n_array, n_array + _dim, rd);
+    std::shuffle(n_array, n_array + _dim, gen);
     for (uint32_t j = 0; j < _dim; j++) {
       _bin_map[p * _dim + n_array[j]] = (p * _dim + j) / _binsize;
       _positions[p * _dim + n_array[j]] = (p * _dim + j) % _binsize;
