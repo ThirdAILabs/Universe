@@ -27,10 +27,13 @@ struct Batch {
   LABEL_TYPE _label_type;
   uint32_t _dim;
 
-  /** Creates a new Batch object with a size, data dimension, and data type */
+  /**
+   * Creates a new Batch object with a size, data dimension, and data type
+   * If sparse, dimension can be set to 0.
+   */
   Batch(uint64_t batch_size, BATCH_TYPE batch_type, LABEL_TYPE label_type,
         uint32_t dim) {
-    assert(_dim != 0);
+    assert(dim != 0);
 
     _batch_type = batch_type;
     _label_type = label_type;
@@ -106,6 +109,7 @@ class Dataset {
   /**
    * target_batch_num_per_read is the number of batches loaded from file each
    * time. set to 0 to load entire file.
+   * Calling the constructor should not load the first batch set.
    */
   Dataset(uint64_t target_batch_size, uint64_t target_batch_num_per_load)
       : _target_batch_size(target_batch_size),
@@ -130,11 +134,13 @@ class Dataset {
    */
   uint64_t numBatches() const { return _num_batches; };
 
-  ~Dataset() { delete[] _batches; }
+  virtual ~Dataset() { delete[] _batches; }
 
  protected:
   const uint64_t _target_batch_size, _target_batch_num_per_load;
   uint64_t _num_batches;
+  // In the future, we may need two batch arrays if we want to read in parallel
+  // while processing
   Batch* _batches;
 };
 
