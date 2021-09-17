@@ -1,6 +1,8 @@
 #pragma once
 
 #include "StringDataset.h"
+#include "StringVectorizer.h"
+#include "StringLoader.h"
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -19,6 +21,8 @@ class GlobalFreq {
   */
  private:
   std::unordered_map<std::string, int> _idfMap;
+  StringVectorizer _stringVectorizer;
+  StringLoader _stringLoader;
 
  public:
   GlobalFreq(std::vector<std::string>& files, LOAD_TYPE load_type);
