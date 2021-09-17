@@ -25,10 +25,11 @@ class SeededRandomEngine {
 constexpr uint32_t DEFAULT_BINSIZE = 8;
 
 FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
-                 uint32_t num_tables, uint32_t range_pow)
+                 uint32_t num_tables, uint32_t range_pow, uint32_t seed)
     : _hashes_per_table(hashes_per_table),
       _num_tables(num_tables),
       _num_hashes(hashes_per_table * num_tables),
+      _range(1 << range_pow),
       _dim(input_dim),
       _binsize(DEFAULT_BINSIZE) {
   (void)range_pow;
@@ -36,13 +37,8 @@ FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
   _permute = ceil((static_cast<double>(_num_hashes) * _binsize) / _dim);
   _log_num_hashes = log2(_num_hashes);
 
-#ifndef SEEDED_HASHING
-  std::random_device rd;
-#else
-  SeededRandomEngine rd;
-#endif
+  std::mt19937 gen(seed);
 
-  std::mt19937 gen(rd());
   uint32_t* n_array = new uint32_t[_dim];
   _bin_map = new uint32_t[_dim * _permute];
   _positions = new uint32_t[_dim * _permute];
@@ -62,7 +58,7 @@ FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
   }
 
   for (uint32_t p = 0; p < _permute; p++) {
-    std::shuffle(n_array, n_array + _dim, rd);
+    std::shuffle(n_array, n_array + _dim, gen);
     for (uint32_t j = 0; j < _dim; j++) {
       _bin_map[p * _dim + n_array[j]] = (p * _dim + j) / _binsize;
       _positions[p * _dim + n_array[j]] = (p * _dim + j) % _binsize;
@@ -77,14 +73,24 @@ FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
   _rand_double_hash_seed = dis(gen);
 }
 
-uint32_t* FastSRP::HashVector(const float* data, uint32_t len) {
-  uint32_t* final_hashes = new uint32_t[_num_tables];
-  HashVector(data, len, final_hashes);
-  return final_hashes;
+void FastSRP::hashDense(uint64_t num_vectors, uint64_t dim,
+                        const float* const* values, uint32_t* output) const {
+  for (uint64_t i = 0; i < num_vectors; i++) {
+    hashDenseVector(values[i], dim, output + i * _num_tables);
+  }
 }
 
-void FastSRP::HashVector(const float* data, uint32_t len,
-                         uint32_t* final_hashes) {
+void FastSRP::hashSparse(uint64_t num_vectors, const uint32_t* const* indices,
+                         const float* const* values, const uint32_t* lengths,
+                         uint32_t* output) const {
+  for (uint64_t i = 0; i < num_vectors; i++) {
+    hashSparseVector(indices[i], values[i], lengths[i],
+                     output + i * _num_tables);
+  }
+}
+
+void FastSRP::hashDenseVector(const float* data, uint32_t len,
+                              uint32_t* final_hashes) const {
   // TODO(patrick): this could cause exceed max stack size, but is cheaper than
   // memory allocation
   uint32_t hashes[_num_hashes];
@@ -114,18 +120,11 @@ void FastSRP::HashVector(const float* data, uint32_t len,
     }
   }
 
-  DensifyHashes(hashes, final_hashes);
+  densifyHashes(hashes, final_hashes);
 }
 
-uint32_t* FastSRP::HashSparseVector(const uint32_t* indices,
-                                    const float* values, uint32_t len) {
-  uint32_t* final_hashes = new uint32_t[_num_tables];
-  HashSparseVector(indices, values, len, final_hashes);
-  return final_hashes;
-}
-
-void FastSRP::HashSparseVector(const uint32_t* indices, const float* values,
-                               uint32_t len, uint32_t* final_hashes) {
+void FastSRP::hashSparseVector(const uint32_t* indices, const float* values,
+                               uint32_t len, uint32_t* final_hashes) const {
   // TODO(patrick): this could cause exceed max stack size, but is cheaper than
   // memory allocation
   uint32_t hashes[_num_hashes];
@@ -155,10 +154,11 @@ void FastSRP::HashSparseVector(const uint32_t* indices, const float* values,
     }
   }
 
-  DensifyHashes(hashes, final_hashes);
+  densifyHashes(hashes, final_hashes);
 }
 
-void FastSRP::DensifyHashes(const uint32_t* hashes, uint32_t* final_hashes) {
+void FastSRP::densifyHashes(const uint32_t* hashes,
+                            uint32_t* final_hashes) const {
   // TODO(patrick): this could cause exceed max stack size, but is cheaper than
   // memory allocation
   uint32_t hash_array[_num_hashes];

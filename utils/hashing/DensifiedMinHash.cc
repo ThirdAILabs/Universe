@@ -1,5 +1,4 @@
 #include "DensifiedMinHash.h"
-//#include "config.h"
 #include <algorithm>
 #include <climits>
 #include <iostream>
@@ -19,25 +18,10 @@ struct cmp {
   };
 };
 
-class SeededRandomEngine {
- private:
-  static constexpr unsigned int SEED = 459386;
-
- public:
-  SeededRandomEngine() { srand(SEED); }
-
-  typedef unsigned int result_type;
-
-  static result_type min() { return std::numeric_limits<result_type>::min(); }
-
-  static result_type max() { return std::numeric_limits<result_type>::max(); }
-
-  result_type operator()() { return rand(); }
-};
-
 DensifiedMinHash::DensifiedMinHash(uint32_t input_dim,
                                    uint32_t hashes_per_table,
-                                   uint32_t num_tables, uint32_t range_pow)
+                                   uint32_t num_tables, uint32_t range_pow,
+                                   uint32_t seed)
     : _hashes_per_table(hashes_per_table),
       _num_tables(num_tables),
       _num_hashes(hashes_per_table * num_tables),
@@ -45,13 +29,7 @@ DensifiedMinHash::DensifiedMinHash(uint32_t input_dim,
       _binsize(ceil(1.0 * _range / _num_hashes)) {
   _log_num_hashes = log2(_num_hashes);
 
-#ifndef SEEDED_HASHING
-  std::random_device rd;
-#else
-  SeededRandomEngine rd;
-#endif
-
-  std::mt19937 gen(rd());
+  std::mt19937 gen(seed);
   std::uniform_int_distribution<uint32_t> dis(
       1, std::numeric_limits<uint32_t>::max() - 1);
 
@@ -104,14 +82,27 @@ DensifiedMinHash::DensifiedMinHash(uint32_t input_dim,
   (void)input_dim;
 }
 
-uint32_t* DensifiedMinHash::HashVector(const float* data, uint32_t len) {
-  uint32_t* final_hashes = new uint32_t[_num_tables];
-  HashVector(data, len, final_hashes);
-  return final_hashes;
+void DensifiedMinHash::hashDense(uint64_t num_vectors, uint64_t dim,
+                                 const float* const* values,
+                                 uint32_t* output) const {
+  for (uint64_t i = 0; i < num_vectors; i++) {
+    hashDenseVector(values[i], dim, output + i * _num_tables);
+  }
 }
 
-void DensifiedMinHash::HashVector(const float* data, uint32_t len,
-                                  uint32_t* final_hashes) {
+void DensifiedMinHash::hashSparse(uint64_t num_vectors,
+                                  const uint32_t* const* indices,
+                                  const float* const* values,
+                                  const uint32_t* lengths,
+                                  uint32_t* output) const {
+  for (uint64_t i = 0; i < num_vectors; i++) {
+    hashSparseVector(indices[i], values[i], lengths[i],
+                     output + i * _num_tables);
+  }
+}
+
+void DensifiedMinHash::hashDenseVector(const float* data, uint32_t len,
+                                       uint32_t* final_hashes) const {
   // _binsize is the number of times the _range is larger than the total number
   // of hashes we need.
   // read the data and add it to priority queue O(dlogk approx 7d) with index as
@@ -145,21 +136,13 @@ void DensifiedMinHash::HashVector(const float* data, uint32_t len,
     }
   }
 
-  DensifyHashes(hashes, final_hashes);
+  densifyHashes(hashes, final_hashes);
   // return final_hashes;
 }
 
-uint32_t* DensifiedMinHash::HashSparseVector(const uint32_t* indices,
-                                             const float* values,
-                                             uint32_t len) {
-  uint32_t* final_hashes = new uint32_t[_num_tables];
-  HashSparseVector(indices, values, len, final_hashes);
-  return final_hashes;
-}
-
-void DensifiedMinHash::HashSparseVector(const uint32_t* indices,
+void DensifiedMinHash::hashSparseVector(const uint32_t* indices,
                                         const float* values, uint32_t len,
-                                        uint32_t* final_hashes) {
+                                        uint32_t* final_hashes) const {
   uint32_t hashes[_num_hashes];
 
   for (uint32_t i = 0; i < _num_hashes; i++) {
@@ -174,13 +157,13 @@ void DensifiedMinHash::HashSparseVector(const uint32_t* indices,
     }
   }
 
-  DensifyHashes(hashes, final_hashes);
+  densifyHashes(hashes, final_hashes);
 
   (void)values;
 }
 
-void DensifiedMinHash::DensifyHashes(const uint32_t* hashes,
-                                     uint32_t* final_hashes) {
+void DensifiedMinHash::densifyHashes(const uint32_t* hashes,
+                                     uint32_t* final_hashes) const {
   // TODO(patrick): this could cause exceed max stack size, but is cheaper than
   // memory allocation
   uint32_t hash_array[_num_hashes];

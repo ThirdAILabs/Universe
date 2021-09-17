@@ -29,7 +29,8 @@ class DWTAHashFunction final : public HashFunction {
 
  public:
   DWTAHashFunction(uint32_t input_dim, uint32_t _hashes_per_table,
-                   uint32_t _num_tables, uint32_t range_pow);
+                   uint32_t _num_tables, uint32_t range_pow,
+                   uint32_t seed = time(nullptr));
 
   void hashSparse(uint64_t num_vectors, const uint32_t* const* indices,
                   const float* const* values, const uint32_t* lengths,

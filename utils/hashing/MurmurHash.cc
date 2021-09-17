@@ -47,9 +47,20 @@ uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed) {
   switch (len & 3) {  // `len % 4'
     case 3:
       k ^= (tail[2] << 16);
+      k ^= (tail[1] << 8);
+      k ^= tail[0];
+      k *= c1;
+      k = (k << r1) | (k >> (32 - r1));
+      k *= c2;
+      h ^= k;
       break;
     case 2:
       k ^= (tail[1] << 8);
+      k ^= tail[0];
+      k *= c1;
+      k = (k << r1) | (k >> (32 - r1));
+      k *= c2;
+      h ^= k;
       break;
     case 1:
       k ^= tail[0];

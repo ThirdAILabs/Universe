@@ -12,11 +12,11 @@ class SparseRandomProjection : public HashFunction {
       _sample_size;
   int16_t* _random_bits;
   uint32_t* _hash_indices;
-  double _ratio = 0.3;
 
  public:
   SparseRandomProjection(uint32_t input_dim, uint32_t srps_per_table,
-                         uint32_t num_tables, uint32_t range_pow);
+                         uint32_t num_tables, uint32_t range_pow,
+                         uint32_t seed = time(nullptr));
 
   void hashSparse(uint64_t num_vectors, const uint32_t* const* indices,
                   const float* const* values, const uint32_t* lengths,
