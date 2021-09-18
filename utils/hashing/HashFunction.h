@@ -40,6 +40,23 @@ class HashFunction {
     }
   }
 
+  void hashDenseParallel(uint64_t num_vectors, const float* const* values,
+                         uint32_t dim, uint32_t* output) const {
+#pragma omp parallel for default(none) shared(num_vectors, values, output, dim)
+    for (uint32_t v = 0; v < num_vectors; v++) {
+      hashSingleDense(values[v], dim, output + v * _num_tables);
+    }
+  }
+
+  void hashBatchSerial(const Batch& batch, uint32_t* output) const {
+    if (batch._batch_type == BATCH_TYPE::SPARSE) {
+      hashSparseSerial(batch._batch_size, batch._indices, batch._values,
+                         batch._lens, output);
+    } else {
+      hashDenseParallel(batch._batch_size, batch._values, batch._dim, output);
+    }
+  }
+
   void hashSparseSerial(uint64_t num_vectors, const uint32_t* const* indices,
                         const float* const* values, const uint32_t* lengths,
                         uint32_t* output) const {
@@ -49,28 +66,12 @@ class HashFunction {
     }
   }
 
-  void hashDenseParallel(uint64_t num_vectors, const float* const* values,
-                         uint32_t dim, uint32_t* output) const {
-#pragma omp parallel for default(none) shared(num_vectors, values, output, dim)
-    for (uint32_t v = 0; v < num_vectors; v++) {
-      hashSingleDense(values[v], dim, output + v * _num_tables);
-    }
-  }
-
   void hashDenseSerial(uint64_t num_vectors, const float* const* values,
-                       uint32_t dim, uint32_t* output) const {
+                         uint32_t dim, uint32_t* output) const {
     for (uint32_t v = 0; v < num_vectors; v++) {
       hashSingleDense(values[v], dim, output + v * _num_tables);
     }
   }
-
-  // virtual void hashDense(uint64_t num_vectors, uint64_t dim,
-  //                        const float* const* values,
-  //                        uint32_t* output) const = 0;
-  //                        {
-  //   uint32_t lengths[1] = {length};
-  //   hashSparse(1, &indices, &values, lengths, output);
-  // }
 
   virtual void hashSingleSparse(const uint32_t* indices, const float* values,
                                 uint32_t length, uint32_t* output) const = 0;

@@ -1,4 +1,5 @@
 enable_testing()
+include(GoogleTest)
 
 add_library(
   lsh_test_helper_lib
@@ -11,19 +12,31 @@ target_link_libraries(
   gtest_main
 )
 
+add_executable(
+  srp_test
+  SRPTest.cc
+)
 
 add_executable(
-  dwta_test
-  DWTATest.cc
+  fast_srp_test
+  FastSRPTest.cc
 )
 
 target_link_libraries(
-  dwta_test
+  srp_test
   PRIVATE
-  dwta_lib
+  hash_function_lib
   lsh_test_helper_lib
   gtest_main
 )
 
-include(GoogleTest)
-gtest_discover_tests(dwta_test)
+target_link_libraries(
+  fast_srp_test
+  PRIVATE
+  hash_function_lib
+  lsh_test_helper_lib
+  gtest_main
+)
+
+gtest_discover_tests(srp_test)
+gtest_discover_tests(fast_srp_test)

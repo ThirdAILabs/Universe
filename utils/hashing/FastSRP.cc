@@ -1,26 +1,10 @@
-#include "NewSRP.h"
+#include "FastSRP.h"
 #include <algorithm>
 #include <iostream>
 #include <limits>
 #include <random>
 
 namespace thirdai::utils {
-
-class SeededRandomEngine {
- private:
-  static constexpr unsigned int SEED = 459386;
-
- public:
-  SeededRandomEngine() { srand(SEED); }
-
-  typedef unsigned int result_type;
-
-  static result_type min() { return std::numeric_limits<result_type>::min(); }
-
-  static result_type max() { return std::numeric_limits<result_type>::max(); }
-
-  result_type operator()() { return rand(); }
-};
 
 constexpr uint32_t DEFAULT_BINSIZE = 8;
 
