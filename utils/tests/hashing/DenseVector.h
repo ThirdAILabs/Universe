@@ -47,14 +47,6 @@ static float angle(const DenseVector& a, const DenseVector& b) {
 }
 
 /**
- * Returns the cosine similarity between 2 dense vectors, where the cosine
- * similarity is defined as 1 - theta / pi.
- */
-static float cosine_sim(const DenseVector& a, const DenseVector& b) {
-  return 1.0 - angle(a, b) / M_PI;
-}
-
-/**
  * Generate a random dense unit vector given a random generator, using
  * https://stackoverflow.com/questions/6283080/random-unit-vector-in-multi-dimensional-space
  */
@@ -73,7 +65,7 @@ static DenseVector generateRandomDenseUnitVector(uint32_t dim,
     vec.values[d] /= magnitude;
   }
   vec.dim = dim;
-  return std::move(vec);
+  return vec;
 }
 
 /**
@@ -99,7 +91,7 @@ static DenseVector generateRandomPerpVector(const DenseVector& first_vec,
   for (uint32_t d = 0; d < first_vec.dim; d++) {
     result.values[d] /= magnitude;
   }
-  return std::move(result);
+  return result;
 }
 
 /** Print out a dense vector */

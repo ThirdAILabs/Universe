@@ -39,13 +39,12 @@ void runSparseSimilarityTest(const thirdai::utils::HashFunction& hash,
     hash.hashSparse(2, indices, values, lens, hashes);
     float measured_sim = getMeasuredSim(hashes, num_tables);
 
-    float sim_diff = measured_sim - actual_sim;
-    total_diff += sim_diff;
-    EXPECT_LE(std::abs(sim_diff), max_diff);
+    total_diff += measured_sim - actual_sim;
+    EXPECT_NEAR(measured_sim, actual_sim, max_diff);
   }
 
   float avg_diff = total_diff / num_tests;
-  EXPECT_LE(std::abs(avg_diff), max_avg_diff);
+  EXPECT_LE(avg_diff, max_avg_diff);
 }
 
 void runDenseSimilarityTest(const thirdai::utils::HashFunction& hash,
@@ -66,9 +65,8 @@ void runDenseSimilarityTest(const thirdai::utils::HashFunction& hash,
     hash.hashDense(2, dim, values, hashes);
     float measured_sim = getMeasuredSim(hashes, num_tables);
 
-    float sim_diff = measured_sim - actual_sim;
-    total_diff += sim_diff;
-    EXPECT_LE(std::abs(sim_diff), max_diff);
+    total_diff += measured_sim - actual_sim;
+    EXPECT_NEAR(measured_sim, actual_sim, max_diff);
   }
 
   float avg_diff = total_diff / num_tests;

@@ -1,4 +1,5 @@
 enable_testing()
+include(GoogleTest)
 
 add_library(
   lsh_test_helper_lib
@@ -12,17 +13,30 @@ target_link_libraries(
 )
 
 add_executable(
-  cosine_test
+  srp_test
   SRPTest.cc
 )
 
+add_executable(
+  fast_srp_test
+  FastSRPTest.cc
+)
+
 target_link_libraries(
-  cosine_test
+  srp_test
   PRIVATE
   hash_function_lib
   lsh_test_helper_lib
   gtest_main
 )
 
-include(GoogleTest)
-gtest_discover_tests(cosine_test)
+target_link_libraries(
+  fast_srp_test
+  PRIVATE
+  hash_function_lib
+  lsh_test_helper_lib
+  gtest_main
+)
+
+gtest_discover_tests(srp_test)
+gtest_discover_tests(fast_srp_test)

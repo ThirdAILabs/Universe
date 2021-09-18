@@ -95,11 +95,11 @@ class CosineSim : public Similarity {
   }
 
   float getSim(const DenseVector& v1, DenseVector& v2) override {
-    return cosine_sim(v1, v2);
+    return 1.0 - angle(v1, v2) / M_PI;
   }
 
   float getSim(const SparseVector& v1, const SparseVector& v2) override {
-    return cosine_sim(v1, v2);
+    return 1.0 - angle(v1, v2) / M_PI;
   }
 
  private:

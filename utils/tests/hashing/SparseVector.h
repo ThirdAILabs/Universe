@@ -41,14 +41,6 @@ static float angle(const SparseVector& a, const SparseVector& b) {
   return std::acos(total / (std::sqrt(ma) * std::sqrt(mb)));
 }
 
-/**
- * Returns the cosine similarity between 2 dense vectors, where the cosine
- * similarity is defined as 1 - theta / pi.
- */
-static float cosine_sim(const SparseVector& a, const SparseVector& b) {
-  return 1.0 - angle(a, b) / M_PI;
-}
-
 /** Print out a sparse vector */
 static void printVec(const SparseVector& vec) {
   for (uint32_t i = 0; i < vec.num_non_zeros; i++) {
