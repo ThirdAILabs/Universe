@@ -16,6 +16,12 @@
 using thirdai::utils::Batch;
 using thirdai::utils::SVMDataset;
 
+// downloaded from
+// https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel/bibtex.bz2
+// This is a relative path from Universe/build/utils/tests/dataset/svm/ to 
+// Universe/utils/tests/dataset/svm/bibtex
+static std::string filename = "../../../../../utils/tests/dataset/svm/bibtex";
+
 static std::string format_vector_as_svm_line(const Batch& batch,
                                              uint64_t vec_i) {
   std::stringstream line;
@@ -61,6 +67,9 @@ static uint64_t get_expected_num_batches(uint64_t target_batch_size,
                                          uint64_t vec_num) {
   uint64_t total_batch_count =
       (vec_num + target_batch_size - 1) / target_batch_size;
+  if (target_batch_number == 0) {
+    return total_batch_count;
+  }
   return std::min(
       target_batch_number,
       total_batch_count - ((number_of_times_loaded - 1) * target_batch_number));
@@ -83,7 +92,12 @@ static uint64_t get_expected_batch_size(uint64_t target_batch_size,
 static void evaluate_load(SVMDataset& Data, uint64_t target_batch_size,
                           uint64_t target_batch_number,
                           uint64_t number_of_times_loaded, uint64_t vec_num) {
-  ASSERT_LE(Data.numBatches(), target_batch_number);
+  if (target_batch_number > 0) {
+    if (Data.numBatches() > target_batch_number) {
+      std::cout << "Num batches is greater than target batch number. Something is terribly wrong." << std::endl;
+    }
+    ASSERT_LE(Data.numBatches(), target_batch_number);
+  }                            
   uint64_t expected_num_batches = get_expected_num_batches(
       target_batch_size, target_batch_number, number_of_times_loaded, vec_num);
   if (Data.numBatches() != expected_num_batches) {
@@ -119,11 +133,7 @@ static void evaluate_load(SVMDataset& Data, uint64_t target_batch_size,
  *  - The size of each batch.
  */
 TEST(SVMDatasetTest, BatchSizeAndNumber) {
-  // download from file from
-  // https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel/bibtex.bz2,
-  // then substitute with local path
-  std::string filename = "/Users/benitogeordie/Downloads/bibtex";
-
+  
   // count number of vectors (non-whitespace lines) in the file.
   std::ifstream _file(filename);
   std::string line;
@@ -138,7 +148,7 @@ TEST(SVMDatasetTest, BatchSizeAndNumber) {
             << std::endl;
 
   uint64_t batch_sizes[] = {150, 100, 50, 30};
-  uint64_t batch_nums[] = {150, 100, 50};
+  uint64_t batch_nums[] = {150, 100, 50, 0};
 
   for (auto bs : batch_sizes) {
     for (auto bn : batch_nums) {
@@ -161,8 +171,14 @@ TEST(SVMDatasetTest, BatchSizeAndNumber) {
       Data.loadNextBatchSet();
       ASSERT_EQ(Data.numBatches(), 0);
 
-      uint64_t expected_num_loads =
+      uint64_t expected_num_loads;
+      
+      if (bn > 0) {
+        expected_num_loads =
           (expected_vec_num + (bs * bn) - 1) / (bs * bn);
+      } else {
+        expected_num_loads = 1;
+      }
       if (successful_loads != expected_num_loads) {
         std::cout << "Num loads expected: " << expected_num_loads
                   << " got: " << successful_loads << std::endl
@@ -179,16 +195,13 @@ TEST(SVMDatasetTest, BatchSizeAndNumber) {
  * that the rewritten file is the same as the initial file.
  */
 TEST(SVMDatasetTest, CompareRewrittenFile) {
-  // download from file from
-  // https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel/bibtex.bz2,
-  // then substitute with local path
-  std::string filename = "/Users/benitogeordie/Downloads/bibtex";
+
   std::ifstream file(filename);
   std::string line_from_file;
   uint64_t line_num = 0;
 
   uint64_t batch_sizes[] = {50, 100, 150};
-  uint64_t batch_nums[] = {50, 100, 150};
+  uint64_t batch_nums[] = {0, 50, 100, 150};
   for (auto bs : batch_sizes) {
     for (auto bn : batch_nums) {
       SVMDataset Data(filename, bs, bn);
