@@ -51,7 +51,7 @@ class HashFunction {
   void hashBatchSerial(const Batch& batch, uint32_t* output) const {
     if (batch._batch_type == BATCH_TYPE::SPARSE) {
       hashSparseSerial(batch._batch_size, batch._indices, batch._values,
-                         batch._lens, output);
+                       batch._lens, output);
     } else {
       hashDenseParallel(batch._batch_size, batch._values, batch._dim, output);
     }
@@ -67,7 +67,7 @@ class HashFunction {
   }
 
   void hashDenseSerial(uint64_t num_vectors, const float* const* values,
-                         uint32_t dim, uint32_t* output) const {
+                       uint32_t dim, uint32_t* output) const {
     for (uint32_t v = 0; v < num_vectors; v++) {
       hashSingleDense(values[v], dim, output + v * _num_tables);
     }
