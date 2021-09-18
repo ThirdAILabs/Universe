@@ -18,7 +18,7 @@ using thirdai::utils::SVMDataset;
 
 // downloaded from
 // https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel/bibtex.bz2
-// This is a relative path from Universe/build/utils/tests/dataset/svm/ to 
+// This is a relative path from Universe/build/utils/tests/dataset/svm/ to
 // Universe/utils/tests/dataset/svm/bibtex
 static std::string filename = "../../../../../utils/tests/dataset/svm/bibtex";
 
@@ -94,10 +94,12 @@ static void evaluate_load(SVMDataset& Data, uint64_t target_batch_size,
                           uint64_t number_of_times_loaded, uint64_t vec_num) {
   if (target_batch_number > 0) {
     if (Data.numBatches() > target_batch_number) {
-      std::cout << "Num batches is greater than target batch number. Something is terribly wrong." << std::endl;
+      std::cout << "Num batches is greater than target batch number. Something "
+                   "is terribly wrong."
+                << std::endl;
     }
     ASSERT_LE(Data.numBatches(), target_batch_number);
-  }                            
+  }
   uint64_t expected_num_batches = get_expected_num_batches(
       target_batch_size, target_batch_number, number_of_times_loaded, vec_num);
   if (Data.numBatches() != expected_num_batches) {
@@ -133,7 +135,6 @@ static void evaluate_load(SVMDataset& Data, uint64_t target_batch_size,
  *  - The size of each batch.
  */
 TEST(SVMDatasetTest, BatchSizeAndNumber) {
-  
   // count number of vectors (non-whitespace lines) in the file.
   std::ifstream _file(filename);
   std::string line;
@@ -172,10 +173,9 @@ TEST(SVMDatasetTest, BatchSizeAndNumber) {
       ASSERT_EQ(Data.numBatches(), 0);
 
       uint64_t expected_num_loads;
-      
+
       if (bn > 0) {
-        expected_num_loads =
-          (expected_vec_num + (bs * bn) - 1) / (bs * bn);
+        expected_num_loads = (expected_vec_num + (bs * bn) - 1) / (bs * bn);
       } else {
         expected_num_loads = 1;
       }
@@ -195,7 +195,6 @@ TEST(SVMDatasetTest, BatchSizeAndNumber) {
  * that the rewritten file is the same as the initial file.
  */
 TEST(SVMDatasetTest, CompareRewrittenFile) {
-
   std::ifstream file(filename);
   std::string line_from_file;
   uint64_t line_num = 0;
