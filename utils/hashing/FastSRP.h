@@ -7,8 +7,8 @@ namespace thirdai::utils {
 
 class FastSRP : public HashFunction {
  private:
-  uint32_t _hashes_per_table, _num_tables, _num_hashes, _log_num_hashes, _range,
-      _dim, _binsize, _permute;
+  uint32_t _hashes_per_table, _num_tables, _num_hashes, _log_num_hashes, _dim,
+      _binsize, _permute;
   uint32_t* _bin_map;
   uint32_t* _positions;
   uint32_t _rand_double_hash_seed;
@@ -31,7 +31,7 @@ class FastSRP : public HashFunction {
 
  public:
   FastSRP(uint32_t input_dim, uint32_t _hashes_per_table, uint32_t _num_tables,
-          uint32_t range_pow, uint32_t seed = time(nullptr));
+          uint32_t seed = time(nullptr));
 
   void hashSparse(uint64_t num_vectors, const uint32_t* const* indices,
                   const float* const* values, const uint32_t* lengths,
@@ -42,7 +42,7 @@ class FastSRP : public HashFunction {
 
   uint32_t numTables() const override { return _num_tables; }
 
-  uint32_t range() const override { return _range; }
+  uint32_t range() const override { return 1 << _hashes_per_table; }
 
   ~FastSRP();
 };
