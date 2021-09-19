@@ -54,6 +54,8 @@ class SparseLayerTestFixture : public testing::Test {
 
   const float* getLayerBiasGradient() { return layer->b_gradient; }
 
+  void makeSoftmax() { layer->act_func = ActivationFunc::Softmax; }
+
   SparseLayer* layer;
 
   std::vector<std::vector<uint32_t>> data_indices;
@@ -215,6 +217,96 @@ TEST_F(SparseLayerTestFixture, SparseTest) {
     ASSERT_EQ(prev_errors_calc.at(i).size(), prev_errors.at(i).size());
     for (uint32_t j = 0; j < data_lens.at(i); j++) {
       ASSERT_EQ(prev_errors_calc.at(i).at(j), prev_errors.at(i).at(j));
+    }
+  }
+}
+
+TEST_F(SparseLayerTestFixture, DenseSoftmaxTest) {
+  makeSoftmax();
+
+  layer->SetSparsity(1.0);
+
+  for (uint32_t i = 0; i < 4; i++) {
+    layer->FeedForward(i, data_indices.at(i).data(), data_values.at(i).data(),
+                       data_lens.at(i), nullptr, 0);
+  }
+
+  std::vector<std::vector<float>> activations = {
+      {0.100775853693, 0.0650657814362, 0.310411482509, 0.0539414274078,
+       0.15608469557, 0.100775853693, 0.12939875753, 0.0835461171208},
+      {0.0881607318037, 0.0828193430836, 0.239645715246, 0.106342141513,
+       0.0881607318037, 0.175328550684, 0.11320062039, 0.106342141513},
+      {0.0671483572533, 0.104001410217, 0.0592582172897, 0.341007495791,
+       0.0262956745225, 0.182528159333, 0.0862201974021, 0.133540454091},
+      {0.107857672581, 0.0741294220005, 0.183472081505, 0.167053231234,
+       0.0614554493523, 0.172356070027, 0.138491992979, 0.095184061973}};
+
+  for (uint32_t i = 0; i < 4; i++) {
+    ASSERT_EQ(layer->GetLen(i), 8);
+    for (uint32_t j = 0; j < 8; j++) {
+      ASSERT_EQ(layer->GetIndices(i)[j], j);
+      ASSERT_FLOAT_EQ(layer->GetValues(i)[j], activations.at(i).at(j));
+    }
+  }
+
+  std::vector<std::vector<uint32_t>> labels = {{4, 5}, {1, 4}, {0, 6}, {2, 7}};
+
+  std::vector<std::vector<float>> errors = {
+      {-0.0251939634232, -0.0162664453591, -0.0776028706271, -0.013485356852,
+       0.0859788261075, 0.0998060365768, -0.0323496893825, -0.0208865292802},
+      {-0.0220401829509, 0.104295164229, -0.0599114288114, -0.0265855353782,
+       0.102959817049, -0.0438321376709, -0.0283001550974, -0.0265855353782},
+      {0.108212910687, -0.0260003525544, -0.0148145543224, -0.0852518739477,
+       -0.00657391863063, -0.0456320398332, 0.103444950649, -0.0333851135227},
+      {-0.0269644181453, -0.0185323555001, 0.0791319796238, -0.0417633078085,
+       -0.0153638623381, -0.0430890175068, -0.0346229982448, 0.101203984507}};
+
+  for (uint32_t i = 0; i < 4; i++) {
+    layer->ComputeErrors(i, labels.at(i).data(), labels.at(i).size());
+    for (uint32_t j = 0; j < 8; j++) {
+      ASSERT_FLOAT_EQ(layer->GetErrors(i)[j], errors.at(i).at(j));
+    }
+  }
+}
+
+TEST_F(SparseLayerTestFixture, SparseSoftmaxTest) {
+  makeSoftmax();
+
+  std::vector<std::vector<uint32_t>> active_neurons = {
+      {2, 3, 4, 6}, {2, 4, 6, 7}, {0, 3, 5, 6}, {1, 3, 5, 7}};
+
+  for (uint32_t i = 0; i < 4; i++) {
+    // Use active neurons as the labels to force them to be selected so the test
+    // is deterministic
+    layer->FeedForward(i, data_indices.at(i).data(), data_values.at(i).data(),
+                       data_lens.at(i), active_neurons.at(i).data(), 4);
+  }
+  std::vector<std::vector<float>> activations = {
+      {0.477676358768, 0.0830077045562, 0.240190757239, 0.199125131669},
+      {0.437829635695, 0.161068521708, 0.206816075701, 0.194285723113},
+      {0.0991991967261, 0.503775089127, 0.269651373858, 0.127374289911},
+      {0.145716727539, 0.328377714588, 0.338801542196, 0.187103981797}};
+
+  for (uint32_t i = 0; i < 4; i++) {
+    ASSERT_EQ(layer->GetLen(i), 4);
+    for (uint32_t j = 0; j < 4; j++) {
+      ASSERT_EQ(layer->GetIndices(i)[j], active_neurons.at(i).at(j));
+      ASSERT_FLOAT_EQ(layer->GetValues(i)[j], activations.at(i).at(j));
+    }
+  }
+
+  std::vector<std::vector<uint32_t>> labels = {{4, 6}, {2, 4}, {0, 6}, {1, 7}};
+
+  std::vector<std::vector<float>> errors = {
+      {-0.119419089692, -0.0207519261391, 0.0649523106903, 0.0752187170828},
+      {0.015542582, 0.0847328695731, -0.0517040189253, -0.0485714307783},
+      {0.100200200818, -0.125943772282, -0.0674128434646, 0.0931564275222},
+      {0.0885708181152, -0.082094428647, -0.084700385549, 0.0782240045508}};
+
+  for (uint32_t i = 0; i < 4; i++) {
+    layer->ComputeErrors(i, labels.at(i).data(), labels.at(i).size());
+    for (uint32_t j = 0; j < 4; j++) {
+      ASSERT_FLOAT_EQ(layer->GetErrors(i)[j], errors.at(i).at(j));
     }
   }
 }
