@@ -36,7 +36,7 @@ void runSparseSimilarityTest(const thirdai::utils::HashFunction& hash,
     uint32_t lens[2] = {num_non_zeros, num_non_zeros};
 
     uint32_t hashes[2 * num_tables];
-    hash.hashSparse(2, indices, values, lens, hashes);
+    hash.hashSparseParallel(2, indices, values, lens, hashes);
     float measured_sim = getMeasuredSim(hashes, num_tables);
 
     total_diff += measured_sim - actual_sim;
@@ -62,7 +62,7 @@ void runDenseSimilarityTest(const thirdai::utils::HashFunction& hash,
                         dense_result.v2.values.data()};
 
     uint32_t hashes[2 * num_tables];
-    hash.hashDense(2, dim, values, hashes);
+    hash.hashDenseParallel(2, values, dim, hashes);
     float measured_sim = getMeasuredSim(hashes, num_tables);
 
     total_diff += measured_sim - actual_sim;
@@ -92,8 +92,8 @@ void runSparseDenseEqTest(const thirdai::utils::HashFunction& hash,
     uint32_t dense_hashes[2 * num_tables];
     uint32_t sparse_hashes[2 * num_tables];
 
-    hash.hashDense(2, dim, values, dense_hashes);
-    hash.hashSparse(2, indices, values, lens, sparse_hashes);
+    hash.hashDenseParallel(2, values, dim, dense_hashes);
+    hash.hashSparseParallel(2, indices, values, lens, sparse_hashes);
 
     for (uint32_t i = 0; i < 2 * num_tables; i++) {
       ASSERT_EQ(dense_hashes[i], sparse_hashes[i]);

@@ -10,8 +10,8 @@ constexpr uint32_t DEFAULT_BINSIZE = 8;
 
 FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
                  uint32_t num_tables, uint32_t seed)
-    : _hashes_per_table(hashes_per_table),
-      _num_tables(num_tables),
+    : HashFunction(num_tables, hashes_per_table),
+      _hashes_per_table(hashes_per_table),
       _num_hashes(hashes_per_table * num_tables),
       _dim(input_dim),
       _binsize(DEFAULT_BINSIZE) {
@@ -56,24 +56,8 @@ FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
   _rand_double_hash_seed = dis(gen);
 }
 
-void FastSRP::hashDense(uint64_t num_vectors, uint64_t dim,
-                        const float* const* values, uint32_t* output) const {
-  for (uint64_t i = 0; i < num_vectors; i++) {
-    hashDenseVector(values[i], dim, output + i * _num_tables);
-  }
-}
-
-void FastSRP::hashSparse(uint64_t num_vectors, const uint32_t* const* indices,
-                         const float* const* values, const uint32_t* lengths,
-                         uint32_t* output) const {
-  for (uint64_t i = 0; i < num_vectors; i++) {
-    hashSparseVector(indices[i], values[i], lengths[i],
-                     output + i * _num_tables);
-  }
-}
-
-void FastSRP::hashDenseVector(const float* data, uint32_t len,
-                              uint32_t* final_hashes) const {
+void FastSRP::hashSingleDense(const float* values, uint32_t dim,
+                              uint32_t* output) const {
   // TODO(patrick): this could cause exceed max stack size, but is cheaper than
   // memory allocation
   uint32_t hashes[_num_hashes];
@@ -86,7 +70,7 @@ void FastSRP::hashDenseVector(const float* data, uint32_t len,
 
   for (uint32_t p = 0; p < _permute; p++) {
     uint32_t base_bin_id = p * _dim;
-    for (uint32_t i = 0; i < len; i++) {
+    for (uint32_t i = 0; i < dim; i++) {
       uint32_t binid = _bin_map[base_bin_id + i];
       // if (binid < _num_hashes && bin_values[binid] < data[i]) {
       //   bin_values[binid] = data[i];
@@ -94,20 +78,20 @@ void FastSRP::hashDenseVector(const float* data, uint32_t len,
       // }
       if (binid < _num_hashes) {
         if (bin_values[binid] == std::numeric_limits<float>::lowest()) {
-          bin_values[binid] = data[i] * _rand_bits[binid];
+          bin_values[binid] = values[i] * _rand_bits[binid];
         } else {
-          bin_values[binid] += data[i] * _rand_bits[binid];
+          bin_values[binid] += values[i] * _rand_bits[binid];
         }
         hashes[binid] = (bin_values[binid] >= 0 ? 0 : 1);
       }
     }
   }
 
-  densifyHashes(hashes, final_hashes);
+  densifyHashes(hashes, output);
 }
 
-void FastSRP::hashSparseVector(const uint32_t* indices, const float* values,
-                               uint32_t len, uint32_t* final_hashes) const {
+void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
+                               uint32_t length, uint32_t* output) const {
   // TODO(patrick): this could cause exceed max stack size, but is cheaper than
   // memory allocation
   uint32_t hashes[_num_hashes];
@@ -120,7 +104,7 @@ void FastSRP::hashSparseVector(const uint32_t* indices, const float* values,
 
   for (uint32_t p = 0; p < _permute; p++) {
     uint32_t base_bin_id = p * _dim;
-    for (uint32_t i = 0; i < len; i++) {
+    for (uint32_t i = 0; i < length; i++) {
       uint32_t binid = _bin_map[base_bin_id + indices[i]];
       // if (binid < _num_hashes && bin_values[binid] < values[i]) {
       //   bin_values[binid] = values[i];
@@ -137,7 +121,7 @@ void FastSRP::hashSparseVector(const uint32_t* indices, const float* values,
     }
   }
 
-  densifyHashes(hashes, final_hashes);
+  densifyHashes(hashes, output);
 }
 
 void FastSRP::densifyHashes(const uint32_t* hashes,
