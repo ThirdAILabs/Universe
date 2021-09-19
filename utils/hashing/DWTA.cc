@@ -128,7 +128,6 @@ void DWTAHashFunction::densifyHashes(const uint32_t* hashes,
   compactHashes(hash_array, final_hashes);
 
   delete[] hash_array;
-
 }
 
 void DWTAHashFunction::compactHashes(const uint32_t* hashes,

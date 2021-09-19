@@ -124,8 +124,8 @@ void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
   densifyHashes(hashes, output);
 }
 
-void FastSRP::densifyHashes(const uint32_t* hashes, uint32_t* final_hashes) const {
-  
+void FastSRP::densifyHashes(const uint32_t* hashes,
+                            uint32_t* final_hashes) const {
   uint32_t* hash_array = new uint32_t[_num_hashes]();
 
   for (uint32_t i = 0; i < _num_hashes; i++) {
