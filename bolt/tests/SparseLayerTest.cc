@@ -3,8 +3,6 @@
 #include <gtest/gtest.h>
 #include <vector>
 
-using namespace ::testing;
-
 namespace thirdai::bolt::tests {
 
 class SparseLayerTestFixture : public testing::Test {
