@@ -9,7 +9,7 @@ namespace thirdai::bolt {
 
 namespace tests {
 class SparseLayerTestFixture;
-}
+}  // namespace tests
 
 class SparseLayer final : public Layer {
   friend class tests::SparseLayerTestFixture;
