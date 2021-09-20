@@ -57,18 +57,18 @@ class SparseLayer final : public Layer {
   void ShuffleRandNeurons() override;
 
   uint32_t GetLen(uint32_t batch_indx) const override {
-    return active_lens[batch_indx];
+    return _active_lens[batch_indx];
   }
 
   const uint32_t* GetIndices(uint32_t batch_indx) const override {
-    return active_neurons[batch_indx];
+    return _active_neurons[batch_indx];
   }
 
   const float* GetValues(uint32_t batch_indx) const override {
-    return activations[batch_indx];
+    return _activations[batch_indx];
   }
 
-  float* GetErrors(uint32_t batch_indx) override { return errors[batch_indx]; }
+  float* GetErrors(uint32_t batch_indx) override { return _errors[batch_indx]; }
 
   float* GetWeights();
 
@@ -87,31 +87,31 @@ class SparseLayer final : public Layer {
 
   constexpr float ActFuncDerivative(float x);
 
-  uint64_t dim, prev_dim, batch_size, sparse_dim;
-  float sparsity;
-  ActivationFunc act_func;
+  uint64_t _dim, _prev_dim, _batch_size, _sparse_dim;
+  float _sparsity;
+  ActivationFunc _act_func;
 
-  uint32_t* active_lens;
-  uint32_t** active_neurons;
-  float** activations;
-  float** errors;
+  uint32_t* _active_lens;
+  uint32_t** _active_neurons;
+  float** _activations;
+  float** _errors;
 
-  float* weights;
-  float* w_gradient;
-  float* w_momentum;
-  float* w_velocity;
+  float* _weights;
+  float* _w_gradient;
+  float* _w_momentum;
+  float* _w_velocity;
 
-  float* biases;
-  float* b_gradient;
-  float* b_momentum;
-  float* b_velocity;
+  float* _biases;
+  float* _b_gradient;
+  float* _b_momentum;
+  float* _b_velocity;
 
-  bool* is_active;
+  bool* _is_active;
 
-  SamplingConfig sampling_config;
-  utils::DWTAHashFunction* hasher;
-  utils::SampledHashTable<uint32_t>* hash_table;
-  uint32_t* rand_neurons;
+  SamplingConfig _sampling_config;
+  utils::DWTAHashFunction* _hasher;
+  utils::SampledHashTable<uint32_t>* _hash_table;
+  uint32_t* _rand_neurons;
 };
 
 }  // namespace thirdai::bolt
