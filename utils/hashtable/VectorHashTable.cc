@@ -23,7 +23,7 @@ void VectorHashTable<Label_t>::insert(uint64_t n, Label_t const* labels,
 #pragma omp parallel for default(none) shared(n, hashes, labels)
   for (uint32_t table = 0; table < _num_tables; table++) {
     for (uint64_t item = 0; item < n; item++) {
-      uint32_t hash = hashes[table * n + item];
+      uint32_t hash = hashes[_num_tables * item + table];
       Label_t label = labels[item];
       tables[getBucketIndex(table, hash)].push_back(label);
     }
@@ -36,7 +36,7 @@ void VectorHashTable<Label_t>::insertSequential(uint64_t n, Label_t start,
 #pragma omp parallel for default(none) shared(n, start, hashes)
   for (uint32_t table = 0; table < _num_tables; table++) {
     for (uint64_t item = 0; item < n; item++) {
-      uint32_t hash = hashes[table * n + item];
+      uint32_t hash = hashes[_num_tables * item + table];
       Label_t label = start + item;
       tables[getBucketIndex(table, hash)].push_back(label);
     }
