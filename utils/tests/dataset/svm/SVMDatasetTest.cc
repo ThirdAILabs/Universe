@@ -16,11 +16,11 @@
 using thirdai::utils::Batch;
 using thirdai::utils::SVMDataset;
 
-// downloaded from
-// https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel/bibtex.bz2
-// This is a relative path from Universe/build/utils/tests/dataset/svm/ to
-// Universe/utils/tests/dataset/svm/bibtex
-static std::string filename = "../../../../../utils/tests/dataset/svm/bibtex";
+// Downloaded by bin/get_datsets.sh from
+// https://www.csie.ntu.edu.tw/~cjlin/lisbsvmtools/datasets/multilabel/bibtex.bz2
+// Downloaded file is located in build/utils/tests/dataset/svm/, the same
+// directory as the exedcutable for this file.
+static std::string filename = "bibtex";
 
 /**
  * Formats a vector from a batch as a line in SVM format.
