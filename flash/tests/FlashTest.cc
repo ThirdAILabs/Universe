@@ -109,7 +109,8 @@ TEST(FlashTest, IdTooLargeTest) {
   error_batch._starting_id = 1 << 16 + 1;
   FastSRP srp_hash(1, 1, 1, 1);
   Flash<uint16_t> flash(srp_hash);
-  ASSERT_THROW(flash.addBatch(error_batch), std::invalid_argument);
+  // Need a nolint here because of course google uses a goto
+  ASSERT_THROW(flash.addBatch(error_batch), std::invalid_argument);  // NOLINT
 }
 
 }  // namespace thirdai::search::flash_testing

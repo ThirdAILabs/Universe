@@ -25,10 +25,11 @@ struct Batch {
   uint32_t* _lens{nullptr};
   uint32_t** _labels{nullptr};
   uint32_t* _label_lens{nullptr};
-  BATCH_TYPE _batch_type;
-  LABEL_TYPE _label_type;
-  uint32_t _dim;
-  uint64_t _starting_id;
+  // Just make the default sparse unlabeled
+  BATCH_TYPE _batch_type{BATCH_TYPE::SPARSE};
+  LABEL_TYPE _label_type{LABEL_TYPE::UNLABELED};
+  uint32_t _dim{0};
+  uint64_t _starting_id{0};
 
   /** Default constructor */
   Batch(){};
