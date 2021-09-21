@@ -34,10 +34,10 @@ template <typename Label_t>
 void VectorHashTable<Label_t>::insertSequential(uint64_t n, Label_t start,
                                                 uint32_t const* hashes) {
 #pragma omp parallel for default(none) shared(n, start, hashes)
-  for (uint64_t item = 0; item < n; item++) {
-    Label_t label = start + item;
-    for (uint32_t table = 0; table < _num_tables; table++) {
+  for (uint32_t table = 0; table < _num_tables; table++) {
+    for (uint64_t item = 0; item < n; item++) {
       uint32_t hash = hashes[_num_tables * item + table];
+      Label_t label = start + item;
       tables[getBucketIndex(table, hash)].push_back(label);
     }
   }

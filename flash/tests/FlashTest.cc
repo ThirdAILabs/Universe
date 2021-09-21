@@ -49,10 +49,10 @@ std::vector<Batch> createBatches(const std::vector<DenseVector>& input_vectors,
  * a close neighbors to a different test vector, but in high dimensions this is
  * vanishingly unlikely so this is still a good test).
  */
-TEST(FlashTest, SRPSmokeTest) {
+TEST(FlashTest, SmokeTest) {
   uint32_t seed = 42;
-  uint32_t num_test_vectors = 5;
-  uint32_t num_index_vectors = 100000;
+  uint32_t num_test_vectors = 10000;
+  uint32_t num_index_vectors = 1000000;
   uint32_t dim = 200;
   float close_sim = 0.9;
   uint32_t num_tables = 100;
@@ -65,7 +65,6 @@ TEST(FlashTest, SRPSmokeTest) {
   for (uint32_t i = 0; i < num_test_vectors; i++) {
     answer_key.push_back(sim_func.getRandomDenseVectors(close_sim, dim));
   }
-  printVec(answer_key.at(0).v1);
 
   std::vector<DenseVector> test_vectors;
   std::vector<DenseVector> index_vectors;
@@ -86,7 +85,6 @@ TEST(FlashTest, SRPSmokeTest) {
   FastSRP srp_hash(dim, hashes_per_table, num_tables, seed);
   Flash<uint32_t> flash(srp_hash);
   std::vector<Batch> batches = createBatches(index_vectors, batch_size);
-  std::cout << batches.at(0)._values[0][0] << std::endl;
   for (auto& batch : batches) {
     flash.addBatch(batch);
   }
