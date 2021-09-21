@@ -1,11 +1,11 @@
 #include "DensifiedMinHash.h"
 #include <algorithm>
 #include <climits>
+#include <cmath>
+#include <cstdint>
 #include <iostream>
-#include <math.h>
 #include <queue>
 #include <random>
-#include <stdint.h>
 #include <vector>
 
 namespace thirdai::utils {
@@ -65,17 +65,11 @@ DensifiedMinHash::DensifiedMinHash(uint32_t input_dim,
   // _binsize is the number of times the _range is larger than the total number
   // of hashes we need.
   for (uint32_t i = 0; i < _num_hashes; i++) {
-    uint32_t h = i;
-    h *= _randa;
-    h ^= h >> 13;
-    h *= 0x85ebca6b;
-
     uint32_t curhash = MurmurHash(reinterpret_cast<char*>(&i),
                                   static_cast<uint32_t>(sizeof(i)),
                                   static_cast<uint32_t>(_randa));
     curhash = curhash & (_range - 1);
-    _binids[i] = static_cast<uint32_t>(floor(curhash / _binsize));
-    ;
+    _binids[i] = floor(static_cast<double>(curhash) / _binsize);
   }
 
   (void)input_dim;

@@ -18,8 +18,8 @@
 
 #define FORCE_INLINE __forceinline
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #define ROTL32(x, y) _rotl(x, y)
 #define ROTL64(x, y) _rotl64(x, y)

@@ -5,8 +5,8 @@
 #include "SparseVector.h"
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <iostream>
-#include <math.h>
 #include <random>
 #include <unordered_set>
 #include <utility>
@@ -37,10 +37,10 @@ class CosineSim : public Similarity {
      * (we only access each of its elements a couple of times).
      */
     auto matrix = [u, v, theta](uint32_t i, uint32_t j) {
-      return (i == j) +
-             sin(theta) *
+      return static_cast<float>((i == j)) +
+             std::sin(theta) *
                  (v.values[i] * u.values[j] - u.values[i] * v.values[j]) +
-             (cos(theta) - 1) *
+             (std::cos(theta) - 1) *
                  (u.values[i] * u.values[j] - v.values[i] * v.values[j]);
     };
 
@@ -95,11 +95,11 @@ class CosineSim : public Similarity {
   }
 
   float getSim(const DenseVector& v1, DenseVector& v2) override {
-    return 1.0 - angle(v1, v2) / M_PI;
+    return static_cast<float>(1.0 - angle(v1, v2) / M_PI);
   }
 
   float getSim(const SparseVector& v1, const SparseVector& v2) override {
-    return 1.0 - angle(v1, v2) / M_PI;
+    return static_cast<float>(1.0 - angle(v1, v2) / M_PI);
   }
 
  private:
