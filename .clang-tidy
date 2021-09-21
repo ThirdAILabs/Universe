@@ -16,6 +16,21 @@
 # cert-*-c, -cert-err34-c, -cert-msc30-c, -cert-msc32-c:
 #    We don't care about limited randomness or seeds (cert-msc30-c, -cert-msc32-c),
 #    TODO: Add back cert-err34-c, it is good, just requires non trivial code changes
+# clang-analyzer-*, -clang-analyzer-core.*:
+#    Includes clang-analyzer checks which runs an automatic analysis tool to find bugs.
+#    Some of the -core checks are slightly unintelligent (and finds bugs in our code that are not supposed to be).
+# cppcoreguidelines-*:
+#    Checks all cpp core guidelines. Can look into some of these later.
+#    Currently ignoring:
+#       - Magic numbers
+#       - Using pointers to access arrays, and pointer arithmetic.
+#       - C-style arrays
+#       - Mandate initialization of variables
+#       - Memory ownership specification
+#       - Finding classes where some but not all special member functions are defined (default/copy/move constructor and destructor)
+#       - Non-private class variables
+#       - Global non-const variables
+#       - Type narrowing
 # google-*, -google-runtime-references:
 #    Checks all Google coding conventions. Ignore some non-const parameters for errors in
 #    HashTable.h.
@@ -25,11 +40,12 @@
 # misc-*, -misc-non-private-member-variables-in-classes:
 #    Misc checks. Currently ignoring private checks on non-static class fields, since we
 #    aren't too worried about the visibility for now.
+# modernize-*, -modernize-use-*, -modernize-avoid-c-arrays:
+#    Some of the modernize checks are unnecessary, specifically -modernize-use checks.
 # openmp-*, mpi-*:
 #    Include all openmp and mpi checks.
 # performance-*, -performance-noexcept-move-constructor:
 #    Include all performance checks.
-#    TODO: Look into adding back noexcept check.
 # readability-*, -readability-magic-numbers, -readability-redundant-member-init, -readability-implicit-bool-conversion, -readability-isolate-declaration, -readability-function-cognitive-complexity:
 #    Overall, the most of the readability checks are necessary and 
 #    good practice to include. Magic numbers, implicit bool conversion, and 
@@ -43,9 +59,15 @@ Checks: >
          bugprone-*, -bugprone-narrowing-conversions,
          cert-*-cpp, -cert-err58-cpp, -cert-msc50-cpp, -cert-msc51-cpp, 
          cert-*-c, -cert-err34-c, -cert-msc30-c, -cert-msc32-c,
+         clang-analyzer-*, -clang-analyzer-core.*,
+         cppcoreguidelines-*, -cppcoreguidelines-avoid-magic-numbers, -cppcoreguidelines-pro-*, 
+            -cppcoreguidelines-avoid-c-arrays, -cppcoreguidelines-init-variables, -cppcoreguidelines-owning-memory, 
+            -cppcoreguidelines-special-member-functions, -cppcoreguidelines-non-private-member-variables-in-classes, 
+            -cppcoreguidelines-avoid-non-const-global-variables, -cppcoreguidelines-narrowing-conversions,
          google-*, -google-runtime-references,
          llvm-*, -llvm-header-guard, -llvm-include-order,
          misc-*, -misc-non-private-member-variables-in-classes,
+         modernize-*, -modernize-use-*, -modernize-avoid-c-arrays,
          openmp-*, mpi-*,
          performance-*, -performance-noexcept-move-constructor,
          readability-*, -readability-redundant-member-init, -readability-implicit-bool-conversion, -readability-isolate-declaration, -readability-function-cognitive-complexity, -readability-magic-numbers,
