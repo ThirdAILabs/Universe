@@ -38,10 +38,9 @@ class VectorHashTable : public HashTable<Label_t> {
     return table * tableRange() + hash;
   }
 
-  std::vector<std::vector<Label_t>> tables;
-
   uint32_t _num_tables;
   uint64_t _table_range;
+  std::vector<std::vector<Label_t>> tables;
 };
 
 }  // namespace thirdai::utils

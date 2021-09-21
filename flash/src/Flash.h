@@ -67,7 +67,6 @@ class Flash {
   const utils::HashFunction& _function;
   uint32_t _num_tables, _range;
   utils::HashTable<Label_t>* _hashtable;
-
 };
 
 }  // namespace thirdai::search

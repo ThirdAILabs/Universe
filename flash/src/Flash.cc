@@ -1,7 +1,7 @@
 #include "Flash.h"
+#include "../../utils/hashtable/SampledHashTable.h"
 #include "../../utils/hashtable/VectorHashTable.h"
 #include <algorithm>
-#include <iostream>
 #include <queue>
 #include <vector>
 
@@ -18,6 +18,8 @@ Flash<Label_t>::Flash(const utils::HashFunction& function)
       _num_tables(_function.numTables()),
       _range(_function.range()),
       _hashtable(new utils::VectorHashTable<Label_t>(_num_tables, _range)) {}
+// TODO(josh/nicholas): Figure out why the SampledHashTable doesn't work well
+// _hashtable(new utils::SampledHashTable<Label_t>(_num_tables, 100, _range)) {}
 
 template <typename Label_t>
 void Flash<Label_t>::addDataset(utils::Dataset& dataset) {
@@ -54,9 +56,11 @@ uint32_t* Flash<Label_t>::hash(const utils::Batch& batch) const {
 template <typename Label_t>
 bool Flash<Label_t>::idTooBig(const utils::Batch& batch) const {
   uint64_t largest_batch_id = batch._starting_id + batch._batch_size;
-  // TODO(josh): Test this before pr
-  // std::cout << static_cast<uint64_t>(static_cast<Label_t>(largest_batch_id))
-  // << " " << largest_batch_id << std::endl;
+  // Casting to a smaller integer is well specified behavior because we are
+  // dealing with only unsigned integers. If the largest_batch_id is out
+  // of range of Label_t, its first bits will get truncated and the equality
+  // check will fail (we cast back to uin64_t to ensure that the
+  // largest_batch_id itself is not casst down to Label_t).
   return static_cast<uint64_t>(static_cast<Label_t>(largest_batch_id)) !=
          largest_batch_id;
 }
@@ -67,8 +71,7 @@ std::vector<std::vector<Label_t>> Flash<Label_t>::queryBatch(
   std::vector<std::vector<Label_t>> results(batch._batch_size);
   uint32_t* hashes = hash(batch);
 
-  // #pragma omp parallel for default(none) shared(batch, top_k, results,
-  // hashes)
+#pragma omp parallel for default(none) shared(batch, top_k, results, hashes)
   for (uint64_t vec_id = 0; vec_id < batch._batch_size; vec_id++) {
     std::vector<Label_t> query_result;
     _hashtable->queryByVector(hashes + vec_id * _num_tables, query_result);
