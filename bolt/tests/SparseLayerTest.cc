@@ -16,14 +16,13 @@ class SparseLayerTestFixture : public testing::Test {
     float* new_weights = new float[80];
     float* new_biases = new float[8];
     for (uint32_t i = 0; i < 80; i++) {
-      new_weights[i] =
-          static_cast<float>((i % 3) + (i % 4)) * static_cast<float>(0.25);
+      new_weights[i] = static_cast<float>((i % 3) + (i % 4)) * 0.25;
       if (i % 2 == 1) {
         new_weights[i] *= -1.0;
       }
     }
     for (uint32_t i = 0; i < 8; i++) {
-      new_biases[i] = static_cast<float>(i % 4) * static_cast<float>(0.125);
+      new_biases[i] = static_cast<float>(i % 4) * 0.125;
     }
 
     delete[] layer->weights;

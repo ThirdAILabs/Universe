@@ -69,7 +69,7 @@ DensifiedMinHash::DensifiedMinHash(uint32_t input_dim,
                                   static_cast<uint32_t>(sizeof(i)),
                                   static_cast<uint32_t>(_randa));
     curhash = curhash & (_range - 1);
-    _binids[i] = floor(1.0 * curhash / _binsize);
+    _binids[i] = floor(static_cast<double>(curhash) / _binsize);
   }
 
   (void)input_dim;

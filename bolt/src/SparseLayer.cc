@@ -150,7 +150,7 @@ void SparseLayer::BackPropagateImpl(uint32_t batch_indx,
 
 void SparseLayer::ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
                                 uint32_t label_len) {
-  float frac = static_cast<float>(1.0 / label_len);
+  float frac = 1.0 / label_len;
 
   for (uint64_t n = 0; n < active_lens[batch_indx]; n++) {
     if (std::find(labels, labels + label_len, active_neurons[batch_indx][n]) !=
