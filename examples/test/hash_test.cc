@@ -1,4 +1,4 @@
-#include "../murmurhash/MurmurHash3.h"
+#include "../../utils/hashing/MurmurHash.h"
 #include "../tabulationhash/UniversalHash.h"
 #include <gtest/gtest.h>
 #include <algorithm>
@@ -14,6 +14,7 @@ using std::chrono::seconds;
 using std::chrono::system_clock;
 
 using thirdai::examples::UniversalHash;
+using thirdai::utils::MurmurHash;
 
 class HashTest : public testing::Test {
  private:
@@ -45,7 +46,7 @@ class HashTest : public testing::Test {
     std::mt19937_64 gen(rd());
     std::uniform_int_distribution<uint64_t> dis;
     // Generate 100000 random integer and char * keys
-    for (int i = 0; i < num_keys; i++) {
+    for (uint32_t i = 0; i < num_keys; i++) {
       int_keys[i] = dis(gen);
       str_keys[i] = generate_random_string();
     }
@@ -73,12 +74,12 @@ TEST_F(HashTest, MurmurHashTimeTest) {
   auto start =
       duration_cast<milliseconds>(system_clock::now().time_since_epoch())
           .count();
-  for (int i = 0; i < num_keys; i++) {
-    MurmurHash3_x86_32(str_keys[i].c_str(),
-                       static_cast<uint64_t>(strlen(str_keys[i].c_str())), seed,
-                       &(murmurhash_output[0]));
-    MurmurHash3_x86_32(static_cast<void*>(&(int_keys[i])), sizeof(uint64_t),
-                       seed, &(murmurhash_output[1]));
+  for (uint32_t i = 0; i < num_keys; i++) {
+    murmurhash_output[0] =
+        MurmurHash(str_keys[i].c_str(),
+                   static_cast<uint32_t>(strlen(str_keys[i].c_str())), seed);
+    murmurhash_output[1] =
+        MurmurHash(std::to_string(int_keys[i]).c_str(), sizeof(uint32_t), seed);
   }
   auto end = duration_cast<milliseconds>(system_clock::now().time_since_epoch())
                  .count();
@@ -95,7 +96,7 @@ TEST_F(HashTest, TabulationHashTimeTest) {
   auto start =
       duration_cast<milliseconds>(system_clock::now().time_since_epoch())
           .count();
-  for (int i = 0; i < num_keys; i++) {
+  for (uint32_t i = 0; i < num_keys; i++) {
     tabulation_output[0] = universal_hash.gethash(str_keys[i]);
     tabulation_output[1] = universal_hash.gethash(int_keys[i]);
   }
@@ -113,17 +114,16 @@ TEST_F(HashTest, MurmurHashStringKeyAvalancheTest) {
   const uint32_t str_bitlength = 48;
   uint32_t res[str_bitlength][32] = {0};
   for (auto& str_key : str_keys) {
-    MurmurHash3_x86_32(str_key.c_str(),
-                       static_cast<uint64_t>(strlen(str_key.c_str())), seed,
-                       &(murmurhash_output[0]));
-    for (int j = 0; j < str_bitlength; j++) {
+    murmurhash_output[0] = MurmurHash(
+        str_key.c_str(), static_cast<uint32_t>(strlen(str_key.c_str())), seed);
+    for (uint32_t j = 0; j < str_bitlength; j++) {
       std::bitset<str_bitlength> str_key_flipped_bitarray(
           convert_to_bitstring(str_key));
       std::string str_key_flipped =
           str_key_flipped_bitarray.flip(j).to_string();
-      MurmurHash3_x86_32(str_key_flipped.c_str(),
-                         static_cast<uint64_t>(strlen(str_key_flipped.c_str())),
-                         seed, &(murmurhash_output[1]));
+      murmurhash_output[1] = MurmurHash(
+          str_key_flipped.c_str(),
+          static_cast<uint32_t>(strlen(str_key_flipped.c_str())), seed);
       for (int k = 0; k < 32; k++) {
         res[j][k] += ((murmurhash_output[0] ^ murmurhash_output[1]) >> k) & 1;
       }
@@ -145,7 +145,7 @@ TEST_F(HashTest, TabulationHashStringKeyAvalancheTest) {
   uint32_t res[str_bitlength][32] = {0};
   for (auto& str_key : str_keys) {
     tabulation_output[0] = universal_hash.gethash(str_key);
-    for (int j = 0; j < str_bitlength; j++) {
+    for (uint32_t j = 0; j < str_bitlength; j++) {
       std::bitset<str_bitlength> str_key_flipped_bitarray(
           convert_to_bitstring(str_key));
       std::string str_key_flipped =

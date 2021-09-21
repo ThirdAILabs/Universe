@@ -28,7 +28,7 @@ void VectorHashTable<Label_t>::insert(uint64_t n, Label_t const* labels,
       tables[getBucketIndex(table, hash)].push_back(label);
     }
   }
-};
+}
 
 template <typename Label_t>
 void VectorHashTable<Label_t>::insertSequential(uint64_t n, Label_t start,
@@ -41,7 +41,7 @@ void VectorHashTable<Label_t>::insertSequential(uint64_t n, Label_t start,
       tables[getBucketIndex(table, hash)].push_back(label);
     }
   }
-};
+}
 
 template <typename Label_t>
 void VectorHashTable<Label_t>::queryBySet(
@@ -63,7 +63,7 @@ void VectorHashTable<Label_t>::queryByCount(
       counts[label]++;
     }
   }
-};
+}
 
 template <typename Label_t>
 void VectorHashTable<Label_t>::queryByVector(
@@ -74,14 +74,14 @@ void VectorHashTable<Label_t>::queryByVector(
       results.push_back(label);
     }
   }
-};
+}
 
 template <typename Label_t>
 void VectorHashTable<Label_t>::clearTables() {
   for (uint64_t index = 0; index < _num_tables * _table_range; index++) {
     tables[index].clear();
   }
-};
+}
 
 template <typename Label_t>
 void VectorHashTable<Label_t>::sortBuckets() {
