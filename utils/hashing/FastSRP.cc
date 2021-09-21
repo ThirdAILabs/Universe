@@ -10,7 +10,7 @@ constexpr uint32_t DEFAULT_BINSIZE = 8;
 
 FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
                  uint32_t num_tables, uint32_t seed)
-    : HashFunction(num_tables, hashes_per_table),
+    : HashFunction(num_tables, 1 << hashes_per_table),
       _hashes_per_table(hashes_per_table),
       _num_hashes(hashes_per_table * num_tables),
       _dim(input_dim),

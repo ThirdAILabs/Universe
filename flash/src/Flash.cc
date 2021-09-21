@@ -1,0 +1,126 @@
+#include "Flash.h"
+#include "../../utils/hashtable/VectorHashTable.h"
+#include <algorithm>
+#include <iostream>
+#include <queue>
+#include <vector>
+
+namespace thirdai::search {
+
+template class Flash<uint8_t>;
+template class Flash<uint16_t>;
+template class Flash<uint32_t>;
+template class Flash<uint64_t>;
+
+template <typename Label_t>
+Flash<Label_t>::Flash(const utils::HashFunction& function)
+    : _function(function),
+      _num_tables(_function.numTables()),
+      _range(_function.range()),
+      _hashtable(new utils::VectorHashTable<Label_t>(_num_tables, _range)) {}
+
+template <typename Label_t>
+void Flash<Label_t>::addDataset(utils::Dataset& dataset) {
+  dataset.loadNextBatchSet();
+  while (dataset.numBatches() > 0) {
+    for (uint64_t batch_id = 0; batch_id < dataset.numBatches(); batch_id++) {
+      addBatch(dataset[batch_id]);
+    }
+    dataset.loadNextBatchSet();
+  }
+}
+
+template <typename Label_t>
+void Flash<Label_t>::addBatch(const utils::Batch& batch) {
+  if (idTooBig(batch)) {
+    throw std::invalid_argument("Trying to insert batch with starting id " +
+                                std::to_string(batch._starting_id) +
+                                " and length " +
+                                std::to_string(batch._batch_size) +
+                                ", which is too large an id for this Flash.");
+  }
+  uint32_t* hashes = hash(batch);
+  _hashtable->insertSequential(batch._batch_size, batch._starting_id, hashes);
+  delete hashes;
+}
+
+template <typename Label_t>
+uint32_t* Flash<Label_t>::hash(const utils::Batch& batch) const {
+  uint32_t* hashes = new uint32_t[batch._batch_size * _num_tables];
+  _function.hashBatchParallel(batch, hashes);
+  return hashes;
+}
+
+template <typename Label_t>
+bool Flash<Label_t>::idTooBig(const utils::Batch& batch) const {
+  uint64_t largest_batch_id = batch._starting_id + batch._batch_size;
+  // TODO(josh): Test this before pr
+  // std::cout << static_cast<uint64_t>(static_cast<Label_t>(largest_batch_id))
+  // << " " << largest_batch_id << std::endl;
+  return static_cast<uint64_t>(static_cast<Label_t>(largest_batch_id)) !=
+         largest_batch_id;
+}
+
+template <typename Label_t>
+std::vector<std::vector<Label_t>> Flash<Label_t>::queryBatch(
+    const utils::Batch& batch, uint32_t top_k) const {
+  std::vector<std::vector<Label_t>> results(batch._batch_size);
+  uint32_t* hashes = hash(batch);
+
+  // #pragma omp parallel for default(none) shared(batch, top_k, results,
+  // hashes)
+  for (uint64_t vec_id = 0; vec_id < batch._batch_size; vec_id++) {
+    std::vector<Label_t> query_result;
+    _hashtable->queryByVector(hashes + vec_id * _num_tables, query_result);
+    results.at(vec_id) = getTopKUsingPriorityQueue(query_result, top_k);
+  }
+
+  delete hashes;
+
+  return results;
+}
+
+template <typename Label_t>
+std::vector<Label_t> Flash<Label_t>::getTopKUsingPriorityQueue(
+    std::vector<Label_t>& query_result, uint32_t top_k) const {
+  // We sort so counting is easy
+  std::sort(query_result.begin(), query_result.end());
+
+  // To make this a max queue, we insert all element counts multiplied by -1
+  std::priority_queue<std::pair<uint32_t, uint64_t>> top_k_queue;
+  if (!query_result.empty()) {
+    uint64_t current_element = query_result.at(0);
+    uint32_t current_element_count = 0;
+    for (auto element : query_result) {
+      if (element == current_element) {
+        current_element_count++;
+      } else {
+        top_k_queue.emplace(-current_element_count, current_element);
+        if (top_k_queue.size() > top_k) {
+          top_k_queue.pop();
+        }
+        current_element = element;
+        current_element_count = 1;
+      }
+    }
+    top_k_queue.emplace(-current_element_count, current_element);
+    if (top_k_queue.size() > top_k) {
+      top_k_queue.pop();
+    }
+  }
+
+  // Create and save results vector
+  std::vector<Label_t> result;
+  while (!top_k_queue.empty()) {
+    result.push_back(top_k_queue.top().second);
+    top_k_queue.pop();
+  }
+  std::reverse(result.begin(), result.end());
+  while (result.size() < top_k) {
+    result.push_back(0);
+  }
+
+  return result;
+}
+
+}  // namespace thirdai::search
