@@ -22,6 +22,9 @@ using thirdai::utils::SVMDataset;
 // Universe/utils/tests/dataset/svm/bibtex
 static std::string filename = "../../../../../utils/tests/dataset/svm/bibtex";
 
+/**
+ * Formats a vector from a batch as a line in SVM format.
+ */
 static std::string format_vector_as_svm_line(const Batch& batch,
                                              uint64_t vec_i) {
   std::stringstream line;
@@ -40,26 +43,6 @@ static std::string format_vector_as_svm_line(const Batch& batch,
   return line.str();
 }
 
-static void append_batch_to_file(std::ostream& file, const Batch& batch) {
-  for (size_t vec_i = 0; vec_i < batch._batch_size; vec_i++) {
-    std::stringstream line;
-    line << batch._labels[vec_i][0];
-    for (size_t label_i = 1; label_i < batch._label_lens[vec_i]; label_i++) {
-      line << "," << batch._labels[vec_i][label_i];
-    }
-    if (batch._lens[vec_i] > 0) {
-      line << " ";
-      line << batch._indices[vec_i][0] << ":" << batch._values[vec_i][0];
-    }
-    for (size_t nonzero_i = 1; nonzero_i < batch._label_lens[vec_i];
-         nonzero_i++) {
-      line << " " << batch._labels[vec_i][nonzero_i] << ":"
-           << batch._values[vec_i][nonzero_i];
-    }
-    line << "\n";
-    file << line.str();
-  }
-}
 
 static uint64_t get_expected_num_batches(uint64_t target_batch_size,
                                          uint64_t target_batch_number,
@@ -89,6 +72,14 @@ static uint64_t get_expected_batch_size(uint64_t target_batch_size,
                                          batch_i_in_load * target_batch_size);
 }
 
+/**
+ * Helper function called in TEST(SVMDatasetTest, BatchSizeAndNumber)
+ * Evaluates the correctness of a batch set after a successful call to SVMDataset::loadNextBatchSet()
+ * Particularly, check:
+ *  - The number of times loadNextBatchSet() is called.
+ *  - The number of batches loaded each time loadNextBatchSet() is called.
+ *  - The size of each batch.
+ */
 static void evaluate_load(SVMDataset& Data, uint64_t target_batch_size,
                           uint64_t target_batch_number,
                           uint64_t number_of_times_loaded, uint64_t vec_num) {
@@ -212,13 +203,15 @@ TEST(SVMDatasetTest, CompareRewrittenFile) {
           std::string vector_svm_line =
               format_vector_as_svm_line(Data[batch_i], vec_i);
           if (vector_svm_line != line_from_file) {
-            std::cout << "Line " << line_num << std::endl;
+            std::cout << "Line " << line_num << " is different from original file:" << std::endl;
+            std::cout << "Original line: " << line_from_file << std::endl;
+            std::cout << "Processed line: " << vector_svm_line << std::endl;
           }
           ASSERT_EQ(vector_svm_line, line_from_file);
           line_num++;
         }
       }
-      while (Data.numBatches() == bn) {
+      while (bn != 0 && Data.numBatches() == bn) {
         Data.loadNextBatchSet();
         for (size_t batch_i = 0; batch_i < Data.numBatches(); batch_i++) {
           for (size_t vec_i = 0; vec_i < Data[batch_i]._batch_size; vec_i++) {

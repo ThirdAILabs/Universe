@@ -14,9 +14,7 @@ class SVMDataset : public Dataset {
   virtual void loadNextBatchSet();
 
   virtual ~SVMDataset(){
-      // No need to explicitly delete _batches because it is not initialized in
-      // the constructor.
-      // Destructor automatically deletes it.
+      // _batches is deleted in superclass destructor.
   };
 
  private:
@@ -27,12 +25,22 @@ class SVMDataset : public Dataset {
   std::vector<uint32_t> _indices;
   std::vector<float> _values;
   uint64_t _num_vecs;
-  // uint64_t _line_count;
-  uint64_t _last_num_batch;
-  // uint64_t _num_loads;
+  uint64_t _num_loads;
 
+  /**
+   * Helper function called in loadNextBatchSet().
+   * Reads lines from the dataset until one of the following is met:
+   * - EOF is reached
+   * - target_batch_num_per_load * target_batch_size vectors have been read (if target_batch_num_per_load > 0)
+   * Fills out _indices, _values, _labels, _label_markers and _markers.
+   */
   void readDataset();
 
+  /**
+   * Helper function called in loadNextBatchSet().
+   * Formats information that is read into _indices, _values, _labels, _label_markers and _markers 
+   * by readDataset() into an array of Batch objects.
+   */
   void createBatches();
 };
 
