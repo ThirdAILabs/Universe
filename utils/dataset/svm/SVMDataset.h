@@ -31,15 +31,17 @@ class SVMDataset : public Dataset {
    * Helper function called in loadNextBatchSet().
    * Reads lines from the dataset until one of the following is met:
    * - EOF is reached
-   * - target_batch_num_per_load * target_batch_size vectors have been read (if target_batch_num_per_load > 0)
-   * Fills out _indices, _values, _labels, _label_markers and _markers.
+   * - target_batch_num_per_load * target_batch_size vectors have been read (if
+   * target_batch_num_per_load > 0) Fills out _indices, _values, _labels,
+   * _label_markers and _markers.
    */
   void readDataset();
 
   /**
    * Helper function called in loadNextBatchSet().
-   * Formats information that is read into _indices, _values, _labels, _label_markers and _markers 
-   * by readDataset() into an array of Batch objects.
+   * Formats information that is read into _indices, _values, _labels,
+   * _label_markers and _markers by readDataset() into an array of Batch
+   * objects.
    */
   void createBatches();
 };

@@ -43,7 +43,6 @@ static std::string format_vector_as_svm_line(const Batch& batch,
   return line.str();
 }
 
-
 static uint64_t get_expected_num_batches(uint64_t target_batch_size,
                                          uint64_t target_batch_number,
                                          uint64_t number_of_times_loaded,
@@ -74,8 +73,8 @@ static uint64_t get_expected_batch_size(uint64_t target_batch_size,
 
 /**
  * Helper function called in TEST(SVMDatasetTest, BatchSizeAndNumber)
- * Evaluates the correctness of a batch set after a successful call to SVMDataset::loadNextBatchSet()
- * Particularly, check:
+ * Evaluates the correctness of a batch set after a successful call to
+ * SVMDataset::loadNextBatchSet() Particularly, check:
  *  - The number of times loadNextBatchSet() is called.
  *  - The number of batches loaded each time loadNextBatchSet() is called.
  *  - The size of each batch.
@@ -203,7 +202,8 @@ TEST(SVMDatasetTest, CompareRewrittenFile) {
           std::string vector_svm_line =
               format_vector_as_svm_line(Data[batch_i], vec_i);
           if (vector_svm_line != line_from_file) {
-            std::cout << "Line " << line_num << " is different from original file:" << std::endl;
+            std::cout << "Line " << line_num
+                      << " is different from original file:" << std::endl;
             std::cout << "Original line: " << line_from_file << std::endl;
             std::cout << "Processed line: " << vector_svm_line << std::endl;
           }
