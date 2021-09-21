@@ -1,4 +1,4 @@
-add_library(flash_lib STATIC flash.cc)
+add_library(flash_lib STATIC Flash.cc)
 
 target_link_libraries(
   flash_lib 
