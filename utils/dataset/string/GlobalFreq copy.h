@@ -12,8 +12,6 @@
 
 namespace thirdai::utils {
 
-  enum class FREQ_TYPE { FROM_DATA, DEFAULT };
-
 class GlobalFreq {
   /*
       This class is responsible for calculating (inverse) word/document
@@ -21,19 +19,9 @@ class GlobalFreq {
   */
  private:
   std::unordered_map<std::string, int> _idfMap;
-  std::ifstream _file;
-  FREQ_TYPE _freq_type;
 
  public:
- // For now let's assume we're only taking in one file. consider array or list of strings next time.
-  // GlobalFreq(std::vector<std::string>& files);
-  explicit GlobalFreq(std::string& filename): _file(filename), _freq_type(FREQ_TYPE::FROM_DATA) {
-    
-  };
-
-  GlobalFreq(): _freq_type(FREQ_TYPE::DEFAULT) {
-    
-  };
+  GlobalFreq(std::vector<std::string>& files, STRING_TYPE load_type);
 
   int getIdf(std::string& token);  // Should have a default value
   int getTF(std::string& token, std::string& doc);
@@ -47,7 +35,7 @@ class GlobalFreq {
 
 // static method to initialize global freq to ?? ah ok i think i want a private constructor.
 
-// GlobalFreq::GlobalFreq(std::vector<std::string>& files, STRING_TYPE load_type) {}
+GlobalFreq::GlobalFreq(std::vector<std::string>& files, STRING_TYPE load_type) {}
 
 GlobalFreq::~GlobalFreq() {}
 

@@ -33,6 +33,8 @@ enum class VECTOR_TYPE { TFIDF, MURMUR };
 
 class StringDataset : public Dataset {
  public:
+
+ // TODO (geordie): do I need to accept list of files as well?
   StringDataset(std::string filename, STRING_TYPE load_type, uint64_t target_batch_size,
                 uint64_t target_batch_num_per_load, GlobalFreq *global_freq);
 
