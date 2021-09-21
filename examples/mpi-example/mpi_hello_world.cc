@@ -21,8 +21,8 @@ int main(int argc, char** argv) {
   MPI_Get_processor_name(processor_name, &name_len);
 
   // Print off a hello world message
-  printf("Hello world from processor %s, rank %d out of %d processors\n",
-         processor_name, world_rank, world_size);
+  std::cout << "Hello world from processor " << processor_name << ", rank "
+            << world_rank << "out of " << world_size << " processors\n";
 
   // Finalize the MPI environment.
   MPI_Finalize();

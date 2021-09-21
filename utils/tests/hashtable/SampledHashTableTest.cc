@@ -158,8 +158,8 @@ TEST(SampledHashTableTest, InsertionQueryWithReservoirSampling) {
 
     std::vector<uint32_t> vec_results;
     table.queryByVector(query_hashes, vec_results);
-    for (uint32_t i = 0; i < vec_results.size(); i++) {
-      ASSERT_TRUE(exp_set_results.count(vec_results[i]));
+    for (uint32_t vec_result : vec_results) {
+      ASSERT_TRUE(exp_set_results.count(vec_result));
     }
 
     std::unordered_set<uint32_t> set_results;

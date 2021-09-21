@@ -124,11 +124,11 @@ class SampledHashTable final : public HashTable<Label_t> {
   void queryByVector(uint32_t const* hashes,
                      std::vector<Label_t>& results) const override;
 
-  void clearTables();
+  void clearTables() override;
 
-  uint32_t numTables() const { return _num_tables; };
+  uint32_t numTables() const override { return _num_tables; };
 
-  uint64_t tableRange() const { return _range; };
+  uint64_t tableRange() const override { return _range; };
 
   ~SampledHashTable();
 };

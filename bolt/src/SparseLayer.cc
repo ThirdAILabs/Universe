@@ -150,7 +150,7 @@ void SparseLayer::BackPropagateImpl(uint32_t batch_indx,
 
 void SparseLayer::ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
                                 uint32_t label_len) {
-  float frac = 1.0 / label_len;
+  float frac = static_cast<float>(1.0 / label_len);
 
   for (uint64_t n = 0; n < active_lens[batch_indx]; n++) {
     if (std::find(labels, labels + label_len, active_neurons[batch_indx][n]) !=
@@ -214,8 +214,8 @@ void SparseLayer::SelectActiveNeurons(uint32_t batch_indx,
 
 void SparseLayer::UpdateParameters(float lr, uint32_t iter, float B1, float B2,
                                    float eps) {
-  float B1_ = 1 - pow(B1, iter);
-  float B2_ = 1 - pow(B2, iter);
+  float B1_ = static_cast<float>(1 - pow(B1, iter));
+  float B2_ = static_cast<float>(1 - pow(B2, iter));
 
 #pragma omp parallel for default(none) shared(lr, B1, B1_, B2, B2_, eps)
   for (uint64_t n = 0; n < dim; n++) {
