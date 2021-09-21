@@ -19,8 +19,8 @@
 # clang-analyzer-*, -clang-analyzer-core.*:
 #    Includes clang-analyzer checks which runs an automatic analysis tool to find bugs.
 #    Some of the -core checks are slightly unintelligent (and finds bugs in our code that are not supposed to be).
-# cppcoreguidelines-*, -cppcoreguidelines-avoid-magic-numbers, -cppcoreguidelines-pro-bounds-*, -cppcoreguidelines-avoid-c-arrays, -cppcoreguidelines-init-variables, -cppcoreguidelines-owning-memory, -cppcoreguidelines-special-member-functions, -cppcoreguidelines-non-private-member-variables-in-classes:
-#    Checks all cpp core guidelines.
+# cppcoreguidelines-*:
+#    Checks all cpp core guidelines. Can look into some of these later.
 #    Currently ignoring:
 #       - Magic numbers
 #       - Using pointers to access arrays, and pointer arithmetic.
@@ -29,6 +29,8 @@
 #       - Memory ownership specification
 #       - Finding classes where some but not all special member functions are defined (default/copy/move constructor and destructor)
 #       - Non-private class variables
+#       - Global non-const variables
+#       - Type narrowing
 # google-*, -google-runtime-references:
 #    Checks all Google coding conventions. Ignore some non-const parameters for errors in
 #    HashTable.h.
@@ -58,7 +60,7 @@ Checks: >
          cert-*-cpp, -cert-err58-cpp, -cert-msc50-cpp, -cert-msc51-cpp, 
          cert-*-c, -cert-err34-c, -cert-msc30-c, -cert-msc32-c,
          clang-analyzer-*, -clang-analyzer-core.*,
-         cppcoreguidelines-*, -cppcoreguidelines-avoid-magic-numbers, -cppcoreguidelines-pro-*, -cppcoreguidelines-avoid-c-arrays, -cppcoreguidelines-init-variables, -cppcoreguidelines-owning-memory, -cppcoreguidelines-special-member-functions, -cppcoreguidelines-non-private-member-variables-in-classes,
+         cppcoreguidelines-*, -cppcoreguidelines-avoid-magic-numbers, -cppcoreguidelines-pro-*, -cppcoreguidelines-avoid-c-arrays, -cppcoreguidelines-init-variables, -cppcoreguidelines-owning-memory, -cppcoreguidelines-special-member-functions, -cppcoreguidelines-non-private-member-variables-in-classes, -cppcoreguidelines-narrowing-conversions, -cppcoreguidelines-avoid-non-const-global-variables,
          google-*, -google-runtime-references,
          llvm-*, -llvm-header-guard, -llvm-include-order,
          misc-*, -misc-non-private-member-variables-in-classes,
