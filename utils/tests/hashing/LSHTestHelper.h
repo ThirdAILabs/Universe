@@ -1,35 +1,40 @@
 #pragma once
 
 #include "../../hashing/HashFunction.h"
+#include "Similarity.h"
 #include <random>
 #include <set>
 #include <vector>
 
 namespace thirdai::utils::lsh_testing {
 
-struct TestVector {
-  std::vector<uint32_t> indices;
-  std::vector<float> values;
-  uint32_t len;
-};
+/**
+ * This function takes in a hash function and a similarity function and runs
+ * num_tests number of tests with different pairs of vectors with increasing
+ * uniformly distributed similarity values from 0 to 1, and asserts that the
+ * difference in the calculated and measured similarity values are all smaller
+ * in absolute value than max_diff, and finally checks that the average
+ * difference is smaller in absolute value than max_avg_diff. Finally, sparsity
+ * is the percent of non zeros we want to have in our test vectors.
+ */
+void runSparseSimilarityTest(const thirdai::utils::HashFunction& hash,
+                             Similarity& sim, uint32_t dim, uint32_t num_tables,
+                             uint32_t num_tests, float sparsity, float max_diff,
+                             float max_avg_diff);
 
-float cosine_similarity(const TestVector& a, const TestVector& b,
-                        bool is_dense);
+/** This is the same as the runSparseTest, except it occurs on dense vectors */
+void runDenseSimilarityTest(const thirdai::utils::HashFunction& hash,
+                            Similarity& sim, uint32_t dim, uint32_t num_tables,
+                            uint32_t num_tests, float max_diff,
+                            float max_avg_diff);
 
-std::pair<TestVector, TestVector> genRandSparseVectors(uint32_t max_dim,
-                                                       float sparsity,
-                                                       float approx_sim);
-
-std::pair<TestVector, TestVector> genRandDenseVectors(uint32_t dim,
-                                                      float approx_sim);
-
-void runSparseTest(const thirdai::utils::HashFunction& hash, uint32_t dim,
-                   uint32_t num_tables);
-
-void runDenseTest(const thirdai::utils::HashFunction& hash, uint32_t dim,
-                  uint32_t num_tables);
-
+/**
+ * This test hashes num_tests pairs of dense vectors at uniformly distributed
+ * similarities using the HashFunctions dense and sparse hashing functions,
+ * and ensures that the hashes are equal.
+ */
 void runSparseDenseEqTest(const thirdai::utils::HashFunction& hash,
-                          uint32_t dim, uint32_t num_tables);
+                          Similarity& sim, uint32_t dim, uint32_t num_tables,
+                          uint32_t num_tests);
 
 }  // namespace thirdai::utils::lsh_testing

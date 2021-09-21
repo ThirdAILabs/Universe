@@ -22,10 +22,9 @@ DensifiedMinHash::DensifiedMinHash(uint32_t input_dim,
                                    uint32_t hashes_per_table,
                                    uint32_t num_tables, uint32_t range_pow,
                                    uint32_t seed)
-    : _hashes_per_table(hashes_per_table),
-      _num_tables(num_tables),
+    : HashFunction(num_tables, 1 << range_pow),
+      _hashes_per_table(hashes_per_table),
       _num_hashes(hashes_per_table * num_tables),
-      _range(1 << range_pow),
       _binsize(ceil(1.0 * _range / _num_hashes)) {
   _log_num_hashes = log2(_num_hashes);
 
@@ -82,27 +81,8 @@ DensifiedMinHash::DensifiedMinHash(uint32_t input_dim,
   (void)input_dim;
 }
 
-void DensifiedMinHash::hashDense(uint64_t num_vectors, uint64_t dim,
-                                 const float* const* values,
-                                 uint32_t* output) const {
-  for (uint64_t i = 0; i < num_vectors; i++) {
-    hashDenseVector(values[i], dim, output + i * _num_tables);
-  }
-}
-
-void DensifiedMinHash::hashSparse(uint64_t num_vectors,
-                                  const uint32_t* const* indices,
-                                  const float* const* values,
-                                  const uint32_t* lengths,
-                                  uint32_t* output) const {
-  for (uint64_t i = 0; i < num_vectors; i++) {
-    hashSparseVector(indices[i], values[i], lengths[i],
-                     output + i * _num_tables);
-  }
-}
-
-void DensifiedMinHash::hashDenseVector(const float* data, uint32_t len,
-                                       uint32_t* final_hashes) const {
+void DensifiedMinHash::hashSingleDense(const float* values, uint32_t dim,
+                                       uint32_t* output) const {
   // _binsize is the number of times the _range is larger than the total number
   // of hashes we need.
   // read the data and add it to priority queue O(dlogk approx 7d) with index as
@@ -112,11 +92,11 @@ void DensifiedMinHash::hashDenseVector(const float* data, uint32_t len,
   std::priority_queue<PAIR, std::vector<PAIR>, cmp> pq;
 
   for (uint32_t i = 0; i < _topK; i++) {
-    pq.push(std::make_pair(i, data[i]));
+    pq.push(std::make_pair(i, values[i]));
   }
 
-  for (uint32_t i = _topK; i < len; i++) {
-    pq.push(std::make_pair(i, data[i]));
+  for (uint32_t i = _topK; i < dim; i++) {
+    pq.push(std::make_pair(i, values[i]));
     pq.pop();
   }
 
@@ -136,20 +116,20 @@ void DensifiedMinHash::hashDenseVector(const float* data, uint32_t len,
     }
   }
 
-  densifyHashes(hashes, final_hashes);
+  densifyHashes(hashes, output);
   // return final_hashes;
 }
 
-void DensifiedMinHash::hashSparseVector(const uint32_t* indices,
-                                        const float* values, uint32_t len,
-                                        uint32_t* final_hashes) const {
+void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
+                                        const float* values, uint32_t length,
+                                        uint32_t* output) const {
   uint32_t hashes[_num_hashes];
 
   for (uint32_t i = 0; i < _num_hashes; i++) {
     hashes[i] = std::numeric_limits<uint32_t>::max();
   }
 
-  for (uint32_t i = 0; i < len; i++) {
+  for (uint32_t i = 0; i < length; i++) {
     uint32_t binid = _binids[indices[i]];
 
     if (hashes[binid] < indices[i]) {
@@ -157,7 +137,7 @@ void DensifiedMinHash::hashSparseVector(const uint32_t* indices,
     }
   }
 
-  densifyHashes(hashes, final_hashes);
+  densifyHashes(hashes, output);
 
   (void)values;
 }

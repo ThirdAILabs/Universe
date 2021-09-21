@@ -12,10 +12,9 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
                                    uint32_t hashes_per_table,
                                    uint32_t num_tables, uint32_t range_pow,
                                    uint32_t seed)
-    : _hashes_per_table(hashes_per_table),
-      _num_tables(num_tables),
+    : HashFunction(num_tables, 1 << range_pow),
+      _hashes_per_table(hashes_per_table),
       _num_hashes(hashes_per_table * num_tables),
-      _range(1 << range_pow),
       _dim(input_dim),
       _binsize(DEFAULT_BINSIZE) {
   _permute = ceil((static_cast<double>(_num_hashes) * _binsize) / _dim);
@@ -46,27 +45,8 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
   _rand_double_hash_seed = dis(gen);
 }
 
-void DWTAHashFunction::hashSparse(uint64_t num_vectors,
-                                  const uint32_t* const* indices,
-                                  const float* const* values,
-                                  const uint32_t* lengths,
-                                  uint32_t* output) const {
-  for (uint64_t i = 0; i < num_vectors; i++) {
-    hashSparseVector(indices[i], values[i], lengths[i],
-                     output + i * _num_tables);
-  }
-}
-
-void DWTAHashFunction::hashDense(uint64_t num_vectors, uint64_t dim,
-                                 const float* const* values,
-                                 uint32_t* output) const {
-  for (uint64_t i = 0; i < num_vectors; i++) {
-    hashDenseVector(values[i], dim, output + i * _num_tables);
-  }
-}
-
-void DWTAHashFunction::hashDenseVector(const float* data, uint32_t len,
-                                       uint32_t* final_hashes) const {
+void DWTAHashFunction::hashSingleDense(const float* values, uint32_t dim,
+                                       uint32_t* output) const {
   uint32_t* hashes = new uint32_t[_num_hashes];
   float* bin_values = new float[_num_hashes];
 
@@ -77,10 +57,10 @@ void DWTAHashFunction::hashDenseVector(const float* data, uint32_t len,
 
   for (uint32_t p = 0; p < _permute; p++) {
     uint32_t base_bin_id = p * _dim;
-    for (uint32_t i = 0; i < len; i++) {
+    for (uint32_t i = 0; i < dim; i++) {
       uint32_t binid = _bin_map[base_bin_id + i];
-      if (binid < _num_hashes && bin_values[binid] < data[i]) {
-        bin_values[binid] = data[i];
+      if (binid < _num_hashes && bin_values[binid] < values[i]) {
+        bin_values[binid] = values[i];
         hashes[binid] = _positions[base_bin_id + i];
       }
     }
@@ -88,14 +68,14 @@ void DWTAHashFunction::hashDenseVector(const float* data, uint32_t len,
 
   delete[] bin_values;
 
-  densifyHashes(hashes, final_hashes);
+  densifyHashes(hashes, output);
 
   delete[] hashes;
 }
 
-void DWTAHashFunction::hashSparseVector(const uint32_t* indices,
-                                        const float* values, uint32_t len,
-                                        uint32_t* final_hashes) const {
+void DWTAHashFunction::hashSingleSparse(const uint32_t* indices,
+                                        const float* values, uint32_t length,
+                                        uint32_t* output) const {
   uint32_t* hashes = new uint32_t[_num_hashes];
   float* bin_values = new float[_num_hashes];
 
@@ -106,7 +86,7 @@ void DWTAHashFunction::hashSparseVector(const uint32_t* indices,
 
   for (uint32_t p = 0; p < _permute; p++) {
     uint32_t base_bin_id = p * _dim;
-    for (uint32_t i = 0; i < len; i++) {
+    for (uint32_t i = 0; i < length; i++) {
       uint32_t binid = _bin_map[base_bin_id + indices[i]];
       if (binid < _num_hashes && bin_values[binid] < values[i]) {
         bin_values[binid] = values[i];
@@ -116,7 +96,7 @@ void DWTAHashFunction::hashSparseVector(const uint32_t* indices,
   }
   delete[] bin_values;
 
-  densifyHashes(hashes, final_hashes);
+  densifyHashes(hashes, output);
 
   delete[] hashes;
 }
