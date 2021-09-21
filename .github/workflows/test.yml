@@ -28,7 +28,8 @@ jobs:
       - name: Build Tests
         run: |
           bin/build.sh
-      - name: Download test datasets
+      - name: Download Test Datasets
+        run: |
           bin/get_datasets.sh
       - name: Run Tests
         run: |
