@@ -2,7 +2,7 @@
 
 #include "HashFunction.h"
 #include "MurmurHash.h"
-#include <stdint.h>
+#include <cstdint>
 
 namespace thirdai::utils {
 

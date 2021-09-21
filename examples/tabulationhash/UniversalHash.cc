@@ -12,9 +12,9 @@ UniversalHash::UniversalHash(uint32_t seed) {
   std::random_device rd;
   std::mt19937_64 gen(rd());
   std::uniform_int_distribution<uint64_t> dis;
-  for (int i = 0; i < 8; i++) {
-    for (int j = 0; j < 256; j++) {
-      T[i][j] = dis(gen);
+  for (auto& i : T) {
+    for (auto& j : i) {
+      j = dis(gen);
     }
   }
 }
@@ -23,11 +23,10 @@ UniversalHash::UniversalHash(uint32_t seed) {
 // 	return T[key & 7][key];
 // }
 
-uint32_t UniversalHash::gethash(std::string key) {
+uint32_t UniversalHash::gethash(const std::string& key) {
   // Not really a great hash, but will be faster.
   uint32_t res = 0;
-  for (size_t i = 0; i < key.length(); i++) {
-    uint8_t temp = key.at(i);
+  for (uint8_t temp : key) {
     res ^= T[temp & 7][static_cast<uint32_t>(temp)];
   }
   return res;

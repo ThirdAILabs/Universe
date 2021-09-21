@@ -3,8 +3,8 @@
 #include "DenseVector.h"
 #include "SparseVector.h"
 #include <cassert>
+#include <cmath>
 #include <iostream>
-#include <math.h>
 #include <random>
 #include <unordered_set>
 #include <utility>
