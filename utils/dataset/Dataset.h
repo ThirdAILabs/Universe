@@ -18,8 +18,10 @@ struct Batch {
  public:
   // TODO(any): Comment these methods
   uint32_t _batch_size{0};
-  uint32_t** _indices{nullptr};
-  const float** _values{nullptr};
+  // These are const so we cannot change the values of the indices and values,
+  // which is nice if we want to point to a constant structure like a vector.
+  uint32_t const** _indices{nullptr};
+  float const** _values{nullptr};
   uint32_t* _lens{nullptr};
   uint32_t** _labels{nullptr};
   uint32_t* _label_lens{nullptr};
@@ -37,9 +39,7 @@ struct Batch {
    */
   Batch(uint64_t batch_size, BATCH_TYPE batch_type, LABEL_TYPE label_type,
         uint32_t dim, uint64_t starting_id) {
-    if (batch_type == BATCH_TYPE::DENSE) {
-      assert(dim != 0);
-    }
+    assert(dim != 0);
 
     _batch_type = batch_type;
     _label_type = label_type;
@@ -49,7 +49,7 @@ struct Batch {
     _starting_id = starting_id;
 
     if (_batch_type == BATCH_TYPE::SPARSE) {
-      _indices = new uint32_t*[_batch_size];
+      _indices = new const uint32_t*[_batch_size];
       _lens = new uint32_t[_batch_size];
     }
     if (_label_type == LABEL_TYPE::LABELED) {
