@@ -30,6 +30,9 @@ struct Batch {
   uint32_t _dim;
   uint64_t _starting_id;
 
+  /** Default constructor */
+  Batch(){};
+
   /**
    * Creates a new Batch object with a size, data dimension, and data type
    * If sparse, dimension can be set to 0.
