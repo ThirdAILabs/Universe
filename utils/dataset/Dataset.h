@@ -27,13 +27,15 @@ struct Batch {
   LABEL_TYPE _label_type;
   uint32_t _dim;
 
-  /**
-   * Creates a new Batch object with a size, data dimension, and data type
-   * If sparse, dimension can be set to 0.
-   */
+  /** Default constructor */
+  Batch(){};
+
+  /** Creates a new Batch object with a size, data dimension, and data type */
   Batch(uint64_t batch_size, BATCH_TYPE batch_type, LABEL_TYPE label_type,
         uint32_t dim) {
-    assert(dim != 0);
+    if (batch_type == BATCH_TYPE::DENSE) {
+      assert(_dim != 0);
+    }
 
     _batch_type = batch_type;
     _label_type = label_type;

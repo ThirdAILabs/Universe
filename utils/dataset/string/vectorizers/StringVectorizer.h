@@ -16,7 +16,7 @@ class StringVectorizer {
   /**
    * Returns the dimension of the vector.
    */
-  uint64_t getDimension() { return _dim; };
+  uint64_t getDimension() const { return _dim; };
 
   /**
    * Takes in a string 'str' and fills out 'indices' and 'values' vectors,

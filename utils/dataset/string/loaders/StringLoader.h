@@ -17,6 +17,6 @@ class StringLoader {
    * All punctuation marks must be stripped off.
    * Returns whether the next string is loaded successfully.
    */
-  virtual bool loadNextString(std::string& str_buf){};
+  virtual bool loadNextString(std::string& str_buf) = 0;
 };
 }  // namespace thirdai::utils
