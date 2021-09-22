@@ -1,8 +1,8 @@
 #!/bin/bash
 
 BASEDIR=$(dirname "$0")
-./build.sh
-./tests.sh
+./$BASEDIR/build.sh
+./$BASEDIR/tests.sh
 
 date=$(date '+%Y-%m-%d')
 mkdir /home/logs/date
