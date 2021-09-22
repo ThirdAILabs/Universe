@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cassert>
+#include <cmath>
 #include <iostream>
-#include <math.h>
 #include <random>
 #include <unordered_set>
 #include <utility>
@@ -43,7 +43,7 @@ static float angle(const DenseVector& a, const DenseVector& b) {
     mb += b.values[i] * b.values[i];
   }
 
-  return acos(total / (std::sqrt(ma) * std::sqrt(mb)));
+  return std::acos(total / (std::sqrt(ma) * std::sqrt(mb)));
 }
 
 /**
