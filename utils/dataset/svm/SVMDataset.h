@@ -11,7 +11,7 @@ class SVMDataset : public Dataset {
   SVMDataset(const std::string& filename, uint64_t target_batch_size,
              uint64_t target_batch_num_per_load);
 
-  virtual void loadNextBatchSet();
+  void loadNextBatchSet() override;
 
   virtual ~SVMDataset(){
       // _batches is deleted in superclass destructor.
@@ -25,7 +25,7 @@ class SVMDataset : public Dataset {
   std::vector<uint32_t> _indices;
   std::vector<float> _values;
   uint64_t _num_vecs;
-  uint64_t _num_loads;
+  uint64_t _times_previously_loaded;
 
   /**
    * Helper function called in loadNextBatchSet().

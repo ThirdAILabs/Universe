@@ -4,10 +4,10 @@
 #include <algorithm>
 #include <bitset>
 #include <chrono>
+#include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <random>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -79,41 +79,41 @@ static uint64_t get_expected_batch_size(uint64_t target_batch_size,
  *  - The number of batches loaded each time loadNextBatchSet() is called.
  *  - The size of each batch.
  */
-static void evaluate_load(SVMDataset& Data, uint64_t target_batch_size,
+static void evaluate_load(SVMDataset& data, uint64_t target_batch_size,
                           uint64_t target_batch_number,
                           uint64_t number_of_times_loaded, uint64_t vec_num) {
   if (target_batch_number > 0) {
-    if (Data.numBatches() > target_batch_number) {
+    if (data.numBatches() > target_batch_number) {
       std::cout << "Num batches is greater than target batch number. Something "
                    "is terribly wrong."
                 << std::endl;
     }
-    ASSERT_LE(Data.numBatches(), target_batch_number);
+    ASSERT_LE(data.numBatches(), target_batch_number);
   }
   uint64_t expected_num_batches = get_expected_num_batches(
       target_batch_size, target_batch_number, number_of_times_loaded, vec_num);
-  if (Data.numBatches() != expected_num_batches) {
+  if (data.numBatches() != expected_num_batches) {
     std::cout << "Num batches expected: " << expected_num_batches
-              << " got: " << Data.numBatches() << std::endl
+              << " got: " << data.numBatches() << std::endl
               << " Config: bn = " << target_batch_number
               << " bs = " << target_batch_size
               << " successful loads = " << number_of_times_loaded << std::endl;
   }
-  ASSERT_EQ(Data.numBatches(), expected_num_batches);
-  for (size_t batch_i = 0; batch_i < Data.numBatches(); batch_i++) {
-    ASSERT_LE(Data[batch_i]._batch_size, target_batch_size);
+  ASSERT_EQ(data.numBatches(), expected_num_batches);
+  for (size_t batch_i = 0; batch_i < data.numBatches(); batch_i++) {
+    ASSERT_LE(data[batch_i]._batch_size, target_batch_size);
     uint64_t expected_batch_size =
         get_expected_batch_size(target_batch_size, target_batch_number,
                                 number_of_times_loaded, vec_num, batch_i);
-    if (Data[batch_i]._batch_size != expected_batch_size) {
+    if (data[batch_i]._batch_size != expected_batch_size) {
       std::cout << "Batch size expected: " << expected_batch_size
-                << " got: " << Data[batch_i]._batch_size << std::endl
+                << " got: " << data[batch_i]._batch_size << std::endl
                 << " Config: bn = " << target_batch_number
                 << " bs = " << target_batch_size
                 << " successful loads = " << number_of_times_loaded
                 << " batch_i = " << batch_i << std::endl;
     }
-    ASSERT_EQ(Data[batch_i]._batch_size, expected_batch_size);
+    ASSERT_EQ(data[batch_i]._batch_size, expected_batch_size);
   }
 }
 

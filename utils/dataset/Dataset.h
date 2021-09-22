@@ -37,7 +37,7 @@ struct Batch {
   Batch(uint64_t batch_size, BATCH_TYPE batch_type, LABEL_TYPE label_type,
         uint32_t dim) {
     try {
-      if (batch_type == BATCH_TYPE::DENSE && _dim == 0) {
+      if (batch_type == BATCH_TYPE::DENSE && dim == 0) {
         throw "Dense batch does not accept dim = 0";
       }
 

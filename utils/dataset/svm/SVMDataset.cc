@@ -8,7 +8,7 @@ SVMDataset::SVMDataset(const std::string& filename, uint64_t target_batch_size,
     throw std::runtime_error("Unable to open file '" + filename + "'");
   }
   _num_batches = 0;
-  _num_loads = 0;
+  _times_previously_loaded = 0;
 };
 
 void SVMDataset::loadNextBatchSet() {
@@ -18,12 +18,15 @@ void SVMDataset::loadNextBatchSet() {
   // Option 1. At each subsequent load, delete the previous batch array.
   // Option 2. Keep the previous array and just modify it as necessary.
   // Keeping option 2.
-  if (_num_loads > 0) {
-    uint32_t last_batch_size =
-        std::min(_target_batch_size,
-                 _num_vecs - (_num_batches - 1) * _target_batch_size);
-    _batches[_num_batches - 1] =
-        Batch(last_batch_size, BATCH_TYPE::SPARSE, LABEL_TYPE::LABELED, 0);
+  if (_times_previously_loaded > 0) {
+    if (_num_batches > 0) {
+      uint32_t size_of_last_batch_in_current_load =
+          std::min(_target_batch_size,
+                   _num_vecs - (_num_batches - 1) * _target_batch_size);
+      _batches[_num_batches - 1] =
+          Batch(size_of_last_batch_in_current_load, BATCH_TYPE::SPARSE,
+                LABEL_TYPE::LABELED, 0);
+    }
   } else {
     _batches = new Batch[_num_batches];
 
@@ -36,7 +39,7 @@ void SVMDataset::loadNextBatchSet() {
   }
 
   createBatches();
-  _num_loads++;
+  _times_previously_loaded++;
 };
 
 void SVMDataset::readDataset() {
