@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MurmurHash.h"
 #include "StringDataset.h"
 #include "StringVectorizer.h"
 #include "StringLoader.h"
@@ -21,11 +22,12 @@ class GlobalFreq {
   */
  private:
   std::unordered_map<std::string, int> _idfMap;
-  StringVectorizer _stringVectorizer;
+  StringLoader* _string_loader;
   StringLoader _stringLoader;
+  u_int32_t _murmur_seed;
 
  public:
-  GlobalFreq(std::vector<std::string>& files, STRING_TYPE load_type);
+  GlobalFreq(std::vector<std::string>& files, StringLoader* string_loader, u_int32_t murmur_seed);
 
   int getIdf(std::string& token);  // Should have a default value
   int getTF(std::string& token, std::string& doc);
@@ -36,9 +38,5 @@ class GlobalFreq {
 
   ~GlobalFreq();
 };
-
-GlobalFreq::GlobalFreq(std::vector<std::string>& files, STRING_TYPE load_type) {}
-
-GlobalFreq::~GlobalFreq() {}
 
 }  // namespace thirdai::utils

@@ -18,5 +18,6 @@ class StringLoader {
    * Returns whether the next string is loaded successfully.
    */
   virtual bool loadNextString(std::string& str_buf) = 0;
+  virtual void updateFile(std::str filename) = 0;
 };
 }  // namespace thirdai::utils
