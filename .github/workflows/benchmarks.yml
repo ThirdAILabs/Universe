@@ -8,8 +8,8 @@ jobs:
     - name: executing remote ssh commands using password
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ 70.233.60.118 }}
-        username: ${{ alan }}
+        host: ${{ "70.233.60.118" }}
+        username: ${{ "alan" }}
         password: ${{ "" }}
         port: ${{ "" }}
         script: |
