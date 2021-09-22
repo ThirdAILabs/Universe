@@ -5,5 +5,5 @@ BUILDDIR="$BASEDIR/../build"
 
 # Download and unzip data
 SVMDATDIR="$BUILDDIR/utils/tests/dataset/svm" 
-wget -P "$SVMDATADIR" "https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel/bibtex.bz2"
+wget -P "$SVMDATADIR/" "https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel/bibtex.bz2"
 bzip2 -d $SVMDATADIR/bibtex.bz2
