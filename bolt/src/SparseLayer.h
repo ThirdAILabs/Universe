@@ -3,11 +3,17 @@
 #include "../../utils/hashing/DWTA.h"
 #include "../../utils/hashtable/SampledHashTable.h"
 #include "Layer.h"
-#include <stdint.h>
+#include <cstdint>
 
 namespace thirdai::bolt {
 
+namespace tests {
+class SparseLayerTestFixture;
+}  // namespace tests
+
 class SparseLayer final : public Layer {
+  friend class tests::SparseLayerTestFixture;
+
  public:
   SparseLayer() {}
 
@@ -24,13 +30,14 @@ class SparseLayer final : public Layer {
                    uint32_t label_len) override;
 
   void Backpropagate(uint32_t batch_indx, const uint32_t* indices,
-                     const float* values, float* errors, uint32_t len) {
+                     const float* values, float* errors,
+                     uint32_t len) override {
     BackPropagateImpl<false>(batch_indx, indices, values, errors, len);
   }
 
   void BackpropagateFirstLayer(uint32_t batch_indx, const uint32_t* indices,
                                const float* values, float* errors,
-                               uint32_t len) {
+                               uint32_t len) override {
     BackPropagateImpl<true>(batch_indx, indices, values, errors, len);
   }
 
