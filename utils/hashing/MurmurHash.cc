@@ -1,7 +1,7 @@
 #include "MurmurHash.h"
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 
 uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed) {
   uint32_t c1 = 0xcc9e2d51;
@@ -17,7 +17,7 @@ uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed) {
   const uint32_t* chunks = NULL;
   const uint8_t* tail = NULL;  // tail - last 8 bytes
   int i = 0;
-  int l = len / 4;  // chunk length
+  int l = static_cast<int>(len / 4);  // chunk length
 
   h = seed;
 
@@ -47,9 +47,20 @@ uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed) {
   switch (len & 3) {  // `len % 4'
     case 3:
       k ^= (tail[2] << 16);
+      k ^= (tail[1] << 8);
+      k ^= tail[0];
+      k *= c1;
+      k = (k << r1) | (k >> (32 - r1));
+      k *= c2;
+      h ^= k;
       break;
     case 2:
       k ^= (tail[1] << 8);
+      k ^= tail[0];
+      k *= c1;
+      k = (k << r1) | (k >> (32 - r1));
+      k *= c2;
+      h ^= k;
       break;
     case 1:
       k ^= tail[0];

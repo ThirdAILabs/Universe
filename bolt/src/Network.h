@@ -1,10 +1,10 @@
 #pragma once
 
 #include "DataLoader.h"
-#include "Layer.h"
+#include "SparseLayer.h"
+#include <cmath>
 #include <iostream>
 #include <limits>
-#include <math.h>
 #include <stdexcept>
 #include <vector>
 
@@ -124,7 +124,7 @@ class Network {
  protected:
   std::vector<LayerConfig> configs;
   uint64_t input_dim;
-  Layer** layers;
+  SparseLayer** layers;
   uint32_t num_layers;
   uint64_t batch_size_hint;
   uint32_t iter;

@@ -112,13 +112,13 @@ TEST_F(HashTest, MurmurHashStringKeyAvalancheTest) {
   uint32_t murmurhash_output[2];
   const uint32_t str_bitlength = 48;
   uint32_t res[str_bitlength][32] = {0};
-  for (int i = 0; i < num_keys; i++) {
-    MurmurHash3_x86_32(str_keys[i].c_str(),
-                       static_cast<uint64_t>(strlen(str_keys[i].c_str())), seed,
+  for (auto& str_key : str_keys) {
+    MurmurHash3_x86_32(str_key.c_str(),
+                       static_cast<uint64_t>(strlen(str_key.c_str())), seed,
                        &(murmurhash_output[0]));
     for (int j = 0; j < str_bitlength; j++) {
       std::bitset<str_bitlength> str_key_flipped_bitarray(
-          convert_to_bitstring(str_keys[i]));
+          convert_to_bitstring(str_key));
       std::string str_key_flipped =
           str_key_flipped_bitarray.flip(j).to_string();
       MurmurHash3_x86_32(str_key_flipped.c_str(),
@@ -129,51 +129,25 @@ TEST_F(HashTest, MurmurHashStringKeyAvalancheTest) {
       }
     }
   }
-  // TODO(alan): Could find better way for gtest assertion.
-  for (int j = 0; j < str_bitlength; j++) {
-    for (int k = 0; k < 32; k++) {
+
+  for (auto& j : res) {
+    for (auto& k : j) {
       // Expect ~0.5 probability over all 100000 keys.
-      EXPECT_NEAR(res[j][k], 50000, 10000);
+      EXPECT_NEAR(k, 50000, 10000);
     }
   }
 }
-
-// TEST_F(HashTest, MurmurHashIntegerKeyAvalancheTest) {
-//   // Allocate 64 bits for output of both keys.
-//   uint32_t murmurhash_output[2];
-//   uint32_t res[64][32] = {0};
-//   for (int i = 0; i < num_keys; i++) {
-//     MurmurHash3_x86_32(static_cast<void*>(&(int_keys[i])), sizeof(uint64_t),
-//                        seed, &(murmurhash_output[1]));
-//     for (int j = 0; j < 64; j++) {
-//       uint64_t int_key_flipped = int_keys[i] ^ (1 << j);
-//       MurmurHash3_x86_32(static_cast<void*>(&(int_key_flipped)),
-//                          sizeof(uint64_t), seed, &(murmurhash_output[1]));
-//       for (int k = 0; k < 32; k++) {
-//         res[j][k] += ((murmurhash_output[0] ^ murmurhash_output[1]) >> k) &
-//         1;
-//       }
-//     }
-//   }
-//   // TODO(alan): Could find better way for gtest assertion.
-//   for (int j = 0; j < 64; j++) {
-//     for (int k = 0; k < 32; k++) {
-//       // Expect ~0.5 probability over all 100000 keys.
-//       EXPECT_NEAR(res[j][k], 50000, 20000);
-//     }
-//   }
-// }
 
 TEST_F(HashTest, TabulationHashStringKeyAvalancheTest) {
   // Allocate 64 bits for output of both keys.
   uint32_t tabulation_output[2];
   const uint32_t str_bitlength = 48;
   uint32_t res[str_bitlength][32] = {0};
-  for (int i = 0; i < num_keys; i++) {
-    tabulation_output[0] = universal_hash.gethash(str_keys[i]);
+  for (auto& str_key : str_keys) {
+    tabulation_output[0] = universal_hash.gethash(str_key);
     for (int j = 0; j < str_bitlength; j++) {
       std::bitset<str_bitlength> str_key_flipped_bitarray(
-          convert_to_bitstring(str_keys[i]));
+          convert_to_bitstring(str_key));
       std::string str_key_flipped =
           str_key_flipped_bitarray.flip(j).to_string();
       tabulation_output[1] = universal_hash.gethash(str_key_flipped);
@@ -182,35 +156,11 @@ TEST_F(HashTest, TabulationHashStringKeyAvalancheTest) {
       }
     }
   }
-  // TODO(alan): Could find better way for gtest assertion.
-  for (int j = 0; j < str_bitlength; j++) {
-    for (int k = 0; k < 32; k++) {
+
+  for (auto& j : res) {
+    for (auto& k : j) {
       // Expect ~0.5 probability over all 100000 keys.
-      EXPECT_NEAR(res[j][k], 50000, 10000);
+      EXPECT_NEAR(k, 50000, 10000);
     }
   }
 }
-
-// TEST_F(HashTest, TabulationHashIntegerKeyAvalancheTest) {
-//   // Allocate 64 bits for output of both keys.
-//   uint32_t tabulation_output[2];
-//   uint32_t res[64][32] = {0};
-//   for (int i = 0; i < num_keys; i++) {
-//     tabulation_output[0] = universal_hash.gethash(int_keys[i]);
-//     for (int j = 0; j < 64; j++) {
-//       uint64_t int_key_flipped = int_keys[i] ^ (1 << j);
-//       tabulation_output[1] = universal_hash.gethash(int_key_flipped);
-//       for (int k = 0; k < 32; k++) {
-//         res[j][k] += ((tabulation_output[0] ^ tabulation_output[1]) >> k) &
-//         1;
-//       }
-//     }
-//   }
-//   // TODO(alan): Could find better way for gtest assertion.
-//   for (int j = 0; j < 64; j++) {
-//     for (int k = 0; k < 32; k++) {
-//       // Expect ~0.5 probability over all 100000 keys.
-//       EXPECT_NEAR(res[j][k], 50000, 35000);
-//     }
-//   }
-// }

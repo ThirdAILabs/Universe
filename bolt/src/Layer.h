@@ -1,8 +1,6 @@
 #pragma once
 
-#include "../../utils/hashing/DWTA.h"
-#include "HashTable.h"
-#include <stdint.h>
+#include <cstdint>
 
 namespace thirdai::bolt {
 
@@ -28,90 +26,44 @@ struct SamplingConfig {
 
 class Layer {
  public:
-  Layer() {}
-
-  Layer(const Layer&) = delete;
-  Layer(Layer&&) = delete;
-  Layer& operator=(const Layer&) = delete;
-  Layer& operator=(Layer&&) = delete;
-
-  Layer(uint64_t _dim, uint64_t _prev_dim, float _sparsity,
-        ActivationFunc _act_func, SamplingConfig _sampling_config);
-
-  void ForwardPass(uint32_t batch_indx, const uint32_t* indices,
-                   const float* values, uint32_t len,
-                   uint32_t* labels = nullptr, uint32_t label_len = 0);
-
-  template <bool FIRST_LAYER>
-  void BackPropagate(uint32_t batch_indx, const uint32_t* indices,
-                     const float* values, float* errors, uint32_t len);
-
-  void ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
-                     uint32_t label_len);
-
-  void UpdateParameters(float lr, uint32_t iter, float B1 = BETA1,
-                        float B2 = BETA2, float eps = EPS);
-
-  void BuildHashTables();
-
-  void ReBuildHashFunction();
-
-  void SetSparsity(float new_sparsity);
-
-  void SetBatchSize(uint64_t new_batch_size);
-
-  void ShuffleRandNeurons();
-
-  uint32_t GetLen(uint32_t batch_indx) { return active_lens[batch_indx]; }
-
-  const uint32_t* GetIndices(uint32_t batch_indx) {
-    return active_neurons[batch_indx];
-  }
-
-  const float* GetValues(uint32_t batch_indx) {
-    return activations[batch_indx];
-  }
-
-  float* GetErrors(uint32_t batch_indx) { return errors[batch_indx]; }
-
-  float* GetWeights();
-
-  float* GetBiases();
-
-  ~Layer();
-
- private:
-  void SelectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
+  virtual void FeedForward(uint32_t batch_indx, const uint32_t* indices,
                            const float* values, uint32_t len, uint32_t* labels,
-                           uint32_t label_len);
+                           uint32_t label_len) = 0;
 
-  constexpr float ActFuncDerivative(float x);
+  virtual void Backpropagate(uint32_t batch_indx, const uint32_t* indices,
+                             const float* values, float* errors,
+                             uint32_t len) = 0;
 
-  uint64_t dim, prev_dim, batch_size, sparse_dim;
-  float sparsity;
-  ActivationFunc act_func;
+  virtual void BackpropagateFirstLayer(uint32_t batch_indx,
+                                       const uint32_t* indices,
+                                       const float* values, float* errors,
+                                       uint32_t len) = 0;
 
-  uint32_t* active_lens;
-  uint32_t** active_neurons;
-  float** activations;
-  float** errors;
+  virtual void ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
+                             uint32_t label_len) = 0;
 
-  float* weights;
-  float* w_gradient;
-  float* w_momentum;
-  float* w_velocity;
+  virtual void UpdateParameters(float lr, uint32_t iter, float B1, float B2,
+                                float eps) = 0;
 
-  float* biases;
-  float* b_gradient;
-  float* b_momentum;
-  float* b_velocity;
+  virtual uint32_t GetLen(uint32_t batch_indx) const = 0;
 
-  bool* is_active;
+  virtual const uint32_t* GetIndices(uint32_t batch_indx) const = 0;
 
-  SamplingConfig sampling_config;
-  utils::DWTAHashFunction* hasher;
-  HashTable<uint32_t, uint32_t>* hash_table;
-  uint32_t* rand_neurons;
+  virtual const float* GetValues(uint32_t batch_indx) const = 0;
+
+  virtual float* GetErrors(uint32_t batch_indx) = 0;
+
+  virtual void BuildHashTables() = 0;
+
+  virtual void ReBuildHashFunction() = 0;
+
+  virtual void SetSparsity(float new_sparsity) = 0;
+
+  virtual void SetBatchSize(uint64_t new_batch_size) = 0;
+
+  virtual void ShuffleRandNeurons() = 0;
+
+  virtual ~Layer() {}
 };
 
 }  // namespace thirdai::bolt
