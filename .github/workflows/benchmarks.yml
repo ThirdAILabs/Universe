@@ -1,4 +1,4 @@
-name: remote ssh command
+name: benchmarks
 on: [push]
 jobs:
   build:
@@ -8,10 +8,10 @@ jobs:
     - name: executing remote ssh commands using password
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        password: ${{ secrets.PASSWORD }}
-        port: ${{ secrets.PORT }}
+        host: ${{ 70.233.60.118 }}
+        username: ${{ alan }}
+        password: ${{ "" }}
+        port: ${{ "" }}
         script: |
           whoami
           ls -al
