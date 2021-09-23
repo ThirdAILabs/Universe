@@ -61,7 +61,8 @@ void SparseRandomProjection::hashSingleDense(const float* values, uint32_t dim,
       for (uint32_t srp_part = 0; srp_part < _sample_size; srp_part++) {
         uint32_t bit_index = table * _srps_per_table * _sample_size +
                              srp * _sample_size + srp_part;
-        s += _random_bits[bit_index] * values[_hash_indices[bit_index]];
+        s += static_cast<float>(_random_bits[bit_index]) *
+             values[_hash_indices[bit_index]];
       }
       uint32_t to_add = (s > 0) << srp;
       output[table] += to_add;
@@ -88,7 +89,8 @@ void SparseRandomProjection::hashSingleSparse(const uint32_t* indices,
           indices_index++;
         }
         if (indices_index < length && hash_index == indices[indices_index]) {
-          s += _random_bits[bit_index] * values[indices_index];
+          s += static_cast<float>(_random_bits[bit_index]) *
+               values[indices_index];
         }
       }
       uint32_t to_add = (s > 0) << srp;

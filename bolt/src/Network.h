@@ -2,9 +2,9 @@
 
 #include "DataLoader.h"
 #include "SparseLayer.h"
+#include <cmath>
 #include <iostream>
 #include <limits>
-#include <math.h>
 #include <stdexcept>
 #include <vector>
 

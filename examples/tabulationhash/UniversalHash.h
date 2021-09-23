@@ -13,7 +13,7 @@ class UniversalHash {
  public:
   explicit UniversalHash(uint32_t seed);
   // uint32_t gethash(uint8_t key);
-  uint32_t gethash(std::string key);
+  uint32_t gethash(const std::string& key);
   // uint32_t gethash(uint32_t key);
   uint32_t gethash(uint64_t key);
   void getBatchHash(const uint8_t* keys, const uint32_t* hashes,
