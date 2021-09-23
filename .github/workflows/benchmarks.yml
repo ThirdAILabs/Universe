@@ -11,6 +11,7 @@ jobs:
         command: |
           ls -a
           whoami
+          w
         host: ${{ secrets.HOST }}
         user: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
