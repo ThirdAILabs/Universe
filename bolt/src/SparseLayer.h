@@ -22,8 +22,8 @@ class SparseLayer final : public Layer {
   SparseLayer& operator=(const SparseLayer&) = delete;
   SparseLayer& operator=(SparseLayer&&) = delete;
 
-  SparseLayer(uint64_t _dim, uint64_t _prev_dim, float _sparsity,
-              ActivationFunc _act_func, SamplingConfig _sampling_config);
+  SparseLayer(uint64_t dim, uint64_t prev_dim, float sparsity,
+              ActivationFunc act_func, SamplingConfig sampling_config);
 
   void FeedForward(uint32_t batch_indx, const uint32_t* indices,
                    const float* values, uint32_t len, uint32_t* labels,
