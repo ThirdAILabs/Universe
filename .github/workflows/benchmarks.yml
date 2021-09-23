@@ -5,13 +5,13 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-    - name: ls -a via ssh
+    - uses: actions/checkout@v2
+    - name: Bolt Benchmarks
       uses: fifsky/ssh-action@master
       with:
         command: |
-          ls -a
-          whoami
           w
+          bin/regular-benchmark.sh
         host: ${{ secrets.HOST }}
         user: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
