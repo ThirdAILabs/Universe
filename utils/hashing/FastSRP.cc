@@ -58,10 +58,8 @@ FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
 
 void FastSRP::hashSingleDense(const float* values, uint32_t dim,
                               uint32_t* output) const {
-  // TODO(patrick): this could cause exceed max stack size, but is cheaper than
-  // memory allocation
-  uint32_t hashes[_num_hashes];
-  float bin_values[_num_hashes];
+  uint32_t* hashes = new uint32_t[_num_hashes];
+  float* bin_values = new float[_num_hashes];
 
   for (uint32_t i = 0; i < _num_hashes; i++) {
     hashes[i] = std::numeric_limits<uint32_t>::max();
@@ -87,16 +85,16 @@ void FastSRP::hashSingleDense(const float* values, uint32_t dim,
       }
     }
   }
+  delete[] bin_values;
 
   compactHashes(hashes, output);
+  delete[] hashes;
 }
 
 void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
                                uint32_t length, uint32_t* output) const {
-  // TODO(patrick): this could cause exceed max stack size, but is cheaper than
-  // memory allocation
-  uint32_t hashes[_num_hashes];
-  float bin_values[_num_hashes];
+  uint32_t* hashes = new uint32_t[_num_hashes];
+  float* bin_values = new float[_num_hashes];
 
   for (uint32_t i = 0; i < _num_hashes; i++) {
     hashes[i] = std::numeric_limits<uint32_t>::max();
@@ -123,7 +121,11 @@ void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
     }
   }
 
+  delete[] bin_values;
+
   densifyHashes(hashes, output);
+
+  delete[] hashes;
 }
 
 void FastSRP::densifyHashes(const uint32_t* hashes,

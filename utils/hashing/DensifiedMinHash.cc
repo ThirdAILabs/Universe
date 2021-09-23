@@ -94,7 +94,7 @@ void DensifiedMinHash::hashSingleDense(const float* values, uint32_t dim,
     pq.pop();
   }
 
-  uint32_t hashes[_num_hashes];
+  uint32_t* hashes = new uint32_t[_num_hashes];
 
   for (uint32_t i = 0; i < _num_hashes; i++) {
     hashes[i] = std::numeric_limits<uint32_t>::max();
@@ -111,13 +111,13 @@ void DensifiedMinHash::hashSingleDense(const float* values, uint32_t dim,
   }
 
   compactHashes(hashes, output);
-  // return final_hashes;
+  delete[] hashes;
 }
 
 void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
                                         const float* values, uint32_t length,
                                         uint32_t* output) const {
-  uint32_t hashes[_num_hashes];
+  uint32_t* hashes = new uint32_t[_num_hashes];
 
   for (uint32_t i = 0; i < _num_hashes; i++) {
     hashes[i] = std::numeric_limits<uint32_t>::max();
@@ -132,7 +132,7 @@ void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
   }
 
   densifyHashes(hashes, output);
-
+  delete[] hashes;
   (void)values;
 }
 

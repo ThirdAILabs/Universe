@@ -16,14 +16,14 @@ class UniversalHash {
   uint32_t gethash(const std::string& key);
   // uint32_t gethash(uint32_t key);
   uint32_t gethash(uint64_t key);
-  void getBatchHash(const uint8_t* keys, const uint32_t* hashes,
-                    uint32_t batchSize, uint32_t numHashes);
-  void getBatchHash(const uint32_t* keys, const uint32_t* hashes,
-                    uint32_t batchSize, uint32_t numHashes);
-  void getBatchHash(const uint64_t* keys, const uint32_t* hashes,
-                    uint32_t batchSize, uint32_t numHashes);
-  void getBatchHash(const char* keys, const uint32_t* hashes,
-                    uint32_t batchSize, uint32_t numHashes);
+  //   void getBatchHash(const uint8_t* keys, const uint32_t* hashes,
+  //                     uint32_t batchSize, uint32_t numHashes);
+  //   void getBatchHash(const uint32_t* keys, const uint32_t* hashes,
+  //                     uint32_t batchSize, uint32_t numHashes);
+  //   void getBatchHash(const uint64_t* keys, const uint32_t* hashes,
+  //                     uint32_t batchSize, uint32_t numHashes);
+  //   void getBatchHash(const char* keys, const uint32_t* hashes,
+  //                     uint32_t batchSize, uint32_t numHashes);
 };
 
 }  // namespace thirdai::examples
