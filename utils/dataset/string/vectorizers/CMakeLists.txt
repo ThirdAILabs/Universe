@@ -1,5 +1,5 @@
 enable_testing()
 
-add_library(tri_gram_vectorizer_lib STATIC TriGramVectorizer.cc)
+add_library(vectorizer_lib STATIC TriGramVectorizer.cc UnigramVectorizer.cc)
 
-target_link_libraries(tri_gram_vectorizer_lib PRIVATE hash_function_lib)
+target_link_libraries(vectorizer_lib PRIVATE hash_function_lib)
