@@ -17,6 +17,9 @@ using thirdai::examples::UniversalHash;
 using thirdai::utils::MurmurHash;
 
 class HashTest : public testing::Test {
+  /*
+   * TODO(alan): Add more unit tests and move to utils.
+   */
  private:
   static std::string generate_random_string() {
     const uint32_t num_chars = 26;

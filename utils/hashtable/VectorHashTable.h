@@ -6,14 +6,6 @@ namespace thirdai::utils {
 
 template <typename Label_t>
 class VectorHashTable : public HashTable<Label_t> {
- private:
-  uint32_t _num_tables;
-  uint64_t _table_range;
-  std::vector<std::vector<Label_t>> tables;
-  constexpr uint64_t getBucketIndex(uint64_t table, uint64_t hash) const {
-    return table * tableRange() + hash;
-  }
-
  public:
   VectorHashTable(uint32_t num_tables, uint64_t table_range);
 
@@ -40,6 +32,15 @@ class VectorHashTable : public HashTable<Label_t> {
 
   /** Sorts the contents of each bucket */
   void sortBuckets();
+
+ private:
+  constexpr uint64_t getBucketIndex(uint64_t table, uint64_t hash) const {
+    return table * tableRange() + hash;
+  }
+
+  uint32_t _num_tables;
+  uint64_t _table_range;
+  std::vector<std::vector<Label_t>> tables;
 };
 
 }  // namespace thirdai::utils

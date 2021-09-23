@@ -9,13 +9,8 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(PythonLibs REQUIRED)
 
 # One way that we can set global compiler flags for all targets. set(CMAKE_CXX_FLAGS) is the alternative.
-if (MSVC)
-    # warning level 4 and all warnings as errors
-    add_compile_options(/W4 /WX)
-else()
-    # lots of warnings and all warnings as errors
-    add_compile_options(-Wall -Wextra -pedantic -Werror -Wno-unused-function)
-endif()
+# Add lots of warnings and all warnings as errors
+add_compile_options(-Wall -Wextra -pedantic -Werror -Wno-unused-function)
 
 include(FetchContent)
 FetchContent_Declare(
