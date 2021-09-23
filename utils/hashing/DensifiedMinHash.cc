@@ -110,7 +110,7 @@ void DensifiedMinHash::hashSingleDense(const float* values, uint32_t dim,
     }
   }
 
-  densifyHashes(hashes, output);
+  compactHashes(hashes, output);
   delete[] hashes;
 }
 
@@ -138,7 +138,7 @@ void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
 
 void DensifiedMinHash::densifyHashes(const uint32_t* hashes,
                                      uint32_t* final_hashes) const {
-  uint32_t* hash_array = new uint32_t[_num_hashes];
+  uint32_t* hash_array = new uint32_t[_num_hashes]();
 
   for (uint32_t i = 0; i < _num_hashes; i++) {
     uint32_t next = hashes[i];
@@ -160,6 +160,13 @@ void DensifiedMinHash::densifyHashes(const uint32_t* hashes,
     hash_array[i] = next;
   }
 
+  compactHashes(hash_array, final_hashes);
+
+  delete[] hash_array;
+}
+
+void DensifiedMinHash::compactHashes(const uint32_t* hashes,
+                                     uint32_t* final_hashes) const {
   for (uint32_t i = 0; i < _num_tables; i++) {
     uint32_t index = 0;
     for (uint32_t j = 0; j < _hashes_per_table; j++) {
@@ -167,13 +174,12 @@ void DensifiedMinHash::densifyHashes(const uint32_t* hashes,
       h *= _rand1[_hashes_per_table * i + j];
       h ^= h >> 13;
       h ^= _rand1[_hashes_per_table * i + j];
-      index += h * hash_array[_hashes_per_table * i + j];
+      index += h * hashes[_hashes_per_table * i + j];
     }
 
     index = index & (_range - 1);
     final_hashes[i] = index;
   }
-  delete[] hash_array;
 }
 
 DensifiedMinHash::~DensifiedMinHash() {
