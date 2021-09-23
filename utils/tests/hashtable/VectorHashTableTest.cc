@@ -23,8 +23,8 @@ TEST(VectorHashTableTest, ExactRetrievalTest) {
   VectorHashTable<uint32_t> test_table(num_tables, table_range);
 
   // Generate hashes
-  uint32_t hashes[num_tables * num_items];
-  uint32_t labels[num_items];
+  uint32_t* hashes = new uint32_t[num_tables * num_items];
+  uint32_t* labels = new uint32_t[num_items];
   for (uint32_t i = 0; i < num_items; i++) {
     labels[i] = i + start_label;
     for (uint32_t t = 0; t < num_tables; t++) {
@@ -71,6 +71,8 @@ TEST(VectorHashTableTest, ExactRetrievalTest) {
 
     ASSERT_TRUE(result_set.empty());
   }
+  delete[] hashes;
+  delete[] labels;
 }
 
 /**

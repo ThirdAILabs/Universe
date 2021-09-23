@@ -18,7 +18,7 @@ IncludeCategories:
   Priority: 2000
 - Regex: '^<hashing/*'
   Priority: 2100
-- Regex: '^<search/*'
+- Regex: '^<hashtable/*'
   Priority: 2200
 - Regex: '^<gtest/*'
   Priority: 2300

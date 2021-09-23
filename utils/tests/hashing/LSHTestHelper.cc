@@ -35,12 +35,13 @@ void runSparseSimilarityTest(const thirdai::utils::HashFunction& hash,
                         sparse_result.v2.values.data()};
     uint32_t lens[2] = {num_non_zeros, num_non_zeros};
 
-    uint32_t hashes[2 * num_tables];
+    uint32_t* hashes = new uint32_t[2 * num_tables];
     hash.hashSparseParallel(2, indices, values, lens, hashes);
     float measured_sim = getMeasuredSim(hashes, num_tables);
 
     total_diff += measured_sim - actual_sim;
     EXPECT_NEAR(measured_sim, actual_sim, max_diff);
+    delete[] hashes;
   }
 
   float avg_diff = total_diff / num_tests;
@@ -61,12 +62,13 @@ void runDenseSimilarityTest(const thirdai::utils::HashFunction& hash,
     float* values[2] = {dense_result.v1.values.data(),
                         dense_result.v2.values.data()};
 
-    uint32_t hashes[2 * num_tables];
+    uint32_t* hashes = new uint32_t[2 * num_tables];
     hash.hashDenseParallel(2, values, dim, hashes);
     float measured_sim = getMeasuredSim(hashes, num_tables);
 
     total_diff += measured_sim - actual_sim;
     EXPECT_NEAR(measured_sim, actual_sim, max_diff);
+    delete[] hashes;
   }
 
   float avg_diff = total_diff / num_tests;
@@ -89,8 +91,8 @@ void runSparseDenseEqTest(const thirdai::utils::HashFunction& hash,
     float* values[2] = {vecs.v1.values.data(), vecs.v2.values.data()};
     uint32_t lens[2] = {dim, dim};
 
-    uint32_t dense_hashes[2 * num_tables];
-    uint32_t sparse_hashes[2 * num_tables];
+    uint32_t* dense_hashes = new uint32_t[2 * num_tables];
+    uint32_t* sparse_hashes = new uint32_t[2 * num_tables];
 
     hash.hashDenseParallel(2, values, dim, dense_hashes);
     hash.hashSparseParallel(2, indices, values, lens, sparse_hashes);
@@ -98,6 +100,8 @@ void runSparseDenseEqTest(const thirdai::utils::HashFunction& hash,
     for (uint32_t i = 0; i < 2 * num_tables; i++) {
       ASSERT_EQ(dense_hashes[i], sparse_hashes[i]);
     }
+    delete[] dense_hashes;
+    delete[] sparse_hashes;
   }
 }
 
