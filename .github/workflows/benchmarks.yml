@@ -10,6 +10,6 @@ jobs:
       with:
         command: |
           ls -a
-        host: 70.233.60.118
-        user: alan
-        key: ${{ secrets.PRIVATE_KEY}}
+        host: ${{ secrets.HOST }}
+        user: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
