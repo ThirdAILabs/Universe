@@ -17,7 +17,7 @@ jobs:
       uses: fifsky/ssh-action@master
       with:
         command: |
-          git clone -b benchmark-tests --single-branch https://github.com/ThirdAILabs/Universe.git
+          git clone -b benchmark-tests --single-branch git@github.com:ThirdAILabs/Universe.git
           w
           bin/regular-benchmark.sh
         host: ${{ secrets.HOST }}
