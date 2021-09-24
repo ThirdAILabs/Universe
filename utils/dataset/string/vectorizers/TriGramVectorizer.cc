@@ -1,12 +1,14 @@
 #include "TriGramVectorizer.h"
 
 namespace thirdai::utils {
-TriGramVectorizer::TriGramVectorizer(GlobalFreq* globalFreq): StringVectorizer(globalFreq) {
-  _dim = 50653;  // 37 ^ 3; 26 letters in the alphabet, 10 numbers, and space.
+
+TriGramVectorizer::TriGramVectorizer(uint32_t start_idx, uint32_t max_dim): StringVectorizer(start_idx, max_dim) {
+  uint32_t original_dim = 50653; // 37 ^ 3; 26 letters in the alphabet, 10 numbers, and space.
                  // 3 characters per token.
-                 
+  _dim = std::min(original_dim, _max_dim);  
+
   // Make minimum perfect hash.
-  _hashC = new uint8_t[256];
+  _hashC = new uint8_t[128]; // Among lower case letters, numbers and space, the highest ascii value is 122.
   // Space
   _hashC[32] = 0;
   // Numbers
@@ -17,7 +19,7 @@ TriGramVectorizer::TriGramVectorizer(GlobalFreq* globalFreq): StringVectorizer(g
   for (size_t i = 0; i < 26; i++) {
     _hashC[97 + i] = 11 + i;
   }
-
+  // Precompute calculations
   for (uint16_t i = 0; i < 37; i++) {
     _37x[i] = i * 37;
     _37x37x[i] = _37x[i] * 37;
@@ -34,21 +36,18 @@ void TriGramVectorizer::vectorize(const std::string& str,
   for (size_t i = 0; i < len - 2; i++) {
     // Can make rolling but it would only cut down one operation.
     uint32_t hash = 0;
-    const uint8_t *char_int_ptr = reinterpret_cast<const uint8_t *>(start + i);
-    hash += _hashC[char_int_ptr[0]] << 6;
+    const uint8_t* char_int_ptr = reinterpret_cast<const uint8_t*>(start + i);
+    hash += _hashC[char_int_ptr[0]];
     hash += _37x[_hashC[char_int_ptr[1]]];
     hash += _37x37x[_hashC[char_int_ptr[2]]];
-    ids[hash] += _globalFreq->getIdf(1);
+    ids[(hash % _dim) + _start_idx]++;
   }
-  // Resize the vector to the number of unique token IDs.
-  indices.resize(ids.size());
-  values.resize(ids.size());
-  size_t i = 0;
-  // This overwrites the previous contents of indices and values.
+  // Reserve space for new unique token IDs.
+  indices.reserve(indices.size() + ids.size());
+  values.reserve(values.size() + ids.size());
   for (auto kv : ids) {
-    indices[i] = kv.first;
-    values[i] = kv.second;
-    i++;
+    indices.push_back(kv.first);
+    values.push_back(kv.second);
   }
 };
 }  // namespace thirdai::utils

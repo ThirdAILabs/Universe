@@ -3,6 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <iostream>
 
 namespace thirdai::utils {
 /**
@@ -20,7 +21,15 @@ class StringVectorizer {
    * max_dim cannot be 0.
    */
   explicit StringVectorizer(uint32_t start_idx, uint32_t max_dim)
-      : _start_idx(start_idx), _max_dim(max_dim){};
+      : _start_idx(start_idx), _max_dim(max_dim) {
+        try {
+          if (_max_dim < 1) {
+            throw "String vectorizer does not accept max_dim < 1";
+          }
+        } catch(std::string& e) {
+          std::cout << "StringDataset:" << e << std::endl;
+        }
+      };
 
   /**
    * Returns the dimension of the vector.
