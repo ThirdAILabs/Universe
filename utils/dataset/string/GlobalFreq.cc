@@ -9,6 +9,7 @@ GlobalFreq::GlobalFreq(std::vector<std::string>& files, StringLoader* string_loa
     // start building the IDF map
     std::unordered_set<int> temp_set;
     size_t file_count = 0;
+    size_t total_doc_count = 0;
     for (auto file : files) {
         std::string buffer;
         string_loader->updateFile(file);
@@ -30,8 +31,13 @@ GlobalFreq::GlobalFreq(std::vector<std::string>& files, StringLoader* string_loa
                 }
             }
             temp_set.clear();
+            total_doc_count ++;
         }
-        
+    }
+    for (auto &kv : _idfMap) {
+        float df = kv.second;
+        float idf = log(total_doc_count/df);
+        _idfMap[kv.first] = idf;
     }
 }
 
