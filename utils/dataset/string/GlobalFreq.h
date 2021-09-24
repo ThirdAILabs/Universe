@@ -1,6 +1,5 @@
 #pragma once
 
-#include "StringDataset.h"
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -12,7 +11,7 @@
 
 namespace thirdai::utils {
 
-  enum class FREQ_TYPE { FROM_DATA, DEFAULT };
+enum class FREQ_TYPE { FROM_DATA, DEFAULT };
 
 class GlobalFreq {
   /*
@@ -25,17 +24,28 @@ class GlobalFreq {
   FREQ_TYPE _freq_type;
 
  public:
- // For now let's assume we're only taking in one file. consider array or list of strings next time.
-  // GlobalFreq(std::vector<std::string>& files);
-  explicit GlobalFreq(std::string& filename): _file(filename), _freq_type(FREQ_TYPE::FROM_DATA) {
-    
-  };
+  // For now let's assume we're only taking in one file. consider array or list
+  // of strings next time. GlobalFreq(std::vector<std::string>& files);
+  explicit GlobalFreq(std::string& filename)
+      : _file(filename),
+        _freq_type(FREQ_TYPE::FROM_DATA){
 
-  GlobalFreq(): _freq_type(FREQ_TYPE::DEFAULT) {
-    
-  };
+        };
 
-  int getIdf(std::string& token);  // Should have a default value
+  GlobalFreq()
+      : _freq_type(FREQ_TYPE::DEFAULT){
+
+        };
+
+  int getIdf(std::string& token) {
+    switch (_freq_type) {
+      case FREQ_TYPE::DEFAULT:
+        return 1;
+        break;
+      default:
+        break;
+    }
+  };  // Should have a default value
   int getTF(std::string& token, std::string& doc);
   int getTokenID(std::string& token);
 
@@ -45,9 +55,11 @@ class GlobalFreq {
   ~GlobalFreq();
 };
 
-// static method to initialize global freq to ?? ah ok i think i want a private constructor.
+// static method to initialize global freq to ?? ah ok i think i want a private
+// constructor.
 
-// GlobalFreq::GlobalFreq(std::vector<std::string>& files, STRING_TYPE load_type) {}
+// GlobalFreq::GlobalFreq(std::vector<std::string>& files, STRING_TYPE
+// load_type) {}
 
 GlobalFreq::~GlobalFreq() {}
 

@@ -1,52 +1,54 @@
 #include "StringDataset.h"
 
-/** 
+/**
  * TODO (benitoThree): add mock vectorizer and loader
- * 
- * If we were to test this routine, we would call the loadNextBatchSet() method and check _batches and _num_batches
- * _batches specs:
+ *
+ * If we were to test this routine, we would call the loadNextBatchSet() method
+ * and check _batches and _num_batches _batches specs:
  *  - Number of elements >= _num_batches
  *  - For each batch:
  *    - the right batch size based on target_batch_size.
  *    - batch size corresponds with size of indices, values, and lens
  *    - lengths of indices and values correspond with lens
- *    - check dim, indices and values against the ground truth produced by the vectorizer
- * _num_batches specs:
+ *    - check dim, indices and values against the ground truth produced by the
+ * vectorizer _num_batches specs:
  *  - Has to be the right number based on target_batch_num_per_load
- * 
- * The mock vectorizer and loader would have to meet some input and output specifications.
- * loader specs:
- *  - The loader outputs strings that only contain lower-case letters, numbers, or space.
- * vectorizer specs:
- *  - Takes in a string and complains if it has anything other than lower-case letters, numbers or space.
- *  - Each string has to produce a different vector so we can easily check whether the batches are duplicates or not.
- */ 
-
-/**
- * TODO(geordie): 
- * Figure out a new StringDataset that incorporates TFIDF and the idea that we will use all three of trigrams, unigrams and bigrams
- * First I want to figure out the loadNextBatchSet workflow?
- * How am I going to slip in TFIDF and the other grams?
- * TFIDF is all about values, so ..?
- * StringDataset, if TFIDF, might need to know whether this is loaded from a serialized object or if the first pass runs at the start.
- * ^But we probably just want an instantiated GlobalFreq to be passed into StringDataset
- * The vectorizers should also take the GlobalFreq
- * GlobalFreq can also be initialized to just 1, so that value would just be the count
- * Or if GlobalFreq is actually not just 1, then the value could be like, count * IDF
- * So I think I figured out how to do TFIDF
- * As for using all three of the token types, 
- * 1. Remove the TOKEN_TYPE enum
- * 2. Change vectorizer to not have to overwrite the vectors. Instead, they have to assume 
- * that they have to add stuff after what is already there and cannot overwrite anything.
- * 3. Run vectorizer one after another, referring to the same indices and values.
+ *
+ * The mock vectorizer and loader would have to meet some input and output
+ * specifications. loader specs:
+ *  - The loader outputs strings that only contain lower-case letters, numbers,
+ * or space. vectorizer specs:
+ *  - Takes in a string and complains if it has anything other than lower-case
+ * letters, numbers or space.
+ *  - Each string has to produce a different vector so we can easily check
+ * whether the batches are duplicates or not.
  */
 
-
+/**
+ * TODO(geordie):
+ * Figure out a new StringDataset that incorporates TFIDF and the idea that we
+ * will use all three of trigrams, unigrams and bigrams First I want to figure
+ * out the loadNextBatchSet workflow? How am I going to slip in TFIDF and the
+ * other grams? TFIDF is all about values, so ..? StringDataset, if TFIDF, might
+ * need to know whether this is loaded from a serialized object or if the first
+ * pass runs at the start. ^But we probably just want an instantiated GlobalFreq
+ * to be passed into StringDataset The vectorizers should also take the
+ * GlobalFreq GlobalFreq can also be initialized to just 1, so that value would
+ * just be the count Or if GlobalFreq is actually not just 1, then the value
+ * could be like, count * IDF So I think I figured out how to do TFIDF As for
+ * using all three of the token types,
+ * 1. Remove the TOKEN_TYPE enum
+ * 2. Change vectorizer to not have to overwrite the vectors. Instead, they have
+ * to assume that they have to add stuff after what is already there and cannot
+ * overwrite anything.
+ * 3. Run vectorizer one after another, referring to the same indices and
+ * values.
+ */
 
 namespace thirdai::utils {
-StringDataset::StringDataset(std::string filename,
-                             STRING_TYPE load_type, uint64_t target_batch_size,
-                             uint64_t target_batch_num_per_load, GlobalFreq *global_freq)
+StringDataset::StringDataset(std::string filename, STRING_TYPE load_type,
+                             uint64_t target_batch_size,
+                             uint64_t target_batch_num_per_load)
     : Dataset(target_batch_size, target_batch_num_per_load) {
   // The sentence loaders have not been fully implemented yet
   switch (load_type) {
@@ -60,8 +62,7 @@ StringDataset::StringDataset(std::string filename,
       _loader = new SentenceLoader(filename);
       break;
   }
-  _tri_gram_vectorizer
-  _dim = _vectorizer->getDimension();
+  _tri_gram_dim = _tri_gram_vectorizer.getDimension();
   _initialized = false;
 };
 
@@ -126,13 +127,14 @@ void StringDataset::loadNextBatchSet() {
   for (size_t vec_i = 0; vec_i < vec_count; vec_i++) {
     size_t batch_i = vec_i / _target_batch_size;
     size_t batch_vec_i = vec_i - (batch_i * _target_batch_size);
-    trigram->vectorize(strings_to_be_vectorized[vec_i], _indices[vec_i],
-                           _values[vec_i]);
+    _tri_gram_vectorizer.vectorize(strings_to_be_vectorized[vec_i],
+                                   _indices[vec_i], _values[vec_i]);
     _batches[batch_i]._lens[batch_vec_i] = _indices[vec_i].size();
     // This prevents us from having to malloc and delete arrays each time.
     // This works because vectors are guaranteed to store its contents in
     // contiguous memory.
-    _batches[batch_i]._indices[batch_vec_i] = &(_indices[vec_i][0]); // can use _indices[vec_i].data()
+    _batches[batch_i]._indices[batch_vec_i] =
+        &(_indices[vec_i][0]);  // can use _indices[vec_i].data()
     _batches[batch_i]._values[batch_vec_i] = &(_values[vec_i][0]);
   }
 }

@@ -1,8 +1,8 @@
 TODO
 
 LOADERS
- 1. SentenceLoader (Geordie)
- 2. SentenceLoaderTest (Geordie)
+ 1. SentenceLoader (Geordie) PRIORITY
+ 2. SentenceLoaderTest (Geordie) PRIORITY
  3. ParagraphLoader 
  4. ParagraphLoaderTest
  5. FileLoader
@@ -13,15 +13,16 @@ LOADERS
     - Check that every file in the queue is eventually reached
 
 VECTORIZERS
- 1. TriGramVectorizer (Geordie)
- 2. TriGramVectorizerTest (almost done, just need to check for shifts and dimension constraints) (Geordie)
- 3. UniGramVectorizer (Henry)
- 4. UniGramVectorizerTest (Henry)
+ 1. TriGramVectorizer (Geordie) PRIORITY DONE
+ 2. TriGramVectorizerTest (almost done, just need to check for shifts and dimension constraints) (Geordie) PRIORITY DONE
+ 3. UniGramVectorizer (Henry) PRIORITY
+ 4. UniGramVectorizerTest (Henry) PRIORITY
  5. BiGramVectorizer
  6. BiGramVectorizerTest
 
 DATASET
- 1. StringDataset (Geordie)
+ 1. StringDataset (Geordie) PRIORITY
+ 2. StringDatasetTest (Henry) PRIORITY
 
 
 
