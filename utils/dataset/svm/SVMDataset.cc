@@ -9,7 +9,7 @@ SVMDataset::SVMDataset(const std::string& filename, uint64_t target_batch_size,
   }
   _num_batches = 0;
   _times_previously_loaded = 0;
-};
+}
 
 void SVMDataset::loadNextBatchSet() {
   readDataset();
@@ -40,7 +40,7 @@ void SVMDataset::loadNextBatchSet() {
 
   createBatches();
   _times_previously_loaded++;
-};
+}
 
 void SVMDataset::readDataset() {
   _num_vecs = 0;
