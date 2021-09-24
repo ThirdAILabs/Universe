@@ -20,10 +20,10 @@ class SentenceLoader : public StringLoader {
     }
     size_t start_lb_idx = _lb_idx;
     bool not_sentence_delimiter = true;
-    for (_lb_idx; _lb_idx < _line_buffer.length() && not_sentence_delimiter;
-         _lb_idx++) {
+    while(_lb_idx < _line_buffer.length() && not_sentence_delimiter) {
       not_sentence_delimiter =
           notSentenceDelimiter(_line_buffer[_lb_idx], str_buf);
+      _lb_idx++;
     }
     str_buf = _line_buffer.substr(start_lb_idx, _lb_idx);
     if (!not_sentence_delimiter) {
@@ -39,6 +39,7 @@ class SentenceLoader : public StringLoader {
 
   void cleanUpLineBuffer(){};
   bool notSentenceDelimiter(char c, std::string& str) {
+    (void) str;
     return c != '.' && c != '?' && c != '!';
   }
 };

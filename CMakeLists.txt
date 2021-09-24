@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 
-set(CMAKE_CXX_COMPILER "g++")
-set(CMAKE_C_COMPILER "gcc")
+set(CMAKE_CXX_COMPILER "/opt/homebrew/bin/g++")
+set(CMAKE_C_COMPILER "/opt/homebrew/bin/gcc-11")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -fopenmp -fPIC -ffast-math -funroll-loops -ftree-vectorize")
 
 project(ThirdAI LANGUAGES CXX)

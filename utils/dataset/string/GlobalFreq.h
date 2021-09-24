@@ -1,9 +1,9 @@
 #pragma once
 
-#include "MurmurHash.h"
-#include "StringDataset.h"
-#include "StringVectorizer.h"
-#include "StringLoader.h"
+#include "../../hashing/MurmurHash.h"
+//#include "StringDataset.h"
+#include "vectorizers/StringVectorizer.h"
+#include "loaders/StringLoader.h"
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -23,7 +23,6 @@ class GlobalFreq {
  private:
   std::unordered_map<std::string, int> _idfMap;
   StringLoader* _string_loader;
-  StringLoader _stringLoader;
   u_int32_t _murmur_seed;
 
  public:

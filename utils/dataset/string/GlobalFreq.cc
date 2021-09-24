@@ -1,4 +1,4 @@
-#include "GlobalFreq.h";
+#include "GlobalFreq.h"
 
 namespace thirdai::utils {
 
@@ -14,6 +14,7 @@ GlobalFreq::GlobalFreq(std::vector<std::string>& files, StringLoader* string_loa
         while (string_loader->loadNextString(buffer)) {
             file_count++;
             // Murmurhash them. We need unigram & bigram & trigram
+            
         }
         
     }

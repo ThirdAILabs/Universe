@@ -7,7 +7,7 @@
 namespace thirdai::utils {
 class TriGramVectorizer : public StringVectorizer {
  public:
-  explicit TriGramVectorizer(GlobalFreq* globalFreq);
+  explicit TriGramVectorizer(uint32_t start_idx, uint32_t max_dim);
 
   virtual void vectorize(const std::string& str, std::vector<uint32_t>& indices,
                          std::vector<float>& values);
