@@ -1,0 +1,86 @@
+TODO
+
+LOADERS
+ 1. SentenceLoader (Geordie)
+ 2. SentenceLoaderTest (Geordie)
+ 3. ParagraphLoader 
+ 4. ParagraphLoaderTest
+ 5. FileLoader
+ 6. FileLoaderTest
+ 7. LoaderHelper / CleanUpString 
+ 8. LoaderTestHelper / Helpers to test invariant specs of loaders
+    - Check characters only contain spaces, lowercase letters, and numbers
+    - Check that every file in the queue is eventually reached
+
+VECTORIZERS
+ 1. TriGramVectorizer (Geordie)
+ 2. TriGramVectorizerTest (almost done, just need to check for shifts and dimension constraints) (Geordie)
+ 3. UniGramVectorizer (Henry)
+ 4. UniGramVectorizerTest (Henry)
+ 5. BiGramVectorizer
+ 6. BiGramVectorizerTest
+
+DATASET
+ 1. StringDataset (Geordie)
+
+
+
+SPECIFICATIONS (FOR V1, SEPTEMBER 24)
+
+LOADERS
+    The INVARIANT of loaders:
+    - The output string must only contain:
+        - spaces (just the space character; exclude tabs, newlines, etc.)
+        - lowercase letters
+        - numbers
+    - Load string from a file based on queue (manages which file in the queue is being read)
+
+ 1. LoaderHelper:
+    - cleanUpString()
+        - Converts non-newline whitespaces to space
+        - Converts uppercase letters to lowercase
+        - Removes every character that is not a letter, a number, space, or sentence ending punctuations
+        - No stemming
+
+ 2. SentenceLoader:
+    - Loads a sentence from a file
+    - Cleans up string (call cleanUpString())
+    - Sentences are delimited using ending punctuations (.?!); we do NOT consider edge cases such as:
+        - '.' is a part of an ellipsis
+        - '.' at the end of initials
+
+ 3. ParagraphLoader:
+    - Loads a paragraph from a file
+    - Cleans up string (call cleanUpString())
+    - Removes ending punctuations.
+    - Assumes a line is a paragraph; we do NOT consider edge cases such as:
+        - Each line is just a bullet point
+
+ 4. FileLoader:
+    - Loads all text from a file into a single string
+    - Cleans up string (call cleanUpString())
+    - Removes ending punctuations and newline characters.
+    
+
+VECTORIZERS
+    The INVARIANT of vectorizers:
+    - Shifts vector indices by start_idx.
+    - Fits all indices into max_dim indices.
+    - If dimension < max_dim, then don't rehash.
+
+ 1. TriGramVectorizer
+    - Fills 'indices' vector with character trigram token ids
+    - Fills 'values' vector with the frequency of each token id (no idf / global frequency)
+ 2. UniGramVectorizer
+    - Fills 'indices' vector with word unigram token ids
+    - Fills 'values' vector with the frequency of each token id (no idf / global frequency)
+ 3. BiGramVectorizer
+    - Fills 'indices' vector with word bigram token ids
+    - Fills 'values' vector with the frequency of each token id (no idf / global frequency)
+    
+
+DATASET
+ 1. StringDataset
+    - Loads string using one of the loaders
+    - Passes it to all three vectorizers and assembles their products into one vector
+    - Formats into batches

@@ -1,5 +1,5 @@
 #pragma once
-#include "../GlobalFreq.h"
+// #include "../GlobalFreq.h"
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -11,7 +11,16 @@ namespace thirdai::utils {
  */
 class StringVectorizer {
  public:
-  StringVectorizer(GlobalFreq* globalFreq) { _globalFreq = globalFreq; }
+  /**
+   * start_idx: The smallest possible non-zero index of the produced vector.
+   * The non-zero indices produced by the vectorizer should be shifted by
+   * + _start_idx.
+   *
+   * max_dim: The maximum dimension of the produced vector.
+   * max_dim cannot be 0.
+   */
+  explicit StringVectorizer(uint32_t start_idx, uint32_t max_dim)
+      : _start_idx(start_idx), _max_dim(max_dim){};
 
   /**
    * Returns the dimension of the vector.
@@ -21,15 +30,26 @@ class StringVectorizer {
   /**
    * Takes in a string 'str' and fills out 'indices' and 'values' vectors,
    * corresponding with the indices and values arrays of a sparse vector.
-   * 'indices' and 'values' are not necessarily empty so this method has
-   * to ensure that 'indices' and 'values' are overwritten.
+   * 'indices' and 'values' are not necessarily empty. This method appends
+   * to 'indices' and 'values'.
    */
   virtual void vectorize(const std::string& str, std::vector<uint32_t>& indices,
-                         std::vector<float>& values, VECTOR_TYPE vector_type){};
-
-  GlobalFreq* _globalFreq;
+                         std::vector<float>& values) = 0;
 
  protected:
+  /**
+   * The smallest possible non-zero index of the produced vector.
+   * The non-zero indices produced by the vectorizer should be shifted by
+   * + _start_idx.
+   */
+  uint32_t _start_idx;
+
+  /**
+   * The maximum dimension of the produced vector.
+   * _max_dim cannot be 0.
+   */
+  uint32_t _max_dim;
+
   /**
    * Dimension of the vector.
    */
