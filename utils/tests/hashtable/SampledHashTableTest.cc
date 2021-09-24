@@ -54,7 +54,7 @@ TEST(SampledHashTableTest, InsertionQueryWithoutReservoirSampling) {
   uint32_t num_queries = 1;
 
   for (uint32_t q = 0; q < num_queries; q++) {
-    uint32_t query_hashes[num_tables];
+    uint32_t* query_hashes = new uint32_t[num_tables];
     std::vector<uint32_t> exp_counts(2 * num_inserts, 0);
     std::vector<uint32_t> exp_vec_results;
     std::unordered_set<uint32_t> exp_set_results;
@@ -93,6 +93,7 @@ TEST(SampledHashTableTest, InsertionQueryWithoutReservoirSampling) {
     for (uint32_t x : exp_set_results) {
       ASSERT_TRUE(set_results.count(x));
     }
+    delete[] query_hashes;
   }
 }
 
@@ -138,7 +139,7 @@ TEST(SampledHashTableTest, InsertionQueryWithReservoirSampling) {
   uint32_t num_queries = 1000;
 
   for (uint32_t q = 0; q < num_queries; q++) {
-    uint32_t query_hashes[num_tables];
+    uint32_t* query_hashes = new uint32_t[num_tables];
     std::vector<uint32_t> exp_counts(2 * num_inserts, 0);
     std::unordered_set<uint32_t> exp_set_results;
     for (uint32_t t = 0; t < num_tables; t++) {
@@ -167,5 +168,6 @@ TEST(SampledHashTableTest, InsertionQueryWithReservoirSampling) {
     for (uint32_t x : set_results) {
       ASSERT_TRUE(exp_set_results.count(x));
     }
+    delete[] query_hashes;
   }
 }
