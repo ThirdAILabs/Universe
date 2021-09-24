@@ -11,6 +11,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace thirdai::utils {
@@ -21,9 +22,10 @@ class GlobalFreq {
      frequencies on a given data corpus.
   */
  private:
-  std::unordered_map<std::string, int> _idfMap;
+  std::unordered_map<int, float> _idfMap;
   StringLoader* _string_loader;
   u_int32_t _murmur_seed;
+  u_int32_t _max_dim = 100000;
 
  public:
   GlobalFreq(std::vector<std::string>& files, StringLoader* string_loader, u_int32_t murmur_seed);
