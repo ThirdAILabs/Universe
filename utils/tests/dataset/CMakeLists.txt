@@ -1,16 +1,27 @@
 enable_testing()
 
+# add_executable(
+#     tri_gram_vectorizer_test
+#     TriGramVectorizerTest.cc
+# )
 add_executable(
-    tri_gram_vectorizer_test
-    TriGramVectorizerTest.cc
+    uni_gram_vectorizer_test
+    UnigramVectorizerTest.cc
 )
 
+# target_link_libraries(
+#     tri_gram_vectorizer_test
+#     PRIVATE
+#     tri_gram_vectorizer_lib
+#     gtest_main
+# )
 target_link_libraries(
-    tri_gram_vectorizer_test
+    uni_gram_vectorizer_test
     PRIVATE
-    tri_gram_vectorizer_lib
+    vectorizer_lib
     gtest_main
 )
 
 include(GoogleTest)
-gtest_discover_tests(tri_gram_vectorizer_test)
+# gtest_discover_tests(tri_gram_vectorizer_test)
+gtest_discover_tests(uni_gram_vectorizer_test)
