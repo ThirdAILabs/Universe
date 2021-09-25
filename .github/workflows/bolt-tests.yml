@@ -1,4 +1,4 @@
-name: Run Bolt Tests
+name: Train Bolt on MNIST
 
 # Controls when the workflow will run
 on:
@@ -28,6 +28,6 @@ jobs:
     - name: Build ThirdAI Python Library
       run: |
         pip3 install .
-    - name: Run Tests
+    - name: Train Bolt
       run: |
         bin/bolt_mnist_test.sh

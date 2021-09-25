@@ -14,7 +14,7 @@ constexpr const char* key_re_str = "\\w+(?=\\s*=)";
 constexpr const char* int_re_str = "\\d+(?=\\s*(,|$))";
 constexpr const char* decimal_re_str = R"((\d+\.\d+)(?=\s*(,|$)))";
 constexpr const char* string_re_str = R"(("|')[-\w\\/.]+("|')(?=\s*(,|$)))";
-constexpr const char* comment_re_str =  R"(^\s*\/\/.*)";
+constexpr const char* comment_re_str = R"(^\s*\/\/.*)";
 constexpr const char* empty_re_str = "^\\s*$";
 
 class ConfigValue {
