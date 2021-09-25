@@ -12,7 +12,7 @@ class TriGramVectorizer : public StringVectorizer {
                  std::vector<float>& values) override;
 
  private:
-  // The following member variables are for storing the minimum perfect hash 
+  // The following member variables are for storing the minimum perfect hash
   // for trigrams containing only lowercase letters, numbers, and spaces.
   uint8_t* _hashC;
   uint16_t _37x[37];

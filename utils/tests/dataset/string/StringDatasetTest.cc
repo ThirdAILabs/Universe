@@ -5,17 +5,19 @@
  * LOADERS
  * 1. Sentence loader
  *  a. Correct fragmentation:
- *      - Start with a vector of sentences that only has lowercase letters, spaces and
- *      numbers. No punctuation. Stream each sentence to a file with a full stop at
- *      the end. Queue this file into the string loader. We should get a vector of strings 
- *      resembling the vector we started with.
- *  b. Correct preprocessing:
- *      - Given a text file that has uppercase letters, whitespaces other than space, and 
- *      other symbols, make sure that: 
- *          - the output strings only have spaces, numbers, and lowercase characters. 
+ *      - Start with a vector of sentences that only has lowercase letters,
+ * spaces and numbers. No punctuation. Stream each sentence to a file with a
+ * full stop at the end. Queue this file into the string loader. We should get a
+ * vector of strings resembling the vector we started with. b. Correct
+ * preprocessing:
+ *      - Given a text file that has uppercase letters, whitespaces other than
+ * space, and other symbols, make sure that:
+ *          - the output strings only have spaces, numbers, and lowercase
+ * characters.
  *          - the output strings do not have consecutive spaces
- *          - the numebr of output strings equals the number of expected sentences.
- * 
+ *          - the numebr of output strings equals the number of expected
+ * sentences.
+ *
  *
  *
  * VECTORIZERS

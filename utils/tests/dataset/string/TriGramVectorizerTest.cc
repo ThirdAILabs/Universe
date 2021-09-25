@@ -13,7 +13,7 @@
 using thirdai::utils::TriGramVectorizer;
 
 static uint32_t default_start_idx = 0;
-static uint32_t default_max_dim = 1 << 31; // practically max int
+static uint32_t default_max_dim = 1 << 31;  // practically max int
 
 /**
  * 1. Trigram vectorizer
@@ -27,7 +27,8 @@ static uint32_t default_max_dim = 1 << 31; // practically max int
 class TriGramVectorizerTest : public testing::Test {
  protected:
   /**
-   * Generate all possible trigrams composed of spaces, lowercase letters and numbers
+   * Generate all possible trigrams composed of spaces, lowercase letters and
+   * numbers
    */
   static std::vector<std::string> generate_all_trigrams() {
     uint8_t chars[37];
@@ -58,8 +59,8 @@ class TriGramVectorizerTest : public testing::Test {
   }
 
   /**
-   * Generate a string containing all possible trigrams composed of spaces, 
-   * lowercase letters and numbers by concatenating the possible trigrams 
+   * Generate a string containing all possible trigrams composed of spaces,
+   * lowercase letters and numbers by concatenating the possible trigrams
    * and a short passage at the end.
    */
   static std::string generate_string_containing_all_trigrams() {
@@ -68,7 +69,13 @@ class TriGramVectorizerTest : public testing::Test {
     for (const std::string& trigram : trigrams) {
       s += trigram;
     }
-    s += "lorem ipsum is simply dummy text of the printing and typesetting industry lorem ipsum has been the industrys standard dummy text ever since the 1500s when an unknown printer took a galley of type and scrambled it to make a type specimen book it has survived not only five centuries but also the leap into electronic typesetting remaining essentially unchanged it was popularised in the 1960s with the release of letraset sheets containing lorem ipsum passages";
+    s += "lorem ipsum is simply dummy text of the printing and typesetting "
+         "industry lorem ipsum has been the industrys standard dummy text ever "
+         "since the 1500s when an unknown printer took a galley of type and "
+         "scrambled it to make a type specimen book it has survived not only "
+         "five centuries but also the leap into electronic typesetting "
+         "remaining essentially unchanged it was popularised in the 1960s with "
+         "the release of letraset sheets containing lorem ipsum passages";
     return s;
   }
 
@@ -76,10 +83,12 @@ class TriGramVectorizerTest : public testing::Test {
   static std::vector<uint32_t> _indices;
   static std::vector<float> _values;
   static uint32_t _dim;
-  // Store the string containing all trigrams so it does not need to be recomputed.
+  // Store the string containing all trigrams so it does not need to be
+  // recomputed.
   static std::string _string_containing_all_trigrams;
 
-  // Initialize all cross-test parameters (_indices, _values, and _string_containing_all_trigrams).
+  // Initialize all cross-test parameters (_indices, _values, and
+  // _string_containing_all_trigrams).
   static void SetUpTestSuite() {
     TriGramVectorizer trigramvec(default_start_idx, default_max_dim);
     _string_containing_all_trigrams = generate_string_containing_all_trigrams();
@@ -136,11 +145,11 @@ TEST_F(TriGramVectorizerTest, SameNumberOfUniqueTokenIdsAsUniqueTokens) {
 }
 
 /**
- * Check that the number of times each trigram appears in the string is equal to 
+ * Check that the number of times each trigram appears in the string is equal to
  * the value corresponding to the the trigram's token id.
  */
 TEST_F(TriGramVectorizerTest, ValuesEqualToTokenCount) {
-  // Build a mapping from each token id to the trigram they represent. 
+  // Build a mapping from each token id to the trigram they represent.
   TriGramVectorizer TGV(default_start_idx, default_max_dim);
   std::unordered_map<uint32_t, std::string> idToTokenMap;
   std::vector<std::string> all_trigrams = generate_all_trigrams();
@@ -150,7 +159,7 @@ TEST_F(TriGramVectorizerTest, ValuesEqualToTokenCount) {
     TGV.vectorize(trigram, idx, val);
     idToTokenMap[idx[0]] = trigram;
   }
-  
+
   // Count the occurrence of each trigram.
   std::unordered_map<std::string, float> countMap;
   for (size_t i = 0; i < (_string_containing_all_trigrams.length() - 2); i++) {
@@ -159,20 +168,24 @@ TEST_F(TriGramVectorizerTest, ValuesEqualToTokenCount) {
     countMap[t]++;
   }
 
-  // Ensure that the count of the token corresponding with each token id is equal to 
-  // the corresponding value in the vector produced by TriGramVectorizer.
+  // Ensure that the count of the token corresponding with each token id is
+  // equal to the corresponding value in the vector produced by
+  // TriGramVectorizer.
   for (size_t i = 0; i < _indices.size(); i++) {
     if (countMap[idToTokenMap[_indices[i]]] != _values[i]) {
-      std::cout << "Token " << idToTokenMap[_indices[i]] << " with id " << _indices[i] << " appeared "
-                << countMap[idToTokenMap[_indices[i]]] << " times but the vector value is "
-                << _values[i] << "." << std::endl;
+      std::cout << "Token " << idToTokenMap[_indices[i]] << " with id "
+                << _indices[i] << " appeared "
+                << countMap[idToTokenMap[_indices[i]]]
+                << " times but the vector value is " << _values[i] << "."
+                << std::endl;
     }
     ASSERT_EQ(countMap[idToTokenMap[_indices[i]]], _values[i]);
   }
 }
 
 /**
- * Check that a trigram never gets hashed to the same token id as other trigrams.
+ * Check that a trigram never gets hashed to the same token id as other
+ * trigrams.
  */
 TEST_F(TriGramVectorizerTest, DifferentTokensNeverCollide) {
   // New instance of TriGramVectorizer to get token id of trigrams.
@@ -201,7 +214,8 @@ TEST_F(TriGramVectorizerTest, DifferentTokensNeverCollide) {
       idSeenMap[idx[0]] = true;
       trigramSeenMap[t] = true;
       tokenIdMap[t] = idx[0];
-    } else { // Otherwise, the id should be consistent with the id that is previously recorded for this trigram.
+    } else {  // Otherwise, the id should be consistent with the id that is
+              // previously recorded for this trigram.
       if (tokenIdMap[t] != idx[0]) {
         std::cout << "The token " << t << "had been mapped to" << tokenIdMap[t]
                   << " but is now mapped to " << idx[0] << "." << std::endl;
@@ -212,20 +226,20 @@ TEST_F(TriGramVectorizerTest, DifferentTokensNeverCollide) {
 }
 
 /**
- * Check that all indices are no less than the given start idx, 
+ * Check that all indices are no less than the given start idx,
  * and the lowest and highest indices are at most max dim apart.
  */
 TEST_F(TriGramVectorizerTest, ComformsToStartIdxAndMaxDim) {
-  // Start a new instance of TriGramVectorizer, this time with 
-  // a non-zero start idx and a max_dim smaller than the default 
+  // Start a new instance of TriGramVectorizer, this time with
+  // a non-zero start idx and a max_dim smaller than the default
   // dimension TriGramVectorizer.
   uint32_t shifted_start_idx = 50000;
   uint32_t smaller_max_dim = _dim / 2;
   TriGramVectorizer TGV(shifted_start_idx, smaller_max_dim);
 
   ASSERT_EQ(TGV.getDimension(), smaller_max_dim);
-  
-  // Make sure that all ids are at least shifted_start_idx and the 
+
+  // Make sure that all ids are at least shifted_start_idx and the
   // minimum and maximum ids are at most smaller_max_dim apart.
   uint32_t min = 1 << 31;
   uint32_t max = 0;

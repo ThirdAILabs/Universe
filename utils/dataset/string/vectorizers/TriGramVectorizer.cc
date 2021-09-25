@@ -2,13 +2,15 @@
 
 namespace thirdai::utils {
 
-TriGramVectorizer::TriGramVectorizer(uint32_t start_idx, uint32_t max_dim): StringVectorizer(start_idx, max_dim) {
-  uint32_t original_dim = 50653; // 37 ^ 3; 26 letters in the alphabet, 10 numbers, and space.
-                 // 3 characters per token.
-  _dim = std::min(original_dim, _max_dim);  
+TriGramVectorizer::TriGramVectorizer(uint32_t start_idx, uint32_t max_dim)
+    : StringVectorizer(start_idx, max_dim) {
+  uint32_t original_dim = 50653;  // 37 ^ 3; 26 letters in the alphabet, 10
+                                  // numbers, and space. 3 characters per token.
+  _dim = std::min(original_dim, _max_dim);
 
   // Make minimum perfect hash.
-  _hashC = new uint8_t[128]; // Among lower case letters, numbers and space, the highest ascii value is 122.
+  _hashC = new uint8_t[128];  // Among lower case letters, numbers and space,
+                              // the highest ascii value is 122.
   // Space
   _hashC[32] = 0;
   // Numbers

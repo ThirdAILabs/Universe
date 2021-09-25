@@ -1,8 +1,8 @@
 #pragma once
 #include "StringLoader.h"
+#include <algorithm>
 #include <fstream>
 #include <iostream>
-#include <algorithm>
 
 /**
  * For September 24th:
@@ -22,7 +22,7 @@ class SentenceLoader : public StringLoader {
   /**
    * Inherits String Loader.
    */
-  SentenceLoader() {};
+  SentenceLoader(){};
 
   bool loadNextString(std::string& str_buf) override;
 
@@ -32,10 +32,8 @@ class SentenceLoader : public StringLoader {
   size_t _lb_idx = 0;
   size_t _queue_idx = 0;
 
-
   static void cleanUpLineBuffer(std::string& line_buffer);
 
-  
   bool getNextLine(std::string& next_line_buf);
 };
 }  // namespace thirdai::utils
