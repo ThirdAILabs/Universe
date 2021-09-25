@@ -15,13 +15,13 @@ def train_sparse_output_layer(train_data, test_data):
     network = bolt.Network(layers=layers, input_dim=780)
 
     network.Train(batch_size=250, train_data=train_data, test_data=test_data,
-                  learning_rate=0.0001, epochs=3, rehash=3000, rebuild=10000, max_test_batches=40)
+                  learning_rate=0.0001, epochs=10, rehash=3000, rebuild=10000, max_test_batches=40)
     return network.GetFinalTestAccuracy()
 
 
 def train_sparse_hidden_layer(train_data, test_data):
     layers = [
-        bolt.LayerConfig(dim=1000, load_factor=0.01,
+        bolt.LayerConfig(dim=20000, load_factor=0.01,
                          activation_function="ReLU",
                          sampling_config=bolt.SamplingConfig(
                              hashes_per_table=3, num_tables=64,
@@ -32,11 +32,13 @@ def train_sparse_hidden_layer(train_data, test_data):
     network = bolt.Network(layers=layers, input_dim=780)
 
     network.Train(batch_size=250, train_data=train_data, test_data=test_data,
-                  learning_rate=0.0001, epochs=2, rehash=3000, rebuild=10000, max_test_batches=40)
+                  learning_rate=0.0001, epochs=10, rehash=3000, rebuild=10000, max_test_batches=40)
 
     return network.GetFinalTestAccuracy()
 
+
 MAX_RUNS = 5
+
 
 def verify_accuracy(test_fn, train_data, test_data, accuracy):
     accs = []
@@ -49,11 +51,13 @@ def verify_accuracy(test_fn, train_data, test_data, accuracy):
     s = "Failed to achive accuracy " + str(accuracy) + " got: "
     for a in accs:
         s += str(accs) + ", "
-    assert False, s
+    print(s)
+    sys.exit(1)
+
 
 def main():
-    assert len(
-        sys.argv) == 3, "Invalid args, usage: python3 mnist_so.py <train data> <test data>"
+    assert len(sys.argv) == 3, \
+        "Invalid args, usage: python3 mnist_so.py <train data> <test data> <optional sparse hidden layer size>"
     train_data = sys.argv[1]
     test_data = sys.argv[2]
 

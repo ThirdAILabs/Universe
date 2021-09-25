@@ -11,7 +11,8 @@ def main():
     layers = [
         bolt.LayerConfig(dim=256, activation_function="ReLU"),
         bolt.LayerConfig(dim=670091, load_factor=0.005, activation_function="Softmax",
-                         sampling_config=bolt.SamplingConfig(K=6, L=128, range_pow=18, reservoir_size=64))
+                         sampling_config=bolt.SamplingConfig(hashes_per_table=6, num_tables=128,
+                                                             range_pow=18, reservoir_size=64))
     ]
 
     network = bolt.Network(layers=layers, input_dim=135909)

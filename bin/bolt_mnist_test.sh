@@ -5,4 +5,4 @@ bzip2 -d mnist.bz2
 bzip2 -d mnist.t.bz2
 
 BASEDIR=$(dirname "$0")
-python3 $BASEDIR/../bolt/benchmarks/mnist.py ./mnist ./mnist.t
+python3 $BASEDIR/../bolt/benchmarks/mnist.py ../data/mnist ../data/mnist.t
