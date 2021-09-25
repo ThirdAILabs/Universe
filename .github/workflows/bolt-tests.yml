@@ -1,4 +1,4 @@
-name: Run Tests
+name: Run Bolt Tests
 
 # Controls when the workflow will run
 on:
@@ -20,6 +20,11 @@ jobs:
     # the rest of the steps
     - uses: actions/checkout@v2
 
+    # This is needed to ensure code can build
+    - name: Install MPI
+      run: |
+        sudo apt install -y mpich libmpich-dev
+        sudo apt install -y openmpi-bin openmpi-doc libopenmpi-dev
     - name: Build ThirdAI Python Library
       run: |
         pip3 install .

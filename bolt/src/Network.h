@@ -121,11 +121,11 @@ class Network {
     return funcs;
   }
 
-  std::vector<float> GetAccuracyPerEpoch() { return _accuracy_per_epoch; }
+  std::vector<float> GetAccuracyPerEpoch() const { return _accuracy_per_epoch; }
 
-  std::vector<int64_t> GetTimePerEpoch() { return _time_per_epoch; }
+  std::vector<int64_t> GetTimePerEpoch() const { return _time_per_epoch; }
 
-  float GetFinalTestAccuracy() { return _final_accuracy; }
+  float GetFinalTestAccuracy() const { return _final_accuracy; }
 
   ~Network();
 

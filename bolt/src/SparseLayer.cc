@@ -43,8 +43,8 @@ SparseLayer::SparseLayer(uint64_t dim, uint64_t prev_dim, float sparsity,
 
   if (_sparsity < 1.0) {
     _hasher = new utils::DWTAHashFunction(
-        _prev_dim, _sampling_config.hashes_per_table, _sampling_config.num_tables,
-        _sampling_config.range_pow);
+        _prev_dim, _sampling_config.hashes_per_table,
+        _sampling_config.num_tables, _sampling_config.range_pow);
 
     _hash_table = new utils::SampledHashTable<uint32_t>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
@@ -155,7 +155,8 @@ void SparseLayer::ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
   for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
     if (std::find(labels, labels + label_len, _active_neurons[batch_indx][n]) !=
         labels + label_len) {
-      _errors[batch_indx][n] = (frac - _activations[batch_indx][n]) / _batch_size;
+      _errors[batch_indx][n] =
+          (frac - _activations[batch_indx][n]) / _batch_size;
     } else {
       _errors[batch_indx][n] = -_activations[batch_indx][n] / _batch_size;
     }
@@ -230,7 +231,7 @@ void SparseLayer::UpdateParameters(float lr, uint32_t iter, float B1, float B2,
       _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
 
       _weights[indx] += lr * (_w_momentum[indx] / B1_) /
-                       (std::sqrt(_w_velocity[indx] / B2_) + eps);
+                        (std::sqrt(_w_velocity[indx] / B2_) + eps);
 
       _w_gradient[indx] = 0;
     }
@@ -259,7 +260,7 @@ void SparseLayer::BuildHashTables() {
 #pragma omp parallel for default(none) shared(num_tables, hashes)
   for (uint64_t n = 0; n < _dim; n++) {
     _hasher->hashSingleDense(_weights + n * _prev_dim, _prev_dim,
-                            hashes + n * num_tables);
+                             hashes + n * num_tables);
   }
 
   _hash_table->clearTables();
