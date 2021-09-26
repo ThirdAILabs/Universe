@@ -30,4 +30,4 @@ jobs:
         pip3 install .
     - name: Train Bolt
       run: |
-        sh bin/bolt_mnist_test.sh
+        bin/bolt_mnist_test.sh
