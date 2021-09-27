@@ -26,3 +26,4 @@ target_link_libraries(
 include(GoogleTest)
 # gtest_discover_tests(tri_gram_vectorizer_test)
 gtest_discover_tests(uni_gram_vectorizer_test)
+add_subdirectory(string)

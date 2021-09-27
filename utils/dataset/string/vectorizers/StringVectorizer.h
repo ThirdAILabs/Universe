@@ -1,6 +1,8 @@
 #pragma once
 #include "../GlobalFreq.h"
 //#include "../StringDataset.h"
+// #include "../GlobalFreq.h"
+#include <iostream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -22,7 +24,15 @@ class StringVectorizer {
    * max_dim cannot be 0.
    */
   explicit StringVectorizer(uint32_t start_idx, uint32_t max_dim)
-      : _start_idx(start_idx), _max_dim(max_dim){};
+      : _start_idx(start_idx), _max_dim(max_dim) {
+    try {
+      if (_max_dim < 1) {
+        throw "String vectorizer does not accept max_dim < 1";
+      }
+    } catch (std::string& e) {
+      std::cout << "StringDataset:" << e << std::endl;
+    }
+  };
 
   /**
    * Returns the dimension of the vector.
@@ -36,7 +46,9 @@ class StringVectorizer {
    * to 'indices' and 'values'.
    */
   virtual void vectorize(const std::string& str, std::vector<uint32_t>& indices,
-                         std::vector<float>& values, VECTOR_TYPE vector_type) = 0;
+                         std::vector<float>& values) = 0;
+
+  virtual ~StringVectorizer() {}
 
  protected:
   /**
