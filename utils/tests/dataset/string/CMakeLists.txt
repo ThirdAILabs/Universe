@@ -18,14 +18,14 @@ add_executable(
 target_link_libraries(
     tri_gram_vectorizer_test
     PRIVATE
-    tri_gram_vectorizer_lib
+    string_vectorizer_lib
     gtest_main
 )
 
 target_link_libraries(
     sentence_loader_test
     PRIVATE
-    sentence_loader_lib
+    string_loader_lib
     gtest_main
 )
 

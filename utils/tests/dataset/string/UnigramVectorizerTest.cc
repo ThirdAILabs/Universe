@@ -1,4 +1,4 @@
-#include "../../dataset/string/vectorizers/UnigramVectorizer.h"
+#include "../../../dataset/string/vectorizers/UnigramVectorizer.h"
 #include <gtest/gtest.h>
 using namespace std;
 
