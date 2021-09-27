@@ -32,8 +32,25 @@ class SentenceLoader : public StringLoader {
   size_t _lb_idx = 0;
   size_t _queue_idx = 0;
 
+  /**
+   * Cleans up the line buffer.
+   * - Convert all whitespaces into space.
+   * - Convert all uppercase characters into lowercase.
+   * - Convert all end-of-sentence punctuation marks to periods.
+   * - Remove any character that is not a letter, a number, or space.
+   * - Remove duplicate spaces and periods.
+   * - Remove periods and spaces before the first letter or number.
+   * - Remove trailing periods and spaces.
+   */
   static void cleanUpLineBuffer(std::string& line_buffer);
 
+  /**
+   * Retrieves the next line from the queue of files;
+   * Keep doing the following until a line is found:
+   *  If the current file is not exhausted, retrieve the next line in the file.
+   *  Otherwise, close the current file, open the next file and read a line from
+   * that file. If no line is found, return false.
+   */
   bool getNextLine(std::string& next_line_buf);
 };
 }  // namespace thirdai::utils

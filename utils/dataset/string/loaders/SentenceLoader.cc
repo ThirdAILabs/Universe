@@ -23,6 +23,31 @@ bool SentenceLoader::loadNextString(std::string& str_buf) {
   return true;
 };
 
+bool SentenceLoader::getNextLine(std::string& next_line_buf) {
+  // Make sure that file is open, file is not bad, file is not exhausted.
+  while (_queue_idx < _filename_queue.size()) {
+    // make sure file is open and good.
+    while (!_file.is_open() && _queue_idx < _filename_queue.size()) {
+      _file.open(_filename_queue[_queue_idx]);
+      if (_file.bad() || _file.fail() || !_file.good() || !_file.is_open()) {
+        _file.close();
+        _queue_idx++;
+      }
+    }
+    if (!_file.is_open()) {
+      return false;
+    }
+    // if file is exhausted, stay in the loop, otherwise return true.
+    if (!std::getline(_file, next_line_buf)) {
+      _file.close();
+      _queue_idx++;
+    } else {
+      return true;
+    }
+  }
+  return false;
+}
+
 void SentenceLoader::cleanUpLineBuffer(std::string& line_buffer) {
   // Turn all whitespaces into space.
   // Turn all uppercase characters into lowercase.
@@ -78,29 +103,4 @@ void SentenceLoader::cleanUpLineBuffer(std::string& line_buffer) {
   line_buffer.erase(std::remove(line_buffer.begin(), line_buffer.end(), '~'),
                     line_buffer.end());
 };
-
-bool SentenceLoader::getNextLine(std::string& next_line_buf) {
-  // Make sure that file is open, file is not bad, file is not exhausted.
-  while (_queue_idx < _filename_queue.size()) {
-    // make sure file is open and good.
-    while (!_file.is_open() && _queue_idx < _filename_queue.size()) {
-      _file.open(_filename_queue[_queue_idx]);
-      if (_file.bad() || _file.fail() || !_file.good() || !_file.is_open()) {
-        _file.close();
-        _queue_idx++;
-      }
-    }
-    if (!_file.is_open()) {
-      return false;
-    }
-    // if file is exhausted, stay in the loop, otherwise return true.
-    if (!std::getline(_file, next_line_buf)) {
-      _file.close();
-      _queue_idx++;
-    } else {
-      return true;
-    }
-  }
-  return false;
-}
 }  // namespace thirdai::utils
