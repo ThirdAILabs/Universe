@@ -1,6 +1,8 @@
 #include "../../../dataset/string/vectorizers/UnigramVectorizer.h"
 #include <gtest/gtest.h>
-using namespace std;
+
+using std::cout;
+using std::endl;
 
 namespace thirdai::utils{
 
@@ -11,8 +13,8 @@ std::vector<u_int32_t> indices;
 std::vector<float> values;
 
 TEST(UnigramVectorizerTest, Vectorize) {
-    UnigramVectorizer unigram_vectorizer(start_idx, max_dim);
-    unigram_vectorizer.vectorize(simple, indices, values, VECTOR_TYPE::TF);
+    UnigramVectorizer unigram_vectorizer(start_idx, max_dim, VECTOR_TYPE::TF);
+    unigram_vectorizer.vectorize(simple, indices, values);
     ASSERT_EQ(indices.size(), values.size());
     cout << "indices: ";
     for (auto i : indices) {
@@ -25,4 +27,4 @@ TEST(UnigramVectorizerTest, Vectorize) {
     }
     cout << endl;
 }
-}
+} // namespace thirdai::utils

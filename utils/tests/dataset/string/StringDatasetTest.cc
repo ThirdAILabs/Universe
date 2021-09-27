@@ -75,7 +75,8 @@ std::string filename = "FreelandSep10_2020.txt";
 
 TEST(StringDatasetTest, BatchesSentence) {
     // Make sure that sentence loader is working
-    SentenceLoader loader(filename);
+    SentenceLoader loader;
+    loader.addFileToQueue(filename);
     std::string buf;
     uint64_t expected_vec_num = 0;
     while (loader.loadNextString(buf)) {
@@ -90,7 +91,8 @@ TEST(StringDatasetTest, BatchesSentence) {
 
   for (auto bs : batch_sizes) {
     for (auto bn : batch_nums) {
-      StringDataset Data(filename, bs, bn);
+      StringDataset Data(FRAGMENT_TYPE::SENTENCE, bs, bn);
+      Data.addFileToQueue(filename);
       size_t successful_loads = 0;
 
       Data.loadNextBatchSet();

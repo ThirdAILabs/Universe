@@ -9,9 +9,9 @@ class UnigramVectorizer : public StringVectorizer {
   VECTOR_TYPE _vector_type;
  public:
   //UnigramVectorizer(GlobalFreq* globalFreq) : StringVectorizer(globalFreq){}
-  UnigramVectorizer(uint32_t start_idx, uint32_t max_dim);
-  virtual void vectorize(const std::string& str, std::vector<uint32_t>& indices,
-                         std::vector<float>& values);
+  UnigramVectorizer(uint32_t start_idx, uint32_t max_dim, VECTOR_TYPE vector_type);
+  void vectorize(const std::string& str, std::vector<uint32_t>& indices,
+                         std::vector<float>& values) override;
 };
 
 }  // namespace thirdai::utils

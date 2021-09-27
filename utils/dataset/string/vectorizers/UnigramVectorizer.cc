@@ -28,7 +28,7 @@ void UnigramVectorizer::vectorize(const std::string& str,
         ids[hash] += 1;
       }
       
-      // TODO: What about markers?
+      // TODO (henry): What about markers?
     }
     // Resize the vector to the number of unique token IDs.
     indices.resize(ids.size());
