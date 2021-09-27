@@ -2,6 +2,7 @@
 
 BASEDIR=$(dirname "$0")
 ./$BASEDIR/tests.sh
+./$BASEDIR/get_datasets.sh
 
 date=$(date '+%Y-%m-%d')
 target=$BASEDIR/../../logs/$date
