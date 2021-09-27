@@ -34,13 +34,7 @@ void Flash<Label_t>::addDataset(utils::Dataset& dataset) {
 
 template <typename Label_t>
 void Flash<Label_t>::addBatch(const utils::Batch& batch) {
-  if (idTooBig(batch)) {
-    throw std::invalid_argument("Trying to insert batch with starting id " +
-                                std::to_string(batch._starting_id) +
-                                " and length " +
-                                std::to_string(batch._batch_size) +
-                                ", which is too large an id for this Flash.");
-  }
+  verifyBatchIds(batch);
   uint32_t* hashes = hash(batch);
   _hashtable->insertSequential(batch._batch_size, batch._starting_id, hashes);
   delete hashes;
@@ -54,15 +48,23 @@ uint32_t* Flash<Label_t>::hash(const utils::Batch& batch) const {
 }
 
 template <typename Label_t>
-bool Flash<Label_t>::idTooBig(const utils::Batch& batch) const {
+void Flash<Label_t>::verifyBatchIds(const utils::Batch& batch) const {
   uint64_t largest_batch_id = batch._starting_id + batch._batch_size;
   // Casting to a smaller integer is well specified behavior because we are
   // dealing with only unsigned integers. If the largest_batch_id is out
   // of range of Label_t, its first bits will get truncated and the equality
   // check will fail (we cast back to uin64_t to ensure that the
   // largest_batch_id itself is not casst down to Label_t).
-  return static_cast<uint64_t>(static_cast<Label_t>(largest_batch_id)) !=
-         largest_batch_id;
+  bool out_of_range =
+      static_cast<uint64_t>(static_cast<Label_t>(largest_batch_id)) !=
+      largest_batch_id;
+  if (out_of_range) {
+    throw std::invalid_argument("Trying to insert batch with starting id " +
+                                std::to_string(batch._starting_id) +
+                                " and length " +
+                                std::to_string(batch._batch_size) +
+                                ", which is too large an id for this Flash.");
+  }
 }
 
 template <typename Label_t>

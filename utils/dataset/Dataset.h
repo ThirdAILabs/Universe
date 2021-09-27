@@ -18,39 +18,31 @@ struct Batch {
  public:
   // TODO(any): Comment these methods
   uint32_t _batch_size{0};
-  // These are const so we cannot change the values of the indices and values,
-  // which is nice if we want to point to a constant structure like a vector.
-  uint32_t const** _indices{nullptr};
-  float const** _values{nullptr};
+  uint32_t** _indices{nullptr};
+  float** _values{nullptr};
   uint32_t* _lens{nullptr};
   uint32_t** _labels{nullptr};
   uint32_t* _label_lens{nullptr};
-  // Just make the default sparse unlabeled
-  BATCH_TYPE _batch_type{BATCH_TYPE::SPARSE};
-  LABEL_TYPE _label_type{LABEL_TYPE::UNLABELED};
-  uint32_t _dim{0};
-  uint64_t _starting_id{0};
-
-  /** Default constructor */
-  Batch(){};
+  BATCH_TYPE _batch_type;
+  LABEL_TYPE _label_type;
+  uint32_t _dim;
 
   /**
    * Creates a new Batch object with a size, data dimension, and data type
    * If sparse, dimension can be set to 0.
    */
   Batch(uint64_t batch_size, BATCH_TYPE batch_type, LABEL_TYPE label_type,
-        uint32_t dim, uint64_t starting_id) {
+        uint32_t dim) {
     assert(dim != 0);
 
     _batch_type = batch_type;
     _label_type = label_type;
     _batch_size = batch_size;
-    _values = new const float*[_batch_size];
+    _values = new float*[_batch_size];
     _dim = dim;
-    _starting_id = starting_id;
 
     if (_batch_type == BATCH_TYPE::SPARSE) {
-      _indices = new const uint32_t*[_batch_size];
+      _indices = new uint32_t*[_batch_size];
       _lens = new uint32_t[_batch_size];
     }
     if (_label_type == LABEL_TYPE::LABELED) {
@@ -72,8 +64,7 @@ struct Batch {
         _label_lens(other._label_lens),
         _batch_type(other._batch_type),
         _label_type(other._label_type),
-        _dim(other._dim),
-        _starting_id(other._starting_id) {
+        _dim(other._dim) {
     // Set fields to null so we do not delete the fields of our current object
     other._batch_size = 0;
     other._indices = nullptr;
@@ -81,7 +72,6 @@ struct Batch {
     other._lens = nullptr;
     other._labels = nullptr;
     other._label_lens = nullptr;
-    other._starting_id = 0;
   }
 
   // No copy assignment operator
@@ -95,7 +85,6 @@ struct Batch {
     _lens = other._lens;
     _labels = other._labels;
     _label_lens = other._label_lens;
-    _starting_id = other._starting_id;
 
     other._batch_size = 0;
     other._indices = nullptr;
@@ -103,7 +92,6 @@ struct Batch {
     other._lens = nullptr;
     other._labels = nullptr;
     other._label_lens = nullptr;
-    other._starting_id = 0;
     return *this;
   }
 

@@ -59,10 +59,10 @@ class Flash {
       std::vector<Label_t>& query_result, uint32_t top_k) const;
 
   /**
-   * Returns whether this batch contains an id that is too large for the
+   * Throws an error if this batch contains an id that is too large for the
    * initialized FLASH (>2^16 for uin16_t, >2^32 for uint32_t, etc.).
    */
-  bool idTooBig(const utils::Batch& batch) const;
+  void verifyBatchIds(const utils::Batch& batch) const;
 
   const utils::HashFunction& _function;
   uint32_t _num_tables, _range;
