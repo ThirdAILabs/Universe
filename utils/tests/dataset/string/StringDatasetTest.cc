@@ -35,12 +35,12 @@ static void evaluate_load(StringDataset& data, uint64_t target_batch_size,
                           uint64_t target_batch_number,
                           uint64_t number_of_times_loaded, uint64_t vec_num) {
   if (target_batch_number > 0) {
-  if (data.numBatches() > target_batch_number) {
-    std::cout << "Num batches is greater than target batch number. Something "
-                "is terribly wrong."
-            << std::endl;
+    if (data.numBatches() > target_batch_number) {
+      std::cout << "Num batches is greater than target batch number. Something "
+                   "is terribly wrong."
+                << std::endl;
     }
-  ASSERT_LE(data.numBatches(), target_batch_number);
+    ASSERT_LE(data.numBatches(), target_batch_number);
   }
   uint64_t expected_num_batches = get_expected_num_batches(
       target_batch_size, target_batch_number, number_of_times_loaded, vec_num);
@@ -67,26 +67,24 @@ static void evaluate_load(StringDataset& data, uint64_t target_batch_size,
     }
     ASSERT_EQ(data[batch_i]._batch_size, expected_batch_size);
   }
-    
-
 }
 
 std::string filename = "FreelandSep10_2020.txt";
 
 TEST(StringDatasetTest, BatchesSentence) {
-    // Make sure that sentence loader is working
-    SentenceLoader loader;
-    loader.addFileToQueue(filename);
-    std::string buf;
-    uint64_t expected_vec_num = 0;
-    while (loader.loadNextString(buf)) {
-        buf.clear();
-        expected_vec_num++;
-    }
-    std::cout << "Expect " << expected_vec_num << " vectors in this dataset."
+  // Make sure that sentence loader is working
+  SentenceLoader loader;
+  loader.addFileToQueue(filename);
+  std::string buf;
+  uint64_t expected_vec_num = 0;
+  while (loader.loadNextString(buf)) {
+    buf.clear();
+    expected_vec_num++;
+  }
+  std::cout << "Expect " << expected_vec_num << " vectors in this dataset."
             << std::endl;
 
-    uint64_t batch_sizes[] = {150, 100, 50, 30};
+  uint64_t batch_sizes[] = {150, 100, 50, 30};
   uint64_t batch_nums[] = {150, 100, 50, 0};
 
   for (auto bs : batch_sizes) {
@@ -128,4 +126,4 @@ TEST(StringDatasetTest, BatchesSentence) {
   }
 }
 
-} // namespace thirdai::utils
+}  // namespace thirdai::utils
