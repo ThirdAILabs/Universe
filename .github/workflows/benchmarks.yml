@@ -18,7 +18,6 @@ jobs:
       with:
         command: |
           rm -rf Universe
-          ssh -vT git@github.com
           git clone -b benchmark-tests --single-branch git@github.com:ThirdAILabs/Universe.git
           cd Universe
           bin/regular-benchmark.sh
