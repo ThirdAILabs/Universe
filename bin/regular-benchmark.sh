@@ -9,8 +9,7 @@ mkdir $BASEDIR/../../logs/
 mkdir $target
 
 now=$(date +"%T")
-#echo "today: $date"
-#echo "Current time : $now"
+
 cd $BASEDIR/../build/
 ctest -A > "../$target/$now.txt"
-#ctest -A > "$now.txt"
+
