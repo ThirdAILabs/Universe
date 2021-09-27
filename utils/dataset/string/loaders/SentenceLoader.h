@@ -26,6 +26,8 @@ class SentenceLoader : public StringLoader {
 
   bool loadNextString(std::string& str_buf) override;
 
+  virtual ~SentenceLoader() {}
+
  private:
   std::ifstream _file;
   std::string _line_buffer;
