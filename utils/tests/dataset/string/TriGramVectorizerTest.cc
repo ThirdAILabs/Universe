@@ -255,23 +255,27 @@ TEST_F(TriGramVectorizerTest, ComformsToStartIdxAndMaxDim) {
 }
 
 /**
- * Check that running TriGramVectorizer does not overwrite the contents of values and indices.
+ * Check that running TriGramVectorizer does not overwrite the contents of
+ * values and indices.
  */
 TEST_F(TriGramVectorizerTest, DoesNotOverwriteIndicesAndValues) {
   // copy original vectors
   std::vector<uint32_t> new_indices(_indices);
-  std::vector<float> new_values(_values); 
+  std::vector<float> new_values(_values);
 
   // Vectorize
-  TriGramVectorizer TGV = TriGramVectorizer(_dim, default_max_dim); // Start_idx is equal to _dim of TriGramVectorizer so no collision. 
+  TriGramVectorizer TGV = TriGramVectorizer(
+      _dim, default_max_dim);  // Start_idx is equal to _dim of
+                               // TriGramVectorizer so no collision.
   TGV.vectorize(_string_containing_all_trigrams, new_indices, new_values);
 
   // check the lengths increase
   ASSERT_EQ(new_indices.size(), 2 * _indices.size());
   ASSERT_EQ(new_values.size(), 2 * _values.size());
-  // check that first original_length elements of indices and values matches the original one. 
+  // check that first original_length elements of indices and values matches the
+  // original one.
   for (size_t i = 0; i < _indices.size(); i++) {
     ASSERT_EQ(new_indices[i], _indices[i]);
     ASSERT_EQ(new_values[i], _values[i]);
-  } 
+  }
 }
