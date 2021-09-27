@@ -1,5 +1,4 @@
 #pragma once
-#include "../GlobalFreq.h"
 //#include "../StringDataset.h"
 // #include "../GlobalFreq.h"
 #include <iostream>
@@ -8,7 +7,7 @@
 #include <vector>
 
 namespace thirdai::utils {
-enum class VECTOR_TYPE { TFIDF, TF };
+enum class VALUE_TYPE { TFIDF, TF };
 /**
  * Interface for extracting sparse vector indices and values out of strings.
  * The constructor of the derived class has to set _dim.

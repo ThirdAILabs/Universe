@@ -4,8 +4,8 @@ namespace thirdai::utils {
 
 //UnigramVectorizer::~UnigramVectorizer() {}
 
-UnigramVectorizer::UnigramVectorizer(uint32_t start_idx, uint32_t max_dim, VECTOR_TYPE vector_type) : StringVectorizer(start_idx, max_dim){
-  _vector_type = vector_type;
+UnigramVectorizer::UnigramVectorizer(uint32_t start_idx, uint32_t max_dim, VALUE_TYPE value_type) : StringVectorizer(start_idx, max_dim){
+  _value_type = value_type;
 }
 
 void UnigramVectorizer::vectorize(const std::string& str,
@@ -19,7 +19,7 @@ void UnigramVectorizer::vectorize(const std::string& str,
       const char *converted = temp.c_str();
       u_int32_t len = temp.length();
       u_int32_t hash = MurmurHash(converted, len, _murmur_seed) % _max_dim;
-      if (_vector_type == VECTOR_TYPE::TFIDF) {
+      if (_value_type == VALUE_TYPE::TFIDF) {
         //int idf = _globalFreq->getIdf(temp);
         int idf = 1; // Placeholder
         ids[hash] += idf;

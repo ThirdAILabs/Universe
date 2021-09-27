@@ -13,7 +13,7 @@ std::vector<u_int32_t> indices;
 std::vector<float> values;
 
 TEST(UnigramVectorizerTest, Vectorize) {
-    UnigramVectorizer unigram_vectorizer(start_idx, max_dim, VECTOR_TYPE::TF);
+    UnigramVectorizer unigram_vectorizer(start_idx, max_dim, VALUE_TYPE::TF);
     unigram_vectorizer.vectorize(simple, indices, values);
     ASSERT_EQ(indices.size(), values.size());
     cout << "indices: ";
