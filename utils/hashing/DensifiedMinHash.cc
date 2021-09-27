@@ -1,4 +1,5 @@
 #include "DensifiedMinHash.h"
+#include "../Exceptions.h"
 #include <algorithm>
 #include <climits>
 #include <cmath>
@@ -20,51 +21,33 @@ struct cmp {
 
 DensifiedMinHash::DensifiedMinHash(uint32_t input_dim,
                                    uint32_t hashes_per_table,
-                                   uint32_t num_tables, uint32_t range_pow,
-                                   uint32_t seed)
-    : HashFunction(num_tables, 1 << range_pow),
+                                   uint32_t num_tables, uint32_t seed)
+    : HashFunction(num_tables, UINT32_MAX),
       _hashes_per_table(hashes_per_table),
-      _num_hashes(hashes_per_table * num_tables),
-      _binsize(ceil(1.0 * _range / _num_hashes)) {
-  _log_num_hashes = log2(_num_hashes);
-
+      _total_num_hashes(hashes_per_table * num_tables),
+      _binsize(_range / _total_num_hashes),
+      _seed(seed) {
   std::mt19937 gen(seed);
   std::uniform_int_distribution<uint32_t> dis(
       1, std::numeric_limits<uint32_t>::max() - 1);
 
-  _rand_double_hash_seed = dis(gen);
-
-  _randa = dis(gen);
+  uint32_t _randa = dis(gen);
   if (_randa % 2 == 0) {
     _randa++;
   }
 
-  _random_hash = new uint32_t[2];
-  _random_hash[0] = dis(gen);
+  _binids = new uint32_t[_total_num_hashes];
 
-  if (_random_hash[0] % 2 == 0) {
-    _random_hash[0]++;
-  }
-  _random_hash[1] = dis(gen);
-  if (_random_hash[1] % 2 == 0) {
-    _random_hash[1]++;
-  }
+  pregenerated_random_nums = new uint32_t[pregenerated_random_nums];
 
-  _binids = new uint32_t[_num_hashes];
-
-  _rand1 = new uint32_t[_num_hashes];
-
-  for (uint32_t i = 0; i < _num_hashes * _num_tables; i++) {
-    _rand1[i] = dis(gen);
-    if (_rand1[i] % 2 == 0) {
-      _rand1[i]++;
-    }
+  for (uint32_t i = 0; i < pregenerated_random_nums; i++) {
+    pregenerated_random_nums[i] = dis(gen);
   }
 
   // int _range = 1 << this->range_power;
   // _binsize is the number of times the _range is larger than the total number
   // of hashes we need.
-  for (uint32_t i = 0; i < _num_hashes; i++) {
+  for (uint32_t i = 0; i < pregenerated_random_nums; i++) {
     uint32_t curhash = MurmurHash(reinterpret_cast<char*>(&i),
                                   static_cast<uint32_t>(sizeof(i)),
                                   static_cast<uint32_t>(_randa));
@@ -77,70 +60,59 @@ DensifiedMinHash::DensifiedMinHash(uint32_t input_dim,
 
 void DensifiedMinHash::hashSingleDense(const float* values, uint32_t dim,
                                        uint32_t* output) const {
-  // _binsize is the number of times the _range is larger than the total number
-  // of hashes we need.
-  // read the data and add it to priority queue O(dlogk approx 7d) with index as
-  // key and values as priority value, get TOPK index O(1) and apply minhash on
-  // retuned index.
-
-  std::priority_queue<PAIR, std::vector<PAIR>, cmp> pq;
-
-  for (uint32_t i = 0; i < _topK; i++) {
-    pq.push(std::make_pair(i, values[i]));
-  }
-
-  for (uint32_t i = _topK; i < dim; i++) {
-    pq.push(std::make_pair(i, values[i]));
-    pq.pop();
-  }
-
-  uint32_t* hashes = new uint32_t[_num_hashes];
-
-  for (uint32_t i = 0; i < _num_hashes; i++) {
-    hashes[i] = std::numeric_limits<uint32_t>::max();
-  }
-
-  for (uint32_t i = 0; i < _topK; i++) {
-    PAIR pair = pq.top();
-    pq.pop();
-    uint32_t index = pair.first;
-    uint32_t binid = _binids[index];
-    if (hashes[binid] < index) {
-      hashes[binid] = index;
-    }
-  }
-
-  compactHashes(hashes, output);
-  delete[] hashes;
+  (void)values;
+  (void)dim;
+  (void)output;
+  throw thirdai::utils::NotImplemented();
 }
 
 void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
                                         const float* values, uint32_t length,
                                         uint32_t* output) const {
-  uint32_t* hashes = new uint32_t[_num_hashes];
+  (void)values;
 
-  for (uint32_t i = 0; i < _num_hashes; i++) {
-    hashes[i] = std::numeric_limits<uint32_t>::max();
-  }
-
+  // If murmur hash takes too long, we can just use the original indices and
+  // sort those. This is not preferred, however, because there might be locality
+  // and thus information loss in the original indices, i.e. having indices 899
+  // 890 891 892 is probably much more likely than having 4 consecutive hash
+  // values. Another complicating factor is that we would need to know the
+  // max dimension upon construction to initialize the range and bin size.
+  std::vector<uint32_t> hashed_indices(length);
   for (uint32_t i = 0; i < length; i++) {
-    uint32_t binid = _binids[indices[i]];
+    hashed_indices[i] = MurmurHash(reinterpret_cast<const char*>(indices + i),
+                                   sizeof(uint32_t), _seed);
+  }
+  std::sort(hashed_indices.begin(), hashed_indices.end());
 
-    if (hashes[binid] < indices[i]) {
-      hashes[binid] = indices[i];
+  // Here, UINT32_MAX represents the absence of a hash
+  // TODO(Josh) bring this into a util method
+  std::vector<uint32_t> hashes(_total_num_hashes, UINT32_MAX);
+  uint32_t current_hash_index = 0;
+  for (uint32_t bin_num = 0; bin_num < _total_num_hashes; bin_num++) {
+    uint32_t bin_upper_bound = bin_num == _total_num_hashes - 1
+                                   ? UINT32_MAX
+                                   : (_binsize + 1) * bin_num;
+
+    // Check if we have a lowest element in the bin
+    if (current_hash_index < hashes.size() &&
+        hashed_indices[current_hash_index] < bin_upper_bound) {
+      hashes[bin_num] = hashed_indices[current_hash_index];
+    }
+
+    while (current_hash_index < hashes.size() &&
+           hashed_indices[current_hash_index] < bin_upper_bound) {
+      current_hash_index++;
     }
   }
 
-  densifyHashes(hashes, output);
-  delete[] hashes;
-  (void)values;
+  densifyHashes(hashes.data(), output);
 }
 
 void DensifiedMinHash::densifyHashes(const uint32_t* hashes,
                                      uint32_t* final_hashes) const {
-  uint32_t* hash_array = new uint32_t[_num_hashes]();
+  uint32_t* hash_array = new uint32_t[_total_num_hashes]();
 
-  for (uint32_t i = 0; i < _num_hashes; i++) {
+  for (uint32_t i = 0; i < _total_num_hashes; i++) {
     uint32_t next = hashes[i];
     if (next != std::numeric_limits<uint32_t>::max()) {
       hash_array[i] = hashes[i];
@@ -183,7 +155,6 @@ void DensifiedMinHash::compactHashes(const uint32_t* hashes,
 }
 
 DensifiedMinHash::~DensifiedMinHash() {
-  delete[] _random_hash;
   delete[] _rand1;
   delete[] _binids;
 }

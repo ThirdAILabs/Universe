@@ -83,6 +83,12 @@ class HashFunction {
 
   inline uint32_t range() const { return _range; }
 
+  static constexpr uint32_t RandDoubleHash(uint32_t binid, uint32_t count, uint32_t seed) {
+    uint32_t tohash = ((binid + 1) << 6) + count;
+    uint32_t result = (seed * tohash << 3);
+    return result;
+  }
+
  protected:
   const uint32_t _num_tables, _range;
 };
