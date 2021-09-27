@@ -21,7 +21,7 @@ bool SentenceLoader::loadNextString(std::string& str_buf) {
     _line_buffer = "";
   }
   return true;
-};
+}
 
 bool SentenceLoader::getNextLine(std::string& next_line_buf) {
   // Make sure that file is open, file is not bad, file is not exhausted.
@@ -102,5 +102,5 @@ void SentenceLoader::cleanUpLineBuffer(std::string& line_buffer) {
   // Remove everything marked to be removed.
   line_buffer.erase(std::remove(line_buffer.begin(), line_buffer.end(), '~'),
                     line_buffer.end());
-};
+}
 }  // namespace thirdai::utils

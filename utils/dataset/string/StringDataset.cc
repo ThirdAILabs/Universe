@@ -24,7 +24,7 @@ StringDataset::StringDataset(FRAGMENT_TYPE load_type,
   // to collect the total dim in _dim.
   _dim += _tri_gram_dim;
   _first_load = true;
-};
+}
 
 void StringDataset::addFileToQueue(std::string filename) {
   _loader->addFileToQueue(filename);

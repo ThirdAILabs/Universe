@@ -26,7 +26,7 @@ TriGramVectorizer::TriGramVectorizer(uint32_t start_idx, uint32_t max_dim)
     _37x[i] = i * 37;
     _37x37x[i] = _37x[i] * 37;
   }
-};
+}
 
 void TriGramVectorizer::vectorize(const std::string& str,
                                   std::vector<uint32_t>& indices,
@@ -51,5 +51,5 @@ void TriGramVectorizer::vectorize(const std::string& str,
     indices.push_back(kv.first);
     values.push_back(kv.second);
   }
-};
+}
 }  // namespace thirdai::utils
