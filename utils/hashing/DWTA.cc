@@ -68,7 +68,7 @@ void DWTAHashFunction::hashSingleDense(const float* values, uint32_t dim,
 
   delete[] bin_values;
 
-  densifyHashes(hashes, output);
+  compactHashes(hashes, output);
 
   delete[] hashes;
 }
@@ -125,15 +125,21 @@ void DWTAHashFunction::densifyHashes(const uint32_t* hashes,
     hash_array[i] = next;
   }
 
+  compactHashes(hash_array, final_hashes);
+
+  delete[] hash_array;
+}
+
+void DWTAHashFunction::compactHashes(const uint32_t* hashes,
+                                     uint32_t* final_hashes) const {
   for (uint32_t i = 0; i < _num_tables; i++) {
     uint32_t index = 0;
     for (uint32_t j = 0; j < _hashes_per_table; j++) {
-      uint32_t h = hash_array[i * _hashes_per_table + j];
+      uint32_t h = hashes[i * _hashes_per_table + j];
       index += h << ((_hashes_per_table - 1 - j) * _log_binsize);
     }
     final_hashes[i] = index;
   }
-  delete[] hash_array;
 }
 
 DWTAHashFunction::~DWTAHashFunction() {

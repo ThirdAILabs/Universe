@@ -44,21 +44,23 @@ uint32_t UniversalHash::gethash(const std::string& key) {
 uint32_t UniversalHash::gethash(uint64_t key) {
   uint32_t res = 0;
   for (uint32_t i = 0; i < 8; i++) {
-    res ^= T[i][static_cast<char>(key >> (i << 3))];
+    res ^= T[i][static_cast<unsigned char>(key >> (i << 3))];
   }
   return res;
 }
 
-void UniversalHash::getBatchHash(const uint8_t* keys, const uint32_t* hashes,
-                                 uint32_t batchSize, uint32_t numHashes) {}
+// void UniversalHash::getBatchHash(const uint8_t* keys, const uint32_t* hashes,
+//                                  uint32_t batchSize, uint32_t numHashes) {}
 
-void UniversalHash::getBatchHash(const uint32_t* keys, const uint32_t* hashes,
-                                 uint32_t batchSize, uint32_t numHashes) {}
+// void UniversalHash::getBatchHash(const uint32_t* keys, const uint32_t*
+// hashes,
+//                                  uint32_t batchSize, uint32_t numHashes) {}
 
-void UniversalHash::getBatchHash(const uint64_t* keys, const uint32_t* hashes,
-                                 uint32_t batchSize, uint32_t numHashes) {}
+// void UniversalHash::getBatchHash(const uint64_t* keys, const uint32_t*
+// hashes,
+//                                  uint32_t batchSize, uint32_t numHashes) {}
 
-void UniversalHash::getBatchHash(const char* keys, const uint32_t* hashes,
-                                 uint32_t batchSize, uint32_t numHashes) {}
+// void UniversalHash::getBatchHash(const char* keys, const uint32_t* hashes,
+//                                  uint32_t batchSize, uint32_t numHashes) {}
 
 }  // namespace thirdai::examples

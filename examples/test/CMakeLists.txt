@@ -9,7 +9,7 @@ target_link_libraries(
   hash_test
   PRIVATE
   universal_hash_lib
-  murmurhash3_lib
+  hash_function_lib
   gtest_main
 )
 

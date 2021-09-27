@@ -1,4 +1,4 @@
-#include "src/Config.h"
+#include "src/ConfigReader.h"
 #include "src/DataLoader.h"
 #include "src/Layer.h"
 #include "src/Network.h"
@@ -15,7 +15,6 @@ int main(int argc, char** argv) {
   }
 
   bolt::ConfigReader config(argv[1]);
-  config.PrintConfigVals();
 
   uint32_t num_layers = config.IntVal("num_layers");
   std::vector<bolt::LayerConfig> layers;
