@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Bolt Benchmarks
+    - name: GTests
       uses: fifsky/ssh-action@master
       with:
         command: |
