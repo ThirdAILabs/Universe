@@ -17,8 +17,6 @@
 
 namespace thirdai::utils {
 
-enum class FREQ_TYPE { FROM_DATA, DEFAULT };
-
 class GlobalFreq {
   /*
       This class is responsible for calculating (inverse) word/document
@@ -33,17 +31,7 @@ class GlobalFreq {
  public:
   GlobalFreq(std::vector<std::string>& files, StringLoader* string_loader, u_int32_t murmur_seed);
 
-        };
-
-  int getIdf(std::string& token) {
-    switch (_freq_type) {
-      case FREQ_TYPE::DEFAULT:
-        return 1;
-        break;
-      default:
-        break;
-    }
-  };  // Should have a default value
+  int getIdf(std::string& token);  // Should have a default value
   int getTF(std::string& token, std::string& doc);
   int getTokenID(std::string& token);
 
