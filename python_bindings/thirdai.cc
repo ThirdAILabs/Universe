@@ -15,18 +15,18 @@ class PyNetwork final : public Network {
       : Network(std::move(configs), input_dim) {}
 
   py::array_t<float> GetWeightMatrix(uint32_t layer_index) {
-    if (layer_index >= num_layers) {
+    if (layer_index >= _num_layers) {
       return py::none();
     }
 
-    float* mem = layers[layer_index]->GetWeights();
+    float* mem = _layers[layer_index]->GetWeights();
 
     py::capsule free_when_done(
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
 
-    size_t dim = configs[layer_index].dim;
+    size_t dim = _configs[layer_index].dim;
     size_t prev_dim =
-        (layer_index > 0) ? configs[layer_index - 1].dim : input_dim;
+        (layer_index > 0) ? _configs[layer_index - 1].dim : _input_dim;
 
     return py::array_t<float>({dim, prev_dim},
                               {prev_dim * sizeof(float), sizeof(float)}, mem,
@@ -34,16 +34,16 @@ class PyNetwork final : public Network {
   }
 
   py::array_t<float> GetBiasVector(uint32_t layer_index) {
-    if (layer_index >= num_layers) {
+    if (layer_index >= _num_layers) {
       return py::none();
     }
 
-    float* mem = layers[layer_index]->GetBiases();
+    float* mem = _layers[layer_index]->GetBiases();
 
     py::capsule free_when_done(
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
 
-    size_t dim = configs[layer_index].dim;
+    size_t dim = _configs[layer_index].dim;
 
     return py::array_t<float>({dim}, {sizeof(float)}, mem, free_when_done);
   }
@@ -85,5 +85,10 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       .def("GetLayerSizes", &thirdai::python::PyNetwork::GetLayerSizes)
       .def("GetInputDim", &thirdai::python::PyNetwork::GetInputDim)
       .def("GetActivationFunctions",
-           &thirdai::python::PyNetwork::GetActivationFunctions);
+           &thirdai::python::PyNetwork::GetActivationFunctions)
+      .def("GetAccuracyPerEpoch",
+           &thirdai::python::PyNetwork::GetAccuracyPerEpoch)
+      .def("GetTimePerEpoch", &thirdai::python::PyNetwork::GetTimePerEpoch)
+      .def("GetFinalTestAccuracy",
+           &thirdai::python::PyNetwork::GetFinalTestAccuracy);
 }

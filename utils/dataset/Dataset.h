@@ -6,6 +6,7 @@
 #include <iostream>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -36,27 +37,23 @@ struct Batch {
    */
   Batch(uint64_t batch_size, BATCH_TYPE batch_type, LABEL_TYPE label_type,
         uint32_t dim) {
-    try {
-      if (batch_type == BATCH_TYPE::DENSE && dim == 0) {
-        throw "Dense batch does not accept dim = 0";
-      }
+    if (batch_type == BATCH_TYPE::DENSE && dim == 0) {
+      throw std::invalid_argument("Dense batch does not accept dim = 0");
+    }
 
-      _batch_type = batch_type;
-      _label_type = label_type;
-      _batch_size = batch_size;
-      _values = new float*[_batch_size];
-      _dim = dim;
+    _batch_type = batch_type;
+    _label_type = label_type;
+    _batch_size = batch_size;
+    _values = new float*[_batch_size];
+    _dim = dim;
 
-      if (_batch_type == BATCH_TYPE::SPARSE) {
-        _indices = new uint32_t*[_batch_size];
-        _lens = new uint32_t[_batch_size];
-      }
-      if (_label_type == LABEL_TYPE::LABELED) {
-        _labels = new uint32_t*[_batch_size];
-        _label_lens = new uint32_t[_batch_size];
-      }
-    } catch (std::string& e) {
-      std::cout << "Batch:" << e << std::endl;
+    if (_batch_type == BATCH_TYPE::SPARSE) {
+      _indices = new uint32_t*[_batch_size];
+      _lens = new uint32_t[_batch_size];
+    }
+    if (_label_type == LABEL_TYPE::LABELED) {
+      _labels = new uint32_t*[_batch_size];
+      _label_lens = new uint32_t[_batch_size];
     }
   }
 

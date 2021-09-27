@@ -25,10 +25,10 @@ class SparseLayerTestFixture : public testing::Test {
       new_biases[i] = static_cast<float>(i % 4) * 0.125;
     }
 
-    delete[] layer->weights;
-    layer->weights = new_weights;
-    delete[] layer->biases;
-    layer->biases = new_biases;
+    delete[] layer->_weights;
+    layer->_weights = new_weights;
+    delete[] layer->_biases;
+    layer->_biases = new_biases;
 
     data_indices = {{1, 2, 3, 4, 6, 8},
                     {0, 2, 3, 5, 6, 7, 9},
@@ -48,11 +48,11 @@ class SparseLayerTestFixture : public testing::Test {
     layer = nullptr;
   }
 
-  const float* getLayerWeightGradient() const { return layer->w_gradient; }
+  const float* getLayerWeightGradient() const { return layer->_w_gradient; }
 
-  const float* getLayerBiasGradient() const { return layer->b_gradient; }
+  const float* getLayerBiasGradient() const { return layer->_b_gradient; }
 
-  void makeSoftmax() const { layer->act_func = ActivationFunc::Softmax; }
+  void makeSoftmax() const { layer->_act_func = ActivationFunc::Softmax; }
 
   SparseLayer* layer;
 
