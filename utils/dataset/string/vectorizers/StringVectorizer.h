@@ -45,6 +45,8 @@ class StringVectorizer {
   virtual void vectorize(const std::string& str, std::vector<uint32_t>& indices,
                          std::vector<float>& values) = 0;
 
+  virtual ~StringVectorizer() {}
+
  protected:
   /**
    * The smallest possible non-zero index of the produced vector.
