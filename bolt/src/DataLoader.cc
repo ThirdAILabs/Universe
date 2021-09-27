@@ -27,10 +27,10 @@ SvmDataset::SvmDataset(const std::string& filename, uint64_t _batch_size)
   auto end = std::chrono::high_resolution_clock::now();
 
   std::cout
-      << "\033[1;36mRead " << num_vecs << " vectors from '" << filename
+      << "Read " << num_vecs << " vectors from '" << filename
       << "' and created " << num_batches << " batches in "
       << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds \033[0m" << std::endl;
+      << " seconds" << std::endl;
 }
 
 void SvmDataset::ReadDataset(const std::string& filename) {
