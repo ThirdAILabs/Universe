@@ -21,7 +21,7 @@ namespace thirdai::search::flash_testing {
 
 /** Creates a vector of Batches with size batch_size that point to the
  * input_vectors */
-std::vector<Batch> createBatches(const std::vector<DenseVector>& input_vectors,
+std::vector<Batch> createBatches(std::vector<DenseVector>& input_vectors,
                                  uint32_t batch_size) {
   std::vector<Batch> result;
   uint32_t current_vector_index = 0;
@@ -31,7 +31,10 @@ std::vector<Batch> createBatches(const std::vector<DenseVector>& input_vectors,
         batch_size);
     Batch next_batch(next_batch_size, thirdai::utils::BATCH_TYPE::DENSE,
                      thirdai::utils::LABEL_TYPE::UNLABELED,
-                     input_vectors.at(0).dim, current_vector_index);
+                     thirdai::utils::ID_TYPE::SEQUENTIAL,
+
+                     input_vectors.at(0).dim);
+    next_batch._starting_id = current_vector_index;
     for (uint32_t batch_vec = 0; batch_vec < next_batch_size; batch_vec++) {
       next_batch._values[batch_vec] =
           input_vectors.at(batch_vec + current_vector_index).values.data();
@@ -107,6 +110,7 @@ TEST(FlashTest, SmokeTest) {
 TEST(FlashTest, IdTooLargeTest) {
   Batch error_batch;
   error_batch._starting_id = 1 << 16 + 1;
+  error_batch._id_type = thirdai::utils::ID_TYPE::SEQUENTIAL;
   FastSRP srp_hash(1, 1, 1, 1);
   Flash<uint16_t> flash(srp_hash);
   // Need a nolint here because of course google uses a goto

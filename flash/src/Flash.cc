@@ -34,9 +34,19 @@ void Flash<Label_t>::addDataset(utils::Dataset& dataset) {
 
 template <typename Label_t>
 void Flash<Label_t>::addBatch(const utils::Batch& batch) {
-  verifyBatchIds(batch);
   uint32_t* hashes = hash(batch);
-  _hashtable->insertSequential(batch._batch_size, batch._starting_id, hashes);
+  switch (batch._id_type) {
+    case thirdai::utils::ID_TYPE::SEQUENTIAL:
+      verifyBatchSequentialIds(batch);
+      std::cout << batch._starting_id << std::endl;
+      _hashtable->insertSequential(batch._batch_size, batch._starting_id,
+                                   hashes);
+      break;
+    case thirdai::utils::ID_TYPE::INDIVIDUAL:
+      std::vector<Label_t> converted_ids = verifyBatchIndependentIds(batch);
+      _hashtable->insert(batch._batch_size, converted_ids.data(), hashes);
+      break;
+  }
   delete hashes;
 }
 
@@ -48,23 +58,36 @@ uint32_t* Flash<Label_t>::hash(const utils::Batch& batch) const {
 }
 
 template <typename Label_t>
-void Flash<Label_t>::verifyBatchIds(const utils::Batch& batch) const {
+void Flash<Label_t>::verifyBatchSequentialIds(const utils::Batch& batch) const {
   uint64_t largest_batch_id = batch._starting_id + batch._batch_size;
+  verify_and_convert_id(largest_batch_id);
+}
+
+template <typename Label_t>
+std::vector<Label_t>  Flash<Label_t>::verifyBatchIndependentIds(const utils::Batch& batch) const {
+  std::vector<Label_t> converted_ids;
+  for (uint32_t vec_id = 0; vec_id < batch._batch_size; vec_id++) {
+    converted_ids.push_back(verify_and_convert_id(batch._individual_ids[vec_id]));
+  }
+  return converted_ids;
+}
+
+template <typename Label_t>
+Label_t Flash<Label_t>::verify_and_convert_id(uint64_t id) const {
   // Casting to a smaller integer is well specified behavior because we are
   // dealing with only unsigned integers. If the largest_batch_id is out
   // of range of Label_t, its first bits will get truncated and the equality
   // check will fail (we cast back to uin64_t to ensure that the
   // largest_batch_id itself is not casst down to Label_t).
-  bool out_of_range =
-      static_cast<uint64_t>(static_cast<Label_t>(largest_batch_id)) !=
-      largest_batch_id;
+  Label_t cast_id = static_cast<Label_t>(id);
+  bool out_of_range = static_cast<uint64_t>(cast_id) != id;
   if (out_of_range) {
-    throw std::invalid_argument("Trying to insert batch with starting id " +
-                                std::to_string(batch._starting_id) +
-                                " and length " +
-                                std::to_string(batch._batch_size) +
+    throw std::invalid_argument("Trying to insert vector with id " +
+                                std::to_string(id) +
                                 ", which is too large an id for this Flash.");
+  
   }
+  return cast_id;
 }
 
 template <typename Label_t>
