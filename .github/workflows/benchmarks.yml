@@ -19,8 +19,8 @@ jobs:
         command: |
           cd Universe
           git pull origin benchmark-testss
-          bin/regular-benchmark.sh          
-          scp -i ~/.ssh/github-actions ${{ secrets.USERNAME }}@${{ secrets.HOST }}:~/logs/$date/$now.html log.html
+          source bin/regular-benchmark.sh
+          scp -i ~/.ssh/github-actions ${{ secrets.USERNAME }}@${{ secrets.HOST }}:~/logs/$DATE/$NOW.html log.html
         host: ${{ secrets.HOST }}
         user: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}

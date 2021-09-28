@@ -4,23 +4,23 @@ BASEDIR=$(dirname "$0")
 ./$BASEDIR/tests.sh
 ./$BASEDIR/get_datasets.sh
 
-date=$(date '+%Y-%m-%d')
-target=$BASEDIR/../../logs/$date
+export DATE=$(date '+%Y-%m-%d')
+target=$BASEDIR/../../logs/$DATE
 mkdir $BASEDIR/../../logs/
 mkdir $target
 
-now=$(date +"%T")
+export NOW=$(date +"%T")
 
 # We need: Code version, machine information, run time, accuracy, hash seeds
 cd $BASEDIR/../build/
-echo "<html>" >> "../$target/$now.html"
-lscpu > "../$target/$now.html"
-echo "" >> "../$target/$now.html"
-echo "" >> "../$target/$now.html"
+echo "<html>" >> "../$target/$NOW.html"
+lscpu > "../$target/$NOW.html"
+echo "" >> "../$target/$NOW.html"
+echo "" >> "../$target/$NOW.html"
 
-echo "Current code version:" >> "../$target/$now.html"
-git describe --tag >> "../$target/$now.html"
-echo "" >> "../$target/$now.html"
+echo "Current code version:" >> "../$target/$NOW.html"
+git describe --tag >> "../$target/$NOW.html"
+echo "" >> "../$target/$NOW.html"
 
-ctest -A >> "../$target/$now.html"
-echo "</html>" >> "../$target/$now.html"
+ctest -A >> "../$target/$NOW.html"
+echo "</html>" >> "../$target/$NOW.html"
