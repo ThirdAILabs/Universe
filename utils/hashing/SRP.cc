@@ -52,6 +52,7 @@ SparseRandomProjection::SparseRandomProjection(uint32_t input_dim,
 void SparseRandomProjection::hashSingleDense(const float* values, uint32_t dim,
                                              uint32_t* output) const {
   assert(dim == _dim);
+  (void)dim;
 
   memset(output, 0, _num_tables * sizeof(uint32_t));
 

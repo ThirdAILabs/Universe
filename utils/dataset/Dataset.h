@@ -44,11 +44,14 @@ struct Batch {
    * will be initialized to empty arrays of the correct size.
    */
   Batch(uint64_t batch_size, BATCH_TYPE batch_type, LABEL_TYPE label_type,
-        ID_TYPE id_type, uint32_t dim)
-      : _batch_type(batch_type),
-        _batch_size(batch_size),
-        _label_type(label_type),
-        _id_type(id_type) {
+        ID_TYPE id_type, uint32_t dim) {
+    // TODO(any): For some reason putting these in an initializer list
+    // causes a segfault, this is probably bad memory management somewhere.
+    _batch_size = batch_size;
+    _batch_type = batch_type;
+    _label_type = label_type;
+    _id_type = id_type;
+
     if (_batch_type == BATCH_TYPE::DENSE && dim == 0) {
       throw std::invalid_argument("Dense batch does not accept dim = 0");
     }
@@ -169,7 +172,7 @@ class Dataset {
   uint64_t _num_batches;
   // In the future, we may need two batch arrays if we want to read in parallel
   // while processing
-  Batch* _batches;
+  Batch* _batches{nullptr};
 };
 
 }  // namespace thirdai::utils

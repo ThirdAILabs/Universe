@@ -13,15 +13,16 @@ SVMDataset::SVMDataset(const std::string& filename, uint64_t target_batch_size,
 
 void SVMDataset::loadNextBatchSet() {
   readDataset();
-  _num_batches = (_num_vecs_in_batch + _target_batch_size - 1) / _target_batch_size;
+  _num_batches =
+      (_num_vecs_in_batch + _target_batch_size - 1) / _target_batch_size;
   // Option 1. At each subsequent load, delete the previous batch array.
   // Option 2. Keep the previous array and just modify it as necessary.
   // Keeping option 2.
   if (_times_previously_loaded > 0) {
     if (_num_batches > 0) {
-      uint32_t size_of_last_batch_in_current_load =
-          std::min(_target_batch_size,
-                   _num_vecs_in_batch - (_num_batches - 1) * _target_batch_size);
+      uint32_t size_of_last_batch_in_current_load = std::min(
+          _target_batch_size,
+          _num_vecs_in_batch - (_num_batches - 1) * _target_batch_size);
       _batches[_num_batches - 1] =
           Batch(size_of_last_batch_in_current_load, BATCH_TYPE::SPARSE,
                 LABEL_TYPE::LABELED, ID_TYPE::SEQUENTIAL, 0);
@@ -32,8 +33,8 @@ void SVMDataset::loadNextBatchSet() {
     _batches = new Batch[_num_batches];
 
     for (uint64_t i = 0; i < _num_batches; i++) {
-      uint32_t batch_size =
-          std::min(_target_batch_size, _num_vecs_in_batch - i * _target_batch_size);
+      uint32_t batch_size = std::min(
+          _target_batch_size, _num_vecs_in_batch - i * _target_batch_size);
       _batches[i] = Batch(batch_size, BATCH_TYPE::SPARSE, LABEL_TYPE::LABELED,
                           ID_TYPE::SEQUENTIAL, 0);
       _batches[_num_batches - 1]._starting_id = _num_vecs_total;
@@ -53,10 +54,11 @@ void SVMDataset::readDataset() {
   _markers.clear();
   _indices.clear();
   _values.clear();
-  while (((_target_batch_num_per_load > 0 &&
-           _num_vecs_in_batch < _target_batch_num_per_load * _target_batch_size) ||
-          _target_batch_num_per_load == 0) &&
-         std::getline(_file, line)) {
+  while (
+      ((_target_batch_num_per_load > 0 &&
+        _num_vecs_in_batch < _target_batch_num_per_load * _target_batch_size) ||
+       _target_batch_num_per_load == 0) &&
+      std::getline(_file, line)) {
     std::stringstream stream(line);
 
     _label_markers.push_back(_labels.size());

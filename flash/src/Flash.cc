@@ -38,7 +38,6 @@ void Flash<Label_t>::addBatch(const utils::Batch& batch) {
   switch (batch._id_type) {
     case thirdai::utils::ID_TYPE::SEQUENTIAL:
       verifyBatchSequentialIds(batch);
-      std::cout << batch._starting_id << std::endl;
       _hashtable->insertSequential(batch._batch_size, batch._starting_id,
                                    hashes);
       break;
@@ -64,10 +63,12 @@ void Flash<Label_t>::verifyBatchSequentialIds(const utils::Batch& batch) const {
 }
 
 template <typename Label_t>
-std::vector<Label_t>  Flash<Label_t>::verifyBatchIndependentIds(const utils::Batch& batch) const {
+std::vector<Label_t> Flash<Label_t>::verifyBatchIndependentIds(
+    const utils::Batch& batch) const {
   std::vector<Label_t> converted_ids;
   for (uint32_t vec_id = 0; vec_id < batch._batch_size; vec_id++) {
-    converted_ids.push_back(verify_and_convert_id(batch._individual_ids[vec_id]));
+    converted_ids.push_back(
+        verify_and_convert_id(batch._individual_ids[vec_id]));
   }
   return converted_ids;
 }
@@ -85,7 +86,6 @@ Label_t Flash<Label_t>::verify_and_convert_id(uint64_t id) const {
     throw std::invalid_argument("Trying to insert vector with id " +
                                 std::to_string(id) +
                                 ", which is too large an id for this Flash.");
-  
   }
   return cast_id;
 }

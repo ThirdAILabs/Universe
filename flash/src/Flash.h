@@ -61,16 +61,17 @@ class Flash {
   /** Makes sure the ids are within range for a batch with sequential ids */
   void verifyBatchSequentialIds(const utils::Batch& batch) const;
 
-  /** 
+  /**
    * Makes sure the ids are within range for a batch with independent ids,
    * and returns a vector of the uint64_t ids converted to the correct size.
    */
-  std::vector<Label_t> verifyBatchIndependentIds(const utils::Batch& batch) const;
+  std::vector<Label_t> verifyBatchIndependentIds(
+      const utils::Batch& batch) const;
 
-  /** 
+  /**
    * Verifies that the passed in id is within the range of this FLASH instance
-   * by throwing an error if the id is too large for the initialized size 
-   * (>2^16 for uin16_t, >2^32 for uint32_t, etc.). 
+   * by throwing an error if the id is too large for the initialized size
+   * (>2^16 for uin16_t, >2^32 for uint32_t, etc.).
    */
   Label_t verify_and_convert_id(uint64_t id) const;
 

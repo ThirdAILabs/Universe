@@ -70,6 +70,8 @@ struct LayerConfig {
       sampling_config = SamplingConfig();
     }
   }
+
+  friend std::ostream& operator<<(std::ostream& out, const LayerConfig& config);
 };
 
 class Network {
@@ -91,13 +93,13 @@ class Network {
 
   void BuildHashTables();
 
-  uint32_t GetNumLayers() const { return num_layers; }
+  uint32_t GetNumLayers() const { return _num_layers; }
 
-  uint32_t GetInputDim() const { return input_dim; }
+  uint32_t GetInputDim() const { return _input_dim; }
 
   std::vector<uint32_t> GetLayerSizes() {
     std::vector<uint32_t> layer_sizes;
-    for (const auto& c : configs) {
+    for (const auto& c : _configs) {
       layer_sizes.push_back(c.dim);
     }
     return layer_sizes;
@@ -105,7 +107,7 @@ class Network {
 
   std::vector<std::string> GetActivationFunctions() {
     std::vector<std::string> funcs;
-    for (const auto& c : configs) {
+    for (const auto& c : _configs) {
       switch (c.act_func) {
         case ActivationFunc::ReLU:
           funcs.emplace_back("ReLU");
@@ -119,15 +121,28 @@ class Network {
     return funcs;
   }
 
+  std::vector<float> GetAccuracyPerEpoch() const { return _accuracy_per_epoch; }
+
+  std::vector<int64_t> GetTimePerEpoch() const { return _time_per_epoch; }
+
+  float GetFinalTestAccuracy() const { return _final_accuracy; }
+
   ~Network();
 
  protected:
-  std::vector<LayerConfig> configs;
-  uint64_t input_dim;
-  SparseLayer** layers;
-  uint32_t num_layers;
-  uint64_t batch_size_hint;
-  uint32_t iter;
+  std::vector<LayerConfig> _configs;
+  uint64_t _input_dim;
+  SparseLayer** _layers;
+  uint32_t _num_layers;
+  uint64_t _batch_size_hint;
+  uint32_t _iter;
+
+  /**
+   * Statistics about training accuracy and time per epoch
+   */
+  std::vector<float> _accuracy_per_epoch;
+  std::vector<int64_t> _time_per_epoch;
+  float _final_accuracy;
 };
 
 }  // namespace thirdai::bolt

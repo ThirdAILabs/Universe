@@ -1,4 +1,4 @@
-#include "Config.h"
+#include "ConfigReader.h"
 #include <fstream>
 
 namespace thirdai::bolt {
@@ -134,12 +134,11 @@ bool ConfigReader::ValExists(const std::string& key) const {
 }
 
 void ConfigReader::PrintConfigVals() {
-  std::cout << "\033[1;34m====== Config Vars ======\033[0m" << std::endl;
+  std::cout << "====== Config Vars ======" << std::endl;
   for (const auto& var : config_vars) {
-    std::cout << "\033[1;34m" << var.first << "\033[0m => " << var.second
-              << std::endl;
+    std::cout << var.first << " => " << var.second << std::endl;
   }
-  std::cout << "\033[1;34m=========================\033[0m" << std::endl;
+  std::cout << "=========================" << std::endl;
 
   std::cout << std::endl;
 }

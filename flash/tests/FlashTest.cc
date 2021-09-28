@@ -109,7 +109,7 @@ TEST(FlashTest, SmokeTest) {
 /** Tests that adding a batch with an id too large throws an error */
 TEST(FlashTest, IdTooLargeTest) {
   Batch error_batch;
-  error_batch._starting_id = 1 << 16 + 1;
+  error_batch._starting_id = (1 << 16) + 1;
   error_batch._id_type = thirdai::utils::ID_TYPE::SEQUENTIAL;
   FastSRP srp_hash(1, 1, 1, 1);
   Flash<uint16_t> flash(srp_hash);
