@@ -20,7 +20,7 @@ jobs:
           cd Universe
           git pull origin benchmark-testss
           bin/regular-benchmark.sh          
-          scp cicd@70.233.60.118:~/logs/$date/$now.html log.html
+          scp ${{ secrets.USERNAME }}@${{ secrets.HOST }}:~/logs/$date/$now.html log.html
         host: ${{ secrets.HOST }}
         user: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -44,7 +44,7 @@ jobs:
         # Optional whether this connection use TLS (default is true if server_port is 465)
         secure: true
         # Optional plain body:
-        body: [Benchmark Results]
+        body: Benchmark Results
         # Optional HTML body read from file:
         html_body: file://log.html
         # Optional carbon copy recipients:
