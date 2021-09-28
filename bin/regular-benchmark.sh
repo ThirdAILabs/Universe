@@ -13,13 +13,14 @@ now=$(date +"%T")
 
 # We need: Code version, machine information, run time, accuracy, hash seeds
 cd $BASEDIR/../build/
-lscpu > "../$target/$now.txt"
-echo "" >> "../$target/$now.txt"
-echo "" >> "../$target/$now.txt"
+echo "<html>" >> "../$target/$now.html"
+lscpu > "../$target/$now.html"
+echo "" >> "../$target/$now.html"
+echo "" >> "../$target/$now.html"
 
-echo "Current code version:" >> "../$target/$now.txt"
-git describe --tag >> "../$target/$now.txt"
-echo "" >> "../$target/$now.txt"
+echo "Current code version:" >> "../$target/$now.html"
+git describe --tag >> "../$target/$now.html"
+echo "" >> "../$target/$now.html"
 
-ctest -A >> "../$target/$now.txt"
-
+ctest -A >> "../$target/$now.html"
+echo "</html>" >> "../$target/$now.html"
