@@ -11,6 +11,15 @@ mkdir $target
 
 now=$(date +"%T")
 
+# We need: Code version, machine information, run time, accuracy, hash seeds
 cd $BASEDIR/../build/
-ctest -A > "../$target/$now.txt"
+lscpu > "../$target/$now.txt"
+echo "" >> "../$target/$now.txt"
+echo "" >> "../$target/$now.txt"
+
+echo "Current code version:" >> "../$target/$now.txt"
+git describe --tag >> "../$target/$now.txt"
+echo "" >> "../$target/$now.txt"
+
+ctest -A >> "../$target/$now.txt"
 
