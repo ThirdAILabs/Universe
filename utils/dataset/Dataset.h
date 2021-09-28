@@ -27,10 +27,10 @@ struct Batch {
   uint32_t* _label_lens{nullptr};
   uint64_t _starting_id{0};
   uint64_t* _individual_ids{nullptr};
-  BATCH_TYPE _batch_type;
-  LABEL_TYPE _label_type;
-  ID_TYPE _id_type;
-  uint32_t _dim;
+  BATCH_TYPE _batch_type{BATCH_TYPE::SPARSE};
+  LABEL_TYPE _label_type{LABEL_TYPE::LABELED};
+  ID_TYPE _id_type{ID_TYPE::INDIVIDUAL};
+  uint32_t _dim{0};
 
   /** Default constructor */
   Batch(){};

@@ -36,11 +36,13 @@ class Flash {
 
   /**
    * Perform a batch query on the Flash structure, for now on a Batch object.
-   * Note that if not enough results are found, the results will be padded
-   * with 0s.
+   * If less than k results are found and pad_zeros = true, the results will be
+   * padded with 0s to obtain a vector of length k. Otherwise less than k
+   * results will be returned.
    */
   std::vector<std::vector<Label_t>> queryBatch(const utils::Batch& batch,
-                                               uint32_t top_k) const;
+                                               uint32_t top_k,
+                                               bool pad_zeros = false) const;
 
  private:
   /**

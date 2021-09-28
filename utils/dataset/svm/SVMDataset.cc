@@ -9,6 +9,7 @@ SVMDataset::SVMDataset(const std::string& filename, uint64_t target_batch_size,
   }
   _num_batches = 0;
   _times_previously_loaded = 0;
+  _num_vecs_total = 0;
 }
 
 void SVMDataset::loadNextBatchSet() {
@@ -26,8 +27,14 @@ void SVMDataset::loadNextBatchSet() {
       _batches[_num_batches - 1] =
           Batch(size_of_last_batch_in_current_load, BATCH_TYPE::SPARSE,
                 LABEL_TYPE::LABELED, ID_TYPE::SEQUENTIAL, 0);
-      _batches[_num_batches - 1]._starting_id = _num_vecs_total;
-      _num_vecs_total += size_of_last_batch_in_current_load;
+      for (uint32_t batch_in_load = 0; batch_in_load < _num_batches;
+           batch_in_load++) {
+        _batches[batch_in_load]._starting_id = _num_vecs_total;
+        std::cout << "Setting batch start to " << _num_vecs_total
+                  << ", current size is " << _batches[batch_in_load]._batch_size
+                  << std::endl;
+        _num_vecs_total += _batches[batch_in_load]._batch_size;
+      }
     }
   } else {
     _batches = new Batch[_num_batches];
@@ -37,7 +44,9 @@ void SVMDataset::loadNextBatchSet() {
           _target_batch_size, _num_vecs_in_batch - i * _target_batch_size);
       _batches[i] = Batch(batch_size, BATCH_TYPE::SPARSE, LABEL_TYPE::LABELED,
                           ID_TYPE::SEQUENTIAL, 0);
-      _batches[_num_batches - 1]._starting_id = _num_vecs_total;
+      _batches[i]._starting_id = _num_vecs_total;
+      std::cout << "Setting batch start to " << _num_vecs_total
+                << ", current size is " << _batches[i]._batch_size << std::endl;
       _num_vecs_total += batch_size;
     }
   }

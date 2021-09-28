@@ -92,15 +92,21 @@ Label_t Flash<Label_t>::verify_and_convert_id(uint64_t id) const {
 
 template <typename Label_t>
 std::vector<std::vector<Label_t>> Flash<Label_t>::queryBatch(
-    const utils::Batch& batch, uint32_t top_k) const {
+    const utils::Batch& batch, uint32_t top_k, bool pad_zeros) const {
   std::vector<std::vector<Label_t>> results(batch._batch_size);
   uint32_t* hashes = hash(batch);
 
-#pragma omp parallel for default(none) shared(batch, top_k, results, hashes)
+#pragma omp parallel for default(none) \
+    shared(batch, top_k, results, hashes, pad_zeros)
   for (uint64_t vec_id = 0; vec_id < batch._batch_size; vec_id++) {
     std::vector<Label_t> query_result;
     _hashtable->queryByVector(hashes + vec_id * _num_tables, query_result);
     results.at(vec_id) = getTopKUsingPriorityQueue(query_result, top_k);
+    if (pad_zeros) {
+      while (results.at(vec_id).size() < top_k) {
+        results.at(vec_id).push_back(0);
+      }
+    }
   }
 
   delete hashes;
@@ -144,9 +150,6 @@ std::vector<Label_t> Flash<Label_t>::getTopKUsingPriorityQueue(
     top_k_queue.pop();
   }
   std::reverse(result.begin(), result.end());
-  while (result.size() < top_k) {
-    result.push_back(0);
-  }
 
   return result;
 }
