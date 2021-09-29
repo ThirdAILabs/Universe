@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BASEDIR=$(dirname "$0")
+export BASEDIR=$(dirname "$0")
 ./$BASEDIR/build.sh
 ./$BASEDIR/get_datasets.sh
 
@@ -20,4 +20,4 @@ git describe --tag >> $LOGFILE
 echo "---------- Unit Test Results ----------" >> $LOGFILE
 ctest -A >> $LOGFILE
 
-./$BASEDIR/bolt_mnist_test.sh
+../$BASEDIR/bolt_mnist_test.sh
