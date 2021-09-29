@@ -24,8 +24,12 @@ jobs:
         user: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
     - name: Copy log file
+    - uses: actions/checkout@v2
       run: |
-        scp ${{ secrets.USERNAME }}@${{ secrets.HOST }}:~/logs/2021-09-29/log.html log.html
+        mkdir ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 700 ~/.ssh/id_rsa
+        scp ${{ secrets.USERNAME }}@${{ secrets.HOST }}:~/logs/2021-09-29/log.html ${{ github.workspace }}/log.html
     - name: Send Email
       uses: dawidd6/action-send-mail@v3
       with:
