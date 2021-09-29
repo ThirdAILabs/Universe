@@ -98,6 +98,8 @@ void StringDataset::vectorizeAndCreateBatches(
   for (size_t vec_i = 0; vec_i < vec_count; vec_i++) {
     _char_tri_gram_vectorizer.vectorize(strings_to_be_vectorized[vec_i],
                                         _indices[vec_i], _values[vec_i]);
+    _word_uni_gram_vectorizer.vectorize(strings_to_be_vectorized[vec_i],
+                                        _indices[vec_i], _values[vec_i]);
 
     size_t batch_i = vec_i / _target_batch_size;
     size_t batch_vec_i = vec_i - (batch_i * _target_batch_size);
