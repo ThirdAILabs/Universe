@@ -25,6 +25,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
     - name: Copy log file
       run: |
+        ssh-keyscan ${{ secrets.HOST }} >> ~/.ssh/known_hosts
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 700 ~/.ssh/id_rsa
         scp ${{ secrets.USERNAME }}@${{ secrets.HOST }}:~/logs/2021-09-29/log.html ${{ github.workspace }}/log.html
