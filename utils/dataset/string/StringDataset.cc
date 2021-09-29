@@ -5,7 +5,8 @@ StringDataset::StringDataset(FRAGMENT_TYPE load_type,
                              uint64_t target_batch_size,
                              uint64_t target_batch_num_per_load)
     : Dataset(target_batch_size, target_batch_num_per_load),
-      _char_tri_gram_vectorizer(0, 100000), _word_uni_gram_vectorizer(0, 100000, VALUE_TYPE::TF) {
+      _char_tri_gram_vectorizer(0, 100000),
+      _word_uni_gram_vectorizer(0, 100000, VALUE_TYPE::TF) {
   // The loaders have not been fully implemented yet. Only sentence loader is
   // available for now.
   switch (load_type) {
@@ -96,7 +97,7 @@ void StringDataset::vectorizeAndCreateBatches(
     shared(vec_count, strings_to_be_vectorized)
   for (size_t vec_i = 0; vec_i < vec_count; vec_i++) {
     _char_tri_gram_vectorizer.vectorize(strings_to_be_vectorized[vec_i],
-                                   _indices[vec_i], _values[vec_i]);
+                                        _indices[vec_i], _values[vec_i]);
 
     size_t batch_i = vec_i / _target_batch_size;
     size_t batch_vec_i = vec_i - (batch_i * _target_batch_size);
