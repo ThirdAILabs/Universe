@@ -1,26 +1,21 @@
 #!/bin/bash
 
 BASEDIR=$(dirname "$0")
-./$BASEDIR/tests.sh
+./$BASEDIR/build.sh
 ./$BASEDIR/get_datasets.sh
 
 export DATE=$(date '+%Y-%m-%d')
 target=$BASEDIR/../../logs/$DATE
 mkdir $BASEDIR/../../logs/
 mkdir $target
-
 export NOW=$(date +"%T")
 
 # We need: Code version, machine information, run time, accuracy, hash seeds
 cd $BASEDIR/../build/
-echo "<html>" >> "../$target/$NOW.html"
-lscpu > "../$target/$NOW.html"
-echo "" >> "../$target/$NOW.html"
-echo "" >> "../$target/$NOW.html"
-
-echo "Current code version:" >> "../$target/$NOW.html"
-git describe --tag >> "../$target/$NOW.html"
-echo "" >> "../$target/$NOW.html"
-
-ctest -A >> "../$target/$NOW.html"
-echo "</html>" >> "../$target/$NOW.html"
+LOGFILE="../$target/$NOW.txt"
+lscpu > LOGFILE
+echo "---------------------------------------" >> LOGFILE
+echo "Current code version:" >> LOGFILE
+git describe --tag >> LOGFILE
+echo "---------- Unit Test Results ----------" >> LOGFILE
+ctest -A >> LOGFILE
