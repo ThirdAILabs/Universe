@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Unit Tests
+    - name: Run Benchmark Tests
       uses: fifsky/ssh-action@master
       with:
         command: |
