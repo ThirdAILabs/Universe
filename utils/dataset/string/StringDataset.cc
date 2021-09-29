@@ -5,7 +5,7 @@ StringDataset::StringDataset(FRAGMENT_TYPE load_type,
                              uint64_t target_batch_size,
                              uint64_t target_batch_num_per_load)
     : Dataset(target_batch_size, target_batch_num_per_load),
-      _tri_gram_vectorizer(0, 100000) {
+      _char_tri_gram_vectorizer(0, 100000), _word_uni_gram_vectorizer(0, 100000, VALUE_TYPE::TF) {
   // The loaders have not been fully implemented yet. Only sentence loader is
   // available for now.
   switch (load_type) {
@@ -19,10 +19,9 @@ StringDataset::StringDataset(FRAGMENT_TYPE load_type,
       _loader = new SentenceLoader();
       break;
   }
-  _tri_gram_dim = _tri_gram_vectorizer.getDimension();
-  // In the future, other vectorizers will have their own dimensions, so we have
-  // to collect the total dim in _dim.
-  _dim += _tri_gram_dim;
+  _dim += _char_tri_gram_vectorizer.getDimension();
+  _word_uni_gram_vectorizer = UnigramVectorizer(_dim, 100000, VALUE_TYPE::TF);
+  _dim += _word_uni_gram_vectorizer.getDimension();
   _first_load = true;
 }
 
@@ -96,7 +95,7 @@ void StringDataset::vectorizeAndCreateBatches(
 #pragma omp parallel for default(none) \
     shared(vec_count, strings_to_be_vectorized)
   for (size_t vec_i = 0; vec_i < vec_count; vec_i++) {
-    _tri_gram_vectorizer.vectorize(strings_to_be_vectorized[vec_i],
+    _char_tri_gram_vectorizer.vectorize(strings_to_be_vectorized[vec_i],
                                    _indices[vec_i], _values[vec_i]);
 
     size_t batch_i = vec_i / _target_batch_size;

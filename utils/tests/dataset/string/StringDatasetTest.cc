@@ -81,6 +81,8 @@ TEST(StringDatasetTest, BatchesSentence) {
     buf.clear();
     expected_vec_num++;
   }
+
+  ASSERT_GT(expected_vec_num, 0);
   std::cout << "Expect " << expected_vec_num << " vectors in this dataset."
             << std::endl;
 

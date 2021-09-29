@@ -2,6 +2,7 @@
 #include "../Dataset.h"
 #include "loaders/SentenceLoader.h"
 #include "vectorizers/TriGramVectorizer.h"
+#include "vectorizers/UnigramVectorizer.h"
 //#include "GlobalFreq.h"
 #include <iostream>
 #include <string>
@@ -29,10 +30,10 @@ class StringDataset : public Dataset {
  private:
   std::vector<uint32_t>* _indices;
   std::vector<float>* _values;
-  TriGramVectorizer _tri_gram_vectorizer;
+  TriGramVectorizer _char_tri_gram_vectorizer;
+  UnigramVectorizer _word_uni_gram_vectorizer;
   StringLoader* _loader;
   bool _first_load;
-  uint32_t _tri_gram_dim;
   uint32_t _dim = 0;
 
   /**
