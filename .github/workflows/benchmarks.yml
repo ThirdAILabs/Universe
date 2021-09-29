@@ -25,7 +25,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
     - name: Copy log file
       run: |
-        echo "<html> hi </html>" > hi.html
+        echo "<html> hi </html>" > log.html
     - name: Send Email
       uses: dawidd6/action-send-mail@v3
       with:
