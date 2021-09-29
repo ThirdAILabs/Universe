@@ -23,11 +23,14 @@ jobs:
         host: ${{ secrets.HOST }}
         user: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+    - name: Copy log file
+      run: |
+        scp ${{ secrets.USERNAME }}@${{ secrets.HOST }}:~/logs/2021-09-29/log.html log.html
     - name: Send Email
       uses: dawidd6/action-send-mail@v3
       with:
         command: |
-          scp -i ~/.ssh/github-actions ${{ secrets.USERNAME }}@${{ secrets.HOST }}:~/logs/2021-09-28/log.html log.html
+          
         # Required mail server address:
         server_address: smtp.gmail.com
         # Required mail server port:
