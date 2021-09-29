@@ -20,4 +20,4 @@ git describe --tag >> $LOGFILE
 echo "---------- Unit Test Results ----------" >> $LOGFILE
 ctest -A >> $LOGFILE
 
-sh ./$BASEDIR/bolt_mnist_test.sh
+./$BASEDIR/bolt_mnist_test.sh
