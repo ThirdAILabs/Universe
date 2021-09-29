@@ -25,12 +25,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
     - name: Copy log file
       run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan github.com >> ~/.ssh/known_hosts
-        ssh -vT git@github.com
-        scp ${{ secrets.USERNAME }}@${{ secrets.HOST }}:~/logs/2021-09-29/log.html ${{ github.workspace }}/log.html
+        echo "<html> hi </html>" > hi.html
     - name: Send Email
       uses: dawidd6/action-send-mail@v3
       with:
