@@ -13,9 +13,9 @@ export NOW=$(date +"%T")
 # We need: Code version, machine information, run time, accuracy, hash seeds
 cd $BASEDIR/../build/
 LOGFILE="../$target/$NOW.txt"
-lscpu > LOGFILE
-echo "---------------------------------------" >> LOGFILE
-echo "Current code version:" >> LOGFILE
-git describe --tag >> LOGFILE
-echo "---------- Unit Test Results ----------" >> LOGFILE
-ctest -A >> LOGFILE
+lscpu > $LOGFILE
+echo "---------------------------------------" >> $LOGFILE
+echo "Current code version:" >> $LOGFILE
+git describe --tag >> $LOGFILE
+echo "---------- Unit Test Results ----------" >> $LOGFILE
+ctest -A >> $LOGFILE
