@@ -19,7 +19,7 @@ jobs:
         command: |
           cd Universe
           git pull origin benchmark-tests
-          source regular-benchmark.sh
+          source bin/regular-benchmark.sh
         host: ${{ secrets.HOST }}
         user: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
