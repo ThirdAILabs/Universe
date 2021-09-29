@@ -21,4 +21,4 @@ echo "---------- Unit Test Results ----------" >> $LOGFILE
 ctest -A >> $LOGFILE
 
 pip3 install .
-sh ./$BASEDIR/bolt_mnist_test.sh > $LOGFILE
+sh ./$BASEDIR/bolt_mnist_test.sh >> $LOGFILE
