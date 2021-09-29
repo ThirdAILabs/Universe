@@ -29,8 +29,6 @@ jobs:
     - name: Send Email
       uses: dawidd6/action-send-mail@v3
       with:
-        command: |
-          
         # Required mail server address:
         server_address: smtp.gmail.com
         # Required mail server port:
