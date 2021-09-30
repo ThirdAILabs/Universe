@@ -63,6 +63,7 @@ void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
 
   std::vector<uint32_t> hashes(_total_num_hashes, UNSET_HASH);
   uint32_t current_hash_index = 0;
+
   for (uint32_t bin_num = 0; bin_num < _total_num_hashes; bin_num++) {
     uint32_t bin_upper_bound = (bin_num == _total_num_hashes - 1)
                                    ? UNSET_HASH
