@@ -7,17 +7,13 @@ template class SampledHashTable<uint32_t>;
 template <typename Label_t>
 SampledHashTable<Label_t>::SampledHashTable(uint64_t num_tables,
                                             uint64_t reservoir_size,
-                                            uint64_t range_pow,
-                                            uint64_t max_rand)
+                                            uint64_t range, uint64_t max_rand)
     : _num_tables(num_tables),
       _reservoir_size(reservoir_size),
-      _range_pow(range_pow),
-      _range(1 << range_pow),
+      _range(range),
       _max_rand(max_rand) {
   _data = new Label_t[_num_tables * _range * _reservoir_size];
   _gen_rand = new uint32_t[_max_rand];
-
-  _mask = _range - 1;
 
   srand(32);
   for (uint64_t i = 1; i < _max_rand; i++) {
@@ -33,7 +29,7 @@ void SampledHashTable<Label_t>::insert(uint64_t n, const Label_t* labels,
 #pragma omp parallel for default(none) shared(n, labels, hashes)
   for (uint64_t i = 0; i < n; i++) {
     for (uint64_t table = 0; table < _num_tables; table++) {
-      uint32_t row_index = HashMod(hashes[HashIdx(i, table)]);
+      uint32_t row_index = hashes[HashIdx(i, table)];
       uint32_t counter = _counters[CounterIdx(table, row_index)]++;
 
       if (counter < _reservoir_size) {
@@ -54,7 +50,7 @@ void SampledHashTable<Label_t>::insertSequential(uint64_t n, Label_t start,
 #pragma omp parallel for default(none) shared(n, start, hashes)
   for (uint64_t i = 0; i < n; i++) {
     for (uint64_t table = 0; table < _num_tables; table++) {
-      uint32_t row_index = HashMod(hashes[HashIdx(i, table)]);
+      uint32_t row_index = hashes[HashIdx(i, table)];
       uint32_t counter = _counters[CounterIdx(table, row_index)]++;
 
       if (counter < _reservoir_size) {
@@ -72,7 +68,7 @@ template <typename Label_t>
 void SampledHashTable<Label_t>::queryBySet(
     const uint32_t* hashes, std::unordered_set<Label_t>& store) const {
   for (uint64_t table = 0; table < _num_tables; table++) {
-    uint32_t row_index = HashMod(hashes[table]);
+    uint32_t row_index = hashes[table];
     uint32_t counter = _counters[CounterIdx(table, row_index)];
 
     for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size);
@@ -86,7 +82,7 @@ template <typename Label_t>
 void SampledHashTable<Label_t>::queryByCount(
     uint32_t const* hashes, std::vector<uint32_t>& counts) const {
   for (uint64_t table = 0; table < _num_tables; table++) {
-    uint32_t row_index = HashMod(hashes[table]);
+    uint32_t row_index = hashes[table];
     uint32_t counter = _counters[CounterIdx(table, row_index)];
 
     for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size);
@@ -100,7 +96,7 @@ template <typename Label_t>
 void SampledHashTable<Label_t>::queryByVector(
     uint32_t const* hashes, std::vector<Label_t>& results) const {
   for (uint64_t table = 0; table < _num_tables; table++) {
-    uint32_t row_index = HashMod(hashes[table]);
+    uint32_t row_index = hashes[table];
     uint32_t counter = _counters[CounterIdx(table, row_index)];
 
     for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size);
