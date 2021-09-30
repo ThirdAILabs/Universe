@@ -12,13 +12,10 @@
 
 namespace thirdai::utils {
 
-typedef std::pair<uint32_t, float> PAIR;
-
-struct cmp {
-  bool operator()(const PAIR& a, const PAIR& b) {
-    return a.second > b.second;  // lower is better
-  };
-};
+// Represents a bin in which no hash was placed into during the initial step
+constexpr uint32_t UNSET_HASH = UINT32_MAX;
+// If this path length is reached in densification we just keep the hash unset
+constexpr uint32_t MAX_DENSIFICATION_PATH_LENGTH = 100;
 
 DensifiedMinHash::DensifiedMinHash(uint32_t hashes_per_table,
                                    uint32_t num_tables, uint32_t seed)
@@ -49,12 +46,14 @@ void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
                                         uint32_t* output) const {
   (void)values;
 
-  // If murmur hash takes too long, we can just use the original indices and
-  // sort those. This is not preferred, however, because there might be locality
-  // and thus information loss in the original indices, i.e. having indices 899
-  // 890 891 892 is probably much more likely than having 4 consecutive hash
-  // values. Another complicating factor is that we would need to know the
-  // max dimension upon construction to initialize the range and bin size.
+  // If murmur hash takes too long, one thing we can do is switch to a faster
+  // hash. Another interesting alternative is to just use the original indices
+  // and sort those. This is not preferred, however, because there might be
+  // locality and thus information loss in the original indices, i.e. having
+  // indices 899 890 891 892 is probably much more likely than having 4
+  // consecutive hash values. Another complicating factor is that we would need
+  // to know themax dimension upon construction to initialize the range and
+  // bin size.
   std::vector<uint32_t> hashed_indices(length);
   for (uint32_t i = 0; i < length; i++) {
     hashed_indices[i] = MurmurHash(reinterpret_cast<const char*>(indices + i),
@@ -62,14 +61,11 @@ void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
   }
   std::sort(hashed_indices.begin(), hashed_indices.end());
 
-  // Here, UINT32_MAX represents the absence of a hash
-  // TODO(Josh) bring this into a util method
-  // TODO(Josh) put null hash value in variable
-  std::vector<uint32_t> hashes(_total_num_hashes, UINT32_MAX);
+  std::vector<uint32_t> hashes(_total_num_hashes, UNSET_HASH);
   uint32_t current_hash_index = 0;
   for (uint32_t bin_num = 0; bin_num < _total_num_hashes; bin_num++) {
     uint32_t bin_upper_bound = (bin_num == _total_num_hashes - 1)
-                                   ? UINT32_MAX
+                                   ? UNSET_HASH
                                    : (_binsize + 1) * bin_num;
 
     // Check if we have a lowest element in the bin
@@ -93,11 +89,11 @@ void DensifiedMinHash::densifyHashes(uint32_t* hashes,
   for (uint32_t i = 0; i < _total_num_hashes; i++) {
     uint32_t next = hashes[i];
     uint32_t count = 0;
-    while (next == UINT32_MAX) {
+    while (next == UNSET_HASH) {
       count++;
       uint32_t index = fastDoubleHash(i, count, _log_2_num_hashes);
       next = hashes[index];
-      if (count > 100) {  // Densification failure.
+      if (count > MAX_DENSIFICATION_PATH_LENGTH) {  // Densification failure.
         break;
       }
     }

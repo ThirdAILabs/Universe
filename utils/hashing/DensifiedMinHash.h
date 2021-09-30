@@ -8,14 +8,6 @@ namespace thirdai::utils {
 
 /** Based off of the paper https://arxiv.org/pdf/1703.04664.pdf */
 class DensifiedMinHash : public HashFunction {
- private:
-  const uint32_t _hashes_per_table, _total_num_hashes, _binsize, _seed,
-      _log_2_num_hashes;
-
-  void densifyHashes(uint32_t* hashes, uint32_t* final_hashes) const;
-
-  void compactHashes(const uint32_t* hashes, uint32_t* final_hashes) const;
-
  public:
   DensifiedMinHash(uint32_t hashes_per_table, uint32_t num_tables,
                    uint32_t seed);
@@ -25,6 +17,14 @@ class DensifiedMinHash : public HashFunction {
 
   void hashSingleDense(const float* values, uint32_t dim,
                        uint32_t* output) const override;
+
+ private:
+  const uint32_t _hashes_per_table, _total_num_hashes, _binsize, _seed,
+      _log_2_num_hashes;
+
+  void densifyHashes(uint32_t* hashes, uint32_t* final_hashes) const;
+
+  void compactHashes(const uint32_t* hashes, uint32_t* final_hashes) const;
 };
 
 }  // namespace thirdai::utils
