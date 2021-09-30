@@ -2,8 +2,11 @@ name: benchmarks
 
 # Controls when the workflow will run
 on:
+  # Schedule for Thursday 4 PM CST (21:00 UTC)
   schedule:
-  - cron: '*/5 * * * *'
+  - cron: '0 21 * * 4'
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
   benchmarks:
