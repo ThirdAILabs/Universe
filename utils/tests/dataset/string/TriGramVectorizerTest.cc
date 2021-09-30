@@ -4,12 +4,12 @@
 #include <bitset>
 #include <chrono>
 #include <iostream>
+#include <numeric>
 #include <random>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <numeric>
 
 using thirdai::utils::TriGramVectorizer;
 
@@ -288,7 +288,7 @@ TEST_F(TriGramVectorizerTest, DoesNotBreakWhenGivenRandomCharacters) {
     random_string += static_cast<uint8_t>(c);
   }
   ASSERT_EQ(random_string.length(), 256);
-  
+
   std::vector<uint32_t> r_indices;
   std::vector<float> r_values;
   TGV.vectorize(random_string, r_indices, r_values);
