@@ -2,11 +2,8 @@ name: benchmarks
 
 # Controls when the workflow will run
 on:
-  # Triggers the workflow on pushes to benchmark-tests branch
-  push:
-    branches: [ benchmark-tests ]
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+  schedule:
+  - cron: "*/5 * * * *"
 
 jobs:
   benchmarks:
