@@ -16,7 +16,7 @@ using std::chrono::system_clock;
 using thirdai::examples::UniversalHash;
 using thirdai::utils::MurmurHash;
 
-class HashTest : public testing::Test {
+class BasicHashTestSuite : public testing::Test {
   /*
    * TODO(alan): Add more unit tests and move to utils.
    */
@@ -28,7 +28,6 @@ class HashTest : public testing::Test {
     str[0] = rand() % num_chars + starting_ascii;
     str[1] = rand() % num_chars + starting_ascii;
     str[2] = rand() % num_chars + starting_ascii;
-
     str[3] = rand() % num_chars + starting_ascii;
     str[4] = rand() % num_chars + starting_ascii;
     str[5] = rand() % num_chars + starting_ascii;
