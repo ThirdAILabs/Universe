@@ -24,7 +24,8 @@ class SVMDataset : public Dataset {
   std::vector<uint32_t> _markers;
   std::vector<uint32_t> _indices;
   std::vector<float> _values;
-  uint64_t _num_vecs;
+  uint64_t _num_vecs_in_batch;
+  uint64_t _num_vecs_total;
   uint64_t _times_previously_loaded;
 
   /**

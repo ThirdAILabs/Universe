@@ -2,7 +2,10 @@
 #include <random>
 
 namespace thirdai::utils {
+template class SampledHashTable<uint8_t>;
+template class SampledHashTable<uint16_t>;
 template class SampledHashTable<uint32_t>;
+template class SampledHashTable<uint64_t>;
 
 template <typename Label_t>
 SampledHashTable<Label_t>::SampledHashTable(uint64_t num_tables,
