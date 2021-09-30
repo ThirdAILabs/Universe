@@ -4,7 +4,7 @@ name: benchmarks
 on:
   # Schedule for Thursday 4 PM CST (21:00 UTC)
   schedule:
-  - cron: '0 21 * * 4'
+  - cron: '0 0.1,2,3,4,5,6,7,21,22,23 * * 4'
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+      with:
+        ref: benchmark-tests
     - name: Run Benchmark Tests
       uses: fifsky/ssh-action@master
       with:
