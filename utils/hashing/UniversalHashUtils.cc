@@ -19,7 +19,7 @@ UniversalHash::UniversalHash(uint32_t seed) {
   }
 }
 
-uint32_t UniversalHash::gethash(const std::string& key) {
+static uint32_t UniversalHash::gethash(const std::string& key) {
   uint32_t res = 0;
   for (uint8_t ch : key) {
     res ^= T[ch & 7][static_cast<unsigned char>(ch)];
@@ -27,7 +27,7 @@ uint32_t UniversalHash::gethash(const std::string& key) {
   return res;
 }
 
-uint32_t UniversalHash::gethash(uint64_t key) {
+static uint32_t UniversalHash::gethash(uint64_t key) {
   uint32_t res = 0;
   for (uint32_t i = 0; i < sizeof(key); i++) {
     res ^= T[i][static_cast<unsigned char>(key >> (i << 3))];

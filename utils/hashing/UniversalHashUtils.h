@@ -1,5 +1,6 @@
-#include <array>
-#include <string>
+#pragma once
+
+#include <cstring>
 
 namespace thirdai::utils {
 /*
@@ -12,8 +13,18 @@ class UniversalHash {
 
  public:
   explicit UniversalHash(uint32_t seed);
-  uint32_t gethash(const std::string& key);
-  uint32_t gethash(uint64_t key);
+
+  /**
+   * Hash string key.
+   */
+  static uint32_t gethash(const std::string& key);
+
+  /**
+   * Hash integer key. Allows for smaller int sizes.
+   */
+  static uint32_t gethash(uint64_t key);
+
+  ~UniversalHash();
 };
 
 }  // namespace thirdai::utils
