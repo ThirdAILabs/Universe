@@ -3,7 +3,7 @@ name: benchmarks
 # Controls when the workflow will run
 on:
   schedule:
-  - cron: "*/5 * * * *"
+  - cron: '*/5 * * * *'
 
 jobs:
   benchmarks:
