@@ -48,8 +48,8 @@ class SampledHashTable final : public HashTable<Label_t> {
    * max_rand: optional parameter, controls how many pre-generated random values
    * are created for reservoir sampling
    */
-  SampledHashTable(uint64_t num_tables, uint64_t reservoir_size,
-                   uint64_t range, uint64_t max_rand = DefaultMaxRand);
+  SampledHashTable(uint64_t num_tables, uint64_t reservoir_size, uint64_t range,
+                   uint64_t max_rand = DefaultMaxRand);
 
   SampledHashTable(const SampledHashTable& other) = delete;
 
