@@ -15,11 +15,16 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
     : HashFunction(num_tables, 1 << range_pow),
       _hashes_per_table(hashes_per_table),
       _num_hashes(hashes_per_table * num_tables),
+      _log_2_num_hashes(__builtin_ffs(_num_hashes) - 1),
       _dim(input_dim),
-      _binsize(DEFAULT_BINSIZE) {
-  _permute = ceil((static_cast<double>(_num_hashes) * _binsize) / _dim);
-  _log_num_hashes = log2(_num_hashes);
-  _log_binsize = floor(log2(_binsize));
+      _binsize(DEFAULT_BINSIZE),
+      _log_binsize(floor(log2(_binsize))),
+      _permute(ceil((static_cast<double>(_num_hashes) * _binsize) / _dim)) {
+  if (1U << _log_2_num_hashes != _num_hashes) {
+    throw std::invalid_argument(
+        "The total number of hashes (hashes_per_table * num_tables) must be a "
+        "power of 2.");
+  }
 
   std::mt19937 gen(seed);
   uint32_t* n_array = new uint32_t[_dim];
@@ -115,7 +120,7 @@ void DWTAHashFunction::densifyHashes(const uint32_t* hashes,
     uint32_t count = 0;
     while (next == std::numeric_limits<uint32_t>::max()) {
       count++;
-      uint32_t index = std::min(RandDoubleHash(i, count), _num_hashes);
+      uint32_t index = fastDoubleHash(i, count, _log_2_num_hashes);
 
       next = hashes[index];
       if (count > 100) {  // Densification failure.

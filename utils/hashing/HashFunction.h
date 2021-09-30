@@ -83,10 +83,16 @@ class HashFunction {
 
   inline uint32_t range() const { return _range; }
 
-  static constexpr uint32_t RandDoubleHash(uint32_t binid, uint32_t count, uint32_t seed) {
-    uint32_t tohash = ((binid + 1) << 6) + count;
-    uint32_t result = (seed * tohash << 3);
-    return result;
+  /* A very cheap and fast hash of two numbers into a hash of a certain bit
+   * range. Inspiration from
+   * https://stackoverflow.com/questions/1835976/what-is-a-sensible-prime-for-hashcode-calculation/2816747#2816747
+   * TODO(Alan, Josh): Move this into a universal hash class
+   */
+  static constexpr uint32_t fastDoubleHash(uint32_t num_one, uint32_t num_two,
+                                           uint32_t bit_range) {
+    const uint32_t prime = 92821;
+    uint32_t result = prime * (prime * num_one + num_two);
+    return result >> (32 - bit_range);
   }
 
  protected:

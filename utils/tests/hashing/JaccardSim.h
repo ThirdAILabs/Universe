@@ -9,9 +9,9 @@
 #include <cmath>
 #include <iostream>
 #include <random>
+#include <stdexcept>
 #include <unordered_set>
 #include <utility>
-#include <stdexcept>
 
 namespace thirdai::utils::lsh_testing {
 
@@ -33,28 +33,33 @@ class JaccardSim : public Similarity {
     // of the intersection is 2ns / (1 + s).
     uint32_t intersection_size = 2 * num_non_zeros * sim / (1 + sim);
     uint32_t union_size = 2 * num_non_zeros - intersection_size;
-    
+
     // Since we will do rejection sampling we want the dimension to be
     // at least 2 times bigger than necessary.
     if (2 * union_size > dim) {
-      throw std::invalid_argument("Dimension " + std::to_string(dim) + " is not big enough to represent jaccard sim " + std::to_string(sim));
+      throw std::invalid_argument(
+          "Dimension " + std::to_string(dim) +
+          " is not big enough to represent jaccard sim " + std::to_string(sim));
     }
 
     std::unordered_set<uint32_t> random_values_set;
     while (random_values_set.size() < union_size) {
       random_values_set.insert(_generator() % dim);
     }
-    std::vector<uint32_t> random_values(random_values_set.begin(), random_values_set.end());
+    std::vector<uint32_t> random_values(random_values_set.begin(),
+                                        random_values_set.end());
 
     std::vector<uint32_t> indices_1;
     std::vector<uint32_t> indices_2;
-    for (uint32_t same_index = 0; same_index < intersection_size; same_index++) {
+    for (uint32_t same_index = 0; same_index < intersection_size;
+         same_index++) {
       uint32_t same_value = random_values.back();
       random_values.pop_back();
       indices_1.push_back(same_value);
       indices_2.push_back(same_value);
     }
-    for (uint32_t diff_index = 0; diff_index < num_non_zeros - intersection_size; diff_index++) {
+    for (uint32_t diff_index = 0;
+         diff_index < num_non_zeros - intersection_size; diff_index++) {
       uint32_t value_1 = random_values.back();
       random_values.pop_back();
       indices_1.push_back(value_1);
@@ -85,7 +90,7 @@ class JaccardSim : public Similarity {
   /** Returns the jacard similarity of two sets, represented as sorted vectors
    */
   static float getJaccardSim(const std::vector<uint32_t>& s1,
-                      const std::vector<uint32_t>& s2) {
+                             const std::vector<uint32_t>& s2) {
     uint32_t intersection_size = 0;
     uint32_t s1_index = 0;
     for (uint32_t s2_value : s2) {
