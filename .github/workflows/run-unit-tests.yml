@@ -1,4 +1,4 @@
-name: Run Tests
+name: Run Unit Tests
 
 # Controls when the workflow will run
 on:

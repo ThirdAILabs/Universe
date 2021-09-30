@@ -4,8 +4,7 @@ export BASEDIR=$(dirname "$0")
 ./$BASEDIR/build.sh
 ./$BASEDIR/get_datasets.sh
 
-export DATE=$(date '+%Y-%m-%d')
-target=$BASEDIR/../../logs/$DATE
+export DATE=$BASEDIR/../../logs/$(date '+%Y-%m-%d')
 mkdir $BASEDIR/../../logs/
 mkdir $target
 export NOW=$(date +"%T")
