@@ -119,6 +119,7 @@ void DWTAHashFunction::densifyHashes(const uint32_t* hashes,
 
       next = hashes[index];
       if (count > 100) {  // Densification failure.
+        next = 0;         // Set to zero to avoid overflow on concatenation
         break;
       }
     }
