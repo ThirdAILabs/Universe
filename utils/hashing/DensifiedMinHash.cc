@@ -59,7 +59,7 @@ void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
   std::vector<uint32_t> hashes(_total_num_hashes, UINT32_MAX);
   for (uint32_t i = 0; i < length; i++) {
     uint32_t hash = MurmurHash(reinterpret_cast<const char*>(indices + i),
-                                    sizeof(uint32_t), _seed);
+                               sizeof(uint32_t), _seed);
     uint32_t bin_id = std::min(hash / _binsize, _total_num_hashes - 1);
     hashes[bin_id] = std::min(hash, hashes[bin_id]);
   }
