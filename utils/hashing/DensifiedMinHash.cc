@@ -12,13 +12,13 @@
 
 namespace thirdai::utils {
 
-// Represents a bin in which no hash was placed into during the initial step
-constexpr uint32_t UNSET_HASH = UINT32_MAX;
 // If this path length is reached in densification we just keep the hash unset
 constexpr uint32_t MAX_DENSIFICATION_PATH_LENGTH = 100;
 
-// TODO(josh): __builtin_ffs is not an obvious thing (it returns the index of
-// first bit set + 1). We should add a better named function to a util file.
+/**
+ * TODO(josh): __builtin_ffs is not an obvious thing (it returns the index of
+ * first bit set + 1). We should add a better named function to a util file.
+ */
 DensifiedMinHash::DensifiedMinHash(uint32_t hashes_per_table,
                                    uint32_t num_tables, uint32_t seed)
     : HashFunction(num_tables, UINT32_MAX),
@@ -56,32 +56,12 @@ void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
   // consecutive hash values. Another complicating factor is that we would need
   // to know themax dimension upon construction to initialize the range and
   // bin size.
-  std::vector<uint32_t> hashed_indices(length);
+  std::vector<uint32_t> hashes(_total_num_hashes, UINT32_MAX);
   for (uint32_t i = 0; i < length; i++) {
-    hashed_indices[i] = MurmurHash(reinterpret_cast<const char*>(indices + i),
-                                   sizeof(uint32_t), _seed);
-  }
-  std::sort(hashed_indices.begin(), hashed_indices.end());
-
-  std::vector<uint32_t> hashes(_total_num_hashes, UNSET_HASH);
-  uint32_t current_hash_index = 0;
-
-  for (uint32_t bin_num = 0; bin_num < _total_num_hashes; bin_num++) {
-    uint32_t bin_upper_bound = (bin_num == _total_num_hashes - 1)
-                                   ? UNSET_HASH
-                                   : (_binsize + 1) * bin_num;
-
-    // Check if we have a lowest element in the bin
-    if (current_hash_index < hashes.size() &&
-        hashed_indices[current_hash_index] < bin_upper_bound) {
-      hashes[bin_num] = hashed_indices[current_hash_index];
-    }
-
-    // Keep going until we escape the bin
-    while (current_hash_index < hashes.size() &&
-           hashed_indices[current_hash_index] < bin_upper_bound) {
-      current_hash_index++;
-    }
+    uint32_t hash = MurmurHash(reinterpret_cast<const char*>(indices + i),
+                                    sizeof(uint32_t), _seed);
+    uint32_t bin_id = std::min(hash / _binsize, _total_num_hashes - 1);
+    hashes[bin_id] = std::min(hash, hashes[bin_id]);
   }
 
   densifyHashes(hashes.data(), output);
@@ -92,7 +72,7 @@ void DensifiedMinHash::densifyHashes(uint32_t* hashes,
   for (uint32_t i = 0; i < _total_num_hashes; i++) {
     uint32_t next = hashes[i];
     uint32_t count = 0;
-    while (next == UNSET_HASH) {
+    while (next == UINT32_MAX) {
       count++;
       uint32_t index = fastDoubleHash(i, count, _log_2_num_hashes);
       next = hashes[index];
