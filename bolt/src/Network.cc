@@ -137,14 +137,15 @@ uint32_t Network::ProcessTestBatch(const Batch& batch) {
         _layers[_num_layers - 2]->GetLen(b), batch.labels[b],
         batch.label_lens[b]);
 
-    const uint32_t* indices = _layers[_num_layers - 1]->GetIndices(b);
     const float* activations = _layers[_num_layers - 1]->GetValues(b);
     float max_act = std::numeric_limits<float>::min();
     uint32_t pred = 0;
     for (uint32_t i = 0; i < _layers[_num_layers - 1]->GetLen(b); i++) {
       if (activations[i] > max_act) {
         max_act = activations[i];
-        pred = indices[i];
+        // Since sparsity is set to 1.0, the layer is dense and we can use i
+        // instead of indices[i]
+        pred = i;
       }
     }
 

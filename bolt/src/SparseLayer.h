@@ -30,16 +30,11 @@ class SparseLayer final : public Layer {
                    uint32_t label_len) override;
 
   void Backpropagate(uint32_t batch_indx, const uint32_t* indices,
-                     const float* values, float* errors,
-                     uint32_t len) override {
-    BackPropagateImpl<false>(batch_indx, indices, values, errors, len);
-  }
+                     const float* values, float* errors, uint32_t len) override;
 
   void BackpropagateFirstLayer(uint32_t batch_indx, const uint32_t* indices,
                                const float* values, float* errors,
-                               uint32_t len) override {
-    BackPropagateImpl<true>(batch_indx, indices, values, errors, len);
-  }
+                               uint32_t len) override;
 
   void ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
                      uint32_t label_len) override;
@@ -78,10 +73,20 @@ class SparseLayer final : public Layer {
   ~SparseLayer();
 
  private:
-  template <bool FIRST_LAYER>
+  template <bool DENSE, bool PREV_DENSE>
+  void FeedForwardImpl(uint32_t batch_indx, const uint32_t* indices,
+                       const float* values, uint32_t len, uint32_t* labels,
+                       uint32_t label_len);
+
+  template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
   void BackPropagateImpl(uint32_t batch_indx, const uint32_t* indices,
                          const float* values, float* errors, uint32_t len);
 
+  template <bool DENSE>
+  void ComputeErrorsImpl(uint32_t batch_indx, const uint32_t* labels,
+                         uint32_t label_len);
+
+  template <bool DENSE, bool PREV_DENSE> 
   void SelectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
                            const float* values, uint32_t len, uint32_t* labels,
                            uint32_t label_len);
