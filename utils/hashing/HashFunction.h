@@ -96,7 +96,6 @@ class HashFunction {
   }
 
  protected:
-
   const uint32_t _num_tables, _range;
 
   /**
@@ -119,7 +118,7 @@ class HashFunction {
     }
   }
 
-   /**
+  /**
    * Does an in place densification of hashes, as described in the DOPH paper.
    * Currently unset hashes should be represented by UINT32_MAX. For a given
    * unset hash, if we don't find a set hash within max_path_length number of
@@ -134,7 +133,7 @@ class HashFunction {
       return;
     }
 
-    // TODO(josh): Make this a util log method. __builtin_clz returns 
+    // TODO(josh): Make this a util log method. __builtin_clz returns
     // the number of zeros before the first set bit, so the log is 32 - 1 -
     // this number.
     const uint32_t log_2_floor = 31 - __builtin_clz(num_hashes);

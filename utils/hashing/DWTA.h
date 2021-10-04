@@ -6,8 +6,8 @@ namespace thirdai::utils {
 
 class DWTAHashFunction final : public HashFunction {
  private:
-  const uint32_t _hashes_per_table, _num_hashes, _dim,
-      _binsize, _log_binsize, _permute;
+  const uint32_t _hashes_per_table, _num_hashes, _dim, _binsize, _log_binsize,
+      _permute;
   uint32_t* _bin_map;
   uint32_t* _positions;
   uint32_t _rand_double_hash_seed;

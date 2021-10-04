@@ -18,8 +18,7 @@ DensifiedMinHash::DensifiedMinHash(uint32_t hashes_per_table,
       _hashes_per_table(hashes_per_table),
       _total_num_hashes(hashes_per_table * num_tables),
       _binsize(_range / _total_num_hashes),
-      _seed(seed)
-      {}
+      _seed(seed) {}
 
 void DensifiedMinHash::hashSingleDense(const float* values, uint32_t dim,
                                        uint32_t* output) const {

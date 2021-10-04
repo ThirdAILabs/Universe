@@ -19,7 +19,6 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
       _binsize(DEFAULT_BINSIZE),
       _log_binsize(floor(log2(_binsize))),
       _permute(ceil((static_cast<double>(_num_hashes) * _binsize) / _dim)) {
-
   std::mt19937 gen(seed);
   uint32_t* n_array = new uint32_t[_dim];
   _bin_map = new uint32_t[_dim * _permute];
