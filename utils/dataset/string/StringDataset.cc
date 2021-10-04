@@ -15,7 +15,7 @@ StringDataset::StringDataset(FRAGMENT_TYPE load_type,
       break;
     default:
       std::cerr << "The chosen loader has not been implemented. Defaulting "
-                   "to sentence loader."
+                   "to sentence loader until other loaders are ready."
                 << std::endl;
       _loader = new SentenceLoader();
       break;
