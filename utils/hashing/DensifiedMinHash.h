@@ -19,8 +19,7 @@ class DensifiedMinHash : public HashFunction {
                        uint32_t* output) const override;
 
  private:
-  const uint32_t _hashes_per_table, _total_num_hashes, _binsize, _seed,
-      _log_2_num_hashes;
+  const uint32_t _hashes_per_table, _total_num_hashes, _binsize, _seed;
 
   void compactHashes(const uint32_t* hashes, uint32_t* final_hashes) const;
 };

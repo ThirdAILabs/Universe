@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../dataset/Dataset.h"
-#include <iostream>
 
 namespace thirdai::utils {
 
@@ -97,37 +96,8 @@ class HashFunction {
   }
 
  protected:
-  /**
-   * Does an in place densification of hashes, as described in the DOPH paper.
-   * Currently unset hashes should be represented by UINT32_MAX. For a given
-   * unset hash, if we don't find a set hash within max_path_length number of
-   * jumps, we set it to unset_hash_value. First performs a densification of
-   * the largest 2^x number of hashes less than the number of hashes, then
-   * densifies the rest.
-   */
-  static void densifyHashes(uint32_t* hashes, uint32_t num_hashes,
-                            uint32_t max_path_length = 100,
-                            uint32_t unset_hash_value = 0) {
-    if (num_hashes == 0) {
-      return;
-    }
 
-    // TODO(josh): Make this a util log method
-    const uint32_t log_2_floor = 31 - __builtin_clz(num_hashes);
-    const uint32_t densify_hashes_block_length = 1 << log_2_floor;
-    const uint32_t num_hashes_in_overlap =
-        2 * densify_hashes_block_length - num_hashes;
-
-    densifyHashesPowerOf2(hashes, log_2_floor, 0, max_path_length,
-                          unset_hash_value);
-    densifyHashesPowerOf2(
-        hashes + densify_hashes_block_length - num_hashes_in_overlap,
-        log_2_floor, num_hashes_in_overlap, max_path_length, unset_hash_value);
-    for (uint32_t i = 0; i < num_hashes; i++) {
-      std::cout << hashes[i] << " ";
-    }
-    std::cout << std::endl;
-  }
+  const uint32_t _num_tables, _range;
 
   /**
    * Performas a default hash compation by assigning hashes_per_output_value
@@ -149,7 +119,35 @@ class HashFunction {
     }
   }
 
-  const uint32_t _num_tables, _range;
+   /**
+   * Does an in place densification of hashes, as described in the DOPH paper.
+   * Currently unset hashes should be represented by UINT32_MAX. For a given
+   * unset hash, if we don't find a set hash within max_path_length number of
+   * jumps, we set it to unset_hash_value. First performs a densification of
+   * the largest 2^x number of hashes less than the number of hashes, then
+   * densifies the rest.
+   */
+  static void densifyHashes(uint32_t* hashes, uint32_t num_hashes,
+                            uint32_t max_path_length = 100,
+                            uint32_t unset_hash_value = 0) {
+    if (num_hashes == 0) {
+      return;
+    }
+
+    // TODO(josh): Make this a util log method. __builtin_clz returns 
+    // the number of zeros before the first set bit, so the log is 32 - 1 -
+    // this number.
+    const uint32_t log_2_floor = 31 - __builtin_clz(num_hashes);
+    const uint32_t densify_hashes_block_length = 1 << log_2_floor;
+    const uint32_t num_hashes_in_overlap =
+        2 * densify_hashes_block_length - num_hashes;
+
+    densifyHashesPowerOf2(hashes, log_2_floor, 0, max_path_length,
+                          unset_hash_value);
+    densifyHashesPowerOf2(
+        hashes + densify_hashes_block_length - num_hashes_in_overlap,
+        log_2_floor, num_hashes_in_overlap, max_path_length, unset_hash_value);
+  }
 
  private:
   /**

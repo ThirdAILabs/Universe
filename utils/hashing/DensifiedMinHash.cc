@@ -12,28 +12,14 @@
 
 namespace thirdai::utils {
 
-// If this path length is reached in densification we just keep the hash unset
-constexpr uint32_t MAX_DENSIFICATION_PATH_LENGTH = 100;
-
-/**
- * TODO(josh): __builtin_ffs is not an obvious thing (it returns the index of
- * first bit set + 1). We should add a better named function to a util file.
- */
 DensifiedMinHash::DensifiedMinHash(uint32_t hashes_per_table,
                                    uint32_t num_tables, uint32_t seed)
     : HashFunction(num_tables, UINT32_MAX),
       _hashes_per_table(hashes_per_table),
       _total_num_hashes(hashes_per_table * num_tables),
       _binsize(_range / _total_num_hashes),
-      _seed(seed),
-      _log_2_num_hashes(__builtin_ffs(_total_num_hashes) - 1) {
-  if (1U << _log_2_num_hashes != _total_num_hashes) {
-    throw std::invalid_argument(
-        "The total number of hashes (hashes_per_table * num_tables) must be a "
-        "power of 2, but was " +
-        std::to_string(_total_num_hashes));
-  }
-}
+      _seed(seed)
+      {}
 
 void DensifiedMinHash::hashSingleDense(const float* values, uint32_t dim,
                                        uint32_t* output) const {
