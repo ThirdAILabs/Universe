@@ -48,7 +48,7 @@ SparseLayer::SparseLayer(uint64_t dim, uint64_t prev_dim, float sparsity,
 
     _hash_table = new utils::SampledHashTable<uint32_t>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
-        _sampling_config.range_pow);
+        1 << _sampling_config.range_pow);
 
     BuildHashTables();
 

@@ -16,7 +16,7 @@
 # cert-*-c, -cert-err34-c, -cert-msc30-c, -cert-msc32-c:
 #    We don't care about limited randomness or seeds (cert-msc30-c, -cert-msc32-c),
 #    TODO: Add back cert-err34-c, it is good, just requires non trivial code changes
-# clang-analyzer-*, -clang-analyzer-core.*:
+# clang-analyzer-*, -clang-analyzer-core.*, -clang-analyzer-security.insecureAPI.rand,
 #    Includes clang-analyzer checks which runs an automatic analysis tool to find bugs.
 #    Some of the -core checks are slightly unintelligent (and finds bugs in our code that are not supposed to be).
 # cppcoreguidelines-*:
@@ -59,7 +59,7 @@ Checks: >
          bugprone-*, -bugprone-narrowing-conversions,
          cert-*-cpp, -cert-err58-cpp, -cert-msc50-cpp, -cert-msc51-cpp, 
          cert-*-c, -cert-err34-c, -cert-msc30-c, -cert-msc32-c,
-         clang-analyzer-*, -clang-analyzer-core.*,
+         clang-analyzer-*, -clang-analyzer-core.*, -clang-analyzer-security.insecureAPI.rand,
          cppcoreguidelines-*, -cppcoreguidelines-avoid-magic-numbers, -cppcoreguidelines-pro-*, 
             -cppcoreguidelines-avoid-c-arrays, -cppcoreguidelines-init-variables, -cppcoreguidelines-owning-memory, 
             -cppcoreguidelines-special-member-functions, -cppcoreguidelines-non-private-member-variables-in-classes, 

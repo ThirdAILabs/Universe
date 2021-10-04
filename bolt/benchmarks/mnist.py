@@ -12,7 +12,7 @@ def train_sparse_output_layer(train_data, test_data):
                              range_pow=3, reservoir_size=10))
     ]
 
-    network = bolt.Network(layers=layers, input_dim=780)
+    network = bolt.Network(layers=layers, input_dim=784)
 
     network.Train(batch_size=250, train_data=train_data, test_data=test_data,
                   learning_rate=0.0001, epochs=10, rehash=3000, rebuild=10000, max_test_batches=40)
@@ -29,7 +29,7 @@ def train_sparse_hidden_layer(train_data, test_data):
         bolt.LayerConfig(dim=10, activation_function="Softmax")
     ]
 
-    network = bolt.Network(layers=layers, input_dim=780)
+    network = bolt.Network(layers=layers, input_dim=784)
 
     network.Train(batch_size=250, train_data=train_data, test_data=test_data,
                   learning_rate=0.0001, epochs=10, rehash=3000, rebuild=10000, max_test_batches=40)
