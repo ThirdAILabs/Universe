@@ -1,7 +1,7 @@
 # Bolt Guide
 
 ### C++ Api
-To use this library you can directly link the `bolt_lib` library in cmake. There is also the `bolt` executable which takes in a config file (see below for format of config file) as an argument and will execute essentially the same code that is in the python bindings. 
+To use this library you can directly link the `bolt_lib` library in cmake. There is also the `bolt` executable which takes in a config file (see below for format of config file) as an argument and will execute the same code that is in the python bindings. The `bolt executable` will be in the directory `build/bolt/` and takes one argument which is the path to the config file, e.g. `$ ./build/bolt/bolt bolt/configs/amzn.cfg`
 
 ### Config file format 
 The format of the config files are `key = <value1>, ... , <value n>` where the values are comma separated. String values must be enclosed in single or double quotations. Lines starting with // are ignored.

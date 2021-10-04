@@ -10,7 +10,7 @@ namespace bolt = thirdai::bolt;
 
 int main(int argc, char** argv) {
   if (argc != 2) {
-    std::cerr << "Invalid args, usage: ./slide <config file>" << std::endl;
+    std::cerr << "Invalid args, usage: ./bolt <config file>" << std::endl;
     return 1;
   }
 
