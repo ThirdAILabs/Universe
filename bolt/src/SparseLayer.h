@@ -86,7 +86,7 @@ class SparseLayer final : public Layer {
   void ComputeErrorsImpl(uint32_t batch_indx, const uint32_t* labels,
                          uint32_t label_len);
 
-  template <bool DENSE, bool PREV_DENSE> 
+  template <bool DENSE, bool PREV_DENSE>
   void SelectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
                            const float* values, uint32_t len, uint32_t* labels,
                            uint32_t label_len);
