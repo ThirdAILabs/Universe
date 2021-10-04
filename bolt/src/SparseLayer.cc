@@ -96,10 +96,14 @@ void SparseLayer::FeedForwardImpl(uint32_t batch_indx, const uint32_t* indices,
 
   float max_act = 0;
   for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
+    // Because DENSE is known at compile time the compiler can remove this
+    // conditional
     uint64_t act_neuron = DENSE ? n : _active_neurons[batch_indx][n];
     _is_active[act_neuron] = true;
     float act = _biases[act_neuron];
     for (uint64_t i = 0; i < len; i++) {
+      // Because PREV_DENSE is known at compile time the compiler can remove
+      // this conditional
       uint32_t prev_act_neuron = PREV_DENSE ? i : indices[i];
       act += _weights[act_neuron * _prev_dim + prev_act_neuron] * values[i];
     }
@@ -197,8 +201,12 @@ void SparseLayer::BackPropagateImpl(uint32_t batch_indx,
                                     uint32_t len) {
   for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
     _errors[batch_indx][n] *= ActFuncDerivative(_activations[batch_indx][n]);
+    // Because DENSE is known at compile time the compiler can remove this
+    // conditional
     uint32_t act_neuron = DENSE ? n : _active_neurons[batch_indx][n];
     for (uint64_t i = 0; i < len; i++) {
+      // Because PREV_DENSE is known at compile time the compiler can remove
+      // this conditional
       uint32_t prev_act_neuron = PREV_DENSE ? i : indices[i];
       _w_gradient[act_neuron * _prev_dim + prev_act_neuron] +=
           _errors[batch_indx][n] * values[i];
@@ -226,6 +234,8 @@ void SparseLayer::ComputeErrorsImpl(uint32_t batch_indx, const uint32_t* labels,
   float frac = 1.0 / label_len;
 
   for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
+    // Because DENSE is known at compile time the compiler can remove this
+    // conditional
     uint32_t act_neuron = DENSE ? n : _active_neurons[batch_indx][n];
     if (std::find(labels, labels + label_len, act_neuron) !=
         labels + label_len) {
