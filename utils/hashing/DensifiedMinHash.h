@@ -22,8 +22,6 @@ class DensifiedMinHash : public HashFunction {
   const uint32_t _hashes_per_table, _total_num_hashes, _binsize, _seed,
       _log_2_num_hashes;
 
-  void densifyHashes(uint32_t* hashes, uint32_t* final_hashes) const;
-
   void compactHashes(const uint32_t* hashes, uint32_t* final_hashes) const;
 };
 

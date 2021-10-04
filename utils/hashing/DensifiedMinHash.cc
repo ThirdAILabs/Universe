@@ -64,38 +64,9 @@ void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
     hashes[bin_id] = std::min(hash, hashes[bin_id]);
   }
 
-  densifyHashes(hashes.data(), output);
-}
-
-void DensifiedMinHash::densifyHashes(uint32_t* hashes,
-                                     uint32_t* final_hashes) const {
-  for (uint32_t i = 0; i < _total_num_hashes; i++) {
-    uint32_t next = hashes[i];
-    uint32_t count = 0;
-    while (next == UINT32_MAX) {
-      count++;
-      uint32_t index = fastDoubleHash(i, count, _log_2_num_hashes);
-      next = hashes[index];
-      if (count > MAX_DENSIFICATION_PATH_LENGTH) {  // Densification failure.
-        break;
-      }
-    }
-    hashes[i] = next;
-  }
-
-  compactHashes(hashes, final_hashes);
-}
-
-void DensifiedMinHash::compactHashes(const uint32_t* hashes,
-                                     uint32_t* final_hashes) const {
-  for (uint32_t i = 0; i < _num_tables; i++) {
-    uint32_t index = 0;
-    for (uint32_t j = 0; j < _hashes_per_table; j++) {
-      uint32_t h = hashes[i * _hashes_per_table + j];
-      index += h << (_hashes_per_table - 1 - j);
-    }
-    final_hashes[i] = index;
-  }
+  densifyHashes(hashes.data(), _total_num_hashes);
+  defaultCompactHashesMethod(hashes.data(), output, _num_tables,
+                             _hashes_per_table);
 }
 
 }  // namespace thirdai::utils

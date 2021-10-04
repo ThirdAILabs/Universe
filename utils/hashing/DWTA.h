@@ -12,8 +12,6 @@ class DWTAHashFunction final : public HashFunction {
   uint32_t* _positions;
   uint32_t _rand_double_hash_seed;
 
-  void densifyHashes(const uint32_t* hashes, uint32_t* final_hashes) const;
-
   void compactHashes(const uint32_t* hashes, uint32_t* final_hashes) const;
 
  public:

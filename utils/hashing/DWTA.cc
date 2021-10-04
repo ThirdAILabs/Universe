@@ -101,38 +101,10 @@ void DWTAHashFunction::hashSingleSparse(const uint32_t* indices,
   }
   delete[] bin_values;
 
-  densifyHashes(hashes, output);
+  densifyHashes(hashes, _num_hashes);
+  compactHashes(hashes, output);
 
   delete[] hashes;
-}
-
-void DWTAHashFunction::densifyHashes(const uint32_t* hashes,
-                                     uint32_t* final_hashes) const {
-  uint32_t* hash_array = new uint32_t[_num_hashes]();
-
-  for (uint32_t i = 0; i < _num_hashes; i++) {
-    uint32_t next = hashes[i];
-    if (next != std::numeric_limits<uint32_t>::max()) {
-      hash_array[i] = hashes[i];
-      continue;
-    }
-
-    uint32_t count = 0;
-    while (next == std::numeric_limits<uint32_t>::max()) {
-      count++;
-      uint32_t index = fastDoubleHash(i, count, _log_2_num_hashes);
-
-      next = hashes[index];
-      if (count > 100) {  // Densification failure.
-        break;
-      }
-    }
-    hash_array[i] = next;
-  }
-
-  compactHashes(hash_array, final_hashes);
-
-  delete[] hash_array;
 }
 
 void DWTAHashFunction::compactHashes(const uint32_t* hashes,

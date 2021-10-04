@@ -6,6 +6,7 @@
 using thirdai::utils::lsh_testing::JaccardSim;
 
 // TODO(josh): Move these to a seperate header file
+// TODO(josh): Test hash with multiplicity
 uint32_t num_tests = 100, seed = 42;
 uint32_t hashes_per_table = 1, num_tables = 1 << 12, dim = 1000000;
 float sparsity = 0.001;  // So ~1000 non zeros
