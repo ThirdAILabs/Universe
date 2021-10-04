@@ -21,8 +21,6 @@ class FastSRP : public HashFunction {
     return result;
   }
 
-  void densifyHashes(const uint32_t* hashes, uint32_t* final_hashes) const;
-
   void compactHashes(const uint32_t* hashes, uint32_t* final_hashes) const;
 
  public:

@@ -6,27 +6,11 @@
 
 namespace thirdai::utils {
 
+/** Based off of the paper https://arxiv.org/pdf/1703.04664.pdf */
 class DensifiedMinHash : public HashFunction {
- private:
-  uint32_t _hashes_per_table, _num_hashes, _binsize;
-  uint32_t _randa, _rand_double_hash_seed;
-  uint32_t *_random_hash, *_rand1, _log_num_hashes, *_binids;
-  uint32_t _topK = 30;
-
-  void densifyHashes(const uint32_t* hashes, uint32_t* final_hashes) const;
-
-  void compactHashes(const uint32_t* hashes, uint32_t* final_hashes) const;
-
  public:
-  constexpr uint32_t RandDoubleHash(int binid, int count) const {
-    uint32_t tohash = ((binid + 1) << 6) + count;
-    uint32_t result =
-        (_rand_double_hash_seed * tohash << 3) >> (32 - _log_num_hashes);
-    return result;
-  }
-
-  DensifiedMinHash(uint32_t input_dim, uint32_t hashes_per_table,
-                   uint32_t num_tables, uint32_t range_pow, uint32_t seed);
+  DensifiedMinHash(uint32_t hashes_per_table, uint32_t num_tables,
+                   uint32_t seed);
 
   void hashSingleSparse(const uint32_t* indices, const float* values,
                         uint32_t length, uint32_t* output) const override;
@@ -34,7 +18,10 @@ class DensifiedMinHash : public HashFunction {
   void hashSingleDense(const float* values, uint32_t dim,
                        uint32_t* output) const override;
 
-  ~DensifiedMinHash();
+ private:
+  const uint32_t _hashes_per_table, _total_num_hashes, _binsize, _seed;
+
+  void compactHashes(const uint32_t* hashes, uint32_t* final_hashes) const;
 };
 
 }  // namespace thirdai::utils

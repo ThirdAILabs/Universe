@@ -22,6 +22,11 @@ add_executable(
   FastSRPTest.cc
 )
 
+add_executable(
+  densified_minhash_test
+  DensifiedMinHashTest.cc
+)
+
 target_link_libraries(
   srp_test
   PRIVATE
@@ -38,5 +43,14 @@ target_link_libraries(
   gtest_main
 )
 
+target_link_libraries(
+  densified_minhash_test
+  PRIVATE
+  hash_function_lib
+  lsh_test_helper_lib
+  gtest_main
+)
+
 gtest_discover_tests(srp_test)
 gtest_discover_tests(fast_srp_test)
+gtest_discover_tests(densified_minhash_test)
