@@ -8,21 +8,21 @@
 namespace thirdai::bolt {
 
 namespace tests {
-class SparseLayerTestFixture;
+class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
-class SparseLayer final : public Layer {
-  friend class tests::SparseLayerTestFixture;
+class FullyConnectedLayer final : public Layer {
+  friend class tests::FullyConnectedLayerTestFixture;
 
  public:
-  SparseLayer() {}
+  FullyConnectedLayer() {}
 
-  SparseLayer(const SparseLayer&) = delete;
-  SparseLayer(SparseLayer&&) = delete;
-  SparseLayer& operator=(const SparseLayer&) = delete;
-  SparseLayer& operator=(SparseLayer&&) = delete;
+  FullyConnectedLayer(const FullyConnectedLayer&) = delete;
+  FullyConnectedLayer(FullyConnectedLayer&&) = delete;
+  FullyConnectedLayer& operator=(const FullyConnectedLayer&) = delete;
+  FullyConnectedLayer& operator=(FullyConnectedLayer&&) = delete;
 
-  SparseLayer(uint64_t dim, uint64_t prev_dim, float sparsity,
+  FullyConnectedLayer(uint64_t dim, uint64_t prev_dim, float sparsity,
               ActivationFunc act_func, SamplingConfig sampling_config);
 
   void FeedForward(uint32_t batch_indx, const uint32_t* indices,
@@ -70,7 +70,7 @@ class SparseLayer final : public Layer {
 
   float* GetBiases();
 
-  ~SparseLayer();
+  ~FullyConnectedLayer();
 
  private:
   template <bool DENSE, bool PREV_DENSE>

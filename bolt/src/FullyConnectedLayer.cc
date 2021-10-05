@@ -1,4 +1,4 @@
-#include "SparseLayer.h"
+#include "FullyConnectedLayer.h"
 #include <algorithm>
 #include <cmath>
 #include <random>
@@ -6,9 +6,10 @@
 
 namespace thirdai::bolt {
 
-SparseLayer::SparseLayer(uint64_t dim, uint64_t prev_dim, float sparsity,
-                         ActivationFunc act_func,
-                         SamplingConfig sampling_config)
+FullyConnectedLayer::FullyConnectedLayer(uint64_t dim, uint64_t prev_dim,
+                                         float sparsity,
+                                         ActivationFunc act_func,
+                                         SamplingConfig sampling_config)
     : _dim(dim),
       _prev_dim(prev_dim),
       _batch_size(0),
@@ -65,11 +66,13 @@ SparseLayer::SparseLayer(uint64_t dim, uint64_t prev_dim, float sparsity,
   }
 }
 
-void SparseLayer::FeedForward(uint32_t batch_indx, const uint32_t* indices,
-                              const float* values, uint32_t len,
-                              uint32_t* labels, uint32_t label_len) {
+void FullyConnectedLayer::FeedForward(uint32_t batch_indx,
+                                      const uint32_t* indices,
+                                      const float* values, uint32_t len,
+                                      uint32_t* labels, uint32_t label_len) {
   if (_sparse_dim == _dim) {
     if (len == _prev_dim) {
+      // TODO(Nicholas): Re-implement this case with dense matrix library
       FeedForwardImpl<true, true>(batch_indx, indices, values, len, labels,
                                   label_len);
     } else {
@@ -88,9 +91,11 @@ void SparseLayer::FeedForward(uint32_t batch_indx, const uint32_t* indices,
 }
 
 template <bool DENSE, bool PREV_DENSE>
-void SparseLayer::FeedForwardImpl(uint32_t batch_indx, const uint32_t* indices,
-                                  const float* values, uint32_t len,
-                                  uint32_t* labels, uint32_t label_len) {
+void FullyConnectedLayer::FeedForwardImpl(uint32_t batch_indx,
+                                          const uint32_t* indices,
+                                          const float* values, uint32_t len,
+                                          uint32_t* labels,
+                                          uint32_t label_len) {
   SelectActiveNeurons<DENSE, PREV_DENSE>(batch_indx, indices, values, len,
                                          labels, label_len);
 
@@ -137,9 +142,10 @@ void SparseLayer::FeedForwardImpl(uint32_t batch_indx, const uint32_t* indices,
   }
 }
 
-void SparseLayer::Backpropagate(uint32_t batch_indx, const uint32_t* indices,
-                                const float* values, float* errors,
-                                uint32_t len) {
+void FullyConnectedLayer::Backpropagate(uint32_t batch_indx,
+                                        const uint32_t* indices,
+                                        const float* values, float* errors,
+                                        uint32_t len) {
   if (_sparse_dim == _dim) {
     if (len == _prev_dim) {
       BackPropagateImpl<false, true, true>(batch_indx, indices, values, errors,
@@ -159,10 +165,10 @@ void SparseLayer::Backpropagate(uint32_t batch_indx, const uint32_t* indices,
   }
 }
 
-void SparseLayer::BackpropagateFirstLayer(uint32_t batch_indx,
-                                          const uint32_t* indices,
-                                          const float* values, float* errors,
-                                          uint32_t len) {
+void FullyConnectedLayer::BackpropagateFirstLayer(uint32_t batch_indx,
+                                                  const uint32_t* indices,
+                                                  const float* values,
+                                                  float* errors, uint32_t len) {
   if (_sparse_dim == _dim) {
     if (len == _prev_dim) {
       BackPropagateImpl<true, true, true>(batch_indx, indices, values, errors,
@@ -182,7 +188,7 @@ void SparseLayer::BackpropagateFirstLayer(uint32_t batch_indx,
   }
 }
 
-constexpr float SparseLayer::ActFuncDerivative(float x) {
+constexpr float FullyConnectedLayer::ActFuncDerivative(float x) {
   switch (_act_func) {
     case ActivationFunc::ReLU:
       return x > 0 ? 1.0 : 0.0;
@@ -195,10 +201,10 @@ constexpr float SparseLayer::ActFuncDerivative(float x) {
 }
 
 template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
-void SparseLayer::BackPropagateImpl(uint32_t batch_indx,
-                                    const uint32_t* indices,
-                                    const float* values, float* prev_errors,
-                                    uint32_t len) {
+void FullyConnectedLayer::BackPropagateImpl(uint32_t batch_indx,
+                                            const uint32_t* indices,
+                                            const float* values,
+                                            float* prev_errors, uint32_t len) {
   for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
     _errors[batch_indx][n] *= ActFuncDerivative(_activations[batch_indx][n]);
     // Because DENSE is known at compile time the compiler can remove this
@@ -219,8 +225,9 @@ void SparseLayer::BackPropagateImpl(uint32_t batch_indx,
   }
 }
 
-void SparseLayer::ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
-                                uint32_t label_len) {
+void FullyConnectedLayer::ComputeErrors(uint32_t batch_indx,
+                                        const uint32_t* labels,
+                                        uint32_t label_len) {
   if (_sparse_dim == _dim) {
     ComputeErrorsImpl<true>(batch_indx, labels, label_len);
   } else {
@@ -229,8 +236,9 @@ void SparseLayer::ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
 }
 
 template <bool DENSE>
-void SparseLayer::ComputeErrorsImpl(uint32_t batch_indx, const uint32_t* labels,
-                                    uint32_t label_len) {
+void FullyConnectedLayer::ComputeErrorsImpl(uint32_t batch_indx,
+                                            const uint32_t* labels,
+                                            uint32_t label_len) {
   float frac = 1.0 / label_len;
 
   for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
@@ -248,10 +256,11 @@ void SparseLayer::ComputeErrorsImpl(uint32_t batch_indx, const uint32_t* labels,
 }
 
 template <bool DENSE, bool PREV_DENSE>
-void SparseLayer::SelectActiveNeurons(uint32_t batch_indx,
-                                      const uint32_t* indices,
-                                      const float* values, uint32_t len,
-                                      uint32_t* labels, uint32_t label_len) {
+void FullyConnectedLayer::SelectActiveNeurons(uint32_t batch_indx,
+                                              const uint32_t* indices,
+                                              const float* values, uint32_t len,
+                                              uint32_t* labels,
+                                              uint32_t label_len) {
   if (DENSE) {
     _active_lens[batch_indx] = _dim;
   } else {
@@ -299,8 +308,8 @@ void SparseLayer::SelectActiveNeurons(uint32_t batch_indx,
   std::fill_n(_errors[batch_indx], _dim, 0);
 }
 
-void SparseLayer::UpdateParameters(float lr, uint32_t iter, float B1, float B2,
-                                   float eps) {
+void FullyConnectedLayer::UpdateParameters(float lr, uint32_t iter, float B1,
+                                           float B2, float eps) {
   float B1_ = static_cast<float>(1 - pow(B1, iter));
   float B2_ = static_cast<float>(1 - pow(B2, iter));
 
@@ -334,7 +343,7 @@ void SparseLayer::UpdateParameters(float lr, uint32_t iter, float B1, float B2,
   }
 }
 
-void SparseLayer::BuildHashTables() {
+void FullyConnectedLayer::BuildHashTables() {
   if (_sparsity >= 1.0) {
     return;
   }
@@ -355,7 +364,7 @@ void SparseLayer::BuildHashTables() {
   delete[] hashes;
 }
 
-void SparseLayer::ReBuildHashFunction() {
+void FullyConnectedLayer::ReBuildHashFunction() {
   if (_sparsity >= 1.0) {
     return;
   }
@@ -366,7 +375,7 @@ void SparseLayer::ReBuildHashFunction() {
       _sampling_config.range_pow);
 }
 
-void SparseLayer::SetBatchSize(uint64_t new_batch_size) {
+void FullyConnectedLayer::SetBatchSize(uint64_t new_batch_size) {
   if (new_batch_size <= _batch_size) {
     return;
   }
@@ -396,32 +405,36 @@ void SparseLayer::SetBatchSize(uint64_t new_batch_size) {
   }
 }
 
-void SparseLayer::SetSparsity(float new_sparsity) {
+void FullyConnectedLayer::SetSparsity(float new_sparsity) {
   _sparsity = new_sparsity;
-  _sparse_dim = _sparsity * _dim;
+  if (_sparsity == 1.0) {
+    _sparse_dim = _dim;
+  } else {
+    _sparse_dim = _sparsity * _dim;
+  }
 }
 
-void SparseLayer::ShuffleRandNeurons() {
+void FullyConnectedLayer::ShuffleRandNeurons() {
   if (_sparsity < 1.0) {
     std::shuffle(_rand_neurons, _rand_neurons + _dim, std::random_device{});
   }
 }
 
-float* SparseLayer::GetWeights() {
+float* FullyConnectedLayer::GetWeights() {
   float* weights_copy = new float[_dim * _prev_dim];
   std::copy(_weights, _weights + _dim * _prev_dim, weights_copy);
 
   return weights_copy;
 }
 
-float* SparseLayer::GetBiases() {
+float* FullyConnectedLayer::GetBiases() {
   float* biases_copy = new float[_dim];
   std::copy(_biases, _biases + _dim, biases_copy);
 
   return biases_copy;
 }
 
-SparseLayer::~SparseLayer() {
+FullyConnectedLayer::~FullyConnectedLayer() {
   for (uint64_t batch = 0; batch < _batch_size; batch++) {
     delete[] _active_neurons[batch];
     delete[] _activations[batch];

@@ -1,14 +1,14 @@
 #include "../../utils/hashtable/SampledHashTable.h"
-#include "../src/SparseLayer.h"
+#include "../src/FullyConnectedLayer.h"
 #include <gtest/gtest.h>
 #include <vector>
 
 namespace thirdai::bolt::tests {
 
-class SparseLayerTestFixture : public testing::Test {
+class FullyConnectedLayerTestFixture : public testing::Test {
  public:
   void SetUp() override {
-    layer = new SparseLayer(8, 10, 0.5, ActivationFunc::ReLU,
+    layer = new FullyConnectedLayer(8, 10, 0.5, ActivationFunc::ReLU,
                             SamplingConfig(1, 1, 3, 4));
 
     layer->SetBatchSize(4);
@@ -60,7 +60,7 @@ class SparseLayerTestFixture : public testing::Test {
 
   void makeSoftmax() const { layer->_act_func = ActivationFunc::Softmax; }
 
-  SparseLayer* layer;
+  FullyConnectedLayer* layer;
 
   std::vector<std::vector<uint32_t>> sparse_data_indices;
   std::vector<std::vector<float>> sparse_data_values;
@@ -68,7 +68,7 @@ class SparseLayerTestFixture : public testing::Test {
   std::vector<uint32_t> data_lens;
 };
 
-TEST_F(SparseLayerTestFixture, SparseDenseTest) {
+TEST_F(FullyConnectedLayerTestFixture, SparseDenseTest) {
   layer->SetSparsity(1.0);
 
   for (uint32_t i = 0; i < 4; i++) {
@@ -148,7 +148,7 @@ TEST_F(SparseLayerTestFixture, SparseDenseTest) {
   }
 }
 
-TEST_F(SparseLayerTestFixture, DenseDenseTest) {
+TEST_F(FullyConnectedLayerTestFixture, DenseDenseTest) {
   layer->SetSparsity(1.0);
 
   for (uint32_t i = 0; i < 4; i++) {
@@ -229,7 +229,7 @@ TEST_F(SparseLayerTestFixture, DenseDenseTest) {
   }
 }
 
-TEST_F(SparseLayerTestFixture, SparseSparseTest) {
+TEST_F(FullyConnectedLayerTestFixture, SparseSparseTest) {
   std::vector<std::vector<uint32_t>> active_neurons = {
       {2, 3, 4, 6}, {2, 4, 6, 7}, {0, 3, 5, 6}, {1, 3, 5, 7}};
 
@@ -310,7 +310,7 @@ TEST_F(SparseLayerTestFixture, SparseSparseTest) {
   }
 }
 
-TEST_F(SparseLayerTestFixture, DenseSparseTest) {
+TEST_F(FullyConnectedLayerTestFixture, DenseSparseTest) {
   std::vector<std::vector<uint32_t>> active_neurons = {
       {2, 3, 4, 6}, {2, 4, 6, 7}, {0, 3, 5, 6}, {1, 3, 5, 7}};
 
@@ -393,7 +393,7 @@ TEST_F(SparseLayerTestFixture, DenseSparseTest) {
   }
 }
 
-TEST_F(SparseLayerTestFixture, DenseSoftmaxTest) {
+TEST_F(FullyConnectedLayerTestFixture, DenseSoftmaxTest) {
   makeSoftmax();
 
   layer->SetSparsity(1.0);
@@ -441,7 +441,7 @@ TEST_F(SparseLayerTestFixture, DenseSoftmaxTest) {
   }
 }
 
-TEST_F(SparseLayerTestFixture, SparseSoftmaxTest) {
+TEST_F(FullyConnectedLayerTestFixture, SparseSoftmaxTest) {
   makeSoftmax();
 
   std::vector<std::vector<uint32_t>> active_neurons = {
