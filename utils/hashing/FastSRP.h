@@ -14,8 +14,6 @@ class FastSRP : public HashFunction {
   uint32_t _rand_double_hash_seed;
   uint16_t* _rand_bits;
 
-  void densifyHashes(const uint32_t* hashes, uint32_t* final_hashes) const;
-
   void compactHashes(const uint32_t* hashes, uint32_t* final_hashes) const;
 
  public:

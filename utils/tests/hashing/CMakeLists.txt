@@ -7,7 +7,7 @@ add_library(
 )
 
 add_library(
-  gen_rand_keys_test_suite_lib
+  avalanche_timed_test_suite_lib
   AvalancheTimedTestSuite.h
 )
 
@@ -18,7 +18,7 @@ target_link_libraries(
 )
 
 target_link_libraries(
-  gen_rand_keys_test_suite_lib
+  avalanche_timed_test_suite_lib
   PRIVATE
   gtest_main
 )
@@ -43,11 +43,16 @@ add_executable(
   FastSRPTest.cc
 )
 
+add_executable(
+  densified_minhash_test
+  DensifiedMinHashTest.cc
+)
+
 set(
   LIBS 
   hash_function_lib
   lsh_test_helper_lib
-  gen_rand_keys_test_suite_lib
+  avalanche_timed_test_suite_lib
   gtest_main
 )
 
@@ -75,7 +80,14 @@ target_link_libraries(
   ${LIBS}
 )
 
+target_link_libraries(
+  densified_minhash_test
+  PRIVATE
+  ${LIBS}
+)
+
 gtest_discover_tests(murmurhash_test)
 gtest_discover_tests(universalhash_test)
 gtest_discover_tests(srp_test)
 gtest_discover_tests(fast_srp_test)
+gtest_discover_tests(densified_minhash_test)
