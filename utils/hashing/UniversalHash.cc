@@ -23,7 +23,7 @@ UniversalHash::UniversalHash(uint32_t seed) {
 uint32_t UniversalHash::gethash(const std::string& key) {
   uint32_t res = 0;
   for (uint8_t ch : key) {
-    res ^= T[ch & 7][static_cast<unsigned char>(ch)];
+    res ^= T[ch & 7][ch];
   }
   return res;
 }

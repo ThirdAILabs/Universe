@@ -1,5 +1,6 @@
 #include "DensifiedMinHash.h"
 #include "../Exceptions.h"
+#include "HashUtils.h"
 #include <algorithm>
 #include <climits>
 #include <cmath>
@@ -49,9 +50,9 @@ void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
     hashes[bin_id] = std::min(hash, hashes[bin_id]);
   }
 
-  densifyHashes(hashes.data(), _total_num_hashes);
-  defaultCompactHashesMethod(hashes.data(), output, _num_tables,
-                             _hashes_per_table);
+  HashUtils::densifyHashes(hashes.data(), _total_num_hashes);
+  HashUtils::defaultCompactHashesMethod(hashes.data(), output, _num_tables,
+                                        _hashes_per_table);
 }
 
 }  // namespace thirdai::utils

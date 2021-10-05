@@ -25,6 +25,9 @@ jobs:
           sudo apt install gcc g++
           sudo apt install -y mpich libmpich-dev
           sudo apt install -y openmpi-bin openmpi-doc libopenmpi-dev
+      - name: Download Test Datasets
+        run: |
+          bin/get_datasets.sh
       - name: Build and Run Tests
         run: |
           bin/tests.sh
