@@ -1,4 +1,5 @@
 #include "FastSRP.h"
+#include "HashUtils.h"
 #include <algorithm>
 #include <iostream>
 #include <limits>
@@ -142,7 +143,10 @@ void FastSRP::densifyHashes(const uint32_t* hashes,
     uint32_t count = 0;
     while (next == std::numeric_limits<uint32_t>::max()) {
       count++;
-      uint32_t index = std::min(RandDoubleHash(i, count), _num_hashes);
+      uint32_t index =
+          std::min(HashUtils::RandDoubleHash(i, count, _rand_double_hash_seed,
+                                             _log_num_hashes),
+                   _num_hashes);
 
       next = hashes[index];
       if (count > 100) {  // Densification failure.

@@ -18,13 +18,6 @@ class DensifiedMinHash : public HashFunction {
   void compactHashes(const uint32_t* hashes, uint32_t* final_hashes) const;
 
  public:
-  constexpr uint32_t RandDoubleHash(int binid, int count) const {
-    uint32_t tohash = ((binid + 1) << 6) + count;
-    uint32_t result =
-        (_rand_double_hash_seed * tohash << 3) >> (32 - _log_num_hashes);
-    return result;
-  }
-
   DensifiedMinHash(uint32_t input_dim, uint32_t hashes_per_table,
                    uint32_t num_tables, uint32_t range_pow, uint32_t seed);
 

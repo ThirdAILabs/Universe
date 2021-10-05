@@ -1,4 +1,4 @@
-#include "UniversalHashUtils.h"
+#include "UniversalHash.h"
 #include <cstdio>
 #include <cstdlib>
 #include <random>
@@ -7,6 +7,7 @@
 namespace thirdai::utils {
 
 UniversalHash::UniversalHash(uint32_t seed) {
+  // We can decide to pass in a generator instead, if needed.
   _seed = seed;
   srand(seed);
   std::random_device rd;
@@ -19,7 +20,7 @@ UniversalHash::UniversalHash(uint32_t seed) {
   }
 }
 
-static uint32_t UniversalHash::gethash(const std::string& key) {
+uint32_t UniversalHash::gethash(const std::string& key) {
   uint32_t res = 0;
   for (uint8_t ch : key) {
     res ^= T[ch & 7][static_cast<unsigned char>(ch)];
@@ -27,7 +28,7 @@ static uint32_t UniversalHash::gethash(const std::string& key) {
   return res;
 }
 
-static uint32_t UniversalHash::gethash(uint64_t key) {
+uint32_t UniversalHash::gethash(uint64_t key) {
   uint32_t res = 0;
   for (uint32_t i = 0; i < sizeof(key); i++) {
     res ^= T[i][static_cast<unsigned char>(key >> (i << 3))];

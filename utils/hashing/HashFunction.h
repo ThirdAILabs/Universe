@@ -6,7 +6,8 @@ namespace thirdai::utils {
 
 class HashFunction {
  public:
-  // 
+  // TODO(any): Add comments
+
   explicit HashFunction(uint32_t num_tables, uint32_t range)
       : _num_tables(num_tables), _range(range) {}
 
