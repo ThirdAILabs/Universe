@@ -72,7 +72,8 @@ void StringDataset::initializeValuesIndicesBatches(uint64_t& vec_count) {
       uint64_t batch_size = std::min(_target_batch_size,
                                      vec_count - batch_i * _target_batch_size);
       _batches[batch_i] =
-          Batch(batch_size, BATCH_TYPE::SPARSE, LABEL_TYPE::UNLABELED, ID_TYPE::SEQUENTIAL, _dim);
+          Batch(batch_size, BATCH_TYPE::SPARSE, LABEL_TYPE::UNLABELED,
+                ID_TYPE::SEQUENTIAL, _dim);
     }
   } else {
     // No need to compute anything if _num_batches = 0.
@@ -101,7 +102,7 @@ void StringDataset::vectorizeAndCreateBatches(
     _word_uni_gram_vectorizer.vectorize(strings_to_be_vectorized[vec_i],
                                         _indices[vec_i], _values[vec_i]);
 
-    uint64_t batch_i = vec_i / _target_batch_size; 
+    uint64_t batch_i = vec_i / _target_batch_size;
     uint64_t batch_vec_i = vec_i - (batch_i * _target_batch_size);
     _batches[batch_i]._lens[batch_vec_i] = _indices[vec_i].size();
     // Vectors are guaranteed to store its contents in
