@@ -8,13 +8,13 @@ target_link_libraries(bolt PRIVATE bolt_lib)
 
 enable_testing()
 
-add_executable(sparse_layer_test tests/SparseLayerTest.cc)
+add_executable(fully_connected_layer_test tests/FullyConnectedLayerTest.cc)
 target_link_libraries(
-  sparse_layer_test 
+  fully_connected_layer_test 
   PRIVATE 
   bolt_lib
   gtest_main
 )
 
 include(GoogleTest)
-gtest_discover_tests(sparse_layer_test)
+gtest_discover_tests(fully_connected_layer_test)
