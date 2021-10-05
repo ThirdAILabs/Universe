@@ -19,7 +19,7 @@ Network::Network(std::vector<LayerConfig> configs, uint64_t input_dim)
   auto start = std::chrono::high_resolution_clock::now();
 
   _num_layers = _configs.size();
-  _layers = new SparseLayer*[_num_layers];
+  _layers = new FullyConnectedLayer*[_num_layers];
 
   std::cout << "====== Building Network ======" << std::endl;
 
@@ -38,9 +38,9 @@ Network::Network(std::vector<LayerConfig> configs, uint64_t input_dim)
     }
 
     std::cout << _configs[i] << std::endl;
-    _layers[i] =
-        new SparseLayer(_configs[i].dim, prev_dim, _configs[i].sparsity,
-                        _configs[i].act_func, _configs[i].sampling_config);
+    _layers[i] = new FullyConnectedLayer(
+        _configs[i].dim, prev_dim, _configs[i].sparsity, _configs[i].act_func,
+        _configs[i].sampling_config);
   }
 
   auto end = std::chrono::high_resolution_clock::now();
