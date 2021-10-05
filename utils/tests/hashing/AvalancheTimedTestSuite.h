@@ -11,7 +11,9 @@ namespace thirdai::utils::avalanche_testing {
  */
 class AvalancheTimedTestSuite : public testing::Test {
  public:
-  // Converts input string to bitstring (bitset).
+  /*
+   * Converts input string to bitstring (bitset).
+   */
   static std::string convert_to_bitstring(const std::string& str) {
     std::string bitstring;
     for (const char& _c : str) {
@@ -41,6 +43,9 @@ class AvalancheTimedTestSuite : public testing::Test {
   }
 
  private:
+  /*
+   * Generate random 6 character string.
+   */
   static std::string generate_random_string() {
     const uint32_t num_chars = 26;
     const uint32_t starting_ascii = 65;
