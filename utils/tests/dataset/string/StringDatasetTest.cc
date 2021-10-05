@@ -33,7 +33,7 @@ static uint64_t get_expected_batch_size(uint64_t target_batch_size,
 
 static void evaluate_load(StringDataset& data, uint64_t target_batch_size,
                           uint64_t target_batch_number,
-                          uint64_t number_of_times_loaded, uint64_t vec_num) {
+                          uint64_t number_of_times_loaded, uint64_t vec_num, uint64_t& expected_starting_id) {
   if (target_batch_number > 0) {
     if (data.numBatches() > target_batch_number) {
       std::cout << "Num batches is greater than target batch number. Something "
@@ -66,7 +66,18 @@ static void evaluate_load(StringDataset& data, uint64_t target_batch_size,
                 << " batch_i = " << batch_i << std::endl;
     }
     ASSERT_EQ(data[batch_i]._batch_size, expected_batch_size);
+    if (data[batch_i]._starting_id != expected_starting_id) {
+      std::cout << "Batch starting id expected: " << expected_starting_id
+                << " got: " << data[batch_i]._starting_id << std::endl
+                << " Config: bn = " << target_batch_number
+                << " bs = " << target_batch_size
+                << " successful loads = " << number_of_times_loaded
+                << " batch_i = " << batch_i << std::endl;
+    }
+    ASSERT_EQ(data[batch_i]._starting_id, expected_starting_id);
+    expected_starting_id += expected_batch_size;
   }
+  
 }
 
 std::string filename = "FreelandSep10_2020.txt";
@@ -91,19 +102,21 @@ TEST(StringDatasetTest, BatchesSentence) {
 
   for (auto bs : batch_sizes) {
     for (auto bn : batch_nums) {
+      uint64_t expected_starting_id = 0;
       StringDataset Data(FRAGMENT_TYPE::SENTENCE, bs, bn);
       Data.addFileToQueue(filename);
       size_t successful_loads = 0;
 
       Data.loadNextBatchSet();
       successful_loads++;
-      evaluate_load(Data, bs, bn, successful_loads, expected_vec_num);
+      evaluate_load(Data, bs, bn, successful_loads, expected_vec_num, expected_starting_id);
+
 
       while (Data.numBatches() > 0) {
         Data.loadNextBatchSet();
         if (Data.numBatches() > 0) {
           successful_loads++;
-          evaluate_load(Data, bs, bn, successful_loads, expected_vec_num);
+          evaluate_load(Data, bs, bn, successful_loads, expected_vec_num, expected_starting_id);
         }
       }
 
