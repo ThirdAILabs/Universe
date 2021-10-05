@@ -78,6 +78,7 @@ static uint64_t get_expected_batch_size(uint64_t target_batch_size,
  *  - The number of times loadNextBatchSet() is called.
  *  - The number of batches loaded each time loadNextBatchSet() is called.
  *  - The size of each batch.
+ *  - The starting id of each batch.
  */
 static void evaluate_load(SVMDataset& data, uint64_t target_batch_size,
                           uint64_t target_batch_number,
@@ -100,8 +101,12 @@ static void evaluate_load(SVMDataset& data, uint64_t target_batch_size,
               << " successful loads = " << number_of_times_loaded << std::endl;
   }
   ASSERT_EQ(data.numBatches(), expected_num_batches);
+  uint64_t vecs_loaded_so_far =
+      target_batch_size * target_batch_number * (number_of_times_loaded - 1);
   for (size_t batch_i = 0; batch_i < data.numBatches(); batch_i++) {
     ASSERT_LE(data[batch_i]._batch_size, target_batch_size);
+    ASSERT_EQ(vecs_loaded_so_far, data[batch_i]._starting_id);
+    vecs_loaded_so_far += data[batch_i]._batch_size;
     uint64_t expected_batch_size =
         get_expected_batch_size(target_batch_size, target_batch_number,
                                 number_of_times_loaded, vec_num, batch_i);
