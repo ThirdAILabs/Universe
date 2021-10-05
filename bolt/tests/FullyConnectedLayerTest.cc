@@ -9,7 +9,7 @@ class FullyConnectedLayerTestFixture : public testing::Test {
  public:
   void SetUp() override {
     layer = new FullyConnectedLayer(8, 10, 0.5, ActivationFunc::ReLU,
-                            SamplingConfig(1, 1, 3, 4));
+                                    SamplingConfig(1, 1, 3, 4));
 
     layer->SetBatchSize(4);
 

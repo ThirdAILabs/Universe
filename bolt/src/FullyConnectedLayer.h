@@ -23,7 +23,7 @@ class FullyConnectedLayer final : public Layer {
   FullyConnectedLayer& operator=(FullyConnectedLayer&&) = delete;
 
   FullyConnectedLayer(uint64_t dim, uint64_t prev_dim, float sparsity,
-              ActivationFunc act_func, SamplingConfig sampling_config);
+                      ActivationFunc act_func, SamplingConfig sampling_config);
 
   void FeedForward(uint32_t batch_indx, const uint32_t* indices,
                    const float* values, uint32_t len, uint32_t* labels,
