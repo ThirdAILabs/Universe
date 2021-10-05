@@ -19,7 +19,7 @@ Network::Network(std::vector<LayerConfig> configs, uint64_t input_dim)
   auto start = std::chrono::high_resolution_clock::now();
 
   _num_layers = _configs.size();
-  _layers = new SparseLayer*[_num_layers];
+  _layers = new FullyConnectedLayer*[_num_layers];
 
   std::cout << "====== Building Network ======" << std::endl;
 
@@ -38,9 +38,9 @@ Network::Network(std::vector<LayerConfig> configs, uint64_t input_dim)
     }
 
     std::cout << _configs[i] << std::endl;
-    _layers[i] =
-        new SparseLayer(_configs[i].dim, prev_dim, _configs[i].sparsity,
-                        _configs[i].act_func, _configs[i].sampling_config);
+    _layers[i] = new FullyConnectedLayer(
+        _configs[i].dim, prev_dim, _configs[i].sparsity, _configs[i].act_func,
+        _configs[i].sampling_config);
   }
 
   auto end = std::chrono::high_resolution_clock::now();
@@ -137,14 +137,15 @@ uint32_t Network::ProcessTestBatch(const Batch& batch) {
         _layers[_num_layers - 2]->GetLen(b), batch.labels[b],
         batch.label_lens[b]);
 
-    const uint32_t* indices = _layers[_num_layers - 1]->GetIndices(b);
     const float* activations = _layers[_num_layers - 1]->GetValues(b);
     float max_act = std::numeric_limits<float>::min();
     uint32_t pred = 0;
     for (uint32_t i = 0; i < _layers[_num_layers - 1]->GetLen(b); i++) {
       if (activations[i] > max_act) {
         max_act = activations[i];
-        pred = indices[i];
+        // Since sparsity is set to 1.0, the layer is dense and we can use i
+        // instead of indices[i]
+        pred = i;
       }
     }
 
