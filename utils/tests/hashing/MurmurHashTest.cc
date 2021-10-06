@@ -66,8 +66,8 @@ TEST_F(AvalancheTimedTestSuite, MurmurHashStringKeyAvalancheTest) {
   // Expect ~0.5 probability of output bit changes for each input bit flip over
   // all 100000 keys.
   for (auto& output_bits_counter_per_input_flip : output_bits_counter) {
-    for (auto& counter : output_bits_counter_per_input_flip) {
-      EXPECT_NEAR(counter * 1.0 / num_keys, 0.5, 0.1);
+    for (auto& diff_count : output_bits_counter_per_input_flip) {
+      EXPECT_NEAR(diff_count * 1.0 / num_keys, 0.5, 0.1);
     }
   }
 }
