@@ -4,6 +4,7 @@
 #include <bitset>
 #include <chrono>
 #include <iostream>
+#include <numeric>
 #include <random>
 #include <string>
 #include <unordered_map>
@@ -264,9 +265,9 @@ TEST_F(TriGramVectorizerTest, DoesNotOverwriteIndicesAndValues) {
   std::vector<float> new_values(_values);
 
   // Vectorize
-  TriGramVectorizer TGV = TriGramVectorizer(
-      _dim, default_max_dim);  // Start_idx is equal to _dim of
-                               // TriGramVectorizer so no collision.
+  TriGramVectorizer TGV(_dim,
+                        default_max_dim);  // Start_idx is equal to _dim of
+                                           // TriGramVectorizer so no collision.
   TGV.vectorize(_string_containing_all_trigrams, new_indices, new_values);
 
   // check the lengths increase
@@ -278,4 +279,23 @@ TEST_F(TriGramVectorizerTest, DoesNotOverwriteIndicesAndValues) {
     ASSERT_EQ(new_indices[i], _indices[i]);
     ASSERT_EQ(new_values[i], _values[i]);
   }
+}
+
+TEST_F(TriGramVectorizerTest, DoesNotBreakWhenGivenRandomCharacters) {
+  TriGramVectorizer TGV(0, 100000);
+  std::string random_string;
+  for (uint16_t c = 0; c < 256; c++) {
+    random_string += static_cast<uint8_t>(c);
+  }
+  ASSERT_EQ(random_string.length(), 256);
+
+  std::vector<uint32_t> r_indices;
+  std::vector<float> r_values;
+  TGV.vectorize(random_string, r_indices, r_values);
+
+  for (auto& idx : r_indices) {
+    ASSERT_LE(idx, TGV.getDimension());
+  }
+  float value_total = std::accumulate(r_values.begin(), r_values.end(), 0.0);
+  ASSERT_EQ(value_total, static_cast<float>(random_string.length() - 2));
 }

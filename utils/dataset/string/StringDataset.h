@@ -2,6 +2,7 @@
 #include "../Dataset.h"
 #include "loaders/SentenceLoader.h"
 #include "vectorizers/TriGramVectorizer.h"
+#include "vectorizers/UnigramVectorizer.h"
 //#include "GlobalFreq.h"
 #include <iostream>
 #include <string>
@@ -29,23 +30,24 @@ class StringDataset : public Dataset {
  private:
   std::vector<uint32_t>* _indices;
   std::vector<float>* _values;
-  TriGramVectorizer _tri_gram_vectorizer;
+  TriGramVectorizer _char_tri_gram_vectorizer;
+  UnigramVectorizer _word_uni_gram_vectorizer;
   StringLoader* _loader;
   bool _first_load;
-  uint32_t _tri_gram_dim;
   uint32_t _dim = 0;
+  uint64_t _batch_set_starting_id = 0;
 
   /**
    * Helper function for initializing _values, _indices, and _batches
    * with the right configurations (e.g. size, dimension, etc) so that
    * they are ready to be filled by vectorizeAndCreateBatches().
    */
-  void initializeValuesIndicesBatches(size_t& vec_count);
+  void initializeValuesIndicesBatches(uint64_t& vec_count);
 
   /**
    * Helper function for vectorizing strings and filling out batches.
    */
   void vectorizeAndCreateBatches(
-      size_t& vec_count, std::vector<std::string>& strings_to_be_vectorized);
+      uint64_t& vec_count, std::vector<std::string>& strings_to_be_vectorized);
 };
 }  // namespace thirdai::utils

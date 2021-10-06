@@ -9,8 +9,8 @@ TriGramVectorizer::TriGramVectorizer(uint32_t start_idx, uint32_t max_dim)
   _dim = std::min(original_dim, _max_dim);
 
   // Make minimum perfect hash.
-  _hashC = new uint8_t[128];  // Among lower case letters, numbers and space,
-                              // the highest ascii value is 122.
+  _hashC = new uint8_t[256]();  // End with () to value-initialize to 0 so it
+                                // does not break when given random symbols.
   // Space
   _hashC[32] = 0;
   // Numbers
