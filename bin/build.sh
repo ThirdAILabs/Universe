@@ -2,8 +2,8 @@
 
 BASEDIR=$(dirname "$0")
 
-mkdir "$BASEDIR/../build"
+mkdir -p "$BASEDIR/../build"
 
 cmake -S "$BASEDIR/../" -B "$BASEDIR/../build"
 
-make all -C "$BASEDIR/../build"
+make all -s -C "$BASEDIR/../build"
