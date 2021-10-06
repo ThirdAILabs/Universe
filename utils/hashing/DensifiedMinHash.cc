@@ -1,5 +1,6 @@
 #include "DensifiedMinHash.h"
 #include "../Exceptions.h"
+#include "HashUtils.h"
 #include <algorithm>
 #include <climits>
 #include <cmath>
@@ -38,9 +39,9 @@ void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
   // and sort those. This is not preferred, however, because there might be
   // locality and thus information loss in the original indices, i.e. having
   // indices 899 890 891 892 is probably much more likely than having 4
-  // consecutive hash values. Another complicating factor is that we would need
-  // to know themax dimension upon construction to initialize the range and
-  // bin size.
+  // consecutive hash values. Another complicating factor is that we would
+  // need to know themax dimension upon construction to initialize the range
+  // and bin size.
   std::vector<uint32_t> hashes(_total_num_hashes, UINT32_MAX);
   for (uint32_t i = 0; i < length; i++) {
     uint32_t hash = MurmurHash(reinterpret_cast<const char*>(indices + i),
@@ -49,9 +50,9 @@ void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
     hashes[bin_id] = std::min(hash, hashes[bin_id]);
   }
 
-  densifyHashes(hashes.data(), _total_num_hashes);
-  defaultCompactHashesMethod(hashes.data(), output, _num_tables,
-                             _hashes_per_table);
+  HashUtils::densifyHashes(hashes.data(), _total_num_hashes);
+  HashUtils::defaultCompactHashesMethod(hashes.data(), output, _num_tables,
+                                        _hashes_per_table);
 }
 
 }  // namespace thirdai::utils

@@ -31,7 +31,6 @@ jobs:
       - name: Download Test Datasets
         run: |
           bin/get_datasets.sh
-      - name: Run Tests
+      - name: Build and Run Tests
         run: |
-          cd build 
-          ctest --output-on-failure --verbose
+          bin/tests.sh
