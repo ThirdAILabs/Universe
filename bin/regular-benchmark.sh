@@ -23,6 +23,8 @@ MSG=$'*_-------------------- Machine information --------------------_*\n'
 MSG+=$(lscpu)
 MSG+=$'\n\n\n*_-------------------- Current code version --------------------_*\n'
 MSG+=$(git describe --tag)
+MSG+=$'\n\n\n*_-------------------- Date --------------------_*\n'
+MSG+=$DATE
 MSG+=$'\n\n\n*_-------------------- Unit Test Results --------------------_*\n'
 MSG+=$(ctest -A)
 echo MSG >> $LOGFILE
