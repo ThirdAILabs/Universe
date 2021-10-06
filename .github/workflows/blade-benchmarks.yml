@@ -2,9 +2,9 @@ name: benchmarks
 
 # Controls when the workflow will run
 on:
-  # Triggers the workflow on pushes to benchmark-tests branch
-  push:
-    branches: [ benchmark-tests ]
+  # Schedule for Thursday 4 PM CST (21:00 UTC)
+  schedule:
+    - cron: '0,15,30,45 0,1,2,3,4,5,6,7,21,22,23 * * 4,5'
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+      with:
+        ref: benchmark-tests
     - name: Run Benchmark Tests
       uses: fifsky/ssh-action@master
       with:
