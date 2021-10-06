@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../dataset/Dataset.h"
+#include "HashUtils.h"
 
 namespace thirdai::utils {
 

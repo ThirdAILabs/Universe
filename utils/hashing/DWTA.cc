@@ -16,11 +16,9 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
       _hashes_per_table(hashes_per_table),
       _num_hashes(hashes_per_table * num_tables),
       _dim(input_dim),
-      _binsize(DEFAULT_BINSIZE) {
-  _permute = ceil((static_cast<double>(_num_hashes) * _binsize) / _dim);
-  _log_num_hashes = log2(_num_hashes);
-  _log_binsize = floor(log2(_binsize));
-
+      _binsize(DEFAULT_BINSIZE),
+      _log_binsize(floor(log2(_binsize))),
+      _permute(ceil((static_cast<double>(_num_hashes) * _binsize) / _dim)) {
   std::mt19937 gen(seed);
   uint32_t* n_array = new uint32_t[_dim];
   _bin_map = new uint32_t[_dim * _permute];
@@ -96,42 +94,16 @@ void DWTAHashFunction::hashSingleSparse(const uint32_t* indices,
   }
   delete[] bin_values;
 
-  densifyHashes(hashes, output);
+  HashUtils::densifyHashes(hashes, _num_hashes);
+  compactHashes(hashes, output);
 
   delete[] hashes;
 }
 
-void DWTAHashFunction::densifyHashes(const uint32_t* hashes,
-                                     uint32_t* final_hashes) const {
-  uint32_t* hash_array = new uint32_t[_num_hashes]();
-
-  for (uint32_t i = 0; i < _num_hashes; i++) {
-    uint32_t next = hashes[i];
-    if (next != std::numeric_limits<uint32_t>::max()) {
-      hash_array[i] = hashes[i];
-      continue;
-    }
-
-    uint32_t count = 0;
-    while (next == std::numeric_limits<uint32_t>::max()) {
-      count++;
-      uint32_t index = std::min(RandDoubleHash(i, count), _num_hashes);
-
-      next = hashes[index];
-      if (count > 100) {  // Densification failure.
-        break;
-      }
-    }
-    hash_array[i] = next;
-  }
-
-  compactHashes(hash_array, final_hashes);
-
-  delete[] hash_array;
-}
-
 void DWTAHashFunction::compactHashes(const uint32_t* hashes,
                                      uint32_t* final_hashes) const {
+  // TODO (Josh, Patrick): Figure out how to consolidate this version of
+  // compactHashes with HashUtils::defaultCompactHashesMethod.
   for (uint32_t i = 0; i < _num_tables; i++) {
     uint32_t index = 0;
     for (uint32_t j = 0; j < _hashes_per_table; j++) {

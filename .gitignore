@@ -5,4 +5,5 @@ bazel-*
 .vscode/*
 compile_commands.json
 
+# CMake Build and Testing output
 build

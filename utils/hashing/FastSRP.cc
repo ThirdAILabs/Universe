@@ -10,7 +10,7 @@ constexpr uint32_t DEFAULT_BINSIZE = 8;
 
 FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
                  uint32_t num_tables, uint32_t seed)
-    : HashFunction(num_tables, hashes_per_table),
+    : HashFunction(num_tables, 1 << hashes_per_table),
       _hashes_per_table(hashes_per_table),
       _num_hashes(hashes_per_table * num_tables),
       _dim(input_dim),
@@ -87,7 +87,9 @@ void FastSRP::hashSingleDense(const float* values, uint32_t dim,
   }
   delete[] bin_values;
 
-  compactHashes(hashes, output);
+  // TODO(Josh, Patrick): Shouldn't we densify here too?
+  HashUtils::defaultCompactHashesMethod(hashes, output, _num_tables,
+                                        _hashes_per_table);
   delete[] hashes;
 }
 
@@ -123,50 +125,11 @@ void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
 
   delete[] bin_values;
 
-  densifyHashes(hashes, output);
+  HashUtils::densifyHashes(hashes, _num_hashes);
+  HashUtils::defaultCompactHashesMethod(hashes, output, _num_tables,
+                                        _hashes_per_table);
 
   delete[] hashes;
-}
-
-void FastSRP::densifyHashes(const uint32_t* hashes,
-                            uint32_t* final_hashes) const {
-  uint32_t* hash_array = new uint32_t[_num_hashes]();
-
-  for (uint32_t i = 0; i < _num_hashes; i++) {
-    uint32_t next = hashes[i];
-    if (next != std::numeric_limits<uint32_t>::max()) {
-      hash_array[i] = hashes[i];
-      continue;
-    }
-
-    uint32_t count = 0;
-    while (next == std::numeric_limits<uint32_t>::max()) {
-      count++;
-      uint32_t index = std::min(RandDoubleHash(i, count), _num_hashes);
-
-      next = hashes[index];
-      if (count > 100) {  // Densification failure.
-        break;
-      }
-    }
-    hash_array[i] = next;
-  }
-
-  compactHashes(hash_array, final_hashes);
-
-  delete[] hash_array;
-}
-
-void FastSRP::compactHashes(const uint32_t* hashes,
-                            uint32_t* final_hashes) const {
-  for (uint32_t i = 0; i < _num_tables; i++) {
-    uint32_t index = 0;
-    for (uint32_t j = 0; j < _hashes_per_table; j++) {
-      uint32_t h = hashes[i * _hashes_per_table + j];
-      index += h << (_hashes_per_table - 1 - j);
-    }
-    final_hashes[i] = index;
-  }
 }
 
 FastSRP::~FastSRP() {
