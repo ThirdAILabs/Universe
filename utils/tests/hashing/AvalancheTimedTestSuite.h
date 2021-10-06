@@ -6,8 +6,6 @@
 namespace thirdai::utils::avalanche_testing {
 /*
  * Test Suite for generating random integer and string keys.
- * TODO(Alan or Josh): Decide how to organize this tests/hashing folder for
- * different kinds of tests.
  */
 class AvalancheTimedTestSuite : public testing::Test {
  public:
