@@ -34,11 +34,12 @@ class GlobalFreq {
   int getIdf(std::string& token);  // Should have a default value
   int getTF(std::string& token, std::string& doc);
   int getTokenID(std::string& token);
+  int idf_size();
 
   // Can have a parallel version of getIdf like:
   void getIdfPar(std::vector<std::string> tokenvec, int* freqs);
 
-  ~GlobalFreq();
+  // ~GlobalFreq();
 };
 
 }  // namespace thirdai::utils

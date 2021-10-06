@@ -1,6 +1,11 @@
 enable_testing()
 
 add_executable(
+    global_freq_test
+    GlobalFreqTest.cc
+)
+
+add_executable(
     uni_gram_vectorizer_test
     UnigramVectorizerTest.cc
 )
@@ -18,6 +23,14 @@ add_executable(
 add_executable(
     string_dataset_test
     StringDatasetTest.cc
+)
+
+target_link_libraries(
+    global_freq_test
+    PRIVATE
+    gtest_main
+    string_dataset_lib
+    # string_loader_lib
 )
 
 target_link_libraries(
@@ -53,3 +66,4 @@ gtest_discover_tests(uni_gram_vectorizer_test)
 gtest_discover_tests(tri_gram_vectorizer_test)
 gtest_discover_tests(sentence_loader_test)
 gtest_discover_tests(string_dataset_test)
+gtest_discover_tests(global_freq_test)
