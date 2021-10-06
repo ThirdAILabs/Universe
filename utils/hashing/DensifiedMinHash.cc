@@ -1,4 +1,6 @@
 #include "DensifiedMinHash.h"
+#include "../Exceptions.h"
+#include "HashUtils.h"
 #include <algorithm>
 #include <climits>
 #include <cmath>
@@ -6,186 +8,51 @@
 #include <iostream>
 #include <queue>
 #include <random>
+#include <stdexcept>
 #include <vector>
 
 namespace thirdai::utils {
 
-typedef std::pair<uint32_t, float> PAIR;
-
-struct cmp {
-  bool operator()(const PAIR& a, const PAIR& b) {
-    return a.second > b.second;  // lower is better
-  };
-};
-
-DensifiedMinHash::DensifiedMinHash(uint32_t input_dim,
-                                   uint32_t hashes_per_table,
-                                   uint32_t num_tables, uint32_t range_pow,
-                                   uint32_t seed)
-    : HashFunction(num_tables, 1 << range_pow),
+DensifiedMinHash::DensifiedMinHash(uint32_t hashes_per_table,
+                                   uint32_t num_tables, uint32_t seed)
+    : HashFunction(num_tables, UINT32_MAX),
       _hashes_per_table(hashes_per_table),
-      _num_hashes(hashes_per_table * num_tables),
-      _binsize(ceil(1.0 * _range / _num_hashes)) {
-  _log_num_hashes = log2(_num_hashes);
-
-  std::mt19937 gen(seed);
-  std::uniform_int_distribution<uint32_t> dis(
-      1, std::numeric_limits<uint32_t>::max() - 1);
-
-  _rand_double_hash_seed = dis(gen);
-
-  _randa = dis(gen);
-  if (_randa % 2 == 0) {
-    _randa++;
-  }
-
-  _random_hash = new uint32_t[2];
-  _random_hash[0] = dis(gen);
-
-  if (_random_hash[0] % 2 == 0) {
-    _random_hash[0]++;
-  }
-  _random_hash[1] = dis(gen);
-  if (_random_hash[1] % 2 == 0) {
-    _random_hash[1]++;
-  }
-
-  _binids = new uint32_t[_num_hashes];
-
-  _rand1 = new uint32_t[_num_hashes];
-
-  for (uint32_t i = 0; i < _num_hashes * _num_tables; i++) {
-    _rand1[i] = dis(gen);
-    if (_rand1[i] % 2 == 0) {
-      _rand1[i]++;
-    }
-  }
-
-  // int _range = 1 << this->range_power;
-  // _binsize is the number of times the _range is larger than the total number
-  // of hashes we need.
-  for (uint32_t i = 0; i < _num_hashes; i++) {
-    uint32_t curhash = MurmurHash(reinterpret_cast<char*>(&i),
-                                  static_cast<uint32_t>(sizeof(i)),
-                                  static_cast<uint32_t>(_randa));
-    curhash = curhash & (_range - 1);
-    _binids[i] = floor(static_cast<double>(curhash) / _binsize);
-  }
-
-  (void)input_dim;
-}
+      _total_num_hashes(hashes_per_table * num_tables),
+      _binsize(_range / _total_num_hashes),
+      _seed(seed) {}
 
 void DensifiedMinHash::hashSingleDense(const float* values, uint32_t dim,
                                        uint32_t* output) const {
-  // _binsize is the number of times the _range is larger than the total number
-  // of hashes we need.
-  // read the data and add it to priority queue O(dlogk approx 7d) with index as
-  // key and values as priority value, get TOPK index O(1) and apply minhash on
-  // retuned index.
-
-  std::priority_queue<PAIR, std::vector<PAIR>, cmp> pq;
-
-  for (uint32_t i = 0; i < _topK; i++) {
-    pq.push(std::make_pair(i, values[i]));
-  }
-
-  for (uint32_t i = _topK; i < dim; i++) {
-    pq.push(std::make_pair(i, values[i]));
-    pq.pop();
-  }
-
-  uint32_t* hashes = new uint32_t[_num_hashes];
-
-  for (uint32_t i = 0; i < _num_hashes; i++) {
-    hashes[i] = std::numeric_limits<uint32_t>::max();
-  }
-
-  for (uint32_t i = 0; i < _topK; i++) {
-    PAIR pair = pq.top();
-    pq.pop();
-    uint32_t index = pair.first;
-    uint32_t binid = _binids[index];
-    if (hashes[binid] < index) {
-      hashes[binid] = index;
-    }
-  }
-
-  compactHashes(hashes, output);
-  delete[] hashes;
+  (void)values;
+  (void)dim;
+  (void)output;
+  throw thirdai::utils::NotImplemented();
 }
 
 void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
                                         const float* values, uint32_t length,
                                         uint32_t* output) const {
-  uint32_t* hashes = new uint32_t[_num_hashes];
-
-  for (uint32_t i = 0; i < _num_hashes; i++) {
-    hashes[i] = std::numeric_limits<uint32_t>::max();
-  }
-
-  for (uint32_t i = 0; i < length; i++) {
-    uint32_t binid = _binids[indices[i]];
-
-    if (hashes[binid] < indices[i]) {
-      hashes[binid] = indices[i];
-    }
-  }
-
-  densifyHashes(hashes, output);
-  delete[] hashes;
   (void)values;
-}
 
-void DensifiedMinHash::densifyHashes(const uint32_t* hashes,
-                                     uint32_t* final_hashes) const {
-  uint32_t* hash_array = new uint32_t[_num_hashes]();
-
-  for (uint32_t i = 0; i < _num_hashes; i++) {
-    uint32_t next = hashes[i];
-    if (next != std::numeric_limits<uint32_t>::max()) {
-      hash_array[i] = hashes[i];
-      continue;
-    }
-
-    uint32_t count = 0;
-    while (next == std::numeric_limits<uint32_t>::max()) {
-      count++;
-      uint32_t index = std::min(RandDoubleHash(i, count), _num_hashes);
-
-      next = hashes[index];
-      if (count > 100) {  // Densification failure.
-        break;
-      }
-    }
-    hash_array[i] = next;
+  // If murmur hash takes too long, one thing we can do is switch to a faster
+  // hash. Another interesting alternative is to just use the original indices
+  // and sort those. This is not preferred, however, because there might be
+  // locality and thus information loss in the original indices, i.e. having
+  // indices 899 890 891 892 is probably much more likely than having 4
+  // consecutive hash values. Another complicating factor is that we would
+  // need to know themax dimension upon construction to initialize the range
+  // and bin size.
+  std::vector<uint32_t> hashes(_total_num_hashes, UINT32_MAX);
+  for (uint32_t i = 0; i < length; i++) {
+    uint32_t hash = MurmurHash(reinterpret_cast<const char*>(indices + i),
+                               sizeof(uint32_t), _seed);
+    uint32_t bin_id = std::min(hash / _binsize, _total_num_hashes - 1);
+    hashes[bin_id] = std::min(hash, hashes[bin_id]);
   }
 
-  compactHashes(hash_array, final_hashes);
-
-  delete[] hash_array;
-}
-
-void DensifiedMinHash::compactHashes(const uint32_t* hashes,
-                                     uint32_t* final_hashes) const {
-  for (uint32_t i = 0; i < _num_tables; i++) {
-    uint32_t index = 0;
-    for (uint32_t j = 0; j < _hashes_per_table; j++) {
-      uint32_t h = _rand1[_hashes_per_table * i + j];
-      h *= _rand1[_hashes_per_table * i + j];
-      h ^= h >> 13;
-      h ^= _rand1[_hashes_per_table * i + j];
-      index += h * hashes[_hashes_per_table * i + j];
-    }
-
-    index = index & (_range - 1);
-    final_hashes[i] = index;
-  }
-}
-
-DensifiedMinHash::~DensifiedMinHash() {
-  delete[] _random_hash;
-  delete[] _rand1;
-  delete[] _binids;
+  HashUtils::densifyHashes(hashes.data(), _total_num_hashes);
+  HashUtils::defaultCompactHashesMethod(hashes.data(), output, _num_tables,
+                                        _hashes_per_table);
 }
 
 }  // namespace thirdai::utils

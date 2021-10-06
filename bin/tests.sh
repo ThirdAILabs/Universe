@@ -6,6 +6,6 @@ BASEDIR=$(dirname "$0")
 "$BASEDIR/build.sh"
 
 # Run tests with the passed in arguments
-ctest --test-dir "$BASEDIR/../build" "$@"
-
-
+cd $BASEDIR/../build/
+ctest
+cd -
