@@ -21,7 +21,9 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
 
   void TearDown() override { delete _layer; }
 
-  uint32_t GetEmbeddingBlockSize() const { return _layer->_embedding_block_size; }
+  uint32_t GetEmbeddingBlockSize() const {
+    return _layer->_embedding_block_size;
+  }
 
   const float* GetEmbeddingBlock() const { return _layer->_embedding_block; }
 
