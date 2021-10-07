@@ -1,5 +1,5 @@
 #include "../../utils/hashtable/SampledHashTable.h"
-#include "../src/FullyConnectedLayer.h"
+#include "../layers/FullyConnectedLayer.h"
 #include <gtest/gtest.h>
 #include <vector>
 

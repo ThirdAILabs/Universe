@@ -1,7 +1,7 @@
 #pragma once
 
-#include "DataLoader.h"
-#include "FullyConnectedLayer.h"
+#include "../layers/FullyConnectedLayer.h"
+#include "../utils/DataLoader.h"
 #include <cmath>
 #include <iostream>
 #include <limits>
