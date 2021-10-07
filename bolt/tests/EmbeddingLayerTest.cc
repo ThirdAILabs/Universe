@@ -21,11 +21,9 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
 
   void TearDown() override { delete _layer; }
 
-  uint32_t GetEmbeddingBlockSize() const {
-    return _layer->_embedding_block_size;
-  }
+  uint32_t GetEmbeddingBlockSize() { return _layer->_embedding_block_size; }
 
-  const float* GetEmbeddingBlock() const { return _layer->_embedding_block; }
+  const float* GetEmbeddingBlock() { return _layer->_embedding_block; }
 
   uint32_t _lookup_size = 20, _num_lookups = 10, _log_block_size = 16, _seed;
   EmbeddingLayer* _layer;
