@@ -1,1 +1,1 @@
-add_library(hash_function_lib STATIC MurmurHash.cc DWTA.cc FastSRP.cc SRP.cc DensifiedMinHash.cc)
+add_library(hash_function_lib STATIC UniversalHash.cc DWTA.cc MurmurHash.cc FastSRP.cc SRP.cc DensifiedMinHash.cc)
