@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Layer.h"
-#include <time.h>
+#include <ctime>
 
 namespace thirdai::bolt {
 
@@ -21,7 +21,7 @@ class EmbeddingLayer {
 
   void Backpropagate(uint32_t batch_indx, float learning_rate);
 
-  uint32_t GetLen(uint32_t) const { return _total_embedding_dim; }
+  uint32_t GetLen(uint32_t /*unused */) const { return _total_embedding_dim; }
 
   const float* GetEmbedding(uint32_t batch_indx) const {
     return _embeddings[batch_indx];
