@@ -1,7 +1,12 @@
 #include "../bolt/src/Network.h"
+#include "../flash/src/Flash.h"
+#include "../utils/dataset/Dataset.h"
+#include "../utils/dataset/svm/SVMDataset.h"
+#include "../utils/hashing/DensifiedMinHash.h"
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <stdexcept>
 
 namespace py = pybind11;
 
@@ -49,18 +54,53 @@ class PyNetwork final : public Network {
   }
 };
 
+// TODO(any): Move this when we refactor the dataset class
+utils::Dataset* createSVMDataset(const std::string& dataset_path,
+                                 uint64_t batch_size,
+                                 uint64_t batches_per_load) {
+  return new utils::SVMDataset(dataset_path, batch_size, batches_per_load);
+}
+
 }  // namespace thirdai::python
 
+// TODO(all): Figure out naming convention for python exposed classes and methods
 PYBIND11_MODULE(thirdai, m) {  // NOLINT
-  auto submodule = m.def_submodule("bolt");
 
-  py::class_<thirdai::bolt::SamplingConfig>(submodule, "SamplingConfig")
+  auto utils_submodule = m.def_submodule("utils");
+  py::class_<thirdai::utils::Batch>(utils_submodule, "Batch"); // NOLINT
+  py::class_<thirdai::utils::Dataset>(utils_submodule, "Dataset")
+    .def("__getitem__", &thirdai::utils::Dataset::operator[]);
+  py::class_<thirdai::utils::HashFunction>(utils_submodule, "HashFunction")
+      .def("GetNumTables", &thirdai::utils::HashFunction::numTables)
+      .def("GetRange", &thirdai::utils::HashFunction::range);
+
+  py::class_<thirdai::utils::DensifiedMinHash, thirdai::utils::HashFunction>(
+      utils_submodule, "DensifiedMinHash")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("hashes_per_table"),
+           py::arg("num_tables"));
+
+  utils_submodule.def("load_svm", &thirdai::python::createSVMDataset,
+                      py::arg("dataset_path"), py::arg("batch_size"), py::arg("batches_per_load"),
+                      "Load an SVM dataset from memory, ready for use with "
+                      "e.g. BOLT or FLASH.");
+
+  // TODO(any): Rename from flash, and fix all other places in the code
+  auto flash_submodule = m.def_submodule("search");
+  py::class_<thirdai::search::Flash<uint64_t>>(flash_submodule, "Flash")
+      .def(py::init<const thirdai::utils::HashFunction&>(),
+           py::arg("hash_function"))
+      .def("AddDataset", &thirdai::search::Flash<uint64_t>::addDataset, py::arg("dataset"))
+      .def("QueryBatch", &thirdai::search::Flash<uint64_t>::queryBatch, py::arg("batch"), py::arg("top_k"), py::arg("pad_zeros") = false);
+
+  auto bolt_submodule = m.def_submodule("bolt");
+
+  py::class_<thirdai::bolt::SamplingConfig>(bolt_submodule, "SamplingConfig")
       .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
            py::arg("hashes_per_table"), py::arg("num_tables"),
            py::arg("range_pow"), py::arg("reservoir_size"))
       .def(py::init<>());
 
-  py::class_<thirdai::bolt::LayerConfig>(submodule, "LayerConfig")
+  py::class_<thirdai::bolt::LayerConfig>(bolt_submodule, "LayerConfig")
       .def(py::init<uint64_t, float, std::string,
                     thirdai::bolt::SamplingConfig>(),
            py::arg("dim"), py::arg("load_factor"),
@@ -70,7 +110,7 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
            py::arg("load_factor"), py::arg("activation_function"));
 
-  py::class_<thirdai::python::PyNetwork>(submodule, "Network")
+  py::class_<thirdai::python::PyNetwork>(bolt_submodule, "Network")
       .def(py::init<std::vector<thirdai::bolt::LayerConfig>, uint64_t>(),
            py::arg("layers"), py::arg("input_dim"))
       .def("Train", &thirdai::python::PyNetwork::Train, py::arg("batch_size"),

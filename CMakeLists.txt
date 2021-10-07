@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 
 set(CMAKE_CXX_COMPILER "g++")
 set(CMAKE_C_COMPILER "gcc")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -fopenmp -fPIC -ffast-math -funroll-loops -ftree-vectorize")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -fopenmp -fPIC -ffast-math -funroll-loops -ftree-vectorize -g")
 
 project(ThirdAI LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
@@ -50,4 +50,5 @@ add_subdirectory(utils)
 add_subdirectory(flash)
 
 file(GLOB BOLT_SOURCES bolt/src/*.cc utils/hashing/DWTA.cc utils/hashtable/SampledHashTable.cc)
-pybind11_add_module(thirdai python_bindings/thirdai.cc ${BOLT_SOURCES})
+file(GLOB_RECURSE FLASH_SOURCES flash/src/*.cc utils/dataset/*.cc utils/hashing/*.cc utils/hashtable/*.cc)
+pybind11_add_module(thirdai python_bindings/thirdai.cc ${BOLT_SOURCES} ${FLASH_SOURCES})

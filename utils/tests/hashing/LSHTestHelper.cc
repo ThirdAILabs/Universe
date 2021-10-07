@@ -5,6 +5,7 @@ namespace thirdai::utils::lsh_testing {
 
 // TODO(josh) can abstract out some of the redundancy in runSparseTest and
 // runDenseTest
+// TODO(josh) Add tests for densification
 
 float getMeasuredSim(const uint32_t* hashes, uint32_t num_tables) {
   uint32_t matches = 0;
