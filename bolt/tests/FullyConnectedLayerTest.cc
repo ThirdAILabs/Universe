@@ -434,7 +434,7 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSoftmaxTest) {
        -0.0153638623381, -0.0430890175068, -0.0346229982448, 0.101203984507}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->computeErrors(i, labels.at(i).data(), labels.at(i).size());
+    _layer->computeErrors(i, labels.size(), labels.at(i).data(), labels.at(i).size());
     for (uint32_t j = 0; j < 8; j++) {
       ASSERT_FLOAT_EQ(_layer->getErrors(i)[j], errors.at(i).at(j));
     }
@@ -477,7 +477,7 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSoftmaxTest) {
       {0.0885708181152, -0.082094428647, -0.084700385549, 0.0782240045508}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->computeErrors(i, labels.at(i).data(), labels.at(i).size());
+    _layer->computeErrors(i, labels.size(), labels.at(i).data(), labels.at(i).size());
     for (uint32_t j = 0; j < 4; j++) {
       ASSERT_FLOAT_EQ(_layer->getErrors(i)[j], errors.at(i).at(j));
     }

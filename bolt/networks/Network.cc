@@ -83,8 +83,8 @@ void Network::processTrainingBatch(const Batch& batch, float lr) {
     /**
      * 2. Compute Errors
      */
-    _layers[_num_layers - 1]->computeErrors(b, batch.labels[b],
-                                            batch.label_lens[b]);
+    _layers[_num_layers - 1]->computeErrors(
+        b, batch.batch_size, batch.labels[b], batch.label_lens[b]);
 
     /**
      * 3. Backpropogation
