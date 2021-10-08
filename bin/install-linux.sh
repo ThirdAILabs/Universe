@@ -1,4 +1,5 @@
 # Run this script as sudo
+apt update
 
 # Install cmake
 apt install cmake -y 

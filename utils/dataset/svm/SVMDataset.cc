@@ -80,8 +80,8 @@ void SVMDataset::readDataset() {
     std::string nonzero;
     while (stream >> nonzero) {
       pos = nonzero.find(':');
-      _indices.push_back(atoi(nonzero.substr(0, pos).c_str()));
-      _values.push_back(atof(nonzero.substr(pos + 1).c_str()));
+      _indices.push_back(atoi(nonzero.c_str()));
+      _values.push_back(atof(nonzero.c_str() + pos + 1));
     }
     _num_vecs_in_batch++;
   }

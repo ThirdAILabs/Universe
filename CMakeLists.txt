@@ -44,7 +44,6 @@ endif()
 
 find_package(OpenMP REQUIRED)
 
-add_subdirectory(examples)
 add_subdirectory(bolt)
 add_subdirectory(utils)
 add_subdirectory(flash)
