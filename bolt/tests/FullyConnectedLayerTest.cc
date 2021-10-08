@@ -9,7 +9,7 @@ class FullyConnectedLayerTestFixture : public testing::Test {
  public:
   void SetUp() override {
     _layer = new FullyConnectedLayer(8, 10, 0.5, ActivationFunc::ReLU,
-                                    SamplingConfig(1, 1, 3, 4));
+                                     SamplingConfig(1, 1, 3, 4));
 
     _layer->setBatchSize(4);
 
@@ -31,14 +31,14 @@ class FullyConnectedLayerTestFixture : public testing::Test {
     _layer->_biases = new_biases;
 
     _sparse_data_indices = {{1, 2, 3, 4, 6, 8},
-                           {0, 2, 3, 5, 6, 7, 9},
-                           {0, 1, 4, 6, 8, 9},
-                           {1, 2, 3, 7, 8}};
+                            {0, 2, 3, 5, 6, 7, 9},
+                            {0, 1, 4, 6, 8, 9},
+                            {1, 2, 3, 7, 8}};
 
     _sparse_data_values = {{0.75, -0.125, 0.5, 0.25, 1.75, -0.375},
-                          {-0.125, 0.25, -0.375, 0.125, 0.625, 0.875, -0.25},
-                          {0.125, 0.75, 0.25, -0.875, 1.5, -0.5},
-                          {0.5, 0.25, -0.25, 0.75, 0.375}};
+                           {-0.125, 0.25, -0.375, 0.125, 0.625, 0.875, -0.25},
+                           {0.125, 0.75, 0.25, -0.875, 1.5, -0.5},
+                           {0.5, 0.25, -0.25, 0.75, 0.375}};
 
     _dense_data_values = {
         {0.0, 0.75, -0.125, 0.5, 0.25, 0.0, 1.75, 0.0, -0.375, 0.0},
@@ -73,8 +73,8 @@ TEST_F(FullyConnectedLayerTestFixture, SparseDenseTest) {
 
   for (uint32_t i = 0; i < 4; i++) {
     _layer->feedForward(i, _sparse_data_indices.at(i).data(),
-                       _sparse_data_values.at(i).data(), _data_lens.at(i),
-                       nullptr, 0);
+                        _sparse_data_values.at(i).data(), _data_lens.at(i),
+                        nullptr, 0);
   }
 
   std::vector<std::vector<float>> activations = {
@@ -103,8 +103,8 @@ TEST_F(FullyConnectedLayerTestFixture, SparseDenseTest) {
   for (uint32_t i = 0; i < 4; i++) {
     std::copy(errors.at(i).begin(), errors.at(i).end(), _layer->getErrors(i));
     _layer->backpropagate(i, _sparse_data_indices.at(i).data(),
-                         _sparse_data_values.at(i).data(),
-                         prev_errors_calc.at(i).data(), _data_lens.at(i));
+                          _sparse_data_values.at(i).data(),
+                          prev_errors_calc.at(i).data(), _data_lens.at(i));
   }
 
   std::vector<std::vector<float>> w_gradient = {
@@ -152,8 +152,8 @@ TEST_F(FullyConnectedLayerTestFixture, DenseDenseTest) {
   _layer->setSparsity(1.0);
 
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->feedForward(i, nullptr, _dense_data_values.at(i).data(), 10, nullptr,
-                       0);
+    _layer->feedForward(i, nullptr, _dense_data_values.at(i).data(), 10,
+                        nullptr, 0);
   }
 
   std::vector<std::vector<float>> activations = {
@@ -182,7 +182,7 @@ TEST_F(FullyConnectedLayerTestFixture, DenseDenseTest) {
   for (uint32_t i = 0; i < 4; i++) {
     std::copy(errors.at(i).begin(), errors.at(i).end(), _layer->getErrors(i));
     _layer->backpropagate(i, nullptr, _dense_data_values.at(i).data(),
-                         prev_errors_calc.at(i).data(), 10);
+                          prev_errors_calc.at(i).data(), 10);
   }
 
   std::vector<std::vector<float>> w_gradient = {
@@ -237,8 +237,8 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSparseTest) {
     // Use active neurons as the labels to force them to be selected so the test
     // is deterministic
     _layer->feedForward(i, _sparse_data_indices.at(i).data(),
-                       _sparse_data_values.at(i).data(), _data_lens.at(i),
-                       active_neurons.at(i).data(), 4);
+                        _sparse_data_values.at(i).data(), _data_lens.at(i),
+                        active_neurons.at(i).data(), 4);
   }
 
   std::vector<std::vector<float>> activations = {{1.0, 0.0, 0.3125, 0.125},
@@ -265,8 +265,8 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSparseTest) {
   for (uint32_t i = 0; i < 4; i++) {
     std::copy(errors.at(i).begin(), errors.at(i).end(), _layer->getErrors(i));
     _layer->backpropagate(i, _sparse_data_indices.at(i).data(),
-                         _sparse_data_values.at(i).data(),
-                         prev_errors_calc.at(i).data(), _data_lens.at(i));
+                          _sparse_data_values.at(i).data(),
+                          prev_errors_calc.at(i).data(), _data_lens.at(i));
   }
 
   std::vector<std::vector<float>> w_gradient = {
@@ -318,7 +318,7 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSparseTest) {
     // Use active neurons as the labels to force them to be selected so the test
     // is deterministic
     _layer->feedForward(i, nullptr, _dense_data_values.at(i).data(), 10,
-                       active_neurons.at(i).data(), 4);
+                        active_neurons.at(i).data(), 4);
   }
 
   std::vector<std::vector<float>> activations = {{1.0, 0.0, 0.3125, 0.125},
@@ -345,7 +345,7 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSparseTest) {
   for (uint32_t i = 0; i < 4; i++) {
     std::copy(errors.at(i).begin(), errors.at(i).end(), _layer->getErrors(i));
     _layer->backpropagate(i, nullptr, _dense_data_values.at(i).data(),
-                         prev_errors_calc.at(i).data(), 10);
+                          prev_errors_calc.at(i).data(), 10);
   }
 
   std::vector<std::vector<float>> w_gradient = {
@@ -400,8 +400,8 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSoftmaxTest) {
 
   for (uint32_t i = 0; i < 4; i++) {
     _layer->feedForward(i, _sparse_data_indices.at(i).data(),
-                       _sparse_data_values.at(i).data(), _data_lens.at(i),
-                       nullptr, 0);
+                        _sparse_data_values.at(i).data(), _data_lens.at(i),
+                        nullptr, 0);
   }
 
   std::vector<std::vector<float>> activations = {
@@ -434,7 +434,8 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSoftmaxTest) {
        -0.0153638623381, -0.0430890175068, -0.0346229982448, 0.101203984507}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->computeErrors(i, labels.size(), labels.at(i).data(), labels.at(i).size());
+    _layer->computeErrors(i, labels.size(), labels.at(i).data(),
+                          labels.at(i).size());
     for (uint32_t j = 0; j < 8; j++) {
       ASSERT_FLOAT_EQ(_layer->getErrors(i)[j], errors.at(i).at(j));
     }
@@ -451,8 +452,8 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSoftmaxTest) {
     // Use active neurons as the labels to force them to be selected so the test
     // is deterministic
     _layer->feedForward(i, _sparse_data_indices.at(i).data(),
-                       _sparse_data_values.at(i).data(), _data_lens.at(i),
-                       active_neurons.at(i).data(), 4);
+                        _sparse_data_values.at(i).data(), _data_lens.at(i),
+                        active_neurons.at(i).data(), 4);
   }
   std::vector<std::vector<float>> activations = {
       {0.477676358768, 0.0830077045562, 0.240190757239, 0.199125131669},
@@ -477,7 +478,8 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSoftmaxTest) {
       {0.0885708181152, -0.082094428647, -0.084700385549, 0.0782240045508}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->computeErrors(i, labels.size(), labels.at(i).data(), labels.at(i).size());
+    _layer->computeErrors(i, labels.size(), labels.at(i).data(),
+                          labels.at(i).size());
     for (uint32_t j = 0; j < 4; j++) {
       ASSERT_FLOAT_EQ(_layer->getErrors(i)[j], errors.at(i).at(j));
     }

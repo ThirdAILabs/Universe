@@ -1,7 +1,7 @@
-#include "utils/ConfigReader.h"
-#include "utils/DataLoader.h"
 #include "layers/Layer.h"
 #include "networks/Network.h"
+#include "utils/ConfigReader.h"
+#include "utils/DataLoader.h"
 #include <chrono>
 #include <iostream>
 #include <vector>

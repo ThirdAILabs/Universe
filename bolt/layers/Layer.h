@@ -39,8 +39,8 @@ class Layer {
                                        const float* values, float* errors,
                                        uint32_t len) = 0;
 
-  virtual void computeErrors(uint32_t batch_indx, uint32_t batch_size, const uint32_t* labels,
-                             uint32_t label_len) = 0;
+  virtual void computeErrors(uint32_t batch_indx, uint32_t batch_size,
+                             const uint32_t* labels, uint32_t label_len) = 0;
 
   virtual void updateParameters(float lr, uint32_t iter, float B1, float B2,
                                 float eps) = 0;

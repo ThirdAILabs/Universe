@@ -83,7 +83,7 @@ class FullyConnectedLayer final : public Layer {
                          const float* values, float* errors, uint32_t len);
 
   template <bool DENSE>
-  void computeErrorsImpl(uint32_t batch_indx, uint32_t batch_size, 
+  void computeErrorsImpl(uint32_t batch_indx, uint32_t batch_size,
                          const uint32_t* labels, uint32_t label_len);
 
   template <bool DENSE, bool PREV_DENSE>
