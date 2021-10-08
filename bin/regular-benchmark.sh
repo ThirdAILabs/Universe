@@ -12,26 +12,106 @@ export NOW=$(date +"%T")
 
 # We need: Code version, machine information, run time, accuracy, hash seeds
 cd $BASEDIR/../build/
+
+MODEL_NAME=$(grep -m 1 "model name" /proc/cpuinfo | sed -e "s/^.*: //")
+NUM_CPUS=$(grep -c ^processor /proc/cpuinfo)
+OTHER_MACHINE_INFO=$(lscpu | egrep 'Socket|Thread|Core')
+CODE_VERSION+=$(git describe --tag)
+UNIT_TESTS=$(ctest -A | tail -3)
+
 LOGFILE="../$target/$NOW.txt"
-echo "Logging into $LOGFILE"
+echo "Logging results into $LOGFILE"
+# TODO(Alan): 
+# - Replace this line and add bolt benchmark tests and several configs.
+EPOCH_LOGS=$(git describe --tag)
+echo EPOCH_LOGS >> $LOGFILE
 
-# TODO(Alan, Henry): 
-# - Add bolt benchmark tests and several configs.
-# - Improve formatting (maybe hide some information)
-# - 
-MSG=$'*_-------------------- Machine information --------------------_*\n'
-MSG+=$(lscpu)
-MSG+=$'\n\n\n*_-------------------- Current code version --------------------_*\n'
-MSG+=$(git describe --tag)
-MSG+=$'\n\n\n*_-------------------- Unit Test Results --------------------_*\n'
-MSG+=$(ctest -A)
-echo MSG >> $LOGFILE
+# TODO(alan): Decide if we want to attach full logs (will need to use S3 or similar to upload remote logs)
+# curl -F token=* \
+#     -F external_id=LOG \
+#     -F external_url="file://~/logs/$DATE/$NOW.txt" \
+#     -F title=logs \
+#     https://slack.com/api/files.remote.add
 
-# JSON_STRING=$( jq -n \
-#                   --arg ver "$VERSION" \
-#                   --arg tst "$CTEST_OUTPUT" \
-#                   --arg info "$MACHINE_INFO" \
-#                   '{text: $tst}' )
+payload="
+{
+    \"text\": \"Benchmarks Completed\",
+    \"blocks\": [
+        {
+			\"type\": \"section\",
+			\"text\": {
+                \"type\": \"mrkdwn\", 
+                \"text\": \"------------------ *_Benchmarks for $DATE $NOW _*------------------\n\"
+            }
+		},
+		{
+			\"type\": \"header\",
+			\"text\": {
+				\"type\": \"plain_text\",
+				\"text\": \"Machine Information\"
+			}
+		},
+		{
+			\"type\": \"section\",
+			\"fields\": [
+                {
+					\"type\": \"mrkdwn\",
+					\"text\": \"*Processor:*\n$MODEL_NAME\"
+				},
+                {
+					\"type\": \"mrkdwn\",
+					\"text\": \"*CPU(s):*\n$NUM_CPUS\"
+				},
+			]
+		},
+		{
+			\"type\": \"section\",
+			\"fields\": [
+				{
+					\"type\": \"mrkdwn\",
+					\"text\": \"*Other:*\n$OTHER_MACHINE_INFO\"
+				},
+			]
+		},
+		{
+			\"type\": \"header\",
+			\"text\": {
+				\"type\": \"plain_text\",
+				\"text\": \"Current Version\"
+			}
+		},
+        {
+			\"type\": \"section\",
+			\"fields\": [
+				{
+					\"type\": \"mrkdwn\",
+					\"text\": \"$CODE_VERSION\"
+				}
+			]
+		},
+        {
+			\"type\": \"header\",
+			\"text\": {
+				\"type\": \"plain_text\",
+				\"text\": \"Unit Tests\"
+			}
+		},
+        {
+            \"type\": \"section\",
+			\"text\": {
+                \"type\": \"mrkdwn\", 
+                \"text\": \"$UNIT_TESTS\"
+            }
+        },
+        {
+            \"type\": \"section\",
+			\"text\": {
+                \"type\": \"mrkdwn\", 
+                \"text\": \"Full epoch logs can be found in: /home/cicd/logs/$DATE/$NOW.txt\"
+            }
+        },
+	]
+}"
 
 # # ../$BASEDIR/bolt_mnist_test.sh >> $LOGFILE
 
@@ -41,4 +121,4 @@ URL="https://hooks.slack.com/services/T0299J2FFM2/B02GPH4KUTX/fE9kSXXAfNo1fo5PZ5
 
 # TODO(alan): Learn how to format this json better.
 curl -X POST -H 'Content-type: application/json' \
---data "{\"text\": \"$MSG\"}" $URL
+--data "$payload" $URL
