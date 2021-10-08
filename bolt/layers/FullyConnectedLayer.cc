@@ -226,17 +226,19 @@ void FullyConnectedLayer::backPropagateImpl(uint32_t batch_indx,
 }
 
 void FullyConnectedLayer::computeErrors(uint32_t batch_indx,
+                                        uint32_t batch_size,
                                         const uint32_t* labels,
                                         uint32_t label_len) {
   if (_sparse_dim == _dim) {
-    computeErrorsImpl<true>(batch_indx, labels, label_len);
+    computeErrorsImpl<true>(batch_indx, batch_size, labels, label_len);
   } else {
-    computeErrorsImpl<false>(batch_indx, labels, label_len);
+    computeErrorsImpl<false>(batch_indx, batch_size, labels, label_len);
   }
 }
 
 template <bool DENSE>
 void FullyConnectedLayer::computeErrorsImpl(uint32_t batch_indx,
+                                            uint32_t batch_size,
                                             const uint32_t* labels,
                                             uint32_t label_len) {
   float frac = 1.0 / label_len;
@@ -248,9 +250,9 @@ void FullyConnectedLayer::computeErrorsImpl(uint32_t batch_indx,
     if (std::find(labels, labels + label_len, act_neuron) !=
         labels + label_len) {
       _errors[batch_indx][n] =
-          (frac - _activations[batch_indx][n]) / _batch_size;
+          (frac - _activations[batch_indx][n]) / batch_size;
     } else {
-      _errors[batch_indx][n] = -_activations[batch_indx][n] / _batch_size;
+      _errors[batch_indx][n] = -_activations[batch_indx][n] / batch_size;
     }
   }
 }

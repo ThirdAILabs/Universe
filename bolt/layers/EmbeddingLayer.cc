@@ -79,7 +79,7 @@ void EmbeddingLayer::backpropagate(uint32_t batch_indx, float learning_rate) {
 }
 
 void EmbeddingLayer::setBatchSize(uint32_t new_batch_size) {
-  if (new_batch_size == _batch_size) {
+  if (new_batch_size <= _batch_size) {
     return;
   }
 

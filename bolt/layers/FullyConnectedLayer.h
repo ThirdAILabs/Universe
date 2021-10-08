@@ -36,8 +36,8 @@ class FullyConnectedLayer final : public Layer {
                                const float* values, float* errors,
                                uint32_t len) override;
 
-  void computeErrors(uint32_t batch_indx, const uint32_t* labels,
-                     uint32_t label_len) override;
+  void computeErrors(uint32_t batch_indx, uint32_t batch_size,
+                     const uint32_t* labels, uint32_t label_len) override;
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2,
                         float eps) override;
@@ -83,8 +83,8 @@ class FullyConnectedLayer final : public Layer {
                          const float* values, float* errors, uint32_t len);
 
   template <bool DENSE>
-  void computeErrorsImpl(uint32_t batch_indx, const uint32_t* labels,
-                         uint32_t label_len);
+  void computeErrorsImpl(uint32_t batch_indx, uint32_t batch_size, 
+                         const uint32_t* labels, uint32_t label_len);
 
   template <bool DENSE, bool PREV_DENSE>
   void selectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
