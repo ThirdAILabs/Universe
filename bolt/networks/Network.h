@@ -16,7 +16,7 @@ struct LayerConfig {
   ActivationFunc act_func;
   SamplingConfig sampling_config;
 
-  static ActivationFunc ActivationFuncFromStr(const std::string& str) {
+  static ActivationFunc activationFuncFromStr(const std::string& str) {
     if (str == "ReLU") {
       return ActivationFunc::ReLU;
     }
@@ -29,7 +29,7 @@ struct LayerConfig {
         "functions: 'ReLU', 'Softmax'");
   }
 
-  static void CheckSparsity(float sparsity) {
+  static void checkSparsity(float sparsity) {
     if (0.2 < sparsity && sparsity < 1.0) {
       std::cout << "WARNING: Using large load_factor value " << sparsity
                 << " in Layer, consider decreasing load_factor" << std::endl;
@@ -46,20 +46,20 @@ struct LayerConfig {
   LayerConfig(uint64_t _dim, float _sparsity, const std::string& act_func_str,
               SamplingConfig _config)
       : dim(_dim), sparsity(_sparsity), sampling_config(_config) {
-    act_func = ActivationFuncFromStr(act_func_str);
-    CheckSparsity(sparsity);
+    act_func = activationFuncFromStr(act_func_str);
+    checkSparsity(sparsity);
   }
 
   LayerConfig(uint64_t _dim, const std::string& act_func_str)
       : dim(_dim), sparsity(1.0), sampling_config(SamplingConfig()) {
-    act_func = ActivationFuncFromStr(act_func_str);
-    CheckSparsity(sparsity);
+    act_func = activationFuncFromStr(act_func_str);
+    checkSparsity(sparsity);
   }
 
   LayerConfig(uint64_t _dim, float _sparsity, const std::string& act_func_str)
       : dim(_dim), sparsity(_sparsity) {
-    act_func = ActivationFuncFromStr(act_func_str);
-    CheckSparsity(sparsity);
+    act_func = activationFuncFromStr(act_func_str);
+    checkSparsity(sparsity);
     if (sparsity < 1.0) {
       uint32_t rp = (static_cast<uint32_t>(log2(dim)) / 3) * 3;
       uint32_t k = rp / 3;
@@ -78,26 +78,26 @@ class Network {
  public:
   Network(std::vector<LayerConfig> configs, uint64_t input_dim);
 
-  void ProcessTrainingBatch(const Batch& batch, float lr);
+  void processTrainingBatch(const Batch& batch, float lr);
 
-  uint32_t ProcessTestBatch(const Batch& batch);
+  uint32_t processTestBatch(const Batch& batch);
 
-  void Train(uint32_t batch_size, const std::string& train_data,
+  void train(uint32_t batch_size, const std::string& train_data,
              const std::string& test_data, float learning_rate, uint32_t epochs,
              uint32_t rehash = 0, uint32_t rebuild = 0,
              uint32_t max_test_batches = std::numeric_limits<uint32_t>::max());
 
-  uint32_t* PredictClasses(const Batch& batch, uint64_t batch_size);
+  uint32_t* predictClasses(const Batch& batch, uint64_t batch_size);
 
-  void ReBuildHashFunctions();
+  void reBuildHashFunctions();
 
-  void BuildHashTables();
+  void buildHashTables();
 
-  uint32_t GetNumLayers() const { return _num_layers; }
+  uint32_t getNumLayers() const { return _num_layers; }
 
-  uint32_t GetInputDim() const { return _input_dim; }
+  uint32_t getInputDim() const { return _input_dim; }
 
-  std::vector<uint32_t> GetLayerSizes() {
+  std::vector<uint32_t> getLayerSizes() {
     std::vector<uint32_t> layer_sizes;
     for (const auto& c : _configs) {
       layer_sizes.push_back(c.dim);
@@ -105,7 +105,7 @@ class Network {
     return layer_sizes;
   }
 
-  std::vector<std::string> GetActivationFunctions() {
+  std::vector<std::string> getActivationFunctions() {
     std::vector<std::string> funcs;
     for (const auto& c : _configs) {
       switch (c.act_func) {
@@ -121,11 +121,11 @@ class Network {
     return funcs;
   }
 
-  std::vector<float> GetAccuracyPerEpoch() const { return _accuracy_per_epoch; }
+  std::vector<float> getAccuracyPerEpoch() const { return _accuracy_per_epoch; }
 
-  std::vector<int64_t> GetTimePerEpoch() const { return _time_per_epoch; }
+  std::vector<int64_t> getTimePerEpoch() const { return _time_per_epoch; }
 
-  float GetFinalTestAccuracy() const { return _final_accuracy; }
+  float getFinalTestAccuracy() const { return _final_accuracy; }
 
   ~Network();
 

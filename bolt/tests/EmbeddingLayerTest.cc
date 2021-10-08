@@ -16,16 +16,16 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
       _layer->_embedding_block[i] = i + 1;
     }
     _seed = _layer->_seed;
-    _layer->SetBatchSize(4);
+    _layer->setBatchSize(4);
   }
 
   void TearDown() override { delete _layer; }
 
-  uint32_t GetEmbeddingBlockSize() const {
+  uint32_t getEmbeddingBlockSize() const {
     return _layer->_embedding_block_size;
   }
 
-  const float* GetEmbeddingBlock() const { return _layer->_embedding_block; }
+  const float* getEmbeddingBlock() const { return _layer->_embedding_block; }
 
   uint32_t _lookup_size = 20, _num_lookups = 10, _log_block_size = 16, _seed;
   EmbeddingLayer* _layer;
@@ -35,11 +35,11 @@ TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
   std::vector<uint32_t> tokens = {6};
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->FeedForward(i, tokens.data() + i, 1);
+    _layer->feedForward(i, tokens.data() + i, 1);
   }
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    const float* embedding = _layer->GetEmbedding(i);
+    const float* embedding = _layer->getEmbedding(i);
 
     for (uint32_t e = 0; e < _num_lookups; e++) {
       uint32_t item = tokens[i] * _num_lookups + e;
@@ -59,11 +59,11 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbedding) {
       {7, 4, 18}, {98, 34, 55, 2}, {9, 24}, {61, 75, 11}};
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->FeedForward(i, tokens[i].data(), tokens[i].size());
+    _layer->feedForward(i, tokens[i].data(), tokens[i].size());
   }
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    const float* embedding = _layer->GetEmbedding(i);
+    const float* embedding = _layer->getEmbedding(i);
 
     for (uint32_t e = 0; e < _num_lookups; e++) {
       for (uint32_t j = 0; j < _lookup_size; j++) {
@@ -87,17 +87,17 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
       {7, 4, 18}, {98, 34, 55, 2}, {9, 24}, {61, 75, 11}};
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->FeedForward(i, tokens[i].data(), tokens[i].size());
+    _layer->feedForward(i, tokens[i].data(), tokens[i].size());
   }
 
   std::unordered_map<uint32_t, float> deltas;
 
   for (uint32_t b = 0; b < 4; b++) {
     for (uint32_t i = 0; i < _num_lookups * _lookup_size; i++) {
-      _layer->GetErrors(b)[i] = 0.5 * i + b * 0.005;
+      _layer->getErrors(b)[i] = 0.5 * i + b * 0.005;
     }
 
-    _layer->Backpropagate(b, 1.0);
+    _layer->backpropagate(b, 1.0);
 
     for (uint32_t t : tokens[b]) {
       for (uint32_t e = 0; e < _num_lookups; e++) {
@@ -108,14 +108,14 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
         loc = loc >> (32 - _log_block_size);
 
         for (uint32_t j = 0; j < _lookup_size; j++) {
-          deltas[loc + j] += _layer->GetErrors(b)[e * _lookup_size + j];
+          deltas[loc + j] += _layer->getErrors(b)[e * _lookup_size + j];
         }
       }
     }
   }
 
-  for (uint32_t i = 0; i < GetEmbeddingBlockSize(); i++) {
-    ASSERT_EQ(GetEmbeddingBlock()[i], i + 1 + deltas[i]);
+  for (uint32_t i = 0; i < getEmbeddingBlockSize(); i++) {
+    ASSERT_EQ(getEmbeddingBlock()[i], i + 1 + deltas[i]);
   }
 }
 

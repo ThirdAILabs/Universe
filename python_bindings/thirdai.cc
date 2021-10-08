@@ -14,12 +14,12 @@ class PyNetwork final : public Network {
   PyNetwork(std::vector<bolt::LayerConfig> configs, uint64_t input_dim)
       : Network(std::move(configs), input_dim) {}
 
-  py::array_t<float> GetWeightMatrix(uint32_t layer_index) {
+  py::array_t<float> getWeightMatrix(uint32_t layer_index) {
     if (layer_index >= _num_layers) {
       return py::none();
     }
 
-    float* mem = _layers[layer_index]->GetWeights();
+    float* mem = _layers[layer_index]->getWeights();
 
     py::capsule free_when_done(
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
@@ -33,12 +33,12 @@ class PyNetwork final : public Network {
                               free_when_done);
   }
 
-  py::array_t<float> GetBiasVector(uint32_t layer_index) {
+  py::array_t<float> getBiasVector(uint32_t layer_index) {
     if (layer_index >= _num_layers) {
       return py::none();
     }
 
-    float* mem = _layers[layer_index]->GetBiases();
+    float* mem = _layers[layer_index]->getBiases();
 
     py::capsule free_when_done(
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
@@ -73,22 +73,22 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
   py::class_<thirdai::python::PyNetwork>(submodule, "Network")
       .def(py::init<std::vector<thirdai::bolt::LayerConfig>, uint64_t>(),
            py::arg("layers"), py::arg("input_dim"))
-      .def("Train", &thirdai::python::PyNetwork::Train, py::arg("batch_size"),
+      .def("Train", &thirdai::python::PyNetwork::train, py::arg("batch_size"),
            py::arg("train_data"), py::arg("test_data"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
            py::arg("rebuild") = 0, py::arg("max_test_batches") = 0)
-      .def("GetWeightMatrix", &thirdai::python::PyNetwork::GetWeightMatrix,
+      .def("GetWeightMatrix", &thirdai::python::PyNetwork::getWeightMatrix,
            py::arg("layer_index"))
-      .def("GetBiasVector", &thirdai::python::PyNetwork::GetBiasVector,
+      .def("GetBiasVector", &thirdai::python::PyNetwork::getBiasVector,
            py::arg("layer_index"))
-      .def("GetNumLayers", &thirdai::python::PyNetwork::GetNumLayers)
-      .def("GetLayerSizes", &thirdai::python::PyNetwork::GetLayerSizes)
-      .def("GetInputDim", &thirdai::python::PyNetwork::GetInputDim)
+      .def("GetNumLayers", &thirdai::python::PyNetwork::getNumLayers)
+      .def("GetLayerSizes", &thirdai::python::PyNetwork::getLayerSizes)
+      .def("GetInputDim", &thirdai::python::PyNetwork::getInputDim)
       .def("GetActivationFunctions",
-           &thirdai::python::PyNetwork::GetActivationFunctions)
+           &thirdai::python::PyNetwork::getActivationFunctions)
       .def("GetAccuracyPerEpoch",
-           &thirdai::python::PyNetwork::GetAccuracyPerEpoch)
-      .def("GetTimePerEpoch", &thirdai::python::PyNetwork::GetTimePerEpoch)
+           &thirdai::python::PyNetwork::getAccuracyPerEpoch)
+      .def("GetTimePerEpoch", &thirdai::python::PyNetwork::getTimePerEpoch)
       .def("GetFinalTestAccuracy",
-           &thirdai::python::PyNetwork::GetFinalTestAccuracy);
+           &thirdai::python::PyNetwork::getFinalTestAccuracy);
 }
