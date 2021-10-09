@@ -7,6 +7,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <stdexcept>
+#include <omp.h>
 
 namespace py = pybind11;
 
@@ -63,34 +64,48 @@ utils::Dataset* createSVMDataset(const std::string& dataset_path,
 
 }  // namespace thirdai::python
 
-// TODO(all): Figure out naming convention for python exposed classes and methods
+// TODO(all): Figure out naming convention for python exposed classes and
+// methods
+// TODO(any): Add docstrings to methods
 PYBIND11_MODULE(thirdai, m) {  // NOLINT
 
   auto utils_submodule = m.def_submodule("utils");
-  py::class_<thirdai::utils::Batch>(utils_submodule, "Batch"); // NOLINT
+
+  py::class_<thirdai::utils::Batch>(utils_submodule, "Batch");  // NOLINT
+
   py::class_<thirdai::utils::Dataset>(utils_submodule, "Dataset")
-    .def("__getitem__", &thirdai::utils::Dataset::operator[]);
+      .def("__getitem__", &thirdai::utils::Dataset::operator[],
+           py::return_value_policy::reference)
+      .def("LoadNextSetOfBatches", &thirdai::utils::Dataset::loadNextBatchSet);
+
   py::class_<thirdai::utils::HashFunction>(utils_submodule, "HashFunction")
       .def("GetNumTables", &thirdai::utils::HashFunction::numTables)
       .def("GetRange", &thirdai::utils::HashFunction::range);
 
   py::class_<thirdai::utils::DensifiedMinHash, thirdai::utils::HashFunction>(
       utils_submodule, "DensifiedMinHash")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("hashes_per_table"),
-           py::arg("num_tables"));
+      .def(py::init<uint32_t, uint32_t, uint32_t>(),
+           py::arg("hashes_per_table"), py::arg("num_tables"),
+           py::arg("range"));
 
   utils_submodule.def("load_svm", &thirdai::python::createSVMDataset,
-                      py::arg("dataset_path"), py::arg("batch_size"), py::arg("batches_per_load"),
+                      py::arg("dataset_path"), py::arg("batch_size"),
+                      py::arg("batches_per_load"),
                       "Load an SVM dataset from memory, ready for use with "
                       "e.g. BOLT or FLASH.");
+
+  utils_submodule.def("set_global_num_threads", &omp_set_num_threads,
+                      py::arg("max_num_threads"));
 
   // TODO(any): Rename from flash, and fix all other places in the code
   auto flash_submodule = m.def_submodule("search");
   py::class_<thirdai::search::Flash<uint64_t>>(flash_submodule, "Flash")
       .def(py::init<const thirdai::utils::HashFunction&>(),
            py::arg("hash_function"))
-      .def("AddDataset", &thirdai::search::Flash<uint64_t>::addDataset, py::arg("dataset"))
-      .def("QueryBatch", &thirdai::search::Flash<uint64_t>::queryBatch, py::arg("batch"), py::arg("top_k"), py::arg("pad_zeros") = false);
+      .def("AddDataset", &thirdai::search::Flash<uint64_t>::addDataset,
+           py::arg("dataset"))
+      .def("QueryBatch", &thirdai::search::Flash<uint64_t>::queryBatch,
+           py::arg("batch"), py::arg("top_k"), py::arg("pad_zeros") = false);
 
   auto bolt_submodule = m.def_submodule("bolt");
 

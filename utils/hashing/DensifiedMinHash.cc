@@ -14,11 +14,12 @@
 namespace thirdai::utils {
 
 DensifiedMinHash::DensifiedMinHash(uint32_t hashes_per_table,
-                                   uint32_t num_tables, uint32_t range, uint32_t seed)
+                                   uint32_t num_tables, uint32_t range,
+                                   uint32_t seed)
     : HashFunction(num_tables, range),
       _hashes_per_table(hashes_per_table),
       _total_num_hashes(hashes_per_table * num_tables),
-      _binsize(_range / _total_num_hashes),
+      _binsize(UINT32_MAX / _total_num_hashes),
       _seed(seed) {}
 
 void DensifiedMinHash::hashSingleDense(const float* values, uint32_t dim,
@@ -52,7 +53,7 @@ void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
 
   HashUtils::densifyHashes(hashes.data(), _total_num_hashes);
   HashUtils::defaultCompactHashes(hashes.data(), output, _num_tables,
-                             _hashes_per_table);
+                                  _hashes_per_table);
   for (uint32_t i = 0; i < _num_tables; i++) {
     output[i] %= _range;
   }

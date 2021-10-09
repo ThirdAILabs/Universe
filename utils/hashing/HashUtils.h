@@ -49,20 +49,21 @@ class HashUtils {
     }
   }
 
-
   /**
    * Performas a default hash compaction by compacting hashes into each of the
    * output bins. If length_output *  hashes_per_output_value >= len(hashes),
    * this will segfault, so don't do that. The range of this is UINT32_MAX.
    */
-  static void defaultCompactHashes(const uint32_t* hashes, uint32_t* output_hashes,
-                                uint32_t length_output,
-                                uint32_t hashes_per_output_value) {
+  static void defaultCompactHashes(const uint32_t* hashes,
+                                   uint32_t* output_hashes,
+                                   uint32_t length_output,
+                                   uint32_t hashes_per_output_value) {
     for (uint32_t i = 0; i < length_output; i++) {
       uint32_t current_hash = hashes[i * hashes_per_output_value];
       for (uint32_t j = 1; j < hashes_per_output_value; j++) {
-        // See https://stackoverflow.com/questions/2590677/how-do-i-combine-hash-values-in-c0x
-        // for explanation of the magic number (this is the boost 
+        // See
+        // https://stackoverflow.com/questions/2590677/how-do-i-combine-hash-values-in-c0x
+        // for explanation of the magic number (this is the boost
         // implementation of combining hash values).
         current_hash ^= hashes[i * hashes_per_output_value + j] + 0x9e3779b9 +
                         (current_hash << 6) + (current_hash >> 2);
@@ -71,7 +72,7 @@ class HashUtils {
     }
   }
 
-/**
+  /**
    * Performas a default hash compaction by assigning hashes_per_output_value
    * hash bits to each of the length_output output hashes. Assumes that
    * the input hashes are all either 0 or 1. If length_output *

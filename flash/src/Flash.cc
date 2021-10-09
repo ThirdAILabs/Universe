@@ -2,9 +2,9 @@
 #include "../../utils/hashtable/SampledHashTable.h"
 #include "../../utils/hashtable/VectorHashTable.h"
 #include <algorithm>
+#include <iostream>
 #include <queue>
 #include <vector>
-#include <iostream>
 
 namespace thirdai::search {
 
@@ -25,7 +25,9 @@ Flash<Label_t>::Flash(const utils::HashFunction& function)
 template <typename Label_t>
 void Flash<Label_t>::addDataset(utils::Dataset& dataset) {
   dataset.loadNextBatchSet();
+  uint64_t batch_id = 0;
   while (dataset.numBatches() > 0) {
+    std::cout << batch_id++ << std::endl;
     for (uint64_t batch_id = 0; batch_id < dataset.numBatches(); batch_id++) {
       addBatch(dataset[batch_id]);
     }
@@ -97,8 +99,8 @@ std::vector<std::vector<Label_t>> Flash<Label_t>::queryBatch(
   std::vector<std::vector<Label_t>> results(batch._batch_size);
   uint32_t* hashes = hash(batch);
 
-// #pragma omp parallel for default(none) 
-//     shared(batch, top_k, results, hashes, pad_zeros)
+#pragma omp parallel for default(none) \
+    shared(batch, top_k, results, hashes, pad_zeros)
   for (uint64_t vec_id = 0; vec_id < batch._batch_size; vec_id++) {
     std::vector<Label_t> query_result;
     _hashtable->queryByVector(hashes + vec_id * _num_tables, query_result);
@@ -108,10 +110,6 @@ std::vector<std::vector<Label_t>> Flash<Label_t>::queryBatch(
         results.at(vec_id).push_back(0);
       }
     }
-    for (auto i : results.at(vec_id)) {
-      std::cout << i << " ";
-    }
-    std::cout << std::endl;
   }
 
   delete hashes;
