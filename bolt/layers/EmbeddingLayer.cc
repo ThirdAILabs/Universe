@@ -35,7 +35,7 @@ EmbeddingLayer::EmbeddingLayer(uint32_t num_embedding_lookups,
   _seed = int_dist(gen);
 }
 
-void EmbeddingLayer::FeedForward(uint32_t batch_indx, const uint32_t* tokens,
+void EmbeddingLayer::feedForward(uint32_t batch_indx, const uint32_t* tokens,
                                  uint32_t len) {
   _lens[batch_indx] = len;
   delete[] _embedding_locs[batch_indx];
@@ -62,7 +62,7 @@ void EmbeddingLayer::FeedForward(uint32_t batch_indx, const uint32_t* tokens,
   }
 }
 
-void EmbeddingLayer::Backpropagate(uint32_t batch_indx, float learning_rate) {
+void EmbeddingLayer::backpropagate(uint32_t batch_indx, float learning_rate) {
   for (uint32_t e = 0; e < _num_embedding_lookups; e++) {
     const float* errors = _errors[batch_indx] + e * _lookup_size;
 
@@ -78,8 +78,8 @@ void EmbeddingLayer::Backpropagate(uint32_t batch_indx, float learning_rate) {
   }
 }
 
-void EmbeddingLayer::SetBatchSize(uint32_t new_batch_size) {
-  if (new_batch_size == _batch_size) {
+void EmbeddingLayer::setBatchSize(uint32_t new_batch_size) {
+  if (new_batch_size <= _batch_size) {
     return;
   }
 

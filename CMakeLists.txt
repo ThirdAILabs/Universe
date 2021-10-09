@@ -48,5 +48,13 @@ add_subdirectory(bolt)
 add_subdirectory(utils)
 add_subdirectory(flash)
 
-file(GLOB BOLT_SOURCES bolt/src/*.cc utils/hashing/DWTA.cc utils/hashtable/SampledHashTable.cc)
+file(
+  GLOB BOLT_SOURCES 
+  bolt/layers/*.cc 
+  bolt/networks/*.cc 
+  bolt/utils/*.cc 
+  utils/hashing/DWTA.cc 
+  utils/hashtable/SampledHashTable.cc
+)
+
 pybind11_add_module(thirdai python_bindings/thirdai.cc ${BOLT_SOURCES})

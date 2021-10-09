@@ -4,7 +4,7 @@ add_executable(fully_connected_layer_test FullyConnectedLayerTest.cc)
 target_link_libraries(
   fully_connected_layer_test 
   PRIVATE 
-  bolt_lib
+  bolt_layer_lib
   gtest_main
 )
 
@@ -12,7 +12,7 @@ add_executable(embedding_layer_test EmbeddingLayerTest.cc)
 target_link_libraries(
   embedding_layer_test 
   PRIVATE 
-  bolt_lib
+  bolt_layer_lib
   gtest_main
 )
 

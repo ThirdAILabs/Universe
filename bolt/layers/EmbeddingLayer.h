@@ -17,19 +17,19 @@ class EmbeddingLayer {
                  uint32_t log_embedding_block_size,
                  uint32_t seed = time(nullptr));
 
-  void FeedForward(uint32_t batch_indx, const uint32_t* tokens, uint32_t len);
+  void feedForward(uint32_t batch_indx, const uint32_t* tokens, uint32_t len);
 
-  void Backpropagate(uint32_t batch_indx, float learning_rate);
+  void backpropagate(uint32_t batch_indx, float learning_rate);
 
-  uint32_t GetLen(uint32_t /* unused */) const { return _total_embedding_dim; }
+  uint32_t getEmbeddingDim() const { return _total_embedding_dim; }
 
-  const float* GetEmbedding(uint32_t batch_indx) const {
+  const float* getEmbedding(uint32_t batch_indx) const {
     return _embeddings[batch_indx];
   }
 
-  float* GetErrors(uint32_t batch_indx) { return _errors[batch_indx]; }
+  float* getErrors(uint32_t batch_indx) { return _errors[batch_indx]; }
 
-  void SetBatchSize(uint32_t new_batch_size);
+  void setBatchSize(uint32_t new_batch_size);
 
   EmbeddingLayer(EmbeddingLayer&) = delete;
   EmbeddingLayer(const EmbeddingLayer&&) = delete;
