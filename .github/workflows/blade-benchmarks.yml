@@ -2,6 +2,8 @@ name: benchmarks
 
 # Controls when the workflow will run
 on:
+  push:
+    branches: [ benchmark-tests ]
   # Schedule for every day at 0,7,14,21 UTC (TODO(alan): Change to weekly after testing on main)
   schedule:
     - cron: '0 0,7,14,21 * * *'
@@ -39,7 +41,7 @@ jobs:
           # but this way avoids any potential user changes in cicd/Universe to affect benchmark results.
         command: |
           rm -rf Universe
-          export ACTIONS_ID=${{ github.run_id }}
+          export RUN_ID=${{ github.run_id }}
           export RUN_BOLT=${{ steps.vars.outputs.bolt }}
           export RUN_FLASH=${{ steps.vars.outputs.flash }}
           git clone --branch ${{ steps.vars.outputs.branch }} git@github.com:ThirdAILabs/Universe.git
