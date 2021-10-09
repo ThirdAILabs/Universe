@@ -14,6 +14,8 @@ export NOW=$(date +"%T")
 cd $BASEDIR/../build/
 
 CURRENT_BRANCH=$(git branch --show-current)
+BRANCH_URL="https://github.$(git config remote.origin.url | cut -f2 -d. | tr ':' /)"
+BRANCH_URL+="/tree/$CURRENT_BRANCH"
 MODEL_NAME=$(grep -m 1 "model name" /proc/cpuinfo | sed -e "s/^.*: //")
 NUM_CPUS=$(grep -c ^processor /proc/cpuinfo)
 OTHER_MACHINE_INFO=$(lscpu | egrep 'Socket|Thread|Core')
@@ -23,14 +25,16 @@ UNIT_TESTS=$(ctest -A | tail -3)
 LOGFILE="../$target/$NOW.txt"
 if [ "$RUN_BOLT" == "y" ]
 then
-    echo "Running BOLT benchmarks...logging results into $LOGFILE..."
+    echo "Running BOLT benchmarks..."
 	# TODO(alan):
 	# - Replace this line and add bolt benchmark tests for amzn670.
 	EPOCH_LOGS=$(git describe --tag)
 	echo EPOCH_LOGS >> $LOGFILE
+	BOLT_MSG="BOLT epoch logs can be found in: /home/cicd/logs/$DATE/$NOW.txt"
 else
-    echo "Skipped BOLT benchmarks"
+	BOLT_MSG="Skipped BOLT benchmarks"
 fi
+echo $BOLT_MSG
 
 # TODO(alan): Decide if we want to attach full logs (will need to use S3 or similar to upload remote logs)
 # curl -F token=* \
@@ -54,7 +58,7 @@ payload="
 			\"type\": \"section\",
 			\"text\": {
                 \"type\": \"mrkdwn\", 
-                \"text\": \"Branch: $CURRENT_BRANCH\"
+                \"text\": \"Branch: <$BRANCH_URL|$CURRENT_BRANCH>\"
             }
 		},
 		{
@@ -120,7 +124,7 @@ payload="
             \"type\": \"section\",
 			\"text\": {
                 \"type\": \"mrkdwn\", 
-                \"text\": \"Full epoch logs can be found in: /home/cicd/logs/$DATE/$NOW.txt\"
+                \"text\": \"$BOLT_MSG\"
             }
         },
 	]

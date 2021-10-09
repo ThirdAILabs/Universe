@@ -28,6 +28,7 @@ jobs:
     - name: Declare variables
       shell: bash
       run: |
+        echo hi ${{ github.event.inputs.bolt }}
         echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         echo "##[set-output name=bolt;]$(echo ${{ github.event.inputs.bolt }})"
         echo "##[set-output name=flash;]$(echo ${{ github.event.inputs.flash }})"
