@@ -13,7 +13,7 @@ export NOW=$(date +"%T")
 # We need: Code version, machine information, run time, accuracy, hash seeds
 cd $BASEDIR/../build/
 
-BRANCH=$(git branch --show-current)
+CURRENT_BRANCH=$(git branch --show-current)
 MODEL_NAME=$(grep -m 1 "model name" /proc/cpuinfo | sed -e "s/^.*: //")
 NUM_CPUS=$(grep -c ^processor /proc/cpuinfo)
 OTHER_MACHINE_INFO=$(lscpu | egrep 'Socket|Thread|Core')
@@ -24,14 +24,13 @@ LOGFILE="../$target/$NOW.txt"
 if [ "$RUN_BOLT" == "y" ]
 then
     echo "Running BOLT benchmarks...logging results into $LOGFILE..."
+	# TODO(alan):
+	# - Replace this line and add bolt benchmark tests for amzn670.
+	EPOCH_LOGS=$(git describe --tag)
+	echo EPOCH_LOGS >> $LOGFILE
 else
     echo "Skipped BOLT benchmarks"
 fi
-
-# TODO(alan):
-# - Replace this line and add bolt benchmark tests for amzn670.
-EPOCH_LOGS=$(git describe --tag)
-echo EPOCH_LOGS >> $LOGFILE
 
 # TODO(alan): Decide if we want to attach full logs (will need to use S3 or similar to upload remote logs)
 # curl -F token=* \
@@ -55,7 +54,7 @@ payload="
 			\"type\": \"section\",
 			\"text\": {
                 \"type\": \"mrkdwn\", 
-                \"text\": \"Branch: $BRANCH\"
+                \"text\": \"Branch: $CURRENT_BRANCH\"
             }
 		},
 		{

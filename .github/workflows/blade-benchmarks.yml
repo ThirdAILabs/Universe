@@ -25,10 +25,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Extract branch name
+    - name: Declare variables
       shell: bash
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-      id: extract_branch
+      run: |
+        echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        echo "##[set-output name=bolt;]$(echo ${{ github.event.inputs.bolt }})"
+        echo "##[set-output name=flash;]$(echo ${{ github.event.inputs.flash }})"
+      id: vars
     - name: Run Benchmark Tests
       uses: fifsky/ssh-action@master
       with:
@@ -36,10 +39,9 @@ jobs:
           # but this way avoids any potential user changes in cicd/Universe to affect benchmark results.
         command: |
           rm -rf Universe
-          echo RUN_BOLT=${{ github.event.inputs.bolt }}
-          export RUN_BOLT=${{ github.event.inputs.bolt }}
-          export RUN_FLASH=${{ github.event.inputs.flash }}
-          git clone --branch ${{ steps.extract_branch.outputs.branch }} git@github.com:ThirdAILabs/Universe.git
+          export RUN_BOLT=${{ steps.vars.outputs.bolt }}
+          export RUN_FLASH=${{ steps.vars.outputs.flash }}
+          git clone --branch ${{ steps.vars.outputs.branch }} git@github.com:ThirdAILabs/Universe.git
           cd Universe
           pip3 install .
           bin/regular-benchmark.sh
