@@ -2,11 +2,12 @@ name: benchmarks
 
 # Controls when the workflow will run
 on:
-  push:
+  # TODO(alan): Remove on pull request.
+  pull_request:
     branches: [ benchmark-tests ]
-  # Schedule for every day at 0,7,14,21 UTC (TODO(alan): Change to weekly after testing on main)
+  # Schedule for every day at 0,7,14,21 UTC. TODO(alan): Change to weekly after testing on main.
   schedule:
-    - cron: '0 0,7,14,21 * * *'
+    - cron: '0 0,12 * * *'
   # Allows you to run this workflow manually from the Actions tab.
   # Select the current branch.
   workflow_dispatch:
@@ -40,10 +41,11 @@ jobs:
           # Could also just checkout specific branch (rather than cloning every time and rebuilding cmake targets), 
           # but this way avoids any potential user changes in cicd/Universe to affect benchmark results.
         command: |
-          rm -rf Universe
           export RUN_ID=${{ steps.vars.outputs.run_id }}
           export RUN_BOLT=${{ steps.vars.outputs.bolt }}
           export RUN_FLASH=${{ steps.vars.outputs.flash }}
+
+          rm -rf Universe
           git clone --branch ${{ steps.vars.outputs.branch }} git@github.com:ThirdAILabs/Universe.git
           cd Universe
           pip3 install .
