@@ -33,7 +33,7 @@ for j in range(1, 10):
     # TODO: We have to make reservoirs smaller as we go up to not go OOM
     # on a laptop, see https://github.com/ThirdAILabs/Universe/issues/133 for a 
     # planned fix
-    reservoir_size = max_size_bytes // table_range // tables
+    reservoir_size = min(200, max_size_bytes // table_range // tables)
 
 
     # TODO(josh): Read this in only once when we refactor the dataset class
