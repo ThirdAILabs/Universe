@@ -10,11 +10,11 @@
 #include <vector>
 
 using thirdai::search::Flash;
-using thirdai::utils::Batch;
+using thirdai::utils::CsvBatch;
 using thirdai::utils::FastSRP;
 using thirdai::utils::lsh_testing::CosineSim;
 using thirdai::utils::lsh_testing::DenseVecPair;
-using thirdai::utils::lsh_testing::DenseVector;
+using thirdai::utils::DenseVector;
 using thirdai::utils::lsh_testing::generateRandomDenseUnitVector;
 
 namespace thirdai::search::flash_testing {
@@ -90,12 +90,12 @@ TEST(FlashTest, SmokeTest) {
 
   FastSRP srp_hash(dim, hashes_per_table, num_tables, seed);
   Flash<uint32_t> flash(srp_hash);
-  std::vector<Batch> batches = createBatches(index_vectors, batch_size);
+  std::vector<CsvBatch<uint32_t>> batches = createBatches(index_vectors, batch_size);
   for (auto& batch : batches) {
     flash.addBatch(batch);
   }
 
-  std::vector<Batch> query_batches =
+  std::vector<CsvBatch<uint32_t>> query_batches =
       createBatches(test_vectors, test_vectors.size());
 
   std::vector<std::vector<uint32_t>> results =

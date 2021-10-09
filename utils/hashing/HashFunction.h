@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../dataset/Dataset.h"
+#include "../dataset/batch_types/CsvBatch.h"
+#include "../dataset/batch_types/SvmBatch.h"
 #include "HashUtils.h"
 
 namespace thirdai::utils {
@@ -21,12 +22,22 @@ class HashFunction {
    * the hashes from the first vector, all of the hashes from the second, and
    * so on.
    */
-  void hashBatchParallel(const Batch& batch, uint32_t* output) const {
-    if (batch._batch_type == BATCH_TYPE::SPARSE) {
-      hashSparseParallel(batch._batch_size, batch._indices, batch._values,
-                         batch._lens, output);
-    } else {
-      hashDenseParallel(batch._batch_size, batch._values, batch._dim, output);
+  template <typename Id_t>
+  void hashBatchParallel(const utils::SvmBatch<Id_t>& batch,
+                         uint32_t* output) const {
+#pragma omp parallel for default(none) shared(batch, output)
+    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+      hashSingleSparse(batch[v].indices, batch[v].values, batch[v].len,
+                       output + v * _num_tables);
+    }
+  }
+
+  template <typename Id_t>
+  void hashBatchParallel(const utils::CsvBatch<Id_t>& batch,
+                         uint32_t* output) const {
+#pragma omp parallel for default(none) shared(batch, output)
+    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+      hashSingleDense(batch[v].values, batch[v].dim, output + v * _num_tables);
     }
   }
 
@@ -49,12 +60,18 @@ class HashFunction {
     }
   }
 
-  void hashBatchSerial(const Batch& batch, uint32_t* output) const {
-    if (batch._batch_type == BATCH_TYPE::SPARSE) {
-      hashSparseSerial(batch._batch_size, batch._indices, batch._values,
-                       batch._lens, output);
-    } else {
-      hashDenseParallel(batch._batch_size, batch._values, batch._dim, output);
+  template <typename Batch_t>
+  void hashBatchSerial(const Batch_t& batch, uint32_t* output) const {
+    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+      if (std::is_same<Batch_t, SvmBatch<uint32_t>>::value ||
+          std::is_same<Batch_t, SvmBatch<uint64_t>>::value) {
+        hashSingleSparse(batch[v].indices, batch[v].values, batch[v].len,
+                         output + v * _num_tables);
+      } else if (std::is_same<Batch_t, CsvBatch<uint32_t>>::value ||
+                 std::is_same<Batch_t, CsvBatch<uint64_t>>::value) {
+        hashSingleDense(batch[v].values, batch[v].dim,
+                        output + v * _num_tables);
+      }
     }
   }
 
