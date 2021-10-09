@@ -22,10 +22,14 @@ jobs:
     - name: Run Benchmark Tests
       uses: fifsky/ssh-action@master
       with:
+          # Could also just checkout specific branch (rather than cloning every time and rebuilding cmake targets), 
+          # but this way avoids any potential user changes in cicd/Universe to affect benchmark results.
         command: |
-          git fetch
-          echo "branch" ${{ steps.extract_branch.outputs.branch }}
-
+          rm -rf Universe
+          git clone --branch ${{ steps.extract_branch.outputs.branch }} git@github.com:ThirdAILabs/Universe.git
+          cd Universe
+          pip3 install .
+          bin/regular-benchmark.sh
         host: ${{ secrets.HOST }}
         user: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
