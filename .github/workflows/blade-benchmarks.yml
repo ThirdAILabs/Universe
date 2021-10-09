@@ -4,12 +4,22 @@ name: benchmarks
 on:
   push:
     branches: [ benchmark-tests ]
-  # Schedule for every day at 0,7,14,21 UTC
+  # Schedule for every day at 0,7,14,21 UTC (TODO(alan): Change to weekly after testing on main)
   schedule:
     - cron: '0 0,7,14,21 * * *'
-  # Allows you to run this workflow manually from the Actions tab
+  # Allows you to run this workflow manually from the Actions tab.
+  # Select the current branch.
   workflow_dispatch:
-
+    inputs:
+      bolt:
+        description: 'Run Bolt Benchmarks (y/n)'
+        required: true
+        default: 'y'
+      flash:
+        description: 'Run Flash Benchmarks (y/n)'
+        required: true
+        default: 'n'
+      
 jobs:
   benchmarks:
     runs-on: ubuntu-latest
@@ -26,6 +36,9 @@ jobs:
           # but this way avoids any potential user changes in cicd/Universe to affect benchmark results.
         command: |
           rm -rf Universe
+          echo RUN_BOLT=${{ github.event.inputs.bolt }}
+          export RUN_BOLT=${{ github.event.inputs.bolt }}
+          export RUN_FLASH=${{ github.event.inputs.flash }}
           git clone --branch ${{ steps.extract_branch.outputs.branch }} git@github.com:ThirdAILabs/Universe.git
           cd Universe
           pip3 install .

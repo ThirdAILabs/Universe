@@ -13,6 +13,7 @@ export NOW=$(date +"%T")
 # We need: Code version, machine information, run time, accuracy, hash seeds
 cd $BASEDIR/../build/
 
+BRANCH=$(git branch --show-current)
 MODEL_NAME=$(grep -m 1 "model name" /proc/cpuinfo | sed -e "s/^.*: //")
 NUM_CPUS=$(grep -c ^processor /proc/cpuinfo)
 OTHER_MACHINE_INFO=$(lscpu | egrep 'Socket|Thread|Core')
@@ -20,9 +21,15 @@ CODE_VERSION+=$(git describe --tag)
 UNIT_TESTS=$(ctest -A | tail -3)
 
 LOGFILE="../$target/$NOW.txt"
-echo "Logging results into $LOGFILE"
-# TODO(Alan): 
-# - Replace this line and add bolt benchmark tests and several configs.
+if [ "$RUN_BOLT" == "y" ]
+then
+    echo "Running BOLT benchmarks...logging results into $LOGFILE..."
+else
+    echo "Skipped BOLT benchmarks"
+fi
+
+# TODO(alan):
+# - Replace this line and add bolt benchmark tests for amzn670.
 EPOCH_LOGS=$(git describe --tag)
 echo EPOCH_LOGS >> $LOGFILE
 
@@ -42,6 +49,13 @@ payload="
 			\"text\": {
                 \"type\": \"mrkdwn\", 
                 \"text\": \"------------------ *_Benchmarks for $DATE $NOW _*------------------\n\"
+            }
+		},
+		{
+			\"type\": \"section\",
+			\"text\": {
+                \"type\": \"mrkdwn\", 
+                \"text\": \"Branch: $BRANCH\"
             }
 		},
 		{
@@ -113,12 +127,18 @@ payload="
 	]
 }"
 
-# # ../$BASEDIR/bolt_mnist_test.sh >> $LOGFILE
+# ../$BASEDIR/bolt_mnist_test.sh >> $LOGFILE
 
 # Send Slack Notification
 # Webhook URL for benchmarks channel
 URL="https://hooks.slack.com/services/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"
-
-# TODO(alan): Learn how to format this json better.
 curl -X POST -H 'Content-type: application/json' \
 --data "$payload" $URL
+
+# TODO(alan): Add FLASH benchmarks
+if [ "$RUN_FLASH" == "y" ]
+then
+    echo "Running FLASH benchmarks...logging results into $LOGFILE..."
+else
+    echo "Skipped FLASH benchmarks"
+fi
