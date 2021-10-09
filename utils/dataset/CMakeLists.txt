@@ -1,3 +1,1 @@
-enable_testing()
-
-add_subdirectory(svm)
+add_library(dataset_lib Dataset.cc)

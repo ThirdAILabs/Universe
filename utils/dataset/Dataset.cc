@@ -1,0 +1,37 @@
+#include "Dataset.h"
+#include "batch_types/CsvBatch.h"
+#include "batch_types/SvmBatch.h"
+
+namespace thirdai::utils {
+
+template class InMemoryDataset<SvmBatch<uint32_t>>;
+template class InMemoryDataset<CsvBatch<uint32_t>>;
+
+template <typename Batch_t>
+InMemoryDataset<Batch_t>::InMemoryDataset(const std::string& filename,
+                                          uint32_t batch_size) {
+  std::ifstream file(filename);
+
+  uint32_t curr_id = 0;
+  while (!file.eof()) {
+    _batches.push_back(Batch_t(file, batch_size, curr_id));
+    curr_id += _batches.back().getBatchSize();
+  }
+}
+
+template class StreamedDataset<SvmBatch<uint32_t>>;
+template class StreamedDataset<CsvBatch<uint32_t>>;
+
+template <typename Batch_t>
+std::optional<Batch_t> StreamedDataset<Batch_t>::nextBatch() {
+  if (_file.eof()) {
+    return std::nullopt;
+  }
+
+  Batch_t next(_file, _batch_size, _curr_id);
+  _curr_id += next.getBatchSize();
+
+  return next;
+}
+
+}  // namespace thirdai::utils
