@@ -27,7 +27,7 @@ void Flash<Label_t>::addDataset(utils::Dataset& dataset) {
   dataset.loadNextBatchSet();
   uint64_t batch_id = 0;
   while (dataset.numBatches() > 0) {
-    std::cout << batch_id++ << std::endl;
+    std::cout << "Starting to process batch #" << batch_id++ << std::endl;
     for (uint64_t batch_id = 0; batch_id < dataset.numBatches(); batch_id++) {
       addBatch(dataset[batch_id]);
     }
