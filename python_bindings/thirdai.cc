@@ -6,8 +6,8 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <stdexcept>
 #include <omp.h>
+#include <stdexcept>
 
 namespace py = pybind11;
 
@@ -100,8 +100,8 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
   // TODO(any): Rename from flash, and fix all other places in the code
   auto flash_submodule = m.def_submodule("search");
   py::class_<thirdai::search::Flash<uint64_t>>(flash_submodule, "Flash")
-      .def(py::init<const thirdai::utils::HashFunction&>(),
-           py::arg("hash_function"))
+      .def(py::init<const thirdai::utils::HashFunction&, uint32_t>(),
+           py::arg("hash_function"), py::arg("reservoir_size"))
       .def("AddDataset", &thirdai::search::Flash<uint64_t>::addDataset,
            py::arg("dataset"))
       .def("QueryBatch", &thirdai::search::Flash<uint64_t>::queryBatch,

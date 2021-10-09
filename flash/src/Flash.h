@@ -25,6 +25,12 @@ class Flash {
   explicit Flash(const utils::HashFunction& function);
 
   /**
+   * This is the same as the single argument constructor, except the supporting
+   * hash table has a max reservoir size.
+   **/
+  Flash(const utils::HashFunction& function, uint32_t reservoir_size);
+
+  /**
    * Insert all batches in the dataset the Flash data structure.
    * loadNextBatches on the dataset should not have been called yet, and this
    * will run through the entire dataset.
