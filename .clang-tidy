@@ -82,4 +82,4 @@ HeaderFilterRegex: ".*"
 #   - key:    readability-magic-numbers.IgnoreAllFloatingPointValues
 #     value:  '1'
 WarningsAsErrors: "*"
-ExtraArgs: [-fopenmp]
+ExtraArgs: [-fopenmp=libomp]
