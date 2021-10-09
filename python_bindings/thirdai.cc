@@ -6,7 +6,9 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#ifndef __clang__
 #include <omp.h>
+#endif
 #include <stdexcept>
 
 namespace py = pybind11;
@@ -94,10 +96,13 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
                       "Load an SVM dataset from memory, ready for use with "
                       "e.g. BOLT or FLASH.");
 
+#ifndef __clang__
   utils_submodule.def("set_global_num_threads", &omp_set_num_threads,
                       py::arg("max_num_threads"));
+#endif
 
   // TODO(any): Rename from flash, and fix all other places in the code
+  // TODO(josh): I think memory is leaking here
   auto flash_submodule = m.def_submodule("search");
   py::class_<thirdai::search::Flash<uint64_t>>(flash_submodule, "Flash")
       .def(py::init<const thirdai::utils::HashFunction&, uint32_t>(),

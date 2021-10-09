@@ -24,7 +24,7 @@ utils.set_global_num_threads(1)
 
 
 r1_at_100_recall_time_pairs = []
-max_size_bytes = 10000000000
+max_size_bytes = 6000000000
 table_range = 1000000
 for j in range(1, 10):
     tables = 2**j 
