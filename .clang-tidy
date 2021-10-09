@@ -70,7 +70,7 @@ Checks: >
          modernize-*, -modernize-use-*, -modernize-avoid-c-arrays,
          openmp-*, mpi-*,
          performance-*, -performance-noexcept-move-constructor,
-         readability-*, -readability-redundant-member-init, -readability-implicit-bool-conversion, -readability-isolate-declaration, -readability-function-cognitive-complexity, -readability-magic-numbers
+         readability-*, -readability-redundant-member-init, -readability-implicit-bool-conversion, -readability-isolate-declaration, -readability-function-cognitive-complexity, -readability-magic-numbers,
 HeaderFilterRegex: ".*"
 # TODO: Add these back in if we can figure out how to exclude the hashing 
 # directory from magic numbers checks
