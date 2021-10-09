@@ -14,9 +14,9 @@ export NOW=$(date +"%T")
 cd $BASEDIR/../build/
 
 CURRENT_BRANCH=$(git branch --show-current)
-BRANCH_URL="https://github.$(git config remote.origin.url | cut -f2 -d. | tr ':' /)"
-BRANCH_URL+="/tree/$CURRENT_BRANCH"
-ACTIONS_URL=$BRANCH_URL + "/runs/$RUN_ID"
+REPO_URL="https://github.$(git config remote.origin.url | cut -f2 -d. | tr ':' /)"
+BRANCH_URL="$REPO_URL/tree/$CURRENT_BRANCH"
+ACTIONS_URL="$REPO_URL/actions/runs/$RUN_ID"
 MODEL_NAME=$(grep -m 1 "model name" /proc/cpuinfo | sed -e "s/^.*: //")
 NUM_CPUS=$(grep -c ^processor /proc/cpuinfo)
 OTHER_MACHINE_INFO=$(lscpu | egrep 'Socket|Thread|Core')
@@ -59,7 +59,7 @@ payload="
 			\"type\": \"section\",
 			\"text\": {
                 \"type\": \"mrkdwn\", 
-                \"text\": \"On branch: <$BRANCH_URL|$CURRENT_BRANCH>\n<$ACTIONS_URL|GitHub Actions Logs>\"
+                \"text\": \"Branch: <$BRANCH_URL|$CURRENT_BRANCH>\n<$ACTIONS_URL|GitHub Actions Logs>\"
             }
 		},
 		{
