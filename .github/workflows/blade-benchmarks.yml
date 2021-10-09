@@ -5,7 +5,7 @@ on:
   # TODO(alan): Remove on pull request.
   pull_request:
     branches: [ benchmark-tests ]
-  # Schedule for every day at 0,7,14,21 UTC. TODO(alan): Change to weekly after testing on main.
+  # Schedule for every day at 0:00 and 12:00 UTC. TODO(alan): Change to weekly after testing on main.
   schedule:
     - cron: '0 0,12 * * *'
   # Allows you to run this workflow manually from the Actions tab.
