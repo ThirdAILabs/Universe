@@ -1,0 +1,56 @@
+name: benchmarks
+
+# Controls when the workflow will run
+on:
+  push:
+    branches: [ benchmark-tests ]
+  pull_request:
+    branches: [ benchmark-tests ]
+  # Schedule for every day at 0:00 and 12:00 UTC. TODO(alan): Change to weekly after testing on main.
+  schedule:
+    - cron: '0 0,12 * * *'
+  # Allows you to run this workflow manually from the Actions tab.
+  # Select the current branch.
+  workflow_dispatch:
+    inputs:
+      bolt:
+        description: 'Run Bolt Benchmarks (y/n)'
+        required: true
+        default: 'y'
+      flash:
+        description: 'Run Flash Benchmarks (y/n)'
+        required: true
+        default: 'n'
+      
+jobs:
+  benchmarks:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Declare variables
+      shell: bash
+      run: |
+        echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        echo "##[set-output name=run_id;]$(echo ${{ github.run_id }})"
+        echo ${{ github.run_id }}
+        echo "##[set-output name=bolt;]$(echo ${{ github.event.inputs.bolt }})"
+        echo "##[set-output name=flash;]$(echo ${{ github.event.inputs.flash }})"
+      id: vars
+    - name: Run Benchmark Tests
+      uses: fifsky/ssh-action@master
+      with:
+          # Could also just checkout specific branch (rather than cloning every time and rebuilding cmake targets), 
+          # but this way avoids any potential user changes in cicd/Universe to affect benchmark results.
+        command: |
+          export RUN_ID=${{ steps.vars.outputs.run_id }}
+          export RUN_BOLT=${{ steps.vars.outputs.bolt }}
+          export RUN_FLASH=${{ steps.vars.outputs.flash }}
+
+          rm -rf Universe
+          git clone --branch ${{ steps.vars.outputs.branch }} git@github.com:ThirdAILabs/Universe.git
+          cd Universe
+          pip3 install .
+          bin/regular-benchmark.sh
+        host: ${{ secrets.HOST }}
+        user: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
