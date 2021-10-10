@@ -16,6 +16,14 @@ class CsvBatch {
     throw std::runtime_error("CsvBatch constructor is not yet implemented");
   }
 
+  // Take r-value reference for vectors to force a move.
+  CsvBatch(std::vector<DenseVector>&& vectors,
+           std::vector<std::vector<uint32_t>>&& labels, Id_t start_id)
+      : _vectors(std::move(vectors)),
+        _batch_size(vectors.size()),
+        _labels(std::move(labels)),
+        _start_id(start_id) {}
+
   const DenseVector& operator[](uint32_t i) const { return _vectors[i]; };
 
   const DenseVector& at(uint32_t i) const { return _vectors.at(i); }

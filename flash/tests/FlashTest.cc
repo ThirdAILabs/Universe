@@ -11,38 +11,34 @@
 
 using thirdai::search::Flash;
 using thirdai::utils::CsvBatch;
+using thirdai::utils::DenseVector;
 using thirdai::utils::FastSRP;
 using thirdai::utils::lsh_testing::CosineSim;
 using thirdai::utils::lsh_testing::DenseVecPair;
-using thirdai::utils::DenseVector;
 using thirdai::utils::lsh_testing::generateRandomDenseUnitVector;
 
 namespace thirdai::search::flash_testing {
 
 /** Creates a vector of Batches with size batch_size that point to the
  * input_vectors */
-std::vector<Batch> createBatches(std::vector<DenseVector>& input_vectors,
-                                 uint32_t batch_size) {
-  std::vector<Batch> result;
+std::vector<CsvBatch<uint32_t>> createBatches(
+    std::vector<DenseVector>& input_vectors, uint32_t batch_size) {
+  std::vector<CsvBatch<uint32_t>> result;
   uint32_t current_vector_index = 0;
   while (current_vector_index < input_vectors.size()) {
     uint32_t next_batch_size = std::min(
         static_cast<uint32_t>(input_vectors.size() - current_vector_index),
         batch_size);
-    Batch next_batch(next_batch_size, thirdai::utils::BATCH_TYPE::DENSE,
-                     thirdai::utils::LABEL_TYPE::UNLABELED,
-                     thirdai::utils::ID_TYPE::SEQUENTIAL,
 
-                     input_vectors.at(0).dim);
-    next_batch._starting_id = current_vector_index;
-    for (uint32_t batch_vec = 0; batch_vec < next_batch_size; batch_vec++) {
-      next_batch._values[batch_vec] =
-          input_vectors.at(batch_vec + current_vector_index).values.data();
+    std::vector<DenseVector> batch_vecs;
+    for (uint32_t i = 0; i < next_batch_size; i++) {
+      batch_vecs.push_back(
+          std::move(input_vectors.at(current_vector_index + i)));
     }
-    result.push_back(std::move(next_batch));
+
+    result.push_back(CsvBatch<uint32_t>(std::move(batch_vecs), {}, current_vector_index));
     current_vector_index += next_batch_size;
   }
-
   return result;
 }
 
@@ -90,7 +86,8 @@ TEST(FlashTest, SmokeTest) {
 
   FastSRP srp_hash(dim, hashes_per_table, num_tables, seed);
   Flash<uint32_t> flash(srp_hash);
-  std::vector<CsvBatch<uint32_t>> batches = createBatches(index_vectors, batch_size);
+  std::vector<CsvBatch<uint32_t>> batches =
+      createBatches(index_vectors, batch_size);
   for (auto& batch : batches) {
     flash.addBatch(batch);
   }
@@ -108,13 +105,13 @@ TEST(FlashTest, SmokeTest) {
 
 /** Tests that adding a batch with an id too large throws an error */
 TEST(FlashTest, IdTooLargeTest) {
-  Batch error_batch;
-  error_batch._starting_id = (1 << 16) + 1;
-  error_batch._id_type = thirdai::utils::ID_TYPE::SEQUENTIAL;
-  FastSRP srp_hash(1, 1, 1, 1);
-  Flash<uint16_t> flash(srp_hash);
-  // Need a nolint here because of course google uses a goto
-  ASSERT_THROW(flash.addBatch(error_batch), std::invalid_argument);  // NOLINT
+  // Batch error_batch;
+  // error_batch._starting_id = (1 << 16) + 1;
+  // error_batch._id_type = thirdai::utils::ID_TYPE::SEQUENTIAL;
+  // FastSRP srp_hash(1, 1, 1, 1);
+  // Flash<uint16_t> flash(srp_hash);
+  // // Need a nolint here because of course google uses a goto
+  // ASSERT_THROW(flash.addBatch(error_batch), std::invalid_argument);  // NOLINT
 }
 
 }  // namespace thirdai::search::flash_testing

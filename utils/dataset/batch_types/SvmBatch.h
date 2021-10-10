@@ -13,6 +13,14 @@ class SvmBatch {
   explicit SvmBatch(std::ifstream& file, uint32_t target_batch_size,
                     Id_t start_id);
 
+  // Take r-value reference for vectors to force a move.
+  SvmBatch(std::vector<SparseVector>&& vectors,
+           std::vector<std::vector<uint32_t>>&& labels, Id_t start_id)
+      : _vectors(std::move(vectors)),
+        _batch_size(vectors.size()),
+        _labels(std::move(labels)),
+        _start_id(start_id) {}
+
   const SparseVector& operator[](uint32_t i) const { return _vectors[i]; }
 
   const SparseVector& at(uint32_t i) const { return _vectors.at(i); }

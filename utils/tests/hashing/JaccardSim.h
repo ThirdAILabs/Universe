@@ -72,9 +72,12 @@ class JaccardSim : public Similarity {
     std::sort(indices_2.begin(), indices_2.end());
 
     std::vector<float> empty_values;
-    SparseVector v1 = {indices_1, empty_values, num_non_zeros};
-    SparseVector v2 = {indices_2, empty_values, num_non_zeros};
-    return {v1, v2, getJaccardSim(indices_1, indices_2)};
+    SparseVector v1(num_non_zeros);// = {indices_1, empty_values, num_non_zeros};
+    SparseVector v2(num_non_zeros);// = {indices_2, empty_values, num_non_zeros};
+    std::copy(indices_1.begin(), indices_1.end(), v1.indices);
+    std::copy(indices_2.begin(), indices_2.end(), v2.indices);
+
+    return {v1, v2, getJaccardSim(v1.indices, v1.len, v2.indices, v2.len)};
   }
 
   float getSim(const DenseVector& v1, DenseVector& v2) override {
@@ -84,24 +87,25 @@ class JaccardSim : public Similarity {
   }
 
   float getSim(const SparseVector& v1, const SparseVector& v2) override {
-    return getJaccardSim(v1.indices, v2.indices);
+    return getJaccardSim(v1.indices, v1.len, v2.indices, v2.len);
   }
 
   /** Returns the jacard similarity of two sets, represented as sorted vectors
    */
-  static float getJaccardSim(const std::vector<uint32_t>& s1,
-                             const std::vector<uint32_t>& s2) {
+  static float getJaccardSim(const uint32_t* s1, uint32_t l1,
+                             const uint32_t* s2, uint32_t l2) {
     uint32_t intersection_size = 0;
     uint32_t s1_index = 0;
-    for (uint32_t s2_value : s2) {
-      while (s1_index < s1.size() && s1.at(s1_index) < s2_value) {
+    for (uint32_t j =0 ; j < l2; j++) {
+      uint32_t s2_value = s2[j];
+      while (s1_index < l1 && s1[s1_index] < s2_value) {
         s1_index++;
       }
-      if (s1_index < s1.size() && s1.at(s1_index) == s2_value) {
+      if (s1_index < l1 && s1[s1_index] == s2_value) {
         intersection_size++;
       }
     }
-    const uint32_t union_size = s1.size() + s2.size() - intersection_size;
+    const uint32_t union_size = l1 + l2 - intersection_size;
     return intersection_size / static_cast<float>(union_size);
   }
 
