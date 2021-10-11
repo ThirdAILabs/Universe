@@ -8,16 +8,17 @@
 
 namespace thirdai::utils {
 
-class CsvBatch {
+class DenseBatch {
  public:
-  explicit CsvBatch(std::ifstream& /*file*/, uint32_t /*target_batch_size*/,
-                    uint64_t /*start_id*/) {
-    throw std::runtime_error("CsvBatch constructor is not yet implemented");
+  DenseBatch(std::ifstream& /*file*/, uint32_t /*target_batch_size*/,
+             uint64_t /*start_id*/) {
+    throw std::runtime_error(
+        "Loading dense batch directly from file not yet implemented");
   }
 
   // Take r-value reference for vectors to force a move.
-  CsvBatch(std::vector<DenseVector>&& vectors,
-           std::vector<std::vector<uint32_t>>&& labels, uint64_t start_id)
+  DenseBatch(std::vector<DenseVector>&& vectors,
+             std::vector<std::vector<uint32_t>>&& labels, uint64_t start_id)
       : _vectors(std::move(vectors)),
         _batch_size(_vectors.size()),
         _labels(std::move(labels)),

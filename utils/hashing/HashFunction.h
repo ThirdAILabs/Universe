@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../dataset/batch_types/CsvBatch.h"
-#include "../dataset/batch_types/SvmBatch.h"
+#include "../dataset/batch_types/DenseBatch.h"
+#include "../dataset/batch_types/SparseBatch.h"
 #include "HashUtils.h"
 
 namespace thirdai::utils {
@@ -22,7 +22,8 @@ class HashFunction {
    * the hashes from the first vector, all of the hashes from the second, and
    * so on.
    */
-  void hashBatchParallel(const utils::SvmBatch& batch, uint32_t* output) const {
+  void hashBatchParallel(const utils::SparseBatch& batch,
+                         uint32_t* output) const {
 #pragma omp parallel for default(none) shared(batch, output)
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
       hashSingleSparse(batch[v].indices, batch[v].values, batch[v].len,
@@ -30,7 +31,8 @@ class HashFunction {
     }
   }
 
-  void hashBatchParallel(const utils::CsvBatch& batch, uint32_t* output) const {
+  void hashBatchParallel(const utils::DenseBatch& batch,
+                         uint32_t* output) const {
 #pragma omp parallel for default(none) shared(batch, output)
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
       hashSingleDense(batch[v].values, batch[v].dim, output + v * _num_tables);
@@ -56,14 +58,15 @@ class HashFunction {
     }
   }
 
-  void hashBatchSerial(const utils::SvmBatch& batch, uint32_t* output) const {
+  void hashBatchSerial(const utils::SparseBatch& batch,
+                       uint32_t* output) const {
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
       hashSingleSparse(batch[v].indices, batch[v].values, batch[v].len,
                        output + v * _num_tables);
     }
   }
 
-  void hashBatchSerial(const utils::CsvBatch& batch, uint32_t* output) const {
+  void hashBatchSerial(const utils::DenseBatch& batch, uint32_t* output) const {
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
       hashSingleDense(batch[v].values, batch[v].dim, output + v * _num_tables);
     }

@@ -1,1 +1,1 @@
-add_library(batch_lib SvmBatch.cc)
+add_library(batch_lib SparseBatch.cc)

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "batch_types/CsvBatch.h"
-#include "batch_types/SvmBatch.h"
+#include "batch_types/DenseBatch.h"
+#include "batch_types/SparseBatch.h"
 #include <cassert>
 #include <cstdint>
 #include <fstream>

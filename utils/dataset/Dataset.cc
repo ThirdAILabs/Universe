@@ -1,11 +1,11 @@
 #include "Dataset.h"
-#include "batch_types/CsvBatch.h"
-#include "batch_types/SvmBatch.h"
+#include "batch_types/DenseBatch.h"
+#include "batch_types/SparseBatch.h"
 
 namespace thirdai::utils {
 
-template class InMemoryDataset<SvmBatch>;
-template class InMemoryDataset<CsvBatch>;
+template class InMemoryDataset<SparseBatch>;
+template class InMemoryDataset<DenseBatch>;
 
 template <typename Batch_t>
 InMemoryDataset<Batch_t>::InMemoryDataset(const std::string& filename,
@@ -21,8 +21,8 @@ InMemoryDataset<Batch_t>::InMemoryDataset(const std::string& filename,
   file.close();
 }
 
-template class StreamedDataset<SvmBatch>;
-template class StreamedDataset<CsvBatch>;
+template class StreamedDataset<SparseBatch>;
+template class StreamedDataset<DenseBatch>;
 
 template <typename Batch_t>
 std::optional<Batch_t> StreamedDataset<Batch_t>::nextBatch() {
