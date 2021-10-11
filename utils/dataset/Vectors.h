@@ -116,4 +116,4 @@ struct DenseVector {
   ~DenseVector() { delete[] values; }
 };
 
-};  // namespace thirdai::utils
+}  // namespace thirdai::utils
