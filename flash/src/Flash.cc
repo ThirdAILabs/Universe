@@ -72,7 +72,7 @@ void Flash<Label_t>::addBatch(const Batch_t& batch) {
   verifyBatchSequentialIds(batch);
   _hashtable->insertSequential(batch.getBatchSize(), batch.id(0), hashes);
 
-  delete hashes;
+  delete[] hashes;
 }
 
 template <typename Label_t>
@@ -141,7 +141,7 @@ std::vector<std::vector<Label_t>> Flash<Label_t>::queryBatch(
     }
   }
 
-  delete hashes;
+  delete[] hashes;
 
   return results;
 }
