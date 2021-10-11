@@ -6,19 +6,8 @@ add_library(
   LSHTestHelper.cc
 )
 
-add_library(
-  avalanche_timed_test_suite_lib
-  AvalancheTimedTestSuite.h
-)
-
 target_link_libraries(
   lsh_test_helper_lib
-  PRIVATE
-  gtest_main
-)
-
-target_link_libraries(
-  avalanche_timed_test_suite_lib
   PRIVATE
   gtest_main
 )
@@ -52,7 +41,6 @@ set(
   LIBS 
   hash_function_lib
   lsh_test_helper_lib
-  avalanche_timed_test_suite_lib
   gtest_main
 )
 

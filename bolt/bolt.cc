@@ -1,7 +1,7 @@
-#include "src/ConfigReader.h"
-#include "src/DataLoader.h"
-#include "src/Layer.h"
-#include "src/Network.h"
+#include "layers/Layer.h"
+#include "networks/Network.h"
+#include "utils/ConfigReader.h"
+#include "utils/DataLoader.h"
 #include <chrono>
 #include <iostream>
 #include <vector>
@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
 
   bolt::ConfigReader config(argv[1]);
 
-  uint32_t num_layers = config.IntVal("num_layers");
+  uint32_t num_layers = config.intVal("num_layers");
   std::vector<bolt::LayerConfig> layers;
 
   for (uint32_t l = 0; l < num_layers; l++) {
@@ -25,28 +25,28 @@ int main(int argc, char** argv) {
       func = bolt::ActivationFunc::Softmax;
     }
     layers.emplace_back(
-        config.IntVal("dims", l), config.FloatVal("sparsity", l), func,
-        bolt::SamplingConfig(config.IntVal("hashes_per_table", l),
-                             config.IntVal("num_tables", l),
-                             config.IntVal("range_pow", l),
-                             config.IntVal("reservoir_size", l)));
+        config.intVal("dims", l), config.floatVal("sparsity", l), func,
+        bolt::SamplingConfig(config.intVal("hashes_per_table", l),
+                             config.intVal("num_tables", l),
+                             config.intVal("range_pow", l),
+                             config.intVal("reservoir_size", l)));
   }
 
-  bolt::Network network(layers, config.IntVal("input_dim"));
+  bolt::Network network(layers, config.intVal("input_dim"));
 
-  float learning_rate = config.FloatVal("learning_rate");
-  uint32_t epochs = config.IntVal("epochs");
-  uint32_t batch_size = config.IntVal("batch_size");
-  uint32_t rehash = config.IntVal("rehash");
-  uint32_t rebuild = config.IntVal("rebuild");
+  float learning_rate = config.floatVal("learning_rate");
+  uint32_t epochs = config.intVal("epochs");
+  uint32_t batch_size = config.intVal("batch_size");
+  uint32_t rehash = config.intVal("rehash");
+  uint32_t rebuild = config.intVal("rebuild");
 
   uint32_t max_test_batches = std::numeric_limits<uint32_t>::max();
-  if (config.ValExists("max_test_batches")) {
-    max_test_batches = config.IntVal("max_test_batches");
+  if (config.valExists("max_test_batches")) {
+    max_test_batches = config.intVal("max_test_batches");
   }
 
-  network.Train(batch_size, config.StrVal("train_data"),
-                config.StrVal("test_data"), learning_rate, epochs, rehash,
+  network.train(batch_size, config.strVal("train_data"),
+                config.strVal("test_data"), learning_rate, epochs, rehash,
                 rebuild, max_test_batches);
 
   return 0;
