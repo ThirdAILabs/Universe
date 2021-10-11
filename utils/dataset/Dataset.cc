@@ -4,11 +4,8 @@
 
 namespace thirdai::utils {
 
-template class InMemoryDataset<SvmBatch<uint32_t>>;
-template class InMemoryDataset<SvmBatch<uint64_t>>;
-
-template class InMemoryDataset<CsvBatch<uint32_t>>;
-template class InMemoryDataset<CsvBatch<uint64_t>>;
+template class InMemoryDataset<SvmBatch>;
+template class InMemoryDataset<CsvBatch>;
 
 template <typename Batch_t>
 InMemoryDataset<Batch_t>::InMemoryDataset(const std::string& filename,
@@ -24,11 +21,8 @@ InMemoryDataset<Batch_t>::InMemoryDataset(const std::string& filename,
   file.close();
 }
 
-template class StreamedDataset<SvmBatch<uint32_t>>;
-template class StreamedDataset<SvmBatch<uint64_t>>;
-
-template class StreamedDataset<CsvBatch<uint32_t>>;
-template class StreamedDataset<CsvBatch<uint64_t>>;
+template class StreamedDataset<SvmBatch>;
+template class StreamedDataset<CsvBatch>;
 
 template <typename Batch_t>
 std::optional<Batch_t> StreamedDataset<Batch_t>::nextBatch() {

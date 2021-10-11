@@ -3,12 +3,9 @@
 
 namespace thirdai::utils {
 
-template class SvmBatch<uint32_t>;
-template class SvmBatch<uint64_t>;
 
-template <typename Id_t>
-SvmBatch<Id_t>::SvmBatch(std::ifstream& file, uint32_t target_batch_size,
-                         Id_t start_id)
+SvmBatch::SvmBatch(std::ifstream& file, uint32_t target_batch_size,
+                         uint64_t start_id)
     : _batch_size(0), _start_id(start_id) {
   std::string line;
   while (_batch_size < target_batch_size && std::getline(file, line)) {

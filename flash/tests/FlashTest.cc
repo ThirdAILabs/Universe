@@ -21,9 +21,9 @@ namespace thirdai::search::flash_testing {
 
 /** Creates a vector of Batches with size batch_size that point to the
  * input_vectors */
-std::vector<CsvBatch<uint32_t>> createBatches(
-    std::vector<DenseVector>& input_vectors, uint32_t batch_size) {
-  std::vector<CsvBatch<uint32_t>> result;
+std::vector<CsvBatch> createBatches(std::vector<DenseVector>& input_vectors,
+                                    uint32_t batch_size) {
+  std::vector<CsvBatch> result;
   uint32_t current_vector_index = 0;
   while (current_vector_index < input_vectors.size()) {
     uint32_t next_batch_size = std::min(
@@ -35,8 +35,7 @@ std::vector<CsvBatch<uint32_t>> createBatches(
       batch_vecs.push_back(
           std::move(input_vectors.at(current_vector_index + i)));
     }
-
-    result.push_back(CsvBatch<uint32_t>(std::move(batch_vecs), {}, current_vector_index));
+    result.push_back(CsvBatch(std::move(batch_vecs), {}, current_vector_index));
     current_vector_index += next_batch_size;
   }
   return result;
@@ -86,13 +85,12 @@ TEST(FlashTest, SmokeTest) {
 
   FastSRP srp_hash(dim, hashes_per_table, num_tables, seed);
   Flash<uint32_t> flash(srp_hash);
-  std::vector<CsvBatch<uint32_t>> batches =
-      createBatches(index_vectors, batch_size);
+  std::vector<CsvBatch> batches = createBatches(index_vectors, batch_size);
   for (auto& batch : batches) {
     flash.addBatch(batch);
   }
 
-  std::vector<CsvBatch<uint32_t>> query_batches =
+  std::vector<CsvBatch> query_batches =
       createBatches(test_vectors, test_vectors.size());
 
   std::vector<std::vector<uint32_t>> results =
@@ -105,13 +103,11 @@ TEST(FlashTest, SmokeTest) {
 
 /** Tests that adding a batch with an id too large throws an error */
 TEST(FlashTest, IdTooLargeTest) {
-  // Batch error_batch;
-  // error_batch._starting_id = (1 << 16) + 1;
-  // error_batch._id_type = thirdai::utils::ID_TYPE::SEQUENTIAL;
-  // FastSRP srp_hash(1, 1, 1, 1);
-  // Flash<uint16_t> flash(srp_hash);
-  // // Need a nolint here because of course google uses a goto
-  // ASSERT_THROW(flash.addBatch(error_batch), std::invalid_argument);  // NOLINT
+  CsvBatch error_batch({}, {}, (static_cast<uint64_t>(1) << 32) + 1);
+  FastSRP srp_hash(1, 1, 1, 1);
+  Flash<uint32_t> flash(srp_hash);
+  // Need a nolint here because of course google uses a goto
+  ASSERT_THROW(flash.addBatch(error_batch), std::invalid_argument);  // NOLINT
 }
 
 }  // namespace thirdai::search::flash_testing

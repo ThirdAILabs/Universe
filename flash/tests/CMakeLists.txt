@@ -12,6 +12,7 @@ target_link_libraries(
   hash_function_lib
   flash_lib
   gtest_main
+  dataset_lib
 )
 
 gtest_discover_tests(flash_test)

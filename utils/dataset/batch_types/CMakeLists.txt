@@ -1,0 +1,1 @@
+add_library(batch_lib SvmBatch.cc)

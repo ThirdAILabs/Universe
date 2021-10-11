@@ -20,7 +20,9 @@ class InMemoryDataset {
   // filenames
   InMemoryDataset(const std::string& filename, uint32_t batch_size);
 
-  const Batch_t& operator[](uint32_t i) const;
+  const Batch_t& operator[](uint32_t i) const { return _batches[i]; }
+
+  const Batch_t& at(uint32_t i) const { return _batches.at(i); }
 
   uint32_t numBatches() const { return _batches.size(); }
 

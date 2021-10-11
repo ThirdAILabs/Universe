@@ -19,10 +19,15 @@ Flash<Label_t>::Flash(const utils::HashFunction& function)
 // TODO(josh/nicholas): Figure out why the SampledHashTable doesn't work well
 // _hashtable(new utils::SampledHashTable<Label_t>(_num_tables, 100, _range)) {}
 
-template void Flash<uint32_t>::addDataset<utils::SvmBatch<uint32_t>>(
-    utils::InMemoryDataset<utils::SvmBatch<uint32_t>>&);
-template void Flash<uint32_t>::addDataset<utils::SvmBatch<uint64_t>>(
-    utils::InMemoryDataset<utils::SvmBatch<uint64_t>>&);
+template void Flash<uint32_t>::addDataset<utils::SvmBatch>(
+    utils::InMemoryDataset<utils::SvmBatch>&);
+template void Flash<uint64_t>::addDataset<utils::SvmBatch>(
+    utils::InMemoryDataset<utils::SvmBatch>&);
+
+template void Flash<uint32_t>::addDataset<utils::CsvBatch>(
+    utils::InMemoryDataset<utils::CsvBatch>&);
+template void Flash<uint64_t>::addDataset<utils::CsvBatch>(
+    utils::InMemoryDataset<utils::CsvBatch>&);
 
 template <typename Label_t>
 template <typename Batch_t>
@@ -32,10 +37,15 @@ void Flash<Label_t>::addDataset(utils::InMemoryDataset<Batch_t>& dataset) {
   }
 }
 
-template void Flash<uint32_t>::addDataset<utils::SvmBatch<uint32_t>>(
-    utils::StreamedDataset<utils::SvmBatch<uint32_t>>&);
-template void Flash<uint64_t>::addDataset<utils::SvmBatch<uint64_t>>(
-    utils::StreamedDataset<utils::SvmBatch<uint64_t>>&);
+template void Flash<uint32_t>::addDataset<utils::SvmBatch>(
+    utils::StreamedDataset<utils::SvmBatch>&);
+template void Flash<uint64_t>::addDataset<utils::SvmBatch>(
+    utils::StreamedDataset<utils::SvmBatch>&);
+
+template void Flash<uint32_t>::addDataset<utils::CsvBatch>(
+    utils::StreamedDataset<utils::CsvBatch>&);
+template void Flash<uint64_t>::addDataset<utils::CsvBatch>(
+    utils::StreamedDataset<utils::CsvBatch>&);
 
 template <typename Label_t>
 template <typename Batch_t>
@@ -45,11 +55,15 @@ void Flash<Label_t>::addDataset(utils::StreamedDataset<Batch_t>& dataset) {
   }
 }
 
-template void Flash<uint32_t>::addBatch<utils::SvmBatch<uint32_t>>(
-    const utils::SvmBatch<uint32_t>&);
+template void Flash<uint32_t>::addBatch<utils::SvmBatch>(
+    const utils::SvmBatch&);
+template void Flash<uint64_t>::addBatch<utils::SvmBatch>(
+    const utils::SvmBatch&);
 
-template void Flash<uint64_t>::addBatch<utils::SvmBatch<uint64_t>>(
-    const utils::SvmBatch<uint64_t>&);
+template void Flash<uint32_t>::addBatch<utils::CsvBatch>(
+    const utils::CsvBatch&);
+template void Flash<uint64_t>::addBatch<utils::CsvBatch>(
+    const utils::CsvBatch&);
 
 template <typename Label_t>
 template <typename Batch_t>
@@ -94,12 +108,18 @@ Label_t Flash<Label_t>::verify_and_convert_id(uint64_t id) const {
 }
 
 template std::vector<std::vector<uint32_t>>
-Flash<uint32_t>::queryBatch<utils::SvmBatch<uint32_t>>(
-    const utils::SvmBatch<uint32_t>&, uint32_t, bool) const;
-
+Flash<uint32_t>::queryBatch<utils::SvmBatch>(const utils::SvmBatch&, uint32_t,
+                                             bool) const;
 template std::vector<std::vector<uint64_t>>
-Flash<uint64_t>::queryBatch<utils::SvmBatch<uint64_t>>(
-    const utils::SvmBatch<uint64_t>&, uint32_t, bool) const;
+Flash<uint64_t>::queryBatch<utils::SvmBatch>(const utils::SvmBatch&, uint32_t,
+                                             bool) const;
+
+template std::vector<std::vector<uint32_t>>
+Flash<uint32_t>::queryBatch<utils::CsvBatch>(const utils::CsvBatch&, uint32_t,
+                                             bool) const;
+template std::vector<std::vector<uint64_t>>
+Flash<uint64_t>::queryBatch<utils::CsvBatch>(const utils::CsvBatch&, uint32_t,
+                                             bool) const;
 
 template <typename Label_t>
 template <typename Batch_t>
