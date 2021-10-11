@@ -51,8 +51,10 @@ static DenseVector generateRandomDenseUnitVector(uint32_t dim,
 
   DenseVector vec(dim);
   float magnitude_squared = 0;
+  std::generate(vec.values, vec.values + dim,
+                [&]() { return dist(*generator); });
   for (uint32_t d = 0; d < dim; d++) {
-    vec.values[d] = dist(*generator);
+    // vec.values[d] = dist(*generator);
     magnitude_squared += std::pow(vec.values[d], 2);
   }
   float magnitude = std::pow(magnitude_squared, 0.5);
