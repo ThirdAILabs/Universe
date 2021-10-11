@@ -21,7 +21,7 @@ SvmBatch::SvmBatch(std::ifstream& file, uint32_t target_batch_size,
     std::vector<std::pair<uint32_t, float>> nonzeros;
     do {
       uint32_t index = std::strtoul(start, &end, 10);
-      start = end;
+      start = end + 1;
       float value = std::strtof(start, &end);
       nonzeros.push_back({index, value});
       start = end;
