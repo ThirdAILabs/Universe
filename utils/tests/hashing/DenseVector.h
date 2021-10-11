@@ -47,14 +47,13 @@ static float angle(const DenseVector& a, const DenseVector& b) {
  */
 static DenseVector generateRandomDenseUnitVector(uint32_t dim,
                                                  std::mt19937* generator) {
-  std::normal_distribution<float> dist(0, 1);
+  std::normal_distribution<float> dist;
 
   DenseVector vec(dim);
   float magnitude_squared = 0;
   std::generate(vec.values, vec.values + dim,
                 [&]() { return dist(*generator); });
   for (uint32_t d = 0; d < dim; d++) {
-    // vec.values[d] = dist(*generator);
     magnitude_squared += std::pow(vec.values[d], 2);
   }
   float magnitude = std::pow(magnitude_squared, 0.5);
