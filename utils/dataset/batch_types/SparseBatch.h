@@ -10,11 +10,11 @@ namespace thirdai::utils {
 class SparseBatch {
  public:
   explicit SparseBatch(std::ifstream& file, uint32_t target_batch_size,
-                    uint64_t start_id);
+                       uint64_t start_id);
 
   // Take r-value reference for vectors to force a move.
   SparseBatch(std::vector<SparseVector>&& vectors,
-           std::vector<std::vector<uint32_t>>&& labels, uint64_t start_id)
+              std::vector<std::vector<uint32_t>>&& labels, uint64_t start_id)
       : _vectors(std::move(vectors)),
         _batch_size(_vectors.size()),
         _labels(std::move(labels)),

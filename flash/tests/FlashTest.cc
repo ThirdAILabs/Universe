@@ -22,7 +22,7 @@ namespace thirdai::search::flash_testing {
 /** Creates a vector of Batches with size batch_size that point to the
  * input_vectors */
 std::vector<DenseBatch> createBatches(std::vector<DenseVector>& input_vectors,
-                                    uint32_t batch_size) {
+                                      uint32_t batch_size) {
   std::vector<DenseBatch> result;
   uint32_t current_vector_index = 0;
   while (current_vector_index < input_vectors.size()) {
@@ -35,7 +35,8 @@ std::vector<DenseBatch> createBatches(std::vector<DenseVector>& input_vectors,
       batch_vecs.push_back(
           std::move(input_vectors.at(current_vector_index + i)));
     }
-    result.push_back(DenseBatch(std::move(batch_vecs), {}, current_vector_index));
+    result.push_back(
+        DenseBatch(std::move(batch_vecs), {}, current_vector_index));
     current_vector_index += next_batch_size;
   }
   return result;

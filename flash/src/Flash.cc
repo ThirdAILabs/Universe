@@ -108,18 +108,18 @@ Label_t Flash<Label_t>::verify_and_convert_id(uint64_t id) const {
 }
 
 template std::vector<std::vector<uint32_t>>
-Flash<uint32_t>::queryBatch<utils::SparseBatch>(const utils::SparseBatch&, uint32_t,
-                                             bool) const;
+Flash<uint32_t>::queryBatch<utils::SparseBatch>(const utils::SparseBatch&,
+                                                uint32_t, bool) const;
 template std::vector<std::vector<uint64_t>>
-Flash<uint64_t>::queryBatch<utils::SparseBatch>(const utils::SparseBatch&, uint32_t,
-                                             bool) const;
+Flash<uint64_t>::queryBatch<utils::SparseBatch>(const utils::SparseBatch&,
+                                                uint32_t, bool) const;
 
 template std::vector<std::vector<uint32_t>>
-Flash<uint32_t>::queryBatch<utils::DenseBatch>(const utils::DenseBatch&, uint32_t,
-                                             bool) const;
+Flash<uint32_t>::queryBatch<utils::DenseBatch>(const utils::DenseBatch&,
+                                               uint32_t, bool) const;
 template std::vector<std::vector<uint64_t>>
-Flash<uint64_t>::queryBatch<utils::DenseBatch>(const utils::DenseBatch&, uint32_t,
-                                             bool) const;
+Flash<uint64_t>::queryBatch<utils::DenseBatch>(const utils::DenseBatch&,
+                                               uint32_t, bool) const;
 
 template <typename Label_t>
 template <typename Batch_t>
