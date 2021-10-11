@@ -1,4 +1,5 @@
 enable_testing()
+include(GoogleTest)
 
 add_library(
   lsh_test_helper_lib
@@ -11,19 +12,70 @@ target_link_libraries(
   gtest_main
 )
 
-
 add_executable(
-  dwta_test
-  DWTATest.cc
+  murmurhash_test
+  MurmurHashTest.cc
 )
 
-target_link_libraries(
-  dwta_test
-  PRIVATE
-  dwta_lib
+add_executable(
+  universalhash_test
+  UniversalHashTest.cc
+)
+
+add_executable(
+  srp_test
+  SRPTest.cc
+)
+
+add_executable(
+  fast_srp_test
+  FastSRPTest.cc
+)
+
+add_executable(
+  densified_minhash_test
+  DensifiedMinHashTest.cc
+)
+
+set(
+  LIBS 
+  hash_function_lib
   lsh_test_helper_lib
   gtest_main
 )
 
-include(GoogleTest)
-gtest_discover_tests(dwta_test)
+target_link_libraries(
+  srp_test
+  PRIVATE
+  ${LIBS}
+)
+
+target_link_libraries(
+  fast_srp_test
+  PRIVATE
+  ${LIBS}
+)
+
+target_link_libraries(
+  murmurhash_test
+  PRIVATE
+  ${LIBS}
+)
+
+target_link_libraries(
+  universalhash_test
+  PRIVATE
+  ${LIBS}
+)
+
+target_link_libraries(
+  densified_minhash_test
+  PRIVATE
+  ${LIBS}
+)
+
+gtest_discover_tests(murmurhash_test)
+gtest_discover_tests(universalhash_test)
+gtest_discover_tests(srp_test)
+gtest_discover_tests(fast_srp_test)
+gtest_discover_tests(densified_minhash_test)

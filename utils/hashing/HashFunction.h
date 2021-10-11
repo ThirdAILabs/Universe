@@ -1,11 +1,17 @@
 #pragma once
 
 #include "../dataset/Dataset.h"
+#include "HashUtils.h"
 
 namespace thirdai::utils {
 
 class HashFunction {
  public:
+  // TODO(any): Add comments
+
+  explicit HashFunction(uint32_t num_tables, uint32_t range)
+      : _num_tables(num_tables), _range(range) {}
+
   /**
    * Populates num_hashes number of hashes for each element in the dataset into
    * the output array. The output array should be of size
@@ -15,38 +21,71 @@ class HashFunction {
    * the hashes from the first vector, all of the hashes from the second, and
    * so on.
    */
-  void hashBatch(const Batch& batch, uint32_t* output) const {
+  void hashBatchParallel(const Batch& batch, uint32_t* output) const {
     if (batch._batch_type == BATCH_TYPE::SPARSE) {
-      hashSparse(batch._batch_size, batch._indices, batch._values, batch._lens,
-                 output);
+      hashSparseParallel(batch._batch_size, batch._indices, batch._values,
+                         batch._lens, output);
     } else {
-      hashDense(batch._batch_size, batch._dim, batch._values, output);
+      hashDenseParallel(batch._batch_size, batch._values, batch._dim, output);
     }
   }
 
-  void hashSingleSparse(const uint32_t* indices, const float* values,
-                        uint32_t length, uint32_t* output) const {
-    uint32_t lengths[1] = {length};
-    hashSparse(1, &indices, &values, lengths, output);
-  }
-
-  void hashSingleDense(const float* values, uint32_t dim,
-                       uint32_t* output) const {
-    hashDense(1, dim, &values, output);
-  }
-
-  // TODO(any): Add comments
-  virtual void hashSparse(uint64_t num_vectors, const uint32_t* const* indices,
+  void hashSparseParallel(uint64_t num_vectors, const uint32_t* const* indices,
                           const float* const* values, const uint32_t* lengths,
-                          uint32_t* output) const = 0;
+                          uint32_t* output) const {
+#pragma omp parallel for default(none) \
+    shared(num_vectors, indices, values, lengths, output)
+    for (uint32_t v = 0; v < num_vectors; v++) {
+      hashSingleSparse(indices[v], values[v], lengths[v],
+                       output + v * _num_tables);
+    }
+  }
 
-  virtual void hashDense(uint64_t num_vectors, uint64_t dim,
-                         const float* const* values,
-                         uint32_t* output) const = 0;
+  void hashDenseParallel(uint64_t num_vectors, const float* const* values,
+                         uint32_t dim, uint32_t* output) const {
+#pragma omp parallel for default(none) shared(num_vectors, values, output, dim)
+    for (uint32_t v = 0; v < num_vectors; v++) {
+      hashSingleDense(values[v], dim, output + v * _num_tables);
+    }
+  }
 
-  virtual uint32_t numTables() const = 0;
+  void hashBatchSerial(const Batch& batch, uint32_t* output) const {
+    if (batch._batch_type == BATCH_TYPE::SPARSE) {
+      hashSparseSerial(batch._batch_size, batch._indices, batch._values,
+                       batch._lens, output);
+    } else {
+      hashDenseParallel(batch._batch_size, batch._values, batch._dim, output);
+    }
+  }
 
-  virtual uint32_t range() const = 0;
+  void hashSparseSerial(uint64_t num_vectors, const uint32_t* const* indices,
+                        const float* const* values, const uint32_t* lengths,
+                        uint32_t* output) const {
+    for (uint32_t v = 0; v < num_vectors; v++) {
+      hashSingleSparse(indices[v], values[v], lengths[v],
+                       output + v * _num_tables);
+    }
+  }
+
+  void hashDenseSerial(uint64_t num_vectors, const float* const* values,
+                       uint32_t dim, uint32_t* output) const {
+    for (uint32_t v = 0; v < num_vectors; v++) {
+      hashSingleDense(values[v], dim, output + v * _num_tables);
+    }
+  }
+
+  virtual void hashSingleSparse(const uint32_t* indices, const float* values,
+                                uint32_t length, uint32_t* output) const = 0;
+
+  virtual void hashSingleDense(const float* values, uint32_t dim,
+                               uint32_t* output) const = 0;
+
+  inline uint32_t numTables() const { return _num_tables; }
+
+  inline uint32_t range() const { return _range; }
+
+ protected:
+  const uint32_t _num_tables, _range;
 };
 
 }  // namespace thirdai::utils

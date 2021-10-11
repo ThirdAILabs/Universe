@@ -8,6 +8,10 @@ project(ThirdAI LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 find_package(PythonLibs REQUIRED)
 
+# One way that we can set global compiler flags for all targets. set(CMAKE_CXX_FLAGS) is the alternative.
+# Add lots of warnings and all warnings as errors
+add_compile_options(-Wall -Wextra -pedantic -Werror -Wno-unused-function)
+
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -40,9 +44,17 @@ endif()
 
 find_package(OpenMP REQUIRED)
 
-add_subdirectory(examples)
 add_subdirectory(bolt)
 add_subdirectory(utils)
+add_subdirectory(flash)
 
-file(GLOB BOLT_SOURCES bolt/src/*.cc utils/hashing/DWTA.cc utils/hashtable/SampledHashTable.cc)
+file(
+  GLOB BOLT_SOURCES 
+  bolt/layers/*.cc 
+  bolt/networks/*.cc 
+  bolt/utils/*.cc 
+  utils/hashing/DWTA.cc 
+  utils/hashtable/SampledHashTable.cc
+)
+
 pybind11_add_module(thirdai python_bindings/thirdai.cc ${BOLT_SOURCES})

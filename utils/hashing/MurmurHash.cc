@@ -1,7 +1,9 @@
 #include "MurmurHash.h"
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+
+namespace thirdai::utils {
 
 uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed) {
   uint32_t c1 = 0xcc9e2d51;
@@ -17,7 +19,7 @@ uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed) {
   const uint32_t* chunks = NULL;
   const uint8_t* tail = NULL;  // tail - last 8 bytes
   int i = 0;
-  int l = len / 4;  // chunk length
+  int l = static_cast<int>(len / 4);  // chunk length
 
   h = seed;
 
@@ -80,3 +82,4 @@ uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed) {
 
   return h;
 }
+}  // namespace thirdai::utils

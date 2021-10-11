@@ -23,13 +23,13 @@ TEST(VectorHashTableTest, ExactRetrievalTest) {
   VectorHashTable<uint32_t> test_table(num_tables, table_range);
 
   // Generate hashes
-  uint32_t hashes[num_tables * num_items];
-  uint32_t labels[num_items];
+  uint32_t* hashes = new uint32_t[num_tables * num_items];
+  uint32_t* labels = new uint32_t[num_items];
   for (uint32_t i = 0; i < num_items; i++) {
     labels[i] = i + start_label;
     for (uint32_t t = 0; t < num_tables; t++) {
       uint32_t hash = (i + t) % table_range;
-      hashes[t * num_items + i] = hash;
+      hashes[num_tables * i + t] = hash;
     }
   }
 
@@ -57,20 +57,22 @@ TEST(VectorHashTableTest, ExactRetrievalTest) {
       uint32_t expected_count = 0;
       bool present = false;
       for (uint32_t table = 0; table < num_tables; table++) {
-        if (hashes[table * num_items + item] == test_hash) {
+        if (hashes[num_tables * item + table] == test_hash) {
           expected_count += 2;  // Because all items were inserted twice
           present = true;
         }
       }
-      assert(counts[item] == expected_count);
-      assert(std::count(result_vector.begin(), result_vector.end(), item) ==
-             expected_count);
-      assert(result_set.count(item) == present);
+      ASSERT_EQ(counts[item], expected_count);
+      ASSERT_EQ(std::count(result_vector.begin(), result_vector.end(), item),
+                expected_count);
+      ASSERT_EQ(result_set.count(item), present);
       result_set.erase(item);
     }
 
-    assert(result_set.empty());
+    ASSERT_TRUE(result_set.empty());
   }
+  delete[] hashes;
+  delete[] labels;
 }
 
 /**

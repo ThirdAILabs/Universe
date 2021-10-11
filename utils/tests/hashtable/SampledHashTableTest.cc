@@ -11,7 +11,7 @@ TEST(SampledHashTableTest, InsertionQueryWithoutReservoirSampling) {
            num_inserts = 10000;
   uint32_t range = 1 << range_pow;
   thirdai::utils::SampledHashTable<uint32_t> table(num_tables, reservoir_size,
-                                                   range_pow);
+                                                   1 << range_pow);
 
   std::vector<std::unordered_map<uint32_t, std::vector<uint32_t>>> insertions(
       num_tables);
@@ -54,7 +54,7 @@ TEST(SampledHashTableTest, InsertionQueryWithoutReservoirSampling) {
   uint32_t num_queries = 1;
 
   for (uint32_t q = 0; q < num_queries; q++) {
-    uint32_t query_hashes[num_tables];
+    uint32_t* query_hashes = new uint32_t[num_tables];
     std::vector<uint32_t> exp_counts(2 * num_inserts, 0);
     std::vector<uint32_t> exp_vec_results;
     std::unordered_set<uint32_t> exp_set_results;
@@ -93,6 +93,7 @@ TEST(SampledHashTableTest, InsertionQueryWithoutReservoirSampling) {
     for (uint32_t x : exp_set_results) {
       ASSERT_TRUE(set_results.count(x));
     }
+    delete[] query_hashes;
   }
 }
 
@@ -101,7 +102,7 @@ TEST(SampledHashTableTest, InsertionQueryWithReservoirSampling) {
            num_inserts = 10000;
   uint32_t range = 1 << range_pow;
   thirdai::utils::SampledHashTable<uint32_t> table(num_tables, reservoir_size,
-                                                   range_pow);
+                                                   1 << range_pow);
 
   std::vector<std::unordered_map<uint32_t, std::vector<uint32_t>>> insertions(
       num_tables);
@@ -138,7 +139,7 @@ TEST(SampledHashTableTest, InsertionQueryWithReservoirSampling) {
   uint32_t num_queries = 1000;
 
   for (uint32_t q = 0; q < num_queries; q++) {
-    uint32_t query_hashes[num_tables];
+    uint32_t* query_hashes = new uint32_t[num_tables];
     std::vector<uint32_t> exp_counts(2 * num_inserts, 0);
     std::unordered_set<uint32_t> exp_set_results;
     for (uint32_t t = 0; t < num_tables; t++) {
@@ -158,8 +159,8 @@ TEST(SampledHashTableTest, InsertionQueryWithReservoirSampling) {
 
     std::vector<uint32_t> vec_results;
     table.queryByVector(query_hashes, vec_results);
-    for (uint32_t i = 0; i < vec_results.size(); i++) {
-      ASSERT_TRUE(exp_set_results.count(vec_results[i]));
+    for (uint32_t vec_result : vec_results) {
+      ASSERT_TRUE(exp_set_results.count(vec_result));
     }
 
     std::unordered_set<uint32_t> set_results;
@@ -167,5 +168,6 @@ TEST(SampledHashTableTest, InsertionQueryWithReservoirSampling) {
     for (uint32_t x : set_results) {
       ASSERT_TRUE(exp_set_results.count(x));
     }
+    delete[] query_hashes;
   }
 }

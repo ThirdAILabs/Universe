@@ -1,4 +1,4 @@
-#include "../bolt/src/Network.h"
+#include "../bolt/networks/Network.h"
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -14,36 +14,36 @@ class PyNetwork final : public Network {
   PyNetwork(std::vector<bolt::LayerConfig> configs, uint64_t input_dim)
       : Network(std::move(configs), input_dim) {}
 
-  py::array_t<float> GetWeightMatrix(uint32_t layer_index) {
-    if (layer_index >= num_layers) {
+  py::array_t<float> getWeightMatrix(uint32_t layer_index) {
+    if (layer_index >= _num_layers) {
       return py::none();
     }
 
-    float* mem = layers[layer_index]->GetWeights();
+    float* mem = _layers[layer_index]->getWeights();
 
     py::capsule free_when_done(
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
 
-    size_t dim = configs[layer_index].dim;
+    size_t dim = _configs[layer_index].dim;
     size_t prev_dim =
-        (layer_index > 0) ? configs[layer_index - 1].dim : input_dim;
+        (layer_index > 0) ? _configs[layer_index - 1].dim : _input_dim;
 
     return py::array_t<float>({dim, prev_dim},
                               {prev_dim * sizeof(float), sizeof(float)}, mem,
                               free_when_done);
   }
 
-  py::array_t<float> GetBiasVector(uint32_t layer_index) {
-    if (layer_index >= num_layers) {
+  py::array_t<float> getBiasVector(uint32_t layer_index) {
+    if (layer_index >= _num_layers) {
       return py::none();
     }
 
-    float* mem = layers[layer_index]->GetBiases();
+    float* mem = _layers[layer_index]->getBiases();
 
     py::capsule free_when_done(
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
 
-    size_t dim = configs[layer_index].dim;
+    size_t dim = _configs[layer_index].dim;
 
     return py::array_t<float>({dim}, {sizeof(float)}, mem, free_when_done);
   }
@@ -73,17 +73,22 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
   py::class_<thirdai::python::PyNetwork>(submodule, "Network")
       .def(py::init<std::vector<thirdai::bolt::LayerConfig>, uint64_t>(),
            py::arg("layers"), py::arg("input_dim"))
-      .def("Train", &thirdai::python::PyNetwork::Train, py::arg("batch_size"),
+      .def("Train", &thirdai::python::PyNetwork::train, py::arg("batch_size"),
            py::arg("train_data"), py::arg("test_data"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
            py::arg("rebuild") = 0, py::arg("max_test_batches") = 0)
-      .def("GetWeightMatrix", &thirdai::python::PyNetwork::GetWeightMatrix,
+      .def("GetWeightMatrix", &thirdai::python::PyNetwork::getWeightMatrix,
            py::arg("layer_index"))
-      .def("GetBiasVector", &thirdai::python::PyNetwork::GetBiasVector,
+      .def("GetBiasVector", &thirdai::python::PyNetwork::getBiasVector,
            py::arg("layer_index"))
-      .def("GetNumLayers", &thirdai::python::PyNetwork::GetNumLayers)
-      .def("GetLayerSizes", &thirdai::python::PyNetwork::GetLayerSizes)
-      .def("GetInputDim", &thirdai::python::PyNetwork::GetInputDim)
+      .def("GetNumLayers", &thirdai::python::PyNetwork::getNumLayers)
+      .def("GetLayerSizes", &thirdai::python::PyNetwork::getLayerSizes)
+      .def("GetInputDim", &thirdai::python::PyNetwork::getInputDim)
       .def("GetActivationFunctions",
-           &thirdai::python::PyNetwork::GetActivationFunctions);
+           &thirdai::python::PyNetwork::getActivationFunctions)
+      .def("GetAccuracyPerEpoch",
+           &thirdai::python::PyNetwork::getAccuracyPerEpoch)
+      .def("GetTimePerEpoch", &thirdai::python::PyNetwork::getTimePerEpoch)
+      .def("GetFinalTestAccuracy",
+           &thirdai::python::PyNetwork::getFinalTestAccuracy);
 }

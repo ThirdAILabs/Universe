@@ -12,16 +12,13 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
                                    uint32_t hashes_per_table,
                                    uint32_t num_tables, uint32_t range_pow,
                                    uint32_t seed)
-    : _hashes_per_table(hashes_per_table),
-      _num_tables(num_tables),
+    : HashFunction(num_tables, 1 << range_pow),
+      _hashes_per_table(hashes_per_table),
       _num_hashes(hashes_per_table * num_tables),
-      _range(1 << range_pow),
       _dim(input_dim),
-      _binsize(DEFAULT_BINSIZE) {
-  _permute = ceil((static_cast<double>(_num_hashes) * _binsize) / _dim);
-  _log_num_hashes = log2(_num_hashes);
-  _log_binsize = floor(log2(_binsize));
-
+      _binsize(DEFAULT_BINSIZE),
+      _log_binsize(floor(log2(_binsize))),
+      _permute(ceil((static_cast<double>(_num_hashes) * _binsize) / _dim)) {
   std::mt19937 gen(seed);
   uint32_t* n_array = new uint32_t[_dim];
   _bin_map = new uint32_t[_dim * _permute];
@@ -46,27 +43,8 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
   _rand_double_hash_seed = dis(gen);
 }
 
-void DWTAHashFunction::hashSparse(uint64_t num_vectors,
-                                  const uint32_t* const* indices,
-                                  const float* const* values,
-                                  const uint32_t* lengths,
-                                  uint32_t* output) const {
-  for (uint64_t i = 0; i < num_vectors; i++) {
-    hashSparseVector(indices[i], values[i], lengths[i],
-                     output + i * _num_tables);
-  }
-}
-
-void DWTAHashFunction::hashDense(uint64_t num_vectors, uint64_t dim,
-                                 const float* const* values,
-                                 uint32_t* output) const {
-  for (uint64_t i = 0; i < num_vectors; i++) {
-    hashDenseVector(values[i], dim, output + i * _num_tables);
-  }
-}
-
-void DWTAHashFunction::hashDenseVector(const float* data, uint32_t len,
-                                       uint32_t* final_hashes) const {
+void DWTAHashFunction::hashSingleDense(const float* values, uint32_t dim,
+                                       uint32_t* output) const {
   uint32_t* hashes = new uint32_t[_num_hashes];
   float* bin_values = new float[_num_hashes];
 
@@ -77,10 +55,10 @@ void DWTAHashFunction::hashDenseVector(const float* data, uint32_t len,
 
   for (uint32_t p = 0; p < _permute; p++) {
     uint32_t base_bin_id = p * _dim;
-    for (uint32_t i = 0; i < len; i++) {
+    for (uint32_t i = 0; i < dim; i++) {
       uint32_t binid = _bin_map[base_bin_id + i];
-      if (binid < _num_hashes && bin_values[binid] < data[i]) {
-        bin_values[binid] = data[i];
+      if (binid < _num_hashes && bin_values[binid] < values[i]) {
+        bin_values[binid] = values[i];
         hashes[binid] = _positions[base_bin_id + i];
       }
     }
@@ -88,14 +66,14 @@ void DWTAHashFunction::hashDenseVector(const float* data, uint32_t len,
 
   delete[] bin_values;
 
-  densifyHashes(hashes, final_hashes);
+  compactHashes(hashes, output);
 
   delete[] hashes;
 }
 
-void DWTAHashFunction::hashSparseVector(const uint32_t* indices,
-                                        const float* values, uint32_t len,
-                                        uint32_t* final_hashes) const {
+void DWTAHashFunction::hashSingleSparse(const uint32_t* indices,
+                                        const float* values, uint32_t length,
+                                        uint32_t* output) const {
   uint32_t* hashes = new uint32_t[_num_hashes];
   float* bin_values = new float[_num_hashes];
 
@@ -106,7 +84,7 @@ void DWTAHashFunction::hashSparseVector(const uint32_t* indices,
 
   for (uint32_t p = 0; p < _permute; p++) {
     uint32_t base_bin_id = p * _dim;
-    for (uint32_t i = 0; i < len; i++) {
+    for (uint32_t i = 0; i < length; i++) {
       uint32_t binid = _bin_map[base_bin_id + indices[i]];
       if (binid < _num_hashes && bin_values[binid] < values[i]) {
         bin_values[binid] = values[i];
@@ -116,44 +94,24 @@ void DWTAHashFunction::hashSparseVector(const uint32_t* indices,
   }
   delete[] bin_values;
 
-  densifyHashes(hashes, final_hashes);
+  HashUtils::densifyHashes(hashes, _num_hashes);
+  compactHashes(hashes, output);
 
   delete[] hashes;
 }
 
-void DWTAHashFunction::densifyHashes(const uint32_t* hashes,
+void DWTAHashFunction::compactHashes(const uint32_t* hashes,
                                      uint32_t* final_hashes) const {
-  uint32_t* hash_array = new uint32_t[_num_hashes]();
-
-  for (uint32_t i = 0; i < _num_hashes; i++) {
-    uint32_t next = hashes[i];
-    if (next != std::numeric_limits<uint32_t>::max()) {
-      hash_array[i] = hashes[i];
-      continue;
-    }
-
-    uint32_t count = 0;
-    while (next == std::numeric_limits<uint32_t>::max()) {
-      count++;
-      uint32_t index = std::min(RandDoubleHash(i, count), _num_hashes);
-
-      next = hashes[index];
-      if (count > 100) {  // Densification failure.
-        break;
-      }
-    }
-    hash_array[i] = next;
-  }
-
+  // TODO (Josh, Patrick): Figure out how to consolidate this version of
+  // compactHashes with HashUtils::defaultCompactHashesMethod.
   for (uint32_t i = 0; i < _num_tables; i++) {
     uint32_t index = 0;
     for (uint32_t j = 0; j < _hashes_per_table; j++) {
-      uint32_t h = hash_array[i * _hashes_per_table + j];
+      uint32_t h = hashes[i * _hashes_per_table + j];
       index += h << ((_hashes_per_table - 1 - j) * _log_binsize);
     }
     final_hashes[i] = index;
   }
-  delete[] hash_array;
 }
 
 DWTAHashFunction::~DWTAHashFunction() {

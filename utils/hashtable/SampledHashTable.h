@@ -20,8 +20,7 @@ constexpr uint64_t DefaultMaxRand = 10000;
 template <typename Label_t>
 class SampledHashTable final : public HashTable<Label_t> {
  private:
-  uint64_t _num_tables, _reservoir_size, _range_pow, _range, _max_rand;
-  uint32_t _mask;
+  uint64_t _num_tables, _reservoir_size, _range, _max_rand;
 
   Label_t* _data;
   std::atomic<uint32_t>* _counters;
@@ -41,8 +40,6 @@ class SampledHashTable final : public HashTable<Label_t> {
     return i * _num_tables + table;
   }
 
-  constexpr uint32_t HashMod(uint32_t hash) const { return hash & _mask; }
-
  public:
   /**
    * num_tables: number of hash tables
@@ -51,8 +48,8 @@ class SampledHashTable final : public HashTable<Label_t> {
    * max_rand: optional parameter, controls how many pre-generated random values
    * are created for reservoir sampling
    */
-  SampledHashTable(uint64_t num_tables, uint64_t reservoir_size,
-                   uint64_t range_pow, uint64_t max_rand = DefaultMaxRand);
+  SampledHashTable(uint64_t num_tables, uint64_t reservoir_size, uint64_t range,
+                   uint64_t max_rand = DefaultMaxRand);
 
   SampledHashTable(const SampledHashTable& other) = delete;
 
@@ -61,10 +58,8 @@ class SampledHashTable final : public HashTable<Label_t> {
   SampledHashTable(SampledHashTable&& other)
       : _num_tables(other._num_tables),
         _reservoir_size(other._reservoir_size),
-        _range_pow(other._range_pow),
         _range(other._range),
         _max_rand(other._max_rand),
-        _mask(other._mask),
         _data(other._data),
         _counters(other._counters),
         _gen_rand(other._gen_rand) {
@@ -76,10 +71,8 @@ class SampledHashTable final : public HashTable<Label_t> {
   SampledHashTable& operator=(SampledHashTable&& other) {
     _num_tables = other._num_tables;
     _reservoir_size = other._reservoir_size;
-    _range_pow = other._range_pow;
     _range = other._range;
     _max_rand = other._max_rand;
-    _mask = other._mask;
     _data = other._data;
     _counters = other._counters;
     _gen_rand = other._gen_rand;
@@ -124,11 +117,11 @@ class SampledHashTable final : public HashTable<Label_t> {
   void queryByVector(uint32_t const* hashes,
                      std::vector<Label_t>& results) const override;
 
-  void clearTables();
+  void clearTables() override;
 
-  uint32_t numTables() const { return _num_tables; };
+  uint32_t numTables() const override { return _num_tables; };
 
-  uint64_t tableRange() const { return _range; };
+  uint64_t tableRange() const override { return _range; };
 
   ~SampledHashTable();
 };
