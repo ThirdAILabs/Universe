@@ -3,7 +3,7 @@
 
 namespace thirdai::bolt {
 
-std::vector<std::string> Split(const std::string& line, char delimeter) {
+std::vector<std::string> split(const std::string& line, char delimeter) {
   std::vector<std::string> output;
   std::string curr = line;
   size_t loc;
@@ -15,7 +15,7 @@ std::vector<std::string> Split(const std::string& line, char delimeter) {
   return output;
 }
 
-void ConfigReader::ParseConfig(const std::string& filename) {
+void ConfigReader::parseConfig(const std::string& filename) {
   std::ifstream file(filename);
 
   std::string line;
@@ -41,7 +41,7 @@ void ConfigReader::ParseConfig(const std::string& filename) {
 
     std::string remainder = line.substr(loc);
 
-    std::vector<std::string> values = Split(remainder, ',');
+    std::vector<std::string> values = split(remainder, ',');
     if (values.empty()) {
       throw std::logic_error("Invaid syntax: " + line +
                              " > Line in config file should have values");
@@ -100,36 +100,36 @@ void ConfigReader::ParseConfig(const std::string& filename) {
   file.close();
 }
 
-uint64_t ConfigReader::IntVal(const std::string& key, uint32_t index) const {
+uint64_t ConfigReader::intVal(const std::string& key, uint32_t index) const {
   if (!config_vars.count(key)) {
     throw std::logic_error("Invaid key in config file: '" + key + "'");
   }
-  return config_vars.at(key)->IntVal(index);
+  return config_vars.at(key)->intVal(index);
 }
 
-float ConfigReader::FloatVal(const std::string& key, uint32_t index) const {
+float ConfigReader::floatVal(const std::string& key, uint32_t index) const {
   if (!config_vars.count(key)) {
     throw std::logic_error("Invaid key in config file: '" + key + "'");
   }
-  return static_cast<float>(config_vars.at(key)->DoubleVal(index));
+  return static_cast<float>(config_vars.at(key)->doubleVal(index));
 }
 
-double ConfigReader::DoubleVal(const std::string& key, uint32_t index) const {
+double ConfigReader::doubleVal(const std::string& key, uint32_t index) const {
   if (!config_vars.count(key)) {
     throw std::logic_error("Invaid key in config file: '" + key + "'");
   }
-  return config_vars.at(key)->DoubleVal(index);
+  return config_vars.at(key)->doubleVal(index);
 }
 
-const std::string& ConfigReader::StrVal(const std::string& key,
+const std::string& ConfigReader::strVal(const std::string& key,
                                         uint32_t index) const {
   if (!config_vars.count(key)) {
     throw std::logic_error("Invaid key in config file: '" + key + "'");
   }
-  return config_vars.at(key)->StrVal(index);
+  return config_vars.at(key)->strVal(index);
 }
 
-bool ConfigReader::ValExists(const std::string& key) const {
+bool ConfigReader::valExists(const std::string& key) const {
   return config_vars.count(key);
 }
 
@@ -144,12 +144,12 @@ void ConfigReader::PrintConfigVals() {
 }
 
 std::ostream& operator<<(std::ostream& out, const ConfigValue& val) {
-  return val.Print(out);
+  return val.print(out);
 }
 
 std::ostream& operator<<(std::ostream& out,
                          const std::shared_ptr<ConfigValue>& val) {
-  return val->Print(out);
+  return val->print(out);
 }
 
 }  // namespace thirdai::bolt
