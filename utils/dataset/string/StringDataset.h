@@ -3,7 +3,7 @@
 #include "loaders/SentenceLoader.h"
 #include "vectorizers/TriGramVectorizer.h"
 #include "vectorizers/UnigramVectorizer.h"
-//#include "GlobalFreq.h"
+#include "GlobalFreq.h"
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -27,6 +27,8 @@ class StringDataset : public Dataset {
    */
   void addFileToQueue(std::string filename);
 
+  void processGlobal(std::vector<std::string>& files);
+
  private:
   std::vector<uint32_t>* _indices;
   std::vector<float>* _values;
@@ -36,6 +38,7 @@ class StringDataset : public Dataset {
   bool _first_load;
   uint32_t _dim = 0;
   uint64_t _batch_set_starting_id = 0;
+  GlobalFreq* _global_freq;
 
   /**
    * Helper function for initializing _values, _indices, and _batches

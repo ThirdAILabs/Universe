@@ -20,9 +20,9 @@ void UnigramVectorizer::vectorize(const std::string& str,
     // Mapping to count frequencies of unique token ids.
     const char* converted = temp.c_str();
     u_int32_t len = temp.length();
-    u_int32_t hash = MurmurHash(converted, len, _murmur_seed) % _max_dim;
+    u_int32_t hash = MurmurHash(converted, len, _murmur_seed) % _max_dim + _start_idx;
     if (_value_type == VALUE_TYPE::TFIDF) {
-      // int idf = _globalFreq->getIdf(temp);
+      // int idf = _global_freq->getIdf(temp);
       int idf = 1;  // Placeholder
       ids[hash] += idf;
     } else {
@@ -42,5 +42,9 @@ void UnigramVectorizer::vectorize(const std::string& str,
     i++;
   }
 }
+
+// void UnigramVectorizer::setGlobalFreq(GlobalFreq* global_freq) {
+//       _global_freq = global_freq;
+// }
 
 }  // namespace thirdai::utils

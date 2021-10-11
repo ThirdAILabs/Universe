@@ -30,6 +30,12 @@ void StringDataset::addFileToQueue(std::string filename) {
   _loader->addFileToQueue(filename);
 }
 
+void StringDataset::processGlobal(std::vector<std::string>& files) {
+  // TODO: (Henry) Where do we want to store the seed?
+  _global_freq = new GlobalFreq(files, _loader, 42);
+  //_word_uni_gram_vectorizer.setGlobalFreq(_global_freq);
+}
+
 void StringDataset::loadNextBatchSet() {
   // Load the first set of strings while computing the number of vectors to
   // load. If _target_batch_num_per_load = 0, then load all vectors from the

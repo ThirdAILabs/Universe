@@ -1,8 +1,7 @@
 #pragma once
 
 #include "../../hashing/MurmurHash.h"
-//#include "StringDataset.h"
-#include "vectorizers/StringVectorizer.h"
+//#include "vectorizers/StringVectorizer.h"
 #include "loaders/StringLoader.h"
 #include <cstdint>
 #include <fstream>
@@ -32,7 +31,6 @@ class GlobalFreq {
   GlobalFreq(std::vector<std::string>& files, StringLoader* string_loader, u_int32_t murmur_seed);
 
   int getIdf(std::string& token);  // Should have a default value
-  int getTF(std::string& token, std::string& doc);
   int getTokenID(std::string& token);
   int idf_size();
 

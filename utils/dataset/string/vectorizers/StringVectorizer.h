@@ -7,7 +7,7 @@
 #include <vector>
 
 namespace thirdai::utils {
-enum class VALUE_TYPE { TFIDF, TF };
+enum class VALUE_TYPE { TFIDF, TF, BINARY };
 /**
  * Interface for extracting sparse vector indices and values out of strings.
  * The constructor of the derived class has to set _dim.
