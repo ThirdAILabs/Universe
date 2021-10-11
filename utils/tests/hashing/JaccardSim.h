@@ -72,8 +72,10 @@ class JaccardSim : public Similarity {
     std::sort(indices_2.begin(), indices_2.end());
 
     std::vector<float> empty_values;
-    SparseVector v1(num_non_zeros);// = {indices_1, empty_values, num_non_zeros};
-    SparseVector v2(num_non_zeros);// = {indices_2, empty_values, num_non_zeros};
+    SparseVector v1(
+        num_non_zeros);  // = {indices_1, empty_values, num_non_zeros};
+    SparseVector v2(
+        num_non_zeros);  // = {indices_2, empty_values, num_non_zeros};
     std::copy(indices_1.begin(), indices_1.end(), v1.indices);
     std::copy(indices_2.begin(), indices_2.end(), v2.indices);
 
@@ -96,7 +98,7 @@ class JaccardSim : public Similarity {
                              const uint32_t* s2, uint32_t l2) {
     uint32_t intersection_size = 0;
     uint32_t s1_index = 0;
-    for (uint32_t j =0 ; j < l2; j++) {
+    for (uint32_t j = 0; j < l2; j++) {
       uint32_t s2_value = s2[j];
       while (s1_index < l1 && s1[s1_index] < s2_value) {
         s1_index++;

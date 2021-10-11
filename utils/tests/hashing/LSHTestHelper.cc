@@ -29,10 +29,8 @@ void runSparseSimilarityTest(const thirdai::utils::HashFunction& hash,
         sim.getRandomSparseVectors(input_sim, num_non_zeros, dim);
     float actual_sim = sparse_result.sim;
 
-    uint32_t* indices[2] = {sparse_result.v1.indices,
-                            sparse_result.v2.indices};
-    float* values[2] = {sparse_result.v1.values,
-                        sparse_result.v2.values};
+    uint32_t* indices[2] = {sparse_result.v1.indices, sparse_result.v2.indices};
+    float* values[2] = {sparse_result.v1.values, sparse_result.v2.values};
     uint32_t lens[2] = {num_non_zeros, num_non_zeros};
 
     uint32_t* hashes = new uint32_t[2 * num_tables];
@@ -59,8 +57,7 @@ void runDenseSimilarityTest(const thirdai::utils::HashFunction& hash,
     auto dense_result = sim.getRandomDenseVectors(input_sim, dim);
     float actual_sim = dense_result.sim;
 
-    float* values[2] = {dense_result.v1.values,
-                        dense_result.v2.values};
+    float* values[2] = {dense_result.v1.values, dense_result.v2.values};
 
     uint32_t* hashes = new uint32_t[2 * num_tables];
     hash.hashDenseParallel(2, values, dim, hashes);
