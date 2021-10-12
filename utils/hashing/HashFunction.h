@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../dataset/Dataset.h"
+#include "../dataset/batch_types/DenseBatch.h"
+#include "../dataset/batch_types/SparseBatch.h"
 #include "HashUtils.h"
 
 namespace thirdai::utils {
@@ -21,12 +22,20 @@ class HashFunction {
    * the hashes from the first vector, all of the hashes from the second, and
    * so on.
    */
-  void hashBatchParallel(const Batch& batch, uint32_t* output) const {
-    if (batch._batch_type == BATCH_TYPE::SPARSE) {
-      hashSparseParallel(batch._batch_size, batch._indices, batch._values,
-                         batch._lens, output);
-    } else {
-      hashDenseParallel(batch._batch_size, batch._values, batch._dim, output);
+  void hashBatchParallel(const utils::SparseBatch& batch,
+                         uint32_t* output) const {
+#pragma omp parallel for default(none) shared(batch, output)
+    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+      hashSingleSparse(batch[v].indices, batch[v].values, batch[v].len,
+                       output + v * _num_tables);
+    }
+  }
+
+  void hashBatchParallel(const utils::DenseBatch& batch,
+                         uint32_t* output) const {
+#pragma omp parallel for default(none) shared(batch, output)
+    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+      hashSingleDense(batch[v].values, batch[v].dim, output + v * _num_tables);
     }
   }
 
@@ -49,12 +58,17 @@ class HashFunction {
     }
   }
 
-  void hashBatchSerial(const Batch& batch, uint32_t* output) const {
-    if (batch._batch_type == BATCH_TYPE::SPARSE) {
-      hashSparseSerial(batch._batch_size, batch._indices, batch._values,
-                       batch._lens, output);
-    } else {
-      hashDenseParallel(batch._batch_size, batch._values, batch._dim, output);
+  void hashBatchSerial(const utils::SparseBatch& batch,
+                       uint32_t* output) const {
+    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+      hashSingleSparse(batch[v].indices, batch[v].values, batch[v].len,
+                       output + v * _num_tables);
+    }
+  }
+
+  void hashBatchSerial(const utils::DenseBatch& batch, uint32_t* output) const {
+    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+      hashSingleDense(batch[v].values, batch[v].dim, output + v * _num_tables);
     }
   }
 
