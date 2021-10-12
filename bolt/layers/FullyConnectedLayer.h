@@ -25,73 +25,73 @@ class FullyConnectedLayer final : public Layer {
   FullyConnectedLayer(uint64_t dim, uint64_t prev_dim, float sparsity,
                       ActivationFunc act_func, SamplingConfig sampling_config);
 
-  void FeedForward(uint32_t batch_indx, const uint32_t* indices,
+  void feedForward(uint32_t batch_indx, const uint32_t* indices,
                    const float* values, uint32_t len, uint32_t* labels,
                    uint32_t label_len) override;
 
-  void Backpropagate(uint32_t batch_indx, const uint32_t* indices,
+  void backpropagate(uint32_t batch_indx, const uint32_t* indices,
                      const float* values, float* errors, uint32_t len) override;
 
-  void BackpropagateFirstLayer(uint32_t batch_indx, const uint32_t* indices,
+  void backpropagateFirstLayer(uint32_t batch_indx, const uint32_t* indices,
                                const float* values, float* errors,
                                uint32_t len) override;
 
-  void ComputeErrors(uint32_t batch_indx, const uint32_t* labels,
-                     uint32_t label_len) override;
+  void computeErrors(uint32_t batch_indx, uint32_t batch_size,
+                     const uint32_t* labels, uint32_t label_len) override;
 
-  void UpdateParameters(float lr, uint32_t iter, float B1, float B2,
+  void updateParameters(float lr, uint32_t iter, float B1, float B2,
                         float eps) override;
 
-  void BuildHashTables() override;
+  void buildHashTables() override;
 
-  void ReBuildHashFunction() override;
+  void reBuildHashFunction() override;
 
-  void SetSparsity(float new_sparsity) override;
+  void setSparsity(float new_sparsity) override;
 
-  void SetBatchSize(uint64_t new_batch_size) override;
+  void setBatchSize(uint64_t new_batch_size) override;
 
-  void ShuffleRandNeurons() override;
+  void shuffleRandNeurons() override;
 
-  uint32_t GetLen(uint32_t batch_indx) const override {
+  uint32_t getLen(uint32_t batch_indx) const override {
     return _active_lens[batch_indx];
   }
 
-  const uint32_t* GetIndices(uint32_t batch_indx) const override {
+  const uint32_t* getIndices(uint32_t batch_indx) const override {
     return _active_neurons[batch_indx];
   }
 
-  const float* GetValues(uint32_t batch_indx) const override {
+  const float* getValues(uint32_t batch_indx) const override {
     return _activations[batch_indx];
   }
 
-  float* GetErrors(uint32_t batch_indx) override { return _errors[batch_indx]; }
+  float* getErrors(uint32_t batch_indx) override { return _errors[batch_indx]; }
 
-  float* GetWeights();
+  float* getWeights();
 
-  float* GetBiases();
+  float* getBiases();
 
   ~FullyConnectedLayer();
 
  private:
   template <bool DENSE, bool PREV_DENSE>
-  void FeedForwardImpl(uint32_t batch_indx, const uint32_t* indices,
+  void feedForwardImpl(uint32_t batch_indx, const uint32_t* indices,
                        const float* values, uint32_t len, uint32_t* labels,
                        uint32_t label_len);
 
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
-  void BackPropagateImpl(uint32_t batch_indx, const uint32_t* indices,
+  void backPropagateImpl(uint32_t batch_indx, const uint32_t* indices,
                          const float* values, float* errors, uint32_t len);
 
   template <bool DENSE>
-  void ComputeErrorsImpl(uint32_t batch_indx, const uint32_t* labels,
-                         uint32_t label_len);
+  void computeErrorsImpl(uint32_t batch_indx, uint32_t batch_size,
+                         const uint32_t* labels, uint32_t label_len);
 
   template <bool DENSE, bool PREV_DENSE>
-  void SelectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
+  void selectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
                            const float* values, uint32_t len, uint32_t* labels,
                            uint32_t label_len);
 
-  constexpr float ActFuncDerivative(float x);
+  constexpr float actFuncDerivative(float x);
 
   uint64_t _dim, _prev_dim, _batch_size, _sparse_dim;
   float _sparsity;
