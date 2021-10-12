@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../dataset/Vectors.h"
 #include <cassert>
 #include <cmath>
 #include <iostream>
@@ -8,12 +9,6 @@
 #include <utility>
 
 namespace thirdai::utils::lsh_testing {
-
-/** Represents a single dense data vector */
-struct DenseVector {
-  std::vector<float> values;
-  uint32_t dim;
-};
 
 /** Returns the magnitude of a dense vector */
 static float magnitude(const DenseVector& vec) {
@@ -52,19 +47,19 @@ static float angle(const DenseVector& a, const DenseVector& b) {
  */
 static DenseVector generateRandomDenseUnitVector(uint32_t dim,
                                                  std::mt19937* generator) {
-  std::normal_distribution<float> normal_distribution;
+  std::normal_distribution<float> dist;
 
-  DenseVector vec;
+  DenseVector vec(dim);
   float magnitude_squared = 0;
+  std::generate(vec.values, vec.values + dim,
+                [&]() { return dist(*generator); });
   for (uint32_t d = 0; d < dim; d++) {
-    vec.values.push_back(normal_distribution(*generator));
     magnitude_squared += std::pow(vec.values[d], 2);
   }
   float magnitude = std::pow(magnitude_squared, 0.5);
   for (uint32_t d = 0; d < dim; d++) {
     vec.values[d] /= magnitude;
   }
-  vec.dim = dim;
   return vec;
 }
 
@@ -78,12 +73,10 @@ static DenseVector generateRandomPerpVector(const DenseVector& first_vec,
       generateRandomDenseUnitVector(first_vec.dim, generator);
   float dot_product = dot(first_vec, second_vec);
 
-  DenseVector result;
-  result.dim = first_vec.dim;
+  DenseVector result(first_vec.dim);
   float magnitude_squared = 0;
   for (uint32_t d = 0; d < first_vec.dim; d++) {
-    result.values.push_back(second_vec.values[d] -
-                            dot_product * first_vec.values[d]);
+    result.values[d] = second_vec.values[d] - dot_product * first_vec.values[d];
     magnitude_squared += std::pow(result.values[d], 2);
   }
 
@@ -95,11 +88,6 @@ static DenseVector generateRandomPerpVector(const DenseVector& first_vec,
 }
 
 /** Print out a dense vector */
-static void printVec(const DenseVector& vec) {
-  for (uint32_t i = 0; i < vec.dim; i++) {
-    std::cout << vec.values.at(i) << " ";
-  }
-  std::cout << std::endl;
-}
+static void printVec(const DenseVector& vec) { std::cout << vec << std::endl; }
 
 }  // namespace thirdai::utils::lsh_testing

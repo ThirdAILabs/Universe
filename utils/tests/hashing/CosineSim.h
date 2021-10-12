@@ -79,17 +79,17 @@ class CosineSim : public Similarity {
       }
     }
 
-    SparseVector v1, v2;
-    v1.values.insert(v1.values.end(), dense_result.v1.values.begin(),
-                     dense_result.v1.values.end());
-    v2.values.insert(v2.values.end(), dense_result.v2.values.begin(),
-                     dense_result.v2.values.end());
-    v1.indices.insert(v1.indices.end(), indices_set.begin(), indices_set.end());
-    v2.indices.insert(v2.indices.end(), indices_set.begin(), indices_set.end());
-    std::sort(v1.indices.begin(), v1.indices.end());
-    std::sort(v2.indices.begin(), v2.indices.end());
-    v1.num_non_zeros = num_non_zeros;
-    v2.num_non_zeros = num_non_zeros;
+    SparseVector v1(num_non_zeros);
+    SparseVector v2(num_non_zeros);
+    std::copy(dense_result.v1.values,
+              dense_result.v1.values + dense_result.v1.dim, v1.values);
+    std::copy(dense_result.v2.values,
+              dense_result.v2.values + dense_result.v2.dim, v2.values);
+
+    std::copy(indices_set.begin(), indices_set.end(), v1.indices);
+    std::copy(indices_set.begin(), indices_set.end(), v2.indices);
+    std::sort(v1.indices, v1.indices + v1.len);
+    std::sort(v2.indices, v2.indices + v2.len);
 
     return {std::move(v1), std::move(v2), dense_result.sim};
   }
