@@ -37,6 +37,11 @@ add_executable(
   DensifiedMinHashTest.cc
 )
 
+add_executable(
+  hash_mod_test
+  HashModTest.cc
+)
+
 set(
   LIBS 
   hash_function_lib
@@ -74,8 +79,15 @@ target_link_libraries(
   ${LIBS}
 )
 
+target_link_libraries(
+  hash_mod_test
+  PRIVATE
+  ${LIBS}
+)
+
 gtest_discover_tests(murmurhash_test)
 gtest_discover_tests(universalhash_test)
 gtest_discover_tests(srp_test)
 gtest_discover_tests(fast_srp_test)
 gtest_discover_tests(densified_minhash_test)
+gtest_discover_tests(hash_mod_test)
