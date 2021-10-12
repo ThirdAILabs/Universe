@@ -1,14 +1,8 @@
 #!/bin/bash
 
-export BASEDIR=$(dirname "$0")
+BASEDIR=$(dirname "$0")
 ./$BASEDIR/build.sh
 ./$BASEDIR/get_datasets.sh
-
-export DATE=$(date '+%Y-%m-%d')
-target=$BASEDIR/../../logs/$DATE
-mkdir -p $BASEDIR/../../logs/
-mkdir -p $target
-export NOW=$(date +"%T")
 
 # We need: Code version, machine information, run time, accuracy, hash seeds
 cd $BASEDIR/../build/
@@ -23,9 +17,16 @@ OTHER_MACHINE_INFO=$(lscpu | egrep 'Socket|Thread|Core')
 CODE_VERSION+=$(git describe --tag)
 UNIT_TESTS=$(ctest -A | tail -3)
 
-LOGFILE="../$target/$NOW.txt"
-if [ "$RUN_BOLT" == "y" ]
+# Empty string accounts for scheduled workflow having no default values
+if [ "$RUN_BOLT" == "y" ] || [ "$RUN_BOLT" == "" ]
 then
+	DATE=$(date '+%Y-%m-%d')
+	target=$BASEDIR/../../logs/$DATE
+	mkdir -p $BASEDIR/../../logs/
+	mkdir -p $target
+	NOW=$(date +"%T")
+	LOGFILE="../$target/$NOW.txt"
+	
     echo "Running BOLT benchmarks..."
 	# TODO(alan):
 	# - Replace this line and add bolt benchmark tests for amzn670.
@@ -140,7 +141,7 @@ curl -X POST -H 'Content-type: application/json' \
 --data "$payload" $URL
 
 # TODO(alan): Add FLASH benchmarks
-if [ "$RUN_FLASH" == "y" ]
+if [ "$RUN_FLASH" == "y" ] || [ "$RUN_FLASH" == "" ]
 then
     echo "Running FLASH benchmarks...logging results into $LOGFILE..."
 else
