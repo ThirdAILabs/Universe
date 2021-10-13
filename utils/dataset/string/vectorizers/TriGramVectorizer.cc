@@ -61,8 +61,8 @@ void TriGramVectorizer::vectorize(
         ids[hash]++;
         break;
       case VALUE_TYPE::TFIDF:
-        if (const float idf = idfMap.at(hash) != 0.0) {
-          ids[hash] += idf;
+        if (idfMap.count(hash) != 0) {
+          ids[hash] += idfMap.at(hash);
         } else {
           ids[hash]++;
         }

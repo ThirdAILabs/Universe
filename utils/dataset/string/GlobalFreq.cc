@@ -28,13 +28,10 @@ GlobalFreq::GlobalFreq(std::vector<std::string>& files,
         // std::cout << temp << " " << hash << "  ";
         if (temp_set.find(hash) == temp_set.end()) {
           temp_set.insert(hash);
-          if (_idfMap.count(hash) > 0) {
-            _idfMap[hash]++;
-          } else {
-            _idfMap[hash] = 1;
-          }
+          _idfMap[hash] = _idfMap[hash] + 1;
         } else {
-          // std::cout << "Clashed  " << temp << std::endl;
+          // std::cout << "Clashed  word:" << temp << "  Sentence: " << buffer
+          // << std::endl;
         }
       }
       temp_set.clear();

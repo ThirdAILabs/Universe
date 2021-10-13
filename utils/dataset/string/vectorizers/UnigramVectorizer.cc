@@ -28,23 +28,23 @@ void UnigramVectorizer::UnigramVectorizer::vectorize(
     // Mapping to count frequencies of unique token ids.
     const char* converted = temp.c_str();
     u_int32_t len = temp.length();
-    u_int32_t hash =
-        MurmurHash(converted, len, _murmur_seed) % _max_dim + _start_idx;
+    u_int32_t hash = MurmurHash(converted, len, _murmur_seed);
+    u_int32_t aligned_hash = hash % _max_dim + _start_idx;
     switch (_value_type) {
       case VALUE_TYPE::TFIDF:
-        if (const float idf = idfMap.at(hash) != 0.0) {
-          ids[hash] += idf;
+        if (idfMap.count(hash) != 0) {
+          ids[aligned_hash] += idfMap.at(hash);
         } else {
-          ids[hash]++;
+          ids[aligned_hash]++;
         }
         break;
 
       case VALUE_TYPE::BINARY:
-        ids[hash] = 1;
+        ids[aligned_hash] = 1;
         break;
 
       case VALUE_TYPE::FREQUENCY:
-        ids[hash]++;
+        ids[aligned_hash]++;
         break;
 
       default:
@@ -62,6 +62,12 @@ void UnigramVectorizer::UnigramVectorizer::vectorize(
     values[i] = kv.second;
     i++;
   }
+}
+
+u_int32_t UnigramVectorizer::get_seed() { return _murmur_seed; }
+
+void UnigramVectorizer::set_seed(u_int32_t new_seed) {
+  _murmur_seed = new_seed;
 }
 
 // void UnigramVectorizer::setGlobalFreq(GlobalFreq* global_freq) {

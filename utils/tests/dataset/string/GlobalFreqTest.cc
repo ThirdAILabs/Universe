@@ -14,8 +14,11 @@ TEST(GlobalFreqTest, ProcessFile) {
   print_to_file();
   SentenceLoader loader;
   GlobalFreq global_freq(directory, &loader, 799);
-  std::string query = "we";
-  std::cout << global_freq.idf_size() << std::endl;
+  std::string query = "biden";
+  std::cout << "IDF size: " << global_freq.idf_size() << std::endl;
+  for (auto kv : global_freq._idfMap) {
+    std::cout << kv.second << std::endl;
+  }
 }
 
 }  // namespace thirdai::utils

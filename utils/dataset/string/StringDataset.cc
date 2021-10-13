@@ -34,7 +34,6 @@ void StringDataset::addFileToQueue(std::string filename) {
 void StringDataset::processGlobal(std::vector<std::string>& files) {
   // TODO: (Henry) Where do we want to store the seed?
   _global_freq = new GlobalFreq(files, _loader, 42);
-  //_word_uni_gram_vectorizer.setGlobalFreq(_global_freq);
 }
 
 void StringDataset::loadNextBatchSet() {
