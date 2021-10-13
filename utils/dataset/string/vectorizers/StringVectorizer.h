@@ -7,7 +7,11 @@
 #include <vector>
 
 namespace thirdai::utils {
-enum class VALUE_TYPE { TFIDF, TF, BINARY };
+enum class VALUE_TYPE { TFIDF, FREQUENCY, BINARY };
+
+static std::unordered_map<uint32_t, float> DefaultIDFMap;
+
+// static IDFMap DefaultIDFMap;
 /**
  * Interface for extracting sparse vector indices and values out of strings.
  * The constructor of the derived class has to set _dim.
@@ -22,16 +26,17 @@ class StringVectorizer {
    * max_dim: The maximum dimension of the produced vector.
    * max_dim cannot be 0.
    */
-  explicit StringVectorizer(uint32_t start_idx, uint32_t max_dim)
+  StringVectorizer(uint32_t start_idx, uint32_t max_dim)
       : _start_idx(start_idx), _max_dim(max_dim) {
-    try {
-      if (_max_dim < 1) {
-        throw "String vectorizer does not accept max_dim < 1";
-      }
-    } catch (std::string& e) {
-      std::cout << "StringDataset:" << e << std::endl;
-    }
+    constructorHelper();
   };
+
+  void constructorHelper() const {
+    if (_max_dim < 1) {
+      throw std::invalid_argument(
+          "String vectorizer does not accept max_dim < 1");
+    }
+  }
 
   /**
    * Returns the dimension of the vector.
@@ -46,6 +51,10 @@ class StringVectorizer {
    */
   virtual void vectorize(const std::string& str, std::vector<uint32_t>& indices,
                          std::vector<float>& values) = 0;
+
+  virtual void vectorize(const std::string& str, std::vector<uint32_t>& indices,
+                         std::vector<float>& values,
+                         const std::unordered_map<uint32_t, float>& idfMap) = 0;
 
   virtual ~StringVectorizer() {}
 

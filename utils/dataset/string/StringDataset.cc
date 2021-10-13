@@ -5,8 +5,8 @@ StringDataset::StringDataset(FRAGMENT_TYPE load_type,
                              uint64_t target_batch_size,
                              uint64_t target_batch_num_per_load)
     : Dataset(target_batch_size, target_batch_num_per_load),
-      _char_tri_gram_vectorizer(0, 100000),
-      _word_uni_gram_vectorizer(0, 100000, VALUE_TYPE::TF) {
+      _char_tri_gram_vectorizer(0, 100000, VALUE_TYPE::FREQUENCY),
+      _word_uni_gram_vectorizer(0, 100000, VALUE_TYPE::FREQUENCY) {
   // The loaders have not been fully implemented yet. Only sentence loader is
   // available for now.
   switch (load_type) {
@@ -21,7 +21,8 @@ StringDataset::StringDataset(FRAGMENT_TYPE load_type,
       break;
   }
   _dim += _char_tri_gram_vectorizer.getDimension();
-  _word_uni_gram_vectorizer = UnigramVectorizer(_dim, 100000, VALUE_TYPE::TF);
+  _word_uni_gram_vectorizer =
+      UnigramVectorizer(_dim, 100000, VALUE_TYPE::FREQUENCY);
   _dim += _word_uni_gram_vectorizer.getDimension();
   _first_load = true;
 }

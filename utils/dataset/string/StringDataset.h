@@ -1,9 +1,9 @@
 #pragma once
 #include "../Dataset.h"
+#include "GlobalFreq.h"
 #include "loaders/SentenceLoader.h"
 #include "vectorizers/TriGramVectorizer.h"
 #include "vectorizers/UnigramVectorizer.h"
-#include "GlobalFreq.h"
 #include <iostream>
 #include <string>
 #include <unordered_map>

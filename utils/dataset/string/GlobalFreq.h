@@ -6,13 +6,13 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <math.h>
 #include <optional>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <math.h>
 
 namespace thirdai::utils {
 
@@ -28,7 +28,8 @@ class GlobalFreq {
   u_int32_t _max_dim = 100000;
 
  public:
-  GlobalFreq(std::vector<std::string>& files, StringLoader* string_loader, u_int32_t murmur_seed);
+  GlobalFreq(std::vector<std::string>& files, StringLoader* string_loader,
+             u_int32_t murmur_seed);
 
   int getIdf(std::string& token);  // Should have a default value
   int getTokenID(std::string& token);

@@ -16,6 +16,10 @@ class UnigramVectorizer : public StringVectorizer {
                     VALUE_TYPE value_type);
   void vectorize(const std::string& str, std::vector<uint32_t>& indices,
                  std::vector<float>& values) override;
+
+  void vectorize(const std::string& str, std::vector<uint32_t>& indices,
+                 std::vector<float>& values,
+                 const std::unordered_map<uint32_t, float>& idfMap) override;
 };
 
 }  // namespace thirdai::utils

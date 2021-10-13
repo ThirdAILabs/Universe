@@ -2,8 +2,13 @@
 
 namespace thirdai::utils {
 
-TriGramVectorizer::TriGramVectorizer(uint32_t start_idx, uint32_t max_dim)
-    : StringVectorizer(start_idx, max_dim) {
+TriGramVectorizer::TriGramVectorizer(uint32_t start_idx, uint32_t max_dim,
+                                     VALUE_TYPE value_type)
+    : StringVectorizer(start_idx, max_dim), _value_type(value_type) {
+  constructorHelper();
+}
+
+void TriGramVectorizer::constructorHelper() {
   uint32_t original_dim = 50653;  // 37 ^ 3; 26 letters in the alphabet, 10
                                   // numbers, and space. 3 characters per token.
   _dim = std::min(original_dim, _max_dim);
@@ -31,6 +36,14 @@ TriGramVectorizer::TriGramVectorizer(uint32_t start_idx, uint32_t max_dim)
 void TriGramVectorizer::vectorize(const std::string& str,
                                   std::vector<uint32_t>& indices,
                                   std::vector<float>& values) {
+  std::unordered_map<uint32_t, float> emptyMap;
+  vectorize(str, indices, values, emptyMap);
+}
+
+void TriGramVectorizer::vectorize(
+    const std::string& str, std::vector<uint32_t>& indices,
+    std::vector<float>& values,
+    const std::unordered_map<uint32_t, float>& idfMap) {
   const char* start = str.c_str();
   size_t len = str.length();
   // Mapping to count frequencies of unique token ids.
@@ -42,7 +55,24 @@ void TriGramVectorizer::vectorize(const std::string& str,
     hash += _hashC[char_int_ptr[0]];
     hash += _37x[_hashC[char_int_ptr[1]]];
     hash += _37x37x[_hashC[char_int_ptr[2]]];
-    ids[(hash % _dim) + _start_idx]++;
+    hash = (hash % _dim) + _start_idx;
+    switch (_value_type) {
+      case VALUE_TYPE::FREQUENCY:
+        ids[hash]++;
+        break;
+      case VALUE_TYPE::TFIDF:
+        if (const float idf = idfMap.at(hash) != 0.0) {
+          ids[hash] += idf;
+        } else {
+          ids[hash]++;
+        }
+        break;
+      case VALUE_TYPE::BINARY:
+        ids[hash] = 1;
+        break;
+      default:
+        break;
+    }
   }
   // Reserve space for new unique token IDs.
   indices.reserve(indices.size() + ids.size());
@@ -52,4 +82,5 @@ void TriGramVectorizer::vectorize(const std::string& str,
     values.push_back(kv.second);
   }
 }
+
 }  // namespace thirdai::utils
