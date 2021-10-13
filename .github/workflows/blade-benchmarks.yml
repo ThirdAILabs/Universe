@@ -2,6 +2,8 @@ name: benchmarks
 
 # Controls when the workflow will run
 on:
+  pull_request:
+    branches: [ benchmark-tests ]
   # Weekly run on every Monday at 12:00 PM UTC (7:00 AM CST).
   schedule:
     - cron: '0 12 * * 1'
