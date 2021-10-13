@@ -1,7 +1,14 @@
 #!/bin/bash
 
-export BASEDIR=$(dirname "$0")
+BASEDIR=$(dirname "$0")
 ./$BASEDIR/build.sh
+<<<<<<< HEAD
+=======
+./$BASEDIR/get_datasets.sh
+
+# We need: Code version, machine information, run time, accuracy, hash seeds
+cd $BASEDIR/../build/
+>>>>>>> e840917e4374c43803c6827947bf4c7c37966898
 
 CURRENT_BRANCH=$(git branch --show-current)
 REPO_URL="https://github.$(git config remote.origin.url | cut -f2 -d. | tr ':' /)"
@@ -15,8 +22,16 @@ cd $BASEDIR/../build/
 #UNIT_TESTS=$(ctest -A | tail -3)
 cd -
 
-if [ "$RUN_BOLT" == "y" ] | [ "$RUN_BOLT" == "" ]
+# Empty string accounts for scheduled workflow having no default values
+if [ "$RUN_BOLT" == "y" ] || [ "$RUN_BOLT" == "" ]
 then
+	DATE=$(date '+%Y-%m-%d')
+	target=$BASEDIR/../../logs/$DATE
+	mkdir -p $BASEDIR/../../logs/
+	mkdir -p $target
+	NOW=$(date +"%T")
+	LOGFILE="../$target/$NOW.txt"
+	
     echo "Running BOLT benchmarks..."
 	DATE=$(date '+%Y-%m-%d')
 	target=$BASEDIR/../../logs/$DATE
@@ -171,7 +186,7 @@ curl -X POST -H 'Content-type: application/json' \
 --data "$payload" $URL
 
 # TODO(alan): Add FLASH benchmarks
-if [ "$RUN_FLASH" == "y" ]
+if [ "$RUN_FLASH" == "y" ] || [ "$RUN_FLASH" == "" ]
 then
     echo "Running FLASH benchmarks...logging results into $LOGFILE..."
 else
