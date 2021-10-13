@@ -2,10 +2,6 @@ name: benchmarks
 
 # Controls when the workflow will run
 on:
-  push:
-    branches: [ benchmark-tests ]
-  pull_request:
-    branches: [ benchmark-tests ]
   # Schedule for every day at 0:00 and 12:00 UTC. TODO(alan): Change to weekly after testing on main.
   schedule:
     - cron: '0 0,12 * * *'
