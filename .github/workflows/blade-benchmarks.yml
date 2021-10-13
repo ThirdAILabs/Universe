@@ -2,11 +2,11 @@ name: benchmarks
 
 # Controls when the workflow will run
 on:
-  # Schedule for every day at 0:00 and 12:00 UTC. TODO(alan): Change to weekly after testing on main.
+  # Weekly run on every Monday at 12:00 PM UTC (7:00 AM CST).
   schedule:
-    - cron: '0 0 * * 0'
+    - cron: '0 12 * * 1'
   # Allows you to run this workflow manually from the Actions tab.
-  # Select the current branch.
+  # Select the current branch and specify inputs.
   workflow_dispatch:
     inputs:
       bolt:
@@ -23,20 +23,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    # Declares workflow dispatch inputs, actions ID, and current branch information for blade session.
     - name: Declare variables
       shell: bash
       run: |
         echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         echo "##[set-output name=run_id;]$(echo ${{ github.run_id }})"
-        echo ${{ github.run_id }}
         echo "##[set-output name=bolt;]$(echo ${{ github.event.inputs.bolt }})"
         echo "##[set-output name=flash;]$(echo ${{ github.event.inputs.flash }})"
       id: vars
     - name: Run Benchmark Tests
       uses: fifsky/ssh-action@master
       with:
-          # Could also just checkout specific branch (rather than cloning every time and rebuilding cmake targets), 
-          # but this way avoids any potential user changes in cicd/Universe to affect benchmark results.
+        # SSH into blade cluster and run this series of commands.
         command: |
           export RUN_ID=${{ steps.vars.outputs.run_id }}
           export RUN_BOLT=${{ steps.vars.outputs.bolt }}
