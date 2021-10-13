@@ -2,13 +2,6 @@
 
 BASEDIR=$(dirname "$0")
 ./$BASEDIR/build.sh
-<<<<<<< HEAD
-=======
-./$BASEDIR/get_datasets.sh
-
-# We need: Code version, machine information, run time, accuracy, hash seeds
-cd $BASEDIR/../build/
->>>>>>> e840917e4374c43803c6827947bf4c7c37966898
 
 CURRENT_BRANCH=$(git branch --show-current)
 REPO_URL="https://github.$(git config remote.origin.url | cut -f2 -d. | tr ':' /)"
@@ -45,36 +38,37 @@ then
 	./build/bolt/bolt bolt/configs/amzn_benchmarks.cfg > $LOGFILE &
 	BOLT_PID=$!
 
-	tail -fn0 $LOGFILE | \
 	while read line ; do
-		echo "Checking accuracy and time... $line" | grep "Epoch 3:"
+		echo "Checking accuracy and time... $line" | grep "Epoch 1:"
 		if [ $? = 0 ]
 		then
 			ACCURACY=$(echo $(tail -4 $LOGFILE | head -1) | grep -Eo '[+-]?[0-9]+([.][0-9]+)')
 			PASS_ACCURACY_CHECK=$(echo "$ACCURACY > 0.3" | bc)
+			BOLT_MSG+=$(head -n-2 $LOGFILE)
 			if [ $PASS_ACCURACY_CHECK -eq 0 ]
 			then
 				kill $BOLT_PID
-				BOLT_MSG+="ERROR: Accuracy ($ACCURACY) too low after 3 epochs."
+				BOLT_MSG+="\nERROR: Accuracy ($ACCURACY) too low after 3 epochs.\n"
 				break
 			fi
 		fi
 
 		END_TIME=$(date +"%s")
 		ELAPSED_TIME=$(($END_TIME - $START_TIME))
-		echo $ELAPSED_TIME
-		if [ $ELAPSED_TIME -gt 5 ]
+		if [ $ELAPSED_TIME -gt 10000 ]
 		then
 			kill $BOLT_PID
-			BOLT_MSG+="ERROR: Timeout exceeded (>10000 seconds)"
+			BOLT_MSG+="ERROR: Timeout exceeded (>10000 seconds)\n"
 			break
 		fi
-	done
-	BOLT_MSG="BOLT epoch logs can be found in: /home/cicd/logs/$DATE/$NOW.txt"
+	done < <( tail -fn0 $LOGFILE )
+	END_TIME=$(date +"%s")
+	BOLT_MSG+="Total elapsed time: $(($END_TIME - $START_TIME)) seconds.\n"
+	BOLT_MSG+="Full logs can be found in: /home/cicd/logs/$DATE/$NOW.txt\n"
 else
 	BOLT_MSG="Skipped BOLT benchmarks"
 fi
-echo $BOLT_MSG
+echo -e $BOLT_MSG
 
 # TODO(alan): Decide if we want to attach full logs (will need to use S3 or similar to upload remote logs)
 # curl -F token=* \
@@ -177,14 +171,13 @@ payload="
 	]
 }"
 
-# ../$BASEDIR/bolt_mnist_test.sh >> $LOGFILE
-
 # Send Slack Notification
 # Webhook URL for benchmarks channel
 URL="https://hooks.slack.com/services/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"
 curl -X POST -H 'Content-type: application/json' \
 --data "$payload" $URL
 
+echo ""
 # TODO(alan): Add FLASH benchmarks
 if [ "$RUN_FLASH" == "y" ] || [ "$RUN_FLASH" == "" ]
 then
