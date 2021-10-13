@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../dataset/Vectors.h"
 #include <cmath>
 #include <cstdint>
 #include <iostream>
@@ -8,18 +9,11 @@
 
 namespace thirdai::utils::lsh_testing {
 
-/** Represents a sparse data vector */
-struct SparseVector {
-  std::vector<uint32_t> indices;
-  std::vector<float> values;
-  uint32_t num_non_zeros;
-};
-
 /** Returns the angle between two sparse vectors */
 static float angle(const SparseVector& a, const SparseVector& b) {
   float total = 0, ma = 0, mb = 0;
   uint32_t ia = 0, ib = 0;
-  while (ia < a.num_non_zeros && ib < b.num_non_zeros) {
+  while (ia < a.len && ib < b.len) {
     if (a.indices[ia] == b.indices[ib]) {
       total += a.values[ia] * b.values[ib];
       ia++;
@@ -30,11 +24,11 @@ static float angle(const SparseVector& a, const SparseVector& b) {
       ib++;
     }
   }
-  for (uint32_t i = 0; i < a.num_non_zeros; i++) {
+  for (uint32_t i = 0; i < a.len; i++) {
     ma += a.values[i] * a.values[i];
   }
 
-  for (uint32_t i = 0; i < b.num_non_zeros; i++) {
+  for (uint32_t i = 0; i < b.len; i++) {
     mb += b.values[i] * b.values[i];
   }
 
@@ -42,11 +36,6 @@ static float angle(const SparseVector& a, const SparseVector& b) {
 }
 
 /** Print out a sparse vector */
-static void printVec(const SparseVector& vec) {
-  for (uint32_t i = 0; i < vec.num_non_zeros; i++) {
-    std::cout << vec.indices.at(i) << ":" << vec.values.at(i) << " ";
-  }
-  std::cout << std::endl;
-}
+static void printVec(const SparseVector& vec) { std::cout << vec << std::endl; }
 
 }  // namespace thirdai::utils::lsh_testing

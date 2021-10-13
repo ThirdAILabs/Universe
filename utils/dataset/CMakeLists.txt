@@ -1,4 +1,4 @@
-enable_testing()
+add_subdirectory(batch_types)
 
-add_subdirectory(svm)
-add_subdirectory(string)
+add_library(dataset_lib Dataset.cc)
+target_link_libraries(dataset_lib batch_lib)
