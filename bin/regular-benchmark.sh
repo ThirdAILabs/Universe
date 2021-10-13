@@ -2,16 +2,6 @@
 
 export BASEDIR=$(dirname "$0")
 ./$BASEDIR/build.sh
-./$BASEDIR/get_datasets.sh
-
-export DATE=$(date '+%Y-%m-%d')
-target=$BASEDIR/../../logs/$DATE
-mkdir -p $BASEDIR/../../logs/
-mkdir -p $target
-export NOW=$(date +"%T")
-
-# We need: Code version, machine information, run time, accuracy, hash seeds
-cd $BASEDIR/../build/
 
 CURRENT_BRANCH=$(git branch --show-current)
 REPO_URL="https://github.$(git config remote.origin.url | cut -f2 -d. | tr ':' /)"
@@ -21,16 +11,50 @@ MODEL_NAME=$(grep -m 1 "model name" /proc/cpuinfo | sed -e "s/^.*: //")
 NUM_CPUS=$(grep -c ^processor /proc/cpuinfo)
 OTHER_MACHINE_INFO=$(lscpu | egrep 'Socket|Thread|Core')
 CODE_VERSION+=$(git describe --tag)
-UNIT_TESTS=$(ctest -A | tail -3)
+cd $BASEDIR/../build/
+#UNIT_TESTS=$(ctest -A | tail -3)
+cd -
 
-LOGFILE="../$target/$NOW.txt"
-if [ "$RUN_BOLT" == "y" ]
+if [ "$RUN_BOLT" == "y" ] | [ "$RUN_BOLT" == "" ]
 then
     echo "Running BOLT benchmarks..."
-	# TODO(alan):
-	# - Replace this line and add bolt benchmark tests for amzn670.
-	EPOCH_LOGS=$(git describe --tag)
-	echo EPOCH_LOGS >> $LOGFILE
+	DATE=$(date '+%Y-%m-%d')
+	target=$BASEDIR/../../logs/$DATE
+	mkdir -p $BASEDIR/../../logs/
+	mkdir -p $target
+	NOW=$(date +"%T")
+	LOGFILE="$target/$NOW.txt"
+	LOGFILE="log.txt"
+
+	START_TIME=$(date +"%s")
+	./build/bolt/bolt bolt/configs/amzn_benchmarks.cfg > $LOGFILE &
+	BOLT_PID=$!
+
+	tail -fn0 $LOGFILE | \
+	while read line ; do
+		echo "Checking accuracy and time... $line" | grep "Epoch 3:"
+		if [ $? = 0 ]
+		then
+			ACCURACY=$(echo $(tail -4 $LOGFILE | head -1) | grep -Eo '[+-]?[0-9]+([.][0-9]+)')
+			PASS_ACCURACY_CHECK=$(echo "$ACCURACY > 0.3" | bc)
+			if [ $PASS_ACCURACY_CHECK -eq 0 ]
+			then
+				kill $BOLT_PID
+				BOLT_MSG+="ERROR: Accuracy ($ACCURACY) too low after 3 epochs."
+				break
+			fi
+		fi
+
+		END_TIME=$(date +"%s")
+		ELAPSED_TIME=$(($END_TIME - $START_TIME))
+		echo $ELAPSED_TIME
+		if [ $ELAPSED_TIME -gt 5 ]
+		then
+			kill $BOLT_PID
+			BOLT_MSG+="ERROR: Timeout exceeded (>10000 seconds)"
+			break
+		fi
+	done
 	BOLT_MSG="BOLT epoch logs can be found in: /home/cicd/logs/$DATE/$NOW.txt"
 else
 	BOLT_MSG="Skipped BOLT benchmarks"
@@ -121,6 +145,13 @@ payload="
                 \"text\": \"$UNIT_TESTS\"
             }
         },
+		{
+			\"type\": \"header\",
+			\"text\": {
+				\"type\": \"plain_text\",
+				\"text\": \"Bolt Benchmarks\"
+			}
+		},
         {
             \"type\": \"section\",
 			\"text\": {
