@@ -4,7 +4,7 @@ name: benchmarks
 on:
   # Schedule for every day at 0:00 and 12:00 UTC. TODO(alan): Change to weekly after testing on main.
   schedule:
-    - cron: '0 0,12 * * *'
+    - cron: '0 0 * * 0'
   # Allows you to run this workflow manually from the Actions tab.
   # Select the current branch.
   workflow_dispatch:

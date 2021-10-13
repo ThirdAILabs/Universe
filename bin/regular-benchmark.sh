@@ -12,7 +12,7 @@ NUM_CPUS=$(grep -c ^processor /proc/cpuinfo)
 OTHER_MACHINE_INFO=$(lscpu | egrep 'Socket|Thread|Core')
 CODE_VERSION+=$(git describe --tag)
 cd $BASEDIR/../build/
-#UNIT_TESTS=$(ctest -A | tail -3)
+UNIT_TESTS=$(ctest -A | tail -3)
 cd -
 
 # Empty string accounts for scheduled workflow having no default values
@@ -39,20 +39,32 @@ then
 	BOLT_PID=$!
 
 	while read line ; do
-		echo "Checking accuracy and time... $line" | grep "Epoch 1:"
+		echo "$line" | grep -q "Epoch: 1"
 		if [ $? = 0 ]
 		then
-			ACCURACY=$(echo $(tail -4 $LOGFILE | head -1) | grep -Eo '[+-]?[0-9]+([.][0-9]+)')
-			PASS_ACCURACY_CHECK=$(echo "$ACCURACY > 0.3" | bc)
 			BOLT_MSG+=$(head -n-2 $LOGFILE)
-			if [ $PASS_ACCURACY_CHECK -eq 0 ]
+			
+			# Kill job and signal an error if accuracy after the third epoch is less than 0.3.
+			ACCURACY=$(echo $(tail -5 $LOGFILE | head -1) | grep -Eo '[+-]?[0-9]+([.][0-9]+)')
+			PASS_ACCURACY_CHECK=$(echo "$ACCURACY > 0.3" | bc)
+			if [[ "$PASS_ACCURACY_CHECK" -eq 0 ]]
 			then
 				kill $BOLT_PID
 				BOLT_MSG+="\nERROR: Accuracy ($ACCURACY) too low after 3 epochs.\n"
 				break
 			fi
+
+			# Kill job and signal an error if training time after the third epoch is longer than 400 seconds.
+			EPOCH_TRAIN_TIME=$(echo $(tail -7 log.txt | head -1) | grep -Eo '[+-]?[0-9]+([.][0-9]+)?' | tail -1)
+			if [[ "$EPOCH_TRAIN_TIME" -gt 400 ]]
+			then
+				kill $BOLT_PID
+				BOLT_MSG+="\nERROR: Epoch training time ($EPOCH_TRAIN_TIME) longer than expected.\n"
+				break
+			fi
 		fi
 
+		# Kill job and notify an error if total elapsed time of all epochs is greater than 10000 seconds.
 		END_TIME=$(date +"%s")
 		ELAPSED_TIME=$(($END_TIME - $START_TIME))
 		if [ $ELAPSED_TIME -gt 10000 ]
