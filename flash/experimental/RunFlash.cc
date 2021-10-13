@@ -1,6 +1,6 @@
-#include "../utils/dataset/svm/SVMDataset.h"
-#include "../utils/hashing/DensifiedMinHash.h"
-#include "src/Flash.h"
+#include "../../utils/hashing/DensifiedMinHash.h"
+#include "../src/Flash.h"
+#include <cstdint>
 #include <iostream>
 
 int main(int argc, char** argv) {
@@ -23,14 +23,15 @@ int main(int argc, char** argv) {
   uint32_t hashes_per_table = atoi(argv[4]);
   uint32_t top_k = atoi(argv[5]);
   uint32_t range = 1000000;
-  auto dataset = thirdai::utils::SVMDataset(argv[1], batch_size, 1);
+  auto dataset = thirdai::utils::InMemoryDataset<thirdai::utils::SparseBatch>(
+      argv[1], batch_size);
   auto hash_func =
       thirdai::utils::DensifiedMinHash(hashes_per_table, num_tables, range);
   auto flash = thirdai::search::Flash<uint64_t>(hash_func);
   flash.addDataset(dataset);
 
-  auto queries = thirdai::utils::SVMDataset(argv[2], UINT32_MAX, 1);
-  queries.loadNextBatchSet();
+  auto queries = thirdai::utils::InMemoryDataset<thirdai::utils::SparseBatch>(
+      argv[2], UINT32_MAX);
   auto all_results = flash.queryBatch(queries[0], top_k, false);
 
   for (auto& result : all_results) {

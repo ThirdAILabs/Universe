@@ -35,10 +35,15 @@ class Flash {
    * loadNextBatches on the dataset should not have been called yet, and this
    * will run through the entire dataset.
    */
-  void addDataset(utils::Dataset& dataset);
+  template <typename Batch_t>
+  void addDataset(utils::InMemoryDataset<Batch_t>& dataset);
+
+  template <typename Batch_t>
+  void addDataset(utils::StreamedDataset<Batch_t>& dataset);
 
   /** Insert this batch into the Flash data structure. */
-  void addBatch(const utils::Batch& batch);
+  template <typename Batch_t>
+  void addBatch(const Batch_t& batch);
 
   /**
    * Perform a batch query on the Flash structure, for now on a Batch object.
@@ -46,7 +51,8 @@ class Flash {
    * padded with 0s to obtain a vector of length k. Otherwise less than k
    * results will be returned.
    */
-  std::vector<std::vector<Label_t>> queryBatch(const utils::Batch& batch,
+  template <typename Batch_t>
+  std::vector<std::vector<Label_t>> queryBatch(const Batch_t& batch,
                                                uint32_t top_k,
                                                bool pad_zeros = false) const;
 
@@ -55,7 +61,8 @@ class Flash {
    * Returns a pointer to the hashes of the input batch. These hashes will need
    * to be deleted by the calling function.
    */
-  uint32_t* hash(const utils::Batch& batch) const;
+  template <typename Batch_t>
+  uint32_t* hash(const Batch_t& batch) const;
 
   /**
    * Get the top_k labels that occur most often in the input vector using a
@@ -67,14 +74,8 @@ class Flash {
       std::vector<Label_t>& query_result, uint32_t top_k) const;
 
   /** Makes sure the ids are within range for a batch with sequential ids */
-  void verifyBatchSequentialIds(const utils::Batch& batch) const;
-
-  /**
-   * Makes sure the ids are within range for a batch with independent ids,
-   * and returns a vector of the uint64_t ids converted to the correct size.
-   */
-  std::vector<Label_t> verifyBatchIndependentIds(
-      const utils::Batch& batch) const;
+  template <typename Batch_t>
+  void verifyBatchSequentialIds(const Batch_t& batch) const;
 
   /**
    * Verifies that the passed in id is within the range of this FLASH instance

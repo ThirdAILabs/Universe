@@ -1,11 +1,14 @@
 #include "../bolt/networks/Network.h"
 #include "../flash/src/Flash.h"
 #include "../utils/dataset/Dataset.h"
-#include "../utils/dataset/svm/SVMDataset.h"
+#include "../utils/dataset/batch_types/SparseBatch.h"
 #include "../utils/hashing/DensifiedMinHash.h"
+#include <_types/_uint64_t.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <string>
+#include <vector>
 #ifndef __clang__
 #include <omp.h>
 #endif
@@ -14,6 +17,16 @@
 namespace py = pybind11;
 
 using thirdai::bolt::Network;
+
+using thirdai::utils::DenseBatch;
+using thirdai::utils::InMemoryDataset;
+using thirdai::utils::SparseBatch;
+using thirdai::utils::StreamedDataset;
+
+using thirdai::utils::DensifiedMinHash;
+using thirdai::utils::HashFunction;
+
+using Flash64 = thirdai::search::Flash<uint64_t>;
 
 namespace thirdai::python {
 
@@ -57,13 +70,6 @@ class PyNetwork final : public Network {
   }
 };
 
-// TODO(any): Move this when we refactor the dataset class
-utils::Dataset* createSVMDataset(const std::string& dataset_path,
-                                 uint64_t batch_size,
-                                 uint64_t batches_per_load) {
-  return new utils::SVMDataset(dataset_path, batch_size, batches_per_load);
-}
-
 }  // namespace thirdai::python
 
 // TODO(all): Figure out naming convention for python exposed classes and
@@ -73,28 +79,25 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
 
   auto utils_submodule = m.def_submodule("utils");
 
-  py::class_<thirdai::utils::Batch>(utils_submodule, "Batch");  // NOLINT
+  py::class_<SparseBatch>(utils_submodule,  // NOLINT
+                          "SparseBatch");
 
-  py::class_<thirdai::utils::Dataset>(utils_submodule, "Dataset")
-      .def("__getitem__", &thirdai::utils::Dataset::operator[],
-           py::return_value_policy::reference)
-      .def("LoadNextSetOfBatches", &thirdai::utils::Dataset::loadNextBatchSet);
+  py::class_<InMemoryDataset<SparseBatch>>(utils_submodule,
+                                           "InMemorySparseDataset")
+      .def(py::init<const std::string&, uint32_t>(), py::arg("file_name"),
+           py::arg("batch_size"))
+      .def("__getitem__", &InMemoryDataset<SparseBatch>::operator[],
+           py::return_value_policy::reference);
 
-  py::class_<thirdai::utils::HashFunction>(utils_submodule, "HashFunction")
-      .def("GetNumTables", &thirdai::utils::HashFunction::numTables)
-      .def("GetRange", &thirdai::utils::HashFunction::range);
+  py::class_<HashFunction>(utils_submodule, "HashFunction")
+      .def("get_num_tables", &HashFunction::numTables)
+      .def("get_range", &HashFunction::range);
 
-  py::class_<thirdai::utils::DensifiedMinHash, thirdai::utils::HashFunction>(
-      utils_submodule, "DensifiedMinHash")
+  py::class_<DensifiedMinHash, HashFunction>(utils_submodule,
+                                             "DensifiedMinHash")
       .def(py::init<uint32_t, uint32_t, uint32_t>(),
            py::arg("hashes_per_table"), py::arg("num_tables"),
            py::arg("range"));
-
-  utils_submodule.def("load_svm", &thirdai::python::createSVMDataset,
-                      py::arg("dataset_path"), py::arg("batch_size"),
-                      py::arg("batches_per_load"),
-                      "Load an SVM dataset from memory, ready for use with "
-                      "e.g. BOLT or FLASH.");
 
 #ifndef __clang__
   utils_submodule.def("set_global_num_threads", &omp_set_num_threads,
@@ -104,13 +107,33 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
   // TODO(any): Rename from flash, and fix all other places in the code
   // TODO(josh): I think memory is leaking here
   auto flash_submodule = m.def_submodule("search");
-  py::class_<thirdai::search::Flash<uint64_t>>(flash_submodule, "Flash")
-      .def(py::init<const thirdai::utils::HashFunction&, uint32_t>(),
-           py::arg("hash_function"), py::arg("reservoir_size"))
-      .def("AddDataset", &thirdai::search::Flash<uint64_t>::addDataset,
-           py::arg("dataset"))
-      .def("QueryBatch", &thirdai::search::Flash<uint64_t>::queryBatch,
-           py::arg("batch"), py::arg("top_k"), py::arg("pad_zeros") = false);
+  py::class_<Flash64>(flash_submodule, "Flash")
+      .def(py::init<HashFunction&, uint32_t>(), py::arg("hash_function"),
+           py::arg("reservoir_size"))
+      // See https://github.com/pybind/pybind11/issues/1153 for why we can't
+      // do a py::overload_cas and instead need to use a static cast instead
+      .def("add_dataset",
+           static_cast<void (Flash64::*)(InMemoryDataset<SparseBatch>&)>(
+               &Flash64::addDataset))
+      .def("add_dataset",
+           static_cast<void (Flash64::*)(InMemoryDataset<DenseBatch>&)>(
+               &Flash64::addDataset))
+      .def("add_dataset",
+           static_cast<void (Flash64::*)(StreamedDataset<SparseBatch>&)>(
+               &Flash64::addDataset))
+      .def("add_dataset",
+           static_cast<void (Flash64::*)(StreamedDataset<DenseBatch>&)>(
+               &Flash64::addDataset))
+      .def("add_batch", static_cast<void (Flash64::*)(const SparseBatch&)>(
+                            &Flash64::addBatch))
+      .def("add_batch", static_cast<void (Flash64::*)(const DenseBatch&)>(
+                            &Flash64::addBatch))
+      .def("query_batch",
+           static_cast<std::vector<std::vector<uint64_t>> (Flash64::*)(
+               const SparseBatch&, uint32_t, bool) const>(&Flash64::queryBatch))
+      .def("query_batch",
+           static_cast<std::vector<std::vector<uint64_t>> (Flash64::*)(
+               const DenseBatch&, uint32_t, bool) const>(&Flash64::queryBatch));
 
   auto bolt_submodule = m.def_submodule("bolt");
 
