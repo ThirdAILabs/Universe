@@ -11,8 +11,9 @@ parser.add_argument('webspam_gt_path',
                     help='the file name of the unzipped webspam ground truth file')
 args = parser.parse_args()
 
-queries = utils.load_svm(args.webspam_query_path, batch_size=100000, batches_per_load=1)
-queries.LoadNextSetOfBatches()
+
+dataset = utils.InMemorySparseDataset(args.webspam_data_path, batch_size=10000)
+queries = utils.InMemorySparseDataset(args.webspam_query_path, batch_size=100000)
 
 gt = []
 with open("../webspam_gt") as f:
@@ -33,18 +34,13 @@ for j in range(1, 10):
     # TODO: We have to make reservoirs smaller as we go up to not go OOM
     # on a laptop, see https://github.com/ThirdAILabs/Universe/issues/133 for a 
     # planned fix
-    reservoir_size = min(200, max_size_bytes // table_range // tables)
-
-
-    # TODO(josh): Read this in only once when we refactor the dataset class
+    res_size = min(200, max_size_bytes // table_range // tables)
     hf = utils.DensifiedMinHash(num_tables=tables, hashes_per_table=k, range=table_range)
-    dataset = utils.load_svm(args.webspam_data_path, batch_size=10000, batches_per_load=1)
-
-    flash = search.Flash(hf, reservoir_size)
-    flash.AddDataset(dataset)
+    flash = search.Flash(hf, reservoir_size=res_size)
+    flash.add_dataset(dataset)
 
     start = timer()
-    results = flash.QueryBatch(queries[0], top_k=100)
+    results = flash.query_batch(queries[0], top_k=100)
     end = timer()
 
     r1_at_100 = 0
@@ -54,5 +50,3 @@ for j in range(1, 10):
 
     r1_at_100_recall_time_pairs.append((r1_at_100, (end - start) / len(results)))
     print(r1_at_100_recall_time_pairs, flush=True)
-
-

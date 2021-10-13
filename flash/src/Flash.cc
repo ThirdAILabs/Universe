@@ -156,6 +156,11 @@ std::vector<std::vector<Label_t>> Flash<Label_t>::queryBatch(
 }
 
 template <typename Label_t>
+Flash<Label_t>::~Flash<Label_t>() {
+  delete _hashtable;
+}
+
+template <typename Label_t>
 std::vector<Label_t> Flash<Label_t>::getTopKUsingPriorityQueue(
     std::vector<Label_t>& query_result, uint32_t top_k) const {
   // We sort so counting is easy

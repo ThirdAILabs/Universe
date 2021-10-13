@@ -56,6 +56,8 @@ class Flash {
                                                uint32_t top_k,
                                                bool pad_zeros = false) const;
 
+  ~Flash();
+
  private:
   /**
    * Returns a pointer to the hashes of the input batch. These hashes will need
@@ -85,8 +87,8 @@ class Flash {
   Label_t verify_and_convert_id(uint64_t id) const;
 
   const utils::HashFunction& _function;
-  uint32_t _num_tables, _range;
-  utils::HashTable<Label_t>* _hashtable;
+  const uint32_t _num_tables, _range;
+  utils::HashTable<Label_t>* const _hashtable;
 };
 
 }  // namespace thirdai::search

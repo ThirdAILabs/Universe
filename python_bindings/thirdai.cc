@@ -85,16 +85,32 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
   py::class_<InMemoryDataset<SparseBatch>>(utils_submodule,
                                            "InMemorySparseDataset")
       .def(py::init<const std::string&, uint32_t>(), py::arg("file_name"),
-           py::arg("batch_size"))
+           py::arg("batch_size") = 10000,
+           "Constructs a sparse dataset from a given file with batch sizes of "
+           "a given size, and attempts to read the"
+           " entire file into memory.")
+      .def("get_num_batches", &InMemoryDataset<SparseBatch>::numBatches,
+           "Returns the number of stored batches.")
       .def("__getitem__", &InMemoryDataset<SparseBatch>::operator[],
-           py::return_value_policy::reference);
+           py::return_value_policy::reference,
+           "Returns the currently stored ith batch.");
 
-  py::class_<HashFunction>(utils_submodule, "HashFunction")
-      .def("get_num_tables", &HashFunction::numTables)
-      .def("get_range", &HashFunction::range);
+  py::class_<HashFunction>(
+      utils_submodule, "HashFunction",
+      "Represents an abstract hash function that maps input DenseVectors and "
+      "SparseVectors to sets of positive integers")
+      .def("get_num_tables", &HashFunction::numTables,
+           "Returns the number of hash tables in this hash function, which is "
+           "equivalently the number of hashes that get returned by the "
+           "function for each input.")
+      .def("get_range", &HashFunction::range,
+           "All hashes returned from this function will be >= 0 and <= "
+           "get_range().");
 
-  py::class_<DensifiedMinHash, HashFunction>(utils_submodule,
-                                             "DensifiedMinHash")
+  py::class_<DensifiedMinHash, HashFunction>(
+      utils_submodule, "DensifiedMinHash",
+      "A concrete implementation of a HashFunction that performs an extremly "
+      "efficient minhash. A statistical estimator of jaccard similarity.")
       .def(py::init<uint32_t, uint32_t, uint32_t>(),
            py::arg("hashes_per_table"), py::arg("num_tables"),
            py::arg("range"));
@@ -105,35 +121,51 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
 #endif
 
   // TODO(any): Rename from flash, and fix all other places in the code
-  // TODO(josh): I think memory is leaking here
   auto flash_submodule = m.def_submodule("search");
-  py::class_<Flash64>(flash_submodule, "Flash")
+  py::class_<Flash64>(
+      flash_submodule, "Flash",
+      "Flash is an index for performing near neighbour search. To use it, "
+      "construct an index by calling one or more of add_dataset or "
+      "add_batch. You may need to stream or read in a Dataset from disk "
+      "using one of our utility data wrappers.")
       .def(py::init<HashFunction&, uint32_t>(), py::arg("hash_function"),
            py::arg("reservoir_size"))
       // See https://github.com/pybind/pybind11/issues/1153 for why we can't
       // do a py::overload_cas and instead need to use a static cast instead
       .def("add_dataset",
            static_cast<void (Flash64::*)(InMemoryDataset<SparseBatch>&)>(
-               &Flash64::addDataset))
+               &Flash64::addDataset),
+           py::arg("dataset"))
       .def("add_dataset",
            static_cast<void (Flash64::*)(InMemoryDataset<DenseBatch>&)>(
-               &Flash64::addDataset))
+               &Flash64::addDataset),
+           py::arg("dataset"))
       .def("add_dataset",
            static_cast<void (Flash64::*)(StreamedDataset<SparseBatch>&)>(
-               &Flash64::addDataset))
+               &Flash64::addDataset),
+           py::arg("dataset"))
       .def("add_dataset",
            static_cast<void (Flash64::*)(StreamedDataset<DenseBatch>&)>(
-               &Flash64::addDataset))
-      .def("add_batch", static_cast<void (Flash64::*)(const SparseBatch&)>(
-                            &Flash64::addBatch))
-      .def("add_batch", static_cast<void (Flash64::*)(const DenseBatch&)>(
-                            &Flash64::addBatch))
+               &Flash64::addDataset),
+           py::arg("dataset"))
+      .def("add_batch",
+           static_cast<void (Flash64::*)(const SparseBatch&)>(
+               &Flash64::addBatch),
+           py::arg("batch"))
+      .def(
+          "add_batch",
+          static_cast<void (Flash64::*)(const DenseBatch&)>(&Flash64::addBatch),
+          py::arg("batch"))
       .def("query_batch",
            static_cast<std::vector<std::vector<uint64_t>> (Flash64::*)(
-               const SparseBatch&, uint32_t, bool) const>(&Flash64::queryBatch))
+               const SparseBatch&, uint32_t, bool) const>(&Flash64::queryBatch),
+           py::arg("dense_batch"), py::arg("top_k"),
+           py::arg("pad_zeros") = false)
       .def("query_batch",
            static_cast<std::vector<std::vector<uint64_t>> (Flash64::*)(
-               const DenseBatch&, uint32_t, bool) const>(&Flash64::queryBatch));
+               const DenseBatch&, uint32_t, bool) const>(&Flash64::queryBatch),
+           py::arg("dense_batch"), py::arg("top_k"),
+           py::arg("pad_zeros") = false);
 
   auto bolt_submodule = m.def_submodule("bolt");
 
