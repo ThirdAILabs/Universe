@@ -3,7 +3,6 @@
 #include "../utils/dataset/Dataset.h"
 #include "../utils/dataset/batch_types/SparseBatch.h"
 #include "../utils/hashing/DensifiedMinHash.h"
-#include <_types/_uint64_t.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
