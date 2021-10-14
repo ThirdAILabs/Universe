@@ -13,7 +13,7 @@ OTHER_MACHINE_INFO=$(lscpu | egrep 'Socket|Thread|Core')
 CODE_VERSION+=$(git describe --tag)
 cd $BASEDIR/../build/
 # Run Unit Tests with valgrind to check for memory leaks.
-UNIT_TESTS=$(ctest -T memcheck)
+UNIT_TESTS=$(ctest -T memcheck -E "TimeTest")
 cd -
 
 # Empty string accounts for scheduled workflow having no default values

@@ -4,10 +4,14 @@
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <bitset>
+#include <chrono>
 #include <iostream>
 #include <random>
 #include <string>
 
+using std::chrono::duration_cast;
+using std::chrono::milliseconds;
+using std::chrono::system_clock;
 using thirdai::utils::UniversalHash;
 using thirdai::utils::avalanche_testing::AvalancheTimedTestSuite;
 
@@ -19,10 +23,16 @@ UniversalHash universal_hash(time(nullptr));
  * Tests speed of UniversalHash on integer and string keys.
  */
 TEST_F(AvalancheTimedTestSuite, UniversalHashTimeTest) {
+  auto start =
+      duration_cast<milliseconds>(system_clock::now().time_since_epoch())
+          .count();
   for (uint32_t i = 0; i < num_keys; i++) {
     universal_hash.gethash(str_keys[i]);
     universal_hash.gethash(int_keys[i]);
   }
+  auto end = duration_cast<milliseconds>(system_clock::now().time_since_epoch())
+                 .count();
+  EXPECT_LE(end - start, 100);
 }
 
 /*
