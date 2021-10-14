@@ -32,9 +32,7 @@ class InMemoryDataset {
 
   uint32_t numBatches() const { return _batches.size(); }
 
-  uint64_t len() const {
-    return _len;
-  }
+  uint64_t len() const { return _len; }
 
  private:
   std::vector<Batch_t> _batches;

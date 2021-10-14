@@ -1,10 +1,10 @@
 #pragma once
 
 #include "../Vectors.h"
+#include "BatchOptions.h"
 #include <cassert>
 #include <fstream>
 #include <vector>
-#include "BatchOptions.h"
 
 namespace thirdai::utils {
 
