@@ -63,6 +63,14 @@ class HashTable {
   virtual uint64_t tableRange() const = 0;
 
   virtual ~HashTable<Label_t>(){};
+  
+protected:
+
+  /** The default number of random pregenerated numbers to use for sampling */
+  const static uint32_t DEFAULT_MAX_RAND = 10000;
 };
+
+template <typename LABEL_T>
+const uint32_t HashTable<LABEL_T>::DEFAULT_MAX_RAND;
 
 }  // namespace thirdai::utils

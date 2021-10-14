@@ -20,7 +20,7 @@ TEST(VectorHashTableTest, ExactRetrievalTest) {
   uint32_t table_range = 100;
   uint32_t start_label = 0;
   uint32_t num_items = 100;
-  VectorHashTable<uint32_t> test_table(num_tables, table_range);
+  VectorHashTable<uint32_t, false> test_table(num_tables, table_range);
 
   // Generate hashes
   uint32_t* hashes = new uint32_t[num_tables * num_items];
@@ -84,7 +84,7 @@ TEST(VectorHashTableTest, SortAndClearBucketsTest) {
   // Create a hash table with a single table
   uint32_t num_tables = 1;
   uint32_t table_range = 10;
-  VectorHashTable<uint8_t> test_table(num_tables, table_range);
+  VectorHashTable<uint8_t, false> test_table(num_tables, table_range);
 
   // Add 5 items. Using a single table ensures they are inserted in the order
   // we intend even with a parallel insert.

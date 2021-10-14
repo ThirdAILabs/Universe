@@ -15,7 +15,7 @@ Flash<Label_t>::Flash(const utils::HashFunction& function)
     : _function(function),
       _num_tables(_function.numTables()),
       _range(_function.range()),
-      _hashtable(new utils::VectorHashTable<Label_t>(_num_tables, _range)) {}
+      _hashtable(new utils::VectorHashTable<Label_t, false>(_num_tables, _range)) {}
 
 template <typename Label_t>
 Flash<Label_t>::Flash(const utils::HashFunction& function,
@@ -23,7 +23,7 @@ Flash<Label_t>::Flash(const utils::HashFunction& function,
     : _function(function),
       _num_tables(_function.numTables()),
       _range(_function.range()),
-      _hashtable(new utils::SampledHashTable<Label_t>(
+      _hashtable(new utils::VectorHashTable<Label_t, true>(
           _num_tables, reservoir_size, _range)) {}
 
 template void Flash<uint32_t>::addDataset<utils::SparseBatch>(
