@@ -1,5 +1,4 @@
 #include "ClickThroughBatch.h"
-#include <_types/_uint32_t.h>
 #include <cstdlib>
 
 namespace thirdai::utils {
