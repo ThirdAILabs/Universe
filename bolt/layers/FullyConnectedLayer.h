@@ -23,7 +23,8 @@ class FullyConnectedLayer final : public Layer {
   FullyConnectedLayer& operator=(const FullyConnectedLayer&) = delete;
   FullyConnectedLayer& operator=(FullyConnectedLayer&&) = delete;
 
-  FullyConnectedLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim);
+  FullyConnectedLayer(const FullyConnectedLayerConfig& config,
+                      uint64_t prev_dim);
 
   void feedForward(uint32_t batch_indx, const uint32_t* indices,
                    const float* values, uint32_t len, uint32_t* labels,
@@ -33,8 +34,7 @@ class FullyConnectedLayer final : public Layer {
                      const float* values, float* errors, uint32_t len) override;
 
   void backpropagateFirstLayer(uint32_t batch_indx, const uint32_t* indices,
-                               const float* values,
-                               uint32_t len) override;
+                               const float* values, uint32_t len) override;
 
   void computeErrors(uint32_t batch_indx, uint32_t batch_size,
                      const uint32_t* labels, uint32_t label_len) override;
