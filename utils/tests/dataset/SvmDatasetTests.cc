@@ -91,7 +91,8 @@ class SvmDatasetTestFixture : public ::testing::Test {
 };
 
 TEST_F(SvmDatasetTestFixture, InMemoryDatasetTest) {
-  InMemoryDataset<SparseBatch> dataset(_filename, _batch_size);
+  InMemoryDataset<SparseBatch, SvmSparseBatchFactory> dataset(_filename,
+                                                              _batch_size);
 
   uint32_t vec_count = 0;
   for (const auto& batch : dataset) {
@@ -121,7 +122,8 @@ TEST_F(SvmDatasetTestFixture, InMemoryDatasetTest) {
 }
 
 TEST_F(SvmDatasetTestFixture, StreamedDatasetTest) {
-  StreamedDataset<SparseBatch> dataset(_filename, _batch_size);
+  StreamedDataset<SparseBatch, SvmSparseBatchFactory> dataset(_filename,
+                                                              _batch_size);
 
   uint32_t vec_count = 0;
   while (auto batch_opt = dataset.nextBatch()) {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Factory.h"
 #include "batch_types/DenseBatch.h"
 #include "batch_types/SparseBatch.h"
 #include <cassert>
@@ -12,12 +13,6 @@
 #include <vector>
 
 namespace thirdai::utils {
-
-template <typename Batch_t>
-class Factory {
- public:
-  virtual Batch_t parse(std::ifstream&, uint32_t, uint32_t) = 0;
-};
 
 template <typename Batch_t, typename Factory_t>
 class InMemoryDataset {
@@ -76,7 +71,7 @@ class StreamedDataset {
       return std::nullopt;
     }
 
-    Batch_t next(_file, _batch_size, _curr_id);
+    Batch_t next = _factory.parse(_file, _batch_size, _curr_id);
     _curr_id += next.getBatchSize();
 
     return next;
