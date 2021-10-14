@@ -12,7 +12,8 @@ NUM_CPUS=$(grep -c ^processor /proc/cpuinfo)
 OTHER_MACHINE_INFO=$(lscpu | egrep 'Socket|Thread|Core')
 CODE_VERSION+=$(git describe --tag)
 cd $BASEDIR/../build/
-UNIT_TESTS=$(ctest -A | tail -3)
+# Run Unit Tests with valgrind to check for memory leaks.
+UNIT_TESTS=$(ctest -T memcheck)
 cd -
 
 # Empty string accounts for scheduled workflow having no default values
@@ -30,6 +31,7 @@ then
 	./build/bolt/bolt bolt/configs/amzn_benchmarks.cfg > $LOGFILE &
 	BOLT_PID=$!
 
+	# TODO(alan): Refactor this loop to monitor epoch logs in a separate python script.
 	while read line ; do
 		# Check metrics after Epoch 3.
 		echo "$line" | grep -q "Epoch: 3"

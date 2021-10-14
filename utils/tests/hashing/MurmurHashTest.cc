@@ -22,18 +22,11 @@ std::string AvalancheTimedTestSuite::str_keys[num_keys];
  * Tests speed of MurmurHash on integer and string keys.
  */
 TEST_F(AvalancheTimedTestSuite, MurmurHashTimeTest) {
-  // Allocate 64 bits for output of both keys.
-  auto start =
-      duration_cast<milliseconds>(system_clock::now().time_since_epoch())
-          .count();
   for (uint32_t i = 0; i < num_keys; i++) {
     MurmurHash(str_keys[i].c_str(),
                static_cast<uint32_t>(strlen(str_keys[i].c_str())), seed);
     MurmurHash(std::to_string(int_keys[i]).c_str(), sizeof(uint32_t), seed);
   }
-  auto end = duration_cast<milliseconds>(system_clock::now().time_since_epoch())
-                 .count();
-  EXPECT_LE(end - start, 100);
 }
 
 /*

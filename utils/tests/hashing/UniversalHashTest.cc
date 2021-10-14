@@ -23,16 +23,10 @@ UniversalHash universal_hash(time(nullptr));
  * Tests speed of UniversalHash on integer and string keys.
  */
 TEST_F(AvalancheTimedTestSuite, UniversalHashTimeTest) {
-  auto start =
-      duration_cast<milliseconds>(system_clock::now().time_since_epoch())
-          .count();
   for (uint32_t i = 0; i < num_keys; i++) {
     universal_hash.gethash(str_keys[i]);
     universal_hash.gethash(int_keys[i]);
   }
-  auto end = duration_cast<milliseconds>(system_clock::now().time_since_epoch())
-                 .count();
-  EXPECT_LE(end - start, 100);
 }
 
 /*
