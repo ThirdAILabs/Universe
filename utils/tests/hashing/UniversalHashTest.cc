@@ -4,14 +4,10 @@
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <bitset>
-#include <chrono>
 #include <iostream>
 #include <random>
 #include <string>
 
-using std::chrono::duration_cast;
-using std::chrono::milliseconds;
-using std::chrono::system_clock;
 using thirdai::utils::UniversalHash;
 using thirdai::utils::avalanche_testing::AvalancheTimedTestSuite;
 
