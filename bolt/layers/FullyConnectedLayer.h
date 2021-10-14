@@ -3,6 +3,7 @@
 #include "../../utils/hashing/DWTA.h"
 #include "../../utils/hashtable/SampledHashTable.h"
 #include "Layer.h"
+#include "LayerConfig.h"
 #include <cstdint>
 
 namespace thirdai::bolt {
@@ -22,8 +23,7 @@ class FullyConnectedLayer final : public Layer {
   FullyConnectedLayer& operator=(const FullyConnectedLayer&) = delete;
   FullyConnectedLayer& operator=(FullyConnectedLayer&&) = delete;
 
-  FullyConnectedLayer(uint64_t dim, uint64_t prev_dim, float sparsity,
-                      ActivationFunc act_func, SamplingConfig sampling_config);
+  FullyConnectedLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim);
 
   void feedForward(uint32_t batch_indx, const uint32_t* indices,
                    const float* values, uint32_t len, uint32_t* labels,
@@ -33,7 +33,7 @@ class FullyConnectedLayer final : public Layer {
                      const float* values, float* errors, uint32_t len) override;
 
   void backpropagateFirstLayer(uint32_t batch_indx, const uint32_t* indices,
-                               const float* values, float* errors,
+                               const float* values,
                                uint32_t len) override;
 
   void computeErrors(uint32_t batch_indx, uint32_t batch_size,
@@ -49,6 +49,10 @@ class FullyConnectedLayer final : public Layer {
   void setSparsity(float new_sparsity) override;
 
   void setBatchSize(uint64_t new_batch_size) override;
+
+  // This should not be used with setBatchSize
+  void makeConcatenatedLayer(uint32_t batch_size, float** new_activations,
+                             float** new_errors);
 
   void shuffleRandNeurons() override;
 
@@ -101,6 +105,8 @@ class FullyConnectedLayer final : public Layer {
   uint32_t** _active_neurons;
   float** _activations;
   float** _errors;
+
+  bool _concatenated;
 
   float* _weights;
   float* _w_gradient;

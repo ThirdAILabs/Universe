@@ -6,21 +6,20 @@
 
 namespace thirdai::bolt {
 
-FullyConnectedLayer::FullyConnectedLayer(uint64_t dim, uint64_t prev_dim,
-                                         float sparsity,
-                                         ActivationFunc act_func,
-                                         SamplingConfig sampling_config)
-    : _dim(dim),
+FullyConnectedLayer::FullyConnectedLayer(
+    const FullyConnectedLayerConfig& config, uint64_t prev_dim)
+    : _dim(config.dim),
       _prev_dim(prev_dim),
       _batch_size(0),
-      _sparse_dim(sparsity * dim),
-      _sparsity(sparsity),
-      _act_func(act_func),
+      _sparse_dim(config.sparsity * config.dim),
+      _sparsity(config.sparsity),
+      _act_func(config.act_func),
       _active_lens(nullptr),
       _active_neurons(nullptr),
       _activations(nullptr),
       _errors(nullptr),
-      _sampling_config(sampling_config) {
+      _concatenated(false),
+      _sampling_config(config.sampling_config) {
   uint64_t total_size = _dim * _prev_dim;
 
   _weights = new float[total_size];
@@ -40,7 +39,7 @@ FullyConnectedLayer::FullyConnectedLayer(uint64_t dim, uint64_t prev_dim,
   std::normal_distribution<float> dist(0.0, 0.01);
 
   std::generate(_weights, _weights + total_size, [&]() { return dist(eng); });
-  std::generate(_biases, _biases + dim, [&]() { return dist(eng); });
+  std::generate(_biases, _biases + _dim, [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
     _hasher = new utils::DWTAHashFunction(
@@ -168,22 +167,22 @@ void FullyConnectedLayer::backpropagate(uint32_t batch_indx,
 void FullyConnectedLayer::backpropagateFirstLayer(uint32_t batch_indx,
                                                   const uint32_t* indices,
                                                   const float* values,
-                                                  float* errors, uint32_t len) {
+                                                  uint32_t len) {
   if (_sparse_dim == _dim) {
     if (len == _prev_dim) {
-      backPropagateImpl<true, true, true>(batch_indx, indices, values, errors,
+      backPropagateImpl<true, true, true>(batch_indx, indices, values, nullptr,
                                           len);
     } else {
-      backPropagateImpl<true, true, false>(batch_indx, indices, values, errors,
+      backPropagateImpl<true, true, false>(batch_indx, indices, values, nullptr,
                                            len);
     }
   } else {
     if (len == _prev_dim) {
-      backPropagateImpl<true, false, true>(batch_indx, indices, values, errors,
+      backPropagateImpl<true, false, true>(batch_indx, indices, values, nullptr,
                                            len);
     } else {
-      backPropagateImpl<true, false, false>(batch_indx, indices, values, errors,
-                                            len);
+      backPropagateImpl<true, false, false>(batch_indx, indices, values,
+                                            nullptr, len);
     }
   }
 }
@@ -416,6 +415,17 @@ void FullyConnectedLayer::setSparsity(float new_sparsity) {
   }
 }
 
+void FullyConnectedLayer::makeConcatenatedLayer(uint32_t batch_size,
+                                                float** new_activations,
+                                                float** new_errors) {
+  _batch_size = batch_size;
+  _active_lens = new uint32_t[_batch_size];
+  _active_neurons = nullptr;
+  _activations = new_activations;
+  _errors = new_errors;
+  _concatenated = true;
+}
+
 void FullyConnectedLayer::shuffleRandNeurons() {
   if (_sparsity < 1.0) {
     std::shuffle(_rand_neurons, _rand_neurons + _dim, std::random_device{});
@@ -437,16 +447,18 @@ float* FullyConnectedLayer::getBiases() {
 }
 
 FullyConnectedLayer::~FullyConnectedLayer() {
-  for (uint64_t batch = 0; batch < _batch_size; batch++) {
-    delete[] _active_neurons[batch];
-    delete[] _activations[batch];
-    delete[] _errors[batch];
+  if (!_concatenated) {
+    for (uint64_t batch = 0; batch < _batch_size; batch++) {
+      delete[] _active_neurons[batch];
+      delete[] _activations[batch];
+      delete[] _errors[batch];
+    }
+    delete[] _active_neurons;
   }
 
-  delete[] _active_lens;
-  delete[] _active_neurons;
   delete[] _activations;
   delete[] _errors;
+  delete[] _active_lens;
 
   delete[] _weights;
   delete[] _w_gradient;

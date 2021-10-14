@@ -5,16 +5,16 @@
 
 namespace thirdai::bolt {
 
-EmbeddingLayer::EmbeddingLayer(uint32_t num_embedding_lookups,
-                               uint32_t lookup_size,
-                               uint32_t log_embedding_block_size, uint32_t seed)
-    : _num_embedding_lookups(num_embedding_lookups),
-      _lookup_size(lookup_size),
-      _total_embedding_dim(num_embedding_lookups * lookup_size),
-      _log_embedding_block_size(log_embedding_block_size),
+EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
+                               uint32_t seed)
+    : _num_embedding_lookups(config.num_embedding_lookups),
+      _lookup_size(config.lookup_size),
+      _total_embedding_dim(config.num_embedding_lookups * config.lookup_size),
+      _log_embedding_block_size(config.log_embedding_block_size),
       _batch_size(0),
       _embeddings(nullptr),
       _errors(nullptr),
+      _concatenated(false),
       _lens(nullptr),
       _embedding_locs(nullptr) {
   // We allocate the extra _lookup_size elements such that if a point hashes to
@@ -108,17 +108,26 @@ void EmbeddingLayer::setBatchSize(uint32_t new_batch_size) {
   }
 }
 
+void EmbeddingLayer::makeConcatenatedLayer(float** new_embeddings,
+                                           float** new_errors) {
+  _embeddings = new_embeddings;
+  _errors = new_errors;
+}
+
 EmbeddingLayer::~EmbeddingLayer() {
   delete[] _embedding_block;
 
   for (uint32_t b = 0; b < _batch_size; b++) {
-    delete[] _embeddings[b];
-    delete[] _errors[b];
+    if (!_concatenated) {
+      delete[] _embeddings[b];
+      delete[] _errors[b];
+    }
     delete[] _embedding_locs[b];
   }
 
   delete[] _embeddings;
   delete[] _errors;
+
   delete[] _embedding_locs;
   delete[] _lens;
 }

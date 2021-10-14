@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Layer.h"
+#include "LayerConfig.h"
 #include <ctime>
 
 namespace thirdai::bolt {
@@ -13,9 +14,8 @@ class EmbeddingLayer {
   friend class tests::EmbeddingLayerTestFixture;
 
  public:
-  EmbeddingLayer(uint32_t num_embedding_lookups, uint32_t lookup_size,
-                 uint32_t log_embedding_block_size,
-                 uint32_t seed = time(nullptr));
+  explicit EmbeddingLayer(const EmbeddingLayerConfig& config,
+                          uint32_t seed = time(nullptr));
 
   void feedForward(uint32_t batch_indx, const uint32_t* tokens, uint32_t len);
 
@@ -30,6 +30,9 @@ class EmbeddingLayer {
   float* getErrors(uint32_t batch_indx) { return _errors[batch_indx]; }
 
   void setBatchSize(uint32_t new_batch_size);
+
+  // This should not be used with setBatchSize
+  void makeConcatenatedLayer(float** new_embeddings, float** new_errors);
 
   EmbeddingLayer(EmbeddingLayer&) = delete;
   EmbeddingLayer(const EmbeddingLayer&&) = delete;
@@ -46,6 +49,8 @@ class EmbeddingLayer {
 
   float** _embeddings;
   float** _errors;
+
+  bool _concatenated;
 
   uint32_t* _lens;
   uint32_t** _embedding_locs;

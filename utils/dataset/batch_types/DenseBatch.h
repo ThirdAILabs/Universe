@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Vectors.h"
+#include "BatchOptions.h"
 #include <cassert>
 #include <fstream>
 #include <stdexcept>
@@ -11,7 +12,7 @@ namespace thirdai::utils {
 class DenseBatch {
  public:
   DenseBatch(std::ifstream& /*file*/, uint32_t /*target_batch_size*/,
-             uint64_t /*start_id*/) {
+             uint64_t /*start_id*/, const BatchOptions& /* (unused) */) {
     throw std::runtime_error(
         "Loading dense batch directly from file not yet implemented");
   }

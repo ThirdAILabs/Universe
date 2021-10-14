@@ -1,3 +1,4 @@
+#include "../bolt/layers/LayerConfig.h"
 #include "../bolt/networks/Network.h"
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -11,7 +12,8 @@ namespace thirdai::python {
 
 class PyNetwork final : public Network {
  public:
-  PyNetwork(std::vector<bolt::LayerConfig> configs, uint64_t input_dim)
+  PyNetwork(std::vector<bolt::FullyConnectedLayerConfig> configs,
+            uint64_t input_dim)
       : Network(std::move(configs), input_dim) {}
 
   py::array_t<float> getWeightMatrix(uint32_t layer_index) {
@@ -60,7 +62,7 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
            py::arg("range_pow"), py::arg("reservoir_size"))
       .def(py::init<>());
 
-  py::class_<thirdai::bolt::LayerConfig>(submodule, "LayerConfig")
+  py::class_<thirdai::bolt::FullyConnectedLayerConfig>(submodule, "LayerConfig")
       .def(py::init<uint64_t, float, std::string,
                     thirdai::bolt::SamplingConfig>(),
            py::arg("dim"), py::arg("load_factor"),
@@ -71,7 +73,8 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
            py::arg("load_factor"), py::arg("activation_function"));
 
   py::class_<thirdai::python::PyNetwork>(submodule, "Network")
-      .def(py::init<std::vector<thirdai::bolt::LayerConfig>, uint64_t>(),
+      .def(py::init<std::vector<thirdai::bolt::FullyConnectedLayerConfig>,
+                    uint64_t>(),
            py::arg("layers"), py::arg("input_dim"))
       .def("Train", &thirdai::python::PyNetwork::train, py::arg("batch_size"),
            py::arg("train_data"), py::arg("test_data"),
