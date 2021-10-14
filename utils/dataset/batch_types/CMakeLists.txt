@@ -1,1 +1,1 @@
-add_library(batch_lib SparseBatch.cc)
+add_library(batch_lib SparseBatch.cc ClickThroughBatch.cc)

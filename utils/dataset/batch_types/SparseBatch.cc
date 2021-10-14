@@ -4,7 +4,7 @@
 namespace thirdai::utils {
 
 SparseBatch::SparseBatch(std::ifstream& file, uint32_t target_batch_size,
-                         uint64_t start_id)
+                         uint64_t start_id, const BatchOptions& /* options */)
     : _batch_size(0), _start_id(start_id) {
   std::string line;
   while (_batch_size < target_batch_size && std::getline(file, line)) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Vectors.h"
+#include "BatchOptions.h"
 #include <cassert>
 #include <fstream>
 #include <vector>
@@ -10,7 +11,7 @@ namespace thirdai::utils {
 class SparseBatch {
  public:
   explicit SparseBatch(std::ifstream& file, uint32_t target_batch_size,
-                       uint64_t start_id);
+                       uint64_t start_id, const BatchOptions& options);
 
   // Take r-value reference for vectors to force a move.
   SparseBatch(std::vector<SparseVector>&& vectors,
