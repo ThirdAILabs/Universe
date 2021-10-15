@@ -45,9 +45,11 @@ class StreamedDataset {
 
   std::optional<Batch_t> nextBatch();
 
-  ~StreamedDataset() { _file.close(); }
-
  private:
+  // Per
+  // https://stackoverflow.com/questions/748014/do-i-need-to-manually-close-an-ifstream,
+  // no need to close this (and throws a clang tidy error if we do, at least on
+  // my machine).
   std::ifstream _file;
   uint32_t _batch_size;
   uint64_t _curr_id;
