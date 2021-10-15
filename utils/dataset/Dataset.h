@@ -3,7 +3,6 @@
 #include "Factory.h"
 #include "batch_types/DenseBatch.h"
 #include "batch_types/SparseBatch.h"
-#include <cassert>
 #include <cstdint>
 #include <fstream>
 #include <memory>
@@ -21,7 +20,7 @@ class InMemoryDataset {
   // TODO (Nicholas, Josh, Geordie): Add constructor that takes in a vector of
   // filenames
   InMemoryDataset(const std::string& filename, uint32_t batch_size,
-                  Factory<Batch_t>& factory) {
+                  Factory<Batch_t>&& factory) {
     std::ifstream file(filename);
     if (file.bad() || file.fail() || !file.good() || !file.is_open()) {
       throw std::runtime_error("Unable to open file '" + filename + "'");
@@ -51,9 +50,8 @@ class InMemoryDataset {
 
   static InMemoryDataset<SparseBatch> loadInMemorySvmDataset(
       const std::string& filename, uint32_t batch_size) {
-    SvmSparseBatchFactory factory;
-
-    return InMemoryDataset<SparseBatch>(filename, batch_size, factory);
+    return InMemoryDataset<SparseBatch>(filename, batch_size,
+                                        SvmSparseBatchFactory{});
   }
 
  private:
@@ -102,7 +100,7 @@ class StreamedDataset {
   std::ifstream _file;
   uint32_t _batch_size;
   uint64_t _curr_id;
-  std::shared_ptr<Factory<Batch_t>> _factory;
+  std::unique_ptr<Factory<Batch_t>> _factory;
 };
 
 }  // namespace thirdai::utils
