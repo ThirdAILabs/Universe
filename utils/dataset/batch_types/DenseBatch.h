@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../Factory.h"
 #include "../Vectors.h"
 #include <cassert>
 #include <fstream>
@@ -10,12 +11,6 @@ namespace thirdai::utils {
 
 class DenseBatch {
  public:
-  DenseBatch(std::ifstream& /*file*/, uint32_t /*target_batch_size*/,
-             uint64_t /*start_id*/) {
-    throw std::runtime_error(
-        "Loading dense batch directly from file not yet implemented");
-  }
-
   // Take r-value reference for vectors to force a move.
   DenseBatch(std::vector<DenseVector>&& vectors,
              std::vector<std::vector<uint32_t>>&& labels, uint64_t start_id)
@@ -39,6 +34,15 @@ class DenseBatch {
   uint32_t _batch_size;
   std::vector<std::vector<uint32_t>> _labels;
   uint64_t _start_id;
+};
+
+class CsvDenseBatchFactory : public Factory<DenseBatch> {
+ public:
+  DenseBatch parse(std::ifstream& /*file*/, uint32_t /*target_batch_size*/,
+                   uint64_t /*start_id*/) override {
+    throw std::runtime_error(
+        "Loading dense batch directly from file not yet implemented");
+  }
 };
 
 }  // namespace thirdai::utils
