@@ -3,6 +3,7 @@
 #include "../utils/dataset/Dataset.h"
 #include "../utils/dataset/batch_types/SparseBatch.h"
 #include "../utils/hashing/DensifiedMinHash.h"
+#include "../utils/hashing/FastSRP.h"
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -23,6 +24,7 @@ using thirdai::utils::SparseBatch;
 using thirdai::utils::StreamedDataset;
 
 using thirdai::utils::DensifiedMinHash;
+using thirdai::utils::FastSRP;
 using thirdai::utils::HashFunction;
 
 using Flash64 = thirdai::search::Flash<uint64_t>;
@@ -107,12 +109,20 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
            "get_range().");
 
   py::class_<DensifiedMinHash, HashFunction>(
-      utils_submodule, "DensifiedMinHash",
+      utils_submodule, "MinHash",
       "A concrete implementation of a HashFunction that performs an extremly "
       "efficient minhash. A statistical estimator of jaccard similarity.")
       .def(py::init<uint32_t, uint32_t, uint32_t>(),
            py::arg("hashes_per_table"), py::arg("num_tables"),
            py::arg("range"));
+
+  py::class_<FastSRP, HashFunction>(
+      utils_submodule, "SignedRandomProjection",
+      "A concrete implementation of a HashFunction that performs an extremly "
+      "efficient signed random projection. A statistical estimator of cossine "
+      "similarity.")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("input_dim"),
+           py::arg("hashes_per_table"), py::arg("num_tables"));
 
 #ifndef __clang__
   utils_submodule.def("set_global_num_threads", &omp_set_num_threads,
@@ -128,7 +138,11 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       "add_batch. You may need to stream or read in a Dataset from disk "
       "using one of our utility data wrappers.")
       .def(py::init<HashFunction&, uint32_t>(), py::arg("hash_function"),
-           py::arg("reservoir_size"))
+           py::arg("reservoir_size"),
+           "Build a Flash index where all hash "
+           "buckets have a max size reservoir_size.")
+      .def(py::init<HashFunction&>(), py::arg("hash_function"),
+           "Build a Flash index where buckets do not have a max size.")
       // See https://github.com/pybind/pybind11/issues/1153 for why we can't
       // do a py::overload_cas and instead need to use a static cast instead
       .def("add_dataset",
