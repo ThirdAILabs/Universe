@@ -23,15 +23,16 @@ int main(int argc, char** argv) {
   uint32_t hashes_per_table = atoi(argv[4]);
   uint32_t top_k = atoi(argv[5]);
   uint32_t range = 1000000;
+  thirdai::utils::SvmSparseBatchFactory factory;
   auto dataset = thirdai::utils::InMemoryDataset<thirdai::utils::SparseBatch>(
-      argv[1], batch_size);
+      argv[1], batch_size, factory);
   auto hash_func =
       thirdai::utils::DensifiedMinHash(hashes_per_table, num_tables, range);
   auto flash = thirdai::search::Flash<uint64_t>(hash_func);
   flash.addDataset(dataset);
 
   auto queries = thirdai::utils::InMemoryDataset<thirdai::utils::SparseBatch>(
-      argv[2], UINT32_MAX);
+      argv[2], UINT32_MAX, factory);
   auto all_results = flash.queryBatch(queries[0], top_k, false);
 
   for (auto& result : all_results) {

@@ -26,47 +26,37 @@ Flash<Label_t>::Flash(const utils::HashFunction& function,
       _hashtable(new utils::SampledHashTable<Label_t>(
           _num_tables, reservoir_size, _range)) {}
 
-template void
-Flash<uint32_t>::addDataset<utils::SparseBatch, utils::SvmSparseBatchFactory>(
-    utils::InMemoryDataset<utils::SparseBatch, utils::SvmSparseBatchFactory>&);
-template void
-Flash<uint64_t>::addDataset<utils::SparseBatch, utils::SvmSparseBatchFactory>(
-    utils::InMemoryDataset<utils::SparseBatch, utils::SvmSparseBatchFactory>&);
+template void Flash<uint32_t>::addDataset<utils::SparseBatch>(
+    utils::InMemoryDataset<utils::SparseBatch>&);
+template void Flash<uint64_t>::addDataset<utils::SparseBatch>(
+    utils::InMemoryDataset<utils::SparseBatch>&);
 
-template void
-Flash<uint32_t>::addDataset<utils::DenseBatch, utils::CsvDenseBatchFactory>(
-    utils::InMemoryDataset<utils::DenseBatch, utils::CsvDenseBatchFactory>&);
-template void
-Flash<uint64_t>::addDataset<utils::DenseBatch, utils::CsvDenseBatchFactory>(
-    utils::InMemoryDataset<utils::DenseBatch, utils::CsvDenseBatchFactory>&);
+template void Flash<uint32_t>::addDataset<utils::DenseBatch>(
+    utils::InMemoryDataset<utils::DenseBatch>&);
+template void Flash<uint64_t>::addDataset<utils::DenseBatch>(
+    utils::InMemoryDataset<utils::DenseBatch>&);
 
 template <typename Label_t>
-template <typename Batch_t, typename Factory_t>
-void Flash<Label_t>::addDataset(
-    utils::InMemoryDataset<Batch_t, Factory_t>& dataset) {
+template <typename Batch_t>
+void Flash<Label_t>::addDataset(utils::InMemoryDataset<Batch_t>& dataset) {
   for (uint64_t batch_id = 0; batch_id < dataset.numBatches(); batch_id++) {
     addBatch(dataset[batch_id]);
   }
 }
 
-template void
-Flash<uint32_t>::addDataset<utils::SparseBatch, utils::SvmSparseBatchFactory>(
-    utils::StreamedDataset<utils::SparseBatch, utils::SvmSparseBatchFactory>&);
-template void
-Flash<uint64_t>::addDataset<utils::SparseBatch, utils::SvmSparseBatchFactory>(
-    utils::StreamedDataset<utils::SparseBatch, utils::SvmSparseBatchFactory>&);
+template void Flash<uint32_t>::addDataset<utils::SparseBatch>(
+    utils::StreamedDataset<utils::SparseBatch>&);
+template void Flash<uint64_t>::addDataset<utils::SparseBatch>(
+    utils::StreamedDataset<utils::SparseBatch>&);
 
-template void
-Flash<uint32_t>::addDataset<utils::DenseBatch, utils::CsvDenseBatchFactory>(
-    utils::StreamedDataset<utils::DenseBatch, utils::CsvDenseBatchFactory>&);
-template void
-Flash<uint64_t>::addDataset<utils::DenseBatch, utils::CsvDenseBatchFactory>(
-    utils::StreamedDataset<utils::DenseBatch, utils::CsvDenseBatchFactory>&);
+template void Flash<uint32_t>::addDataset<utils::DenseBatch>(
+    utils::StreamedDataset<utils::DenseBatch>&);
+template void Flash<uint64_t>::addDataset<utils::DenseBatch>(
+    utils::StreamedDataset<utils::DenseBatch>&);
 
 template <typename Label_t>
-template <typename Batch_t, typename Factory_t>
-void Flash<Label_t>::addDataset(
-    utils::StreamedDataset<Batch_t, Factory_t>& dataset) {
+template <typename Batch_t>
+void Flash<Label_t>::addDataset(utils::StreamedDataset<Batch_t>& dataset) {
   while (auto batch = dataset.nextBatch()) {
     addBatch(*batch);
   }

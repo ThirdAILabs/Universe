@@ -12,8 +12,8 @@ parser.add_argument('webspam_gt_path',
 args = parser.parse_args()
 
 
-dataset = utils.InMemorySparseDataset(args.webspam_data_path, batch_size=10000)
-queries = utils.InMemorySparseDataset(args.webspam_query_path, batch_size=100000)
+dataset = utils.loadInMemorySvmDataset(args.webspam_data_path, batch_size=10000)
+queries = utils.loadInMemorySvmDataset(args.webspam_query_path, batch_size=100000)
 
 gt = []
 with open("../webspam_gt") as f:

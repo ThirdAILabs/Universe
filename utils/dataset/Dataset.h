@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cstdint>
 #include <fstream>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -14,18 +15,19 @@
 
 namespace thirdai::utils {
 
-template <typename Batch_t, typename Factory_t>
+template <typename Batch_t>
 class InMemoryDataset {
  public:
   // TODO (Nicholas, Josh, Geordie): Add constructor that takes in a vector of
   // filenames
-  template <typename... Args>
   InMemoryDataset(const std::string& filename, uint32_t batch_size,
-                  Args&&... args) {
+                  Factory<Batch_t>& factory) {
     std::ifstream file(filename);
+    if (file.bad() || file.fail() || !file.good() || !file.is_open()) {
+      throw std::runtime_error("Unable to open file '" + filename + "'");
+    }
 
     uint64_t curr_id = 0;
-    Factory_t factory(std::forward<Args>(args)...);
     while (!file.eof()) {
       _batches.push_back(factory.parse(file, batch_size, curr_id));
       curr_id += _batches.back().getBatchSize();
@@ -47,31 +49,46 @@ class InMemoryDataset {
 
   uint64_t len() const { return _len; }
 
+  static InMemoryDataset<SparseBatch> loadInMemorySvmDataset(
+      const std::string& filename, uint32_t batch_size) {
+    SvmSparseBatchFactory factory;
+
+    return InMemoryDataset<SparseBatch>(filename, batch_size, factory);
+  }
+
  private:
   std::vector<Batch_t> _batches;
   uint64_t _len;
 };
 
-template <typename Batch_t, typename Factory_t>
+template <typename Batch_t>
 class StreamedDataset {
  public:
   // TODO (Nicholas, Josh, Geordie): Add constructor that takes in a vector of
   // filenames. For this dataset it will have to store a list of filenames,
   // and whenever it reaches the end of one it can open the next one.
-  template <typename... Args>
+
+  // This class takes in a unique pointer because Factor<T> is an abstract class
+  // so we cannot store it directly as a member variable. We cannot store it as
+  // a reference in case the factory constructed passed to the dataset, and then
+  // the dataset is returned from the function.
   StreamedDataset(const std::string& filename, uint32_t batch_size,
-                  Args&&... args)
+                  std::unique_ptr<Factory<Batch_t>> factory)
       : _file(filename),
         _batch_size(batch_size),
         _curr_id(0),
-        _factory(std::forward<Args>(args)...) {}
+        _factory(std::move(factory)) {
+    if (_file.bad() || _file.fail() || !_file.good() || !_file.is_open()) {
+      throw std::runtime_error("Unable to open file '" + filename + "'");
+    }
+  }
 
   std::optional<Batch_t> nextBatch() {
     if (_file.eof()) {
       return std::nullopt;
     }
 
-    Batch_t next = _factory.parse(_file, _batch_size, _curr_id);
+    Batch_t next = _factory->parse(_file, _batch_size, _curr_id);
     _curr_id += next.getBatchSize();
 
     return next;
@@ -85,7 +102,7 @@ class StreamedDataset {
   std::ifstream _file;
   uint32_t _batch_size;
   uint64_t _curr_id;
-  Factory_t _factory;
+  std::shared_ptr<Factory<Batch_t>> _factory;
 };
 
 }  // namespace thirdai::utils

@@ -35,11 +35,11 @@ class Flash {
    * loadNextBatches on the dataset should not have been called yet, and this
    * will run through the entire dataset.
    */
-  template <typename Batch_t, typename Factory_t>
-  void addDataset(utils::InMemoryDataset<Batch_t, Factory_t>& dataset);
+  template <typename Batch_t>
+  void addDataset(utils::InMemoryDataset<Batch_t>& dataset);
 
-  template <typename Batch_t, typename Factory_t>
-  void addDataset(utils::StreamedDataset<Batch_t, Factory_t>& dataset);
+  template <typename Batch_t>
+  void addDataset(utils::StreamedDataset<Batch_t>& dataset);
 
   /** Insert this batch into the Flash data structure. */
   template <typename Batch_t>
