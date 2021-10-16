@@ -17,7 +17,6 @@ Flash<Label_t>::Flash(const utils::HashFunction& function)
       _range(_function.range()),
       _hashtable(new utils::VectorHashTable<Label_t>(_num_tables, _range)) {}
 
-
 template <typename Label_t>
 Flash<Label_t>::Flash(const utils::HashFunction& function,
                       uint32_t reservoir_size)
