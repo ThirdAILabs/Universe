@@ -57,4 +57,12 @@ file(
   utils/hashtable/SampledHashTable.cc
 )
 
-pybind11_add_module(thirdai python_bindings/thirdai.cc ${BOLT_SOURCES})
+file(
+  GLOB_RECURSE FLASH_SOURCES 
+  flash/src/*.cc 
+  utils/dataset/*.cc 
+  utils/hashing/*.cc 
+  utils/hashtable/*.cc
+)
+
+pybind11_add_module(thirdai python_bindings/thirdai.cc ${BOLT_SOURCES} ${FLASH_SOURCES})

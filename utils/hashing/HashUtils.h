@@ -50,6 +50,49 @@ class HashUtils {
   }
 
   /**
+   * Performas a default hash compaction by compacting hashes into each of the
+   * output bins. If length_output *  hashes_per_output_value >= len(hashes),
+   * this will segfault, so don't do that. The range of this is UINT32_MAX.
+   */
+  static void defaultCompactHashes(const uint32_t* hashes,
+                                   uint32_t* output_hashes,
+                                   uint32_t length_output,
+                                   uint32_t hashes_per_output_value) {
+    for (uint32_t i = 0; i < length_output; i++) {
+      uint32_t current_hash = hashes[i * hashes_per_output_value];
+      for (uint32_t j = 1; j < hashes_per_output_value; j++) {
+        // See
+        // https://stackoverflow.com/questions/2590677/how-do-i-combine-hash-values-in-c0x
+        // for explanation of the magic number (this is the boost
+        // implementation of combining hash values).
+        current_hash ^= hashes[i * hashes_per_output_value + j] + 0x9e3779b9 +
+                        (current_hash << 6) + (current_hash >> 2);
+      }
+      output_hashes[i] = current_hash;
+    }
+  }
+
+  /**
+   * Performas a default hash compaction by assigning hashes_per_output_value
+   * hash bits to each of the length_output output hashes. Assumes that
+   * the input hashes are all either 0 or 1. If length_output *
+   * hashes_per_output_value >= len(hashes), this will segfault,
+   * so don't do that.
+   */
+  static void compactHashBits(const uint32_t* hashes, uint32_t* output_hashes,
+                              uint32_t length_output,
+                              uint32_t hashes_per_output_value) {
+    for (uint32_t i = 0; i < length_output; i++) {
+      uint32_t current_hash = 0;
+      for (uint32_t j = 0; j < hashes_per_output_value; j++) {
+        uint32_t h = hashes[i * hashes_per_output_value + j];
+        current_hash += h << (hashes_per_output_value - 1 - j);
+      }
+      output_hashes[i] = current_hash;
+    }
+  }
+
+  /**
    * Does an in place densification of hashes, as described in the DOPH paper.
    * Currently unset hashes should be represented by UINT32_MAX. For a given
    * unset hash, if we don't find a set hash within max_path_length number of
@@ -97,7 +140,7 @@ class HashUtils {
       uint32_t count = 0;
       while (final_hash == UINT32_MAX) {
         count++;
-        uint32_t index = HashUtils::fastDoubleHash(i, count, log_num_hashes);
+        uint32_t index = fastDoubleHash(i, count, log_num_hashes);
 
         final_hash = hashes[index];
         if (count > max_path_length) {  // Densification failure.
