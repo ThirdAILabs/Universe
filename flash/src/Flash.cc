@@ -17,15 +17,6 @@ Flash<Label_t>::Flash(const utils::HashFunction& function)
       _range(_function.range()),
       _hashtable(new utils::VectorHashTable<Label_t>(_num_tables, _range)) {}
 
-template void Flash<uint32_t>::addDataset<utils::SparseBatch>(
-    utils::InMemoryDataset<utils::SparseBatch>&);
-template void Flash<uint64_t>::addDataset<utils::SparseBatch>(
-    utils::InMemoryDataset<utils::SparseBatch>&);
-
-template void Flash<uint32_t>::addDataset<utils::DenseBatch>(
-    utils::InMemoryDataset<utils::DenseBatch>&);
-template void Flash<uint64_t>::addDataset<utils::DenseBatch>(
-    utils::InMemoryDataset<utils::DenseBatch>&);
 
 template <typename Label_t>
 Flash<Label_t>::Flash(const utils::HashFunction& function,
