@@ -36,7 +36,7 @@ class HashModPow2 final : public HashFunction {
   }
 
  private:
-  uint32_t _rshift;
+  const uint32_t _rshift;
   LSHFunc_t _hash_func;
 };
 

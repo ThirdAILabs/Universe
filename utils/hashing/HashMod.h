@@ -43,7 +43,7 @@ class HashMod final : public HashFunction {
   }
 
  private:
-  uint32_t _mod;
+  const uint32_t _mod;
   LSHFunc_t _hash_func;
 };
 
