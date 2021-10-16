@@ -13,7 +13,7 @@ float sparsity = 0.001;  // So ~1000 non zeros
 float max_sim_diff = 0.05, max_avg_sim_diff = 0.01;
 JaccardSim jaccard_sim_func(seed);
 thirdai::utils::DensifiedMinHash densified_minhash(hashes_per_table, num_tables,
-                                                   seed);
+                                                   UINT32_MAX, seed);
 
 TEST(DensifiedMinHashTest, SparseHashing) {
   thirdai::utils::lsh_testing::runSparseSimilarityTest(
