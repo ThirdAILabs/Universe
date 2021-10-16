@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Factory.h"
+#include "batch_types/ClickThroughBatch.h"
 #include "batch_types/DenseBatch.h"
 #include "batch_types/SparseBatch.h"
 #include <cstdint>
@@ -47,6 +48,12 @@ class InMemoryDataset {
   uint32_t numBatches() const { return _batches.size(); }
 
   uint64_t len() const { return _len; }
+
+  static InMemoryDataset<SparseBatch> loadInMemorySvmDataset(
+      const std::string& filename, uint32_t batch_size) {
+    return InMemoryDataset<SparseBatch>(filename, batch_size,
+                                        SvmSparseBatchFactory{});
+  }
 
  private:
   std::vector<Batch_t> _batches;

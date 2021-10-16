@@ -19,7 +19,6 @@ add_executable(
 target_link_libraries(
   click_through_dataset_test
   PRIVATE
-  dataset_lib
   gtest_main
 )
 

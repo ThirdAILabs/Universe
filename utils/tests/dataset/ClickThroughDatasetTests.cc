@@ -34,15 +34,23 @@ class CLickThroughDatasetTestFixture : public ::testing::Test {
     vec.label = _label_dist(gen);
 
     for (uint32_t i = 0; i < _dense_features; i++) {
-      vec.dense_features.push_back(_dense_feature_dist(gen));
+      uint32_t feature = _dense_feature_dist(gen);
+      if (feature % 10 == 0) {
+        feature = 0;
+      }
+      vec.dense_features.push_back(feature);
     }
 
     std::unordered_set<uint32_t> categorical_features;
     while (categorical_features.size() < _categorical_features) {
       categorical_features.insert(_categorical_feature_dist(gen));
     }
-    for (uint32_t i : categorical_features) {
-      vec.categorical_features.push_back(i);
+    for (uint32_t c : categorical_features) {
+      uint32_t feature = c;
+      if (feature % 10 == 0) {
+        feature = 0;
+      }
+      vec.categorical_features.push_back(feature);
     }
 
     return vec;
@@ -63,12 +71,20 @@ class CLickThroughDatasetTestFixture : public ::testing::Test {
     for (const auto& vec : _vectors) {
       output_file << std::dec << vec.label;
       for (uint32_t d : vec.dense_features) {
-        output_file << '\t' << d;
+        if (d == 0) {
+          output_file << '\t';
+        } else {
+          output_file << '\t' << d;
+        }
       }
 
       output_file << std::hex;
       for (uint32_t c : vec.categorical_features) {
-        output_file << '\t' << c;
+        if (c == 0) {
+          output_file << '\t';
+        } else {
+          output_file << '\t' << c;
+        }
       }
 
       output_file << std::endl;
@@ -100,7 +116,8 @@ class CLickThroughDatasetTestFixture : public ::testing::Test {
 TEST_F(CLickThroughDatasetTestFixture, InMemoryDatasetTest) {
   InMemoryDataset<ClickThroughBatch> dataset(
       _filename, _batch_size,
-      BatchOptions(getNumDenseFeatures(), getNumCategoricalFeatures()));
+      ClickThroughBatchFactory(getNumDenseFeatures(),
+                               getNumCategoricalFeatures()));
 
   uint32_t vec_count = 0;
   for (const auto& batch : dataset) {
@@ -134,7 +151,8 @@ TEST_F(CLickThroughDatasetTestFixture, InMemoryDatasetTest) {
 TEST_F(CLickThroughDatasetTestFixture, StreamedDatasetTest) {
   StreamedDataset<ClickThroughBatch> dataset(
       _filename, _batch_size,
-      BatchOptions(getNumDenseFeatures(), getNumCategoricalFeatures()));
+      std::make_unique<ClickThroughBatchFactory>(getNumDenseFeatures(),
+                                                 getNumCategoricalFeatures()));
 
   uint32_t vec_count = 0;
   while (auto batch_opt = dataset.nextBatch()) {

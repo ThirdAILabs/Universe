@@ -2,7 +2,6 @@
 
 #include "../Factory.h"
 #include "../Vectors.h"
-#include "BatchOptions.h"
 #include <cassert>
 #include <fstream>
 #include <vector>
