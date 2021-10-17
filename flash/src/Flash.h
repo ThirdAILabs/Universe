@@ -25,6 +25,12 @@ class Flash {
   explicit Flash(const utils::HashFunction& function);
 
   /**
+   * This is the same as the single argument constructor, except the supporting
+   * hash table has a max reservoir size.
+   **/
+  Flash(const utils::HashFunction& function, uint32_t reservoir_size);
+
+  /**
    * Insert all batches in the dataset the Flash data structure.
    * loadNextBatches on the dataset should not have been called yet, and this
    * will run through the entire dataset.
@@ -49,6 +55,8 @@ class Flash {
   std::vector<std::vector<Label_t>> queryBatch(const Batch_t& batch,
                                                uint32_t top_k,
                                                bool pad_zeros = false) const;
+
+  ~Flash();
 
  private:
   /**
@@ -79,8 +87,8 @@ class Flash {
   Label_t verify_and_convert_id(uint64_t id) const;
 
   const utils::HashFunction& _function;
-  uint32_t _num_tables, _range;
-  utils::HashTable<Label_t>* _hashtable;
+  const uint32_t _num_tables, _range;
+  utils::HashTable<Label_t>* const _hashtable;
 };
 
 }  // namespace thirdai::search

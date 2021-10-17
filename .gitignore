@@ -2,7 +2,8 @@
 bazel-*
 
 # VSCode settings
-.vscode/*
+.vscode
+.cache
 compile_commands.json
 
 # CMake Build and Testing output

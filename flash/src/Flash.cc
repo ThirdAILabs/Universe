@@ -16,8 +16,15 @@ Flash<Label_t>::Flash(const utils::HashFunction& function)
       _num_tables(_function.numTables()),
       _range(_function.range()),
       _hashtable(new utils::VectorHashTable<Label_t>(_num_tables, _range)) {}
-// TODO(josh/nicholas): Figure out why the SampledHashTable doesn't work well
-// _hashtable(new utils::SampledHashTable<Label_t>(_num_tables, 100, _range)) {}
+
+template <typename Label_t>
+Flash<Label_t>::Flash(const utils::HashFunction& function,
+                      uint32_t reservoir_size)
+    : _function(function),
+      _num_tables(_function.numTables()),
+      _range(_function.range()),
+      _hashtable(new utils::SampledHashTable<Label_t>(
+          _num_tables, reservoir_size, _range)) {}
 
 template void Flash<uint32_t>::addDataset<utils::SparseBatch>(
     utils::InMemoryDataset<utils::SparseBatch>&);
@@ -144,6 +151,11 @@ std::vector<std::vector<Label_t>> Flash<Label_t>::queryBatch(
   delete[] hashes;
 
   return results;
+}
+
+template <typename Label_t>
+Flash<Label_t>::~Flash<Label_t>() {
+  delete _hashtable;
 }
 
 template <typename Label_t>
