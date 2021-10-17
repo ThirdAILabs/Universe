@@ -61,6 +61,8 @@ class HashTable {
 
   /* Returns the range (number of buckets) of each table */
   virtual uint64_t tableRange() const = 0;
+
+  virtual ~HashTable<Label_t>(){};
 };
 
 }  // namespace thirdai::utils
