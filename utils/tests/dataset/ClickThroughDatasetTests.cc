@@ -33,7 +33,7 @@ class CLickThroughDatasetTestFixture : public ::testing::Test {
 
     vec.label = _label_dist(gen);
 
-    for (uint32_t i = 0; i < _dense_features; i++) {
+    for (uint32_t i = 0; i < _num_dense_features; i++) {
       uint32_t feature = _dense_feature_dist(gen);
       if (feature % 10 == 0) {
         feature = 0;
@@ -42,7 +42,7 @@ class CLickThroughDatasetTestFixture : public ::testing::Test {
     }
 
     std::unordered_set<uint32_t> categorical_features;
-    while (categorical_features.size() < _categorical_features) {
+    while (categorical_features.size() < _num_categorical_features) {
       categorical_features.insert(_categorical_feature_dist(gen));
     }
     for (uint32_t c : categorical_features) {
@@ -95,8 +95,10 @@ class CLickThroughDatasetTestFixture : public ::testing::Test {
 
   // void TearDown() override { ASSERT_FALSE(std::remove(_filename.c_str())); }
 
-  static uint32_t getNumDenseFeatures() { return _dense_features; }
-  static uint32_t getNumCategoricalFeatures() { return _categorical_features; }
+  static uint32_t getNumDenseFeatures() { return _num_dense_features; }
+  static uint32_t getNumCategoricalFeatures() {
+    return _num_categorical_features;
+  }
 
   std::vector<TestClickThroughVec> _vectors;
 
@@ -105,9 +107,33 @@ class CLickThroughDatasetTestFixture : public ::testing::Test {
   std::uniform_int_distribution<uint32_t> _dense_feature_dist;
   std::uniform_int_distribution<uint32_t> _categorical_feature_dist;
 
+  void verifyBatch(const ClickThroughBatch& batch, uint32_t vec_count_base) {
+    ASSERT_TRUE(batch.getBatchSize() == _batch_size ||
+                batch.getBatchSize() == _num_vectors % _batch_size);
+
+    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+      ASSERT_EQ(batch.id(v), vec_count_base + v);
+
+      ASSERT_EQ(batch.label(v), _vectors.at(vec_count_base + v).label);
+
+      ASSERT_EQ(batch[v].dim, getNumDenseFeatures());
+      for (uint32_t i = 0; i < getNumDenseFeatures(); i++) {
+        float val = _vectors.at(vec_count_base + v).dense_features.at(i);
+        ASSERT_EQ(batch.at(v).values[i], val);
+      }
+
+      ASSERT_EQ(batch.categoricalFeatures(v).size(),
+                getNumCategoricalFeatures());
+      for (uint32_t i = 0; i < getNumCategoricalFeatures(); i++) {
+        ASSERT_EQ(batch.categoricalFeatures(v).at(i),
+                  _vectors.at(vec_count_base + v).categorical_features.at(i));
+      }
+    }
+  }
+
  private:
-  static const uint32_t _num_classes = 10, _dense_features = 7,
-                        _categorical_features = 4,
+  static const uint32_t _num_classes = 10, _num_dense_features = 7,
+                        _num_categorical_features = 4,
                         _dense_feature_range = 100000,
                         _categorical_feature_range =
                             std::numeric_limits<uint32_t>::max();
@@ -121,29 +147,8 @@ TEST_F(CLickThroughDatasetTestFixture, InMemoryDatasetTest) {
 
   uint32_t vec_count = 0;
   for (const auto& batch : dataset) {
-    ASSERT_TRUE(batch.getBatchSize() == _batch_size ||
-                batch.getBatchSize() == _num_vectors % _batch_size);
-
-    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      ASSERT_EQ(batch.id(v), vec_count);
-
-      ASSERT_EQ(batch.label(v), _vectors.at(vec_count).label);
-
-      ASSERT_EQ(batch[v].dim, getNumDenseFeatures());
-      for (uint32_t i = 0; i < getNumDenseFeatures(); i++) {
-        float val = _vectors.at(vec_count).dense_features.at(i);
-        ASSERT_EQ(batch.at(v).values[i], val);
-      }
-
-      ASSERT_EQ(batch.categoricalFeatures(v).size(),
-                getNumCategoricalFeatures());
-      for (uint32_t i = 0; i < getNumCategoricalFeatures(); i++) {
-        ASSERT_EQ(batch.categoricalFeatures(v).at(i),
-                  _vectors.at(vec_count).categorical_features.at(i));
-      }
-
-      vec_count++;
-    }
+    verifyBatch(batch, vec_count);
+    vec_count += batch.getBatchSize();
   }
   ASSERT_EQ(vec_count, _num_vectors);
 }
@@ -156,30 +161,8 @@ TEST_F(CLickThroughDatasetTestFixture, StreamedDatasetTest) {
 
   uint32_t vec_count = 0;
   while (auto batch_opt = dataset.nextBatch()) {
-    const ClickThroughBatch& batch = *batch_opt;
-    ASSERT_TRUE(batch.getBatchSize() == _batch_size ||
-                batch.getBatchSize() == _num_vectors % _batch_size);
-
-    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      ASSERT_EQ(batch.id(v), vec_count);
-
-      ASSERT_EQ(batch.label(v), _vectors.at(vec_count).label);
-
-      ASSERT_EQ(batch[v].dim, getNumDenseFeatures());
-      for (uint32_t i = 0; i < getNumDenseFeatures(); i++) {
-        float val = _vectors.at(vec_count).dense_features.at(i);
-        ASSERT_EQ(batch.at(v).values[i], val);
-      }
-
-      ASSERT_EQ(batch.categoricalFeatures(v).size(),
-                getNumCategoricalFeatures());
-      for (uint32_t i = 0; i < getNumCategoricalFeatures(); i++) {
-        ASSERT_EQ(batch.categoricalFeatures(v).at(i),
-                  _vectors.at(vec_count).categorical_features.at(i));
-      }
-
-      vec_count++;
-    }
+    verifyBatch(*batch_opt, vec_count);
+    vec_count += batch_opt->getBatchSize();
   }
   ASSERT_EQ(vec_count, _num_vectors);
 }
