@@ -1,11 +1,11 @@
 #pragma once
 //#include "../StringDataset.h"
 // #include "../GlobalFreq.h"
+#include <exception>
 #include <iostream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <exception>
 // #include "../IDFMap.h"
 
 namespace thirdai::utils {
@@ -25,14 +25,15 @@ class StringVectorizer {
    * max_dim: The maximum dimension of the produced vector.
    * max_dim cannot be 0.
    */
-  StringVectorizer(uint32_t start_idx, uint32_t max_dim)
-      : _start_idx(start_idx), _max_dim(max_dim) {
+  StringVectorizer(uint32_t start_idx, uint32_t max_dim, VALUE_TYPE value_type)
+      : _start_idx(start_idx), _max_dim(max_dim), _value_type(value_type) {
     constructorHelper();
   };
 
   void constructorHelper() const {
     if (_max_dim < 1) {
-      throw std::invalid_argument("String vectorizer does not accept max_dim < 1");
+      throw std::invalid_argument(
+          "String vectorizer does not accept max_dim < 1");
     }
   }
 
@@ -46,17 +47,10 @@ class StringVectorizer {
    * corresponding with the indices and values arrays of a sparse vector.
    * 'indices' and 'values' are not necessarily empty. This method appends
    * to 'indices' and 'values'.
-   * 
-   * TODO(geordie): document the differnce between the signature that takes in emptyMap and the one that doesn't
    */
   virtual void vectorize(const std::string& str, std::vector<uint32_t>& indices,
-                         std::vector<float>& values) {
-    std::unordered_map<uint32_t, float> emptyMap;
-    vectorize(str, indices, values, emptyMap);
-  };
-
-  virtual void vectorize(const std::string& str, std::vector<uint32_t>& indices,
-                         std::vector<float>& values, const std::unordered_map<uint32_t, float>& idfMap) = 0;
+                         std::vector<float>& values,
+                         const std::unordered_map<uint32_t, float>& idfMap) = 0;
 
   virtual ~StringVectorizer() {}
 
@@ -79,5 +73,9 @@ class StringVectorizer {
    */
   uint32_t _dim;
 
+  /**
+   * Whether the vector values are binary, frequency, or tf-idf.
+   */
+  VALUE_TYPE _value_type;
 };
 }  // namespace thirdai::utils
