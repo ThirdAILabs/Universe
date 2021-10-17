@@ -40,11 +40,11 @@ void DLRM::train(uint32_t batch_size, const std::string& train_data,
                  uint32_t rebuild, uint32_t max_test_batches) {
   utils::InMemoryDataset<utils::ClickThroughBatch> train(
       train_data, batch_size,
-      utils::BatchOptions(dense_features, categorical_features));
+      utils::ClickThroughBatchFactory(dense_features, categorical_features));
 
   utils::InMemoryDataset<utils::ClickThroughBatch> test(
       test_data, batch_size,
-      utils::BatchOptions(dense_features, categorical_features));
+      utils::ClickThroughBatchFactory(dense_features, categorical_features));
 
   uint64_t intermediate_test_batches =
       std::min<uint64_t>(test.numBatches(), max_test_batches);
