@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Factory.h"
+#include "batch_types/ClickThroughBatch.h"
 #include "batch_types/DenseBatch.h"
 #include "batch_types/SparseBatch.h"
 #include <cstdint>
