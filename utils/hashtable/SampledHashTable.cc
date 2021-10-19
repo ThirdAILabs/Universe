@@ -10,7 +10,8 @@ template class SampledHashTable<uint64_t>;
 template <typename LABEL_T>
 SampledHashTable<LABEL_T>::SampledHashTable(uint64_t num_tables,
                                             uint64_t reservoir_size,
-                                            uint64_t range, uint32_t seed, uint64_t max_rand)
+                                            uint64_t range, uint32_t seed,
+                                            uint64_t max_rand)
     : _num_tables(num_tables),
       _reservoir_size(reservoir_size),
       _range(range),
@@ -45,20 +46,21 @@ void SampledHashTable<LABEL_T>::insertSequential(uint64_t n, LABEL_T start,
 }
 
 template <typename LABEL_T>
-void SampledHashTable<LABEL_T>::insertIntoTables(LABEL_T label, const uint32_t* hashes) {
-    for (uint64_t table = 0; table < _num_tables; table++) {
-      uint32_t row_index = hashes[table];
-      uint32_t counter = _counters[CounterIdx(table, row_index)]++;
+void SampledHashTable<LABEL_T>::insertIntoTables(LABEL_T label,
+                                                 const uint32_t* hashes) {
+  for (uint64_t table = 0; table < _num_tables; table++) {
+    uint32_t row_index = hashes[table];
+    uint32_t counter = _counters[CounterIdx(table, row_index)]++;
 
-      if (counter < _reservoir_size) {
-        _data[DataIdx(table, row_index, counter)] = label;
-      } else {
-        uint32_t rand_num = _gen_rand[counter % _max_rand] % (counter + 1);
-        if (rand_num < _reservoir_size) {
-          _data[DataIdx(table, row_index, rand_num)] = label;
-        }
+    if (counter < _reservoir_size) {
+      _data[DataIdx(table, row_index, counter)] = label;
+    } else {
+      uint32_t rand_num = _gen_rand[counter % _max_rand] % (counter + 1);
+      if (rand_num < _reservoir_size) {
+        _data[DataIdx(table, row_index, rand_num)] = label;
       }
     }
+  }
 }
 
 template <typename LABEL_T>

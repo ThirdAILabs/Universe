@@ -1,13 +1,13 @@
 #include "HashTable.h"
+#include <atomic>
 #include <random>
 #include <unordered_set>
 #include <vector>
-#include <atomic>
 
 namespace thirdai::utils {
 
 template <typename LABEL_T, bool USE_RESERVOIR>
-class VectorHashTable final: public HashTable<LABEL_T> {
+class VectorHashTable final : public HashTable<LABEL_T> {
  public:
   // We use SFINAE to make the first constructor resolve when USE_RESERVOIR
   // is false and the other constructor resolve when USE_RESERVOIR is true:
@@ -66,8 +66,8 @@ class VectorHashTable final: public HashTable<LABEL_T> {
   void sortBuckets();
 
  private:
-
-  /** Insert a label into a hashtable, including reservoir sampling if enabled */
+  /** Insert a label into a hashtable, including reservoir sampling if enabled
+   */
   void insertIntoTable(LABEL_T label, uint32_t hash, uint32_t table);
 
   constexpr uint64_t getBucketIndex(uint64_t table, uint64_t hash) const {

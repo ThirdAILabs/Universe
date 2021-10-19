@@ -13,16 +13,16 @@
 
 namespace thirdai::utils {
 
-template <typename Batch_t>
+template <typename BATCH_T>
 class InMemoryDataset {
  public:
   // TODO (Nicholas, Josh, Geordie): Add constructor that takes in a vector of
   // filenames
   InMemoryDataset(const std::string& filename, uint32_t batch_size);
 
-  const Batch_t& operator[](uint32_t i) const { return _batches[i]; }
+  const BATCH_T& operator[](uint32_t i) const { return _batches[i]; }
 
-  const Batch_t& at(uint32_t i) const { return _batches.at(i); }
+  const BATCH_T& at(uint32_t i) const { return _batches.at(i); }
 
   auto begin() const { return _batches.begin(); }
 
@@ -31,10 +31,10 @@ class InMemoryDataset {
   uint32_t numBatches() const { return _batches.size(); }
 
  private:
-  std::vector<Batch_t> _batches;
+  std::vector<BATCH_T> _batches;
 };
 
-template <typename Batch_t>
+template <typename BATCH_T>
 class StreamedDataset {
  public:
   // TODO (Nicholas, Josh, Geordie): Add constructor that takes in a vector of
@@ -43,7 +43,7 @@ class StreamedDataset {
   StreamedDataset(const std::string& filename, uint32_t batch_size)
       : _file(filename), _batch_size(batch_size), _curr_id(0) {}
 
-  std::optional<Batch_t> nextBatch();
+  std::optional<BATCH_T> nextBatch();
 
  private:
   // Per

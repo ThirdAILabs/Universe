@@ -18,7 +18,6 @@ namespace thirdai::utils {
 template <typename LABEL_T>
 class SampledHashTable final : public HashTable<LABEL_T> {
  private:
-
   uint64_t _num_tables, _reservoir_size, _range, _max_rand;
 
   LABEL_T* _data;

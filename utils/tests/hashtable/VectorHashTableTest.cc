@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <cassert>
+#include <vector>
 
 using thirdai::utils::VectorHashTable;
 
@@ -99,15 +100,18 @@ TEST(VectorHashTableTest, SortAndClearBucketsTest) {
   std::vector<uint8_t> result(0);
   uint32_t test_hashes_1[] = {1};
   test_table.queryByVector(test_hashes_1, result);
-  assert(result.size() == 3);
-  assert(result[0] == 3 && result[1] == 4 && result[2] == 5);
+  ASSERT_EQ(result.size(), 3);
+  ASSERT_EQ(result[0], 3);
+  ASSERT_EQ(result[1], 4);
+  ASSERT_EQ(result[2], 5);
 
   // Do query in bucket 2
   result.clear();
   uint32_t test_hashes_2[] = {2};
   test_table.queryByVector(test_hashes_2, result);
-  assert(result.size() == 2);
-  assert(result[0] == 1 && result[1] == 2);
+  ASSERT_EQ(result.size(), 2);
+  ASSERT_EQ(result[0], 1);
+  ASSERT_EQ(result[1], 2);
 
   // Clear table
   test_table.clearTables();
@@ -116,5 +120,38 @@ TEST(VectorHashTableTest, SortAndClearBucketsTest) {
   result.clear();
   test_table.queryByVector(test_hashes_1, result);
   test_table.queryByVector(test_hashes_2, result);
-  assert(result.empty());
+  ASSERT_TRUE(result.empty());
+}
+
+/**
+ * Tests reservoir sampling by adding 100 items to a max reservoir size 10
+ * table and ensuring we get back exactly 10 items, some of which are not the
+ * first 10 we added (the chance we would randomly select the first 10 out of
+ * 100 is vanishingly small).
+ */
+TEST(VectorHashTableTest, SimpleReservoirTest) {
+  // Create a hash table with a single table
+  uint32_t num_tables = 1;
+  uint32_t table_range = 100;
+  uint32_t max_reservoir_size = 10;
+  uint32_t num_elements_to_add = 100;
+  uint32_t element_hash = 42;
+  uint32_t seed = 43;
+  VectorHashTable<uint32_t, true> test_table(num_tables, max_reservoir_size,
+                                             table_range, seed);
+
+  // Add 100 items all with the same hash. Using a single table ensures they are
+  // inserted in the order we intend even with a parallel insert.
+  auto hashes = std::vector<uint32_t>(num_elements_to_add, element_hash);
+  auto labels = std::vector<uint32_t>(num_elements_to_add);
+  std::iota(std::begin(labels), std::end(labels), 0);
+  test_table.insert(num_elements_to_add, labels.data(), hashes.data());
+
+  // Do query
+  std::vector<uint32_t> result(0);
+  uint32_t test_hashes_1[] = {element_hash};
+  test_table.queryByVector(test_hashes_1, result);
+  ASSERT_EQ(result.size(), 10);
+  std::sort(result.begin(), result.end());
+  ASSERT_TRUE(!(result[0] == 0 && result[9] == 9));
 }
