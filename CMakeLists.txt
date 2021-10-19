@@ -50,8 +50,8 @@ add_subdirectory(flash)
 
 file(
   GLOB BOLT_SOURCES 
-  bolt/layers/*.cc 
-  bolt/networks/*.cc 
+  bolt/layers/FullyConnectedLayer.cc 
+  bolt/networks/Network.cc 
   bolt/utils/*.cc 
   utils/hashing/DWTA.cc 
   utils/hashtable/SampledHashTable.cc

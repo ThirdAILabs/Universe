@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <fstream>
+#include <memory>
 #include <random>
 #include <unordered_set>
 #include <vector>
@@ -91,7 +92,8 @@ class SvmDatasetTestFixture : public ::testing::Test {
 };
 
 TEST_F(SvmDatasetTestFixture, InMemoryDatasetTest) {
-  InMemoryDataset<SparseBatch> dataset(_filename, _batch_size);
+  InMemoryDataset<SparseBatch> dataset(_filename, _batch_size,
+                                       SvmSparseBatchFactory{});
 
   uint32_t vec_count = 0;
   for (const auto& batch : dataset) {
@@ -121,7 +123,8 @@ TEST_F(SvmDatasetTestFixture, InMemoryDatasetTest) {
 }
 
 TEST_F(SvmDatasetTestFixture, StreamedDatasetTest) {
-  StreamedDataset<SparseBatch> dataset(_filename, _batch_size);
+  StreamedDataset<SparseBatch> dataset(
+      _filename, _batch_size, std::make_unique<SvmSparseBatchFactory>());
 
   uint32_t vec_count = 0;
   while (auto batch_opt = dataset.nextBatch()) {

@@ -4,6 +4,7 @@
 #include "../utils/dataset/batch_types/SparseBatch.h"
 #include "../utils/hashing/DensifiedMinHash.h"
 #include "../utils/hashing/FastSRP.h"
+#include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -83,13 +84,16 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
   py::class_<SparseBatch>(utils_submodule,  // NOLINT
                           "SparseBatch");
 
+  utils_submodule.def(
+      "loadInMemorySvmDataset",
+      &InMemoryDataset<SparseBatch>::loadInMemorySvmDataset,
+      py::arg("filename"), py::arg("batch_size") = 10000,
+      "Constructs a sparse dataset from a given file with batch sizes of "
+      "a given size, and attempts to read the"
+      " entire file into memory.");
+
   py::class_<InMemoryDataset<SparseBatch>>(utils_submodule,
                                            "InMemorySparseDataset")
-      .def(py::init<const std::string&, uint32_t>(), py::arg("file_name"),
-           py::arg("batch_size") = 10000,
-           "Constructs a sparse dataset from a given file with batch sizes of "
-           "a given size, and attempts to read the"
-           " entire file into memory.")
       .def("get_num_batches", &InMemoryDataset<SparseBatch>::numBatches,
            "Returns the number of stored batches.")
       .def("__getitem__", &InMemoryDataset<SparseBatch>::operator[],

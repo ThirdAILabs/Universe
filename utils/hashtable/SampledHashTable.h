@@ -122,7 +122,7 @@ class SampledHashTable final : public HashTable<LABEL_T> {
 
   uint64_t tableRange() const override { return _range; };
 
-  ~SampledHashTable();
+  ~SampledHashTable() override;
 };
 
 }  // namespace thirdai::utils
