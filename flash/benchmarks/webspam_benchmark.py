@@ -12,8 +12,8 @@ parser.add_argument('webspam_gt_path',
 args = parser.parse_args()
 
 
-dataset = utils.InMemorySparseDataset(args.webspam_data_path, batch_size=10000)
-queries = utils.InMemorySparseDataset(args.webspam_query_path, batch_size=100000)
+dataset = utils.loadInMemorySvmDataset(args.webspam_data_path, batch_size=10000)
+queries = utils.loadInMemorySvmDataset(args.webspam_query_path, batch_size=100000)
 
 gt = []
 gt_distances = []
@@ -69,7 +69,6 @@ axisfontsize = 18
 labelfontsize = 12
 ls = "--"
 
-# plt.legend(fontsize=labelfontsize, loc = 'center left')
 plt.xlabel("Recall (R1@100)", fontsize=axisfontsize)
 plt.ylabel('Queries per second (log 10)', fontsize=axisfontsize)
 plt.title("Flash Recall on Webspam", fontsize=titlefontsize)
