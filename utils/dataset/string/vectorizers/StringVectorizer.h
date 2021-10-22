@@ -43,13 +43,15 @@ class StringVectorizer {
   uint64_t getDimension() const { return _dim; };
 
   /**
-   * Takes in a string 'str' and fills out 'indices' and 'values' vectors,
-   * corresponding with the indices and values arrays of a sparse vector.
-   * 'indices' and 'values' are not necessarily empty. This method appends
-   * to 'indices' and 'values'.
+   * Takes in a string 'str' and fills out 'indexToValueMap' which maps
+   * the indices to the values of a sparse vector.
+   * indexToValueMap are not necessarily empty. This method adds new 
+   * entries to indexToValueMap.
+   * However, the keys added by this method must not overlap with the 
+   * existing keys in the map. If it does, then it can be overwritten.
    */
-  virtual void vectorize(const std::string& str, std::vector<uint32_t>& indices,
-                         std::vector<float>& values,
+  virtual void vectorize(const std::string& str,
+                         std::unordered_map<uint32_t, float>& indexToValueMap,
                          const std::unordered_map<uint32_t, float>& idfMap) = 0;
 
   virtual ~StringVectorizer() {}

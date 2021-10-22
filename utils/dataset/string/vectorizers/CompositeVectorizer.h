@@ -88,11 +88,11 @@ class CompositeVectorizer {
     }
   }
 
-  void vectorize(const std::string& str, std::vector<uint32_t>& indices,
-                 std::vector<float>& values,
+  void vectorize(const std::string& str,
+                 std::unordered_map<uint32_t, float>& indexToValueMap,
                  const std::unordered_map<uint32_t, float>& idfMap) {
     for (auto* vectorizer_ptr : _vectorizers) {
-      vectorizer_ptr->vectorize(str, indices, values, idfMap);
+      vectorizer_ptr->vectorize(str, indexToValueMap, idfMap);
     }
   }
 

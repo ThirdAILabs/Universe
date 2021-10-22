@@ -40,20 +40,23 @@ class StringFactory : public Factory<SparseBatch> {
     std::vector<SparseVector> vectors(actual_batch_size);
 
     for (uint32_t v = 0; v < actual_batch_size; v++) {
-      std::vector<uint32_t> indices;
-      std::vector<float> values;
-      _vectorizer.vectorize(strings[v], indices, values, _idf_map);
+      std::unordered_map<uint32_t, float> indexValueMap;
+      _vectorizer.vectorize(strings[v], indexValueMap, _idf_map);
 
-      SparseVector string_vec(indices.size());
+      SparseVector string_vec(indexValueMap.size());
+      string_vec.indices = new uint32_t[indexValueMap.size()];
+      string_vec.values = new float[indexValueMap.size()];
 
-      // Need to copy each element as the vectors will go out of scope and
-      // deallocate internal array.
-      string_vec.indices = new uint32_t[indices.size()];
-      std::copy(indices.begin(), indices.end(), string_vec.indices);
-      string_vec.values = new float[values.size()];
-      std::copy(values.begin(), values.end(), string_vec.values);
-
-      vectors[v] = string_vec;
+      // Map entries are copied here instead of in the vectorizer to 
+      // prevent double copying 
+      size_t i = 0;
+      for (auto kv : indexValueMap) {
+        string_vec.indices[i] = kv.first;
+        string_vec.values[i] = kv.second;
+        i++;
+      }
+      
+      vectors[v] = std::move(string_vec); // Prevent copying. string_vec will not be reused.
     }
 
     return {std::move(vectors), std::move(labels), start_id};
