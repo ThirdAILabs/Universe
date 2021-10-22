@@ -14,7 +14,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace thirdai::utils {
+namespace thirdai::utils::dataset {
 template <typename LOADER_T>
 class GlobalFreq {
   /*
@@ -26,7 +26,7 @@ class GlobalFreq {
  public:
   GlobalFreq(vectorizer_config_t config, std::vector<std::string>&& filenames);
 
-  std::unordered_map<uint32_t, float> getIdfMap() const { return _idf_map; }
+  std::unordered_map<uint32_t, float>& getIdfMap() { return _idf_map; }
 
   vectorizer_config_t getVectorizerConfig() const {
     return _vectorizer.getConfig();
@@ -43,4 +43,4 @@ class GlobalFreq {
   std::unordered_map<uint32_t, float> _idf_map;
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::utils::dataset

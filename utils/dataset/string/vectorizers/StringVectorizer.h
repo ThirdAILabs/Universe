@@ -1,15 +1,12 @@
 #pragma once
-//#include "../StringDataset.h"
-// #include "../GlobalFreq.h"
 #include <exception>
 #include <iostream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-// #include "../IDFMap.h"
 
-namespace thirdai::utils {
-enum class VALUE_TYPE { TFIDF, FREQUENCY, BINARY };
+namespace thirdai::utils::dataset {
+enum class StringVectorizerValue { TFIDF, FREQUENCY, BINARY };
 
 /**
  * Interface for extracting sparse vector indices and values out of strings.
@@ -26,7 +23,8 @@ class StringVectorizer {
    * max_dim: The maximum dimension of the produced vector.
    * max_dim cannot be 0.
    */
-  StringVectorizer(uint32_t start_idx, uint32_t max_dim, VALUE_TYPE value_type)
+  StringVectorizer(uint32_t start_idx, uint32_t max_dim,
+                   StringVectorizerValue value_type)
       : _start_idx(start_idx), _max_dim(max_dim), _value_type(value_type) {
     constructorHelper();
   };
@@ -34,7 +32,8 @@ class StringVectorizer {
   void constructorHelper() const {
     if (_max_dim < 1) {
       throw std::invalid_argument(
-          "String vectorizer does not accept max_dim < 1");
+          "String vectorizer does not accept max_dim < 1, max_dim = " +
+          std::to_string(_max_dim));
     }
   }
 
@@ -78,6 +77,6 @@ class StringVectorizer {
   /**
    * Whether the vector values are binary, frequency, or tf-idf.
    */
-  VALUE_TYPE _value_type;
+  StringVectorizerValue _value_type;
 };
-}  // namespace thirdai::utils
+}  // namespace thirdai::utils::dataset

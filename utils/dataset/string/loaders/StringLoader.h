@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace thirdai::utils {
+namespace thirdai::utils::dataset {
 /**
  * Interface to open text files and extract strings of a certain type,
  * such as sentences, paragraphs, or the whole file.
@@ -21,4 +21,4 @@ class StringLoader {
       std::vector<std::string>& loaded_strings,
       std::vector<std::vector<uint32_t>>& loaded_labels) = 0;
 };
-}  // namespace thirdai::utils
+}  // namespace thirdai::utils::dataset

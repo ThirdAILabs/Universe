@@ -4,30 +4,45 @@
 #include <exception>
 #include <limits>
 
-namespace thirdai::utils {
-enum class TOKEN_TYPE { WORD_UNIGRAM, CHAR_TRIGRAM };
+namespace thirdai::utils::dataset {
+enum class StringVectorizerToken { WORD_UNIGRAM, CHAR_TRIGRAM };
 
 /**
  * vectorizer_confic_t is the type for vectorizer configurations,
  * which determine how vectors of different token types are
  * concatenated.
- * Each tuple represents how a vectorizer is configured:
- *  a token type (TOKEN_TYPE)
+ * Each StringVectorizerConfigItem represents how a vectorizer is configured:
+ *  a token type (StringVectorizerToken)
+ *  the value type (binary, frequency, or TF-IDF) (StringVectorizerValue)
  *  the maximum dimension of the vector (uint32_t)
- *  the value type (binary, frequency, or TF-IDF) (VALUE_TYPE)
  * Suppose you want a vectorizer that produces vectors such that:
  *  - The first up-to-50,000 entries correspond to the TF-IDF of word unigrams
  *  - The next up-to-100,000 entries correspond to the existence of word bigrams
  * (binary values)
  *  - The last up-to-60,000 entries correspond to the frequencies of character
- * trigrams Then the configuration would be: std::vector { std::tuple {
- * TOKEN_TYPE::WORD_UNIGRAM, 50000, VALUE_TYPE::TFIDF }, std::tuple {
- * TOKEN_TYPE::WORD_BIGRAM, 100000, VALUE_TYPE::BINARY }, std::tuple {
- * TOKEN_TYPE::CHAR_TRIGRAM, 60000, VALUE_TYPE::FREQ }
+ * trigrams Then the configuration would be:
+ * std::vector {
+ *  { _token_type = StringVectorizerToken::WORD_UNIGRAM, _value_type =
+ * StringVectorizerValue::TFIDF, _max_dim = 50000 }, { _token_type =
+ * StringVectorizerToken::WORD_BIGRAM, _value_type =
+ * StringVectorizerValue::BINARY, _max_dim = 100000 }, { _token_type =
+ * StringVectorizerToken::CHAR_TRIGRAM, _value_type =
+ * StringVectorizerValue::FREQ, _max_dim = 60000 },
  * }
  */
-typedef std::vector<std::tuple<TOKEN_TYPE, uint32_t, VALUE_TYPE>>
-    vectorizer_config_t;
+struct StringVectorizerConfigItem {
+  StringVectorizerToken _token_type;
+  StringVectorizerValue _value_type;
+  uint32_t _max_dim;
+
+  friend bool operator==(StringVectorizerConfigItem& lhs,
+                         StringVectorizerConfigItem& rhs) {
+    return lhs._token_type == rhs._token_type &&
+           lhs._value_type == rhs._value_type && lhs._max_dim == rhs._max_dim;
+  }
+};
+
+using vectorizer_config_t = std::vector<StringVectorizerConfigItem>;
 
 /**
  * Only used by StringFactory and GlobalFreq object.
@@ -42,18 +57,11 @@ class CompositeVectorizer {
  public:
   explicit CompositeVectorizer(vectorizer_config_t config)
       : _config(std::move(config)) {
-    for (auto triple : _config) {
+    for (auto item : _config) {
       StringVectorizer* vectorizer_ptr;
-      TOKEN_TYPE token_type = std::get<0>(triple);
-      uint32_t max_dim = std::get<1>(triple);
-      VALUE_TYPE value_type = std::get<2>(triple);
 
-      // TODO (Geordie): remove
-      (void)max_dim;
-      (void)value_type;
-
-      switch (token_type) {
-        case TOKEN_TYPE::WORD_UNIGRAM:
+      switch (item._token_type) {
+        case StringVectorizerToken::WORD_UNIGRAM:
           /**
            * Will be filled in the next PR
            * Will look something like
@@ -66,7 +74,7 @@ class CompositeVectorizer {
            */
           throw std::invalid_argument("Word unigrams are not yet implemented.");
           break;
-        case TOKEN_TYPE::CHAR_TRIGRAM:
+        case StringVectorizerToken::CHAR_TRIGRAM:
           // Will be filled in the next PR
           throw std::invalid_argument(
               "Character trigrams are not yet implemented.");
@@ -90,17 +98,6 @@ class CompositeVectorizer {
 
   vectorizer_config_t getConfig() const { return _config; }
 
-  friend bool operator==(CompositeVectorizer& lhs, CompositeVectorizer& rhs) {
-    vectorizer_config_t lhs_config = lhs.getConfig();
-    vectorizer_config_t rhs_config = rhs.getConfig();
-    uint32_t lhs_hash =
-        MurmurHash(reinterpret_cast<const char*>(lhs_config.data()),
-                   lhs_config.size() * sizeof(vectorizer_config_t), 0);
-    uint32_t rhs_hash =
-        MurmurHash(reinterpret_cast<const char*>(rhs_config.data()),
-                   rhs_config.size() * sizeof(vectorizer_config_t), 0);
-    return lhs_hash == rhs_hash;
-  }
   CompositeVectorizer& operator=(const CompositeVectorizer& other) = delete;
   CompositeVectorizer& operator=(CompositeVectorizer&& other) = delete;
   CompositeVectorizer(const CompositeVectorizer& other) = delete;
@@ -114,4 +111,4 @@ class CompositeVectorizer {
     }
   }
 };
-}  // namespace thirdai::utils
+}  // namespace thirdai::utils::dataset

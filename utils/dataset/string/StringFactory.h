@@ -9,9 +9,10 @@ namespace thirdai::utils::dataset {
 template <typename LOADER_T>
 class StringFactory : public Factory<SparseBatch> {
  private:
+  static std::unordered_map<uint32_t, float> _default_empty_map;
   LOADER_T _loader;
   CompositeVectorizer _vectorizer;
-  std::unordered_map<uint32_t, float> _idf_map;
+  std::unordered_map<uint32_t, float>& _idf_map;
 
  public:
   // Without TF-IDF
@@ -19,7 +20,7 @@ class StringFactory : public Factory<SparseBatch> {
       : _loader(),
         _vectorizer(vectorizer_config),  // Forces a copy so it can be reused
                                          // outside this instance.
-        _idf_map(std::move(std::unordered_map<uint32_t, float>())) {}
+        _idf_map(_default_empty_map) {}
 
   // With global frequencies object for TF-IDF
   // Does not need to take in separate vectorizer config since it can be
@@ -27,7 +28,7 @@ class StringFactory : public Factory<SparseBatch> {
   explicit StringFactory(const GlobalFreq<LOADER_T>& global_freq)
       : _loader(),
         _vectorizer(std::move(global_freq.getVectorizerConfig())),
-        _idf_map(std::move(global_freq.getIdfMap())) {}
+        _idf_map(global_freq.getIdfMap()) {}
 
   SparseBatch parse(std::ifstream& file, uint32_t target_batch_size,
                     uint64_t start_id) override {
