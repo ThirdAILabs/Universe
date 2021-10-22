@@ -68,7 +68,7 @@ class VectorHashTable final : public HashTable<LABEL_T> {
  private:
   /** Insert a label into a hashtable, including reservoir sampling if enabled
    */
-  void insertIntoTable(LABEL_T label, uint32_t hash, uint32_t table);
+  inline void insertIntoTable(LABEL_T label, uint32_t hash, uint32_t table);
 
   constexpr uint64_t getBucketIndex(uint64_t table, uint64_t hash) const {
     return table * tableRange() + hash;

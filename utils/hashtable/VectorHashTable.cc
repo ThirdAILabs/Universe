@@ -42,9 +42,8 @@ void VectorHashTable<LABEL_T, USE_RESERVOIR>::insertSequential(
 }
 
 template <typename LABEL_T, bool USE_RESERVOIR>
-void VectorHashTable<LABEL_T, USE_RESERVOIR>::insertIntoTable(LABEL_T label,
-                                                              uint32_t hash,
-                                                              uint32_t table) {
+inline void VectorHashTable<LABEL_T, USE_RESERVOIR>::insertIntoTable(
+    LABEL_T label, uint32_t hash, uint32_t table) {
   if (USE_RESERVOIR &&
       _buckets[getBucketIndex(table, hash)].size() == _max_reservoir_size) {
     uint32_t rand_counter = counter++;

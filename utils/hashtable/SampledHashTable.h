@@ -120,7 +120,7 @@ class SampledHashTable final : public HashTable<LABEL_T> {
 
   uint32_t numTables() const override { return _num_tables; };
 
-  uint64_t tableRange() const override { return _range; };
+  inline uint64_t tableRange() const override { return _range; };
 
   ~SampledHashTable() override;
 };
