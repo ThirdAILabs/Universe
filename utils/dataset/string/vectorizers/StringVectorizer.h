@@ -19,6 +19,7 @@ class StringVectorizer {
  public:
   /**
    * start_idx: The smallest possible non-zero index of the produced vector.
+   * This is used because vectors are concatenated with other vectors.
    * The non-zero indices produced by the vectorizer should be shifted by
    * + _start_idx.
    *
@@ -57,6 +58,7 @@ class StringVectorizer {
  protected:
   /**
    * The smallest possible non-zero index of the produced vector.
+   * This is used because vectors are concatenated with other vectors.
    * The non-zero indices produced by the vectorizer should be shifted by
    * + _start_idx.
    */

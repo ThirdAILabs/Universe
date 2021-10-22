@@ -13,11 +13,12 @@ class StringLoader {
  public:
   /**
    * Loads up to target_batch_size strings from file into 'loaded_strings',
-   * overwriting its contents
-   * The string can only contain lower case characters, numbers, and space.
-   * All punctuation marks must be stripped off.
+   * overwriting its contents, and up to target_batch_size label vectors
+   * from file into 'loaded_labels', overwriting its contents.
    */
-  virtual void loadStrings(std::ifstream& file, uint32_t target_batch_size,
-                           std::vector<std::string>& loaded_strings) = 0;
+  virtual void loadStringsAndLabels(
+      std::ifstream& file, uint32_t target_batch_size,
+      std::vector<std::string>& loaded_strings,
+      std::vector<std::vector<uint32_t>>& loaded_labels) = 0;
 };
 }  // namespace thirdai::utils

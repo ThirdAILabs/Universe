@@ -4,60 +4,59 @@
 #include "loaders/StringLoader.h"
 #include "vectorizers/CompositeVectorizer.h"
 
-namespace thirdai::utils {
+namespace thirdai::utils::dataset {
 
-template <typename Loader_t>
+template <typename LOADER_T>
 class StringFactory : public Factory<SparseBatch> {
  private:
-  Loader_t _loader;
+  LOADER_T _loader;
   CompositeVectorizer _vectorizer;
-  std::unordered_map<uint32_t, float> _idfMap;
+  std::unordered_map<uint32_t, float> _idf_map;
 
  public:
   // Without TF-IDF
-  explicit StringFactory(vectorizer_config_t vectorizer_config)
+  explicit StringFactory(vectorizer_config_t& vectorizer_config)
       : _loader(),
-        _vectorizer(std::move(vectorizer_config)),
-        _idfMap(std::move(std::unordered_map<uint32_t, float>())) {}
+        _vectorizer(vectorizer_config),  // Forces a copy so it can be reused
+                                         // outside this instance.
+        _idf_map(std::move(std::unordered_map<uint32_t, float>())) {}
 
   // With global frequencies object for TF-IDF
-  explicit StringFactory(vectorizer_config_t vectorizer_config,
-                         GlobalFreq<Loader_t>& global_freq)
+  // Does not need to take in separate vectorizer config since it can be
+  // retrieved from global_freq, and the configurations must be the same
+  explicit StringFactory(const GlobalFreq<LOADER_T>& global_freq)
       : _loader(),
-        _vectorizer(std::move(vectorizer_config)),
-        _idfMap(global_freq._idfMap) {
-    if (_vectorizer.getConfigHash() != global_freq.getVectorizerConfigHash()) {
-      std::invalid_argument(
-          "Invalid global frequencies object; vectorizer configurations do not "
-          "match.");
-    }
-  }
+        _vectorizer(std::move(global_freq.getVectorizerConfig())),
+        _idf_map(std::move(global_freq.getIdfMap())) {}
 
   SparseBatch parse(std::ifstream& file, uint32_t target_batch_size,
                     uint64_t start_id) override {
     std::vector<std::string> strings;
-    _loader.loadStrings(file, target_batch_size, strings);
+    std::vector<std::vector<uint32_t>> labels;
+    _loader.loadStringsAndLabels(file, target_batch_size, strings, labels);
     uint32_t actual_batch_size = strings.size();
 
-    std::vector<SparseVector> vectors;
-    vectors.resize(actual_batch_size);
-
-    std::vector<std::vector<uint32_t>> labels;
-    labels.resize(actual_batch_size);
+    std::vector<SparseVector> vectors(actual_batch_size);
 
     for (uint32_t v = 0; v < actual_batch_size; v++) {
       std::vector<uint32_t> indices;
       std::vector<float> values;
-      _vectorizer.vectorize(strings[v], indices, values, _idfMap);
+      _vectorizer.vectorize(strings[v], indices, values, _idf_map);
+
       SparseVector string_vec(indices.size());
-      string_vec.indices = indices.data();
-      string_vec.values = values.data();
+
+      // Need to copy each element as the vectors will go out of scope and
+      // deallocate internal array.
+      string_vec.indices = new uint32_t[indices.size()];
+      std::copy(indices.begin(), indices.end(), string_vec.indices);
+      string_vec.values = new float[values.size()];
+      std::copy(values.begin(), values.end(), string_vec.values);
+
       vectors[v] = string_vec;
-      labels[v].push_back(0);
     }
 
-    return SparseBatch(std::move(vectors), std::move(labels), start_id);
+    return {std::move(vectors), std::move(labels), start_id};
   }
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::utils::dataset
