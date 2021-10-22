@@ -50,7 +50,7 @@ class StringVectorizer {
    * However, the keys added by this method must not overlap with the 
    * existing keys in the map. If it does, then it can be overwritten.
    */
-  virtual void vectorize(const std::string& str,
+  virtual void fillIndexToValueMap(const std::string& str,
                          std::unordered_map<uint32_t, float>& indexToValueMap,
                          const std::unordered_map<uint32_t, float>& idfMap) = 0;
 

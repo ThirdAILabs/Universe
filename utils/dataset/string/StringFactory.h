@@ -41,7 +41,7 @@ class StringFactory : public Factory<SparseBatch> {
 
     for (uint32_t v = 0; v < actual_batch_size; v++) {
       std::unordered_map<uint32_t, float> indexValueMap;
-      _vectorizer.vectorize(strings[v], indexValueMap, _idf_map);
+      _vectorizer.fillIndexToValueMap(strings[v], indexValueMap, _idf_map);
 
       SparseVector string_vec(indexValueMap.size());
       string_vec.indices = new uint32_t[indexValueMap.size()];
