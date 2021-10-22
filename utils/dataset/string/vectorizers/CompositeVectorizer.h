@@ -89,8 +89,8 @@ class CompositeVectorizer {
   }
 
   void fillIndexToValueMap(const std::string& str,
-                 std::unordered_map<uint32_t, float>& indexToValueMap,
-                 const std::unordered_map<uint32_t, float>& idfMap) {
+                           std::unordered_map<uint32_t, float>& indexToValueMap,
+                           const std::unordered_map<uint32_t, float>& idfMap) {
     for (auto* vectorizer_ptr : _vectorizers) {
       vectorizer_ptr->fillIndexToValueMap(str, indexToValueMap, idfMap);
     }

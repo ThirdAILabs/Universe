@@ -47,16 +47,17 @@ class StringFactory : public Factory<SparseBatch> {
       string_vec.indices = new uint32_t[indexValueMap.size()];
       string_vec.values = new float[indexValueMap.size()];
 
-      // Map entries are copied here instead of in the vectorizer to 
-      // prevent double copying 
+      // Map entries are copied here instead of in the vectorizer to
+      // prevent double copying
       size_t i = 0;
       for (auto kv : indexValueMap) {
         string_vec.indices[i] = kv.first;
         string_vec.values[i] = kv.second;
         i++;
       }
-      
-      vectors[v] = std::move(string_vec); // Prevent copying. string_vec will not be reused.
+
+      vectors[v] = std::move(
+          string_vec);  // Prevent copying. string_vec will not be reused.
     }
 
     return {std::move(vectors), std::move(labels), start_id};
