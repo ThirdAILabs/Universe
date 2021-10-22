@@ -1,4 +1,5 @@
 #pragma once
+
 #include "../../../hashing/MurmurHash.h"
 #include "./StringVectorizer.h"
 #include <exception>
@@ -34,12 +35,6 @@ struct StringVectorizerConfigItem {
   StringVectorizerToken _token_type;
   StringVectorizerValue _value_type;
   uint32_t _max_dim;
-
-  friend bool operator==(StringVectorizerConfigItem& lhs,
-                         StringVectorizerConfigItem& rhs) {
-    return lhs._token_type == rhs._token_type &&
-           lhs._value_type == rhs._value_type && lhs._max_dim == rhs._max_dim;
-  }
 };
 
 using vectorizer_config_t = std::vector<StringVectorizerConfigItem>;
@@ -88,11 +83,12 @@ class CompositeVectorizer {
     }
   }
 
-  void fillIndexToValueMap(const std::string& str,
-                           std::unordered_map<uint32_t, float>& indexToValueMap,
-                           const std::unordered_map<uint32_t, float>& idfMap) {
+  void fillIndexToValueMap(
+      const std::string& str,
+      std::unordered_map<uint32_t, float>& index_to_value_map,
+      const std::unordered_map<uint32_t, float>& idf_map) {
     for (auto* vectorizer_ptr : _vectorizers) {
-      vectorizer_ptr->fillIndexToValueMap(str, indexToValueMap, idfMap);
+      vectorizer_ptr->fillIndexToValueMap(str, index_to_value_map, idf_map);
     }
   }
 

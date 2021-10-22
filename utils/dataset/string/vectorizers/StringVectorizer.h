@@ -1,4 +1,5 @@
 #pragma once
+
 #include <exception>
 #include <iostream>
 #include <string>
@@ -52,8 +53,8 @@ class StringVectorizer {
    */
   virtual void fillIndexToValueMap(
       const std::string& str,
-      std::unordered_map<uint32_t, float>& indexToValueMap,
-      const std::unordered_map<uint32_t, float>& idfMap) = 0;
+      std::unordered_map<uint32_t, float>& index_to_value_map,
+      const std::unordered_map<uint32_t, float>& idf_map) = 0;
 
   virtual ~StringVectorizer() {}
 

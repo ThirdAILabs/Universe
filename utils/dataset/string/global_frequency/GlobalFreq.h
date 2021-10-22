@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -15,7 +16,7 @@
 #include <vector>
 
 namespace thirdai::utils::dataset {
-template <typename LOADER_T>
+
 class GlobalFreq {
   /*
       This class is responsible for calculating (inverse) word/document
@@ -24,9 +25,11 @@ class GlobalFreq {
   // TODO(Henry): documentation
 
  public:
-  GlobalFreq(vectorizer_config_t config, std::vector<std::string>&& filenames);
+  GlobalFreq(std::unique_ptr<StringLoader> string_loader,
+             vectorizer_config_t vectorizer_config,
+             std::vector<std::string>&& filenames);
 
-  std::unordered_map<uint32_t, float>& getIdfMap() { return _idf_map; }
+  std::unordered_map<uint32_t, float> getIdfMap() const { return _idf_map; }
 
   vectorizer_config_t getVectorizerConfig() const {
     return _vectorizer.getConfig();
@@ -35,7 +38,7 @@ class GlobalFreq {
   ~GlobalFreq();
 
  private:
-  LOADER_T _string_loader;
+  std::unique_ptr<StringLoader> _string_loader;
   CompositeVectorizer _vectorizer;
   /**
    * Map from feature hash to inverse document frequency
