@@ -10,7 +10,7 @@ FullyConnectedLayer::FullyConnectedLayer(
     const FullyConnectedLayerConfig& config, uint64_t prev_dim)
     : _dim(config.dim),
       _prev_dim(prev_dim),
-      _batch_size(0),
+      _max_batch_size(0),
       _sparse_dim(config.sparsity * config.dim),
       _sparsity(config.sparsity),
       _act_func(config.act_func),
@@ -18,7 +18,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _active_neurons(nullptr),
       _activations(nullptr),
       _errors(nullptr),
-      _concatenated(false),
+      _internal_state_provided(false),
       _sampling_config(config.sampling_config) {
   uint64_t total_size = _dim * _prev_dim;
 
@@ -376,34 +376,59 @@ void FullyConnectedLayer::reBuildHashFunction() {
       _sampling_config.range_pow);
 }
 
-void FullyConnectedLayer::setBatchSize(uint64_t new_batch_size) {
-  if (new_batch_size <= _batch_size) {
+void FullyConnectedLayer::initializeLayer(uint64_t new_batch_size) {
+  // If the new max_batch_size is smaller we can ignore this call
+  if (new_batch_size <= _max_batch_size) {
     return;
   }
 
-  for (uint64_t batch = 0; batch < _batch_size; batch++) {
-    delete[] _active_neurons[batch];
-    delete[] _activations[batch];
-    delete[] _errors[batch];
-  }
+  // Free previously allocated memory
+  deallocateInternalState();
 
-  delete[] _active_lens;
-  delete[] _active_neurons;
-  delete[] _activations;
-  delete[] _errors;
+  _max_batch_size = new_batch_size;
+  _internal_state_provided = false;
 
-  _batch_size = new_batch_size;
+  // Reallocate internal state for new batch size
+  _active_lens = new uint32_t[_max_batch_size];
+  _active_neurons = new uint32_t*[_max_batch_size];
+  _activations = new float*[_max_batch_size];
+  _errors = new float*[_max_batch_size];
 
-  _active_lens = new uint32_t[_batch_size];
-  _active_neurons = new uint32_t*[_batch_size];
-  _activations = new float*[_batch_size];
-  _errors = new float*[_batch_size];
-
-  for (uint64_t batch = 0; batch < _batch_size; batch++) {
+  for (uint64_t batch = 0; batch < _max_batch_size; batch++) {
     _active_neurons[batch] = new uint32_t[_dim];
     _activations[batch] = new float[_dim];
     _errors[batch] = new float[_dim]();
   }
+}
+
+void FullyConnectedLayer::initializeLayer(uint64_t new_batch_size,
+                                          float** new_activations,
+                                          float** new_errors) {
+  // Free previously allocated memory
+  deallocateInternalState();
+
+  _max_batch_size = new_batch_size;
+  _internal_state_provided = true;
+
+  // Reconstruct internal state using provided memory
+  _active_lens = new uint32_t[_max_batch_size];
+  _active_neurons = nullptr;
+  _activations = new_activations;
+  _errors = new_errors;
+}
+
+void FullyConnectedLayer::deallocateInternalState() {
+  if (!_internal_state_provided) {
+    for (uint64_t batch = 0; batch < _max_batch_size; batch++) {
+      delete[] _active_neurons[batch];
+      delete[] _activations[batch];
+      delete[] _errors[batch];
+    }
+  }
+  delete[] _active_lens;
+  delete[] _active_neurons;
+  delete[] _activations;
+  delete[] _errors;
 }
 
 void FullyConnectedLayer::setSparsity(float new_sparsity) {
@@ -413,17 +438,6 @@ void FullyConnectedLayer::setSparsity(float new_sparsity) {
   } else {
     _sparse_dim = _sparsity * _dim;
   }
-}
-
-void FullyConnectedLayer::makeConcatenatedLayer(uint32_t batch_size,
-                                                float** new_activations,
-                                                float** new_errors) {
-  _batch_size = batch_size;
-  _active_lens = new uint32_t[_batch_size];
-  _active_neurons = nullptr;
-  _activations = new_activations;
-  _errors = new_errors;
-  _concatenated = true;
 }
 
 void FullyConnectedLayer::shuffleRandNeurons() {
@@ -447,18 +461,7 @@ float* FullyConnectedLayer::getBiases() {
 }
 
 FullyConnectedLayer::~FullyConnectedLayer() {
-  if (!_concatenated) {
-    for (uint64_t batch = 0; batch < _batch_size; batch++) {
-      delete[] _active_neurons[batch];
-      delete[] _activations[batch];
-      delete[] _errors[batch];
-    }
-    delete[] _active_neurons;
-  }
-
-  delete[] _activations;
-  delete[] _errors;
-  delete[] _active_lens;
+  deallocateInternalState();
 
   delete[] _weights;
   delete[] _w_gradient;

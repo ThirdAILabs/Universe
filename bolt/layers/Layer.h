@@ -45,7 +45,7 @@ class Layer {
 
   virtual void setSparsity(float new_sparsity) = 0;
 
-  virtual void setBatchSize(uint64_t new_batch_size) = 0;
+  virtual void initializeLayer(uint64_t new_batch_size) = 0;
 
   virtual void shuffleRandNeurons() = 0;
 

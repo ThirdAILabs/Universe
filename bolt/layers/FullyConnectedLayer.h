@@ -48,11 +48,10 @@ class FullyConnectedLayer final : public Layer {
 
   void setSparsity(float new_sparsity) override;
 
-  void setBatchSize(uint64_t new_batch_size) override;
+  void initializeLayer(uint64_t new_batch_size) override;
 
-  // This should not be used with setBatchSize
-  void makeConcatenatedLayer(uint32_t batch_size, float** new_activations,
-                             float** new_errors);
+  void initializeLayer(uint64_t new_batch_size, float** new_activations,
+                       float** new_errors);
 
   void shuffleRandNeurons() override;
 
@@ -97,7 +96,9 @@ class FullyConnectedLayer final : public Layer {
 
   constexpr float actFuncDerivative(float x);
 
-  uint64_t _dim, _prev_dim, _batch_size, _sparse_dim;
+  void deallocateInternalState();
+
+  uint64_t _dim, _prev_dim, _max_batch_size, _sparse_dim;
   float _sparsity;
   ActivationFunc _act_func;
 
@@ -106,7 +107,7 @@ class FullyConnectedLayer final : public Layer {
   float** _activations;
   float** _errors;
 
-  bool _concatenated;
+  bool _internal_state_provided;
 
   float* _weights;
   float* _w_gradient;

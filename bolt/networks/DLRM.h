@@ -25,6 +25,8 @@ class DLRM {
 
   uint32_t processTestBatch(const utils::ClickThroughBatch& batch);
 
+  void initializeNetworkForBatchSize(uint32_t batch_size);
+
   void reBuildHashFunctions();
 
   void buildHashTables();

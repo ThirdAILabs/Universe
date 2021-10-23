@@ -58,38 +58,9 @@ void DLRM::train(uint32_t batch_size, const std::string& train_data,
   uint64_t num_train_batches = train.numBatches();
   uint32_t print = std::max<uint32_t>(num_train_batches / 10, 1);
 
-  _concat_layer_activations = new float*[batch_size];
-  _concat_layer_errors = new float*[batch_size];
-
-  float** embedding_layer_activations = new float*[batch_size];
-  float** embedding_layer_errors = new float*[batch_size];
-  float** dense_feature_layer_activations = new float*[batch_size];
-  float** dense_feature_layer_errors = new float*[batch_size];
-
-  uint32_t embedding_dim = _embedding_layer->getEmbeddingDim();
-
-  for (uint32_t i = 0; i < batch_size; i++) {
-    _concat_layer_activations[i] = new float[_concat_layer_dim]();
-    _concat_layer_errors[i] = new float[_concat_layer_dim]();
-
-    embedding_layer_activations[i] = _concat_layer_activations[i];
-    embedding_layer_errors[i] = _concat_layer_errors[i];
-
-    dense_feature_layer_activations[i] =
-        _concat_layer_activations[i] + embedding_dim;
-    dense_feature_layer_errors[i] = _concat_layer_errors[i] + embedding_dim;
-  }
-
-  _embedding_layer->makeConcatenatedLayer(embedding_layer_activations,
-                                          embedding_layer_errors);
-  _dense_feature_layer->makeConcatenatedLayer(
-      batch_size, dense_feature_layer_activations, dense_feature_layer_errors);
-
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
-  for (uint32_t l = 0; l < _num_fc_layers; l++) {
-    _fc_layers[l]->setBatchSize(batch_size);
-  }
+  initializeNetworkForBatchSize(batch_size);
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
     std::cout << "---------|" << std::endl;
@@ -157,6 +128,39 @@ void DLRM::train(uint32_t batch_size, const std::string& train_data,
   _final_accuracy = static_cast<float>(final_correct) / test.len();
   std::cout << "Accuracy after training: " << _final_accuracy << " ("
             << final_correct << "/" << test.len() << ")" << std::endl;
+}
+
+void DLRM::initializeNetworkForBatchSize(uint32_t batch_size) {
+  _concat_layer_activations = new float*[batch_size];
+  _concat_layer_errors = new float*[batch_size];
+
+  float** embedding_layer_activations = new float*[batch_size];
+  float** embedding_layer_errors = new float*[batch_size];
+  float** dense_feature_layer_activations = new float*[batch_size];
+  float** dense_feature_layer_errors = new float*[batch_size];
+
+  uint32_t embedding_dim = _embedding_layer->getEmbeddingDim();
+
+  for (uint32_t i = 0; i < batch_size; i++) {
+    _concat_layer_activations[i] = new float[_concat_layer_dim]();
+    _concat_layer_errors[i] = new float[_concat_layer_dim]();
+
+    embedding_layer_activations[i] = _concat_layer_activations[i];
+    embedding_layer_errors[i] = _concat_layer_errors[i];
+
+    dense_feature_layer_activations[i] =
+        _concat_layer_activations[i] + embedding_dim;
+    dense_feature_layer_errors[i] = _concat_layer_errors[i] + embedding_dim;
+  }
+
+  _embedding_layer->initializeLayer(batch_size, embedding_layer_activations,
+                                    embedding_layer_errors);
+  _dense_feature_layer->initializeLayer(
+      batch_size, dense_feature_layer_activations, dense_feature_layer_errors);
+
+  for (uint32_t l = 0; l < _num_fc_layers; l++) {
+    _fc_layers[l]->initializeLayer(batch_size);
+  }
 }
 
 void DLRM::processTrainingBatch(const utils::ClickThroughBatch& batch,

@@ -17,7 +17,7 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
       _layer->_embedding_block[i] = i + 1;
     }
     _seed = _layer->_seed;
-    _layer->setBatchSize(4);
+    _layer->initializeLayer(4);
   }
 
   void TearDown() override { delete _layer; }

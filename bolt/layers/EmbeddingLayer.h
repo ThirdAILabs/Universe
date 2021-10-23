@@ -29,10 +29,11 @@ class EmbeddingLayer {
 
   float* getErrors(uint32_t batch_indx) { return _errors[batch_indx]; }
 
-  void setBatchSize(uint32_t new_batch_size);
+  void initializeLayer(uint32_t new_batch_size);
 
   // This should not be used with setBatchSize
-  void makeConcatenatedLayer(float** new_embeddings, float** new_errors);
+  void initializeLayer(uint32_t batch_size, float** new_embeddings,
+                             float** new_errors);
 
   EmbeddingLayer(EmbeddingLayer&) = delete;
   EmbeddingLayer(const EmbeddingLayer&&) = delete;
@@ -42,6 +43,8 @@ class EmbeddingLayer {
   ~EmbeddingLayer();
 
  private:
+  void deallocateInternalState();
+  
   uint32_t _num_embedding_lookups, _lookup_size, _total_embedding_dim,
       _log_embedding_block_size, _embedding_block_size, _batch_size, _seed;
 
@@ -50,9 +53,9 @@ class EmbeddingLayer {
   float** _embeddings;
   float** _errors;
 
-  bool _concatenated;
+  bool _internal_state_provided;
 
-  uint32_t* _lens;
+  uint32_t* _loc_lens;
   uint32_t** _embedding_locs;
 };
 

@@ -186,7 +186,7 @@ void Network::train(uint32_t batch_size, const std::string& train_data,
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
   for (uint32_t l = 0; l < _num_layers; l++) {
-    _layers[l]->setBatchSize(batch_size);
+    _layers[l]->initializeLayer(batch_size);
   }
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
