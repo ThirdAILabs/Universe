@@ -25,6 +25,8 @@ class StringFactory : public Factory<SparseBatch> {
                          GlobalFreq& global_freq)
       : _loader(std::move(string_loader)),
         _vectorizer(std::move(global_freq.getVectorizerConfig())),
+        // global_freq.getIdfMap() returns a copy of the idf map,
+        // so the std::move() is just to prevent double copying.
         _idf_map(std::move(global_freq.getIdfMap())) {}
 
   SparseBatch parse(std::ifstream& file, uint32_t target_batch_size,

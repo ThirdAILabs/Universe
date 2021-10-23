@@ -29,6 +29,7 @@ class GlobalFreq {
              vectorizer_config_t vectorizer_config,
              std::vector<std::string>&& filenames);
 
+  // Returns a copy of _idf_map.
   std::unordered_map<uint32_t, float> getIdfMap() const { return _idf_map; }
 
   vectorizer_config_t getVectorizerConfig() const {
