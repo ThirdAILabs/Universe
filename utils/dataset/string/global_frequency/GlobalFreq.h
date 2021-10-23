@@ -33,14 +33,14 @@ class GlobalFreq {
   std::unordered_map<uint32_t, float> getIdfMap() const { return _idf_map; }
 
   vectorizer_config_t getVectorizerConfig() const {
-    return _vectorizer.getConfig();
+    return _vectorizer_config;
   }
 
   ~GlobalFreq();
 
  private:
   std::unique_ptr<StringLoader> _string_loader;
-  CompositeVectorizer _vectorizer;
+  vectorizer_config_t _vectorizer_config;
   /**
    * Map from feature hash to inverse document frequency
    */
