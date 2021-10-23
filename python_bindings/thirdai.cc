@@ -4,6 +4,7 @@
 #include "../utils/dataset/batch_types/SparseBatch.h"
 #include "../utils/hashing/DensifiedMinHash.h"
 #include "../utils/hashing/FastSRP.h"
+#include <_types/_uint32_t.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -71,6 +72,33 @@ class PyNetwork final : public Network {
     return py::array_t<float>({dim}, {sizeof(float)}, mem, free_when_done);
   }
 };
+
+  // TODO(josh): Is this method in a good place?
+  // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=numpy#arrays
+  // for explanation of why we do py::array::c_style and py::array::forcecase.
+  // Ensures array is an array of floats in dense row major order.
+  static InMemoryDataset<DenseBatch> loadInMemoryNumpyDataset(
+      pybind11::array_t<float,
+                        pybind11::array::c_style |
+                        pybind11::array::forcecast>
+          data,
+      uint64_t num_batches) {
+    
+    auto data_buf = data.request();
+    auto shape = data_buf.shape;
+    if (shape.size() != 2) {
+      throw std::invalid_argument("For now, Numpy datasets must be 2D (the rows are dense data vectors).");
+    }  
+    
+    auto num_vectors = static_cast<uint64_t>(shape.at(0));
+    auto dimension = shape.at(1);
+    if (num_batches == 0 || num_batches > num_vectors) {
+      throw std::invalid_argument("The number of batches must be between 1 and the number of vectors in the dataset, inclusive.");
+    }
+
+    
+
+  }
 
 }  // namespace thirdai::python
 

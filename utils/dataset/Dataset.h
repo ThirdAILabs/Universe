@@ -38,6 +38,10 @@ class InMemoryDataset {
     _len = curr_id;
   }
 
+  // Take r-value reference for batches to force a move.
+  InMemoryDataset(std::vector<BATCH_T>&& batches, uint64_t len)
+      : _batches(batches), _len(len) {}
+
   const BATCH_T& operator[](uint32_t i) const { return _batches[i]; }
 
   const BATCH_T& at(uint32_t i) const { return _batches.at(i); }
@@ -55,19 +59,6 @@ class InMemoryDataset {
     return InMemoryDataset<SparseBatch>(filename, batch_size,
                                         SvmSparseBatchFactory{});
   }
-
-  // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=numpy#arrays
-  // for explanation of why we do py::array::c_style and py::array::forcecase.
-  // Ensures array is an array of floats in dense row major order.
-  // static InMemoryDataset<DenseBatch> loadInMemoryNumpyDataset(
-  //     pybind11::array_t<float,
-  //                       pybind11::array::c_style |
-  //                       pybind11::array::forcecast>
-  //         data,
-  //     size_t num_batches) {
-  //   auto dataBuf = data.request();
-
-  // }
 
  private:
   std::vector<BATCH_T> _batches;
