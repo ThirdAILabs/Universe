@@ -26,7 +26,7 @@ class HashFunction {
                          uint32_t* output) const {
 #pragma omp parallel for default(none) shared(batch, output)
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      hashSingleSparse(batch[v].indices, batch[v].values, batch[v].len,
+      hashSingleSparse(batch[v]._indices, batch[v]._values, batch[v]._len,
                        output + v * _num_tables);
     }
   }
@@ -35,7 +35,8 @@ class HashFunction {
                          uint32_t* output) const {
 #pragma omp parallel for default(none) shared(batch, output)
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      hashSingleDense(batch[v].values, batch[v].dim, output + v * _num_tables);
+      hashSingleDense(batch[v]._values, batch[v]._dim,
+                      output + v * _num_tables);
     }
   }
 
@@ -61,14 +62,15 @@ class HashFunction {
   void hashBatchSerial(const utils::SparseBatch& batch,
                        uint32_t* output) const {
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      hashSingleSparse(batch[v].indices, batch[v].values, batch[v].len,
+      hashSingleSparse(batch[v]._indices, batch[v]._values, batch[v]._len,
                        output + v * _num_tables);
     }
   }
 
   void hashBatchSerial(const utils::DenseBatch& batch, uint32_t* output) const {
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      hashSingleDense(batch[v].values, batch[v].dim, output + v * _num_tables);
+      hashSingleDense(batch[v]._values, batch[v]._dim,
+                      output + v * _num_tables);
     }
   }
 

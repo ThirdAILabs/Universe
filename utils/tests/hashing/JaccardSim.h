@@ -76,10 +76,10 @@ class JaccardSim : public Similarity {
         num_non_zeros);  // = {indices_1, empty_values, num_non_zeros};
     SparseVector v2(
         num_non_zeros);  // = {indices_2, empty_values, num_non_zeros};
-    std::copy(indices_1.begin(), indices_1.end(), v1.indices);
-    std::copy(indices_2.begin(), indices_2.end(), v2.indices);
+    std::copy(indices_1.begin(), indices_1.end(), v1._indices);
+    std::copy(indices_2.begin(), indices_2.end(), v2._indices);
 
-    return {v1, v2, getJaccardSim(v1.indices, v1.len, v2.indices, v2.len)};
+    return {v1, v2, getJaccardSim(v1._indices, v1._len, v2._indices, v2._len)};
   }
 
   float getSim(const DenseVector& v1, DenseVector& v2) override {
@@ -89,7 +89,7 @@ class JaccardSim : public Similarity {
   }
 
   float getSim(const SparseVector& v1, const SparseVector& v2) override {
-    return getJaccardSim(v1.indices, v1.len, v2.indices, v2.len);
+    return getJaccardSim(v1._indices, v1._len, v2._indices, v2._len);
   }
 
   /** Returns the jacard similarity of two sets, represented as sorted vectors

@@ -4,6 +4,7 @@
 #include "batch_types/ClickThroughBatch.h"
 #include "batch_types/DenseBatch.h"
 #include "batch_types/SparseBatch.h"
+// #include <pybind11/numpy.h>
 #include <cstdint>
 #include <fstream>
 #include <memory>
@@ -55,6 +56,19 @@ class InMemoryDataset {
                                         SvmSparseBatchFactory{});
   }
 
+  // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=numpy#arrays
+  // for explanation of why we do py::array::c_style and py::array::forcecase.
+  // Ensures array is an array of floats in dense row major order.
+  // static InMemoryDataset<DenseBatch> loadInMemoryNumpyDataset(
+  //     pybind11::array_t<float,
+  //                       pybind11::array::c_style |
+  //                       pybind11::array::forcecast>
+  //         data,
+  //     size_t num_batches) {
+  //   auto dataBuf = data.request();
+
+  // }
+
  private:
   std::vector<BATCH_T> _batches;
   uint64_t _len;
@@ -67,10 +81,10 @@ class StreamedDataset {
   // filenames. For this dataset it will have to store a list of filenames,
   // and whenever it reaches the end of one it can open the next one.
 
-  // This class takes in a unique pointer because Factor<T> is an abstract class
-  // so we cannot store it directly as a member variable. We cannot store it as
-  // a reference in case the factory constructed passed to the dataset, and then
-  // the dataset is returned from the function.
+  // This class takes in a unique pointer because Factor<T> is an abstract
+  // class so we cannot store it directly as a member variable. We cannot
+  // store it as a reference in case the factory constructed passed to the
+  // dataset, and then the dataset is returned from the function.
   StreamedDataset(const std::string& filename, uint32_t batch_size,
                   std::unique_ptr<Factory<BATCH_T>> factory)
       : _file(filename),
@@ -96,8 +110,8 @@ class StreamedDataset {
  private:
   // Per
   // https://stackoverflow.com/questions/748014/do-i-need-to-manually-close-an-ifstream,
-  // no need to close this (and throws a clang tidy error if we do, at least on
-  // my machine).
+  // no need to close this (and throws a clang tidy error if we do, at least
+  // on my machine).
   std::ifstream _file;
   uint32_t _batch_size;
   uint64_t _curr_id;

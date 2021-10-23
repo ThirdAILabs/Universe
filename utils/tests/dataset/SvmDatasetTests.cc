@@ -108,11 +108,11 @@ TEST_F(SvmDatasetTestFixture, InMemoryDatasetTest) {
         ASSERT_EQ(batch.labels(v).at(i), _vectors.at(vec_count).labels.at(i));
       }
 
-      ASSERT_EQ(batch[v].len, _vectors[vec_count].values.size());
-      for (uint32_t i = 0; i < batch[v].len; i++) {
-        ASSERT_EQ(batch.at(v).indices[i],
+      ASSERT_EQ(batch[v]._len, _vectors[vec_count].values.size());
+      for (uint32_t i = 0; i < batch[v]._len; i++) {
+        ASSERT_EQ(batch.at(v)._indices[i],
                   _vectors.at(vec_count).values.at(i).first);
-        ASSERT_EQ(batch.at(v).values[i],
+        ASSERT_EQ(batch.at(v)._values[i],
                   _vectors.at(vec_count).values.at(i).second);
       }
 
@@ -140,11 +140,11 @@ TEST_F(SvmDatasetTestFixture, StreamedDatasetTest) {
         ASSERT_EQ(batch.labels(v).at(i), _vectors.at(vec_count).labels.at(i));
       }
 
-      ASSERT_EQ(batch[v].len, _vectors[vec_count].values.size());
-      for (uint32_t i = 0; i < batch[v].len; i++) {
-        ASSERT_EQ(batch.at(v).indices[i],
+      ASSERT_EQ(batch[v]._len, _vectors[vec_count].values.size());
+      for (uint32_t i = 0; i < batch[v]._len; i++) {
+        ASSERT_EQ(batch.at(v)._indices[i],
                   _vectors.at(vec_count).values.at(i).first);
-        ASSERT_EQ(batch.at(v).values[i],
+        ASSERT_EQ(batch.at(v)._values[i],
                   _vectors.at(vec_count).values.at(i).second);
       }
 
