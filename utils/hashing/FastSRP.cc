@@ -25,7 +25,7 @@ FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
   uint32_t* n_array = new uint32_t[_dim];
   _bin_map = new uint32_t[_dim * _permute];
   _positions = new uint32_t[_dim * _permute];
-  _rand_bits = new uint16_t[_dim * _permute];
+  _rand_bits = new int8_t[_dim * _permute];
 
   for (uint32_t i = 0; i < _dim; i++) {
     n_array[i] = i;
@@ -76,10 +76,10 @@ void FastSRP::hashSingleDense(const float* values, uint32_t dim,
       // }
       if (binid < _num_hashes) {
         if (bin_values[binid] == std::numeric_limits<float>::lowest()) {
-          bin_values[binid] = values[i] * static_cast<float>(_rand_bits[binid]);
+          bin_values[binid] = values[i] * _rand_bits[binid];
         } else {
           bin_values[binid] +=
-              values[i] * static_cast<float>(_rand_bits[binid]);
+              values[i] * _rand_bits[binid];
         }
         hashes[binid] = (bin_values[binid] >= 0 ? 0 : 1);
       }
@@ -114,10 +114,10 @@ void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
       // }
       if (binid < _num_hashes) {
         if (bin_values[binid] == std::numeric_limits<float>::lowest()) {
-          bin_values[binid] = values[i] * static_cast<float>(_rand_bits[binid]);
+          bin_values[binid] = values[i] * _rand_bits[binid];
         } else {
           bin_values[binid] +=
-              values[i] * static_cast<float>(_rand_bits[binid]);
+              values[i] * _rand_bits[binid];
         }
         hashes[binid] = (bin_values[binid] >= 0 ? 0 : 1);
       }

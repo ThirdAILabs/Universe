@@ -12,7 +12,7 @@ class FastSRP : public HashFunction {
   uint32_t* _bin_map;
   uint32_t* _positions;
   uint32_t _rand_double_hash_seed;
-  uint16_t* _rand_bits;
+  int8_t* _rand_bits;
 
  public:
   FastSRP(uint32_t input_dim, uint32_t _hashes_per_table, uint32_t _num_tables,
