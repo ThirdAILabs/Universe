@@ -33,7 +33,7 @@ class EmbeddingLayer {
 
   // This should not be used with setBatchSize
   void initializeLayer(uint32_t batch_size, float** new_embeddings,
-                             float** new_errors);
+                       float** new_errors);
 
   EmbeddingLayer(EmbeddingLayer&) = delete;
   EmbeddingLayer(const EmbeddingLayer&&) = delete;
@@ -44,7 +44,7 @@ class EmbeddingLayer {
 
  private:
   void deallocateInternalState();
-  
+
   uint32_t _num_embedding_lookups, _lookup_size, _total_embedding_dim,
       _log_embedding_block_size, _embedding_block_size, _batch_size, _seed;
 
