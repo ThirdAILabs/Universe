@@ -5,6 +5,7 @@
 #include "../utils/hashing/DensifiedMinHash.h"
 #include "../utils/hashing/FastSRP.h"
 #include <_types/_uint32_t.h>
+#include <_types/_uint64_t.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -73,32 +74,47 @@ class PyNetwork final : public Network {
   }
 };
 
-  // TODO(josh): Is this method in a good place?
-  // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=numpy#arrays
-  // for explanation of why we do py::array::c_style and py::array::forcecase.
-  // Ensures array is an array of floats in dense row major order.
-  static InMemoryDataset<DenseBatch> loadInMemoryNumpyDataset(
-      pybind11::array_t<float,
-                        pybind11::array::c_style |
-                        pybind11::array::forcecast>
-          data,
-      uint64_t num_batches) {
-    
-    auto data_buf = data.request();
-    auto shape = data_buf.shape;
-    if (shape.size() != 2) {
-      throw std::invalid_argument("For now, Numpy datasets must be 2D (the rows are dense data vectors).");
-    }  
-    
-    auto num_vectors = static_cast<uint64_t>(shape.at(0));
-    auto dimension = shape.at(1);
-    if (num_batches == 0 || num_batches > num_vectors) {
-      throw std::invalid_argument("The number of batches must be between 1 and the number of vectors in the dataset, inclusive.");
-    }
-
-    
-
+// TODO(josh): Is this method in a good place?
+// https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=numpy#arrays
+// for explanation of why we do py::array::c_style and py::array::forcecase.
+// Ensures array is an array of floats in dense row major order.
+static InMemoryDataset<DenseBatch> wrapNumpyIntoInMemoryDataset(
+    const pybind11::array_t<float, pybind11::array::c_style |
+                                       pybind11::array::forcecast>& data,
+    uint64_t num_batches, uint64_t starting_id) {
+  const pybind11::buffer_info data_buf = data.request();
+  const auto shape = data_buf.shape;
+  if (shape.size() != 2) {
+    throw std::invalid_argument(
+        "For now, Numpy datasets must be 2D (each row is a dense data "
+        "vectors).");
   }
+
+  uint64_t num_vectors = static_cast<uint64_t>(shape.at(0));
+  uint64_t dimension = static_cast<uint64_t>(shape.at(1));
+  if (num_batches == 0 || num_batches > num_vectors) {
+    throw std::invalid_argument(
+        "The number of batches must be between 1 and the number of vectors in "
+        "the dataset, inclusive.");
+  }
+
+  const uint64_t batch_size = (num_vectors + num_batches - 1) / num_batches;
+  float* raw_data = static_cast<float*>(data_buf.ptr);
+  std::vector<DenseBatch> batches;
+  for (uint64_t batch_start = 0; batch_start < num_vectors;
+       batch_start += batch_size) {
+    uint64_t batch_end = std::min(batch_start + batch_size, num_vectors);
+    std::vector<utils::DenseVector> current_batch_vectors;
+    for (uint64_t vector_id = batch_start; vector_id < batch_end; vector_id++) {
+      current_batch_vectors.emplace_back(
+          dimension, raw_data + dimension * vector_id, false);
+    }
+    uint64_t batch_starting_id = batch_start + starting_id;
+    batches.emplace_back(std::move(current_batch_vectors), batch_starting_id);
+  }
+
+  return InMemoryDataset<DenseBatch>(std::move(batches), num_vectors);
+}
 
 }  // namespace thirdai::python
 
@@ -111,6 +127,27 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
 
   py::class_<SparseBatch>(utils_submodule,  // NOLINT
                           "SparseBatch");
+  py::class_<DenseBatch>(utils_submodule,  // NOLINT
+                         "DenseBatch");
+
+  py::class_<InMemoryDataset<DenseBatch>>(utils_submodule,  // NOLINT
+                                          "InMemoryDenseDataset")
+      .def("get_num_batches", &InMemoryDataset<DenseBatch>::numBatches,
+           "Returns the number of stored batches.")
+      // This is reference_internal so that even if there is no reference
+      // to the outer dataset, but there is a reference to a batch returned
+      // from this operator, the batch won't be deleted.
+      .def("__getitem__", &InMemoryDataset<DenseBatch>::operator[],
+           py::return_value_policy::reference_internal,
+           "Returns the currently stored ith batch.");
+
+  py::class_<InMemoryDataset<SparseBatch>>(utils_submodule,
+                                           "InMemorySparseDataset")
+      .def("get_num_batches", &InMemoryDataset<SparseBatch>::numBatches,
+           "Returns the number of stored batches.")
+      .def("__getitem__", &InMemoryDataset<SparseBatch>::operator[],
+           py::return_value_policy::reference_internal,
+           "Returns the currently stored ith batch.");
 
   utils_submodule.def(
       "loadInMemorySvmDataset",
@@ -120,13 +157,10 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       "a given size, and attempts to read the"
       " entire file into memory.");
 
-  py::class_<InMemoryDataset<SparseBatch>>(utils_submodule,
-                                           "InMemorySparseDataset")
-      .def("get_num_batches", &InMemoryDataset<SparseBatch>::numBatches,
-           "Returns the number of stored batches.")
-      .def("__getitem__", &InMemoryDataset<SparseBatch>::operator[],
-           py::return_value_policy::reference,
-           "Returns the currently stored ith batch.");
+  utils_submodule.def("wrap_numpy_into_in_memory_dataset",
+                      &thirdai::python::wrapNumpyIntoInMemoryDataset,
+                      py::keep_alive<0, 1>(), py::arg("numpy_array"),
+                      py::arg("num_batches") = 1, py::arg("starting_id") = 1);
 
   py::class_<HashFunction>(
       utils_submodule, "HashFunction",
