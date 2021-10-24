@@ -3,19 +3,23 @@
 #include <iostream>
 #include <limits>
 #include <random>
+#include <stdexcept>
 
 namespace thirdai::utils {
 
 constexpr uint32_t DEFAULT_BINSIZE = 8;
 
 FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
-                 uint32_t num_tables, uint32_t seed)
-    : HashFunction(num_tables, 1 << hashes_per_table),
+                 uint32_t num_tables, uint32_t out_mod, uint32_t seed)
+    : HashFunction(num_tables, std::min<uint32_t>(out_mod, 1 << hashes_per_table)),
       _hashes_per_table(hashes_per_table),
       _num_hashes(hashes_per_table * num_tables),
       _dim(input_dim),
-      _binsize(DEFAULT_BINSIZE) {
-  assert(hashes_per_table < 32);
+      _binsize(DEFAULT_BINSIZE)
+  {
+  if (hashes_per_table >= 32) {
+    throw std::invalid_argument("For now, we require <31 SRP per hash");
+  }
 
   _permute = ceil((static_cast<double>(_num_hashes) * _binsize) / _dim);
   _log_num_hashes = log2(_num_hashes);
@@ -89,6 +93,9 @@ void FastSRP::hashSingleDense(const float* values, uint32_t dim,
 
   // TODO(Josh, Patrick): Shouldn't we densify here too?
   HashUtils::compactHashBits(hashes, output, _num_tables, _hashes_per_table);
+  for (uint32_t i = 0; i < _num_tables; i++) {
+    output[i] %= _range;
+  }
   delete[] hashes;
 }
 
@@ -128,6 +135,9 @@ void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
 
   HashUtils::densifyHashes(hashes, _num_hashes);
   HashUtils::compactHashBits(hashes, output, _num_tables, _hashes_per_table);
+  for (uint32_t i = 0; i < _num_tables; i++) {
+    output[i] %= _range;
+  }
 
   delete[] hashes;
 }

@@ -10,7 +10,7 @@ uint32_t hashes_per_table = 1, num_tables = 10000, dim = 1000;
 float sparsity = 0.3;
 float max_sim_diff = 0.05, max_avg_sim_diff = 0.01;
 CosineSim cosine_sim_func(seed);
-thirdai::utils::FastSRP fast_srp(dim, hashes_per_table, num_tables, seed);
+thirdai::utils::FastSRP fast_srp(dim, hashes_per_table, num_tables, UINT32_MAX, seed);
 
 TEST(FastSRPTest, SparseHashing) {
   thirdai::utils::lsh_testing::runSparseSimilarityTest(

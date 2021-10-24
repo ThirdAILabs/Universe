@@ -84,7 +84,7 @@ TEST(FlashTest, SmokeTest) {
     index_vectors.push_back(generateRandomDenseUnitVector(dim, &generator));
   }
 
-  FastSRP srp_hash(dim, hashes_per_table, num_tables, seed);
+  FastSRP srp_hash(dim, hashes_per_table, num_tables, UINT32_MAX, seed);
   Flash<uint32_t> flash(srp_hash);
   std::vector<DenseBatch> batches = createBatches(index_vectors, batch_size);
   for (auto& batch : batches) {
@@ -105,7 +105,7 @@ TEST(FlashTest, SmokeTest) {
 /** Tests that adding a batch with an id too large throws an error */
 TEST(FlashTest, IdTooLargeTest) {
   DenseBatch error_batch({}, {}, (static_cast<uint64_t>(1) << 32) + 1);
-  FastSRP srp_hash(1, 1, 1, 1);
+  FastSRP srp_hash(1, 1, 1, UINT32_MAX, 1);
   Flash<uint32_t> flash(srp_hash);
   // Need a nolint here because of course google uses a goto
   ASSERT_THROW(flash.addBatch(error_batch), std::invalid_argument);  // NOLINT

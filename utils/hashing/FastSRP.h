@@ -15,7 +15,7 @@ class FastSRP : public HashFunction {
   int8_t* _rand_bits;
 
  public:
-  FastSRP(uint32_t input_dim, uint32_t _hashes_per_table, uint32_t _num_tables,
+  FastSRP(uint32_t input_dim, uint32_t _hashes_per_table, uint32_t _num_tables, uint32_t out_mod = UINT32_MAX, 
           uint32_t seed = time(nullptr));
 
   void hashSingleSparse(const uint32_t* indices, const float* values,

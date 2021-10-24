@@ -10,6 +10,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <cstdint>
 #include <string>
 #include <vector>
 #ifndef __clang__
@@ -187,8 +188,8 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       "A concrete implementation of a HashFunction that performs an extremly "
       "efficient signed random projection. A statistical estimator of cossine "
       "similarity.")
-      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("input_dim"),
-           py::arg("hashes_per_table"), py::arg("num_tables"));
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(), py::arg("input_dim"),
+           py::arg("hashes_per_table"), py::arg("num_tables"), py::arg("range")=UINT32_MAX);
 
 #ifndef __clang__
   utils_submodule.def("set_global_num_threads", &omp_set_num_threads,
