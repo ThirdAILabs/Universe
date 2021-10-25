@@ -14,8 +14,8 @@ GlobalFreq::GlobalFreq(std::unique_ptr<StringLoader> string_loader,
   std::unordered_map<uint32_t, float> index_to_value_map;
   for (auto file:filenames) {
       std::ifstream fstream(file);
-      // When I use StringLoader, how do I know when it has loaded to the end of file
-      uint32_t batch_size = 1; // Temporary for now
+      // Load one vector at a time to get document frequency
+      uint32_t batch_size = 1;
       CompositeVectorizer composite_vectorizer(vectorizer_config);
       do  // Keep loading until the whole file is loaded
       {
