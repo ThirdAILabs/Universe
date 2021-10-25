@@ -12,7 +12,7 @@ GlobalFreq::GlobalFreq(std::unique_ptr<StringLoader> string_loader,
   std::vector<std::string> loaded_strings;
   std::vector<std::vector<uint32_t>> loaded_labels;
   std::unordered_map<uint32_t, float> index_to_value_map;
-  for (auto file : filenames) {
+  for (auto const &file : filenames) {
     std::ifstream fstream(file);
     // Load one vector at a time to get document frequency
     uint32_t batch_size = 1;
@@ -26,7 +26,7 @@ GlobalFreq::GlobalFreq(std::unique_ptr<StringLoader> string_loader,
                                           loaded_labels);
       total_doc_count++;
 
-      for (auto string : loaded_strings) {
+      for (auto const &string : loaded_strings) {
         composite_vectorizer.fillIndexToValueMap(string, index_to_value_map,
                                                  empty_map);
       }
@@ -48,7 +48,7 @@ GlobalFreq::GlobalFreq(std::unique_ptr<StringLoader> string_loader,
   }
   for (auto& kv : _idf_map) {
     float df = kv.second;
-    float idf = log(total_doc_count / df);
+    float idf = std::log(total_doc_count / df);
     _idf_map[kv.first] = idf;
   }
 }
