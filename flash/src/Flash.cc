@@ -166,7 +166,7 @@ std::vector<LABEL_T> Flash<LABEL_T>::getTopKUsingPriorityQueue(
   std::sort(query_result.begin(), query_result.end());
 
   // To make this a max queue, we insert all element counts multiplied by -1
-  std::priority_queue<std::pair<uint32_t, uint64_t>> top_k_queue;
+  std::priority_queue<std::pair<int32_t, uint64_t>> top_k_queue;
   if (!query_result.empty()) {
     uint64_t current_element = query_result.at(0);
     uint32_t current_element_count = 0;

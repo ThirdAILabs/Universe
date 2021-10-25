@@ -11,12 +11,12 @@ constexpr uint32_t DEFAULT_BINSIZE = 8;
 
 FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
                  uint32_t num_tables, uint32_t out_mod, uint32_t seed)
-    : HashFunction(num_tables, std::min<uint32_t>(out_mod, 1 << hashes_per_table)),
+    : HashFunction(num_tables,
+                   std::min<uint32_t>(out_mod, 1 << hashes_per_table)),
       _hashes_per_table(hashes_per_table),
       _num_hashes(hashes_per_table * num_tables),
       _dim(input_dim),
-      _binsize(DEFAULT_BINSIZE)
-  {
+      _binsize(DEFAULT_BINSIZE) {
   if (hashes_per_table >= 32) {
     throw std::invalid_argument("For now, we require <31 SRP per hash");
   }
@@ -82,8 +82,7 @@ void FastSRP::hashSingleDense(const float* values, uint32_t dim,
         if (bin_values[binid] == std::numeric_limits<float>::lowest()) {
           bin_values[binid] = values[i] * _rand_bits[binid];
         } else {
-          bin_values[binid] +=
-              values[i] * _rand_bits[binid];
+          bin_values[binid] += values[i] * _rand_bits[binid];
         }
         hashes[binid] = (bin_values[binid] >= 0 ? 0 : 1);
       }
@@ -123,8 +122,7 @@ void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
         if (bin_values[binid] == std::numeric_limits<float>::lowest()) {
           bin_values[binid] = values[i] * _rand_bits[binid];
         } else {
-          bin_values[binid] +=
-              values[i] * _rand_bits[binid];
+          bin_values[binid] += values[i] * _rand_bits[binid];
         }
         hashes[binid] = (bin_values[binid] >= 0 ? 0 : 1);
       }

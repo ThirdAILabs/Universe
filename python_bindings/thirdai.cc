@@ -173,7 +173,19 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
            "function for each input.")
       .def("get_range", &HashFunction::range,
            "All hashes returned from this function will be >= 0 and <= "
-           "get_range().");
+           "get_range().")
+      .def("hash_batch",
+           static_cast<std::vector<uint32_t> (HashFunction::*)(
+               const DenseBatch&) const>(&HashFunction::hashBatchParallel),
+           py::arg("batch"),
+           "Hashes a batch using this hash function, returning the results in "
+           "a 1D vector in row major order")
+      .def("hash_batch",
+           static_cast<std::vector<uint32_t> (HashFunction::*)(
+               const SparseBatch&) const>(&HashFunction::hashBatchParallel),
+           py::arg("batch"),
+           "Hashes a batch using this hash function, returning the results in "
+           "a 1D vector in row major order");
 
   py::class_<DensifiedMinHash, HashFunction>(
       utils_submodule, "MinHash",
@@ -188,8 +200,9 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       "A concrete implementation of a HashFunction that performs an extremly "
       "efficient signed random projection. A statistical estimator of cossine "
       "similarity.")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(), py::arg("input_dim"),
-           py::arg("hashes_per_table"), py::arg("num_tables"), py::arg("range")=UINT32_MAX);
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+           py::arg("input_dim"), py::arg("hashes_per_table"),
+           py::arg("num_tables"), py::arg("range") = UINT32_MAX);
 
 #ifndef __clang__
   utils_submodule.def("set_global_num_threads", &omp_set_num_threads,

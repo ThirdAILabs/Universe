@@ -31,6 +31,13 @@ class HashFunction {
     }
   }
 
+  std::vector<uint32_t> hashBatchParallel(
+      const utils::SparseBatch& batch) const {
+    std::vector<uint32_t> result(_num_tables * batch.getBatchSize());
+    hashBatchParallel(batch, result.data());
+    return result;
+  }
+
   void hashBatchParallel(const utils::DenseBatch& batch,
                          uint32_t* output) const {
 #pragma omp parallel for default(none) shared(batch, output)
@@ -38,6 +45,13 @@ class HashFunction {
       hashSingleDense(batch[v]._values, batch[v]._dim,
                       output + v * _num_tables);
     }
+  }
+
+  std::vector<uint32_t> hashBatchParallel(
+      const utils::DenseBatch& batch) const {
+    std::vector<uint32_t> result(_num_tables * batch.getBatchSize());
+    hashBatchParallel(batch, result.data());
+    return result;
   }
 
   void hashSparseParallel(uint64_t num_vectors, const uint32_t* const* indices,
