@@ -86,8 +86,7 @@ static void print_to_file() {
 }
 
 TEST(GlobalFreqTest, ProcessFile) {
-    std::vector<std::string> directory;
-    directory.push_back(filename);
-    print_to_file();
-    
+  std::vector<std::string> directory;
+  directory.push_back(filename);
+  print_to_file();
 }
