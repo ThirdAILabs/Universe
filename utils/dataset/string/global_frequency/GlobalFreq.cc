@@ -3,7 +3,7 @@
 namespace thirdai::utils::dataset {
 
 GlobalFreq::GlobalFreq(std::unique_ptr<StringLoader> string_loader,
-                       vectorizer_config_t vectorizer_config,
+                       const vectorizer_config_t& vectorizer_config,
                        std::vector<std::string>&& filenames)
     : _vectorizer_config(vectorizer_config) {
   std::unordered_set<uint32_t> temp_set;
