@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
   bolt::ConfigReader config(argv[1]);
 
   uint32_t num_layers = config.intVal("num_layers");
-  std::vector<bolt::LayerConfig> layers;
+  std::vector<bolt::FullyConnectedLayerConfig> layers;
 
   for (uint32_t l = 0; l < num_layers; l++) {
     bolt::ActivationFunc func = bolt::ActivationFunc::ReLU;

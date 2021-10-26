@@ -8,10 +8,11 @@ namespace thirdai::bolt::tests {
 class FullyConnectedLayerTestFixture : public testing::Test {
  public:
   void SetUp() override {
-    _layer = new FullyConnectedLayer(8, 10, 0.5, ActivationFunc::ReLU,
+    FullyConnectedLayerConfig config(8, 0.5, ActivationFunc::ReLU,
                                      SamplingConfig(1, 1, 3, 4));
+    _layer = new FullyConnectedLayer(config, 10);
 
-    _layer->setBatchSize(4);
+    _layer->initializeLayer(4);
 
     float* new_weights = new float[80];
     float* new_biases = new float[8];

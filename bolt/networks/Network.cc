@@ -1,4 +1,5 @@
 #include "Network.h"
+#include "../utils/ProgressBar.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -11,11 +12,9 @@ constexpr uint32_t RehashAutoTuneThreshold = 100000;
 constexpr uint32_t RehashAutoTuneFactor1 = 100;
 constexpr uint32_t RehashAutoTuneFactor2 = 20;
 
-Network::Network(std::vector<LayerConfig> configs, uint64_t input_dim)
-    : _configs(std::move(configs)),
-      _input_dim(input_dim),
-      _batch_size_hint(0),
-      _iter(0) {
+Network::Network(std::vector<FullyConnectedLayerConfig> configs,
+                 uint64_t input_dim)
+    : _configs(std::move(configs)), _input_dim(input_dim), _iter(0) {
   auto start = std::chrono::high_resolution_clock::now();
 
   _num_layers = _configs.size();
@@ -38,9 +37,7 @@ Network::Network(std::vector<LayerConfig> configs, uint64_t input_dim)
     }
 
     std::cout << _configs[i] << std::endl;
-    _layers[i] = new FullyConnectedLayer(
-        _configs[i].dim, prev_dim, _configs[i].sparsity, _configs[i].act_func,
-        _configs[i].sampling_config);
+    _layers[i] = new FullyConnectedLayer(_configs[i], prev_dim);
   }
 
   auto end = std::chrono::high_resolution_clock::now();
@@ -54,12 +51,6 @@ Network::Network(std::vector<LayerConfig> configs, uint64_t input_dim)
 
 void Network::processTrainingBatch(const Batch& batch, float lr) {
   uint32_t batch_size = batch.batch_size;
-  if (batch_size != _batch_size_hint) {
-    for (uint32_t layer = 0; layer < _num_layers; layer++) {
-      _layers[layer]->setBatchSize(batch_size);
-    }
-    _batch_size_hint = batch_size;
-  }
 
 #pragma omp parallel for default(none) shared(batch, batch_size)
   for (uint32_t b = 0; b < batch_size; b++) {
@@ -70,15 +61,16 @@ void Network::processTrainingBatch(const Batch& batch, float lr) {
                             nullptr, 0);
 
     for (uint32_t l = 1; l < _num_layers - 1; l++) {
-      _layers[l]->feedForward(b, _layers[l - 1]->getIndices(b),
-                              _layers[l - 1]->getValues(b),
-                              _layers[l - 1]->getLen(b), nullptr, 0);
+      FullyConnectedLayer* prev_layer = _layers[l - 1];
+      _layers[l]->feedForward(b, prev_layer->getIndices(b),
+                              prev_layer->getValues(b), prev_layer->getLen(b),
+                              nullptr, 0);
     }
+    FullyConnectedLayer* second_to_last_layer = _layers[_num_layers - 2];
     _layers[_num_layers - 1]->feedForward(
-        b, _layers[_num_layers - 2]->getIndices(b),
-        _layers[_num_layers - 2]->getValues(b),
-        _layers[_num_layers - 2]->getLen(b), batch.labels[b],
-        batch.label_lens[b]);
+        b, second_to_last_layer->getIndices(b),
+        second_to_last_layer->getValues(b), second_to_last_layer->getLen(b),
+        batch.labels[b], batch.label_lens[b]);
 
     /**
      * 2. Compute Errors
@@ -91,13 +83,14 @@ void Network::processTrainingBatch(const Batch& batch, float lr) {
      */
 
     for (uint32_t l = _num_layers - 1; l > 0; l--) {
+      FullyConnectedLayer* prev_layer = _layers[l - 1];
       _layers[l]->backpropagate(
-          b, _layers[l - 1]->getIndices(b), _layers[l - 1]->getValues(b),
-          _layers[l - 1]->getErrors(b), _layers[l - 1]->getLen(b));
+          b, prev_layer->getIndices(b), prev_layer->getValues(b),
+          prev_layer->getErrors(b), prev_layer->getLen(b));
     }
 
     _layers[0]->backpropagateFirstLayer(b, batch.indices[b], batch.values[b],
-                                        nullptr, batch.lens[b]);
+                                        batch.lens[b]);
   }
 
   ++_iter;
@@ -108,12 +101,6 @@ void Network::processTrainingBatch(const Batch& batch, float lr) {
 
 uint32_t Network::processTestBatch(const Batch& batch) {
   uint32_t batch_size = batch.batch_size;
-  if (batch_size != _batch_size_hint) {
-    for (uint32_t layer = 0; layer < _num_layers; layer++) {
-      _layers[layer]->setBatchSize(batch_size);
-    }
-    _batch_size_hint = batch_size;
-  }
 
   for (uint32_t layer = 0; layer < _num_layers; layer++) {
     _layers[layer]->setSparsity(1.0);
@@ -127,15 +114,17 @@ uint32_t Network::processTestBatch(const Batch& batch) {
                             nullptr, 0);
 
     for (uint32_t l = 1; l < _num_layers - 1; l++) {
-      _layers[l]->feedForward(b, _layers[l - 1]->getIndices(b),
-                              _layers[l - 1]->getValues(b),
-                              _layers[l - 1]->getLen(b), nullptr, 0);
+      FullyConnectedLayer* prev_layer = _layers[l - 1];
+      _layers[l]->feedForward(b, prev_layer->getIndices(b),
+                              prev_layer->getValues(b), prev_layer->getLen(b),
+                              nullptr, 0);
     }
+    FullyConnectedLayer* second_to_last_layer = _layers[_num_layers - 2];
+
     _layers[_num_layers - 1]->feedForward(
-        b, _layers[_num_layers - 2]->getIndices(b),
-        _layers[_num_layers - 2]->getValues(b),
-        _layers[_num_layers - 2]->getLen(b), batch.labels[b],
-        batch.label_lens[b]);
+        b, second_to_last_layer->getIndices(b),
+        second_to_last_layer->getValues(b), second_to_last_layer->getLen(b),
+        batch.labels[b], batch.label_lens[b]);
 
     const float* activations = _layers[_num_layers - 1]->getValues(b);
     float max_act = std::numeric_limits<float>::min();
@@ -188,14 +177,22 @@ void Network::train(uint32_t batch_size, const std::string& train_data,
   uint64_t intermediate_test_vecs = std::min<uint64_t>(
       test.NumVecs(), intermediate_test_batches * batch_size);
 
-  uint32_t rebuild_batch = rebuild / batch_size;
-  uint32_t rehash_batch = rehash / batch_size;
+  // Take max with 1 so that we don't get 0 causing a floating point error.
+  uint32_t rebuild_batch = std::max<uint32_t>(rebuild / batch_size, 1);
+  uint32_t rehash_batch = std::max<uint32_t>(rehash / batch_size, 1);
 
   uint64_t num_train_batches = train.NumBatches();
-  uint32_t print = num_train_batches / 10;
 
+  // Because of how the datasets are read we know that all batches will not have
+  // a batch size larger than this so we can just set the batch size here.
+  for (uint32_t l = 0; l < _num_layers; l++) {
+    _layers[l]->initializeLayer(batch_size);
+  }
+
+  ProgressBar bar(num_train_batches);
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
-    std::cout << "---------|" << std::endl;
+    bar.reset();
+    std::cout << "\nEpoch " << (epoch + 1) << "/" << epochs << ':' << std::endl;
     auto train_start = std::chrono::high_resolution_clock::now();
     for (uint32_t batch = 0; batch < num_train_batches; batch++) {
       if (_iter % 1000 == 999) {
@@ -213,9 +210,7 @@ void Network::train(uint32_t batch_size, const std::string& train_data,
         buildHashTables();
       }
 
-      if ((batch % print) == (print - 1)) {
-        std::cout << "." << std::flush;
-      }
+      bar.update();
     }
 
     auto train_end = std::chrono::high_resolution_clock::now();
@@ -224,9 +219,8 @@ void Network::train(uint32_t batch_size, const std::string& train_data,
                              .count();
     _time_per_epoch.push_back(epoch_time);
     std::cout << std::endl
-              << "Epoch: " << epoch << "\nProcessed " << num_train_batches
-              << " training batches in " << epoch_time << " seconds"
-              << std::endl;
+              << "Processed " << num_train_batches << " training batches in "
+              << epoch_time << " seconds" << std::endl;
 
     if (intermediate_test_batches == 0) {
       continue;
@@ -262,57 +256,6 @@ void Network::train(uint32_t batch_size, const std::string& train_data,
             << final_correct << "/" << test.NumVecs() << ")" << std::endl;
 }
 
-uint32_t* Network::predictClasses(const Batch& batch, uint64_t batch_size) {
-  if (batch_size != _batch_size_hint) {
-    for (uint32_t layer = 0; layer < _num_layers; layer++) {
-      _layers[layer]->setBatchSize(batch_size);
-    }
-    _batch_size_hint = batch_size;
-  }
-
-  for (uint32_t layer = 0; layer < _num_layers; layer++) {
-    _layers[layer]->setSparsity(1.0);
-  }
-
-  uint32_t* predictions = new uint32_t[batch_size];
-
-#pragma omp parallel for default(none) shared(batch, batch_size, predictions)
-  for (uint32_t b = 0; b < batch_size; b++) {
-    _layers[0]->feedForward(b, batch.indices[b], batch.values[b], batch.lens[b],
-                            nullptr, 0);
-
-    for (uint32_t l = 1; l < _num_layers - 1; l++) {
-      _layers[l]->feedForward(b, _layers[l - 1]->getIndices(b),
-                              _layers[l - 1]->getValues(b),
-                              _layers[l - 1]->getLen(b), nullptr, 0);
-    }
-    _layers[_num_layers - 1]->feedForward(
-        b, _layers[_num_layers - 2]->getIndices(b),
-        _layers[_num_layers - 2]->getValues(b),
-        _layers[_num_layers - 2]->getLen(b), batch.labels[b],
-        batch.label_lens[b]);
-
-    const uint32_t* indices = _layers[_num_layers - 1]->getIndices(b);
-    const float* activations = _layers[_num_layers - 1]->getValues(b);
-    float max_act = std::numeric_limits<float>::min();
-    uint32_t pred = 0;
-    for (uint32_t i = 0; i < _layers[_num_layers - 1]->getLen(b); i++) {
-      if (activations[i] > max_act) {
-        max_act = activations[i];
-        pred = indices[i];
-      }
-    }
-
-    predictions[b] = pred;
-  }
-
-  for (uint32_t layer = 0; layer < _num_layers; layer++) {
-    _layers[layer]->setSparsity(_configs[layer].sparsity);
-  }
-
-  return predictions;
-}
-
 void Network::reBuildHashFunctions() {
   for (uint32_t l = 0; l < _num_layers; l++) {
     _layers[l]->reBuildHashFunction();
@@ -331,26 +274,6 @@ Network::~Network() {
   }
 
   delete[] _layers;
-}
-
-std::ostream& operator<<(std::ostream& out, const LayerConfig& config) {
-  out << "Layer: dim=" << config.dim << ", load_factor=" << config.sparsity;
-  switch (config.act_func) {
-    case ActivationFunc::ReLU:
-      out << ", act_func=ReLU";
-      break;
-    case ActivationFunc::Softmax:
-      out << ", act_func=Softmax";
-      break;
-  }
-  if (config.sparsity < 1.0) {
-    out << ", sampling: {";
-    out << "hashes_per_table=" << config.sampling_config.hashes_per_table
-        << ", num_tables=" << config.sampling_config.num_tables
-        << ", range_pow=" << config.sampling_config.range_pow
-        << ", reservoir_size=" << config.sampling_config.reservoir_size << "}";
-  }
-  return out;
 }
 
 }  // namespace thirdai::bolt
