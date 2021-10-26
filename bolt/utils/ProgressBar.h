@@ -54,14 +54,10 @@ class ProgressBar {
   ProgressBar(ProgressBar&&) = delete;
   ProgressBar& operator=(ProgressBar&&) = delete;
 
-  // default constructor, must call set_niter later
-  inline ProgressBar();
   explicit inline ProgressBar(int n, bool showbar = true);
 
   // reset bar to use it again
   inline void reset();
-  // set number of loop iterations
-  inline void setNiter(int iter);
   // chose your style
   inline void setDoneChar(char sym) { done_char = sym; }
   inline void setTodoChar(char sym) { todo_char = sym; }
@@ -85,17 +81,6 @@ class ProgressBar {
   char closing_bracket_char;
 };
 
-inline ProgressBar::ProgressBar()
-    : progress(0),
-      n_cycles(0),
-      last_perc(0),
-      do_show_bar(true),
-      update_is_called(false),
-      done_char('='),
-      todo_char(' '),
-      opening_bracket_char('['),
-      closing_bracket_char(']') {}
-
 inline ProgressBar::ProgressBar(int n, bool showbar)
     : progress(0),
       n_cycles(n),
@@ -112,18 +97,7 @@ inline void ProgressBar::reset() {
   last_perc = 0;
 }
 
-inline void ProgressBar::setNiter(int niter) {
-  if (niter <= 0) {
-    throw std::invalid_argument(
-        "progressbar::set_niter: number of iterations null or negative");
-  }
-  n_cycles = niter;
-}
-
 inline void ProgressBar::update() {
-  if (n_cycles == 0) {
-    throw std::runtime_error("progressbar::update: number of cycles not set");
-  }
   if (!update_is_called) {
     if (do_show_bar == true) {
       std::cout << opening_bracket_char;
