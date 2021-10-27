@@ -59,68 +59,69 @@ class ProgressBar {
   // reset bar to use it again
   inline void reset();
   // chose your style
-  inline void setDoneChar(char sym) { done_char = sym; }
-  inline void setTodoChar(char sym) { todo_char = sym; }
-  inline void setOpeningBracketChar(char sym) { opening_bracket_char = sym; }
-  inline void setClosingBracketChar(char sym) { closing_bracket_char = sym; }
+  inline void setDoneChar(char sym) { _done_char = sym; }
+  inline void setTodoChar(char sym) { _todo_char = sym; }
+  inline void setOpeningBracketChar(char sym) { _opening_bracket_char = sym; }
+  inline void setClosingBracketChar(char sym) { _closing_bracket_char = sym; }
   // to show only the percentage
-  inline void showBar(bool flag = true) { do_show_bar = flag; }
+  inline void showBar(bool flag = true) { _do_show_bar = flag; }
   // main function
   inline void update();
 
  private:
-  int progress;
-  int n_cycles;
-  int last_perc;
-  bool do_show_bar;
-  bool update_is_called;
+  int _progress;
+  int _n_cycles;
+  int _last_perc;
+  bool _do_show_bar;
+  bool _update_is_called;
 
-  char done_char;
-  char todo_char;
-  char opening_bracket_char;
-  char closing_bracket_char;
+  char _done_char;
+  char _todo_char;
+  char _opening_bracket_char;
+  char _closing_bracket_char;
 };
 
 inline ProgressBar::ProgressBar(int n, bool showbar)
-    : progress(0),
-      n_cycles(n),
-      last_perc(0),
-      do_show_bar(showbar),
-      update_is_called(false),
-      done_char('='),
-      todo_char(' '),
-      opening_bracket_char('['),
-      closing_bracket_char(']') {}
+    : _progress(0),
+      _n_cycles(n),
+      _last_perc(0),
+      _do_show_bar(showbar),
+      _update_is_called(false),
+      _done_char('='),
+      _todo_char(' '),
+      _opening_bracket_char('['),
+      _closing_bracket_char(']') {}
 
 inline void ProgressBar::reset() {
-  progress = 0, update_is_called = false;
-  last_perc = 0;
+  _progress = 0;
+  _update_is_called = false;
+  _last_perc = 0;
 }
 
 inline void ProgressBar::update() {
-  if (!update_is_called) {
-    if (do_show_bar == true) {
-      std::cout << opening_bracket_char;
+  if (!_update_is_called) {
+    if (_do_show_bar) {
+      std::cout << _opening_bracket_char;
       for (int _ = 0; _ < 50; _++) {
-        std::cout << todo_char;
+        std::cout << _todo_char;
       }
-      std::cout << closing_bracket_char << " 0%";
+      std::cout << _closing_bracket_char << " 0%";
     } else {
       std::cout << "0%";
     }
   }
-  update_is_called = true;
+  _update_is_called = true;
 
   int perc = 0;
 
   // compute percentage, if did not change, do nothing and return
-  perc = progress * 100. / (n_cycles - 1);
-  if (perc < last_perc) {
+  perc = _progress * 100. / (_n_cycles - 1);
+  if (perc < _last_perc) {
     return;
   }
 
   // update percentage each unit
-  if (perc == last_perc + 1) {
+  if (perc == _last_perc + 1) {
     // erase the correct  number of characters
     if (perc <= 10) {
       std::cout << "\b\b" << perc << '%';
@@ -128,7 +129,7 @@ inline void ProgressBar::update() {
       std::cout << "\b\b\b" << perc << '%';
     }
   }
-  if (do_show_bar == true) {
+  if (_do_show_bar) {
     // update bar every ten units
     if (perc % 2 == 0) {
       // erase closing bracket
@@ -148,20 +149,20 @@ inline void ProgressBar::update() {
 
       // add one additional 'done_char'
       if (perc == 0) {
-        std::cout << todo_char;
+        std::cout << _todo_char;
       } else {
-        std::cout << done_char;
+        std::cout << _done_char;
       }
       // refill with 'todo_char'
       for (int j = 0; j < 50 - (perc - 1) / 2 - 1; ++j) {
-        std::cout << todo_char;
+        std::cout << _todo_char;
       }
 
       // readd trailing percentage characters
-      std::cout << closing_bracket_char << ' ' << perc << '%';
+      std::cout << _closing_bracket_char << ' ' << perc << '%';
     }
   }
-  last_perc = perc;
-  ++progress;
+  _last_perc = perc;
+  ++_progress;
   std::cout << std::flush;
 }
