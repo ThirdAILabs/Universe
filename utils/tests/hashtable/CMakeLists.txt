@@ -20,7 +20,7 @@ add_executable(
 target_link_libraries(
   sampled_hash_table_test
   PRIVATE
-  sampled_hash_table_lib
+  hash_table_lib
   gtest_main
 )
 

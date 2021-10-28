@@ -94,6 +94,8 @@ void FastSRP::hashSingleDense(const float* values, uint32_t dim,
 
 void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
                                uint32_t length, uint32_t* output) const {
+  // TODO(josh, Patrick): Should we assert indices are within the expected
+  // dimension here (otherwise it's a segfault)
   uint32_t* hashes = new uint32_t[_num_hashes];
   float* bin_values = new float[_num_hashes];
 

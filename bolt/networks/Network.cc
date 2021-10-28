@@ -1,4 +1,5 @@
 #include "Network.h"
+#include "../utils/ProgressBar.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -181,7 +182,6 @@ void Network::train(uint32_t batch_size, const std::string& train_data,
   uint32_t rehash_batch = std::max<uint32_t>(rehash / batch_size, 1);
 
   uint64_t num_train_batches = train.NumBatches();
-  uint32_t print = std::max<uint32_t>(num_train_batches / 10, 1);
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
@@ -189,8 +189,10 @@ void Network::train(uint32_t batch_size, const std::string& train_data,
     _layers[l]->initializeLayer(batch_size);
   }
 
+  ProgressBar bar(num_train_batches);
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
-    std::cout << "---------|" << std::endl;
+    bar.reset();
+    std::cout << "\nEpoch " << (epoch + 1) << "/" << epochs << ':' << std::endl;
     auto train_start = std::chrono::high_resolution_clock::now();
     for (uint32_t batch = 0; batch < num_train_batches; batch++) {
       if (_iter % 1000 == 999) {
@@ -208,9 +210,7 @@ void Network::train(uint32_t batch_size, const std::string& train_data,
         buildHashTables();
       }
 
-      if ((batch % print) == (print - 1)) {
-        std::cout << "." << std::flush;
-      }
+      bar.update();
     }
 
     auto train_end = std::chrono::high_resolution_clock::now();
@@ -219,9 +219,8 @@ void Network::train(uint32_t batch_size, const std::string& train_data,
                              .count();
     _time_per_epoch.push_back(epoch_time);
     std::cout << std::endl
-              << "Epoch: " << epoch << "\nProcessed " << num_train_batches
-              << " training batches in " << epoch_time << " seconds"
-              << std::endl;
+              << "Processed " << num_train_batches << " training batches in "
+              << epoch_time << " seconds" << std::endl;
 
     if (intermediate_test_batches == 0) {
       continue;

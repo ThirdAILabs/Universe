@@ -29,7 +29,7 @@ FetchContent_MakeAvailable(googletest)
 # )
 # FetchContent_MakeAvailable(abseil)
 
-enable_testing()
+include(CTest)
 
 FetchContent_Declare(
     pybind11

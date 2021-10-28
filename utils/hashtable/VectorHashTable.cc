@@ -5,99 +5,106 @@
 
 namespace thirdai::utils {
 
-template class VectorHashTable<uint8_t>;
-template class VectorHashTable<uint16_t>;
-template class VectorHashTable<uint32_t>;
-template class VectorHashTable<uint64_t>;
+template class VectorHashTable<uint8_t, true>;
+template class VectorHashTable<uint16_t, true>;
+template class VectorHashTable<uint32_t, true>;
+template class VectorHashTable<uint64_t, true>;
+template class VectorHashTable<uint8_t, false>;
+template class VectorHashTable<uint16_t, false>;
+template class VectorHashTable<uint32_t, false>;
+template class VectorHashTable<uint64_t, false>;
 
-template <typename Label_t>
-VectorHashTable<Label_t>::VectorHashTable(uint32_t num_tables,
-                                          uint64_t table_range)
-    : _num_tables(num_tables),
-      _table_range(table_range),
-      tables(num_tables * table_range) {}
-
-template <typename Label_t>
-void VectorHashTable<Label_t>::insert(uint64_t n, Label_t const* labels,
-                                      uint32_t const* hashes) {
+template <typename LABEL_T, bool USE_RESERVOIR>
+void VectorHashTable<LABEL_T, USE_RESERVOIR>::insert(uint64_t n,
+                                                     LABEL_T const* labels,
+                                                     uint32_t const* hashes) {
 #pragma omp parallel for default(none) shared(n, hashes, labels)
   for (uint32_t table = 0; table < _num_tables; table++) {
     for (uint64_t item = 0; item < n; item++) {
       uint32_t hash = hashes[_num_tables * item + table];
-      Label_t label = labels[item];
-      tables[getBucketIndex(table, hash)].push_back(label);
+      LABEL_T label = labels[item];
+      insertIntoTable(label, hash, table);
     }
   }
 }
 
-template <typename Label_t>
-void VectorHashTable<Label_t>::insertSequential(uint64_t n, Label_t start,
-                                                uint32_t const* hashes) {
+template <typename LABEL_T, bool USE_RESERVOIR>
+void VectorHashTable<LABEL_T, USE_RESERVOIR>::insertSequential(
+    uint64_t n, LABEL_T start, uint32_t const* hashes) {
 #pragma omp parallel for default(none) shared(n, start, hashes)
   for (uint32_t table = 0; table < _num_tables; table++) {
     for (uint64_t item = 0; item < n; item++) {
       uint32_t hash = hashes[_num_tables * item + table];
-      Label_t label = start + item;
-      tables[getBucketIndex(table, hash)].push_back(label);
+      LABEL_T label = start + item;
+      insertIntoTable(label, hash, table);
     }
   }
 }
 
-template <typename Label_t>
-void VectorHashTable<Label_t>::queryBySet(
-    uint32_t const* hashes, std::unordered_set<Label_t>& store) const {
+template <typename LABEL_T, bool USE_RESERVOIR>
+inline void VectorHashTable<LABEL_T, USE_RESERVOIR>::insertIntoTable(
+    LABEL_T label, uint32_t hash, uint32_t table) {
+  if (USE_RESERVOIR &&
+      _buckets[getBucketIndex(table, hash)].size() == _max_reservoir_size) {
+    uint32_t rand_counter = counter++;
+    uint32_t num_elems_tried_insert =
+        _num_elements_tried_insert_into_bucket[getBucketIndex(table, hash)]++;
+    uint32_t rand_num =
+        _generated_rand_nums[rand_counter % _max_reservoir_size] %
+        (num_elems_tried_insert + 1);
+    if (rand_num < _max_reservoir_size) {
+      _buckets[getBucketIndex(table, hash)][rand_num] = label;
+    }
+  } else {
+    _buckets[getBucketIndex(table, hash)].push_back(label);
+  }
+}
+
+template <typename LABEL_T, bool USE_RESERVOIR>
+void VectorHashTable<LABEL_T, USE_RESERVOIR>::queryBySet(
+    uint32_t const* hashes, std::unordered_set<LABEL_T>& store) const {
   for (uint32_t table = 0; table < _num_tables; table++) {
     uint32_t hash = hashes[table];
-    for (Label_t label : tables[getBucketIndex(table, hash)]) {
+    for (LABEL_T label : _buckets[getBucketIndex(table, hash)]) {
       store.insert(label);
     }
   }
 }
 
-template <typename Label_t>
-void VectorHashTable<Label_t>::queryByCount(
+template <typename LABEL_T, bool USE_RESERVOIR>
+void VectorHashTable<LABEL_T, USE_RESERVOIR>::queryByCount(
     uint32_t const* hashes, std::vector<uint32_t>& counts) const {
   for (uint32_t table = 0; table < _num_tables; table++) {
     uint32_t hash = hashes[table];
-    for (Label_t label : tables[getBucketIndex(table, hash)]) {
+    for (LABEL_T label : _buckets[getBucketIndex(table, hash)]) {
       counts[label]++;
     }
   }
 }
 
-template <typename Label_t>
-void VectorHashTable<Label_t>::queryByVector(
-    uint32_t const* hashes, std::vector<Label_t>& results) const {
+template <typename LABEL_T, bool USE_RESERVOIR>
+void VectorHashTable<LABEL_T, USE_RESERVOIR>::queryByVector(
+    uint32_t const* hashes, std::vector<LABEL_T>& results) const {
   for (uint32_t table = 0; table < _num_tables; table++) {
     uint32_t hash = hashes[table];
-    for (Label_t label : tables[getBucketIndex(table, hash)]) {
+    for (LABEL_T label : _buckets[getBucketIndex(table, hash)]) {
       results.push_back(label);
     }
   }
 }
 
-template <typename Label_t>
-void VectorHashTable<Label_t>::clearTables() {
+template <typename LABEL_T, bool USE_RESERVOIR>
+void VectorHashTable<LABEL_T, USE_RESERVOIR>::clearTables() {
   for (uint64_t index = 0; index < _num_tables * _table_range; index++) {
-    tables[index].clear();
+    _buckets[index].clear();
   }
 }
 
-template <typename Label_t>
-void VectorHashTable<Label_t>::sortBuckets() {
+template <typename LABEL_T, bool USE_RESERVOIR>
+void VectorHashTable<LABEL_T, USE_RESERVOIR>::sortBuckets() {
   for (uint64_t index = 0; index < _num_tables * _table_range; index++) {
-    std::sort(tables[index].begin(), tables[index].end());
+    std::sort(_buckets[index].begin(), _buckets[index].end());
   }
-}
-
-template <typename Label_t>
-uint32_t VectorHashTable<Label_t>::numTables() const {
-  return _num_tables;
-}
-
-template <typename Label_t>
-uint64_t VectorHashTable<Label_t>::tableRange() const {
-  return _table_range;
 }
 
 }  // namespace thirdai::utils
