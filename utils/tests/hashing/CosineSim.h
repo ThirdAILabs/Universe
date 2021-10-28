@@ -71,7 +71,7 @@ class CosineSim : public Similarity {
 
     // Generate indices
     std::unordered_set<uint32_t> indices_set;
-    std::uniform_int_distribution<uint32_t> dist_indices(0, dim);
+    std::uniform_int_distribution<uint32_t> dist_indices(0, dim - 1);
     while (indices_set.size() < num_non_zeros) {
       uint32_t x = dist_indices(_generator);
       if (!indices_set.count(x)) {

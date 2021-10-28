@@ -12,7 +12,7 @@ namespace thirdai::search {
  * will be inserted, and if a label larger than this is inserted the insert
  * method will throw an error.
  */
-template <typename Label_t>
+template <typename LABEL_T>
 class Flash {
  public:
   /**
@@ -25,19 +25,25 @@ class Flash {
   explicit Flash(const utils::HashFunction& function);
 
   /**
+   * This is the same as the single argument constructor, except the supporting
+   * hash table has a max reservoir size.
+   **/
+  Flash(const utils::HashFunction& function, uint32_t reservoir_size);
+
+  /**
    * Insert all batches in the dataset the Flash data structure.
    * loadNextBatches on the dataset should not have been called yet, and this
    * will run through the entire dataset.
    */
-  template <typename Batch_t>
-  void addDataset(utils::InMemoryDataset<Batch_t>& dataset);
+  template <typename BATCH_T>
+  void addDataset(utils::InMemoryDataset<BATCH_T>& dataset);
 
-  template <typename Batch_t>
-  void addDataset(utils::StreamedDataset<Batch_t>& dataset);
+  template <typename BATCH_T>
+  void addDataset(utils::StreamedDataset<BATCH_T>& dataset);
 
   /** Insert this batch into the Flash data structure. */
-  template <typename Batch_t>
-  void addBatch(const Batch_t& batch);
+  template <typename BATCH_T>
+  void addBatch(const BATCH_T& batch);
 
   /**
    * Perform a batch query on the Flash structure, for now on a Batch object.
@@ -45,18 +51,20 @@ class Flash {
    * padded with 0s to obtain a vector of length k. Otherwise less than k
    * results will be returned.
    */
-  template <typename Batch_t>
-  std::vector<std::vector<Label_t>> queryBatch(const Batch_t& batch,
+  template <typename BATCH_T>
+  std::vector<std::vector<LABEL_T>> queryBatch(const BATCH_T& batch,
                                                uint32_t top_k,
                                                bool pad_zeros = false) const;
+
+  ~Flash();
 
  private:
   /**
    * Returns a pointer to the hashes of the input batch. These hashes will need
    * to be deleted by the calling function.
    */
-  template <typename Batch_t>
-  uint32_t* hash(const Batch_t& batch) const;
+  template <typename BATCH_T>
+  uint32_t* hash(const BATCH_T& batch) const;
 
   /**
    * Get the top_k labels that occur most often in the input vector using a
@@ -64,23 +72,23 @@ class Flash {
    * has length n, because it must be sorted to find the top k. Note that
    * the input query_result will be modified (it will be sorted).
    */
-  std::vector<Label_t> getTopKUsingPriorityQueue(
-      std::vector<Label_t>& query_result, uint32_t top_k) const;
+  std::vector<LABEL_T> getTopKUsingPriorityQueue(
+      std::vector<LABEL_T>& query_result, uint32_t top_k) const;
 
   /** Makes sure the ids are within range for a batch with sequential ids */
-  template <typename Batch_t>
-  void verifyBatchSequentialIds(const Batch_t& batch) const;
+  template <typename BATCH_T>
+  void verifyBatchSequentialIds(const BATCH_T& batch) const;
 
   /**
    * Verifies that the passed in id is within the range of this FLASH instance
    * by throwing an error if the id is too large for the initialized size
    * (>2^16 for uin16_t, >2^32 for uint32_t, etc.).
    */
-  Label_t verify_and_convert_id(uint64_t id) const;
+  LABEL_T verify_and_convert_id(uint64_t id) const;
 
   const utils::HashFunction& _function;
-  uint32_t _num_tables, _range;
-  utils::HashTable<Label_t>* _hashtable;
+  const uint32_t _num_tables, _range;
+  utils::HashTable<LABEL_T>* const _hashtable;
 };
 
 }  // namespace thirdai::search

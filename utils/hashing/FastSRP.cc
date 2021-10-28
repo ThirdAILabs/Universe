@@ -88,13 +88,14 @@ void FastSRP::hashSingleDense(const float* values, uint32_t dim,
   delete[] bin_values;
 
   // TODO(Josh, Patrick): Shouldn't we densify here too?
-  HashUtils::defaultCompactHashesMethod(hashes, output, _num_tables,
-                                        _hashes_per_table);
+  HashUtils::compactHashBits(hashes, output, _num_tables, _hashes_per_table);
   delete[] hashes;
 }
 
 void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
                                uint32_t length, uint32_t* output) const {
+  // TODO(josh, Patrick): Should we assert indices are within the expected
+  // dimension here (otherwise it's a segfault)
   uint32_t* hashes = new uint32_t[_num_hashes];
   float* bin_values = new float[_num_hashes];
 
@@ -126,8 +127,7 @@ void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
   delete[] bin_values;
 
   HashUtils::densifyHashes(hashes, _num_hashes);
-  HashUtils::defaultCompactHashesMethod(hashes, output, _num_tables,
-                                        _hashes_per_table);
+  HashUtils::compactHashBits(hashes, output, _num_tables, _hashes_per_table);
 
   delete[] hashes;
 }
