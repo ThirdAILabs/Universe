@@ -15,13 +15,13 @@
 
 namespace thirdai::utils {
 
-template <typename Batch_t>
+template <typename BATCH_T>
 class InMemoryDataset {
  public:
   // TODO (Nicholas, Josh, Geordie): Add constructor that takes in a vector of
   // filenames
   InMemoryDataset(const std::string& filename, uint32_t batch_size,
-                  Factory<Batch_t>&& factory) {
+                  Factory<BATCH_T>&& factory) {
     std::ifstream file(filename);
     if (file.bad() || file.fail() || !file.good() || !file.is_open()) {
       throw std::runtime_error("Unable to open file '" + filename + "'");
@@ -37,9 +37,9 @@ class InMemoryDataset {
     _len = curr_id;
   }
 
-  const Batch_t& operator[](uint32_t i) const { return _batches[i]; }
+  const BATCH_T& operator[](uint32_t i) const { return _batches[i]; }
 
-  const Batch_t& at(uint32_t i) const { return _batches.at(i); }
+  const BATCH_T& at(uint32_t i) const { return _batches.at(i); }
 
   auto begin() const { return _batches.begin(); }
 
@@ -56,11 +56,11 @@ class InMemoryDataset {
   }
 
  private:
-  std::vector<Batch_t> _batches;
+  std::vector<BATCH_T> _batches;
   uint64_t _len;
 };
 
-template <typename Batch_t>
+template <typename BATCH_T>
 class StreamedDataset {
  public:
   // TODO (Nicholas, Josh, Geordie): Add constructor that takes in a vector of
@@ -72,7 +72,7 @@ class StreamedDataset {
   // a reference in case the factory constructed passed to the dataset, and then
   // the dataset is returned from the function.
   StreamedDataset(const std::string& filename, uint32_t batch_size,
-                  std::unique_ptr<Factory<Batch_t>> factory)
+                  std::unique_ptr<Factory<BATCH_T>> factory)
       : _file(filename),
         _batch_size(batch_size),
         _curr_id(0),
@@ -82,12 +82,12 @@ class StreamedDataset {
     }
   }
 
-  std::optional<Batch_t> nextBatch() {
+  std::optional<BATCH_T> nextBatch() {
     if (_file.eof()) {
       return std::nullopt;
     }
 
-    Batch_t next = _factory->parse(_file, _batch_size, _curr_id);
+    BATCH_T next = _factory->parse(_file, _batch_size, _curr_id);
     _curr_id += next.getBatchSize();
 
     return next;
@@ -101,7 +101,7 @@ class StreamedDataset {
   std::ifstream _file;
   uint32_t _batch_size;
   uint64_t _curr_id;
-  std::unique_ptr<Factory<Batch_t>> _factory;
+  std::unique_ptr<Factory<BATCH_T>> _factory;
 };
 
 }  // namespace thirdai::utils

@@ -3,6 +3,7 @@
 #include "../utils/dataset/Dataset.h"
 #include "../utils/dataset/batch_types/SparseBatch.h"
 #include "../utils/hashing/DensifiedMinHash.h"
+#include "../utils/hashing/FastSRP.h"
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -24,6 +25,7 @@ using thirdai::utils::SparseBatch;
 using thirdai::utils::StreamedDataset;
 
 using thirdai::utils::DensifiedMinHash;
+using thirdai::utils::FastSRP;
 using thirdai::utils::HashFunction;
 
 using Flash64 = thirdai::search::Flash<uint64_t>;
@@ -32,7 +34,8 @@ namespace thirdai::python {
 
 class PyNetwork final : public Network {
  public:
-  PyNetwork(std::vector<bolt::LayerConfig> configs, uint64_t input_dim)
+  PyNetwork(std::vector<bolt::FullyConnectedLayerConfig> configs,
+            uint64_t input_dim)
       : Network(std::move(configs), input_dim) {}
 
   py::array_t<float> getWeightMatrix(uint32_t layer_index) {
@@ -82,9 +85,13 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
   py::class_<SparseBatch>(utils_submodule,  // NOLINT
                           "SparseBatch");
 
-  utils_submodule.def("loadInMemorySvmDataset",
-                      &InMemoryDataset<SparseBatch>::loadInMemorySvmDataset,
-                      py::arg("filename"), py::arg("batch_size"));
+  utils_submodule.def(
+      "loadInMemorySvmDataset",
+      &InMemoryDataset<SparseBatch>::loadInMemorySvmDataset,
+      py::arg("filename"), py::arg("batch_size") = 10000,
+      "Constructs a sparse dataset from a given file with batch sizes of "
+      "a given size, and attempts to read the"
+      " entire file into memory.");
 
   py::class_<InMemoryDataset<SparseBatch>>(utils_submodule,
                                            "InMemorySparseDataset")
@@ -107,12 +114,20 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
            "get_range().");
 
   py::class_<DensifiedMinHash, HashFunction>(
-      utils_submodule, "DensifiedMinHash",
+      utils_submodule, "MinHash",
       "A concrete implementation of a HashFunction that performs an extremly "
       "efficient minhash. A statistical estimator of jaccard similarity.")
       .def(py::init<uint32_t, uint32_t, uint32_t>(),
            py::arg("hashes_per_table"), py::arg("num_tables"),
            py::arg("range"));
+
+  py::class_<FastSRP, HashFunction>(
+      utils_submodule, "SignedRandomProjection",
+      "A concrete implementation of a HashFunction that performs an extremly "
+      "efficient signed random projection. A statistical estimator of cossine "
+      "similarity.")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("input_dim"),
+           py::arg("hashes_per_table"), py::arg("num_tables"));
 
 #ifndef __clang__
   utils_submodule.def("set_global_num_threads", &omp_set_num_threads,
@@ -128,7 +143,11 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       "add_batch. You may need to stream or read in a Dataset from disk "
       "using one of our utility data wrappers.")
       .def(py::init<HashFunction&, uint32_t>(), py::arg("hash_function"),
-           py::arg("reservoir_size"))
+           py::arg("reservoir_size"),
+           "Build a Flash index where all hash "
+           "buckets have a max size reservoir_size.")
+      .def(py::init<HashFunction&>(), py::arg("hash_function"),
+           "Build a Flash index where buckets do not have a max size.")
       // See https://github.com/pybind/pybind11/issues/1153 for why we can't
       // do a py::overload_cas and instead need to use a static cast instead
       .def("add_dataset",
@@ -174,7 +193,8 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
            py::arg("range_pow"), py::arg("reservoir_size"))
       .def(py::init<>());
 
-  py::class_<thirdai::bolt::LayerConfig>(bolt_submodule, "LayerConfig")
+  py::class_<thirdai::bolt::FullyConnectedLayerConfig>(bolt_submodule,
+                                                       "LayerConfig")
       .def(py::init<uint64_t, float, std::string,
                     thirdai::bolt::SamplingConfig>(),
            py::arg("dim"), py::arg("load_factor"),
@@ -185,7 +205,8 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
            py::arg("load_factor"), py::arg("activation_function"));
 
   py::class_<thirdai::python::PyNetwork>(bolt_submodule, "Network")
-      .def(py::init<std::vector<thirdai::bolt::LayerConfig>, uint64_t>(),
+      .def(py::init<std::vector<thirdai::bolt::FullyConnectedLayerConfig>,
+                    uint64_t>(),
            py::arg("layers"), py::arg("input_dim"))
       .def("Train", &thirdai::python::PyNetwork::train, py::arg("batch_size"),
            py::arg("train_data"), py::arg("test_data"),

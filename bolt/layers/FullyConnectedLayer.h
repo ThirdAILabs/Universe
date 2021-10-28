@@ -3,6 +3,7 @@
 #include "../../utils/hashing/DWTA.h"
 #include "../../utils/hashtable/SampledHashTable.h"
 #include "Layer.h"
+#include "LayerConfig.h"
 #include <cstdint>
 
 namespace thirdai::bolt {
@@ -22,8 +23,8 @@ class FullyConnectedLayer final : public Layer {
   FullyConnectedLayer& operator=(const FullyConnectedLayer&) = delete;
   FullyConnectedLayer& operator=(FullyConnectedLayer&&) = delete;
 
-  FullyConnectedLayer(uint64_t dim, uint64_t prev_dim, float sparsity,
-                      ActivationFunc act_func, SamplingConfig sampling_config);
+  FullyConnectedLayer(const FullyConnectedLayerConfig& config,
+                      uint64_t prev_dim);
 
   void feedForward(uint32_t batch_indx, const uint32_t* indices,
                    const float* values, uint32_t len, uint32_t* labels,
@@ -33,8 +34,7 @@ class FullyConnectedLayer final : public Layer {
                      const float* values, float* errors, uint32_t len) override;
 
   void backpropagateFirstLayer(uint32_t batch_indx, const uint32_t* indices,
-                               const float* values, float* errors,
-                               uint32_t len) override;
+                               const float* values, uint32_t len) override;
 
   void computeErrors(uint32_t batch_indx, uint32_t batch_size,
                      const uint32_t* labels, uint32_t label_len) override;
@@ -48,7 +48,10 @@ class FullyConnectedLayer final : public Layer {
 
   void setSparsity(float new_sparsity) override;
 
-  void setBatchSize(uint64_t new_batch_size) override;
+  void initializeLayer(uint64_t new_batch_size) override;
+
+  void initializeLayer(uint64_t new_batch_size, float** new_activations,
+                       float** new_errors);
 
   void shuffleRandNeurons() override;
 
@@ -93,7 +96,9 @@ class FullyConnectedLayer final : public Layer {
 
   constexpr float actFuncDerivative(float x);
 
-  uint64_t _dim, _prev_dim, _batch_size, _sparse_dim;
+  void deallocateInternalState();
+
+  uint64_t _dim, _prev_dim, _max_batch_size, _sparse_dim;
   float _sparsity;
   ActivationFunc _act_func;
 
@@ -101,6 +106,8 @@ class FullyConnectedLayer final : public Layer {
   uint32_t** _active_neurons;
   float** _activations;
   float** _errors;
+
+  bool _internal_state_provided;
 
   float* _weights;
   float* _w_gradient;
