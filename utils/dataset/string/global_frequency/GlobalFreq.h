@@ -27,7 +27,7 @@ class GlobalFreq {
  public:
   GlobalFreq(std::unique_ptr<StringLoader> string_loader,
              const vectorizer_config_t& vectorizer_config,
-             std::vector<std::string>&& filenames);
+             std::vector<std::string>& filenames);
 
   // Returns a copy of _idf_map.
   std::unordered_map<uint32_t, float> getIdfMap() const { return _idf_map; }
