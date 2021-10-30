@@ -274,10 +274,6 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
                const DenseBatch&, uint32_t, bool) const>(&Flash64::queryBatch),
            py::arg("dense_batch"), py::arg("top_k"),
            py::arg("pad_zeros") = false);
-  .def("query",
-       static_cast<std::vector<uint64_t> (Flash64::*)(
-           const DenseVector&, uint32_t, bool) const>(&Flash64::queryBatch),
-       py::arg("dense_vector"), py::arg("top_k"), py::arg("pad_zeros") = false);
 
   auto bolt_submodule = m.def_submodule("bolt");
 
