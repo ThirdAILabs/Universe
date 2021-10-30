@@ -2,6 +2,7 @@
 
 #include "Layer.h"
 #include "LayerConfig.h"
+#include <cmath>
 #include <ctime>
 
 namespace thirdai::bolt {
@@ -19,7 +20,9 @@ class EmbeddingLayer {
 
   void feedForward(uint32_t batch_indx, const uint32_t* tokens, uint32_t len);
 
-  void backpropagate(uint32_t batch_indx, float learning_rate);
+  void backpropagate(uint32_t batch_indx);
+
+  void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
   uint32_t getEmbeddingDim() const { return _total_embedding_dim; }
 
@@ -49,6 +52,9 @@ class EmbeddingLayer {
       _log_embedding_block_size, _embedding_block_size, _batch_size, _seed;
 
   float* _embedding_block;
+  float* _gradients;
+  float* _momentum;
+  float* _velocity;
 
   float** _embeddings;
   float** _errors;

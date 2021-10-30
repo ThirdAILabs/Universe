@@ -28,6 +28,8 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
 
   const float* getEmbeddingBlock() const { return _layer->_embedding_block; }
 
+  const float* getEmbeddingGradients() const { return _layer->_gradients; }
+
   uint32_t _lookup_size = 20, _num_lookups = 10, _log_block_size = 16, _seed;
   EmbeddingLayer* _layer;
 };
@@ -98,7 +100,7 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
       _layer->getErrors(b)[i] = 0.5 * i + b * 0.005;
     }
 
-    _layer->backpropagate(b, 1.0);
+    _layer->backpropagate(b);
 
     for (uint32_t t : tokens[b]) {
       for (uint32_t e = 0; e < _num_lookups; e++) {
@@ -116,7 +118,7 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
   }
 
   for (uint32_t i = 0; i < getEmbeddingBlockSize(); i++) {
-    ASSERT_EQ(getEmbeddingBlock()[i], i + 1 + deltas[i]);
+    ASSERT_EQ(getEmbeddingGradients()[i], deltas[i]);
   }
 }
 

@@ -205,10 +205,11 @@ void DLRM::processTrainingBatch(const utils::ClickThroughBatch& batch,
     _dense_feature_layer->backpropagateFirstLayer(b, /* indices */ nullptr,
                                                   vec.values, vec.dim);
 
-    _embedding_layer->backpropagate(b, lr);
+    _embedding_layer->backpropagate(b);
   }
 
   ++_iter;
+  _embedding_layer->updateParameters(lr, _iter, BETA1, BETA2, EPS);
   _dense_feature_layer->updateParameters(lr, _iter, BETA1, BETA2, EPS);
   for (uint32_t l = 0; l < _num_fc_layers; l++) {
     _fc_layers[l]->updateParameters(lr, _iter, BETA1, BETA2, EPS);

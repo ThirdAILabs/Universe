@@ -2,6 +2,7 @@
 #include "../../utils/hashing/MurmurHash.h"
 #include <algorithm>
 #include <random>
+#include <vector>
 
 namespace thirdai::bolt {
 
@@ -22,6 +23,9 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   // around.
   _embedding_block_size = (1 << _log_embedding_block_size) + _lookup_size;
   _embedding_block = new float[_embedding_block_size];
+  _gradients = new float[_embedding_block_size]();
+  _momentum = new float[_embedding_block_size]();
+  _velocity = new float[_embedding_block_size]();
 
   std::mt19937 gen(seed);
   std::normal_distribution<float> dist(0.0, 0.01);
@@ -62,18 +66,64 @@ void EmbeddingLayer::feedForward(uint32_t batch_indx, const uint32_t* tokens,
   }
 }
 
-void EmbeddingLayer::backpropagate(uint32_t batch_indx, float learning_rate) {
+void EmbeddingLayer::backpropagate(uint32_t batch_indx) {
   for (uint32_t e = 0; e < _num_embedding_lookups; e++) {
     const float* errors = _errors[batch_indx] + e * _lookup_size;
 
     for (uint32_t n = 0; n < _loc_lens[batch_indx]; n++) {
       float* update_loc =
-          _embedding_block +
+          _gradients +
           _embedding_locs[batch_indx][n * _num_embedding_lookups + e];
 
       for (uint32_t i = 0; i < _lookup_size; i++) {
-        update_loc[i] += learning_rate * errors[i];
+        update_loc[i] += errors[i];
       }
+    }
+  }
+}
+
+void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
+                                      float B2, float eps) {
+  float B1_ = static_cast<float>(1 - pow(B1, iter));
+  float B2_ = static_cast<float>(1 - pow(B2, iter));
+
+  std::vector<uint32_t> all_embedding_locs;
+  for (uint32_t b = 0; b < _batch_size; b++) {
+    for (uint32_t n = 0; n < _loc_lens[b]; n++) {
+      for (uint32_t e = 0; e < _num_embedding_lookups; e++) {
+        all_embedding_locs.push_back(
+            _embedding_locs[b][n * _num_embedding_lookups + e]);
+      }
+    }
+  }
+
+  std::sort(all_embedding_locs.begin(), all_embedding_locs.end());
+
+  std::vector<std::pair<uint64_t, uint64_t>> disjoint_ranges;
+  for (uint32_t i = 0; i < all_embedding_locs.size(); i++) {
+    uint64_t start = all_embedding_locs[i];
+    uint64_t end = start + _lookup_size;
+    for (uint32_t j = i + 1; j < all_embedding_locs.size(); j++) {
+      if (all_embedding_locs[j] > end) {
+        break;
+      }
+      end = all_embedding_locs[j] + _lookup_size;
+      i++;
+    }
+    disjoint_ranges.push_back({start, end});
+  }
+#pragma omp parallel for default(none) \
+    shared(disjoint_ranges, B1, B2, B1_, B2_, eps, lr)
+  for (const auto& pair : disjoint_ranges) {
+    for (uint64_t n = pair.first; n < pair.second; n++) {
+      float grad = _gradients[n];
+      _momentum[n] = B1 * _momentum[n] + (1 - B1) * grad;
+      _velocity[n] = B2 * _velocity[n] + (1 - B2) * grad * grad;
+
+      _embedding_block[n] +=
+          lr * (_momentum[n] / B1_) / (std::sqrt(_velocity[n] / B2_) + eps);
+
+      _gradients[n] = 0;
     }
   }
 }
@@ -135,6 +185,9 @@ void EmbeddingLayer::deallocateInternalState() {
 
 EmbeddingLayer::~EmbeddingLayer() {
   delete[] _embedding_block;
+  delete[] _gradients;
+  delete[] _momentum;
+  delete[] _velocity;
 
   deallocateInternalState();
 }
