@@ -22,7 +22,7 @@ class DenseBatch {
   DenseBatch(std::vector<DenseVector>&& vectors, uint64_t start_id)
       : _vectors(std::move(vectors)),
         _batch_size(_vectors.size()),
-        _labels(vectors.size()),
+        _labels(_vectors.size()),
         _start_id(start_id) {}
 
   const DenseVector& operator[](uint32_t i) const { return _vectors[i]; };
@@ -36,9 +36,9 @@ class DenseBatch {
   uint32_t getBatchSize() const { return _batch_size; }
 
  private:
+  std::vector<std::vector<uint32_t>> _labels;
   std::vector<DenseVector> _vectors;
   uint32_t _batch_size;
-  std::vector<std::vector<uint32_t>> _labels;
   uint64_t _start_id;
 };
 
