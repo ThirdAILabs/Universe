@@ -13,7 +13,7 @@ namespace thirdai::utils::lsh_testing {
 /** Returns the magnitude of a dense vector */
 static float magnitude(const DenseVector& vec) {
   float mag = 0;
-  for (uint32_t d = 0; d < vec._dim; d++) {
+  for (uint32_t d = 0; d < vec.dim(); d++) {
     mag += std::pow(vec._values[d], 2);
   }
   return std::pow(mag, 0.5);
@@ -21,9 +21,9 @@ static float magnitude(const DenseVector& vec) {
 
 /** Returns the dot product of 2 dense vectors */
 static float dot(const DenseVector& first_vec, const DenseVector& second_vec) {
-  assert(first_vec._dim == second_vec._dim);
+  assert(first_vec.dim() == second_vec.dim());
   float total = 0;
-  for (uint32_t d = 0; d < first_vec._dim; d++) {
+  for (uint32_t d = 0; d < first_vec.dim(); d++) {
     total += first_vec._values[d] * second_vec._values[d];
   }
   return total;
@@ -32,7 +32,7 @@ static float dot(const DenseVector& first_vec, const DenseVector& second_vec) {
 /** Returns the angle between 2 dense vectors */
 static float angle(const DenseVector& a, const DenseVector& b) {
   float total = 0, ma = 0, mb = 0;
-  for (uint32_t i = 0; i < a._dim; i++) {
+  for (uint32_t i = 0; i < a.dim(); i++) {
     total += a._values[i] * b._values[i];
     ma += a._values[i] * a._values[i];
     mb += b._values[i] * b._values[i];
@@ -70,19 +70,19 @@ static DenseVector generateRandomDenseUnitVector(uint32_t dim,
 static DenseVector generateRandomPerpVector(const DenseVector& first_vec,
                                             std::mt19937* generator) {
   DenseVector second_vec =
-      generateRandomDenseUnitVector(first_vec._dim, generator);
+      generateRandomDenseUnitVector(first_vec.dim(), generator);
   float dot_product = dot(first_vec, second_vec);
 
-  DenseVector result(first_vec._dim);
+  DenseVector result(first_vec.dim());
   float magnitude_squared = 0;
-  for (uint32_t d = 0; d < first_vec._dim; d++) {
+  for (uint32_t d = 0; d < first_vec.dim(); d++) {
     result._values[d] =
         second_vec._values[d] - dot_product * first_vec._values[d];
     magnitude_squared += std::pow(result._values[d], 2);
   }
 
   float magnitude = std::pow(magnitude_squared, 0.5);
-  for (uint32_t d = 0; d < first_vec._dim; d++) {
+  for (uint32_t d = 0; d < first_vec.dim(); d++) {
     result._values[d] /= magnitude;
   }
   return result;

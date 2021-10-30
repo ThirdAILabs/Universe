@@ -23,8 +23,10 @@ namespace py = pybind11;
 using thirdai::bolt::Network;
 
 using thirdai::utils::DenseBatch;
+using thirdai::utils::DenseVector;
 using thirdai::utils::InMemoryDataset;
 using thirdai::utils::SparseBatch;
+using thirdai::utils::SparseVector;
 using thirdai::utils::StreamedDataset;
 
 using thirdai::utils::DensifiedMinHash;
@@ -79,10 +81,10 @@ class PyNetwork final : public Network {
 // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=numpy#arrays
 // for explanation of why we do py::array::c_style and py::array::forcecase.
 // Ensures array is an array of floats in dense row major order.
-static InMemoryDataset<DenseBatch> wrapNumpyIntoInMemoryDataset(
+static DenseBatch creatNumpyBatch(
     const pybind11::array_t<float, pybind11::array::c_style |
                                        pybind11::array::forcecast>& data,
-    uint64_t num_batches, uint64_t starting_id) {
+    uint64_t starting_id) {
   const pybind11::buffer_info data_buf = data.request();
   const auto shape = data_buf.shape;
   if (shape.size() != 2) {
@@ -93,28 +95,17 @@ static InMemoryDataset<DenseBatch> wrapNumpyIntoInMemoryDataset(
 
   uint64_t num_vectors = static_cast<uint64_t>(shape.at(0));
   uint64_t dimension = static_cast<uint64_t>(shape.at(1));
-  if (num_batches == 0 || num_batches > num_vectors) {
-    throw std::invalid_argument(
-        "The number of batches must be between 1 and the number of vectors in "
-        "the dataset, inclusive.");
-  }
-
-  const uint64_t batch_size = (num_vectors + num_batches - 1) / num_batches;
   float* raw_data = static_cast<float*>(data_buf.ptr);
-  std::vector<DenseBatch> batches;
-  for (uint64_t batch_start = 0; batch_start < num_vectors;
-       batch_start += batch_size) {
-    uint64_t batch_end = std::min(batch_start + batch_size, num_vectors);
-    std::vector<utils::DenseVector> current_batch_vectors;
-    for (uint64_t vector_id = batch_start; vector_id < batch_end; vector_id++) {
-      current_batch_vectors.emplace_back(
-          dimension, raw_data + dimension * vector_id, false);
-    }
-    uint64_t batch_starting_id = batch_start + starting_id;
-    batches.emplace_back(std::move(current_batch_vectors), batch_starting_id);
+  std::vector<utils::DenseVector> batch_vectors;
+  for (uint64_t vec_id = 0; vec_id < num_vectors; vec_id++) {
+    // owns_data = false because we don't want the numpy array to be deleted
+    // if this batch (and thus the underlying vectors) get deleted
+    bool owns_data = false;
+    batch_vectors.emplace_back(dimension, raw_data + dimension * vec_id,
+                               owns_data);
   }
 
-  return InMemoryDataset<DenseBatch>(std::move(batches), num_vectors);
+  return DenseBatch(std::move(batch_vectors), starting_id);
 }
 
 }  // namespace thirdai::python
@@ -122,14 +113,38 @@ static InMemoryDataset<DenseBatch> wrapNumpyIntoInMemoryDataset(
 // TODO(all): Figure out naming convention for python exposed classes and
 // methods
 // TODO(any): Add docstrings to methods
+// TODO(any): Can we remove redudancy in the bindings?
 PYBIND11_MODULE(thirdai, m) {  // NOLINT
 
   auto utils_submodule = m.def_submodule("utils");
 
-  py::class_<SparseBatch>(utils_submodule,  // NOLINT
-                          "SparseBatch");
-  py::class_<DenseBatch>(utils_submodule,  // NOLINT
-                         "DenseBatch");
+  // TODO(josh): We can expose dense batches and dense/sparse vectors and
+  // let them be cast directly to numpy arrays, see
+  // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
+
+  py::class_<SparseVector>(utils_submodule, "SparseVector")
+      .def("get_length", &SparseVector::length)
+      .def("__getitem__", &SparseVector::at);
+
+  py::class_<DenseVector>(utils_submodule, "DenseVector")
+      .def("get_dim", &DenseVector::dim)
+      .def("__getitem__", &DenseVector::at);
+
+  py::class_<DenseBatch>(utils_submodule, "DenseBatch")
+      // This is reference_internal so that even if there is no reference
+      // to the batch, but there is a reference to a vector returned
+      // from this operator, the vector won't be deleted. Note we use the
+      // memory safe at() since this is a python binding.
+      .def("__getitem__", &DenseBatch::at,
+           py::return_value_policy::reference_internal,
+           "Returns the ith vector in this batch.")
+      .def("get_batch_size", &DenseBatch::getBatchSize);
+
+  py::class_<SparseBatch>(utils_submodule, "SparseBatch")
+      .def("__getitem__", &SparseBatch::at,
+           py::return_value_policy::reference_internal,
+           "Returns the ith vector in this batch.")
+      .def("get_batch_size", &SparseBatch::getBatchSize);
 
   py::class_<InMemoryDataset<DenseBatch>>(utils_submodule,  // NOLINT
                                           "InMemoryDenseDataset")
@@ -138,7 +153,7 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       // This is reference_internal so that even if there is no reference
       // to the outer dataset, but there is a reference to a batch returned
       // from this operator, the batch won't be deleted.
-      .def("__getitem__", &InMemoryDataset<DenseBatch>::operator[],
+      .def("__getitem__", &InMemoryDataset<DenseBatch>::at,
            py::return_value_policy::reference_internal,
            "Returns the currently stored ith batch.");
 
@@ -146,7 +161,7 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
                                            "InMemorySparseDataset")
       .def("get_num_batches", &InMemoryDataset<SparseBatch>::numBatches,
            "Returns the number of stored batches.")
-      .def("__getitem__", &InMemoryDataset<SparseBatch>::operator[],
+      .def("__getitem__", &InMemoryDataset<SparseBatch>::at,
            py::return_value_policy::reference_internal,
            "Returns the currently stored ith batch.");
 
@@ -158,10 +173,9 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       "a given size, and attempts to read the"
       " entire file into memory.");
 
-  utils_submodule.def("wrap_numpy_into_in_memory_dataset",
-                      &thirdai::python::wrapNumpyIntoInMemoryDataset,
+  utils_submodule.def("create_numpy_batch", &thirdai::python::creatNumpyBatch,
                       py::keep_alive<0, 1>(), py::arg("numpy_array"),
-                      py::arg("num_batches") = 1, py::arg("starting_id") = 1);
+                      py::arg("starting_id") = 0);
 
   py::class_<HashFunction>(
       utils_submodule, "HashFunction",
@@ -249,16 +263,20 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
           "add_batch",
           static_cast<void (Flash64::*)(const DenseBatch&)>(&Flash64::addBatch),
           py::arg("batch"))
-      .def("query_batch",
+      .def("query",
            static_cast<std::vector<std::vector<uint64_t>> (Flash64::*)(
                const SparseBatch&, uint32_t, bool) const>(&Flash64::queryBatch),
            py::arg("dense_batch"), py::arg("top_k"),
            py::arg("pad_zeros") = false)
-      .def("query_batch",
+      .def("query",
            static_cast<std::vector<std::vector<uint64_t>> (Flash64::*)(
                const DenseBatch&, uint32_t, bool) const>(&Flash64::queryBatch),
            py::arg("dense_batch"), py::arg("top_k"),
            py::arg("pad_zeros") = false);
+  .def("query",
+       static_cast<std::vector<uint64_t> (Flash64::*)(
+           const DenseVector&, uint32_t, bool) const>(&Flash64::queryBatch),
+       py::arg("dense_vector"), py::arg("top_k"), py::arg("pad_zeros") = false);
 
   auto bolt_submodule = m.def_submodule("bolt");
 

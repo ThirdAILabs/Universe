@@ -116,7 +116,7 @@ class CLickThroughDatasetTestFixture : public ::testing::Test {
 
       ASSERT_EQ(batch.label(v), _vectors.at(vec_count_base + v).label);
 
-      ASSERT_EQ(batch[v]._dim, getNumDenseFeatures());
+      ASSERT_EQ(batch[v].dim(), getNumDenseFeatures());
       for (uint32_t i = 0; i < getNumDenseFeatures(); i++) {
         float val = _vectors.at(vec_count_base + v).dense_features.at(i);
         ASSERT_EQ(batch.at(v)._values[i], val);

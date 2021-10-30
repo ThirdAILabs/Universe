@@ -13,7 +13,7 @@ namespace thirdai::utils::lsh_testing {
 static float angle(const SparseVector& a, const SparseVector& b) {
   float total = 0, ma = 0, mb = 0;
   uint32_t ia = 0, ib = 0;
-  while (ia < a._len && ib < b._len) {
+  while (ia < a.length() && ib < b.length()) {
     if (a._indices[ia] == b._indices[ib]) {
       total += a._values[ia] * b._values[ib];
       ia++;
@@ -24,11 +24,11 @@ static float angle(const SparseVector& a, const SparseVector& b) {
       ib++;
     }
   }
-  for (uint32_t i = 0; i < a._len; i++) {
+  for (uint32_t i = 0; i < a.length(); i++) {
     ma += a._values[i] * a._values[i];
   }
 
-  for (uint32_t i = 0; i < b._len; i++) {
+  for (uint32_t i = 0; i < b.length(); i++) {
     mb += b._values[i] * b._values[i];
   }
 

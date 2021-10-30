@@ -82,14 +82,14 @@ class CosineSim : public Similarity {
     SparseVector v1(num_non_zeros);
     SparseVector v2(num_non_zeros);
     std::copy(dense_result.v1._values,
-              dense_result.v1._values + dense_result.v1._dim, v1._values);
+              dense_result.v1._values + dense_result.v1.dim(), v1._values);
     std::copy(dense_result.v2._values,
-              dense_result.v2._values + dense_result.v2._dim, v2._values);
+              dense_result.v2._values + dense_result.v2.dim(), v2._values);
 
     std::copy(indices_set.begin(), indices_set.end(), v1._indices);
     std::copy(indices_set.begin(), indices_set.end(), v2._indices);
-    std::sort(v1._indices, v1._indices + v1._len);
-    std::sort(v2._indices, v2._indices + v2._len);
+    std::sort(v1._indices, v1._indices + v1.length());
+    std::sort(v2._indices, v2._indices + v2.length());
 
     return {std::move(v1), std::move(v2), dense_result.sim};
   }
