@@ -36,9 +36,9 @@ class DenseBatch {
   uint32_t getBatchSize() const { return _batch_size; }
 
  private:
-  std::vector<std::vector<uint32_t>> _labels;
   std::vector<DenseVector> _vectors;
   uint32_t _batch_size;
+  std::vector<std::vector<uint32_t>> _labels;
   uint64_t _start_id;
 };
 
