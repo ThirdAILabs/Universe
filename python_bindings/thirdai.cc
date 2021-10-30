@@ -4,13 +4,10 @@
 #include "../utils/dataset/batch_types/SparseBatch.h"
 #include "../utils/hashing/DensifiedMinHash.h"
 #include "../utils/hashing/FastSRP.h"
-#include <_types/_uint32_t.h>
-#include <_types/_uint64_t.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <cstdint>
 #include <string>
 #include <vector>
 #ifndef __clang__

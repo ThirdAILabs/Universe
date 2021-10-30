@@ -36,7 +36,7 @@ for tables in [2 ** exp for exp in range(1, 9)]:
     # Make these tests single threaded so we can better compare performance 
     utils.set_global_num_threads(1)
     start = timer()
-    results = flash.query_batch(queries[0], top_k=100)
+    results = flash.query(queries[0], top_k=100)
     end = timer()
     utils.set_global_num_threads(max_num_threads_for_indexing)
 

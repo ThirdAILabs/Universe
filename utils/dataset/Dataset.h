@@ -4,7 +4,6 @@
 #include "batch_types/ClickThroughBatch.h"
 #include "batch_types/DenseBatch.h"
 #include "batch_types/SparseBatch.h"
-// #include <pybind11/numpy.h>
 #include <cstdint>
 #include <fstream>
 #include <memory>
