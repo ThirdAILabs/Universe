@@ -2,7 +2,6 @@
 #include "../../utils/hashing/MurmurHash.h"
 #include <algorithm>
 #include <random>
-#include <vector>
 
 namespace thirdai::bolt {
 
@@ -58,7 +57,7 @@ void EmbeddingLayer::feedForward(uint32_t batch_indx, const uint32_t* tokens,
       hash_loc = hash_loc >> (32 - _log_embedding_block_size);
       _embedding_locs[batch_indx][n * _num_embedding_lookups + e] = hash_loc;
 
-      // This is safe since we allowed 2^_log_embedding_block_size+_lookup_size
+      // Safe since we allocated 2^_log_embedding_block_size+_lookup_size
       for (uint32_t i = 0; i < _lookup_size; i++) {
         output_start[i] += _embedding_block[hash_loc + i];
       }
@@ -82,11 +81,8 @@ void EmbeddingLayer::backpropagate(uint32_t batch_indx) {
   }
 }
 
-void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
-                                      float B2, float eps) {
-  float B1_ = static_cast<float>(1 - pow(B1, iter));
-  float B2_ = static_cast<float>(1 - pow(B2, iter));
-
+std::vector<std::pair<uint64_t, uint64_t>>
+EmbeddingLayer::getDisjointUpdateRanges() {
   std::vector<uint32_t> all_embedding_locs;
   for (uint32_t b = 0; b < _batch_size; b++) {
     for (uint32_t n = 0; n < _loc_lens[b]; n++) {
@@ -112,6 +108,18 @@ void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
     }
     disjoint_ranges.push_back({start, end});
   }
+
+  return disjoint_ranges;
+}
+
+void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
+                                      float B2, float eps) {
+  float B1_ = static_cast<float>(1 - pow(B1, iter));
+  float B2_ = static_cast<float>(1 - pow(B2, iter));
+
+  std::vector<std::pair<uint64_t, uint64_t>> disjoint_ranges =
+      getDisjointUpdateRanges();
+
 #pragma omp parallel for default(none) \
     shared(disjoint_ranges, B1, B2, B1_, B2_, eps, lr)
   for (const auto& pair : disjoint_ranges) {

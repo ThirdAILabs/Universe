@@ -4,6 +4,7 @@
 #include "LayerConfig.h"
 #include <cmath>
 #include <ctime>
+#include <vector>
 
 namespace thirdai::bolt {
 
@@ -47,6 +48,8 @@ class EmbeddingLayer {
 
  private:
   void deallocateInternalState();
+
+  std::vector<std::pair<uint64_t, uint64_t>> getDisjointUpdateRanges();
 
   uint32_t _num_embedding_lookups, _lookup_size, _total_embedding_dim,
       _log_embedding_block_size, _embedding_block_size, _batch_size, _seed;
