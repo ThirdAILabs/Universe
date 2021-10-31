@@ -1,7 +1,6 @@
 #include "../../utils/hashing/MurmurHash.h"
 #include "../layers/EmbeddingLayer.h"
 #include <gtest/gtest.h>
-#include <_types/_uint32_t.h>
 #include <algorithm>
 #include <unordered_map>
 #include <vector>
