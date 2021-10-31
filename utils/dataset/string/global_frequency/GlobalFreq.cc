@@ -22,15 +22,8 @@ GlobalFreq::GlobalFreq(std::unique_ptr<StringLoader> string_loader,
     while (string_loader->loadStringsAndLabels(fstream, batch_size,
                                                loaded_strings,
                                                loaded_labels) == batch_size) {
-      loaded_strings.clear();
-      loaded_labels.clear();
-      index_to_value_map.clear();
-      total_doc_count++;
-
-      for (auto const& string : loaded_strings) {
-        composite_vectorizer.fillIndexToValueMap(string, index_to_value_map,
-                                                 empty_map);
-      }
+      composite_vectorizer.fillIndexToValueMap(loaded_strings[0],
+                                               index_to_value_map, empty_map);
 
       for (auto kv : index_to_value_map) {
         uint32_t hash = kv.first;
@@ -44,6 +37,10 @@ GlobalFreq::GlobalFreq(std::unique_ptr<StringLoader> string_loader,
         }
       }
       temp_set.clear();
+      loaded_strings.clear();
+      loaded_labels.clear();
+      index_to_value_map.clear();
+      total_doc_count++;
     }
   }
   for (auto& kv : _idf_map) {
