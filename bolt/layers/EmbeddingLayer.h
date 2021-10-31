@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Layer.h"
+#include "LayerConfig.h"
 #include <ctime>
 
 namespace thirdai::bolt {
@@ -13,9 +14,8 @@ class EmbeddingLayer {
   friend class tests::EmbeddingLayerTestFixture;
 
  public:
-  EmbeddingLayer(uint32_t num_embedding_lookups, uint32_t lookup_size,
-                 uint32_t log_embedding_block_size,
-                 uint32_t seed = time(nullptr));
+  explicit EmbeddingLayer(const EmbeddingLayerConfig& config,
+                          uint32_t seed = time(nullptr));
 
   void feedForward(uint32_t batch_indx, const uint32_t* tokens, uint32_t len);
 
@@ -29,7 +29,11 @@ class EmbeddingLayer {
 
   float* getErrors(uint32_t batch_indx) { return _errors[batch_indx]; }
 
-  void setBatchSize(uint32_t new_batch_size);
+  void initializeLayer(uint32_t new_batch_size);
+
+  // This should not be used with setBatchSize
+  void initializeLayer(uint32_t batch_size, float** new_embeddings,
+                       float** new_errors);
 
   EmbeddingLayer(EmbeddingLayer&) = delete;
   EmbeddingLayer(const EmbeddingLayer&&) = delete;
@@ -39,6 +43,8 @@ class EmbeddingLayer {
   ~EmbeddingLayer();
 
  private:
+  void deallocateInternalState();
+
   uint32_t _num_embedding_lookups, _lookup_size, _total_embedding_dim,
       _log_embedding_block_size, _embedding_block_size, _batch_size, _seed;
 
@@ -47,7 +53,9 @@ class EmbeddingLayer {
   float** _embeddings;
   float** _errors;
 
-  uint32_t* _lens;
+  bool _internal_state_provided;
+
+  uint32_t* _loc_lens;
   uint32_t** _embedding_locs;
 };
 

@@ -5,17 +5,17 @@
 
 namespace thirdai::bolt {
 
-EmbeddingLayer::EmbeddingLayer(uint32_t num_embedding_lookups,
-                               uint32_t lookup_size,
-                               uint32_t log_embedding_block_size, uint32_t seed)
-    : _num_embedding_lookups(num_embedding_lookups),
-      _lookup_size(lookup_size),
-      _total_embedding_dim(num_embedding_lookups * lookup_size),
-      _log_embedding_block_size(log_embedding_block_size),
+EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
+                               uint32_t seed)
+    : _num_embedding_lookups(config.num_embedding_lookups),
+      _lookup_size(config.lookup_size),
+      _total_embedding_dim(config.num_embedding_lookups * config.lookup_size),
+      _log_embedding_block_size(config.log_embedding_block_size),
       _batch_size(0),
       _embeddings(nullptr),
       _errors(nullptr),
-      _lens(nullptr),
+      _internal_state_provided(false),
+      _loc_lens(nullptr),
       _embedding_locs(nullptr) {
   // We allocate the extra _lookup_size elements such that if a point hashes to
   // the end of 2^_embedding_block_size we don't have to worry about wrapping it
@@ -37,7 +37,7 @@ EmbeddingLayer::EmbeddingLayer(uint32_t num_embedding_lookups,
 
 void EmbeddingLayer::feedForward(uint32_t batch_indx, const uint32_t* tokens,
                                  uint32_t len) {
-  _lens[batch_indx] = len;
+  _loc_lens[batch_indx] = len;
   delete[] _embedding_locs[batch_indx];
   _embedding_locs[batch_indx] = new uint32_t[len * _num_embedding_lookups];
 
@@ -66,7 +66,7 @@ void EmbeddingLayer::backpropagate(uint32_t batch_indx, float learning_rate) {
   for (uint32_t e = 0; e < _num_embedding_lookups; e++) {
     const float* errors = _errors[batch_indx] + e * _lookup_size;
 
-    for (uint32_t n = 0; n < _lens[batch_indx]; n++) {
+    for (uint32_t n = 0; n < _loc_lens[batch_indx]; n++) {
       float* update_loc =
           _embedding_block +
           _embedding_locs[batch_indx][n * _num_embedding_lookups + e];
@@ -78,28 +78,20 @@ void EmbeddingLayer::backpropagate(uint32_t batch_indx, float learning_rate) {
   }
 }
 
-void EmbeddingLayer::setBatchSize(uint32_t new_batch_size) {
+void EmbeddingLayer::initializeLayer(uint32_t new_batch_size) {
   if (new_batch_size <= _batch_size) {
     return;
   }
 
-  for (uint32_t b = 0; b < _batch_size; b++) {
-    delete[] _embeddings[b];
-    delete[] _errors[b];
-    delete[] _embedding_locs[b];
-  }
-
-  delete[] _embeddings;
-  delete[] _errors;
-  delete[] _embedding_locs;
-  delete[] _lens;
+  deallocateInternalState();
 
   _batch_size = new_batch_size;
+  _internal_state_provided = false;
 
   _embeddings = new float*[_batch_size];
   _errors = new float*[_batch_size];
   _embedding_locs = new uint32_t*[_batch_size];
-  _lens = new uint32_t[_batch_size];
+  _loc_lens = new uint32_t[_batch_size];
 
   for (uint32_t b = 0; b < _batch_size; b++) {
     _embeddings[b] = new float[_total_embedding_dim]();
@@ -108,19 +100,43 @@ void EmbeddingLayer::setBatchSize(uint32_t new_batch_size) {
   }
 }
 
-EmbeddingLayer::~EmbeddingLayer() {
-  delete[] _embedding_block;
+void EmbeddingLayer::initializeLayer(uint32_t batch_size,
+                                     float** new_embeddings,
+                                     float** new_errors) {
+  deallocateInternalState();
+
+  _batch_size = batch_size;
+  _internal_state_provided = true;
+
+  _embeddings = new_embeddings;
+  _errors = new_errors;
+  _loc_lens = new uint32_t[_batch_size];
+  _embedding_locs = new uint32_t*[_batch_size];
 
   for (uint32_t b = 0; b < _batch_size; b++) {
-    delete[] _embeddings[b];
-    delete[] _errors[b];
+    _embedding_locs[b] = nullptr;
+  }
+}
+
+void EmbeddingLayer::deallocateInternalState() {
+  for (uint32_t b = 0; b < _batch_size; b++) {
+    if (!_internal_state_provided) {
+      delete[] _embeddings[b];
+      delete[] _errors[b];
+    }
     delete[] _embedding_locs[b];
   }
 
   delete[] _embeddings;
   delete[] _errors;
   delete[] _embedding_locs;
-  delete[] _lens;
+  delete[] _loc_lens;
+}
+
+EmbeddingLayer::~EmbeddingLayer() {
+  delete[] _embedding_block;
+
+  deallocateInternalState();
 }
 
 }  // namespace thirdai::bolt

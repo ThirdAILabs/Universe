@@ -9,14 +9,15 @@ namespace thirdai::bolt::tests {
 class EmbeddingLayerTestFixture : public ::testing::Test {
  public:
   void SetUp() override {
-    _layer = new EmbeddingLayer(_num_lookups, _lookup_size, _log_block_size,
+    EmbeddingLayerConfig config(_num_lookups, _lookup_size, _log_block_size);
+    _layer = new EmbeddingLayer(config,
                                 /* seed for determinism */ 8274953);
 
     for (uint32_t i = 0; i < _layer->_embedding_block_size; i++) {
       _layer->_embedding_block[i] = i + 1;
     }
     _seed = _layer->_seed;
-    _layer->setBatchSize(4);
+    _layer->initializeLayer(4);
   }
 
   void TearDown() override { delete _layer; }
