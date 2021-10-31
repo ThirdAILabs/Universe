@@ -6,7 +6,6 @@ GlobalFreq::GlobalFreq(std::unique_ptr<StringLoader> string_loader,
                        const vectorizer_config_t& vectorizer_config,
                        std::vector<std::string>& filenames)
     : _vectorizer_config(vectorizer_config) {
-  std::unordered_set<uint32_t> temp_set;
   std::unordered_map<uint32_t, float> empty_map;
   size_t total_doc_count = 0;
   std::vector<std::string> loaded_strings;
@@ -27,16 +26,8 @@ GlobalFreq::GlobalFreq(std::unique_ptr<StringLoader> string_loader,
 
       for (auto kv : index_to_value_map) {
         uint32_t hash = kv.first;
-        if (temp_set.find(hash) == temp_set.end()) {
-          temp_set.insert(hash);
-          // keys in _idf_map have default values of 1
-          _idf_map[hash]++;
-        } else {
-          // std::cout << "Clashed  word:" << temp << "  Sentence: " << buffer
-          // << std::endl;
-        }
+        _idf_map[hash]++;
       }
-      temp_set.clear();
       loaded_strings.clear();
       loaded_labels.clear();
       index_to_value_map.clear();
