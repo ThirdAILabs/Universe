@@ -17,7 +17,7 @@ class StringLoader {
    * overwriting its contents, and up to target_batch_size label vectors
    * from file into 'loaded_labels', overwriting its contents.
    */
-  virtual void loadStringsAndLabels(
+  virtual uint32_t loadStringsAndLabels(
       std::ifstream& file, uint32_t target_batch_size,
       std::vector<std::string>& loaded_strings,
       std::vector<std::vector<uint32_t>>& loaded_labels) = 0;
