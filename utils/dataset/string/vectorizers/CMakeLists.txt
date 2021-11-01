@@ -1,0 +1,6 @@
+enable_testing()
+
+# add_library(string_vectorizer_lib STATIC CharTriGramVectorizer.cc WordUniGramVectorizer.cc)
+add_library(string_vectorizer_lib STATIC CharTriGramVectorizer.cc)
+
+target_link_libraries(string_vectorizer_lib PRIVATE hash_function_lib)
