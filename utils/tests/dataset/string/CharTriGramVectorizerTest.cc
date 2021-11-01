@@ -15,7 +15,8 @@ using thirdai::utils::dataset::CharTriGramVectorizer;
 using thirdai::utils::dataset::StringVectorizerValue;
 
 static uint32_t default_start_idx = 0;
-static uint32_t default_max_dim = 1 << 31;  // practically max int
+// Very large max_dim so we keep actual tri gram dimensions.
+static uint32_t default_max_dim = 1 << 31;
 
 /**
  * 1. Trigram vectorizer
