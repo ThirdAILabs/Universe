@@ -27,13 +27,16 @@
  *          - the number of output strings equals the number of expected
  sentences.
  *  c. Correct batch size:
- *      - Given a target batch size, the size of the vector of loaded strings is 
+ *      - Given a target batch size, the size of the vector of loaded strings is
  * at most equal to the target batch size.
- *      - Return value of loadStringsAndLabels is equal to size of vector of loaded strings
- *      - If file is exhausted, loadedStringsAndLabels returns 0 and vector of loaded strings 
+ *      - Return value of loadStringsAndLabels is equal to size of vector of
+ loaded strings
+ *      - If file is exhausted, loadedStringsAndLabels returns 0 and vector of
+ loaded strings
  * is empty
  *  d. Correct labels:
- *      - The vector of loaded strings and the vector of loaded labels are equal in size.
+ *      - The vector of loaded strings and the vector of loaded labels are equal
+ in size.
  *      - Each entry in the vector of loaded labels is an empty vector.
  */
 
@@ -77,7 +80,8 @@ static std::string lorem_ipsum_passage =
 static void checkOnlyWantedCharacters(std::string& str) {
   for (auto& c : str) {
     if (!(c == ' ' || ('0' <= c && c <= '9') || ('a' <= c && c <= 'z'))) {
-      std::cout << "The string " << str << " contains the character '" << c << "'" << std::endl; 
+      std::cout << "The string " << str << " contains the character '" << c
+                << "'" << std::endl;
     }
     ASSERT_TRUE(c == ' ' || ('0' <= c && c <= '9') || ('a' <= c && c <= 'z'));
   }
@@ -87,18 +91,19 @@ static void checkNoConsecutiveSpaces(std::string& str) {
   char last_c = 'a';
   for (auto& c : str) {
     if (c == ' ' && last_c == ' ') {
-      std::cout << "There are consecutive spaces in the string '" << str << "'" << std::endl;
+      std::cout << "There are consecutive spaces in the string '" << str << "'"
+                << std::endl;
     }
     ASSERT_FALSE(c == ' ' && last_c == ' ');
     last_c = c;
   }
 }
 
-static void checkStringNotEmpty(std::string& str) { 
+static void checkStringNotEmpty(std::string& str) {
   if (str.empty()) {
     std::cout << "Found an empty string!" << std::endl;
   }
-  ASSERT_FALSE(str.empty()); 
+  ASSERT_FALSE(str.empty());
 }
 
 static void generateTwoFilesWithOneDifferentSentence(
@@ -184,7 +189,8 @@ TEST(SentenceLoaderTest, CorrectlyFragmentsSimpleFile) {
   std::vector<std::string> loaded_strings;
   std::vector<std::vector<uint32_t>> loaded_labels;
   size_t i = 0;
-  while (loader.loadStringsAndLabels(file, 1, loaded_strings, loaded_labels) == 1) {
+  while (loader.loadStringsAndLabels(file, 1, loaded_strings, loaded_labels) ==
+         1) {
     ASSERT_EQ(loaded_strings[0], strings[i]);
     i++;
   }
@@ -215,7 +221,8 @@ TEST(SentenceLoaderTest, CorrectPreprocessing) {
   std::vector<std::string> loaded_strings;
   std::vector<std::vector<uint32_t>> loaded_labels;
   size_t loaded_count = 0;
-  while (loader.loadStringsAndLabels(out_file_read, 1, loaded_strings, loaded_labels)) {
+  while (loader.loadStringsAndLabels(out_file_read, 1, loaded_strings,
+                                     loaded_labels)) {
     loaded_count++;
     checkOnlyWantedCharacters(loaded_strings[0]);
     checkNoConsecutiveSpaces(loaded_strings[0]);
@@ -226,11 +233,12 @@ TEST(SentenceLoaderTest, CorrectPreprocessing) {
 
 /**
  *  c. Correct batch size:
- *      - Given a target batch size, the size of the vector of loaded strings is 
+ *      - Given a target batch size, the size of the vector of loaded strings is
  * at most equal to the target batch size.
- *      - Return value of loadStringsAndLabels is equal to size of vector of loaded strings
- *      - If file is exhausted, loadedStringsAndLabels returns 0 and vector of loaded strings 
- * is empty
+ *      - Return value of loadStringsAndLabels is equal to size of vector of
+ * loaded strings
+ *      - If file is exhausted, loadedStringsAndLabels returns 0 and vector of
+ * loaded strings is empty
  */
 TEST(SentenceLoaderTest, CorrectBatchSize) {
   std::string out_file_name = "lorem_ipsum_test.txt";
@@ -245,24 +253,31 @@ TEST(SentenceLoaderTest, CorrectBatchSize) {
   uint32_t target_batch_size = 10;
   uint32_t loaded_strings_count;
   uint32_t times_loaded_less_than_target_batch_size = 0;
-  while ((loaded_strings_count = loader.loadStringsAndLabels(out_file_read, target_batch_size, loaded_strings, loaded_labels)) > 0) {
+  while ((loaded_strings_count =
+              loader.loadStringsAndLabels(out_file_read, target_batch_size,
+                                          loaded_strings, loaded_labels)) > 0) {
     ASSERT_EQ(loaded_strings_count, loaded_strings.size());
     ASSERT_LE(loaded_strings_count, target_batch_size);
     if (loaded_strings_count < target_batch_size) {
-      ASSERT_EQ(times_loaded_less_than_target_batch_size, 0); // Cannot load > 0 but < target_batch_size strings more than once.
+      ASSERT_EQ(times_loaded_less_than_target_batch_size,
+                0);  // Cannot load > 0 but < target_batch_size strings more
+                     // than once.
       times_loaded_less_than_target_batch_size++;
     }
     loaded_count++;
   }
   ASSERT_EQ(loaded_strings.size(), 0);
   // File is exhausted; next load count should be zero again.
-  ASSERT_EQ(loader.loadStringsAndLabels(out_file_read, target_batch_size, loaded_strings, loaded_labels), 0);
+  ASSERT_EQ(loader.loadStringsAndLabels(out_file_read, target_batch_size,
+                                        loaded_strings, loaded_labels),
+            0);
   ASSERT_TRUE(loaded_count > 0);
 }
 
 /**
  *  d. Correct labels:
- *      - The vector of loaded strings and the vector of loaded labels are equal in size.
+ *      - The vector of loaded strings and the vector of loaded labels are equal
+ * in size.
  *      - Each entry in the vector of loaded labels is an empty vector.
  */
 TEST(SentenceLoaderTest, CorrectLabels) {
@@ -275,10 +290,11 @@ TEST(SentenceLoaderTest, CorrectLabels) {
   std::vector<std::string> loaded_strings;
   std::vector<std::vector<uint32_t>> loaded_labels;
   uint32_t target_batch_size = 10;
-  while (loader.loadStringsAndLabels(out_file_read, target_batch_size, loaded_strings, loaded_labels) > 0) {
+  while (loader.loadStringsAndLabels(out_file_read, target_batch_size,
+                                     loaded_strings, loaded_labels) > 0) {
     ASSERT_EQ(loaded_strings.size(), loaded_labels.size());
     for (const auto& labels_vec : loaded_labels) {
-      ASSERT_EQ(labels_vec.size(), 0); // SentenceLoader does not load labels.
+      ASSERT_EQ(labels_vec.size(), 0);  // SentenceLoader does not load labels.
     }
   }
 }
