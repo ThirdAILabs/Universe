@@ -1,5 +1,7 @@
 enable_testing()
 
+add_subdirectory(string)
+
 add_executable(
   svm_dataset_test
   SvmDatasetTests.cc
