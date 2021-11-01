@@ -56,6 +56,32 @@ class StringVectorizer {
       std::unordered_map<uint32_t, float>& index_to_value_map,
       const std::unordered_map<uint32_t, float>& idf_map) = 0;
 
+  /**
+   * Helper function to set the value of an index_to_value_map based
+   * on _value_type. Avoids repeating the same code in all string
+   * vectorizer derived classes.
+   */
+  void setMapValue(std::unordered_map<uint32_t, float>& index_to_value_map,
+                   uint32_t key,
+                   const std::unordered_map<uint32_t, float>& idf_map) {
+    switch (_value_type) {
+      case StringVectorizerValue::BINARY:
+        index_to_value_map[key] = 1;
+        break;
+      case StringVectorizerValue::FREQUENCY:
+        index_to_value_map[key]++;
+        break;
+      case StringVectorizerValue::TFIDF:
+        if (idf_map.find(key) != idf_map.end()) {
+          index_to_value_map[key] += idf_map.at(key);
+        } else {
+          index_to_value_map[key]++;
+        }
+      default:
+        break;
+    }
+  }
+
   virtual ~StringVectorizer() {}
 
  protected:
