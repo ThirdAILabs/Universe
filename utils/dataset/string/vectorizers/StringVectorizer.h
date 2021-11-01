@@ -69,13 +69,13 @@ class StringVectorizer {
         index_to_value_map[key] = 1;
         break;
       case StringVectorizerValue::FREQUENCY:
-        index_to_value_map[key]++;
+        index_to_value_map[key] += 1.0;
         break;
       case StringVectorizerValue::TFIDF:
         if (idf_map.find(key) != idf_map.end()) {
           index_to_value_map[key] += idf_map.at(key);
         } else {
-          index_to_value_map[key]++;
+          index_to_value_map[key] += 1.0;
         }
       default:
         break;
