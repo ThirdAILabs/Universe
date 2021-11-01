@@ -8,6 +8,8 @@ uint32_t SentenceLoader::loadStringsAndLabels(
   std::string str_buf;
   loaded_strings.reserve(target_batch_size);
   loaded_labels.reserve(target_batch_size);
+  loaded_strings.clear();
+  loaded_labels.clear();
   while (loaded_strings.size() < target_batch_size &&
          loadNextSentence(file, str_buf)) {
     loaded_strings.push_back(str_buf);
