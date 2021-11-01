@@ -20,11 +20,9 @@ static uint32_t default_max_dim = 1 << 31;  // practically max int
 /**
  * 1. Trigram vectorizer
  *  Given a string, make sure that:
- *  a. all the token ids in the _indices vector are unique
- *  b. the size of _values equals the size of _indices
- *  c. the number of unique tokens = the number of unique token id's
- *  d. the count of each unique token = the count of each unique token id
- *  e. different tokens never collide
+ *  - the number of unique tokens = the number of unique token id's
+ *  - the count of each unique token = the count of each unique token id
+ *  - different tokens never collide
  */
 class CharTriGramVectorizerTest : public testing::Test {
  protected:
