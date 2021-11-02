@@ -6,6 +6,11 @@
 
 namespace thirdai::bolt {
 
+struct PrecisionRecal {
+  uint32_t true_positive, false_positive;
+  uint32_t true_negative, false_negative;
+};
+
 DLRM::DLRM(EmbeddingLayerConfig embedding_config,
            FullyConnectedLayerConfig dense_feature_layer_config,
            std::vector<FullyConnectedLayerConfig> fc_layer_configs,
@@ -221,9 +226,12 @@ uint32_t DLRM::processTestBatch(const utils::ClickThroughBatch& batch) {
     _fc_layers[l]->setSparsity(1.0);
   }
 
-  std::atomic<uint32_t> correct = 0;
+  std::atomic<uint32_t> tp = 0;
+  std::atomic<uint32_t> fp = 0;
+  std::atomic<uint32_t> tn = 0;
+  std::atomic<uint32_t> fn = 0;
 
-#pragma omp parallel for default(none) shared(batch, correct)
+#pragma omp parallel for default(none) shared(batch, tp, fp, tn, fn)
   for (uint32_t b = 0; b < batch.getBatchSize(); b++) {
     _embedding_layer->feedForward(b, batch.categoricalFeatures(b).data(),
                                   batch.categoricalFeatures(b).size());
@@ -246,19 +254,24 @@ uint32_t DLRM::processTestBatch(const utils::ClickThroughBatch& batch) {
     }
 
     const float* activations = _fc_layers[_num_fc_layers - 1]->getValues(b);
-    float max_act = std::numeric_limits<float>::min();
-    uint32_t pred = 0;
-    for (uint32_t i = 0; i < _fc_layers[_num_fc_layers - 1]->getLen(b); i++) {
-      if (activations[i] > max_act) {
-        max_act = activations[i];
-        // Since sparsity is set to 1.0, the layer is dense and we can use i
-        // instead of indices[i]
-        pred = i;
-      }
+    uint32_t score = activations[1] > activations[0] ? 2 : 0;
+    if (batch.label(b)) {
+      ++score;
     }
 
-    if (pred == batch.label(b)) {
-      correct++;
+    switch (score) {
+      case 0:
+        ++tn;
+        break;
+      case 1:
+        ++fn;
+        break;
+      case 2:
+        ++fp;
+        break;
+      case 3:
+        ++fn;
+        break;
     }
   }
 
@@ -266,7 +279,7 @@ uint32_t DLRM::processTestBatch(const utils::ClickThroughBatch& batch) {
     _fc_layers[l]->setSparsity(_fc_layer_configs[l].sparsity);
   }
 
-  return correct;
+  return 0;
 }
 
 void DLRM::reBuildHashFunctions() {
