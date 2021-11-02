@@ -26,17 +26,32 @@ class HashFunction {
                          uint32_t* output) const {
 #pragma omp parallel for default(none) shared(batch, output)
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      hashSingleSparse(batch[v].indices, batch[v].values, batch[v].len,
+      hashSingleSparse(batch[v]._indices, batch[v]._values, batch[v].length(),
                        output + v * _num_tables);
     }
+  }
+
+  std::vector<uint32_t> hashBatchParallel(
+      const utils::SparseBatch& batch) const {
+    std::vector<uint32_t> result(_num_tables * batch.getBatchSize());
+    hashBatchParallel(batch, result.data());
+    return result;
   }
 
   void hashBatchParallel(const utils::DenseBatch& batch,
                          uint32_t* output) const {
 #pragma omp parallel for default(none) shared(batch, output)
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      hashSingleDense(batch[v].values, batch[v].dim, output + v * _num_tables);
+      hashSingleDense(batch[v]._values, batch[v].dim(),
+                      output + v * _num_tables);
     }
+  }
+
+  std::vector<uint32_t> hashBatchParallel(
+      const utils::DenseBatch& batch) const {
+    std::vector<uint32_t> result(_num_tables * batch.getBatchSize());
+    hashBatchParallel(batch, result.data());
+    return result;
   }
 
   void hashSparseParallel(uint64_t num_vectors, const uint32_t* const* indices,
@@ -61,14 +76,15 @@ class HashFunction {
   void hashBatchSerial(const utils::SparseBatch& batch,
                        uint32_t* output) const {
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      hashSingleSparse(batch[v].indices, batch[v].values, batch[v].len,
+      hashSingleSparse(batch[v]._indices, batch[v]._values, batch[v].length(),
                        output + v * _num_tables);
     }
   }
 
   void hashBatchSerial(const utils::DenseBatch& batch, uint32_t* output) const {
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      hashSingleDense(batch[v].values, batch[v].dim, output + v * _num_tables);
+      hashSingleDense(batch[v]._values, batch[v].dim(),
+                      output + v * _num_tables);
     }
   }
 

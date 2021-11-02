@@ -13,23 +13,23 @@ namespace thirdai::utils::lsh_testing {
 static float angle(const SparseVector& a, const SparseVector& b) {
   float total = 0, ma = 0, mb = 0;
   uint32_t ia = 0, ib = 0;
-  while (ia < a.len && ib < b.len) {
-    if (a.indices[ia] == b.indices[ib]) {
-      total += a.values[ia] * b.values[ib];
+  while (ia < a.length() && ib < b.length()) {
+    if (a._indices[ia] == b._indices[ib]) {
+      total += a._values[ia] * b._values[ib];
       ia++;
       ib++;
-    } else if (a.indices[ia] < b.indices[ib]) {
+    } else if (a._indices[ia] < b._indices[ib]) {
       ia++;
     } else {
       ib++;
     }
   }
-  for (uint32_t i = 0; i < a.len; i++) {
-    ma += a.values[i] * a.values[i];
+  for (uint32_t i = 0; i < a.length(); i++) {
+    ma += a._values[i] * a._values[i];
   }
 
-  for (uint32_t i = 0; i < b.len; i++) {
-    mb += b.values[i] * b.values[i];
+  for (uint32_t i = 0; i < b.length(); i++) {
+    mb += b._values[i] * b._values[i];
   }
 
   return std::acos(total / (std::sqrt(ma) * std::sqrt(mb)));

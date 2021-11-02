@@ -70,7 +70,7 @@ class ClickThroughBatchFactory : public Factory<ClickThroughBatch> {
           feature = std::strtof(start, &end);
           start = end + 1;
         }
-        vec.values[d] = feature;
+        vec._values[d] = feature;
       }
       batch._dense_features.push_back(std::move(vec));
 

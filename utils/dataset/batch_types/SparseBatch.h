@@ -71,8 +71,8 @@ class SvmSparseBatchFactory : public Factory<SparseBatch> {
       SparseVector v(nonzeros.size());
       uint32_t cnt = 0;
       for (const auto& x : nonzeros) {
-        v.indices[cnt] = x.first;
-        v.values[cnt] = x.second;
+        v._indices[cnt] = x.first;
+        v._values[cnt] = x.second;
         cnt++;
       }
 

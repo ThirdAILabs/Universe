@@ -39,18 +39,18 @@ class CosineSim : public Similarity {
     auto matrix = [u, v, theta](uint32_t i, uint32_t j) {
       return static_cast<float>((i == j)) +
              std::sin(theta) *
-                 (v.values[i] * u.values[j] - u.values[i] * v.values[j]) +
+                 (v._values[i] * u._values[j] - u._values[i] * v._values[j]) +
              (std::cos(theta) - 1) *
-                 (u.values[i] * u.values[j] - v.values[i] * v.values[j]);
+                 (u._values[i] * u._values[j] - v._values[i] * v._values[j]);
     };
 
     // Set v to be equal to u rotated by this matrix
     for (uint32_t i = 0; i < dim; i++) {
       float row_product = 0;
       for (uint32_t j = 0; j < dim; j++) {
-        row_product += matrix(i, j) * u.values[j];
+        row_product += matrix(i, j) * u._values[j];
       }
-      v.values[i] = row_product;
+      v._values[i] = row_product;
     }
 
     float actual_sim = getSim(u, v);
@@ -81,15 +81,15 @@ class CosineSim : public Similarity {
 
     SparseVector v1(num_non_zeros);
     SparseVector v2(num_non_zeros);
-    std::copy(dense_result.v1.values,
-              dense_result.v1.values + dense_result.v1.dim, v1.values);
-    std::copy(dense_result.v2.values,
-              dense_result.v2.values + dense_result.v2.dim, v2.values);
+    std::copy(dense_result.v1._values,
+              dense_result.v1._values + dense_result.v1.dim(), v1._values);
+    std::copy(dense_result.v2._values,
+              dense_result.v2._values + dense_result.v2.dim(), v2._values);
 
-    std::copy(indices_set.begin(), indices_set.end(), v1.indices);
-    std::copy(indices_set.begin(), indices_set.end(), v2.indices);
-    std::sort(v1.indices, v1.indices + v1.len);
-    std::sort(v2.indices, v2.indices + v2.len);
+    std::copy(indices_set.begin(), indices_set.end(), v1._indices);
+    std::copy(indices_set.begin(), indices_set.end(), v2._indices);
+    std::sort(v1._indices, v1._indices + v1.length());
+    std::sort(v2._indices, v2._indices + v2.length());
 
     return {std::move(v1), std::move(v2), dense_result.sim};
   }
