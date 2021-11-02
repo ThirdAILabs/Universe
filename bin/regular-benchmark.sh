@@ -13,7 +13,7 @@ OTHER_MACHINE_INFO=$(lscpu | egrep 'Socket|Thread|Core')
 CODE_VERSION+=$(git describe --tag)
 cd $BASEDIR/../build/
 # Run Unit Tests with valgrind to check for memory leaks.
-UNIT_TESTS=$(ctest -T memcheck -E "TimeTest")
+UNIT_TESTS=$(ctest -T memcheck -E "TimeTest" -R "FullyConnectedLayerTestFixture.SparseDenseTest" | tail -5)
 cd -
 
 # Empty string accounts for scheduled workflow having no default values
@@ -27,49 +27,19 @@ then
 	NOW=$(date +"%T")
 	LOGFILE="$target/$NOW.txt"
 
+	# Run bolt benchmark on amzn670k (see python script for configurations).
 	START_TIME=$(date +"%s")
-	./build/bolt/bolt bolt/configs/amzn_benchmarks.cfg > $LOGFILE &
-	BOLT_PID=$!
-
-	# TODO(alan): Refactor this loop to monitor epoch logs in a separate python script.
-	while read line ; do
-		# Check metrics after Epoch 3.
-		echo "$line" | grep -q "Epoch: 3"
-		if [ $? = 0 ]; then
-			BOLT_MSG+=$(head -n-3 $LOGFILE)
-			# Kill job and signal an error if accuracy after epoch 3 is less than 0.3.
-			ACCURACY=$(echo $(tail -5 $LOGFILE | head -1) | grep -Eo '[+-]?[0-9]+([.][0-9]+)')
-			PASS_ACCURACY_CHECK=$(echo "$ACCURACY > 0.31" | bc)
-			if [[ "$PASS_ACCURACY_CHECK" -eq 0 ]]; then
-				kill $BOLT_PID
-				BOLT_ERROR_MSG+="\n*ERROR*: Accuracy ($ACCURACY) too low after 3 epochs: Expected > 0.31. Terminated benchmark test.\n"
-				break
-			fi
-			# Kill job and signal an error if training time after epoch 3 is longer than 400 seconds.
-			EPOCH_TRAIN_TIME=$(echo $(tail -7 $LOGFILE | head -1) | grep -Eo '[+-]?[0-9]+([.][0-9]+)?' | tail -1)
-			if [[ "$EPOCH_TRAIN_TIME" -gt 450 ]]; then
-				kill $BOLT_PID
-				BOLT_ERROR_MSG+="\n*ERROR*: Epoch training time ($EPOCH_TRAIN_TIME) longer than expected (< 450 seconds). Terminated benchmark test.\n"
-				break
-			fi
-		fi
-		# Kill job and notify an error if total elapsed time of all 25 epochs is greater than 12000 seconds.
-		END_TIME=$(date +"%s")
-		ELAPSED_TIME=$(($END_TIME - $START_TIME))
-		if [[ "$ELAPSED_TIME" -gt 12000 ]]; then
-			kill $BOLT_PID
-			BOLT_ERROR_MSG+="\n*ERROR*: Timeout exceeded (> 12000 seconds). Terminated benchmark test.\n"
-			break
-		fi
-	done < <( tail -fn0 $LOGFILE )
-
-	# Add ERROR msg if any.
-	if [ -n "$BOLT_ERROR_MSG" ]
+	python3 bolt/benchmarks/amzn670_blade.py > $LOGFILE
+	if [ $? -eq 1 ]
 	then
-		BOLT_MSG+=$BOLT_ERROR_MSG
+		BOLT_MSG+=$(sed 's/\^.[^ ]*//g' $LOGFILE)
+		BOLT_MSG+="\n"
+		BOLT_MSG+="\n*ERROR*: Terminated run\n"
 	else
+		BOLT_MSG=$(sed 's/\^.[^ ]*//g' $LOGFILE)
+		BOLT_MSG+="\n"
 		END_TIME=$(date +"%s")
-		BOLT_MSG+="\n*SUCCESS*: _Total elapsed time: $(($END_TIME - $START_TIME)) seconds._\n"
+		BOLT_MSG+="*SUCCESS*: _Total elapsed time: $(($END_TIME - $START_TIME)) seconds._\n"
 		BOLT_MSG+="_Full logs can be found in: /home/cicd/logs/$DATE/$NOW.txt_\n"
 	fi
 else
@@ -151,7 +121,7 @@ payload="
 			\"type\": \"header\",
 			\"text\": {
 				\"type\": \"plain_text\",
-				\"text\": \"Unit Tests\"
+				\"text\": \"Unit Tests (valgrind)\"
 			}
 		},
         {
