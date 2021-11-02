@@ -2,9 +2,9 @@ import subprocess
 import time
 import sys
 
-args = ['/home/cicd/Universe2/build/bolt/bolt', '/home/cicd/Universe2/bolt/configs/amzn_benchmarks.cfg']
+args = ['/home/cicd/Universe/build/bolt/bolt', '/home/cicd/Universe/bolt/configs/amzn_benchmarks.cfg']
 
-# Thresholds for checking accuracy and time after epoch number
+# Thresholds for checking accuracy and time after specified epoch number
 epoch_check_num = 3
 training_time_threshold = 450
 accuracy_threshold = 0.31
@@ -20,21 +20,22 @@ while True:
         print (line, end = '')
         line = p.stdout.readline().decode('utf-8')
 
-        # Kill job and signal an error if training time after epoch 3 is longer than desired.
         line = p.stdout.readline().decode('utf-8')
         print(line, end = '')
         training_time = line.split(' ')[-2]
-        if float(training_time) > training_time_threshold:
-            print(f'Epoch {epoch_check_num} training time *({training_time}))* took longer than expected *({training_time_threshold})*')
-            sys.exit(1)
         
         line = p.stdout.readline().decode('utf-8')
         print(line, end = '')
 
-        # Kill job and signal an error if accuracy after epoch 3 is less than desired.
         line = p.stdout.readline().decode('utf-8')
         print(line, end = '')
         accuracy = line.split(' ')[-2]
+
+        # Kill job and signal an error if training time after epoch_check_num is longer than desired.
+        if float(training_time) > training_time_threshold:
+            print(f'Epoch {epoch_check_num} training time *({training_time}))* took longer than expected *({training_time_threshold})*')
+            sys.exit(1)
+        # Kill job and signal an error if accuracy after epoch_check_num is less than desired.
         if float(accuracy) < accuracy_threshold:
             print(f'Epoch {epoch_check_num} accuracy *({accuracy})* is lower than expected *({accuracy_threshold})*')
             sys.exit(1)
