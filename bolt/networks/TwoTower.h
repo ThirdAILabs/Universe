@@ -10,15 +10,22 @@ namespace thirdai::bolt {
 class TwoTower {
 
 public:
+    TwoTower(std::vector<FullyConnectedLayerConfig> query_layer_configs, 
+            std::vector<FullyConnectedLayerConfig> candid_layer_configs);
+
     
 
 private:
-    uint32_t _num_layers;
-    FullyConnectedLayer** _model1_layers;
-    FullyConnectedLayer** _model2_layers;
+    void processTrainingBatch(const ClickThroughBatch& batch, float learning_rate);
+    uint32_t processTestBatch(const ClickThroughBatch& batch);
 
-    std::vector<FullyConnectedLayerConfig> _model1_layer_configs;
-    std::vector<FullyConnectedLayerConfig> _model2_layer_configs;
+
+    uint32_t _num_layers;
+    FullyConnectedLayer** _query_layers;
+    FullyConnectedLayer** _candid_layers;
+
+    std::vector<FullyConnectedLayerConfig> _query_layer_configs;
+    std::vector<FullyConnectedLayerConfig> _candid_layer_configs;
 
 };
 
