@@ -13,7 +13,7 @@ OTHER_MACHINE_INFO=$(lscpu | egrep 'Socket|Thread|Core')
 CODE_VERSION+=$(git describe --tag)
 cd $BASEDIR/../build/
 # Run Unit Tests with valgrind to check for memory leaks.
-UNIT_TESTS=$(ctest -T memcheck -E "TimeTest" | tail -5)
+UNIT_TESTS=$(ctest -T memcheck -E "TimeTest" -R "MultipleTokenEmbedding" | tail -5)
 cd -
 
 # Empty string accounts for scheduled workflow having no default values
@@ -29,14 +29,15 @@ then
 
 	# Run bolt benchmark on amzn670k (see python script for configurations).
 	START_TIME=$(date +"%s")
-	python3 bolt/benchmarks/amzn670_blade.py > $LOGFILE
+	python3 bolt/benchmarks/runner.py mnist_so --K 5 > $LOGFILE
 	if [ $? -eq 1 ]
 	then
-		BOLT_MSG+=$(sed 's/\^.[^ ]*//g' $LOGFILE)
+		BOLT_MSG+=$(tail -n 1 $LOGFILE)
 		BOLT_MSG+="\n"
 		BOLT_MSG+="\n*ERROR*: Terminated run\n"
 	else
-		BOLT_MSG=$(sed 's/\^.[^ ]*//g' $LOGFILE)
+		# python3 bolt/benchmarks/runner.py amzn670 > $LOGFILE
+		BOLT_MSG=$(tail -n 3 $LOGFILE)
 		BOLT_MSG+="\n"
 		END_TIME=$(date +"%s")
 		BOLT_MSG+="*SUCCESS*: _Total elapsed time: $(($END_TIME - $START_TIME)) seconds._\n"
