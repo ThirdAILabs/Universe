@@ -37,6 +37,10 @@ class InMemoryDataset {
     _len = curr_id;
   }
 
+  // Take r-value reference for batches to force a move.
+  InMemoryDataset(std::vector<BATCH_T>&& batches, uint64_t len)
+      : _batches(batches), _len(len) {}
+
   const BATCH_T& operator[](uint32_t i) const { return _batches[i]; }
 
   const BATCH_T& at(uint32_t i) const { return _batches.at(i); }
@@ -67,10 +71,10 @@ class StreamedDataset {
   // filenames. For this dataset it will have to store a list of filenames,
   // and whenever it reaches the end of one it can open the next one.
 
-  // This class takes in a unique pointer because Factor<T> is an abstract class
-  // so we cannot store it directly as a member variable. We cannot store it as
-  // a reference in case the factory constructed passed to the dataset, and then
-  // the dataset is returned from the function.
+  // This class takes in a unique pointer because Factor<T> is an abstract
+  // class so we cannot store it directly as a member variable. We cannot
+  // store it as a reference in case the factory constructed passed to the
+  // dataset, and then the dataset is returned from the function.
   StreamedDataset(const std::string& filename, uint32_t batch_size,
                   std::unique_ptr<Factory<BATCH_T>> factory)
       : _file(filename),
@@ -96,8 +100,8 @@ class StreamedDataset {
  private:
   // Per
   // https://stackoverflow.com/questions/748014/do-i-need-to-manually-close-an-ifstream,
-  // no need to close this (and throws a clang tidy error if we do, at least on
-  // my machine).
+  // no need to close this (and throws a clang tidy error if we do, at least
+  // on my machine).
   std::ifstream _file;
   uint32_t _batch_size;
   uint64_t _curr_id;

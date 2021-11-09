@@ -3,19 +3,23 @@
 #include <iostream>
 #include <limits>
 #include <random>
+#include <stdexcept>
 
 namespace thirdai::utils {
 
 constexpr uint32_t DEFAULT_BINSIZE = 8;
 
 FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
-                 uint32_t num_tables, uint32_t seed)
-    : HashFunction(num_tables, 1 << hashes_per_table),
+                 uint32_t num_tables, uint32_t out_mod, uint32_t seed)
+    : HashFunction(num_tables,
+                   std::min<uint32_t>(out_mod, 1 << hashes_per_table)),
       _hashes_per_table(hashes_per_table),
       _num_hashes(hashes_per_table * num_tables),
       _dim(input_dim),
       _binsize(DEFAULT_BINSIZE) {
-  assert(hashes_per_table < 32);
+  if (hashes_per_table >= 32) {
+    throw std::invalid_argument("For now, we require <31 SRP per hash");
+  }
 
   _permute = ceil((static_cast<double>(_num_hashes) * _binsize) / _dim);
   _log_num_hashes = log2(_num_hashes);
@@ -25,7 +29,7 @@ FastSRP::FastSRP(uint32_t input_dim, uint32_t hashes_per_table,
   uint32_t* n_array = new uint32_t[_dim];
   _bin_map = new uint32_t[_dim * _permute];
   _positions = new uint32_t[_dim * _permute];
-  _rand_bits = new uint16_t[_dim * _permute];
+  _rand_bits = new int8_t[_dim * _permute];
 
   for (uint32_t i = 0; i < _dim; i++) {
     n_array[i] = i;
@@ -76,10 +80,9 @@ void FastSRP::hashSingleDense(const float* values, uint32_t dim,
       // }
       if (binid < _num_hashes) {
         if (bin_values[binid] == std::numeric_limits<float>::lowest()) {
-          bin_values[binid] = values[i] * static_cast<float>(_rand_bits[binid]);
+          bin_values[binid] = values[i] * _rand_bits[binid];
         } else {
-          bin_values[binid] +=
-              values[i] * static_cast<float>(_rand_bits[binid]);
+          bin_values[binid] += values[i] * _rand_bits[binid];
         }
         hashes[binid] = (bin_values[binid] >= 0 ? 0 : 1);
       }
@@ -89,6 +92,9 @@ void FastSRP::hashSingleDense(const float* values, uint32_t dim,
 
   // TODO(Josh, Patrick): Shouldn't we densify here too?
   HashUtils::compactHashBits(hashes, output, _num_tables, _hashes_per_table);
+  for (uint32_t i = 0; i < _num_tables; i++) {
+    output[i] %= _range;
+  }
   delete[] hashes;
 }
 
@@ -114,10 +120,9 @@ void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
       // }
       if (binid < _num_hashes) {
         if (bin_values[binid] == std::numeric_limits<float>::lowest()) {
-          bin_values[binid] = values[i] * static_cast<float>(_rand_bits[binid]);
+          bin_values[binid] = values[i] * _rand_bits[binid];
         } else {
-          bin_values[binid] +=
-              values[i] * static_cast<float>(_rand_bits[binid]);
+          bin_values[binid] += values[i] * _rand_bits[binid];
         }
         hashes[binid] = (bin_values[binid] >= 0 ? 0 : 1);
       }
@@ -128,6 +133,9 @@ void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
 
   HashUtils::densifyHashes(hashes, _num_hashes);
   HashUtils::compactHashBits(hashes, output, _num_tables, _hashes_per_table);
+  for (uint32_t i = 0; i < _num_tables; i++) {
+    output[i] %= _range;
+  }
 
   delete[] hashes;
 }

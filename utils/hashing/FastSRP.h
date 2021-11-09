@@ -12,11 +12,11 @@ class FastSRP : public HashFunction {
   uint32_t* _bin_map;
   uint32_t* _positions;
   uint32_t _rand_double_hash_seed;
-  uint16_t* _rand_bits;
+  int8_t* _rand_bits;
 
  public:
   FastSRP(uint32_t input_dim, uint32_t _hashes_per_table, uint32_t _num_tables,
-          uint32_t seed = time(nullptr));
+          uint32_t out_mod = UINT32_MAX, uint32_t seed = time(nullptr));
 
   void hashSingleSparse(const uint32_t* indices, const float* values,
                         uint32_t length, uint32_t* output) const override;

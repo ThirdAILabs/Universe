@@ -19,6 +19,12 @@ class DenseBatch {
         _labels(std::move(labels)),
         _start_id(start_id) {}
 
+  DenseBatch(std::vector<DenseVector>&& vectors, uint64_t start_id)
+      : _vectors(std::move(vectors)),
+        _batch_size(_vectors.size()),
+        _labels(_vectors.size()),
+        _start_id(start_id) {}
+
   const DenseVector& operator[](uint32_t i) const { return _vectors[i]; };
 
   const DenseVector& at(uint32_t i) const { return _vectors.at(i); }
