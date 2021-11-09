@@ -93,7 +93,7 @@ def main():
             sparsity=0.005,
             lr=0.0001,
         )
-        train_and_verify(args, train_fn=train_amzn670, accuracy_threshold=0.31, epoch_time_threshold=450, 
+        train_and_verify(args, train_fn=train_amzn670, accuracy_threshold=0.3, epoch_time_threshold=450, 
                         total_time_threshold=12000, max_runs=1)
     else:
         print("Invalid dataset name. Options: mnist_so, mnist_sh, amzn670, etc.", file=sys.stderr)

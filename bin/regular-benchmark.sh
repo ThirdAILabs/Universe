@@ -29,14 +29,14 @@ then
 
 	# Run bolt benchmark on amzn670k (see python script for configurations).
 	START_TIME=$(date +"%s")
-	python3 bolt/benchmarks/runner.py mnist_so --K 5 > $LOGFILE
+	python3 bolt/benchmarks/runner.py amzn670 --epochs 3 --K 5 > $LOGFILE
 	if [ $? -eq 1 ]
 	then
-		BOLT_MSG+=$(tail -n 1 $LOGFILE)
+		BOLT_MSG=$(tail -n 1 $LOGFILE)
 		BOLT_MSG+="\n"
 		BOLT_MSG+="\n*ERROR*: Terminated run\n"
 	else
-		# python3 bolt/benchmarks/runner.py amzn670 > $LOGFILE
+		python3 bolt/benchmarks/runner.py amzn670 --K 5 > $LOGFILE
 		BOLT_MSG=$(tail -n 3 $LOGFILE)
 		BOLT_MSG+="\n"
 		END_TIME=$(date +"%s")
