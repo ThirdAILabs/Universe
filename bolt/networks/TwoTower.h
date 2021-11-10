@@ -35,10 +35,5 @@ class TwoTower {
   std::vector<FullyConnectedLayerConfig> _candid_layer_configs;
 
   uint32_t _iter;
-
-  std::vector<float> _accuracy_per_epoch;
-  std::vector<int64_t> _time_per_epoch;
-  float _final_accuracy;
 };
-
 }  // namespace thirdai::bolt
