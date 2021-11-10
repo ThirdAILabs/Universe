@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../utils/dataset/batch_types/ClickThroughBatch.h"
 #include "../layers/FullyConnectedLayer.h"
+#include "../utils/DataLoader.h"
 #include <vector>
 
 namespace thirdai::bolt {
