@@ -12,7 +12,7 @@ class TwoTower {
            std::vector<FullyConnectedLayerConfig> candid_layer_configs,
            uint32_t input_dim);
 
-  void train(u_int32_t batch_size, const std::string& train_data,
+  void train(uint32_t batch_size, const std::string& train_data,
              const std::string& test_data, float learning_rate, uint32_t epochs,
              uint32_t rehash = 0, uint32_t rebuild = 0,
              uint32_t max_test_batches = std::numeric_limits<uint32_t>::max());
