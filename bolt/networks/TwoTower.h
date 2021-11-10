@@ -18,8 +18,7 @@ class TwoTower {
              uint32_t max_test_batches = std::numeric_limits<uint32_t>::max());
 
  private:
-  void processTrainingBatch(const Batch& batch,
-                            float learning_rate);
+  void processTrainingBatch(const Batch& batch, float learning_rate);
 
   uint32_t processTestBatch(const Batch& batch);
 
