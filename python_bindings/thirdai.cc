@@ -79,21 +79,64 @@ class PyNetwork final : public Network {
 // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=numpy#arrays
 // for explanation of why we do py::array::c_style and py::array::forcecase.
 // Ensures array is an array of floats in dense row major order.
-static DenseBatch creatNumpyBatch(
-    const pybind11::array_t<float, pybind11::array::c_style |
-                                       pybind11::array::forcecast>& data,
+static SparseBatch wrapNumpyIntoSparseData(
+    const std::vector<py::array_t<
+        float, py::array::c_style | py::array::forcecast>>& sparse_values,
+    const std::vector<
+        py::array_t<uint32_t, py::array::c_style | py::array::forcecast>>&
+        sparse_indices,
     uint64_t starting_id) {
-  const pybind11::buffer_info data_buf = data.request();
+  if (sparse_values.size() != sparse_indices.size()) {
+    throw std::invalid_argument(
+        "Values and indices arrays must have the same number of elements.");
+  }
+
+  uint64_t num_vectors = sparse_values.size();
+
+  std::vector<utils::SparseVector> batch_vectors;
+  for (uint64_t vec_id = 0; vec_id < num_vectors; vec_id++) {
+    const py::buffer_info indices_buf = sparse_indices.at(vec_id).request();
+    const py::buffer_info values_buf = sparse_values.at(vec_id).request();
+    const auto indices_shape = indices_buf.shape;
+    const auto values_shape = values_buf.shape;
+
+    if (indices_shape.size() != 1 || values_shape.size() != 1) {
+      throw std::invalid_argument(
+          "For now, every entry in the indices and values arrays must be a 1D "
+          "array.");
+    }
+
+    if (indices_shape.at(0) != 1 || values_shape.at(0)) {
+      throw std::invalid_argument(
+          "Corresponding indice and value entries must have the same number of "
+          "values.");
+    }
+
+    bool owns_data = false;
+    uint64_t length = indices_shape.at(0);
+    batch_vectors.emplace_back(static_cast<uint32_t*>(indices_buf.ptr),
+                               static_cast<float*>(values_buf.ptr), length,
+                               owns_data);
+  }
+
+  return SparseBatch(std::move(batch_vectors), starting_id);
+}
+
+static DenseBatch wrapNumpyIntoDenseBatch(
+    const py::array_t<float, py::array::c_style | py::array::forcecast>& data,
+    uint64_t starting_id) {
+  const py::buffer_info data_buf = data.request();
   const auto shape = data_buf.shape;
   if (shape.size() != 2) {
     throw std::invalid_argument(
-        "For now, Numpy datasets must be 2D (each row is a dense data "
-        "vectors).");
+        "For now, Numpy dense data must be 2D (each row is a dense data "
+        "vector).");
   }
 
   uint64_t num_vectors = static_cast<uint64_t>(shape.at(0));
   uint64_t dimension = static_cast<uint64_t>(shape.at(1));
   float* raw_data = static_cast<float*>(data_buf.ptr);
+
   std::vector<utils::DenseVector> batch_vectors;
   for (uint64_t vec_id = 0; vec_id < num_vectors; vec_id++) {
     // owns_data = false because we don't want the numpy array to be deleted
@@ -106,7 +149,56 @@ static DenseBatch creatNumpyBatch(
   return DenseBatch(std::move(batch_vectors), starting_id);
 }
 
+class PyFlash final : public Flash64 {
+ public:
+  explicit PyFlash(const utils::HashFunction& function) : Flash64(function) {}
+
+  PyFlash(const utils::HashFunction& function, uint32_t reservoir_size)
+      : Flash64(function, reservoir_size) {}
+
+  void addDenseBatch(
+      const py::array_t<float, py::array::c_style | py::array::forcecast>& data,
+      uint64_t starting_id) {
+    Flash64::addBatch(wrapNumpyIntoDenseBatch(data, starting_id));
+  }
+
+  void addSparseBatch(
+      const std::vector<py::array_t<float, py::array::c_style |
+                                               py::array::forcecast>>& values,
+      const std::vector<
+          py::array_t<uint32_t, py::array::c_style | py::array::forcecast>>&
+          indices,
+      uint64_t starting_id) {
+    Flash64::addBatch(wrapNumpyIntoSparseData(values, indices, starting_id));
+  }
+
+  py::array queryDenseBatch(
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          queries,
+      uint32_t top_k) {
+    bool pad_zeros = true;
+    auto query_batch = wrapNumpyIntoDenseBatch(queries, 0);
+    auto result = Flash64::queryBatch(query_batch, top_k, pad_zeros);
+    return py::cast(result);
+  }
+
+  py::array querySparseBatch(
+      const std::vector<py::array_t<
+          float, py::array::c_style | py::array::forcecast>>& query_values,
+      const std::vector<
+          py::array_t<uint32_t, py::array::c_style | py::array::forcecast>>&
+          query_indices,
+      uint32_t top_k) {
+    bool pad_zeros = true;
+    auto query_batch = wrapNumpyIntoSparseData(query_values, query_indices, 0);
+    auto result = Flash64::queryBatch(query_batch, top_k, pad_zeros);
+    return py::cast(result);
+  }
+};
+
 }  // namespace thirdai::python
+
+using thirdai::python::PyFlash;
 
 // TODO(all): Figure out naming convention for python exposed classes and
 // methods
@@ -116,9 +208,9 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
 
   auto utils_submodule = m.def_submodule("utils");
 
-  // TODO(josh): We can expose dense batches and dense/sparse vectors and
-  // let them be cast directly to numpy arrays, see
-  // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
+  // TODO(josh, nick): Change our internal datasets to be numpy/
+  // scikit sparse/eigen across the board. We can then delete a
+  // lot of these methods
 
   py::class_<SparseVector>(utils_submodule, "SparseVector")
       .def("get_length", &SparseVector::length)
@@ -171,10 +263,6 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       "a given size, and attempts to read the"
       " entire file into memory.");
 
-  utils_submodule.def("create_numpy_batch", &thirdai::python::creatNumpyBatch,
-                      py::keep_alive<0, 1>(), py::arg("numpy_array"),
-                      py::arg("starting_id") = 0);
-
   py::class_<HashFunction>(
       utils_submodule, "HashFunction",
       "Represents an abstract hash function that maps input DenseVectors and "
@@ -186,6 +274,8 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       .def("get_range", &HashFunction::range,
            "All hashes returned from this function will be >= 0 and <= "
            "get_range().")
+      // See https://github.com/pybind/pybind11/issues/1153 for why we can't
+      // do a py::overload_cas and instead need to use a static cast instead
       .def("hash_batch",
            static_cast<std::vector<uint32_t> (HashFunction::*)(
                const DenseBatch&) const>(&HashFunction::hashBatchParallel),
@@ -223,7 +313,7 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
 
   // TODO(any): Rename from flash, and fix all other places in the code
   auto flash_submodule = m.def_submodule("search");
-  py::class_<Flash64>(
+  py::class_<PyFlash>(
       flash_submodule, "Flash",
       "Flash is an index for performing near neighbour search. To use it, "
       "construct an index by calling one or more of add_dataset or "
@@ -235,42 +325,14 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
            "buckets have a max size reservoir_size.")
       .def(py::init<HashFunction&>(), py::arg("hash_function"),
            "Build a Flash index where buckets do not have a max size.")
-      // See https://github.com/pybind/pybind11/issues/1153 for why we can't
-      // do a py::overload_cas and instead need to use a static cast instead
-      .def("add_dataset",
-           static_cast<void (Flash64::*)(InMemoryDataset<SparseBatch>&)>(
-               &Flash64::addDataset),
-           py::arg("dataset"))
-      .def("add_dataset",
-           static_cast<void (Flash64::*)(InMemoryDataset<DenseBatch>&)>(
-               &Flash64::addDataset),
-           py::arg("dataset"))
-      .def("add_dataset",
-           static_cast<void (Flash64::*)(StreamedDataset<SparseBatch>&)>(
-               &Flash64::addDataset),
-           py::arg("dataset"))
-      .def("add_dataset",
-           static_cast<void (Flash64::*)(StreamedDataset<DenseBatch>&)>(
-               &Flash64::addDataset),
-           py::arg("dataset"))
-      .def("add_batch",
-           static_cast<void (Flash64::*)(const SparseBatch&)>(
-               &Flash64::addBatch),
-           py::arg("batch"))
-      .def(
-          "add_batch",
-          static_cast<void (Flash64::*)(const DenseBatch&)>(&Flash64::addBatch),
-          py::arg("batch"))
-      .def("query",
-           static_cast<std::vector<std::vector<uint64_t>> (Flash64::*)(
-               const SparseBatch&, uint32_t, bool) const>(&Flash64::queryBatch),
-           py::arg("dense_batch"), py::arg("top_k"),
-           py::arg("pad_zeros") = false)
-      .def("query",
-           static_cast<std::vector<std::vector<uint64_t>> (Flash64::*)(
-               const DenseBatch&, uint32_t, bool) const>(&Flash64::queryBatch),
-           py::arg("dense_batch"), py::arg("top_k"),
-           py::arg("pad_zeros") = false);
+      .def("add", &PyFlash::addDenseBatch, py::arg("dense_data"),
+           py::arg("starting_index"))
+      .def("add", &PyFlash::addSparseBatch, py::arg("sparse_values"),
+           py::arg("sparse_indices"), py::arg("starting_index"))
+      .def("query", &PyFlash::queryDenseBatch, py::arg("dense_queries"),
+           py::arg("top_k") = 10)
+      .def("query", &PyFlash::querySparseBatch, py::arg("sparse_query_values"),
+           py::arg("sparse_query_indices"), py::arg("top_k") = 10);
 
   auto bolt_submodule = m.def_submodule("bolt");
 
