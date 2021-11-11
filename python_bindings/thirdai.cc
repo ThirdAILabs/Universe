@@ -24,7 +24,6 @@ using thirdai::utils::DenseVector;
 using thirdai::utils::InMemoryDataset;
 using thirdai::utils::SparseBatch;
 using thirdai::utils::SparseVector;
-using thirdai::utils::StreamedDataset;
 
 using thirdai::utils::DensifiedMinHash;
 using thirdai::utils::FastSRP;
