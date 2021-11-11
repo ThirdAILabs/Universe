@@ -9,6 +9,8 @@ def add_arguments(parser, train, test, epochs, K, L, sparsity, lr):
         help="file path of train data")
     parser.add_argument("--test", default=test, type=str, required=False,
         help="file path of test data")
+    parser.add_argument("--enable_checks", default=False, required=False,
+        help="train with error checking", action='store_true')
     parser.add_argument("--epochs", default=epochs, type=int, required=False,
         help="number of epochs")
     parser.add_argument("--K", default=K, type=int, required=False,
@@ -21,8 +23,7 @@ def add_arguments(parser, train, test, epochs, K, L, sparsity, lr):
         help="learning rate")
     return parser.parse_args()
 
-
-def train_and_verify(args, train_fn, accuracy_threshold, epoch_time_threshold=100, total_time_threshold=10000, max_runs=1):
+def train(args, train_fn, accuracy_threshold, epoch_time_threshold=100, total_time_threshold=10000, max_runs=1):
     final_accuracies = []
     final_epoch_times = []
     total_times = []
@@ -31,14 +32,15 @@ def train_and_verify(args, train_fn, accuracy_threshold, epoch_time_threshold=10
         final_accuracies.append(final_accuracy)
         final_epoch_times.append(time_per_epoch[-1])
         total_times.append(sum(time_per_epoch))
-        if final_accuracy > accuracy_threshold and time_per_epoch[-1] < epoch_time_threshold and sum(time_per_epoch) < total_time_threshold:
+        if args.enable_checks and final_accuracy > accuracy_threshold and time_per_epoch[-1] < epoch_time_threshold and sum(time_per_epoch) < total_time_threshold:
             print(f"Passed training checks for {args.dataset} on {args.epochs} epochs with:\n\tFinal epoch accuracies: {final_accuracies}\n\tFinal epoch times(s): {final_epoch_times}")
-            return 
-
-    if max(final_accuracies) < accuracy_threshold:
-        print(f'Epoch {args.epochs} accuracy *({max(final_accuracies)})* is lower than expected *({accuracy_threshold})*')
-    if min(final_epoch_times) > epoch_time_threshold:
-        print(f'Epoch {args.epochs} training time *({min(final_epoch_times)}))* took longer than expected *({epoch_time_threshold})*')
-    if min(total_times) > total_time_threshold:
-        print(f'Training time took longer than expected *({min(total_times)})*')
-    sys.exit(1)
+            return final_accuracies, final_epoch_times
+    if args.enable_checks:
+        if max(final_accuracies) < accuracy_threshold:
+            print(f'Epoch {args.epochs} accuracy *({max(final_accuracies)})* is lower than expected *({accuracy_threshold})*')
+        if min(final_epoch_times) > epoch_time_threshold:
+            print(f'Epoch {args.epochs} training time *({min(final_epoch_times)}))* took longer than expected *({epoch_time_threshold})*')
+        if min(total_times) > total_time_threshold:
+            print(f'Training time took longer than expected *({min(total_times)})*')
+        sys.exit(1)
+    return final_accuracies, final_epoch_times

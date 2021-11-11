@@ -1,7 +1,7 @@
 from thirdai import bolt
 import sys
 import argparse
-from helpers import add_arguments, train_and_verify
+from helpers import add_arguments, train
 
 
 def train_mnist_sparse_output_layer(args):
@@ -54,9 +54,7 @@ def main():
     dataset = sys.argv[1]
 
     # Add default params for training, which can also be specified in command line.
-    accuracy_threshold = 0
-    max_runs = 1
-    train_fn = None
+    accs, times = [], []
     parser = argparse.ArgumentParser(description=f"Run BOLT on {dataset} with specified params.")
     if dataset == "mnist_so":   
         args = add_arguments(
@@ -69,7 +67,7 @@ def main():
             sparsity=0.4,
             lr=0.0001,
         )
-        train_and_verify(args, train_fn=train_mnist_sparse_output_layer, accuracy_threshold=0.95, max_runs=5)
+        accs, times = train(args, train_fn=train_mnist_sparse_output_layer, accuracy_threshold=0.95, max_runs=5)
     elif dataset == "mnist_sh":
         args = add_arguments(
             parser=parser,
@@ -81,7 +79,7 @@ def main():
             sparsity=0.01,
             lr=0.0001,
         )
-        train_and_verify(args, train_fn=train_mnist_sparse_hidden_layer, accuracy_threshold=0.95, max_runs=5)
+        accs, times = train(args, train_fn=train_mnist_sparse_hidden_layer, accuracy_threshold=0.95, max_runs=5)
     elif dataset == "amzn670":
         args = add_arguments(
             parser=parser,
@@ -93,11 +91,13 @@ def main():
             sparsity=0.005,
             lr=0.0001,
         )
-        train_and_verify(args, train_fn=train_amzn670, accuracy_threshold=0.3, epoch_time_threshold=450, 
-                        total_time_threshold=12000, max_runs=1)
+        accs, times = train_and_verify(args, train_fn=train_amzn670, accuracy_threshold=0.3, epoch_time_threshold=450, 
+                            total_time_threshold=12000, max_runs=1)
     else:
         print("Invalid dataset name. Options: mnist_so, mnist_sh, amzn670, etc.", file=sys.stderr)
         sys.exit(1)
+    print ("Avg final accuracies: ", sum(accs) / len(accs))
+    print ("Avg final epoch time (s): ", sum(times) / len(times))
 
 if __name__ == "__main__":
     main()

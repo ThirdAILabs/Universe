@@ -7,5 +7,5 @@ bzip2 -d mnist.bz2
 bzip2 -d mnist.t.bz2
 
 BASEDIR=$(dirname "$0")
-python3 $BASEDIR/../bolt/benchmarks/runner.py mnist_so --train ./mnist --test ./mnist.t
-python3 $BASEDIR/../bolt/benchmarks/runner.py mnist_sh --train ./mnist --test ./mnist.t
+python3 $BASEDIR/../bolt/benchmarks/runner.py mnist_so --enable_checks --train ./mnist --test ./mnist.t
+python3 $BASEDIR/../bolt/benchmarks/runner.py mnist_sh --enable_checks --train ./mnist --test ./mnist.t
