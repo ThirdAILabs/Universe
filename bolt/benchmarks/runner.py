@@ -67,7 +67,7 @@ def main():
             sparsity=0.4,
             lr=0.0001,
         )
-        accs, times = train(args, train_fn=train_mnist_sparse_output_layer, accuracy_threshold=0.95, max_runs=5)
+        accs, times = train(args, train_fn=train_mnist_sparse_output_layer, accuracy_threshold=0.95)
     elif dataset == "mnist_sh":
         args = add_arguments(
             parser=parser,
@@ -79,7 +79,7 @@ def main():
             sparsity=0.01,
             lr=0.0001,
         )
-        accs, times = train(args, train_fn=train_mnist_sparse_hidden_layer, accuracy_threshold=0.95, max_runs=5)
+        accs, times = train(args, train_fn=train_mnist_sparse_hidden_layer, accuracy_threshold=0.95)
     elif dataset == "amzn670":
         args = add_arguments(
             parser=parser,
@@ -91,8 +91,8 @@ def main():
             sparsity=0.005,
             lr=0.0001,
         )
-        accs, times = train_and_verify(args, train_fn=train_amzn670, accuracy_threshold=0.3, epoch_time_threshold=450, 
-                            total_time_threshold=12000, max_runs=1)
+        accs, times = train(args, train_fn=train_amzn670, accuracy_threshold=0.3, epoch_time_threshold=450, 
+                            total_time_threshold=12000)
     else:
         print("Invalid dataset name. Options: mnist_so, mnist_sh, amzn670, etc.", file=sys.stderr)
         sys.exit(1)

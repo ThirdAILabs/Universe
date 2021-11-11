@@ -11,6 +11,8 @@ def add_arguments(parser, train, test, epochs, K, L, sparsity, lr):
         help="file path of test data")
     parser.add_argument("--enable_checks", default=False, required=False,
         help="train with error checking", action='store_true')
+    parser.add_argument("--runs", default=1, type=int, required=False,
+        help="number of runs (output will show avg)")
     parser.add_argument("--epochs", default=epochs, type=int, required=False,
         help="number of epochs")
     parser.add_argument("--K", default=K, type=int, required=False,
@@ -23,11 +25,11 @@ def add_arguments(parser, train, test, epochs, K, L, sparsity, lr):
         help="learning rate")
     return parser.parse_args()
 
-def train(args, train_fn, accuracy_threshold, epoch_time_threshold=100, total_time_threshold=10000, max_runs=1):
+def train(args, train_fn, accuracy_threshold, epoch_time_threshold=100, total_time_threshold=10000):
     final_accuracies = []
     final_epoch_times = []
     total_times = []
-    for _ in range(max_runs):
+    for _ in range(args.runs):
         final_accuracy, accuracies_per_epoch, time_per_epoch = train_fn(args)
         final_accuracies.append(final_accuracy)
         final_epoch_times.append(time_per_epoch[-1])
