@@ -195,7 +195,8 @@ constexpr float FullyConnectedLayer::actFuncDerivative(float x) {
     case ActivationFunc::ReLU:
       return x > 0 ? 1.0 : 0.0;
     case ActivationFunc::Softmax:
-      return 1.0;
+      // return 1.0; // Commented out because Clang tidy doesn't like
+      // consecutive identical branches
     case ActivationFunc::Identity:
       return 1.0;
       // default:
