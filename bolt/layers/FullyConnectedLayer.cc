@@ -2,7 +2,8 @@
 #include <algorithm>
 #include <cmath>
 #include <random>
-#include <unordered_set>
+#include <tuple>
+#include <unordered_map>
 
 namespace thirdai::bolt {
 
@@ -14,6 +15,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sparse_dim(config.sparsity * config.dim),
       _sparsity(config.sparsity),
       _act_func(config.act_func),
+      _error_func(config.error_func),
       _active_lens(nullptr),
       _active_neurons(nullptr),
       _activations(nullptr),
@@ -97,7 +99,6 @@ void FullyConnectedLayer::feedForwardImpl(uint32_t batch_indx,
                                           uint32_t label_len) {
   selectActiveNeurons<DENSE, PREV_DENSE>(batch_indx, indices, values, len,
                                          labels, label_len);
-
   float max_act = 0;
   for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
     // Because DENSE is known at compile time the compiler can remove this
@@ -125,6 +126,8 @@ void FullyConnectedLayer::feedForwardImpl(uint32_t batch_indx,
           max_act = act;
         }
         break;
+      case ActivationFunc::Identity:
+        _activations[batch_indx][n] = act;
     }
   }
 
@@ -193,6 +196,10 @@ constexpr float FullyConnectedLayer::actFuncDerivative(float x) {
       return x > 0 ? 1.0 : 0.0;
     case ActivationFunc::Softmax:
       return 1.0;
+    case ActivationFunc::Identity:
+      return 1.0;
+      // default:
+      //   return 0.0;
   }
   // This is impossible to reach, but the compiler gave a warning saying it
   // reached the end of a non void function wihtout it.
@@ -228,18 +235,135 @@ void FullyConnectedLayer::computeErrors(uint32_t batch_indx,
                                         uint32_t batch_size,
                                         const uint32_t* labels,
                                         uint32_t label_len) {
-  if (_sparse_dim == _dim) {
-    computeErrorsImpl<true>(batch_indx, batch_size, labels, label_len);
+  if (_error_func == ErrorFunc::Squared) {
+    squaredError(batch_indx, batch_size, labels, label_len);
+  } else {  // Softmax
+    if (_sparse_dim == _dim) {
+      softmaxError<true>(batch_indx, batch_size, labels, label_len);
+    } else {
+      softmaxError<false>(batch_indx, batch_size, labels, label_len);
+    }
+  }
+}
+
+// TODO(Geordie): Try computePairErrors (compute errors based on this layer and
+// another layer)
+template <bool DENSE>
+void FullyConnectedLayer::computeErrorsWithImpl(
+    const FullyConnectedLayer& other, uint32_t other_original_active_len,
+    uint32_t batch_indx, uint32_t batch_size, uint32_t label) {
+  float activation_l2_norm =
+      l2Norm(_activations[batch_indx], _active_lens[batch_indx]);
+  float other_activation_l2_norm =
+      l2Norm(other._activations[batch_indx], other._active_lens[batch_indx]);
+  if (DENSE) {
+    float activation_dot_product = dotProduct<true>(
+        nullptr, _activations[batch_indx],
+        _dim, nullptr,
+        other._activations[batch_indx], _dim);
+    for (uint32_t i = 0; i < _dim; i++) {
+       _errors[batch_indx][i] = pairwiseCosineLoss(
+            activation_dot_product, activation_l2_norm,
+            other_activation_l2_norm, _activations[batch_indx][i],
+            other._activations[batch_indx][i], label);
+    }
   } else {
-    computeErrorsImpl<false>(batch_indx, batch_size, labels, label_len);
+    float activation_dot_product = dotProduct<false>(
+        _active_neurons[batch_indx], _activations[batch_indx],
+        _active_lens[batch_indx], other._active_neurons[batch_indx],
+        other._activations[batch_indx], other._active_lens[batch_indx]);
+
+    // Compute union of active neurons of both layers and set the relevant
+    // fields in both layers.
+    std::unordered_map<uint32_t, uint32_t> active_neuron_map;
+    for (uint32_t i = 0; i < _active_lens[batch_indx]; i++) {
+      active_neuron_map[_active_neurons[batch_indx][i]] = i;
+      _errors[batch_indx][i] = pairwiseCosineLoss(
+          activation_dot_product, activation_l2_norm, other_activation_l2_norm,
+          _activations[batch_indx][i], 0, label);
+    }
+    for (uint32_t other_i = 0; other_i < other_original_active_len; other_i++) {
+      uint32_t other_active_neuron = other._active_neurons[batch_indx][other_i];
+      // Not in set <--> count = 0
+      if (!active_neuron_map.count(other_active_neuron)) {
+        uint32_t i = _active_lens[batch_indx];
+        // Adjust active neurons
+        _active_neurons[batch_indx][i] = 0;
+        // Adjust activations
+        _activations[batch_indx][i] = 0;
+        // Adjust errors
+        _errors[batch_indx][i] =
+            pairwiseCosineLoss(activation_dot_product, activation_l2_norm,
+                               other_activation_l2_norm, 0,
+                               other._activations[batch_indx][other_i], label);
+        // Adjust active lens
+        _active_lens[batch_indx]++;
+      } else {
+        uint32_t i = active_neuron_map[other_active_neuron];
+        _errors[batch_indx][i] = pairwiseCosineLoss(
+            activation_dot_product, activation_l2_norm,
+            other_activation_l2_norm, _activations[batch_indx][i],
+            other._activations[batch_indx][other_i], label);
+      }
+    }
+
+    // Set: _active_lens, _active_neurons, _activations, _errors,
+    // ^ Used in back propagation
+    // Compute error gradients.
   }
 }
 
 template <bool DENSE>
-void FullyConnectedLayer::computeErrorsImpl(uint32_t batch_indx,
-                                            uint32_t batch_size,
-                                            const uint32_t* labels,
-                                            uint32_t label_len) {
+float FullyConnectedLayer::dotProduct(uint32_t* indices_1, float* values_1,
+                                      uint32_t len_1, uint32_t* indices_2,
+                                      float* values_2, uint32_t len_2) {
+  float result = 0;
+  if (DENSE) {
+    for (uint32_t i = 0; i < len_1; i++) {
+      result += values_1[i] * values_2[i];
+    }
+  } else {
+    std::unordered_map<uint32_t, float> index1ToValue1Map;
+    for (uint32_t i = 0; i < len_1; i++) {
+      index1ToValue1Map[indices_1[i]] = values_1[i];
+    }
+    for (uint32_t j = 0; j < len_2; j++) {
+      result += values_2[j] *
+                index1ToValue1Map[indices_2[j]];  // If indices_2[j] is not a
+                                                  // key in the map, then the
+                                                  // value defaults to 0.
+    }
+  }
+  return result;
+}
+
+float FullyConnectedLayer::l2Norm(float* values, uint32_t len) {
+  float norm = 0;
+  for (uint32_t i = 0; i < len; i++) {
+    norm += values[i] * values[i];
+  }
+  norm = std::pow(norm, 0.5);
+  return norm;
+}
+
+float FullyConnectedLayer::pairwiseCosineLoss(float activation_dot_product,
+                                              float activation_l2_norm,
+                                              float other_activation_l2_norm,
+                                              float activation,
+                                              float other_activation,
+                                              uint32_t label) {
+  float l2_norm_product = activation_l2_norm * other_activation_l2_norm;
+  float normalized_dot_product = activation_dot_product / l2_norm_product;
+  return 2 * (static_cast<float>(label) - normalized_dot_product) *
+         (other_activation / l2_norm_product -
+          normalized_dot_product * activation /
+              (activation_l2_norm * activation_l2_norm));
+}
+
+template <bool DENSE>
+void FullyConnectedLayer::softmaxError(uint32_t batch_indx, uint32_t batch_size,
+                                       const uint32_t* labels,
+                                       uint32_t label_len) {
   float frac = 1.0 / label_len;
 
   for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
@@ -254,6 +378,35 @@ void FullyConnectedLayer::computeErrorsImpl(uint32_t batch_indx,
       _errors[batch_indx][n] = -_activations[batch_indx][n] / batch_size;
     }
   }
+}
+
+void FullyConnectedLayer::squaredError(uint32_t batch_indx, uint32_t batch_size,
+                                       const uint32_t* labels,
+                                       uint32_t label_len) {
+  // Assumes _active_lens[batch_indx] = label_len
+  // Assumes labels is a dense vector.
+  for (uint32_t n = 0; n < label_len; n++) {
+    _errors[batch_indx][n] =
+        2 * (static_cast<float>(labels[n]) - _activations[batch_indx][n]) /
+        batch_size;
+  }
+}
+
+float FullyConnectedLayer::computeErrorValue(uint32_t batch_indx,
+                                             uint32_t batch_size,
+                                             const uint32_t* labels,
+                                             uint32_t label_len) {
+  if (_error_func == ErrorFunc::Squared) {
+    (void)batch_size;
+    float error = 0;
+    for (uint32_t n = 0; n < label_len; n++) {
+      float difference =
+          static_cast<float>(labels[n]) - _activations[batch_indx][n];
+      error += difference * difference;
+    }
+    return error;
+  }
+  return 1.0;
 }
 
 template <bool DENSE, bool PREV_DENSE>

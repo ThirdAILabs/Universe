@@ -6,7 +6,8 @@
 
 namespace thirdai::bolt {
 
-enum class ActivationFunc { ReLU, Softmax };
+enum class ActivationFunc { ReLU, Softmax, Identity };
+enum class ErrorFunc { Softmax, Squared };
 
 struct SamplingConfig {
   uint32_t hashes_per_table, num_tables, range_pow, reservoir_size;
@@ -26,6 +27,7 @@ struct FullyConnectedLayerConfig {
   uint64_t dim;
   float sparsity;
   ActivationFunc act_func;
+  ErrorFunc error_func;
   SamplingConfig sampling_config;
 
   static ActivationFunc activationFuncFromStr(const std::string& str) {
@@ -35,10 +37,26 @@ struct FullyConnectedLayerConfig {
     if (str == "Softmax") {
       return ActivationFunc::Softmax;
     }
+    if (str == "Identity") {
+      return ActivationFunc::Identity;
+    }
     throw std::invalid_argument(
         "'" + str +
         "' is not a valid activation function. Supported activation "
         "functions: 'ReLU', 'Softmax'");
+  }
+
+  static ErrorFunc errorFuncFromStr(const std::string& str) {
+    if (str == "Softmax") {
+      return ErrorFunc::Softmax;
+    }
+    if (str == "Squared") {
+      return ErrorFunc::Squared;
+    }
+    throw std::invalid_argument(
+        "'" + str +
+        "' is not a valid error function. Supported activation "
+        "functions: 'Softmax', 'Squared'");
   }
 
   static void checkSparsity(float sparsity) {
@@ -53,6 +71,8 @@ struct FullyConnectedLayerConfig {
       : dim(_dim),
         sparsity(_sparsity),
         act_func(_act_func),
+        error_func(_act_func == ActivationFunc::Identity ? ErrorFunc::Squared
+                                                         : ErrorFunc::Softmax),
         sampling_config(_config) {}
 
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
@@ -60,12 +80,16 @@ struct FullyConnectedLayerConfig {
                             SamplingConfig _config)
       : dim(_dim), sparsity(_sparsity), sampling_config(_config) {
     act_func = activationFuncFromStr(act_func_str);
+    error_func = act_func == ActivationFunc::Identity ? ErrorFunc::Squared
+                                                      : ErrorFunc::Softmax;
     checkSparsity(sparsity);
   }
 
   FullyConnectedLayerConfig(uint64_t _dim, const std::string& act_func_str)
       : dim(_dim), sparsity(1.0), sampling_config(SamplingConfig()) {
     act_func = activationFuncFromStr(act_func_str);
+    error_func = act_func == ActivationFunc::Identity ? ErrorFunc::Squared
+                                                      : ErrorFunc::Softmax;
     checkSparsity(sparsity);
   }
 
@@ -73,6 +97,8 @@ struct FullyConnectedLayerConfig {
                             const std::string& act_func_str)
       : dim(_dim), sparsity(_sparsity) {
     act_func = activationFuncFromStr(act_func_str);
+    error_func = act_func == ActivationFunc::Identity ? ErrorFunc::Squared
+                                                      : ErrorFunc::Softmax;
     checkSparsity(sparsity);
     if (sparsity < 1.0) {
       uint32_t rp = (static_cast<uint32_t>(log2(dim)) / 3) * 3;
@@ -94,6 +120,17 @@ struct FullyConnectedLayerConfig {
         break;
       case ActivationFunc::Softmax:
         out << ", act_func=Softmax";
+        break;
+      case ActivationFunc::Identity:
+        out << ", act_func=Identity";
+        break;
+    }
+    switch (config.error_func) {
+      case ErrorFunc::Softmax:
+        out << ", error_func=Softmax";
+        break;
+      case ErrorFunc::Squared:
+        out << ", error_func=Squared";
         break;
     }
     if (config.sparsity < 1.0) {

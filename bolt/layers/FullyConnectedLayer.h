@@ -39,6 +39,13 @@ class FullyConnectedLayer final : public Layer {
   void computeErrors(uint32_t batch_indx, uint32_t batch_size,
                      const uint32_t* labels, uint32_t label_len) override;
 
+  void computeErrorsWith(const FullyConnectedLayer& other, uint32_t batch_indx,
+                         uint32_t batch_size, const uint32_t* labels,
+                         uint32_t label_len);
+
+  float computeErrorValue(uint32_t batch_indx, uint32_t batch_size,
+                          const uint32_t* labels, uint32_t label_len);
+
   void updateParameters(float lr, uint32_t iter, float B1, float B2,
                         float eps) override;
 
@@ -86,8 +93,28 @@ class FullyConnectedLayer final : public Layer {
                          const float* values, float* errors, uint32_t len);
 
   template <bool DENSE>
-  void computeErrorsImpl(uint32_t batch_indx, uint32_t batch_size,
-                         const uint32_t* labels, uint32_t label_len);
+  void computeErrorsWithImpl(const FullyConnectedLayer& other,
+                             uint32_t other_original_active_len,
+                             uint32_t batch_indx, uint32_t batch_size,
+                             uint32_t labels);
+
+  float pairwiseCosineLoss(float activation_dot_product,
+                           float activation_l2_norm,
+                           float other_activation_l2_norm, float activation,
+                           float other_activation, uint32_t label);
+
+  template <bool DENSE>
+  float dotProduct(uint32_t* indices_1, float* values_1, uint32_t len_1,
+                   uint32_t* indices_2, float* values_2, uint32_t len_2);
+
+  float l2Norm(float* values, uint32_t len);
+
+  template <bool DENSE>
+  void softmaxError(uint32_t batch_indx, uint32_t batch_size,
+                    const uint32_t* labels, uint32_t label_len);
+
+  void squaredError(uint32_t batch_indx, uint32_t batch_size,
+                    const uint32_t* labels, uint32_t label_len);
 
   template <bool DENSE, bool PREV_DENSE>
   void selectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
@@ -101,6 +128,7 @@ class FullyConnectedLayer final : public Layer {
   uint64_t _dim, _prev_dim, _max_batch_size, _sparse_dim;
   float _sparsity;
   ActivationFunc _act_func;
+  ErrorFunc _error_func;
 
   uint32_t* _active_lens;
   uint32_t** _active_neurons;
