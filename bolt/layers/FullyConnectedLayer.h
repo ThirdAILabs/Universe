@@ -39,13 +39,6 @@ class FullyConnectedLayer final : public Layer {
   void computeErrors(uint32_t batch_indx, uint32_t batch_size,
                      const uint32_t* labels, uint32_t label_len) override;
 
-  void computeErrorsWith(const FullyConnectedLayer& other, uint32_t batch_indx,
-                         uint32_t batch_size, const uint32_t* labels,
-                         uint32_t label_len);
-
-  float computeErrorValue(uint32_t batch_indx, uint32_t batch_size,
-                          const uint32_t* labels, uint32_t label_len);
-
   void updateParameters(float lr, uint32_t iter, float B1, float B2,
                         float eps) override;
 
@@ -91,23 +84,6 @@ class FullyConnectedLayer final : public Layer {
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
   void backPropagateImpl(uint32_t batch_indx, const uint32_t* indices,
                          const float* values, float* errors, uint32_t len);
-
-  template <bool DENSE>
-  void computeErrorsWithImpl(const FullyConnectedLayer& other,
-                             uint32_t other_original_active_len,
-                             uint32_t batch_indx, uint32_t batch_size,
-                             uint32_t labels);
-
-  float pairwiseCosineLoss(float activation_dot_product,
-                           float activation_l2_norm,
-                           float other_activation_l2_norm, float activation,
-                           float other_activation, uint32_t label);
-
-  template <bool DENSE>
-  float dotProduct(uint32_t* indices_1, float* values_1, uint32_t len_1,
-                   uint32_t* indices_2, float* values_2, uint32_t len_2);
-
-  float l2Norm(float* values, uint32_t len);
 
   template <bool DENSE>
   void softmaxError(uint32_t batch_indx, uint32_t batch_size,
