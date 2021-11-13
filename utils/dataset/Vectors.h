@@ -32,7 +32,7 @@ struct SparseVector {
   SparseVector(uint32_t* indices, float* values, uint32_t len, bool owns_data)
       : _indices(indices), _values(values), _len(len), _owns_data(owns_data) {}
 
-  SparseVector(const SparseVector& other)
+  SparseVector(const SparseVector& other) noexcept
       : _indices(new uint32_t[other.length()]),
         _values(new float[other.length()]),
         _len(other.length()),
@@ -41,7 +41,7 @@ struct SparseVector {
     std::copy(other._values, other._values + _len, this->_values);
   }
 
-  SparseVector(SparseVector&& other)
+  SparseVector(SparseVector&& other) noexcept
       : _indices(other._indices),
         _values(other._values),
         _len(other.length()),
@@ -50,7 +50,7 @@ struct SparseVector {
     other._values = nullptr;
   }
 
-  SparseVector& operator=(const SparseVector& other) {
+  SparseVector& operator=(const SparseVector& other) noexcept {
     if (this != &other) {
       if (_owns_data) {
         delete[] _indices;
@@ -67,7 +67,7 @@ struct SparseVector {
     return *this;
   }
 
-  SparseVector& operator=(SparseVector&& other) {
+  SparseVector& operator=(SparseVector&& other) noexcept {
     if (this != &other) {
       if (_owns_data) {
         delete[] _indices;
@@ -136,19 +136,19 @@ struct DenseVector {
   DenseVector(uint32_t dim, float* values, bool owns_data)
       : _values(values), _dim(dim), _owns_data(owns_data) {}
 
-  DenseVector(const DenseVector& other)
+  DenseVector(const DenseVector& other) noexcept
       : _values(new float[other.dim()]), _dim(other.dim()), _owns_data(true) {
     std::copy(other._values, other._values + _dim, this->_values);
   }
 
-  DenseVector(DenseVector&& other)
+  DenseVector(DenseVector&& other) noexcept
       : _values(other._values),
         _dim(other.dim()),
         _owns_data(other._owns_data) {
     other._values = nullptr;
   }
 
-  DenseVector& operator=(const DenseVector& other) {
+  DenseVector& operator=(const DenseVector& other) noexcept {
     if (this != &other) {
       _values = new float[_dim];
       _dim = other._dim;
@@ -160,7 +160,7 @@ struct DenseVector {
     return *this;
   }
 
-  DenseVector& operator=(DenseVector&& other) {
+  DenseVector& operator=(DenseVector&& other) noexcept {
     if (this != &other) {
       if (_owns_data) {
         delete[] _values;
