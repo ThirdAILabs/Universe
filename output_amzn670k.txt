@@ -1,8 +1,0 @@
-K: 3
-L: 32
-sparsity: 0.001
-[b'Avg final accuracies:  0.3413298428058624\n', b'Avg final epoch time (s):  144.0\n']
-----------------------
-K: 3
-L: 32
-sparsity: 0.005
