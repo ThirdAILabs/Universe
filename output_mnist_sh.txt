@@ -1,0 +1,188 @@
+K: 1
+L: 32
+sparsity: 0.005
+[b'Avg final accuracies:  0.9284999966621399\n', b'Avg final epoch time (s):  0.3333333333333333\n']
+----------------------
+K: 1
+L: 32
+sparsity: 0.01
+[b'Avg final accuracies:  0.9497666756312052\n', b'Avg final epoch time (s):  1.0\n']
+----------------------
+K: 1
+L: 32
+sparsity: 0.05
+[b'Avg final accuracies:  0.9710666537284851\n', b'Avg final epoch time (s):  3.3333333333333335\n']
+----------------------
+K: 1
+L: 32
+sparsity: 0.1
+[b'Avg final accuracies:  0.9767333467801412\n', b'Avg final epoch time (s):  10.333333333333334\n']
+----------------------
+K: 1
+L: 64
+sparsity: 0.005
+[b'Avg final accuracies:  0.9286999901135763\n', b'Avg final epoch time (s):  1.0\n']
+----------------------
+K: 1
+L: 64
+sparsity: 0.01
+[b'Avg final accuracies:  0.9482666651407877\n', b'Avg final epoch time (s):  1.0\n']
+----------------------
+K: 1
+L: 64
+sparsity: 0.05
+[b'Avg final accuracies:  0.9714000026384989\n', b'Avg final epoch time (s):  3.3333333333333335\n']
+----------------------
+K: 1
+L: 64
+sparsity: 0.1
+[b'Avg final accuracies:  0.9748999873797098\n', b'Avg final epoch time (s):  8.666666666666666\n']
+----------------------
+K: 1
+L: 128
+sparsity: 0.005
+[b'Avg final accuracies:  0.9268666704495748\n', b'Avg final epoch time (s):  1.0\n']
+----------------------
+K: 1
+L: 128
+sparsity: 0.01
+[b'Avg final accuracies:  0.9484666784604391\n', b'Avg final epoch time (s):  2.0\n']
+----------------------
+K: 1
+L: 128
+sparsity: 0.05
+[b'Avg final accuracies:  0.9727999965349833\n', b'Avg final epoch time (s):  4.333333333333333\n']
+----------------------
+K: 1
+L: 128
+sparsity: 0.1
+[b'Avg final accuracies:  0.978600005308787\n', b'Avg final epoch time (s):  7.0\n']
+----------------------
+K: 3
+L: 32
+sparsity: 0.005
+[b'Avg final accuracies:  0.9405666589736938\n', b'Avg final epoch time (s):  1.0\n']
+----------------------
+K: 3
+L: 32
+sparsity: 0.01
+[b'Avg final accuracies:  0.9561666448911031\n', b'Avg final epoch time (s):  2.3333333333333335\n']
+----------------------
+K: 3
+L: 32
+sparsity: 0.05
+[b'Avg final accuracies:  0.9755333264668783\n', b'Avg final epoch time (s):  7.0\n']
+----------------------
+K: 3
+L: 32
+sparsity: 0.1
+[b'Avg final accuracies:  0.9782333374023438\n', b'Avg final epoch time (s):  12.0\n']
+----------------------
+K: 3
+L: 64
+sparsity: 0.005
+[b'Avg final accuracies:  0.9417333404223124\n', b'Avg final epoch time (s):  1.3333333333333333\n']
+----------------------
+K: 3
+L: 64
+sparsity: 0.01
+[b'Avg final accuracies:  0.956766664981842\n', b'Avg final epoch time (s):  2.6666666666666665\n']
+----------------------
+K: 3
+L: 64
+sparsity: 0.05
+[b'Avg final accuracies:  0.9755666653315226\n', b'Avg final epoch time (s):  6.666666666666667\n']
+----------------------
+K: 3
+L: 64
+sparsity: 0.1
+[b'Avg final accuracies:  0.9764333367347717\n', b'Avg final epoch time (s):  10.666666666666666\n']
+----------------------
+K: 3
+L: 128
+sparsity: 0.005
+[b'Avg final accuracies:  0.9400666554768881\n', b'Avg final epoch time (s):  2.3333333333333335\n']
+----------------------
+K: 3
+L: 128
+sparsity: 0.01
+[b'Avg final accuracies:  0.9560333291689554\n', b'Avg final epoch time (s):  3.6666666666666665\n']
+----------------------
+K: 3
+L: 128
+sparsity: 0.05
+[b'Avg final accuracies:  0.9763000011444092\n', b'Avg final epoch time (s):  8.0\n']
+----------------------
+K: 3
+L: 128
+sparsity: 0.1
+[b'Avg final accuracies:  0.9774666627248129\n', b'Avg final epoch time (s):  10.666666666666666\n']
+----------------------
+K: 5
+L: 32
+sparsity: 0.005
+[b'Avg final accuracies:  0.9392333428064982\n', b'Avg final epoch time (s):  2.3333333333333335\n']
+----------------------
+K: 5
+L: 32
+sparsity: 0.01
+[b'Avg final accuracies:  0.953166663646698\n', b'Avg final epoch time (s):  3.3333333333333335\n']
+----------------------
+K: 5
+L: 32
+sparsity: 0.05
+[b'Avg final accuracies:  0.9749333262443542\n', b'Avg final epoch time (s):  7.333333333333333\n']
+----------------------
+K: 5
+L: 32
+sparsity: 0.1
+[b'Avg final accuracies:  0.978766679763794\n', b'Avg final epoch time (s):  12.333333333333334\n']
+----------------------
+K: 5
+L: 64
+sparsity: 0.005
+[b'Avg final accuracies:  0.9419333338737488\n', b'Avg final epoch time (s):  3.0\n']
+----------------------
+K: 5
+L: 64
+sparsity: 0.01
+[b'Avg final accuracies:  0.9546999931335449\n', b'Avg final epoch time (s):  3.3333333333333335\n']
+----------------------
+K: 5
+L: 64
+sparsity: 0.05
+[b'Avg final accuracies:  0.9752999941507975\n', b'Avg final epoch time (s):  9.0\n']
+----------------------
+K: 5
+L: 64
+sparsity: 0.1
+[b'Avg final accuracies:  0.9794999957084656\n', b'Avg final epoch time (s):  13.666666666666666\n']
+----------------------
+K: 5
+L: 128
+sparsity: 0.005
+[b'Avg final accuracies:  0.946833332379659\n', b'Avg final epoch time (s):  4.333333333333333\n']
+----------------------
+K: 5
+L: 128
+sparsity: 0.01
+[b'Avg final accuracies:  0.9564333359400431\n', b'Avg final epoch time (s):  5.0\n']
+----------------------
+K: 5
+L: 128
+sparsity: 0.05
+[b'Avg final accuracies:  0.97543332974116\n', b'Avg final epoch time (s):  10.333333333333334\n']
+----------------------
+K: 5
+L: 128
+sparsity: 0.1
+[b'Avg final accuracies:  0.9800666570663452\n', b'Avg final epoch time (s):  14.666666666666666\n']
+----------------------
+K: 7
+L: 32
+sparsity: 0.005
+[b'Avg final accuracies:  0.9344000021616617\n', b'Avg final epoch time (s):  28.666666666666668\n']
+----------------------
+K: 7
+L: 32
+sparsity: 0.01

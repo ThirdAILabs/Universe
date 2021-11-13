@@ -10,8 +10,8 @@ def train_mnist_sparse_output_layer(args):
         bolt.LayerConfig(dim=10, load_factor=args.sparsity,
                          activation_function="Softmax",
                          sampling_config=bolt.SamplingConfig(
-                             hashes_per_table=args.K, num_tables=args.L,
-                             range_pow=args.K * 3, reservoir_size=10))
+                             hashes_per_table=args.hashes_per_table, num_tables=args.num_hashes,
+                             range_pow=args.hashes_per_table * 3, reservoir_size=10))
     ]
     network = bolt.Network(layers=layers, input_dim=784)
     network.Train(batch_size=250, train_data=args.train, test_data=args.test,
@@ -24,8 +24,8 @@ def train_mnist_sparse_hidden_layer(args):
         bolt.LayerConfig(dim=20000, load_factor=args.sparsity,
                          activation_function="ReLU",
                          sampling_config=bolt.SamplingConfig(
-                             hashes_per_table=args.K, num_tables=args.L,
-                             range_pow=args.K * 3, reservoir_size=32)),
+                             hashes_per_table=args.hashes_per_table, num_tables=args.num_hashes,
+                             range_pow=args.hashes_per_table * 3, reservoir_size=32)),
         bolt.LayerConfig(dim=10, activation_function="Softmax")
     ]
     network = bolt.Network(layers=layers, input_dim=784)
@@ -39,8 +39,8 @@ def train_amzn670(args):
         bolt.LayerConfig(dim=670091, load_factor=args.sparsity,
                         activation_function="Softmax",
                         sampling_config=bolt.SamplingConfig(
-                            hashes_per_table=args.K, num_tables=args.L,
-                            range_pow=args.K * 3, reservoir_size=128)),
+                            hashes_per_table=args.hashes_per_table, num_tables=args.num_hashes,
+                            range_pow=args.hashes_per_table * 3, reservoir_size=128)),
     ]
     network = bolt.Network(layers=layers, input_dim=135909)
     network.Train(batch_size=256, train_data=args.train, test_data=args.test, 
@@ -56,26 +56,26 @@ def main():
     # Add default params for training, which can also be specified in command line.
     accs, times = [], []
     parser = argparse.ArgumentParser(description=f"Run BOLT on {dataset} with specified params.")
-    if dataset == "mnist_so":   
+    if dataset == "mnist_sparse_output":   
         args = add_arguments(
             parser=parser,
             train="/media/scratch/data/mnist/mnist",
             test="/media/scratch/data/mnist/mnist.t",
             epochs=10,
-            K=1,
-            L=32,
+            hashes_per_table=1,
+            num_hashes=32,
             sparsity=0.4,
             lr=0.0001,
         )
         accs, times = train(args, train_fn=train_mnist_sparse_output_layer, accuracy_threshold=0.95)
-    elif dataset == "mnist_sh":
+    elif dataset == "mnist_sparse_hidden":
         args = add_arguments(
             parser=parser,
             train="/media/scratch/data/mnist/mnist",
             test="/media/scratch/data/mnist/mnist.t",
             epochs=10,
-            K=3,
-            L=64,
+            hashes_per_table=3,
+            num_hashes=64,
             sparsity=0.01,
             lr=0.0001,
         )
@@ -86,15 +86,15 @@ def main():
             train="/media/scratch/data/amazon-670k/train_shuffled_noHeader.txt",
             test="/media/scratch/data/amazon-670k/test_shuffled_noHeader.txt",
             epochs=25,
-            K=6,
-            L=128,
+            hashes_per_table=6,
+            num_hashes=128,
             sparsity=0.005,
             lr=0.0001,
         )
         accs, times = train(args, train_fn=train_amzn670, accuracy_threshold=0.3, epoch_time_threshold=450, 
                             total_time_threshold=12000)
     else:
-        print("Invalid dataset name. Options: mnist_so, mnist_sh, amzn670, etc.", file=sys.stderr)
+        print("Invalid dataset name. Options: mnist_sparse_output, mnist_sparse_hidden, amzn670, etc.", file=sys.stderr)
         sys.exit(1)
     print ("Avg final accuracies: ", sum(accs) / len(accs))
     print ("Avg final epoch time (s): ", sum(times) / len(times))

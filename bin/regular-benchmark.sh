@@ -36,6 +36,7 @@ then
 		BOLT_MSG+="\n"
 		BOLT_MSG+="\n*ERROR*: Terminated run\n"
 	else
+		# Run benchmark on all 25 epochs if first few epochs have no errors.
 		python3 bolt/benchmarks/runner.py amzn670 --enable_checks --K 5 > $LOGFILE
 		BOLT_MSG=$(tail -n 5 $LOGFILE)
 		BOLT_MSG+="\n"
@@ -55,6 +56,8 @@ echo -e $BOLT_MSG
 #     -F title=logs \
 #     https://slack.com/api/files.remote.add
 
+
+# TODO(alan): Refactor this into python script when we add mag search benchmarks.
 payload="
 {
     \"text\": \"Benchmarks Completed\",
