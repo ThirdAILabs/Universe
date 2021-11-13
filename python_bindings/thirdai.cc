@@ -105,7 +105,7 @@ static SparseBatch wrapNumpyIntoSparseData(
           "array.");
     }
 
-    if (indices_shape.at(0) != 1 || values_shape.at(0)) {
+    if (indices_shape.at(0) != values_shape.at(0)) {
       throw std::invalid_argument(
           "Corresponding indice and value entries must have the same number of "
           "values.");
