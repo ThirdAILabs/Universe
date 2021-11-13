@@ -10,7 +10,7 @@ def train_mnist_sparse_output_layer(args):
         bolt.LayerConfig(dim=10, load_factor=args.sparsity,
                          activation_function="Softmax",
                          sampling_config=bolt.SamplingConfig(
-                             hashes_per_table=args.hashes_per_table, num_tables=args.num_hashes,
+                             hashes_per_table=args.hashes_per_table, num_tables=args.num_tables,
                              range_pow=args.hashes_per_table * 3, reservoir_size=10))
     ]
     network = bolt.Network(layers=layers, input_dim=784)
@@ -24,7 +24,7 @@ def train_mnist_sparse_hidden_layer(args):
         bolt.LayerConfig(dim=20000, load_factor=args.sparsity,
                          activation_function="ReLU",
                          sampling_config=bolt.SamplingConfig(
-                             hashes_per_table=args.hashes_per_table, num_tables=args.num_hashes,
+                             hashes_per_table=args.hashes_per_table, num_tables=args.num_tables,
                              range_pow=args.hashes_per_table * 3, reservoir_size=32)),
         bolt.LayerConfig(dim=10, activation_function="Softmax")
     ]
@@ -39,7 +39,7 @@ def train_amzn670(args):
         bolt.LayerConfig(dim=670091, load_factor=args.sparsity,
                         activation_function="Softmax",
                         sampling_config=bolt.SamplingConfig(
-                            hashes_per_table=args.hashes_per_table, num_tables=args.num_hashes,
+                            hashes_per_table=args.hashes_per_table, num_tables=args.num_tables,
                             range_pow=args.hashes_per_table * 3, reservoir_size=128)),
     ]
     network = bolt.Network(layers=layers, input_dim=135909)
@@ -63,7 +63,7 @@ def main():
             test="/media/scratch/data/mnist/mnist.t",
             epochs=10,
             hashes_per_table=1,
-            num_hashes=32,
+            num_tables=32,
             sparsity=0.4,
             lr=0.0001,
         )
@@ -75,7 +75,7 @@ def main():
             test="/media/scratch/data/mnist/mnist.t",
             epochs=10,
             hashes_per_table=3,
-            num_hashes=64,
+            num_tables=64,
             sparsity=0.01,
             lr=0.0001,
         )
@@ -87,7 +87,7 @@ def main():
             test="/media/scratch/data/amazon-670k/test_shuffled_noHeader.txt",
             epochs=25,
             hashes_per_table=6,
-            num_hashes=128,
+            num_tables=128,
             sparsity=0.005,
             lr=0.0001,
         )
