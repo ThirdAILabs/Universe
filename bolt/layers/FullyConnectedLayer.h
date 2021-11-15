@@ -89,6 +89,7 @@ class FullyConnectedLayer final : public Layer {
   void softmaxError(uint32_t batch_indx, uint32_t batch_size,
                     const uint32_t* labels, uint32_t label_len);
 
+  template <bool DENSE>
   void squaredError(uint32_t batch_indx, uint32_t batch_size,
                     const uint32_t* labels, uint32_t label_len);
 

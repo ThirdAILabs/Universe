@@ -237,7 +237,11 @@ void FullyConnectedLayer::computeErrors(uint32_t batch_indx,
                                         const uint32_t* labels,
                                         uint32_t label_len) {
   if (_error_func == ErrorFunc::Squared) {
-    squaredError(batch_indx, batch_size, labels, label_len);
+    if (_sparse_dim == _dim) {
+      squaredError<true>(batch_indx, batch_size, labels, label_len);
+    } else {
+      squaredError<false>(batch_indx, batch_size, labels, label_len);
+    }
   } else {  // Softmax
     if (_sparse_dim == _dim) {
       softmaxError<true>(batch_indx, batch_size, labels, label_len);
@@ -267,15 +271,18 @@ void FullyConnectedLayer::softmaxError(uint32_t batch_indx, uint32_t batch_size,
   }
 }
 
+template <bool DENSE>
 void FullyConnectedLayer::squaredError(uint32_t batch_indx, uint32_t batch_size,
                                        const uint32_t* labels,
                                        uint32_t label_len) {
   // Assumes _active_lens[batch_indx] = label_len
   // Assumes labels is a dense vector.
-  for (uint32_t n = 0; n < label_len; n++) {
+  for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
+    uint32_t act_neuron = DENSE ? n : _active_neurons[batch_indx][n];
     _errors[batch_indx][n] =
-        2 * (static_cast<float>(labels[n]) - _activations[batch_indx][n]) /
+        2 * (static_cast<float>(labels[act_neuron]) - _activations[batch_indx][n]) /
         batch_size;
+
   }
 }
 
