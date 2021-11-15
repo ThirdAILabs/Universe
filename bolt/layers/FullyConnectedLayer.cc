@@ -1,7 +1,9 @@
 #include "FullyConnectedLayer.h"
 #include <algorithm>
 #include <cmath>
+#include <exception>
 #include <random>
+#include <sstream>
 #include <tuple>
 #include <unordered_map>
 
@@ -275,14 +277,20 @@ template <bool DENSE>
 void FullyConnectedLayer::squaredError(uint32_t batch_indx, uint32_t batch_size,
                                        const uint32_t* labels,
                                        uint32_t label_len) {
-  // Assumes _active_lens[batch_indx] = label_len
+  // Assumes _dim = label_len
   // Assumes labels is a dense vector.
+  if (label_len != _dim) {
+    std::stringstream err_msg;
+    err_msg << "Label length must be equal to layer dimensions: _dim = " << _dim
+            << ", label_len = " << label_len;
+    throw std::invalid_argument(err_msg.str());
+  }
   for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
     uint32_t act_neuron = DENSE ? n : _active_neurons[batch_indx][n];
     _errors[batch_indx][n] =
-        2 * (static_cast<float>(labels[act_neuron]) - _activations[batch_indx][n]) /
+        2 *
+        (static_cast<float>(labels[act_neuron]) - _activations[batch_indx][n]) /
         batch_size;
-
   }
 }
 
