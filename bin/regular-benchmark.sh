@@ -29,7 +29,7 @@ then
 
 	# Run bolt benchmark on amzn670k (see python script for configurations).
 	START_TIME=$(date +"%s")
-	python3 bolt/benchmarks/runner.py amzn670 --enable_checks --epochs 3 --K 5 > $LOGFILE
+	python3 bolt/benchmarks/runner.py amzn670 --enable_checks --epochs 3 --hashes_per_table 5 > $LOGFILE
 	if [ $? -eq 1 ]
 	then
 		BOLT_MSG=$(tail -n 1 $LOGFILE)
@@ -37,7 +37,7 @@ then
 		BOLT_MSG+="\n*ERROR*: Terminated run\n"
 	else
 		# Run benchmark on all 25 epochs if first few epochs have no errors.
-		python3 bolt/benchmarks/runner.py amzn670 --enable_checks --K 5 > $LOGFILE
+		python3 bolt/benchmarks/runner.py amzn670 --enable_checks --hashes_per_table 5 > $LOGFILE
 		BOLT_MSG=$(tail -n 5 $LOGFILE)
 		BOLT_MSG+="\n"
 		END_TIME=$(date +"%s")
