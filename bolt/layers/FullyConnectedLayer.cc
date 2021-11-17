@@ -246,22 +246,22 @@ void FullyConnectedLayer::computeSoftmaxErrors(uint32_t batch_indx,
 
 void FullyConnectedLayer::computeMeanSquaredErrors(
     uint32_t batch_indx, uint32_t batch_size, const uint32_t* truth_indices,
-    const float* truth_values, uint32_t label_len) {
+    const float* truth_values, uint32_t truth_len) {
   if (_sparse_dim == _dim) {
-    if (label_len == _dim) {
+    if (truth_len == _dim) {
       computeMeanSquaredErrorsImpl<true, true>(
-          batch_indx, batch_size, truth_indices, truth_values, label_len);
+          batch_indx, batch_size, truth_indices, truth_values, truth_len);
     } else {
       computeMeanSquaredErrorsImpl<true, false>(
-          batch_indx, batch_size, truth_indices, truth_values, label_len);
+          batch_indx, batch_size, truth_indices, truth_values, truth_len);
     }
   } else {
-    if (label_len == _dim) {
+    if (truth_len == _dim) {
       computeMeanSquaredErrorsImpl<false, true>(
-          batch_indx, batch_size, truth_indices, truth_values, label_len);
+          batch_indx, batch_size, truth_indices, truth_values, truth_len);
     } else {
       computeMeanSquaredErrorsImpl<false, false>(
-          batch_indx, batch_size, truth_indices, truth_values, label_len);
+          batch_indx, batch_size, truth_indices, truth_values, truth_len);
     }
   }
 }
