@@ -22,6 +22,16 @@ class SparseBatch {
         _labels(std::move(labels)),
         _start_id(start_id) {}
 
+  /**
+   * Explicitly constructs a sparse batch from a vector of SparseVectors and a
+   * starting id. Note that this sets each items label vector to be empty.
+   **/
+  SparseBatch(std::vector<SparseVector>&& vectors, uint64_t start_id)
+      : _vectors(std::move(vectors)),
+        _batch_size(_vectors.size()),
+        _labels(_vectors.size()),
+        _start_id(start_id) {}
+
   const SparseVector& operator[](uint32_t i) const { return _vectors[i]; }
 
   const SparseVector& at(uint32_t i) const { return _vectors.at(i); }

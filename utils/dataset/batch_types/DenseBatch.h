@@ -19,6 +19,10 @@ class DenseBatch {
         _labels(std::move(labels)),
         _start_id(start_id) {}
 
+  /**
+   * Explicitly constructs a dense batch from a vector of DenseVectors and a
+   * starting id. Note that this sets each items label vector to be empty.
+   **/
   DenseBatch(std::vector<DenseVector>&& vectors, uint64_t start_id)
       : _vectors(std::move(vectors)),
         _batch_size(_vectors.size()),
