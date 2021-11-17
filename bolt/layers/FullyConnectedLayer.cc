@@ -17,7 +17,6 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sparse_dim(config.sparsity * config.dim),
       _sparsity(config.sparsity),
       _act_func(config.act_func),
-      _error_func(config.error_func),
       _active_lens(nullptr),
       _active_neurons(nullptr),
       _activations(nullptr),
@@ -128,7 +127,7 @@ void FullyConnectedLayer::feedForwardImpl(uint32_t batch_indx,
           max_act = act;
         }
         break;
-      case ActivationFunc::Identity:
+      case ActivationFunc::MeanSquared:
         _activations[batch_indx][n] = act;
     }
   }
@@ -199,7 +198,7 @@ constexpr float FullyConnectedLayer::actFuncDerivative(float x) {
     case ActivationFunc::Softmax:
       // return 1.0; // Commented out because Clang tidy doesn't like
       // consecutive identical branches
-    case ActivationFunc::Identity:
+    case ActivationFunc::MeanSquared:
       return 1.0;
       // default:
       //   return 0.0;
@@ -234,29 +233,44 @@ void FullyConnectedLayer::backPropagateImpl(uint32_t batch_indx,
   }
 }
 
-void FullyConnectedLayer::computeErrors(uint32_t batch_indx,
-                                        uint32_t batch_size,
-                                        const uint32_t* labels,
-                                        uint32_t label_len) {
-  if (_error_func == ErrorFunc::Squared) {
-    if (_sparse_dim == _dim) {
-      squaredError<true>(batch_indx, batch_size, labels, label_len);
+void FullyConnectedLayer::computeSoftmaxErrors(uint32_t batch_indx,
+                                               uint32_t batch_size,
+                                               const uint32_t* labels,
+                                               uint32_t label_len) {
+  if (_sparse_dim == _dim) {
+    computeSoftmaxErrorsImpl<true>(batch_indx, batch_size, labels, label_len);
+  } else {
+    computeSoftmaxErrorsImpl<false>(batch_indx, batch_size, labels, label_len);
+  }
+}
+
+void FullyConnectedLayer::computeMeanSquaredErrors(
+    uint32_t batch_indx, uint32_t batch_size, const uint32_t* truth_indices,
+    const float* truth_values, uint32_t label_len) {
+  if (_sparse_dim == _dim) {
+    if (label_len == _dim) {
+      computeMeanSquaredErrorsImpl<true, true>(
+          batch_indx, batch_size, truth_indices, truth_values, label_len);
     } else {
-      squaredError<false>(batch_indx, batch_size, labels, label_len);
+      computeMeanSquaredErrorsImpl<true, false>(
+          batch_indx, batch_size, truth_indices, truth_values, label_len);
     }
-  } else {  // Softmax
-    if (_sparse_dim == _dim) {
-      softmaxError<true>(batch_indx, batch_size, labels, label_len);
+  } else {
+    if (label_len == _dim) {
+      computeMeanSquaredErrorsImpl<false, true>(
+          batch_indx, batch_size, truth_indices, truth_values, label_len);
     } else {
-      softmaxError<false>(batch_indx, batch_size, labels, label_len);
+      computeMeanSquaredErrorsImpl<false, false>(
+          batch_indx, batch_size, truth_indices, truth_values, label_len);
     }
   }
 }
 
 template <bool DENSE>
-void FullyConnectedLayer::softmaxError(uint32_t batch_indx, uint32_t batch_size,
-                                       const uint32_t* labels,
-                                       uint32_t label_len) {
+void FullyConnectedLayer::computeSoftmaxErrorsImpl(uint32_t batch_indx,
+                                                   uint32_t batch_size,
+                                                   const uint32_t* labels,
+                                                   uint32_t label_len) {
   float frac = 1.0 / label_len;
 
   for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
@@ -273,24 +287,21 @@ void FullyConnectedLayer::softmaxError(uint32_t batch_indx, uint32_t batch_size,
   }
 }
 
-template <bool DENSE>
-void FullyConnectedLayer::squaredError(uint32_t batch_indx, uint32_t batch_size,
-                                       const uint32_t* labels,
-                                       uint32_t label_len) {
-  // Assumes _dim = label_len
-  // Assumes labels is a dense vector.
-  if (label_len != _dim) {
-    std::stringstream err_msg;
-    err_msg << "Label length must be equal to layer dimensions: _dim = " << _dim
-            << ", label_len = " << label_len;
-    throw std::invalid_argument(err_msg.str());
-  }
+template <bool DENSE, bool TRUTH_DENSE>
+void FullyConnectedLayer::computeMeanSquaredErrorsImpl(
+    uint32_t batch_indx, uint32_t batch_size, const uint32_t* truth_indices,
+    const float* truth_values, uint32_t truth_len) {
   for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
     uint32_t act_neuron = DENSE ? n : _active_neurons[batch_indx][n];
+    const unsigned int* itr;
+    float matching_truth_value =
+        TRUTH_DENSE ? truth_values[act_neuron]
+        : (itr = std::find(truth_indices, truth_indices + truth_len,
+                           act_neuron)) != truth_indices + truth_len
+            ? truth_values[std::distance(truth_indices, itr)]
+            : 0.0;
     _errors[batch_indx][n] =
-        2 *
-        (static_cast<float>(labels[act_neuron]) - _activations[batch_indx][n]) /
-        batch_size;
+        2 * (matching_truth_value - _activations[batch_indx][n]) / batch_size;
   }
 }
 
