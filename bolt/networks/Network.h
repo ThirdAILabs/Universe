@@ -50,6 +50,10 @@ class Network {
         case ActivationFunc::Softmax:
           funcs.emplace_back("Softmax");
           break;
+
+        case ActivationFunc::MeanSquared:
+          funcs.emplace_back("MeanSquared");
+          break;
       }
     }
     return funcs;

@@ -8,18 +8,24 @@ namespace thirdai::bolt::tests {
 class FullyConnectedLayerTestFixture : public testing::Test {
  public:
   void SetUp() override {
+    // Layer with dim 8, sparsity 0.5, act_func ReLU
+    // 1 hashes_per_table, 1 num_tables, 3 range_pow, 4 reservoir_size
     FullyConnectedLayerConfig config(8, 0.5, ActivationFunc::ReLU,
                                      SamplingConfig(1, 1, 3, 4));
+    // Input layer is dim 10
     _layer = new FullyConnectedLayer(config, 10);
-
+    // Batch size = 4
     _layer->initializeLayer(4);
 
-    float* new_weights = new float[80];
+    // Manually set weights and biases
+    float* new_weights =
+        new float[80];  // 8 (cur dim) x 10 (prev dim) weight matrix
     float* new_biases = new float[8];
     for (uint32_t i = 0; i < 80; i++) {
-      new_weights[i] = static_cast<float>((i % 3) + (i % 4)) * 0.25;
+      new_weights[i] = static_cast<float>((i % 3) + (i % 4)) *
+                       0.25;  // Weights are between 0 and 1.25
       if (i % 2 == 1) {
-        new_weights[i] *= -1.0;
+        new_weights[i] *= -1.0;  // odd indices are -1..?
       }
     }
     for (uint32_t i = 0; i < 8; i++) {
@@ -60,6 +66,10 @@ class FullyConnectedLayerTestFixture : public testing::Test {
   const float* getLayerBiasGradient() const { return _layer->_b_gradient; }
 
   void makeSoftmax() const { _layer->_act_func = ActivationFunc::Softmax; }
+
+  void makeMeanSquared() const {
+    _layer->_act_func = ActivationFunc::MeanSquared;
+  }
 
   FullyConnectedLayer* _layer;
 
@@ -435,8 +445,8 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSoftmaxTest) {
        -0.0153638623381, -0.0430890175068, -0.0346229982448, 0.101203984507}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->computeErrors(i, labels.size(), labels.at(i).data(),
-                          labels.at(i).size());
+    _layer->computeSoftmaxErrors(i, labels.size(), labels.at(i).data(),
+                                 labels.at(i).size());
     for (uint32_t j = 0; j < 8; j++) {
       ASSERT_FLOAT_EQ(_layer->getErrors(i)[j], errors.at(i).at(j));
     }
@@ -479,8 +489,215 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSoftmaxTest) {
       {0.0885708181152, -0.082094428647, -0.084700385549, 0.0782240045508}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->computeErrors(i, labels.size(), labels.at(i).data(),
-                          labels.at(i).size());
+    _layer->computeSoftmaxErrors(i, labels.size(), labels.at(i).data(),
+                                 labels.at(i).size());
+    for (uint32_t j = 0; j < 4; j++) {
+      ASSERT_FLOAT_EQ(_layer->getErrors(i)[j], errors.at(i).at(j));
+    }
+  }
+}
+
+TEST_F(FullyConnectedLayerTestFixture, DenseLayerDenseTruthMeanSquaredTest) {
+  makeMeanSquared();
+
+  _layer->setSparsity(1.0);
+
+  for (uint32_t i = 0; i < 4; i++) {
+    _layer->feedForward(i, _sparse_data_indices.at(i).data(),
+                        _sparse_data_values.at(i).data(), _data_lens.at(i),
+                        nullptr, 0);
+  }
+
+  // TODO(Geordie): Change activations DONE
+  std::vector<std::vector<float>> activations = {
+      {-0.125, -0.5625, 1, -0.75, 0.3125, -0.125, 0.125, -0.3125},
+      {-0.0625, -0.125, 0.9375, 0.125, -0.0625, 0.625, 0.1875, 0.125},
+      {0.125, 0.5625, 0, 1.75, -0.8125, 1.125, 0.375, 0.8125},
+      {-0.375, -0.75, 0.15625, 0.0625, -0.9375, 0.09375, -0.125, -0.5}};
+
+  for (uint32_t i = 0; i < 4; i++) {
+    ASSERT_EQ(_layer->getLen(i), 8);
+    for (uint32_t j = 0; j < 8; j++) {
+      ASSERT_FLOAT_EQ(_layer->getValues(i)[j], activations.at(i).at(j));
+    }
+  }
+
+  // TODO(Geordie): Change labels DONE
+  std::vector<std::vector<float>> truth_values = {
+      {1.0, 2.1, 0.0, 4.0, 0.0, 6.0, 0.0, 0.0},
+      {1.0, 1.0, 1.3, 0.0, 0.0, 0.0, -10.0, 1.0},
+      {0.0, 0.0, 1.0, 5.5, 0.0, 0.0, 0.0, 1.0},
+      {2.7, 7.2, 2.2, 0.0, 0.0, 0.0, 0.0, 0.0}};
+
+  // TODO(Geordie): Change errors DONE
+  std::vector<std::vector<float>> errors = {
+      {0.5625, 1.33125, -0.5, 2.375, -0.15625, 3.0625, -0.0625, 0.15625},
+      {0.53125, 0.5625, 0.18125, -0.0625, 0.03125, -0.3125, -5.09375, 0.4375},
+      {-0.0625, -0.28125, 0.5, 1.875, 0.40625, -0.5625, -0.1875, 0.09375},
+      {1.5375, 3.975, 1.021875, -0.03125, 0.46875, -0.046875, 0.0625, 0.25}};
+
+  // TODO(Geordie): Change method calls DONE
+  for (uint32_t i = 0; i < 4; i++) {
+    _layer->computeMeanSquaredErrors(i, truth_values.size(), nullptr,
+                                     truth_values.at(i).data(),
+                                     truth_values.at(i).size());
+    for (uint32_t j = 0; j < 8; j++) {
+      ASSERT_FLOAT_EQ(_layer->getErrors(i)[j], errors.at(i).at(j));
+    }
+  }
+}
+
+TEST_F(FullyConnectedLayerTestFixture, DenseLayerSparseTruthMeanSquaredTest) {
+  makeMeanSquared();
+
+  _layer->setSparsity(1.0);
+
+  for (uint32_t i = 0; i < 4; i++) {
+    _layer->feedForward(i, _sparse_data_indices.at(i).data(),
+                        _sparse_data_values.at(i).data(), _data_lens.at(i),
+                        nullptr, 0);
+  }
+
+  std::vector<std::vector<float>> activations = {
+      {-0.125, -0.5625, 1, -0.75, 0.3125, -0.125, 0.125, -0.3125},
+      {-0.0625, -0.125, 0.9375, 0.125, -0.0625, 0.625, 0.1875, 0.125},
+      {0.125, 0.5625, 0, 1.75, -0.8125, 1.125, 0.375, 0.8125},
+      {-0.375, -0.75, 0.15625, 0.0625, -0.9375, 0.09375, -0.125, -0.5}};
+
+  for (uint32_t i = 0; i < 4; i++) {
+    ASSERT_EQ(_layer->getLen(i), 8);
+    for (uint32_t j = 0; j < 8; j++) {
+      ASSERT_FLOAT_EQ(_layer->getValues(i)[j], activations.at(i).at(j));
+    }
+  }
+
+  // TODO(Geordie): Change labels DONE
+  std::vector<std::vector<uint32_t>> truth_indices = {
+      {0, 1, 3, 5}, {0, 1, 2, 6, 7}, {0, 2, 3, 7}, {0, 1, 2, 3}};
+  std::vector<std::vector<float>> truth_values = {{1.0, 2.1, 4.0, 6.0},
+                                                  {1.0, 1.0, 1.3, -10.0, 1.0},
+                                                  {0.0, 1.0, 5.5, 1.0},
+                                                  {2.7, 7.2, 2.2, 0.0}};
+
+  // TODO(Geordie): Change errors DONE
+  std::vector<std::vector<float>> errors = {
+      {0.5625, 1.33125, -0.5, 2.375, -0.15625, 3.0625, -0.0625, 0.15625},
+      {0.53125, 0.5625, 0.18125, -0.0625, 0.03125, -0.3125, -5.09375, 0.4375},
+      {-0.0625, -0.28125, 0.5, 1.875, 0.40625, -0.5625, -0.1875, 0.09375},
+      {1.5375, 3.975, 1.021875, -0.03125, 0.46875, -0.046875, 0.0625, 0.25}};
+
+  // TODO(Geordie): Change method calls DONE
+  for (uint32_t i = 0; i < 4; i++) {
+    _layer->computeMeanSquaredErrors(
+        i, truth_values.size(), truth_indices.at(i).data(),
+        truth_values.at(i).data(), truth_indices.at(i).size());
+    for (uint32_t j = 0; j < 8; j++) {
+      ASSERT_FLOAT_EQ(_layer->getErrors(i)[j], errors.at(i).at(j));
+    }
+  }
+}
+
+TEST_F(FullyConnectedLayerTestFixture, SparseLayerSparseTruthMeanSquaredTest) {
+  makeMeanSquared();
+
+  std::vector<std::vector<uint32_t>> active_neurons = {
+      {2, 3, 4, 6}, {2, 4, 6, 7}, {0, 3, 5, 6}, {1, 3, 5, 7}};
+
+  for (uint32_t i = 0; i < 4; i++) {
+    // Use active neurons as the labels to force them to be selected so the test
+    // is deterministic
+    _layer->feedForward(i, _sparse_data_indices.at(i).data(),
+                        _sparse_data_values.at(i).data(), _data_lens.at(i),
+                        active_neurons.at(i).data(), 4);
+  }
+
+  std::vector<std::vector<float>> activations = {
+      {1, -0.75, 0.3125, 0.125},
+      {0.9375, -0.0625, 0.1875, 0.125},
+      {0.125, 1.75, 1.125, 0.375},
+      {-0.75, 0.0625, 0.09375, -0.5}};
+
+  for (uint32_t i = 0; i < 4; i++) {
+    ASSERT_EQ(_layer->getLen(i), 4);
+    for (uint32_t j = 0; j < 4; j++) {
+      ASSERT_EQ(_layer->getIndices(i)[j], active_neurons.at(i).at(j));
+      ASSERT_FLOAT_EQ(_layer->getValues(i)[j], activations.at(i).at(j));
+    }
+  }
+
+  // TODO(Geordie): Change labels DONE
+  std::vector<std::vector<uint32_t>> truth_indices = {
+      {0, 1, 3, 5}, {0, 1, 2, 6, 7}, {0, 2, 3, 7}, {0, 1, 2, 3}};
+  std::vector<std::vector<float>> truth_values = {{1.0, 2.1, 4.0, 6.0},
+                                                  {1.0, 1.0, 1.3, -10.0, 1.0},
+                                                  {0.0, 1.0, 5.5, 1.0},
+                                                  {2.7, 7.2, 2.2, 0.0}};
+
+  // TODO(Geordie): Change errors DONE
+  std::vector<std::vector<float>> errors = {
+      {-0.5, 2.375, -0.15625, -0.0625},
+      {0.18125, 0.03125, -5.09375, 0.4375},
+      {-0.0625, 1.875, -0.5625, -0.1875},
+      {3.975, -0.03125, -0.046875, 0.25}};
+
+  // TODO(Geordie): Change method calls DONE
+  for (uint32_t i = 0; i < 4; i++) {
+    _layer->computeMeanSquaredErrors(
+        i, truth_values.size(), truth_indices.at(i).data(),
+        truth_values.at(i).data(), truth_indices.at(i).size());
+    for (uint32_t j = 0; j < 4; j++) {
+      ASSERT_FLOAT_EQ(_layer->getErrors(i)[j], errors.at(i).at(j));
+    }
+  }
+}
+
+TEST_F(FullyConnectedLayerTestFixture, SparseLayerDenseTruthMeanSquaredTest) {
+  makeMeanSquared();
+
+  std::vector<std::vector<uint32_t>> active_neurons = {
+      {2, 3, 4, 6}, {2, 4, 6, 7}, {0, 3, 5, 6}, {1, 3, 5, 7}};
+
+  for (uint32_t i = 0; i < 4; i++) {
+    // Use active neurons as the labels to force them to be selected so the test
+    // is deterministic
+    _layer->feedForward(i, _sparse_data_indices.at(i).data(),
+                        _sparse_data_values.at(i).data(), _data_lens.at(i),
+                        active_neurons.at(i).data(), 4);
+  }
+
+  std::vector<std::vector<float>> activations = {
+      {1, -0.75, 0.3125, 0.125},
+      {0.9375, -0.0625, 0.1875, 0.125},
+      {0.125, 1.75, 1.125, 0.375},
+      {-0.75, 0.0625, 0.09375, -0.5}};
+
+  for (uint32_t i = 0; i < 4; i++) {
+    ASSERT_EQ(_layer->getLen(i), 4);
+    for (uint32_t j = 0; j < 4; j++) {
+      ASSERT_EQ(_layer->getIndices(i)[j], active_neurons.at(i).at(j));
+      ASSERT_FLOAT_EQ(_layer->getValues(i)[j], activations.at(i).at(j));
+    }
+  }
+
+  // TODO(Geordie): Change labels DONE
+  std::vector<std::vector<float>> truth_values = {
+      {1.0, 2.1, 0.0, 4.0, 0.0, 6.0, 0.0, 0.0},
+      {1.0, 1.0, 1.3, 0.0, 0.0, 0.0, -10.0, 1.0},
+      {0.0, 0.0, 1.0, 5.5, 0.0, 0.0, 0.0, 1.0},
+      {2.7, 7.2, 2.2, 0.0, 0.0, 0.0, 0.0, 0.0}};
+
+  // TODO(Geordie): Change errors DONE
+  std::vector<std::vector<float>> errors = {
+      {-0.5, 2.375, -0.15625, -0.0625},
+      {0.18125, 0.03125, -5.09375, 0.4375},
+      {-0.0625, 1.875, -0.5625, -0.1875},
+      {3.975, -0.03125, -0.046875, 0.25}};
+
+  // TODO(Geordie): Change method calls DONE
+  for (uint32_t i = 0; i < 4; i++) {
+    _layer->computeMeanSquaredErrors(i, truth_values.size(), nullptr,
+                                     truth_values.at(i).data(),
+                                     truth_values.at(i).size());
     for (uint32_t j = 0; j < 4; j++) {
       ASSERT_FLOAT_EQ(_layer->getErrors(i)[j], errors.at(i).at(j));
     }

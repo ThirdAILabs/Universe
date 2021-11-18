@@ -22,8 +22,15 @@ class Layer {
                                        const uint32_t* indices,
                                        const float* values, uint32_t len) = 0;
 
-  virtual void computeErrors(uint32_t batch_indx, uint32_t batch_size,
-                             const uint32_t* labels, uint32_t label_len) = 0;
+  virtual void computeSoftmaxErrors(uint32_t batch_indx, uint32_t batch_size,
+                                    const uint32_t* labels,
+                                    uint32_t label_len) = 0;
+
+  virtual void computeMeanSquaredErrors(uint32_t batch_indx,
+                                        uint32_t batch_size,
+                                        const uint32_t* truth_indices,
+                                        const float* truth_values,
+                                        uint32_t label_len) = 0;
 
   virtual void updateParameters(float lr, uint32_t iter, float B1, float B2,
                                 float eps) = 0;
