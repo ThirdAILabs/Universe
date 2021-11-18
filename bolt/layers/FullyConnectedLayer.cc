@@ -293,13 +293,18 @@ void FullyConnectedLayer::computeMeanSquaredErrorsImpl(
     const float* truth_values, uint32_t truth_len) {
   for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
     uint32_t act_neuron = DENSE ? n : _active_neurons[batch_indx][n];
-    const unsigned int* itr;
-    float matching_truth_value =
-        TRUTH_DENSE ? truth_values[act_neuron]
-                    : (itr = std::find(truth_indices, truth_indices + truth_len,
-                                       act_neuron)) != truth_indices + truth_len
-                          ? truth_values[std::distance(truth_indices, itr)]
-                          : 0.0;
+    float matching_truth_value;
+    if (TRUTH_DENSE) {
+      matching_truth_value = truth_values[act_neuron];
+    } else {
+      const unsigned int* itr =
+          std::find(truth_indices, truth_indices + truth_len, act_neuron);
+      if (itr != truth_indices + truth_len) {
+        matching_truth_value = truth_values[std::distance(truth_indices, itr)];
+      } else {
+        matching_truth_value = 0.0;
+      }
+    }
     _errors[batch_indx][n] =
         2 * (matching_truth_value - _activations[batch_indx][n]) / batch_size;
   }
