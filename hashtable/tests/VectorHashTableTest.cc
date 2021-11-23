@@ -1,5 +1,5 @@
-#include "../../hashtable/HashTable.h"
-#include "../../hashtable/VectorHashTable.h"
+#include <hashtable/src/HashTable.h>
+#include <hashtable/src/VectorHashTable.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <cassert>

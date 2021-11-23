@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../dataset/Vectors.h"
+#include <dataset/src/Vectors.h>
 #include <cmath>
 #include <cstdint>
 #include <iostream>

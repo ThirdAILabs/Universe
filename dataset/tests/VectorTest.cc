@@ -1,6 +1,6 @@
-#include "../../dataset/Dataset.h"
-#include "../../dataset/Vectors.h"
 #include <gtest/gtest.h>
+#include <dataset/src/Dataset.h>
+#include <dataset/src/Vectors.h>
 
 namespace thirdai::utils::dataset_tests {
 

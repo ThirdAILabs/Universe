@@ -1,5 +1,5 @@
 #include "EmbeddingLayer.h"
-#include "../../utils/hashing/MurmurHash.h"
+#include <hashing/src/MurmurHash.h>
 #include <algorithm>
 #include <random>
 

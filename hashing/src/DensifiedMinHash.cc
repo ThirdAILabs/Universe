@@ -1,6 +1,6 @@
 #include "DensifiedMinHash.h"
-#include "../Exceptions.h"
 #include "HashUtils.h"
+#include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <climits>
 #include <cmath>

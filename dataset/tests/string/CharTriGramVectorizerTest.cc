@@ -1,5 +1,5 @@
-#include "../../../dataset/string/vectorizers/CharTriGramVectorizer.h"
 #include <gtest/gtest.h>
+#include <dataset/src/string/vectorizers/CharTriGramVectorizer.h>
 #include <algorithm>
 #include <bitset>
 #include <chrono>

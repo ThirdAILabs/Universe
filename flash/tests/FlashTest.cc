@@ -1,9 +1,9 @@
-#include "../../utils/dataset/Dataset.h"
-#include "../../utils/hashing/FastSRP.h"
-#include "../../utils/tests/hashing/CosineSim.h"
-#include "../../utils/tests/hashing/DenseVector.h"
-#include "../src/Flash.h"
+#include <hashing/src/FastSRP.h>
+#include <hashing/tests/CosineSim.h>
+#include <hashing/tests/DenseVector.h>
 #include <gtest/gtest.h>
+#include <dataset/src/Dataset.h>
+#include <flash/src/Flash.h>
 #include <algorithm>
 #include <iostream>
 #include <random>

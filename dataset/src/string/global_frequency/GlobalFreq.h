@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../../hashing/MurmurHash.h"
-#include "../loaders/StringLoader.h"
-#include "../vectorizers/CompositeVectorizer.h"
+#include <hashing/src/MurmurHash.h>
+#include <dataset/src/string/loaders/StringLoader.h>
+#include <dataset/src/string/vectorizers/CompositeVectorizer.h>
 #include <cmath>
 #include <cstdint>
 #include <fstream>

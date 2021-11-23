@@ -1,9 +1,9 @@
-#include "../bolt/networks/Network.h"
-#include "../flash/src/Flash.h"
-#include "../utils/dataset/Dataset.h"
-#include "../utils/dataset/batch_types/SparseBatch.h"
-#include "../utils/hashing/DensifiedMinHash.h"
-#include "../utils/hashing/FastSRP.h"
+#include <bolt/networks/Network.h>
+#include <hashing/src/DensifiedMinHash.h>
+#include <hashing/src/FastSRP.h>
+#include <dataset/src/Dataset.h>
+#include <dataset/src/batch_types/SparseBatch.h>
+#include <flash/src/Flash.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>

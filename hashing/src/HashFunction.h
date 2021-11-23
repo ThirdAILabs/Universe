@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../dataset/batch_types/DenseBatch.h"
-#include "../dataset/batch_types/SparseBatch.h"
 #include "HashUtils.h"
+#include <dataset/src/batch_types/DenseBatch.h>
+#include <dataset/src/batch_types/SparseBatch.h>
 
 namespace thirdai::utils {
 

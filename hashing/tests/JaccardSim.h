@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../../Exceptions.h"
 #include "DenseVector.h"
 #include "Similarity.h"
 #include "SparseVector.h"
+#include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <cassert>
 #include <cmath>

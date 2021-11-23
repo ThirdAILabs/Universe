@@ -1,5 +1,5 @@
-#include "../../dataset/string/global_frequency/GlobalFreq.h"
 #include <gtest/gtest.h>
+#include <dataset/src/string/global_frequency/GlobalFreq.h>
 #include <fstream>
 #include <iostream>
 

@@ -1,6 +1,6 @@
-#include "../../hashing/MurmurHash.h"
-#include "../../hashing/UniversalHash.h"
 #include "AvalancheTimedTestSuite.h"
+#include <hashing/src/MurmurHash.h>
+#include <hashing/src/UniversalHash.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <bitset>

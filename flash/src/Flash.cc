@@ -1,6 +1,6 @@
 #include "Flash.h"
-#include "../../utils/hashtable/SampledHashTable.h"
-#include "../../utils/hashtable/VectorHashTable.h"
+#include <hashtable/src/SampledHashTable.h>
+#include <hashtable/src/VectorHashTable.h>
 #include <algorithm>
 #include <queue>
 #include <vector>

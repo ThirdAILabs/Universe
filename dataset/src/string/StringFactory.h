@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../Factory.h"
-#include "../batch_types/SparseBatch.h"
 #include "global_frequency/GlobalFreq.h"
 #include "loaders/StringLoader.h"
 #include "vectorizers/CompositeVectorizer.h"
+#include <dataset/src/Factory.h>
+#include <dataset/src/batch_types/SparseBatch.h>
 
 namespace thirdai::utils::dataset {
 

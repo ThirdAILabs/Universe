@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../../utils/hashing/DWTA.h"
-#include "../../utils/hashtable/SampledHashTable.h"
 #include "Layer.h"
 #include "LayerConfig.h"
+#include <hashing/src/DWTA.h>
+#include <hashtable/src/SampledHashTable.h>
 #include <cstdint>
 
 namespace thirdai::bolt {

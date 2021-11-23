@@ -44,9 +44,15 @@ endif()
 
 find_package(OpenMP REQUIRED)
 
+# So we can include using e.g. #include "hashtable/src/SampledHashTable.h"
+include_directories(".")
+
 add_subdirectory(bolt)
-add_subdirectory(utils)
+add_subdirectory(dataset)
+add_subdirectory(exceptions)
 add_subdirectory(flash)
+add_subdirectory(hashing)
+add_subdirectory(hashtable)
 
 file(
   GLOB BOLT_SOURCES 

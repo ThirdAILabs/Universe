@@ -1,5 +1,5 @@
-#include "../../utils/hashing/MurmurHash.h"
 #include "../layers/EmbeddingLayer.h"
+#include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
 #include <unordered_map>
 #include <vector>

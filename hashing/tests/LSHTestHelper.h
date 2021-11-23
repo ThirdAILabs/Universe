@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../hashing/HashFunction.h"
 #include "Similarity.h"
+#include <hashing/src/HashFunction.h>
 #include <random>
 #include <set>
 #include <vector>

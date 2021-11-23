@@ -1,6 +1,6 @@
-#include "../../hashing/FastSRP.h"
 #include "CosineSim.h"
 #include "LSHTestHelper.h"
+#include <hashing/src/FastSRP.h>
 #include <gtest/gtest.h>
 
 using thirdai::utils::lsh_testing::CosineSim;

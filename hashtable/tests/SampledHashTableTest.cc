@@ -1,4 +1,4 @@
-#include "../../hashtable/SampledHashTable.h"
+#include <hashtable/src/SampledHashTable.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <random>

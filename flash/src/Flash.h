@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../utils/dataset/Dataset.h"
-#include "../../utils/hashing/HashFunction.h"
-#include "../../utils/hashtable/HashTable.h"
+#include <hashing/src/HashFunction.h>
+#include <hashtable/src/HashTable.h>
+#include <dataset/src/Dataset.h>
 
 namespace thirdai::search {
 

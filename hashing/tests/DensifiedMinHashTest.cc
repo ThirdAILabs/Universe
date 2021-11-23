@@ -1,6 +1,6 @@
-#include "../../hashing/DensifiedMinHash.h"
 #include "JaccardSim.h"
 #include "LSHTestHelper.h"
+#include <hashing/src/DensifiedMinHash.h>
 #include <gtest/gtest.h>
 
 using thirdai::utils::lsh_testing::JaccardSim;

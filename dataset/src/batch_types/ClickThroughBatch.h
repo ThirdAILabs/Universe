@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../Factory.h"
-#include "../Vectors.h"
+#include <dataset/src/Factory.h>
+#include <dataset/src/Vectors.h>
 #include <fstream>
 #include <iostream>
 #include <vector>
