@@ -6,7 +6,7 @@
 #include <set>
 #include <vector>
 
-namespace thirdai::utils::lsh_testing {
+namespace thirdai::hashing {
 
 /**
  * This function takes in a hash function and a similarity function and runs
@@ -17,13 +17,13 @@ namespace thirdai::utils::lsh_testing {
  * difference is smaller in absolute value than max_avg_diff. Finally, sparsity
  * is the percent of non zeros we want to have in our test vectors.
  */
-void runSparseSimilarityTest(const thirdai::utils::HashFunction& hash,
+void runSparseSimilarityTest(const thirdai::hashing::HashFunction& hash,
                              Similarity& sim, uint32_t dim, uint32_t num_tables,
                              uint32_t num_tests, float sparsity, float max_diff,
                              float max_avg_diff);
 
 /** This is the same as the runSparseTest, except it occurs on dense vectors */
-void runDenseSimilarityTest(const thirdai::utils::HashFunction& hash,
+void runDenseSimilarityTest(const thirdai::hashing::HashFunction& hash,
                             Similarity& sim, uint32_t dim, uint32_t num_tables,
                             uint32_t num_tests, float max_diff,
                             float max_avg_diff);
@@ -33,8 +33,8 @@ void runDenseSimilarityTest(const thirdai::utils::HashFunction& hash,
  * similarities using the HashFunctions dense and sparse hashing functions,
  * and ensures that the hashes are equal.
  */
-void runSparseDenseEqTest(const thirdai::utils::HashFunction& hash,
+void runSparseDenseEqTest(const thirdai::hashing::HashFunction& hash,
                           Similarity& sim, uint32_t dim, uint32_t num_tables,
                           uint32_t num_tests);
 
-}  // namespace thirdai::utils::lsh_testing
+}  // namespace thirdai::hashing

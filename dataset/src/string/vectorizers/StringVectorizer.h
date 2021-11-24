@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace thirdai::utils::dataset {
+namespace thirdai::dataset {
 enum class StringVectorizerValue { TFIDF, FREQUENCY, BINARY };
 
 /**
@@ -109,4 +109,4 @@ class StringVectorizer {
    */
   StringVectorizerValue _value_type;
 };
-}  // namespace thirdai::utils::dataset
+}  // namespace thirdai::dataset

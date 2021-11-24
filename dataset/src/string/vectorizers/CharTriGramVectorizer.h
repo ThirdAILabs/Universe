@@ -3,7 +3,7 @@
 #include <ctgmath>
 #include <iostream>
 
-namespace thirdai::utils::dataset {
+namespace thirdai::dataset {
 class CharTriGramVectorizer : public StringVectorizer {
  public:
   CharTriGramVectorizer(uint32_t start_idx, uint32_t max_dim,
@@ -25,4 +25,4 @@ class CharTriGramVectorizer : public StringVectorizer {
 
   std::vector<uint8_t> _character_hash;
 };
-}  // namespace thirdai::utils::dataset
+}  // namespace thirdai::dataset

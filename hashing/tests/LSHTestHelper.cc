@@ -1,7 +1,7 @@
 #include "LSHTestHelper.h"
 #include <gtest/gtest.h>
 
-namespace thirdai::utils::lsh_testing {
+namespace thirdai::hashing {
 
 // TODO(josh) can abstract out some of the redundancy in runSparseTest and
 // runDenseTest
@@ -17,7 +17,7 @@ float getMeasuredSim(const uint32_t* hashes, uint32_t num_tables) {
   return matches / static_cast<float>(num_tables);
 }
 
-void runSparseSimilarityTest(const thirdai::utils::HashFunction& hash,
+void runSparseSimilarityTest(const thirdai::hashing::HashFunction& hash,
                              Similarity& sim, uint32_t dim, uint32_t num_tables,
                              uint32_t num_tests, float sparsity, float max_diff,
                              float max_avg_diff) {
@@ -48,7 +48,7 @@ void runSparseSimilarityTest(const thirdai::utils::HashFunction& hash,
   EXPECT_LE(avg_diff, max_avg_diff);
 }
 
-void runDenseSimilarityTest(const thirdai::utils::HashFunction& hash,
+void runDenseSimilarityTest(const thirdai::hashing::HashFunction& hash,
                             Similarity& sim, uint32_t dim, uint32_t num_tables,
                             uint32_t num_tests, float max_diff,
                             float max_avg_diff) {
@@ -74,7 +74,7 @@ void runDenseSimilarityTest(const thirdai::utils::HashFunction& hash,
   EXPECT_LE(std::abs(avg_diff), max_avg_diff);
 }
 
-void runSparseDenseEqTest(const thirdai::utils::HashFunction& hash,
+void runSparseDenseEqTest(const thirdai::hashing::HashFunction& hash,
                           Similarity& sim, uint32_t dim, uint32_t num_tables,
                           uint32_t num_tests) {
   uint32_t denominator = num_tests + 1;
@@ -104,4 +104,4 @@ void runSparseDenseEqTest(const thirdai::utils::HashFunction& hash,
   }
 }
 
-}  // namespace thirdai::utils::lsh_testing
+}  // namespace thirdai::hashing

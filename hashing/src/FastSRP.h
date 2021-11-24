@@ -3,7 +3,7 @@
 #include "HashFunction.h"
 #include <cstdint>
 
-namespace thirdai::utils {
+namespace thirdai::hashing {
 
 class FastSRP : public HashFunction {
  private:
@@ -27,4 +27,4 @@ class FastSRP : public HashFunction {
   ~FastSRP();
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashing

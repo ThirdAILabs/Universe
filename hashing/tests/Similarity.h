@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DenseVector.h"
+#include "DenseVectorUtils.h"
 #include "SparseVector.h"
 #include <cassert>
 #include <cmath>
@@ -11,17 +11,17 @@
 
 // TODO(josh): Add DWTA and Jaccard similarities and test those hash classes
 // TOOD(josh): Add Euclidean similarity
-namespace thirdai::utils::lsh_testing {
+namespace thirdai::hashing {
 
 struct SparseVecPair {
-  SparseVector v1;
-  SparseVector v2;
+  dataset::SparseVector v1;
+  dataset::SparseVector v2;
   float sim;
 };
 
 struct DenseVecPair {
-  DenseVector v1;
-  DenseVector v2;
+  dataset::DenseVector v1;
+  dataset::DenseVector v2;
   float sim;
 };
 
@@ -53,10 +53,12 @@ class Similarity {
                                                uint32_t dim) = 0;
 
   /** Returns the similarity of the two dense input vectors. */
-  virtual float getSim(const DenseVector& v1, DenseVector& v2) = 0;
+  virtual float getSim(const dataset::DenseVector& v1,
+                       dataset::DenseVector& v2) = 0;
 
   /** Returns the similarity of the two sparse input vectors. */
-  virtual float getSim(const SparseVector& v1, const SparseVector& v2) = 0;
+  virtual float getSim(const dataset::SparseVector& v1,
+                       const dataset::SparseVector& v2) = 0;
 };
 
-}  // namespace thirdai::utils::lsh_testing
+}  // namespace thirdai::hashing

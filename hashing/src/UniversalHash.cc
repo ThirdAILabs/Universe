@@ -4,7 +4,7 @@
 #include <random>
 #include <string>
 
-namespace thirdai::utils {
+namespace thirdai::hashing {
 
 UniversalHash::UniversalHash(uint32_t seed) {
   // We can decide to pass in a generator instead, if needed.
@@ -36,4 +36,4 @@ uint32_t UniversalHash::gethash(uint64_t key) {
   return res;
 }
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashing

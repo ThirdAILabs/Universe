@@ -4,7 +4,7 @@
 #include "MurmurHash.h"
 #include <cstdint>
 
-namespace thirdai::utils {
+namespace thirdai::hashing {
 
 /** Based off of the paper https://arxiv.org/pdf/1703.04664.pdf */
 class DensifiedMinHash : public HashFunction {
@@ -23,4 +23,4 @@ class DensifiedMinHash : public HashFunction {
   const uint32_t _hashes_per_table, _total_num_hashes, _binsize, _seed;
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashing

@@ -10,8 +10,8 @@ TEST(SampledHashTableTest, InsertionQueryWithoutReservoirSampling) {
   uint32_t num_tables = 100, range_pow = 10, reservoir_size = 100,
            num_inserts = 10000;
   uint32_t range = 1 << range_pow;
-  thirdai::utils::SampledHashTable<uint32_t> table(num_tables, reservoir_size,
-                                                   1 << range_pow);
+  thirdai::hashtable::SampledHashTable<uint32_t> table(
+      num_tables, reservoir_size, 1 << range_pow);
 
   std::vector<std::unordered_map<uint32_t, std::vector<uint32_t>>> insertions(
       num_tables);
@@ -101,8 +101,8 @@ TEST(SampledHashTableTest, InsertionQueryWithReservoirSampling) {
   uint32_t num_tables = 100, range_pow = 10, reservoir_size = 10,
            num_inserts = 10000;
   uint32_t range = 1 << range_pow;
-  thirdai::utils::SampledHashTable<uint32_t> table(num_tables, reservoir_size,
-                                                   1 << range_pow);
+  thirdai::hashtable::SampledHashTable<uint32_t> table(
+      num_tables, reservoir_size, 1 << range_pow);
 
   std::vector<std::unordered_map<uint32_t, std::vector<uint32_t>>> insertions(
       num_tables);

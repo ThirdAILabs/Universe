@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace thirdai::utils {
+namespace thirdai::hashing {
 
 DensifiedMinHash::DensifiedMinHash(uint32_t hashes_per_table,
                                    uint32_t num_tables, uint32_t range,
@@ -27,7 +27,7 @@ void DensifiedMinHash::hashSingleDense(const float* values, uint32_t dim,
   (void)values;
   (void)dim;
   (void)output;
-  throw thirdai::utils::NotImplemented();
+  throw thirdai::exceptions::NotImplemented();
 }
 
 void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
@@ -59,4 +59,4 @@ void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
   }
 }
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashing

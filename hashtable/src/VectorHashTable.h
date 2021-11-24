@@ -4,7 +4,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace thirdai::utils {
+namespace thirdai::hashtable {
 
 template <typename LABEL_T, bool USE_RESERVOIR>
 class VectorHashTable final : public HashTable<LABEL_T> {
@@ -85,4 +85,4 @@ class VectorHashTable final : public HashTable<LABEL_T> {
   std::atomic<uint32_t> counter = 0;
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashtable

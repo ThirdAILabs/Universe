@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace thirdai::utils {
+namespace thirdai::hashing {
 
 class HashUtils {
  public:
@@ -153,4 +153,4 @@ class HashUtils {
   }
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashing

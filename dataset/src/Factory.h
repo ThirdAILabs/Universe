@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-namespace thirdai::utils {
+namespace thirdai::dataset {
 
 template <typename BATCH_T>
 class Factory {
@@ -10,4 +10,4 @@ class Factory {
   virtual BATCH_T parse(std::ifstream&, uint32_t, uint64_t) = 0;
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::dataset

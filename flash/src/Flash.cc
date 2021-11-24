@@ -11,67 +11,67 @@ template class Flash<uint32_t>;
 template class Flash<uint64_t>;
 
 template <typename LABEL_T>
-Flash<LABEL_T>::Flash(const utils::HashFunction& function)
+Flash<LABEL_T>::Flash(const hashing::HashFunction& function)
     : _function(function),
       _num_tables(_function.numTables()),
       _range(_function.range()),
-      _hashtable(
-          new utils::VectorHashTable<LABEL_T, false>(_num_tables, _range)) {}
+      _hashtable(new hashtable::VectorHashTable<LABEL_T, false>(_num_tables,
+                                                                _range)) {}
 
 template <typename LABEL_T>
-Flash<LABEL_T>::Flash(const utils::HashFunction& function,
+Flash<LABEL_T>::Flash(const hashing::HashFunction& function,
                       uint32_t reservoir_size)
     : _function(function),
       _num_tables(_function.numTables()),
       _range(_function.range()),
-      _hashtable(new utils::VectorHashTable<LABEL_T, true>(
+      _hashtable(new hashtable::VectorHashTable<LABEL_T, true>(
           _num_tables, reservoir_size, _range)) {}
 
-template void Flash<uint32_t>::addDataset<utils::SparseBatch>(
-    utils::InMemoryDataset<utils::SparseBatch>&);
-template void Flash<uint64_t>::addDataset<utils::SparseBatch>(
-    utils::InMemoryDataset<utils::SparseBatch>&);
+template void Flash<uint32_t>::addDataset<dataset::SparseBatch>(
+    dataset::InMemoryDataset<dataset::SparseBatch>&);
+template void Flash<uint64_t>::addDataset<dataset::SparseBatch>(
+    dataset::InMemoryDataset<dataset::SparseBatch>&);
 
-template void Flash<uint32_t>::addDataset<utils::DenseBatch>(
-    utils::InMemoryDataset<utils::DenseBatch>&);
-template void Flash<uint64_t>::addDataset<utils::DenseBatch>(
-    utils::InMemoryDataset<utils::DenseBatch>&);
+template void Flash<uint32_t>::addDataset<dataset::DenseBatch>(
+    dataset::InMemoryDataset<dataset::DenseBatch>&);
+template void Flash<uint64_t>::addDataset<dataset::DenseBatch>(
+    dataset::InMemoryDataset<dataset::DenseBatch>&);
 
 template <typename LABEL_T>
 template <typename BATCH_T>
-void Flash<LABEL_T>::addDataset(utils::InMemoryDataset<BATCH_T>& dataset) {
+void Flash<LABEL_T>::addDataset(dataset::InMemoryDataset<BATCH_T>& dataset) {
   for (uint64_t batch_id = 0; batch_id < dataset.numBatches(); batch_id++) {
     addBatch(dataset[batch_id]);
   }
 }
 
-template void Flash<uint32_t>::addDataset<utils::SparseBatch>(
-    utils::StreamedDataset<utils::SparseBatch>&);
-template void Flash<uint64_t>::addDataset<utils::SparseBatch>(
-    utils::StreamedDataset<utils::SparseBatch>&);
+template void Flash<uint32_t>::addDataset<dataset::SparseBatch>(
+    dataset::StreamedDataset<dataset::SparseBatch>&);
+template void Flash<uint64_t>::addDataset<dataset::SparseBatch>(
+    dataset::StreamedDataset<dataset::SparseBatch>&);
 
-template void Flash<uint32_t>::addDataset<utils::DenseBatch>(
-    utils::StreamedDataset<utils::DenseBatch>&);
-template void Flash<uint64_t>::addDataset<utils::DenseBatch>(
-    utils::StreamedDataset<utils::DenseBatch>&);
+template void Flash<uint32_t>::addDataset<dataset::DenseBatch>(
+    dataset::StreamedDataset<dataset::DenseBatch>&);
+template void Flash<uint64_t>::addDataset<dataset::DenseBatch>(
+    dataset::StreamedDataset<dataset::DenseBatch>&);
 
 template <typename LABEL_T>
 template <typename BATCH_T>
-void Flash<LABEL_T>::addDataset(utils::StreamedDataset<BATCH_T>& dataset) {
+void Flash<LABEL_T>::addDataset(dataset::StreamedDataset<BATCH_T>& dataset) {
   while (auto batch = dataset.nextBatch()) {
     addBatch(*batch);
   }
 }
 
-template void Flash<uint32_t>::addBatch<utils::SparseBatch>(
-    const utils::SparseBatch&);
-template void Flash<uint64_t>::addBatch<utils::SparseBatch>(
-    const utils::SparseBatch&);
+template void Flash<uint32_t>::addBatch<dataset::SparseBatch>(
+    const dataset::SparseBatch&);
+template void Flash<uint64_t>::addBatch<dataset::SparseBatch>(
+    const dataset::SparseBatch&);
 
-template void Flash<uint32_t>::addBatch<utils::DenseBatch>(
-    const utils::DenseBatch&);
-template void Flash<uint64_t>::addBatch<utils::DenseBatch>(
-    const utils::DenseBatch&);
+template void Flash<uint32_t>::addBatch<dataset::DenseBatch>(
+    const dataset::DenseBatch&);
+template void Flash<uint64_t>::addBatch<dataset::DenseBatch>(
+    const dataset::DenseBatch&);
 
 template <typename LABEL_T>
 template <typename BATCH_T>
@@ -116,18 +116,18 @@ LABEL_T Flash<LABEL_T>::verify_and_convert_id(uint64_t id) const {
 }
 
 template std::vector<std::vector<uint32_t>>
-Flash<uint32_t>::queryBatch<utils::SparseBatch>(const utils::SparseBatch&,
-                                                uint32_t, bool) const;
+Flash<uint32_t>::queryBatch<dataset::SparseBatch>(const dataset::SparseBatch&,
+                                                  uint32_t, bool) const;
 template std::vector<std::vector<uint64_t>>
-Flash<uint64_t>::queryBatch<utils::SparseBatch>(const utils::SparseBatch&,
-                                                uint32_t, bool) const;
+Flash<uint64_t>::queryBatch<dataset::SparseBatch>(const dataset::SparseBatch&,
+                                                  uint32_t, bool) const;
 
 template std::vector<std::vector<uint32_t>>
-Flash<uint32_t>::queryBatch<utils::DenseBatch>(const utils::DenseBatch&,
-                                               uint32_t, bool) const;
+Flash<uint32_t>::queryBatch<dataset::DenseBatch>(const dataset::DenseBatch&,
+                                                 uint32_t, bool) const;
 template std::vector<std::vector<uint64_t>>
-Flash<uint64_t>::queryBatch<utils::DenseBatch>(const utils::DenseBatch&,
-                                               uint32_t, bool) const;
+Flash<uint64_t>::queryBatch<dataset::DenseBatch>(const dataset::DenseBatch&,
+                                                 uint32_t, bool) const;
 
 template <typename LABEL_T>
 template <typename BATCH_T>

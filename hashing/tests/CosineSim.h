@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DenseVector.h"
+#include "DenseVectorUtils.h"
 #include "Similarity.h"
 #include "SparseVector.h"
 #include <algorithm>
@@ -11,7 +11,7 @@
 #include <unordered_set>
 #include <utility>
 
-namespace thirdai::utils::lsh_testing {
+namespace thirdai::hashing {
 
 /**
  * Note that this similarity is defined as 1 - theta / pi, where theta is
@@ -79,8 +79,8 @@ class CosineSim : public Similarity {
       }
     }
 
-    SparseVector v1(num_non_zeros);
-    SparseVector v2(num_non_zeros);
+    thirdai::dataset::SparseVector v1(num_non_zeros);
+    thirdai::dataset::SparseVector v2(num_non_zeros);
     std::copy(dense_result.v1._values,
               dense_result.v1._values + dense_result.v1.dim(), v1._values);
     std::copy(dense_result.v2._values,
@@ -94,11 +94,13 @@ class CosineSim : public Similarity {
     return {std::move(v1), std::move(v2), dense_result.sim};
   }
 
-  float getSim(const DenseVector& v1, DenseVector& v2) override {
+  float getSim(const thirdai::dataset::DenseVector& v1,
+               thirdai::dataset::DenseVector& v2) override {
     return static_cast<float>(1.0 - angle(v1, v2) / M_PI);
   }
 
-  float getSim(const SparseVector& v1, const SparseVector& v2) override {
+  float getSim(const thirdai::dataset::SparseVector& v1,
+               const thirdai::dataset::SparseVector& v2) override {
     return static_cast<float>(1.0 - angle(v1, v2) / M_PI);
   }
 
@@ -106,4 +108,4 @@ class CosineSim : public Similarity {
   std::mt19937 _generator;
 };
 
-}  // namespace thirdai::utils::lsh_testing
+}  // namespace thirdai::hashing

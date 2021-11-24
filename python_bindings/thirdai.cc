@@ -19,15 +19,15 @@ namespace py = pybind11;
 
 using thirdai::bolt::Network;
 
-using thirdai::utils::DenseBatch;
-using thirdai::utils::DenseVector;
-using thirdai::utils::InMemoryDataset;
-using thirdai::utils::SparseBatch;
-using thirdai::utils::SparseVector;
+using thirdai::dataset::DenseBatch;
+using thirdai::dataset::DenseVector;
+using thirdai::dataset::InMemoryDataset;
+using thirdai::dataset::SparseBatch;
+using thirdai::dataset::SparseVector;
 
-using thirdai::utils::DensifiedMinHash;
-using thirdai::utils::FastSRP;
-using thirdai::utils::HashFunction;
+using thirdai::hashing::DensifiedMinHash;
+using thirdai::hashing::FastSRP;
+using thirdai::hashing::HashFunction;
 
 using Flash64 = thirdai::search::Flash<uint64_t>;
 
@@ -92,7 +92,7 @@ static SparseBatch wrapNumpyIntoSparseData(
 
   uint64_t num_vectors = sparse_values.size();
 
-  std::vector<utils::SparseVector> batch_vectors;
+  std::vector<dataset::SparseVector> batch_vectors;
   for (uint64_t vec_id = 0; vec_id < num_vectors; vec_id++) {
     const py::buffer_info indices_buf = sparse_indices.at(vec_id).request();
     const py::buffer_info values_buf = sparse_values.at(vec_id).request();
@@ -136,7 +136,7 @@ static DenseBatch wrapNumpyIntoDenseBatch(
   uint64_t dimension = static_cast<uint64_t>(shape.at(1));
   float* raw_data = static_cast<float*>(data_buf.ptr);
 
-  std::vector<utils::DenseVector> batch_vectors;
+  std::vector<dataset::DenseVector> batch_vectors;
   for (uint64_t vec_id = 0; vec_id < num_vectors; vec_id++) {
     // owns_data = false because we don't want the numpy array to be deleted
     // if this batch (and thus the underlying vectors) get deleted
@@ -150,9 +150,9 @@ static DenseBatch wrapNumpyIntoDenseBatch(
 
 class PyFlash final : public Flash64 {
  public:
-  explicit PyFlash(const utils::HashFunction& function) : Flash64(function) {}
+  explicit PyFlash(const HashFunction& function) : Flash64(function) {}
 
-  PyFlash(const utils::HashFunction& function, uint32_t reservoir_size)
+  PyFlash(const HashFunction& function, uint32_t reservoir_size)
       : Flash64(function, reservoir_size) {}
 
   void addDenseBatch(

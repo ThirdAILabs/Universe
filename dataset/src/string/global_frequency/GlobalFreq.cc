@@ -1,6 +1,6 @@
 #include "GlobalFreq.h"
 
-namespace thirdai::utils::dataset {
+namespace thirdai::dataset {
 
 GlobalFreq::GlobalFreq(std::unique_ptr<StringLoader> string_loader,
                        const vectorizer_config_t& vectorizer_config,
@@ -41,4 +41,4 @@ GlobalFreq::GlobalFreq(std::unique_ptr<StringLoader> string_loader,
   }
 }
 
-}  // namespace thirdai::utils::dataset
+}  // namespace thirdai::dataset

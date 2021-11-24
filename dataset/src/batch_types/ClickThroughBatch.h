@@ -5,7 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
-namespace thirdai::utils {
+namespace thirdai::dataset {
 
 class ClickThroughBatch {
   friend class ClickThroughBatchFactory;
@@ -99,4 +99,4 @@ class ClickThroughBatchFactory : public Factory<ClickThroughBatch> {
   uint32_t _num_dense_features, _num_categorical_features;
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::dataset

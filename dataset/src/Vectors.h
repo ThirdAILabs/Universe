@@ -6,7 +6,7 @@
 #include <string>
 #include <utility>
 
-namespace thirdai::utils {
+namespace thirdai::dataset {
 
 struct SparseVector {
   uint32_t* _indices;
@@ -205,4 +205,4 @@ struct DenseVector {
   bool _owns_data;
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::dataset

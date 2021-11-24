@@ -4,7 +4,7 @@
 #include <dataset/src/batch_types/DenseBatch.h>
 #include <dataset/src/batch_types/SparseBatch.h>
 
-namespace thirdai::utils {
+namespace thirdai::hashing {
 
 class HashFunction {
  public:
@@ -22,7 +22,7 @@ class HashFunction {
    * the hashes from the first vector, all of the hashes from the second, and
    * so on.
    */
-  void hashBatchParallel(const utils::SparseBatch& batch,
+  void hashBatchParallel(const dataset::SparseBatch& batch,
                          uint32_t* output) const {
 #pragma omp parallel for default(none) shared(batch, output)
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
@@ -32,13 +32,13 @@ class HashFunction {
   }
 
   std::vector<uint32_t> hashBatchParallel(
-      const utils::SparseBatch& batch) const {
+      const dataset::SparseBatch& batch) const {
     std::vector<uint32_t> result(_num_tables * batch.getBatchSize());
     hashBatchParallel(batch, result.data());
     return result;
   }
 
-  void hashBatchParallel(const utils::DenseBatch& batch,
+  void hashBatchParallel(const dataset::DenseBatch& batch,
                          uint32_t* output) const {
 #pragma omp parallel for default(none) shared(batch, output)
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
@@ -48,7 +48,7 @@ class HashFunction {
   }
 
   std::vector<uint32_t> hashBatchParallel(
-      const utils::DenseBatch& batch) const {
+      const dataset::DenseBatch& batch) const {
     std::vector<uint32_t> result(_num_tables * batch.getBatchSize());
     hashBatchParallel(batch, result.data());
     return result;
@@ -73,7 +73,7 @@ class HashFunction {
     }
   }
 
-  void hashBatchSerial(const utils::SparseBatch& batch,
+  void hashBatchSerial(const dataset::SparseBatch& batch,
                        uint32_t* output) const {
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
       hashSingleSparse(batch[v]._indices, batch[v]._values, batch[v].length(),
@@ -81,7 +81,8 @@ class HashFunction {
     }
   }
 
-  void hashBatchSerial(const utils::DenseBatch& batch, uint32_t* output) const {
+  void hashBatchSerial(const dataset::DenseBatch& batch,
+                       uint32_t* output) const {
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
       hashSingleDense(batch[v]._values, batch[v].dim(),
                       output + v * _num_tables);
@@ -118,4 +119,4 @@ class HashFunction {
   const uint32_t _num_tables, _range;
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashing

@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-namespace thirdai::utils {
+namespace thirdai::hashing {
 
 uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed) {
   uint32_t c1 = 0xcc9e2d51;
@@ -82,4 +82,4 @@ uint32_t MurmurHash(const char* key, uint32_t len, uint32_t seed) {
 
   return h;
 }
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashing

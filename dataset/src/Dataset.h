@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-namespace thirdai::utils {
+namespace thirdai::dataset {
 
 template <typename BATCH_T>
 class InMemoryDataset {
@@ -108,4 +108,4 @@ class StreamedDataset {
   std::unique_ptr<Factory<BATCH_T>> _factory;
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::dataset

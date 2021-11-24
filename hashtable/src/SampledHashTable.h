@@ -6,7 +6,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace thirdai::utils {
+namespace thirdai::hashtable {
 
 /**
  * This class implements the hash table interface for a sampled hash table where
@@ -125,4 +125,4 @@ class SampledHashTable final : public HashTable<LABEL_T> {
   ~SampledHashTable() override;
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashtable

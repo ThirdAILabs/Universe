@@ -5,7 +5,7 @@
 #include <exception>
 #include <limits>
 
-namespace thirdai::utils::dataset {
+namespace thirdai::dataset {
 enum class StringVectorizerToken { WORD_UNIGRAM, CHAR_TRIGRAM };
 
 /**
@@ -107,4 +107,4 @@ class CompositeVectorizer {
     }
   }
 };
-}  // namespace thirdai::utils::dataset
+}  // namespace thirdai::dataset

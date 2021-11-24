@@ -44,7 +44,7 @@ endif()
 
 find_package(OpenMP REQUIRED)
 
-# So we can include using e.g. #include "hashtable/src/SampledHashTable.h"
+# So we can include using e.g. #include <hashtable/src/SampledHashTable.h>
 include_directories(".")
 
 add_subdirectory(bolt)

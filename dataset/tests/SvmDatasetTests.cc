@@ -9,7 +9,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace thirdai::utils::dataset_tests {
+namespace thirdai::dataset {
 
 const std::string _filename = "./svm_dataset_test_file";
 static const uint32_t _num_vectors = 10000, _batch_size = 256;
@@ -154,4 +154,4 @@ TEST_F(SvmDatasetTestFixture, StreamedDatasetTest) {
   ASSERT_EQ(vec_count, _num_vectors);
 }
 
-}  // namespace thirdai::utils::dataset_tests
+}  // namespace thirdai::dataset

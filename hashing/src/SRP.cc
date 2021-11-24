@@ -7,7 +7,7 @@
 #include <iostream>
 #include <random>
 
-namespace thirdai::utils {
+namespace thirdai::hashing {
 
 // TODO(josh). TEST THIS CLASS. I didn't test this implementation
 // of SRP hashing, but I want to commit it before people work more on the
@@ -105,4 +105,4 @@ SparseRandomProjection::~SparseRandomProjection() {
   delete[] _hash_indices;
 }
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashing

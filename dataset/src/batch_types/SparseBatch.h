@@ -6,7 +6,7 @@
 #include <fstream>
 #include <vector>
 
-namespace thirdai::utils {
+namespace thirdai::dataset {
 
 class SparseBatch {
   friend class SvmSparseBatchFactory;
@@ -93,4 +93,4 @@ class SvmSparseBatchFactory : public Factory<SparseBatch> {
   }
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::dataset

@@ -2,7 +2,7 @@
 
 #include "HashFunction.h"
 
-namespace thirdai::utils {
+namespace thirdai::hashing {
 
 class DWTAHashFunction final : public HashFunction {
  private:
@@ -28,4 +28,4 @@ class DWTAHashFunction final : public HashFunction {
   ~DWTAHashFunction();
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashing

@@ -1,7 +1,7 @@
 #include "SampledHashTable.h"
 #include <random>
 
-namespace thirdai::utils {
+namespace thirdai::hashtable {
 template class SampledHashTable<uint8_t>;
 template class SampledHashTable<uint16_t>;
 template class SampledHashTable<uint32_t>;
@@ -121,4 +121,4 @@ SampledHashTable<LABEL_T>::~SampledHashTable() {
   delete[] _gen_rand;
 }
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashtable

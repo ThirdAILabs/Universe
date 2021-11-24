@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string>
 
-namespace thirdai::utils {
+namespace thirdai::hashing {
 
 /*
  * Cheaper Hash functions, if you need 64 bit hash use murmurhash or xxhash.
@@ -27,4 +27,4 @@ class UniversalHash {
   uint32_t T[8][256];
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashing

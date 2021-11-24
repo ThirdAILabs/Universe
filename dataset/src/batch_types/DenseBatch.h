@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace thirdai::utils {
+namespace thirdai::dataset {
 
 class DenseBatch {
  public:
@@ -55,4 +55,4 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
   }
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::dataset

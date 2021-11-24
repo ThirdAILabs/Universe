@@ -5,7 +5,7 @@
 #include <cassert>
 #include <vector>
 
-using thirdai::utils::VectorHashTable;
+using thirdai::hashtable::VectorHashTable;
 
 // TODO(josh): Abstract some of the logic from this test out and make the test
 // smaller

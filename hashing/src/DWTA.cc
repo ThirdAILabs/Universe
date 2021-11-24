@@ -4,7 +4,7 @@
 #include <limits>
 #include <random>
 
-namespace thirdai::utils {
+namespace thirdai::hashing {
 
 constexpr uint32_t DEFAULT_BINSIZE = 8;
 
@@ -119,4 +119,4 @@ DWTAHashFunction::~DWTAHashFunction() {
   delete[] _positions;
 }
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashing

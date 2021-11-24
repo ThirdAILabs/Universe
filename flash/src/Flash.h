@@ -22,13 +22,13 @@ class Flash {
    * may have to mod it and change the range, or do that in the hashfunction
    * implementation).
    **/
-  explicit Flash(const utils::HashFunction& function);
+  explicit Flash(const hashing::HashFunction& function);
 
   /**
    * This is the same as the single argument constructor, except the supporting
    * hash table has a max reservoir size.
    **/
-  Flash(const utils::HashFunction& function, uint32_t reservoir_size);
+  Flash(const hashing::HashFunction& function, uint32_t reservoir_size);
 
   /**
    * Insert all batches in the dataset the Flash data structure.
@@ -36,10 +36,10 @@ class Flash {
    * will run through the entire dataset.
    */
   template <typename BATCH_T>
-  void addDataset(utils::InMemoryDataset<BATCH_T>& dataset);
+  void addDataset(dataset::InMemoryDataset<BATCH_T>& dataset);
 
   template <typename BATCH_T>
-  void addDataset(utils::StreamedDataset<BATCH_T>& dataset);
+  void addDataset(dataset::StreamedDataset<BATCH_T>& dataset);
 
   /** Insert this batch into the Flash data structure. */
   template <typename BATCH_T>
@@ -86,9 +86,9 @@ class Flash {
    */
   LABEL_T verify_and_convert_id(uint64_t id) const;
 
-  const utils::HashFunction& _function;
+  const hashing::HashFunction& _function;
   const uint32_t _num_tables, _range;
-  utils::HashTable<LABEL_T>* const _hashtable;
+  hashtable::HashTable<LABEL_T>* const _hashtable;
 };
 
 }  // namespace thirdai::search

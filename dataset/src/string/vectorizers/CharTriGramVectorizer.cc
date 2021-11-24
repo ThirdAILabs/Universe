@@ -1,6 +1,6 @@
 #include "CharTriGramVectorizer.h"
 
-namespace thirdai::utils::dataset {
+namespace thirdai::dataset {
 
 CharTriGramVectorizer::CharTriGramVectorizer(uint32_t start_idx,
                                              uint32_t max_dim,
@@ -47,4 +47,4 @@ void CharTriGramVectorizer::fillIndexToValueMap(
     setMapValue(index_to_value_map, (hash % _dim) + _start_idx, idf_map);
   }
 }
-}  // namespace thirdai::utils::dataset
+}  // namespace thirdai::dataset

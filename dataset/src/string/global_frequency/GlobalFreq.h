@@ -15,7 +15,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace thirdai::utils::dataset {
+namespace thirdai::dataset {
 
 class GlobalFreq {
   /*
@@ -45,4 +45,4 @@ class GlobalFreq {
   std::unordered_map<uint32_t, float> _idf_map;
 };
 
-}  // namespace thirdai::utils::dataset
+}  // namespace thirdai::dataset

@@ -4,7 +4,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace thirdai::utils {
+namespace thirdai::hashtable {
 
 /**
  * This is the abstract HashTable interface, which represents n hash tables
@@ -72,4 +72,4 @@ class HashTable {
 template <typename LABEL_T>
 const uint32_t HashTable<LABEL_T>::DEFAULT_MAX_RAND;
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashtable

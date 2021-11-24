@@ -7,10 +7,11 @@
 #include <utility>
 #include <vector>
 
-namespace thirdai::utils::lsh_testing {
+namespace thirdai::hashing {
 
 /** Returns the angle between two sparse vectors */
-static float angle(const SparseVector& a, const SparseVector& b) {
+static float angle(const thirdai::dataset::SparseVector& a,
+                   const thirdai::dataset::SparseVector& b) {
   float total = 0, ma = 0, mb = 0;
   uint32_t ia = 0, ib = 0;
   while (ia < a.length() && ib < b.length()) {
@@ -36,6 +37,8 @@ static float angle(const SparseVector& a, const SparseVector& b) {
 }
 
 /** Print out a sparse vector */
-static void printVec(const SparseVector& vec) { std::cout << vec << std::endl; }
+static void printVec(const thirdai::dataset::SparseVector& vec) {
+  std::cout << vec << std::endl;
+}
 
-}  // namespace thirdai::utils::lsh_testing
+}  // namespace thirdai::hashing

@@ -5,7 +5,7 @@
 #include <random>
 #include <stdexcept>
 
-namespace thirdai::utils {
+namespace thirdai::hashing {
 
 constexpr uint32_t DEFAULT_BINSIZE = 8;
 
@@ -145,4 +145,4 @@ FastSRP::~FastSRP() {
   delete[] _positions;
 }
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashing

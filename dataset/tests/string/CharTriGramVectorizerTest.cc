@@ -11,8 +11,8 @@
 #include <unordered_set>
 #include <vector>
 
-using thirdai::utils::dataset::CharTriGramVectorizer;
-using thirdai::utils::dataset::StringVectorizerValue;
+using thirdai::dataset::CharTriGramVectorizer;
+using thirdai::dataset::StringVectorizerValue;
 
 static uint32_t default_start_idx = 0;
 // Very large max_dim so we keep actual tri gram dimensions.

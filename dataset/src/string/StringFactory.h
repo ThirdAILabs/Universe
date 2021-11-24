@@ -6,7 +6,7 @@
 #include <dataset/src/Factory.h>
 #include <dataset/src/batch_types/SparseBatch.h>
 
-namespace thirdai::utils::dataset {
+namespace thirdai::dataset {
 
 class StringFactory : public Factory<SparseBatch> {
  public:
@@ -68,4 +68,4 @@ class StringFactory : public Factory<SparseBatch> {
   std::unordered_map<uint32_t, float> _idf_map;
 };
 
-}  // namespace thirdai::utils::dataset
+}  // namespace thirdai::dataset

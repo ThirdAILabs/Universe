@@ -3,7 +3,7 @@
 #include <iostream>
 #include <random>
 
-namespace thirdai::utils::avalanche_testing {
+namespace thirdai::hashing {
 /*
  * Test Suite for generating random integer and string keys.
  */
@@ -57,4 +57,4 @@ class AvalancheTimedTestSuite : public testing::Test {
     return str;
   }
 };
-}  // namespace thirdai::utils::avalanche_testing
+}  // namespace thirdai::hashing

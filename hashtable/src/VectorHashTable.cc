@@ -3,7 +3,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace thirdai::utils {
+namespace thirdai::hashtable {
 
 template class VectorHashTable<uint8_t, true>;
 template class VectorHashTable<uint16_t, true>;
@@ -107,4 +107,4 @@ void VectorHashTable<LABEL_T, USE_RESERVOIR>::sortBuckets() {
   }
 }
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashtable

@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace thirdai::utils {
+namespace thirdai::hashing {
 
 class SparseRandomProjection : public HashFunction {
  private:
@@ -25,4 +25,4 @@ class SparseRandomProjection : public HashFunction {
   ~SparseRandomProjection();
 };
 
-}  // namespace thirdai::utils
+}  // namespace thirdai::hashing

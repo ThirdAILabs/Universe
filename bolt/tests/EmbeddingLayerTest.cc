@@ -44,8 +44,8 @@ TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
 
     for (uint32_t e = 0; e < _num_lookups; e++) {
       uint32_t item = tokens[i] * _num_lookups + e;
-      uint32_t start = utils::MurmurHash(reinterpret_cast<const char*>(&item),
-                                         sizeof(uint32_t), _seed);
+      uint32_t start = hashing::MurmurHash(reinterpret_cast<const char*>(&item),
+                                           sizeof(uint32_t), _seed);
       start = start >> (32 - _log_block_size);
 
       for (uint32_t j = 0; j < _lookup_size; j++) {
@@ -71,7 +71,7 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbedding) {
         float expected_val = 0;
         for (uint32_t t : tokens[i]) {
           uint32_t item = t * _num_lookups + e;
-          uint32_t start = utils::MurmurHash(
+          uint32_t start = hashing::MurmurHash(
               reinterpret_cast<const char*>(&item), sizeof(uint32_t), _seed);
           start = start >> (32 - _log_block_size);
 
@@ -104,8 +104,8 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
       for (uint32_t e = 0; e < _num_lookups; e++) {
         uint32_t id = t * _num_lookups + e;
 
-        uint32_t loc = utils::MurmurHash(reinterpret_cast<const char*>(&id),
-                                         sizeof(uint32_t), _seed);
+        uint32_t loc = hashing::MurmurHash(reinterpret_cast<const char*>(&id),
+                                           sizeof(uint32_t), _seed);
         loc = loc >> (32 - _log_block_size);
 
         for (uint32_t j = 0; j < _lookup_size; j++) {

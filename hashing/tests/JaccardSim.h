@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DenseVector.h"
+#include "DenseVectorUtils.h"
 #include "Similarity.h"
 #include "SparseVector.h"
 #include <exceptions/src/Exceptions.h>
@@ -13,7 +13,7 @@
 #include <unordered_set>
 #include <utility>
 
-namespace thirdai::utils::lsh_testing {
+namespace thirdai::hashing {
 
 class JaccardSim : public Similarity {
  public:
@@ -23,7 +23,7 @@ class JaccardSim : public Similarity {
     (void)sim;
     (void)dim;
     // Jaccard is only for sparse vectors
-    throw NotImplemented();
+    throw thirdai::exceptions::NotImplemented();
   }
 
   SparseVecPair getRandomSparseVectors(float sim, uint32_t num_non_zeros,
@@ -72,9 +72,9 @@ class JaccardSim : public Similarity {
     std::sort(indices_2.begin(), indices_2.end());
 
     std::vector<float> empty_values;
-    SparseVector v1(
+    thirdai::dataset::SparseVector v1(
         num_non_zeros);  // = {indices_1, empty_values, num_non_zeros};
-    SparseVector v2(
+    thirdai::dataset::SparseVector v2(
         num_non_zeros);  // = {indices_2, empty_values, num_non_zeros};
     std::copy(indices_1.begin(), indices_1.end(), v1._indices);
     std::copy(indices_2.begin(), indices_2.end(), v2._indices);
@@ -83,13 +83,15 @@ class JaccardSim : public Similarity {
             getJaccardSim(v1._indices, v1.length(), v2._indices, v2.length())};
   }
 
-  float getSim(const DenseVector& v1, DenseVector& v2) override {
+  float getSim(const thirdai::dataset::DenseVector& v1,
+               thirdai::dataset::DenseVector& v2) override {
     (void)v1;
     (void)v2;
-    throw NotImplemented();
+    throw thirdai::exceptions::NotImplemented();
   }
 
-  float getSim(const SparseVector& v1, const SparseVector& v2) override {
+  float getSim(const thirdai::dataset::SparseVector& v1,
+               const thirdai::dataset::SparseVector& v2) override {
     return getJaccardSim(v1._indices, v1.length(), v2._indices, v2.length());
   }
 
@@ -116,4 +118,4 @@ class JaccardSim : public Similarity {
   std::mt19937 _generator;
 };
 
-}  // namespace thirdai::utils::lsh_testing
+}  // namespace thirdai::hashing

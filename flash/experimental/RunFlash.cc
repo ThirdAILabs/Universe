@@ -23,15 +23,17 @@ int main(int argc, char** argv) {
   uint32_t hashes_per_table = atoi(argv[4]);
   uint32_t top_k = atoi(argv[5]);
   uint32_t range = 1000000;
-  auto dataset = thirdai::utils::InMemoryDataset<thirdai::utils::SparseBatch>(
-      argv[1], batch_size, thirdai::utils::SvmSparseBatchFactory{});
+  auto dataset =
+      thirdai::dataset::InMemoryDataset<thirdai::dataset::SparseBatch>(
+          argv[1], batch_size, thirdai::dataset::SvmSparseBatchFactory{});
   auto hash_func =
-      thirdai::utils::DensifiedMinHash(hashes_per_table, num_tables, range);
+      thirdai::hashing::DensifiedMinHash(hashes_per_table, num_tables, range);
   auto flash = thirdai::search::Flash<uint64_t>(hash_func);
   flash.addDataset(dataset);
 
-  auto queries = thirdai::utils::InMemoryDataset<thirdai::utils::SparseBatch>(
-      argv[2], UINT32_MAX, thirdai::utils::SvmSparseBatchFactory{});
+  auto queries =
+      thirdai::dataset::InMemoryDataset<thirdai::dataset::SparseBatch>(
+          argv[2], UINT32_MAX, thirdai::dataset::SvmSparseBatchFactory{});
   auto all_results = flash.queryBatch(queries[0], top_k, false);
 
   for (auto& result : all_results) {
@@ -40,4 +42,6 @@ int main(int argc, char** argv) {
     }
     std::cout << std::endl;
   }
+
+  return 0;
 }
