@@ -59,16 +59,16 @@ file(
   bolt/layers/FullyConnectedLayer.cc 
   bolt/networks/Network.cc 
   bolt/utils/*.cc 
-  utils/hashing/DWTA.cc 
-  utils/hashtable/SampledHashTable.cc
+  hashing/src/DWTA.cc 
+  hashtable/src/SampledHashTable.cc
 )
 
 file(
   GLOB_RECURSE FLASH_SOURCES 
   flash/src/*.cc 
-  utils/dataset/*.cc 
-  utils/hashing/*.cc 
-  utils/hashtable/*.cc
+  dataset/src/*.cc 
+  hashing/src/*.cc 
+  hashtable/src/*.cc
 )
 
 pybind11_add_module(thirdai python_bindings/thirdai.cc ${BOLT_SOURCES} ${FLASH_SOURCES})
