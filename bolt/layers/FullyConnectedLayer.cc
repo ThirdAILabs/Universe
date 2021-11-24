@@ -45,11 +45,11 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::generate(_biases, _biases + _dim, [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
-    _hasher = new utils::DWTAHashFunction(
+    _hasher = new hashing::DWTAHashFunction(
         _prev_dim, _sampling_config.hashes_per_table,
         _sampling_config.num_tables, _sampling_config.range_pow);
 
-    _hash_table = new utils::SampledHashTable<uint32_t>(
+    _hash_table = new hashtable::SampledHashTable<uint32_t>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow);
 
@@ -425,7 +425,7 @@ void FullyConnectedLayer::reBuildHashFunction() {
   }
   delete _hasher;
 
-  _hasher = new utils::DWTAHashFunction(
+  _hasher = new hashing::DWTAHashFunction(
       _prev_dim, _sampling_config.hashes_per_table, _sampling_config.num_tables,
       _sampling_config.range_pow);
 }

@@ -1,23 +1,23 @@
-#include "../../utils/dataset/Dataset.h"
-#include "../../utils/hashing/FastSRP.h"
-#include "../../utils/tests/hashing/CosineSim.h"
-#include "../../utils/tests/hashing/DenseVector.h"
-#include "../src/Flash.h"
+#include <hashing/src/FastSRP.h>
+#include <hashing/tests/CosineSim.h>
+#include <hashing/tests/DenseVectorUtils.h>
 #include <gtest/gtest.h>
+#include <dataset/src/Dataset.h>
+#include <flash/src/Flash.h>
 #include <algorithm>
 #include <iostream>
 #include <random>
 #include <vector>
 
+using thirdai::dataset::DenseBatch;
+using thirdai::dataset::DenseVector;
+using thirdai::hashing::CosineSim;
+using thirdai::hashing::DenseVecPair;
+using thirdai::hashing::FastSRP;
+using thirdai::hashing::generateRandomDenseUnitVector;
 using thirdai::search::Flash;
-using thirdai::utils::DenseBatch;
-using thirdai::utils::DenseVector;
-using thirdai::utils::FastSRP;
-using thirdai::utils::lsh_testing::CosineSim;
-using thirdai::utils::lsh_testing::DenseVecPair;
-using thirdai::utils::lsh_testing::generateRandomDenseUnitVector;
 
-namespace thirdai::search::flash_testing {
+namespace thirdai::search {
 
 /** Creates a vector of Batches with size batch_size that point to the
  * input_vectors */
@@ -111,4 +111,4 @@ TEST(FlashTest, IdTooLargeTest) {
   ASSERT_THROW(flash.addBatch(error_batch), std::invalid_argument);  // NOLINT
 }
 
-}  // namespace thirdai::search::flash_testing
+}  // namespace thirdai::search

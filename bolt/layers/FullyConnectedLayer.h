@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../../utils/hashing/DWTA.h"
-#include "../../utils/hashtable/SampledHashTable.h"
 #include "Layer.h"
 #include "LayerConfig.h"
+#include <hashing/src/DWTA.h>
+#include <hashtable/src/SampledHashTable.h>
 #include <cstdint>
 
 namespace thirdai::bolt {
@@ -134,8 +134,8 @@ class FullyConnectedLayer final : public Layer {
   bool* _is_active;
 
   SamplingConfig _sampling_config;
-  utils::DWTAHashFunction* _hasher;
-  utils::SampledHashTable<uint32_t>* _hash_table;
+  hashing::DWTAHashFunction* _hasher;
+  hashtable::SampledHashTable<uint32_t>* _hash_table;
   uint32_t* _rand_neurons;
 };
 

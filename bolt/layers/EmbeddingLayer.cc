@@ -1,5 +1,5 @@
 #include "EmbeddingLayer.h"
-#include "../../utils/hashing/MurmurHash.h"
+#include <hashing/src/MurmurHash.h>
 #include <algorithm>
 #include <random>
 
@@ -49,8 +49,8 @@ void EmbeddingLayer::feedForward(uint32_t batch_indx, const uint32_t* tokens,
 
     for (uint32_t n = 0; n < len; n++) {
       uint32_t id = tokens[n] * _num_embedding_lookups + e;
-      uint32_t hash_loc = utils::MurmurHash(reinterpret_cast<const char*>(&id),
-                                            sizeof(uint32_t), _seed);
+      uint32_t hash_loc = hashing::MurmurHash(
+          reinterpret_cast<const char*>(&id), sizeof(uint32_t), _seed);
       hash_loc = hash_loc >> (32 - _log_embedding_block_size);
       _embedding_locs[batch_indx][n * _num_embedding_lookups + e] = hash_loc;
 
