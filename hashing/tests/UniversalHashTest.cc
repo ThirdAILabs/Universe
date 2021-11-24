@@ -12,8 +12,8 @@
 using std::chrono::duration_cast;
 using std::chrono::milliseconds;
 using std::chrono::system_clock;
+using thirdai::hashing::AvalancheTimedTestSuite;
 using thirdai::hashing::UniversalHash;
-using thirdai::hashing::avalanche_testing::AvalancheTimedTestSuite;
 
 uint64_t AvalancheTimedTestSuite::int_keys[num_keys];
 std::string AvalancheTimedTestSuite::str_keys[num_keys];
