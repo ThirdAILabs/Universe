@@ -1,7 +1,7 @@
 #pragma once
 
-#include "./StringVectorizer.h"
-#include "hashing/src/MurmurHash.h"
+#include "StringVectorizer.h"
+#include <hashing/src/MurmurHash.h>
 #include <exception>
 #include <limits>
 
