@@ -6,7 +6,7 @@
 
 namespace thirdai::bolt {
 
-enum class ActivationFunc { ReLU, Softmax };
+enum class ActivationFunc { ReLU, Softmax, MeanSquared };
 
 struct SamplingConfig {
   uint32_t hashes_per_table, num_tables, range_pow, reservoir_size;
@@ -34,6 +34,9 @@ struct FullyConnectedLayerConfig {
     }
     if (str == "Softmax") {
       return ActivationFunc::Softmax;
+    }
+    if (str == "MeanSquared") {
+      return ActivationFunc::MeanSquared;
     }
     throw std::invalid_argument(
         "'" + str +
@@ -109,6 +112,9 @@ struct FullyConnectedLayerConfig {
         break;
       case ActivationFunc::Softmax:
         out << ", act_func=Softmax";
+        break;
+      case ActivationFunc::MeanSquared:
+        out << ", act_func=MeanSquared";
         break;
     }
     if (config.sparsity < 1.0) {
