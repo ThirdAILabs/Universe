@@ -96,7 +96,7 @@ struct FullyConnectedLayerConfig {
       uint32_t k = rp / 3;
       uint32_t rs = (dim * 4) / (1 << rp);
       sparsity = static_cast<float>(pow(0.5, k));
-      uint32_t l = parsity < 0.05 ? 64 : 32;
+      uint32_t l = sparsity < 0.05 ? 64 : 32;
       sampling_config = SamplingConfig(k, l, rp, rs);
     } else {
       sampling_config = SamplingConfig();
