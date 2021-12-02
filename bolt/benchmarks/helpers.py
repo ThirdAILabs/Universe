@@ -1,6 +1,6 @@
 import sys
 
-def add_arguments(parser, train, test, epochs, hashes_per_table, num_tables, sparsity, lr):
+def add_arguments(parser, train, test, epochs, dim, hashes_per_table, num_tables, sparsity, lr):
     """
     Add arguments to each benchmark script.
     """
@@ -15,6 +15,7 @@ def add_arguments(parser, train, test, epochs, hashes_per_table, num_tables, spa
         help="number of runs (output will show avg)")
     parser.add_argument("--epochs", default=epochs, type=int, required=False,
         help="number of epochs")
+    parser.add_argument("--dim", default=dim, type=int, required=False, help="layer dim")
     parser.add_argument("--hashes_per_table", default=hashes_per_table, type=int, required=False,
         help="number of hashes per table")
     parser.add_argument("--num_tables", default=num_tables, type=int, required=False,

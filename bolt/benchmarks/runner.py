@@ -7,7 +7,7 @@ from helpers import add_arguments, train
 def train_mnist_sparse_output_layer(args):
     layers = [
         bolt.LayerConfig(dim=256, activation_function="ReLU"),
-        bolt.LayerConfig(dim=10, load_factor=args.sparsity,
+        bolt.LayerConfig(dim=args.dim, load_factor=args.sparsity,
                          activation_function="Softmax",
                          sampling_config=bolt.SamplingConfig(
                              hashes_per_table=args.hashes_per_table, num_tables=args.num_tables,
@@ -21,7 +21,7 @@ def train_mnist_sparse_output_layer(args):
 
 def train_mnist_sparse_hidden_layer(args):
     layers = [
-        bolt.LayerConfig(dim=20000, load_factor=args.sparsity,
+        bolt.LayerConfig(dim=args.dim, load_factor=args.sparsity,
                          activation_function="ReLU",
                          sampling_config=bolt.SamplingConfig(
                              hashes_per_table=args.hashes_per_table, num_tables=args.num_tables,
@@ -36,7 +36,7 @@ def train_mnist_sparse_hidden_layer(args):
 def train_amzn670(args):
     layers = [
         bolt.LayerConfig(dim=256, activation_function="ReLU"),
-        bolt.LayerConfig(dim=670091, load_factor=args.sparsity,
+        bolt.LayerConfig(dim=args.dim, load_factor=args.sparsity,
                         activation_function="Softmax",
                         sampling_config=bolt.SamplingConfig(
                             hashes_per_table=args.hashes_per_table, num_tables=args.num_tables,
@@ -62,6 +62,7 @@ def main():
             train="/media/scratch/data/mnist/mnist",
             test="/media/scratch/data/mnist/mnist.t",
             epochs=10,
+            dim=10,
             hashes_per_table=1,
             num_tables=32,
             sparsity=0.4,
@@ -74,6 +75,7 @@ def main():
             train="/media/scratch/data/mnist/mnist",
             test="/media/scratch/data/mnist/mnist.t",
             epochs=10,
+            dim=20000,
             hashes_per_table=3,
             num_tables=64,
             sparsity=0.01,
@@ -86,6 +88,7 @@ def main():
             train="/media/scratch/data/amazon-670k/train_shuffled_noHeader.txt",
             test="/media/scratch/data/amazon-670k/test_shuffled_noHeader.txt",
             epochs=25,
+            dim=670091,
             hashes_per_table=6,
             num_tables=128,
             sparsity=0.005,

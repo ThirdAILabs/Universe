@@ -66,19 +66,13 @@ struct FullyConnectedLayerConfig {
     checkSparsity(sparsity);
   }
 
-  FullyConnectedLayerConfig(uint64_t _dim, const std::string& act_func_str)
-      : dim(_dim), sparsity(1.0), sampling_config(SamplingConfig()) {
-    act_func = activationFuncFromStr(act_func_str);
-    checkSparsity(sparsity);
-  }
-
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
                             const std::string& act_func_str)
       : dim(_dim), sparsity(_sparsity) {
     act_func = activationFuncFromStr(act_func_str);
     checkSparsity(sparsity);
     if (sparsity < 1.0) {
-      uint32_t k = static_cast<uint32_t>(ceil(log2(dim) / 3));
+      uint32_t k = static_cast<uint32_t>(floor(log2(dim) / 3));
       uint32_t rp = k * 3;
       uint32_t rs = (dim * 4) / (1 << rp);
       uint32_t l = sparsity < 0.05 ? 64 : 32;
@@ -91,16 +85,12 @@ struct FullyConnectedLayerConfig {
   FullyConnectedLayerConfig(uint64_t _dim, const std::string& act_func_str)
       : dim(_dim) {
     act_func = activationFuncFromStr(act_func_str);
-    if (sparsity < 1.0) {
-      uint32_t rp = (static_cast<uint32_t>(log2(dim)) / 3) * 3;
-      uint32_t k = rp / 3;
-      uint32_t rs = (dim * 4) / (1 << rp);
-      sparsity = static_cast<float>(pow(0.5, k));
-      uint32_t l = sparsity < 0.05 ? 64 : 32;
-      sampling_config = SamplingConfig(k, l, rp, rs);
-    } else {
-      sampling_config = SamplingConfig();
-    }
+    uint32_t k = static_cast<uint32_t>(ceil(log2(dim) / 3));
+    uint32_t rp = k * 3;
+    uint32_t rs = (dim * 4) / (1 << rp);
+    sparsity = static_cast<float>(pow(0.5, k));
+    uint32_t l = sparsity < 0.05 ? 64 : 32;
+    sampling_config = SamplingConfig(k, l, rp, rs);
   }
 
   friend std::ostream& operator<<(std::ostream& out,
