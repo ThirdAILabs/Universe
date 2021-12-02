@@ -349,6 +349,8 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
            py::arg("activation_function"), py::arg("sampling_config"))
       .def(py::init<uint64_t, std::string>(), py::arg("dim"),
            py::arg("activation_function"))
+      .def(py::init<uint64_t, std::string, bool>(), py::arg("dim"),
+           py::arg("activation_function"), py::arg("autotune"))
       .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
            py::arg("load_factor"), py::arg("activation_function"));
 

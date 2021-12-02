@@ -82,13 +82,7 @@ struct FullyConnectedLayerConfig {
     }
   }
 
-  FullyConnectedLayerConfig(uint64_t _dim, const std::string& act_func_str)
-      : dim(_dim), sparsity(1.0), sampling_config(SamplingConfig()) {
-    act_func = activationFuncFromStr(act_func_str);
-    checkSparsity(sparsity);
-  }
-
-  FullyConnectedLayerConfig(uint64_t _dim, const std::string& act_func_str, bool autotune)
+  FullyConnectedLayerConfig(uint64_t _dim, const std::string& act_func_str, bool autotune=false)
       : dim(_dim) {
     act_func = activationFuncFromStr(act_func_str);
     if (autotune) {
