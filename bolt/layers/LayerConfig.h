@@ -72,7 +72,7 @@ struct FullyConnectedLayerConfig {
     act_func = activationFuncFromStr(act_func_str);
     checkSparsity(sparsity);
     if (sparsity < 1.0) {
-      uint32_t k = static_cast<uint32_t>(floor(log2(dim) / 3));
+      uint32_t k = static_cast<uint32_t>(ceil(log2(dim) / 4));
       uint32_t rp = k * 3;
       uint32_t rs = (dim * 4) / (1 << rp);
       uint32_t l = sparsity < 0.05 ? 64 : 32;
@@ -85,10 +85,10 @@ struct FullyConnectedLayerConfig {
   FullyConnectedLayerConfig(uint64_t _dim, const std::string& act_func_str)
       : dim(_dim) {
     act_func = activationFuncFromStr(act_func_str);
-    uint32_t k = static_cast<uint32_t>(ceil(log2(dim) / 3));
+    uint32_t k = static_cast<uint32_t>(ceil(log2(dim) / 4));
     uint32_t rp = k * 3;
     uint32_t rs = (dim * 4) / (1 << rp);
-    sparsity = static_cast<float>(pow(0.5, k));
+    sparsity = static_cast<float>(pow(0.35, k));
     uint32_t l = sparsity < 0.05 ? 64 : 32;
     sampling_config = SamplingConfig(k, l, rp, rs);
   }
