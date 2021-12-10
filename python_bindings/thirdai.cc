@@ -21,7 +21,6 @@ using thirdai::bolt::Network;
 
 using thirdai::dataset::DenseBatch;
 using thirdai::dataset::DenseVector;
-using thirdai::dataset::InMemoryDataset;
 using thirdai::dataset::SparseBatch;
 using thirdai::dataset::SparseVector;
 
@@ -220,7 +219,7 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       .def("get_range", &HashFunction::range,
            "All hashes returned from this function will be >= 0 and <= "
            "get_range().");
-  // TODO: Add bindings for hashing numpy array and sparse data type
+  // TODO(josh): Add bindings for hashing numpy array and sparse data
 
   py::class_<DensifiedMinHash, HashFunction>(
       hashing_submodule, "MinHash",
