@@ -4,29 +4,42 @@ import thirdai
 import sklearn
 from sklearn import metrics
 
+reservoir_sizes = [100, 200, 500, 1000]
+hashes_per_table = [8, 10, 12, 14, 16]
+num_tables = [10, 50, 100, 200, 500]
+
 data_path = "/Users/josh/IndexChunks/"
-top_k_gt = 10
-top_k_flash = 100
+# data_path = "/media/scratch/ImageNetDemo/IndexFiles/"
 
-hf = thirdai.utils.SignedRandomProjection(input_dim=4096, hashes_per_table=13, num_tables=500)
-flash = thirdai.search.Flash(hf, reservoir_size=100)
+for res in reservoir_sizes:
+  for per_table in hashes_per_table:
+    for tables in num_tables:
 
-max_chunk = 129
-num_vectors = 0
-start = time.perf_counter()
-for chunk_num in range(0, max_chunk):
-    batch = np.load("%schunk-ave%d.npy" % (data_path, chunk_num))
-    flash.add(dense_data=batch, starting_index=num_vectors)
-    num_vectors += len(batch)
-end = time.perf_counter()
-print("Loading and indexing %d vectors (40GB) took %f seconds." % (num_vectors, end - start))
+      print((res, per_table, tables), flush=True)
 
-queries = np.load(data_path + "test_embeddings.npy")
-start = time.perf_counter()
-results = flash.query(queries, top_k=top_k_flash)
-end = time.perf_counter()
-print("Querying %d vectors took %f seconds (%fms per query)." % (len(queries), end - start, (end - start) / len(queries) * 1000))
+      top_k_gt = 10
+      top_k_flash = 100
 
-gt = np.load(data_path + "ground_truth.npy")
-recals = [sum(gt[i] in result for i in range(top_k_gt)) / top_k_gt for result, gt in zip(results, gt)]
-print(f"R{top_k_gt}@{top_k_flash} = {sum(recals) / len(recals)}")
+      hf = thirdai.hashing.SignedRandomProjection(input_dim=4096, hashes_per_table=per_table, num_tables=tables)
+      flash = thirdai.search.MagSearch(hf, reservoir_size=res)
+
+      max_chunk = 129
+      num_vectors = 0
+      start = time.perf_counter()
+      for chunk_num in range(0, max_chunk):
+          batch = np.load("%schunk-ave%d.npy" % (data_path, chunk_num))
+          flash.add(dense_data=batch, starting_index=num_vectors)
+          num_vectors += len(batch)
+      end = time.perf_counter()
+      print("Loading and indexing %d vectors (40GB) took:%f" % (num_vectors, end - start), flush=True)
+
+      queries = np.load(data_path + "test_embeddings.npy")
+      start = time.perf_counter()
+      results = flash.query(queries, top_k=top_k_flash)
+      end = time.perf_counter()
+      print("Querying %d vectors took:%f" % (len(queries), end - start), flush=True)
+
+      gt = np.load(data_path + "ground_truth.npy")
+      recals = [sum(gt[i] in result for i in range(top_k_gt)) / top_k_gt for result, gt in zip(results, gt)]
+      print(f"R{top_k_gt}@{top_k_flash} = {sum(recals) / len(recals)}", flush=True)
+
