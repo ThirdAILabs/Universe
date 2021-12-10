@@ -246,7 +246,7 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
 
   auto search_submodule = m.def_submodule("search");
   py::class_<PyFlash>(
-      search_submodule, "magsearch",
+      search_submodule, "MagSearch",
       "MagSearch is an index for performing near neighbor search. To use it, "
       "construct an index by passing in a hash function and then calling "
       "add() at least once to populate the index.")

@@ -1,4 +1,6 @@
-with open("image_results_m1.txt") as f:
+file_name = "results"
+
+with open("results.txt") as f:
   lines = f.readlines()
   i = 0
   results = []
