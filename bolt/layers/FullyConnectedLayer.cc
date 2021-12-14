@@ -22,6 +22,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _activations(nullptr),
       _errors(nullptr),
       _internal_state_provided(false),
+      _is_frozen(false), //Anshu: For Inference
       _sampling_config(config.sampling_config) {
   uint64_t total_size = _dim * _prev_dim;
 
@@ -399,7 +400,7 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
 }
 
 void FullyConnectedLayer::buildHashTables() {
-  if (_sparsity >= 1.0) {
+  if (_sparsity >= 1.0 || _is_frozen) {
     return;
   }
   uint64_t num_tables = _hash_table->numTables();
@@ -420,7 +421,7 @@ void FullyConnectedLayer::buildHashTables() {
 }
 
 void FullyConnectedLayer::reBuildHashFunction() {
-  if (_sparsity >= 1.0) {
+  if (_sparsity >= 1.0 || _is_frozen) {
     return;
   }
   delete _hasher;
@@ -429,6 +430,12 @@ void FullyConnectedLayer::reBuildHashFunction() {
       _prev_dim, _sampling_config.hashes_per_table, _sampling_config.num_tables,
       _sampling_config.range_pow);
 }
+
+//Anshu: For Efficient Inference
+void FullyConnectedLayer::freezeSelectionForInference() {
+  _is_frozen = true;
+}
+
 
 void FullyConnectedLayer::initializeLayer(uint64_t new_batch_size) {
   // If the new max_batch_size is smaller we can ignore this call
@@ -495,7 +502,7 @@ void FullyConnectedLayer::setSparsity(float new_sparsity) {
 }
 
 void FullyConnectedLayer::shuffleRandNeurons() {
-  if (_sparsity < 1.0) {
+  if (_sparsity < 1.0 && !_is_frozen) {
     std::shuffle(_rand_neurons, _rand_neurons + _dim, std::random_device{});
   }
 }

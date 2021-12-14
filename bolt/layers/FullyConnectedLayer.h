@@ -52,6 +52,8 @@ class FullyConnectedLayer final : public Layer {
 
   void reBuildHashFunction() override;
 
+  void freezeSelectionForInference() override;
+
   void setSparsity(float new_sparsity) override;
 
   void initializeLayer(uint64_t new_batch_size) override;
@@ -132,6 +134,8 @@ class FullyConnectedLayer final : public Layer {
   float* _b_velocity;
 
   bool* _is_active;
+
+  bool _is_frozen;
 
   SamplingConfig _sampling_config;
   hashing::DWTAHashFunction* _hasher;

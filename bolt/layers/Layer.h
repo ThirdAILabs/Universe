@@ -53,6 +53,8 @@ class Layer {
 
   virtual void shuffleRandNeurons() = 0;
 
+  virtual void freezeSelectionForInference() = 0;
+
   virtual ~Layer() {}
 };
 
