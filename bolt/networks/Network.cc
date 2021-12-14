@@ -189,6 +189,8 @@ void Network::train(uint32_t batch_size, const std::string& train_data,
     _layers[l]->initializeLayer(batch_size);
   }
 
+  //Anshu: Calculating logic for freezing randomness for inference 
+
   ProgressBar bar(num_train_batches);
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
     bar.reset();
@@ -243,6 +245,12 @@ void Network::train(uint32_t batch_size, const std::string& train_data,
     _accuracy_per_epoch.push_back(accuracy);
     std::cout << "Accuracy: " << accuracy << " (" << correct << "/"
               << intermediate_test_vecs << ")" << std::endl;
+
+    // after 75% training we dont update hash tables etc.
+    if(epoch == floor(0.6*epochs)){
+      std::cout << "\n Freezing Partitions for Inference";
+      freezeRandomnessForInference();
+    }
   }
 
   uint64_t num_test_batches = test.NumBatches();
@@ -254,11 +262,19 @@ void Network::train(uint32_t batch_size, const std::string& train_data,
   _final_accuracy = static_cast<float>(final_correct) / test.NumVecs();
   std::cout << "Accuracy after training: " << _final_accuracy << " ("
             << final_correct << "/" << test.NumVecs() << ")" << std::endl;
+
+            
 }
 
 void Network::reBuildHashFunctions() {
   for (uint32_t l = 0; l < _num_layers; l++) {
     _layers[l]->reBuildHashFunction();
+  }
+}
+
+void Network::freezeRandomnessForInference(){
+  for (uint32_t l = 0; l < _num_layers; l++) {
+    _layers[l]->freezeSelectionForInference();
   }
 }
 

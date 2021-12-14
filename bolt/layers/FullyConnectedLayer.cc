@@ -493,6 +493,10 @@ void FullyConnectedLayer::deallocateInternalState() {
 }
 
 void FullyConnectedLayer::setSparsity(float new_sparsity) {
+
+  if(_is_frozen)
+     return; // don't change if frozen for inference
+
   _sparsity = new_sparsity;
   if (_sparsity == 1.0) {
     _sparse_dim = _dim;

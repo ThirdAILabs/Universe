@@ -27,6 +27,8 @@ class Network {
 
   void buildHashTables();
 
+  void freezeRandomnessForInference();
+
   uint32_t getNumLayers() const { return _num_layers; }
 
   uint32_t getInputDim() const { return _input_dim; }
