@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../utils/dataset/batch_types/ClickThroughBatch.h"
-#include "../layers/EmbeddingLayer.h"
-#include "../layers/FullyConnectedLayer.h"
+#include <bolt/layers/EmbeddingLayer.h>
+#include <bolt/layers/FullyConnectedLayer.h>
+#include <dataset/src/Dataset.h>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -14,16 +14,19 @@ class DLRM {
        std::vector<FullyConnectedLayerConfig> fc_layer_configs,
        uint32_t input_dim);
 
-  void train(uint32_t batch_size, const std::string& train_data,
-             const std::string& test_data, float learning_rate, uint32_t epochs,
-             uint32_t dense_features, uint32_t categorical_features,
-             uint32_t rehash = 0, uint32_t rebuild = 0,
-             uint32_t max_test_batches = std::numeric_limits<uint32_t>::max());
+  void train(
+      const dataset::InMemoryDataset<dataset::ClickThroughBatch>& train_data,
+      float learning_rate, uint32_t epochs, uint32_t rehash = 0,
+      uint32_t rebuild = 0);
+
+  void testImpl(
+      const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
+      float* scores);
 
  private:
-  void processTrainingBatch(const utils::ClickThroughBatch& batch, float lr);
+  void processTrainingBatch(const dataset::ClickThroughBatch& batch, float lr);
 
-  uint32_t processTestBatch(const utils::ClickThroughBatch& batch);
+  void processTestBatch(const dataset::ClickThroughBatch& batch, float* scores);
 
   void initializeNetworkForBatchSize(uint32_t batch_size);
 

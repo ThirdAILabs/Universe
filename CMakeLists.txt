@@ -63,6 +63,16 @@ file(
   hashtable/src/SampledHashTable.cc
 )
 
+
+file(
+  GLOB DLRM_SOURCES 
+  bolt/layers/FullyConnectedLayer.cc 
+  bolt/networks/DLRM.cc 
+  bolt/utils/*.cc 
+  hashing/src/DWTA.cc 
+  hashtable/src/SampledHashTable.cc
+)
+
 file(
   GLOB_RECURSE FLASH_SOURCES 
   flash/src/*.cc 
@@ -71,4 +81,4 @@ file(
   hashtable/src/*.cc
 )
 
-pybind11_add_module(thirdai python_bindings/thirdai.cc ${BOLT_SOURCES} ${FLASH_SOURCES})
+pybind11_add_module(thirdai python_bindings/thirdai.cc ${BOLT_SOURCES} ${FLASH_SOURCES} ${DLRM_SOURCES})
