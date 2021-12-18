@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../../utils/hashing/DWTA.h"
-#include "../../utils/hashtable/SampledHashTable.h"
 #include "Layer.h"
 #include "LayerConfig.h"
+#include <hashing/src/DWTA.h>
+#include <hashtable/src/SampledHashTable.h>
 #include <cstdint>
 
 namespace thirdai::bolt {
@@ -36,8 +36,14 @@ class FullyConnectedLayer final : public Layer {
   void backpropagateFirstLayer(uint32_t batch_indx, const uint32_t* indices,
                                const float* values, uint32_t len) override;
 
-  void computeErrors(uint32_t batch_indx, uint32_t batch_size,
-                     const uint32_t* labels, uint32_t label_len) override;
+  void computeSoftmaxErrors(uint32_t batch_indx, uint32_t batch_size,
+                            const uint32_t* labels,
+                            uint32_t label_len) override;
+
+  void computeMeanSquaredErrors(uint32_t batch_indx, uint32_t batch_size,
+                                const uint32_t* truth_indices,
+                                const float* truth_values,
+                                uint32_t truth_len) override;
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2,
                         float eps) override;
@@ -86,8 +92,14 @@ class FullyConnectedLayer final : public Layer {
                          const float* values, float* errors, uint32_t len);
 
   template <bool DENSE>
-  void computeErrorsImpl(uint32_t batch_indx, uint32_t batch_size,
-                         const uint32_t* labels, uint32_t label_len);
+  void computeSoftmaxErrorsImpl(uint32_t batch_indx, uint32_t batch_size,
+                                const uint32_t* labels, uint32_t label_len);
+
+  template <bool DENSE, bool TRUTH_DENSE>
+  void computeMeanSquaredErrorsImpl(uint32_t batch_indx, uint32_t batch_size,
+                                    const uint32_t* truth_indices,
+                                    const float* truth_values,
+                                    uint32_t truth_len);
 
   template <bool DENSE, bool PREV_DENSE>
   void selectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
@@ -122,8 +134,8 @@ class FullyConnectedLayer final : public Layer {
   bool* _is_active;
 
   SamplingConfig _sampling_config;
-  utils::DWTAHashFunction* _hasher;
-  utils::SampledHashTable<uint32_t>* _hash_table;
+  hashing::DWTAHashFunction* _hasher;
+  hashtable::SampledHashTable<uint32_t>* _hash_table;
   uint32_t* _rand_neurons;
 };
 

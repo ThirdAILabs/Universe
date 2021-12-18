@@ -75,7 +75,7 @@ void Network::processTrainingBatch(const Batch& batch, float lr) {
     /**
      * 2. Compute Errors
      */
-    _layers[_num_layers - 1]->computeErrors(
+    _layers[_num_layers - 1]->computeSoftmaxErrors(
         b, batch.batch_size, batch.labels[b], batch.label_lens[b]);
 
     /**

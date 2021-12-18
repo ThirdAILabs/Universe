@@ -2,6 +2,7 @@
 #include "../../utils/dataset/Dataset.h"
 #include <_types/_uint32_t.h>
 #include <atomic>
+#include <chrono>
 #include <stdexcept>
 
 namespace thirdai::bolt {
@@ -38,11 +39,8 @@ DLRM::DLRM(EmbeddingLayerConfig embedding_config,
   }
 }
 
-void DLRM::train(uint32_t batch_size, const std::string& train_data,
-                 const std::string& test_data, float learning_rate,
-                 uint32_t epochs, uint32_t dense_features,
-                 uint32_t categorical_features, uint32_t rehash,
-                 uint32_t rebuild, uint32_t max_test_batches) {
+void DLRM::train(const utils::InMemoryDataset<utils::ClickThroughBatch>& train_data, float learning_rate,
+                 uint32_t epochs, uint32_t rehash, uint32_t rebuild) {
   utils::InMemoryDataset<utils::ClickThroughBatch> train(
       train_data, batch_size,
       utils::ClickThroughBatchFactory(dense_features, categorical_features));

@@ -1,8 +1,11 @@
 #include "FullyConnectedLayer.h"
 #include <algorithm>
 #include <cmath>
+#include <exception>
 #include <random>
-#include <unordered_set>
+#include <sstream>
+#include <tuple>
+#include <unordered_map>
 
 namespace thirdai::bolt {
 
@@ -42,11 +45,11 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::generate(_biases, _biases + _dim, [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
-    _hasher = new utils::DWTAHashFunction(
+    _hasher = new hashing::DWTAHashFunction(
         _prev_dim, _sampling_config.hashes_per_table,
         _sampling_config.num_tables, _sampling_config.range_pow);
 
-    _hash_table = new utils::SampledHashTable<uint32_t>(
+    _hash_table = new hashtable::SampledHashTable<uint32_t>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow);
 
@@ -97,7 +100,6 @@ void FullyConnectedLayer::feedForwardImpl(uint32_t batch_indx,
                                           uint32_t label_len) {
   selectActiveNeurons<DENSE, PREV_DENSE>(batch_indx, indices, values, len,
                                          labels, label_len);
-
   float max_act = 0;
   for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
     // Because DENSE is known at compile time the compiler can remove this
@@ -125,6 +127,8 @@ void FullyConnectedLayer::feedForwardImpl(uint32_t batch_indx,
           max_act = act;
         }
         break;
+      case ActivationFunc::MeanSquared:
+        _activations[batch_indx][n] = act;
     }
   }
 
@@ -192,7 +196,12 @@ constexpr float FullyConnectedLayer::actFuncDerivative(float x) {
     case ActivationFunc::ReLU:
       return x > 0 ? 1.0 : 0.0;
     case ActivationFunc::Softmax:
+      // return 1.0; // Commented out because Clang tidy doesn't like
+      // consecutive identical branches
+    case ActivationFunc::MeanSquared:
       return 1.0;
+      // default:
+      //   return 0.0;
   }
   // This is impossible to reach, but the compiler gave a warning saying it
   // reached the end of a non void function wihtout it.
@@ -224,22 +233,44 @@ void FullyConnectedLayer::backPropagateImpl(uint32_t batch_indx,
   }
 }
 
-void FullyConnectedLayer::computeErrors(uint32_t batch_indx,
-                                        uint32_t batch_size,
-                                        const uint32_t* labels,
-                                        uint32_t label_len) {
+void FullyConnectedLayer::computeSoftmaxErrors(uint32_t batch_indx,
+                                               uint32_t batch_size,
+                                               const uint32_t* labels,
+                                               uint32_t label_len) {
   if (_sparse_dim == _dim) {
-    computeErrorsImpl<true>(batch_indx, batch_size, labels, label_len);
+    computeSoftmaxErrorsImpl<true>(batch_indx, batch_size, labels, label_len);
   } else {
-    computeErrorsImpl<false>(batch_indx, batch_size, labels, label_len);
+    computeSoftmaxErrorsImpl<false>(batch_indx, batch_size, labels, label_len);
+  }
+}
+
+void FullyConnectedLayer::computeMeanSquaredErrors(
+    uint32_t batch_indx, uint32_t batch_size, const uint32_t* truth_indices,
+    const float* truth_values, uint32_t truth_len) {
+  if (_sparse_dim == _dim) {
+    if (truth_len == _dim) {
+      computeMeanSquaredErrorsImpl<true, true>(
+          batch_indx, batch_size, truth_indices, truth_values, truth_len);
+    } else {
+      computeMeanSquaredErrorsImpl<true, false>(
+          batch_indx, batch_size, truth_indices, truth_values, truth_len);
+    }
+  } else {
+    if (truth_len == _dim) {
+      computeMeanSquaredErrorsImpl<false, true>(
+          batch_indx, batch_size, truth_indices, truth_values, truth_len);
+    } else {
+      computeMeanSquaredErrorsImpl<false, false>(
+          batch_indx, batch_size, truth_indices, truth_values, truth_len);
+    }
   }
 }
 
 template <bool DENSE>
-void FullyConnectedLayer::computeErrorsImpl(uint32_t batch_indx,
-                                            uint32_t batch_size,
-                                            const uint32_t* labels,
-                                            uint32_t label_len) {
+void FullyConnectedLayer::computeSoftmaxErrorsImpl(uint32_t batch_indx,
+                                                   uint32_t batch_size,
+                                                   const uint32_t* labels,
+                                                   uint32_t label_len) {
   float frac = 1.0 / label_len;
 
   for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
@@ -253,6 +284,29 @@ void FullyConnectedLayer::computeErrorsImpl(uint32_t batch_indx,
     } else {
       _errors[batch_indx][n] = -_activations[batch_indx][n] / batch_size;
     }
+  }
+}
+
+template <bool DENSE, bool TRUTH_DENSE>
+void FullyConnectedLayer::computeMeanSquaredErrorsImpl(
+    uint32_t batch_indx, uint32_t batch_size, const uint32_t* truth_indices,
+    const float* truth_values, uint32_t truth_len) {
+  for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
+    uint32_t act_neuron = DENSE ? n : _active_neurons[batch_indx][n];
+    float matching_truth_value;
+    if (TRUTH_DENSE) {
+      matching_truth_value = truth_values[act_neuron];
+    } else {
+      const unsigned int* itr =
+          std::find(truth_indices, truth_indices + truth_len, act_neuron);
+      if (itr != truth_indices + truth_len) {
+        matching_truth_value = truth_values[std::distance(truth_indices, itr)];
+      } else {
+        matching_truth_value = 0.0;
+      }
+    }
+    _errors[batch_indx][n] =
+        2 * (matching_truth_value - _activations[batch_indx][n]) / batch_size;
   }
 }
 
@@ -371,7 +425,7 @@ void FullyConnectedLayer::reBuildHashFunction() {
   }
   delete _hasher;
 
-  _hasher = new utils::DWTAHashFunction(
+  _hasher = new hashing::DWTAHashFunction(
       _prev_dim, _sampling_config.hashes_per_table, _sampling_config.num_tables,
       _sampling_config.range_pow);
 }
