@@ -12,7 +12,7 @@ namespace tests {
 class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
-class FullyConnectedLayer final : public Layer {
+class FullyConnectedLayer final{
   friend class tests::FullyConnectedLayerTestFixture;
 
  public:
@@ -26,21 +26,14 @@ class FullyConnectedLayer final : public Layer {
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
                       uint64_t prev_dim);
 
-  void forward(const uint32_t* indices_in, const float* values_in,
-               uint32_t len_in, uint32_t* indices_out, float* values_out,
+  void forward(const VectorState& input, VectorState& output,
                const uint32_t* labels = nullptr,
-               uint32_t label_len = 0) override;
+               uint32_t label_len = 0) ;
 
-  void backpropagate(const uint32_t* indices_in, const float* values_in,
-                     float* gradients_in, uint32_t len_in,
-                     const uint32_t* indices_out, const float* values_out,
-                     const float* gradients_out) override;
+  void backpropagate(VectorState& input, VectorState& output) ;
 
-  void backpropagateInputLayer(const uint32_t* indices_in,
-                               const float* values_in, uint32_t len_in,
-                               const uint32_t* indices_out,
-                               const float* values_out,
-                               const float* gradients_out) override;
+  void backpropagateInputLayer(VectorState& input,
+                               VectorState& output) ;
 
   // void computeSoftmaxErrors(uint32_t batch_indx, uint32_t batch_size,
   //                           const uint32_t* labels,
@@ -52,6 +45,13 @@ class FullyConnectedLayer final : public Layer {
   //                               uint32_t truth_len) override;
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
+
+  BatchState createBatchState(const uint32_t batch_size,
+                              bool force_dense = false)  {
+    bool is_dense = (_sparse_dim == _dim) || force_dense;
+
+    return BatchState(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
+  }
 
   void buildHashTables();
 
@@ -67,15 +67,11 @@ class FullyConnectedLayer final : public Layer {
 
  private:
   template <bool DENSE, bool PREV_DENSE>
-  void forwardImpl(const uint32_t* indices_in, const float* values_in,
-                   uint32_t len_in, uint32_t* indices_out, float* values_out,
+  void forwardImpl(const VectorState& input, VectorState& output,
                    const uint32_t* labels, uint32_t label_len);
 
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
-  void backpropagateImpl(const uint32_t* indices_in, const float* values_in,
-                         float* gradients_in, uint32_t len_in,
-                         const uint32_t* indices_out, const float* values_out,
-                         const float* gradients_out);
+  void backpropagateImpl(VectorState& input, VectorState& output);
 
   // template <bool DENSE>
   // void computeSoftmaxErrorsImpl(uint32_t batch_indx, uint32_t batch_size,
@@ -88,10 +84,8 @@ class FullyConnectedLayer final : public Layer {
   //                                   uint32_t truth_len);
 
   template <bool DENSE, bool PREV_DENSE>
-  void selectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
-                           const float* values, uint32_t len,
-                           uint32_t* indices_out, const uint32_t* labels,
-                           uint32_t label_len);
+  void selectActiveNeurons(const VectorState& input, VectorState& output,
+                           const uint32_t* labels, uint32_t label_len);
 
   constexpr float actFuncDerivative(float x);
 
