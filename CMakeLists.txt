@@ -67,6 +67,7 @@ file(
 file(
   GLOB DLRM_SOURCES 
   bolt/layers/FullyConnectedLayer.cc 
+  bolt/layers/EmbeddingLayer.cc
   bolt/networks/DLRM.cc 
   bolt/utils/*.cc 
   hashing/src/DWTA.cc 
