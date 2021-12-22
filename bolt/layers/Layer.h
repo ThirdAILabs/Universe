@@ -18,18 +18,19 @@ struct VectorState {
 
   VectorState() {}
 
-  explicit VectorState(uint32_t* an, float* a, float* g, uint32_t l)
+  constexpr explicit VectorState(uint32_t* an, float* a, float* g, uint32_t l)
       : active_neurons(an), activations(a), gradients(g), len(l) {}
 
-  static VectorState makeDenseState(float* a, float* g, uint32_t l) {
+  constexpr static VectorState makeDenseState(float* a, float* g, uint32_t l) {
     return VectorState(nullptr, a, g, l);
   }
 
-  static VectorState makeSparseInputState(uint32_t* an, float* a, uint32_t l) {
+  constexpr static VectorState makeSparseInputState(uint32_t* an, float* a,
+                                                    uint32_t l) {
     return VectorState(an, a, nullptr, l);
   }
 
-  static VectorState makeDenseInputState(float* a, uint32_t l) {
+  constexpr static VectorState makeDenseInputState(float* a, uint32_t l) {
     return VectorState(nullptr, a, nullptr, l);
   }
 };
@@ -43,6 +44,8 @@ class BatchState {
   uint32_t _batch_size;
 
  public:
+  BatchState() {}
+
   BatchState(const uint32_t dim, const uint32_t batch_size, bool is_dense)
       : _batch_size(batch_size) {
     _vector_states = new VectorState[batch_size];

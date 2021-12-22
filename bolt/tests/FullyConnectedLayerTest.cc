@@ -474,7 +474,7 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSoftmaxTest) {
       {-0.0269644181453, -0.0185323555001, 0.0791319796238, -0.0417633078085,
        -0.0153638623381, -0.0430890175068, -0.0346229982448, 0.101203984507}};
 
-  CrossEntropyLoss loss;
+  SparseCategoricalCrossEntropyLoss loss;
 
   for (uint32_t i = 0; i < 4; i++) {
     loss(outputs[i], 4, labels.at(i).data(), labels.at(i).size());
@@ -525,7 +525,7 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSoftmaxTest) {
       {0.100200200818, -0.125943772282, -0.0674128434646, 0.0931564275222},
       {0.0885708181152, -0.082094428647, -0.084700385549, 0.0782240045508}};
 
-  CrossEntropyLoss loss;
+  SparseCategoricalCrossEntropyLoss loss;
 
   for (uint32_t i = 0; i < 4; i++) {
     loss(outputs[i], 4, labels.at(i).data(), labels.at(i).size());

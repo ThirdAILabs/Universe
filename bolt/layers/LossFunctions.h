@@ -2,7 +2,7 @@
 
 namespace thirdai::bolt {
 
-class CrossEntropyLoss {
+class SparseCategoricalCrossEntropyLoss {
  private:
   template <bool DENSE>
   void computeLoss(VectorState& output, uint32_t batch_size,
