@@ -29,8 +29,12 @@ class InMemoryDataset {
 
     uint64_t curr_id = 0;
     while (!file.eof()) {
-      _batches.push_back(factory.parse(file, batch_size, curr_id));
-      curr_id += _batches.back().getBatchSize();
+      BATCH_T&& batch = factory.parse(file, batch_size, curr_id);
+      if (batch.getBatchSize() == 0) {
+        break;
+      }
+      curr_id += batch.getBatchSize();
+      _batches.push_back(batch);
     }
 
     file.close();

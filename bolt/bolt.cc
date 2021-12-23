@@ -1,12 +1,13 @@
 #include "layers/Layer.h"
 #include "networks/Network.h"
 #include "utils/ConfigReader.h"
-#include "utils/DataLoader.h"
+#include <dataset/src/Dataset.h>
 #include <chrono>
 #include <iostream>
 #include <vector>
 
 namespace bolt = thirdai::bolt;
+namespace dataset = thirdai::dataset;
 
 int main(int argc, char** argv) {
   if (argc != 2) {
@@ -45,9 +46,18 @@ int main(int argc, char** argv) {
     max_test_batches = config.intVal("max_test_batches");
   }
 
-  network.train(batch_size, config.strVal("train_data"),
-                config.strVal("test_data"), learning_rate, epochs, rehash,
-                rebuild, max_test_batches);
+  dataset::InMemoryDataset<dataset::SparseBatch> train_data(
+      config.strVal("train_data"), batch_size,
+      dataset::SvmSparseBatchFactory{});
+
+  dataset::InMemoryDataset<dataset::SparseBatch> test_data(
+      config.strVal("test_data"), batch_size, dataset::SvmSparseBatchFactory{});
+
+  for (uint32_t e = 0; e < epochs; e++) {
+    network.train(train_data, learning_rate, 1, rehash, rebuild);
+    network.test(test_data, max_test_batches);
+  }
+  network.test(test_data);
 
   return 0;
 }
