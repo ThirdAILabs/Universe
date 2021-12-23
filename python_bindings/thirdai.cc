@@ -320,9 +320,10 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
 
   auto dataset_submodule = m.def_submodule("dataset");
 
-  m.def("loadClickThroughDataset", &thirdai::python::loadClickThorughDataset,
-        py::arg("filename"), py::arg("batch_size"),
-        py::arg("num_dense_features"), py::arg("num_categorical_features"));
+  dataset_submodule.def(
+      "loadClickThroughDataset", &thirdai::python::loadClickThorughDataset,
+      py::arg("filename"), py::arg("batch_size"), py::arg("num_dense_features"),
+      py::arg("num_categorical_features"));
 
   py::class_<
       thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>>
