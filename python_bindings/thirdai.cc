@@ -9,6 +9,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <chrono>
 #include <string>
 #include <vector>
 #ifndef __clang__
@@ -78,13 +79,20 @@ class PyNetwork final : public Network {
 using ClickThroughDataset =
     thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>;
 
-ClickThroughDataset readClickThorughDataset(std::string filename,
+ClickThroughDataset loadClickThorughDataset(std::string filename,
                                             uint32_t batch_size,
                                             uint32_t num_dense_features,
                                             uint32_t num_categorical_features) {
+  auto start = std::chrono::high_resolution_clock::now();
   thirdai::dataset::ClickThroughBatchFactory factory(num_dense_features,
                                                      num_categorical_features);
-  return ClickThroughDataset(filename, batch_size, std::move(factory));
+  ClickThroughDataset data(filename, batch_size, std::move(factory));
+  auto end = std::chrono::high_resolution_clock::now();
+  std::cout
+      << "Read " << data.len() << " vectors in "
+      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
+      << " seconds" << std::endl;
+  return data;
 }
 
 class PyDLRM final : public DLRM {
@@ -312,7 +320,7 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
 
   auto dataset_submodule = m.def_submodule("datasets");
 
-  m.def("read_click_through_dataset", &thirdai::python::readClickThorughDataset,
+  m.def("loadClickThroughDataset", &thirdai::python::loadClickThorughDataset,
         py::arg("filename"), py::arg("batch_size"),
         py::arg("num_dense_features"), py::arg("num_categorical_features"));
 
