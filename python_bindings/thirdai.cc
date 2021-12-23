@@ -148,7 +148,7 @@ static DenseBatch wrapNumpyIntoDenseBatch(
   return DenseBatch(std::move(batch_vectors), starting_id);
 }
 
-static InMemoryDataset<SparseBatch> loadSVMDataset(std::string filename,
+static InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
                                                    uint32_t batch_size) {
   return InMemoryDataset<SparseBatch>(
       filename, batch_size, thirdai::dataset::SvmSparseBatchFactory{});
@@ -252,8 +252,9 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
 
   auto dataset_submodule = m.def_submodule("dataset");
 
-  py::class_<InMemoryDataset<SparseBatch>>(dataset_submodule,
-                                           "InMemorySparseDataset");
+  py::class_<InMemoryDataset<SparseBatch>> _imsb_(dataset_submodule,
+                                                  "InMemorySparseDataset");
+  (void)_imsb_;  // To get rid of clang tidy error
 
   dataset_submodule.def("loadSVMDataset", &thirdai::python::loadSVMDataset,
                         py::arg("filename"), py::arg("batch_size"));

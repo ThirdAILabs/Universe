@@ -243,7 +243,6 @@ void Network::forward(uint32_t batch_index, const VectorState& input,
   }
 }
 
-// TODO: handle case where input is data vs output from another network/layer
 template <bool FROM_INPUT>
 void Network::backpropagate(uint32_t batch_index, VectorState& input,
                             VectorState& output) {

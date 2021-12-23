@@ -113,21 +113,21 @@ class BatchState {
   }
 };
 
-class Layer {
- public:
-  virtual void forward(const VectorState& input, VectorState& output,
-                       const uint32_t* labels = nullptr,
-                       uint32_t label_len = 0) = 0;
+// class Layer {
+//  public:
+//   virtual void forward(const VectorState& input, VectorState& output,
+//                        const uint32_t* labels = nullptr,
+//                        uint32_t label_len = 0) = 0;
 
-  virtual void backpropagate(VectorState& input, VectorState& output) = 0;
+//   virtual void backpropagate(VectorState& input, VectorState& output) = 0;
 
-  virtual void backpropagateInputLayer(VectorState& input,
-                                       VectorState& output) = 0;
+//   virtual void backpropagateInputLayer(VectorState& input,
+//                                        VectorState& output) = 0;
 
-  virtual BatchState createBatchState(const uint32_t batch_size,
-                                      bool training = true);
+//   virtual BatchState createBatchState(const uint32_t batch_size,
+//                                       bool training = true);
 
-  virtual ~Layer() {}
-};
+//   virtual ~Layer() {}
+// };
 
 }  // namespace thirdai::bolt
