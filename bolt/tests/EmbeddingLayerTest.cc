@@ -62,12 +62,14 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
 TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
   std::vector<uint32_t> tokens = {6};
 
+  BatchState output = _layer->createBatchState(tokens.size());
+
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->feedForward(i, tokens.data() + i, 1);
+    _layer->forward(i, tokens.data() + i, 1, output[i]);
   }
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    const float* embedding = _layer->getEmbedding(i);
+    const float* embedding = output[i].activations;
 
     for (uint32_t e = 0; e < _num_lookups; e++) {
       uint32_t item = tokens[i] * _num_lookups + e;
@@ -86,12 +88,14 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbedding) {
   std::vector<std::vector<uint32_t>> tokens = {
       {7, 4, 18}, {98, 34, 55, 2}, {9, 24}, {61, 75, 11}};
 
+  BatchState output = _layer->createBatchState(tokens.size());
+
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->feedForward(i, tokens[i].data(), tokens[i].size());
+    _layer->forward(i, tokens[i].data(), tokens[i].size(), output[i]);
   }
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    const float* embedding = _layer->getEmbedding(i);
+    const float* embedding = output[i].activations;
 
     for (uint32_t e = 0; e < _num_lookups; e++) {
       for (uint32_t j = 0; j < _lookup_size; j++) {
@@ -114,18 +118,24 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
   std::vector<std::vector<uint32_t>> tokens = {
       {7, 4, 18}, {98, 34, 55, 2}, {9, 24}, {61, 75, 11}};
 
+  BatchState output = _layer->createBatchState(tokens.size());
+
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->feedForward(i, tokens[i].data(), tokens[i].size());
+    _layer->forward(i, tokens[i].data(), tokens[i].size(), output[i]);
   }
 
   std::unordered_map<uint32_t, float> deltas;
 
   for (uint32_t b = 0; b < 4; b++) {
     for (uint32_t i = 0; i < _num_lookups * _lookup_size; i++) {
-      _layer->getErrors(b)[i] = 0.5 * i + b * 0.005;
+      output[b].gradients[i] = 0.5 * i + b * 0.005;
     }
 
+<<<<<<< HEAD
     _layer->backpropagate(b);
+=======
+    _layer->backpropagate(b, 1.0, output[b]);
+>>>>>>> 1a0210f88e3290ea1eb3cdf9f460c3bde2c24bd5
 
     for (uint32_t t : tokens[b]) {
       for (uint32_t e = 0; e < _num_lookups; e++) {
@@ -136,7 +146,7 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
         loc = loc >> (32 - _log_block_size);
 
         for (uint32_t j = 0; j < _lookup_size; j++) {
-          deltas[loc + j] += _layer->getErrors(b)[e * _lookup_size + j];
+          deltas[loc + j] += output[b].gradients[e * _lookup_size + j];
         }
       }
     }

@@ -1,4 +1,5 @@
 #include "../layers/FullyConnectedLayer.h"
+#include "../layers/LossFunctions.h"
 #include <hashtable/src/SampledHashTable.h>
 #include <gtest/gtest.h>
 #include <vector>
@@ -15,7 +16,6 @@ class FullyConnectedLayerTestFixture : public testing::Test {
     // Input layer is dim 10
     _layer = new FullyConnectedLayer(config, 10);
     // Batch size = 4
-    _layer->initializeLayer(4);
 
     // Manually set weights and biases
     float* new_weights =
@@ -80,12 +80,21 @@ class FullyConnectedLayerTestFixture : public testing::Test {
 };
 
 TEST_F(FullyConnectedLayerTestFixture, SparseDenseTest) {
-  _layer->setSparsity(1.0);
+  std::vector<std::vector<float>> prev_errors_calc = {
+      std::vector<float>(6, 0), std::vector<float>(7, 0),
+      std::vector<float>(6, 0), std::vector<float>(5, 0)};
+
+  std::vector<VectorState> inputs;
+  for (uint32_t i = 0; i < 4; i++) {
+    inputs.push_back(VectorState(
+        _sparse_data_indices.at(i).data(), _sparse_data_values.at(i).data(),
+        prev_errors_calc.at(i).data(), prev_errors_calc.at(i).size()));
+  }
+
+  BatchState outputs = _layer->createBatchState(4, true);
 
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->feedForward(i, _sparse_data_indices.at(i).data(),
-                        _sparse_data_values.at(i).data(), _data_lens.at(i),
-                        nullptr, 0);
+    _layer->forward(inputs[i], outputs[i], nullptr, 0);
   }
 
   std::vector<std::vector<float>> activations = {
@@ -95,9 +104,10 @@ TEST_F(FullyConnectedLayerTestFixture, SparseDenseTest) {
       {0.0, 0.0, 0.15625, 0.0625, 0.0, 0.09375, 0.0, 0.0}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    ASSERT_EQ(_layer->getLen(i), 8);
+    ASSERT_EQ(outputs[i].len, 8);
+    ASSERT_EQ(outputs[i].active_neurons, nullptr);
     for (uint32_t j = 0; j < 8; j++) {
-      ASSERT_EQ(_layer->getValues(i)[j], activations.at(i).at(j));
+      ASSERT_EQ(outputs[i].activations[j], activations.at(i).at(j));
     }
   }
 
@@ -107,15 +117,9 @@ TEST_F(FullyConnectedLayerTestFixture, SparseDenseTest) {
       {0.375, -0.5, -0.125, -0.5, 0.625, 0.75, -0.5, -0.125},
       {0.5, -0.25, 0.75, -0.375, 0.125, -0.375, 0.5, 0.5}};
 
-  std::vector<std::vector<float>> prev_errors_calc = {
-      std::vector<float>(6, 0), std::vector<float>(7, 0),
-      std::vector<float>(6, 0), std::vector<float>(5, 0)};
-
   for (uint32_t i = 0; i < 4; i++) {
-    std::copy(errors.at(i).begin(), errors.at(i).end(), _layer->getErrors(i));
-    _layer->backpropagate(i, _sparse_data_indices.at(i).data(),
-                          _sparse_data_values.at(i).data(),
-                          prev_errors_calc.at(i).data(), _data_lens.at(i));
+    std::copy(errors.at(i).begin(), errors.at(i).end(), outputs[i].gradients);
+    _layer->backpropagate(inputs[i], outputs[i]);
   }
 
   std::vector<std::vector<float>> w_gradient = {
@@ -160,11 +164,21 @@ TEST_F(FullyConnectedLayerTestFixture, SparseDenseTest) {
 }
 
 TEST_F(FullyConnectedLayerTestFixture, DenseDenseTest) {
-  _layer->setSparsity(1.0);
+  std::vector<std::vector<float>> prev_errors_calc = {
+      std::vector<float>(10, 0), std::vector<float>(10, 0),
+      std::vector<float>(10, 0), std::vector<float>(10, 0)};
+
+  std::vector<VectorState> inputs;
+  for (uint32_t i = 0; i < 4; i++) {
+    inputs.push_back(VectorState::makeDenseState(
+        _dense_data_values.at(i).data(), prev_errors_calc.at(i).data(),
+        prev_errors_calc.at(i).size()));
+  }
+
+  BatchState outputs = _layer->createBatchState(4, true);
 
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->feedForward(i, nullptr, _dense_data_values.at(i).data(), 10,
-                        nullptr, 0);
+    _layer->forward(inputs[i], outputs[i], nullptr, 0);
   }
 
   std::vector<std::vector<float>> activations = {
@@ -174,9 +188,10 @@ TEST_F(FullyConnectedLayerTestFixture, DenseDenseTest) {
       {0.0, 0.0, 0.15625, 0.0625, 0.0, 0.09375, 0.0, 0.0}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    ASSERT_EQ(_layer->getLen(i), 8);
+    ASSERT_EQ(outputs[i].len, 8);
+    ASSERT_EQ(outputs[i].active_neurons, nullptr);
     for (uint32_t j = 0; j < 8; j++) {
-      ASSERT_EQ(_layer->getValues(i)[j], activations.at(i).at(j));
+      ASSERT_EQ(outputs[i].activations[j], activations.at(i).at(j));
     }
   }
 
@@ -186,14 +201,9 @@ TEST_F(FullyConnectedLayerTestFixture, DenseDenseTest) {
       {0.375, -0.5, -0.125, -0.5, 0.625, 0.75, -0.5, -0.125},
       {0.5, -0.25, 0.75, -0.375, 0.125, -0.375, 0.5, 0.5}};
 
-  std::vector<std::vector<float>> prev_errors_calc = {
-      std::vector<float>(10, 0), std::vector<float>(10, 0),
-      std::vector<float>(10, 0), std::vector<float>(10, 0)};
-
   for (uint32_t i = 0; i < 4; i++) {
-    std::copy(errors.at(i).begin(), errors.at(i).end(), _layer->getErrors(i));
-    _layer->backpropagate(i, nullptr, _dense_data_values.at(i).data(),
-                          prev_errors_calc.at(i).data(), 10);
+    std::copy(errors.at(i).begin(), errors.at(i).end(), outputs[i].gradients);
+    _layer->backpropagate(inputs[i], outputs[i]);
   }
 
   std::vector<std::vector<float>> w_gradient = {
@@ -241,15 +251,26 @@ TEST_F(FullyConnectedLayerTestFixture, DenseDenseTest) {
 }
 
 TEST_F(FullyConnectedLayerTestFixture, SparseSparseTest) {
+  std::vector<std::vector<float>> prev_errors_calc = {
+      std::vector<float>(6, 0), std::vector<float>(7, 0),
+      std::vector<float>(6, 0), std::vector<float>(5, 0)};
+
+  std::vector<VectorState> inputs;
+  for (uint32_t i = 0; i < 4; i++) {
+    inputs.push_back(VectorState(
+        _sparse_data_indices.at(i).data(), _sparse_data_values.at(i).data(),
+        prev_errors_calc.at(i).data(), prev_errors_calc.at(i).size()));
+  }
+
+  BatchState outputs = _layer->createBatchState(4);
+
   std::vector<std::vector<uint32_t>> active_neurons = {
       {2, 3, 4, 6}, {2, 4, 6, 7}, {0, 3, 5, 6}, {1, 3, 5, 7}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    // Use active neurons as the labels to force them to be selected so the test
-    // is deterministic
-    _layer->feedForward(i, _sparse_data_indices.at(i).data(),
-                        _sparse_data_values.at(i).data(), _data_lens.at(i),
-                        active_neurons.at(i).data(), 4);
+    // Use active neurons as the labels to force them to be selected so the
+    // test is deterministic
+    _layer->forward(inputs[i], outputs[i], active_neurons.at(i).data(), 4);
   }
 
   std::vector<std::vector<float>> activations = {{1.0, 0.0, 0.3125, 0.125},
@@ -258,10 +279,10 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSparseTest) {
                                                  {0.0, 0.0625, 0.09375, 0.0}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    ASSERT_EQ(_layer->getLen(i), 4);
+    ASSERT_EQ(outputs[i].len, 4);
     for (uint32_t j = 0; j < 4; j++) {
-      ASSERT_EQ(_layer->getIndices(i)[j], active_neurons.at(i).at(j));
-      ASSERT_EQ(_layer->getValues(i)[j], activations.at(i).at(j));
+      ASSERT_EQ(outputs[i].active_neurons[j], active_neurons.at(i).at(j));
+      ASSERT_EQ(outputs[i].activations[j], activations.at(i).at(j));
     }
   }
 
@@ -269,15 +290,10 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSparseTest) {
                                             {0.5, 0.5, 0.75, -0.5},
                                             {0.375, -0.5, 0.75, -0.5},
                                             {-0.25, -0.375, -0.375, 0.5}};
-  std::vector<std::vector<float>> prev_errors_calc = {
-      std::vector<float>(6, 0), std::vector<float>(7, 0),
-      std::vector<float>(6, 0), std::vector<float>(5, 0)};
 
   for (uint32_t i = 0; i < 4; i++) {
-    std::copy(errors.at(i).begin(), errors.at(i).end(), _layer->getErrors(i));
-    _layer->backpropagate(i, _sparse_data_indices.at(i).data(),
-                          _sparse_data_values.at(i).data(),
-                          prev_errors_calc.at(i).data(), _data_lens.at(i));
+    std::copy(errors.at(i).begin(), errors.at(i).end(), outputs[i].gradients);
+    _layer->backpropagate(inputs[i], outputs[i]);
   }
 
   std::vector<std::vector<float>> w_gradient = {
@@ -322,14 +338,26 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSparseTest) {
 }
 
 TEST_F(FullyConnectedLayerTestFixture, DenseSparseTest) {
+  std::vector<std::vector<float>> prev_errors_calc = {
+      std::vector<float>(10, 0), std::vector<float>(10, 0),
+      std::vector<float>(10, 0), std::vector<float>(10, 0)};
+
+  std::vector<VectorState> inputs;
+  for (uint32_t i = 0; i < 4; i++) {
+    inputs.push_back(VectorState::makeDenseState(
+        _dense_data_values.at(i).data(), prev_errors_calc.at(i).data(),
+        prev_errors_calc.at(i).size()));
+  }
+
+  BatchState outputs = _layer->createBatchState(4);
+
   std::vector<std::vector<uint32_t>> active_neurons = {
       {2, 3, 4, 6}, {2, 4, 6, 7}, {0, 3, 5, 6}, {1, 3, 5, 7}};
 
   for (uint32_t i = 0; i < 4; i++) {
     // Use active neurons as the labels to force them to be selected so the test
     // is deterministic
-    _layer->feedForward(i, nullptr, _dense_data_values.at(i).data(), 10,
-                        active_neurons.at(i).data(), 4);
+    _layer->forward(inputs[i], outputs[i], active_neurons.at(i).data(), 4);
   }
 
   std::vector<std::vector<float>> activations = {{1.0, 0.0, 0.3125, 0.125},
@@ -338,10 +366,10 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSparseTest) {
                                                  {0.0, 0.0625, 0.09375, 0.0}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    ASSERT_EQ(_layer->getLen(i), 4);
+    ASSERT_EQ(outputs[i].len, 4);
     for (uint32_t j = 0; j < 4; j++) {
-      ASSERT_EQ(_layer->getIndices(i)[j], active_neurons.at(i).at(j));
-      ASSERT_EQ(_layer->getValues(i)[j], activations.at(i).at(j));
+      ASSERT_EQ(outputs[i].active_neurons[j], active_neurons.at(i).at(j));
+      ASSERT_EQ(outputs[i].activations[j], activations.at(i).at(j));
     }
   }
 
@@ -349,14 +377,10 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSparseTest) {
                                             {0.5, 0.5, 0.75, -0.5},
                                             {0.375, -0.5, 0.75, -0.5},
                                             {-0.25, -0.375, -0.375, 0.5}};
-  std::vector<std::vector<float>> prev_errors_calc = {
-      std::vector<float>(10, 0), std::vector<float>(10, 0),
-      std::vector<float>(10, 0), std::vector<float>(10, 0)};
 
   for (uint32_t i = 0; i < 4; i++) {
-    std::copy(errors.at(i).begin(), errors.at(i).end(), _layer->getErrors(i));
-    _layer->backpropagate(i, nullptr, _dense_data_values.at(i).data(),
-                          prev_errors_calc.at(i).data(), 10);
+    std::copy(errors.at(i).begin(), errors.at(i).end(), outputs[i].gradients);
+    _layer->backpropagate(inputs[i], outputs[i]);
   }
 
   std::vector<std::vector<float>> w_gradient = {
@@ -407,12 +431,17 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSparseTest) {
 TEST_F(FullyConnectedLayerTestFixture, DenseSoftmaxTest) {
   makeSoftmax();
 
-  _layer->setSparsity(1.0);
+  std::vector<VectorState> inputs;
+  for (uint32_t i = 0; i < 4; i++) {
+    inputs.push_back(VectorState::makeSparseInputState(
+        _sparse_data_indices.at(i).data(), _sparse_data_values.at(i).data(),
+        _sparse_data_indices.at(i).size()));
+  }
+
+  BatchState outputs = _layer->createBatchState(4, true);
 
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->feedForward(i, _sparse_data_indices.at(i).data(),
-                        _sparse_data_values.at(i).data(), _data_lens.at(i),
-                        nullptr, 0);
+    _layer->forward(inputs[i], outputs[i], nullptr, 0);
   }
 
   std::vector<std::vector<float>> activations = {
@@ -426,9 +455,10 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSoftmaxTest) {
        0.0614554493523, 0.172356070027, 0.138491992979, 0.095184061973}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    ASSERT_EQ(_layer->getLen(i), 8);
+    ASSERT_EQ(outputs[i].len, 8);
+    ASSERT_EQ(outputs[i].active_neurons, nullptr);
     for (uint32_t j = 0; j < 8; j++) {
-      ASSERT_FLOAT_EQ(_layer->getValues(i)[j], activations.at(i).at(j));
+      ASSERT_FLOAT_EQ(outputs[i].activations[j], activations.at(i).at(j));
     }
   }
 
@@ -444,11 +474,12 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSoftmaxTest) {
       {-0.0269644181453, -0.0185323555001, 0.0791319796238, -0.0417633078085,
        -0.0153638623381, -0.0430890175068, -0.0346229982448, 0.101203984507}};
 
+  SparseCategoricalCrossEntropyLoss loss;
+
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->computeSoftmaxErrors(i, labels.size(), labels.at(i).data(),
-                                 labels.at(i).size());
+    loss(outputs[i], 4, labels.at(i).data(), labels.at(i).size());
     for (uint32_t j = 0; j < 8; j++) {
-      ASSERT_FLOAT_EQ(_layer->getErrors(i)[j], errors.at(i).at(j));
+      ASSERT_FLOAT_EQ(outputs[i].gradients[j], errors.at(i).at(j));
     }
   }
 }
@@ -456,16 +487,22 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSoftmaxTest) {
 TEST_F(FullyConnectedLayerTestFixture, SparseSoftmaxTest) {
   makeSoftmax();
 
+  std::vector<VectorState> inputs;
+  for (uint32_t i = 0; i < 4; i++) {
+    inputs.push_back(VectorState::makeSparseInputState(
+        _sparse_data_indices.at(i).data(), _sparse_data_values.at(i).data(),
+        _sparse_data_indices.at(i).size()));
+  }
+
+  BatchState outputs = _layer->createBatchState(4);
+
   std::vector<std::vector<uint32_t>> active_neurons = {
       {2, 3, 4, 6}, {2, 4, 6, 7}, {0, 3, 5, 6}, {1, 3, 5, 7}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    // Use active neurons as the labels to force them to be selected so the test
-    // is deterministic
-    _layer->feedForward(i, _sparse_data_indices.at(i).data(),
-                        _sparse_data_values.at(i).data(), _data_lens.at(i),
-                        active_neurons.at(i).data(), 4);
+    _layer->forward(inputs[i], outputs[i], active_neurons.at(i).data(), 4);
   }
+
   std::vector<std::vector<float>> activations = {
       {0.477676358768, 0.0830077045562, 0.240190757239, 0.199125131669},
       {0.437829635695, 0.161068521708, 0.206816075701, 0.194285723113},
@@ -473,10 +510,10 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSoftmaxTest) {
       {0.145716727539, 0.328377714588, 0.338801542196, 0.187103981797}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    ASSERT_EQ(_layer->getLen(i), 4);
+    ASSERT_EQ(outputs[i].len, 4);
     for (uint32_t j = 0; j < 4; j++) {
-      ASSERT_EQ(_layer->getIndices(i)[j], active_neurons.at(i).at(j));
-      ASSERT_FLOAT_EQ(_layer->getValues(i)[j], activations.at(i).at(j));
+      ASSERT_EQ(outputs[i].active_neurons[j], active_neurons.at(i).at(j));
+      ASSERT_FLOAT_EQ(outputs[i].activations[j], activations.at(i).at(j));
     }
   }
 
@@ -488,11 +525,13 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSoftmaxTest) {
       {0.100200200818, -0.125943772282, -0.0674128434646, 0.0931564275222},
       {0.0885708181152, -0.082094428647, -0.084700385549, 0.0782240045508}};
 
+  SparseCategoricalCrossEntropyLoss loss;
+
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->computeSoftmaxErrors(i, labels.size(), labels.at(i).data(),
-                                 labels.at(i).size());
+    loss(outputs[i], 4, labels.at(i).data(), labels.at(i).size());
+
     for (uint32_t j = 0; j < 4; j++) {
-      ASSERT_FLOAT_EQ(_layer->getErrors(i)[j], errors.at(i).at(j));
+      ASSERT_FLOAT_EQ(outputs[i].gradients[j], errors.at(i).at(j));
     }
   }
 }
@@ -500,12 +539,17 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSoftmaxTest) {
 TEST_F(FullyConnectedLayerTestFixture, DenseLayerDenseTruthMeanSquaredTest) {
   makeMeanSquared();
 
-  _layer->setSparsity(1.0);
+  std::vector<VectorState> inputs;
+  for (uint32_t i = 0; i < 4; i++) {
+    inputs.push_back(VectorState::makeSparseInputState(
+        _sparse_data_indices.at(i).data(), _sparse_data_values.at(i).data(),
+        _sparse_data_indices.at(i).size()));
+  }
+
+  BatchState outputs = _layer->createBatchState(4, true);
 
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->feedForward(i, _sparse_data_indices.at(i).data(),
-                        _sparse_data_values.at(i).data(), _data_lens.at(i),
-                        nullptr, 0);
+    _layer->forward(inputs[i], outputs[i], nullptr, 0);
   }
 
   // TODO(Geordie): Change activations DONE
@@ -516,9 +560,10 @@ TEST_F(FullyConnectedLayerTestFixture, DenseLayerDenseTruthMeanSquaredTest) {
       {-0.375, -0.75, 0.15625, 0.0625, -0.9375, 0.09375, -0.125, -0.5}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    ASSERT_EQ(_layer->getLen(i), 8);
+    ASSERT_EQ(outputs[i].len, 8);
+    ASSERT_EQ(outputs[i].active_neurons, nullptr);
     for (uint32_t j = 0; j < 8; j++) {
-      ASSERT_FLOAT_EQ(_layer->getValues(i)[j], activations.at(i).at(j));
+      ASSERT_FLOAT_EQ(outputs[i].activations[j], activations.at(i).at(j));
     }
   }
 
@@ -536,13 +581,13 @@ TEST_F(FullyConnectedLayerTestFixture, DenseLayerDenseTruthMeanSquaredTest) {
       {-0.0625, -0.28125, 0.5, 1.875, 0.40625, -0.5625, -0.1875, 0.09375},
       {1.5375, 3.975, 1.021875, -0.03125, 0.46875, -0.046875, 0.0625, 0.25}};
 
+  MeanSquaredError mse;
   // TODO(Geordie): Change method calls DONE
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->computeMeanSquaredErrors(i, truth_values.size(), nullptr,
-                                     truth_values.at(i).data(),
-                                     truth_values.at(i).size());
+    mse(outputs[i], 4, nullptr, truth_values.at(i).data(),
+        truth_values.at(i).size());
     for (uint32_t j = 0; j < 8; j++) {
-      ASSERT_FLOAT_EQ(_layer->getErrors(i)[j], errors.at(i).at(j));
+      ASSERT_FLOAT_EQ(outputs[i].gradients[j], errors.at(i).at(j));
     }
   }
 }
@@ -550,12 +595,17 @@ TEST_F(FullyConnectedLayerTestFixture, DenseLayerDenseTruthMeanSquaredTest) {
 TEST_F(FullyConnectedLayerTestFixture, DenseLayerSparseTruthMeanSquaredTest) {
   makeMeanSquared();
 
-  _layer->setSparsity(1.0);
+  std::vector<VectorState> inputs;
+  for (uint32_t i = 0; i < 4; i++) {
+    inputs.push_back(VectorState::makeSparseInputState(
+        _sparse_data_indices.at(i).data(), _sparse_data_values.at(i).data(),
+        _sparse_data_indices.at(i).size()));
+  }
+
+  BatchState outputs = _layer->createBatchState(4, true);
 
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->feedForward(i, _sparse_data_indices.at(i).data(),
-                        _sparse_data_values.at(i).data(), _data_lens.at(i),
-                        nullptr, 0);
+    _layer->forward(inputs[i], outputs[i], nullptr, 0);
   }
 
   std::vector<std::vector<float>> activations = {
@@ -565,9 +615,10 @@ TEST_F(FullyConnectedLayerTestFixture, DenseLayerSparseTruthMeanSquaredTest) {
       {-0.375, -0.75, 0.15625, 0.0625, -0.9375, 0.09375, -0.125, -0.5}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    ASSERT_EQ(_layer->getLen(i), 8);
+    ASSERT_EQ(outputs[i].len, 8);
+    ASSERT_EQ(outputs[i].active_neurons, nullptr);
     for (uint32_t j = 0; j < 8; j++) {
-      ASSERT_FLOAT_EQ(_layer->getValues(i)[j], activations.at(i).at(j));
+      ASSERT_FLOAT_EQ(outputs[i].activations[j], activations.at(i).at(j));
     }
   }
 
@@ -586,13 +637,13 @@ TEST_F(FullyConnectedLayerTestFixture, DenseLayerSparseTruthMeanSquaredTest) {
       {-0.0625, -0.28125, 0.5, 1.875, 0.40625, -0.5625, -0.1875, 0.09375},
       {1.5375, 3.975, 1.021875, -0.03125, 0.46875, -0.046875, 0.0625, 0.25}};
 
+  MeanSquaredError mse;
   // TODO(Geordie): Change method calls DONE
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->computeMeanSquaredErrors(
-        i, truth_values.size(), truth_indices.at(i).data(),
-        truth_values.at(i).data(), truth_indices.at(i).size());
+    mse(outputs[i], 4, truth_indices.at(i).data(), truth_values.at(i).data(),
+        truth_indices.at(i).size());
     for (uint32_t j = 0; j < 8; j++) {
-      ASSERT_FLOAT_EQ(_layer->getErrors(i)[j], errors.at(i).at(j));
+      ASSERT_FLOAT_EQ(outputs[i].gradients[j], errors.at(i).at(j));
     }
   }
 }
@@ -600,15 +651,22 @@ TEST_F(FullyConnectedLayerTestFixture, DenseLayerSparseTruthMeanSquaredTest) {
 TEST_F(FullyConnectedLayerTestFixture, SparseLayerSparseTruthMeanSquaredTest) {
   makeMeanSquared();
 
+  std::vector<VectorState> inputs;
+  for (uint32_t i = 0; i < 4; i++) {
+    inputs.push_back(VectorState::makeSparseInputState(
+        _sparse_data_indices.at(i).data(), _sparse_data_values.at(i).data(),
+        _sparse_data_indices.at(i).size()));
+  }
+
+  BatchState outputs = _layer->createBatchState(4);
+
   std::vector<std::vector<uint32_t>> active_neurons = {
       {2, 3, 4, 6}, {2, 4, 6, 7}, {0, 3, 5, 6}, {1, 3, 5, 7}};
 
   for (uint32_t i = 0; i < 4; i++) {
     // Use active neurons as the labels to force them to be selected so the test
     // is deterministic
-    _layer->feedForward(i, _sparse_data_indices.at(i).data(),
-                        _sparse_data_values.at(i).data(), _data_lens.at(i),
-                        active_neurons.at(i).data(), 4);
+    _layer->forward(inputs[i], outputs[i], active_neurons.at(i).data(), 4);
   }
 
   std::vector<std::vector<float>> activations = {
@@ -618,10 +676,10 @@ TEST_F(FullyConnectedLayerTestFixture, SparseLayerSparseTruthMeanSquaredTest) {
       {-0.75, 0.0625, 0.09375, -0.5}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    ASSERT_EQ(_layer->getLen(i), 4);
+    ASSERT_EQ(outputs[i].len, 4);
     for (uint32_t j = 0; j < 4; j++) {
-      ASSERT_EQ(_layer->getIndices(i)[j], active_neurons.at(i).at(j));
-      ASSERT_FLOAT_EQ(_layer->getValues(i)[j], activations.at(i).at(j));
+      ASSERT_EQ(outputs[i].active_neurons[j], active_neurons.at(i).at(j));
+      ASSERT_FLOAT_EQ(outputs[i].activations[j], activations.at(i).at(j));
     }
   }
 
@@ -640,13 +698,13 @@ TEST_F(FullyConnectedLayerTestFixture, SparseLayerSparseTruthMeanSquaredTest) {
       {-0.0625, 1.875, -0.5625, -0.1875},
       {3.975, -0.03125, -0.046875, 0.25}};
 
+  MeanSquaredError mse;
   // TODO(Geordie): Change method calls DONE
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->computeMeanSquaredErrors(
-        i, truth_values.size(), truth_indices.at(i).data(),
-        truth_values.at(i).data(), truth_indices.at(i).size());
+    mse(outputs[i], 4, truth_indices.at(i).data(), truth_values.at(i).data(),
+        truth_indices.at(i).size());
     for (uint32_t j = 0; j < 4; j++) {
-      ASSERT_FLOAT_EQ(_layer->getErrors(i)[j], errors.at(i).at(j));
+      ASSERT_FLOAT_EQ(outputs[i].gradients[j], errors.at(i).at(j));
     }
   }
 }
@@ -654,15 +712,22 @@ TEST_F(FullyConnectedLayerTestFixture, SparseLayerSparseTruthMeanSquaredTest) {
 TEST_F(FullyConnectedLayerTestFixture, SparseLayerDenseTruthMeanSquaredTest) {
   makeMeanSquared();
 
+  std::vector<VectorState> inputs;
+  for (uint32_t i = 0; i < 4; i++) {
+    inputs.push_back(VectorState::makeSparseInputState(
+        _sparse_data_indices.at(i).data(), _sparse_data_values.at(i).data(),
+        _sparse_data_indices.at(i).size()));
+  }
+
+  BatchState outputs = _layer->createBatchState(4);
+
   std::vector<std::vector<uint32_t>> active_neurons = {
       {2, 3, 4, 6}, {2, 4, 6, 7}, {0, 3, 5, 6}, {1, 3, 5, 7}};
 
   for (uint32_t i = 0; i < 4; i++) {
     // Use active neurons as the labels to force them to be selected so the test
     // is deterministic
-    _layer->feedForward(i, _sparse_data_indices.at(i).data(),
-                        _sparse_data_values.at(i).data(), _data_lens.at(i),
-                        active_neurons.at(i).data(), 4);
+    _layer->forward(inputs[i], outputs[i], active_neurons.at(i).data(), 4);
   }
 
   std::vector<std::vector<float>> activations = {
@@ -672,10 +737,10 @@ TEST_F(FullyConnectedLayerTestFixture, SparseLayerDenseTruthMeanSquaredTest) {
       {-0.75, 0.0625, 0.09375, -0.5}};
 
   for (uint32_t i = 0; i < 4; i++) {
-    ASSERT_EQ(_layer->getLen(i), 4);
+    ASSERT_EQ(outputs[i].len, 4);
     for (uint32_t j = 0; j < 4; j++) {
-      ASSERT_EQ(_layer->getIndices(i)[j], active_neurons.at(i).at(j));
-      ASSERT_FLOAT_EQ(_layer->getValues(i)[j], activations.at(i).at(j));
+      ASSERT_EQ(outputs[i].active_neurons[j], active_neurons.at(i).at(j));
+      ASSERT_FLOAT_EQ(outputs[i].activations[j], activations.at(i).at(j));
     }
   }
 
@@ -693,13 +758,13 @@ TEST_F(FullyConnectedLayerTestFixture, SparseLayerDenseTruthMeanSquaredTest) {
       {-0.0625, 1.875, -0.5625, -0.1875},
       {3.975, -0.03125, -0.046875, 0.25}};
 
+  MeanSquaredError mse;
   // TODO(Geordie): Change method calls DONE
   for (uint32_t i = 0; i < 4; i++) {
-    _layer->computeMeanSquaredErrors(i, truth_values.size(), nullptr,
-                                     truth_values.at(i).data(),
-                                     truth_values.at(i).size());
+    mse(outputs[i], 4, nullptr, truth_values.at(i).data(),
+        truth_values.at(i).size());
     for (uint32_t j = 0; j < 4; j++) {
-      ASSERT_FLOAT_EQ(_layer->getErrors(i)[j], errors.at(i).at(j));
+      ASSERT_FLOAT_EQ(outputs[i].gradients[j], errors.at(i).at(j));
     }
   }
 }

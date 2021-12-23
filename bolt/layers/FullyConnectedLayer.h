@@ -12,7 +12,7 @@ namespace tests {
 class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
-class FullyConnectedLayer final : public Layer {
+class FullyConnectedLayer final {
   friend class tests::FullyConnectedLayerTestFixture;
 
  public:
@@ -26,54 +26,27 @@ class FullyConnectedLayer final : public Layer {
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
                       uint64_t prev_dim);
 
-  void feedForward(uint32_t batch_indx, const uint32_t* indices,
-                   const float* values, uint32_t len, uint32_t* labels,
-                   uint32_t label_len) override;
+  void forward(const VectorState& input, VectorState& output,
+               const uint32_t* labels = nullptr, uint32_t label_len = 0);
 
-  void backpropagate(uint32_t batch_indx, const uint32_t* indices,
-                     const float* values, float* errors, uint32_t len) override;
+  void backpropagate(VectorState& input, VectorState& output);
 
-  void backpropagateFirstLayer(uint32_t batch_indx, const uint32_t* indices,
-                               const float* values, uint32_t len) override;
+  void backpropagateInputLayer(VectorState& input, VectorState& output);
 
-  void computeSoftmaxErrors(uint32_t batch_indx, uint32_t batch_size,
-                            const uint32_t* labels,
-                            uint32_t label_len) override;
+  void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
-  void computeMeanSquaredErrors(uint32_t batch_indx, uint32_t batch_size,
-                                const uint32_t* truth_indices,
-                                const float* truth_values,
-                                uint32_t truth_len) override;
+  BatchState createBatchState(const uint32_t batch_size,
+                              bool force_dense = false) const {
+    bool is_dense = (_sparse_dim == _dim) || force_dense;
 
-  void updateParameters(float lr, uint32_t iter, float B1, float B2,
-                        float eps) override;
-
-  void buildHashTables() override;
-
-  void reBuildHashFunction() override;
-
-  void setSparsity(float new_sparsity) override;
-
-  void initializeLayer(uint64_t new_batch_size) override;
-
-  void initializeLayer(uint64_t new_batch_size, float** new_activations,
-                       float** new_errors);
-
-  void shuffleRandNeurons() override;
-
-  uint32_t getLen(uint32_t batch_indx) const override {
-    return _active_lens[batch_indx];
+    return BatchState(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
   }
 
-  const uint32_t* getIndices(uint32_t batch_indx) const override {
-    return _active_neurons[batch_indx];
-  }
+  void buildHashTables();
 
-  const float* getValues(uint32_t batch_indx) const override {
-    return _activations[batch_indx];
-  }
+  void reBuildHashFunction();
 
-  float* getErrors(uint32_t batch_indx) override { return _errors[batch_indx]; }
+  void shuffleRandNeurons();
 
   float* getWeights();
 
@@ -83,43 +56,21 @@ class FullyConnectedLayer final : public Layer {
 
  private:
   template <bool DENSE, bool PREV_DENSE>
-  void feedForwardImpl(uint32_t batch_indx, const uint32_t* indices,
-                       const float* values, uint32_t len, uint32_t* labels,
-                       uint32_t label_len);
+  void forwardImpl(const VectorState& input, VectorState& output,
+                   const uint32_t* labels, uint32_t label_len);
 
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
-  void backPropagateImpl(uint32_t batch_indx, const uint32_t* indices,
-                         const float* values, float* errors, uint32_t len);
-
-  template <bool DENSE>
-  void computeSoftmaxErrorsImpl(uint32_t batch_indx, uint32_t batch_size,
-                                const uint32_t* labels, uint32_t label_len);
-
-  template <bool DENSE, bool TRUTH_DENSE>
-  void computeMeanSquaredErrorsImpl(uint32_t batch_indx, uint32_t batch_size,
-                                    const uint32_t* truth_indices,
-                                    const float* truth_values,
-                                    uint32_t truth_len);
+  void backpropagateImpl(VectorState& input, VectorState& output);
 
   template <bool DENSE, bool PREV_DENSE>
-  void selectActiveNeurons(uint32_t batch_indx, const uint32_t* indices,
-                           const float* values, uint32_t len, uint32_t* labels,
-                           uint32_t label_len);
+  void selectActiveNeurons(const VectorState& input, VectorState& output,
+                           const uint32_t* labels, uint32_t label_len);
 
   constexpr float actFuncDerivative(float x);
-
-  void deallocateInternalState();
 
   uint64_t _dim, _prev_dim, _max_batch_size, _sparse_dim;
   float _sparsity;
   ActivationFunc _act_func;
-
-  uint32_t* _active_lens;
-  uint32_t** _active_neurons;
-  float** _activations;
-  float** _errors;
-
-  bool _internal_state_provided;
 
   float* _weights;
   float* _w_gradient;

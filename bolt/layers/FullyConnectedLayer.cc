@@ -17,11 +17,6 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sparse_dim(config.sparsity * config.dim),
       _sparsity(config.sparsity),
       _act_func(config.act_func),
-      _active_lens(nullptr),
-      _active_neurons(nullptr),
-      _activations(nullptr),
-      _errors(nullptr),
-      _internal_state_provided(false),
       _sampling_config(config.sampling_config) {
   uint64_t total_size = _dim * _prev_dim;
 
@@ -68,125 +63,110 @@ FullyConnectedLayer::FullyConnectedLayer(
   }
 }
 
-void FullyConnectedLayer::feedForward(uint32_t batch_indx,
-                                      const uint32_t* indices,
-                                      const float* values, uint32_t len,
-                                      uint32_t* labels, uint32_t label_len) {
-  if (_sparse_dim == _dim) {
-    if (len == _prev_dim) {
+void FullyConnectedLayer::forward(const VectorState& input, VectorState& output,
+                                  const uint32_t* labels, uint32_t label_len) {
+  if (output.active_neurons == nullptr) {
+    if (input.len == _prev_dim) {
       // TODO(Nicholas): Re-implement this case with dense matrix library
-      feedForwardImpl<true, true>(batch_indx, indices, values, len, labels,
-                                  label_len);
+      forwardImpl<true, true>(input, output, labels, label_len);
     } else {
-      feedForwardImpl<true, false>(batch_indx, indices, values, len, labels,
-                                   label_len);
+      forwardImpl<true, false>(input, output, labels, label_len);
     }
   } else {
-    if (len == _prev_dim) {
-      feedForwardImpl<false, true>(batch_indx, indices, values, len, labels,
-                                   label_len);
+    if (input.len == _prev_dim) {
+      forwardImpl<false, true>(input, output, labels, label_len);
     } else {
-      feedForwardImpl<false, false>(batch_indx, indices, values, len, labels,
-                                    label_len);
+      forwardImpl<false, false>(input, output, labels, label_len);
     }
   }
 }
 
 template <bool DENSE, bool PREV_DENSE>
-void FullyConnectedLayer::feedForwardImpl(uint32_t batch_indx,
-                                          const uint32_t* indices,
-                                          const float* values, uint32_t len,
-                                          uint32_t* labels,
-                                          uint32_t label_len) {
-  selectActiveNeurons<DENSE, PREV_DENSE>(batch_indx, indices, values, len,
-                                         labels, label_len);
+void FullyConnectedLayer::forwardImpl(const VectorState& input,
+                                      VectorState& output,
+                                      const uint32_t* labels,
+                                      uint32_t label_len) {
+  selectActiveNeurons<DENSE, PREV_DENSE>(input, output, labels, label_len);
+
   float max_act = 0;
-  for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
+  uint32_t len_out = DENSE ? _dim : _sparse_dim;
+  std::fill_n(output.gradients, len_out, 0);
+
+  for (uint64_t n = 0; n < len_out; n++) {
     // Because DENSE is known at compile time the compiler can remove this
     // conditional
-    uint64_t act_neuron = DENSE ? n : _active_neurons[batch_indx][n];
+    uint64_t act_neuron = DENSE ? n : output.active_neurons[n];
     _is_active[act_neuron] = true;
     float act = _biases[act_neuron];
-    for (uint64_t i = 0; i < len; i++) {
+    for (uint64_t i = 0; i < input.len; i++) {
       // Because PREV_DENSE is known at compile time the compiler can remove
       // this conditional
-      uint32_t prev_act_neuron = PREV_DENSE ? i : indices[i];
-      act += _weights[act_neuron * _prev_dim + prev_act_neuron] * values[i];
+      uint32_t prev_act_neuron = PREV_DENSE ? i : input.active_neurons[i];
+      act += _weights[act_neuron * _prev_dim + prev_act_neuron] *
+             input.activations[i];
     }
     switch (_act_func) {
       case ActivationFunc::ReLU:
         if (act < 0) {
-          _activations[batch_indx][n] = 0;
+          output.activations[n] = 0;
         } else {
-          _activations[batch_indx][n] = act;
+          output.activations[n] = act;
         }
         break;
       case ActivationFunc::Softmax:
-        _activations[batch_indx][n] = act;
+        output.activations[n] = act;
         if (max_act < act) {
           max_act = act;
         }
         break;
       case ActivationFunc::MeanSquared:
-        _activations[batch_indx][n] = act;
+        output.activations[n] = act;
+        break;
     }
   }
 
   if (_act_func == ActivationFunc::Softmax) {
     float total = 0;
-    for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
-      _activations[batch_indx][n] =
-          std::exp(_activations[batch_indx][n] - max_act);
-      total += _activations[batch_indx][n];
+    for (uint64_t n = 0; n < len_out; n++) {
+      output.activations[n] = std::exp(output.activations[n] - max_act);
+      total += output.activations[n];
     }
-    for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
-      _activations[batch_indx][n] /= (total + EPS);
-    }
-  }
-}
-
-void FullyConnectedLayer::backpropagate(uint32_t batch_indx,
-                                        const uint32_t* indices,
-                                        const float* values, float* errors,
-                                        uint32_t len) {
-  if (_sparse_dim == _dim) {
-    if (len == _prev_dim) {
-      backPropagateImpl<false, true, true>(batch_indx, indices, values, errors,
-                                           len);
-    } else {
-      backPropagateImpl<false, true, false>(batch_indx, indices, values, errors,
-                                            len);
-    }
-  } else {
-    if (len == _prev_dim) {
-      backPropagateImpl<false, false, true>(batch_indx, indices, values, errors,
-                                            len);
-    } else {
-      backPropagateImpl<false, false, false>(batch_indx, indices, values,
-                                             errors, len);
+    for (uint64_t n = 0; n < len_out; n++) {
+      output.activations[n] /= (total + EPS);
     }
   }
 }
 
-void FullyConnectedLayer::backpropagateFirstLayer(uint32_t batch_indx,
-                                                  const uint32_t* indices,
-                                                  const float* values,
-                                                  uint32_t len) {
-  if (_sparse_dim == _dim) {
-    if (len == _prev_dim) {
-      backPropagateImpl<true, true, true>(batch_indx, indices, values, nullptr,
-                                          len);
+void FullyConnectedLayer::backpropagate(VectorState& input,
+                                        VectorState& output) {
+  if (output.active_neurons == nullptr) {
+    if (input.len == _prev_dim) {
+      backpropagateImpl<false, true, true>(input, output);
     } else {
-      backPropagateImpl<true, true, false>(batch_indx, indices, values, nullptr,
-                                           len);
+      backpropagateImpl<false, true, false>(input, output);
     }
   } else {
-    if (len == _prev_dim) {
-      backPropagateImpl<true, false, true>(batch_indx, indices, values, nullptr,
-                                           len);
+    if (input.len == _prev_dim) {
+      backpropagateImpl<false, false, true>(input, output);
     } else {
-      backPropagateImpl<true, false, false>(batch_indx, indices, values,
-                                            nullptr, len);
+      backpropagateImpl<false, false, false>(input, output);
+    }
+  }
+}
+
+void FullyConnectedLayer::backpropagateInputLayer(VectorState& input,
+                                                  VectorState& output) {
+  if (output.active_neurons == nullptr) {
+    if (input.len == _prev_dim) {
+      backpropagateImpl<true, true, true>(input, output);
+    } else {
+      backpropagateImpl<true, true, false>(input, output);
+    }
+  } else {
+    if (input.len == _prev_dim) {
+      backpropagateImpl<true, false, true>(input, output);
+    } else {
+      backpropagateImpl<true, false, false>(input, output);
     }
   }
 }
@@ -204,163 +184,84 @@ constexpr float FullyConnectedLayer::actFuncDerivative(float x) {
       //   return 0.0;
   }
   // This is impossible to reach, but the compiler gave a warning saying it
-  // reached the end of a non void function wihtout it.
+  // reached the end of a non void function without it.
   return 0.0;
 }
 
 template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
-void FullyConnectedLayer::backPropagateImpl(uint32_t batch_indx,
-                                            const uint32_t* indices,
-                                            const float* values,
-                                            float* prev_errors, uint32_t len) {
-  for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
-    _errors[batch_indx][n] *= actFuncDerivative(_activations[batch_indx][n]);
+void FullyConnectedLayer::backpropagateImpl(VectorState& input,
+                                            VectorState& output) {
+  uint32_t len_out = DENSE ? _dim : _sparse_dim;
+
+  for (uint64_t n = 0; n < len_out; n++) {
+    output.gradients[n] *= actFuncDerivative(output.activations[n]);
     // Because DENSE is known at compile time the compiler can remove this
     // conditional
-    uint32_t act_neuron = DENSE ? n : _active_neurons[batch_indx][n];
-    for (uint64_t i = 0; i < len; i++) {
+    uint32_t act_neuron = DENSE ? n : output.active_neurons[n];
+    for (uint64_t i = 0; i < input.len; i++) {
       // Because PREV_DENSE is known at compile time the compiler can remove
       // this conditional
-      uint32_t prev_act_neuron = PREV_DENSE ? i : indices[i];
+      uint32_t prev_act_neuron = PREV_DENSE ? i : input.active_neurons[i];
       _w_gradient[act_neuron * _prev_dim + prev_act_neuron] +=
-          _errors[batch_indx][n] * values[i];
+          output.gradients[n] * input.activations[i];
       if (!FIRST_LAYER) {
-        prev_errors[i] += _errors[batch_indx][n] *
-                          _weights[act_neuron * _prev_dim + prev_act_neuron];
+        input.gradients[i] +=
+            output.gradients[n] *
+            _weights[act_neuron * _prev_dim + prev_act_neuron];
       }
     }
-    _b_gradient[act_neuron] += _errors[batch_indx][n];
-  }
-}
-
-void FullyConnectedLayer::computeSoftmaxErrors(uint32_t batch_indx,
-                                               uint32_t batch_size,
-                                               const uint32_t* labels,
-                                               uint32_t label_len) {
-  if (_sparse_dim == _dim) {
-    computeSoftmaxErrorsImpl<true>(batch_indx, batch_size, labels, label_len);
-  } else {
-    computeSoftmaxErrorsImpl<false>(batch_indx, batch_size, labels, label_len);
-  }
-}
-
-void FullyConnectedLayer::computeMeanSquaredErrors(
-    uint32_t batch_indx, uint32_t batch_size, const uint32_t* truth_indices,
-    const float* truth_values, uint32_t truth_len) {
-  if (_sparse_dim == _dim) {
-    if (truth_len == _dim) {
-      computeMeanSquaredErrorsImpl<true, true>(
-          batch_indx, batch_size, truth_indices, truth_values, truth_len);
-    } else {
-      computeMeanSquaredErrorsImpl<true, false>(
-          batch_indx, batch_size, truth_indices, truth_values, truth_len);
-    }
-  } else {
-    if (truth_len == _dim) {
-      computeMeanSquaredErrorsImpl<false, true>(
-          batch_indx, batch_size, truth_indices, truth_values, truth_len);
-    } else {
-      computeMeanSquaredErrorsImpl<false, false>(
-          batch_indx, batch_size, truth_indices, truth_values, truth_len);
-    }
-  }
-}
-
-template <bool DENSE>
-void FullyConnectedLayer::computeSoftmaxErrorsImpl(uint32_t batch_indx,
-                                                   uint32_t batch_size,
-                                                   const uint32_t* labels,
-                                                   uint32_t label_len) {
-  float frac = 1.0 / label_len;
-
-  for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
-    // Because DENSE is known at compile time the compiler can remove this
-    // conditional
-    uint32_t act_neuron = DENSE ? n : _active_neurons[batch_indx][n];
-    if (std::find(labels, labels + label_len, act_neuron) !=
-        labels + label_len) {
-      _errors[batch_indx][n] =
-          (frac - _activations[batch_indx][n]) / batch_size;
-    } else {
-      _errors[batch_indx][n] = -_activations[batch_indx][n] / batch_size;
-    }
-  }
-}
-
-template <bool DENSE, bool TRUTH_DENSE>
-void FullyConnectedLayer::computeMeanSquaredErrorsImpl(
-    uint32_t batch_indx, uint32_t batch_size, const uint32_t* truth_indices,
-    const float* truth_values, uint32_t truth_len) {
-  for (uint64_t n = 0; n < _active_lens[batch_indx]; n++) {
-    uint32_t act_neuron = DENSE ? n : _active_neurons[batch_indx][n];
-    float matching_truth_value;
-    if (TRUTH_DENSE) {
-      matching_truth_value = truth_values[act_neuron];
-    } else {
-      const unsigned int* itr =
-          std::find(truth_indices, truth_indices + truth_len, act_neuron);
-      if (itr != truth_indices + truth_len) {
-        matching_truth_value = truth_values[std::distance(truth_indices, itr)];
-      } else {
-        matching_truth_value = 0.0;
-      }
-    }
-    _errors[batch_indx][n] =
-        2 * (matching_truth_value - _activations[batch_indx][n]) / batch_size;
+    _b_gradient[act_neuron] += output.gradients[n];
   }
 }
 
 template <bool DENSE, bool PREV_DENSE>
-void FullyConnectedLayer::selectActiveNeurons(uint32_t batch_indx,
-                                              const uint32_t* indices,
-                                              const float* values, uint32_t len,
-                                              uint32_t* labels,
+void FullyConnectedLayer::selectActiveNeurons(const VectorState& input,
+                                              VectorState& output,
+                                              const uint32_t* labels,
                                               uint32_t label_len) {
   if (DENSE) {
-    _active_lens[batch_indx] = _dim;
+    return;
+  }
+
+  std::unordered_set<uint32_t> active_set;
+
+  for (uint32_t i = 0; i < label_len; i++) {
+    active_set.insert(labels[i]);
+  }
+
+  uint32_t* hashes = new uint32_t[_hash_table->numTables()];
+  if (PREV_DENSE) {
+    _hasher->hashSingleDense(input.activations, input.len, hashes);
   } else {
-    std::unordered_set<uint32_t> active_set;
+    _hasher->hashSingleSparse(input.active_neurons, input.activations,
+                              input.len, hashes);
+  }
+  _hash_table->queryBySet(hashes, active_set);
+  delete[] hashes;
 
-    for (uint32_t i = 0; i < label_len; i++) {
-      active_set.insert(labels[i]);
-    }
-
-    uint32_t* hashes = new uint32_t[_hash_table->numTables()];
-    if (PREV_DENSE) {
-      _hasher->hashSingleDense(values, len, hashes);
-    } else {
-      _hasher->hashSingleSparse(indices, values, len, hashes);
-    }
-    _hash_table->queryBySet(hashes, active_set);
-    delete[] hashes;
-
-    if (active_set.size() < _sparse_dim) {
-      uint32_t rand_offset = rand() % _dim;
-      while (active_set.size() < _sparse_dim) {
-        active_set.insert(_rand_neurons[rand_offset++]);
-        rand_offset = rand_offset % _dim;
-      }
-    }
-
-    uint32_t active_len = _sparse_dim;
-    _active_lens[batch_indx] = active_len;
-
-    uint32_t cnt = 0;
-    for (uint32_t i = 0; i < label_len; i++) {
-      if (cnt >= _sparse_dim) {
-        break;
-      }
-      _active_neurons[batch_indx][cnt++] = labels[i];
-      active_set.erase(labels[i]);
-    }
-    for (auto x : active_set) {
-      if (cnt >= _sparse_dim) {
-        break;
-      }
-      _active_neurons[batch_indx][cnt++] = x;
+  if (active_set.size() < _sparse_dim) {
+    uint32_t rand_offset = rand() % _dim;
+    while (active_set.size() < _sparse_dim) {
+      active_set.insert(_rand_neurons[rand_offset++]);
+      rand_offset = rand_offset % _dim;
     }
   }
-  std::fill_n(_errors[batch_indx], _dim, 0);
+
+  uint32_t cnt = 0;
+  for (uint32_t i = 0; i < label_len; i++) {
+    if (cnt >= _sparse_dim) {
+      break;
+    }
+    output.active_neurons[cnt++] = labels[i];
+    active_set.erase(labels[i]);
+  }
+  for (auto x : active_set) {
+    if (cnt >= _sparse_dim) {
+      break;
+    }
+
+    output.active_neurons[cnt++] = x;
+  }
 }
 
 void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
@@ -430,70 +331,6 @@ void FullyConnectedLayer::reBuildHashFunction() {
       _sampling_config.range_pow);
 }
 
-void FullyConnectedLayer::initializeLayer(uint64_t new_batch_size) {
-  // If the new max_batch_size is smaller we can ignore this call
-  if (new_batch_size <= _max_batch_size) {
-    return;
-  }
-
-  // Free previously allocated memory
-  deallocateInternalState();
-
-  _max_batch_size = new_batch_size;
-  _internal_state_provided = false;
-
-  // Reallocate internal state for new batch size
-  _active_lens = new uint32_t[_max_batch_size];
-  _active_neurons = new uint32_t*[_max_batch_size];
-  _activations = new float*[_max_batch_size];
-  _errors = new float*[_max_batch_size];
-
-  for (uint64_t batch = 0; batch < _max_batch_size; batch++) {
-    _active_neurons[batch] = new uint32_t[_dim];
-    _activations[batch] = new float[_dim];
-    _errors[batch] = new float[_dim]();
-  }
-}
-
-void FullyConnectedLayer::initializeLayer(uint64_t new_batch_size,
-                                          float** new_activations,
-                                          float** new_errors) {
-  // Free previously allocated memory
-  deallocateInternalState();
-
-  _max_batch_size = new_batch_size;
-  _internal_state_provided = true;
-
-  // Reconstruct internal state using provided memory
-  _active_lens = new uint32_t[_max_batch_size];
-  _active_neurons = nullptr;
-  _activations = new_activations;
-  _errors = new_errors;
-}
-
-void FullyConnectedLayer::deallocateInternalState() {
-  if (!_internal_state_provided) {
-    for (uint64_t batch = 0; batch < _max_batch_size; batch++) {
-      delete[] _active_neurons[batch];
-      delete[] _activations[batch];
-      delete[] _errors[batch];
-    }
-  }
-  delete[] _active_lens;
-  delete[] _active_neurons;
-  delete[] _activations;
-  delete[] _errors;
-}
-
-void FullyConnectedLayer::setSparsity(float new_sparsity) {
-  _sparsity = new_sparsity;
-  if (_sparsity == 1.0) {
-    _sparse_dim = _dim;
-  } else {
-    _sparse_dim = _sparsity * _dim;
-  }
-}
-
 void FullyConnectedLayer::shuffleRandNeurons() {
   if (_sparsity < 1.0) {
     std::shuffle(_rand_neurons, _rand_neurons + _dim, std::random_device{});
@@ -515,8 +352,6 @@ float* FullyConnectedLayer::getBiases() {
 }
 
 FullyConnectedLayer::~FullyConnectedLayer() {
-  deallocateInternalState();
-
   delete[] _weights;
   delete[] _w_gradient;
   delete[] _w_momentum;
