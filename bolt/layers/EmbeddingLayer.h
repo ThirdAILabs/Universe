@@ -27,7 +27,7 @@ class EmbeddingLayer {
 
   void initializeLayer(uint32_t new_batch_size);
 
-  BatchState createBatchState(const uint32_t batch_size) {
+  BatchState createBatchState(const uint32_t batch_size) const {
     return BatchState(_total_embedding_dim, batch_size, true);
   }
 
