@@ -8,6 +8,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <chrono>
 #include <string>
 #include <vector>
 #ifndef __clang__
@@ -150,8 +151,17 @@ static DenseBatch wrapNumpyIntoDenseBatch(
 
 static InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
                                                    uint32_t batch_size) {
-  return InMemoryDataset<SparseBatch>(
-      filename, batch_size, thirdai::dataset::SvmSparseBatchFactory{});
+  auto start = std::chrono::high_resolution_clock::now();
+  InMemoryDataset<SparseBatch> data(filename, batch_size,
+                                    thirdai::dataset::SvmSparseBatchFactory{});
+  auto end = std::chrono::high_resolution_clock::now();
+
+  std::cout
+      << "Read " << data.len() << " vectors in "
+      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
+      << " seconds" << std::endl;
+
+  return data;
 }
 
 class PyFlash final : public Flash64 {
