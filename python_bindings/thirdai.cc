@@ -79,7 +79,7 @@ class PyNetwork final : public Network {
 using ClickThroughDataset =
     thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>;
 
-ClickThroughDataset loadClickThorughDataset(std::string filename,
+ClickThroughDataset loadClickThorughDataset(const std::string& filename,
                                             uint32_t batch_size,
                                             uint32_t num_dense_features,
                                             uint32_t num_categorical_features) {
@@ -101,8 +101,8 @@ class PyDLRM final : public DLRM {
          bolt::FullyConnectedLayerConfig dense_feature_layer_config,
          std::vector<bolt::FullyConnectedLayerConfig> fc_layer_configs,
          uint32_t input_dim)
-      : DLRM(embedding_config, dense_feature_layer_config, fc_layer_configs,
-             input_dim) {}
+      : DLRM(embedding_config, dense_feature_layer_config,
+             std::move(fc_layer_configs), input_dim) {}
 
   py::array_t<float> test(
       const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data) {
@@ -318,15 +318,16 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
            "approximate top_k neighbors as a row for each of the passed in "
            "queries.");
 
-  auto dataset_submodule = m.def_submodule("datasets");
+  auto dataset_submodule = m.def_submodule("dataset");
 
   m.def("loadClickThroughDataset", &thirdai::python::loadClickThorughDataset,
         py::arg("filename"), py::arg("batch_size"),
         py::arg("num_dense_features"), py::arg("num_categorical_features"));
 
   py::class_<
-      thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>>(
-      dataset_submodule, "ClickThroughDataset");
+      thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>>
+      _ctd_(dataset_submodule, "ClickThroughDataset");
+  (void)_ctd_;  // To get rid of clang tidy error.
 
   auto bolt_submodule = m.def_submodule("bolt");
 

@@ -172,7 +172,7 @@ void DLRM::processTrainingBatch(const dataset::ClickThroughBatch& batch,
         b, batch.getBatchSize(), &label, &label_val, 1);
 
     for (uint32_t l = _num_fc_layers; l > 0; l--) {
-      uint32_t layer = l -1;
+      uint32_t layer = l - 1;
       FullyConnectedLayer* prev_layer = _fc_layers[layer - 1];
 
       _fc_layers[layer]->backpropagate(
