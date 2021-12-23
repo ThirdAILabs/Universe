@@ -56,7 +56,7 @@ Network::Network(std::vector<FullyConnectedLayerConfig> configs,
 }
 
 std::vector<int64_t> Network::train(
-    dataset::InMemoryDataset<dataset::SparseBatch> train_data,
+    const dataset::InMemoryDataset<dataset::SparseBatch>& train_data,
     float learning_rate, uint32_t epochs, uint32_t rehash_in,
     uint32_t rebuild_in) {
   uint32_t rehash = rehash_in;
@@ -152,8 +152,9 @@ std::vector<int64_t> Network::train(
   return time_per_epoch;
 }
 
-float Network::test(dataset::InMemoryDataset<dataset::SparseBatch> test_data,
-                    uint32_t batch_limit) {
+float Network::test(
+    const dataset::InMemoryDataset<dataset::SparseBatch>& test_data,
+    uint32_t batch_limit) {
   uint32_t batch_size = test_data[0].getBatchSize();
 
   uint64_t num_test_batches = std::min(test_data.numBatches(), batch_limit);

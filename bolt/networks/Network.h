@@ -21,7 +21,7 @@ class Network {
    * returns a list of the durations (in seconds) of each epoch.
    */
   std::vector<int64_t> train(
-      dataset::InMemoryDataset<dataset::SparseBatch> train_data,
+      const dataset::InMemoryDataset<dataset::SparseBatch>& train_data,
       float learning_rate, uint32_t epochs, uint32_t rehash = 0,
       uint32_t rebuild = 0);
 
@@ -31,7 +31,7 @@ class Network {
    * test batches used, this is intended for intermediate accuracy checks during
    * training with large datasets.
    */
-  float test(dataset::InMemoryDataset<dataset::SparseBatch> test_data,
+  float test(const dataset::InMemoryDataset<dataset::SparseBatch>& test_data,
              uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
   void forward(uint32_t batch_index, const VectorState& input,
