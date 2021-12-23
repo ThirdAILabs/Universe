@@ -192,12 +192,12 @@ float Network::test(dataset::InMemoryDataset<dataset::SparseBatch> test_data,
       const float* activations = outputs[i].activations;
       float max_act = std::numeric_limits<float>::min();
       uint32_t pred = 0;
-      for (uint32_t i = 0; i < outputs[i].len; i++) {
-        if (activations[i] > max_act) {
-          max_act = activations[i];
+      for (uint32_t k = 0; k < outputs[i].len; k++) {
+        if (activations[k] > max_act) {
+          max_act = activations[k];
           // Since sparsity is set to 1.0, the layer is dense and we can use i
           // instead of indices[i]
-          pred = i;
+          pred = k;
         }
       }
 

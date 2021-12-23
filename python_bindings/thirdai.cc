@@ -21,6 +21,7 @@ using thirdai::bolt::Network;
 
 using thirdai::dataset::DenseBatch;
 using thirdai::dataset::DenseVector;
+using thirdai::dataset::InMemoryDataset;
 using thirdai::dataset::SparseBatch;
 using thirdai::dataset::SparseVector;
 
@@ -147,6 +148,12 @@ static DenseBatch wrapNumpyIntoDenseBatch(
   return DenseBatch(std::move(batch_vectors), starting_id);
 }
 
+static InMemoryDataset<SparseBatch> loadSVMDataset(std::string filename,
+                                                   uint32_t batch_size) {
+  return InMemoryDataset<SparseBatch>(
+      filename, batch_size, thirdai::dataset::SvmSparseBatchFactory{});
+}
+
 class PyFlash final : public Flash64 {
  public:
   explicit PyFlash(const HashFunction& function) : Flash64(function) {}
@@ -243,6 +250,14 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
         py::arg("max_num_threads"));
 #endif
 
+  auto dataset_submodule = m.def_submodule("dataset");
+
+  py::class_<InMemoryDataset<SparseBatch>>(dataset_submodule,
+                                           "InMemorySparseDataset");
+
+  dataset_submodule.def("loadSVMDataset", &thirdai::python::loadSVMDataset,
+                        py::arg("filename"), py::arg("batch_size"));
+
   auto search_submodule = m.def_submodule("search");
   py::class_<PyFlash>(
       search_submodule, "MagSearch",
@@ -300,10 +315,11 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       .def(py::init<std::vector<thirdai::bolt::FullyConnectedLayerConfig>,
                     uint64_t>(),
            py::arg("layers"), py::arg("input_dim"))
-      .def("Train", &thirdai::python::PyNetwork::train, py::arg("batch_size"),
-           py::arg("train_data"), py::arg("test_data"),
+      .def("Train", &thirdai::python::PyNetwork::train, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
-           py::arg("rebuild") = 0, py::arg("max_test_batches") = 0)
+           py::arg("rebuild") = 0)
+      .def("Test", &thirdai::python::PyNetwork::test, py::arg("test_data"),
+           py::arg("batch_limit") = 0)
       .def("GetWeightMatrix", &thirdai::python::PyNetwork::getWeightMatrix,
            py::arg("layer_index"))
       .def("GetBiasVector", &thirdai::python::PyNetwork::getBiasVector,
@@ -312,10 +328,5 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       .def("GetLayerSizes", &thirdai::python::PyNetwork::getLayerSizes)
       .def("GetInputDim", &thirdai::python::PyNetwork::getInputDim)
       .def("GetActivationFunctions",
-           &thirdai::python::PyNetwork::getActivationFunctions)
-      .def("GetAccuracyPerEpoch",
-           &thirdai::python::PyNetwork::getAccuracyPerEpoch)
-      .def("GetTimePerEpoch", &thirdai::python::PyNetwork::getTimePerEpoch)
-      .def("GetFinalTestAccuracy",
-           &thirdai::python::PyNetwork::getFinalTestAccuracy);
+           &thirdai::python::PyNetwork::getActivationFunctions);
 }
