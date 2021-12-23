@@ -35,15 +35,6 @@ class FullyConnectedLayer final{
   void backpropagateInputLayer(VectorState& input,
                                VectorState& output) ;
 
-  // void computeSoftmaxErrors(uint32_t batch_indx, uint32_t batch_size,
-  //                           const uint32_t* labels,
-  //                           uint32_t label_len) override;
-
-  // void computeMeanSquaredErrors(uint32_t batch_indx, uint32_t batch_size,
-  //                               const uint32_t* truth_indices,
-  //                               const float* truth_values,
-  //                               uint32_t truth_len) override;
-
   void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
   BatchState createBatchState(const uint32_t batch_size,
@@ -72,16 +63,6 @@ class FullyConnectedLayer final{
 
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
   void backpropagateImpl(VectorState& input, VectorState& output);
-
-  // template <bool DENSE>
-  // void computeSoftmaxErrorsImpl(uint32_t batch_indx, uint32_t batch_size,
-  //                               const uint32_t* labels, uint32_t label_len);
-
-  // template <bool DENSE, bool TRUTH_DENSE>
-  // void computeMeanSquaredErrorsImpl(uint32_t batch_indx, uint32_t batch_size,
-  //                                   const uint32_t* truth_indices,
-  //                                   const float* truth_values,
-  //                                   uint32_t truth_len);
 
   template <bool DENSE, bool PREV_DENSE>
   void selectActiveNeurons(const VectorState& input, VectorState& output,

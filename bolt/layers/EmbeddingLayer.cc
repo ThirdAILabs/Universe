@@ -12,9 +12,6 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
       _total_embedding_dim(config.num_embedding_lookups * config.lookup_size),
       _log_embedding_block_size(config.log_embedding_block_size),
       _batch_size(0),
-      _embeddings(nullptr),
-      _errors(nullptr),
-      _internal_state_provided(false),
       _loc_lens(nullptr),
       _embedding_locs(nullptr) {
   // We allocate the extra _lookup_size elements such that if a point hashes to
@@ -35,17 +32,17 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   _seed = int_dist(gen);
 }
 
-void EmbeddingLayer::feedForward(uint32_t batch_indx, const uint32_t* tokens,
-                                 uint32_t len) {
+void EmbeddingLayer::forward(uint32_t batch_indx, const uint32_t* tokens,
+                             uint32_t len, VectorState& output) {
   _loc_lens[batch_indx] = len;
   delete[] _embedding_locs[batch_indx];
   _embedding_locs[batch_indx] = new uint32_t[len * _num_embedding_lookups];
 
-  std::fill_n(_embeddings[batch_indx], _total_embedding_dim, 0);
-  std::fill_n(_errors[batch_indx], _total_embedding_dim, 0);
+  std::fill_n(output.activations, _total_embedding_dim, 0);
+  std::fill_n(output.gradients, _total_embedding_dim, 0);
 
   for (uint32_t e = 0; e < _num_embedding_lookups; e++) {
-    float* output_start = _embeddings[batch_indx] + e * _lookup_size;
+    float* output_start = output.activations + e * _lookup_size;
 
     for (uint32_t n = 0; n < len; n++) {
       uint32_t id = tokens[n] * _num_embedding_lookups + e;
@@ -62,9 +59,10 @@ void EmbeddingLayer::feedForward(uint32_t batch_indx, const uint32_t* tokens,
   }
 }
 
-void EmbeddingLayer::backpropagate(uint32_t batch_indx, float learning_rate) {
+void EmbeddingLayer::backpropagate(uint32_t batch_indx, float learning_rate,
+                                   const VectorState& output) {
   for (uint32_t e = 0; e < _num_embedding_lookups; e++) {
-    const float* errors = _errors[batch_indx] + e * _lookup_size;
+    const float* errors = output.gradients + e * _lookup_size;
 
     for (uint32_t n = 0; n < _loc_lens[batch_indx]; n++) {
       float* update_loc =
@@ -82,61 +80,28 @@ void EmbeddingLayer::initializeLayer(uint32_t new_batch_size) {
   if (new_batch_size <= _batch_size) {
     return;
   }
-
-  deallocateInternalState();
-
-  _batch_size = new_batch_size;
-  _internal_state_provided = false;
-
-  _embeddings = new float*[_batch_size];
-  _errors = new float*[_batch_size];
-  _embedding_locs = new uint32_t*[_batch_size];
-  _loc_lens = new uint32_t[_batch_size];
-
   for (uint32_t b = 0; b < _batch_size; b++) {
-    _embeddings[b] = new float[_total_embedding_dim]();
-    _errors[b] = new float[_total_embedding_dim]();
-    _embedding_locs[b] = nullptr;
-  }
-}
-
-void EmbeddingLayer::initializeLayer(uint32_t batch_size,
-                                     float** new_embeddings,
-                                     float** new_errors) {
-  deallocateInternalState();
-
-  _batch_size = batch_size;
-  _internal_state_provided = true;
-
-  _embeddings = new_embeddings;
-  _errors = new_errors;
-  _loc_lens = new uint32_t[_batch_size];
-  _embedding_locs = new uint32_t*[_batch_size];
-
-  for (uint32_t b = 0; b < _batch_size; b++) {
-    _embedding_locs[b] = nullptr;
-  }
-}
-
-void EmbeddingLayer::deallocateInternalState() {
-  for (uint32_t b = 0; b < _batch_size; b++) {
-    if (!_internal_state_provided) {
-      delete[] _embeddings[b];
-      delete[] _errors[b];
-    }
     delete[] _embedding_locs[b];
   }
 
-  delete[] _embeddings;
-  delete[] _errors;
   delete[] _embedding_locs;
   delete[] _loc_lens;
+
+  _batch_size = new_batch_size;
+
+  _loc_lens = new uint32_t[_batch_size];
+  _embedding_locs = new uint32_t*[_batch_size]();
 }
 
 EmbeddingLayer::~EmbeddingLayer() {
   delete[] _embedding_block;
 
-  deallocateInternalState();
+  for (uint32_t b = 0; b < _batch_size; b++) {
+    delete[] _embedding_locs[b];
+  }
+
+  delete[] _embedding_locs;
+  delete[] _loc_lens;
 }
 
 }  // namespace thirdai::bolt
