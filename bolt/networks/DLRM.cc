@@ -1,4 +1,5 @@
 #include "DLRM.h"
+#include <bolt/layers/LossFunctions.h>
 #include <bolt/utils/ProgressBar.h>
 #include <atomic>
 #include <chrono>
@@ -6,36 +7,28 @@
 
 namespace thirdai::bolt {
 
-struct PrecisionRecal {
-  uint32_t true_positive, false_positive;
-  uint32_t true_negative, false_negative;
-};
-
 DLRM::DLRM(EmbeddingLayerConfig embedding_config,
-           FullyConnectedLayerConfig dense_feature_layer_config,
-           std::vector<FullyConnectedLayerConfig> fc_layer_configs,
-           uint32_t input_dim)
-    : _fc_layer_configs(std::move(fc_layer_configs)), _iter(0) {
-  _embedding_layer = new EmbeddingLayer(embedding_config);
+           std::vector<FullyConnectedLayerConfig> bottom_mlp_configs,
+           std::vector<FullyConnectedLayerConfig> top_mlp_configs,
+           uint32_t dense_feature_dim)
+    : _embedding_layer(embedding_config),
+      _bottom_mlp(bottom_mlp_configs, dense_feature_dim),
+      _top_mlp(top_mlp_configs,
+               (1 << embedding_config.log_embedding_block_size) +
+                   bottom_mlp_configs.back().dim),
 
-  if (dense_feature_layer_config.sparsity != 1.0) {
+      _iter(0) {
+  if (bottom_mlp_configs.back().sparsity != 1.0) {
     throw std::invalid_argument(
         "Dense feature layer must be have sparsity 1.0");
   }
-  _dense_feature_layer =
-      new FullyConnectedLayer(dense_feature_layer_config, input_dim);
 
-  _num_fc_layers = _fc_layer_configs.size();
-  _fc_layers = new FullyConnectedLayer*[_num_fc_layers];
+  if (top_mlp_configs.back().dim != 1) {
+    throw std::invalid_argument("Output layer must have dimension 1");
+  }
 
   _concat_layer_dim =
-      _embedding_layer->getEmbeddingDim() + dense_feature_layer_config.dim;
-
-  for (uint32_t l = 0; l < _fc_layer_configs.size(); l++) {
-    uint32_t prev_dim =
-        l > 0 ? _fc_layer_configs.at(l - 1).dim : _concat_layer_dim;
-    _fc_layers[l] = new FullyConnectedLayer(_fc_layer_configs.at(l), prev_dim);
-  }
+      _embedding_layer.getEmbeddingDim() + bottom_mlp_configs.back().dim;
 }
 
 void DLRM::train(
@@ -52,6 +45,10 @@ void DLRM::train(
   // a batch size larger than this so we can just set the batch size here.
   initializeNetworkForBatchSize(batch_size);
 
+  BatchState output(1, batch_size, true);
+
+  MeanSquaredError MSE;
+
   ProgressBar bar(num_train_batches);
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
@@ -59,12 +56,28 @@ void DLRM::train(
     auto train_start = std::chrono::high_resolution_clock::now();
     for (uint32_t batch = 0; batch < num_train_batches; batch++) {
       if (_iter % 1000 == 999) {
-        for (uint32_t i = 0; i < _num_fc_layers; i++) {
-          _fc_layers[i]->shuffleRandNeurons();
-        }
+        _bottom_mlp.shuffleRandomNeurons();
+        _top_mlp.shuffleRandomNeurons();
       }
 
-      processTrainingBatch(train_data[batch], learning_rate);
+      const dataset::ClickThroughBatch& input_batch = train_data[batch];
+
+#pragma omp parallel for default(none) shared(input_batch, output, batch_size, MSE)
+      for (uint32_t b = 0; b < input_batch.getBatchSize(); b++) {
+        VectorState dense_input = VectorState::makeDenseInputState(
+            input_batch[b]._values, input_batch[b].dim());
+
+        forward(b, dense_input, input_batch.categoricalFeatures(b), output[b]);
+
+        float label = static_cast<float>(input_batch.label(b));
+
+        MSE(output[b], batch_size, nullptr, &label, 1);
+      }
+
+      _bottom_mlp.updateParameters(learning_rate);
+      _embedding_layer.updateParameters(learning_rate, ++_iter, BETA1, BETA2,
+                                        EPS);
+      _top_mlp.updateParameters(learning_rate);
 
       if (_iter % rebuild_batch == (rebuild_batch - 1)) {
         reBuildHashFunctions();
@@ -80,7 +93,6 @@ void DLRM::train(
     int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
                              train_end - train_start)
                              .count();
-    _time_per_epoch.push_back(epoch_time);
     std::cout << std::endl
               << "Epoch: " << epoch << "\nProcessed " << num_train_batches
               << " training batches in " << epoch_time << " seconds"
@@ -96,151 +108,82 @@ void DLRM::testImpl(
 
   initializeNetworkForBatchSize(batch_size);
 
+  BatchState output(1, batch_size, true);
+
   ProgressBar bar(num_test_batches);
 
-  uint32_t offset = 0;
+  uint32_t cnt = 0;
   for (const auto& batch : test_data) {
-    processTestBatch(batch, scores + offset);
-    offset += batch.getBatchSize();
+#pragma omp parallel for default(none) shared(batch, output, scores, cnt)
+    for (uint32_t b = 0; b < batch.getBatchSize(); b++) {
+      VectorState dense_input =
+          VectorState::makeDenseInputState(batch[b]._values, batch[b].dim());
+
+      forward(b, dense_input, batch.categoricalFeatures(b), output[b]);
+
+      scores[cnt + b] = output[b].activations[0];
+    }
+
+    cnt += batch.getBatchSize();
+
     bar.update();
   }
 }
 
 void DLRM::initializeNetworkForBatchSize(uint32_t batch_size) {
-  _concat_layer_activations = new float*[batch_size];
-  _concat_layer_errors = new float*[batch_size];
+  _concat_layer_state = BatchState(_concat_layer_dim, batch_size, true);
 
-  float** embedding_layer_activations = new float*[batch_size];
-  float** embedding_layer_errors = new float*[batch_size];
-  float** dense_feature_layer_activations = new float*[batch_size];
-  float** dense_feature_layer_errors = new float*[batch_size];
+  uint32_t embedding_dim = _embedding_layer.getEmbeddingDim();
+  uint32_t bottom_mlp_output_dim = _bottom_mlp.getLayerSizes().back();
 
-  uint32_t embedding_dim = _embedding_layer->getEmbeddingDim();
+  _bottom_mlp_output.clear();
+  _embedding_layer_output.clear();
 
-  for (uint32_t i = 0; i < batch_size; i++) {
-    _concat_layer_activations[i] = new float[_concat_layer_dim]();
-    _concat_layer_errors[i] = new float[_concat_layer_dim]();
+  for (uint32_t b = 0; b < batch_size; b++) {
+    const VectorState& concat_vec = _concat_layer_state[b];
 
-    embedding_layer_activations[i] = _concat_layer_activations[i];
-    embedding_layer_errors[i] = _concat_layer_errors[i];
+    _bottom_mlp_output.push_back(VectorState::makeDenseState(
+        concat_vec.activations, concat_vec.gradients, bottom_mlp_output_dim));
 
-    dense_feature_layer_activations[i] =
-        _concat_layer_activations[i] + embedding_dim;
-    dense_feature_layer_errors[i] = _concat_layer_errors[i] + embedding_dim;
-  }
-
-  _embedding_layer->initializeLayer(batch_size, embedding_layer_activations,
-                                    embedding_layer_errors);
-  _dense_feature_layer->initializeLayer(
-      batch_size, dense_feature_layer_activations, dense_feature_layer_errors);
-
-  for (uint32_t l = 0; l < _num_fc_layers; l++) {
-    _fc_layers[l]->initializeLayer(batch_size);
+    _embedding_layer_output.push_back(VectorState::makeDenseState(
+        concat_vec.activations + bottom_mlp_output_dim,
+        concat_vec.gradients + bottom_mlp_output_dim, embedding_dim));
   }
 }
 
-void DLRM::processTrainingBatch(const dataset::ClickThroughBatch& batch,
-                                float lr) {
-#pragma omp parallel for default(none) shared(batch, lr)
-  for (uint32_t b = 0; b < batch.getBatchSize(); b++) {
-    _embedding_layer->feedForward(b, batch.categoricalFeatures(b).data(),
-                                  batch.categoricalFeatures(b).size());
+void DLRM::forward(uint32_t batch_index, const VectorState& dense_input,
+                   const std::vector<uint32_t>& categorical_features,
+                   VectorState& output) {
+  _bottom_mlp.forward(batch_index, dense_input, _bottom_mlp_output[batch_index],
+                      nullptr, 0);
 
-    const dataset::DenseVector& vec = batch[b];
-    _dense_feature_layer->feedForward(b, /* indices */ nullptr, vec._values,
-                                      vec.dim(), /* labels */ nullptr,
-                                      /* label_len */ 0);
+  _embedding_layer.forward(batch_index, categorical_features,
+                           _embedding_layer_output[batch_index]);
 
-    _fc_layers[0]->feedForward(b, /* indices */ nullptr,
-                               _concat_layer_activations[b], _concat_layer_dim,
-                               /* labels */ nullptr, /* label_len */ 0);
-
-    uint32_t label = batch.label(b);
-    float label_val = 1.0;
-    for (uint32_t l = 1; l < _num_fc_layers; l++) {
-      FullyConnectedLayer* prev_layer = _fc_layers[l - 1];
-
-      uint32_t* labels = l == _num_fc_layers - 1 ? &label : nullptr;
-      uint32_t label_len = l == _num_fc_layers - 1 ? 1 : 0;
-
-      _fc_layers[l]->feedForward(b, prev_layer->getIndices(b),
-                                 prev_layer->getValues(b),
-                                 prev_layer->getLen(b), labels, label_len);
-    }
-
-    _fc_layers[_num_fc_layers - 1]->computeMeanSquaredErrors(
-        b, batch.getBatchSize(), &label, &label_val, 1);
-
-    for (uint32_t l = _num_fc_layers; l > 0; l--) {
-      uint32_t layer = l - 1;
-      FullyConnectedLayer* prev_layer = _fc_layers[layer - 1];
-
-      _fc_layers[layer]->backpropagate(
-          b, prev_layer->getIndices(b), prev_layer->getValues(b),
-          prev_layer->getErrors(b), prev_layer->getLen(b));
-    }
-
-    _dense_feature_layer->backpropagateFirstLayer(b, /* indices */ nullptr,
-                                                  vec._values, vec.dim());
-
-    _embedding_layer->backpropagate(b);
-  }
-
-  ++_iter;
-  _embedding_layer->updateParameters(lr, _iter, BETA1, BETA2, EPS);
-  _dense_feature_layer->updateParameters(lr, _iter, BETA1, BETA2, EPS);
-  for (uint32_t l = 0; l < _num_fc_layers; l++) {
-    _fc_layers[l]->updateParameters(lr, _iter, BETA1, BETA2, EPS);
-  }
+  _top_mlp.forward(batch_index, _concat_layer_state[batch_index], output,
+                   nullptr, 0);
 }
 
-void DLRM::processTestBatch(const dataset::ClickThroughBatch& batch,
-                            float* scores) {
-  for (uint32_t l = 0; l < _num_fc_layers; l++) {
-    _fc_layers[l]->setSparsity(1.0);
-  }
+void DLRM::backpropagate(uint32_t batch_index, VectorState& dense_input,
+                         VectorState& output) {
+  _top_mlp.backpropagate<false>(batch_index, _concat_layer_state[batch_index],
+                                output);
 
-#pragma omp parallel for default(none) shared(batch, scores)
-  for (uint32_t b = 0; b < batch.getBatchSize(); b++) {
-    _embedding_layer->feedForward(b, batch.categoricalFeatures(b).data(),
-                                  batch.categoricalFeatures(b).size());
+  _embedding_layer.backpropagate(batch_index,
+                                 _embedding_layer_output[batch_index]);
 
-    const dataset::DenseVector& vec = batch[b];
-    _dense_feature_layer->feedForward(b, /* indices */ nullptr, vec._values,
-                                      vec.dim(), /* labels */ nullptr,
-                                      /* label_len */ 0);
-
-    _fc_layers[0]->feedForward(b, /* indices */ nullptr,
-                               _concat_layer_activations[b], _concat_layer_dim,
-                               /* labels */ nullptr, /* label_len */ 0);
-
-    for (uint32_t l = 1; l < _num_fc_layers; l++) {
-      FullyConnectedLayer* prev_layer = _fc_layers[l - 1];
-
-      _fc_layers[l]->feedForward(b, prev_layer->getIndices(b),
-                                 prev_layer->getValues(b),
-                                 prev_layer->getLen(b), nullptr, 0);
-    }
-
-    const float* activations = _fc_layers[_num_fc_layers - 1]->getValues(b);
-    scores[b] = activations[0];
-  }
-
-  for (uint32_t l = 0; l < _num_fc_layers; l++) {
-    _fc_layers[l]->setSparsity(_fc_layer_configs[l].sparsity);
-  }
+  _bottom_mlp.backpropagate<true>(batch_index, dense_input,
+                                  _bottom_mlp_output[batch_index]);
 }
 
 void DLRM::reBuildHashFunctions() {
-  for (uint32_t l = 0; l < _num_fc_layers; l++) {
-    _fc_layers[l]->reBuildHashFunction();
-  }
+  _bottom_mlp.reBuildHashFunctions();
+  _top_mlp.reBuildHashFunctions();
 }
 
 void DLRM::buildHashTables() {
-  for (uint32_t l = 0; l < _num_fc_layers; l++) {
-    _fc_layers[l]->buildHashTables();
-  }
+  _bottom_mlp.buildHashTables();
+  _top_mlp.buildHashTables();
 }
 
 }  // namespace thirdai::bolt

@@ -12,7 +12,7 @@ namespace thirdai::bolt {
 
 class Network {
  public:
-  Network(std::vector<FullyConnectedLayerConfig> configs, uint64_t input_dim);
+  Network(std::vector<FullyConnectedLayerConfig> configs, uint32_t input_dim);
 
   /**
    * This function takes in a dataset and training parameters and trains the
@@ -34,6 +34,12 @@ class Network {
   float test(const dataset::InMemoryDataset<dataset::SparseBatch>& test_data,
              uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
+  void createBatchStates(uint32_t batch_size, bool force_dense = false) {
+    for (uint32_t l = 0; l < _num_layers - 1; l++) {
+      _states[l] = _layers[l]->createBatchState(batch_size, force_dense);
+    }
+  }
+
   void forward(uint32_t batch_index, const VectorState& input,
                VectorState& output, const uint32_t* labels, uint32_t label_len);
 
@@ -41,9 +47,13 @@ class Network {
   void backpropagate(uint32_t batch_index, VectorState& input,
                      VectorState& output);
 
+  void updateParameters(float learning_rate);
+
   void reBuildHashFunctions();
 
   void buildHashTables();
+
+  void shuffleRandomNeurons();
 
   uint32_t getNumLayers() const { return _num_layers; }
 

@@ -2,6 +2,7 @@
 
 #include <bolt/layers/EmbeddingLayer.h>
 #include <bolt/layers/FullyConnectedLayer.h>
+#include <bolt/networks/Network.h>
 #include <dataset/src/Dataset.h>
 #include <vector>
 
@@ -10,9 +11,9 @@ namespace thirdai::bolt {
 class DLRM {
  public:
   DLRM(EmbeddingLayerConfig embedding_config,
-       FullyConnectedLayerConfig dense_feature_layer_config,
-       std::vector<FullyConnectedLayerConfig> fc_layer_configs,
-       uint32_t input_dim);
+       std::vector<FullyConnectedLayerConfig> bottom_mlp_configs,
+       std::vector<FullyConnectedLayerConfig> top_mlp_configs,
+       uint32_t dense_feature_dim);
 
   void train(
       const dataset::InMemoryDataset<dataset::ClickThroughBatch>& train_data,
@@ -24,9 +25,12 @@ class DLRM {
       float* scores);
 
  private:
-  void processTrainingBatch(const dataset::ClickThroughBatch& batch, float lr);
+  void forward(uint32_t batch_index, const VectorState& dense_input,
+               const std::vector<uint32_t>& categorical_features,
+               VectorState& output);
 
-  void processTestBatch(const dataset::ClickThroughBatch& batch, float* scores);
+  void backpropagate(uint32_t batch_index, VectorState& dense_input,
+                     VectorState& output);
 
   void initializeNetworkForBatchSize(uint32_t batch_size);
 
@@ -34,21 +38,16 @@ class DLRM {
 
   void buildHashTables();
 
-  EmbeddingLayer* _embedding_layer;
-  FullyConnectedLayer* _dense_feature_layer;
-  uint32_t _num_fc_layers;
-  FullyConnectedLayer** _fc_layers;
-  std::vector<FullyConnectedLayerConfig> _fc_layer_configs;
+  EmbeddingLayer _embedding_layer;
+  Network _bottom_mlp;
+  Network _top_mlp;
 
   uint32_t _concat_layer_dim;
-  float** _concat_layer_activations;
-  float** _concat_layer_errors;
+  BatchState _concat_layer_state;
+  std::vector<VectorState> _embedding_layer_output;
+  std::vector<VectorState> _bottom_mlp_output;
 
   uint32_t _iter;
-
-  std::vector<float> _accuracy_per_epoch;
-  std::vector<int64_t> _time_per_epoch;
-  float _final_accuracy;
 };
 
 }  // namespace thirdai::bolt

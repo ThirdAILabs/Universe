@@ -19,11 +19,10 @@ class EmbeddingLayer {
   explicit EmbeddingLayer(const EmbeddingLayerConfig& config,
                           uint32_t seed = time(nullptr));
 
-  void forward(uint32_t batch_indx, const uint32_t* tokens, uint32_t len,
+  void forward(uint32_t batch_indx, const std::vector<uint32_t>& tokens,
                VectorState& output);
 
-  void backpropagate(uint32_t batch_indx, float learning_rate,
-                     const VectorState& output);
+  void backpropagate(uint32_t batch_indx, const VectorState& output);
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 

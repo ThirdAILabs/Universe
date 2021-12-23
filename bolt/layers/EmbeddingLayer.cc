@@ -35,11 +35,12 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   _seed = int_dist(gen);
 }
 
-void EmbeddingLayer::forward(uint32_t batch_indx, const uint32_t* tokens,
-                             uint32_t len, VectorState& output) {
-  _loc_lens[batch_indx] = len;
+void EmbeddingLayer::forward(uint32_t batch_indx,
+                             const std::vector<uint32_t>& tokens,
+                             VectorState& output) {
+  _loc_lens[batch_indx] = tokens.size();
   delete[] _embedding_locs[batch_indx];
-  _embedding_locs[batch_indx] = new uint32_t[len * _num_embedding_lookups];
+  _embedding_locs[batch_indx] = new uint32_t[tokens.size() * _num_embedding_lookups];
 
   std::fill_n(output.activations, _total_embedding_dim, 0);
   std::fill_n(output.gradients, _total_embedding_dim, 0);
@@ -47,7 +48,7 @@ void EmbeddingLayer::forward(uint32_t batch_indx, const uint32_t* tokens,
   for (uint32_t e = 0; e < _num_embedding_lookups; e++) {
     float* output_start = output.activations + e * _lookup_size;
 
-    for (uint32_t n = 0; n < len; n++) {
+    for (uint32_t n = 0; n < tokens.size(); n++) {
       uint32_t id = tokens[n] * _num_embedding_lookups + e;
       uint32_t hash_loc = hashing::MurmurHash(
           reinterpret_cast<const char*>(&id), sizeof(uint32_t), _seed);
@@ -62,7 +63,7 @@ void EmbeddingLayer::forward(uint32_t batch_indx, const uint32_t* tokens,
   }
 }
 
-void EmbeddingLayer::backpropagate(uint32_t batch_indx, float learning_rate,
+void EmbeddingLayer::backpropagate(uint32_t batch_indx,
                                    const VectorState& output) {
   for (uint32_t e = 0; e < _num_embedding_lookups; e++) {
     const float* errors = output.gradients + e * _lookup_size;

@@ -99,11 +99,11 @@ ClickThroughDataset loadClickThorughDataset(const std::string& filename,
 class PyDLRM final : public DLRM {
  public:
   PyDLRM(bolt::EmbeddingLayerConfig embedding_config,
-         bolt::FullyConnectedLayerConfig dense_feature_layer_config,
-         std::vector<bolt::FullyConnectedLayerConfig> fc_layer_configs,
+         std::vector<bolt::FullyConnectedLayerConfig> bottom_mlp_configs,
+         std::vector<bolt::FullyConnectedLayerConfig> top_mlp_configs,
          uint32_t input_dim)
-      : DLRM(embedding_config, dense_feature_layer_config,
-             std::move(fc_layer_configs), input_dim) {}
+      : DLRM(embedding_config, std::move(bottom_mlp_configs),
+             std::move(top_mlp_configs), input_dim) {}
 
   py::array_t<float> test(
       const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data) {
@@ -302,9 +302,19 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
 
   auto dataset_submodule = m.def_submodule("dataset");
 
-  py::class_<InMemoryDataset<SparseBatch>> _imsb_(dataset_submodule,
+  py::class_<InMemoryDataset<SparseBatch>> _imsd_(dataset_submodule,
                                                   "InMemorySparseDataset");
-  (void)_imsb_;  // To get rid of clang tidy error
+  (void)_imsd_;  // To get rid of clang tidy error
+
+  dataset_submodule.def(
+      "loadClickThroughDataset", &thirdai::python::loadClickThorughDataset,
+      py::arg("filename"), py::arg("batch_size"), py::arg("num_dense_features"),
+      py::arg("num_categorical_features"));
+
+  py::class_<
+      thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>>
+      _imctd_(dataset_submodule, "ClickThroughDataset");
+  (void)_imctd_;  // To get rid of clang tidy error.
 
   dataset_submodule.def("loadSVMDataset", &thirdai::python::loadSVMDataset,
                         py::arg("filename"), py::arg("batch_size"));
@@ -342,18 +352,6 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
            "Performs a batch query that returns the "
            "approximate top_k neighbors as a row for each of the passed in "
            "queries.");
-
-  auto dataset_submodule = m.def_submodule("dataset");
-
-  dataset_submodule.def(
-      "loadClickThroughDataset", &thirdai::python::loadClickThorughDataset,
-      py::arg("filename"), py::arg("batch_size"), py::arg("num_dense_features"),
-      py::arg("num_categorical_features"));
-
-  py::class_<
-      thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>>
-      _ctd_(dataset_submodule, "ClickThroughDataset");
-  (void)_ctd_;  // To get rid of clang tidy error.
 
   auto bolt_submodule = m.def_submodule("bolt");
 
@@ -401,11 +399,11 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
 
   py::class_<thirdai::python::PyDLRM>(bolt_submodule, "DLRM")
       .def(py::init<thirdai::bolt::EmbeddingLayerConfig,
-                    thirdai::bolt::FullyConnectedLayerConfig,
+                    std::vector<thirdai::bolt::FullyConnectedLayerConfig>,
                     std::vector<thirdai::bolt::FullyConnectedLayerConfig>,
                     uint32_t>(),
-           py::arg("embedding_layer"), py::arg("dense_input_layer"),
-           py::arg("dense_layers"), py::arg("input_dim"))
+           py::arg("embedding_layer"), py::arg("bottom_mlp"),
+           py::arg("top_mlp"), py::arg("input_dim"))
       .def("Train", &thirdai::python::PyDLRM::train, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash"),
            py::arg("rebuild"))

@@ -14,7 +14,7 @@ constexpr uint32_t RehashAutoTuneFactor1 = 100;
 constexpr uint32_t RehashAutoTuneFactor2 = 20;
 
 Network::Network(std::vector<FullyConnectedLayerConfig> configs,
-                 uint64_t input_dim)
+                 uint32_t input_dim)
     : _configs(std::move(configs)),
       _input_dim(input_dim),
       _iter(0),
@@ -83,9 +83,7 @@ std::vector<int64_t> Network::train(
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
-  for (uint32_t l = 0; l < _num_layers - 1; l++) {
-    _states[l] = _layers[l]->createBatchState(batch_size);
-  }
+  this->createBatchStates(batch_size);
 
   std::vector<int64_t> time_per_epoch;
 
@@ -100,9 +98,7 @@ std::vector<int64_t> Network::train(
     auto train_start = std::chrono::high_resolution_clock::now();
     for (uint32_t batch = 0; batch < num_train_batches; batch++) {
       if (_iter % 1000 == 999) {
-        for (uint32_t i = 0; i < _num_layers; i++) {
-          _layers[i]->shuffleRandNeurons();
-        }
+        shuffleRandomNeurons();
       }
 
       const dataset::SparseBatch& input_batch = train_data[batch];
@@ -122,11 +118,7 @@ std::vector<int64_t> Network::train(
         this->backpropagate<true>(i, input, outputs[i]);
       }
 
-      ++_iter;
-      for (uint32_t layer = 0; layer < _num_layers; layer++) {
-        _layers[layer]->updateParameters(learning_rate, _iter, BETA1, BETA2,
-                                         EPS);
-      }
+      this->updateParameters(learning_rate);
 
       if (_iter % rebuild_batch == (rebuild_batch - 1)) {
         reBuildHashFunctions();
@@ -161,9 +153,7 @@ float Network::test(
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
-  for (uint32_t l = 0; l < _num_layers - 1; l++) {
-    _states[l] = _layers[l]->createBatchState(batch_size, true);
-  }
+  this->createBatchStates(batch_size, true);
 
   BatchState outputs =
       _layers[_num_layers - 1]->createBatchState(batch_size, true);
@@ -269,6 +259,13 @@ void Network::backpropagate(uint32_t batch_index, VectorState& input,
   }
 }
 
+void Network::updateParameters(float learning_rate) {
+  ++_iter;
+  for (uint32_t layer = 0; layer < _num_layers; layer++) {
+    _layers[layer]->updateParameters(learning_rate, _iter, BETA1, BETA2, EPS);
+  }
+}
+
 void Network::reBuildHashFunctions() {
   for (uint32_t l = 0; l < _num_layers; l++) {
     _layers[l]->reBuildHashFunction();
@@ -278,6 +275,12 @@ void Network::reBuildHashFunctions() {
 void Network::buildHashTables() {
   for (uint32_t l = 0; l < _num_layers; l++) {
     _layers[l]->buildHashTables();
+  }
+}
+
+void Network::shuffleRandomNeurons() {
+  for (uint32_t i = 0; i < _num_layers; i++) {
+    _layers[i]->shuffleRandNeurons();
   }
 }
 

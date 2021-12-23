@@ -65,7 +65,7 @@ TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
   BatchState output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i, tokens.data() + i, 1, output[i]);
+    _layer->forward(i, {tokens[i]}, output[i]);
   }
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
@@ -91,7 +91,7 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbedding) {
   BatchState output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i, tokens[i].data(), tokens[i].size(), output[i]);
+    _layer->forward(i, tokens[i], output[i]);
   }
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
@@ -121,7 +121,7 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
   BatchState output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i, tokens[i].data(), tokens[i].size(), output[i]);
+    _layer->forward(i, tokens[i], output[i]);
   }
 
   std::unordered_map<uint32_t, float> deltas;
@@ -131,11 +131,7 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
       output[b].gradients[i] = 0.5 * i + b * 0.005;
     }
 
-<<<<<<< HEAD
-    _layer->backpropagate(b);
-=======
-    _layer->backpropagate(b, 1.0, output[b]);
->>>>>>> 1a0210f88e3290ea1eb3cdf9f460c3bde2c24bd5
+    _layer->backpropagate(b, output[b]);
 
     for (uint32_t t : tokens[b]) {
       for (uint32_t e = 0; e < _num_lookups; e++) {
