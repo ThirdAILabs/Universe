@@ -62,7 +62,8 @@ void DLRM::train(
 
       const dataset::ClickThroughBatch& input_batch = train_data[batch];
 
-#pragma omp parallel for default(none) shared(input_batch, output, batch_size, MSE)
+#pragma omp parallel for default(none) \
+    shared(input_batch, output, batch_size, MSE)
       for (uint32_t b = 0; b < input_batch.getBatchSize(); b++) {
         VectorState dense_input = VectorState::makeDenseInputState(
             input_batch[b]._values, input_batch[b].dim());

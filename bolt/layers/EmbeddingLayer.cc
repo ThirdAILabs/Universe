@@ -40,7 +40,8 @@ void EmbeddingLayer::forward(uint32_t batch_indx,
                              VectorState& output) {
   _loc_lens[batch_indx] = tokens.size();
   delete[] _embedding_locs[batch_indx];
-  _embedding_locs[batch_indx] = new uint32_t[tokens.size() * _num_embedding_lookups];
+  _embedding_locs[batch_indx] =
+      new uint32_t[tokens.size() * _num_embedding_lookups];
 
   std::fill_n(output.activations, _total_embedding_dim, 0);
   std::fill_n(output.gradients, _total_embedding_dim, 0);
