@@ -12,7 +12,7 @@ namespace tests {
 class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
-class FullyConnectedLayer final{
+class FullyConnectedLayer final {
   friend class tests::FullyConnectedLayerTestFixture;
 
  public:
@@ -27,18 +27,16 @@ class FullyConnectedLayer final{
                       uint64_t prev_dim);
 
   void forward(const VectorState& input, VectorState& output,
-               const uint32_t* labels = nullptr,
-               uint32_t label_len = 0) ;
+               const uint32_t* labels = nullptr, uint32_t label_len = 0);
 
-  void backpropagate(VectorState& input, VectorState& output) ;
+  void backpropagate(VectorState& input, VectorState& output);
 
-  void backpropagateInputLayer(VectorState& input,
-                               VectorState& output) ;
+  void backpropagateInputLayer(VectorState& input, VectorState& output);
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
   BatchState createBatchState(const uint32_t batch_size,
-                              bool force_dense = false)  {
+                              bool force_dense = false) {
     bool is_dense = (_sparse_dim == _dim) || force_dense;
 
     return BatchState(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
