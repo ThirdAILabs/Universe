@@ -1,9 +1,0 @@
-LICENSE
-README.md
-setup.py
-thirdai.egg-info/PKG-INFO
-thirdai.egg-info/SOURCES.txt
-thirdai.egg-info/dependency_links.txt
-thirdai.egg-info/not-zip-safe
-thirdai.egg-info/requires.txt
-thirdai.egg-info/top_level.txt
