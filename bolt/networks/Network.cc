@@ -19,6 +19,7 @@ Network::Network(std::vector<FullyConnectedLayerConfig> configs,
       _input_dim(input_dim),
       _iter(0),
       _epoch_count(0) {
+  std::cout << "INPUT DIM: " << input_dim << std::endl;
   auto start = std::chrono::high_resolution_clock::now();
 
   _num_layers = _configs.size();
@@ -26,7 +27,7 @@ Network::Network(std::vector<FullyConnectedLayerConfig> configs,
   _states =
       new BatchState[_num_layers - 1]();  // No stored state for output layer
 
-  std::cout << "====== Building Network ======" << std::endl;
+  std::cout << "====== Building Fully Connected Network ======" << std::endl;
 
   for (uint32_t i = 0; i < _num_layers; i++) {
     uint64_t prev_dim = (i > 0) ? _configs[i - 1].dim : _input_dim;
@@ -34,11 +35,6 @@ Network::Network(std::vector<FullyConnectedLayerConfig> configs,
       if (_configs[i].act_func == ActivationFunc::Softmax) {
         throw std::invalid_argument(
             "Softmax activation function is not supported for hidden layers.");
-      }
-    } else {
-      if (_configs[i].act_func == ActivationFunc::ReLU) {
-        throw std::invalid_argument(
-            "Softmax activation function is required for output layer.");
       }
     }
 
@@ -83,7 +79,7 @@ std::vector<int64_t> Network::train(
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
-  this->createBatchStates(batch_size);
+  this->createBatchStates(batch_size, false);
 
   std::vector<int64_t> time_per_epoch;
 
@@ -93,8 +89,8 @@ std::vector<int64_t> Network::train(
 
   ProgressBar bar(num_train_batches);
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
-    bar.reset();
     std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
+    bar.reset();
     auto train_start = std::chrono::high_resolution_clock::now();
     for (uint32_t batch = 0; batch < num_train_batches; batch++) {
       if (_iter % 1000 == 999) {
@@ -233,6 +229,11 @@ void Network::forward(uint32_t batch_index, const VectorState& input,
   }
 }
 
+template void Network::backpropagate<true>(uint32_t, VectorState&,
+                                           VectorState&);
+template void Network::backpropagate<false>(uint32_t, VectorState&,
+                                            VectorState&);
+
 template <bool FROM_INPUT>
 void Network::backpropagate(uint32_t batch_index, VectorState& input,
                             VectorState& output) {
@@ -256,6 +257,12 @@ void Network::backpropagate(uint32_t batch_index, VectorState& input,
       _layers[layer]->backpropagate(_states[layer - 1][batch_index],
                                     _states[layer][batch_index]);
     }
+  }
+}
+
+void Network::createBatchStates(uint32_t batch_size, bool force_dense) {
+  for (uint32_t l = 0; l < _num_layers - 1; l++) {
+    _states[l] = _layers[l]->createBatchState(batch_size, force_dense);
   }
 }
 

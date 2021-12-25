@@ -32,7 +32,7 @@ class DLRM {
   void backpropagate(uint32_t batch_index, VectorState& dense_input,
                      VectorState& output);
 
-  void initializeNetworkForBatchSize(uint32_t batch_size);
+  void initializeNetworkForBatchSize(uint32_t batch_size, bool force_dense);
 
   void reBuildHashFunctions();
 
@@ -48,6 +48,7 @@ class DLRM {
   std::vector<VectorState> _bottom_mlp_output;
 
   uint32_t _iter;
+  uint32_t _epoch_count;
 };
 
 }  // namespace thirdai::bolt

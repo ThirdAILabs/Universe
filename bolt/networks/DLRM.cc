@@ -13,11 +13,12 @@ DLRM::DLRM(EmbeddingLayerConfig embedding_config,
            uint32_t dense_feature_dim)
     : _embedding_layer(embedding_config),
       _bottom_mlp(bottom_mlp_configs, dense_feature_dim),
-      _top_mlp(top_mlp_configs,
-               (1 << embedding_config.log_embedding_block_size) +
-                   bottom_mlp_configs.back().dim),
+      _top_mlp(top_mlp_configs, (embedding_config.lookup_size *
+                                 embedding_config.num_embedding_lookups) +
+                                    bottom_mlp_configs.back().dim),
 
-      _iter(0) {
+      _iter(0),
+      _epoch_count(0) {
   if (bottom_mlp_configs.back().sparsity != 1.0) {
     throw std::invalid_argument(
         "Dense feature layer must be have sparsity 1.0");
@@ -43,7 +44,7 @@ void DLRM::train(
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
-  initializeNetworkForBatchSize(batch_size);
+  initializeNetworkForBatchSize(batch_size, false);
 
   BatchState output(1, batch_size, true);
 
@@ -52,7 +53,9 @@ void DLRM::train(
   ProgressBar bar(num_train_batches);
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
+    std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
     bar.reset();
+
     auto train_start = std::chrono::high_resolution_clock::now();
     for (uint32_t batch = 0; batch < num_train_batches; batch++) {
       if (_iter % 1000 == 999) {
@@ -62,8 +65,8 @@ void DLRM::train(
 
       const dataset::ClickThroughBatch& input_batch = train_data[batch];
 
-#pragma omp parallel for default(none) \
-    shared(input_batch, output, batch_size, MSE)
+      // #pragma omp parallel for default(none)
+      //     shared(input_batch, output, batch_size, MSE)
       for (uint32_t b = 0; b < input_batch.getBatchSize(); b++) {
         VectorState dense_input = VectorState::makeDenseInputState(
             input_batch[b]._values, input_batch[b].dim());
@@ -95,9 +98,11 @@ void DLRM::train(
                              train_end - train_start)
                              .count();
     std::cout << std::endl
-              << "Epoch: " << epoch << "\nProcessed " << num_train_batches
+              << "Processed " << num_train_batches
               << " training batches in " << epoch_time << " seconds"
               << std::endl;
+
+    _epoch_count++;
   }
 }
 
@@ -107,7 +112,7 @@ void DLRM::testImpl(
   uint32_t batch_size = test_data.at(0).getBatchSize();
   uint64_t num_test_batches = test_data.numBatches();
 
-  initializeNetworkForBatchSize(batch_size);
+  initializeNetworkForBatchSize(batch_size, true);
 
   BatchState output(1, batch_size, true);
 
@@ -131,7 +136,8 @@ void DLRM::testImpl(
   }
 }
 
-void DLRM::initializeNetworkForBatchSize(uint32_t batch_size) {
+void DLRM::initializeNetworkForBatchSize(uint32_t batch_size,
+                                         bool force_dense) {
   _concat_layer_state = BatchState(_concat_layer_dim, batch_size, true);
 
   uint32_t embedding_dim = _embedding_layer.getEmbeddingDim();
@@ -150,6 +156,11 @@ void DLRM::initializeNetworkForBatchSize(uint32_t batch_size) {
         concat_vec.activations + bottom_mlp_output_dim,
         concat_vec.gradients + bottom_mlp_output_dim, embedding_dim));
   }
+
+  _embedding_layer.initializeLayer(batch_size);
+
+  _bottom_mlp.createBatchStates(batch_size, force_dense);
+  _top_mlp.createBatchStates(batch_size, force_dense);
 }
 
 void DLRM::forward(uint32_t batch_index, const VectorState& dense_input,

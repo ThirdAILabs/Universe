@@ -44,7 +44,11 @@ class BatchState {
   uint32_t _batch_size;
 
  public:
-  BatchState() {}
+  BatchState()
+      : _vector_states(nullptr),
+        _active_neurons_buf(nullptr),
+        _activations_buf(nullptr),
+        _gradients_buf(nullptr) {}
 
   BatchState(const uint32_t dim, const uint32_t batch_size, bool is_dense)
       : _batch_size(batch_size) {
