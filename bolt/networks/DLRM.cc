@@ -65,8 +65,8 @@ void DLRM::train(
 
       const dataset::ClickThroughBatch& input_batch = train_data[batch];
 
-      // #pragma omp parallel for default(none)
-      //     shared(input_batch, output, batch_size, MSE)
+#pragma omp parallel for default(none) \
+    shared(input_batch, output, batch_size, MSE)
       for (uint32_t b = 0; b < input_batch.getBatchSize(); b++) {
         VectorState dense_input = VectorState::makeDenseInputState(
             input_batch[b]._values, input_batch[b].dim());
@@ -98,9 +98,8 @@ void DLRM::train(
                              train_end - train_start)
                              .count();
     std::cout << std::endl
-              << "Processed " << num_train_batches
-              << " training batches in " << epoch_time << " seconds"
-              << std::endl;
+              << "Processed " << num_train_batches << " training batches in "
+              << epoch_time << " seconds" << std::endl;
 
     _epoch_count++;
   }
@@ -119,6 +118,9 @@ void DLRM::testImpl(
   ProgressBar bar(num_test_batches);
 
   uint32_t cnt = 0;
+
+  auto test_start = std::chrono::high_resolution_clock::now();
+
   for (const auto& batch : test_data) {
 #pragma omp parallel for default(none) shared(batch, output, scores, cnt)
     for (uint32_t b = 0; b < batch.getBatchSize(); b++) {
@@ -134,6 +136,14 @@ void DLRM::testImpl(
 
     bar.update();
   }
+
+  auto test_end = std::chrono::high_resolution_clock::now();
+  int64_t test_time =
+      std::chrono::duration_cast<std::chrono::seconds>(test_end - test_start)
+          .count();
+  std::cout << std::endl
+            << "Processed " << num_test_batches << " test batches in "
+            << test_time << " seconds" << std::endl;
 }
 
 void DLRM::initializeNetworkForBatchSize(uint32_t batch_size,

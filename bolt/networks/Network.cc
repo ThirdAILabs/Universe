@@ -159,12 +159,6 @@ float Network::test(
 
   auto test_start = std::chrono::high_resolution_clock::now();
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
-    if (_iter % 1000 == 999) {
-      for (uint32_t i = 0; i < _num_layers; i++) {
-        _layers[i]->shuffleRandNeurons();
-      }
-    }
-
     const dataset::SparseBatch& input_batch = test_data[batch];
 
 #pragma omp parallel for default(none) shared(input_batch, outputs, correct)

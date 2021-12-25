@@ -1,6 +1,8 @@
 from thirdai import bolt, dataset
 
-train = dataset.loadClickThroughDataset(
+train_data = dataset.loadClickThroughDataset(
+    "/Users/nmeisburger/files/Research/data/mini_criteo.txt", 256, 13, 26)
+test_data = dataset.loadClickThroughDataset(
     "/Users/nmeisburger/files/Research/data/mini_criteo.txt", 256, 13, 26)
 
 bottom_mlp = [
@@ -28,6 +30,6 @@ top_mlp = [
 dlrm = bolt.DLRM(embedding, bottom_mlp, top_mlp, 13)
 
 
-dlrm.Train(train, learning_rate=0.001, epochs=2, rehash=300, rebuild=500)
+dlrm.Train(train_data, learning_rate=0.001, epochs=2, rehash=300, rebuild=500)
 
-dlrm.Test(train)
+dlrm.Test(test_data)
