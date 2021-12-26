@@ -32,4 +32,4 @@ dlrm = bolt.DLRM(embedding, bottom_mlp, top_mlp, 13)
 
 dlrm.Train(train_data, learning_rate=0.001, epochs=2, rehash=300, rebuild=500)
 
-dlrm.Test(test_data)
+scores = dlrm.Test(test_data)
