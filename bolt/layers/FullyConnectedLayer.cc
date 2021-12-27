@@ -2,10 +2,13 @@
 #include <algorithm>
 #include <cmath>
 #include <exception>
+#include <immintrin.h>
 #include <random>
 #include <sstream>
 #include <tuple>
 #include <unordered_map>
+
+// #define USE_VECTORIZATION
 
 namespace thirdai::bolt {
 
@@ -269,12 +272,86 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
   float B1_ = static_cast<float>(1 - pow(B1, iter));
   float B2_ = static_cast<float>(1 - pow(B2, iter));
 
-#pragma omp parallel for default(none) shared(lr, B1, B1_, B2, B2_, eps)
+#if defined __SSE__ && defined USE_VECTORIZATION
+  float one_minus_B1 = 1 - B1;
+  float one_minus_B2 = 1 - B2;
+  float lr_b1 = lr / B1_;
+#endif
+
+  // #pragma omp parallel for default(none) shared(lr, B1, B1_, B2, B2_, eps)
   for (uint64_t n = 0; n < _dim; n++) {
     if (!_is_active[n]) {
       continue;
     }
 
+#if defined __SSE__ && defined USE_VECTORIZATION
+    for (uint64_t i = 0; i < (_prev_dim & (~3)); i += 4) {
+      auto index = n * _prev_dim + i;
+
+      __m128 grad = _mm_load_ps(_w_gradient + index);
+
+      __m128 mom, vel;
+      {  // _w_momentum[indx] = B1 * _w_momentum[indx] + (1 - B1) * grad;
+        __m128 omB1 = _mm_load1_ps(&one_minus_B1);
+        __m128 term2 = _mm_mul_ps(omB1, grad);
+
+        __m128 B1_128 = _mm_load1_ps(&B1);
+        mom = _mm_load_ps(_w_momentum + index);
+        __m128 term1 = _mm_mul_ps(B1_128, mom);
+
+        mom = _mm_add_ps(term1, term2);
+        _mm_store_ps(_w_momentum + index, mom);
+      }
+
+      {  // _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
+        __m128 omB2 = _mm_load1_ps(&one_minus_B2);
+        __m128 grad_square = _mm_mul_ps(grad, grad);
+        __m128 term2 = _mm_mul_ps(omB2, grad_square);
+
+        __m128 B2_128 = _mm_load1_ps(&B2);
+        vel = _mm_load_ps(_w_velocity + index);
+        __m128 term1 = _mm_mul_ps(B2_128, vel);
+
+        vel = _mm_add_ps(term1, term2);
+        _mm_store_ps(_w_velocity + index, vel);
+      }
+
+      {  // _weights[indx] += lr * (_w_momentum[indx] / B1_) /
+         //                   (std::sqrt(_w_velocity[indx] / B2_) + eps);
+        __m128 lr_b1_128 = _mm_load1_ps(&lr_b1);
+        __m128 mom_term = _mm_mul_ps(lr_b1_128, mom);
+
+        __m128 B2_hat = _mm_load1_ps(&B2_);
+        __m128 vel_term = _mm_div_ps(vel, B2_hat);
+        __m128 eps128 = _mm_load1_ps(&eps);
+        vel_term = _mm_add_ps(vel_term, eps128);
+
+        vel_term = _mm_rsqrt_ps(vel_term);
+
+        __m128 new_weight = _mm_mul_ps(mom_term, vel_term);
+        _mm_store_ps(_weights + index, new_weight);
+      }
+
+      {  // _w_gradient[indx] = 0;
+#pragma GCC unroll 4
+        for (int j = 0; j < 4; j++) {
+          _w_gradient[index + j] = 0;
+        }
+      }
+    }
+    for (uint64_t i = (_prev_dim & (~3)); i < _prev_dim; i++) {
+      auto indx = n * _prev_dim + i;
+      float grad = _w_gradient[indx];
+      _w_momentum[indx] = B1 * _w_momentum[indx] + (1 - B1) * grad;
+      _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
+
+      _weights[indx] += lr * (_w_momentum[indx] / B1_) /
+                        (std::sqrt(_w_velocity[indx] / B2_) + eps);
+
+      _w_gradient[indx] = 0;
+    }
+#else
+#pragma GCC ivdep
     for (uint64_t i = 0; i < _prev_dim; i++) {
       auto indx = n * _prev_dim + i;
       float grad = _w_gradient[indx];
@@ -286,6 +363,7 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
 
       _w_gradient[indx] = 0;
     }
+#endif
 
     float grad = _b_gradient[n];
     _b_momentum[n] = B1 * _b_momentum[n] + (1 - B1) * grad;
