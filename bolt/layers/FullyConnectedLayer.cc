@@ -282,7 +282,13 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
   __m128 vec_b2_hat = _mm_set1_ps(B2_hat);
 #endif
 
-  // #pragma omp parallel for default(none) shared(lr, B1, B1_, B2, B2_, eps)
+#if defined __SSE__ && defined USE_VECTORIZATION
+#pragma omp parallel for default(none)                                        \
+    shared(lr, B1, B1_hat, B2, B2_hat, eps, vec_b1, vec_b2, vec_one_minus_b1, \
+           vec_one_minus_b2, vec_eps, vec_lr_b1_hat, vec_b2_hat)
+#else
+#pragma omp parallel for default(none) shared(lr, B1, B1_hat, B2, B2_hat, eps)
+#endif
   for (uint64_t n = 0; n < _dim; n++) {
     if (!_is_active[n]) {
       continue;
