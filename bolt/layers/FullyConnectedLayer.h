@@ -135,7 +135,7 @@ class FullyConnectedLayer final : public Layer {
 
   bool* _is_active;
 
-  bool _is_frozen;
+  bool _hash_tables_frozen;
 
   SamplingConfig _sampling_config;
   hashing::DWTAHashFunction* _hasher;
