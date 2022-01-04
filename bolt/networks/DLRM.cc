@@ -76,6 +76,8 @@ void DLRM::train(
         float label = static_cast<float>(input_batch.label(b));
 
         MSE(output[b], batch_size, nullptr, &label, 1);
+
+        backpropagate(b, dense_input, output[b]);
       }
 
       _bottom_mlp.updateParameters(learning_rate);
