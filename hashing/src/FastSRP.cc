@@ -143,6 +143,7 @@ void FastSRP::hashSingleSparse(const uint32_t* indices, const float* values,
 FastSRP::~FastSRP() {
   delete[] _bin_map;
   delete[] _positions;
+  delete[] _rand_bits;
 }
 
 }  // namespace thirdai::hashing
