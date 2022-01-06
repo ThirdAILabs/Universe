@@ -45,6 +45,8 @@ class Network {
 
   void buildHashTables();
 
+  void freezeSelectionForInference() {_freeze_Selection_Inference = true;};
+
   uint32_t getNumLayers() const { return _num_layers; }
 
   uint32_t getInputDim() const { return _input_dim; }
@@ -87,6 +89,8 @@ class Network {
   uint32_t _num_layers;
   uint32_t _iter;
   uint32_t _epoch_count;
+
+  bool _freeze_Selection_Inference;
 };
 
 }  // namespace thirdai::bolt

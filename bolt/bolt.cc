@@ -54,6 +54,15 @@ int main(int argc, char** argv) {
       config.strVal("test_data"), batch_size, dataset::SvmSparseBatchFactory{});
 
   for (uint32_t e = 0; e < epochs; e++) {
+
+        //TODO: Put this as parameter
+    const float  factor = 3.0;
+    if(e == floor(epochs/factor))
+    {
+      std::cout << "Freezing Selection for Sparse Inference" << std::endl;
+      network.freezeSelectionForInference();
+    }
+
     network.train(train_data, learning_rate, 1, rehash, rebuild);
     network.test(test_data, max_test_batches);
   }
