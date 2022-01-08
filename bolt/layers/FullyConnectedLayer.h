@@ -42,6 +42,10 @@ class FullyConnectedLayer final {
     return BatchState(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
   }
 
+  void forceSparseForInference() {if(_sparsity < 1.0) {_forceSparseForInference = true;}}
+
+  bool isForceSparsity() {return _forceSparseForInference;}
+
   void buildHashTables();
 
   void reBuildHashFunction();
@@ -83,6 +87,8 @@ class FullyConnectedLayer final {
   float* _b_velocity;
 
   bool* _is_active;
+
+  bool _forceSparseForInference;
 
   SamplingConfig _sampling_config;
   hashing::DWTAHashFunction* _hasher;

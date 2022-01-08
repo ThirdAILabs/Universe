@@ -167,10 +167,9 @@ float Network::test(
   for (uint32_t l = 0; l < _num_layers - 1; l++) {
     _states[l] = _layers[l]->createBatchState(batch_size, !_freeze_Selection_Inference);
   }
-
- // TODO: Anshu Output Layer Sparsity.
+  
   BatchState outputs =
-      _layers[_num_layers - 1]->createBatchState(batch_size, true);
+      _layers[_num_layers - 1]->createBatchState(batch_size, !_layers[_num_layers-1]->isForceSparsity());
 
   std::atomic<uint32_t> correct{0};
   ProgressBar bar(num_test_batches);
@@ -191,8 +190,7 @@ float Network::test(
           input_batch[i]._indices, input_batch[i]._values,
           input_batch[i].length());
 
-      this->forward(i, input, outputs[i], input_batch.labels(i).data(),
-                    input_batch.labels(i).size());
+      this->forward(i, input, outputs[i], nullptr, 0);
 
       const float* activations = outputs[i].activations;
       float max_act = std::numeric_limits<float>::min();
@@ -202,7 +200,11 @@ float Network::test(
           max_act = activations[k];
           // Since sparsity is set to 1.0, the layer is dense and we can use i
           // instead of indices[i]
-          pred = k;
+          if(_layers[_num_layers-1]->isForceSparsity()){
+           pred = outputs[i].active_neurons[k];
+           } else {
+             pred = k;
+           } 
         }
       }
 

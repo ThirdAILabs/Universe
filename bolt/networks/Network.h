@@ -45,8 +45,11 @@ class Network {
 
   void buildHashTables();
 
-  void freezeSelectionForInference() {_freeze_Selection_Inference = true;};
-
+  void freezeSelectionForInference() {
+    _freeze_Selection_Inference = true;
+    _layers[_num_layers-1]->forceSparseForInference();
+  }
+   
   uint32_t getNumLayers() const { return _num_layers; }
 
   uint32_t getInputDim() const { return _input_dim; }

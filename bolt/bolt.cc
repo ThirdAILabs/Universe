@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
 
   for (uint32_t e = 0; e < epochs; e++) {
 
-        //TODO: Put this as parameter
+    //Anshu: TODO: Put this as parameter
     const float  factor = 3.0;
     if(e == floor(epochs/factor))
     {

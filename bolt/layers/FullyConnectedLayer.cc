@@ -32,6 +32,9 @@ FullyConnectedLayer::FullyConnectedLayer(
 
   _is_active = new bool[_dim]();  // TODO(nicholas): bitvector?
 
+  // Anshu: Only used for Softmax
+  _forceSparseForInference = false; 
+
   std::random_device rd;
   std::default_random_engine eng(rd());
   std::normal_distribution<float> dist(0.0, 0.01);
@@ -236,7 +239,16 @@ void FullyConnectedLayer::selectActiveNeurons(const VectorState& input,
     _hasher->hashSingleSparse(input.active_neurons, input.activations,
                               input.len, hashes);
   }
-  _hash_table->queryBySet(hashes, active_set);
+
+  
+
+  // Anshu: Force Sparse Inference.
+  if(_forceSparseForInference && _act_func == ActivationFunc::Softmax){     
+    _hash_table->queryAndinsertForInference(hashes, active_set, _sparse_dim);
+  } else {
+    _hash_table->queryBySet(hashes, active_set);
+  }
+
   delete[] hashes;
 
   if (active_set.size() < _sparse_dim) {
@@ -255,11 +267,11 @@ void FullyConnectedLayer::selectActiveNeurons(const VectorState& input,
     output.active_neurons[cnt++] = labels[i];
     active_set.erase(labels[i]);
   }
+
   for (auto x : active_set) {
     if (cnt >= _sparse_dim) {
       break;
     }
-
     output.active_neurons[cnt++] = x;
   }
 }

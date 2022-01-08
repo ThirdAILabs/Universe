@@ -78,6 +78,60 @@ void SampledHashTable<LABEL_T>::queryBySet(
 }
 
 template <typename LABEL_T>
+void SampledHashTable<LABEL_T>::queryAndinsertForInference(uint32_t const* hashes, std::unordered_set<LABEL_T>& store,
+                  uint32_t outputsize) {
+
+  std::unordered_set<uint32_t> tempStore;
+  
+  uint32_t remaining = outputsize - store.size(); //Labels are already in store 
+  
+  uint64_t table =0;
+  while (table < _num_tables) {
+    uint32_t row_index = hashes[table];
+    uint32_t counter = _counters[CounterIdx(table, row_index)];
+     
+    uint32_t elementsFound = std::min<uint64_t>(counter, _reservoir_size); 
+
+    remaining = remaining - elementsFound;
+    if(remaining < 0){
+      for (uint64_t i = 0; i <  remaining + elementsFound; i++) {  
+        tempStore.insert(_data[DataIdx(table, row_index, i)]); 
+      }
+      break;
+    } else {
+      for (uint64_t i = 0; i <  elementsFound; i++) {  
+        tempStore.insert(_data[DataIdx(table, row_index, i)]); 
+      }
+    }
+    table++;
+  }
+    
+  for (auto x : store) {
+    if(tempStore.find(x) == tempStore.end()){
+      for (uint32_t i = 0; i < table-1; i++){
+        uint32_t row_id = hashes[i];
+        uint64_t ctr = _counters[CounterIdx(i, row_id)]++;
+
+        if (ctr < _reservoir_size) {
+            _data[DataIdx(i, row_id, ctr)] = x;
+        } else {
+          uint64_t rand_num = _gen_rand[x*13 % _max_rand] % _reservoir_size;
+          _data[DataIdx(i, row_id, rand_num)] = x;
+        }
+      }
+    }
+  } 
+  
+  // This is slow because we are reiterating over tempStore which is larger than label_len.
+  for (auto x : tempStore){
+    store.insert(x);
+  }
+}
+
+
+
+
+template <typename LABEL_T>
 void SampledHashTable<LABEL_T>::queryByCount(
     uint32_t const* hashes, std::vector<uint32_t>& counts) const {
   for (uint64_t table = 0; table < _num_tables; table++) {

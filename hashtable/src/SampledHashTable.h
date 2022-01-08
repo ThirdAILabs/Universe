@@ -101,6 +101,16 @@ class SampledHashTable final : public HashTable<LABEL_T> {
    */
   void queryBySet(uint32_t const* hashes,
                   std::unordered_set<LABEL_T>& store) const override;
+  
+ /**
+   * 
+   * The hashes array should have length equal to the number of tables, and
+   * the ith entry should be a bucket index into the ith table. 
+   *  
+   */  
+
+  void queryAndinsertForInference(uint32_t const* hashes, std::unordered_set<LABEL_T>& store,
+                  uint32_t outputsize);
 
   /**
    * Queries the table and returns the counts of elements in the union of the
