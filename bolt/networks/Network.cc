@@ -21,7 +21,7 @@ Network::Network(std::vector<FullyConnectedLayerConfig> configs,
       _epoch_count(0) {
   auto start = std::chrono::high_resolution_clock::now();
 
-  _freeze_Selection_Inference = false;
+  _sparse_inference = false;
   _num_layers = _configs.size();
   _layers = new FullyConnectedLayer*[_num_layers];
   _states =
@@ -100,7 +100,7 @@ std::vector<int64_t> Network::train(
     std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
     auto train_start = std::chrono::high_resolution_clock::now();
     for (uint32_t batch = 0; batch < num_train_batches; batch++) {
-      if (_iter % 1000 == 999 && !_freeze_Selection_Inference) {
+      if (_iter % 1000 == 999 && !_sparse_inference) {
         for (uint32_t i = 0; i < _num_layers; i++) {
           _layers[i]->shuffleRandNeurons();
         }
@@ -129,7 +129,7 @@ std::vector<int64_t> Network::train(
                                          EPS);
       }
 
-      if(!_freeze_Selection_Inference){
+      if(!_sparse_inference){
         if (_iter % rebuild_batch == (rebuild_batch - 1)) {
           reBuildHashFunctions();
           buildHashTables();
@@ -165,7 +165,7 @@ float Network::test(
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
   for (uint32_t l = 0; l < _num_layers - 1; l++) {
-    _states[l] = _layers[l]->createBatchState(batch_size, !_freeze_Selection_Inference);
+    _states[l] = _layers[l]->createBatchState(batch_size, !_sparse_inference);
   }
   
   BatchState outputs =
@@ -176,7 +176,7 @@ float Network::test(
 
   auto test_start = std::chrono::high_resolution_clock::now();
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
-    if (_iter % 1000 == 999 && !_freeze_Selection_Inference) {
+    if (_iter % 1000 == 999 && !_sparse_inference) {
       for (uint32_t i = 0; i < _num_layers; i++) {
         _layers[i]->shuffleRandNeurons();
       }

@@ -109,7 +109,7 @@ class SampledHashTable final : public HashTable<LABEL_T> {
    *  
    */  
 
-  void queryAndinsertForInference(uint32_t const* hashes, std::unordered_set<LABEL_T>& store,
+  void queryAndInsertForInference(uint32_t const* hashes, std::unordered_set<LABEL_T>& store,
                   uint32_t outputsize);
 
   /**

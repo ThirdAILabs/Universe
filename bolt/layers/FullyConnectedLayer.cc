@@ -243,8 +243,9 @@ void FullyConnectedLayer::selectActiveNeurons(const VectorState& input,
   
 
   // Anshu: Force Sparse Inference.
+  //TODO: if we are calling for inference we have no label information. 
   if(_forceSparseForInference && _act_func == ActivationFunc::Softmax){     
-    _hash_table->queryAndinsertForInference(hashes, active_set, _sparse_dim);
+    _hash_table->queryAndInsertForInference(hashes, active_set, _sparse_dim);
   } else {
     _hash_table->queryBySet(hashes, active_set);
   }

@@ -78,12 +78,12 @@ void SampledHashTable<LABEL_T>::queryBySet(
 }
 
 template <typename LABEL_T>
-void SampledHashTable<LABEL_T>::queryAndinsertForInference(uint32_t const* hashes, std::unordered_set<LABEL_T>& store,
+void SampledHashTable<LABEL_T>::queryAndInsertForInference(uint32_t const* hashes, std::unordered_set<LABEL_T>& store,
                   uint32_t outputsize) {
 
-  std::unordered_set<uint32_t> tempStore;
+  std::unordered_set<uint32_t> temp_store;
   
-  uint32_t remaining = outputsize - store.size(); //Labels are already in store 
+  int32_t remaining = outputsize - store.size(); //Labels are already in store 
   
   uint64_t table =0;
   while (table < _num_tables) {
@@ -95,19 +95,19 @@ void SampledHashTable<LABEL_T>::queryAndinsertForInference(uint32_t const* hashe
     remaining = remaining - elementsFound;
     if(remaining < 0){
       for (uint64_t i = 0; i <  remaining + elementsFound; i++) {  
-        tempStore.insert(_data[DataIdx(table, row_index, i)]); 
+        temp_store.insert(_data[DataIdx(table, row_index, i)]); 
       }
       break;
     } else {
       for (uint64_t i = 0; i <  elementsFound; i++) {  
-        tempStore.insert(_data[DataIdx(table, row_index, i)]); 
+        temp_store.insert(_data[DataIdx(table, row_index, i)]); 
       }
     }
     table++;
   }
-    
+    // If the labels (stored in store is not present in retreived. Add it to every relevant bucket in the tables probed.)
   for (auto x : store) {
-    if(tempStore.find(x) == tempStore.end()){
+    if(temp_store.find(x) == temp_store.end()){
       for (uint32_t i = 0; i < table-1; i++){
         uint32_t row_id = hashes[i];
         uint64_t ctr = _counters[CounterIdx(i, row_id)]++;
@@ -122,8 +122,9 @@ void SampledHashTable<LABEL_T>::queryAndinsertForInference(uint32_t const* hashe
     }
   } 
   
-  // This is slow because we are reiterating over tempStore which is larger than label_len.
-  for (auto x : tempStore){
+  // This is slow because we are reiterating over temp_store which is larger than label_len. 
+  // TODO: switch role of temp_store and store so we wont need the following. 
+  for (auto x : temp_store){
     store.insert(x);
   }
 }

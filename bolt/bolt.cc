@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
     if((epochs > 2) && e == epochs - 2)
     {
       std::cout << "Freezing Selection for Sparse Inference" << std::endl;
-      network.freezeSelectionForInference();
+      network.useSparseInference();
     }
 
     network.train(train_data, learning_rate, 1, rehash, rebuild);

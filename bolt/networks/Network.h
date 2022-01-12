@@ -45,8 +45,8 @@ class Network {
 
   void buildHashTables();
 
-  void freezeSelectionForInference() {
-    _freeze_Selection_Inference = true;
+  void useSparseInference() {
+    _sparse_inference = true;
     _layers[_num_layers-1]->forceSparseForInference();
   }
    
@@ -93,7 +93,7 @@ class Network {
   uint32_t _iter;
   uint32_t _epoch_count;
 
-  bool _freeze_Selection_Inference;
+  bool _sparse_inference;
 };
 
 }  // namespace thirdai::bolt
