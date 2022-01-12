@@ -83,7 +83,7 @@ void SampledHashTable<LABEL_T>::queryAndInsertForInference(
     uint32_t outputsize) {
   std::unordered_set<uint32_t> temp_store;
 
-  int32_t remaining = outputsize - store.size();  // Labels are already in store
+  uint32_t remaining = outputsize - store.size();  // Labels are already in store
 
   uint64_t table = 0;
   while (table < _num_tables) {
