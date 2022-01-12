@@ -92,9 +92,8 @@ void SampledHashTable<LABEL_T>::queryAndInsertForInference(
 
     uint32_t elements_found = std::min<uint64_t>(counter, _reservoir_size);
 
-    remaining = remaining - elements_found;
-    if (remaining < 0) {
-      for (uint64_t i = 0; i < remaining + elements_found; i++) {
+    if (remaining < elements_found) {
+      for (uint64_t i = 0; i < remaining; i++) {
         temp_store.insert(_data[DataIdx(table, row_index, i)]);
       }
       break;
@@ -102,6 +101,7 @@ void SampledHashTable<LABEL_T>::queryAndInsertForInference(
     for (uint64_t i = 0; i < elements_found; i++) {
       temp_store.insert(_data[DataIdx(table, row_index, i)]);
     }
+    remaining = remaining - elements_found;
     table++;
   }
   // If the labels (stored in store is not present in retreived. Add it to every
