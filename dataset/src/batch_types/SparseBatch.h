@@ -4,7 +4,6 @@
 #include <dataset/src/Vectors.h>
 #include <cassert>
 #include <fstream>
-#include <iostream>
 #include <vector>
 
 namespace thirdai::dataset {
