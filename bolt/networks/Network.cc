@@ -207,7 +207,7 @@ float Network::test(
         correct++;
       }
     }
-    
+
     bar.increment();
   }
 
