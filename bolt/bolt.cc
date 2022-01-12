@@ -40,6 +40,7 @@ int main(int argc, char** argv) {
   uint32_t batch_size = config.intVal("batch_size");
   uint32_t rehash = config.intVal("rehash");
   uint32_t rebuild = config.intVal("rebuild");
+  uint32_t switch_inference_epoch = config.valExists("sparse_inf_at_epoch")? config.intVal("sparse_inf_at_epoch") : 0;
 
   uint32_t max_test_batches = std::numeric_limits<uint32_t>::max();
   if (config.valExists("max_test_batches")) {
@@ -55,9 +56,8 @@ int main(int argc, char** argv) {
 
   for (uint32_t e = 0; e < epochs; e++) {
 
-    //Anshu: TODO: Put this as parameter
-    //const float f = 3.0;
-    if((epochs > 2) && e == epochs - 2)
+    //Anshu: TODO: Put this in python bindings
+    if((switch_inference_epoch > 0) && e == switch_inference_epoch)
     {
       std::cout << "Freezing Selection for Sparse Inference" << std::endl;
       network.useSparseInference();

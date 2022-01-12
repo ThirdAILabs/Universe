@@ -217,12 +217,13 @@ float Network::test(
   }
 
   auto test_end = std::chrono::high_resolution_clock::now();
+  //Anshu: Inference times in milliseconds
   int64_t test_time =
-      std::chrono::duration_cast<std::chrono::seconds>(test_end - test_start)
+      std::chrono::duration_cast<std::chrono::milliseconds>(test_end - test_start)
           .count();
   std::cout << std::endl
             << "Processed " << num_test_batches << " test batches in "
-            << test_time << " seconds" << std::endl;
+            << test_time << " milliseconds" << std::endl;
 
   uint32_t num_vecs = std::min(num_test_batches * batch_size, test_data.len());
   float accuracy = static_cast<float>(correct) / num_vecs;
