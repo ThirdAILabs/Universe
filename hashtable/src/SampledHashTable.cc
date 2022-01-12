@@ -83,7 +83,12 @@ void SampledHashTable<LABEL_T>::queryAndInsertForInference(
     uint32_t outputsize) {
   std::unordered_set<uint32_t> temp_store;
 
+<<<<<<< HEAD
   uint32_t remaining = outputsize - store.size();  // Labels are already in store
+=======
+  // Labels are already in store
+  uint32_t remaining = outputsize - store.size();
+>>>>>>> 7088486f374f2bd67c93eb43f920daf4f85a0c93
 
   uint64_t table = 0;
   while (table < _num_tables) {
@@ -93,7 +98,7 @@ void SampledHashTable<LABEL_T>::queryAndInsertForInference(
     uint32_t elements_found = std::min<uint64_t>(counter, _reservoir_size);
 
     if (remaining < elements_found) {
-      for (uint64_t i = 0; i < remaining; i++) {
+      for (uint32_t i = 0; i < remaining; i++) {
         temp_store.insert(_data[DataIdx(table, row_index, i)]);
       }
       break;
