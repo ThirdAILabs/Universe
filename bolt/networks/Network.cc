@@ -129,7 +129,7 @@ std::vector<int64_t> Network::train(
                                          EPS);
       }
 
-      if(!_sparse_inference){
+      if (!_sparse_inference) {
         if (_iter % rebuild_batch == (rebuild_batch - 1)) {
           reBuildHashFunctions();
           buildHashTables();
@@ -167,9 +167,9 @@ float Network::test(
   for (uint32_t l = 0; l < _num_layers - 1; l++) {
     _states[l] = _layers[l]->createBatchState(batch_size, !_sparse_inference);
   }
-  
-  BatchState outputs =
-      _layers[_num_layers - 1]->createBatchState(batch_size, !_layers[_num_layers-1]->isForceSparsity());
+
+  BatchState outputs = _layers[_num_layers - 1]->createBatchState(
+      batch_size, !_layers[_num_layers - 1]->isForceSparsity());
 
   std::atomic<uint32_t> correct{0};
   ProgressBar bar(num_test_batches);
@@ -200,11 +200,11 @@ float Network::test(
           max_act = activations[k];
           // Since sparsity is set to 1.0, the layer is dense and we can use i
           // instead of indices[i]
-          if(_layers[_num_layers-1]->isForceSparsity()){
-           pred = outputs[i].active_neurons[k];
-           } else {
-             pred = k;
-           } 
+          if (_layers[_num_layers - 1]->isForceSparsity()) {
+            pred = outputs[i].active_neurons[k];
+          } else {
+            pred = k;
+          }
         }
       }
 
@@ -217,10 +217,10 @@ float Network::test(
   }
 
   auto test_end = std::chrono::high_resolution_clock::now();
-  //Anshu: Inference times in milliseconds
-  int64_t test_time =
-      std::chrono::duration_cast<std::chrono::milliseconds>(test_end - test_start)
-          .count();
+  // Anshu: Inference times in milliseconds
+  int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+                          test_end - test_start)
+                          .count();
   std::cout << std::endl
             << "Processed " << num_test_batches << " test batches in "
             << test_time << " milliseconds" << std::endl;

@@ -47,9 +47,9 @@ class Network {
 
   void useSparseInference() {
     _sparse_inference = true;
-    _layers[_num_layers-1]->forceSparseForInference();
+    _layers[_num_layers - 1]->forceSparseForInference();
   }
-   
+
   uint32_t getNumLayers() const { return _num_layers; }
 
   uint32_t getInputDim() const { return _input_dim; }

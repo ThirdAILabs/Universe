@@ -78,59 +78,58 @@ void SampledHashTable<LABEL_T>::queryBySet(
 }
 
 template <typename LABEL_T>
-void SampledHashTable<LABEL_T>::queryAndInsertForInference(uint32_t const* hashes, std::unordered_set<LABEL_T>& store,
-                  uint32_t outputsize) {
-
+void SampledHashTable<LABEL_T>::queryAndInsertForInference(
+    uint32_t const* hashes, std::unordered_set<LABEL_T>& store,
+    uint32_t outputsize) {
   std::unordered_set<uint32_t> temp_store;
-  
-  int32_t remaining = outputsize - store.size(); //Labels are already in store 
-  
-  uint64_t table =0;
+
+  int32_t remaining = outputsize - store.size();  // Labels are already in store
+
+  uint64_t table = 0;
   while (table < _num_tables) {
     uint32_t row_index = hashes[table];
     uint32_t counter = _counters[CounterIdx(table, row_index)];
-     
-    uint32_t elementsFound = std::min<uint64_t>(counter, _reservoir_size); 
 
-    remaining = remaining - elementsFound;
-    if(remaining < 0){
-      for (uint64_t i = 0; i <  remaining + elementsFound; i++) {  
-        temp_store.insert(_data[DataIdx(table, row_index, i)]); 
+    uint32_t elements_found = std::min<uint64_t>(counter, _reservoir_size);
+
+    remaining = remaining - elements_found;
+    if (remaining < 0) {
+      for (uint64_t i = 0; i < remaining + elements_found; i++) {
+        temp_store.insert(_data[DataIdx(table, row_index, i)]);
       }
       break;
-    } else {
-      for (uint64_t i = 0; i <  elementsFound; i++) {  
-        temp_store.insert(_data[DataIdx(table, row_index, i)]); 
-      }
+    }
+    for (uint64_t i = 0; i < elements_found; i++) {
+      temp_store.insert(_data[DataIdx(table, row_index, i)]);
     }
     table++;
   }
-    // If the labels (stored in store is not present in retreived. Add it to every relevant bucket in the tables probed.)
+  // If the labels (stored in store is not present in retreived. Add it to every
+  // relevant bucket in the tables probed.)
   for (auto x : store) {
-    if(temp_store.find(x) == temp_store.end()){
-      for (uint32_t i = 0; i < table-1; i++){
+    if (temp_store.find(x) == temp_store.end()) {
+      for (uint32_t i = 0; i < table - 1; i++) {
         uint32_t row_id = hashes[i];
         uint64_t ctr = _counters[CounterIdx(i, row_id)]++;
 
         if (ctr < _reservoir_size) {
-            _data[DataIdx(i, row_id, ctr)] = x;
+          _data[DataIdx(i, row_id, ctr)] = x;
         } else {
-          uint64_t rand_num = _gen_rand[x*13 % _max_rand] % _reservoir_size;
+          uint64_t rand_num = _gen_rand[x * 13 % _max_rand] % _reservoir_size;
           _data[DataIdx(i, row_id, rand_num)] = x;
         }
       }
     }
-  } 
-  
-  // This is slow because we are reiterating over temp_store which is larger than label_len. 
-  // TODO: switch role of temp_store and store so we wont need the following. 
-  for (auto x : temp_store){
+  }
+
+  // This is slow because we are reiterating over temp_store which is larger
+  // than label_len.
+  // TODO(anshu): switch role of temp_store and store so we wont need the
+  // following.
+  for (auto x : temp_store) {
     store.insert(x);
   }
 }
-
-
-
 
 template <typename LABEL_T>
 void SampledHashTable<LABEL_T>::queryByCount(

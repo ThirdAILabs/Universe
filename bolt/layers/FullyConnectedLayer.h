@@ -42,9 +42,13 @@ class FullyConnectedLayer final {
     return BatchState(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
   }
 
-  void forceSparseForInference() {if(_sparsity < 1.0) {_forceSparseForInference = true;}}
+  void forceSparseForInference() {
+    if (_sparsity < 1.0) {
+      _force_sparse_for_inference = true;
+    }
+  }
 
-  bool isForceSparsity() {return _forceSparseForInference;}
+  bool isForceSparsity() const { return _force_sparse_for_inference; }
 
   void buildHashTables();
 
@@ -88,12 +92,12 @@ class FullyConnectedLayer final {
 
   bool* _is_active;
 
-  bool _forceSparseForInference;
-
   SamplingConfig _sampling_config;
   hashing::DWTAHashFunction* _hasher;
   hashtable::SampledHashTable<uint32_t>* _hash_table;
   uint32_t* _rand_neurons;
+
+  bool _force_sparse_for_inference;
 };
 
 }  // namespace thirdai::bolt
