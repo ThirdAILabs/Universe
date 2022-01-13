@@ -17,7 +17,8 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sparse_dim(config.sparsity * config.dim),
       _sparsity(config.sparsity),
       _act_func(config.act_func),
-      _sampling_config(config.sampling_config) {
+      _sampling_config(config.sampling_config),
+      _force_sparse_for_inference(false) {
   uint64_t total_size = _dim * _prev_dim;
 
   _weights = new float[total_size];
@@ -236,7 +237,13 @@ void FullyConnectedLayer::selectActiveNeurons(const VectorState& input,
     _hasher->hashSingleSparse(input.active_neurons, input.activations,
                               input.len, hashes);
   }
-  _hash_table->queryBySet(hashes, active_set);
+
+  if (_force_sparse_for_inference && _act_func == ActivationFunc::Softmax) {
+    _hash_table->queryAndInsertForInference(hashes, active_set, _sparse_dim);
+  } else {
+    _hash_table->queryBySet(hashes, active_set);
+  }
+
   delete[] hashes;
 
   if (active_set.size() < _sparse_dim) {
@@ -255,11 +262,11 @@ void FullyConnectedLayer::selectActiveNeurons(const VectorState& input,
     output.active_neurons[cnt++] = labels[i];
     active_set.erase(labels[i]);
   }
+
   for (auto x : active_set) {
     if (cnt >= _sparse_dim) {
       break;
     }
-
     output.active_neurons[cnt++] = x;
   }
 }

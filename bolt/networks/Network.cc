@@ -21,6 +21,7 @@ Network::Network(std::vector<FullyConnectedLayerConfig> configs,
       _epoch_count(0) {
   auto start = std::chrono::high_resolution_clock::now();
 
+  _sparse_inference = false;
   _num_layers = _configs.size();
   _layers = new FullyConnectedLayer*[_num_layers];
   _states =
@@ -99,7 +100,7 @@ std::vector<int64_t> Network::train(
     std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
     auto train_start = std::chrono::high_resolution_clock::now();
     for (uint32_t batch = 0; batch < num_train_batches; batch++) {
-      if (_iter % 1000 == 999) {
+      if (_iter % 1000 == 999 && !_sparse_inference) {
         for (uint32_t i = 0; i < _num_layers; i++) {
           _layers[i]->shuffleRandNeurons();
         }
@@ -128,11 +129,13 @@ std::vector<int64_t> Network::train(
                                          EPS);
       }
 
-      if (_iter % rebuild_batch == (rebuild_batch - 1)) {
-        reBuildHashFunctions();
-        buildHashTables();
-      } else if (_iter % rehash_batch == (rehash_batch - 1)) {
-        buildHashTables();
+      if (!_sparse_inference) {
+        if (_iter % rebuild_batch == (rebuild_batch - 1)) {
+          reBuildHashFunctions();
+          buildHashTables();
+        } else if (_iter % rehash_batch == (rehash_batch - 1)) {
+          buildHashTables();
+        }
       }
 
       bar.update();
@@ -162,18 +165,18 @@ float Network::test(
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
   for (uint32_t l = 0; l < _num_layers - 1; l++) {
-    _states[l] = _layers[l]->createBatchState(batch_size, true);
+    _states[l] = _layers[l]->createBatchState(batch_size, !_sparse_inference);
   }
 
-  BatchState outputs =
-      _layers[_num_layers - 1]->createBatchState(batch_size, true);
+  BatchState outputs = _layers[_num_layers - 1]->createBatchState(
+      batch_size, !_layers[_num_layers - 1]->isForceSparsity());
 
   std::atomic<uint32_t> correct{0};
   ProgressBar bar(num_test_batches);
 
   auto test_start = std::chrono::high_resolution_clock::now();
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
-    if (_iter % 1000 == 999) {
+    if (_iter % 1000 == 999 && !_sparse_inference) {
       for (uint32_t i = 0; i < _num_layers; i++) {
         _layers[i]->shuffleRandNeurons();
       }
@@ -187,8 +190,7 @@ float Network::test(
           input_batch[i]._indices, input_batch[i]._values,
           input_batch[i].length());
 
-      this->forward(i, input, outputs[i], input_batch.labels(i).data(),
-                    input_batch.labels(i).size());
+      this->forward(i, input, outputs[i], nullptr, 0);
 
       const float* activations = outputs[i].activations;
       float max_act = std::numeric_limits<float>::min();
@@ -198,7 +200,11 @@ float Network::test(
           max_act = activations[k];
           // Since sparsity is set to 1.0, the layer is dense and we can use i
           // instead of indices[i]
-          pred = k;
+          if (_layers[_num_layers - 1]->isForceSparsity()) {
+            pred = outputs[i].active_neurons[k];
+          } else {
+            pred = k;
+          }
         }
       }
 
@@ -211,12 +217,13 @@ float Network::test(
   }
 
   auto test_end = std::chrono::high_resolution_clock::now();
-  int64_t test_time =
-      std::chrono::duration_cast<std::chrono::seconds>(test_end - test_start)
-          .count();
+  // Anshu: Inference times in milliseconds
+  int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+                          test_end - test_start)
+                          .count();
   std::cout << std::endl
             << "Processed " << num_test_batches << " test batches in "
-            << test_time << " seconds" << std::endl;
+            << test_time << " milliseconds" << std::endl;
 
   uint32_t num_vecs = std::min(num_test_batches * batch_size, test_data.len());
   float accuracy = static_cast<float>(correct) / num_vecs;

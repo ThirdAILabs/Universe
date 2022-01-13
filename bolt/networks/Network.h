@@ -45,6 +45,11 @@ class Network {
 
   void buildHashTables();
 
+  void useSparseInference() {
+    _sparse_inference = true;
+    _layers[_num_layers - 1]->forceSparseForInference();
+  }
+
   uint32_t getNumLayers() const { return _num_layers; }
 
   uint32_t getInputDim() const { return _input_dim; }
@@ -87,6 +92,8 @@ class Network {
   uint32_t _num_layers;
   uint32_t _iter;
   uint32_t _epoch_count;
+
+  bool _sparse_inference;
 };
 
 }  // namespace thirdai::bolt
