@@ -60,6 +60,7 @@ class SvmSparseBatchFactory : public Factory<SparseBatch> {
     std::string line;
     while (batch._batch_size < target_batch_size && std::getline(file, line)) {
       const char* start = line.c_str();
+      const char* const line_end = line.c_str() + line.size();
       char* end;
       std::vector<uint32_t> labels;
       do {
@@ -76,7 +77,11 @@ class SvmSparseBatchFactory : public Factory<SparseBatch> {
         float value = std::strtof(start, &end);
         nonzeros.push_back({index, value});
         start = end;
-      } while ((*start++) == ' ');
+
+        while ((*start == ' ' || *start == '\t') && start < line_end) {
+          start++;
+        }
+      } while (*start != '\n' && start < line_end);
 
       SparseVector v(nonzeros.size());
       uint32_t cnt = 0;

@@ -60,17 +60,44 @@ class SvmDatasetTestFixture : public ::testing::Test {
     ASSERT_FALSE(output_file.bad());
     ASSERT_FALSE(output_file.fail());
 
+    uint32_t v = 0;
     for (const auto& vec : _vectors) {
       output_file << vec.labels.at(0);
       for (uint32_t l = 1; l < vec.labels.size(); l++) {
         output_file << "," << vec.labels.at(l);
       }
 
+      uint32_t i = 0;
       for (const auto& x : vec.values) {
-        output_file << " " << x.first << ":" << x.second;
+        const char* space = " ";
+        switch (i++ & 3) {
+          case 0:
+          case 1:
+            break;
+          case 2:
+            space = "\t";
+            break;
+          case 3:
+            space = " \t ";
+        }
+        output_file << space << x.first << ":" << x.second;
       }
 
-      output_file << std::endl;
+      const char* end_of_line = "";
+      switch (v++ & 3) {
+        case 0:
+          break;
+        case 1:
+          end_of_line = " ";
+          break;
+        case 2:
+          end_of_line = "\t";
+          break;
+        case 3:
+          end_of_line = " \t ";
+      }
+
+      output_file << end_of_line << std::endl;
     }
 
     output_file.close();
