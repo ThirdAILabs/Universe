@@ -73,7 +73,8 @@ def train_amzn670(args):
         epoch_times.append(times[0])
         acc = network.Test(test_data, batch_limit=20)
         epoch_accuracies.append(acc)
-    return epoch_accuracies[-1], epoch_accuracies, epoch_times
+    final_accuracy = network.Test(test_data)
+    return final_accuracy, epoch_accuracies, epoch_times
 
 
 def main():

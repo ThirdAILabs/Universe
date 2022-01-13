@@ -387,6 +387,8 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
            py::arg("rebuild") = 0)
       .def("Test", &thirdai::python::PyNetwork::test, py::arg("test_data"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
+      .def("UseSparseInference",
+           &thirdai::python::PyNetwork::useSparseInference)
       .def("GetWeightMatrix", &thirdai::python::PyNetwork::getWeightMatrix,
            py::arg("layer_index"))
       .def("GetBiasVector", &thirdai::python::PyNetwork::getBiasVector,

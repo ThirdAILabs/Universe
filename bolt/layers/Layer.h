@@ -33,6 +33,15 @@ struct VectorState {
   constexpr static VectorState makeDenseInputState(float* a, uint32_t l) {
     return VectorState(nullptr, a, nullptr, l);
   }
+
+  friend std::ostream& operator<<(std::ostream& out, const VectorState& state) {
+    bool dense = state.active_neurons == nullptr;
+    for (uint32_t i = 0; i < state.len; i++) {
+      printf("\t%u: \t%0.3f, \t%0.3f\n", dense ? i : state.active_neurons[i],
+             state.activations[i], state.gradients[i]);
+    }
+    return out;
+  }
 };
 
 class BatchState {
@@ -114,6 +123,18 @@ class BatchState {
     delete[] _active_neurons_buf;
     delete[] _activations_buf;
     delete[] _gradients_buf;
+  }
+
+  friend std::ostream& operator<<(std::ostream& out, const BatchState& state) {
+    std::cout << "-------------------------------------------------------------"
+              << std::endl;
+    for (uint32_t i = 0; i < state._batch_size; i++) {
+      std::cout << "Vector: " << i << ": " << state._vector_states[i]
+                << std::endl;
+    }
+    std::cout << "-------------------------------------------------------------"
+              << std::endl;
+    return out;
   }
 };
 

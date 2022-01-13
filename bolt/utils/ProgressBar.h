@@ -1,168 +1,71 @@
-// The MIT License (MIT)
-//
-// Copyright (c) 2019 Luigi Pertoldi
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to
-// deal in the Software without restriction, including without limitation the
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-// IN THE SOFTWARE.
-//
-// ============================================================================
-//  ___   ___   ___   __    ___   ____  __   __   ___    __    ___
-// | |_) | |_) / / \ / /`_ | |_) | |_  ( (` ( (` | |_)  / /\  | |_)
-// |_|   |_| \ \_\_/ \_\_/ |_| \ |_|__ _)_) _)_) |_|_) /_/--\ |_| \_
-//
-// Very simple progress bar for c++ loops with internal running variable
-//
-// Author: Luigi Pertoldi
-// Created: 3 dic 2016
-//
-// Notes: The bar must be used when there's no other possible source of output
-//        inside the for loop
-//
-// Note: This version is slighly modified from the original open source version
-// to use chars instead of strings for better efficiency. It also makes some
-// coding styles specific changes.
-
 #pragma once
 
 #include <iostream>
-#include <stdexcept>
-#include <string>
+
+constexpr char OPEN = '[';
+constexpr char CLOSE = ']';
+constexpr char DONE = '=';
+constexpr char TODO = ' ';
 
 class ProgressBar {
- public:
-  // default destructor
-  ~ProgressBar() = default;
+ private:
+  static constexpr uint32_t BAR_SIZE = 50;
+  uint32_t _prev_ticks, _prev_steps, _prev_percent;
+  const uint32_t _max_steps;
 
-  // delete everything else
-  ProgressBar(ProgressBar const&) = delete;
-  ProgressBar& operator=(ProgressBar const&) = delete;
+ public:
+  ProgressBar(const ProgressBar&) = delete;
   ProgressBar(ProgressBar&&) = delete;
+  ProgressBar() = delete;
+
+  ProgressBar& operator=(const ProgressBar&) = delete;
   ProgressBar& operator=(ProgressBar&&) = delete;
 
-  explicit inline ProgressBar(int n, bool showbar = true);
-
-  // reset bar to use it again
-  inline void reset();
-  // chose your style
-  inline void setDoneChar(char sym) { _done_char = sym; }
-  inline void setTodoChar(char sym) { _todo_char = sym; }
-  inline void setOpeningBracketChar(char sym) { _opening_bracket_char = sym; }
-  inline void setClosingBracketChar(char sym) { _closing_bracket_char = sym; }
-  // to show only the percentage
-  inline void showBar(bool flag = true) { _do_show_bar = flag; }
-  // main function
-  inline void update();
-
- private:
-  int _progress;
-  int _n_cycles;
-  int _last_perc;
-  bool _do_show_bar;
-  bool _update_is_called;
-
-  char _done_char;
-  char _todo_char;
-  char _opening_bracket_char;
-  char _closing_bracket_char;
-};
-
-inline ProgressBar::ProgressBar(int n, bool showbar)
-    : _progress(0),
-      _n_cycles(n),
-      _last_perc(0),
-      _do_show_bar(showbar),
-      _update_is_called(false),
-      _done_char('='),
-      _todo_char(' '),
-      _opening_bracket_char('['),
-      _closing_bracket_char(']') {}
-
-inline void ProgressBar::reset() {
-  _progress = 0;
-  _update_is_called = false;
-  _last_perc = 0;
-}
-
-inline void ProgressBar::update() {
-  if (!_update_is_called) {
-    if (_do_show_bar) {
-      std::cout << _opening_bracket_char;
-      for (int _ = 0; _ < 50; _++) {
-        std::cout << _todo_char;
-      }
-      std::cout << _closing_bracket_char << " 0%";
-    } else {
-      std::cout << "0%";
+  explicit ProgressBar(uint32_t max_steps)
+      : _prev_ticks(0),
+        _prev_steps(0),
+        _prev_percent(0),
+        _max_steps(max_steps) {
+    std::cout << OPEN;
+    for (uint32_t i = 0; i < BAR_SIZE; i++) {
+      std::cout << TODO;
     }
-  }
-  _update_is_called = true;
-
-  int perc = 0;
-
-  // compute percentage, if did not change, do nothing and return
-  perc = _progress * 100. / (_n_cycles - 1);
-  if (perc < _last_perc) {
-    return;
+    std::cout << CLOSE << " " << _prev_percent << "%" << std::flush;
   }
 
-  // update percentage each unit
-  if (perc == _last_perc + 1) {
-    // erase the correct  number of characters
-    if (perc <= 10) {
-      std::cout << "\b\b" << perc << '%';
-    } else if ((perc > 10 && perc < 100) || perc == 100) {
-      std::cout << "\b\b\b" << perc << '%';
+  void increment() {
+    uint32_t new_percent = (++_prev_steps) * 100.0 / _max_steps;
+    if (new_percent == _prev_percent) {
+      return;
     }
-  }
-  if (_do_show_bar) {
-    // update bar every ten units
-    if (perc % 2 == 0) {
-      // erase closing bracket
+
+    // Clear percent
+    if (_prev_percent < 10) {
+      std::cout << "\b\b";
+    } else if (_prev_percent < 100) {
+      std::cout << "\b\b\b";
+    } else if (_prev_percent == 100) {
+      std::cout << "\b\b\b\b";
+    }
+    // Clear space and close bracket
+    std::cout << "\b\b";
+
+    for (uint32_t i = 0; i < BAR_SIZE - _prev_ticks; i++) {
       std::cout << '\b';
-      // erase trailing percentage characters
-      if (perc < 10) {
-        std::cout << "\b\b\b";
-      } else if (perc >= 10 && perc < 100) {
-        std::cout << "\b\b\b\b";
-      } else if (perc == 100) {
-        std::cout << "\b\b\b\b\b";
-      }
-      // erase 'todo_char'
-      for (int j = 0; j < 50 - (perc - 1) / 2; ++j) {
-        std::cout << '\b';
-      }
-
-      // add one additional 'done_char'
-      if (perc == 0) {
-        std::cout << _todo_char;
-      } else {
-        std::cout << _done_char;
-      }
-      // refill with 'todo_char'
-      for (int j = 0; j < 50 - (perc - 1) / 2 - 1; ++j) {
-        std::cout << _todo_char;
-      }
-
-      // readd trailing percentage characters
-      std::cout << _closing_bracket_char << ' ' << perc << '%';
     }
+
+    uint32_t new_ticks = (new_percent + 1) / 2;
+
+    for (uint32_t i = 0; i < new_ticks - _prev_ticks; i++) {
+      std::cout << DONE;
+    }
+
+    for (uint32_t i = 0; i < BAR_SIZE - new_ticks; i++) {
+      std::cout << TODO;
+    }
+    std::cout << CLOSE << " " << new_percent << "%" << std::flush;
+
+    _prev_ticks = new_ticks;
+    _prev_percent = new_percent;
   }
-  _last_perc = perc;
-  ++_progress;
-  std::cout << std::flush;
-}
+};
