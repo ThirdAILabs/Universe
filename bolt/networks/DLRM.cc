@@ -50,11 +50,9 @@ void DLRM::train(
 
   MeanSquaredError MSE;
 
-  ProgressBar bar(num_train_batches);
-
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
     std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
-    bar.reset();
+    ProgressBar bar(num_train_batches);
 
     auto train_start = std::chrono::high_resolution_clock::now();
     for (uint32_t batch = 0; batch < num_train_batches; batch++) {
@@ -92,7 +90,7 @@ void DLRM::train(
         buildHashTables();
       }
 
-      bar.update();
+      bar.increment();
     }
 
     auto train_end = std::chrono::high_resolution_clock::now();
@@ -136,7 +134,7 @@ void DLRM::testImpl(
 
     cnt += batch.getBatchSize();
 
-    bar.update();
+    bar.increment();
   }
 
   auto test_end = std::chrono::high_resolution_clock::now();
