@@ -94,11 +94,11 @@ std::vector<int64_t> Network::train(
 
   SparseCategoricalCrossEntropyLoss loss;
 
-  ProgressBar bar(num_train_batches);
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
-    bar.reset();
     std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
+    ProgressBar bar(num_train_batches);
     auto train_start = std::chrono::high_resolution_clock::now();
+
     for (uint32_t batch = 0; batch < num_train_batches; batch++) {
       if (_iter % 1000 == 999 && !_sparse_inference) {
         for (uint32_t i = 0; i < _num_layers; i++) {
@@ -138,7 +138,7 @@ std::vector<int64_t> Network::train(
         }
       }
 
-      bar.update();
+      bar.increment();
     }
 
     auto train_end = std::chrono::high_resolution_clock::now();
@@ -213,7 +213,8 @@ float Network::test(
         correct++;
       }
     }
-    bar.update();
+
+    bar.increment();
   }
 
   auto test_end = std::chrono::high_resolution_clock::now();
