@@ -50,7 +50,7 @@ class Network {
   void buildHashTables();
 
   void shuffleRandomNeurons();
-  
+
   void useSparseInference() {
     _sparse_inference = true;
     _layers[_num_layers - 1]->forceSparseForInference();
