@@ -19,7 +19,6 @@ Network::Network(std::vector<FullyConnectedLayerConfig> configs,
       _input_dim(input_dim),
       _iter(0),
       _epoch_count(0) {
-  std::cout << "INPUT DIM: " << input_dim << std::endl;
   auto start = std::chrono::high_resolution_clock::now();
 
   _num_layers = _configs.size();
