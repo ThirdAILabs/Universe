@@ -1,3 +1,3 @@
-add_library(bolt_network_lib Network.cc)
+add_library(bolt_network_lib Network.cc DLRM.cc)
 
 target_link_libraries(bolt_network_lib bolt_layer_lib)

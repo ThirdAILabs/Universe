@@ -1,3 +1,4 @@
+#include <bolt/networks/DLRM.h>
 #include <bolt/networks/Network.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/FastSRP.h>
@@ -18,6 +19,7 @@
 
 namespace py = pybind11;
 
+using thirdai::bolt::DLRM;
 using thirdai::bolt::Network;
 
 using thirdai::dataset::DenseBatch;
@@ -72,6 +74,44 @@ class PyNetwork final : public Network {
     size_t dim = _configs[layer_index].dim;
 
     return py::array_t<float>({dim}, {sizeof(float)}, mem, free_when_done);
+  }
+};
+
+using ClickThroughDataset =
+    thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>;
+
+ClickThroughDataset loadClickThroughDataset(const std::string& filename,
+                                            uint32_t batch_size,
+                                            uint32_t num_dense_features,
+                                            uint32_t num_categorical_features) {
+  auto start = std::chrono::high_resolution_clock::now();
+  thirdai::dataset::ClickThroughBatchFactory factory(num_dense_features,
+                                                     num_categorical_features);
+  ClickThroughDataset data(filename, batch_size, std::move(factory));
+  auto end = std::chrono::high_resolution_clock::now();
+  std::cout
+      << "Read " << data.len() << " vectors in "
+      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
+      << " seconds" << std::endl;
+  return data;
+}
+
+class PyDLRM final : public DLRM {
+ public:
+  PyDLRM(bolt::EmbeddingLayerConfig embedding_config,
+         std::vector<bolt::FullyConnectedLayerConfig> bottom_mlp_configs,
+         std::vector<bolt::FullyConnectedLayerConfig> top_mlp_configs,
+         uint32_t input_dim)
+      : DLRM(embedding_config, std::move(bottom_mlp_configs),
+             std::move(top_mlp_configs), input_dim) {}
+
+  py::array_t<float> test(
+      const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data) {
+    py::array_t<float> scores({static_cast<uint32_t>(test_data.len())});
+
+    testImpl(test_data, scores.mutable_data());
+
+    return scores;
   }
 };
 
@@ -262,9 +302,19 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
 
   auto dataset_submodule = m.def_submodule("dataset");
 
-  py::class_<InMemoryDataset<SparseBatch>> _imsb_(dataset_submodule,
+  py::class_<InMemoryDataset<SparseBatch>> _imsd_(dataset_submodule,
                                                   "InMemorySparseDataset");
-  (void)_imsb_;  // To get rid of clang tidy error
+  (void)_imsd_;  // To get rid of clang tidy error
+
+  dataset_submodule.def(
+      "loadClickThroughDataset", &thirdai::python::loadClickThroughDataset,
+      py::arg("filename"), py::arg("batch_size"), py::arg("num_dense_features"),
+      py::arg("num_categorical_features"));
+
+  py::class_<
+      thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>>
+      _imctd_(dataset_submodule, "ClickThroughDataset");
+  (void)_imctd_;  // To get rid of clang tidy error.
 
   dataset_submodule.def("loadSVMDataset", &thirdai::python::loadSVMDataset,
                         py::arg("filename"), py::arg("batch_size"));
@@ -322,6 +372,12 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
            py::arg("load_factor"), py::arg("activation_function"));
 
+  py::class_<thirdai::bolt::EmbeddingLayerConfig>(bolt_submodule,
+                                                  "EmbeddingLayerConfig")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(),
+           py::arg("num_embedding_lookups"), py::arg("lookup_size"),
+           py::arg("log_embedding_block_size"));
+
   py::class_<thirdai::python::PyNetwork>(bolt_submodule, "Network")
       .def(py::init<std::vector<thirdai::bolt::FullyConnectedLayerConfig>,
                     uint64_t>(),
@@ -342,4 +398,16 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       .def("GetInputDim", &thirdai::python::PyNetwork::getInputDim)
       .def("GetActivationFunctions",
            &thirdai::python::PyNetwork::getActivationFunctions);
+
+  py::class_<thirdai::python::PyDLRM>(bolt_submodule, "DLRM")
+      .def(py::init<thirdai::bolt::EmbeddingLayerConfig,
+                    std::vector<thirdai::bolt::FullyConnectedLayerConfig>,
+                    std::vector<thirdai::bolt::FullyConnectedLayerConfig>,
+                    uint32_t>(),
+           py::arg("embedding_layer"), py::arg("bottom_mlp"),
+           py::arg("top_mlp"), py::arg("input_dim"))
+      .def("Train", &thirdai::python::PyDLRM::train, py::arg("train_data"),
+           py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash"),
+           py::arg("rebuild"))
+      .def("Test", &thirdai::python::PyDLRM::test, py::arg("test_data"));
 }

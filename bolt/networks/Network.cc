@@ -14,7 +14,7 @@ constexpr uint32_t RehashAutoTuneFactor1 = 100;
 constexpr uint32_t RehashAutoTuneFactor2 = 20;
 
 Network::Network(std::vector<FullyConnectedLayerConfig> configs,
-                 uint64_t input_dim)
+                 uint32_t input_dim)
     : _configs(std::move(configs)),
       _input_dim(input_dim),
       _iter(0),
@@ -27,7 +27,7 @@ Network::Network(std::vector<FullyConnectedLayerConfig> configs,
   _states =
       new BatchState[_num_layers - 1]();  // No stored state for output layer
 
-  std::cout << "====== Building Network ======" << std::endl;
+  std::cout << "====== Building Fully Connected Network ======" << std::endl;
 
   for (uint32_t i = 0; i < _num_layers; i++) {
     uint64_t prev_dim = (i > 0) ? _configs[i - 1].dim : _input_dim;
@@ -35,11 +35,6 @@ Network::Network(std::vector<FullyConnectedLayerConfig> configs,
       if (_configs[i].act_func == ActivationFunc::Softmax) {
         throw std::invalid_argument(
             "Softmax activation function is not supported for hidden layers.");
-      }
-    } else {
-      if (_configs[i].act_func == ActivationFunc::ReLU) {
-        throw std::invalid_argument(
-            "Softmax activation function is required for output layer.");
       }
     }
 
@@ -84,9 +79,7 @@ std::vector<int64_t> Network::train(
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
-  for (uint32_t l = 0; l < _num_layers - 1; l++) {
-    _states[l] = _layers[l]->createBatchState(batch_size);
-  }
+  this->createBatchStates(batch_size, false);
 
   std::vector<int64_t> time_per_epoch;
 
@@ -100,10 +93,8 @@ std::vector<int64_t> Network::train(
     auto train_start = std::chrono::high_resolution_clock::now();
 
     for (uint32_t batch = 0; batch < num_train_batches; batch++) {
-      if (_iter % 1000 == 999 && !_sparse_inference) {
-        for (uint32_t i = 0; i < _num_layers; i++) {
-          _layers[i]->shuffleRandNeurons();
-        }
+      if (_iter % 1000 == 999) {
+        shuffleRandomNeurons();
       }
 
       const dataset::SparseBatch& input_batch = train_data[batch];
@@ -123,11 +114,7 @@ std::vector<int64_t> Network::train(
         this->backpropagate<true>(i, input, outputs[i]);
       }
 
-      ++_iter;
-      for (uint32_t layer = 0; layer < _num_layers; layer++) {
-        _layers[layer]->updateParameters(learning_rate, _iter, BETA1, BETA2,
-                                         EPS);
-      }
+      this->updateParameters(learning_rate);
 
       if (!_sparse_inference) {
         if (_iter % rebuild_batch == (rebuild_batch - 1)) {
@@ -164,9 +151,7 @@ float Network::test(
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
-  for (uint32_t l = 0; l < _num_layers - 1; l++) {
-    _states[l] = _layers[l]->createBatchState(batch_size, !_sparse_inference);
-  }
+  this->createBatchStates(batch_size, true);
 
   BatchState outputs = _layers[_num_layers - 1]->createBatchState(
       batch_size, !_layers[_num_layers - 1]->isForceSparsity());
@@ -176,12 +161,6 @@ float Network::test(
 
   auto test_start = std::chrono::high_resolution_clock::now();
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
-    if (_iter % 1000 == 999 && !_sparse_inference) {
-      for (uint32_t i = 0; i < _num_layers; i++) {
-        _layers[i]->shuffleRandNeurons();
-      }
-    }
-
     const dataset::SparseBatch& input_batch = test_data[batch];
 
 #pragma omp parallel for default(none) shared(input_batch, outputs, correct)
@@ -251,6 +230,11 @@ void Network::forward(uint32_t batch_index, const VectorState& input,
   }
 }
 
+template void Network::backpropagate<true>(uint32_t, VectorState&,
+                                           VectorState&);
+template void Network::backpropagate<false>(uint32_t, VectorState&,
+                                            VectorState&);
+
 template <bool FROM_INPUT>
 void Network::backpropagate(uint32_t batch_index, VectorState& input,
                             VectorState& output) {
@@ -277,6 +261,19 @@ void Network::backpropagate(uint32_t batch_index, VectorState& input,
   }
 }
 
+void Network::createBatchStates(uint32_t batch_size, bool force_dense) {
+  for (uint32_t l = 0; l < _num_layers - 1; l++) {
+    _states[l] = _layers[l]->createBatchState(batch_size, force_dense);
+  }
+}
+
+void Network::updateParameters(float learning_rate) {
+  ++_iter;
+  for (uint32_t layer = 0; layer < _num_layers; layer++) {
+    _layers[layer]->updateParameters(learning_rate, _iter, BETA1, BETA2, EPS);
+  }
+}
+
 void Network::reBuildHashFunctions() {
   for (uint32_t l = 0; l < _num_layers; l++) {
     _layers[l]->reBuildHashFunction();
@@ -286,6 +283,12 @@ void Network::reBuildHashFunctions() {
 void Network::buildHashTables() {
   for (uint32_t l = 0; l < _num_layers; l++) {
     _layers[l]->buildHashTables();
+  }
+}
+
+void Network::shuffleRandomNeurons() {
+  for (uint32_t i = 0; i < _num_layers; i++) {
+    _layers[i]->shuffleRandNeurons();
   }
 }
 
