@@ -23,9 +23,19 @@ DLRM::DLRM(EmbeddingLayerConfig embedding_config,
     throw std::invalid_argument("Dense feature layer must have sparsity 1.0");
   }
 
-  if (top_mlp_configs.back().dim != 1) {
-    throw std::invalid_argument("Output layer must have dimension 1");
+  if (top_mlp_configs.back().dim == 1 &&
+      top_mlp_configs.back().act_func != ActivationFunc::MeanSquared) {
+    throw std::invalid_argument(
+        "Output layer must have MeanSqauredError if dimension is 1");
   }
+
+  if (top_mlp_configs.back().dim != 1 &&
+      top_mlp_configs.back().act_func != ActivationFunc::Softmax) {
+    throw std::invalid_argument(
+        "Output layer must have Softmax if dimension is > 1");
+  }
+
+  _softmax = top_mlp_configs.back().act_func == ActivationFunc::Softmax;
 
   _concat_layer_dim =
       _embedding_layer.getEmbeddingDim() + bottom_mlp_configs.back().dim;
@@ -48,6 +58,7 @@ void DLRM::train(
   BatchState output(1, batch_size, true);
 
   MeanSquaredError MSE;
+  SparseCategoricalCrossEntropyLoss loss;
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
     std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
@@ -63,16 +74,20 @@ void DLRM::train(
       const dataset::ClickThroughBatch& input_batch = train_data[batch];
 
 #pragma omp parallel for default(none) \
-    shared(input_batch, output, batch_size, MSE)
+    shared(input_batch, output, batch_size, MSE, loss)
       for (uint32_t b = 0; b < input_batch.getBatchSize(); b++) {
         VectorState dense_input = VectorState::makeDenseInputState(
             input_batch[b]._values, input_batch[b].dim());
 
         forward(b, dense_input, input_batch.categoricalFeatures(b), output[b]);
 
-        float label = static_cast<float>(input_batch.label(b));
-
-        MSE(output[b], batch_size, nullptr, &label, 1);
+        if (_softmax) {
+          uint32_t label = input_batch.label(b);
+          loss(output[b], batch_size, &label, 1);
+        } else {
+          float label = static_cast<float>(input_batch.label(b));
+          MSE(output[b], batch_size, nullptr, &label, 1);
+        }
 
         backpropagate(b, dense_input, output[b]);
       }
