@@ -1,6 +1,7 @@
 #include "../layers/EmbeddingLayer.h"
 #include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <unordered_map>
 #include <vector>
 
@@ -26,10 +27,36 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
     return _layer->_embedding_block_size;
   }
 
-  const float* getEmbeddingBlock() const { return _layer->_embedding_block; }
+  std::vector<std::pair<uint64_t, uint64_t>> getDisjointRanges() {
+    EmbeddingLayerConfig config(4, 5, 7);
 
-  uint32_t _lookup_size = 20, _num_lookups = 10, _log_block_size = 16, _seed;
+    EmbeddingLayer layer(config);
+    layer.initializeLayer(2);
+
+    for (uint32_t i = 0; i < 2; i++) {
+      layer._loc_lens[i] = 2;
+
+      layer._embedding_locs[i] = new uint32_t[8];
+      std::copy(dummyEmbeddingLocs[i].begin(), dummyEmbeddingLocs[i].end(),
+                layer._embedding_locs[i]);
+    }
+
+    return layer.getDisjointUpdateRanges();
+  }
+
+  float* getEmbeddingBlock() const { return _layer->_embedding_block; }
+
+  float* getEmbeddingGradients() const { return _layer->_gradients; }
+
+  uint32_t _lookup_size = 20, _num_lookups = 50, _log_block_size = 10, _seed;
   EmbeddingLayer* _layer;
+
+  std::vector<std::vector<uint32_t>> dummyEmbeddingLocs = {
+      {4, 21, 68, 32, 99, 45, 2, 79}, {23, 82, 20, 32, 86, 63, 54, 47}};
+
+  std::vector<std::pair<uint64_t, uint64_t>> expectedDisjointRanges = {
+      {2, 9},   {20, 28}, {32, 37}, {45, 52},
+      {54, 59}, {63, 73}, {79, 91}, {99, 104}};
 };
 
 TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
@@ -38,7 +65,7 @@ TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
   BatchState output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i, tokens.data() + i, 1, output[i]);
+    _layer->forward(i, {tokens[i]}, output[i]);
   }
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
@@ -64,7 +91,7 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbedding) {
   BatchState output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i, tokens[i].data(), tokens[i].size(), output[i]);
+    _layer->forward(i, tokens[i], output[i]);
   }
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
@@ -94,7 +121,7 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
   BatchState output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
-    _layer->forward(i, tokens[i].data(), tokens[i].size(), output[i]);
+    _layer->forward(i, tokens[i], output[i]);
   }
 
   std::unordered_map<uint32_t, float> deltas;
@@ -104,7 +131,7 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
       output[b].gradients[i] = 0.5 * i + b * 0.005;
     }
 
-    _layer->backpropagate(b, 1.0, output[b]);
+    _layer->backpropagate(b, output[b]);
 
     for (uint32_t t : tokens[b]) {
       for (uint32_t e = 0; e < _num_lookups; e++) {
@@ -122,7 +149,17 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
   }
 
   for (uint32_t i = 0; i < getEmbeddingBlockSize(); i++) {
-    ASSERT_EQ(getEmbeddingBlock()[i], i + 1 + deltas[i]);
+    ASSERT_FLOAT_EQ(getEmbeddingGradients()[i], deltas[i]);
+  }
+}
+
+TEST_F(EmbeddingLayerTestFixture, UpdateRangeCorrectness) {
+  std::vector<std::pair<uint64_t, uint64_t>> ranges = getDisjointRanges();
+
+  ASSERT_EQ(ranges.size(), expectedDisjointRanges.size());
+
+  for (uint32_t i = 0; i < ranges.size(); i++) {
+    ASSERT_EQ(ranges.at(i), expectedDisjointRanges.at(i));
   }
 }
 
