@@ -20,8 +20,7 @@ DLRM::DLRM(EmbeddingLayerConfig embedding_config,
       _iter(0),
       _epoch_count(0) {
   if (bottom_mlp_configs.back().sparsity != 1.0) {
-    throw std::invalid_argument(
-        "Dense feature layer must have sparsity 1.0");
+    throw std::invalid_argument("Dense feature layer must have sparsity 1.0");
   }
 
   if (top_mlp_configs.back().dim != 1) {
