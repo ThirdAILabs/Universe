@@ -80,7 +80,7 @@ class PyNetwork final : public Network {
 using ClickThroughDataset =
     thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>;
 
-ClickThroughDataset loadClickThorughDataset(const std::string& filename,
+ClickThroughDataset loadClickThroughDataset(const std::string& filename,
                                             uint32_t batch_size,
                                             uint32_t num_dense_features,
                                             uint32_t num_categorical_features) {
@@ -307,7 +307,7 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
   (void)_imsd_;  // To get rid of clang tidy error
 
   dataset_submodule.def(
-      "loadClickThroughDataset", &thirdai::python::loadClickThorughDataset,
+      "loadClickThroughDataset", &thirdai::python::loadClickThroughDataset,
       py::arg("filename"), py::arg("batch_size"), py::arg("num_dense_features"),
       py::arg("num_categorical_features"));
 
