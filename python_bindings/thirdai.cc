@@ -90,7 +90,7 @@ ClickThroughDataset loadClickThroughDataset(const std::string& filename,
   ClickThroughDataset data(filename, batch_size, std::move(factory));
   auto end = std::chrono::high_resolution_clock::now();
   std::cout
-      << "Read " << data.len() << " vectors in "
+      << "Read " << data.len() << " vectors from " << filename << " in "
       << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
       << " seconds" << std::endl;
   return data;

@@ -1,11 +1,17 @@
 import numpy as np
 from sklearn.metrics import roc_auc_score
 from thirdai import bolt, dataset
+import socket
 
-train_file = "/media/temp/data/criteo-small/train_shuf_feat_hash_pairwise.txt"
-test_file = "/media/temp/data/criteo-small/test_shuf_feat_hash_pairwise.txt"
-train_data = dataset.loadClickThroughDataset(train_file, 256, 13, 300)
-test_data = dataset.loadClickThroughDataset(test_file, 256, 13, 300)
+if socket.gethostname() == 'node1':
+    train_file = "/media/temp/data/criteo-small/train_shuf.txt"
+    test_file = "/media/temp/data/criteo-small/test_shuf.txt"
+else:
+    train_file = "/media/scratch/data/criteo-small/train_shuf.txt"
+    test_file = "/media/scratch/data/criteo-small/test_shuf.txt"
+
+train_data = dataset.loadClickThroughDataset(train_file, 256, 13, 24)
+test_data = dataset.loadClickThroughDataset(test_file, 256, 13, 24)
 
 f = open(test_file)
 

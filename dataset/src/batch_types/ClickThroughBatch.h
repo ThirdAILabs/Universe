@@ -5,7 +5,10 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+
 namespace thirdai::dataset {
+
+static constexpr int CATEGORICAL_FEATURE_BASE = 10;
 
 class ClickThroughBatch {
   friend class ClickThroughBatchFactory;
@@ -82,7 +85,7 @@ class ClickThroughBatchFactory : public Factory<ClickThroughBatch> {
           feature = 0;
           start = start + 1;
         } else {
-          feature = std::strtol(start, &end, 16);
+          feature = std::strtol(start, &end, CATEGORICAL_FEATURE_BASE);
           start = end + 1;
         }
         categorical[c] = feature;
