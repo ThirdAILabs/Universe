@@ -36,6 +36,7 @@ DLRM::DLRM(EmbeddingLayerConfig embedding_config,
   }
 
   _softmax = top_mlp_configs.back().act_func == ActivationFunc::Softmax;
+  _output_dim = top_mlp_configs.back().dim;
 
   _concat_layer_dim =
       _embedding_layer.getEmbeddingDim() + bottom_mlp_configs.back().dim;
@@ -55,7 +56,7 @@ void DLRM::train(
   // a batch size larger than this so we can just set the batch size here.
   initializeNetworkForBatchSize(batch_size, false);
 
-  BatchState output(1, batch_size, true);
+  BatchState output(_output_dim, batch_size, true);
 
   MeanSquaredError MSE;
   SparseCategoricalCrossEntropyLoss loss;
@@ -127,7 +128,7 @@ void DLRM::testImpl(
 
   initializeNetworkForBatchSize(batch_size, true);
 
-  BatchState output(1, batch_size, true);
+  BatchState output(_output_dim, batch_size, true);
 
   ProgressBar bar(num_test_batches);
 
@@ -143,7 +144,10 @@ void DLRM::testImpl(
 
       forward(b, dense_input, batch.categoricalFeatures(b), output[b]);
 
-      scores[cnt + b] = output[b].activations[0];
+      for (uint32_t i = 0; i < output[b].len; i++) {
+        scores[cnt + b * _output_dim + i] = output[b].activations[i];
+      }
+ 
     }
 
     cnt += batch.getBatchSize();

@@ -107,11 +107,18 @@ class PyDLRM final : public DLRM {
 
   py::array_t<float> test(
       const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data) {
-    py::array_t<float> scores({static_cast<uint32_t>(test_data.len())});
+    float* scores = new float[test_data.len() * _output_dim];
 
-    testImpl(test_data, scores.mutable_data());
+    testImpl(test_data, scores);
 
-    return scores;
+    py::capsule free_when_done(
+        scores, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+    return py::array_t<float>({static_cast<size_t>(test_data.len()),
+                               static_cast<size_t>(_output_dim)},
+                              {_output_dim * sizeof(float), sizeof(float)},
+                              scores, free_when_done);
+    ;
   }
 };
 
