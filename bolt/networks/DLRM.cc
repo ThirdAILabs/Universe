@@ -147,7 +147,6 @@ void DLRM::testImpl(
       for (uint32_t i = 0; i < output[b].len; i++) {
         scores[cnt + b * _output_dim + i] = output[b].activations[i];
       }
- 
     }
 
     cnt += batch.getBatchSize();
