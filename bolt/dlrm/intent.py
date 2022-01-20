@@ -1,5 +1,4 @@
 import numpy as np
-from sklearn.metrics import roc_auc_score
 from thirdai import bolt, dataset
 import socket
 
@@ -7,11 +6,11 @@ if socket.gethostname() == 'node1':
     train_file = "/media/temp/data/criteo-small/train_shuf.txt"
     test_file = "/media/temp/data/criteo-small/test_shuf.txt"
 else:
-    train_file = "/Users/nmeisburger/ThirdAI/data/criteo/train_shuf.txt"
-    test_file = "/Users/nmeisburger/ThirdAI/data/criteo/test_shuf.txt"
+    train_file = "/Users/nmeisburger/ThirdAI/data/intent/train_shuf_criteo.txt"
+    test_file = "/Users/nmeisburger/ThirdAI/data/intent/test_shuf_criteo.txt"
 
-train_data = dataset.loadClickThroughDataset(train_file, 256, 15, 24)
-test_data = dataset.loadClickThroughDataset(test_file, 256, 15, 24)
+train_data = dataset.loadClickThroughDataset(train_file, 256, 512, 6)
+test_data = dataset.loadClickThroughDataset(test_file, 256, 512, 6)
 
 f = open(test_file)
 
@@ -44,7 +43,7 @@ top_mlp = [
                      sampling_config=bolt.SamplingConfig(
                          hashes_per_table=3, num_tables=128,
                          range_pow=9, reservoir_size=10)),
-    bolt.LayerConfig(dim=1, activation_function="MeanSquared")
+    bolt.LayerConfig(dim=151, activation_function="Softmax")
 ]
 
 dlrm = bolt.DLRM(embedding, bottom_mlp, top_mlp, 512)
@@ -58,5 +57,3 @@ for i in range(10):
         if preds[i] == test_labels[i]:
             correct += 1
     print("Accuracy: ", correct / len(test_labels))
-    # auc = roc_auc_score(test_labels, scores)
-    # print('AUC: ',auc)
