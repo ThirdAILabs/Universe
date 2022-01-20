@@ -9,8 +9,8 @@ void createSearchSubmodule(py::module_& module) {
       "MagSearch is an index for performing near neighbor search. To use it, "
       "construct an index by passing in a hash function and then calling "
       "add() at least once to populate the index.")
-      .def(py::init<hashing::HashFunction&, uint32_t>(), py::arg("hash_function"),
-           py::arg("reservoir_size"),
+      .def(py::init<hashing::HashFunction&, uint32_t>(),
+           py::arg("hash_function"), py::arg("reservoir_size"),
            "Builds a MagSearch index where all hash "
            "buckets have a max size reservoir_size.")
       .def(py::init<hashing::HashFunction&>(), py::arg("hash_function"),
