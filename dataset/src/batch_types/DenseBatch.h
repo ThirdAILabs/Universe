@@ -5,6 +5,7 @@
 #include <cassert>
 #include <exception>
 #include <fstream>
+#include <sstream>
 #include <stdexcept>
 #include <vector>
 
