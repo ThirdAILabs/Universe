@@ -14,6 +14,17 @@ target_link_libraries(
 )
 
 add_executable(
+  csv_dataset_test
+  CsvDatasetTests.cc
+)
+
+target_link_libraries(
+  csv_dataset_test
+  PRIVATE
+  gtest_main
+)
+
+add_executable(
   click_through_dataset_test
   ClickThroughDatasetTests.cc
 )
