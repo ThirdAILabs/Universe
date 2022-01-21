@@ -7,13 +7,11 @@ if socket.gethostname() == 'node1':
     train_file = "/media/temp/data/criteo-small/train_shuf.txt"
     test_file = "/media/temp/data/criteo-small/test_shuf.txt"
 else:
-    train_file = "../data/criteo-small/mini.txt"
-    test_file = "../data/criteo-small/mini.txt"
+    train_file = "/media/scratch/data/criteo-small/train_shuf.txt"
+    test_file = "/media/scratch/data/criteo-small/test_shuf.txt"
 
-N = 10
-
-train_data = dataset.loadClickThroughDataset(train_file, N, 15, 24)
-test_data = dataset.loadClickThroughDataset(test_file, N, 15, 24)
+train_data = dataset.loadClickThroughDataset(train_file, 256, 15, 24)
+test_data = dataset.loadClickThroughDataset(test_file, 256, 15, 24)
 
 f = open(test_file)
 
@@ -46,25 +44,14 @@ top_mlp = [
                      sampling_config=bolt.SamplingConfig(
                          hashes_per_table=3, num_tables=128,
                          range_pow=9, reservoir_size=10)),
-    bolt.LayerConfig(dim=2, activation_function="Softmax")
+    bolt.LayerConfig(dim=1, activation_function="MeanSquared")
 ]
 
 dlrm = bolt.DLRM(embedding, bottom_mlp, top_mlp, 15)
 
-aucs=[]
 for i in range(1000):
     dlrm.Train(train_data, learning_rate=0.001,
                epochs=1, rehash=300, rebuild=500)
     scores = dlrm.Test(test_data)
-    auc = roc_auc_score(test_labels, scores[:,1])
+    auc = roc_auc_score(test_labels, scores[:, 1])
     print('AUC: ', auc)
-    aucs.append(auc)
-    # preds = np.argmax(scores, axis=1)
-    # for i in range(N):
-    #     print(test_labels[i], preds[i], scores[i])
-
-
-import matplotlib.pyplot as plt
-
-plt.plot(aucs)
-plt.show()
