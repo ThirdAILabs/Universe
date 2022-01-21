@@ -11,4 +11,4 @@ namespace thirdai::hashing::python {
 
 void createHashingSubmodule(py::module_& module);
 
-}
+}  // namespace thirdai::hashing::python

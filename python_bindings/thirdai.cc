@@ -14,8 +14,6 @@
 #include <omp.h>
 #endif
 
-namespace py = pybind11;
-
 // TODO(all): Figure out naming convention for python exposed classes and
 // methods
 // TODO(any): Add docstrings to methods

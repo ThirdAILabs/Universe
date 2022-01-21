@@ -8,10 +8,10 @@
 
 namespace py = pybind11;
 
+namespace thirdai::search::python {
+
 using thirdai::dataset::python::wrapNumpyIntoDenseBatch;
 using thirdai::dataset::python::wrapNumpyIntoSparseData;
-
-namespace thirdai::search::python {
 
 void createSearchSubmodule(py::module_& module);
 
