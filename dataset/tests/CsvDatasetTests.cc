@@ -118,7 +118,7 @@ TEST_F(CsvDatasetTestFixture, InMemoryDatasetTest) {
       ASSERT_EQ(batch.id(v), vec_count);
 
       ASSERT_EQ(batch.labels(v).size(), 1);
-      for (auto& label : batch.labels(v)) {
+      for (const auto& label : batch.labels(v)) {
         ASSERT_EQ(label, _vectors.at(vec_count).label);
       }
 
@@ -147,8 +147,8 @@ TEST_F(CsvDatasetTestFixture, StreamedDatasetTest) {
       ASSERT_EQ(batch.id(v), vec_count);
 
       ASSERT_EQ(batch.labels(v).size(), 1);
-      for (uint32_t i = 0; i < batch.labels(v).size(); i++) {
-        ASSERT_EQ(batch.labels(v).at(i), _vectors.at(vec_count).label);
+      for (const auto& label : batch.labels(v)) {
+        ASSERT_EQ(label, _vectors.at(vec_count).label);
       }
 
       ASSERT_EQ(batch[v].dim(), _vectors[vec_count].values.size());
