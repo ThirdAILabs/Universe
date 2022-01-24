@@ -51,20 +51,6 @@ Network::Network(std::vector<FullyConnectedLayerConfig> configs,
   std::cout << "==============================" << std::endl;
 }
 
-template <>
-VectorState Network::makeInputVectorState<dataset::SparseBatch>(
-    const dataset::SparseBatch& input_batch, uint32_t i) {
-  return VectorState::makeSparseInputState(
-      input_batch[i]._indices, input_batch[i]._values, input_batch[i].length());
-}
-
-template <>
-VectorState Network::makeInputVectorState<dataset::DenseBatch>(
-    const dataset::DenseBatch& input_batch, uint32_t i) {
-  return VectorState::makeDenseInputState(input_batch[i]._values,
-                                          input_batch[i].dim());
-}
-
 template std::vector<int64_t> Network::train<dataset::SparseBatch>(
     const dataset::InMemoryDataset<dataset::SparseBatch>& train_data,
     float learning_rate, uint32_t epochs, uint32_t rehash_in,
@@ -125,7 +111,8 @@ std::vector<int64_t> Network::train(
 
 #pragma omp parallel for default(none) shared(input_batch, outputs, loss)
       for (uint32_t i = 0; i < input_batch.getBatchSize(); i++) {
-        VectorState input = makeInputVectorState<BATCH_T>(input_batch, i);
+        VectorState input =
+            VectorState::makeInputStateFromBatch<BATCH_T>(input_batch, i);
 
         this->forward(i, input, outputs[i], input_batch.labels(i).data(),
                       input_batch.labels(i).size());
@@ -195,7 +182,7 @@ float Network::test(const dataset::InMemoryDataset<BATCH_T>& test_data,
 
 #pragma omp parallel for default(none) shared(input_batch, outputs, correct)
     for (uint32_t i = 0; i < input_batch.getBatchSize(); i++) {
-      VectorState input = makeInputVectorState(input_batch, i);
+      VectorState input = VectorState::makeInputStateFromBatch(input_batch, i);
 
       this->forward(i, input, outputs[i], nullptr, 0);
 

@@ -92,10 +92,6 @@ class Network {
   ~Network();
 
  protected:
-  template <typename BATCH_T>
-  VectorState makeInputVectorState(const BATCH_T& input_batch, uint32_t) {
-    throw std::invalid_argument("Input batch type is not supported.");
-  }
   std::vector<FullyConnectedLayerConfig> _configs;
   uint64_t _input_dim;
   FullyConnectedLayer** _layers;
