@@ -17,4 +17,10 @@ VectorState VectorState::makeInputStateFromBatch<dataset::DenseBatch>(
                                           input_batch[i].dim());
 }
 
+template <typename BATCH_T>
+VectorState VectorState::makeInputStateFromBatch(
+    const BATCH_T&, uint32_t) {
+  throw std::invalid_argument("Input batch type is not supported.");
+}
+
 }  // namespace thirdai::bolt

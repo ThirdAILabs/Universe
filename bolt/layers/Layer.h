@@ -35,9 +35,7 @@ struct VectorState {
   }
 
   template <typename BATCH_T>
-  static VectorState makeInputStateFromBatch(const BATCH_T&, uint32_t) {
-    throw std::invalid_argument("Input batch type is not supported.");
-  }
+  static VectorState makeInputStateFromBatch(const BATCH_T&, uint32_t);
 
   friend std::ostream& operator<<(std::ostream& out, const VectorState& state) {
     bool dense = state.active_neurons == nullptr;

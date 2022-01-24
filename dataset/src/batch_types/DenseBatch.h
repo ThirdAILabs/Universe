@@ -92,6 +92,7 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
       if (start == end) {
         throw std::invalid_argument("Invalid dataset file: Found a line that doesn't start with a label.");
       }
+      batch._labels.push_back({label});
       if (line_end - end == 1) {
         throw std::invalid_argument("Invalid dataset file: The line only contains a label.");
       }

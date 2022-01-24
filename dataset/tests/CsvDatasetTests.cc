@@ -11,13 +11,13 @@
 
 namespace thirdai::dataset {
 
-const std::string _filename = "./csv_dataset_test_file";
-static const uint32_t _num_vectors = 10000, _batch_size = 256;
+const std::string filename = "./csv_dataset_test_file";
+static const uint32_t num_vectors = 10000, batch_size = 256, seed = 590240;
 
 class CsvDatasetTestFixture : public ::testing::Test {
  public:
   CsvDatasetTestFixture()
-      : gen(590240),
+      : gen(seed),
         _label_dist(0, _num_classes - 1),
         _value_dist(-_val_range, _val_range) {}
 
@@ -39,11 +39,11 @@ class CsvDatasetTestFixture : public ::testing::Test {
   }
 
   void SetUp() override {
-    for (uint32_t i = 0; i < _num_vectors; i++) {
+    for (uint32_t i = 0; i < num_vectors; i++) {
       _vectors.push_back(createTestSparseVec());
     }
 
-    std::ofstream output_file(_filename);
+    std::ofstream output_file(filename);
 
     ASSERT_TRUE(output_file.is_open());
     ASSERT_TRUE(output_file.good());
@@ -92,7 +92,7 @@ class CsvDatasetTestFixture : public ::testing::Test {
     output_file.close();
   }
 
-  void TearDown() override { ASSERT_FALSE(std::remove(_filename.c_str())); }
+  void TearDown() override { ASSERT_FALSE(std::remove(filename.c_str())); }
 
   std::vector<TestSparseVec> _vectors;
 
@@ -106,13 +106,13 @@ class CsvDatasetTestFixture : public ::testing::Test {
 };
 
 TEST_F(CsvDatasetTestFixture, InMemoryDatasetTest) {
-  InMemoryDataset<DenseBatch> dataset(_filename, _batch_size,
-                                      CsvDenseBatchFactory{});
+  InMemoryDataset<DenseBatch> dataset(filename, batch_size,
+                                      CsvDenseBatchFactory(','));
 
   uint32_t vec_count = 0;
   for (const auto& batch : dataset) {
-    ASSERT_TRUE(batch.getBatchSize() == _batch_size ||
-                batch.getBatchSize() == _num_vectors % _batch_size);
+    ASSERT_TRUE(batch.getBatchSize() == batch_size ||
+                batch.getBatchSize() == num_vectors % batch_size);
 
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
       ASSERT_EQ(batch.id(v), vec_count);
@@ -130,18 +130,18 @@ TEST_F(CsvDatasetTestFixture, InMemoryDatasetTest) {
       vec_count++;
     }
   }
-  ASSERT_EQ(vec_count, _num_vectors);
+  ASSERT_EQ(vec_count, num_vectors);
 }
 
 TEST_F(CsvDatasetTestFixture, StreamedDatasetTest) {
-  StreamedDataset<DenseBatch> dataset(_filename, _batch_size,
-                                      std::make_unique<CsvDenseBatchFactory>());
+  StreamedDataset<DenseBatch> dataset(filename, batch_size,
+                                      std::make_unique<CsvDenseBatchFactory>(','));
 
   uint32_t vec_count = 0;
   while (auto batch_opt = dataset.nextBatch()) {
     const DenseBatch& batch = *batch_opt;
-    ASSERT_TRUE(batch.getBatchSize() == _batch_size ||
-                batch.getBatchSize() == _num_vectors % _batch_size);
+    ASSERT_TRUE(batch.getBatchSize() == batch_size ||
+                batch.getBatchSize() == num_vectors % batch_size);
 
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
       ASSERT_EQ(batch.id(v), vec_count);
@@ -159,7 +159,7 @@ TEST_F(CsvDatasetTestFixture, StreamedDatasetTest) {
       vec_count++;
     }
   }
-  ASSERT_EQ(vec_count, _num_vectors);
+  ASSERT_EQ(vec_count, num_vectors);
 }
 
 }  // namespace thirdai::dataset
