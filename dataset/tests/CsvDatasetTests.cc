@@ -92,7 +92,7 @@ class CsvDatasetTestFixture : public ::testing::Test {
     output_file.close();
   }
 
-  // void TearDown() override { ASSERT_FALSE(std::remove(_filename.c_str())); }
+  void TearDown() override { ASSERT_FALSE(std::remove(_filename.c_str())); }
 
   std::vector<TestSparseVec> _vectors;
 
