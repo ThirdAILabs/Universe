@@ -49,23 +49,53 @@ int main(int argc, char** argv) {
     max_test_batches = config.intVal("max_test_batches");
   }
 
-  dataset::InMemoryDataset<dataset::SparseBatch> train_data(
-      config.strVal("train_data"), batch_size,
-      dataset::SvmSparseBatchFactory{});
+  if (config.valExists("dataset_format") &&
+      config.strVal("dataset_format") == "csv") {
+    dataset::InMemoryDataset<dataset::DenseBatch> train_data(
+        config.strVal("train_data"), batch_size,
+        dataset::CsvDenseBatchFactory{});
 
-  dataset::InMemoryDataset<dataset::SparseBatch> test_data(
-      config.strVal("test_data"), batch_size, dataset::SvmSparseBatchFactory{});
+    dataset::InMemoryDataset<dataset::DenseBatch> test_data(
+        config.strVal("test_data"), batch_size,
+        dataset::CsvDenseBatchFactory{});
 
-  for (uint32_t e = 0; e < epochs; e++) {
-    if ((switch_inference_epoch > 0) && e == switch_inference_epoch) {
-      std::cout << "Freezing Selection for Sparse Inference" << std::endl;
-      network.useSparseInference();
+    for (uint32_t e = 0; e < epochs; e++) {
+      if ((switch_inference_epoch > 0) && e == switch_inference_epoch) {
+        std::cout << "Freezing Selection for Sparse Inference" << std::endl;
+        network.useSparseInference();
+      }
+
+      network.train<dataset::DenseBatch>(train_data, learning_rate, 1, rehash,
+                                         rebuild);
+      network.test<dataset::DenseBatch>(test_data, max_test_batches);
     }
+    network.test(test_data);
+  } else if (config.valExists("dataset_format") &&
+             config.strVal("dataset_format") != "svm") {
+    throw std::invalid_argument("The dataset format " +
+                                config.strVal("dataset_format") +
+                                " is not supported.");
+  } else {
+    dataset::InMemoryDataset<dataset::SparseBatch> train_data(
+        config.strVal("train_data"), batch_size,
+        dataset::SvmSparseBatchFactory{});
 
-    network.train(train_data, learning_rate, 1, rehash, rebuild);
-    network.test(test_data, max_test_batches);
+    dataset::InMemoryDataset<dataset::SparseBatch> test_data(
+        config.strVal("test_data"), batch_size,
+        dataset::SvmSparseBatchFactory{});
+
+    for (uint32_t e = 0; e < epochs; e++) {
+      if ((switch_inference_epoch > 0) && e == switch_inference_epoch) {
+        std::cout << "Freezing Selection for Sparse Inference" << std::endl;
+        network.useSparseInference();
+      }
+
+      network.train<dataset::SparseBatch>(train_data, learning_rate, 1, rehash,
+                                          rebuild);
+      network.test<dataset::SparseBatch>(test_data, max_test_batches);
+    }
+    network.test(test_data);
   }
-  network.test(test_data);
 
   return 0;
 }
