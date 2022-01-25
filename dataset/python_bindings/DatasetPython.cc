@@ -23,7 +23,7 @@ void createDatasetSubmodule(py::module_& module) {
   dataset_submodule.def("loadSVMDataset", &loadSVMDataset, py::arg("filename"),
                         py::arg("batch_size"));
 
-  dataset_submodule.def("loadCSVDataset", &loadCSVDataset, py::arg("filename"), 
+  dataset_submodule.def("loadCSVDataset", &loadCSVDataset, py::arg("filename"),
                         py::arg("batch_size"), py::arg("delimiter") = ",");
 }
 
