@@ -11,8 +11,9 @@
 
 namespace thirdai::dataset {
 
-  // TODO: Negative test cases that expect errors
-  // TODO: Write utility file generation and test functions that generalizes over delimiters
+// TODO: Negative test cases that expect errors
+// TODO: Write utility file generation and test functions that generalizes over
+// delimiters
 
 const std::string filename = "./csv_dataset_test_file";
 static const uint32_t num_vectors = 10000, batch_size = 256, seed = 590240;
@@ -71,10 +72,8 @@ class CsvDatasetTestFixture : public ::testing::Test {
     output_file << std::endl;
     output_file.close();
   }
- 
-  void deleteTestFile() {
-    ASSERT_FALSE(std::remove(filename.c_str()));
-  }
+
+  void deleteTestFile() { ASSERT_FALSE(std::remove(filename.c_str())); }
 
   void SetUp() override {
     for (uint32_t i = 0; i < num_vectors; i++) {
@@ -82,7 +81,7 @@ class CsvDatasetTestFixture : public ::testing::Test {
     }
   }
 
-  void TearDown() override {  }
+  void TearDown() override {}
 
   std::vector<TestSparseVec> _vectors;
 
@@ -118,7 +117,8 @@ class CsvDatasetTestFixture : public ::testing::Test {
 
 //         ASSERT_EQ(batch[v].dim(), _vectors[vec_count].values.size());
 //         for (uint32_t i = 0; i < batch[v].dim(); i++) {
-//           ASSERT_EQ(batch.at(v)._values[i], _vectors.at(vec_count).values.at(i));
+//           ASSERT_EQ(batch.at(v)._values[i],
+//           _vectors.at(vec_count).values.at(i));
 //         }
 
 //         vec_count++;
@@ -153,7 +153,8 @@ class CsvDatasetTestFixture : public ::testing::Test {
 
 //         ASSERT_EQ(batch[v].dim(), _vectors[vec_count].values.size());
 //         for (uint32_t i = 0; i < batch[v].dim(); i++) {
-//           ASSERT_EQ(batch.at(v)._values[i], _vectors.at(vec_count).values.at(i));
+//           ASSERT_EQ(batch.at(v)._values[i],
+//           _vectors.at(vec_count).values.at(i));
 //         }
 
 //         vec_count++;
@@ -167,23 +168,16 @@ class CsvDatasetTestFixture : public ::testing::Test {
 
 TEST_F(CsvDatasetTestFixture, ErroneousFilesTest) {
   std::vector<std::string> entries{
-    "5.0.5,5,2",
-    "5,a,5",
-    "5a5",
-    "5,5 ",
-    "5 ,5",
+      "5.0.5,5,2", "5,a,5", "5a5", "5,5 ", "5 ,5",
   };
   for (const std::string& entry : entries) {
     generateTestFileWithEntry(entry);
     bool failed = false;
-    try
-    {
+    try {
       std::cout << entry << std::endl;
       InMemoryDataset<DenseBatch> dataset(filename, batch_size,
-                                        CsvDenseBatchFactory(','));
-    }
-    catch(const std::exception& e)
-    {
+                                          CsvDenseBatchFactory(','));
+    } catch (const std::exception& e) {
       std::cout << e.what() << std::endl;
       failed = true;
     }
@@ -195,20 +189,17 @@ TEST_F(CsvDatasetTestFixture, ErroneousFilesTest) {
 }
 
 TEST_F(CsvDatasetTestFixture, ErroneousDelimiterTest) {
-  for (const char& delimiter : {'.', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}) {
+  for (const char& delimiter :
+       {'.', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}) {
     bool failed = false;
-    try
-    {
+    try {
       InMemoryDataset<DenseBatch> dataset(filename, batch_size,
                                           CsvDenseBatchFactory(delimiter));
-    }
-    catch(const std::exception& e)
-    {
+    } catch (const std::exception& e) {
       failed = true;
     }
     ASSERT_TRUE(failed);
   }
-  
 }
 
 }  // namespace thirdai::dataset
