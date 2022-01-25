@@ -57,10 +57,7 @@ class DenseBatch {
 class CsvDenseBatchFactory : public Factory<DenseBatch> {
  public:
   explicit CsvDenseBatchFactory(char delimiter) : _delimiter(delimiter) {
-    if (delimiter == '.' || delimiter == '0' || delimiter == '1' ||
-        delimiter == '2' || delimiter == '3' || delimiter == '4' ||
-        delimiter == '5' || delimiter == '6' || delimiter == '7' ||
-        delimiter == '8' || delimiter == '9') {
+    if (delimiter == '.' || (delimiter >= '0' && delimiter <= '9')) {
       throw std::invalid_argument("Invalid delimiter: " + delimiter);
     }
   }
@@ -103,18 +100,20 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
         }
         start++;
         if (start == line_end) {
-          throw std::invalid_argument(
-              "Invalid dataset file: No number after delimiter.");
+          values.push_back(0);
+        } else {
+          float value = std::strtof(start, &end);
+          if (start == end && *start != _delimiter) {
+            std::stringstream error_ss;
+            error_ss << "Invalid dataset file: Found invalid character: "
+                     << *start;
+            throw std::invalid_argument(error_ss.str());
+          }
+          // value defaults to 0, So if start == end but start == delimiter,
+          // value = 0.
+          values.push_back(value);
+          start = end;
         }
-        float value = std::strtof(start, &end);
-        if (start == end) {
-          std::stringstream error_ss;
-          error_ss << "Invalid dataset file: Found invalid character: "
-                   << *start;
-          throw std::invalid_argument(error_ss.str());
-        }
-        values.push_back(value);
-        start = end;
       }
 
       if (dim != 0 && dim != values.size()) {
