@@ -29,11 +29,6 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def("loadCSVDataset", &loadCSVDataset, py::arg("filename"),
                         py::arg("batch_size"), py::arg("delimiter") = ",");
-
-  dataset_submodule.def("DenseInMemoryDatasetFromNumpy",
-                        &DenseInMemoryDatasetFromNumpy, py::arg("examples"),
-                        py::arg("labels"), py::arg("batch_size"),
-                        py::arg("starting_id") = 0);
 }
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
