@@ -1,3 +1,5 @@
+#pragma once
+
 #include <bolt/layers/LayerConfig.h>
 #include <bolt/networks/DLRM.h>
 #include <bolt/networks/Network.h>

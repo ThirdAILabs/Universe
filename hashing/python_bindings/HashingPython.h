@@ -1,3 +1,5 @@
+#pragma once
+
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/FastSRP.h>
 #include <pybind11/cast.h>

@@ -1,3 +1,5 @@
+#pragma once
+
 #include <hashing/src/HashFunction.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <flash/src/Flash.h>
