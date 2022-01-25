@@ -204,6 +204,23 @@ static InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
   return data;
 }
 
+static InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
+                                                  uint32_t batch_size,
+                                                  std::string delimiter) {
+  auto start = std::chrono::high_resolution_clock::now();
+  InMemoryDataset<DenseBatch> data(
+      filename, batch_size,
+      thirdai::dataset::CsvDenseBatchFactory(delimiter.at(0)));
+  auto end = std::chrono::high_resolution_clock::now();
+
+  std::cout
+      << "Read " << data.len() << " vectors in "
+      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
+      << " seconds" << std::endl;
+
+  return data;
+}
+
 class PyFlash final : public Flash64 {
  public:
   explicit PyFlash(const HashFunction& function) : Flash64(function) {}
@@ -319,6 +336,10 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
   dataset_submodule.def("loadSVMDataset", &thirdai::python::loadSVMDataset,
                         py::arg("filename"), py::arg("batch_size"));
 
+  dataset_submodule.def("loadCSVDataset", &thirdai::python::loadCSVDataset,
+                        py::arg("filename"), py::arg("batch_size"),
+                        py::arg("delimiter") = ",");
+
   auto search_submodule = m.def_submodule("search");
   py::class_<PyFlash>(
       search_submodule, "MagSearch",
@@ -382,19 +403,19 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
       .def(py::init<std::vector<thirdai::bolt::FullyConnectedLayerConfig>,
                     uint64_t>(),
            py::arg("layers"), py::arg("input_dim"))
-      .def("TrainSparse",
+      .def("Train",
            &thirdai::python::PyNetwork::train<thirdai::dataset::SparseBatch>,
            py::arg("train_data"), py::arg("learning_rate"), py::arg("epochs"),
            py::arg("rehash") = 0, py::arg("rebuild") = 0)
-      .def("TrainDense",
+      .def("Train",
            &thirdai::python::PyNetwork::train<thirdai::dataset::DenseBatch>,
            py::arg("train_data"), py::arg("learning_rate"), py::arg("epochs"),
            py::arg("rehash") = 0, py::arg("rebuild") = 0)
-      .def("TestSparse",
+      .def("Test",
            &thirdai::python::PyNetwork::test<thirdai::dataset::SparseBatch>,
            py::arg("test_data"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
-      .def("TestDense",
+      .def("Test",
            &thirdai::python::PyNetwork::test<thirdai::dataset::DenseBatch>,
            py::arg("test_data"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
