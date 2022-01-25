@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     std::cerr << "dataset_format is not specified in the config file."
               << std::endl;
     return 1;
-  } else {
+
     if (config.strVal("dataset_format") == "svm") {
       dataset::InMemoryDataset<dataset::SparseBatch> train_data(
           config.strVal("train_data"), batch_size,
@@ -104,7 +104,6 @@ int main(int argc, char** argv) {
                 << " is not supported." << std::endl;
       return 1;
     }
-  }
 
-  return 0;
-}
+    return 0;
+  }
