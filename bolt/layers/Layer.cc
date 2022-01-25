@@ -20,6 +20,8 @@ VectorState VectorState::makeInputStateFromBatch<dataset::DenseBatch>(
 template <typename BATCH_T>
 VectorState VectorState::makeInputStateFromBatch(const BATCH_T& input_batch,
                                                  uint32_t i) {
+  (void)input_batch;
+  (void)i;
   throw std::invalid_argument("Input batch type is not supported.");
 }
 
