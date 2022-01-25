@@ -69,8 +69,8 @@ int main(int argc, char** argv) {
         network.useSparseInference();
       }
 
-      network.train<dataset::SparseBatch>(train_data, learning_rate, 1,
-                                          rehash, rebuild);
+      network.train<dataset::SparseBatch>(train_data, learning_rate, 1, rehash,
+                                          rebuild);
       network.test<dataset::SparseBatch>(test_data, max_test_batches);
     }
     network.test(test_data);
@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
       }
 
       network.train<dataset::DenseBatch>(train_data, learning_rate, 1, rehash,
-                                          rebuild);
+                                         rebuild);
       network.test<dataset::DenseBatch>(test_data, max_test_batches);
     }
     network.test(test_data);
