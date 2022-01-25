@@ -104,7 +104,7 @@ void DLRM::train(
   }
 }
 
-void DLRM::testImpl(
+void DLRM::test(
     const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
     float* scores) {
   uint32_t batch_size = test_data.at(0).getBatchSize();
