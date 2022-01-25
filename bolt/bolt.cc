@@ -53,58 +53,57 @@ int main(int argc, char** argv) {
     std::cerr << "dataset_format is not specified in the config file."
               << std::endl;
     return 1;
+  }
+  if (config.strVal("dataset_format") == "svm") {
+    dataset::InMemoryDataset<dataset::SparseBatch> train_data(
+        config.strVal("train_data"), batch_size,
+        dataset::SvmSparseBatchFactory{});
 
-    if (config.strVal("dataset_format") == "svm") {
-      dataset::InMemoryDataset<dataset::SparseBatch> train_data(
-          config.strVal("train_data"), batch_size,
-          dataset::SvmSparseBatchFactory{});
+    dataset::InMemoryDataset<dataset::SparseBatch> test_data(
+        config.strVal("test_data"), batch_size,
+        dataset::SvmSparseBatchFactory{});
 
-      dataset::InMemoryDataset<dataset::SparseBatch> test_data(
-          config.strVal("test_data"), batch_size,
-          dataset::SvmSparseBatchFactory{});
-
-      for (uint32_t e = 0; e < epochs; e++) {
-        if ((switch_inference_epoch > 0) && e == switch_inference_epoch) {
-          std::cout << "Freezing Selection for Sparse Inference" << std::endl;
-          network.useSparseInference();
-        }
-
-        network.train<dataset::SparseBatch>(train_data, learning_rate, 1,
-                                            rehash, rebuild);
-        network.test<dataset::SparseBatch>(test_data, max_test_batches);
+    for (uint32_t e = 0; e < epochs; e++) {
+      if ((switch_inference_epoch > 0) && e == switch_inference_epoch) {
+        std::cout << "Freezing Selection for Sparse Inference" << std::endl;
+        network.useSparseInference();
       }
-      network.test(test_data);
-    } else if (config.strVal("dataset_format") == "csv") {
-      if (!config.valExists("csv_delimiter")) {
-        std::cerr << "csv_delimiter is not specified in the config file."
-                  << std::endl;
-        return 1;
-      }
-      dataset::InMemoryDataset<dataset::DenseBatch> train_data(
-          config.strVal("train_data"), batch_size,
-          dataset::CsvDenseBatchFactory(config.strVal("csv_delimiter").at(0)));
 
-      dataset::InMemoryDataset<dataset::DenseBatch> test_data(
-          config.strVal("test_data"), batch_size,
-          dataset::CsvDenseBatchFactory(config.strVal("csv_delimiter").at(0)));
-
-      for (uint32_t e = 0; e < epochs; e++) {
-        if ((switch_inference_epoch > 0) && e == switch_inference_epoch) {
-          std::cout << "Freezing Selection for Sparse Inference" << std::endl;
-          network.useSparseInference();
-        }
-
-        network.train<dataset::DenseBatch>(train_data, learning_rate, 1, rehash,
-                                           rebuild);
-        network.test<dataset::DenseBatch>(test_data, max_test_batches);
-      }
-      network.test(test_data);
-    } else {
-      std::cerr << "The dataset format " << config.strVal("dataset_format")
-                << " is not supported." << std::endl;
+      network.train<dataset::SparseBatch>(train_data, learning_rate, 1,
+                                          rehash, rebuild);
+      network.test<dataset::SparseBatch>(test_data, max_test_batches);
+    }
+    network.test(test_data);
+  } else if (config.strVal("dataset_format") == "csv") {
+    if (!config.valExists("csv_delimiter")) {
+      std::cerr << "csv_delimiter is not specified in the config file."
+                << std::endl;
       return 1;
     }
+    dataset::InMemoryDataset<dataset::DenseBatch> train_data(
+        config.strVal("train_data"), batch_size,
+        dataset::CsvDenseBatchFactory(config.strVal("csv_delimiter").at(0)));
 
-    return 0;
+    dataset::InMemoryDataset<dataset::DenseBatch> test_data(
+        config.strVal("test_data"), batch_size,
+        dataset::CsvDenseBatchFactory(config.strVal("csv_delimiter").at(0)));
+
+    for (uint32_t e = 0; e < epochs; e++) {
+      if ((switch_inference_epoch > 0) && e == switch_inference_epoch) {
+        std::cout << "Freezing Selection for Sparse Inference" << std::endl;
+        network.useSparseInference();
+      }
+
+      network.train<dataset::DenseBatch>(train_data, learning_rate, 1, rehash,
+                                          rebuild);
+      network.test<dataset::DenseBatch>(test_data, max_test_batches);
+    }
+    network.test(test_data);
+  } else {
+    std::cerr << "The dataset format " << config.strVal("dataset_format")
+              << " is not supported." << std::endl;
+    return 1;
   }
+
+  return 0;
 }
