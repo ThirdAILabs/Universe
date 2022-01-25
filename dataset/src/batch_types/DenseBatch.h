@@ -56,18 +56,11 @@ class DenseBatch {
 
 class CsvDenseBatchFactory : public Factory<DenseBatch> {
  public:
-  CsvDenseBatchFactory(char delimiter): _delimiter(delimiter) {
-    if (delimiter == '.' 
-        || delimiter == '0'
-        || delimiter == '1'
-        || delimiter == '2'
-        || delimiter == '3'
-        || delimiter == '4'
-        || delimiter == '5'
-        || delimiter == '6'
-        || delimiter == '7'
-        || delimiter == '8'
-        || delimiter == '9') {
+  explicit CsvDenseBatchFactory(char delimiter) : _delimiter(delimiter) {
+    if (delimiter == '.' || delimiter == '0' || delimiter == '1' ||
+        delimiter == '2' || delimiter == '3' || delimiter == '4' ||
+        delimiter == '5' || delimiter == '6' || delimiter == '7' ||
+        delimiter == '8' || delimiter == '9') {
       throw std::invalid_argument("Invalid delimiter: " + delimiter);
     }
   }
@@ -81,7 +74,7 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
     std::string line;
     while (batch._batch_size < target_batch_size && std::getline(file, line)) {
       std::cout << "line is '" << line << "'." << std::endl;
-      if (line.size() == 0) {
+      if (line.empty()) {
         continue;
       }
 
@@ -92,27 +85,33 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
       uint32_t label = std::strtoul(start, &end, 10);
       std::cout << "label " << label << " |" << std::endl;
       if (start == end) {
-        throw std::invalid_argument("Invalid dataset file: Found a line that doesn't start with a label.");
+        throw std::invalid_argument(
+            "Invalid dataset file: Found a line that doesn't start with a "
+            "label.");
       }
       batch._labels.push_back({label});
       if (line_end - end == 1) {
-        throw std::invalid_argument("Invalid dataset file: The line only contains a label.");
+        throw std::invalid_argument(
+            "Invalid dataset file: The line only contains a label.");
       }
       start = end;
       std::vector<float> values;
       while (start < line_end) {
         std::cout << "char at start is '" << *start << "'." << std::endl;
         if (*start != _delimiter) {
-          throw std::invalid_argument("Invalid dataset file: Found invalid character: " + *start);
+          throw std::invalid_argument(
+              "Invalid dataset file: Found invalid character: " + *start);
         }
         start++;
         if (start == line_end) {
-          throw std::invalid_argument("Invalid dataset file: No number after delimiter.");
+          throw std::invalid_argument(
+              "Invalid dataset file: No number after delimiter.");
         }
         float value = std::strtof(start, &end);
         std::cout << "value " << value << " |" << std::endl;
         if (start == end) {
-          throw std::invalid_argument("Invalid dataset file: Found invalid character: " + *start);
+          throw std::invalid_argument(
+              "Invalid dataset file: Found invalid character: " + *start);
         }
         values.push_back(value);
         start = end;

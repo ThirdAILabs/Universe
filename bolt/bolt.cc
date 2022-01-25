@@ -75,7 +75,8 @@ int main(int argc, char** argv) {
       network.test(test_data);
     } else if (config.strVal("dataset_format") == "csv") {
       if (!config.valExists("csv_delimiter")) {
-        throw std::invalid_argument("csv_delimiter is not specified in the config file.");
+        throw std::invalid_argument(
+            "csv_delimiter is not specified in the config file.");
       }
       dataset::InMemoryDataset<dataset::DenseBatch> train_data(
           config.strVal("train_data"), batch_size,
