@@ -91,77 +91,77 @@ class CsvDatasetTestFixture : public ::testing::Test {
   static const int32_t _val_range = 1000;
 };
 
-// TEST_F(CsvDatasetTestFixture, InMemoryDatasetTest) {
-//   for (const char& delimiter : {',', '\t', ' '}) {
-//     generateTestFile(delimiter);
+TEST_F(CsvDatasetTestFixture, InMemoryDatasetTest) {
+  for (const char& delimiter : {',', '\t', ' '}) {
+    generateTestFile(delimiter);
 
-//     InMemoryDataset<DenseBatch> dataset(filename, batch_size,
-//                                         CsvDenseBatchFactory(delimiter));
+    InMemoryDataset<DenseBatch> dataset(filename, batch_size,
+                                        CsvDenseBatchFactory(delimiter));
 
-//     uint32_t vec_count = 0;
-//     for (const auto& batch : dataset) {
-//       ASSERT_TRUE(batch.getBatchSize() == batch_size ||
-//                   batch.getBatchSize() == num_vectors % batch_size);
+    uint32_t vec_count = 0;
+    for (const auto& batch : dataset) {
+      ASSERT_TRUE(batch.getBatchSize() == batch_size ||
+                  batch.getBatchSize() == num_vectors % batch_size);
 
-//       for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-//         ASSERT_EQ(batch.id(v), vec_count);
+      for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+        ASSERT_EQ(batch.id(v), vec_count);
 
-//         ASSERT_EQ(batch.labels(v).size(), 1);
-//         for (const auto& label : batch.labels(v)) {
-//           ASSERT_EQ(label, _vectors.at(vec_count).label);
-//         }
+        ASSERT_EQ(batch.labels(v).size(), 1);
+        for (const auto& label : batch.labels(v)) {
+          ASSERT_EQ(label, _vectors.at(vec_count).label);
+        }
 
-//         ASSERT_EQ(batch[v].dim(), _vectors[vec_count].values.size());
-//         for (uint32_t i = 0; i < batch[v].dim(); i++) {
-//           ASSERT_EQ(batch.at(v)._values[i],
-//                     _vectors.at(vec_count).values.at(i));
-//         }
+        ASSERT_EQ(batch[v].dim(), _vectors[vec_count].values.size());
+        for (uint32_t i = 0; i < batch[v].dim(); i++) {
+          ASSERT_EQ(batch.at(v)._values[i],
+                    _vectors.at(vec_count).values.at(i));
+        }
 
-//         vec_count++;
-//       }
-//     }
-//     ASSERT_EQ(vec_count, num_vectors);
+        vec_count++;
+      }
+    }
+    ASSERT_EQ(vec_count, num_vectors);
 
-//     deleteTestFile();
-//   }
-// }
+    deleteTestFile();
+  }
+}
 
-// TEST_F(CsvDatasetTestFixture, StreamedDatasetTest) {
-//   for (const char& delimiter : {',', '\t', ' '}) {
-//     generateTestFile(delimiter);
+TEST_F(CsvDatasetTestFixture, StreamedDatasetTest) {
+  for (const char& delimiter : {',', '\t', ' '}) {
+    generateTestFile(delimiter);
 
-//     StreamedDataset<DenseBatch> dataset(
-//         filename, batch_size,
-//         std::make_unique<CsvDenseBatchFactory>(delimiter));
+    StreamedDataset<DenseBatch> dataset(
+        filename, batch_size,
+        std::make_unique<CsvDenseBatchFactory>(delimiter));
 
-//     uint32_t vec_count = 0;
-//     while (auto batch_opt = dataset.nextBatch()) {
-//       const DenseBatch& batch = *batch_opt;
-//       ASSERT_TRUE(batch.getBatchSize() == batch_size ||
-//                   batch.getBatchSize() == num_vectors % batch_size);
+    uint32_t vec_count = 0;
+    while (auto batch_opt = dataset.nextBatch()) {
+      const DenseBatch& batch = *batch_opt;
+      ASSERT_TRUE(batch.getBatchSize() == batch_size ||
+                  batch.getBatchSize() == num_vectors % batch_size);
 
-//       for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-//         ASSERT_EQ(batch.id(v), vec_count);
+      for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+        ASSERT_EQ(batch.id(v), vec_count);
 
-//         ASSERT_EQ(batch.labels(v).size(), 1);
-//         for (const auto& label : batch.labels(v)) {
-//           ASSERT_EQ(label, _vectors.at(vec_count).label);
-//         }
+        ASSERT_EQ(batch.labels(v).size(), 1);
+        for (const auto& label : batch.labels(v)) {
+          ASSERT_EQ(label, _vectors.at(vec_count).label);
+        }
 
-//         ASSERT_EQ(batch[v].dim(), _vectors[vec_count].values.size());
-//         for (uint32_t i = 0; i < batch[v].dim(); i++) {
-//           ASSERT_EQ(batch.at(v)._values[i],
-//                     _vectors.at(vec_count).values.at(i));
-//         }
+        ASSERT_EQ(batch[v].dim(), _vectors[vec_count].values.size());
+        for (uint32_t i = 0; i < batch[v].dim(); i++) {
+          ASSERT_EQ(batch.at(v)._values[i],
+                    _vectors.at(vec_count).values.at(i));
+        }
 
-//         vec_count++;
-//       }
-//     }
-//     ASSERT_EQ(vec_count, num_vectors);
+        vec_count++;
+      }
+    }
+    ASSERT_EQ(vec_count, num_vectors);
 
-//     deleteTestFile();
-//   }
-// }
+    deleteTestFile();
+  }
+}
 
 TEST_F(CsvDatasetTestFixture, ErroneousFilesTest) {
   std::vector<std::pair<std::string, std::string>> entries_and_errors{
@@ -177,18 +177,15 @@ TEST_F(CsvDatasetTestFixture, ErroneousFilesTest) {
   };
   for (const auto& entry_error_pair : entries_and_errors) {
     generateTestFileWithEntry(entry_error_pair.first);
-    EXPECT_THROW(
-        {
-          try {
-            InMemoryDataset<DenseBatch> dataset(filename, batch_size,
-                                                CsvDenseBatchFactory(','));
-          } catch (const std::invalid_argument& e) {
-            EXPECT_STREQ(entry_error_pair.second.c_str(), e.what());
-            throw;
-          }
-        },
-        std::invalid_argument);
-
+    bool failed = false;
+    try {
+      InMemoryDataset<DenseBatch> dataset(filename, batch_size,
+                                          CsvDenseBatchFactory(','));
+    } catch (const std::invalid_argument& e) {
+      EXPECT_STREQ(entry_error_pair.second.c_str(), e.what());
+      failed = true;
+    }
+    EXPECT_TRUE(failed);
     deleteTestFile();
   }
 }
@@ -196,17 +193,15 @@ TEST_F(CsvDatasetTestFixture, ErroneousFilesTest) {
 TEST_F(CsvDatasetTestFixture, ErroneousDelimiterTest) {
   for (const char& delimiter :
        {'.', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}) {
-    EXPECT_THROW(
-        {
-          try {
-            InMemoryDataset<DenseBatch> dataset(
-                filename, batch_size, CsvDenseBatchFactory(delimiter));
-          } catch (const std::invalid_argument& e) {
-            EXPECT_STREQ("Invalid delimiter: " + delimiter, e.what());
-            throw;
-          }
-        },
-        std::invalid_argument);
+    bool failed = false;
+    try {
+      InMemoryDataset<DenseBatch> dataset(filename, batch_size,
+                                          CsvDenseBatchFactory(delimiter));
+    } catch (const std::invalid_argument& e) {
+      EXPECT_STREQ("Invalid delimiter: " + delimiter, e.what());
+      failed = true;
+    }
+    EXPECT_TRUE(failed);
   }
 }
 
