@@ -163,6 +163,23 @@ TEST_F(CsvDatasetTestFixture, StreamedDatasetTest) {
   }
 }
 
+TEST_F(CsvDatasetTestFixture, EmptyValuesTest) {
+  std::vector<std::pair<std::string, std::vector<float>>> entries_and_expected{
+      {"5,,,", {0, 0, 0}},
+      {"5,,5,5", {0, 5, 5}},
+  };
+  for (const auto& entry_expected_pair : entries_and_expected) {
+    generateTestFileWithEntry(entry_expected_pair.first);
+    InMemoryDataset<DenseBatch> dataset(filename, batch_size,
+                                        CsvDenseBatchFactory(','));
+    ASSERT_EQ(dataset.len(), 1);
+    for (uint32_t i = 0; i < dataset.at(0).at(0).dim(); ++i) {
+      ASSERT_EQ(dataset.at(0).at(0)._values[i], entry_expected_pair.second[i]);
+    }
+    deleteTestFile();
+  }
+}
+
 TEST_F(CsvDatasetTestFixture, ErroneousFilesTest) {
   std::vector<std::pair<std::string, std::string>> entries_and_errors{
       {",5",
@@ -173,7 +190,6 @@ TEST_F(CsvDatasetTestFixture, ErroneousFilesTest) {
       {"5,a,5", "Invalid dataset file: Found invalid character: a"},
       {"5,5 ", "Invalid dataset file: Found invalid character:  "},
       {"5 ,5", "Invalid dataset file: Found invalid character:  "},
-      {"5,5,", "Invalid dataset file: No number after delimiter."},
   };
   for (const auto& entry_error_pair : entries_and_errors) {
     generateTestFileWithEntry(entry_error_pair.first);
