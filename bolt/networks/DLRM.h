@@ -20,7 +20,7 @@ class DLRM {
       float learning_rate, uint32_t epochs, uint32_t rehash = 0,
       uint32_t rebuild = 0);
 
-  void testImpl(
+  void test(
       const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
       float* scores);
 
