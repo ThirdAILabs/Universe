@@ -5,6 +5,7 @@
 #include <cassert>
 #include <exception>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
@@ -79,7 +80,7 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
 
     std::string line;
     while (batch._batch_size < target_batch_size && std::getline(file, line)) {
-      
+      std::cout << "line is '" << line << "'." << std::endl;
       if (line.size() == 0) {
         continue;
       }
@@ -89,6 +90,7 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
       char* end;
 
       uint32_t label = std::strtoul(start, &end, 10);
+      std::cout << "label " << label << " |" << std::endl;
       if (start == end) {
         throw std::invalid_argument("Invalid dataset file: Found a line that doesn't start with a label.");
       }
@@ -99,6 +101,7 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
       start = end;
       std::vector<float> values;
       while (start < line_end) {
+        std::cout << "char at start is '" << *start << "'." << std::endl;
         if (*start != _delimiter) {
           throw std::invalid_argument("Invalid dataset file: Found invalid character: " + *start);
         }
@@ -107,6 +110,7 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
           throw std::invalid_argument("Invalid dataset file: No number after delimiter.");
         }
         float value = std::strtof(start, &end);
+        std::cout << "value " << value << " |" << std::endl;
         if (start == end) {
           throw std::invalid_argument("Invalid dataset file: Found invalid character: " + *start);
         }
