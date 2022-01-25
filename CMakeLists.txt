@@ -6,7 +6,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -fopenmp -fPIC -ffast-math -funro
 
 project(ThirdAI LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
-find_package(PythonLibs REQUIRED)
+
+find_package(OpenMP REQUIRED)
 
 # One way that we can set global compiler flags for all targets. set(CMAKE_CXX_FLAGS) is the alternative.
 # Add lots of warnings and all warnings as errors
@@ -31,6 +32,8 @@ FetchContent_MakeAvailable(googletest)
 
 include(CTest)
 
+# The following is for creating the python bindings
+
 FetchContent_Declare(
     pybind11
     GIT_REPOSITORY https://github.com/pybind/pybind11
@@ -42,10 +45,11 @@ if(NOT pybind11_POPULATED)
     add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
 endif()
 
-find_package(OpenMP REQUIRED)
+find_package (Python3 COMPONENTS Interpreter Development)
 
 # So we can include using e.g. #include <hashtable/src/SampledHashTable.h>
 include_directories(".")
+include_directories(${pybind11_SOURCE_DIR}/include)
 
 add_subdirectory(bolt)
 add_subdirectory(dataset)
@@ -60,8 +64,6 @@ file(
   bolt/layers/FullyConnectedLayer.cc 
   bolt/networks/Network.cc 
   bolt/utils/*.cc 
-  hashing/src/DWTA.cc 
-  hashtable/src/SampledHashTable.cc
 )
 
 
@@ -74,9 +76,27 @@ file(
 file(
   GLOB_RECURSE FLASH_SOURCES 
   flash/src/*.cc 
-  dataset/src/*.cc 
-  hashing/src/*.cc 
+)
+
+file(
+  GLOB_RECURSE HASHING_SOURCES
+  hashing/src/*.cc
+)
+
+file(
+  GLOB_RECURSE HASHTABLE_SOURCES
   hashtable/src/*.cc
 )
 
-pybind11_add_module(thirdai python_bindings/thirdai.cc ${BOLT_SOURCES} ${FLASH_SOURCES} ${DLRM_SOURCES})
+pybind11_add_module(thirdai 
+  python_bindings/thirdai.cc 
+  bolt/python_bindings/BoltPython.cc
+  dataset/python_bindings/DatasetPython.cc
+  flash/python_bindings/FlashPython.cc
+  hashing/python_bindings/HashingPython.cc
+  ${BOLT_SOURCES} 
+  ${DLRM_SOURCES}
+  ${FLASH_SOURCES} 
+  ${HASHING_SOURCES}
+  ${HASHTABLE_SOURCES}
+)
