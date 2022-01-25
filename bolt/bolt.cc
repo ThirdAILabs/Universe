@@ -50,8 +50,9 @@ int main(int argc, char** argv) {
   }
 
   if (!config.valExists("dataset_format")) {
-    throw std::invalid_argument(
-        "dataset_format is not specified in the config file.");
+    std::cerr << "dataset_format is not specified in the config file."
+              << std::endl;
+    return 1;
   } else {
     if (config.strVal("dataset_format") == "svm") {
       dataset::InMemoryDataset<dataset::SparseBatch> train_data(
@@ -75,8 +76,9 @@ int main(int argc, char** argv) {
       network.test(test_data);
     } else if (config.strVal("dataset_format") == "csv") {
       if (!config.valExists("csv_delimiter")) {
-        throw std::invalid_argument(
-            "csv_delimiter is not specified in the config file.");
+        std::cerr << "csv_delimiter is not specified in the config file."
+                  << std::endl;
+        return 1;
       }
       dataset::InMemoryDataset<dataset::DenseBatch> train_data(
           config.strVal("train_data"), batch_size,
@@ -98,9 +100,9 @@ int main(int argc, char** argv) {
       }
       network.test(test_data);
     } else {
-      throw std::invalid_argument("The dataset format " +
-                                  config.strVal("dataset_format") +
-                                  " is not supported.");
+      std::cerr << "The dataset format " << config.strVal("dataset_format")
+                << " is not supported." << std::endl;
+      return 1;
     }
   }
 
