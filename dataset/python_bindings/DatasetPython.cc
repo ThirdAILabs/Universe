@@ -22,6 +22,9 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def("loadSVMDataset", &loadSVMDataset, py::arg("filename"),
                         py::arg("batch_size"));
+
+  dataset_submodule.def("loadCSVDataset", &loadCSVDataset, py::arg("filename"),
+                        py::arg("batch_size"), py::arg("delimiter") = ",");
 }
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
@@ -49,6 +52,23 @@ InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
 
   std::cout
       << "Read " << data.len() << " vectors from " << filename << " in "
+      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
+      << " seconds" << std::endl;
+
+  return data;
+}
+
+InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
+                                           uint32_t batch_size,
+                                           std::string delimiter) {
+  auto start = std::chrono::high_resolution_clock::now();
+  InMemoryDataset<DenseBatch> data(
+      filename, batch_size,
+      thirdai::dataset::CsvDenseBatchFactory(delimiter.at(0)));
+  auto end = std::chrono::high_resolution_clock::now();
+
+  std::cout
+      << "Read " << data.len() << " vectors in "
       << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
       << " seconds" << std::endl;
 

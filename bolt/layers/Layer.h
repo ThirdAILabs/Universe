@@ -34,6 +34,10 @@ struct VectorState {
     return VectorState(nullptr, a, nullptr, l);
   }
 
+  template <typename BATCH_T>
+  static VectorState makeInputStateFromBatch(const BATCH_T& input_batch,
+                                             uint32_t i);
+
   friend std::ostream& operator<<(std::ostream& out, const VectorState& state) {
     bool dense = state.active_neurons == nullptr;
     for (uint32_t i = 0; i < state.len; i++) {

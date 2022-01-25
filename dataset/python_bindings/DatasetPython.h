@@ -20,6 +20,10 @@ InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
 InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
                                             uint32_t batch_size);
 
+InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
+                                           uint32_t batch_size,
+                                           std::string delimiter);
+
 // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=numpy#arrays
 // for explanation of why we do py::array::c_style and py::array::forcecast.
 // Ensures array is an array of floats in dense row major order.

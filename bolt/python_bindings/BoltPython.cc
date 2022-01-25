@@ -32,10 +32,17 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<std::vector<thirdai::bolt::FullyConnectedLayerConfig>,
                     uint64_t>(),
            py::arg("layers"), py::arg("input_dim"))
-      .def("Train", &PyNetwork::train, py::arg("train_data"),
-           py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
-           py::arg("rebuild") = 0)
-      .def("Test", &PyNetwork::test, py::arg("test_data"),
+      .def("Train", &PyNetwork::train<thirdai::dataset::SparseBatch>,
+           py::arg("train_data"), py::arg("learning_rate"), py::arg("epochs"),
+           py::arg("rehash") = 0, py::arg("rebuild") = 0)
+      .def("Train", &PyNetwork::train<thirdai::dataset::DenseBatch>,
+           py::arg("train_data"), py::arg("learning_rate"), py::arg("epochs"),
+           py::arg("rehash") = 0, py::arg("rebuild") = 0)
+      .def("Test", &PyNetwork::test<thirdai::dataset::SparseBatch>,
+           py::arg("test_data"),
+           py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
+      .def("Test", &PyNetwork::test<thirdai::dataset::DenseBatch>,
+           py::arg("test_data"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
       .def("UseSparseInference", &PyNetwork::useSparseInference)
       .def("GetWeightMatrix", &PyNetwork::getWeightMatrix,

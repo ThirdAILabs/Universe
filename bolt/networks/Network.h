@@ -20,10 +20,10 @@ class Network {
    * that it can be called multiple times to train a network. This function
    * returns a list of the durations (in seconds) of each epoch.
    */
+  template <typename BATCH_T>
   std::vector<int64_t> train(
-      const dataset::InMemoryDataset<dataset::SparseBatch>& train_data,
-      float learning_rate, uint32_t epochs, uint32_t rehash = 0,
-      uint32_t rebuild = 0);
+      const dataset::InMemoryDataset<BATCH_T>& train_data, float learning_rate,
+      uint32_t epochs, uint32_t rehash = 0, uint32_t rebuild = 0);
 
   /**
    * This function takes in a test dataset and uses it to evaluate the model. It
@@ -31,7 +31,8 @@ class Network {
    * test batches used, this is intended for intermediate accuracy checks during
    * training with large datasets.
    */
-  float test(const dataset::InMemoryDataset<dataset::SparseBatch>& test_data,
+  template <typename BATCH_T>
+  float test(const dataset::InMemoryDataset<BATCH_T>& test_data,
              uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
   void createBatchStates(uint32_t batch_size, bool force_dense);
