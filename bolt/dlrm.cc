@@ -25,20 +25,27 @@ ClickThroughDataset loadClickThorughDataset(const std::string& filename,
 
 int main() {
   auto train = loadClickThorughDataset(
-      "/Users/nmeisburger/files/Research/data/mini_criteo.txt", 256, 13, 26);
+      "/Users/nmeisburger/files/ThirdAI/data/intent/train_shuf_criteo.txt", 4,
+      512, 6);
+  auto test = loadClickThorughDataset(
+      "/Users/nmeisburger/files/ThirdAI/data/intent/test_shuf_criteo.txt", 256,
+      512, 6);
 
   auto embedding = thirdai::bolt::EmbeddingLayerConfig(8, 16, 15);
 
   std::vector<thirdai::bolt::FullyConnectedLayerConfig> bottom_mlp = {
-      {1000, 0.2, "ReLU", {3, 128, 9, 10}}, {100, "ReLU"}};
+      {10000, 0.05, "ReLU", {5, 128, 15, 64}}, {100, "ReLU"}};
 
   std::vector<thirdai::bolt::FullyConnectedLayerConfig> top_mlp = {
-      {100, "ReLU"}, {1000, 0.2, "ReLU", {3, 128, 9, 10}}, {1, "MeanSquared"}};
+      {100, "ReLU"}, {1000, 0.2, "ReLU", {3, 128, 9, 10}}, {151, "Softmax"}};
 
-  thirdai::bolt::DLRM dlrm(embedding, bottom_mlp, top_mlp, 13);
+  thirdai::bolt::DLRM dlrm(embedding, bottom_mlp, top_mlp, 512);
 
-  dlrm.train(train, 0.0001, 2, 300, 500);
-  dlrm.train(train, 0.0001, 2, 300, 500);
+  for (uint32_t e = 0; e < 1; e++) {
+    dlrm.train(train, 0.0001, 1, 300, 500);
 
+    float* scores = new float[151 * test.len()];
+    dlrm.testImpl(test, scores);
+  }
   return 0;
 }

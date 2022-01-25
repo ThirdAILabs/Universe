@@ -145,7 +145,7 @@ void DLRM::testImpl(
       forward(b, dense_input, batch.categoricalFeatures(b), output[b]);
 
       for (uint32_t i = 0; i < output[b].len; i++) {
-        scores[cnt + b * _output_dim + i] = output[b].activations[i];
+        scores[(cnt + b) * _output_dim + i] = output[b].activations[i];
       }
     }
 
