@@ -73,7 +73,6 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
 
     std::string line;
     while (batch._batch_size < target_batch_size && std::getline(file, line)) {
-      std::cout << "line is '" << line << "'." << std::endl;
       if (line.empty()) {
         continue;
       }
@@ -83,24 +82,24 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
       char* end;
 
       uint32_t label = std::strtoul(start, &end, 10);
-      std::cout << "label " << label << " |" << std::endl;
       if (start == end) {
         throw std::invalid_argument(
             "Invalid dataset file: Found a line that doesn't start with a "
             "label.");
       }
       batch._labels.push_back({label});
-      if (line_end - end == 1) {
+      if (line_end - end < 1) {
         throw std::invalid_argument(
             "Invalid dataset file: The line only contains a label.");
       }
       start = end;
       std::vector<float> values;
       while (start < line_end) {
-        std::cout << "char at start is '" << *start << "'." << std::endl;
         if (*start != _delimiter) {
-          throw std::invalid_argument(
-              "Invalid dataset file: Found invalid character: " + *start);
+          std::stringstream error_ss;
+          error_ss << "Invalid dataset file: Found invalid character: "
+                   << *start;
+          throw std::invalid_argument(error_ss.str());
         }
         start++;
         if (start == line_end) {
@@ -108,10 +107,11 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
               "Invalid dataset file: No number after delimiter.");
         }
         float value = std::strtof(start, &end);
-        std::cout << "value " << value << " |" << std::endl;
         if (start == end) {
-          throw std::invalid_argument(
-              "Invalid dataset file: Found invalid character: " + *start);
+          std::stringstream error_ss;
+          error_ss << "Invalid dataset file: Found invalid character: "
+                   << *start;
+          throw std::invalid_argument(error_ss.str());
         }
         values.push_back(value);
         start = end;
