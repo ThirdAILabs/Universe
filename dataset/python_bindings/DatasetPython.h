@@ -39,4 +39,8 @@ DenseBatch wrapNumpyIntoDenseBatch(
     const py::array_t<float, py::array::c_style | py::array::forcecast>& data,
     uint64_t starting_id);
 
+template <typename BATCH_T>
+InMemoryDataset<BATCH_T> makeInMemoryDataset(std::vector<BATCH_T> batches, uint64_t len);
+
+
 }  // namespace thirdai::dataset::python

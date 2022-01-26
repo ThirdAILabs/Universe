@@ -25,6 +25,19 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def("loadCSVDataset", &loadCSVDataset, py::arg("filename"),
                         py::arg("batch_size"), py::arg("delimiter") = ",");
+  
+  dataset_submodule.def("makeInMemoryDatasetFromBatches",
+                        &makeInMemoryDataset<thirdai::dataset::SparseBatch>,
+                        py::arg("batches"), py::arg("dataset_size"));
+
+  dataset_submodule.def("makeInMemoryDatasetFromBatches",
+                        &makeInMemoryDataset<thirdai::dataset::DenseBatch>,
+                        py::arg("batches"), py::arg("dataset_size"));
+
+  dataset_submodule.def("wrapNumpyIntoDenseBatch", 
+                        &wrapNumpyIntoDenseBatch, py::arg("array"),
+                        py::arg("starting_id") = 0);
+
 }
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
@@ -147,6 +160,13 @@ DenseBatch wrapNumpyIntoDenseBatch(
   }
 
   return DenseBatch(std::move(batch_vectors), starting_id);
+}
+
+template <typename BATCH_T>
+static InMemoryDataset<BATCH_T> makeInMemoryDataset(
+    std::vector<BATCH_T> batches, uint64_t len) {
+  InMemoryDataset<BATCH_T> data(std::move(batches), len);
+  return data;
 }
 
 }  // namespace thirdai::dataset::python
