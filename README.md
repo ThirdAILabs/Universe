@@ -10,10 +10,10 @@ and lint you code.
 All executables will be in their corresponding directory within the build 
 directory. e.g. the mpi_example executable will be in 
 `Universe/build/examples/mpi-example/mpi_example`.
-2. Run `$ bin/tests.sh` from anywhere to have cmake run all tests. To run specific
+2. Run `$ bin/test.sh` from anywhere to have cmake run all tests. To run specific
 tests, you can also pass a regular expression to filter tests 
 (or provide an explicit test name):
-`$ bin/tests.sh -R <test filter expression>`
+`$ bin/test.sh -R <test filter expression>`
 Note you can actually pass any arguments you would pass to ctest to this
 script and it will forward them. 
 3. Run `$ bin/format.sh` from anywhere to format all code.
@@ -27,7 +27,9 @@ commands database (you shouldn't ever need to call this script manually).
 1. Clone this repository and navigate into it.
 2. `$ mkdir build && cd build`
 3. `$ cmake ..` - this will generate the makefile that can be used to compile the code. 
-4. `$ make all` will compile all targets. Or you can use `$ make <target name>` to build a specific target. 
+4. `$ make all` will compile all targets. Or you can use `$ make <target name>` to build a specific target. Run with -j$NUM_JOBS
+to build in paralell ($NUM_JOBS should be ~1.5 times the total number of threads on your machine
+for best performance).
 5. All executables will be in their corresponding directory within the build directory. e.g. the mpi_example executable will be in `Universe/build/examples/mpi-example/mpi_example`.
 6. To run tests simply run `$ ctest` from within the build directory after compiling all of the targets, or optionally pass a regular expression to filter tests (or provide an explicit test names) `$ ctest -R <test filter expression>`. 
 

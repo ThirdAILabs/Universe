@@ -25,4 +25,4 @@ jobs:
         sudo ln -s /usr/bin/clang-tidy-12 /usr/bin/clang-tidy
     - name: Run linting on all files
       run: |
-        bin/linting.sh
+        bin/lint.sh
