@@ -10,6 +10,10 @@ void createDatasetSubmodule(py::module_& module) {
                                                   "InMemorySparseDataset");
   (void)_imsd_;  // To get rid of clang tidy error
 
+  py::class_<InMemoryDataset<DenseBatch>> _imdd_(dataset_submodule,
+                                                 "InMemoryDenseDataset");
+  (void)_imdd_;  // To get rid of clang tidy error
+
   dataset_submodule.def("loadClickThroughDataset", &loadClickThroughDataset,
                         py::arg("filename"), py::arg("batch_size"),
                         py::arg("num_dense_features"),
@@ -25,19 +29,11 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def("loadCSVDataset", &loadCSVDataset, py::arg("filename"),
                         py::arg("batch_size"), py::arg("delimiter") = ",");
-  
-  dataset_submodule.def("makeInMemoryDatasetFromBatches",
-                        &makeInMemoryDataset<thirdai::dataset::SparseBatch>,
-                        py::arg("batches"), py::arg("dataset_size"));
 
-  dataset_submodule.def("makeInMemoryDatasetFromBatches",
-                        &makeInMemoryDataset<thirdai::dataset::DenseBatch>,
-                        py::arg("batches"), py::arg("dataset_size"));
-
-  dataset_submodule.def("wrapNumpyIntoDenseBatch", 
-                        &wrapNumpyIntoDenseBatch, py::arg("array"),
+  dataset_submodule.def("DenseInMemoryDatasetFromNumpy",
+                        &DenseInMemoryDatasetFromNumpy, py::arg("examples"),
+                        py::arg("labels"), py::arg("batch_size"),
                         py::arg("starting_id") = 0);
-
 }
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
@@ -162,11 +158,68 @@ DenseBatch wrapNumpyIntoDenseBatch(
   return DenseBatch(std::move(batch_vectors), starting_id);
 }
 
-template <typename BATCH_T>
-static InMemoryDataset<BATCH_T> makeInMemoryDataset(
-    std::vector<BATCH_T> batches, uint64_t len) {
-  InMemoryDataset<BATCH_T> data(std::move(batches), len);
-  return data;
+InMemoryDataset<DenseBatch> DenseInMemoryDatasetFromNumpy(
+    const py::array_t<float, py::array::c_style | py::array::forcecast>&
+        examples,
+    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+        labels,
+    uint32_t batch_size, uint64_t starting_id) {
+  // Get information from examples
+
+  const py::buffer_info examples_buf = examples.request();
+  const auto examples_shape = examples_buf.shape;
+  if (examples_shape.size() != 2) {
+    throw std::invalid_argument(
+        "For now, Numpy dense data must be 2D (each row is a dense data "
+        "vector).");
+  }
+
+  uint64_t num_examples = static_cast<uint64_t>(examples_shape.at(0));
+  uint64_t dimension = static_cast<uint64_t>(examples_shape.at(1));
+  float* examples_raw_data = static_cast<float*>(examples_buf.ptr);
+
+  // Get information from labels
+
+  const py::buffer_info labels_buf = labels.request();
+  const auto labels_shape = labels_buf.shape;
+  if (labels_shape.size() != 1) {
+    throw std::invalid_argument(
+        "For now, Numpy labels must be 1D (each element is an integer).");
+  }
+
+  uint64_t num_labels = static_cast<uint64_t>(labels_shape.at(0));
+  if (num_labels != num_examples) {
+    throw std::invalid_argument(
+        "The size of the label array must be equal to the number of rows in "
+        "the examples array.");
+  }
+  uint32_t* labels_raw_data = static_cast<uint32_t*>(labels_buf.ptr);
+
+  // Build batches
+
+  uint64_t num_batches = (num_examples + batch_size - 1) / batch_size;
+  std::vector<DenseBatch> batches;
+
+  for (uint32_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
+    std::vector<DenseVector> batch_vectors;
+    std::vector<std::vector<uint32_t>> batch_labels;
+
+    uint64_t start_vec_idx = batch_idx * batch_size;
+    uint64_t end_vec_idx = std::min(start_vec_idx + batch_size, num_examples);
+    for (uint64_t vec_idx = start_vec_idx; vec_idx < end_vec_idx; ++vec_idx) {
+      // owns_data = false because we don't want the numpy array to be deleted
+      // if this batch (and thus the underlying vectors) get deleted
+      bool owns_data = false;
+      batch_vectors.emplace_back(
+          dimension, examples_raw_data + dimension * vec_idx, owns_data);
+      batch_labels.push_back({*(labels_raw_data + vec_idx)});
+    }
+
+    batches.emplace_back(std::move(batch_vectors), std::move(batch_labels),
+                         starting_id + start_vec_idx);
+  }
+
+  return InMemoryDataset(std::move(batches), num_examples);
 }
 
 }  // namespace thirdai::dataset::python
