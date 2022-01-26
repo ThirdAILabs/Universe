@@ -9,11 +9,14 @@ and lint you code.
 1. Run `$ bin/build.sh` from anywhere to have cmake build everything in universe.
 All executables will be in their corresponding directory within the build 
 directory. e.g. the mpi_example executable will be in 
-`Universe/build/examples/mpi-example/mpi_example`.
+`Universe/build/examples/mpi-example/mpi_example`. By default this will
+run in parallel and build all unbuilt targets or targets whose component source
+files have been updated, but you can pass in parameters to run in serial or build
+only a specific target. See the source of `$ bin/build.sh` for more details.
 2. Run `$ bin/test.sh` from anywhere to have cmake run all tests. To run specific
 tests, you can also pass a regular expression to filter tests 
 (or provide an explicit test name):
-`$ bin/test.sh -R <test filter expression>`
+`$ bin/test.sh -R <test filter expression>`.
 Note you can actually pass any arguments you would pass to ctest to this
 script and it will forward them. 
 3. Run `$ bin/format.sh` from anywhere to format all code.
@@ -23,12 +26,12 @@ these are clang-tidy checks).
 commands database (you shouldn't ever need to call this script manually).
 
 
-## Development (Deprecated, use scripts in bin, see above)
+## Manual building and testing (DEPRECATED, use scripts in bin, see above)
 1. Clone this repository and navigate into it.
 2. `$ mkdir build && cd build`
 3. `$ cmake ..` - this will generate the makefile that can be used to compile the code. 
 4. `$ make all` will compile all targets. Or you can use `$ make <target name>` to build a specific target. Run with -j$NUM_JOBS
-to build in paralell ($NUM_JOBS should be ~1.5 times the total number of threads on your machine
+to build in parallel ($NUM_JOBS should be ~1.5 times the total number of threads on your machine
 for best performance).
 5. All executables will be in their corresponding directory within the build directory. e.g. the mpi_example executable will be in `Universe/build/examples/mpi-example/mpi_example`.
 6. To run tests simply run `$ ctest` from within the build directory after compiling all of the targets, or optionally pass a regular expression to filter tests (or provide an explicit test names) `$ ctest -R <test filter expression>`. 
@@ -37,7 +40,7 @@ for best performance).
 1. The building target `thirdai` will compile the `thirdai.so` library in the build directory. 
 This is automatically run on a full build, so you can run `bin/build.sh` as normal.
 2. To compile and install bindings, run `pip3 install .` from the root of the Universe directory. 
-This will allow them to be imported anywhere on your machine,
+This will allow them to be imported anywhere on your machine.
 
 ## Using cmake
 To understand how to setup a executable, library, or test using cmake please see the examples in the `examples` directory. For more context here are a few things to know: 
