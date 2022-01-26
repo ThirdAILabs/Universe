@@ -1,13 +1,7 @@
 # This script starts a very simple flask application that indexes ImageNet
 # using the penultimate layer of VGG16 as image embeddings and then exposes
-# a REST API to perform ANN search. You will need to change the below variables
-# for the script to work on your system.  
-
-chunk_path = "/Users/josh/IndexChunks/"
-max_chunk_num_exclusive = 129
-file_name_index_path = "/Users/josh/IndexChunks/all_files.npy"
-average_vector_path = "/Users/josh/IndexChunks/avg.npy"
-max_image_size_bytes = 16000000
+# a REST API to perform ANN search. You will need to change the variables
+# below the import statement for the script to work on your system. 
 
 import tensorflow as tf
 import numpy as np
@@ -21,6 +15,12 @@ import thirdai
 from flask import Flask, flash, request, send_file, abort, redirect
 from PIL import Image
 import io
+
+chunk_path = "/Users/josh/IndexChunks/"
+max_chunk_num_exclusive = 129
+file_name_index_path = "/Users/josh/IndexChunks/all_files.npy"
+average_vector_path = "/Users/josh/IndexChunks/avg.npy"
+max_image_size_bytes = 16000000
 
 reservoir_size = 500
 num_tables = 500
