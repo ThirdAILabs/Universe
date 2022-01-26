@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dataset/src/Dataset.h>
+#include <dataset/src/batch_types/DenseBatch.h>
 #include <dataset/src/batch_types/SparseBatch.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
@@ -39,8 +40,11 @@ DenseBatch wrapNumpyIntoDenseBatch(
     const py::array_t<float, py::array::c_style | py::array::forcecast>& data,
     uint64_t starting_id);
 
-template <typename BATCH_T>
-InMemoryDataset<BATCH_T> makeInMemoryDataset(std::vector<BATCH_T> batches, uint64_t len);
-
+InMemoryDataset<DenseBatch> DenseInMemoryDatasetFromNumpy(
+    const py::array_t<float, py::array::c_style | py::array::forcecast>&
+        examples,
+    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+        labels,
+    uint32_t batch_size, uint64_t starting_id);
 
 }  // namespace thirdai::dataset::python
