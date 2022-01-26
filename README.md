@@ -11,14 +11,16 @@ All executables will be in their corresponding directory within the build
 directory. e.g. the mpi_example executable will be in 
 `Universe/build/examples/mpi-example/mpi_example`.
 2. Run `$ bin/tests.sh` from anywhere to have cmake run all tests. To run specific
-tests, you can also cd to the build directory and pass a regular expression to 
-filter tests (or provide an explicit test names):
-`$ ctest -R <test filter expression>`. 
-3. Run `$ generate_compile_commands.sh` from anywhere to generate the compile
-commands database (needed for 4 and 5).
-4. Run `$ bin/clang-format.sh` from anywhere to format all code.
-5. Run `$ bin/tidy-check.sh` from anywhere to run clang-tidy checks on all code. 
-6. Run `$ bin/clang-check.sh` to run 3, 4, and 5.
+tests, you can also pass a regular expression to filter tests 
+(or provide an explicit test name):
+`$ bin/tests.sh -R <test filter expression>`
+Note you can actually pass any arguments you would pass to ctest to this
+script and it will forward them. 
+3. Run `$ bin/format.sh` from anywhere to format all code.
+4. Run `$ bin/lint.sh` from anywhere to run linting on all code (primarily 
+these are clang-tidy checks).
+5. Run `$ generate_compile_commands.sh` from anywhere to generate the compile
+commands database (you shouldn't ever need to call this script manually).
 
 
 ## Development (Deprecated, use scripts in bin, see above)
@@ -30,8 +32,10 @@ commands database (needed for 4 and 5).
 6. To run tests simply run `$ ctest` from within the build directory after compiling all of the targets, or optionally pass a regular expression to filter tests (or provide an explicit test names) `$ ctest -R <test filter expression>`. 
 
 ## Installing python bindings
-1. The building target `thirdai` will compile the `thirdai.so` library in the build directory.
-2. Alternatively, running `pip3 install .` from the root of the Universe directory will compile and install the python bindings on whatever machine you are using. This is recommended because once they are installed with pip they can be imported and used anywhere on that machine. 
+1. The building target `thirdai` will compile the `thirdai.so` library in the build directory. 
+This is automatically run on a full build, so you can run `bin/build.sh` as normal.
+2. To compile and install bindings, run `pip3 install .` from the root of the Universe directory. 
+This will allow them to be imported anywhere on your machine,
 
 ## Using cmake
 To understand how to setup a executable, library, or test using cmake please see the examples in the `examples` directory. For more context here are a few things to know: 
