@@ -1,3 +1,5 @@
+#pragma once
+
 #include "HashTable.h"
 #include <atomic>
 #include <random>
