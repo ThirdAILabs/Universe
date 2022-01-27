@@ -3,6 +3,7 @@
 #include <bolt/layers/LayerConfig.h>
 #include <bolt/networks/DLRM.h>
 #include <bolt/networks/Network.h>
+#include <dataset/python_bindings/DatasetPython.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -52,6 +53,20 @@ class PyNetwork final : public Network {
     size_t dim = _configs[layer_index].dim;
 
     return py::array_t<float>({dim}, {sizeof(float)}, mem, free_when_done);
+  }
+
+  // Does not return py::array_t because this is consistent with the original
+  // train method.
+  std::vector<int64_t> trainWithDenseNumpyArray(
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          examples,
+      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+          labels,
+      uint32_t batch_size, float learning_rate, uint32_t epochs,
+      uint64_t starting_id, uint32_t rehash, uint32_t rebuild) {
+    auto data = thirdai::dataset::python::denseInMemoryDatasetFromNumpy(
+        examples, labels, batch_size, starting_id);
+    return train(data, learning_rate, epochs, rehash, rebuild);
   }
 };
 

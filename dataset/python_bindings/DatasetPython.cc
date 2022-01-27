@@ -29,11 +29,6 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def("loadCSVDataset", &loadCSVDataset, py::arg("filename"),
                         py::arg("batch_size"), py::arg("delimiter") = ",");
-
-  dataset_submodule.def("DenseInMemoryDatasetFromNumpy",
-                        &DenseInMemoryDatasetFromNumpy, py::arg("examples"),
-                        py::arg("labels"), py::arg("batch_size"),
-                        py::arg("starting_id") = 0);
 }
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
@@ -158,7 +153,7 @@ DenseBatch wrapNumpyIntoDenseBatch(
   return DenseBatch(std::move(batch_vectors), starting_id);
 }
 
-InMemoryDataset<DenseBatch> DenseInMemoryDatasetFromNumpy(
+InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
         examples,
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&

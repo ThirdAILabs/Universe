@@ -40,7 +40,7 @@ DenseBatch wrapNumpyIntoDenseBatch(
     const py::array_t<float, py::array::c_style | py::array::forcecast>& data,
     uint64_t starting_id);
 
-InMemoryDataset<DenseBatch> DenseInMemoryDatasetFromNumpy(
+InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
         examples,
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
