@@ -13,7 +13,7 @@
 namespace thirdai::dataset {
 
 const std::string filename = "./csv_dataset_test_file";
-static const uint32_t num_vectors = 10000, batch_size = 256, seed = 590240;
+static const uint32_t num_vectors = 1000, batch_size = 256, seed = 590240;
 
 class CsvDatasetTestFixture : public ::testing::Test {
  public:
