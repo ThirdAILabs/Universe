@@ -32,31 +32,37 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<std::vector<thirdai::bolt::FullyConnectedLayerConfig>,
                     uint64_t>(),
            py::arg("layers"), py::arg("input_dim"))
-      .def("Train", &PyNetwork::train<thirdai::dataset::SparseBatch>,
+      .def("train", &PyNetwork::train<thirdai::dataset::SparseBatch>,
            py::arg("train_data"), py::arg("learning_rate"), py::arg("epochs"),
            py::arg("rehash") = 0, py::arg("rebuild") = 0)
-      .def("Train", &PyNetwork::train<thirdai::dataset::DenseBatch>,
+      .def("train", &PyNetwork::train<thirdai::dataset::DenseBatch>,
            py::arg("train_data"), py::arg("learning_rate"), py::arg("epochs"),
            py::arg("rehash") = 0, py::arg("rebuild") = 0)
-      .def("Train", &PyNetwork::trainWithDenseNumpyArray,
+      .def("loadAndTrain", &PyNetwork::trainWithDenseNumpyArray, 
            py::arg("train_examples"), py::arg("train_labels"),
            py::arg("batch_size"), py::arg("learning_rate"), py::arg("epochs"),
            py::arg("starting_id") = 0, py::arg("rehash") = 0,
-           py::arg("rebuild") = 0)
-      .def("Test", &PyNetwork::test<thirdai::dataset::SparseBatch>,
+           py::arg("rebuild") = 0) 
+           // Later down the line, we can have loadAndTrain that accepts file datasets as well (polymorphism).
+      .def("test", &PyNetwork::test<thirdai::dataset::SparseBatch>,
            py::arg("test_data"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
-      .def("Test", &PyNetwork::test<thirdai::dataset::DenseBatch>,
+      .def("test", &PyNetwork::test<thirdai::dataset::DenseBatch>,
            py::arg("test_data"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
-      .def("UseSparseInference", &PyNetwork::useSparseInference)
-      .def("GetWeightMatrix", &PyNetwork::getWeightMatrix,
+      .def("loadAndTest", &PyNetwork::testWithDenseNumpyArray,
+           py::arg("test_examples"), py::arg("test_labels"),
+           py::arg("batch_size"), py::arg("starting_id") = 0,
+           py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
+           // Later down the line, we can have loadAndTest that accepts file datasets as well (polymorphism).
+      .def("useSparseInference", &PyNetwork::useSparseInference)
+      .def("getWeightMatrix", &PyNetwork::getWeightMatrix,
            py::arg("layer_index"))
-      .def("GetBiasVector", &PyNetwork::getBiasVector, py::arg("layer_index"))
-      .def("GetNumLayers", &PyNetwork::getNumLayers)
-      .def("GetLayerSizes", &PyNetwork::getLayerSizes)
-      .def("GetInputDim", &PyNetwork::getInputDim)
-      .def("GetActivationFunctions", &PyNetwork::getActivationFunctions);
+      .def("getBiasVector", &PyNetwork::getBiasVector, py::arg("layer_index"))
+      .def("getNumLayers", &PyNetwork::getNumLayers)
+      .def("getLayerSizes", &PyNetwork::getLayerSizes)
+      .def("getInputDim", &PyNetwork::getInputDim)
+      .def("getActivationFunctions", &PyNetwork::getActivationFunctions);
 
   py::class_<PyDLRM>(bolt_submodule, "DLRM")
       .def(py::init<thirdai::bolt::EmbeddingLayerConfig,
@@ -65,10 +71,10 @@ void createBoltSubmodule(py::module_& module) {
                     uint32_t>(),
            py::arg("embedding_layer"), py::arg("bottom_mlp"),
            py::arg("top_mlp"), py::arg("input_dim"))
-      .def("Train", &PyDLRM::train, py::arg("train_data"),
+      .def("train", &PyDLRM::train, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash"),
            py::arg("rebuild"))
-      .def("Test", &PyDLRM::test, py::arg("test_data"));
+      .def("test", &PyDLRM::test, py::arg("test_data"));
 }
 
 }  // namespace thirdai::bolt::python
