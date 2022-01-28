@@ -29,10 +29,7 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def("loadCSVDataset", &loadCSVDataset, py::arg("filename"),
                         py::arg("batch_size"), py::arg("delimiter") = ",");
-
-  dataset_submodule.def("copyNumpyToInMemoryDataset", &copyNumpyToInMemoryDataset,
-                        py::arg("examples"), py::arg("labels"), py::arg("batch_size"), 
-                        py::arg("starting_id") = 0);                        
+                      
 }
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
@@ -163,8 +160,10 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
         labels,
     uint32_t batch_size, uint64_t starting_id) {
-  // Get information from examples
+    
+  auto start = std::chrono::high_resolution_clock::now();
 
+  // Get information from examples
   const py::buffer_info examples_buf = examples.request();
   const auto examples_shape = examples_buf.shape;
   if (examples_shape.size() != 2) {
@@ -217,6 +216,12 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
     batches.emplace_back(std::move(batch_vectors), std::move(batch_labels),
                          starting_id + start_vec_idx);
   }
+
+  auto end = std::chrono::high_resolution_clock::now();
+
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+  std::cout << "Wrapping took " << duration << " milliseconds." << std::endl;
 
   return InMemoryDataset(std::move(batches), num_examples);
 }
