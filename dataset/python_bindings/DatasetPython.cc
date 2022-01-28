@@ -162,7 +162,7 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
         examples,
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
         labels,
-    uint32_t batch_size, uint64_t starting_id, bool copy_data=false) {
+    uint32_t batch_size, uint64_t starting_id, bool copy_data) {
   // Get information from examples
 
   const py::buffer_info examples_buf = examples.request();
