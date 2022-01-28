@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Layer.h"
+#include "BoltVector.h"
 #include "LayerConfig.h"
 #include <cmath>
 #include <ctime>
@@ -20,9 +20,9 @@ class EmbeddingLayer {
                           uint32_t seed = time(nullptr));
 
   void forward(uint32_t batch_indx, const std::vector<uint32_t>& tokens,
-               VectorState& output);
+               BoltVector& output);
 
-  void backpropagate(uint32_t batch_indx, const VectorState& output);
+  void backpropagate(uint32_t batch_indx, const BoltVector& output);
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
@@ -30,8 +30,8 @@ class EmbeddingLayer {
 
   void initializeLayer(uint32_t new_batch_size);
 
-  BatchState createBatchState(const uint32_t batch_size) const {
-    return BatchState(_total_embedding_dim, batch_size, true);
+  BoltBatch createBatchState(const uint32_t batch_size) const {
+    return BoltBatch(_total_embedding_dim, batch_size, true);
   }
 
   EmbeddingLayer(EmbeddingLayer&) = delete;

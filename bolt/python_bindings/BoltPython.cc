@@ -44,13 +44,13 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("starting_id") = 0, py::arg("rehash") = 0,
            py::arg("rebuild") = 0) 
            // Later down the line, we can have loadAndTrain that accepts file datasets as well (polymorphism).
-      .def("test", &PyNetwork::test<thirdai::dataset::SparseBatch>,
+      .def("predict", &PyNetwork::predict<thirdai::dataset::SparseBatch>,
            py::arg("test_data"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
-      .def("test", &PyNetwork::test<thirdai::dataset::DenseBatch>,
+      .def("predict", &PyNetwork::predict<thirdai::dataset::DenseBatch>,
            py::arg("test_data"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
-      .def("loadAndTest", &PyNetwork::testWithDenseNumpyArray,
+      .def("loadAndPredict", &PyNetwork::testWithDenseNumpyArray,
            py::arg("test_examples"), py::arg("test_labels"),
            py::arg("batch_size"), py::arg("starting_id") = 0,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
@@ -74,7 +74,7 @@ void createBoltSubmodule(py::module_& module) {
       .def("train", &PyDLRM::train, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash"),
            py::arg("rebuild"))
-      .def("test", &PyDLRM::test, py::arg("test_data"));
+      .def("predict", &PyDLRM::predict, py::arg("test_data"));
 }
 
 }  // namespace thirdai::bolt::python
