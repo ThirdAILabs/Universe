@@ -161,8 +161,6 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
         labels,
     uint32_t batch_size, uint64_t starting_id) {
     
-  auto start = std::chrono::high_resolution_clock::now();
-
   // Get information from examples
   const py::buffer_info examples_buf = examples.request();
   const auto examples_shape = examples_buf.shape;
@@ -216,12 +214,6 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
     batches.emplace_back(std::move(batch_vectors), std::move(batch_labels),
                          starting_id + start_vec_idx);
   }
-
-  auto end = std::chrono::high_resolution_clock::now();
-
-  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-
-  std::cout << "Wrapping took " << duration << " milliseconds." << std::endl;
 
   return InMemoryDataset(std::move(batches), num_examples);
 }
