@@ -64,7 +64,7 @@ FullyConnectedLayer::FullyConnectedLayer(
   }
 }
 
-void FullyConnectedLayer::forward(const VectorState& input, VectorState& output,
+void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
                                   const uint32_t* labels, uint32_t label_len) {
   if (output.active_neurons == nullptr) {
     if (input.len == _prev_dim) {
@@ -83,8 +83,8 @@ void FullyConnectedLayer::forward(const VectorState& input, VectorState& output,
 }
 
 template <bool DENSE, bool PREV_DENSE>
-void FullyConnectedLayer::forwardImpl(const VectorState& input,
-                                      VectorState& output,
+void FullyConnectedLayer::forwardImpl(const BoltVector& input,
+                                      BoltVector& output,
                                       const uint32_t* labels,
                                       uint32_t label_len) {
   selectActiveNeurons<DENSE, PREV_DENSE>(input, output, labels, label_len);
@@ -138,8 +138,7 @@ void FullyConnectedLayer::forwardImpl(const VectorState& input,
   }
 }
 
-void FullyConnectedLayer::backpropagate(VectorState& input,
-                                        VectorState& output) {
+void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
   if (output.active_neurons == nullptr) {
     if (input.len == _prev_dim) {
       backpropagateImpl<false, true, true>(input, output);
@@ -155,8 +154,8 @@ void FullyConnectedLayer::backpropagate(VectorState& input,
   }
 }
 
-void FullyConnectedLayer::backpropagateInputLayer(VectorState& input,
-                                                  VectorState& output) {
+void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
+                                                  BoltVector& output) {
   if (output.active_neurons == nullptr) {
     if (input.len == _prev_dim) {
       backpropagateImpl<true, true, true>(input, output);
@@ -190,8 +189,8 @@ constexpr float FullyConnectedLayer::actFuncDerivative(float x) {
 }
 
 template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
-void FullyConnectedLayer::backpropagateImpl(VectorState& input,
-                                            VectorState& output) {
+void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
+                                            BoltVector& output) {
   uint32_t len_out = DENSE ? _dim : _sparse_dim;
 
   for (uint64_t n = 0; n < len_out; n++) {
@@ -216,8 +215,8 @@ void FullyConnectedLayer::backpropagateImpl(VectorState& input,
 }
 
 template <bool DENSE, bool PREV_DENSE>
-void FullyConnectedLayer::selectActiveNeurons(const VectorState& input,
-                                              VectorState& output,
+void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
+                                              BoltVector& output,
                                               const uint32_t* labels,
                                               uint32_t label_len) {
   if (DENSE) {
@@ -273,10 +272,11 @@ void FullyConnectedLayer::selectActiveNeurons(const VectorState& input,
 
 void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
                                            float B2, float eps) {
-  float B1_ = static_cast<float>(1 - pow(B1, iter));
-  float B2_ = static_cast<float>(1 - pow(B2, iter));
+  float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
+  float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 
-#pragma omp parallel for default(none) shared(lr, B1, B1_, B2, B2_, eps)
+#pragma omp parallel for default(none) \
+    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t n = 0; n < _dim; n++) {
     if (!_is_active[n]) {
       continue;
@@ -288,8 +288,9 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
       _w_momentum[indx] = B1 * _w_momentum[indx] + (1 - B1) * grad;
       _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
 
-      _weights[indx] += lr * (_w_momentum[indx] / B1_) /
-                        (std::sqrt(_w_velocity[indx] / B2_) + eps);
+      _weights[indx] +=
+          lr * (_w_momentum[indx] / B1_bias_corrected) /
+          (std::sqrt(_w_velocity[indx] / B2_bias_corrected) + eps);
 
       _w_gradient[indx] = 0;
     }
@@ -298,8 +299,8 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
     _b_momentum[n] = B1 * _b_momentum[n] + (1 - B1) * grad;
     _b_velocity[n] = B2 * _b_velocity[n] + (1 - B2) * grad * grad;
 
-    _biases[n] +=
-        lr * (_b_momentum[n] / B1_) / (std::sqrt(_b_velocity[n] / B2_) + eps);
+    _biases[n] += lr * (_b_momentum[n] / B1_bias_corrected) /
+                  (std::sqrt(_b_velocity[n] / B2_bias_corrected) + eps);
 
     _b_gradient[n] = 0;
     _is_active[n] = false;

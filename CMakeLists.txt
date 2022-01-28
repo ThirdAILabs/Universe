@@ -60,7 +60,7 @@ add_subdirectory(hashtable)
 
 file(
   GLOB BOLT_SOURCES 
-  bolt/layers/Layer.cc 
+  bolt/layers/BoltVector.cc 
   bolt/layers/FullyConnectedLayer.cc 
   bolt/networks/Network.cc 
   bolt/utils/*.cc 

@@ -84,14 +84,14 @@ TEST_F(FullyConnectedLayerTestFixture, SparseDenseTest) {
       std::vector<float>(6, 0), std::vector<float>(7, 0),
       std::vector<float>(6, 0), std::vector<float>(5, 0)};
 
-  std::vector<VectorState> inputs;
+  std::vector<BoltVector> inputs;
   for (uint32_t i = 0; i < 4; i++) {
-    inputs.push_back(VectorState(
+    inputs.push_back(BoltVector(
         _sparse_data_indices.at(i).data(), _sparse_data_values.at(i).data(),
         prev_errors_calc.at(i).data(), prev_errors_calc.at(i).size()));
   }
 
-  BatchState outputs = _layer->createBatchState(4, true);
+  BoltBatch outputs = _layer->createBatchState(4, true);
 
   for (uint32_t i = 0; i < 4; i++) {
     _layer->forward(inputs[i], outputs[i], nullptr, 0);
@@ -168,14 +168,14 @@ TEST_F(FullyConnectedLayerTestFixture, DenseDenseTest) {
       std::vector<float>(10, 0), std::vector<float>(10, 0),
       std::vector<float>(10, 0), std::vector<float>(10, 0)};
 
-  std::vector<VectorState> inputs;
+  std::vector<BoltVector> inputs;
   for (uint32_t i = 0; i < 4; i++) {
-    inputs.push_back(VectorState::makeDenseState(
-        _dense_data_values.at(i).data(), prev_errors_calc.at(i).data(),
-        prev_errors_calc.at(i).size()));
+    inputs.push_back(BoltVector::makeDenseState(_dense_data_values.at(i).data(),
+                                                prev_errors_calc.at(i).data(),
+                                                prev_errors_calc.at(i).size()));
   }
 
-  BatchState outputs = _layer->createBatchState(4, true);
+  BoltBatch outputs = _layer->createBatchState(4, true);
 
   for (uint32_t i = 0; i < 4; i++) {
     _layer->forward(inputs[i], outputs[i], nullptr, 0);
@@ -255,14 +255,14 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSparseTest) {
       std::vector<float>(6, 0), std::vector<float>(7, 0),
       std::vector<float>(6, 0), std::vector<float>(5, 0)};
 
-  std::vector<VectorState> inputs;
+  std::vector<BoltVector> inputs;
   for (uint32_t i = 0; i < 4; i++) {
-    inputs.push_back(VectorState(
+    inputs.push_back(BoltVector(
         _sparse_data_indices.at(i).data(), _sparse_data_values.at(i).data(),
         prev_errors_calc.at(i).data(), prev_errors_calc.at(i).size()));
   }
 
-  BatchState outputs = _layer->createBatchState(4);
+  BoltBatch outputs = _layer->createBatchState(4);
 
   std::vector<std::vector<uint32_t>> active_neurons = {
       {2, 3, 4, 6}, {2, 4, 6, 7}, {0, 3, 5, 6}, {1, 3, 5, 7}};
@@ -342,14 +342,14 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSparseTest) {
       std::vector<float>(10, 0), std::vector<float>(10, 0),
       std::vector<float>(10, 0), std::vector<float>(10, 0)};
 
-  std::vector<VectorState> inputs;
+  std::vector<BoltVector> inputs;
   for (uint32_t i = 0; i < 4; i++) {
-    inputs.push_back(VectorState::makeDenseState(
-        _dense_data_values.at(i).data(), prev_errors_calc.at(i).data(),
-        prev_errors_calc.at(i).size()));
+    inputs.push_back(BoltVector::makeDenseState(_dense_data_values.at(i).data(),
+                                                prev_errors_calc.at(i).data(),
+                                                prev_errors_calc.at(i).size()));
   }
 
-  BatchState outputs = _layer->createBatchState(4);
+  BoltBatch outputs = _layer->createBatchState(4);
 
   std::vector<std::vector<uint32_t>> active_neurons = {
       {2, 3, 4, 6}, {2, 4, 6, 7}, {0, 3, 5, 6}, {1, 3, 5, 7}};
@@ -431,14 +431,14 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSparseTest) {
 TEST_F(FullyConnectedLayerTestFixture, DenseSoftmaxTest) {
   makeSoftmax();
 
-  std::vector<VectorState> inputs;
+  std::vector<BoltVector> inputs;
   for (uint32_t i = 0; i < 4; i++) {
-    inputs.push_back(VectorState::makeSparseInputState(
+    inputs.push_back(BoltVector::makeSparseInputState(
         _sparse_data_indices.at(i).data(), _sparse_data_values.at(i).data(),
         _sparse_data_indices.at(i).size()));
   }
 
-  BatchState outputs = _layer->createBatchState(4, true);
+  BoltBatch outputs = _layer->createBatchState(4, true);
 
   for (uint32_t i = 0; i < 4; i++) {
     _layer->forward(inputs[i], outputs[i], nullptr, 0);
@@ -487,14 +487,14 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSoftmaxTest) {
 TEST_F(FullyConnectedLayerTestFixture, SparseSoftmaxTest) {
   makeSoftmax();
 
-  std::vector<VectorState> inputs;
+  std::vector<BoltVector> inputs;
   for (uint32_t i = 0; i < 4; i++) {
-    inputs.push_back(VectorState::makeSparseInputState(
+    inputs.push_back(BoltVector::makeSparseInputState(
         _sparse_data_indices.at(i).data(), _sparse_data_values.at(i).data(),
         _sparse_data_indices.at(i).size()));
   }
 
-  BatchState outputs = _layer->createBatchState(4);
+  BoltBatch outputs = _layer->createBatchState(4);
 
   std::vector<std::vector<uint32_t>> active_neurons = {
       {2, 3, 4, 6}, {2, 4, 6, 7}, {0, 3, 5, 6}, {1, 3, 5, 7}};
@@ -539,14 +539,14 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSoftmaxTest) {
 TEST_F(FullyConnectedLayerTestFixture, DenseLayerDenseTruthMeanSquaredTest) {
   makeMeanSquared();
 
-  std::vector<VectorState> inputs;
+  std::vector<BoltVector> inputs;
   for (uint32_t i = 0; i < 4; i++) {
-    inputs.push_back(VectorState::makeSparseInputState(
+    inputs.push_back(BoltVector::makeSparseInputState(
         _sparse_data_indices.at(i).data(), _sparse_data_values.at(i).data(),
         _sparse_data_indices.at(i).size()));
   }
 
-  BatchState outputs = _layer->createBatchState(4, true);
+  BoltBatch outputs = _layer->createBatchState(4, true);
 
   for (uint32_t i = 0; i < 4; i++) {
     _layer->forward(inputs[i], outputs[i], nullptr, 0);
@@ -595,14 +595,14 @@ TEST_F(FullyConnectedLayerTestFixture, DenseLayerDenseTruthMeanSquaredTest) {
 TEST_F(FullyConnectedLayerTestFixture, DenseLayerSparseTruthMeanSquaredTest) {
   makeMeanSquared();
 
-  std::vector<VectorState> inputs;
+  std::vector<BoltVector> inputs;
   for (uint32_t i = 0; i < 4; i++) {
-    inputs.push_back(VectorState::makeSparseInputState(
+    inputs.push_back(BoltVector::makeSparseInputState(
         _sparse_data_indices.at(i).data(), _sparse_data_values.at(i).data(),
         _sparse_data_indices.at(i).size()));
   }
 
-  BatchState outputs = _layer->createBatchState(4, true);
+  BoltBatch outputs = _layer->createBatchState(4, true);
 
   for (uint32_t i = 0; i < 4; i++) {
     _layer->forward(inputs[i], outputs[i], nullptr, 0);
@@ -651,14 +651,14 @@ TEST_F(FullyConnectedLayerTestFixture, DenseLayerSparseTruthMeanSquaredTest) {
 TEST_F(FullyConnectedLayerTestFixture, SparseLayerSparseTruthMeanSquaredTest) {
   makeMeanSquared();
 
-  std::vector<VectorState> inputs;
+  std::vector<BoltVector> inputs;
   for (uint32_t i = 0; i < 4; i++) {
-    inputs.push_back(VectorState::makeSparseInputState(
+    inputs.push_back(BoltVector::makeSparseInputState(
         _sparse_data_indices.at(i).data(), _sparse_data_values.at(i).data(),
         _sparse_data_indices.at(i).size()));
   }
 
-  BatchState outputs = _layer->createBatchState(4);
+  BoltBatch outputs = _layer->createBatchState(4);
 
   std::vector<std::vector<uint32_t>> active_neurons = {
       {2, 3, 4, 6}, {2, 4, 6, 7}, {0, 3, 5, 6}, {1, 3, 5, 7}};
@@ -712,14 +712,14 @@ TEST_F(FullyConnectedLayerTestFixture, SparseLayerSparseTruthMeanSquaredTest) {
 TEST_F(FullyConnectedLayerTestFixture, SparseLayerDenseTruthMeanSquaredTest) {
   makeMeanSquared();
 
-  std::vector<VectorState> inputs;
+  std::vector<BoltVector> inputs;
   for (uint32_t i = 0; i < 4; i++) {
-    inputs.push_back(VectorState::makeSparseInputState(
+    inputs.push_back(BoltVector::makeSparseInputState(
         _sparse_data_indices.at(i).data(), _sparse_data_values.at(i).data(),
         _sparse_data_indices.at(i).size()));
   }
 
-  BatchState outputs = _layer->createBatchState(4);
+  BoltBatch outputs = _layer->createBatchState(4);
 
   std::vector<std::vector<uint32_t>> active_neurons = {
       {2, 3, 4, 6}, {2, 4, 6, 7}, {0, 3, 5, 6}, {1, 3, 5, 7}};
