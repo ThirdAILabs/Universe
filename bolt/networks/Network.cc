@@ -161,7 +161,7 @@ template float Network::predict<dataset::DenseBatch>(
 
 template <typename BATCH_T>
 float Network::predict(const dataset::InMemoryDataset<BATCH_T>& test_data,
-                    uint32_t batch_limit) {
+                       uint32_t batch_limit) {
   uint32_t batch_size = test_data[0].getBatchSize();
 
   uint64_t num_test_batches = std::min(test_data.numBatches(), batch_limit);

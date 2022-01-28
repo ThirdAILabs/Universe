@@ -14,12 +14,12 @@ template <>
 BoltVector BoltVector::makeInputStateFromBatch<dataset::DenseBatch>(
     const dataset::DenseBatch& input_batch, uint32_t i) {
   return BoltVector::makeDenseInputState(input_batch[i]._values,
-                                          input_batch[i].dim());
+                                         input_batch[i].dim());
 }
 
 template <typename BATCH_T>
 BoltVector BoltVector::makeInputStateFromBatch(const BATCH_T& input_batch,
-                                                 uint32_t i) {
+                                               uint32_t i) {
   (void)input_batch;
   (void)i;
   throw std::invalid_argument("Input batch type is not supported.");

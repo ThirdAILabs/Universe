@@ -33,7 +33,7 @@ class Network {
    */
   template <typename BATCH_T>
   float predict(const dataset::InMemoryDataset<BATCH_T>& test_data,
-             uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
+                uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
   void createBatchStates(uint32_t batch_size, bool force_dense);
 

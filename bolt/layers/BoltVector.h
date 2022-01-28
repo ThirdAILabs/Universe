@@ -79,7 +79,7 @@ class BoltBatch {
     for (uint32_t i = 0; i < batch_size; i++) {
       uint32_t* an_ptr = is_dense ? nullptr : _active_neurons_buf + (i * dim);
       _vector_states[i] = BoltVector(an_ptr, _activations_buf + (i * dim),
-                                      _gradients_buf + (i * dim), dim);
+                                     _gradients_buf + (i * dim), dim);
     }
   }
 
@@ -134,8 +134,8 @@ class BoltBatch {
     std::cout << "-------------------------------------------------------------"
               << std::endl;
     for (uint32_t i = 0; i < state._batch_size; i++) {
-      std::cout << "Vector: " << i << ":\n" << state._vector_states[i]
-                << std::endl;
+      std::cout << "Vector: " << i << ":\n"
+                << state._vector_states[i] << std::endl;
     }
     std::cout << "-------------------------------------------------------------"
               << std::endl;
