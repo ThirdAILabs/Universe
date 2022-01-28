@@ -162,7 +162,7 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
         examples,
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
         labels,
-    uint32_t batch_size, uint64_t starting_id, bool copy_data) {
+    uint32_t batch_size, uint64_t starting_id) {
   // Get information from examples
 
   const py::buffer_info examples_buf = examples.request();
@@ -208,16 +208,9 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
     for (uint64_t vec_idx = start_vec_idx; vec_idx < end_vec_idx; ++vec_idx) {
       // owns_data = false because we don't want the numpy array to be deleted
       // if this batch (and thus the underlying vectors) get deleted
-      bool owns_data = copy_data;
-      if (copy_data) {
-        float* data = new float[dimension];
-        std::memcpy(data, examples_raw_data + dimension * vec_idx, dimension * sizeof(float));
-        batch_vectors.emplace_back(
-            dimension, data, owns_data);
-      } else {
-        batch_vectors.emplace_back(
+      bool owns_data = false;
+      batch_vectors.emplace_back(
             dimension, examples_raw_data + dimension * vec_idx, owns_data);
-      }
       batch_labels.push_back({labels_raw_data[vec_idx]});
     }
 
@@ -227,15 +220,5 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
 
   return InMemoryDataset(std::move(batches), num_examples);
 }
-
-InMemoryDataset<DenseBatch> copyNumpyToInMemoryDataset(
-    const py::array_t<float, py::array::c_style | py::array::forcecast>&
-        examples,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        labels,
-    uint32_t batch_size, uint64_t starting_id) {
-        return denseInMemoryDatasetFromNumpy(examples, labels, batch_size, starting_id, true);
-    }
-
 
 }  // namespace thirdai::dataset::python
