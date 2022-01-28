@@ -1,24 +1,24 @@
-#include "Layer.h"
+#include "BoltVector.h"
 #include <dataset/src/Dataset.h>
 
 namespace thirdai::bolt {
 
 template <>
-VectorState VectorState::makeInputStateFromBatch<dataset::SparseBatch>(
+BoltVector BoltVector::makeInputStateFromBatch<dataset::SparseBatch>(
     const dataset::SparseBatch& input_batch, uint32_t i) {
-  return VectorState::makeSparseInputState(
+  return BoltVector::makeSparseInputState(
       input_batch[i]._indices, input_batch[i]._values, input_batch[i].length());
 }
 
 template <>
-VectorState VectorState::makeInputStateFromBatch<dataset::DenseBatch>(
+BoltVector BoltVector::makeInputStateFromBatch<dataset::DenseBatch>(
     const dataset::DenseBatch& input_batch, uint32_t i) {
-  return VectorState::makeDenseInputState(input_batch[i]._values,
+  return BoltVector::makeDenseInputState(input_batch[i]._values,
                                           input_batch[i].dim());
 }
 
 template <typename BATCH_T>
-VectorState VectorState::makeInputStateFromBatch(const BATCH_T& input_batch,
+BoltVector BoltVector::makeInputStateFromBatch(const BATCH_T& input_batch,
                                                  uint32_t i) {
   (void)input_batch;
   (void)i;

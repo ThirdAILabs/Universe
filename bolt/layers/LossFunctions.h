@@ -1,13 +1,13 @@
 #pragma once
 
-#include "Layer.h"
+#include "BoltVector.h"
 
 namespace thirdai::bolt {
 
 class SparseCategoricalCrossEntropyLoss {
  private:
   template <bool DENSE>
-  void computeLoss(VectorState& output, uint32_t batch_size,
+  void computeLoss(BoltVector& output, uint32_t batch_size,
                    const uint32_t* labels, uint32_t label_len) const {
     float frac = 1.0 / label_len;
 
@@ -25,7 +25,7 @@ class SparseCategoricalCrossEntropyLoss {
   }
 
  public:
-  void operator()(VectorState& output, uint32_t batch_size,
+  void operator()(BoltVector& output, uint32_t batch_size,
                   const uint32_t* labels, uint32_t label_len) const {
     if (output.active_neurons == nullptr) {
       computeLoss<true>(output, batch_size, labels, label_len);
@@ -39,7 +39,7 @@ class SparseCategoricalCrossEntropyLoss {
 class MeanSquaredError {
  private:
   template <bool DENSE, bool TRUTH_DENSE>
-  void computeLoss(VectorState& output, uint32_t batch_size,
+  void computeLoss(BoltVector& output, uint32_t batch_size,
                    const uint32_t* truth_indices, const float* truth_values,
                    uint32_t truth_len) const {
     for (uint64_t n = 0; n < output.len; n++) {
@@ -63,7 +63,7 @@ class MeanSquaredError {
   }
 
  public:
-  void operator()(VectorState& output, uint32_t batch_size,
+  void operator()(BoltVector& output, uint32_t batch_size,
                   const uint32_t* truth_indices, const float* truth_values,
                   uint32_t truth_len) const {
     if (output.active_neurons == nullptr) {

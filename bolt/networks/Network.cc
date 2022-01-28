@@ -25,7 +25,7 @@ Network::Network(std::vector<FullyConnectedLayerConfig> configs,
   _num_layers = _configs.size();
   _layers = new FullyConnectedLayer*[_num_layers];
   _states =
-      new BatchState[_num_layers - 1]();  // No stored state for output layer
+      new BoltBatch[_num_layers - 1]();  // No stored state for output layer
 
   std::cout << "====== Building Fully Connected Network ======" << std::endl;
 
@@ -93,7 +93,7 @@ std::vector<int64_t> Network::train(
 
   std::vector<int64_t> time_per_epoch;
 
-  BatchState outputs = _layers[_num_layers - 1]->createBatchState(batch_size);
+  BoltBatch outputs = _layers[_num_layers - 1]->createBatchState(batch_size);
 
   SparseCategoricalCrossEntropyLoss loss;
 
@@ -111,8 +111,8 @@ std::vector<int64_t> Network::train(
 
 #pragma omp parallel for default(none) shared(input_batch, outputs, loss)
       for (uint32_t i = 0; i < input_batch.getBatchSize(); i++) {
-        VectorState input =
-            VectorState::makeInputStateFromBatch<BATCH_T>(input_batch, i);
+        BoltVector input =
+            BoltVector::makeInputStateFromBatch<BATCH_T>(input_batch, i);
 
         this->forward(i, input, outputs[i], input_batch.labels(i).data(),
                       input_batch.labels(i).size());
@@ -151,16 +151,16 @@ std::vector<int64_t> Network::train(
   return time_per_epoch;
 }
 
-template float Network::test<dataset::SparseBatch>(
+template float Network::predict<dataset::SparseBatch>(
     const dataset::InMemoryDataset<dataset::SparseBatch>& test_data,
     uint32_t batch_limit);
 
-template float Network::test<dataset::DenseBatch>(
+template float Network::predict<dataset::DenseBatch>(
     const dataset::InMemoryDataset<dataset::DenseBatch>& test_data,
     uint32_t batch_limit);
 
 template <typename BATCH_T>
-float Network::test(const dataset::InMemoryDataset<BATCH_T>& test_data,
+float Network::predict(const dataset::InMemoryDataset<BATCH_T>& test_data,
                     uint32_t batch_limit) {
   uint32_t batch_size = test_data[0].getBatchSize();
 
@@ -170,7 +170,7 @@ float Network::test(const dataset::InMemoryDataset<BATCH_T>& test_data,
   // a batch size larger than this so we can just set the batch size here.
   this->createBatchStates(batch_size, true);
 
-  BatchState outputs = _layers[_num_layers - 1]->createBatchState(
+  BoltBatch outputs = _layers[_num_layers - 1]->createBatchState(
       batch_size, !_layers[_num_layers - 1]->isForceSparsity());
 
   std::atomic<uint32_t> correct{0};
@@ -182,7 +182,7 @@ float Network::test(const dataset::InMemoryDataset<BATCH_T>& test_data,
 
 #pragma omp parallel for default(none) shared(input_batch, outputs, correct)
     for (uint32_t i = 0; i < input_batch.getBatchSize(); i++) {
-      VectorState input = VectorState::makeInputStateFromBatch(input_batch, i);
+      BoltVector input = BoltVector::makeInputStateFromBatch(input_batch, i);
 
       this->forward(i, input, outputs[i], nullptr, 0);
 
@@ -228,8 +228,8 @@ float Network::test(const dataset::InMemoryDataset<BATCH_T>& test_data,
   return accuracy;
 }
 
-void Network::forward(uint32_t batch_index, const VectorState& input,
-                      VectorState& output, const uint32_t* labels,
+void Network::forward(uint32_t batch_index, const BoltVector& input,
+                      BoltVector& output, const uint32_t* labels,
                       uint32_t label_len) {
   for (uint32_t i = 0; i < _num_layers; i++) {
     if (i == 0 && _num_layers == 1) {  // First and last layer
@@ -245,14 +245,12 @@ void Network::forward(uint32_t batch_index, const VectorState& input,
   }
 }
 
-template void Network::backpropagate<true>(uint32_t, VectorState&,
-                                           VectorState&);
-template void Network::backpropagate<false>(uint32_t, VectorState&,
-                                            VectorState&);
+template void Network::backpropagate<true>(uint32_t, BoltVector&, BoltVector&);
+template void Network::backpropagate<false>(uint32_t, BoltVector&, BoltVector&);
 
 template <bool FROM_INPUT>
-void Network::backpropagate(uint32_t batch_index, VectorState& input,
-                            VectorState& output) {
+void Network::backpropagate(uint32_t batch_index, BoltVector& input,
+                            BoltVector& output) {
   for (uint32_t i = _num_layers; i > 0; i--) {
     uint32_t layer = i - 1;
     if (layer == 0 && _num_layers == 1) {  // First and last layer
