@@ -228,4 +228,14 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
   return InMemoryDataset(std::move(batches), num_examples);
 }
 
+InMemoryDataset<DenseBatch> copyNumpyToInMemoryDataset(
+    const py::array_t<float, py::array::c_style | py::array::forcecast>&
+        examples,
+    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+        labels,
+    uint32_t batch_size, uint64_t starting_id) {
+        return denseInMemoryDatasetFromNumpy(examples, labels, batch_size, starting_id, true);
+    }
+
+
 }  // namespace thirdai::dataset::python
