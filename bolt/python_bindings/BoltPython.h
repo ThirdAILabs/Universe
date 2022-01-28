@@ -65,8 +65,19 @@ class PyNetwork final : public Network {
       uint32_t batch_size, float learning_rate, uint32_t epochs,
       uint64_t starting_id, uint32_t rehash, uint32_t rebuild) {
     auto data = thirdai::dataset::python::denseInMemoryDatasetFromNumpy(
-        examples, labels, batch_size, starting_id);
+        examples, labels, batch_size, starting_id, false);
     return train(data, learning_rate, epochs, rehash, rebuild);
+  }
+
+  float testWithDenseNumpyArray(
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          examples,
+      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+          labels,
+      uint32_t batch_size, uint64_t starting_id, uint32_t batch_limit) {
+    auto data = thirdai::dataset::python::denseInMemoryDatasetFromNumpy(
+        examples, labels, batch_size, starting_id, false);
+    return test(data, batch_limit);
   }
 };
 

@@ -20,10 +20,10 @@ def train_mnist_sparse_output_layer(args):
     epoch_times = []
     epoch_accuracies = []
     for _ in range(args.epochs):
-        times = network.Train(train_data, args.lr, 1,
+        times = network.train(train_data, args.lr, 1,
                               rehash=3000, rebuild=10000)
         epoch_times.append(times[0])
-        acc = network.Test(test_data)
+        acc = network.test(test_data)
         epoch_accuracies.append(acc)
     return epoch_accuracies[-1], epoch_accuracies, epoch_times
 
@@ -44,10 +44,10 @@ def train_mnist_sparse_hidden_layer(args):
     epoch_times = []
     epoch_accuracies = []
     for _ in range(args.epochs):
-        times = network.Train(train_data, args.lr, 1,
+        times = network.train(train_data, args.lr, 1,
                               rehash=3000, rebuild=10000)
         epoch_times.append(times[0])
-        acc = network.Test(test_data)
+        acc = network.test(test_data)
         epoch_accuracies.append(acc)
     return epoch_accuracies[-1], epoch_accuracies, epoch_times
 
@@ -68,12 +68,12 @@ def train_amzn670(args):
     epoch_times = []
     epoch_accuracies = []
     for _ in range(args.epochs):
-        times = network.Train(train_data, args.lr, 1,
+        times = network.train(train_data, args.lr, 1,
                               rehash=6400, rebuild=128000)
         epoch_times.append(times[0])
-        acc = network.Test(test_data, batch_limit=20)
+        acc = network.test(test_data, batch_limit=20)
         epoch_accuracies.append(acc)
-    final_accuracy = network.Test(test_data)
+    final_accuracy = network.test(test_data)
     return final_accuracy, epoch_accuracies, epoch_times
 
 

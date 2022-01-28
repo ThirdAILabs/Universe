@@ -29,6 +29,10 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def("loadCSVDataset", &loadCSVDataset, py::arg("filename"),
                         py::arg("batch_size"), py::arg("delimiter") = ",");
+
+  dataset_submodule.def("copyNumpyToInMemoryDataset", &copyNumpyToInMemoryDataset,
+                        py::arg("examples"), py::arg("labels"), py::arg("batch_size"), 
+                        py::arg("starting_id") = 0);                        
 }
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
@@ -158,7 +162,7 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
         examples,
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
         labels,
-    uint32_t batch_size, uint64_t starting_id) {
+    uint32_t batch_size, uint64_t starting_id, bool copy_data=false) {
   // Get information from examples
 
   const py::buffer_info examples_buf = examples.request();
@@ -204,10 +208,17 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
     for (uint64_t vec_idx = start_vec_idx; vec_idx < end_vec_idx; ++vec_idx) {
       // owns_data = false because we don't want the numpy array to be deleted
       // if this batch (and thus the underlying vectors) get deleted
-      bool owns_data = false;
-      batch_vectors.emplace_back(
-          dimension, examples_raw_data + dimension * vec_idx, owns_data);
-      batch_labels.push_back({*(labels_raw_data + vec_idx)});
+      bool owns_data = copy_data;
+      if (copy_data) {
+        float* data = new float[dimension];
+        std::memcpy(data, examples_raw_data + dimension * vec_idx, dimension * sizeof(float));
+        batch_vectors.emplace_back(
+            dimension, data, owns_data);
+      } else {
+        batch_vectors.emplace_back(
+            dimension, examples_raw_data + dimension * vec_idx, owns_data);
+      }
+      batch_labels.push_back({labels_raw_data[vec_idx]});
     }
 
     batches.emplace_back(std::move(batch_vectors), std::move(batch_labels),
