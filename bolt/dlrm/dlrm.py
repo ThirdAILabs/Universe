@@ -45,6 +45,6 @@ dlrm = bolt.DLRM(embedding, bottom_mlp, top_mlp, 13)
 
 for i in range(10):
     dlrm.Train(train_data, learning_rate=0.001, epochs=1, rehash=300, rebuild=500)
-    scores = dlrm.Test(test_data)
+    scores = dlrm.Predict(test_data)
     auc = roc_auc_score(test_labels, scores)
     print('AUC: ',auc)

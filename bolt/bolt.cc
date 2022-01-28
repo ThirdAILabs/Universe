@@ -1,4 +1,3 @@
-#include "layers/Layer.h"
 #include "networks/Network.h"
 #include "utils/ConfigReader.h"
 #include <dataset/src/Dataset.h>
@@ -71,9 +70,9 @@ int main(int argc, char** argv) {
 
       network.train<dataset::SparseBatch>(train_data, learning_rate, 1, rehash,
                                           rebuild);
-      network.test<dataset::SparseBatch>(test_data, max_test_batches);
+      network.predict<dataset::SparseBatch>(test_data, max_test_batches);
     }
-    network.test(test_data);
+    network.predict(test_data);
   } else if (config.strVal("dataset_format") == "csv") {
     if (!config.valExists("csv_delimiter")) {
       std::cerr << "csv_delimiter is not specified in the config file."
@@ -96,9 +95,9 @@ int main(int argc, char** argv) {
 
       network.train<dataset::DenseBatch>(train_data, learning_rate, 1, rehash,
                                          rebuild);
-      network.test<dataset::DenseBatch>(test_data, max_test_batches);
+      network.predict<dataset::DenseBatch>(test_data, max_test_batches);
     }
-    network.test(test_data);
+    network.predict(test_data);
   } else {
     std::cerr << "The dataset format " << config.strVal("dataset_format")
               << " is not supported." << std::endl;

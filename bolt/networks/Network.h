@@ -32,17 +32,17 @@ class Network {
    * training with large datasets.
    */
   template <typename BATCH_T>
-  float test(const dataset::InMemoryDataset<BATCH_T>& test_data,
-             uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
+  float predict(const dataset::InMemoryDataset<BATCH_T>& test_data,
+                uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
   void createBatchStates(uint32_t batch_size, bool force_dense);
 
-  void forward(uint32_t batch_index, const VectorState& input,
-               VectorState& output, const uint32_t* labels, uint32_t label_len);
+  void forward(uint32_t batch_index, const BoltVector& input,
+               BoltVector& output, const uint32_t* labels, uint32_t label_len);
 
   template <bool FROM_INPUT>
-  void backpropagate(uint32_t batch_index, VectorState& input,
-                     VectorState& output);
+  void backpropagate(uint32_t batch_index, BoltVector& input,
+                     BoltVector& output);
 
   void updateParameters(float learning_rate);
 
@@ -95,7 +95,7 @@ class Network {
   std::vector<FullyConnectedLayerConfig> _configs;
   uint64_t _input_dim;
   FullyConnectedLayer** _layers;
-  BatchState* _states;
+  BoltBatch* _states;
   uint32_t _num_layers;
   uint32_t _iter;
   uint32_t _epoch_count;

@@ -90,11 +90,11 @@ class PyDLRM final : public DLRM {
       : DLRM(embedding_config, std::move(bottom_mlp_configs),
              std::move(top_mlp_configs), input_dim) {}
 
-  py::array_t<float> test(
+  py::array_t<float> predict(
       const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data) {
     py::array_t<float> scores({static_cast<uint32_t>(test_data.len())});
 
-    DLRM::test(test_data, scores.mutable_data());
+    DLRM::predict(test_data, scores.mutable_data());
 
     return scores;
   }

@@ -62,7 +62,7 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
 TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
   std::vector<uint32_t> tokens = {6};
 
-  BatchState output = _layer->createBatchState(tokens.size());
+  BoltBatch output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
     _layer->forward(i, {tokens[i]}, output[i]);
@@ -88,7 +88,7 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbedding) {
   std::vector<std::vector<uint32_t>> tokens = {
       {7, 4, 18}, {98, 34, 55, 2}, {9, 24}, {61, 75, 11}};
 
-  BatchState output = _layer->createBatchState(tokens.size());
+  BoltBatch output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
     _layer->forward(i, tokens[i], output[i]);
@@ -118,7 +118,7 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
   std::vector<std::vector<uint32_t>> tokens = {
       {7, 4, 18}, {98, 34, 55, 2}, {9, 24}, {61, 75, 11}};
 
-  BatchState output = _layer->createBatchState(tokens.size());
+  BoltBatch output = _layer->createBatchState(tokens.size());
 
   for (uint32_t i = 0; i < tokens.size(); i++) {
     _layer->forward(i, tokens[i], output[i]);
