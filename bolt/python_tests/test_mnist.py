@@ -36,7 +36,7 @@ def train_mnist_sparse_output_layer(args):
 		times = network.Train(train_data, args.lr, 1,
 													rehash=3000, rebuild=10000)
 		epoch_times.append(times[0])
-		acc = network.Test(test_data)
+		acc = network.Predict(test_data)
 		epoch_accuracies.append(acc)
 
 	return epoch_accuracies[-1], epoch_accuracies, epoch_times
@@ -61,7 +61,7 @@ def train_mnist_sparse_hidden_layer(args):
 		times = network.Train(train_data, args.lr, 1,
 													rehash=3000, rebuild=10000)
 		epoch_times.append(times[0])
-		acc = network.Test(test_data)
+		acc = network.Predict(test_data)
 		epoch_accuracies.append(acc)
 	return epoch_accuracies[-1], epoch_accuracies, epoch_times
 

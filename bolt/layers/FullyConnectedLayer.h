@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Layer.h"
+#include "BoltVector.h"
 #include "LayerConfig.h"
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
@@ -26,20 +26,20 @@ class FullyConnectedLayer final {
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
                       uint64_t prev_dim);
 
-  void forward(const VectorState& input, VectorState& output,
+  void forward(const BoltVector& input, BoltVector& output,
                const uint32_t* labels = nullptr, uint32_t label_len = 0);
 
-  void backpropagate(VectorState& input, VectorState& output);
+  void backpropagate(BoltVector& input, BoltVector& output);
 
-  void backpropagateInputLayer(VectorState& input, VectorState& output);
+  void backpropagateInputLayer(BoltVector& input, BoltVector& output);
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
-  BatchState createBatchState(const uint32_t batch_size,
-                              bool force_dense = false) const {
+  BoltBatch createBatchState(const uint32_t batch_size,
+                             bool force_dense = false) const {
     bool is_dense = (_sparse_dim == _dim) || force_dense;
 
-    return BatchState(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
+    return BoltBatch(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
   }
 
   void forceSparseForInference() {
@@ -64,14 +64,14 @@ class FullyConnectedLayer final {
 
  private:
   template <bool DENSE, bool PREV_DENSE>
-  void forwardImpl(const VectorState& input, VectorState& output,
+  void forwardImpl(const BoltVector& input, BoltVector& output,
                    const uint32_t* labels, uint32_t label_len);
 
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
-  void backpropagateImpl(VectorState& input, VectorState& output);
+  void backpropagateImpl(BoltVector& input, BoltVector& output);
 
   template <bool DENSE, bool PREV_DENSE>
-  void selectActiveNeurons(const VectorState& input, VectorState& output,
+  void selectActiveNeurons(const BoltVector& input, BoltVector& output,
                            const uint32_t* labels, uint32_t label_len);
 
   constexpr float actFuncDerivative(float x);

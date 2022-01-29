@@ -38,10 +38,10 @@ void createBoltSubmodule(py::module_& module) {
       .def("Train", &PyNetwork::train<thirdai::dataset::DenseBatch>,
            py::arg("train_data"), py::arg("learning_rate"), py::arg("epochs"),
            py::arg("rehash") = 0, py::arg("rebuild") = 0)
-      .def("Test", &PyNetwork::test<thirdai::dataset::SparseBatch>,
+      .def("Predict", &PyNetwork::predict<thirdai::dataset::SparseBatch>,
            py::arg("test_data"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
-      .def("Test", &PyNetwork::test<thirdai::dataset::DenseBatch>,
+      .def("Predict", &PyNetwork::predict<thirdai::dataset::DenseBatch>,
            py::arg("test_data"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
       .def("UseSparseInference", &PyNetwork::useSparseInference)
@@ -63,7 +63,7 @@ void createBoltSubmodule(py::module_& module) {
       .def("Train", &PyDLRM::train, py::arg("train_data"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash"),
            py::arg("rebuild"))
-      .def("Test", &PyDLRM::test, py::arg("test_data"));
+      .def("Predict", &PyDLRM::predict, py::arg("test_data"));
 }
 
 }  // namespace thirdai::bolt::python
