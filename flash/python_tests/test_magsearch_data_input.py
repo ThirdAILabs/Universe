@@ -67,5 +67,3 @@ def test_exact_duplicate_sparse():
   results = index.query(sparse_query_values=data_values, sparse_query_indices=data_indices, top_k=5)
   for i in range(len(results)):
     assert results[i][0] == i
-
-test_exact_duplicate_sparse()
