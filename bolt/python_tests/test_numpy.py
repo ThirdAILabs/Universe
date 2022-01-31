@@ -2,11 +2,9 @@ import numpy as np
 import pytest
 from thirdai import bolt
 
+
 def train_simple_bolt_model(examples, labels):
-    layers = [
-        bolt.LayerConfig(dim=10, load_factor=1,
-                            activation_function="Softmax")
-    ]
+    layers = [bolt.LayerConfig(dim=10, load_factor=1, activation_function="Softmax")]
     network = bolt.Network(layers=layers, input_dim=10)
 
     batch_size = 64
@@ -15,8 +13,9 @@ def train_simple_bolt_model(examples, labels):
 
     network.train(examples, labels, batch_size, learning_rate, epochs)
     acc = network.predict(examples, labels, batch_size)
-    
+
     return acc
+
 
 @pytest.mark.unit
 def test_read_easy_mock_data():
@@ -34,6 +33,7 @@ def test_read_easy_mock_data():
     acc = train_simple_bolt_model(examples, labels)
     assert acc > 0.99
 
+
 @pytest.mark.unit
 def test_read_noise():
     """
@@ -46,5 +46,3 @@ def test_read_noise():
 
     acc = train_simple_bolt_model(examples, labels)
     assert acc < 0.2
-
-
