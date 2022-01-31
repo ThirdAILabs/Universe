@@ -41,7 +41,7 @@ def train(args, train_fn, accuracy_threshold, epoch_time_threshold=100, total_ti
 
       if args.enable_checks:
         assert final_accuracies[-1] > accuracy_threshold
-        assert final_epoch_times[-1] > epoch_time_threshold
-        assert total_times[-1] > total_time_threshold
+        assert final_epoch_times[-1] < epoch_time_threshold
+        assert total_times[-1] < total_time_threshold
 
     return final_accuracies, final_epoch_times
