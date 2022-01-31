@@ -43,7 +43,6 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("batch_size"), py::arg("learning_rate"), py::arg("epochs"),
            py::arg("starting_id") = 0, py::arg("rehash") = 0,
            py::arg("rebuild") = 0) 
-           // Later down the line, we can have loadAndTrain that accepts file datasets as well (polymorphism).
       .def("predict", &PyNetwork::predict<thirdai::dataset::SparseBatch>,
            py::arg("test_data"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
