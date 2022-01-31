@@ -10,3 +10,7 @@ apt install clang-tidy -y
 
 # Append Universe build directory to PYTHONPATH on interactive shell startup
 echo "export PYTHONPATH=~/Universe/build:$PYTHONPATH" >> $HOME/.bash_profile 
+
+# Install necessary python packages
+pip3 install dark
+pip3 install pytest
