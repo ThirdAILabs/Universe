@@ -49,6 +49,9 @@ for best performance).
 ## Installing python bindings
 1. The building target `thirdai` will compile the `thirdai.so` library in the build directory. 
 This is automatically run on a full build, so you can run `bin/build.sh` as normal.
+Note this will use the version of python you get from running `which python3`, 
+and even with the PYTHONPATH changes below a different version of python will
+not be able to find the so file.
 2. To use the bindings, you need to tell python where the `thirdai.so` file is.
 To do this, you can add the so file to your PYTHONPATH environment
 variable. This will allow you to automatically use the newest built version of 
@@ -58,7 +61,7 @@ the library. To do this, you can run
 home directory). This will work until you open a new shell; to 
 automatically update your PYTHONPATH when you start your shell add the above
 command to your ~/.bash_profile or ~/.bash_rc, or equivalently run
-`echo "PYTHONPATH=~/Universe/build:$PYTHONPATH" >> $HOME/.bash_profile`. 
+`echo "export PYTHONPATH=~/Universe/build:$PYTHONPATH" >> $HOME/.bash_profile`. 
 Alternatively you can run `pip3 install .` every time you make a change to the
 source, but this will rebuild everything and possibly conflict with the last way,
 and so is not preferred.

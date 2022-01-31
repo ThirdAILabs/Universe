@@ -32,6 +32,6 @@ mkdir -p "$BASEDIR/../build"
 
 cd "$BASEDIR/../build"
 
-cmake .. -DPYTHON_EXECUTABLE=$(which python)
+cmake .. -DPYTHON_EXECUTABLE=$(which python3)
 
 make $TARGET -s -j$NUM_JOBS
