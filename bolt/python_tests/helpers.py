@@ -29,20 +29,19 @@ def train(args, train_fn, accuracy_threshold, epoch_time_threshold=100, total_ti
     final_accuracies = []
     final_epoch_times = []
     total_times = []
+
     for _ in range(args.runs):
-        final_accuracy, accuracies_per_epoch, time_per_epoch = train_fn(args)
-        final_accuracies.append(final_accuracy)
-        final_epoch_times.append(time_per_epoch[-1])
-        total_times.append(sum(time_per_epoch))
-        if args.enable_checks and final_accuracy > accuracy_threshold and time_per_epoch[-1] < epoch_time_threshold and sum(time_per_epoch) < total_time_threshold:
-            print(f"Passed training checks for {args.dataset} on {args.epochs} epochs with:\n\tFinal epoch accuracies: {final_accuracies}\n\tFinal epoch times(s): {final_epoch_times}")
-            return final_accuracies, final_epoch_times
-    if args.enable_checks:
-        if max(final_accuracies) < accuracy_threshold:
-            print(f'Epoch {args.epochs} accuracy *({max(final_accuracies)})* is lower than expected *({accuracy_threshold})*')
-        if min(final_epoch_times) > epoch_time_threshold:
-            print(f'Epoch {args.epochs} training time *({min(final_epoch_times)}))* took longer than expected *({epoch_time_threshold})*')
-        if min(total_times) > total_time_threshold:
-            print(f'Training time took longer than expected *({min(total_times)})*')
-        sys.exit(1)
+
+      final_accuracy, accuracies_per_epoch, time_per_epoch = train_fn(args)
+      final_accuracies.append(final_accuracy)
+      final_epoch_times.append(time_per_epoch[-1])
+      total_times.append(sum(time_per_epoch))
+    
+      print(f"Result of training {args.dataset} for {args.epochs} epochs:\n\tFinal epoch accuracy: {final_accuracy}\n\tFinal epoch time: {time_per_epoch}")
+
+      if args.enable_checks:
+        assert final_accuracies[-1] > accuracy_threshold
+        assert final_epoch_times[-1] < epoch_time_threshold
+        assert total_times[-1] < total_time_threshold
+
     return final_accuracies, final_epoch_times

@@ -13,12 +13,22 @@ directory. e.g. the mpi_example executable will be in
 run in parallel and build all unbuilt targets or targets whose component source
 files have been updated, but you can pass in parameters to run in serial or build
 only a specific target. See the source of `$ bin/build.sh` for more details.
-2. Run `$ bin/test.sh` from anywhere to have cmake run all tests. To run specific
+2. Run `$ bin/cpp-test.sh` from anywhere to have cmake run all c++ tests. To run specific
 tests, you can also pass a regular expression to filter tests 
 (or provide an explicit test name):
-`$ bin/test.sh -R <test filter expression>`.
+`$ bin/cpp-test.sh -R <test filter expression>`.
 Note you can actually pass any arguments you would pass to ctest to this
 script and it will forward them. 
+3. Run `$ bin/python-test.sh` from anywhere to run all python tests. To run specific
+tests, you can also pass a regular expression to filter tests 
+(or provide an explicit test name):
+`$ bin/python-test.sh -R <test filter expression>`.
+You can also filter to unit, integration, or benchmarking tests by e.g. running 
+`$ bin/python-test.sh -m unit`.
+Note you can actually pass any arguments you would pass to pytest to this
+script and it will forward them, see https://docs.pytest.org/en/6.2.x/usage.html.
+You can also directly run tests using pytest, but this script also ensures
+that the thirdai so file is on your path. 
 3. Run `$ bin/format.sh` from anywhere to format all code.
 4. Run `$ bin/lint.sh` from anywhere to run linting on all code (primarily 
 these are clang-tidy checks).
@@ -39,8 +49,23 @@ for best performance).
 ## Installing python bindings
 1. The building target `thirdai` will compile the `thirdai.so` library in the build directory. 
 This is automatically run on a full build, so you can run `bin/build.sh` as normal.
-2. To compile and install bindings, run `pip3 install .` from the root of the Universe directory. 
-This will allow them to be imported anywhere on your machine.
+Note this will use the version of python you get from running `which python3`, 
+and even with the PYTHONPATH changes below a different version of python will
+not be able to find the so file.
+2. To use the bindings, you need to tell python where the `thirdai.so` file is.
+To do this, you can add the so file to your PYTHONPATH environment
+variable. This will allow you to automatically use the newest built version of 
+the library. To do this, you can run
+`export PYTHONPATH=~/Universe/build:$PYTHONPATH`
+(replace the path with the correct one if your Universe folder is not in your
+home directory). This will work until you open a new shell; to 
+automatically update your PYTHONPATH when you start your shell add the above
+command to your ~/.bash_profile or ~/.bash_rc, or equivalently run
+`echo "export PYTHONPATH=~/Universe/build:$PYTHONPATH" >> $HOME/.bash_profile`. 
+Alternatively you can run `pip3 install .`. This installs thirdi without messing
+around with environment variables, but is not preferred for development since it
+is performs an entirely seperate parallel build from `bin/build.sh`, and so is
+much slower.
 
 ## Using cmake
 To understand how to setup a executable, library, or test using cmake please see the examples in the `examples` directory. For more context here are a few things to know: 
