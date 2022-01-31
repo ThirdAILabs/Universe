@@ -78,7 +78,7 @@ def test_mnist_sparse_output():
 		"sparsity": 0.4,
 		"lr": 0.0001,
 		"enable_checks": True,
-		"runs": 2
+		"runs": 1
 	}
 	# Turn the dictionary into the format expected by the train method, fields
 	# referencable by e.g. args.train
@@ -98,7 +98,7 @@ def test_mnist_sparse_hidden():
 		"sparsity": 0.01,
 		"lr": 0.0001,
 		"enable_checks": True,
-		"runs": 2
+		"runs": 1
 	}
 	args = namedtuple("args", args.keys())(*args.values())
 	accs, times = train(
