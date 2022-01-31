@@ -53,55 +53,26 @@ int main(int argc, char** argv) {
               << std::endl;
     return 1;
   }
-  if (config.strVal("dataset_format") == "svm") {
-    dataset::InMemoryDataset<dataset::BoltInputBatch> train_data(
-        config.strVal("train_data"), batch_size,
-        dataset::BoltSparseBatchFactory{});
+  auto train_data =
+      dataset::InMemoryDataset<dataset::BoltInputBatch>::loadBoltDataset(
+          config.strVal("train_data"), batch_size,
+          config.strVal("dataset_format"));
 
-    dataset::InMemoryDataset<dataset::BoltInputBatch> test_data(
-        config.strVal("test_data"), batch_size,
-        dataset::BoltSparseBatchFactory{});
+  auto test_data =
+      dataset::InMemoryDataset<dataset::BoltInputBatch>::loadBoltDataset(
+          config.strVal("test_data"), batch_size,
+          config.strVal("dataset_format"));
 
-    for (uint32_t e = 0; e < epochs; e++) {
-      if ((switch_inference_epoch > 0) && e == switch_inference_epoch) {
-        std::cout << "Freezing Selection for Sparse Inference" << std::endl;
-        network.useSparseInference();
-      }
-
-      network.train(train_data, learning_rate, 1, rehash, rebuild);
-      network.predict(test_data, max_test_batches);
+  for (uint32_t e = 0; e < epochs; e++) {
+    if ((switch_inference_epoch > 0) && e == switch_inference_epoch) {
+      std::cout << "Freezing Selection for Sparse Inference" << std::endl;
+      network.useSparseInference();
     }
-    network.predict(test_data);
-  } else if (config.strVal("dataset_format") == "csv") {
-    if (!config.valExists("csv_delimiter")) {
-      std::cerr << "csv_delimiter is not specified in the config file."
-                << std::endl;
-      return 1;
-    }
-    // dataset::InMemoryDataset<dataset::DenseBatch> train_data(
-    //     config.strVal("train_data"), batch_size,
-    //     dataset::CsvDenseBatchFactory(config.strVal("csv_delimiter").at(0)));
 
-    // dataset::InMemoryDataset<dataset::DenseBatch> test_data(
-    //     config.strVal("test_data"), batch_size,
-    //     dataset::CsvDenseBatchFactory(config.strVal("csv_delimiter").at(0)));
-
-    // for (uint32_t e = 0; e < epochs; e++) {
-    //   if ((switch_inference_epoch > 0) && e == switch_inference_epoch) {
-    //     std::cout << "Freezing Selection for Sparse Inference" << std::endl;
-    //     network.useSparseInference();
-    //   }
-
-    //   network.train(train_data, learning_rate, 1, rehash,
-    //                                      rebuild);
-    //   network.test(test_data, max_test_batches);
-    // }
-    // network.test(test_data);
-  } else {
-    std::cerr << "The dataset format " << config.strVal("dataset_format")
-              << " is not supported." << std::endl;
-    return 1;
+    network.train(train_data, learning_rate, 1, rehash, rebuild);
+    network.predict(test_data, max_test_batches);
   }
+  network.predict(test_data);
 
   return 0;
 }
