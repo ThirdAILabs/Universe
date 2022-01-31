@@ -32,7 +32,7 @@ layers = [
 
 network = bolt.Network(layers=layers, input_dim=784)
 
-network.Train(batch_size=250, train_data="/home/ubuntu/mnist",
+network.train(batch_size=250, train_data="/home/ubuntu/mnist",
               test_data="/home/ubuntu/mnist.t",
               learning_rate=0.0001, epochs=10)
 ```
@@ -52,7 +52,7 @@ layers = [
 
 network = bolt.Network(layers=layers, input_dim=780)
 
-network.Train(batch_size=250, train_data="/usr/data/mnist",
+network.train(batch_size=250, train_data="/usr/data/mnist",
               test_data="/usr/data/mnist.t",
               learning_rate=0.0001, epochs=10, rehash=5000, rebuild=10000)
 ```
@@ -71,24 +71,24 @@ layers = [
 
 network = bolt.Network(layers=layers, input_dim=780)
 
-network.Train(batch_size=250, train_data=TRAIN_DATA,
+network.train(batch_size=250, train_data=TRAIN_DATA,
               test_data=TEST_DATA,
               learning_rate=0.0001, epochs=10, max_test_batches=40)
 
-W1_arr = network.GetWeightMatrix(0)
-B1_arr = network.GetBiasVector(0)
+W1_arr = network.get_weight_matrix(0)
+B1_arr = network.get_bias_vector(0)
 
 W1 = tf.Variable(W1_arr)
 B1 = tf.Variable(B1_arr)
 
-W2_arr = network.GetWeightMatrix(1)
-B2_arr = network.GetBiasVector(1)
+W2_arr = network.get_weight_matrix(1)
+B2_arr = network.get_bias_vector(1)
 
 W2 = tf.Variable(W2_arr)
 B2 = tf.Variable(B2_arr)
 
-W3_arr = network.GetWeightMatrix(2)
-B3_arr = network.GetBiasVector(2)
+W3_arr = network.get_weight_matrix(2)
+B3_arr = network.get_bias_vector(2)
 
 W3 = tf.Variable(W3_arr)
 B3 = tf.Variable(B3_arr)

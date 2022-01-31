@@ -8,15 +8,15 @@ layers_ = [
 
 network = bolt.Network(layers=layers_, input_dim=784)
 
-network.Train(batch_size=250, train_data="/home/ubuntu/mnist",
+network.train(batch_size=250, train_data="/home/ubuntu/mnist",
               test_data="/home/ubuntu/mnist.t",
               learning_rate=0.0001, epochs=1)
 
 
-inp_dim = network.GetInputDim()
-num_layers = network.GetNumLayers()
-layer_sizes = network.GetLayerSizes()
-act_funcs = network.GetActivationFunctions()
+inp_dim = network.get_input_dim()
+num_layers = network.get_num_layers()
+layer_sizes = network.get_layer_sizes()
+act_funcs = network.get_activation_functions()
 
 ############  To Keras #############
 

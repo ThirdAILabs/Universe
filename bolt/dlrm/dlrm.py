@@ -4,8 +4,8 @@ from thirdai import bolt, dataset
 
 train_file = "/media/temp/data/criteo-small/train_shuf_feat_hash_pairwise.txt"
 test_file = "/media/temp/data/criteo-small/test_shuf_feat_hash_pairwise.txt"
-train_data = dataset.loadClickThroughDataset(train_file, 256, 13, 300)
-test_data = dataset.loadClickThroughDataset(test_file, 256, 13, 300)
+train_data = dataset.load_click_through_dataset(train_file, 256, 13, 300)
+test_data = dataset.load_click_through_dataset(test_file, 256, 13, 300)
 
 f = open(test_file)
 
@@ -44,7 +44,7 @@ top_mlp = [
 dlrm = bolt.DLRM(embedding, bottom_mlp, top_mlp, 13)
 
 for i in range(10):
-    dlrm.Train(train_data, learning_rate=0.001, epochs=1, rehash=300, rebuild=500)
-    scores = dlrm.Predict(test_data)
+    dlrm.train(train_data, learning_rate=0.001, epochs=1, rehash=300, rebuild=500)
+    scores = dlrm.predict(test_data)
     auc = roc_auc_score(test_labels, scores)
     print('AUC: ',auc)
