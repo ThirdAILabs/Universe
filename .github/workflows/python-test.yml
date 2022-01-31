@@ -1,4 +1,4 @@
-name: Run Tests
+name: Run Python Tests
 
 # Controls when the workflow will run
 on:
@@ -25,6 +25,11 @@ jobs:
           sudo apt install gcc g++
           sudo apt install -y mpich libmpich-dev
           sudo apt install -y openmpi-bin openmpi-doc libopenmpi-dev
+      - name: Prepare Python
+        run: |
+          sudo pip3 install pytest
+          sudo pip3 install numpy
       - name: Build and Run Tests
         run: |
-          bin/test.sh
+          bin/build.sh
+          bin/python-test.sh
