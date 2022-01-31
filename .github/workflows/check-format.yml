@@ -1,0 +1,36 @@
+name: Check Python and C++ Formatting
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  cpp-format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run clang-format
+      uses: DoozyX/clang-format-lint-action@v0.12
+      with:
+        source: '.'
+        exclude: './third_party ./external'
+        clangFormatVersion: 10
+        style: file
+
+  python-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Prepare Python
+        run: |
+          sudo pip3 install black
+      - name: Check Python format 
+        run: |
+          black . --check

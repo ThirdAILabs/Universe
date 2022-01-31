@@ -29,14 +29,19 @@ batched_labels = np.split(labels, 40, axis=0)
 layers = [
     bolt.LayerConfig(dim=128, activation_function="ReLU"),
     bolt.LayerConfig(dim=1024, load_factor=0.05, activation_function="ReLU"),
-    bolt.LayerConfig(dim=10, activation_function="Softmax")
+    bolt.LayerConfig(dim=10, activation_function="Softmax"),
 ]
 
 network = bolt.Network(layers=layers, input_dim=780)
 
-network.Train(batch_size=250, train_data=TRAIN_DATA,
-              test_data=TEST_DATA,
-              learning_rate=0.0001, epochs=10, max_test_batches=40)
+network.Train(
+    batch_size=250,
+    train_data=TRAIN_DATA,
+    test_data=TEST_DATA,
+    learning_rate=0.0001,
+    epochs=10,
+    max_test_batches=40,
+)
 
 W1_arr = network.GetWeightMatrix(0)
 B1_arr = network.GetBiasVector(0)
