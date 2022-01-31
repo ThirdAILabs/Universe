@@ -34,10 +34,6 @@ struct BoltVector {
     return BoltVector(nullptr, a, nullptr, l);
   }
 
-  template <typename BATCH_T>
-  static BoltVector makeInputStateFromBatch(const BATCH_T& input_batch,
-                                            uint32_t i);
-
   friend std::ostream& operator<<(std::ostream& out, const BoltVector& state) {
     bool dense = state.active_neurons == nullptr;
     for (uint32_t i = 0; i < state.len; i++) {
@@ -92,6 +88,8 @@ class BoltBatch {
     assert(i < _batch_size);
     return _vector_states[i];
   }
+
+  uint32_t getBatchSize() const { return _batch_size; }
 
   BoltBatch(const BoltBatch& other) = delete;
 

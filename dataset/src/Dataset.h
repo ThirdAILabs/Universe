@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Factory.h"
+#include "batch_types/BoltInputBatch.h"
 #include "batch_types/ClickThroughBatch.h"
 #include "batch_types/DenseBatch.h"
 #include "batch_types/SparseBatch.h"
@@ -34,7 +35,7 @@ class InMemoryDataset {
         break;
       }
       curr_id += batch.getBatchSize();
-      _batches.push_back(batch);
+      _batches.push_back(std::move(batch));
     }
 
     file.close();
@@ -45,9 +46,26 @@ class InMemoryDataset {
   InMemoryDataset(std::vector<BATCH_T>&& batches, uint64_t len)
       : _batches(batches), _len(len) {}
 
+  InMemoryDataset(const InMemoryDataset&) = delete;
+
+  InMemoryDataset(InMemoryDataset&& other)
+      : _batches(std::move(other._batches)), _len(other._len) {}
+
+  InMemoryDataset& operator=(const InMemoryDataset&) = delete;
+
+  InMemoryDataset& operator=(InMemoryDataset&& other) {
+    _batches = std::move(other._batches);
+    _len = other._len;
+    return *this;
+  }
+
   const BATCH_T& operator[](uint32_t i) const { return _batches[i]; }
 
+  BATCH_T& operator[](uint32_t i) { return _batches[i]; }
+
   const BATCH_T& at(uint32_t i) const { return _batches.at(i); }
+
+  BATCH_T& at(uint32_t i) { return _batches.at(i); }
 
   auto begin() const { return _batches.begin(); }
 

@@ -2,10 +2,8 @@
 
 #include <dataset/src/Dataset.h>
 #include <dataset/src/batch_types/SparseBatch.h>
-#include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
@@ -19,6 +17,9 @@ InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
 
 InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
                                             uint32_t batch_size);
+
+InMemoryDataset<BoltInputBatch> loadBoltSVMDataset(const std::string& filename,
+                                                   uint32_t batch_size);
 
 InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
                                            uint32_t batch_size,

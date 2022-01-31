@@ -149,6 +149,36 @@ TEST_F(SvmDatasetTestFixture, InMemoryDatasetTest) {
   ASSERT_EQ(vec_count, _num_vectors);
 }
 
+TEST_F(SvmDatasetTestFixture, BoltInMemoryDatasetTest) {
+  InMemoryDataset<BoltInputBatch> dataset(_filename, _batch_size,
+                                          BoltSparseBatchFactory{});
+
+  uint32_t vec_count = 0;
+  for (const auto& batch : dataset) {
+    ASSERT_TRUE(batch.getBatchSize() == _batch_size ||
+                batch.getBatchSize() == _num_vectors % _batch_size);
+
+    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+      ASSERT_EQ(batch.labels(v).size(), _vectors.at(vec_count).labels.size());
+      for (uint32_t i = 0; i < batch.labels(v).size(); i++) {
+        ASSERT_EQ(batch.labels(v).at(i), _vectors.at(vec_count).labels.at(i));
+      }
+
+      ASSERT_EQ(batch[v].len, _vectors[vec_count].values.size());
+      for (uint32_t i = 0; i < batch[v].len; i++) {
+        ASSERT_EQ(batch.at(v).active_neurons[i],
+                  _vectors.at(vec_count).values.at(i).first);
+        ASSERT_EQ(batch.at(v).activations[i],
+                  _vectors.at(vec_count).values.at(i).second);
+      }
+      ASSERT_EQ(batch[v].gradients, nullptr);
+
+      vec_count++;
+    }
+  }
+  ASSERT_EQ(vec_count, _num_vectors);
+}
+
 TEST_F(SvmDatasetTestFixture, StreamedDatasetTest) {
   StreamedDataset<SparseBatch> dataset(
       _filename, _batch_size, std::make_unique<SvmSparseBatchFactory>());

@@ -54,13 +54,13 @@ int main(int argc, char** argv) {
     return 1;
   }
   if (config.strVal("dataset_format") == "svm") {
-    dataset::InMemoryDataset<dataset::SparseBatch> train_data(
+    dataset::InMemoryDataset<dataset::BoltInputBatch> train_data(
         config.strVal("train_data"), batch_size,
-        dataset::SvmSparseBatchFactory{});
+        dataset::BoltSparseBatchFactory{});
 
-    dataset::InMemoryDataset<dataset::SparseBatch> test_data(
+    dataset::InMemoryDataset<dataset::BoltInputBatch> test_data(
         config.strVal("test_data"), batch_size,
-        dataset::SvmSparseBatchFactory{});
+        dataset::BoltSparseBatchFactory{});
 
     for (uint32_t e = 0; e < epochs; e++) {
       if ((switch_inference_epoch > 0) && e == switch_inference_epoch) {
@@ -68,9 +68,8 @@ int main(int argc, char** argv) {
         network.useSparseInference();
       }
 
-      network.train<dataset::SparseBatch>(train_data, learning_rate, 1, rehash,
-                                          rebuild);
-      network.predict<dataset::SparseBatch>(test_data, max_test_batches);
+      network.train(train_data, learning_rate, 1, rehash, rebuild);
+      network.predict(test_data, max_test_batches);
     }
     network.predict(test_data);
   } else if (config.strVal("dataset_format") == "csv") {
@@ -79,25 +78,25 @@ int main(int argc, char** argv) {
                 << std::endl;
       return 1;
     }
-    dataset::InMemoryDataset<dataset::DenseBatch> train_data(
-        config.strVal("train_data"), batch_size,
-        dataset::CsvDenseBatchFactory(config.strVal("csv_delimiter").at(0)));
+    // dataset::InMemoryDataset<dataset::DenseBatch> train_data(
+    //     config.strVal("train_data"), batch_size,
+    //     dataset::CsvDenseBatchFactory(config.strVal("csv_delimiter").at(0)));
 
-    dataset::InMemoryDataset<dataset::DenseBatch> test_data(
-        config.strVal("test_data"), batch_size,
-        dataset::CsvDenseBatchFactory(config.strVal("csv_delimiter").at(0)));
+    // dataset::InMemoryDataset<dataset::DenseBatch> test_data(
+    //     config.strVal("test_data"), batch_size,
+    //     dataset::CsvDenseBatchFactory(config.strVal("csv_delimiter").at(0)));
 
-    for (uint32_t e = 0; e < epochs; e++) {
-      if ((switch_inference_epoch > 0) && e == switch_inference_epoch) {
-        std::cout << "Freezing Selection for Sparse Inference" << std::endl;
-        network.useSparseInference();
-      }
+    // for (uint32_t e = 0; e < epochs; e++) {
+    //   if ((switch_inference_epoch > 0) && e == switch_inference_epoch) {
+    //     std::cout << "Freezing Selection for Sparse Inference" << std::endl;
+    //     network.useSparseInference();
+    //   }
 
-      network.train<dataset::DenseBatch>(train_data, learning_rate, 1, rehash,
-                                         rebuild);
-      network.predict<dataset::DenseBatch>(test_data, max_test_batches);
-    }
-    network.predict(test_data);
+    //   network.train(train_data, learning_rate, 1, rehash,
+    //                                      rebuild);
+    //   network.test(test_data, max_test_batches);
+    // }
+    // network.test(test_data);
   } else {
     std::cerr << "The dataset format " << config.strVal("dataset_format")
               << " is not supported." << std::endl;

@@ -2,6 +2,7 @@
 
 #include <bolt/layers/FullyConnectedLayer.h>
 #include <dataset/src/Dataset.h>
+#include <dataset/src/batch_types/BoltInputBatch.h>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -20,10 +21,10 @@ class Network {
    * that it can be called multiple times to train a network. This function
    * returns a list of the durations (in seconds) of each epoch.
    */
-  template <typename BATCH_T>
   std::vector<int64_t> train(
-      const dataset::InMemoryDataset<BATCH_T>& train_data, float learning_rate,
-      uint32_t epochs, uint32_t rehash = 0, uint32_t rebuild = 0);
+      dataset::InMemoryDataset<dataset::BoltInputBatch>& train_data,
+      float learning_rate, uint32_t epochs, uint32_t rehash = 0,
+      uint32_t rebuild = 0);
 
   /**
    * This function takes in a test dataset and uses it to evaluate the model. It
@@ -31,9 +32,9 @@ class Network {
    * test batches used, this is intended for intermediate accuracy checks during
    * training with large datasets.
    */
-  template <typename BATCH_T>
-  float predict(const dataset::InMemoryDataset<BATCH_T>& test_data,
-                uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
+  float predict(
+      const dataset::InMemoryDataset<dataset::BoltInputBatch>& test_data,
+      uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
   void createBatchStates(uint32_t batch_size, bool force_dense);
 
