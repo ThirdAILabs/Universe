@@ -19,12 +19,12 @@ def train_amzn670(args):
     epoch_times = []
     epoch_accuracies = []
     for _ in range(args.epochs):
-        times = network.Train(train_data, args.lr, 1,
+        times = network.train(train_data, args.lr, 1,
                               rehash=6400, rebuild=128000)
         epoch_times.append(times[0])
-        acc = network.Predict(test_data, batch_limit=20)
+        acc = network.predict(test_data, batch_limit=20)
         epoch_accuracies.append(acc)
-    final_accuracy = network.Predict(test_data)
+    final_accuracy = network.predict(test_data)
     return final_accuracy, epoch_accuracies, epoch_times
 
 
