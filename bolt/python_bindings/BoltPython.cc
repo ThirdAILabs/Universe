@@ -38,7 +38,7 @@ void createBoltSubmodule(py::module_& module) {
       .def("train", &PyNetwork::train<thirdai::dataset::DenseBatch>,
            py::arg("train_data"), py::arg("learning_rate"), py::arg("epochs"),
            py::arg("rehash") = 0, py::arg("rebuild") = 0)
-      .def("loadAndTrain", &PyNetwork::trainWithDenseNumpyArray, 
+      .def("train", &PyNetwork::trainWithDenseNumpyArray, 
            py::arg("train_examples"), py::arg("train_labels"),
            py::arg("batch_size"), py::arg("learning_rate"), py::arg("epochs"),
            py::arg("starting_id") = 0, py::arg("rehash") = 0,
@@ -49,7 +49,7 @@ void createBoltSubmodule(py::module_& module) {
       .def("predict", &PyNetwork::predict<thirdai::dataset::DenseBatch>,
            py::arg("test_data"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
-      .def("loadAndPredict", &PyNetwork::testWithDenseNumpyArray,
+      .def("predict", &PyNetwork::testWithDenseNumpyArray,
            py::arg("test_examples"), py::arg("test_labels"),
            py::arg("batch_size"), py::arg("starting_id") = 0,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
