@@ -2,16 +2,38 @@ cmake_minimum_required(VERSION 3.14)
 
 set(CMAKE_CXX_COMPILER "g++")
 set(CMAKE_C_COMPILER "gcc")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -fopenmp -fPIC -ffast-math -funroll-loops -ftree-vectorize")
 
 project(ThirdAI LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(OpenMP REQUIRED)
+message("====================================")
+message("\tBUILD MODE: ${CMAKE_BUILD_TYPE}")
+message("====================================")
 
-# One way that we can set global compiler flags for all targets. set(CMAKE_CXX_FLAGS) is the alternative.
-# Add lots of warnings and all warnings as errors
-add_compile_options(-Wall -Wextra -pedantic -Werror -Wno-unused-function)
+add_compile_options(
+  -fopenmp
+  -fPIC
+  -Wall
+  -Wextra
+  -Werror
+  -Wno-unused-function
+  -pedantic 
+  $<$<CONFIG:DEBUG>:-O0>
+  $<$<CONFIG:DEBUG>:-g>
+  $<$<CONFIG:DEBUG>:-fsanitize=address>
+  $<$<CONFIG:RELEASE>:-DNDEBUG>
+  $<$<CONFIG:RELEASE>:-Ofast>
+  $<$<CONFIG:RELEASE>:-ffast-math>
+  $<$<CONFIG:RELEASE>:-funroll-loops>
+  $<$<CONFIG:RELEASE>:-ftree-vectorize>
+)
+
+add_link_options(
+  -fopenmp
+  $<$<CONFIG:DEBUG>:-fsanitize=address>
+)
+
+find_package(OpenMP REQUIRED)
 
 include(FetchContent)
 FetchContent_Declare(

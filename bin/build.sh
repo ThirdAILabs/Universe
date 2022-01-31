@@ -1,5 +1,5 @@
 #!/bin/bash
-# Usage ./bin/build.sh [make_target] [num_jobs]
+# Usage ./bin/build.sh [make_target] [build mode] [num_jobs]
 # The first positional argument is the make target. If omitted, make will use 'all', but
 # you can pass in a specific one if you just want to make one target. e.g.
 # run "bin/build.sh clean" if you want to delete objects and executables.
@@ -17,21 +17,27 @@ else
   TARGET="$1"
 fi
 
-
 if [ -z "$2" ] 
+then 
+  BUILD_MODE=release
+else 
+  BUILD_MODE=$2
+fi
+
+if [ -z "$3" ] 
 then
   NUM_AVAILABLE_THREADS=$(getconf _NPROCESSORS_ONLN)
   # Per below, rule of thumb is 1.5 times the number of available threads
   # https://stackoverflow.com/questions/414714/compiling-with-g-using-multiple-cores
   NUM_JOBS=$((3*NUM_AVAILABLE_THREADS/2))
 else
-  NUM_JOBS="$2"
+  NUM_JOBS="$3"
 fi
 
 mkdir -p "$BASEDIR/../build"
 
 cd "$BASEDIR/../build"
 
-cmake .. -DPYTHON_EXECUTABLE=$(which python3)
+cmake .. -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE=$BUILD_MODE
 
 make $TARGET -s -j$NUM_JOBS
