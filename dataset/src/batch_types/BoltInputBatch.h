@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DenseBatch.h"
 #include "SparseBatch.h"
 #include <bolt/layers/BoltVector.h>
 #include <dataset/src/Factory.h>
@@ -102,13 +103,13 @@ class BoltInputBatch {
   uint32_t _total_dim;
 };
 
-class BoltSparseBatchFactory : public Factory<BoltInputBatch> {
+class BoltSparseBatchFactory final : public Factory<BoltInputBatch> {
  public:
   BoltSparseBatchFactory() {}
 
   BoltInputBatch parse(std::ifstream& file, uint32_t target_batch_size,
                        uint64_t start_id) override {
-    SparseBatch batch(start_id);
+    (void)start_id;
 
     std::vector<uint32_t> indices, markers;
     std::vector<float> values;
@@ -119,6 +120,32 @@ class BoltSparseBatchFactory : public Factory<BoltInputBatch> {
 
     return BoltInputBatch(indices, values, markers, labels);
   }
+};
+
+class BoltDenseBatchFactory final : public Factory<BoltInputBatch> {
+ public:
+  explicit BoltDenseBatchFactory(char delimiter) : _delimiter(delimiter) {
+    if (delimiter == '.' || (delimiter >= '0' && delimiter <= '9')) {
+      throw std::invalid_argument("Invalid delimiter: " + delimiter);
+    }
+  }
+
+  BoltInputBatch parse(std::ifstream& file, uint32_t target_batch_size,
+                       uint64_t start_id) override {
+    (void)start_id;
+
+    std::vector<float> values;
+    std::vector<std::vector<uint32_t>> labels;
+    uint32_t batch_size = CsvDenseBatchFactory::parseCSVBatch(
+        file, target_batch_size, values, labels, _delimiter);
+
+    uint32_t dim = values.size() / batch_size;
+
+    return BoltInputBatch(dim, values, labels);
+  }
+
+ private:
+  char _delimiter;
 };
 
 }  // namespace thirdai::dataset

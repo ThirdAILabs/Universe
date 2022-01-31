@@ -18,9 +18,6 @@ InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
 InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
                                             uint32_t batch_size);
 
-InMemoryDataset<BoltInputBatch> loadBoltSVMDataset(const std::string& filename,
-                                                   uint32_t batch_size);
-
 InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
                                            uint32_t batch_size,
                                            std::string delimiter);

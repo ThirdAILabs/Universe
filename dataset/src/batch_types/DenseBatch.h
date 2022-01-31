@@ -62,14 +62,14 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
     }
   }
 
-  DenseBatch parse(std::ifstream& file, uint32_t target_batch_size,
-                   uint64_t start_id) override {
-    DenseBatch batch(start_id);
-
+  static uint32_t parseCSVBatch(std::ifstream& file, uint32_t target_batch_size,
+                                std::vector<float>& values,
+                                std::vector<std::vector<uint32_t>>& labels,
+                                char delimiter) {
     uint32_t dim = 0;
-
+    uint32_t curr_batch_size = 0;
     std::string line;
-    while (batch._batch_size < target_batch_size && std::getline(file, line)) {
+    while (curr_batch_size < target_batch_size && std::getline(file, line)) {
       if (line.empty()) {
         continue;
       }
@@ -84,15 +84,15 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
             "Invalid dataset file: Found a line that doesn't start with a "
             "label.");
       }
-      batch._labels.push_back({label});
+      labels.push_back({label});
       if (line_end - end < 1) {
         throw std::invalid_argument(
             "Invalid dataset file: The line only contains a label.");
       }
       start = end;
-      std::vector<float> values;
+      uint32_t curr_dim = 0;
       while (start < line_end) {
-        if (*start != _delimiter) {
+        if (*start != delimiter) {
           std::stringstream error_ss;
           error_ss << "Invalid dataset file: Found invalid character: "
                    << *start;
@@ -103,7 +103,7 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
           values.push_back(0);
         } else {
           float value = std::strtof(start, &end);
-          if (start == end && *start != _delimiter) {
+          if (start == end && *start != delimiter) {
             std::stringstream error_ss;
             error_ss << "Invalid dataset file: Found invalid character: "
                      << *start;
@@ -114,14 +114,15 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
           values.push_back(value);
           start = end;
         }
+        curr_dim++;
       }
 
-      if (dim != 0 && dim != values.size()) {
+      if (dim != 0 && dim != curr_dim) {
         throw std::invalid_argument(
             "Invalid dataset file: Contains different-dimensional vectors.\n");
       }
 
-      dim = values.size();
+      dim = curr_dim;
 
       DenseVector v(values.size());
       uint32_t cnt = 0;
@@ -130,9 +131,30 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
         cnt++;
       }
 
-      batch._vectors.push_back(std::move(v));
-      batch._batch_size++;
+      curr_batch_size++;
     }
+    return curr_batch_size;
+  }
+
+  DenseBatch parse(std::ifstream& file, uint32_t target_batch_size,
+                   uint64_t start_id) override {
+    DenseBatch batch(start_id);
+
+    std::vector<float> values;
+    std::vector<std::vector<uint32_t>> labels;
+    batch._batch_size =
+        parseCSVBatch(file, target_batch_size, values, labels, _delimiter);
+
+    uint32_t dim = values.size() / batch._batch_size;
+
+    for (uint32_t i = 0; i < batch._batch_size; i++) {
+      DenseVector vec(dim);
+      std::copy(values.data() + i * dim, values.data() + (i + 1) * dim,
+                vec._values);
+      batch._vectors.push_back(std::move(vec));
+    }
+    batch._labels = std::move(labels);
+
     return batch;
   }
 

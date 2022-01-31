@@ -14,8 +14,10 @@ void createDatasetSubmodule(py::module_& module) {
                                                      "InMemoryBoltDataset");
   (void)_imbd_;  // To get rid of clang tidy error
 
-  dataset_submodule.def("loadBoltSVMDataset", &loadBoltSVMDataset,
-                        py::arg("filename"), py::arg("batch_size"));
+  dataset_submodule.def("loadBoltDataset",
+                        &InMemoryDataset<BoltInputBatch>::loadBoltDataset,
+                        py::arg("filename"), py::arg("batch_size"),
+                        py::arg("format"), py::arg("csv_delimiter") = ',');
 
   dataset_submodule.def("loadClickThroughDataset", &loadClickThroughDataset,
                         py::arg("filename"), py::arg("batch_size"),
@@ -55,21 +57,6 @@ InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
   auto start = std::chrono::high_resolution_clock::now();
   InMemoryDataset<SparseBatch> data(filename, batch_size,
                                     thirdai::dataset::SvmSparseBatchFactory{});
-  auto end = std::chrono::high_resolution_clock::now();
-
-  std::cout
-      << "Read " << data.len() << " vectors from " << filename << " in "
-      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds" << std::endl;
-
-  return data;
-}
-
-InMemoryDataset<BoltInputBatch> loadBoltSVMDataset(const std::string& filename,
-                                                   uint32_t batch_size) {
-  auto start = std::chrono::high_resolution_clock::now();
-  InMemoryDataset<BoltInputBatch> data(
-      filename, batch_size, thirdai::dataset::BoltSparseBatchFactory{});
   auto end = std::chrono::high_resolution_clock::now();
 
   std::cout

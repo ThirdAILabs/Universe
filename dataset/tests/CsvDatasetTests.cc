@@ -126,6 +126,41 @@ TEST_F(CsvDatasetTestFixture, InMemoryDatasetTest) {
   }
 }
 
+TEST_F(CsvDatasetTestFixture, BoltInMemoryDatasetTest) {
+  for (const char& delimiter : {',', '\t', ' '}) {
+    generateTestFile(delimiter);
+
+    InMemoryDataset<BoltInputBatch> dataset(filename, batch_size,
+                                            BoltDenseBatchFactory(delimiter));
+
+    uint32_t vec_count = 0;
+    for (const auto& batch : dataset) {
+      ASSERT_TRUE(batch.getBatchSize() == batch_size ||
+                  batch.getBatchSize() == num_vectors % batch_size);
+
+      for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+        ASSERT_EQ(batch.labels(v).size(), 1);
+        for (const auto& label : batch.labels(v)) {
+          ASSERT_EQ(label, _vectors.at(vec_count).label);
+        }
+
+        ASSERT_EQ(batch[v].len, _vectors[vec_count].values.size());
+        ASSERT_EQ(batch[v].active_neurons, nullptr);
+        for (uint32_t i = 0; i < batch[v].len; i++) {
+          ASSERT_EQ(batch[v].activations[i],
+                    _vectors.at(vec_count).values.at(i));
+        }
+        ASSERT_EQ(batch[v].gradients, nullptr);
+
+        vec_count++;
+      }
+    }
+    ASSERT_EQ(vec_count, num_vectors);
+
+    deleteTestFile();
+  }
+}
+
 TEST_F(CsvDatasetTestFixture, StreamedDatasetTest) {
   for (const char& delimiter : {',', '\t', ' '}) {
     generateTestFile(delimiter);

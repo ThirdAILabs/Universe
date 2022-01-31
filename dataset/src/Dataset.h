@@ -5,6 +5,7 @@
 #include "batch_types/ClickThroughBatch.h"
 #include "batch_types/DenseBatch.h"
 #include "batch_types/SparseBatch.h"
+#include <chrono>
 #include <cstdint>
 #include <fstream>
 #include <memory>
@@ -75,10 +76,33 @@ class InMemoryDataset {
 
   uint64_t len() const { return _len; }
 
-  static InMemoryDataset<SparseBatch> loadInMemorySvmDataset(
-      const std::string& filename, uint32_t batch_size) {
-    return InMemoryDataset<SparseBatch>(filename, batch_size,
-                                        SvmSparseBatchFactory{});
+  static InMemoryDataset<BoltInputBatch> loadBoltDataset(
+      const std::string& filename, uint32_t batch_size,
+      const std::string& format, char csv_delimiter = ',') {
+    bool dense;
+    if (format == "csv" || format == "Csv" || format == "CSV") {
+      dense = true;
+    } else if (format == "svm" || format == "Svm" || format == "SVM") {
+      dense = false;
+    } else {
+      throw std::invalid_argument(
+          "Invalid bolt dataset format, please use svm or csv");
+    }
+    auto start = std::chrono::high_resolution_clock::now();
+
+    auto data =
+        dense ? InMemoryDataset<BoltInputBatch>(
+                    filename, batch_size, BoltDenseBatchFactory(csv_delimiter))
+              : InMemoryDataset<BoltInputBatch>(filename, batch_size,
+                                                BoltSparseBatchFactory());
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout
+        << "Read " << data.len() << " vectors from " << filename << " in "
+        << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
+        << " seconds" << std::endl;
+
+    return data;
   }
 
  private:
