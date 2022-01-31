@@ -38,11 +38,11 @@ void createBoltSubmodule(py::module_& module) {
       .def("train", &PyNetwork::train<thirdai::dataset::DenseBatch>,
            py::arg("train_data"), py::arg("learning_rate"), py::arg("epochs"),
            py::arg("rehash") = 0, py::arg("rebuild") = 0)
-      .def("train", &PyNetwork::trainWithDenseNumpyArray, 
+      .def("train", &PyNetwork::trainWithDenseNumpyArray,
            py::arg("train_examples"), py::arg("train_labels"),
            py::arg("batch_size"), py::arg("learning_rate"), py::arg("epochs"),
            py::arg("starting_id") = 0, py::arg("rehash") = 0,
-           py::arg("rebuild") = 0) 
+           py::arg("rebuild") = 0)
       .def("predict", &PyNetwork::predict<thirdai::dataset::SparseBatch>,
            py::arg("test_data"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
@@ -53,7 +53,6 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("test_examples"), py::arg("test_labels"),
            py::arg("batch_size"), py::arg("starting_id") = 0,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
-           // Later down the line, we can have loadAndTest that accepts file datasets as well (polymorphism).
       .def("useSparseInference", &PyNetwork::useSparseInference)
       .def("getWeightMatrix", &PyNetwork::getWeightMatrix,
            py::arg("layer_index"))

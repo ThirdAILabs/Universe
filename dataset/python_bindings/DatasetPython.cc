@@ -29,7 +29,6 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def("loadCSVDataset", &loadCSVDataset, py::arg("filename"),
                         py::arg("batch_size"), py::arg("delimiter") = ",");
-                      
 }
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
@@ -160,7 +159,6 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
         labels,
     uint32_t batch_size, uint64_t starting_id) {
-    
   // Get information from examples
   const py::buffer_info examples_buf = examples.request();
   const auto examples_shape = examples_buf.shape;
@@ -207,7 +205,7 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
       // if this batch (and thus the underlying vectors) get deleted
       bool owns_data = false;
       batch_vectors.emplace_back(
-            dimension, examples_raw_data + dimension * vec_idx, owns_data);
+          dimension, examples_raw_data + dimension * vec_idx, owns_data);
       batch_labels.push_back({labels_raw_data[vec_idx]});
     }
 
