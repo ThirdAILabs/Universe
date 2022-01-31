@@ -63,18 +63,20 @@ class PyNetwork final : public Network {
       const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           labels,
       uint32_t batch_size, float learning_rate, uint32_t epochs,
-      uint64_t starting_id, uint32_t rehash, uint32_t rebuild) {
+      uint32_t rehash, uint32_t rebuild) {
+    uint32_t starting_id = 0;
     auto data = thirdai::dataset::python::denseInMemoryDatasetFromNumpy(
         examples, labels, batch_size, starting_id);
     return train(data, learning_rate, epochs, rehash, rebuild);
   }
 
-  float testWithDenseNumpyArray(
+  float predictWithDenseNumpyArray(
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           examples,
       const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           labels,
-      uint32_t batch_size, uint64_t starting_id, uint32_t batch_limit) {
+      uint32_t batch_size, uint32_t batch_limit) {
+    uint32_t starting_id = 0;
     auto data = thirdai::dataset::python::denseInMemoryDatasetFromNumpy(
         examples, labels, batch_size, starting_id);
     return predict(data, batch_limit);

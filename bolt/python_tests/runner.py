@@ -14,8 +14,8 @@ def train_amzn670(args):
     ]
     network = bolt.Network(layers=layers, input_dim=135909)
 
-    train_data = dataset.loadSVMDataset(args.train, 256)
-    test_data = dataset.loadSVMDataset(args.test, 256)
+    train_data = dataset.load_svm_dataset(args.train, 256)
+    test_data = dataset.load_svm_dataset(args.test, 256)
     epoch_times = []
     epoch_accuracies = []
     for _ in range(args.epochs):

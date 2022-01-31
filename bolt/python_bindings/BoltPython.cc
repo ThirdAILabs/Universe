@@ -41,26 +41,25 @@ void createBoltSubmodule(py::module_& module) {
       .def("train", &PyNetwork::trainWithDenseNumpyArray,
            py::arg("train_examples"), py::arg("train_labels"),
            py::arg("batch_size"), py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("starting_id") = 0, py::arg("rehash") = 0,
-           py::arg("rebuild") = 0)
+           py::arg("rehash") = 0, py::arg("rebuild") = 0)
       .def("predict", &PyNetwork::predict<thirdai::dataset::SparseBatch>,
            py::arg("test_data"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
       .def("predict", &PyNetwork::predict<thirdai::dataset::DenseBatch>,
            py::arg("test_data"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
-      .def("predict", &PyNetwork::testWithDenseNumpyArray,
+      .def("predict", &PyNetwork::predictWithDenseNumpyArray,
            py::arg("test_examples"), py::arg("test_labels"),
-           py::arg("batch_size"), py::arg("starting_id") = 0,
+           py::arg("batch_size"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
-      .def("useSparseInference", &PyNetwork::useSparseInference)
-      .def("getWeightMatrix", &PyNetwork::getWeightMatrix,
+      .def("use_sparse_inference", &PyNetwork::useSparseInference)
+      .def("get_weight_matrix", &PyNetwork::getWeightMatrix,
            py::arg("layer_index"))
-      .def("getBiasVector", &PyNetwork::getBiasVector, py::arg("layer_index"))
-      .def("getNumLayers", &PyNetwork::getNumLayers)
-      .def("getLayerSizes", &PyNetwork::getLayerSizes)
-      .def("getInputDim", &PyNetwork::getInputDim)
-      .def("getActivationFunctions", &PyNetwork::getActivationFunctions);
+      .def("get_bias_vector", &PyNetwork::getBiasVector, py::arg("layer_index"))
+      .def("get_num_layers", &PyNetwork::getNumLayers)
+      .def("get_layer_sizes", &PyNetwork::getLayerSizes)
+      .def("get_input_dim", &PyNetwork::getInputDim)
+      .def("get_activation_functions", &PyNetwork::getActivationFunctions);
 
   py::class_<PyDLRM>(bolt_submodule, "DLRM")
       .def(py::init<thirdai::bolt::EmbeddingLayerConfig,

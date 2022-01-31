@@ -14,7 +14,7 @@ void createDatasetSubmodule(py::module_& module) {
                                                  "InMemoryDenseDataset");
   (void)_imdd_;  // To get rid of clang tidy error
 
-  dataset_submodule.def("loadClickThroughDataset", &loadClickThroughDataset,
+  dataset_submodule.def("load_click_through_dataset", &loadClickThroughDataset,
                         py::arg("filename"), py::arg("batch_size"),
                         py::arg("num_dense_features"),
                         py::arg("num_categorical_features"));
@@ -24,11 +24,12 @@ void createDatasetSubmodule(py::module_& module) {
       _imctd_(dataset_submodule, "ClickThroughDataset");
   (void)_imctd_;  // To get rid of clang tidy error.
 
-  dataset_submodule.def("loadSVMDataset", &loadSVMDataset, py::arg("filename"),
-                        py::arg("batch_size"));
+  dataset_submodule.def("load_svm_dataset", &loadSVMDataset,
+                        py::arg("filename"), py::arg("batch_size"));
 
-  dataset_submodule.def("loadCSVDataset", &loadCSVDataset, py::arg("filename"),
-                        py::arg("batch_size"), py::arg("delimiter") = ",");
+  dataset_submodule.def("load_csv_dataset", &loadCSVDataset,
+                        py::arg("filename"), py::arg("batch_size"),
+                        py::arg("delimiter") = ",");
 }
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
