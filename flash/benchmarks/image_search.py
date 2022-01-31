@@ -8,8 +8,8 @@ reservoir_sizes = [100, 200, 500, 1000]
 hashes_per_table = [8, 10, 12, 14, 16]
 num_tables = [10, 50, 100, 200, 500]
 
-# data_path = "/Users/josh/IndexChunks/"
-data_path = "/media/scratch/ImageNetDemo/IndexFiles/"
+data_path = "/Users/josh/IndexChunks/"
+# data_path = "/media/scratch/ImageNetDemo/IndexFiles/"
 
 for res in reservoir_sizes:
   for per_table in hashes_per_table:

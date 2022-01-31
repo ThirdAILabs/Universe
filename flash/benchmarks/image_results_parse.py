@@ -1,5 +1,3 @@
-file_name = "results"
-
 with open("results.txt") as f:
   lines = f.readlines()
   i = 0
@@ -39,4 +37,5 @@ ls = "--"
 plt.xlabel("Recall (R10@100)", fontsize=axisfontsize)
 plt.ylabel('Queries per second (log 10)', fontsize=axisfontsize)
 plt.title("Flash Recall on ImageNet Vgg Embeddings", fontsize=titlefontsize)
+plt.savefig('flash_recall_imagenet.png')
 plt.show()
