@@ -53,26 +53,30 @@ int main(int argc, char** argv) {
               << std::endl;
     return 1;
   }
-  auto train_data =
-      dataset::InMemoryDataset<dataset::BoltInputBatch>::loadBoltDataset(
-          config.strVal("train_data"), batch_size,
-          config.strVal("dataset_format"));
+  try {
+    auto train_data =
+        dataset::InMemoryDataset<dataset::BoltInputBatch>::loadBoltDataset(
+            config.strVal("train_data"), batch_size,
+            config.strVal("dataset_format"));
 
-  auto test_data =
-      dataset::InMemoryDataset<dataset::BoltInputBatch>::loadBoltDataset(
-          config.strVal("test_data"), batch_size,
-          config.strVal("dataset_format"));
+    auto test_data =
+        dataset::InMemoryDataset<dataset::BoltInputBatch>::loadBoltDataset(
+            config.strVal("test_data"), batch_size,
+            config.strVal("dataset_format"));
 
-  for (uint32_t e = 0; e < epochs; e++) {
-    if ((switch_inference_epoch > 0) && e == switch_inference_epoch) {
-      std::cout << "Freezing Selection for Sparse Inference" << std::endl;
-      network.useSparseInference();
+    for (uint32_t e = 0; e < epochs; e++) {
+      if ((switch_inference_epoch > 0) && e == switch_inference_epoch) {
+        std::cout << "Freezing Selection for Sparse Inference" << std::endl;
+        network.useSparseInference();
+      }
+
+      network.train(train_data, learning_rate, 1, rehash, rebuild);
+      network.predict(test_data, max_test_batches);
     }
-
-    network.train(train_data, learning_rate, 1, rehash, rebuild);
-    network.predict(test_data, max_test_batches);
+    network.predict(test_data);
+  } catch (std::exception& e) {
+    std::cerr << "Error reading dataset" << std::endl;
   }
-  network.predict(test_data);
 
   return 0;
 }
