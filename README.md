@@ -62,9 +62,10 @@ home directory). This will work until you open a new shell; to
 automatically update your PYTHONPATH when you start your shell add the above
 command to your ~/.bash_profile or ~/.bash_rc, or equivalently run
 `echo "export PYTHONPATH=~/Universe/build:$PYTHONPATH" >> $HOME/.bash_profile`. 
-Alternatively you can run `pip3 install .` every time you make a change to the
-source, but this will rebuild everything and possibly conflict with the last way,
-and so is not preferred.
+Alternatively you can run `pip3 install .`. This installs thirdi without messing
+around with environment variables, but is not preferred for development since it
+is performs an entirely seperate parallel build from `bin/build.sh`, and so is
+much slower.
 
 ## Using cmake
 To understand how to setup a executable, library, or test using cmake please see the examples in the `examples` directory. For more context here are a few things to know: 
