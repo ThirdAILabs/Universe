@@ -27,5 +27,5 @@ jobs:
           sudo apt install -y openmpi-bin openmpi-doc libopenmpi-dev
       - name: Build and Run Tests
         run: |
-          bin/build.sh
+          bin/build.sh all debug
           bin/cpp-test.sh
