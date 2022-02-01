@@ -37,11 +37,11 @@ add_link_options(
 
 # ASan does not work with GCC on M1 Macs yet. We would have to switch to clang. 
 if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64") 
-  add_link_options(
+  add_compile_options(
     $<$<CONFIG:DEBUG>:-fsanitize=address>
   )
 
-  add_compile_options(
+  add_link_options(
     $<$<CONFIG:DEBUG>:-fsanitize=address>
   )
 endif()
