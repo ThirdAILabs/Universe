@@ -20,6 +20,7 @@ add_compile_options(
   -pedantic 
   $<$<CONFIG:DEBUG>:-O0>
   $<$<CONFIG:DEBUG>:-g>
+  $<$<CONFIG:DEBUG>:-fno-omit-frame-pointer>
   $<$<CONFIG:RELEASE>:-DNDEBUG>
   $<$<CONFIG:RELEASE>:-Ofast>
   $<$<CONFIG:RELEASE>:-ffast-math>
