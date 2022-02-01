@@ -15,8 +15,8 @@ on:
         description: 'Run Bolt Benchmarks (y/n)'
         required: true
         default: 'y'
-      flash:
-        description: 'Run Flash Benchmarks (y/n)'
+      magsearch:
+        description: 'Run MagSearch Benchmarks (y/n)'
         required: true
         default: 'n'
       
@@ -32,7 +32,7 @@ jobs:
         echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         echo "##[set-output name=run_id;]$(echo ${{ github.run_id }})"
         echo "##[set-output name=bolt;]$(echo ${{ github.event.inputs.bolt }})"
-        echo "##[set-output name=flash;]$(echo ${{ github.event.inputs.flash }})"
+        echo "##[set-output name=magsearch;]$(echo ${{ github.event.inputs.magsearch }})"
       id: vars
     - name: Run Benchmark Tests
       uses: fifsky/ssh-action@master
@@ -41,7 +41,7 @@ jobs:
         command: |
           export RUN_ID=${{ steps.vars.outputs.run_id }}
           export RUN_BOLT=${{ steps.vars.outputs.bolt }}
-          export RUN_FLASH=${{ steps.vars.outputs.flash }}
+          export RUN_MAGSEARCH=${{ steps.vars.outputs.magsearch }}
 
           rm -rf Universe
           git clone --branch ${{ steps.vars.outputs.branch }} git@github.com:ThirdAILabs/Universe.git

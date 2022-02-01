@@ -10,3 +10,9 @@ thirdai.egg-info
 
 # Mac stuff
 .DS_Store
+
+# Ignore everything in benchmarking folder (which contains generated files), but 
+# not a couple of scripts we need in there.
+benchmarking/*
+!benchmarking/aggregate_request.py 
+!benchmarking/send_request_to_slack.py
