@@ -58,7 +58,9 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
  public:
   explicit CsvDenseBatchFactory(char delimiter) : _delimiter(delimiter) {
     if (delimiter == '.' || (delimiter >= '0' && delimiter <= '9')) {
-      throw std::invalid_argument("Invalid delimiter: " + delimiter);
+      std::string msg = "Invalid delimiter: ";
+      msg.push_back(delimiter);
+      throw std::invalid_argument(msg.c_str());
     }
   }
 
