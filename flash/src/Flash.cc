@@ -79,7 +79,7 @@ void Flash<LABEL_T>::addBatch(const BATCH_T& batch) {
   uint32_t* hashes = hash(batch);
   try {
     verifyBatchSequentialIds(batch);
-  } catch (std::exception& e) {
+  } catch (std::invalid_argument& e) {
     delete[] hashes;
     throw e;
   }
