@@ -65,7 +65,7 @@ def run_trial(reservoir_size, hashes_per_table, num_tables):
     indexing_time = end - start
     print(
         "Loading and indexing %d vectors (%d bytes) took:%f"
-        % (num_bytes, num_vectors, end - start),
+        % (num_vectors, num_bytes, end - start),
         flush=True,
     )
 
@@ -102,10 +102,16 @@ num_tables = [10, 50, 100, 200, 500]
 results = []
 
 # From a larger grid search, these were a good representative of the best
-# hyperparameters.
-trials = [(100, 12, 10)]
+# hyperparameters. For intuition, for low recall to optimize speed we choose
+# a lot of hash functions and increasing number of hash tables, along with a 
+# reasonably small reservoir. Towards the higher end of recall, we decrease
+# the number of hashes per table to try to find more neighbors, and increase
+# reservoir size.
+trials = [
+  (10, 16, 100), (25, 16, 100), (50, 16, 100), (100, 16, 100), (200, 16, 100), 
+  (500, 16, 200), (500, 14, 200), (500, 12, 500), (1000, 10, 1000)]
 
-for (reservoir_size, hashes_per_table, num_tables) in trials:
+for (num_tables, hashes_per_table, reservoir_size) in trials:
     results.append(run_trial(res, per_table, tables))
 
 
