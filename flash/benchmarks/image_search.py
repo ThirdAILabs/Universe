@@ -5,17 +5,40 @@ import argparse
 
 parser = argparse.ArgumentParser(description="Run MagSearch VGG Image Net Benchmark.")
 parser.add_argument(
-    "data_folder", help="The path to the folder containing the 129 imagenet .npy files."
+    "output_folder",
+    help="The folder where this script should save graphs and text results.",
 )
 parser.add_argument(
-    "output_folder",
-    help="The path to the folder where this script saves graphs and text results.",
+    "data_folder", help="The folder containing the 129 imagenet .npy files."
+)
+parse.add_argument(
+    "--read_in_entire_dataset",
+    action="store_true",
+    help="Speed up program is we have enough memory to read in the entire dataset (~40 GB)",
 )
 args = parser.parse_args()
 
 top_k_gt = 10
 top_k_search = 100
 max_numpy_chunk_exclusive = 129
+
+
+def load_ith_numpy_batch(i):
+    return np.load("%s/chunk-ave%d.npy" % (args.data_folder, i))
+
+
+if args.read_in_entire_dataset:
+    all_batches = [
+        load_ith_numpy_batch(chunk_num)
+        for chunk_num in range(max_numpy_chunk_exclusive)
+    ]
+
+
+def get_ith_batch(i):
+    if args.read_in_entire_dataset:
+        return all_batches[i]
+    else:
+        return load_ith_numpy_batch(i)
 
 
 def run_trial(reservoir_size, hashes_per_table, num_tables):
@@ -34,7 +57,7 @@ def run_trial(reservoir_size, hashes_per_table, num_tables):
     start = time.perf_counter()
     num_bytes = 0
     for chunk_num in range(0, max_numpy_chunk_exclusive):
-        batch = np.load("%s/chunk-ave%d.npy" % (args.data_folder, chunk_num))
+        batch = get_ith_batch(chunk_num)
         num_bytes += batch.nbytes
         index.add(dense_data=batch, starting_index=num_vectors)
         num_vectors += len(batch)
@@ -73,6 +96,19 @@ def run_trial(reservoir_size, hashes_per_table, num_tables):
     )
 
 
+reservoir_sizes = [100, 200, 500]
+hashes_per_table = [12, 14, 16]
+num_tables = [10, 50, 100, 200, 500]
+results = []
+
+# From a larger grid search, these were a good representative of the best
+# hyperparameters.
+trials = [(100, 12, 10)]
+
+for (reservoir_size, hashes_per_table, num_tables) in trials:
+    results.append(run_trial(res, per_table, tables))
+
+
 def get_pareto(values):
     results = []
     for v in sorted(values):
@@ -80,15 +116,6 @@ def get_pareto(values):
             results.append(v)
     return results
 
-
-reservoir_sizes = [100, 200, 500]
-hashes_per_table = [12, 14, 16]
-num_tables = [10, 50, 100, 200, 500]
-results = []
-for res in reservoir_sizes:
-    for per_table in hashes_per_table:
-        for tables in num_tables:
-            results.append(run_trial(res, per_table, tables))
 
 query_time_v_recall = [(result[4], result[5]) for result in results]
 pareto = get_pareto(query_time_v_recall)

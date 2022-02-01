@@ -11,7 +11,7 @@ then
   IMAGENET_FOLDER=$BENCHMARKING_FOLDER/MagSearch/ImageNet
   mkdir -p $IMAGENET_FOLDER
   python3 $BASEDIR/../flash/benchmarks/image_search.py \
-    /Users/josh/IndexChunks $IMAGENET_FOLDER \
+    $IMAGENET_FOLDER /Users/josh/IndexChunks --read_in_entire_dataset \
     > $IMAGENET_FOLDER/stdout 2> $IMAGENET_FOLDER/stderr
 fi
 
@@ -23,7 +23,9 @@ then
   # Amazon 670k extreme classification
   AMAZON_FOLDER=$BOLT_FOLDER/Amazon670k
   mkdir $AMAZON_FOLDER
-  # TODO: ADD HERE
+  python3 $BASEDIR/../bolt/benchmarks/amazon670k.py \
+    $AMAZON_FOLDER \
+    > $AMAZON_FOLDER/stdout 2> $AMAZON_FOLDER/stderr
 fi
 
 # Aggregate request into benchmarking/request.json

@@ -1,8 +1,7 @@
 from thirdai import bolt, dataset
 import sys
 import argparse
-from helpers import add_arguments, train
-
+from helpers import add_arguments
 
 def train_amzn670(args):
     layers = [
@@ -35,40 +34,24 @@ def train_amzn670(args):
 
 
 def main():
-    assert (
-        len(sys.argv) >= 2
-    ), "Invalid args, usage: python3 runner.py <dataset> [-h] <flags...>"
-    dataset = sys.argv[1]
 
     # Add default params for training, which can also be specified in command line.
-    accs, times = [], []
     parser = argparse.ArgumentParser(
-        description=f"Run BOLT on {dataset} with specified params."
+        description=f"Run BOLT on Amazon 670k with specified params."
     )
-    if dataset == "amzn670":
-        args = add_arguments(
-            parser=parser,
-            train="/media/scratch/data/amazon-670k/train_shuffled_noHeader.txt",
-            test="/media/scratch/data/amazon-670k/test_shuffled_noHeader.txt",
-            epochs=25,
-            hashes_per_table=6,
-            num_tables=128,
-            sparsity=0.005,
-            lr=0.0001,
-        )
-        accs, times = train(
-            args,
-            train_fn=train_amzn670,
-            accuracy_threshold=0.3,
-            epoch_time_threshold=450,
-            total_time_threshold=12000,
-        )
-    else:
-        print(
-            "Invalid dataset name. Options: mnist_sparse_output, mnist_sparse_hidden, amzn670, etc.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+
+    args = add_arguments(
+        parser=parser,
+        train="/media/scratch/data/amazon-670k/train_shuffled_noHeader.txt",
+        test="/media/scratch/data/amazon-670k/test_shuffled_noHeader.txt",
+        epochs=25,
+        hashes_per_table=5,
+        num_tables=128,
+        sparsity=0.005,
+        lr=0.0001
+    )
+    final_accuracy, epoch_accuracies, epoch_times = train_amzn670(args)
+
     print("Avg final accuracies: ", sum(accs) / len(accs))
     print("Avg final epoch time (s): ", sum(times) / len(times))
 
