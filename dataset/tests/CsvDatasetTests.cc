@@ -207,14 +207,16 @@ TEST_F(CsvDatasetTestFixture, ErroneousFilesTest) {
 }
 
 TEST_F(CsvDatasetTestFixture, ErroneousDelimiterTest) {
-  for (const char& delimiter :
+  for (const char delimiter :
        {'.', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}) {
     bool failed = false;
     try {
       InMemoryDataset<DenseBatch> dataset(filename, batch_size,
                                           CsvDenseBatchFactory(delimiter));
     } catch (const std::invalid_argument& e) {
-      EXPECT_STREQ("Invalid delimiter: " + delimiter, e.what());
+      std::string msg = "Invalid delimiter: ";
+      msg.push_back(delimiter);
+      EXPECT_STREQ(msg.c_str(), e.what());
       failed = true;
     }
     EXPECT_TRUE(failed);

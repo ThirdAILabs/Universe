@@ -1,4 +1,4 @@
-name: clang-tidy
+name: Lint C++ Code
 
 # Controls when the workflow will run
 on:
