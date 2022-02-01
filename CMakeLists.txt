@@ -20,18 +20,31 @@ add_compile_options(
   -pedantic 
   $<$<CONFIG:DEBUG>:-O0>
   $<$<CONFIG:DEBUG>:-g>
-  $<$<CONFIG:DEBUG>:-fsanitize=address>
   $<$<CONFIG:RELEASE>:-DNDEBUG>
   $<$<CONFIG:RELEASE>:-Ofast>
   $<$<CONFIG:RELEASE>:-ffast-math>
   $<$<CONFIG:RELEASE>:-funroll-loops>
   $<$<CONFIG:RELEASE>:-ftree-vectorize>
 )
+# In debug mode we are using ASan (address sanitizer) to provide better information on errors.
+# We only run with this in debug mode because it carries a performace penalty. 
+# See https://github.com/google/sanitizers/wiki/AddressSanitizer for more information.
+
 
 add_link_options(
   -fopenmp
-  $<$<CONFIG:DEBUG>:-fsanitize=address>
 )
+
+# ASan does not work with GCC on M1 Macs yet. We would have to switch to clang. 
+if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64") 
+  add_link_options(
+    $<$<CONFIG:DEBUG>:-fsanitize=address>
+  )
+
+  add_compile_options(
+    $<$<CONFIG:DEBUG>:-fsanitize=address>
+  )
+endif()
 
 find_package(OpenMP REQUIRED)
 
