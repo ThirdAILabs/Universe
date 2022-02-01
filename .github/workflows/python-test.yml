@@ -31,5 +31,5 @@ jobs:
           sudo pip3 install numpy
       - name: Build and Run Tests
         run: |
-          bin/build.sh all debug
+          bin/build.sh
           bin/python-test.sh
