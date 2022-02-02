@@ -25,7 +25,7 @@ def add_folder_to_payload(to_append_to, root, files):
         "type": "header",
         "text": {
             "type": "plain_text",
-            "text": " ".join(root.split("/")) + " Benchmarks",
+            "text": " ".join(root.split("/")[-2:]) + " Benchmarks",
         },
     }
     to_append_to.append(header)

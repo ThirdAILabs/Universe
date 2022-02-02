@@ -11,7 +11,7 @@ parser.add_argument(
 parser.add_argument(
     "data_folder", help="The folder containing the 129 imagenet .npy files."
 )
-parse.add_argument(
+parser.add_argument(
     "--read_in_entire_dataset",
     action="store_true",
     help="Speed up program is we have enough memory to read in the entire dataset (~40 GB)",
@@ -43,8 +43,8 @@ def get_ith_batch(i):
 
 def run_trial(reservoir_size, hashes_per_table, num_tables):
     print(
-        f"Creating index with reservoir size {res} and {tables} hash"
-        + f" tables, with {per_table} concatenated hashes per table.",
+        f"Creating index with reservoir size {reservoir_size} and {num_tables} hash"
+        + f" tables, with {hashes_per_table} concatenated hashes per table.",
         flush=True,
     )
 
@@ -87,7 +87,7 @@ def run_trial(reservoir_size, hashes_per_table, num_tables):
     total_recall = sum(recals) / len(recals)
     print(f"R{top_k_gt}@{top_k_search} = {total_recall}", flush=True)
     return (
-        res,
+        reservoir_size,
         hashes_per_table,
         num_tables,
         indexing_time,
@@ -112,7 +112,7 @@ trials = [
   (500, 16, 200), (500, 14, 200), (500, 12, 500), (1000, 10, 1000)]
 
 for (num_tables, hashes_per_table, reservoir_size) in trials:
-    results.append(run_trial(res, per_table, tables))
+    results.append(run_trial(reservoir_size, hashes_per_table, num_tables))
 
 
 def get_pareto(values):
@@ -127,7 +127,7 @@ query_time_v_recall = [(result[4], result[5]) for result in results]
 pareto = get_pareto(query_time_v_recall)
 
 fastest_with_recall_80_percent = [p for p in pareto if p[1] > 0.8][0]
-with open(args.output_folder + "/imagenet_results.txt") as f:
+with open(args.output_folder + "/imagenet_results.txt", "w") as f:
     f.write(
         f"""
 	Succesfully ran {len(results)} trials of MagSearch on the ImageNet embedding
