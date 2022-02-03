@@ -37,8 +37,10 @@ jobs:
     - name: Run Benchmark Tests
       uses: fifsky/ssh-action@master
       with:
-        # SSH into blade cluster and run this series of commands.
+        # SSH into blade cluster node 11 and run this series of commands.
         command: |
+          ssh cicd@192.168.1.11
+
           export RUN_ID=${{ steps.vars.outputs.run_id }}
           export RUN_BOLT=${{ steps.vars.outputs.bolt }}
           export RUN_MAGSEARCH=${{ steps.vars.outputs.magsearch }}
@@ -47,9 +49,8 @@ jobs:
           git clone --branch ${{ steps.vars.outputs.branch }} git@github.com:ThirdAILabs/Universe.git
           cd Universe
           pip3 install .
-          pip3 install numpy
-          pip3 install mlflow
           nohup bin/benchmark.sh &
+          exit
         host: ${{ secrets.HOST }}
         user: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
