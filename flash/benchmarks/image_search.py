@@ -10,7 +10,7 @@ parser.add_argument(
     "--data_folder",
     help="The folder containing the 129 imagenet .npy files.",
     required=False,
-    default="/media/scratch/ImageNetDemo/IndexFiles",
+    default="/media/scratch/data/ImageNet",
 )
 parser.add_argument(
     "--read_in_entire_dataset",
