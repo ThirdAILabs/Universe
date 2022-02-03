@@ -47,6 +47,8 @@ jobs:
           git clone --branch ${{ steps.vars.outputs.branch }} git@github.com:ThirdAILabs/Universe.git
           cd Universe
           pip3 install .
+          pip3 install numpy
+          pip3 install mlflow
           nohup bash bin/benchmark.sh &
         host: ${{ secrets.HOST }}
         user: ${{ secrets.USERNAME }}
