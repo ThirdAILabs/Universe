@@ -7,11 +7,10 @@ BENCHMARKING_FOLDER=$BASEDIR/../benchmarking
 if [ "$RUN_MAGSEARCH" != "n" ]
 then
   # Image net embedding search
-  # --read_in_entire_dataset \
   IMAGENET_FOLDER=$BENCHMARKING_FOLDER/magsearch/imagenet
   mkdir -p $IMAGENET_FOLDER
   python3 $BASEDIR/../flash/benchmarks/image_search.py \
-    /Users/josh/IndexChunks \
+      --read_in_entire_dataset \
       > $IMAGENET_FOLDER/stdout 2> $IMAGENET_FOLDER/stderr
 fi
 
@@ -25,6 +24,7 @@ then
     > $AMAZON_FOLDER/stdout 2> $AMAZON_FOLDER/stderr
 fi
 
-# Send Slack Notification
-URL="https://hooks.slack.com/services/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"
-curl -X POST -H 'Content-type: application/json' -d @$BENCHMARKING_FOLDER/request.json $URL
+DATE=$(date '+%Y-%m-%d')
+LOG_DIR=$BASEDIR/../../logs/$DATE
+mkdir -p $LOG_DIR
+cp -a $BENCHMARKING_FOLDER/* ../LOG_DIR/
