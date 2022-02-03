@@ -97,17 +97,9 @@ add_subdirectory(hashtable)
 
 file(
   GLOB BOLT_SOURCES 
-  bolt/layers/BoltVector.cc 
-  bolt/layers/FullyConnectedLayer.cc 
-  bolt/networks/Network.cc 
+  bolt/layers/*.cc 
+  bolt/networks/*.cc 
   bolt/utils/*.cc 
-)
-
-
-file(
-  GLOB DLRM_SOURCES 
-  bolt/layers/EmbeddingLayer.cc
-  bolt/networks/DLRM.cc 
 )
 
 file(

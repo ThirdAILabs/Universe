@@ -12,7 +12,8 @@ namespace thirdai::bolt {
 
 class FullyConnectedNetwork {
  public:
-  FullyConnectedNetwork(std::vector<FullyConnectedLayerConfig> configs, uint32_t input_dim);
+  FullyConnectedNetwork(std::vector<FullyConnectedLayerConfig> configs,
+                        uint32_t input_dim);
 
   /**
    * This function takes in a dataset and training parameters and trains the
