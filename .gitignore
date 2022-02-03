@@ -11,6 +11,5 @@ thirdai.egg-info
 # Mac stuff
 .DS_Store
 
-# Ignore everything in benchmarking folder (which contains generated files), but 
-# not a couple of scripts we need in there.
+# Ignore benchmarking folder
 benchmarking
