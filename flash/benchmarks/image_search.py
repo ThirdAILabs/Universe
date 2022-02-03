@@ -7,8 +7,9 @@ from datetime import date
 
 parser = argparse.ArgumentParser(description="Run MagSearch VGG Image Net Benchmark.")
 parser.add_argument(
-    "data_folder",
+    "--data_folder",
     help="The folder containing the 129 imagenet .npy files.",
+    required=False,
     default="/media/scratch/ImageNetDemo/IndexFiles",
 )
 parser.add_argument(

@@ -1,3 +1,5 @@
+#!/bin/bash -x
+
 # This script runs our benchmarks and logs the results to our MlFlow server.
 
 BASEDIR=$(dirname "$0")
@@ -27,4 +29,4 @@ fi
 DATE=$(date '+%Y-%m-%d')
 LOG_DIR=$BASEDIR/../../logs/$DATE
 mkdir -p $LOG_DIR
-cp -a $BENCHMARKING_FOLDER/* ../LOG_DIR/
+cp -a $BENCHMARKING_FOLDER/* $LOG_DIR
