@@ -14,9 +14,9 @@ namespace thirdai::dataset {
 const std::string _filename = "./clickthrough_dataset_test_file";
 static const uint32_t _num_vectors = 11, _batch_size = 4;
 
-class CLickThroughDatasetTestFixture : public ::testing::Test {
+class ClickThroughDatasetTestFixture : public ::testing::Test {
  public:
-  CLickThroughDatasetTestFixture()
+  ClickThroughDatasetTestFixture()
       : gen(590240),
         _label_dist(0, _num_classes - 1),
         _dense_feature_dist(0, _dense_feature_range),
@@ -139,7 +139,7 @@ class CLickThroughDatasetTestFixture : public ::testing::Test {
                             std::numeric_limits<uint32_t>::max();
 };
 
-TEST_F(CLickThroughDatasetTestFixture, InMemoryDatasetTest) {
+TEST_F(ClickThroughDatasetTestFixture, InMemoryDatasetTest) {
   InMemoryDataset<ClickThroughBatch> dataset(
       _filename, _batch_size,
       ClickThroughBatchFactory(getNumDenseFeatures(),
@@ -153,7 +153,7 @@ TEST_F(CLickThroughDatasetTestFixture, InMemoryDatasetTest) {
   ASSERT_EQ(vec_count, _num_vectors);
 }
 
-TEST_F(CLickThroughDatasetTestFixture, StreamedDatasetTest) {
+TEST_F(ClickThroughDatasetTestFixture, StreamedDatasetTest) {
   StreamedDataset<ClickThroughBatch> dataset(
       _filename, _batch_size,
       std::make_unique<ClickThroughBatchFactory>(getNumDenseFeatures(),
