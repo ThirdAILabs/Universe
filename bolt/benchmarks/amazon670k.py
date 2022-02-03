@@ -28,6 +28,7 @@ def train_amzn670(args):
     train_data = dataset.load_svm_dataset(args.train, 256)
     test_data = dataset.load_svm_dataset(args.test, 256)
 
+    mlflow.log_metric("accuracy", 0)
     for i in range(args.epochs):
         network.train(train_data, args.lr, 1, rehash=6400, rebuild=128000)
         acc = network.predict(test_data, batch_limit=20)
