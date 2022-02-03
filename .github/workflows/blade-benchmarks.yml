@@ -41,15 +41,11 @@ jobs:
         command: |
           ssh cicd@192.168.1.11
 
-          export RUN_ID=${{ steps.vars.outputs.run_id }}
           export RUN_BOLT=${{ steps.vars.outputs.bolt }}
           export RUN_MAGSEARCH=${{ steps.vars.outputs.magsearch }}
 
-          rm -rf Universe
-          git clone --branch ${{ steps.vars.outputs.branch }} git@github.com:ThirdAILabs/Universe.git
           cd Universe
-          pip3 install .
-          nohup bin/benchmark.sh &
+          bin/benchmark.sh & disown
           exit
         host: ${{ secrets.HOST }}
         user: ${{ secrets.USERNAME }}
