@@ -1,4 +1,4 @@
-#include "networks/Network.h"
+#include "networks/FullyConnectedNetwork.h"
 #include "utils/ConfigReader.h"
 #include <dataset/src/Dataset.h>
 #include <chrono>
@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
                              config.intVal("reservoir_size", l)));
   }
 
-  bolt::Network network(layers, config.intVal("input_dim"));
+  bolt::FullyConnectedNetwork network(layers, config.intVal("input_dim"));
 
   float learning_rate = config.floatVal("learning_rate");
   uint32_t epochs = config.intVal("epochs");

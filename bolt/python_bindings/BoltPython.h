@@ -2,7 +2,7 @@
 
 #include <bolt/layers/LayerConfig.h>
 #include <bolt/networks/DLRM.h>
-#include <bolt/networks/Network.h>
+#include <bolt/networks/FullyConnectedNetwork.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
@@ -15,11 +15,11 @@ namespace thirdai::bolt::python {
 
 void createBoltSubmodule(py::module_& module);
 
-class PyNetwork final : public Network {
+class PyNetwork final : public FullyConnectedNetwork {
  public:
   PyNetwork(std::vector<bolt::FullyConnectedLayerConfig> configs,
             uint64_t input_dim)
-      : Network(std::move(configs), input_dim) {}
+      : FullyConnectedNetwork(std::move(configs), input_dim) {}
 
   py::array_t<float> getWeightMatrix(uint32_t layer_index) {
     if (layer_index >= _num_layers) {

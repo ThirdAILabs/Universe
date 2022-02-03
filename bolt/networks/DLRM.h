@@ -2,7 +2,7 @@
 
 #include <bolt/layers/EmbeddingLayer.h>
 #include <bolt/layers/FullyConnectedLayer.h>
-#include <bolt/networks/Network.h>
+#include <bolt/networks/FullyConnectedNetwork.h>
 #include <dataset/src/Dataset.h>
 #include <vector>
 
@@ -39,8 +39,8 @@ class DLRM {
   void buildHashTables();
 
   EmbeddingLayer _embedding_layer;
-  Network _bottom_mlp;
-  Network _top_mlp;
+  FullyConnectedNetwork _bottom_mlp;
+  FullyConnectedNetwork _top_mlp;
 
   uint32_t _concat_layer_dim;
   BoltBatch _concat_layer_state;
