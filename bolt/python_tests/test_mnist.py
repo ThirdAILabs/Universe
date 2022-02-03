@@ -1,7 +1,6 @@
 import os
 from thirdai import bolt, dataset
 import sys
-from helpers import train
 import pytest
 from collections import namedtuple
 
