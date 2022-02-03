@@ -10,9 +10,10 @@
 
 namespace thirdai::bolt {
 
-class Network {
+class FullyConnectedNetwork {
  public:
-  Network(std::vector<FullyConnectedLayerConfig> configs, uint32_t input_dim);
+  FullyConnectedNetwork(std::vector<FullyConnectedLayerConfig> configs,
+                        uint32_t input_dim);
 
   /**
    * This function takes in a dataset and training parameters and trains the
@@ -89,7 +90,7 @@ class Network {
     return funcs;
   }
 
-  ~Network();
+  ~FullyConnectedNetwork();
 
  protected:
   std::vector<FullyConnectedLayerConfig> _configs;

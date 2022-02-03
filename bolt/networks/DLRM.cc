@@ -1,5 +1,5 @@
 #include "DLRM.h"
-#include <bolt/layers/LossFunctions.h>
+#include <bolt/loss_functions/LossFunctions.h>
 #include <bolt/utils/ProgressBar.h>
 #include <atomic>
 #include <chrono>

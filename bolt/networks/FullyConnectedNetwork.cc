@@ -1,5 +1,5 @@
-#include "Network.h"
-#include <bolt/layers/LossFunctions.h>
+#include "FullyConnectedNetwork.h"
+#include <bolt/loss_functions/LossFunctions.h>
 #include <bolt/utils/ProgressBar.h>
 #include <algorithm>
 #include <atomic>
@@ -13,8 +13,8 @@ constexpr uint32_t RehashAutoTuneThreshold = 100000;
 constexpr uint32_t RehashAutoTuneFactor1 = 100;
 constexpr uint32_t RehashAutoTuneFactor2 = 20;
 
-Network::Network(std::vector<FullyConnectedLayerConfig> configs,
-                 uint32_t input_dim)
+FullyConnectedNetwork::FullyConnectedNetwork(
+    std::vector<FullyConnectedLayerConfig> configs, uint32_t input_dim)
     : _configs(std::move(configs)),
       _input_dim(input_dim),
       _iter(0),
@@ -51,18 +51,19 @@ Network::Network(std::vector<FullyConnectedLayerConfig> configs,
   std::cout << "==============================" << std::endl;
 }
 
-template std::vector<int64_t> Network::train<dataset::SparseBatch>(
+template std::vector<int64_t>
+FullyConnectedNetwork::train<dataset::SparseBatch>(
     const dataset::InMemoryDataset<dataset::SparseBatch>& train_data,
     float learning_rate, uint32_t epochs, uint32_t rehash_in,
     uint32_t rebuild_in);
 
-template std::vector<int64_t> Network::train<dataset::DenseBatch>(
+template std::vector<int64_t> FullyConnectedNetwork::train<dataset::DenseBatch>(
     const dataset::InMemoryDataset<dataset::DenseBatch>& train_data,
     float learning_rate, uint32_t epochs, uint32_t rehash_in,
     uint32_t rebuild_in);
 
 template <typename BATCH_T>
-std::vector<int64_t> Network::train(
+std::vector<int64_t> FullyConnectedNetwork::train(
     const dataset::InMemoryDataset<BATCH_T>& train_data, float learning_rate,
     uint32_t epochs, uint32_t rehash_in, uint32_t rebuild_in) {
   uint32_t rehash = rehash_in;
@@ -151,17 +152,17 @@ std::vector<int64_t> Network::train(
   return time_per_epoch;
 }
 
-template float Network::predict<dataset::SparseBatch>(
+template float FullyConnectedNetwork::predict<dataset::SparseBatch>(
     const dataset::InMemoryDataset<dataset::SparseBatch>& test_data,
     uint32_t batch_limit);
 
-template float Network::predict<dataset::DenseBatch>(
+template float FullyConnectedNetwork::predict<dataset::DenseBatch>(
     const dataset::InMemoryDataset<dataset::DenseBatch>& test_data,
     uint32_t batch_limit);
 
 template <typename BATCH_T>
-float Network::predict(const dataset::InMemoryDataset<BATCH_T>& test_data,
-                       uint32_t batch_limit) {
+float FullyConnectedNetwork::predict(
+    const dataset::InMemoryDataset<BATCH_T>& test_data, uint32_t batch_limit) {
   uint32_t batch_size = test_data[0].getBatchSize();
 
   uint64_t num_test_batches = std::min(test_data.numBatches(), batch_limit);
@@ -228,9 +229,10 @@ float Network::predict(const dataset::InMemoryDataset<BATCH_T>& test_data,
   return accuracy;
 }
 
-void Network::forward(uint32_t batch_index, const BoltVector& input,
-                      BoltVector& output, const uint32_t* labels,
-                      uint32_t label_len) {
+void FullyConnectedNetwork::forward(uint32_t batch_index,
+                                    const BoltVector& input, BoltVector& output,
+                                    const uint32_t* labels,
+                                    uint32_t label_len) {
   for (uint32_t i = 0; i < _num_layers; i++) {
     if (i == 0 && _num_layers == 1) {  // First and last layer
       _layers[0]->forward(input, output, labels, label_len);
@@ -245,12 +247,15 @@ void Network::forward(uint32_t batch_index, const BoltVector& input,
   }
 }
 
-template void Network::backpropagate<true>(uint32_t, BoltVector&, BoltVector&);
-template void Network::backpropagate<false>(uint32_t, BoltVector&, BoltVector&);
+template void FullyConnectedNetwork::backpropagate<true>(uint32_t, BoltVector&,
+                                                         BoltVector&);
+template void FullyConnectedNetwork::backpropagate<false>(uint32_t, BoltVector&,
+                                                          BoltVector&);
 
 template <bool FROM_INPUT>
-void Network::backpropagate(uint32_t batch_index, BoltVector& input,
-                            BoltVector& output) {
+void FullyConnectedNetwork::backpropagate(uint32_t batch_index,
+                                          BoltVector& input,
+                                          BoltVector& output) {
   for (uint32_t i = _num_layers; i > 0; i--) {
     uint32_t layer = i - 1;
     if (layer == 0 && _num_layers == 1) {  // First and last layer
@@ -274,38 +279,39 @@ void Network::backpropagate(uint32_t batch_index, BoltVector& input,
   }
 }
 
-void Network::createBatchStates(uint32_t batch_size, bool force_dense) {
+void FullyConnectedNetwork::createBatchStates(uint32_t batch_size,
+                                              bool force_dense) {
   for (uint32_t l = 0; l < _num_layers - 1; l++) {
     _states[l] = _layers[l]->createBatchState(batch_size, force_dense);
   }
 }
 
-void Network::updateParameters(float learning_rate) {
+void FullyConnectedNetwork::updateParameters(float learning_rate) {
   ++_iter;
   for (uint32_t layer = 0; layer < _num_layers; layer++) {
     _layers[layer]->updateParameters(learning_rate, _iter, BETA1, BETA2, EPS);
   }
 }
 
-void Network::reBuildHashFunctions() {
+void FullyConnectedNetwork::reBuildHashFunctions() {
   for (uint32_t l = 0; l < _num_layers; l++) {
     _layers[l]->reBuildHashFunction();
   }
 }
 
-void Network::buildHashTables() {
+void FullyConnectedNetwork::buildHashTables() {
   for (uint32_t l = 0; l < _num_layers; l++) {
     _layers[l]->buildHashTables();
   }
 }
 
-void Network::shuffleRandomNeurons() {
+void FullyConnectedNetwork::shuffleRandomNeurons() {
   for (uint32_t i = 0; i < _num_layers; i++) {
     _layers[i]->shuffleRandNeurons();
   }
 }
 
-Network::~Network() {
+FullyConnectedNetwork::~FullyConnectedNetwork() {
   for (uint32_t i = 0; i < _num_layers; i++) {
     delete _layers[i];
   }

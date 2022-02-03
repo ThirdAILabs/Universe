@@ -1,5 +1,5 @@
 #include "../layers/FullyConnectedLayer.h"
-#include "../layers/LossFunctions.h"
+#include "../loss_functions/LossFunctions.h"
 #include <hashtable/src/SampledHashTable.h>
 #include <gtest/gtest.h>
 #include <vector>
