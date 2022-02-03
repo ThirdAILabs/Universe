@@ -107,10 +107,7 @@ mlflow.set_experiment("MagSearch")
 with mlflow.start_run(
     nested=True,
     run_name=f"ImageNet Benchmarks {date.today()}",
-    tags={
-        "dataset": "imagenet_embeddings",
-        "algorithm": "magsearch"
-    },
+    tags={"dataset": "imagenet_embeddings", "algorithm": "magsearch"},
 ):
     for (num_tables, hashes_per_table, reservoir_size) in trials:
         with mlflow.start_run(nested=True):

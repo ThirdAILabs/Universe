@@ -61,10 +61,7 @@ def main():
     mlflow.set_experiment("Bolt")
     with mlflow.start_run(
         run_name=f"Amazon670k Benchmarks {date.today()}",
-        tags={
-            "dataset": "amazon670k",
-            "algorithm": "bolt"
-        },
+        tags={"dataset": "amazon670k", "algorithm": "bolt"},
     ):
         mlflow.log_param("hashes_per_table", args.hashes_per_table)
         mlflow.log_param("num_tables", args.num_tables)
