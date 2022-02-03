@@ -2,7 +2,6 @@ from thirdai import bolt, dataset
 import sys
 import argparse
 from helpers import add_arguments
-import matplotlib.pyplot as plt
 import requests
 import time
 import mlflow
