@@ -49,7 +49,7 @@ jobs:
           pip3 install .
           pip3 install numpy
           pip3 install mlflow
-          nohup bash bin/benchmark.sh &
+          nohup bin/benchmark.sh &
         host: ${{ secrets.HOST }}
         user: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
