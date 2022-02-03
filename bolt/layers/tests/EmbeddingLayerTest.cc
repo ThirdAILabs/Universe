@@ -1,4 +1,4 @@
-#include "../layers/EmbeddingLayer.h"
+#include <bolt/layers/EmbeddingLayer.h>
 #include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
 #include <algorithm>
