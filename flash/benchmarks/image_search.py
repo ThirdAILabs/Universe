@@ -109,8 +109,7 @@ with mlflow.start_run(
     run_name=f"ImageNet Benchmarks {date.today()}",
     tags={
         "dataset": "imagenet_embeddings",
-        "algorithm": "magsearch",
-        "reason": "weekly benchmarking",
+        "algorithm": "magsearch"
     },
 ):
     for (num_tables, hashes_per_table, reservoir_size) in trials:

@@ -63,8 +63,7 @@ def main():
         run_name=f"Amazon670k Benchmarks {date.today()}",
         tags={
             "dataset": "amazon670k",
-            "algorithm": "bolt",
-            "reason": "weekly benchmarking",
+            "algorithm": "bolt"
         },
     ):
         mlflow.log_param("hashes_per_table", args.hashes_per_table)
