@@ -54,9 +54,6 @@ def main():
         lr=0.0001,
     )
 
-    mlflow.set_tracking_uri(
-        "http://deplo-mlflo-15qe25sw8psjr-1d20dd0c302edb1f.elb.us-east-1.amazonaws.com"
-    )
     mlflow.set_experiment("Bolt")
     with mlflow.start_run(
         run_name=f"Amazon670k Benchmarks {date.today()}",

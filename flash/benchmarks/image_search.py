@@ -99,10 +99,6 @@ trials = [
     (1000, 10, 1000),
 ]
 
-
-mlflow.set_tracking_uri(
-    "http://deplo-mlflo-15qe25sw8psjr-1d20dd0c302edb1f.elb.us-east-1.amazonaws.com"
-)
 mlflow.set_experiment("MagSearch")
 with mlflow.start_run(
     nested=True,
