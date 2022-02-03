@@ -7,7 +7,6 @@ def add_arguments(
     """
     Add arguments to each benchmark script.
     """
-    parser.add_argument("output_folder", type=str, help="folder where this script should save graphs and text results")
     parser.add_argument(
         "--train",
         default=train,

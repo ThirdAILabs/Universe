@@ -5,7 +5,9 @@ with open("benchmarking/magsearch/imagenet/stdout") as f:
     while i < len(lines) - 3:
         words = lines[i].split()
         res_size, hashes_per_table, num_tables = [
-            int(words[5]), int(words[7]), int(words[11])
+            int(words[5]),
+            int(words[7]),
+            int(words[11]),
         ]
         i += 1
         indexing_time = float(lines[i].split(":")[1][:-1])

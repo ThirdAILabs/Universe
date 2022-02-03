@@ -18,7 +18,7 @@ on:
       magsearch:
         description: 'Run MagSearch Benchmarks (y/n)'
         required: true
-        default: 'n'
+        default: 'y'
       
 jobs:
   benchmarks:

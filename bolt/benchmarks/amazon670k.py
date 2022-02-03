@@ -2,6 +2,11 @@ from thirdai import bolt, dataset
 import sys
 import argparse
 from helpers import add_arguments
+import matplotlib.pyplot as plt
+import requests
+import time
+import mlflow
+
 
 def train_amzn670(args):
     layers = [
@@ -22,20 +27,18 @@ def train_amzn670(args):
 
     train_data = dataset.load_svm_dataset(args.train, 256)
     test_data = dataset.load_svm_dataset(args.test, 256)
-    epoch_times = []
-    epoch_accuracies = []
-    for _ in range(args.epochs):
-        times = network.train(train_data, args.lr, 1, rehash=6400, rebuild=128000)
-        epoch_times.append(times[0])
+
+    for i in range(args.epochs):
+        network.train(train_data, args.lr, 1, rehash=6400, rebuild=128000)
         acc = network.predict(test_data, batch_limit=20)
-        epoch_accuracies.append(acc)
+        mlflow.log_metric("accuracy", acc)
+
     final_accuracy = network.predict(test_data)
-    return final_accuracy, epoch_accuracies, epoch_times
+    mlflow.log_metric("final_accuracy", final_accuracy)
 
 
 def main():
 
-    # Add default params for training, which can also be specified in command line.
     parser = argparse.ArgumentParser(
         description=f"Run BOLT on Amazon 670k with specified params."
     )
@@ -48,12 +51,27 @@ def main():
         hashes_per_table=5,
         num_tables=128,
         sparsity=0.005,
-        lr=0.0001
+        lr=0.0001,
     )
-    final_accuracy, epoch_accuracies, epoch_times = train_amzn670(args)
 
-    print("Avg final accuracies: ", sum(accs) / len(accs))
-    print("Avg final epoch time (s): ", sum(times) / len(times))
+    mlflow.set_tracking_uri(
+        "http://deplo-mlflo-15qe25sw8psjr-1d20dd0c302edb1f.elb.us-east-1.amazonaws.com"
+    )
+    mlflow.set_experiment("Bolt")
+    with mlflow.start_run(
+        run_name=f"Amazon670k Benchmarks {date.today()}",
+        tags={
+            "dataset": "amazon670k",
+            "algorithm": "bolt",
+            "reason": "weekly benchmarking",
+        },
+    ):
+        mlflow.log_param("hashes_per_table", args.hashes_per_table)
+        mlflow.log_param("num_tables", args.num_tables)
+        mlflow.log_param("sparsity", args.sparsity)
+        mlflow.log_param("learning_rate", args.lr)
+
+        train_amzn670(args)
 
 
 if __name__ == "__main__":
