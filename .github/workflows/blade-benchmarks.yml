@@ -44,8 +44,11 @@ jobs:
           export RUN_BOLT=${{ steps.vars.outputs.bolt }}
           export RUN_MAGSEARCH=${{ steps.vars.outputs.magsearch }}
 
+          rm -rf Universe
+          git clone --branch ${{ steps.vars.outputs.branch }} git@github.com:ThirdAILabs/Universe.git
           cd Universe
-          bin/benchmark.sh & disown
+          pip3 install .
+          bin/benchmark.sh
           exit
         host: ${{ secrets.HOST }}
         user: ${{ secrets.USERNAME }}
