@@ -62,7 +62,6 @@ class ModelLogger:
 
     def __init__(
         self,
-        run_name,
         dataset,
         learning_rate,
         num_hash_tables=False,
@@ -70,7 +69,6 @@ class ModelLogger:
         sparsity=False,
         algorithm="bolt",
     ):
-        self.run_name = run_name
         self.dataset = dataset
         self.num_hash_tables = num_hash_tables
         self.sparsity = sparsity
@@ -82,7 +80,6 @@ class ModelLogger:
     def __enter__(self):
         mlflow.set_experiment("Learning")
         mlflow.start_run(
-            run_name=self.run_name,
             tags={"dataset": self.dataset, "algorithm": self.algorithm},
         )
         _log_machine_info()
