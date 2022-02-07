@@ -43,7 +43,7 @@ class ModelLogger:
         num_hash_tables=10,
         hashes_per_table=5,
         sparsity=0.01,
-        algorithm="Bolt") as mlflow_logger:
+        algorithm="bolt") as mlflow_logger:
 
         <Code to init model>
 

@@ -4,7 +4,6 @@ import argparse
 from helpers import add_arguments
 import requests
 import time
-import mlflow
 from datetime import date
 
 # Add the logging folder to the system path
@@ -61,7 +60,6 @@ def main():
         lr=0.0001,
     )
 
-    mlflow.set_experiment("Bolt")
     with ModelLogger(
         dataset="amazon670k",
         learning_rate=0.01,
