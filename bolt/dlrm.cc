@@ -45,7 +45,7 @@ int main() {
     dlrm.train(train, 0.0001, 1, 300, 500);
 
     float* scores = new float[151 * test.len()];
-    dlrm.testImpl(test, scores);
+    dlrm.predict(test, scores);
   }
   return 0;
 }

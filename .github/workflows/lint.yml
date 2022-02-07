@@ -1,4 +1,4 @@
-name: clang-tidy
+name: Lint C++ Code
 
 # Controls when the workflow will run
 on:
@@ -23,8 +23,6 @@ jobs:
         sudo apt install -y mpich libmpich-dev
         sudo apt-get install -y clang-tidy-12
         sudo ln -s /usr/bin/clang-tidy-12 /usr/bin/clang-tidy
-    - name: Prepare compile_commands.json
+    - name: Run linting on all files
       run: |
-        bin/generate_compile_commands.sh
-    - name: Run clang-tidy on all files
-      run: python3 bin/run-clang-tidy.py
+        bin/lint.sh

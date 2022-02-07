@@ -25,3 +25,10 @@ brew install cmake
 # Git line endings
 git config --global core.eol lf 
 git config --global core.autocrlf input
+
+# Append Universe build directory to PYTHONPATH on interactive shell startup
+echo "export PYTHONPATH=~/Universe/build:$PYTHONPATH" >> $HOME/.bash_profile 
+
+# Install necessary python packages
+pip3 install dark
+pip3 install pytest

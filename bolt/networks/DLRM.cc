@@ -1,5 +1,6 @@
 #include "DLRM.h"
-#include <bolt/layers/LossFunctions.h>
+#include <bolt/layers/BoltVector.h>
+#include <bolt/loss_functions/LossFunctions.h>
 #include <bolt/utils/ProgressBar.h>
 #include <atomic>
 #include <chrono>
@@ -56,7 +57,7 @@ void DLRM::train(
   // a batch size larger than this so we can just set the batch size here.
   initializeNetworkForBatchSize(batch_size, false);
 
-  BatchState output(_output_dim, batch_size, true);
+  BoltBatch output(_output_dim, batch_size, true);
 
   MeanSquaredError MSE;
   SparseCategoricalCrossEntropyLoss loss;
@@ -77,7 +78,7 @@ void DLRM::train(
 #pragma omp parallel for default(none) \
     shared(input_batch, output, batch_size, MSE, loss)
       for (uint32_t b = 0; b < input_batch.getBatchSize(); b++) {
-        VectorState dense_input = VectorState::makeDenseInputState(
+        BoltVector dense_input = BoltVector::makeDenseInputState(
             input_batch[b]._values, input_batch[b].dim());
 
         forward(b, dense_input, input_batch.categoricalFeatures(b), output[b]);
@@ -120,7 +121,7 @@ void DLRM::train(
   }
 }
 
-void DLRM::testImpl(
+void DLRM::predict(
     const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
     float* scores) {
   uint32_t batch_size = test_data.at(0).getBatchSize();
@@ -128,7 +129,7 @@ void DLRM::testImpl(
 
   initializeNetworkForBatchSize(batch_size, true);
 
-  BatchState output(_output_dim, batch_size, true);
+  BoltBatch output(_output_dim, batch_size, true);
 
   ProgressBar bar(num_test_batches);
 
@@ -139,8 +140,8 @@ void DLRM::testImpl(
   for (const auto& batch : test_data) {
 #pragma omp parallel for default(none) shared(batch, output, scores, cnt)
     for (uint32_t b = 0; b < batch.getBatchSize(); b++) {
-      VectorState dense_input =
-          VectorState::makeDenseInputState(batch[b]._values, batch[b].dim());
+      BoltVector dense_input =
+          BoltVector::makeDenseInputState(batch[b]._values, batch[b].dim());
 
       forward(b, dense_input, batch.categoricalFeatures(b), output[b]);
 
@@ -165,7 +166,7 @@ void DLRM::testImpl(
 
 void DLRM::initializeNetworkForBatchSize(uint32_t batch_size,
                                          bool force_dense) {
-  _concat_layer_state = BatchState(_concat_layer_dim, batch_size, true);
+  _concat_layer_state = BoltBatch(_concat_layer_dim, batch_size, true);
 
   uint32_t embedding_dim = _embedding_layer.getEmbeddingDim();
   uint32_t bottom_mlp_output_dim = _bottom_mlp.getLayerSizes().back();
@@ -174,12 +175,12 @@ void DLRM::initializeNetworkForBatchSize(uint32_t batch_size,
   _embedding_layer_output.clear();
 
   for (uint32_t b = 0; b < batch_size; b++) {
-    const VectorState& concat_vec = _concat_layer_state[b];
+    const BoltVector& concat_vec = _concat_layer_state[b];
 
-    _bottom_mlp_output.push_back(VectorState::makeDenseState(
+    _bottom_mlp_output.push_back(BoltVector::makeDenseState(
         concat_vec.activations, concat_vec.gradients, bottom_mlp_output_dim));
 
-    _embedding_layer_output.push_back(VectorState::makeDenseState(
+    _embedding_layer_output.push_back(BoltVector::makeDenseState(
         concat_vec.activations + bottom_mlp_output_dim,
         concat_vec.gradients + bottom_mlp_output_dim, embedding_dim));
   }
@@ -190,9 +191,9 @@ void DLRM::initializeNetworkForBatchSize(uint32_t batch_size,
   _top_mlp.createBatchStates(batch_size, force_dense);
 }
 
-void DLRM::forward(uint32_t batch_index, const VectorState& dense_input,
+void DLRM::forward(uint32_t batch_index, const BoltVector& dense_input,
                    const std::vector<uint32_t>& categorical_features,
-                   VectorState& output) {
+                   BoltVector& output) {
   _bottom_mlp.forward(batch_index, dense_input, _bottom_mlp_output[batch_index],
                       nullptr, 0);
 
@@ -203,8 +204,8 @@ void DLRM::forward(uint32_t batch_index, const VectorState& dense_input,
                    nullptr, 0);
 }
 
-void DLRM::backpropagate(uint32_t batch_index, VectorState& dense_input,
-                         VectorState& output) {
+void DLRM::backpropagate(uint32_t batch_index, BoltVector& dense_input,
+                         BoltVector& output) {
   _top_mlp.backpropagate<false>(batch_index, _concat_layer_state[batch_index],
                                 output);
 

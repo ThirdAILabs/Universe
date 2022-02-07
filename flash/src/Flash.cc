@@ -77,7 +77,12 @@ template <typename LABEL_T>
 template <typename BATCH_T>
 void Flash<LABEL_T>::addBatch(const BATCH_T& batch) {
   uint32_t* hashes = hash(batch);
-  verifyBatchSequentialIds(batch);
+  try {
+    verifyBatchSequentialIds(batch);
+  } catch (std::invalid_argument& e) {
+    delete[] hashes;
+    throw e;
+  }
   _hashtable->insertSequential(batch.getBatchSize(), batch.id(0), hashes);
 
   delete[] hashes;

@@ -47,7 +47,7 @@ jobs:
           git clone --branch ${{ steps.vars.outputs.branch }} git@github.com:ThirdAILabs/Universe.git
           cd Universe
           pip3 install .
-          bash bin/regular-benchmark.sh
+          nohup bash bin/regular-benchmark.sh &
         host: ${{ secrets.HOST }}
         user: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}

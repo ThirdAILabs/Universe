@@ -37,7 +37,7 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
 
 void EmbeddingLayer::forward(uint32_t batch_indx,
                              const std::vector<uint32_t>& tokens,
-                             VectorState& output) {
+                             BoltVector& output) {
   _loc_lens[batch_indx] = tokens.size();
   delete[] _embedding_locs[batch_indx];
   _embedding_locs[batch_indx] =
@@ -65,7 +65,7 @@ void EmbeddingLayer::forward(uint32_t batch_indx,
 }
 
 void EmbeddingLayer::backpropagate(uint32_t batch_indx,
-                                   const VectorState& output) {
+                                   const BoltVector& output) {
   for (uint32_t e = 0; e < _num_embedding_lookups; e++) {
     const float* errors = output.gradients + e * _lookup_size;
 
@@ -114,14 +114,14 @@ EmbeddingLayer::getDisjointUpdateRanges() {
 
 void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
                                       float B2, float eps) {
-  float B1_ = static_cast<float>(1 - pow(B1, iter));
-  float B2_ = static_cast<float>(1 - pow(B2, iter));
+  float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
+  float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 
   std::vector<std::pair<uint64_t, uint64_t>> disjoint_ranges =
       getDisjointUpdateRanges();
 
-#pragma omp parallel for default(none) \
-    shared(disjoint_ranges, B1, B2, B1_, B2_, eps, lr)
+#pragma omp parallel for default(none) shared( \
+    disjoint_ranges, B1, B2, B1_bias_corrected, B2_bias_corrected, eps, lr)
   for (const auto& pair : disjoint_ranges) {
     for (uint64_t n = pair.first; n < pair.second; n++) {
       float grad = _gradients[n];
@@ -129,7 +129,8 @@ void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
       _velocity[n] = B2 * _velocity[n] + (1 - B2) * grad * grad;
 
       _embedding_block[n] +=
-          lr * (_momentum[n] / B1_) / (std::sqrt(_velocity[n] / B2_) + eps);
+          lr * (_momentum[n] / B1_bias_corrected) /
+          (std::sqrt(_velocity[n] / B2_bias_corrected) + eps);
 
       _gradients[n] = 0;
     }
