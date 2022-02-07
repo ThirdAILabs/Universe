@@ -37,10 +37,10 @@ def train_amzn670(args, mlflow_logger):
     for i in range(args.epochs):
         network.train(train_data, args.lr, 1, rehash=6400, rebuild=128000)
         acc = network.predict(test_data, batch_limit=20)
-        mlflow.log_epoch(acc)
+        mlflow_logger.log_epoch(acc)
 
     final_accuracy = network.predict(test_data)
-    mlflow.log_param("final_accuracy", final_accuracy)
+    mlflow_logger.log_final_accuracy(final_accuracy)
 
 
 def main():

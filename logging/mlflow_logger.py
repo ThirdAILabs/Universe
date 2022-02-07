@@ -122,6 +122,13 @@ class ModelLogger:
         mlflow.log_metric("accuracy", accuracy)
         mlflow.log_metric("epoch_length", self.epoch_times[-1] - self.epoch_times[-2])
 
+    def log_final_accuracy(self, final_accuracy):
+        """
+        Call this method to log a final accuracy, usually by running the model
+        on a larger final test set after training is complete.
+        """
+        mlflow.log_param("final_accuracy", final_accuracy)
+
     def __exit__(self, type, value, traceback):
         if len(self.epoch_accuracies) > 0 and len(self.epoch_times) > 1:
             mlflow.log_metric("final_accuracy", self.epoch_accuracies[-1])
