@@ -2,8 +2,12 @@ import numpy as np
 import time
 import thirdai
 import argparse
-import mlflow
-from datetime import date
+
+# Add the logging folder to the system path
+import sys
+
+sys.path.insert(1, sys.path[0] + "/../../logging/")
+import mlflow_logger
 
 parser = argparse.ArgumentParser(description="Run MagSearch VGG Image Net Benchmark.")
 parser.add_argument(
@@ -43,9 +47,6 @@ def get_ith_batch(i):
 
 
 def run_trial(reservoir_size, hashes_per_table, num_tables):
-    mlflow.log_param("reservoir_size", reservoir_size)
-    mlflow.log_param("hashes_per_table", hashes_per_table)
-    mlflow.log_param("num_tables", num_tables)
 
     hf = thirdai.hashing.SignedRandomProjection(
         input_dim=4096, hashes_per_table=hashes_per_table, num_tables=num_tables
@@ -60,7 +61,6 @@ def run_trial(reservoir_size, hashes_per_table, num_tables):
         num_vectors += len(batch)
     end = time.perf_counter()
     indexing_time = end - start
-    mlflow.log_param("indexing_time", indexing_time)
     print(indexing_time, flush=True)
 
     queries = np.load(args.data_folder + "/test_embeddings.npy")
@@ -68,8 +68,6 @@ def run_trial(reservoir_size, hashes_per_table, num_tables):
     results = index.query(queries, top_k=top_k_search)
     end = time.perf_counter()
     querying_time = end - start
-    mlflow.log_param("querying_time", querying_time)
-    mlflow.log_param("queries_per_second", 10000 / querying_time)
     print(querying_time, flush=True)
 
     gt = np.load(args.data_folder + "/ground_truth.npy")
@@ -78,7 +76,8 @@ def run_trial(reservoir_size, hashes_per_table, num_tables):
         for result, gt in zip(results, gt)
     ]
     total_recall = sum(recals) / len(recals)
-    mlflow.log_param("recall", total_recall)
+
+    return indexing_time, querying_time, total_recall
 
 
 # From a larger grid search, these were a good representative of the best
@@ -99,12 +98,20 @@ trials = [
     (1000, 10, 1000),
 ]
 
-mlflow.set_experiment("MagSearch")
-with mlflow.start_run(
-    nested=True,
-    run_name=f"ImageNet Benchmarks {date.today()}",
-    tags={"dataset": "imagenet_embeddings", "algorithm": "magsearch"},
-):
+# Start an mlflow run so that the nested mlflows will be nested in the UI
+with mlflow.start_run():
     for (num_tables, hashes_per_table, reservoir_size) in trials:
-        with mlflow.start_run(nested=True):
-            run_trial(reservoir_size, hashes_per_table, num_tables)
+        indexing_time, querying_time, recall = run_trial(
+            reservoir_size, hashes_per_table, num_tables
+        )
+        mlflow_logger.log_magsearch(
+            reservoir_size=reservoir_size,
+            hashes_per_table=hashes_per_table,
+            num_tables=num_tables,
+            indexing_time=indexing_time,
+            querying_time=querying_time,
+            num_queries=10000,
+            recall=recall,
+            dataset="imagenet_embeddings",
+            nested=True,
+        )

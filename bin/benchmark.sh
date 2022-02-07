@@ -4,7 +4,6 @@
 
 BASEDIR=$(dirname "$0")
 BENCHMARKING_FOLDER=$BASEDIR/../benchmarking
-export MLFLOW_TRACKING_URI=http://deplo-mlflo-15qe25sw8psjr-1d20dd0c302edb1f.elb.us-east-1.amazonaws.com
 
 # --------------- Mag Search ---------------
 if [ "$RUN_MAGSEARCH" != "n" ]

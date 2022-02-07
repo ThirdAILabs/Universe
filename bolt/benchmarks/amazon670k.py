@@ -7,8 +7,14 @@ import time
 import mlflow
 from datetime import date
 
+# Add the logging folder to the system path
+import sys
 
-def train_amzn670(args):
+sys.path.insert(1, sys.path[0] + "/../../logging/")
+from mlflow_logger import ModelLogger
+
+
+def train_amzn670(args, mlflow_logger):
     layers = [
         bolt.LayerConfig(dim=256, activation_function="ReLU"),
         bolt.LayerConfig(
@@ -28,14 +34,14 @@ def train_amzn670(args):
     train_data = dataset.load_svm_dataset(args.train, 256)
     test_data = dataset.load_svm_dataset(args.test, 256)
 
-    mlflow.log_metric("accuracy", 0)
+    mlflow_logger.log_start_training()
     for i in range(args.epochs):
         network.train(train_data, args.lr, 1, rehash=6400, rebuild=128000)
         acc = network.predict(test_data, batch_limit=20)
-        mlflow.log_metric("accuracy", acc)
+        mlflow.log_epoch(acc)
 
     final_accuracy = network.predict(test_data)
-    mlflow.log_metric("final_accuracy", final_accuracy)
+    mlflow.log_param("final_accuracy", final_accuracy)
 
 
 def main():
@@ -56,16 +62,16 @@ def main():
     )
 
     mlflow.set_experiment("Bolt")
-    with mlflow.start_run(
-        run_name=f"Amazon670k Benchmarks {date.today()}",
-        tags={"dataset": "amazon670k", "algorithm": "bolt"},
-    ):
-        mlflow.log_param("hashes_per_table", args.hashes_per_table)
-        mlflow.log_param("num_tables", args.num_tables)
-        mlflow.log_param("sparsity", args.sparsity)
-        mlflow.log_param("learning_rate", args.lr)
+    with ModelLogger(
+        dataset="amazon670k",
+        learning_rate=0.01,
+        num_hash_tables=10,
+        hashes_per_table=5,
+        sparsity=0.01,
+        algorithm="Bolt",
+    ) as mlflow_logger:
 
-        train_amzn670(args)
+        train_amzn670(args, mlflow_logger)
 
 
 if __name__ == "__main__":

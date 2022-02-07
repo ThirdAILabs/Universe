@@ -14,3 +14,6 @@ echo "export PYTHONPATH=~/Universe/build:$PYTHONPATH" >> $HOME/.bash_profile
 # Install necessary python packages
 pip3 install dark
 pip3 install pytest
+pip3 install mlflow
+pip3 install toml
+pip3 install psutil

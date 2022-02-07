@@ -30,5 +30,10 @@ git config --global core.autocrlf input
 echo "export PYTHONPATH=~/Universe/build:$PYTHONPATH" >> $HOME/.bash_profile 
 
 # Install necessary python packages
+# Note if using an m1 mac you may need to download conda and use it to install 
+# toml and mlflow.
 pip3 install dark
 pip3 install pytest
+pip3 install psutil
+# pip3 install mlflow
+# pip3 install toml
