@@ -71,6 +71,7 @@ class ModelLogger:
     ):
         self.dataset = dataset
         self.num_hash_tables = num_hash_tables
+        self.hashes_per_table = hashes_per_table
         self.sparsity = sparsity
         self.learning_rate = learning_rate
         self.algorithm = algorithm
