@@ -2,6 +2,7 @@ import numpy as np
 import time
 import thirdai
 import argparse
+import mlflow
 
 # Add the logging folder to the system path
 import sys
@@ -99,19 +100,17 @@ trials = [
 ]
 
 # Start an mlflow run so that the nested mlflows will be nested in the UI
-with mlflow.start_run():
-    for (num_tables, hashes_per_table, reservoir_size) in trials:
-        indexing_time, querying_time, recall = run_trial(
-            reservoir_size, hashes_per_table, num_tables
-        )
-        mlflow_logger.log_magsearch(
-            reservoir_size=reservoir_size,
-            hashes_per_table=hashes_per_table,
-            num_tables=num_tables,
-            indexing_time=indexing_time,
-            querying_time=querying_time,
-            num_queries=10000,
-            recall=recall,
-            dataset="imagenet_embeddings",
-            nested=True,
-        )
+for (num_tables, hashes_per_table, reservoir_size) in trials:
+    indexing_time, querying_time, recall = run_trial(
+        reservoir_size, hashes_per_table, num_tables
+    )
+    mlflow_logger.log_magsearch_run(
+        reservoir_size=reservoir_size,
+        hashes_per_table=hashes_per_table,
+        num_tables=num_tables,
+        indexing_time=indexing_time,
+        querying_time=querying_time,
+        num_queries=10000,
+        recall=recall,
+        dataset="imagenet_embeddings",
+    )

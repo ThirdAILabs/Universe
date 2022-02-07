@@ -36,7 +36,7 @@ class ModelLogger:
     This class starts an mlflow run that logs metadata about a model run to
     our mlflow tracking server. It has fields for Bolt, but also can be used
     with Tensorflow for a direct comparison. Example usage:
-      from base_logger import ModelLogger
+      from mlflow_logger import ModelLogger
       with ModelLogger(
         dataset="amazon670k",
         learning_rate=0.01,
@@ -133,7 +133,7 @@ class ModelLogger:
             )
 
 
-def log_magsearch(
+def log_magsearch_run(
     reservoir_size,
     hashes_per_table,
     num_tables,
@@ -142,16 +142,12 @@ def log_magsearch(
     num_queries,
     recall,
     dataset,
-    nested=False,
 ):
     """Starts and finishes an mlflow run for magsearch, logging all
-    necessary information. Can be called inside an existing run and nested
-    by setting nested=True."""
+    necessary information."""
 
     mlflow.set_experiment("Search")
-    with mlflow.start_run(
-        tags={"dataset": dataset, "algorithm": "magsearch"}, nested=nested
-    ):
+    with mlflow.start_run(tags={"dataset": dataset, "algorithm": "magsearch"}):
         _log_machine_info()
         mlflow.log_param("reservoir_size", reservoir_size)
         mlflow.log_param("hashes_per_table", hashes_per_table)
