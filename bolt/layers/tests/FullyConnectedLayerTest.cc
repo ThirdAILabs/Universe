@@ -1,5 +1,5 @@
 #include <bolt/layers/FullyConnectedLayer.h>
-#include <bolt/layers/LossFunctions.h>
+#include <bolt/loss_functions/LossFunctions.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <gtest/gtest.h>
 #include <vector>

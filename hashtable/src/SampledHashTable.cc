@@ -1,4 +1,5 @@
 #include "SampledHashTable.h"
+#include <cassert>
 #include <random>
 
 namespace thirdai::hashtable {
@@ -17,7 +18,11 @@ SampledHashTable<LABEL_T>::SampledHashTable(uint64_t num_tables,
       _range(range),
       _max_rand(max_rand) {
   _data = new LABEL_T[_num_tables * _range * _reservoir_size];
+  assert(_data != nullptr);
+
   _gen_rand = new uint32_t[_max_rand];
+  assert(_gen_rand != nullptr);
+
   std::mt19937 generator(seed);
 
   for (uint64_t i = 1; i < _max_rand; i++) {
@@ -25,6 +30,7 @@ SampledHashTable<LABEL_T>::SampledHashTable(uint64_t num_tables,
   }
 
   _counters = new std::atomic<uint32_t>[_num_tables * _range]();
+  assert(_counters != nullptr);
 }
 
 template <typename LABEL_T>
@@ -50,6 +56,8 @@ inline void SampledHashTable<LABEL_T>::insertIntoTables(
     LABEL_T label, const uint32_t* hashes) {
   for (uint64_t table = 0; table < _num_tables; table++) {
     uint32_t row_index = hashes[table];
+    assert(row_index < _range);
+
     uint32_t counter = _counters[CounterIdx(table, row_index)]++;
 
     if (counter < _reservoir_size) {
@@ -68,6 +76,8 @@ void SampledHashTable<LABEL_T>::queryBySet(
     const uint32_t* hashes, std::unordered_set<LABEL_T>& store) const {
   for (uint64_t table = 0; table < _num_tables; table++) {
     uint32_t row_index = hashes[table];
+    assert(row_index < _range);
+
     uint32_t counter = _counters[CounterIdx(table, row_index)];
 
     for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size);
@@ -89,6 +99,8 @@ void SampledHashTable<LABEL_T>::queryAndInsertForInference(
   uint64_t table = 0;
   while (table < _num_tables) {
     uint32_t row_index = hashes[table];
+    assert(row_index < _range);
+
     uint32_t counter = _counters[CounterIdx(table, row_index)];
 
     uint32_t elements_found = std::min<uint64_t>(counter, _reservoir_size);
@@ -111,6 +123,8 @@ void SampledHashTable<LABEL_T>::queryAndInsertForInference(
     if (temp_store.find(x) == temp_store.end()) {
       for (uint32_t i = 0; i < table - 1; i++) {
         uint32_t row_id = hashes[i];
+        assert(row_id < _range);
+
         uint64_t ctr = _counters[CounterIdx(i, row_id)]++;
 
         if (ctr < _reservoir_size) {
@@ -137,6 +151,8 @@ void SampledHashTable<LABEL_T>::queryByCount(
     uint32_t const* hashes, std::vector<uint32_t>& counts) const {
   for (uint64_t table = 0; table < _num_tables; table++) {
     uint32_t row_index = hashes[table];
+    assert(row_index < _range);
+
     uint32_t counter = _counters[CounterIdx(table, row_index)];
 
     for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size);
@@ -151,6 +167,8 @@ void SampledHashTable<LABEL_T>::queryByVector(
     uint32_t const* hashes, std::vector<LABEL_T>& results) const {
   for (uint64_t table = 0; table < _num_tables; table++) {
     uint32_t row_index = hashes[table];
+    assert(row_index < _range);
+
     uint32_t counter = _counters[CounterIdx(table, row_index)];
 
     for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size);
