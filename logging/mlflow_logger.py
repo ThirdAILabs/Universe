@@ -152,5 +152,5 @@ def log_magsearch_run(
         mlflow.log_param("indexing_time", indexing_time)
         mlflow.log_param("querying_time", querying_time)
         mlflow.log_param("num_queries", num_queries)
-        mlflow.log_param("queries_per_second", querying_time / num_queries)
+        mlflow.log_param("queries_per_second", num_queries / querying_time)
         mlflow.log_param("recall", recall)
