@@ -26,25 +26,32 @@ test_labels = np.array(test_labels)
 
 
 bottom_mlp = [
-    bolt.LayerConfig(dim=1000, load_factor=0.2,
-                     activation_function="ReLU",
-                     sampling_config=bolt.SamplingConfig(
-                         hashes_per_table=3, num_tables=128,
-                         range_pow=9, reservoir_size=10)),
-    bolt.LayerConfig(dim=100, activation_function="ReLU")
+    bolt.LayerConfig(
+        dim=1000,
+        load_factor=0.2,
+        activation_function="ReLU",
+        sampling_config=bolt.SamplingConfig(
+            hashes_per_table=3, num_tables=128, range_pow=9, reservoir_size=10
+        ),
+    ),
+    bolt.LayerConfig(dim=100, activation_function="ReLU"),
 ]
 
 embedding = bolt.EmbeddingLayerConfig(
-    num_embedding_lookups=8, lookup_size=16, log_embedding_block_size=10)
+    num_embedding_lookups=8, lookup_size=16, log_embedding_block_size=10
+)
 
 top_mlp = [
     bolt.LayerConfig(dim=100, activation_function="ReLU"),
-    bolt.LayerConfig(dim=1000, load_factor=0.2,
-                     activation_function="ReLU",
-                     sampling_config=bolt.SamplingConfig(
-                         hashes_per_table=3, num_tables=128,
-                         range_pow=9, reservoir_size=10)),
-    bolt.LayerConfig(dim=1, activation_function="MeanSquared")
+    bolt.LayerConfig(
+        dim=1000,
+        load_factor=0.2,
+        activation_function="ReLU",
+        sampling_config=bolt.SamplingConfig(
+            hashes_per_table=3, num_tables=128, range_pow=9, reservoir_size=10
+        ),
+    ),
+    bolt.LayerConfig(dim=1, activation_function="MeanSquared"),
 ]
 
 dlrm = bolt.DLRM(embedding, bottom_mlp, top_mlp, 15)
