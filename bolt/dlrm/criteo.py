@@ -7,11 +7,11 @@ if socket.gethostname() == 'node1':
     train_file = "/media/temp/data/criteo-small/train_shuf.txt"
     test_file = "/media/temp/data/criteo-small/test_shuf.txt"
 else:
-    train_file = "/media/scratch/data/criteo-small/train_shuf.txt"
-    test_file = "/media/scratch/data/criteo-small/test_shuf.txt"
+    train_file = "/Users/nmeisburger/ThirdAI/data/criteo/train_shuf.txt"
+    test_file = "/Users/nmeisburger/ThirdAI/data/criteo/test_shuf.txt"
 
-train_data = dataset.loadClickThroughDataset(train_file, 256, 15, 24)
-test_data = dataset.loadClickThroughDataset(test_file, 256, 15, 24)
+train_data = dataset.load_click_through_dataset(train_file, 256, 15, 24)
+test_data = dataset.load_click_through_dataset(test_file, 256, 15, 24)
 
 f = open(test_file)
 
@@ -51,14 +51,15 @@ top_mlp = [
             hashes_per_table=3, num_tables=128, range_pow=9, reservoir_size=10
         ),
     ),
-    bolt.LayerConfig(dim=1, activation_function="MeanSquared"),
+    bolt.LayerConfig(dim=2, activation_function="Softmax"),
 ]
 
 dlrm = bolt.DLRM(embedding, bottom_mlp, top_mlp, 15)
 
 for i in range(1000):
-    dlrm.Train(train_data, learning_rate=0.001,
+    dlrm.train(train_data, learning_rate=0.001,
                epochs=1, rehash=300, rebuild=500)
-    scores = dlrm.Test(test_data)
-    auc = roc_auc_score(test_labels, scores[:, 1])
+    scores = dlrm.predict(test_data)
+    print(scores.shape)
+    auc = roc_auc_score(test_labels, scores[:,1])
     print('AUC: ', auc)
