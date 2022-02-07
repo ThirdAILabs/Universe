@@ -27,7 +27,7 @@ test_labels = np.array(test_labels)
 bottom_mlp = [
     bolt.LayerConfig(
         dim=10000,
-        load_factor=0.05,
+        load_factor=0.2,
         activation_function="ReLU",
         sampling_config=bolt.SamplingConfig(
             hashes_per_table=3, num_tables=128, range_pow=9, reservoir_size=10
@@ -43,7 +43,7 @@ embedding = bolt.EmbeddingLayerConfig(
 top_mlp = [
     bolt.LayerConfig(
         dim=10000,
-        load_factor=0.05,
+        load_factor=0.2,
         activation_function="ReLU",
         sampling_config=bolt.SamplingConfig(
             hashes_per_table=3, num_tables=128, range_pow=9, reservoir_size=10
