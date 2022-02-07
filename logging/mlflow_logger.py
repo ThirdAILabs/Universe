@@ -95,7 +95,7 @@ class ModelLogger:
         self.start_time = time.time()
         return self
 
-    def log_start_training():
+    def log_start_training(self):
         """
         Call this method to log and store a start time for training, so
         the first epoch length can be recorded. Must be called before log_epoch.
