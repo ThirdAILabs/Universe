@@ -8,7 +8,7 @@ import mlflow
 import sys
 
 sys.path.insert(1, sys.path[0] + "/../../logging/")
-import mlflow_logger
+from mlflow_logger import log_imagesearch_run
 
 parser = argparse.ArgumentParser(description="Run MagSearch VGG Image Net Benchmark.")
 parser.add_argument(
@@ -99,12 +99,11 @@ trials = [
     (1000, 10, 1000),
 ]
 
-# Start an mlflow run so that the nested mlflows will be nested in the UI
 for (num_tables, hashes_per_table, reservoir_size) in trials:
     indexing_time, querying_time, recall = run_trial(
         reservoir_size, hashes_per_table, num_tables
     )
-    mlflow_logger.log_magsearch_run(
+    log_imagesearch_run(
         reservoir_size=reservoir_size,
         hashes_per_table=hashes_per_table,
         num_tables=num_tables,

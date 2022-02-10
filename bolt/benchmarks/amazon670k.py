@@ -10,7 +10,7 @@ from datetime import date
 import sys
 
 sys.path.insert(1, sys.path[0] + "/../../logging/")
-from mlflow_logger import ModelLogger
+from mlflow_logger import ProductRecommendationLogger
 
 
 def train_amzn670(args, mlflow_logger):
@@ -60,7 +60,7 @@ def main():
         lr=0.0001,
     )
 
-    with ModelLogger(
+    with ProductRecommendationLogger(
         dataset="amazon670k",
         learning_rate=0.01,
         num_hash_tables=10,

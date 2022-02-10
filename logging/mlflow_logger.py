@@ -31,7 +31,7 @@ def _log_machine_info():
         mlflow.log_param(key, val)
 
 
-class ModelLogger:
+class ProductRecommendationLogger:
     """
     This class starts an mlflow run that logs metadata about a model run to
     our mlflow tracking server. It has fields for Bolt, but also can be used
@@ -79,7 +79,7 @@ class ModelLogger:
         self.epoch_accuracies = []
 
     def __enter__(self):
-        mlflow.set_experiment("Learning")
+        mlflow.set_experiment("Product Recommendation")
         mlflow.start_run(
             tags={"dataset": self.dataset, "algorithm": self.algorithm},
         )
@@ -138,7 +138,7 @@ class ModelLogger:
             )
 
 
-def log_magsearch_run(
+def log_imagesearch_run(
     reservoir_size,
     hashes_per_table,
     num_tables,
@@ -151,7 +151,7 @@ def log_magsearch_run(
     """Starts and finishes an mlflow run for magsearch, logging all
     necessary information."""
 
-    mlflow.set_experiment("Search")
+    mlflow.set_experiment("Image Search")
     with mlflow.start_run(tags={"dataset": dataset, "algorithm": "magsearch"}):
         _log_machine_info()
         mlflow.log_param("reservoir_size", reservoir_size)
