@@ -374,6 +374,8 @@ void FullyConnectedLayer::restrictClass(uint32_t* class_ids, uint32_t class_ids_
      if(_act_func == ActivationFunc::Softmax)
      {
         _is_restricted_class = true;
+        _sparsity = class_ids_len/_dim;
+        _sparse_dim = class_ids_len;
         _restricted_class_len = class_ids_len;
         _restricted_class = new uint32_t[_restricted_class_len];
         

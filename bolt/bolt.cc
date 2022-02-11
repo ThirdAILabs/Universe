@@ -81,6 +81,7 @@ int main(int argc, char** argv) {
     }
     
     if(config.valExists("restrict_classes")){
+      std::cout << "Freezing Selection to classes in range: "<<restrict_class_startval<<" and "<<restrict_class_endval<<  std::endl;
        network.restrictClass(restrict_class_startval,restrict_class_endval);    
     }
     network.predict(test_data);
@@ -109,6 +110,7 @@ int main(int argc, char** argv) {
       network.predict<dataset::DenseBatch>(test_data, max_test_batches);
     }
     if(config.valExists("restrict_classes")){
+       std::cout << "Freezing Selection to classes in range: "<<restrict_class_startval<<" and "<<restrict_class_endval<<  std::endl;
        network.restrictClass(restrict_class_startval,restrict_class_endval);    
     }
     network.predict(test_data);

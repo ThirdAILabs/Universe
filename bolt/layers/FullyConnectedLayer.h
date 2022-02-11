@@ -50,6 +50,8 @@ class FullyConnectedLayer final {
 
   bool isForceSparsity() const { return _force_sparse_for_inference; }
 
+   bool isRestrictClass() const { return _is_restricted_class; }
+
   // Anshu: For Multi-Task 
   void restrictClass(uint32_t* class_ids, uint32_t class_ids_len);
 
