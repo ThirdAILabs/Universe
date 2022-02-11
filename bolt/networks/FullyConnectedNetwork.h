@@ -58,6 +58,18 @@ class FullyConnectedNetwork {
     _layers[_num_layers - 1]->forceSparseForInference();
   }
 
+  void restrictClass(uint32_t startid, uint32_t endid) {    
+    uint32_t len = endid - startid +1;
+    uint32_t* class_ids = new uint32_t[len];
+    for (size_t i = 0; i < len; i++)
+    {
+      class_ids[i] = startid +i;
+    }
+    _layers[_num_layers-1]->restrictClass(class_ids, len);
+    _restrict_class = true;
+    delete[] class_ids;
+  }
+
   uint32_t getNumLayers() const { return _num_layers; }
 
   uint32_t getInputDim() const { return _input_dim; }
@@ -101,7 +113,9 @@ class FullyConnectedNetwork {
   uint32_t _iter;
   uint32_t _epoch_count;
 
+
   bool _sparse_inference;
+  bool _restrict_class;
 };
 
 }  // namespace thirdai::bolt

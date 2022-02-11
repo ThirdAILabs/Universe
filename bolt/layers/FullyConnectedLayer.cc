@@ -18,7 +18,8 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sparsity(config.sparsity),
       _act_func(config.act_func),
       _sampling_config(config.sampling_config),
-      _force_sparse_for_inference(false) {
+      _force_sparse_for_inference(false),
+      _is_restricted_class(false) {
   uint64_t total_size = _dim * _prev_dim;
 
   _weights = new float[total_size];
@@ -219,6 +220,15 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                                               BoltVector& output,
                                               const uint32_t* labels,
                                               uint32_t label_len) {
+  
+  if(_is_restricted_class){
+     uint32_t counter = 0;
+     for (size_t i = 0; i < _restricted_class_len; i++){
+        output.active_neurons[counter++] = _restricted_class[i]; 
+     }
+     return;
+  }
+
   if (DENSE) {
     return;
   }
@@ -359,6 +369,23 @@ float* FullyConnectedLayer::getBiases() {
   return biases_copy;
 }
 
+
+void FullyConnectedLayer::restrictClass(uint32_t* class_ids, uint32_t class_ids_len) {
+     if(_act_func == ActivationFunc::Softmax)
+     {
+        _is_restricted_class = true;
+        _restricted_class_len = class_ids_len;
+        _restricted_class = new uint32_t[_restricted_class_len];
+        
+        for (size_t i = 0; i < _restricted_class_len; i++)
+        {
+          _restricted_class[i] = class_ids[i];
+        }
+        
+     }
+}
+
+
 FullyConnectedLayer::~FullyConnectedLayer() {
   delete[] _weights;
   delete[] _w_gradient;
@@ -375,6 +402,8 @@ FullyConnectedLayer::~FullyConnectedLayer() {
   delete _hasher;
   delete _hash_table;
   delete[] _rand_neurons;
+
+  delete[] _restricted_class;
 }
 
 }  // namespace thirdai::bolt

@@ -43,6 +43,13 @@ int main(int argc, char** argv) {
                                         ? config.intVal("sparse_inf_at_epoch")
                                         : 0;
 
+  uint32_t restrict_class_startval = config.valExists("restrict_classes")
+                                        ? config.intVal("restrict_classes",0)
+                                        : 0;                                    
+  uint32_t restrict_class_endval = config.valExists("restrict_classes")
+                                        ? config.intVal("restrict_classes",1)
+                                        : config.intVal("dims", num_layers -1);         
+
   uint32_t max_test_batches = std::numeric_limits<uint32_t>::max();
   if (config.valExists("max_test_batches")) {
     max_test_batches = config.intVal("max_test_batches");
@@ -72,6 +79,10 @@ int main(int argc, char** argv) {
                                           rebuild);
       network.predict<dataset::SparseBatch>(test_data, max_test_batches);
     }
+    
+    if(config.valExists("restrict_classes")){
+       network.restrictClass(restrict_class_startval,restrict_class_endval);    
+    }
     network.predict(test_data);
   } else if (config.strVal("dataset_format") == "csv") {
     if (!config.valExists("csv_delimiter")) {
@@ -96,6 +107,9 @@ int main(int argc, char** argv) {
       network.train<dataset::DenseBatch>(train_data, learning_rate, 1, rehash,
                                          rebuild);
       network.predict<dataset::DenseBatch>(test_data, max_test_batches);
+    }
+    if(config.valExists("restrict_classes")){
+       network.restrictClass(restrict_class_startval,restrict_class_endval);    
     }
     network.predict(test_data);
   } else {

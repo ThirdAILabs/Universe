@@ -50,6 +50,9 @@ class FullyConnectedLayer final {
 
   bool isForceSparsity() const { return _force_sparse_for_inference; }
 
+  // Anshu: For Multi-Task 
+  void restrictClass(uint32_t* class_ids, uint32_t class_ids_len);
+
   void buildHashTables();
 
   void reBuildHashFunction();
@@ -98,6 +101,11 @@ class FullyConnectedLayer final {
   uint32_t* _rand_neurons;
 
   bool _force_sparse_for_inference;
+
+  //Anshu: For MultiTask
+  bool _is_restricted_class;
+  uint32_t* _restricted_class;
+  uint32_t  _restricted_class_len;
 };
 
 }  // namespace thirdai::bolt

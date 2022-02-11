@@ -22,6 +22,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(
   auto start = std::chrono::high_resolution_clock::now();
 
   _sparse_inference = false;
+  _restrict_class = false;
   _num_layers = _configs.size();
   _layers = new FullyConnectedLayer*[_num_layers];
   _states =
