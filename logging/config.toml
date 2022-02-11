@@ -1,0 +1,6 @@
+# This is a TOML document.
+
+title = "Logging config information."
+
+[tracking]
+uri = "http://deplo-mlflo-15qe25sw8psjr-1d20dd0c302edb1f.elb.us-east-1.amazonaws.com"

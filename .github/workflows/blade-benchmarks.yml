@@ -15,10 +15,10 @@ on:
         description: 'Run Bolt Benchmarks (y/n)'
         required: true
         default: 'y'
-      flash:
-        description: 'Run Flash Benchmarks (y/n)'
+      magsearch:
+        description: 'Run MagSearch Benchmarks (y/n)'
         required: true
-        default: 'n'
+        default: 'y'
       
 jobs:
   benchmarks:
@@ -32,22 +32,24 @@ jobs:
         echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         echo "##[set-output name=run_id;]$(echo ${{ github.run_id }})"
         echo "##[set-output name=bolt;]$(echo ${{ github.event.inputs.bolt }})"
-        echo "##[set-output name=flash;]$(echo ${{ github.event.inputs.flash }})"
+        echo "##[set-output name=magsearch;]$(echo ${{ github.event.inputs.magsearch }})"
       id: vars
     - name: Run Benchmark Tests
       uses: fifsky/ssh-action@master
       with:
-        # SSH into blade cluster and run this series of commands.
+        # SSH into blade cluster node 11 and run this series of commands.
         command: |
-          export RUN_ID=${{ steps.vars.outputs.run_id }}
+          ssh cicd@192.168.1.11
+
           export RUN_BOLT=${{ steps.vars.outputs.bolt }}
-          export RUN_FLASH=${{ steps.vars.outputs.flash }}
+          export RUN_MAGSEARCH=${{ steps.vars.outputs.magsearch }}
 
           rm -rf Universe
           git clone --branch ${{ steps.vars.outputs.branch }} git@github.com:ThirdAILabs/Universe.git
           cd Universe
           pip3 install .
-          nohup bash bin/regular-benchmark.sh &
+          bin/benchmark.sh
+          exit
         host: ${{ secrets.HOST }}
         user: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
