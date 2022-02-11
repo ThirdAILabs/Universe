@@ -106,7 +106,7 @@ class FullyConnectedLayer final {
 
   // Anshu: For MultiTask
   bool _is_restricted_class;
-  uint32_t* _restricted_class;
+  uint32_t* _restricted_class = NULL;
   uint32_t _restricted_class_len;
 };
 

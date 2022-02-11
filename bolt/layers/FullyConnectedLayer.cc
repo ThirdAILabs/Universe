@@ -400,7 +400,9 @@ FullyConnectedLayer::~FullyConnectedLayer() {
   delete _hash_table;
   delete[] _rand_neurons;
 
-  if (_restricted_class != nullptr) delete[] _restricted_class;
+  if (_restricted_class != NULL) {
+     delete[] _restricted_class;
+  }
 }
 
 }  // namespace thirdai::bolt
