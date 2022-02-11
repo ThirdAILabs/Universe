@@ -173,7 +173,8 @@ float FullyConnectedNetwork::predict(
   this->createBatchStates(batch_size, true);
 
   BoltBatch outputs = _layers[_num_layers - 1]->createBatchState(
-      batch_size, !(_layers[_num_layers - 1]->isForceSparsity() || _layers[_num_layers - 1]->isRestrictClass()));
+      batch_size, !(_layers[_num_layers - 1]->isForceSparsity() ||
+                    _layers[_num_layers - 1]->isRestrictClass()));
 
   std::atomic<uint32_t> correct{0};
   ProgressBar bar(num_test_batches);
@@ -196,7 +197,8 @@ float FullyConnectedNetwork::predict(
           max_act = activations[k];
           // Since sparsity is set to 1.0, the layer is dense and we can use i
           // instead of indices[i]
-          if (_layers[_num_layers - 1]->isForceSparsity() || _layers[_num_layers - 1]->isRestrictClass()) {
+          if (_layers[_num_layers - 1]->isForceSparsity() ||
+              _layers[_num_layers - 1]->isRestrictClass()) {
             pred = outputs[i].active_neurons[k];
           } else {
             pred = k;

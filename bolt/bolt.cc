@@ -44,11 +44,11 @@ int main(int argc, char** argv) {
                                         : 0;
 
   uint32_t restrict_class_startval = config.valExists("restrict_classes")
-                                        ? config.intVal("restrict_classes",0)
-                                        : 0;                                    
+                                         ? config.intVal("restrict_classes", 0)
+                                         : 0;
   uint32_t restrict_class_endval = config.valExists("restrict_classes")
-                                        ? config.intVal("restrict_classes",1)
-                                        : config.intVal("dims", num_layers -1);         
+                                       ? config.intVal("restrict_classes", 1)
+                                       : config.intVal("dims", num_layers - 1);
 
   uint32_t max_test_batches = std::numeric_limits<uint32_t>::max();
   if (config.valExists("max_test_batches")) {
@@ -79,10 +79,12 @@ int main(int argc, char** argv) {
                                           rebuild);
       network.predict<dataset::SparseBatch>(test_data, max_test_batches);
     }
-    
-    if(config.valExists("restrict_classes")){
-      std::cout << "Freezing Selection to classes in range: "<<restrict_class_startval<<" and "<<restrict_class_endval<<  std::endl;
-       network.restrictClass(restrict_class_startval,restrict_class_endval);    
+
+    if (config.valExists("restrict_classes")) {
+      std::cout << "Freezing Selection to classes in range: "
+                << restrict_class_startval << " and " << restrict_class_endval
+                << std::endl;
+      network.restrictClass(restrict_class_startval, restrict_class_endval);
     }
     network.predict(test_data);
   } else if (config.strVal("dataset_format") == "csv") {
@@ -109,9 +111,11 @@ int main(int argc, char** argv) {
                                          rebuild);
       network.predict<dataset::DenseBatch>(test_data, max_test_batches);
     }
-    if(config.valExists("restrict_classes")){
-       std::cout << "Freezing Selection to classes in range: "<<restrict_class_startval<<" and "<<restrict_class_endval<<  std::endl;
-       network.restrictClass(restrict_class_startval,restrict_class_endval);    
+    if (config.valExists("restrict_classes")) {
+      std::cout << "Freezing Selection to classes in range: "
+                << restrict_class_startval << " and " << restrict_class_endval
+                << std::endl;
+      network.restrictClass(restrict_class_startval, restrict_class_endval);
     }
     network.predict(test_data);
   } else {
