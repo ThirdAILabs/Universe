@@ -134,7 +134,7 @@ void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
     for (uint64_t n = pair.first; n < pair.second; n++) {
       float grad = _gradients[n];
       assert(!std::isnan(grad));
-      
+
       _momentum[n] = B1 * _momentum[n] + (1 - B1) * grad;
       _velocity[n] = B2 * _velocity[n] + (1 - B2) * grad * grad;
       assert(!std::isnan(_momentum[n]));

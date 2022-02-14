@@ -105,8 +105,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
          (input.len == _prev_dim && PREV_DENSE));
   assert((input.active_neurons == nullptr && PREV_DENSE) ||
          (input.active_neurons != nullptr && !PREV_DENSE));
-  assert((output.len < _dim && !DENSE) ||
-         (output.len == _dim && DENSE));
+  assert((output.len < _dim && !DENSE) || (output.len == _dim && DENSE));
   assert((output.active_neurons == nullptr && DENSE) ||
          (output.active_neurons != nullptr && !DENSE));
   assert((labels == nullptr && label_len == 0) ||
@@ -226,8 +225,7 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
          (input.len == _prev_dim && PREV_DENSE));
   assert((input.active_neurons == nullptr && PREV_DENSE) ||
          (input.active_neurons != nullptr && !PREV_DENSE));
-  assert((output.len < _dim && !DENSE) ||
-         (output.len == _dim && DENSE));
+  assert((output.len < _dim && !DENSE) || (output.len == _dim && DENSE));
   assert((output.active_neurons == nullptr && DENSE) ||
          (output.active_neurons != nullptr && !DENSE));
 
