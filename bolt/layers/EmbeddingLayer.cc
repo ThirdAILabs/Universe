@@ -22,6 +22,10 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
   _gradients = new float[_embedding_block_size]();
   _momentum = new float[_embedding_block_size]();
   _velocity = new float[_embedding_block_size]();
+  assert(_embedding_block != nullptr);
+  assert(_gradients != nullptr);
+  assert(_momentum != nullptr);
+  assert(_velocity != nullptr);
 
   std::mt19937 gen(seed);
   std::normal_distribution<float> dist(0.0, 0.01);
@@ -38,6 +42,9 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
 void EmbeddingLayer::forward(uint32_t batch_indx,
                              const std::vector<uint32_t>& tokens,
                              BoltVector& output) {
+  assert(output.len == _total_embedding_dim);
+  assert(output.active_neurons == nullptr);
+
   _loc_lens[batch_indx] = tokens.size();
   delete[] _embedding_locs[batch_indx];
   _embedding_locs[batch_indx] =
@@ -54,6 +61,7 @@ void EmbeddingLayer::forward(uint32_t batch_indx,
       uint32_t hash_loc = hashing::MurmurHash(
           reinterpret_cast<const char*>(&id), sizeof(uint32_t), _seed);
       hash_loc = hash_loc >> (32 - _log_embedding_block_size);
+      assert(hash_loc < _total_embedding_dim);
       _embedding_locs[batch_indx][n * _num_embedding_lookups + e] = hash_loc;
 
       // Safe since we allocated 2^_log_embedding_block_size+_lookup_size
@@ -125,12 +133,16 @@ void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
   for (const auto& pair : disjoint_ranges) {
     for (uint64_t n = pair.first; n < pair.second; n++) {
       float grad = _gradients[n];
+      assert(!std::isnan(grad));
       _momentum[n] = B1 * _momentum[n] + (1 - B1) * grad;
       _velocity[n] = B2 * _velocity[n] + (1 - B2) * grad * grad;
+      assert(!std::isnan(_momentum[n]));
+      assert(!std::isnan(_velocity[n]));
 
       _embedding_block[n] +=
           lr * (_momentum[n] / B1_bias_corrected) /
           (std::sqrt(_velocity[n] / B2_bias_corrected) + eps);
+      assert(!std::isnan(_embedding_block[n]));
 
       _gradients[n] = 0;
     }
@@ -151,7 +163,9 @@ void EmbeddingLayer::initializeLayer(uint32_t new_batch_size) {
   _batch_size = new_batch_size;
 
   _loc_lens = new uint32_t[_batch_size];
+  assert(_loc_lens != nullptr);
   _embedding_locs = new uint32_t*[_batch_size]();
+  assert(_embedding_locs != nullptr);
 }
 
 EmbeddingLayer::~EmbeddingLayer() {
