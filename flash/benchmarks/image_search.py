@@ -1,57 +1,115 @@
 import numpy as np
 import time
 import thirdai
-import sklearn
-from sklearn import metrics
+import argparse
+import mlflow
 
-reservoir_sizes = [100, 200, 500, 1000]
-hashes_per_table = [8, 10, 12, 14, 16]
-num_tables = [10, 50, 100, 200, 500]
+# Add the logging folder to the system path
+import sys
 
-# data_path = "/Users/josh/IndexChunks/"
-data_path = "/media/scratch/ImageNetDemo/IndexFiles/"
+sys.path.insert(1, sys.path[0] + "/../../logging/")
+from mlflow_logger import log_imagesearch_run
 
-for res in reservoir_sizes:
-    for per_table in hashes_per_table:
-        for tables in num_tables:
+parser = argparse.ArgumentParser(description="Run MagSearch VGG Image Net Benchmark.")
+parser.add_argument(
+    "--data_folder",
+    help="The folder containing the 129 imagenet .npy files.",
+    required=False,
+    default="/media/scratch/data/ImageNet",
+)
+parser.add_argument(
+    "--read_in_entire_dataset",
+    action="store_true",
+    help="Speed up program is we have enough memory to read in the entire dataset (~40 GB)",
+)
+args = parser.parse_args()
 
-            print((res, per_table, tables), flush=True)
+top_k_gt = 10
+top_k_search = 100
+max_numpy_chunk_exclusive = 129
 
-            top_k_gt = 10
-            top_k_flash = 100
 
-            hf = thirdai.hashing.SignedRandomProjection(
-                input_dim=4096, hashes_per_table=per_table, num_tables=tables
-            )
-            flash = thirdai.search.MagSearch(hf, reservoir_size=res)
+def load_ith_numpy_batch(i):
+    return np.load("%s/chunk-ave%d.npy" % (args.data_folder, i))
 
-            max_chunk = 129
-            num_vectors = 0
-            start = time.perf_counter()
-            for chunk_num in range(0, max_chunk):
-                batch = np.load("%schunk-ave%d.npy" % (data_path, chunk_num))
-                flash.add(dense_data=batch, starting_index=num_vectors)
-                num_vectors += len(batch)
-            end = time.perf_counter()
-            print(
-                "Loading and indexing %d vectors (40GB) took:%f"
-                % (num_vectors, end - start),
-                flush=True,
-            )
 
-            queries = np.load(data_path + "test_embeddings.npy")
-            start = time.perf_counter()
-            results = flash.query(queries, top_k=top_k_flash)
-            end = time.perf_counter()
-            print(
-                "Querying %d vectors took:%f" % (len(queries), end - start), flush=True
-            )
+if args.read_in_entire_dataset:
+    all_batches = [
+        load_ith_numpy_batch(chunk_num)
+        for chunk_num in range(max_numpy_chunk_exclusive)
+    ]
 
-            gt = np.load(data_path + "ground_truth.npy")
-            recals = [
-                sum(gt[i] in result for i in range(top_k_gt)) / top_k_gt
-                for result, gt in zip(results, gt)
-            ]
-            print(
-                f"R{top_k_gt}@{top_k_flash} = {sum(recals) / len(recals)}", flush=True
-            )
+
+def get_ith_batch(i):
+    if args.read_in_entire_dataset:
+        return all_batches[i]
+    else:
+        return load_ith_numpy_batch(i)
+
+
+def run_trial(reservoir_size, hashes_per_table, num_tables):
+
+    hf = thirdai.hashing.SignedRandomProjection(
+        input_dim=4096, hashes_per_table=hashes_per_table, num_tables=num_tables
+    )
+    index = thirdai.search.MagSearch(hf, reservoir_size=reservoir_size)
+
+    start = time.perf_counter()
+    num_vectors = 0
+    for chunk_num in range(0, max_numpy_chunk_exclusive):
+        batch = get_ith_batch(chunk_num)
+        index.add(dense_data=batch, starting_index=num_vectors)
+        num_vectors += len(batch)
+    end = time.perf_counter()
+    indexing_time = end - start
+    print(indexing_time, flush=True)
+
+    queries = np.load(args.data_folder + "/test_embeddings.npy")
+    start = time.perf_counter()
+    results = index.query(queries, top_k=top_k_search)
+    end = time.perf_counter()
+    querying_time = end - start
+    print(querying_time, flush=True)
+
+    gt = np.load(args.data_folder + "/ground_truth.npy")
+    recals = [
+        sum(gt[i] in result for i in range(top_k_gt)) / top_k_gt
+        for result, gt in zip(results, gt)
+    ]
+    total_recall = sum(recals) / len(recals)
+
+    return indexing_time, querying_time, total_recall
+
+
+# From a larger grid search, these were a good representative of the best
+# hyperparameters. For intuition, for low recall to optimize speed we choose
+# a lot of hash functions and increasing number of hash tables, along with a
+# reasonably small reservoir. Towards the higher end of recall, we decrease
+# the number of hashes per table to try to find more neighbors, and increase
+# reservoir size.
+trials = [
+    (10, 16, 100),
+    (25, 16, 100),
+    (50, 16, 100),
+    (100, 16, 100),
+    (200, 16, 100),
+    (500, 16, 200),
+    (500, 14, 200),
+    (500, 12, 500),
+    (1000, 10, 1000),
+]
+
+for (num_tables, hashes_per_table, reservoir_size) in trials:
+    indexing_time, querying_time, recall = run_trial(
+        reservoir_size, hashes_per_table, num_tables
+    )
+    log_imagesearch_run(
+        reservoir_size=reservoir_size,
+        hashes_per_table=hashes_per_table,
+        num_tables=num_tables,
+        indexing_time=indexing_time,
+        querying_time=querying_time,
+        num_queries=10000,
+        recall=recall,
+        dataset="imagenet_embeddings",
+    )

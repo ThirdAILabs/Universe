@@ -1,7 +1,6 @@
 import os
 from thirdai import bolt, dataset
 import sys
-from helpers import train
 import pytest
 from collections import namedtuple
 
@@ -77,6 +76,35 @@ def train_mnist_sparse_hidden_layer(args):
         acc = network.predict(test_data)
         epoch_accuracies.append(acc)
     return epoch_accuracies[-1], epoch_accuracies, epoch_times
+
+
+def train(
+    args,
+    train_fn,
+    accuracy_threshold,
+    epoch_time_threshold=100,
+    total_time_threshold=10000,
+):
+    final_accuracies = []
+    final_epoch_times = []
+    total_times = []
+
+    for _ in range(args.runs):
+
+        final_accuracy, accuracies_per_epoch, time_per_epoch = train_fn(args)
+        final_accuracies.append(final_accuracy)
+        final_epoch_times.append(time_per_epoch[-1])
+        total_times.append(sum(time_per_epoch))
+
+        print(
+            f"Result of training {args.dataset} for {args.epochs} epochs:\n\tFinal epoch accuracy: {final_accuracy}\n\tFinal epoch time: {time_per_epoch}"
+        )
+
+        assert final_accuracies[-1] > accuracy_threshold
+        assert final_epoch_times[-1] < epoch_time_threshold
+        assert total_times[-1] < total_time_threshold
+
+    return final_accuracies, final_epoch_times
 
 
 @pytest.mark.integration
