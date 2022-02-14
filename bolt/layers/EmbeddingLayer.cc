@@ -61,7 +61,7 @@ void EmbeddingLayer::forward(uint32_t batch_indx,
       uint32_t hash_loc = hashing::MurmurHash(
           reinterpret_cast<const char*>(&id), sizeof(uint32_t), _seed);
       hash_loc = hash_loc >> (32 - _log_embedding_block_size);
-      assert(hash_loc < _total_embedding_dim);
+      assert(hash_loc < _embedding_block_size - _lookup_size);
       _embedding_locs[batch_indx][n * _num_embedding_lookups + e] = hash_loc;
 
       // Safe since we allocated 2^_log_embedding_block_size+_lookup_size
@@ -78,6 +78,9 @@ void EmbeddingLayer::backpropagate(uint32_t batch_indx,
     const float* errors = output.gradients + e * _lookup_size;
 
     for (uint32_t n = 0; n < _loc_lens[batch_indx]; n++) {
+      assert(_embedding_locs[batch_indx][n * _num_embedding_lookups + e] <
+             _embedding_block_size - _lookup_size);
+
       float* update_loc =
           _gradients +
           _embedding_locs[batch_indx][n * _num_embedding_lookups + e];

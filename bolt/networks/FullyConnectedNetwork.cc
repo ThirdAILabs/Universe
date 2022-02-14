@@ -316,6 +316,8 @@ FullyConnectedNetwork::~FullyConnectedNetwork() {
     delete _layers[i];
   }
 
+  delete[] _states;
+
   delete[] _layers;
 }
 
