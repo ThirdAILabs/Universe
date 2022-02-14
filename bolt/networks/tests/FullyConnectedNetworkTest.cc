@@ -12,7 +12,8 @@ class FullyConnectedNetworkTestFixture : public testing::Test {
   static const uint32_t n_classes = 100, n_batches = 100, batch_size = 100;
 
   FullyConnectedNetworkTestFixture()
-      : _network({FullyConnectedLayerConfig{n_classes, "Softmax"}}, n_classes) {}
+      : _network({FullyConnectedLayerConfig{n_classes, "Softmax"}}, n_classes) {
+  }
 
   static dataset::InMemoryDataset<dataset::DenseBatch> genDataset(
       bool add_noise) {
