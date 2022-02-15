@@ -6,8 +6,8 @@ if socket.gethostname() == "node1":
     train_file = "/media/temp/data/intent/train_shuf_criteo.txt"
     test_file = "/media/temp/data/intent/test_shuf_criteo.txt"
 else:
-    train_file = "/Users/nmeisburger/ThirdAI/data/intent/train_shuf_criteo.txt"
-    test_file = "/Users/nmeisburger/ThirdAI/data/intent/test_shuf_criteo.txt"
+    train_file = "/scratch/temp/data/intent/train_shuf_criteo.txt"
+    test_file = "/scratch/temp/data/intent/test_shuf_criteo.txt"
 
 train_data = dataset.load_click_through_dataset(train_file, 256, 512, 26)
 test_data = dataset.load_click_through_dataset(test_file, 256, 512, 26)
@@ -55,7 +55,8 @@ top_mlp = [
 dlrm = bolt.DLRM(embedding, bottom_mlp, top_mlp, 512)
 
 for i in range(100):
-    dlrm.train(train_data, learning_rate=0.001, epochs=1, rehash=5000, rebuild=50000)
+    dlrm.train(train_data, learning_rate=0.001,
+               epochs=1, rehash=5000, rebuild=50000)
     scores = dlrm.predict(test_data)
     preds = np.argmax(scores, axis=1)
     correct = 0
