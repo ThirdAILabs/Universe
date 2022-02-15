@@ -95,12 +95,16 @@ class BoltBatch {
 
   BoltBatch(const BoltBatch& other) = delete;
 
-  BoltBatch(BoltBatch&& other)
-      : _vector_states(other._vector_states),
-        _active_neurons_buf(other._active_neurons_buf),
-        _activations_buf(other._activations_buf),
-        _gradients_buf(other._gradients_buf),
-        _batch_size(other._batch_size) {
+  BoltBatch(BoltBatch&& other) : _batch_size(other._batch_size) {
+    delete[] this->_vector_states;
+    this->_vector_states = other._vector_states;
+    delete[] this->_active_neurons_buf;
+    this->_active_neurons_buf = other._active_neurons_buf;
+    delete[] this->_activations_buf;
+    this->_activations_buf = other._activations_buf;
+    delete[] this->_gradients_buf;
+    this->_gradients_buf = other._gradients_buf;
+
     other._vector_states = nullptr;
     other._active_neurons_buf = nullptr;
     other._activations_buf = nullptr;
@@ -110,9 +114,15 @@ class BoltBatch {
   BoltBatch& operator=(const BoltBatch& other) = delete;
 
   BoltBatch& operator=(BoltBatch&& other) {
+    delete[] this->_vector_states;
     this->_vector_states = other._vector_states;
+    delete[] this->_active_neurons_buf;
     this->_active_neurons_buf = other._active_neurons_buf;
+    delete[] this->_activations_buf;
     this->_activations_buf = other._activations_buf;
+    delete[] this->_gradients_buf;
+    this->_gradients_buf = other._gradients_buf;
+
     this->_batch_size = other._batch_size;
 
     other._vector_states = nullptr;
