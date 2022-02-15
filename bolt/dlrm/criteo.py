@@ -56,7 +56,7 @@ top_mlp = [
 
 dlrm = bolt.DLRM(embedding, bottom_mlp, top_mlp, 15)
 
-for i in range(1000):
+for i in range(10):
     dlrm.train(train_data, learning_rate=0.001, epochs=1, rehash=300, rebuild=500)
     scores = dlrm.predict(test_data)
     print(scores.shape)
