@@ -49,6 +49,11 @@ class DLRM {
 
   uint32_t _iter;
   uint32_t _epoch_count;
+
+  bool _softmax;
+
+ protected:
+  uint32_t _output_dim;
 };
 
 }  // namespace thirdai::bolt

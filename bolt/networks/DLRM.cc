@@ -1,4 +1,5 @@
 #include "DLRM.h"
+#include <bolt/layers/BoltVector.h>
 #include <bolt/loss_functions/LossFunctions.h>
 #include <bolt/utils/ProgressBar.h>
 #include <atomic>
@@ -23,9 +24,20 @@ DLRM::DLRM(EmbeddingLayerConfig embedding_config,
     throw std::invalid_argument("Dense feature layer must have sparsity 1.0");
   }
 
-  if (top_mlp_configs.back().dim != 1) {
-    throw std::invalid_argument("Output layer must have dimension 1");
+  if (top_mlp_configs.back().dim == 1 &&
+      top_mlp_configs.back().act_func != ActivationFunc::MeanSquared) {
+    throw std::invalid_argument(
+        "Output layer must have MeanSqauredError if dimension is 1");
   }
+
+  if (top_mlp_configs.back().dim != 1 &&
+      top_mlp_configs.back().act_func != ActivationFunc::Softmax) {
+    throw std::invalid_argument(
+        "Output layer must have Softmax if dimension is > 1");
+  }
+
+  _softmax = top_mlp_configs.back().act_func == ActivationFunc::Softmax;
+  _output_dim = top_mlp_configs.back().dim;
 
   _concat_layer_dim =
       _embedding_layer.getEmbeddingDim() + bottom_mlp_configs.back().dim;
@@ -45,9 +57,10 @@ void DLRM::train(
   // a batch size larger than this so we can just set the batch size here.
   initializeNetworkForBatchSize(batch_size, false);
 
-  BoltBatch output(1, batch_size, true);
+  BoltBatch output(_output_dim, batch_size, true);
 
   MeanSquaredError MSE;
+  SparseCategoricalCrossEntropyLoss loss;
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
     std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
@@ -63,16 +76,20 @@ void DLRM::train(
       const dataset::ClickThroughBatch& input_batch = train_data[batch];
 
 #pragma omp parallel for default(none) \
-    shared(input_batch, output, batch_size, MSE)
+    shared(input_batch, output, batch_size, MSE, loss)
       for (uint32_t b = 0; b < input_batch.getBatchSize(); b++) {
         BoltVector dense_input = BoltVector::makeDenseInputState(
             input_batch[b]._values, input_batch[b].dim());
 
         forward(b, dense_input, input_batch.categoricalFeatures(b), output[b]);
 
-        float label = static_cast<float>(input_batch.label(b));
-
-        MSE(output[b], batch_size, nullptr, &label, 1);
+        if (_softmax) {
+          uint32_t label = input_batch.label(b);
+          loss(output[b], batch_size, &label, 1);
+        } else {
+          float label = static_cast<float>(input_batch.label(b));
+          MSE(output[b], batch_size, nullptr, &label, 1);
+        }
 
         backpropagate(b, dense_input, output[b]);
       }
@@ -112,7 +129,7 @@ void DLRM::predict(
 
   initializeNetworkForBatchSize(batch_size, true);
 
-  BoltBatch output(1, batch_size, true);
+  BoltBatch output(_output_dim, batch_size, true);
 
   ProgressBar bar(num_test_batches);
 
@@ -128,7 +145,9 @@ void DLRM::predict(
 
       forward(b, dense_input, batch.categoricalFeatures(b), output[b]);
 
-      scores[cnt + b] = output[b].activations[0];
+      for (uint32_t i = 0; i < output[b].len; i++) {
+        scores[(cnt + b) * _output_dim + i] = output[b].activations[i];
+      }
     }
 
     cnt += batch.getBatchSize();

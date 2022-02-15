@@ -78,7 +78,8 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
         }
       }
 
-      output_file << std::hex;
+      // If we want the categorical features in hexadecimal
+      // output_file << std::hex;
       for (uint32_t c : vec.categorical_features) {
         if (c == 0) {
           output_file << '\t';

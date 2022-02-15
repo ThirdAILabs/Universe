@@ -1,11 +1,17 @@
 import numpy as np
 from sklearn.metrics import roc_auc_score
 from thirdai import bolt, dataset
+import socket
 
-train_file = "/media/temp/data/criteo-small/train_shuf_feat_hash_pairwise.txt"
-test_file = "/media/temp/data/criteo-small/test_shuf_feat_hash_pairwise.txt"
-train_data = dataset.load_click_through_dataset(train_file, 256, 13, 300)
-test_data = dataset.load_click_through_dataset(test_file, 256, 13, 300)
+if socket.gethostname() == "node1":
+    train_file = "/media/temp/data/criteo-small/train_shuf.txt"
+    test_file = "/media/temp/data/criteo-small/test_shuf.txt"
+else:
+    train_file = "/scratch/temp/data/criteo-small/train_shuf.txt"
+    test_file = "/scratch/temp/data/criteo-small/test_shuf.txt"
+
+train_data = dataset.load_click_through_dataset(train_file, 256, 15, 24)
+test_data = dataset.load_click_through_dataset(test_file, 256, 15, 24)
 
 f = open(test_file)
 
@@ -48,10 +54,11 @@ top_mlp = [
     bolt.LayerConfig(dim=1, activation_function="MeanSquared"),
 ]
 
-dlrm = bolt.DLRM(embedding, bottom_mlp, top_mlp, 13)
+dlrm = bolt.DLRM(embedding, bottom_mlp, top_mlp, 15)
 
 for i in range(10):
     dlrm.train(train_data, learning_rate=0.001, epochs=1, rehash=300, rebuild=500)
     scores = dlrm.predict(test_data)
+    print(scores.shape)
     auc = roc_auc_score(test_labels, scores)
     print("AUC: ", auc)
