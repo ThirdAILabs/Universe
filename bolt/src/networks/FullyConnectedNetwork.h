@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bolt/layers/FullyConnectedLayer.h>
+#include <bolt/src/layers/FullyConnectedLayer.h>
 #include <dataset/src/Dataset.h>
 #include <cmath>
 #include <iostream>

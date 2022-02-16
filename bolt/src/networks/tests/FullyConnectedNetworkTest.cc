@@ -1,4 +1,4 @@
-#include <bolt/networks/FullyConnectedNetwork.h>
+#include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Dataset.h>
 #include <algorithm>
