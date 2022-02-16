@@ -97,9 +97,9 @@ add_subdirectory(hashtable)
 
 file(
   GLOB BOLT_SOURCES 
-  bolt/layers/*.cc 
-  bolt/networks/*.cc 
-  bolt/utils/*.cc 
+  bolt/src/layers/*.cc 
+  bolt/src/networks/*.cc 
+  bolt/src/utils/*.cc 
 )
 
 file(
