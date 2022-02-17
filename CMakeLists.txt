@@ -84,6 +84,14 @@ endif()
 
 find_package (Python3 COMPONENTS Interpreter Development)
 
+FetchContent_Declare(
+    tomlplusplus
+    GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
+    GIT_TAG        v3.0.1
+)
+FetchContent_MakeAvailable(tomlplusplus)
+include_directories(${tomlplusplus_SOURCE_DIR})
+
 # So we can include using e.g. #include <hashtable/src/SampledHashTable.h>
 include_directories(".")
 include_directories(${pybind11_SOURCE_DIR}/include)

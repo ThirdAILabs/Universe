@@ -1,1 +1,1 @@
-add_library(bolt_utils_lib ConfigReader.cc DataLoader.cc)
+add_library(bolt_utils_lib ConfigReader.cc)
