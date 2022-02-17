@@ -1,8 +1,8 @@
 #pragma once
 
-#include <bolt/layers/LayerConfig.h>
-#include <bolt/networks/DLRM.h>
-#include <bolt/networks/FullyConnectedNetwork.h>
+#include <bolt/src/layers/LayerConfig.h>
+#include <bolt/src/networks/DLRM.h>
+#include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>

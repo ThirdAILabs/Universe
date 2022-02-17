@@ -1,8 +1,8 @@
 #pragma once
 
-#include <bolt/layers/EmbeddingLayer.h>
-#include <bolt/layers/FullyConnectedLayer.h>
-#include <bolt/networks/FullyConnectedNetwork.h>
+#include <bolt/src/layers/EmbeddingLayer.h>
+#include <bolt/src/layers/FullyConnectedLayer.h>
+#include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/src/Dataset.h>
 #include <vector>
 

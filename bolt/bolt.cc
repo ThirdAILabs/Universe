@@ -1,5 +1,5 @@
-#include "networks/FullyConnectedNetwork.h"
-#include "utils/ConfigReader.h"
+#include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <bolt/src/utils/ConfigReader.h>
 #include <dataset/src/Dataset.h>
 #include <chrono>
 #include <iostream>

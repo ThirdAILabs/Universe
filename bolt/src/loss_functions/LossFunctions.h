@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bolt/layers/BoltVector.h>
+#include <bolt/src/layers/BoltVector.h>
 
 namespace thirdai::bolt {
 

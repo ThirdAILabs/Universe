@@ -1,4 +1,4 @@
-#include "networks/DLRM.h"
+#include <bolt/src/networks/DLRM.h>
 #include <dataset/src/Dataset.h>
 #include <chrono>
 #include <iostream>

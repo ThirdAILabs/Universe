@@ -1,6 +1,8 @@
 #include "FullyConnectedLayer.h"
 #include <algorithm>
+#include <cassert>
 #include <cmath>
+#include <cstddef>
 #include <exception>
 #include <random>
 #include <sstream>
@@ -25,13 +27,22 @@ FullyConnectedLayer::FullyConnectedLayer(
   _w_gradient = new float[total_size]();
   _w_momentum = new float[total_size]();
   _w_velocity = new float[total_size]();
+  assert(_weights != nullptr);
+  assert(_w_gradient != nullptr);
+  assert(_w_momentum != nullptr);
+  assert(_w_velocity != nullptr);
 
   _biases = new float[_dim];
   _b_gradient = new float[_dim]();
   _b_momentum = new float[_dim]();
   _b_velocity = new float[_dim]();
+  assert(_biases != nullptr);
+  assert(_b_gradient != nullptr);
+  assert(_b_momentum != nullptr);
+  assert(_b_velocity != nullptr);
 
   _is_active = new bool[_dim]();  // TODO(nicholas): bitvector?
+  assert(_is_active != nullptr);
 
   std::random_device rd;
   std::default_random_engine eng(rd());
@@ -44,14 +55,17 @@ FullyConnectedLayer::FullyConnectedLayer(
     _hasher = new hashing::DWTAHashFunction(
         _prev_dim, _sampling_config.hashes_per_table,
         _sampling_config.num_tables, _sampling_config.range_pow);
+    assert(_hasher != nullptr);
 
     _hash_table = new hashtable::SampledHashTable<uint32_t>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow);
+    assert(_hash_table != nullptr);
 
     buildHashTables();
 
     _rand_neurons = new uint32_t[_dim];
+    assert(_rand_neurons != nullptr);
     for (uint32_t i = 0; i < _dim; i++) {
       _rand_neurons[i] = i;
     }
@@ -87,6 +101,16 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
                                       BoltVector& output,
                                       const uint32_t* labels,
                                       uint32_t label_len) {
+  assert((input.len < _prev_dim && !PREV_DENSE) ||
+         (input.len == _prev_dim && PREV_DENSE));
+  assert((input.active_neurons == nullptr && PREV_DENSE) ||
+         (input.active_neurons != nullptr && !PREV_DENSE));
+  assert((output.len < _dim && !DENSE) || (output.len == _dim && DENSE));
+  assert((output.active_neurons == nullptr && DENSE) ||
+         (output.active_neurons != nullptr && !DENSE));
+  assert((labels == nullptr && label_len == 0) ||
+         (labels != nullptr && label_len > 0));
+
   selectActiveNeurons<DENSE, PREV_DENSE>(input, output, labels, label_len);
 
   float max_act = 0;
@@ -97,15 +121,20 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
     // Because DENSE is known at compile time the compiler can remove this
     // conditional
     uint64_t act_neuron = DENSE ? n : output.active_neurons[n];
+    assert(act_neuron < _dim);
     _is_active[act_neuron] = true;
     float act = _biases[act_neuron];
     for (uint64_t i = 0; i < input.len; i++) {
       // Because PREV_DENSE is known at compile time the compiler can remove
       // this conditional
       uint32_t prev_act_neuron = PREV_DENSE ? i : input.active_neurons[i];
+      assert(prev_act_neuron < _prev_dim);
       act += _weights[act_neuron * _prev_dim + prev_act_neuron] *
              input.activations[i];
     }
+
+    assert(!std::isnan(act));
+
     switch (_act_func) {
       case ActivationFunc::ReLU:
         if (act < 0) {
@@ -134,6 +163,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
     }
     for (uint64_t n = 0; n < len_out; n++) {
       output.activations[n] /= (total + EPS);
+      assert(!std::isnan(output.activations[n]));
     }
   }
 }
@@ -191,17 +221,29 @@ constexpr float FullyConnectedLayer::actFuncDerivative(float x) {
 template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
                                             BoltVector& output) {
+  assert((input.len < _prev_dim && !PREV_DENSE) ||
+         (input.len == _prev_dim && PREV_DENSE));
+  assert((input.active_neurons == nullptr && PREV_DENSE) ||
+         (input.active_neurons != nullptr && !PREV_DENSE));
+  assert((output.len < _dim && !DENSE) || (output.len == _dim && DENSE));
+  assert((output.active_neurons == nullptr && DENSE) ||
+         (output.active_neurons != nullptr && !DENSE));
+
   uint32_t len_out = DENSE ? _dim : _sparse_dim;
 
   for (uint64_t n = 0; n < len_out; n++) {
+    assert(!std::isnan(output.gradients[n]));
     output.gradients[n] *= actFuncDerivative(output.activations[n]);
+    assert(!std::isnan(output.gradients[n]));
     // Because DENSE is known at compile time the compiler can remove this
     // conditional
     uint32_t act_neuron = DENSE ? n : output.active_neurons[n];
+    assert(act_neuron < _dim);
     for (uint64_t i = 0; i < input.len; i++) {
       // Because PREV_DENSE is known at compile time the compiler can remove
       // this conditional
       uint32_t prev_act_neuron = PREV_DENSE ? i : input.active_neurons[i];
+      assert(prev_act_neuron < _prev_dim);
       _w_gradient[act_neuron * _prev_dim + prev_act_neuron] +=
           output.gradients[n] * input.activations[i];
       if (!FIRST_LAYER) {
@@ -226,6 +268,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
   std::unordered_set<uint32_t> active_set;
 
   for (uint32_t i = 0; i < label_len; i++) {
+    assert(labels[i] < _dim);
     active_set.insert(labels[i]);
   }
 
@@ -266,6 +309,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     if (cnt >= _sparse_dim) {
       break;
     }
+    assert(x < _dim);
     output.active_neurons[cnt++] = x;
   }
 }
@@ -285,22 +329,33 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
     for (uint64_t i = 0; i < _prev_dim; i++) {
       auto indx = n * _prev_dim + i;
       float grad = _w_gradient[indx];
+      assert(!std::isnan(grad));
+
       _w_momentum[indx] = B1 * _w_momentum[indx] + (1 - B1) * grad;
       _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
+      assert(!std::isnan(_w_momentum[indx]));
+      assert(!std::isnan(_w_velocity[indx]));
 
       _weights[indx] +=
           lr * (_w_momentum[indx] / B1_bias_corrected) /
           (std::sqrt(_w_velocity[indx] / B2_bias_corrected) + eps);
+      assert(!std::isnan(_weights[indx]));
 
       _w_gradient[indx] = 0;
     }
 
     float grad = _b_gradient[n];
+    assert(!std::isnan(grad));
+
     _b_momentum[n] = B1 * _b_momentum[n] + (1 - B1) * grad;
     _b_velocity[n] = B2 * _b_velocity[n] + (1 - B2) * grad * grad;
 
+    assert(!std::isnan(_b_momentum[n]));
+    assert(!std::isnan(_b_velocity[n]));
+
     _biases[n] += lr * (_b_momentum[n] / B1_bias_corrected) /
                   (std::sqrt(_b_velocity[n] / B2_bias_corrected) + eps);
+    assert(!std::isnan(_biases[n]));
 
     _b_gradient[n] = 0;
     _is_active[n] = false;
