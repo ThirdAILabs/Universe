@@ -1,0 +1,28 @@
+job = "amzn 670k"
+
+[dataset]
+train_data = "/home/thirdai/data/amazon-670k/train_shuffled_noHeader.txt"
+test_data = "/home/thirdai/data/amazon-670k/test_shuffled_noHeader.txt"
+format = "svm"
+input_dim = 135909
+max_test_batches = 20
+
+[params]
+learning_rate = 0.0001
+epochs = 25
+batch_size = 256
+rehash = 6400
+rebuild = 128000
+
+[[layers]]
+dim = 256
+activation = 'ReLU'
+
+[[layers]]
+dim = 670091
+activation = 'Softmax'
+sparsity = 0.005
+hashes_per_table = 6
+num_tables = 128
+reservoir_size = 64
+range_pow = 18

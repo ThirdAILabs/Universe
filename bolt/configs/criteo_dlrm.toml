@@ -1,0 +1,50 @@
+job = "Criteo DLRM"
+
+[dataset]
+train_data = "/Users/nmeisburger/files/ThirdAI/data/criteo-small/train_shuf.txt"
+test_data = "/Users/nmeisburger/files/ThirdAI/data/criteo-small/test_shuf.txt"
+dense_features = 15
+categorical_features = 24
+
+[params]
+learning_rate = 0.001
+epochs = 2
+batch_size = 255
+rehash = 300
+rebuild = 500
+use_auc = true
+
+[embedding_layer]
+num_embedding_lookups = 8
+lookup_size = 16
+log_embedding_block_size = 10
+
+[[bottom_mlp_layers]]
+dim = 1000
+activation = 'ReLU'
+sparsity = 0.2
+hashes_per_table = 3
+num_tables = 128
+reservoir_size = 32
+range_pow = 9
+
+[[bottom_mlp_layers]]
+dim = 100
+activation = "ReLU"
+
+[[top_mlp_layers]]
+dim = 100
+activation = "ReLU"
+
+[[top_mlp_layers]]
+dim = 1000
+activation = 'ReLU'
+sparsity = 0.2
+hashes_per_table = 3
+num_tables = 128
+reservoir_size = 32
+range_pow = 9
+
+[[top_mlp_layers]]
+dim = 1
+activation = 'MeanSquared'
