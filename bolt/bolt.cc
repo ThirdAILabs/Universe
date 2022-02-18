@@ -10,11 +10,12 @@
 namespace bolt = thirdai::bolt;
 namespace dataset = thirdai::dataset;
 
-uint32_t getIntValue(toml::table const* table, std::string key,
+uint32_t getIntValue(toml::table const* table, const std::string& key,
                      bool use_default = false, uint32_t default_value = 0) {
   if (!table->contains(key) && use_default) {
     return default_value;
-  } else if (!table->contains(key)) {
+  }
+  if (!table->contains(key)) {
     std::cerr << "Invalid config file format: expected key '" + key +
                      "' in table."
               << std::endl;
@@ -29,11 +30,12 @@ uint32_t getIntValue(toml::table const* table, std::string key,
   return table->get(key)->as_integer()->get();
 }
 
-float getFloatValue(toml::table const* table, std::string key,
+float getFloatValue(toml::table const* table, const std::string& key,
                     bool use_default = false, float default_value = 0) {
   if (!table->contains(key) && use_default) {
     return default_value;
-  } else if (!table->contains(key)) {
+  }
+  if (!table->contains(key)) {
     std::cerr << "Invalid config file format: expected key '" + key +
                      "' in table."
               << std::endl;
@@ -48,12 +50,13 @@ float getFloatValue(toml::table const* table, std::string key,
   return table->get(key)->as_floating_point()->get();
 }
 
-std::string getStrValue(toml::table const* table, std::string key,
+std::string getStrValue(toml::table const* table, const std::string& key,
                         bool use_default = false,
                         std::string default_value = "") {
   if (!table->contains(key) && use_default) {
     return default_value;
-  } else if (!table->contains(key)) {
+  }
+  if (!table->contains(key)) {
     std::cerr << "Invalid config file format: expected key '" + key +
                      "' in table."
               << std::endl;
@@ -78,7 +81,7 @@ std::vector<bolt::FullyConnectedLayerConfig> createFullyConnectedLayerConfigs(
   }
   std::vector<bolt::FullyConnectedLayerConfig> layers;
 
-  auto array = configs.as_array();
+  auto* array = configs.as_array();
   for (auto& config : *array) {
     if (!config.is_table()) {
       std::cerr
@@ -86,7 +89,7 @@ std::vector<bolt::FullyConnectedLayerConfig> createFullyConnectedLayerConfigs(
           << std::endl;
       exit(1);
     }
-    auto table = config.as_table();
+    auto* table = config.as_table();
 
     uint32_t dim = getIntValue(table, "dim");
     uint32_t hashes_per_table = getIntValue(table, "hashes_per_table", true, 0);
@@ -106,14 +109,14 @@ std::vector<bolt::FullyConnectedLayerConfig> createFullyConnectedLayerConfigs(
 
 bolt::EmbeddingLayerConfig createEmbeddingLayerConfig(toml::table& config) {
   if (!config.contains("embedding_layer") ||
-      config["embedding_layer"].is_table()) {
+      !config["embedding_layer"].is_table()) {
     std::cerr << "Invalid config file format: expected table for embedding "
                  "layer config."
               << std::endl;
     exit(1);
   }
 
-  auto embedding_config = config["embedding_layer"].as_table();
+  auto* embedding_config = config["embedding_layer"].as_table();
 
   uint32_t num_embedding_lookups =
       getIntValue(embedding_config, "num_embedding_lookups");
@@ -133,7 +136,7 @@ void trainFCN(toml::table& config) {
               << std::endl;
     exit(1);
   }
-  auto dataset_table = config["dataset"].as_table();
+  auto* dataset_table = config["dataset"].as_table();
   uint32_t input_dim = getIntValue(dataset_table, "input_dim");
   std::string train_filename = getStrValue(dataset_table, "train_data");
   std::string test_filename = getStrValue(dataset_table, "test_data");
@@ -147,7 +150,7 @@ void trainFCN(toml::table& config) {
               << std::endl;
     exit(1);
   }
-  auto param_table = config["params"].as_table();
+  auto* param_table = config["params"].as_table();
   uint32_t batch_size = getIntValue(param_table, "batch_size");
   float learning_rate = getFloatValue(param_table, "learning_rate");
   uint32_t epochs = getIntValue(param_table, "epochs");
@@ -220,7 +223,7 @@ void trainDLRM(toml::table& config) {
               << std::endl;
     exit(1);
   }
-  auto dataset_table = config["dataset"].as_table();
+  auto* dataset_table = config["dataset"].as_table();
   uint32_t dense_features = getIntValue(dataset_table, "dense_features");
   uint32_t categorical_features =
       getIntValue(dataset_table, "categorical_features");
@@ -232,7 +235,7 @@ void trainDLRM(toml::table& config) {
               << std::endl;
     exit(1);
   }
-  auto param_table = config["params"].as_table();
+  auto* param_table = config["params"].as_table();
   uint32_t batch_size = getIntValue(param_table, "batch_size");
   float learning_rate = getFloatValue(param_table, "learning_rate");
   uint32_t epochs = getIntValue(param_table, "epochs");
@@ -263,7 +266,8 @@ int main(int argc, const char** argv) {
 
   if (table.contains("layers")) {
     trainFCN(table);
-  } else if (table.contains("bottom_mlp") && table.contains("top_mlp")) {
+  } else if (table.contains("bottom_mlp_layers") &&
+             table.contains("top_mlp_layers")) {
     trainDLRM(table);
   }
 
