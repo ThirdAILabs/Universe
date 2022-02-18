@@ -36,8 +36,7 @@ def create_embedding_layer_config(
     )
 
 
-AnyBoltDataset = Union[dataset.InMemorySparseDataset,
-                       dataset.InMemoryDenseDataset]
+AnyBoltDataset = Union[dataset.InMemorySparseDataset, dataset.InMemoryDenseDataset]
 
 
 def load_dataset(
@@ -115,8 +114,7 @@ def train_fcn(config: MutableMapping[str, Any]):
 
 def train_dlrm(config: MutableMapping[str, Any]):
     embedding_layer = create_embedding_layer_config(config["embedding_layer"])
-    bottom_mlp = create_fully_connected_layer_configs(
-        config["bottom_mlp_layers"])
+    bottom_mlp = create_fully_connected_layer_configs(config["bottom_mlp_layers"])
     top_mlp = create_fully_connected_layer_configs(config["top_mlp_layers"])
     input_dim = config["dataset"]["dense_features"]
     dlrm = bolt.DLRM(
