@@ -3,6 +3,7 @@
 #include <bolt/src/utils/ConfigReader.h>
 #include <dataset/src/Dataset.h>
 #include <chrono>
+#include <filesystem>
 #include <iostream>
 #include <toml.hpp>
 #include <vector>
@@ -128,6 +129,49 @@ bolt::EmbeddingLayerConfig createEmbeddingLayerConfig(toml::table& config) {
                                     log_embedding_block_size);
 }
 
+std::string findFullFilepath(const std::string& filename) {
+  std::string full_file_path = __FILE__;
+  std::string dataset_path_file =
+      full_file_path.substr(0, full_file_path.size() - strlen("bolt/bolt.cc"));
+  dataset_path_file += "dataset_paths.toml";
+
+  try {
+    toml::table table = toml::parse_file(dataset_path_file);
+
+    if (!table.contains("prefixes") || !table["prefixes"].is_array()) {
+      std::cerr << "Invalid config file format: expected array 'prefixes' in "
+                   "'dataset_paths.toml'."
+                << std::endl;
+      exit(1);
+    }
+    auto* array = table["prefixes"].as_array();
+    for (auto& prefix : *array) {
+      if (!prefix.is_string()) {
+        std::cerr
+            << "Invalid config file format: expected prefix to be string in "
+               "'dataset_paths.toml'."
+            << std::endl;
+        exit(1);
+      }
+
+      std::string candidate = prefix.as_string()->get() + filename;
+      if (std::filesystem::exists(candidate)) {
+        return candidate;
+      }
+    }
+
+    std::cerr << "Could not find file '" + filename +
+                     "' on any filepaths. Add correct path to "
+                     "'Universe/dataset_paths.toml'"
+              << std::endl;
+    exit(1);
+  } catch (std::exception& e) {
+    std::cerr << "Expected 'dataset_paths.toml' at root of Universe"
+              << std::endl;
+    exit(1);
+  }
+}
+
 void trainFCN(toml::table& config) {
   auto layers = createFullyConnectedLayerConfigs(config["layers"]);
 
@@ -138,8 +182,10 @@ void trainFCN(toml::table& config) {
   }
   auto* dataset_table = config["dataset"].as_table();
   uint32_t input_dim = getIntValue(dataset_table, "input_dim");
-  std::string train_filename = getStrValue(dataset_table, "train_data");
-  std::string test_filename = getStrValue(dataset_table, "test_data");
+  std::string train_filename =
+      findFullFilepath(getStrValue(dataset_table, "train_data"));
+  std::string test_filename =
+      findFullFilepath(getStrValue(dataset_table, "test_data"));
   std::string dataset_format = getStrValue(dataset_table, "format");
   uint32_t max_test_batches =
       getIntValue(dataset_table, "max_test_batches", true,
@@ -156,6 +202,11 @@ void trainFCN(toml::table& config) {
   uint32_t epochs = getIntValue(param_table, "epochs");
   uint32_t rehash = getIntValue(param_table, "rehash");
   uint32_t rebuild = getIntValue(param_table, "rebuild");
+  uint32_t sparse_inference_epoch = 0;
+  bool use_sparse_inference = param_table->contains("sparse_inference_epoch");
+  if (use_sparse_inference) {
+    sparse_inference_epoch = getIntValue(param_table, "sparse_inference_epoch");
+  }
 
   bolt::FullyConnectedNetwork network(layers, input_dim);
 
@@ -168,6 +219,9 @@ void trainFCN(toml::table& config) {
 
     for (uint32_t e = 0; e < epochs; e++) {
       network.train(train_data, learning_rate, 1, rehash, rebuild);
+      if (use_sparse_inference && e == sparse_inference_epoch) {
+        network.useSparseInference();
+      }
       network.predict(test_data, max_test_batches);
     }
   } else if (dataset_format == "csv") {
@@ -228,8 +282,10 @@ void trainDLRM(toml::table& config) {
   uint32_t dense_features = getIntValue(dataset_table, "dense_features");
   uint32_t categorical_features =
       getIntValue(dataset_table, "categorical_features");
-  std::string train_filename = getStrValue(dataset_table, "train_data");
-  std::string test_filename = getStrValue(dataset_table, "test_data");
+  std::string train_filename =
+      findFullFilepath(getStrValue(dataset_table, "train_data"));
+  std::string test_filename =
+      findFullFilepath(getStrValue(dataset_table, "test_data"));
 
   if (!config.contains("params") || !config["params"].is_table()) {
     std::cerr << "Invalid config file format: expected table for parameters."

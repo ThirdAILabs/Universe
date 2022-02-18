@@ -1,8 +1,8 @@
 job = "amzn 670k"
 
 [dataset]
-train_data = "/home/thirdai/data/amazon-670k/train_shuffled_noHeader.txt"
-test_data = "/home/thirdai/data/amazon-670k/test_shuffled_noHeader.txt"
+train_data = "amazon-670k/train_shuffled_noHeader.txt"
+test_data = "amazon-670k/test_shuffled_noHeader.txt"
 format = "svm"
 input_dim = 135909
 max_test_batches = 20

@@ -1,8 +1,8 @@
 job = "intent fully connected network"
 
 [dataset]
-train_data = "/Users/nmeisburger/files/ThirdAI/data/intent/train_shuf.svm"
-test_data = "/Users/nmeisburger/files/ThirdAI/data/intent/test_shuf.svm"
+train_data = "intent/train_shuf.svm"
+test_data = "intent/test_shuf.svm"
 format = "svm"
 input_dim = 5512
 

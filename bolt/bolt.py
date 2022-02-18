@@ -1,5 +1,6 @@
 import toml
 import sys
+import os
 from thirdai import bolt, dataset
 import numpy as np
 import numpy.typing as npt
@@ -37,14 +38,27 @@ def create_embedding_layer_config(
     )
 
 
+def find_full_filepath(filename: str) -> str:
+    prefix_table = toml.load(sys.path[0] + "/../dataset_paths.toml")
+    for prefix in prefix_table["prefixes"]:
+        if os.path.exists(prefix + filename):
+            return prefix + filename
+    print(
+        "Could not find file '"
+        + filename
+        + "' on any filepaths. Add correct path to 'Universe/dataset_paths.toml'"
+    )
+    sys.exit(1)
+
+
 AnyBoltDataset = Union[dataset.InMemorySparseDataset, dataset.InMemoryDenseDataset]
 
 
 def load_dataset(
     config: MutableMapping[str, Any]
 ) -> Optional[Tuple[AnyBoltDataset, AnyBoltDataset]]:
-    train_filename = config["dataset"]["train_data"]
-    test_filename = config["dataset"]["test_data"]
+    train_filename = find_full_filepath(config["dataset"]["train_data"])
+    test_filename = find_full_filepath(config["dataset"]["test_data"])
     batch_size = config["params"]["batch_size"]
     if config["dataset"]["format"].lower() == "svm":
         train = dataset.load_svm_dataset(train_filename, batch_size)
@@ -63,8 +77,8 @@ def load_dataset(
 def load_click_through_dataset(
     config: MutableMapping[str, Any]
 ) -> Tuple[dataset.ClickThroughDataset, dataset.ClickThroughDataset]:
-    train_filename = config["dataset"]["train_data"]
-    test_filename = config["dataset"]["test_data"]
+    train_filename = find_full_filepath(config["dataset"]["train_data"])
+    test_filename = find_full_filepath(config["dataset"]["test_data"])
     batch_size = config["params"]["batch_size"]
     dense_features = config["dataset"]["dense_features"]
     categorical_features = config["dataset"]["categorical_features"]
@@ -79,7 +93,7 @@ def load_click_through_dataset(
 
 def get_labels(dataset: str) -> npt.NDArray[np.int32]:
     labels = []
-    with open(dataset) as file:
+    with open(find_full_filepath(dataset)) as file:
         for line in file.readlines():
             items = line.strip().split()
             label = int(items[0])
@@ -97,14 +111,18 @@ def train_fcn(config: MutableMapping[str, Any]):
     max_test_batches = config["dataset"].get("max_test_batches", None)
     rehash = config["params"]["rehash"]
     rebuild = config["params"]["rebuild"]
+    use_sparse_inference = "sparse_inference_epoch" in config["params"].keys()
+    sparse_inference_epoch = config["params"]["sparse_inference_epoch"]
 
     data = load_dataset(config)
     if data is None:
         return
     train, test = data
 
-    for _ in range(epochs):
+    for e in range(epochs):
         network.train(train, learning_rate, 1, rehash, rebuild)
+        if use_sparse_inference and e == sparse_inference_epoch:
+            network.use_sparse_inference()
         if max_test_batches is None:
             network.predict(test)
         else:

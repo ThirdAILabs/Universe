@@ -1,8 +1,8 @@
 job = "Criteo DLRM"
 
 [dataset]
-train_data = "/Users/nmeisburger/files/ThirdAI/data/criteo-small/train_shuf.txt"
-test_data = "/Users/nmeisburger/files/ThirdAI/data/criteo-small/test_shuf.txt"
+train_data = "criteo-small/train_shuf.txt"
+test_data = "criteo-small/test_shuf.txt"
 dense_features = 15
 categorical_features = 24
 
@@ -10,8 +10,8 @@ categorical_features = 24
 learning_rate = 0.001
 epochs = 2
 batch_size = 255
-rehash = 300
-rebuild = 500
+rehash = 3000
+rebuild = 10000
 use_auc = true
 
 [embedding_layer]

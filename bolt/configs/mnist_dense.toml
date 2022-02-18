@@ -1,8 +1,8 @@
 job = "mnist dense layers"
 
 [dataset]
-train_data = "/Users/nmeisburger/files/ThirdAI/data/mnist/mnist"
-test_data = "/Users/nmeisburger/files/ThirdAI/data/mnist/mnist.t"
+train_data = "mnist/mnist"
+test_data = "mnist/mnist.t"
 format = "svm"
 input_dim = 784
 
