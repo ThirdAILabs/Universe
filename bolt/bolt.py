@@ -2,6 +2,7 @@ import toml
 import sys
 from thirdai import bolt, dataset
 import numpy as np
+import numpy.typing as npt
 from sklearn.metrics import roc_auc_score
 from typing import MutableMapping, List, Tuple, Any, Union, Optional
 
@@ -76,7 +77,7 @@ def load_click_through_dataset(
     return train, test
 
 
-def get_labels(dataset: str) -> np.array:
+def get_labels(dataset: str) -> npt.NDArray[np.int32]:
     labels = []
     with open(dataset) as file:
         for line in file.readlines():
