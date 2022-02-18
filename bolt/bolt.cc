@@ -263,13 +263,18 @@ int main(int argc, const char** argv) {
     return 1;
   }
 
-  toml::table table = toml::parse_file(argv[1]);
+  try {
+    toml::table table = toml::parse_file(argv[1]);
 
-  if (table.contains("layers")) {
-    trainFCN(table);
-  } else if (table.contains("bottom_mlp_layers") &&
-             table.contains("top_mlp_layers")) {
-    trainDLRM(table);
+    if (table.contains("layers")) {
+      trainFCN(table);
+    } else if (table.contains("bottom_mlp_layers") &&
+               table.contains("top_mlp_layers")) {
+      trainDLRM(table);
+    }
+  } catch (std::exception& e) {
+    std::cerr << e.what() << std::endl;
+    return 1;
   }
 
   return 0;
