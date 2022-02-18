@@ -169,7 +169,7 @@ float FullyConnectedNetwork::predict(
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
-  this->createBatchStates(batch_size, true);
+  this->createBatchStates(batch_size, !this->_sparse_inference);
 
   BoltBatch outputs = _layers[_num_layers - 1]->createBatchState(
       batch_size, !_layers[_num_layers - 1]->isForceSparsity());
