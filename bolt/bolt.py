@@ -3,9 +3,12 @@ import sys
 from thirdai import bolt, dataset
 import numpy as np
 from sklearn.metrics import roc_auc_score
+from typing import MutableMapping, List, Tuple, Any, Union, Optional
 
 
-def create_fully_connected_layer_configs(configs):
+def create_fully_connected_layer_configs(
+    configs: List[MutableMapping[str, Any]]
+) -> List[bolt.LayerConfig]:
     layers = []
     for config in configs:
         layer = bolt.LayerConfig(
@@ -23,7 +26,9 @@ def create_fully_connected_layer_configs(configs):
     return layers
 
 
-def create_embedding_layer_config(config):
+def create_embedding_layer_config(
+    config: MutableMapping[str, Any]
+) -> bolt.EmbeddingLayerConfig:
     return bolt.EmbeddingLayerConfig(
         num_embedding_lookups=config.get("num_embedding_lookups"),
         lookup_size=config.get("lookup_size"),
@@ -31,7 +36,13 @@ def create_embedding_layer_config(config):
     )
 
 
-def load_dataset(config):
+AnyBoltDataset = Union[dataset.InMemorySparseDataset,
+                       dataset.InMemoryDenseDataset]
+
+
+def load_dataset(
+    config: MutableMapping[str, Any]
+) -> Optional[Tuple[AnyBoltDataset, AnyBoltDataset]]:
     train_filename = config["dataset"]["train_data"]
     test_filename = config["dataset"]["test_data"]
     batch_size = config["params"]["batch_size"]
@@ -49,7 +60,9 @@ def load_dataset(config):
         return None
 
 
-def load_click_through_dataset(config):
+def load_click_through_dataset(
+    config: MutableMapping[str, Any]
+) -> Tuple[dataset.ClickThroughDataset, dataset.ClickThroughDataset]:
     train_filename = config["dataset"]["train_data"]
     test_filename = config["dataset"]["test_data"]
     batch_size = config["params"]["batch_size"]
@@ -64,7 +77,7 @@ def load_click_through_dataset(config):
     return train, test
 
 
-def get_labels(dataset):
+def get_labels(dataset: str) -> np.array:
     labels = []
     with open(dataset) as file:
         for line in file.readlines():
@@ -74,7 +87,7 @@ def get_labels(dataset):
     return np.array(labels)
 
 
-def train_fcn(config):
+def train_fcn(config: MutableMapping[str, Any]):
     layers = create_fully_connected_layer_configs(config["layers"])
     input_dim = config["dataset"]["input_dim"]
     network = bolt.Network(layers=layers, input_dim=input_dim)
@@ -85,7 +98,10 @@ def train_fcn(config):
     rehash = config["params"]["rehash"]
     rebuild = config["params"]["rebuild"]
 
-    train, test = load_dataset(config)
+    data = load_dataset(config)
+    if data is None:
+        return
+    train, test = data
 
     for _ in range(epochs):
         network.train(train, learning_rate, 1, rehash, rebuild)
@@ -97,9 +113,10 @@ def train_fcn(config):
         network.predict(test)
 
 
-def train_dlrm(config):
+def train_dlrm(config: MutableMapping[str, Any]):
     embedding_layer = create_embedding_layer_config(config["embedding_layer"])
-    bottom_mlp = create_fully_connected_layer_configs(config["bottom_mlp_layers"])
+    bottom_mlp = create_fully_connected_layer_configs(
+        config["bottom_mlp_layers"])
     top_mlp = create_fully_connected_layer_configs(config["top_mlp_layers"])
     input_dim = config["dataset"]["dense_features"]
     dlrm = bolt.DLRM(
@@ -130,11 +147,11 @@ def train_dlrm(config):
             print("AUC: ", auc)
 
 
-def is_dlrm(config):
+def is_dlrm(config: MutableMapping[str, Any]) -> bool:
     return "bottom_mlp_layers" in config.keys() and "top_mlp_layers" in config.keys()
 
 
-def is_fcn(config):
+def is_fcn(config: MutableMapping[str, Any]) -> bool:
     return "layers" in config.keys()
 
 
