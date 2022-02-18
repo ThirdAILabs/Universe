@@ -214,7 +214,8 @@ ClickThroughDataset loadClickThorughDataset(const std::string& filename,
 
 void trainDLRM(toml::table& config) {
   auto embedding_layer = createEmbeddingLayerConfig(config);
-  auto bottom_mlp = createFullyConnectedLayerConfigs(config["bottom_mlp_layers"]);
+  auto bottom_mlp =
+      createFullyConnectedLayerConfigs(config["bottom_mlp_layers"]);
   auto top_mlp = createFullyConnectedLayerConfigs(config["top_mlp_layers"]);
   uint32_t output_dim = top_mlp.back().dim;
 
