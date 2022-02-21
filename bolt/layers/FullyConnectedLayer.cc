@@ -317,7 +317,7 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
 }
 
 void FullyConnectedLayer::buildHashTables() {
-  if (_sparsity >= 1.0) {
+  if (_sparsity >= 1.0 || _force_sparse_for_inference) {
     return;
   }
   uint64_t num_tables = _hash_table->numTables();
@@ -338,7 +338,7 @@ void FullyConnectedLayer::buildHashTables() {
 }
 
 void FullyConnectedLayer::reBuildHashFunction() {
-  if (_sparsity >= 1.0) {
+  if (_sparsity >= 1.0 || _force_sparse_for_inference) {
     return;
   }
   delete _hasher;
@@ -349,7 +349,7 @@ void FullyConnectedLayer::reBuildHashFunction() {
 }
 
 void FullyConnectedLayer::shuffleRandNeurons() {
-  if (_sparsity < 1.0) {
+  if (_sparsity < 1.0 && !_force_sparse_for_inference) {
     std::shuffle(_rand_neurons, _rand_neurons + _dim, std::random_device{});
   }
 }
