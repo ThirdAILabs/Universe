@@ -110,7 +110,7 @@ void SampledHashTable<LABEL_T>::queryAndInsertForInference(
   // relevant bucket in the tables probed.)
   for (auto x : store) {
     if (temp_store.find(x) == temp_store.end()) {
-      for (uint32_t i = 0; i < table - 1; i++) {
+      for (uint32_t i = 0; i < table; i++) {
 
         uint32_t row_id = hashes[i];
         uint64_t ctr = _counters[CounterIdx(i, row_id)]++;
