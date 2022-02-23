@@ -75,6 +75,15 @@ int main(int argc, char** argv) {
         network.useSparseInference();
       }
 
+      //Anshu: Quick Test restricting while training
+      if (config.valExists("restrict_classes")  && (e == epochs - 3) && (epochs > 3)) {
+      std::cout << "Freezing Selection to classes in range and training 2 epochs: "
+                << restrict_class_startval << " and " << restrict_class_endval
+                << std::endl;
+      network.restrictClass(restrict_class_startval, restrict_class_endval);
+    }
+
+
       network.train<dataset::SparseBatch>(train_data, learning_rate, 1, rehash,
                                           rebuild);
       network.predict<dataset::SparseBatch>(test_data, max_test_batches);
