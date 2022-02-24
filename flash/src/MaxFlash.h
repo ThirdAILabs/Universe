@@ -23,7 +23,8 @@ class MaxFlash {
   const uint32_t _num_tables;
   const uint32_t _range;
 
-  hashtable::TinyTable<LABEL_T>* _hashtable;
+  bool populated = false;
+  hashtable::TinyTable<LABEL_T>* _hashtable = NULL;
 };
 
 }  // namespace thirdai::search

@@ -1,4 +1,5 @@
 #include "MaxFlash.h"
+#include <stdexcept>
 
 namespace thirdai::search {
 
@@ -9,7 +10,7 @@ template class MaxFlash<uint64_t>;
 
 template <typename LABEL_T>
 MaxFlash<LABEL_T>::MaxFlash(uint32_t num_tables, uint32_t range)
-    : _num_tables(num_tables), _range(range), _hashtable(NULL) {}
+    : _num_tables(num_tables), _range(range) {}
 
 template void MaxFlash<uint8_t>::populate(uint32_t const* hashes,
                                           uint32_t num_elements);
@@ -23,8 +24,13 @@ template void MaxFlash<uint64_t>::populate(uint32_t const* hashes,
 template <typename LABEL_T>
 void MaxFlash<LABEL_T>::populate(uint32_t const* hashes,
                                  uint32_t num_elements) {
-  _hashtable = new hashtable::TinyTable<LABEL_T>(_num_tables, num_elements,
-                                                 _range, hashes);
+  if (!populated) {
+    _hashtable = new hashtable::TinyTable<LABEL_T>(_num_tables, num_elements,
+                                                   _range, hashes);
+    populated = true;
+  } else {
+    throw std::runtime_error("Tried to populate the same MaxFlash twice.");
+  }
 }
 
 template float MaxFlash<uint8_t>::getScore(

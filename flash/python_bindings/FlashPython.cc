@@ -43,9 +43,9 @@ void createSearchSubmodule(py::module_& module) {
       .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
            py::arg("num_documents"), py::arg("hashes_per_table"),
            py::arg("num_tables"), py::arg("dense_input_dimension"))
-      .def("addDocument", &PyMaxFlashArray::addDocument,
+      .def("add_document", &PyMaxFlashArray::addDocument,
            py::arg("document_embeddings"), py::arg("document_id"))
-      .def("rankDocuments", &PyMaxFlashArray::rankDocuments,
+      .def("rank_documents", &PyMaxFlashArray::rankDocuments,
            py::arg("query_embeddings"), py::arg("document_ids_to_rank"));
 }
 
