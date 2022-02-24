@@ -1,4 +1,5 @@
 #include "FlashPython.h"
+#include "DocSearchPython.h"
 
 namespace thirdai::search::python {
 
@@ -36,5 +37,16 @@ void createSearchSubmodule(py::module_& module) {
            "Performs a batch query that returns the "
            "approximate top_k neighbors as a row for each of the passed in "
            "queries.");
+
+  // TODO(josh): Right now this only has support for dense input
+  py::class_<PyMaxFlashArray>(search_submodule, "doc_retrieval_index")
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+           py::arg("num_documents"), py::arg("hashes_per_table"),
+           py::arg("num_tables"), py::arg("dense_input_dimension"))
+      .def("addDocument", &PyMaxFlashArray::addDocument,
+           py::arg("document_embeddings"), py::arg("document_id"))
+      .def("rankDocuments", &PyMaxFlashArray::rankDocuments,
+           py::arg("query_embeddings"), py::arg("document_ids_to_rank"));
 }
+
 }  // namespace thirdai::search::python

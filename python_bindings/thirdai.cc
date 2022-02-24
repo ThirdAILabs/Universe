@@ -28,6 +28,7 @@ PYBIND11_MODULE(thirdai, m) {  // NOLINT
   // Per pybind11 docs breaking up the construction of bindings in this way
   // could speed up build times. See below for more info:
   // https://pybind11.readthedocs.io/en/stable/faq.html#how-can-i-reduce-the-build-time
+
   thirdai::dataset::python::createDatasetSubmodule(m);
 
   thirdai::hashing::python::createHashingSubmodule(m);
