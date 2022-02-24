@@ -1,0 +1,27 @@
+job = "mnist sparse hidden layer"
+
+[dataset]
+train_data = "mnist/mnist"
+test_data = "mnist/mnist.t"
+format = "svm"
+input_dim = 784
+
+[params]
+learning_rate = 0.0001
+epochs = 2
+batch_size = 250
+rehash = 3000
+rebuild = 10000
+
+[[layers]]
+dim = 20000
+activation = 'ReLU'
+sparsity = 0.01
+hashes_per_table = 3
+num_tables = 64
+reservoir_size = 32
+range_pow = 9
+
+[[layers]]
+dim = 10
+activation = 'Softmax'
