@@ -10,6 +10,15 @@
 
 namespace thirdai::hashtable {
 
+// The goal of this class is to be a REALLY tiny hashtable.
+// LABEL_T should be the smallest size neccesary to store the number of elements
+// in the table. Needless to say, you need to know the number of elements and
+// all hashes when you construct this table. By my estimate, its current size is
+// 40 + sizeof(LABEL_T) * ((_hash_range + 1) * _num_tables + _num_elements *
+// _num_tables). As an example, if you are storing 200 elements in 32 tables
+// with a hash range of 64, this class will use less than 10 KB of memory (8520
+// bytes).
+// TODO(josh): write tests for this class
 template <typename LABEL_T>
 class TinyTable final {
  public:
@@ -19,7 +28,6 @@ class TinyTable final {
         _num_elements(num_elements),
         _num_tables(num_tables),
         _index((_hash_range + 1 + _num_elements) * _num_tables) {
-    // std::cout << "Total index size " << _index.size() << std::endl;
     if (num_elements > std::numeric_limits<LABEL_T>::max()) {
       throw std::runtime_error(
           "inserting " + std::to_string(num_elements) +
@@ -47,8 +55,6 @@ class TinyTable final {
       uint64_t current_offset = _table_start + _num_elements * table;
       for (uint64_t bucket = 0; bucket < hash_range; bucket++) {
         for (LABEL_T item : temp_buckets.at(bucket)) {
-          // std::cout << current_offset << " " << _table_start << " " <<
-          // _num_elements << " " << table << " " << bucket << std::endl;
           _index.at(current_offset) = item;
           current_offset += 1;
         }

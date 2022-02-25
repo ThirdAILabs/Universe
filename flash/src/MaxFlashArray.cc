@@ -83,11 +83,11 @@ std::vector<float> MaxFlashArray<LABEL_T>::getDocumentScores(
 
   std::vector<float> result(documents_to_query.size());
 
-  // #pragma omp parallel
+#pragma omp parallel
   {
     std::vector<uint32_t> buffer(_largest_doc);
 
-    // #pragma omp for
+#pragma omp for
     for (uint64_t i = 0; i < result.size(); i++) {
       uint64_t flash_index = documents_to_query.at(i);
       result[i] =
