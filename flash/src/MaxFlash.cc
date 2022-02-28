@@ -9,7 +9,8 @@ template class MaxFlash<uint32_t>;
 template class MaxFlash<uint64_t>;
 
 template <typename LABEL_T>
-MaxFlash<LABEL_T>::MaxFlash(uint32_t num_tables, uint32_t range, LABEL_T num_elements, uint32_t const* hashes)
+MaxFlash<LABEL_T>::MaxFlash(uint32_t num_tables, uint32_t range,
+                            LABEL_T num_elements, uint32_t const* hashes)
     : _hashtable(std::make_unique<hashtable::TinyTable<LABEL_T>>(
           num_tables, range, num_elements, hashes)) {}
 

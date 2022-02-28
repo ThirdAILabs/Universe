@@ -10,7 +10,8 @@ namespace thirdai::search {
 template <typename LABEL_T>
 class MaxFlash {
  public:
-  MaxFlash(uint32_t num_tables, uint32_t range, LABEL_T num_elements, uint32_t const* hashes);
+  MaxFlash(uint32_t num_tables, uint32_t range, LABEL_T num_elements,
+           uint32_t const* hashes);
 
   float getScore(uint32_t const* query_hashes, uint32_t num_elements,
                  std::vector<uint32_t>& count_buffer,

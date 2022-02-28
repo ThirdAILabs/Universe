@@ -2,12 +2,12 @@
 
 #include <atomic>
 #include <exception>
+#include <iostream>
 #include <random>
 #include <stdexcept>
 #include <string>
 #include <unordered_set>
 #include <vector>
-#include <iostream>
 
 namespace thirdai::hashtable {
 
@@ -29,7 +29,6 @@ class TinyTable final {
         _num_elements(num_elements),
         _num_tables(num_tables),
         _index((_hash_range + 1 + _num_elements) * _num_tables) {
-
     if (num_elements > std::numeric_limits<LABEL_T>::max()) {
       throw std::runtime_error(
           "inserting " + std::to_string(num_elements) +
@@ -69,7 +68,8 @@ class TinyTable final {
       uint32_t hash = hashes[table];
       LABEL_T start_offset = _index[(_hash_range + 1) * table + hash];
       LABEL_T end_offset = _index[(_hash_range + 1) * table + hash + 1];
-      uint64_t table_offset = _table_start + static_cast<uint64_t>(table) * _num_elements;
+      uint64_t table_offset =
+          _table_start + static_cast<uint64_t>(table) * _num_elements;
       for (uint64_t offset = table_offset + start_offset;
            offset < table_offset + end_offset; offset++) {
         counts.at(_index.at(offset))++;
@@ -91,7 +91,8 @@ class TinyTable final {
   const uint32_t _hash_range;
   const LABEL_T _num_elements;
   const uint32_t _num_tables;
-  const uint64_t _table_start = static_cast<uint64_t>(_num_tables) * (_hash_range + 1);
+  const uint64_t _table_start =
+      static_cast<uint64_t>(_num_tables) * (_hash_range + 1);
   // First _hash_range elements + 1 are bucket offsets (starts) into the first
   // table array (the + 1 element is just = _num_elements, for ease of
   // iteration), second _hash_range + 1 elements are offsets into the second

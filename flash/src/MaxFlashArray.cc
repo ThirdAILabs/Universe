@@ -20,8 +20,7 @@ MaxFlashArray<LABEL_T>::MaxFlashArray(hashing::HashFunction* function,
           max_doc_size, std::numeric_limits<LABEL_T>::max())),
       _function(function),
       _maxflash_array(),
-      _lookups(function->range())
-{
+      _lookups(function->range()) {
   for (uint32_t i = 0; i < _function->numTables(); i++) {
     _lookups[i] =
         std::exp(std::log(static_cast<float>(i) / function->numTables()) /
