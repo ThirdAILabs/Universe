@@ -2,6 +2,7 @@
 
 #include <hashtable/src/TinyTable.h>
 #include <dataset/src/Dataset.h>
+#include <memory>
 #include <utility>
 
 namespace thirdai::search {
@@ -17,14 +18,16 @@ class MaxFlash {
                  std::vector<uint32_t>& count_buffer,
                  const std::vector<float>& lookups) const;
 
-  ~MaxFlash();
+  // Delete copy constructor and assignment
+  MaxFlash(const MaxFlash&) = delete;
+  MaxFlash& operator=(const MaxFlash&) = delete;
 
  private:
   const uint32_t _num_tables;
   const uint32_t _range;
 
   bool populated = false;
-  hashtable::TinyTable<LABEL_T>* _hashtable = NULL;
+  std::unique_ptr<hashtable::TinyTable<LABEL_T>> _hashtable = NULL;
 };
 
 }  // namespace thirdai::search

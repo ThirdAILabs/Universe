@@ -25,8 +25,8 @@ template <typename LABEL_T>
 void MaxFlash<LABEL_T>::populate(uint32_t const* hashes,
                                  uint32_t num_elements) {
   if (!populated) {
-    _hashtable = new hashtable::TinyTable<LABEL_T>(_num_tables, num_elements,
-                                                   _range, hashes);
+    _hashtable = std::make_unique<hashtable::TinyTable<LABEL_T>>(
+        _num_tables, num_elements, _range, hashes);
     populated = true;
   } else {
     throw std::runtime_error("Tried to populate the same MaxFlash twice.");
@@ -77,11 +77,6 @@ float MaxFlash<LABEL_T>::getScore(uint32_t const* query_hashes,
   }
 
   return sum;
-}
-
-template <typename LABEL_T>
-MaxFlash<LABEL_T>::~MaxFlash() {
-  delete _hashtable;
 }
 
 }  // namespace thirdai::search

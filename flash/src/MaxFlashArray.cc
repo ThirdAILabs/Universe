@@ -21,8 +21,8 @@ MaxFlashArray<LABEL_T>::MaxFlashArray(hashing::HashFunction* function,
       _lookups(function->range()),
       _largest_doc(0) {
   for (uint64_t i = 0; i < num_flashes; i++) {
-    _maxflash_array.push_back(
-        new MaxFlash<LABEL_T>(_function->numTables(), _function->range()));
+    _maxflash_array.push_back(std::make_unique<MaxFlash<LABEL_T>>(
+        _function->numTables(), _function->range()));
   }
   for (uint32_t i = 0; i < _function->numTables(); i++) {
     _lookups[i] =
@@ -98,14 +98,6 @@ std::vector<float> MaxFlashArray<LABEL_T>::getDocumentScores(
 
   delete[] hashes;
   return result;
-}
-
-template <typename LABEL_T>
-MaxFlashArray<LABEL_T>::~MaxFlashArray() {
-  for (uint32_t i = 0; i < _maxflash_array.size(); i++) {
-    delete _maxflash_array.at(i);
-  }
-  delete _function;
 }
 
 /**

@@ -76,6 +76,10 @@ class TinyTable final {
     }
   }
 
+  // Delete copy constructor and assignment
+  TinyTable(const TinyTable&) = delete;
+  TinyTable& operator=(const TinyTable&) = delete;
+
   // Techincally this is 32 wasted bytes per table = 250MB for 8M docs, but it's
   // fine for now
   const uint64_t _hash_range;

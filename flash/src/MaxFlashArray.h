@@ -13,6 +13,8 @@ template <typename LABEL_T>
 class MaxFlashArray {
  public:
   // This will own the hash function and delete it during the destructor
+  // TODO(josh): Remove naked pointers from hash function library so moves will
+  // work, then change this to a unique pointer
   MaxFlashArray(hashing::HashFunction* function, uint64_t num_flashes,
                 uint32_t hashes_per_table);
 
@@ -23,7 +25,9 @@ class MaxFlashArray {
       const dataset::DenseBatch& query,
       const std::vector<uint32_t>& documents_to_query) const;
 
-  ~MaxFlashArray();
+  // Delete copy constructor and assignment
+  MaxFlashArray(const MaxFlashArray&) = delete;
+  MaxFlashArray& operator=(const MaxFlashArray&) = delete;
 
  private:
   /**
@@ -34,8 +38,8 @@ class MaxFlashArray {
   template <typename BATCH_T>
   uint32_t* hash(const BATCH_T& batch) const;
 
-  hashing::HashFunction* _function;
-  std::vector<MaxFlash<LABEL_T>*> _maxflash_array;
+  std::unique_ptr<hashing::HashFunction> _function;
+  std::vector<std::unique_ptr<MaxFlash<LABEL_T>>> _maxflash_array;
   std::vector<float> _lookups;
   uint32_t _largest_doc;
 };
