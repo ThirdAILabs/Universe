@@ -41,10 +41,11 @@ void createSearchSubmodule(py::module_& module) {
   // TODO(josh): Right now this only has support for dense input
   py::class_<PyMaxFlashArray>(search_submodule, "doc_retrieval_index")
       .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
-           py::arg("num_documents"), py::arg("hashes_per_table"),
-           py::arg("num_tables"), py::arg("dense_input_dimension"))
+           py::arg("hashes_per_table"), py::arg("num_tables"),
+           py::arg("dense_input_dimension"),
+           py::arg("max_allowable_doc_size") = 256)
       .def("add_document", &PyMaxFlashArray::addDocument,
-           py::arg("document_embeddings"), py::arg("document_id"))
+           py::arg("document_embeddings"))
       .def("rank_documents", &PyMaxFlashArray::rankDocuments,
            py::arg("query_embeddings"), py::arg("document_ids_to_rank"));
 }

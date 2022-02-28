@@ -14,16 +14,14 @@ template class MaxFlashArray<uint64_t>;
 
 template <typename LABEL_T>
 MaxFlashArray<LABEL_T>::MaxFlashArray(hashing::HashFunction* function,
-                                      uint64_t num_flashes,
-                                      uint32_t hashes_per_table)
-    : _function(function),
+                                      uint32_t hashes_per_table,
+                                      uint64_t max_doc_size)
+    : _max_allowable_doc_size(std::min<uint64_t>(
+          max_doc_size, std::numeric_limits<LABEL_T>::max())),
+      _function(function),
       _maxflash_array(),
-      _lookups(function->range()),
-      _largest_doc(0) {
-  for (uint64_t i = 0; i < num_flashes; i++) {
-    _maxflash_array.push_back(std::make_unique<MaxFlash<LABEL_T>>(
-        _function->numTables(), _function->range()));
-  }
+      _lookups(function->range())
+{
   for (uint32_t i = 0; i < _function->numTables(); i++) {
     _lookups[i] =
         std::exp(std::log(static_cast<float>(i) / function->numTables()) /
@@ -32,33 +30,31 @@ MaxFlashArray<LABEL_T>::MaxFlashArray(hashing::HashFunction* function,
 }
 
 template void MaxFlashArray<uint8_t>::addDocument<dataset::SparseBatch>(
-    const dataset::SparseBatch&, uint64_t);
+    const dataset::SparseBatch&);
 template void MaxFlashArray<uint16_t>::addDocument<dataset::SparseBatch>(
-    const dataset::SparseBatch&, uint64_t);
+    const dataset::SparseBatch&);
 template void MaxFlashArray<uint32_t>::addDocument<dataset::SparseBatch>(
-    const dataset::SparseBatch&, uint64_t);
+    const dataset::SparseBatch&);
 template void MaxFlashArray<uint64_t>::addDocument<dataset::SparseBatch>(
-    const dataset::SparseBatch&, uint64_t);
+    const dataset::SparseBatch&);
 
 template void MaxFlashArray<uint8_t>::addDocument<dataset::DenseBatch>(
-    const dataset::DenseBatch&, uint64_t);
+    const dataset::DenseBatch&);
 template void MaxFlashArray<uint16_t>::addDocument<dataset::DenseBatch>(
-    const dataset::DenseBatch&, uint64_t);
+    const dataset::DenseBatch&);
 template void MaxFlashArray<uint32_t>::addDocument<dataset::DenseBatch>(
-    const dataset::DenseBatch&, uint64_t);
+    const dataset::DenseBatch&);
 template void MaxFlashArray<uint64_t>::addDocument<dataset::DenseBatch>(
-    const dataset::DenseBatch&, uint64_t);
+    const dataset::DenseBatch&);
 
-// TODO(josh): Make this safer to parallilize
 template <typename LABEL_T>
 template <typename BATCH_T>
-void MaxFlashArray<LABEL_T>::addDocument(const BATCH_T& batch,
-                                         uint64_t document_id) {
-  _largest_doc = std::max(_largest_doc, batch.getBatchSize());
+void MaxFlashArray<LABEL_T>::addDocument(const BATCH_T& batch) {
+  LABEL_T num_elements =
+      std::min<uint64_t>(batch.getBatchSize(), _max_allowable_doc_size);
   uint32_t* hashes = hash(batch);
-  _maxflash_array[document_id]->populate(
-      hashes, std::min<uint64_t>(batch.getBatchSize(),
-                                 std::numeric_limits<LABEL_T>::max()));
+  _maxflash_array.push_back(std::make_unique<MaxFlash<LABEL_T>>(
+      _function->numTables(), _function->range(), num_elements, hashes));
   delete[] hashes;
 }
 
@@ -86,7 +82,7 @@ std::vector<float> MaxFlashArray<LABEL_T>::getDocumentScores(
 #pragma omp parallel default(none) \
     shared(result, documents_to_query, hashes, query)
   {
-    std::vector<uint32_t> buffer(_largest_doc);
+    std::vector<uint32_t> buffer(_max_allowable_doc_size);
 
 #pragma omp for
     for (uint64_t i = 0; i < result.size(); i++) {

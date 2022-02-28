@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include <iostream>
 
 namespace thirdai::hashtable {
 
@@ -22,12 +23,13 @@ namespace thirdai::hashtable {
 template <typename LABEL_T>
 class TinyTable final {
  public:
-  TinyTable(uint64_t num_tables, uint64_t num_elements, uint64_t hash_range,
+  TinyTable(uint32_t num_tables, uint32_t range, LABEL_T num_elements,
             uint32_t const* hashes)
-      : _hash_range(hash_range),
+      : _hash_range(range),
         _num_elements(num_elements),
         _num_tables(num_tables),
         _index((_hash_range + 1 + _num_elements) * _num_tables) {
+
     if (num_elements > std::numeric_limits<LABEL_T>::max()) {
       throw std::runtime_error(
           "inserting " + std::to_string(num_elements) +
@@ -35,16 +37,15 @@ class TinyTable final {
           std::to_string(std::numeric_limits<LABEL_T>::max()));
     }
 
-    for (uint64_t table = 0; table < num_tables; table++) {
-      std::vector<std::vector<LABEL_T>> temp_buckets(hash_range);
+    for (uint32_t table = 0; table < num_tables; table++) {
+      std::vector<std::vector<LABEL_T>> temp_buckets(_hash_range);
       for (uint64_t vec_id = 0; vec_id < num_elements; vec_id++) {
         uint64_t hash = hashes[vec_id * num_tables + table];
         temp_buckets.at(hash).push_back(vec_id);
       }
-
       // Populate offsets
       _index.at(table * (_hash_range + 1)) = 0;
-      for (uint64_t bucket = 1; bucket < hash_range; bucket++) {
+      for (uint32_t bucket = 1; bucket < _hash_range; bucket++) {
         _index.at(table * (_hash_range + 1) + bucket) =
             _index.at(table * (_hash_range + 1) + bucket - 1) +
             temp_buckets.at(bucket - 1).size();
@@ -53,7 +54,7 @@ class TinyTable final {
 
       // Populate table itself
       uint64_t current_offset = _table_start + _num_elements * table;
-      for (uint64_t bucket = 0; bucket < hash_range; bucket++) {
+      for (uint64_t bucket = 0; bucket < _hash_range; bucket++) {
         for (LABEL_T item : temp_buckets.at(bucket)) {
           _index.at(current_offset) = item;
           current_offset += 1;
@@ -64,11 +65,11 @@ class TinyTable final {
 
   void queryByCount(uint32_t const* hashes,
                     std::vector<uint32_t>& counts) const {
-    for (uint64_t table = 0; table < _num_tables; table++) {
+    for (uint32_t table = 0; table < _num_tables; table++) {
       uint32_t hash = hashes[table];
       LABEL_T start_offset = _index[(_hash_range + 1) * table + hash];
       LABEL_T end_offset = _index[(_hash_range + 1) * table + hash + 1];
-      uint64_t table_offset = _table_start + table * _num_elements;
+      uint64_t table_offset = _table_start + static_cast<uint64_t>(table) * _num_elements;
       for (uint64_t offset = table_offset + start_offset;
            offset < table_offset + end_offset; offset++) {
         counts.at(_index.at(offset))++;
@@ -76,16 +77,21 @@ class TinyTable final {
     }
   }
 
+  constexpr uint32_t numTables() { return _num_tables; }
+
+  constexpr LABEL_T numElements() { return _num_elements; }
+
   // Delete copy constructor and assignment
   TinyTable(const TinyTable&) = delete;
   TinyTable& operator=(const TinyTable&) = delete;
 
+ private:
   // Techincally this is 32 wasted bytes per table = 250MB for 8M docs, but it's
   // fine for now
-  const uint64_t _hash_range;
-  const uint64_t _num_elements;
-  const uint64_t _num_tables;
-  const uint64_t _table_start = _num_tables * (_hash_range + 1);
+  const uint32_t _hash_range;
+  const LABEL_T _num_elements;
+  const uint32_t _num_tables;
+  const uint64_t _table_start = static_cast<uint64_t>(_num_tables) * (_hash_range + 1);
   // First _hash_range elements + 1 are bucket offsets (starts) into the first
   // table array (the + 1 element is just = _num_elements, for ease of
   // iteration), second _hash_range + 1 elements are offsets into the second

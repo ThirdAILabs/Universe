@@ -20,18 +20,17 @@ using thirdai::dataset::python::wrapNumpyIntoDenseBatch;
 // at 256 embeddings
 class PyMaxFlashArray final : public MaxFlashArray<uint8_t> {
  public:
-  PyMaxFlashArray(uint32_t num_flashes, uint32_t hashes_per_table,
-                  uint32_t num_tables, uint32_t dense_input_dimension)
+  PyMaxFlashArray(uint32_t hashes_per_table, uint32_t num_tables,
+                  uint32_t dense_input_dimension,
+                  uint32_t max_allowable_doc_size)
       : MaxFlashArray<uint8_t>(
             new thirdai::hashing::FastSRP(dense_input_dimension,
                                           hashes_per_table, num_tables),
-            num_flashes, hashes_per_table) {}
+            hashes_per_table, max_allowable_doc_size) {}
 
-  void addDocument(
-      const py::array_t<float, py::array::c_style | py::array::forcecast>& data,
-      uint32_t document_id) {
-    MaxFlashArray<uint8_t>::addDocument(wrapNumpyIntoDenseBatch(data, 0),
-                                        document_id);
+  void addDocument(const py::array_t<float, py::array::c_style |
+                                                py::array::forcecast>& data) {
+    MaxFlashArray<uint8_t>::addDocument(wrapNumpyIntoDenseBatch(data, 0));
   }
 
   py::array rankDocuments(
