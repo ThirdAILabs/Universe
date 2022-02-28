@@ -66,13 +66,12 @@ def test_doc_retrieval():
 
     # Build index
     index = thirdai.search.doc_retrieval_index(
-        num_documents=num_docs,
         hashes_per_table=7,
         num_tables=32,
         dense_input_dimension=data_dim,
     )
-    for i, doc in enumerate(docs):
-        index.add_document(document_embeddings=np.array(doc), document_id=i)
+    for doc in docs:
+        index.add_document(document_embeddings=np.array(doc))
 
     # Query index
     for gt, query in enumerate(queries):
