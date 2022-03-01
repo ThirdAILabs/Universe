@@ -26,7 +26,7 @@ class MaxFlashArray {
                 uint64_t max_doc_size);
 
   template <typename BATCH_T>
-  void addDocument(const BATCH_T& batch);
+  uint64_t addDocument(const BATCH_T& batch);
 
   std::vector<float> getDocumentScores(
       const dataset::DenseBatch& query,

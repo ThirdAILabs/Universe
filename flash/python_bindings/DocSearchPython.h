@@ -28,9 +28,11 @@ class PyMaxFlashArray final : public MaxFlashArray<uint8_t> {
                                           hashes_per_table, num_tables),
             hashes_per_table, max_allowable_doc_size) {}
 
-  void addDocument(const py::array_t<float, py::array::c_style |
-                                                py::array::forcecast>& data) {
-    MaxFlashArray<uint8_t>::addDocument(wrapNumpyIntoDenseBatch(data, 0));
+  uint64_t addDocument(
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          data) {
+    return MaxFlashArray<uint8_t>::addDocument(
+        wrapNumpyIntoDenseBatch(data, 0));
   }
 
   py::array rankDocuments(

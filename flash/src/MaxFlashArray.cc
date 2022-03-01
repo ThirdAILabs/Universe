@@ -28,33 +28,34 @@ MaxFlashArray<LABEL_T>::MaxFlashArray(hashing::HashFunction* function,
   }
 }
 
-template void MaxFlashArray<uint8_t>::addDocument<dataset::SparseBatch>(
+template uint64_t MaxFlashArray<uint8_t>::addDocument<dataset::SparseBatch>(
     const dataset::SparseBatch&);
-template void MaxFlashArray<uint16_t>::addDocument<dataset::SparseBatch>(
+template uint64_t MaxFlashArray<uint16_t>::addDocument<dataset::SparseBatch>(
     const dataset::SparseBatch&);
-template void MaxFlashArray<uint32_t>::addDocument<dataset::SparseBatch>(
+template uint64_t MaxFlashArray<uint32_t>::addDocument<dataset::SparseBatch>(
     const dataset::SparseBatch&);
-template void MaxFlashArray<uint64_t>::addDocument<dataset::SparseBatch>(
+template uint64_t MaxFlashArray<uint64_t>::addDocument<dataset::SparseBatch>(
     const dataset::SparseBatch&);
 
-template void MaxFlashArray<uint8_t>::addDocument<dataset::DenseBatch>(
+template uint64_t MaxFlashArray<uint8_t>::addDocument<dataset::DenseBatch>(
     const dataset::DenseBatch&);
-template void MaxFlashArray<uint16_t>::addDocument<dataset::DenseBatch>(
+template uint64_t MaxFlashArray<uint16_t>::addDocument<dataset::DenseBatch>(
     const dataset::DenseBatch&);
-template void MaxFlashArray<uint32_t>::addDocument<dataset::DenseBatch>(
+template uint64_t MaxFlashArray<uint32_t>::addDocument<dataset::DenseBatch>(
     const dataset::DenseBatch&);
-template void MaxFlashArray<uint64_t>::addDocument<dataset::DenseBatch>(
+template uint64_t MaxFlashArray<uint64_t>::addDocument<dataset::DenseBatch>(
     const dataset::DenseBatch&);
 
 template <typename LABEL_T>
 template <typename BATCH_T>
-void MaxFlashArray<LABEL_T>::addDocument(const BATCH_T& batch) {
+uint64_t MaxFlashArray<LABEL_T>::addDocument(const BATCH_T& batch) {
   LABEL_T num_elements =
       std::min<uint64_t>(batch.getBatchSize(), _max_allowable_doc_size);
   uint32_t* hashes = hash(batch);
   _maxflash_array.push_back(std::make_unique<MaxFlash<LABEL_T>>(
       _function->numTables(), _function->range(), num_elements, hashes));
   delete[] hashes;
+  return _maxflash_array.size() - 1;
 }
 
 template std::vector<float> MaxFlashArray<uint8_t>::getDocumentScores(

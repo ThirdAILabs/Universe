@@ -38,7 +38,7 @@ float MaxFlash<LABEL_T>::getScore(uint32_t const* query_hashes,
                                   const std::vector<float>& lookups) const {
   std::vector<uint32_t> results(num_elements);
 
-  assert(count_buffer.size() >= _hashtable.num_elements());
+  assert(count_buffer.size() >= _hashtable->numElements());
 
   for (uint64_t vec_id = 0; vec_id < num_elements; vec_id++) {
     std::fill(count_buffer.begin(),
@@ -48,9 +48,9 @@ float MaxFlash<LABEL_T>::getScore(uint32_t const* query_hashes,
     _hashtable->queryByCount(query_hashes + vec_id * _hashtable->numTables(),
                              count_buffer);
     uint32_t max_count = 0;
-    for (uint32_t i : count_buffer) {
-      if (i > max_count) {
-        max_count = i;
+    for (uint32_t i = 0; i < _hashtable->numElements(); i++) {
+      if (count_buffer[i] > max_count) {
+        max_count = count_buffer[i];
       }
     }
     results.at(vec_id) = max_count;
