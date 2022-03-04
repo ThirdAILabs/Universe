@@ -81,6 +81,39 @@ class PyNetwork final : public FullyConnectedNetwork {
         examples, labels, batch_size, starting_id);
     return predict(data, batch_limit);
   }
+  
+  std::vector<int64_t> trainWithSparseNumpyArray(
+      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+          x_idxs,
+	  const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          x_vals,
+	  const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+          x_offsets,
+      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+          labels,
+      uint32_t batch_size, float learning_rate, uint32_t epochs,
+      uint32_t rehash, uint32_t rebuild) {
+    uint32_t starting_id = 0;
+    auto data = thirdai::dataset::python::sparseInMemoryDatasetFromNumpy(
+        x_idxs, x_vals, x_offsets, labels, batch_size, starting_id);
+    return train(data, learning_rate, epochs, rehash, rebuild);
+  }
+
+  float predictWithSparseNumpyArray(
+      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+          x_idxs,
+	  const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          x_vals,
+	  const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+          x_offsets,
+      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+          labels,
+      uint32_t batch_size, uint32_t batch_limit) {
+    uint32_t starting_id = 0;
+    auto data = thirdai::dataset::python::sparseInMemoryDatasetFromNumpy(
+        x_idxs, x_vals, x_offsets, labels, batch_size, starting_id);
+    return predict(data, batch_limit);
+  }
 };
 
 class PyDLRM final : public DLRM {
