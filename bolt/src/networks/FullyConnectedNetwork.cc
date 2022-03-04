@@ -175,7 +175,7 @@ float FullyConnectedNetwork::predict(
       batch_size, !_layers[_num_layers - 1]->isForceSparsity());
 
   std::atomic<uint32_t> correct{0};
-  ProgressBar bar(num_test_batches);
+  // ProgressBar bar(num_test_batches);
   
   // auto test_start = std::chrono::high_resolution_clock::now();
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
@@ -208,7 +208,7 @@ float FullyConnectedNetwork::predict(
         correct++;
       }
     }
-    bar.increment();
+    // bar.increment();
   }
 
   // auto test_end = std::chrono::high_resolution_clock::now();
