@@ -43,7 +43,7 @@ class MaxFlashArray {
    */
 
   template <typename BATCH_T>
-  uint32_t* hash(const BATCH_T& batch) const;
+  std::vector<uint32_t> hash(const BATCH_T& batch) const;
 
   const LABEL_T _max_allowable_doc_size;
   const std::unique_ptr<hashing::HashFunction> _function;

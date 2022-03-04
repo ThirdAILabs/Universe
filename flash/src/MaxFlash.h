@@ -11,10 +11,10 @@ template <typename LABEL_T>
 class MaxFlash {
  public:
   MaxFlash(uint32_t num_tables, uint32_t range, LABEL_T num_elements,
-           uint32_t const* hashes);
+           const std::vector<uint32_t>& hashes);
 
-  float getScore(uint32_t const* query_hashes, uint32_t num_elements,
-                 std::vector<uint32_t>& count_buffer,
+  float getScore(const std::vector<uint32_t>& query_hashes,
+                 uint32_t num_elements, std::vector<uint32_t>& count_buffer,
                  const std::vector<float>& lookups) const;
 
   // Delete copy constructor and assignment

@@ -23,7 +23,7 @@ TEST(TinyTableTest, InsertionAndQuery) {
     }
   }
 
-  TinyTable<uint8_t> table(num_tables, range, num_elements, hashes.data());
+  TinyTable<uint8_t> table(num_tables, range, num_elements, hashes);
   for (uint32_t hash = 0; hash < range; hash++) {
     std::vector<uint32_t> query(num_tables, hash);
     std::vector<uint32_t> query_counts(num_elements, 0);
