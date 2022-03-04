@@ -30,7 +30,7 @@ float MaxFlash<LABEL_T>::getScore(
     const std::vector<float>& collision_count_to_sim) const {
   std::vector<uint32_t> results(num_elements);
 
-  assert(count_buffer.size() >= _hashtable->numElements());
+  assert(count_buffer.size() >= _hashtable.numElements());
 
   for (uint64_t vec_id = 0; vec_id < num_elements; vec_id++) {
     std::fill(count_buffer.begin(),
