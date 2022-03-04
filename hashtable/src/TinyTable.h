@@ -77,9 +77,9 @@ class TinyTable final {
     }
   }
 
-  constexpr uint32_t numTables() { return _num_tables; }
+  constexpr uint32_t numTables() const { return _num_tables; }
 
-  constexpr LABEL_T numElements() { return _num_elements; }
+  constexpr LABEL_T numElements() const { return _num_elements; }
 
   // Delete copy constructor and assignment
   TinyTable(const TinyTable&) = delete;

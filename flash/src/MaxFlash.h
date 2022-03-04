@@ -15,14 +15,14 @@ class MaxFlash {
 
   float getScore(const std::vector<uint32_t>& query_hashes,
                  uint32_t num_elements, std::vector<uint32_t>& count_buffer,
-                 const std::vector<float>& lookups) const;
+                 const std::vector<float>& collision_count_to_sim) const;
 
   // Delete copy constructor and assignment
   MaxFlash(const MaxFlash&) = delete;
   MaxFlash& operator=(const MaxFlash&) = delete;
 
  private:
-  const std::unique_ptr<hashtable::TinyTable<LABEL_T>> _hashtable;
+  const hashtable::TinyTable<LABEL_T> _hashtable;
 };
 
 }  // namespace thirdai::search

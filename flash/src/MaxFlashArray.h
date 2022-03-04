@@ -43,7 +43,7 @@ class MaxFlashArray {
   const LABEL_T _max_allowable_doc_size;
   const std::unique_ptr<hashing::HashFunction> _hash_function;
   std::vector<std::unique_ptr<MaxFlash<LABEL_T>>> _maxflash_array;
-  std::vector<float> _lookups;
+  std::vector<float> _collision_count_to_sim;
 };
 
 }  // namespace thirdai::search
