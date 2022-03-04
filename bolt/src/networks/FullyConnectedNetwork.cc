@@ -175,9 +175,9 @@ float FullyConnectedNetwork::predict(
       batch_size, !_layers[_num_layers - 1]->isForceSparsity());
 
   std::atomic<uint32_t> correct{0};
-  // ProgressBar bar(num_test_batches);
+  ProgressBar bar(num_test_batches);
   
-  // auto test_start = std::chrono::high_resolution_clock::now();
+  auto test_start = std::chrono::high_resolution_clock::now();
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
     const BATCH_T& input_batch = test_data[batch];
 
@@ -208,22 +208,22 @@ float FullyConnectedNetwork::predict(
         correct++;
       }
     }
-    // bar.increment();
+    bar.increment();
   }
 
-  // auto test_end = std::chrono::high_resolution_clock::now();
-  // Inference times in milliseconds
-  // int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
-  //                         test_end - test_start)
-  //                         .count();
-  // std::cout << std::endl
-  //           << "Processed " << num_test_batches << " test batches in "
-  //           << test_time << " milliseconds" << std::endl;
+  auto test_end = std::chrono::high_resolution_clock::now();
+  Inference times in milliseconds
+  int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+                          test_end - test_start)
+                          .count();
+  std::cout << std::endl
+            << "Processed " << num_test_batches << " test batches in "
+            << test_time << " milliseconds" << std::endl;
   
   uint32_t num_vecs = std::min(num_test_batches * batch_size, test_data.len());
   float accuracy = static_cast<float>(correct) / num_vecs;
-  // std::cout << "Accuracy: " << accuracy << " (" << correct << "/" << num_vecs
-  //             << ")" << std::endl;
+  std::cout << "Accuracy: " << accuracy << " (" << correct << "/" << num_vecs
+              << ")" << std::endl;
   return accuracy;
 }
 
