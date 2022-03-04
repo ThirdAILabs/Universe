@@ -17,10 +17,10 @@ MaxFlashArray<LABEL_T>::MaxFlashArray(hashing::HashFunction* function,
                                       uint64_t max_doc_size)
     : _max_allowable_doc_size(std::min<uint64_t>(
           max_doc_size, std::numeric_limits<LABEL_T>::max())),
-      _function(function),
+      _hash_function(function),
       _maxflash_array(),
       _lookups(function->range()) {
-  for (uint32_t i = 0; i < _function->numTables(); i++) {
+  for (uint32_t i = 0; i < _hash_function->numTables(); i++) {
     _lookups[i] =
         std::exp(std::log(static_cast<float>(i) / function->numTables()) /
                  hashes_per_table);
@@ -48,7 +48,8 @@ uint64_t MaxFlashArray<LABEL_T>::addDocument(const BATCH_T& batch) {
       std::min<uint64_t>(batch.getBatchSize(), _max_allowable_doc_size);
   const std::vector<uint32_t> hashes = hash(batch);
   _maxflash_array.push_back(std::make_unique<MaxFlash<LABEL_T>>(
-      _function->numTables(), _function->range(), num_elements, hashes));
+      _hash_function->numTables(), _hash_function->range(), num_elements,
+      hashes));
   return _maxflash_array.size() - 1;
 }
 
@@ -87,16 +88,11 @@ std::vector<float> MaxFlashArray<LABEL_T>::getDocumentScores(
   return result;
 }
 
-/**
- * Returns a pointer to the hashes of the input batch. These hashes will need
- * to be deleted by the calling function.
- */
-
 template <typename LABEL_T>
 template <typename BATCH_T>
 std::vector<uint32_t> MaxFlashArray<LABEL_T>::hash(const BATCH_T& batch) const {
   // TODO(josh): Parallilize across documents
-  return _function->hashBatchParallel(batch);
+  return _hash_function->hashBatchParallel(batch);
 }
 
 }  // namespace thirdai::search

@@ -27,7 +27,7 @@ TEST(TinyTableTest, InsertionAndQuery) {
   for (uint32_t hash = 0; hash < range; hash++) {
     std::vector<uint32_t> query(num_tables, hash);
     std::vector<uint32_t> query_counts(num_elements, 0);
-    table.queryByCount(query.data(), query_counts);
+    table.queryByCount(query, 0, query_counts);
 
     for (uint32_t i = 0; i < num_elements; i++) {
       ASSERT_EQ(query_counts.at(i), expected_counts.at(hash).at(i));

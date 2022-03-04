@@ -37,16 +37,11 @@ class MaxFlashArray {
   MaxFlashArray& operator=(const MaxFlashArray&) = delete;
 
  private:
-  /**
-   * Returns a pointer to the hashes of the input batch. These hashes will need
-   * to be deleted by the calling function.
-   */
-
   template <typename BATCH_T>
   std::vector<uint32_t> hash(const BATCH_T& batch) const;
 
   const LABEL_T _max_allowable_doc_size;
-  const std::unique_ptr<hashing::HashFunction> _function;
+  const std::unique_ptr<hashing::HashFunction> _hash_function;
   std::vector<std::unique_ptr<MaxFlash<LABEL_T>>> _maxflash_array;
   std::vector<float> _lookups;
 };

@@ -38,8 +38,8 @@ float MaxFlash<LABEL_T>::getScore(const std::vector<uint32_t>& query_hashes,
               count_buffer.begin() + _hashtable->numElements(), 0);
 
     std::vector<LABEL_T> query_result;
-    _hashtable->queryByCount(
-        query_hashes.data() + vec_id * _hashtable->numTables(), count_buffer);
+    _hashtable->queryByCount(query_hashes, vec_id * _hashtable->numTables(),
+                             count_buffer);
     uint32_t max_count = 0;
     for (uint32_t i = 0; i < _hashtable->numElements(); i++) {
       if (count_buffer[i] > max_count) {
