@@ -212,7 +212,7 @@ float FullyConnectedNetwork::predict(
   }
 
   auto test_end = std::chrono::high_resolution_clock::now();
-  Inference times in milliseconds
+  // Inference times in milliseconds
   int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
                           test_end - test_start)
                           .count();
