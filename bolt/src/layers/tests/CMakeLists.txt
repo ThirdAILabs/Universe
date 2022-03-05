@@ -5,6 +5,7 @@ target_link_libraries(
   fully_connected_layer_test 
   PRIVATE 
   bolt_layer_lib
+  bolt_loss_function_lib
   gtest_main
 )
 
@@ -16,7 +17,15 @@ target_link_libraries(
   gtest_main
 )
 
+add_executable(bolt_layer_test_utils_test BoltLayerTestUtilsTest.cc)
+target_link_libraries(
+  bolt_layer_test_utils_test
+  PRIVATE
+  gtest_main
+)
+
 
 include(GoogleTest)
 gtest_discover_tests(fully_connected_layer_test)
 gtest_discover_tests(embedding_layer_test)
+gtest_discover_tests(bolt_layer_test_utils_test)

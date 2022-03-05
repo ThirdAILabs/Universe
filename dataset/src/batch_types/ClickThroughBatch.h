@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dataset/src/Factory.h>
-#include <dataset/src/Vectors.h>
+#include <bolt/src/layers/BoltVector.h>
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -17,13 +17,17 @@ class ClickThroughBatch {
   explicit ClickThroughBatch(uint64_t start_id)
       : _batch_size(0), _start_id(start_id) {}
 
-  const DenseVector& operator[](uint32_t i) const {
+  const bolt::BoltVector& operator[](uint32_t i) const {
     return _dense_features[i];
   };
 
-  const DenseVector& at(uint32_t i) const { return _dense_features.at(i); }
+  bolt::BoltVector& operator[](uint32_t i) {
+    return _dense_features[i];
+  };
 
-  uint32_t label(uint32_t i) const { return _labels[i]; }
+  const bolt::BoltVector& at(uint32_t i) const { return _dense_features.at(i); }
+
+  const bolt::BoltVector& label(uint32_t i) const { return _labels[i]; }
 
   const std::vector<uint32_t>& categoricalFeatures(uint32_t i) const {
     return _categorical_features[i];
@@ -34,9 +38,9 @@ class ClickThroughBatch {
   uint32_t getBatchSize() const { return _batch_size; }
 
  private:
-  std::vector<DenseVector> _dense_features;
+  std::vector<bolt::BoltVector> _dense_features;
   std::vector<std::vector<uint32_t>> _categorical_features;
-  std::vector<uint32_t> _labels;
+  std::vector<bolt::BoltVector> _labels;
   uint32_t _batch_size;
   uint64_t _start_id;
 };
@@ -58,11 +62,14 @@ class ClickThroughBatchFactory : public Factory<ClickThroughBatch> {
       char* end;
 
       uint32_t label = std::strtol(start, &end, 10);
-      batch._labels.push_back(label);
+      bolt::BoltVector label_vec(1, true, false);
+      label_vec.active_neurons[0] = label;
+      label_vec.activations[0] = 1.0;
+      batch._labels.push_back(std::move(label_vec));
 
       start = end + 1;
 
-      DenseVector vec(_num_dense_features);
+      bolt::BoltVector vec(_num_dense_features, false, false);
       for (uint32_t d = 0; d < _num_dense_features; d++) {
         float feature;
         if (*start == '\t') {
@@ -73,7 +80,7 @@ class ClickThroughBatchFactory : public Factory<ClickThroughBatch> {
           feature = std::strtof(start, &end);
           start = end + 1;
         }
-        vec._values[d] = feature;
+        vec.activations[d] = feature;
       }
       batch._dense_features.push_back(std::move(vec));
 

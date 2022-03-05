@@ -16,12 +16,12 @@ class DLRM {
        uint32_t dense_feature_dim);
 
   void train(
-      const dataset::InMemoryDataset<dataset::ClickThroughBatch>& train_data,
+      dataset::InMemoryDataset<dataset::ClickThroughBatch>& train_data,
       float learning_rate, uint32_t epochs, uint32_t rehash = 0,
       uint32_t rebuild = 0);
 
   void predict(
-      const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
+       dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
       float* scores);
 
  private:

@@ -1,0 +1,1 @@
+add_library(bolt_loss_function_lib LossFunctions.cc)
