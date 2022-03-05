@@ -2,11 +2,8 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <cstddef>
 #include <exception>
 #include <random>
-#include <sstream>
-#include <tuple>
 #include <unordered_map>
 
 namespace thirdai::bolt {

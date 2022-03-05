@@ -29,13 +29,10 @@ struct BoltVector {
         activations(a),
         gradients(g),
         len(l),
-        _owns_data(false) {
-    std::cout << "Default constructor" << std::endl;
-  }
+        _owns_data(false) {}
 
   explicit BoltVector(uint32_t l, bool sparse, bool has_gradient = true)
       : len(l), _owns_data(true) {
-    std::cout << "Allocating constructor" << std::endl;
     if (sparse) {
       active_neurons = new uint32_t[len];
     } else {
@@ -60,24 +57,18 @@ struct BoltVector {
 
   static BoltVector makeDenseVector(const std::vector<float>& values) {
     BoltVector vec(values.size(), false, false);
-    std::cout << "makeDenseVector: " << vec.active_neurons << " "
-              << vec.activations << " " << vec.gradients << std::endl;
     std::copy(values.begin(), values.end(), vec.activations);
     return vec;
   }
 
   BoltVector(const BoltVector&) = delete;
 
-  BoltVector(BoltVector&& other) : len(other.len) {
-    std::cout << "Move constructor" << std::endl;
-    std::cout << "\t into ptr = " << this << std::endl;
-
-    freeMemory();
-    this->_owns_data = other._owns_data;
-    this->active_neurons = other.active_neurons;
-    this->activations = other.activations;
-    this->gradients = other.gradients;
-
+  BoltVector(BoltVector&& other)
+      : active_neurons(other.active_neurons),
+        activations(other.activations),
+        gradients(other.gradients),
+        len(other.len),
+        _owns_data(other._owns_data) {
     other.active_neurons = nullptr;
     other.activations = nullptr;
     other.gradients = nullptr;
@@ -87,8 +78,6 @@ struct BoltVector {
   BoltVector& operator=(const BoltVector&) = delete;
 
   BoltVector& operator=(BoltVector&& other) {
-    std::cout << "Move assignment" << std::endl;
-
     this->len = other.len;
     freeMemory();
 
@@ -117,10 +106,7 @@ struct BoltVector {
 
   constexpr bool isDense() const { return this->active_neurons == nullptr; }
 
-  ~BoltVector() {
-    std::cout << "Destructor called" << std::endl;
-    freeMemory();
-  }
+  ~BoltVector() { freeMemory(); }
 
  private:
   bool _owns_data;
@@ -129,11 +115,6 @@ struct BoltVector {
     if (_owns_data) {
       delete[] this->active_neurons;
       delete[] this->activations;
-      if (this->gradients == nullptr) {
-        std::cout << "Gradient is null: " << this->gradients << std::endl;
-      } else {
-        std::cout << "Gradient is not null: " << this->gradients << std::endl;
-      }
       delete[] this->gradients;
     }
   }

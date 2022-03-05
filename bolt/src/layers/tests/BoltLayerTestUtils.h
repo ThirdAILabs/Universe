@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -40,12 +41,13 @@ class Matrix {
                   uint32_t max_col)
       : Matrix(indices.size(), max_col) {
     if (indices.size() != values.size()) {
-      throw std::invalid_argument("Matrix indices and values aren't same size");
+      throw std::invalid_argument(
+          "Matrix indices and values aren't the same size");
     }
     for (uint32_t b = 0; b < indices.size(); b++) {
       if (indices[0].size() != values[0].size()) {
         throw std::invalid_argument(
-            "Matrix indices and values aren't same size");
+            "Matrix indices and values aren't the same size");
       }
       for (uint32_t i = 0; i < indices[b].size(); i++) {
         (*this)(b, indices.at(b).at(i)) = values.at(b).at(i);
@@ -69,8 +71,8 @@ class Matrix {
     if (i >= _rows || j >= _cols) {
       throw std::out_of_range("Invalid (i,j) = (" + std::to_string(i) + ", " +
                               std::to_string(j) + ") for matrix of size = (" +
-                              std::to_string(_rows) + ", " + std::to_string(j) +
-                              ")");
+                              std::to_string(_rows) + ", " +
+                              std::to_string(_cols) + ")");
     }
     return _data.get()[i * _row_stride + j * _col_stride];
   }
