@@ -45,7 +45,7 @@ class InMemoryDataset {
   // Take r-value reference for batches to force a move. len is the total number
   // of elements in the dataset.
   InMemoryDataset(std::vector<BATCH_T>&& batches, uint64_t len)
-      : _batches(batches), _len(len) {}
+      : _batches(std::move(batches)), _len(len) {}
 
   const BATCH_T& operator[](uint32_t i) const { return _batches[i]; }
 

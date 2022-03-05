@@ -59,7 +59,7 @@ void DLRM::train(
   BoltBatch output(_output_dim, batch_size, true);
 
   MeanSquaredError MSE;
-  SparseCategoricalCrossEntropyLoss loss;
+  CategoricalCrossEntropyLoss loss;
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
     std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
@@ -132,7 +132,7 @@ void DLRM::predict(
 
   auto test_start = std::chrono::high_resolution_clock::now();
 
-  for (auto& batch : test_data) {
+  for (const auto& batch : test_data) {
 #pragma omp parallel for default(none) shared(batch, output, scores, cnt)
     for (uint32_t b = 0; b < batch.getBatchSize(); b++) {
       forward(b, batch[b], batch.categoricalFeatures(b), output[b]);
