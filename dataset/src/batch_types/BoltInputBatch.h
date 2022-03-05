@@ -32,6 +32,10 @@ class BoltInputBatch {
     }
   }
 
+  BoltInputBatch(std::vector<BoltVector>&& vectors,
+                 std::vector<BoltVector>&& labels)
+      : _vectors(vectors), _labels(labels) {}
+
   uint32_t getBatchSize() const { return _vectors.size(); }
 
   const BoltVector& operator[](size_t i) const {
