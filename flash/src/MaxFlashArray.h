@@ -44,7 +44,8 @@ class MaxFlashArray {
   // This method lets cereal know which data members to serialize
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_max_allowable_doc_size, _maxflash_array, _collision_count_to_sim);
+    archive(_max_allowable_doc_size, _hash_function, _maxflash_array,
+            _collision_count_to_sim);
   }
 
  private:

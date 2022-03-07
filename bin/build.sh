@@ -40,6 +40,6 @@ mkdir -p "$BASEDIR/../build"
 
 cd "$BASEDIR/../build"
 
-# cmake .. -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE=$BUILD_MODE
+cmake .. -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE=$BUILD_MODE
 
 make $TARGET -s -j$NUM_JOBS

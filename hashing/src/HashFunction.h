@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
 #include "HashUtils.h"
 #include <dataset/src/batch_types/DenseBatch.h>
 #include <dataset/src/batch_types/SparseBatch.h>

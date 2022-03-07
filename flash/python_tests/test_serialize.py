@@ -74,11 +74,13 @@ def test_doc_retrieval():
         index.add_document(document_embeddings=np.array(doc))
 
     # Query index
+    all_rankings_1 = []
     for gt, query in enumerate(queries):
         ranking = index.rank_documents(
             query_embeddings=np.array(query),
             document_ids_to_rank=np.array(range(num_docs)),
         )
+        all_rankings_1.append(ranking)
         assert gt == ranking[0]
 
     index.serialize_to_file("maxflash.serialized")
@@ -86,4 +88,14 @@ def test_doc_retrieval():
         "maxflash.serialized"
     )
 
-    print(index2)
+    all_rankings_2 = []
+    for gt, query in enumerate(queries):
+        ranking = index2.rank_documents(
+            query_embeddings=np.array(query),
+            document_ids_to_rank=np.array(range(num_docs)),
+        )
+        all_rankings_2.append(ranking)
+
+    for r1, r2 in zip(all_rankings_1, all_rankings_2):
+        for a, b in zip(r1, r2):
+            assert a == b

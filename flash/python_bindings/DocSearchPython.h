@@ -69,18 +69,16 @@ class PyMaxFlashArray final : public MaxFlashArray<uint8_t> {
   }
 
   void serialize_to_file(const std::string& path) {
-    std::fstream filestream(
-        path, std::fstream::binary | std::fstream::trunc | std::fstream::out);
+    std::ofstream filestream(path, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
     oarchive(*this);
   }
 
   static std::unique_ptr<PyMaxFlashArray> deserialize_from_file(
       const std::string& path) {
-    std::fstream filestream(
-        path, std::fstream::binary | std::fstream::trunc | std::fstream::in);
-    cereal::BinaryOutputArchive iarchive(filestream);
-    std::unique_ptr<PyMaxFlashArray> serialize_into;
+    std::ifstream filestream(path, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<PyMaxFlashArray> serialize_into(new PyMaxFlashArray());
     iarchive(*serialize_into);
     return serialize_into;
   }
@@ -90,6 +88,10 @@ class PyMaxFlashArray final : public MaxFlashArray<uint8_t> {
     // See https://uscilab.github.io/cereal/inheritance.html
     ar(cereal::base_class<MaxFlashArray<uint8_t>>(this));
   }
+
+ private:
+  friend class cereal::access;
+  PyMaxFlashArray() : MaxFlashArray<uint8_t>() {}
 };
 
 }  // namespace thirdai::search::python
