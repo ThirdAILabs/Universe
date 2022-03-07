@@ -83,14 +83,15 @@ class PyMaxFlashArray final : public MaxFlashArray<uint8_t> {
     return serialize_into;
   }
 
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
   template <class Archive>
   void serialize(Archive& ar) {
     // See https://uscilab.github.io/cereal/inheritance.html
     ar(cereal::base_class<MaxFlashArray<uint8_t>>(this));
   }
-
- private:
-  friend class cereal::access;
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   PyMaxFlashArray() : MaxFlashArray<uint8_t>() {}
 };
 

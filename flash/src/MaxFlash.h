@@ -21,15 +21,15 @@ class MaxFlash {
   MaxFlash(const MaxFlash&) = delete;
   MaxFlash& operator=(const MaxFlash&) = delete;
 
-  // This method lets cereal know which data members to serialize
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_hashtable);
   }
-
- private:
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   MaxFlash<LABEL_T>() : _hashtable(0, 0, 0, std::vector<uint32_t>()){};
-  friend class cereal::access;
 
   hashtable::TinyTable<LABEL_T> _hashtable;
 };

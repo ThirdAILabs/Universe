@@ -118,14 +118,16 @@ class HashFunction {
 
   virtual ~HashFunction() {}
 
-  // This method lets cereal know wh_ich data members to serialize
+ protected:
+  uint32_t _num_tables, _range;
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_num_tables, _range);
   }
-
- protected:
-  uint32_t _num_tables, _range;
 };
 
 }  // namespace thirdai::hashing

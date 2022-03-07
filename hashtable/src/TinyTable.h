@@ -86,15 +86,15 @@ class TinyTable final {
   TinyTable(const TinyTable&) = delete;
   TinyTable& operator=(const TinyTable&) = delete;
 
-  // This method lets cereal know which data members to serialize
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_hash_range, _num_elements, _num_tables, _table_start, _index);
   }
-
- private:
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   TinyTable<LABEL_T>(){};
-  friend class cereal::access;
 
   // Techincally this is 16 + sizeof(LABEL_T) wasted bytes per table,
   // but it's fine for now

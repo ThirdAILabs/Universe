@@ -8,15 +8,6 @@
 namespace thirdai::hashing {
 
 class FastSRP : public HashFunction {
- private:
-  uint32_t _hashes_per_table, _num_hashes, _log_num_hashes, _dim, _binsize,
-      _permute, _rand_double_hash_seed;
-  std::vector<uint32_t> _bin_map, _positions;
-  std::vector<int8_t> _rand_bits;
-
-  FastSRP() : HashFunction(0, 0){};
-  friend class cereal::access;
-
  public:
   FastSRP(uint32_t input_dim, uint32_t _hashes_per_table, uint32_t _num_tables,
           uint32_t out_mod = UINT32_MAX, uint32_t seed = time(nullptr));
@@ -28,12 +19,23 @@ class FastSRP : public HashFunction {
                        uint32_t* output) const override;
 
   // This method lets cereal know which data members to serialize
+
+ private:
+  uint32_t _hashes_per_table, _num_hashes, _log_num_hashes, _dim, _binsize,
+      _permute, _rand_double_hash_seed;
+  std::vector<uint32_t> _bin_map, _positions;
+  std::vector<int8_t> _rand_bits;
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<HashFunction>(this), _hashes_per_table,
             _num_hashes, _log_num_hashes, _dim, _binsize, _permute,
             _rand_double_hash_seed, _bin_map, _positions, _rand_bits);
   }
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
+  FastSRP() : HashFunction(0, 0){};
 };
 
 }  // namespace thirdai::hashing

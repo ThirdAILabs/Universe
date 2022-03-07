@@ -28,6 +28,9 @@ class MaxFlashArray {
   MaxFlashArray(hashing::HashFunction* function, uint32_t hashes_per_table,
                 uint64_t max_doc_size);
 
+  // This needs to be public since it's a top level serialization target, but
+  // DO NOT call it unless you are creating a temporary object to serialize
+  // into.
   MaxFlashArray(){};
 
   template <typename BATCH_T>
@@ -41,19 +44,17 @@ class MaxFlashArray {
   MaxFlashArray(const MaxFlashArray&) = delete;
   MaxFlashArray& operator=(const MaxFlashArray&) = delete;
 
-  // This method lets cereal know which data members to serialize
+ private:
+  template <typename BATCH_T>
+  std::vector<uint32_t> hash(const BATCH_T& batch) const;
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(_max_allowable_doc_size, _hash_function, _maxflash_array,
             _collision_count_to_sim);
   }
-
- private:
-  template <typename BATCH_T>
-  std::vector<uint32_t> hash(const BATCH_T& batch) const;
-
-  // MaxFlashArray<LABEL_T>() {}
-  // friend class cereal::access;
 
   LABEL_T _max_allowable_doc_size;
   std::unique_ptr<hashing::HashFunction> _hash_function;
