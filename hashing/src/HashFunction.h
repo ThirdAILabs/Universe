@@ -117,8 +117,14 @@ class HashFunction {
 
   virtual ~HashFunction() {}
 
+  // This method lets cereal know wh_ich data members to serialize
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_num_tables, _range);
+  }
+
  protected:
-  const uint32_t _num_tables, _range;
+  uint32_t _num_tables, _range;
 };
 
 }  // namespace thirdai::hashing

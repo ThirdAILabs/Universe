@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/archives/binary.hpp>
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/HashFunction.h>
 #include <dataset/python_bindings/DatasetPython.h>
@@ -9,6 +10,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <cmath>
+#include <fstream>
+#include <memory>
 
 namespace py = pybind11;
 
@@ -63,6 +66,29 @@ class PyMaxFlashArray final : public MaxFlashArray<uint8_t> {
     auto to_return = py::cast(std::move(final_result));
 
     return to_return;
+  }
+
+  void serialize_to_file(const std::string& path) {
+    std::fstream filestream(
+        path, std::fstream::binary | std::fstream::trunc | std::fstream::out);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<PyMaxFlashArray> deserialize_from_file(
+      const std::string& path) {
+    std::fstream filestream(
+        path, std::fstream::binary | std::fstream::trunc | std::fstream::in);
+    cereal::BinaryOutputArchive iarchive(filestream);
+    std::unique_ptr<PyMaxFlashArray> serialize_into;
+    iarchive(*serialize_into);
+    return serialize_into;
+  }
+
+  template <class Archive>
+  void serialize(Archive& ar) {
+    // See https://uscilab.github.io/cereal/inheritance.html
+    ar(cereal::base_class<MaxFlashArray<uint8_t>>(this));
   }
 };
 

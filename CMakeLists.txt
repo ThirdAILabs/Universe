@@ -92,6 +92,17 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(tomlplusplus)
 include_directories(${tomlplusplus_SOURCE_DIR})
 
+set (JUST_INSTALL_CEREAL ON)
+FetchContent_Declare(
+    cereal
+    GIT_REPOSITORY https://github.com/USCiLab/cereal.git
+    GIT_TAG        v1.3.2
+)
+FetchContent_MakeAvailable(
+  cereal
+)
+include_directories(${cereal_SOURCE_DIR}/include)
+
 # So we can include using e.g. #include <hashtable/src/SampledHashTable.h>
 include_directories(".")
 include_directories(${pybind11_SOURCE_DIR}/include)
