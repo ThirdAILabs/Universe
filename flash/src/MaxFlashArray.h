@@ -11,6 +11,12 @@ namespace thirdai::search {
 
 // TODO(josh): This class is NOT currently safe to call concurrently.
 // Fix this.
+/**
+ * Represents a collection of documents. We can incrementally update documents
+ * and estimate the ColBERT score (sum of max similarities) between a query
+ * and a document.
+ * LABEL_T is an unsigned numerical type, currently uint8_t, uin16_t, uin32_t.
+ */
 template <typename LABEL_T>
 class MaxFlashArray {
  public:
