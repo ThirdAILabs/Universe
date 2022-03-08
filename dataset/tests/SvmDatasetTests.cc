@@ -181,4 +181,36 @@ TEST_F(SvmDatasetTestFixture, StreamedDatasetTest) {
   ASSERT_EQ(vec_count, _num_vectors);
 }
 
+TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
+  InMemoryDataset<BoltInputBatch> dataset(_filename, _batch_size,
+                                          BoltSvmBatchFactory{});
+
+  uint32_t vec_count = 0;
+  for (const auto& batch : dataset) {
+    ASSERT_TRUE(batch.getBatchSize() == _batch_size ||
+                batch.getBatchSize() == _num_vectors % _batch_size);
+
+    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+      ASSERT_EQ(batch.labels(v).len, _vectors.at(vec_count).labels.size());
+      for (uint32_t i = 0; i < batch.labels(v).len; i++) {
+        ASSERT_EQ(batch.labels(v).active_neurons[i],
+                  _vectors.at(vec_count).labels.at(i));
+        ASSERT_FLOAT_EQ(batch.labels(v).activations[i],
+                        1.0 / _vectors.at(vec_count).labels.size());
+      }
+
+      ASSERT_EQ(batch[v].len, _vectors[vec_count].values.size());
+      for (uint32_t i = 0; i < batch[v].len; i++) {
+        ASSERT_EQ(batch[v].active_neurons[i],
+                  _vectors.at(vec_count).values.at(i).first);
+        ASSERT_FLOAT_EQ(batch[v].activations[i],
+                        _vectors.at(vec_count).values.at(i).second);
+      }
+
+      vec_count++;
+    }
+  }
+  ASSERT_EQ(vec_count, _num_vectors);
+}
+
 }  // namespace thirdai::dataset

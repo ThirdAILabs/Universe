@@ -1,4 +1,8 @@
+#pragma once
+
 #include <bolt/src/layers/BoltVector.h>
+#include <dataset/src/Factory.h>
+#include <dataset/src/parsers/CsvParser.h>
 #include <dataset/src/parsers/SvmParser.h>
 
 namespace thirdai::dataset {
@@ -57,6 +61,56 @@ class BoltInputBatch {
  private:
   std::vector<BoltVector> _vectors;
   std::vector<BoltVector> _labels;
+};
+
+class BoltSvmBatchFactory : public Factory<BoltInputBatch> {
+ private:
+  SvmParser<BoltVector, BoltVector> _parser;
+
+ public:
+  BoltSvmBatchFactory()
+      : _parser(BoltVector::makeSparseVector,
+                [](const std::vector<uint32_t>& labels) -> BoltVector {
+                  return BoltVector::makeSparseVector(
+                      labels,
+                      std::vector<float>(labels.size(), 1.0 / labels.size()));
+                }) {}
+
+  BoltInputBatch parse(std::ifstream& file, uint32_t target_batch_size,
+                       uint64_t start_id) override {
+    (void)start_id;
+    std::vector<BoltVector> vectors;
+    std::vector<BoltVector> labels;
+
+    _parser.parseBatch(target_batch_size, file, vectors, labels);
+
+    return BoltInputBatch(std::move(vectors), std::move(labels));
+  }
+};
+
+class BoltCsvBatchFactory : public Factory<BoltInputBatch> {
+ private:
+  CsvParser<BoltVector, BoltVector> _parser;
+
+ public:
+  explicit BoltCsvBatchFactory(char delimiter)
+      : _parser(
+            BoltVector::makeDenseVector,
+            [](uint32_t label) -> BoltVector {
+              return BoltVector::makeSparseVector({label}, {1.0});
+            },
+            delimiter) {}
+
+  BoltInputBatch parse(std::ifstream& file, uint32_t target_batch_size,
+                       uint64_t start_id) override {
+    (void)start_id;
+    std::vector<BoltVector> vectors;
+    std::vector<BoltVector> labels;
+
+    _parser.parseBatch(target_batch_size, file, vectors, labels);
+
+    return BoltInputBatch(std::move(vectors), std::move(labels));
+  }
 };
 
 }  // namespace thirdai::dataset
