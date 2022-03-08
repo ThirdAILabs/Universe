@@ -8,6 +8,11 @@
 
 using thirdai::hashtable::TinyTable;
 
+/**
+ * Basic test that hashes elements with a simple hash function (i + j) % range,
+ * inserts the elements into the TinyTable, and then ensures that the counts of
+ * all hashes are as expected on retrieval from the TinyTable.
+ */
 TEST(TinyTableTest, InsertionAndQuery) {
   uint32_t num_tables = 100, range = 1000, num_elements = 100;
 
