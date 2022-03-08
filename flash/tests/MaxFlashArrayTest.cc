@@ -103,8 +103,6 @@ TEST(MaxFlashArrayTest, SerializeAndDeserializeTest) {
   for (uint32_t i = 0; i < num_queries; i++) {
     for (uint32_t j = 0; j < num_docs; j++) {
       ASSERT_EQ(first_results.at(i).at(j), second_results.at(i).at(j));
-      std::cout << first_results.at(i).at(j) << " "
-                << second_results.at(i).at(j) << std::endl;
     }
   }
 }
