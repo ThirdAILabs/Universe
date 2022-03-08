@@ -115,12 +115,15 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
       ASSERT_EQ(batch.id(v), vec_count_base + v);
 
-      ASSERT_EQ(batch.label(v), _vectors.at(vec_count_base + v).label);
+      ASSERT_EQ(batch.label(v).len, 1);
+      ASSERT_EQ(batch.label(v).active_neurons[0],
+                _vectors.at(vec_count_base + v).label);
+      ASSERT_EQ(batch.label(v).activations[0], 1.0);
 
-      ASSERT_EQ(batch[v].dim(), getNumDenseFeatures());
+      ASSERT_EQ(batch[v].len, getNumDenseFeatures());
       for (uint32_t i = 0; i < getNumDenseFeatures(); i++) {
         float val = _vectors.at(vec_count_base + v).dense_features.at(i);
-        ASSERT_EQ(batch.at(v)._values[i], val);
+        ASSERT_EQ(batch.at(v).activations[i], val);
       }
 
       ASSERT_EQ(batch.categoricalFeatures(v).size(),

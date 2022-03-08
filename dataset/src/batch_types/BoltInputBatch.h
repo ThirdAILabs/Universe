@@ -1,4 +1,5 @@
 #include <bolt/src/layers/BoltVector.h>
+#include <dataset/src/parsers/SvmParser.h>
 
 namespace thirdai::dataset {
 

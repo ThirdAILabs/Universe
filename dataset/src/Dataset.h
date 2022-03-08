@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Factory.h"
+#include "batch_types/BoltInputBatch.h"
 #include "batch_types/ClickThroughBatch.h"
 #include "batch_types/DenseBatch.h"
 #include "batch_types/SparseBatch.h"
-#include "batch_types/BoltInputBatch.h"
 #include <cstdint>
 #include <fstream>
 #include <memory>
@@ -35,7 +35,7 @@ class InMemoryDataset {
         break;
       }
       curr_id += batch.getBatchSize();
-      _batches.push_back(batch);
+      _batches.push_back(std::move(batch));
     }
 
     file.close();
