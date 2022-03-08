@@ -40,4 +40,4 @@ class FastSRP : public HashFunction {
 
 }  // namespace thirdai::hashing
 
-CEREAL_REGISTER_TYPE(thirdai::hashing::FastSRP);
+CEREAL_REGISTER_TYPE(thirdai::hashing::FastSRP)
