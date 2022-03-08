@@ -35,11 +35,11 @@ std::vector<DenseBatch> createBatches(std::vector<DenseVector>& input_vectors,
   return result;
 }
 
-std::vector<DenseVector> createRandomVectors(uint32_t dim,
-                                             uint32_t num_vectors) {
+std::vector<DenseVector> createRandomVectors(
+    uint32_t dim, uint32_t num_vectors,
+    std::normal_distribution<float> distribution) {
   std::vector<DenseVector> result;
   std::default_random_engine generator;
-  std::normal_distribution<float> distribution(0, 1);
   for (uint32_t i = 0; i < num_vectors; i++) {
     float* data = new float[dim];
     for (uint32_t d = 0; d < dim; d++) {
@@ -57,11 +57,13 @@ TEST(MaxFlashArrayTest, SerializeAndDeserializeTest) {
   uint32_t words_per_query = 10;
   uint32_t num_queries = 100;
 
-  auto doc_words = createRandomVectors(data_dim, num_docs * words_per_doc);
+  auto distribution = std::normal_distribution<float>(0, 1);
+  auto doc_words =
+      createRandomVectors(data_dim, num_docs * words_per_doc, distribution);
   auto documents = createBatches(doc_words, words_per_doc);
 
-  auto query_words =
-      createRandomVectors(data_dim, num_queries * words_per_query);
+  auto query_words = createRandomVectors(
+      data_dim, num_queries * words_per_query, distribution);
   auto queries = createBatches(query_words, words_per_query);
 
   // Create MaxFlashArray
