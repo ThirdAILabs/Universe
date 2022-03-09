@@ -47,7 +47,12 @@ void createSearchSubmodule(py::module_& module) {
       .def("add_document", &PyMaxFlashArray::addDocument,
            py::arg("document_embeddings"))
       .def("rank_documents", &PyMaxFlashArray::rankDocuments,
-           py::arg("query_embeddings"), py::arg("document_ids_to_rank"));
+           py::arg("query_embeddings"), py::arg("document_ids_to_rank"))
+      .def("serialize_to_file", &PyMaxFlashArray::serialize_to_file,
+           py::arg("output_path"))
+      .def_static("deserialize_from_file",
+                  &PyMaxFlashArray::deserialize_from_file,
+                  py::arg("input_path"));
 }
 
 }  // namespace thirdai::search::python

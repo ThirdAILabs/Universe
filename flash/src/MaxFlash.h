@@ -22,7 +22,16 @@ class MaxFlash {
   MaxFlash& operator=(const MaxFlash&) = delete;
 
  private:
-  const hashtable::TinyTable<LABEL_T> _hashtable;
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_hashtable);
+  }
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
+  MaxFlash<LABEL_T>() : _hashtable(0, 0, 0, std::vector<uint32_t>()){};
+
+  hashtable::TinyTable<LABEL_T> _hashtable;
 };
 
 }  // namespace thirdai::search
