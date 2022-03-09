@@ -2,6 +2,7 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <bolt/src/utils/ConfigReader.h>
 #include <dataset/src/Dataset.h>
+#include <dataset/src/Factory.h>
 #include <chrono>
 #include <filesystem>
 #include <iostream>
@@ -210,20 +211,12 @@ void trainFCN(toml::table& config) {
 
   bolt::FullyConnectedNetwork network(layers, input_dim);
 
+  std::unique_ptr<dataset::Factory<dataset::BoltInputBatch>> train_fac;
+  std::unique_ptr<dataset::Factory<dataset::BoltInputBatch>> test_fac;
+
   if (dataset_format == "svm") {
-    dataset::InMemoryDataset<dataset::SparseBatch> train_data(
-        train_filename, batch_size, dataset::SvmSparseBatchFactory{});
-
-    dataset::InMemoryDataset<dataset::SparseBatch> test_data(
-        test_filename, batch_size, dataset::SvmSparseBatchFactory{});
-
-    for (uint32_t e = 0; e < epochs; e++) {
-      network.train(train_data, learning_rate, 1, rehash, rebuild);
-      if (use_sparse_inference && e == sparse_inference_epoch) {
-        network.useSparseInference();
-      }
-      network.predict(test_data, max_test_batches);
-    }
+    train_fac = std::make_unique<dataset::BoltSvmBatchFactory>();
+    test_fac = std::make_unique<dataset::BoltSvmBatchFactory>();
   } else if (dataset_format == "csv") {
     std::string delimiter = getStrValue(dataset_table, "delimter", true, ",");
     if (delimiter.size() != 1) {
@@ -233,17 +226,26 @@ void trainFCN(toml::table& config) {
       exit(1);
     }
 
-    dataset::InMemoryDataset<dataset::DenseBatch> train_data(
-        train_filename, batch_size,
-        dataset::CsvDenseBatchFactory{delimiter[0]});
+    train_fac = std::make_unique<dataset::BoltCsvBatchFactory>(delimiter[0]);
+    test_fac = std::make_unique<dataset::BoltCsvBatchFactory>(delimiter[0]);
+  } else {
+    std::cerr << "Invalid dataset format '" << dataset_format
+              << "'. Use 'svm' or 'csv'" << std::endl;
+    exit(1);
+  }
 
-    dataset::InMemoryDataset<dataset::DenseBatch> test_data(
-        test_filename, batch_size, dataset::CsvDenseBatchFactory{delimiter[0]});
+  dataset::InMemoryDataset<dataset::BoltInputBatch> train_data(
+      train_filename, batch_size, std::move(*train_fac));
 
-    for (uint32_t e = 0; e < epochs; e++) {
-      network.train(train_data, learning_rate, 1, rehash, rebuild);
-      network.predict(test_data, max_test_batches);
+  dataset::InMemoryDataset<dataset::BoltInputBatch> test_data(
+      test_filename, batch_size, std::move(*test_fac));
+
+  for (uint32_t e = 0; e < epochs; e++) {
+    network.train(train_data, learning_rate, 1, rehash, rebuild);
+    if (use_sparse_inference && e == sparse_inference_epoch) {
+      network.useSparseInference();
     }
+    network.predict(test_data, max_test_batches);
   }
 }
 

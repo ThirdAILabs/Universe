@@ -261,7 +261,8 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
 
   std::unordered_set<uint32_t> active_set;
 
-  for (uint32_t i = 0; i < labels->len; i++) {
+  uint32_t label_len = labels != nullptr ? labels->len : 0;
+  for (uint32_t i = 0; i < label_len; i++) {
     assert(labels->active_neurons[i] < _dim);
     active_set.insert(labels->active_neurons[i]);
   }
@@ -291,7 +292,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
   }
 
   uint32_t cnt = 0;
-  for (uint32_t i = 0; i < labels->len; i++) {
+  for (uint32_t i = 0; i < label_len; i++) {
     if (cnt >= _sparse_dim) {
       break;
     }
