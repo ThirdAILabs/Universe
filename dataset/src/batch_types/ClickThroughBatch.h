@@ -1,7 +1,7 @@
 #pragma once
 
-#include <dataset/src/Factory.h>
 #include <bolt/src/layers/BoltVector.h>
+#include <dataset/src/Factory.h>
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -21,9 +21,7 @@ class ClickThroughBatch {
     return _dense_features[i];
   };
 
-  bolt::BoltVector& operator[](uint32_t i) {
-    return _dense_features[i];
-  };
+  bolt::BoltVector& operator[](uint32_t i) { return _dense_features[i]; };
 
   const bolt::BoltVector& at(uint32_t i) const { return _dense_features.at(i); }
 

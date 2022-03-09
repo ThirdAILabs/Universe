@@ -61,7 +61,25 @@ struct BoltVector {
     return vec;
   }
 
-  BoltVector(const BoltVector&) = delete;
+  BoltVector(const BoltVector& other) : len(other.len), _owns_data(true) {
+    if (other.active_neurons != nullptr) {
+      active_neurons = new uint32_t[len];
+      std::copy(other.active_neurons, other.active_neurons + len,
+                active_neurons);
+    } else {
+      active_neurons = nullptr;
+    }
+
+    activations = new float[len];
+    std::copy(other.activations, other.activations + len, activations);
+
+    if (other.gradients != nullptr) {
+      gradients = new float[len];
+      std::copy(other.gradients, other.gradients + len, gradients);
+    } else {
+      gradients = nullptr;
+    }
+  }
 
   BoltVector(BoltVector&& other)
       : active_neurons(other.active_neurons),
@@ -75,7 +93,35 @@ struct BoltVector {
     other.len = 0;
   }
 
-  BoltVector& operator=(const BoltVector&) = delete;
+  BoltVector& operator=(const BoltVector& other) {
+    if (&other == this) {
+      return *this;
+    }
+    freeMemory();
+
+    this->len = other.len;
+    this->_owns_data = true;
+
+    if (other.active_neurons != nullptr) {
+      active_neurons = new uint32_t[len];
+      std::copy(other.active_neurons, other.active_neurons + len,
+                active_neurons);
+    } else {
+      active_neurons = nullptr;
+    }
+
+    activations = new float[len];
+    std::copy(other.activations, other.activations + len, activations);
+
+    if (other.gradients != nullptr) {
+      gradients = new float[len];
+      std::copy(other.gradients, other.gradients + len, gradients);
+    } else {
+      gradients = nullptr;
+    }
+
+    return *this;
+  }
 
   BoltVector& operator=(BoltVector&& other) {
     this->len = other.len;

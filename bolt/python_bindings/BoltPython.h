@@ -64,9 +64,8 @@ class PyNetwork final : public FullyConnectedNetwork {
           labels,
       uint32_t batch_size, float learning_rate, uint32_t epochs,
       uint32_t rehash, uint32_t rebuild) {
-    uint32_t starting_id = 0;
-    auto data = thirdai::dataset::python::denseInMemoryDatasetFromNumpy(
-        examples, labels, batch_size, starting_id);
+    auto data = thirdai::dataset::python::denseBoltDatasetFromNumpy(
+        examples, labels, batch_size);
     return train(data, learning_rate, epochs, rehash, rebuild);
   }
 
@@ -76,9 +75,8 @@ class PyNetwork final : public FullyConnectedNetwork {
       const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           labels,
       uint32_t batch_size, uint32_t batch_limit) {
-    uint32_t starting_id = 0;
-    auto data = thirdai::dataset::python::denseInMemoryDatasetFromNumpy(
-        examples, labels, batch_size, starting_id);
+    auto data = thirdai::dataset::python::denseBoltDatasetFromNumpy(
+        examples, labels, batch_size);
     return predict(data, batch_limit);
   }
 };
@@ -93,7 +91,7 @@ class PyDLRM final : public DLRM {
              std::move(top_mlp_configs), input_dim) {}
 
   py::array_t<float> predict(
-      const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data) {
+      dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data) {
     float* scores = new float[test_data.len() * _output_dim];
 
     DLRM::predict(test_data, scores);

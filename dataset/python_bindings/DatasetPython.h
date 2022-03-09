@@ -47,4 +47,11 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
         labels,
     uint32_t batch_size, uint64_t starting_id);
 
+InMemoryDataset<BoltInputBatch> denseBoltDatasetFromNumpy(
+    const py::array_t<float, py::array::c_style | py::array::forcecast>&
+        examples,
+    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+        labels,
+    uint32_t batch_size);
+
 }  // namespace thirdai::dataset::python

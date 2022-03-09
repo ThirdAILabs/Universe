@@ -5,7 +5,6 @@ target_link_libraries(
   fully_connected_layer_test 
   PRIVATE 
   bolt_layer_lib
-  bolt_loss_function_lib
   gtest_main
 )
 

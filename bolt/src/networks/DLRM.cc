@@ -77,7 +77,6 @@ void DLRM::train(
 #pragma omp parallel for default(none) \
     shared(inputs, output, batch_size, MSE, loss)
       for (uint32_t b = 0; b < inputs.getBatchSize(); b++) {
-
         forward(b, inputs[b], inputs.categoricalFeatures(b), output[b]);
 
         if (_softmax) {
@@ -117,7 +116,7 @@ void DLRM::train(
 }
 
 void DLRM::predict(
-     dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
+    dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
     float* scores) {
   uint32_t batch_size = test_data.at(0).getBatchSize();
   uint64_t num_test_batches = test_data.numBatches();
@@ -169,13 +168,12 @@ void DLRM::initializeNetworkForBatchSize(uint32_t batch_size,
   for (uint32_t b = 0; b < batch_size; b++) {
     const BoltVector& concat_vec = _concat_layer_state[b];
 
-    _bottom_mlp_output.push_back(BoltVector(
-        nullptr,
-        concat_vec.activations, concat_vec.gradients, bottom_mlp_output_dim));
+    _bottom_mlp_output.push_back(BoltVector(nullptr, concat_vec.activations,
+                                            concat_vec.gradients,
+                                            bottom_mlp_output_dim));
 
     _embedding_layer_output.push_back(BoltVector(
-        nullptr,
-        concat_vec.activations + bottom_mlp_output_dim,
+        nullptr, concat_vec.activations + bottom_mlp_output_dim,
         concat_vec.gradients + bottom_mlp_output_dim, embedding_dim));
   }
 

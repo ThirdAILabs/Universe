@@ -1,4 +1,5 @@
 #include "DatasetPython.h"
+#include <bolt/src/layers/BoltVector.h>
 #include <chrono>
 
 namespace thirdai::dataset::python {
@@ -212,6 +213,66 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
 
     batches.emplace_back(std::move(batch_vectors), std::move(batch_labels),
                          starting_id + start_vec_idx);
+  }
+
+  return InMemoryDataset(std::move(batches), num_examples);
+}
+
+InMemoryDataset<BoltInputBatch> denseBoltDatasetFromNumpy(
+    const py::array_t<float, py::array::c_style | py::array::forcecast>&
+        examples,
+    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+        labels,
+    uint32_t batch_size) {
+  // Get information from examples
+  const py::buffer_info examples_buf = examples.request();
+  const auto examples_shape = examples_buf.shape;
+  if (examples_shape.size() != 2) {
+    throw std::invalid_argument(
+        "For now, Numpy dense data must be 2D (each row is a dense data "
+        "vector).");
+  }
+
+  uint64_t num_examples = static_cast<uint64_t>(examples_shape.at(0));
+  uint64_t dimension = static_cast<uint64_t>(examples_shape.at(1));
+  float* examples_raw_data = static_cast<float*>(examples_buf.ptr);
+
+  // Get information from labels
+
+  const py::buffer_info labels_buf = labels.request();
+  const auto labels_shape = labels_buf.shape;
+  if (labels_shape.size() != 1) {
+    throw std::invalid_argument(
+        "For now, Numpy labels must be 1D (each element is an integer).");
+  }
+
+  uint64_t num_labels = static_cast<uint64_t>(labels_shape.at(0));
+  if (num_labels != num_examples) {
+    throw std::invalid_argument(
+        "The size of the label array must be equal to the number of rows in "
+        "the examples array.");
+  }
+  uint32_t* labels_raw_data = static_cast<uint32_t*>(labels_buf.ptr);
+
+  // Build batches
+
+  uint64_t num_batches = (num_examples + batch_size - 1) / batch_size;
+  std::vector<BoltInputBatch> batches;
+
+  for (uint32_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
+    std::vector<BoltVector> batch_vectors;
+    std::vector<BoltVector> batch_labels;
+
+    uint64_t start_vec_idx = batch_idx * batch_size;
+    uint64_t end_vec_idx = std::min(start_vec_idx + batch_size, num_examples);
+    for (uint64_t vec_idx = start_vec_idx; vec_idx < end_vec_idx; ++vec_idx) {
+      batch_vectors.emplace_back(
+          nullptr, examples_raw_data + dimension * vec_idx, nullptr, dimension);
+      batch_labels.push_back(
+          BoltVector::makeSparseVector({labels_raw_data[vec_idx]}, {1.0}));
+    }
+
+    batches.emplace_back(std::move(batch_vectors), std::move(batch_labels));
   }
 
   return InMemoryDataset(std::move(batches), num_examples);
