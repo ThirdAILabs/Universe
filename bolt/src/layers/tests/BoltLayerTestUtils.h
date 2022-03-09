@@ -17,10 +17,10 @@ class Matrix {
         _cols(cols),
         _row_stride(cols),
         _col_stride(1),
-        _data(new float[rows * cols]()) {}
+        _data(rows * cols, 0) {}
 
   Matrix(uint32_t rows, uint32_t cols, uint32_t row_stride, uint32_t col_stride,
-         std::shared_ptr<float>& data)
+         std::vector<float>& data)
       : _rows(rows),
         _cols(cols),
         _row_stride(row_stride),
@@ -60,7 +60,7 @@ class Matrix {
       throw std::invalid_argument(
           "Initialization vector should have rows*cols size");
     }
-    std::copy(values.begin(), values.end(), _data.get());
+    std::copy(values.begin(), values.end(), _data.begin());
   }
 
   uint32_t nRows() const { return _rows; }
@@ -74,14 +74,14 @@ class Matrix {
                               std::to_string(_rows) + ", " +
                               std::to_string(_cols) + ")");
     }
-    return _data.get()[i * _row_stride + j * _col_stride];
+    return _data.at(i * _row_stride + j * _col_stride);
   }
 
   const float& operator()(uint32_t i, uint32_t j) const {
     if (i >= _rows || j >= _cols) {
       throw std::out_of_range("Invalid (i,j) for matrix");
     }
-    return _data.get()[i * _row_stride + j * _col_stride];
+    return _data.at(i * _row_stride + j * _col_stride);
   }
 
   Matrix multiply(const Matrix& other) {
@@ -120,7 +120,7 @@ class Matrix {
 
  private:
   uint32_t _rows, _cols, _row_stride, _col_stride;
-  std::shared_ptr<float> _data;
+  std::vector<float> _data;
 };
 
 }  // namespace thirdai::bolt::tests
