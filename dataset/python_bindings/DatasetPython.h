@@ -27,11 +27,11 @@ InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
                                            std::string delimiter);
 
 InMemoryDataset<BoltInputBatch> loadBoltSVMDataset(const std::string& filename,
-                                                uint32_t batch_size);
+                                                   uint32_t batch_size);
 
 InMemoryDataset<BoltInputBatch> loadBoltCSVDataset(const std::string& filename,
-                                               uint32_t batch_size,
-                                               std::string delimiter);
+                                                   uint32_t batch_size,
+                                                   std::string delimiter);
 
 // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=numpy#arrays
 // for explanation of why we do py::array::c_style and py::array::forcecast.
