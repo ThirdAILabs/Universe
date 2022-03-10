@@ -1,3 +1,4 @@
+import scipy as sp
 import toml
 import sys
 import os
@@ -72,7 +73,7 @@ def load_dataset(
 
 
 def load_click_through_dataset(
-    config: MutableMapping[str, Any]
+    config: MutableMapping[str, Any], sparse_labels: bool
 ) -> Tuple[dataset.ClickThroughDataset, dataset.ClickThroughDataset]:
     train_filename = find_full_filepath(config["dataset"]["train_data"])
     test_filename = find_full_filepath(config["dataset"]["test_data"])
@@ -80,10 +81,10 @@ def load_click_through_dataset(
     dense_features = config["dataset"]["dense_features"]
     categorical_features = config["dataset"]["categorical_features"]
     train = dataset.load_click_through_dataset(
-        train_filename, batch_size, dense_features, categorical_features
+        train_filename, batch_size, dense_features, categorical_features, sparse_labels
     )
     test = dataset.load_click_through_dataset(
-        test_filename, batch_size, dense_features, categorical_features
+        test_filename, batch_size, dense_features, categorical_features, sparse_labels
     )
     return train, test
 
@@ -109,7 +110,10 @@ def train_fcn(config: MutableMapping[str, Any]):
     rehash = config["params"]["rehash"]
     rebuild = config["params"]["rebuild"]
     use_sparse_inference = "sparse_inference_epoch" in config["params"].keys()
-    sparse_inference_epoch = config["params"]["sparse_inference_epoch"]
+    if use_sparse_inference:
+        sparse_inference_epoch = config["params"]["sparse_inference_epoch"]
+    else:
+        sparse_inference_epoch = None
 
     data = load_dataset(config)
     if data is None:
@@ -145,9 +149,12 @@ def train_dlrm(config: MutableMapping[str, Any]):
     rehash = config["params"]["rehash"]
     rebuild = config["params"]["rebuild"]
 
-    use_auc = config["params"].get("use_auc", False)
+    use_auc = "use_auc" in config["params"].keys() and config["params"].get(
+        "use_auc", False
+    )
 
-    train, test = load_click_through_dataset(config)
+    use_sparse_labels = config["top_mlp_layers"][-1]["dim"] > 1
+    train, test = load_click_through_dataset(config, use_sparse_labels)
     labels = get_labels(config["dataset"]["test_data"])
 
     for _ in range(epochs):

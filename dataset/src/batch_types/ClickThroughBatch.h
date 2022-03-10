@@ -46,9 +46,11 @@ class ClickThroughBatch {
 class ClickThroughBatchFactory : public Factory<ClickThroughBatch> {
  public:
   ClickThroughBatchFactory(uint32_t num_dense_features,
-                           uint32_t num_categorical_features)
+                           uint32_t num_categorical_features,
+                           bool sparse_labels)
       : _num_dense_features(num_dense_features),
-        _num_categorical_features(num_categorical_features) {}
+        _num_categorical_features(num_categorical_features),
+        _sparse_labels(sparse_labels) {}
 
   ClickThroughBatch parse(std::ifstream& file, uint32_t target_batch_size,
                           uint64_t start_id) override {
@@ -60,10 +62,16 @@ class ClickThroughBatchFactory : public Factory<ClickThroughBatch> {
       char* end;
 
       uint32_t label = std::strtol(start, &end, 10);
-      bolt::BoltVector label_vec(1, false, false);
-      label_vec.active_neurons[0] = label;
-      label_vec.activations[0] = 1.0;
-      batch._labels.push_back(std::move(label_vec));
+      if (_sparse_labels) {
+        bolt::BoltVector label_vec(1, false, false);
+        label_vec.active_neurons[0] = label;
+        label_vec.activations[0] = 1.0;
+        batch._labels.push_back(std::move(label_vec));
+      } else {
+        bolt::BoltVector label_vec(1, true, false);
+        label_vec.activations[0] = label;
+        batch._labels.push_back(std::move(label_vec));
+      }
 
       start = end + 1;
 
@@ -105,6 +113,7 @@ class ClickThroughBatchFactory : public Factory<ClickThroughBatch> {
 
  private:
   uint32_t _num_dense_features, _num_categorical_features;
+  bool _sparse_labels;
 };
 
 }  // namespace thirdai::dataset

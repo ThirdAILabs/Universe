@@ -17,7 +17,8 @@ void createDatasetSubmodule(py::module_& module);
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
     const std::string& filename, uint32_t batch_size,
-    uint32_t num_dense_features, uint32_t num_categorical_features);
+    uint32_t num_dense_features, uint32_t num_categorical_features,
+    bool sparse_labels);
 
 InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
                                             uint32_t batch_size);

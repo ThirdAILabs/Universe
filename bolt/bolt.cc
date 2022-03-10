@@ -255,10 +255,11 @@ using ClickThroughDataset =
 ClickThroughDataset loadClickThorughDataset(const std::string& filename,
                                             uint32_t batch_size,
                                             uint32_t num_dense_features,
-                                            uint32_t num_categorical_features) {
+                                            uint32_t num_categorical_features,
+                                            bool sparse_labels) {
   auto start = std::chrono::high_resolution_clock::now();
-  thirdai::dataset::ClickThroughBatchFactory factory(num_dense_features,
-                                                     num_categorical_features);
+  thirdai::dataset::ClickThroughBatchFactory factory(
+      num_dense_features, num_categorical_features, sparse_labels);
   ClickThroughDataset data(filename, batch_size, std::move(factory));
   auto end = std::chrono::high_resolution_clock::now();
   std::cout
@@ -303,10 +304,12 @@ void trainDLRM(toml::table& config) {
 
   bolt::DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, dense_features);
 
-  auto train_data = loadClickThorughDataset(
-      train_filename, batch_size, dense_features, categorical_features);
-  auto test_data = loadClickThorughDataset(
-      test_filename, batch_size, dense_features, categorical_features);
+  auto train_data =
+      loadClickThorughDataset(train_filename, batch_size, dense_features,
+                              categorical_features, top_mlp.back().dim > 1);
+  auto test_data =
+      loadClickThorughDataset(test_filename, batch_size, dense_features,
+                              categorical_features, top_mlp.back().dim > 1);
 
   std::vector<float> scores(test_data.len() * output_dim);
   for (uint32_t e = 0; e < epochs; e++) {

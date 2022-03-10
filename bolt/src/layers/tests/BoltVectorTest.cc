@@ -58,14 +58,16 @@ void testMove(BoltVector& a) {
   bool has_grad = a.gradients != nullptr;
 
   BoltVector b(std::move(a));
-  checkVectorsAfterMove(a, b, dense, has_grad);
+  // Prevent linting because clang tidy doesn't like using a after move
+  checkVectorsAfterMove(a, b, dense, has_grad);  // NOLINT
 }
 
 void testMoveAssign(BoltVector& a) {
   bool dense = a.isDense();
   bool has_grad = a.gradients != nullptr;
   BoltVector b = std::move(a);
-  checkVectorsAfterMove(a, b, dense, has_grad);
+  // Prevent linting because clang tidy doesn't like using a after move
+  checkVectorsAfterMove(a, b, dense, has_grad);  // NOLINT
 }
 
 BoltVector makeVectorForTest(bool dense, bool has_grad) {

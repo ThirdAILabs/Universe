@@ -16,10 +16,10 @@ void createDatasetSubmodule(py::module_& module) {
                                                  "InMemoryDenseDataset");
   (void)_imdd_;  // To get rid of clang tidy error
 
-  dataset_submodule.def("load_click_through_dataset", &loadClickThroughDataset,
-                        py::arg("filename"), py::arg("batch_size"),
-                        py::arg("num_dense_features"),
-                        py::arg("num_categorical_features"));
+  dataset_submodule.def(
+      "load_click_through_dataset", &loadClickThroughDataset,
+      py::arg("filename"), py::arg("batch_size"), py::arg("num_dense_features"),
+      py::arg("num_categorical_features"), py::arg("sparse_labels"));
 
   py::class_<
       thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>>
@@ -47,10 +47,11 @@ void createDatasetSubmodule(py::module_& module) {
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
     const std::string& filename, uint32_t batch_size,
-    uint32_t num_dense_features, uint32_t num_categorical_features) {
+    uint32_t num_dense_features, uint32_t num_categorical_features,
+    bool sparse_labels) {
   auto start = std::chrono::high_resolution_clock::now();
-  thirdai::dataset::ClickThroughBatchFactory factory(num_dense_features,
-                                                     num_categorical_features);
+  thirdai::dataset::ClickThroughBatchFactory factory(
+      num_dense_features, num_categorical_features, sparse_labels);
   InMemoryDataset<ClickThroughBatch> data(filename, batch_size,
                                           std::move(factory));
   auto end = std::chrono::high_resolution_clock::now();
