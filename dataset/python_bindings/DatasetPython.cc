@@ -1,5 +1,6 @@
 #include "DatasetPython.h"
 #include <bolt/src/layers/BoltVector.h>
+#include <dataset/src/batch_types/BoltInputBatch.h>
 #include <chrono>
 
 namespace thirdai::dataset::python {
@@ -29,6 +30,17 @@ void createDatasetSubmodule(py::module_& module) {
                         py::arg("filename"), py::arg("batch_size"));
 
   dataset_submodule.def("load_csv_dataset", &loadCSVDataset,
+                        py::arg("filename"), py::arg("batch_size"),
+                        py::arg("delimiter") = ",");
+
+  py::class_<InMemoryDataset<BoltInputBatch>> _bolt_dataset_(dataset_submodule,
+                                                             "BoltDataset");
+  (void)_bolt_dataset_;  // To get rid of clang tidy error
+
+  dataset_submodule.def("load_bolt_svm_dataset", &loadBoltSVMDataset,
+                        py::arg("filename"), py::arg("batch_size"));
+
+  dataset_submodule.def("load_bolt_csv_dataset", &loadBoltCSVDataset,
                         py::arg("filename"), py::arg("batch_size"),
                         py::arg("delimiter") = ",");
 }
@@ -71,6 +83,38 @@ InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
   InMemoryDataset<DenseBatch> data(
       filename, batch_size,
       thirdai::dataset::CsvDenseBatchFactory(delimiter.at(0)));
+  auto end = std::chrono::high_resolution_clock::now();
+
+  std::cout
+      << "Read " << data.len() << " vectors in "
+      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
+      << " seconds" << std::endl;
+
+  return data;
+}
+
+InMemoryDataset<BoltInputBatch> loadBoltSVMDataset(const std::string& filename,
+                                                   uint32_t batch_size) {
+  auto start = std::chrono::high_resolution_clock::now();
+  InMemoryDataset<BoltInputBatch> data(filename, batch_size,
+                                       thirdai::dataset::BoltSvmBatchFactory{});
+  auto end = std::chrono::high_resolution_clock::now();
+
+  std::cout
+      << "Read " << data.len() << " vectors from " << filename << " in "
+      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
+      << " seconds" << std::endl;
+
+  return data;
+}
+
+InMemoryDataset<BoltInputBatch> loadBoltCSVDataset(const std::string& filename,
+                                                   uint32_t batch_size,
+                                                   std::string delimiter) {
+  auto start = std::chrono::high_resolution_clock::now();
+  InMemoryDataset<BoltInputBatch> data(
+      filename, batch_size,
+      thirdai::dataset::BoltCsvBatchFactory(delimiter.at(0)));
   auto end = std::chrono::high_resolution_clock::now();
 
   std::cout

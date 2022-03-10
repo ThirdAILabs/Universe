@@ -5,7 +5,7 @@ from thirdai import bolt, dataset
 import numpy as np
 import numpy.typing as npt
 from sklearn.metrics import roc_auc_score
-from typing import MutableMapping, List, Tuple, Any, Union, Optional
+from typing import MutableMapping, List, Tuple, Any, Optional
 
 
 def create_fully_connected_layer_configs(
@@ -51,23 +51,20 @@ def find_full_filepath(filename: str) -> str:
     sys.exit(1)
 
 
-AnyBoltDataset = Union[dataset.InMemorySparseDataset, dataset.InMemoryDenseDataset]
-
-
 def load_dataset(
     config: MutableMapping[str, Any]
-) -> Optional[Tuple[AnyBoltDataset, AnyBoltDataset]]:
+) -> Optional[Tuple[dataset.BoltDataset, dataset.BoltDataset]]:
     train_filename = find_full_filepath(config["dataset"]["train_data"])
     test_filename = find_full_filepath(config["dataset"]["test_data"])
     batch_size = config["params"]["batch_size"]
     if config["dataset"]["format"].lower() == "svm":
-        train = dataset.load_svm_dataset(train_filename, batch_size)
-        test = dataset.load_svm_dataset(test_filename, batch_size)
+        train = dataset.load_bolt_svm_dataset(train_filename, batch_size)
+        test = dataset.load_bolt_svm_dataset(test_filename, batch_size)
         return train, test
     elif config["dataset"]["format"].lower() == "csv":
         delimiter = config["dataset"].get("delimeter", ",")
-        train = dataset.load_csv_dataset(train_filename, batch_size, delimiter)
-        test = dataset.load_csv_dataset(test_filename, batch_size, delimiter)
+        train = dataset.load_bolt_csv_dataset(train_filename, batch_size, delimiter)
+        test = dataset.load_bolt_csv_dataset(test_filename, batch_size, delimiter)
         return train, test
     else:
         print("Invalid dataset format specified")
