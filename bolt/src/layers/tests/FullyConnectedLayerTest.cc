@@ -82,7 +82,7 @@ class FullyConnectedLayerTestFixture : public testing::Test {
     _bolt_inputs.clear();
     for (uint32_t b = 0; b < BATCH_SIZE; b++) {
       auto values = genRandomValues(INPUT_DIM);
-      BoltVector vec(INPUT_DIM, false, true);
+      BoltVector vec(INPUT_DIM, true, true);
       std::fill_n(vec.gradients, INPUT_DIM, 0);
       std::copy(values.begin(), values.end(), vec.activations);
       _bolt_inputs.push_back(std::move(vec));
@@ -98,7 +98,7 @@ class FullyConnectedLayerTestFixture : public testing::Test {
     for (uint32_t b = 0; b < BATCH_SIZE; b++) {
       auto indices = genRandomIndices(SPARSE_INPUT_DIM, INPUT_DIM);
       auto values = genRandomValues(SPARSE_INPUT_DIM);
-      BoltVector vec(SPARSE_INPUT_DIM, true, true);
+      BoltVector vec(SPARSE_INPUT_DIM, false, true);
       std::fill_n(vec.gradients, SPARSE_INPUT_DIM, 0);
       std::copy(indices.begin(), indices.end(), vec.active_neurons);
       std::copy(values.begin(), values.end(), vec.activations);

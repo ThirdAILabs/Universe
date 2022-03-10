@@ -16,6 +16,14 @@ target_link_libraries(
   gtest_main
 )
 
+add_executable(bolt_vector_test BoltVectorTest.cc)
+target_link_libraries(
+  bolt_vector_test
+  PRIVATE
+  gtest_main
+)
+
+
 add_executable(bolt_layer_test_utils_test BoltLayerTestUtilsTest.cc)
 target_link_libraries(
   bolt_layer_test_utils_test
@@ -27,4 +35,5 @@ target_link_libraries(
 include(GoogleTest)
 gtest_discover_tests(fully_connected_layer_test)
 gtest_discover_tests(embedding_layer_test)
+gtest_discover_tests(bolt_vector_test)
 gtest_discover_tests(bolt_layer_test_utils_test)

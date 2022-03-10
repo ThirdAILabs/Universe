@@ -5,7 +5,7 @@ namespace thirdai::bolt::tests {
 
 BoltVector makeVector(const std::vector<uint32_t>& indices,
                       const std::vector<float>& values) {
-  BoltVector vec(values.size(), !indices.empty());
+  BoltVector vec(values.size(), indices.empty());
   std::copy(indices.begin(), indices.end(), vec.active_neurons);
   std::copy(values.begin(), values.end(), vec.activations);
   return vec;

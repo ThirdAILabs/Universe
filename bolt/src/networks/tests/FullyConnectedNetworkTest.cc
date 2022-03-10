@@ -27,7 +27,7 @@ class FullyConnectedNetworkTestFixture : public testing::Test {
       std::vector<bolt::BoltVector> vectors;
       for (uint32_t i = 0; i < batch_size; i++) {
         uint32_t label = label_dist(gen);
-        bolt::BoltVector v(n_classes, false, false);
+        bolt::BoltVector v(n_classes, true, false);
         std::generate(v.activations, v.activations + n_classes,
                       [&]() { return data_dist(gen); });
         if (!add_noise) {

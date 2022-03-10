@@ -60,14 +60,14 @@ class ClickThroughBatchFactory : public Factory<ClickThroughBatch> {
       char* end;
 
       uint32_t label = std::strtol(start, &end, 10);
-      bolt::BoltVector label_vec(1, true, false);
+      bolt::BoltVector label_vec(1, false, false);
       label_vec.active_neurons[0] = label;
       label_vec.activations[0] = 1.0;
       batch._labels.push_back(std::move(label_vec));
 
       start = end + 1;
 
-      bolt::BoltVector vec(_num_dense_features, false, false);
+      bolt::BoltVector vec(_num_dense_features, true, false);
       for (uint32_t d = 0; d < _num_dense_features; d++) {
         float feature;
         if (*start == '\t') {

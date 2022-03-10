@@ -31,9 +31,9 @@ struct BoltVector {
         len(l),
         _owns_data(false) {}
 
-  explicit BoltVector(uint32_t l, bool sparse, bool has_gradient = true)
+  explicit BoltVector(uint32_t l, bool is_dense, bool has_gradient = true)
       : len(l), _owns_data(true) {
-    if (sparse) {
+    if (!is_dense) {
       active_neurons = new uint32_t[len];
     } else {
       active_neurons = nullptr;
@@ -49,14 +49,14 @@ struct BoltVector {
   static BoltVector makeSparseVector(const std::vector<uint32_t>& indices,
                                      const std::vector<float>& values) {
     assert(indices.size() == values.size());
-    BoltVector vec(indices.size(), true, false);
+    BoltVector vec(indices.size(), false, false);
     std::copy(indices.begin(), indices.end(), vec.active_neurons);
     std::copy(values.begin(), values.end(), vec.activations);
     return vec;
   }
 
   static BoltVector makeDenseVector(const std::vector<float>& values) {
-    BoltVector vec(values.size(), false, false);
+    BoltVector vec(values.size(), true, false);
     std::copy(values.begin(), values.end(), vec.activations);
     return vec;
   }
@@ -177,7 +177,7 @@ class BoltBatch {
   BoltBatch(const uint32_t dim, const uint32_t batch_size, bool is_dense)
       : _batch_size(batch_size) {
     for (uint32_t i = 0; i < _batch_size; i++) {
-      _vector_states.push_back(BoltVector(dim, !is_dense));
+      _vector_states.push_back(BoltVector(dim, is_dense));
     }
   }
 
