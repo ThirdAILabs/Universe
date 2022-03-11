@@ -44,7 +44,7 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("rehash") = 0, py::arg("rebuild") = 0)
       .def("train", &PyNetwork::trainWithSparseNumpyArray,
            py::arg("x_idxs"), py::arg("x_vals"), py::arg("x_offsets"),
-           py::arg("y_idxs"), py::arg("y_vals"), py::arg("y_offsets"),
+           py::arg("y_idxs"), py::arg("y_offsets"),
            py::arg("batch_size"), py::arg("learning_rate"), py::arg("epochs"),
            py::arg("rehash") = 0, py::arg("rebuild") = 0)
       .def("predict", &PyNetwork::predict<thirdai::dataset::SparseBatch>,
@@ -59,7 +59,7 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
       .def("predict", &PyNetwork::predictWithSparseNumpyArray,
            py::arg("x_idxs"), py::arg("x_vals"), py::arg("x_offsets"), 
-           py::arg("y_idxs"), py::arg("y_vals"), py::arg("y_offsets"),
+           py::arg("y_idxs"), py::arg("y_offsets"),
            py::arg("batch_size"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
       .def("use_sparse_inference", &PyNetwork::useSparseInference)

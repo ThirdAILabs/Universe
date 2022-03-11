@@ -112,14 +112,12 @@ class PyNetwork final : public FullyConnectedNetwork {
           x_offsets,
       const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           y_idxs,
-	  const py::array_t<float, py::array::c_style | py::array::forcecast>&
-          y_vals,
 	  const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           y_offsets,
       uint32_t batch_size, uint32_t batch_limit) {
     uint32_t starting_id = 0;
     auto data = thirdai::dataset::python::sparseInMemoryDatasetFromNumpy(
-        x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, batch_size, starting_id);
+        x_idxs, x_vals, x_offsets, y_idxs, y_offsets, batch_size, starting_id);
     return predict(data, batch_limit);
   }
 };
