@@ -1,5 +1,8 @@
 #!/bin/bash
 
 BASEDIR=$(dirname "$0")
+cd $BASEDIR
+BASEDIR=$(pwd)
 
-cp $BASEDIR/../../build/thirdai.so .
+cd ../../
+git archive main | bzip2 > $BASEDIR/Universe.tar.bz2

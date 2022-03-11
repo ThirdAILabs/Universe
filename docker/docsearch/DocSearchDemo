@@ -1,35 +1,27 @@
-FROM ubuntu:20.04
-LABEL Description="Build Environment"
-ENV HOME /root
+FROM jupyter/base-notebook:python-3.9.10
+LABEL Description="Build ThirdAI"
 SHELL ["/bin/bash", "-c"]
-RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends install \
+ADD Universe.tar.bz2 /Universe
+USER root
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update --yes ; \
+    apt-get upgrade --yes ; \
+    apt-get install --yes --no-install-recommends \
     build-essential \
     git \
     curl \
-    clang \
     cmake \
-    clang-tidy \
-    clang-format \
-    gdb \
-    python3 \
-    python3-dev \
-    pip \
-    && pip3 install \
-    dark \
-    pytest \
-    mlflow \
-    toml \
-    psutil \
-    git; \ 
-    echo "export PYTHONPATH=/src/build:$PYTHONPATH" >> $HOME/.bash_profile ; \
-    git clone https://github.com/ThirdAILabs/Universe ; \
-    cd Universe ; \
-    bin/build.sh ; \
+    gdb ; \
+    cd /Universe ; \
+    bin/build.sh ;
 
 
-# FROM python:3.10.2-slim-bullseye
-# LABEL Description="TODO FILL IN"
-# ENV HOME /root
-# SHELL ["/bin/bash", "-c"]
-# COPY ~/Universe/build/thirdai.so /
-# RUN echo "export PYTHONPATH=/src/build:$PYTHONPATH" >> $HOME/.bash_profile
+FROM jupyter/base-notebook:python-3.9.10
+LABEL Description="Document Search"
+SHELL ["/bin/bash", "-c"]
+USER root
+RUN pip3 install torch pytest numpy
+COPY --from=0 /Universe/build/thirdai.cpython-* ./
+# This line is temporary, eventually we will test with a custom script
+COPY --from=0 /Universe/flash/python_tests/*doc_retrieval* ./
+RUN echo "export PYTHONPATH=~" >> ~/.bashrc
