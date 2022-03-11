@@ -225,29 +225,33 @@ InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
         x_offsets,
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        labels,
+        y_idxs,
+    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+        y_offsets,
     uint32_t batch_size, uint64_t starting_id) {
   // Get information from examples
   const py::buffer_info x_idxs_buf = x_idxs.request();
   const py::buffer_info x_vals_buf = x_vals.request();
   const py::buffer_info x_offsets_buf = x_offsets.request();
-  const py::buffer_info labels_buf = labels.request();
+  const py::buffer_info y_idxs_buf = y_idxs.request();
+  const py::buffer_info y_offsets_buf = y_offsets.request();
   
   uint64_t num_examples = static_cast<uint64_t>(x_offsets_buf.shape.at(0)-1);
   uint32_t* x_idxs_raw_data = static_cast<uint32_t*>(x_idxs_buf.ptr);
   float* x_vals_raw_data = static_cast<float*>(x_vals_buf.ptr);
   uint32_t* x_offsets_raw_data = static_cast<uint32_t*>(x_offsets_buf.ptr);
-  uint32_t* labels_raw_data = static_cast<uint32_t*>(labels_buf.ptr);
+  uint32_t* y_idxs_raw_data = static_cast<uint32_t*>(y_idxs_buf.ptr);
+  uint32_t* y_offsets_raw_data = static_cast<uint32_t*>(y_offsets_buf.ptr);
 
   // Get information from labels
 
-  const auto labels_shape = labels_buf.shape;
-  if (labels_shape.size() != 1) {
-    throw std::invalid_argument(
-        "For now, Numpy labels must be 1D (each element is an integer).");
-  }
+  // const auto labels_shape = labels_buf.shape;
+  // if (labels_shape.size() != 1) {
+  //   throw std::invalid_argument(
+  //       "For now, Numpy labels must be 1D (each element is an integer).");
+  // }
 
-  uint64_t num_labels = static_cast<uint64_t>(labels_shape.at(0));
+  uint64_t num_labels = static_cast<uint64_t>(y_offsets_buf.shape.at(0)-1);
   if (num_labels != num_examples) {
     throw std::invalid_argument(
         "The size of the label array must be equal to the number of rows in "
@@ -271,7 +275,11 @@ InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
       bool owns_data = false;
       batch_vectors.emplace_back(
           x_idxs_raw_data+x_offsets_raw_data[vec_idx], x_vals_raw_data+x_offsets_raw_data[vec_idx], x_offsets_raw_data[vec_idx+1]-x_offsets_raw_data[vec_idx], owns_data);
-      batch_labels.push_back({labels_raw_data[vec_idx]});
+      std::vector<uint32_t> vec_labels;
+      for (uint64_t nnz_id = y_offsets_raw_data[vec_idx]; nnz_id < y_offsets_raw_data[vec_idx+1]; ++nnz_id) {
+        vec_labels.push_back(y_idxs_raw_data[nnz_id]);
+      }
+      batch_labels.push_back(std::move(vec_labels));  
     }
 
     batches.emplace_back(std::move(batch_vectors), std::move(batch_labels),

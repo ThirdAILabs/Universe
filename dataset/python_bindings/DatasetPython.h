@@ -55,6 +55,10 @@ InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
 	const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
         x_offsets,
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        labels,
+        y_idxs,
+	const py::array_t<float, py::array::c_style | py::array::forcecast>&
+        y_vals,
+	const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+        y_offsets,
     uint32_t batch_size, uint64_t starting_id);
 }  // namespace thirdai::dataset::python
