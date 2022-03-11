@@ -80,9 +80,9 @@ void DLRM::train(
         forward(b, inputs[b], inputs.categoricalFeatures(b), output[b]);
 
         if (_softmax) {
-          loss(output[b], inputs.label(b), batch_size);
+          loss.loss(output[b], inputs.label(b), batch_size);
         } else {
-          MSE(output[b], inputs.label(b), batch_size);
+          MSE.loss(output[b], inputs.label(b), batch_size);
         }
 
         backpropagate(b, inputs[b], output[b]);

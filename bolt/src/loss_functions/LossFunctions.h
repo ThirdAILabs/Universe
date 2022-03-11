@@ -9,8 +9,8 @@ class LossFunction {
  public:
   LossFunction() {}
 
-  void operator()(BoltVector& output, const BoltVector& labels,
-                  uint32_t batch_size) const {
+  void loss(BoltVector& output, const BoltVector& labels,
+            uint32_t batch_size) const {
     if (output.isDense()) {
       if (labels.isDense()) {
         computeLossImpl<true, true>(output, labels, batch_size);

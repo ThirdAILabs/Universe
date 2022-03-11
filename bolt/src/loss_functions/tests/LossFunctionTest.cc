@@ -17,7 +17,7 @@ void testDenseLabelDenseOutput() {
   BoltVector labels = makeVector({}, {0.5, 0.25, 0.5, 0.75, 0.0, 0.25});
 
   LOSS loss;
-  loss(output, labels, 4);
+  loss.loss(output, labels, 4);
 
   uint32_t factor = 4;
   if (std::is_same<LOSS, MeanSquaredError>::value) {
@@ -36,7 +36,7 @@ void testSparseLabelDenseOutput() {
   BoltVector labels = makeVector({0, 1, 3, 5}, {0.5, 0.25, 0.75, 0.25});
 
   LOSS loss;
-  loss(output, labels, 4);
+  loss.loss(output, labels, 4);
 
   uint32_t factor = 4;
   if (std::is_same<LOSS, MeanSquaredError>::value) {
@@ -55,7 +55,7 @@ void testDenseLabelSparseOutput() {
   BoltVector labels = makeVector({}, {0.5, 0.25, 0.5, 0.75, 0.0, 0.25});
 
   LOSS loss;
-  loss(output, labels, 4);
+  loss.loss(output, labels, 4);
 
   uint32_t factor = 4;
   if (std::is_same<LOSS, MeanSquaredError>::value) {
@@ -74,7 +74,7 @@ void testSparseLabelSparseOutput() {
   BoltVector labels = makeVector({0, 1, 3, 5}, {0.5, 0.25, 0.75, 0.875});
 
   LOSS loss;
-  loss(output, labels, 4);
+  loss.loss(output, labels, 4);
 
   uint32_t factor = 4;
   if (std::is_same<LOSS, MeanSquaredError>::value) {

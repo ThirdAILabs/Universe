@@ -104,7 +104,7 @@ std::vector<int64_t> FullyConnectedNetwork::train(
       for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
         this->forward(i, inputs[i], outputs[i], &inputs.labels(i));
 
-        loss(outputs[i], inputs.labels(i), inputs.getBatchSize());
+        loss.loss(outputs[i], inputs.labels(i), inputs.getBatchSize());
 
         this->backpropagate<true>(i, inputs[i], outputs[i]);
       }
