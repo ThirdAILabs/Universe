@@ -36,8 +36,8 @@ def train_mnist_sparse_output_layer(args):
     ]
     network = bolt.Network(layers=layers, input_dim=784)
 
-    train_data = dataset.load_svm_dataset(args.train, 250)
-    test_data = dataset.load_svm_dataset(args.test, 250)
+    train_data = dataset.load_bolt_svm_dataset(args.train, 250)
+    test_data = dataset.load_bolt_svm_dataset(args.test, 250)
     epoch_times = []
     epoch_accuracies = []
     for _ in range(args.epochs):
@@ -66,8 +66,8 @@ def train_mnist_sparse_hidden_layer(args):
     ]
     network = bolt.Network(layers=layers, input_dim=784)
 
-    train_data = dataset.load_svm_dataset(args.train, 250)
-    test_data = dataset.load_svm_dataset(args.test, 250)
+    train_data = dataset.load_bolt_svm_dataset(args.train, 250)
+    test_data = dataset.load_bolt_svm_dataset(args.test, 250)
     epoch_times = []
     epoch_accuracies = []
     for _ in range(args.epochs):

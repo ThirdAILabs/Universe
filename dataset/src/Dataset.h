@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Factory.h"
+#include "batch_types/BoltInputBatch.h"
 #include "batch_types/ClickThroughBatch.h"
 #include "batch_types/DenseBatch.h"
 #include "batch_types/SparseBatch.h"
@@ -34,7 +35,7 @@ class InMemoryDataset {
         break;
       }
       curr_id += batch.getBatchSize();
-      _batches.push_back(batch);
+      _batches.push_back(std::move(batch));
     }
 
     file.close();
@@ -44,9 +45,11 @@ class InMemoryDataset {
   // Take r-value reference for batches to force a move. len is the total number
   // of elements in the dataset.
   InMemoryDataset(std::vector<BATCH_T>&& batches, uint64_t len)
-      : _batches(batches), _len(len) {}
+      : _batches(std::move(batches)), _len(len) {}
 
   const BATCH_T& operator[](uint32_t i) const { return _batches[i]; }
+
+  BATCH_T& operator[](uint32_t i) { return _batches[i]; }
 
   const BATCH_T& at(uint32_t i) const { return _batches.at(i); }
 

@@ -43,7 +43,7 @@ DLRM::DLRM(EmbeddingLayerConfig embedding_config,
 }
 
 void DLRM::train(
-    const dataset::InMemoryDataset<dataset::ClickThroughBatch>& train_data,
+    dataset::InMemoryDataset<dataset::ClickThroughBatch>& train_data,
     float learning_rate, uint32_t epochs, uint32_t rehash, uint32_t rebuild) {
   uint32_t batch_size = train_data.at(0).getBatchSize();
   // Take max with 1 so that we don't get 0 causing a floating point error.
@@ -59,7 +59,7 @@ void DLRM::train(
   BoltBatch output(_output_dim, batch_size, true);
 
   MeanSquaredError MSE;
-  SparseCategoricalCrossEntropyLoss loss;
+  CategoricalCrossEntropyLoss loss;
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
     std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
@@ -72,25 +72,20 @@ void DLRM::train(
         _top_mlp.shuffleRandomNeurons();
       }
 
-      const dataset::ClickThroughBatch& input_batch = train_data[batch];
+      dataset::ClickThroughBatch& inputs = train_data[batch];
 
 #pragma omp parallel for default(none) \
-    shared(input_batch, output, batch_size, MSE, loss)
-      for (uint32_t b = 0; b < input_batch.getBatchSize(); b++) {
-        BoltVector dense_input = BoltVector::makeDenseInputState(
-            input_batch[b]._values, input_batch[b].dim());
-
-        forward(b, dense_input, input_batch.categoricalFeatures(b), output[b]);
+    shared(inputs, output, batch_size, MSE, loss)
+      for (uint32_t b = 0; b < inputs.getBatchSize(); b++) {
+        forward(b, inputs[b], inputs.categoricalFeatures(b), output[b]);
 
         if (_softmax) {
-          uint32_t label = input_batch.label(b);
-          loss(output[b], batch_size, &label, 1);
+          loss.loss(output[b], inputs.label(b), batch_size);
         } else {
-          float label = static_cast<float>(input_batch.label(b));
-          MSE(output[b], batch_size, nullptr, &label, 1);
+          MSE.loss(output[b], inputs.label(b), batch_size);
         }
 
-        backpropagate(b, dense_input, output[b]);
+        backpropagate(b, inputs[b], output[b]);
       }
 
       _bottom_mlp.updateParameters(learning_rate);
@@ -121,7 +116,7 @@ void DLRM::train(
 }
 
 void DLRM::predict(
-    const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
+    dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
     float* scores) {
   uint32_t batch_size = test_data.at(0).getBatchSize();
   uint64_t num_test_batches = test_data.numBatches();
@@ -139,10 +134,7 @@ void DLRM::predict(
   for (const auto& batch : test_data) {
 #pragma omp parallel for default(none) shared(batch, output, scores, cnt)
     for (uint32_t b = 0; b < batch.getBatchSize(); b++) {
-      BoltVector dense_input =
-          BoltVector::makeDenseInputState(batch[b]._values, batch[b].dim());
-
-      forward(b, dense_input, batch.categoricalFeatures(b), output[b]);
+      forward(b, batch[b], batch.categoricalFeatures(b), output[b]);
 
       for (uint32_t i = 0; i < output[b].len; i++) {
         scores[(cnt + b) * _output_dim + i] = output[b].activations[i];
@@ -176,11 +168,12 @@ void DLRM::initializeNetworkForBatchSize(uint32_t batch_size,
   for (uint32_t b = 0; b < batch_size; b++) {
     const BoltVector& concat_vec = _concat_layer_state[b];
 
-    _bottom_mlp_output.push_back(BoltVector::makeDenseState(
-        concat_vec.activations, concat_vec.gradients, bottom_mlp_output_dim));
+    _bottom_mlp_output.push_back(BoltVector(nullptr, concat_vec.activations,
+                                            concat_vec.gradients,
+                                            bottom_mlp_output_dim));
 
-    _embedding_layer_output.push_back(BoltVector::makeDenseState(
-        concat_vec.activations + bottom_mlp_output_dim,
+    _embedding_layer_output.push_back(BoltVector(
+        nullptr, concat_vec.activations + bottom_mlp_output_dim,
         concat_vec.gradients + bottom_mlp_output_dim, embedding_dim));
   }
 
@@ -194,13 +187,13 @@ void DLRM::forward(uint32_t batch_index, const BoltVector& dense_input,
                    const std::vector<uint32_t>& categorical_features,
                    BoltVector& output) {
   _bottom_mlp.forward(batch_index, dense_input, _bottom_mlp_output[batch_index],
-                      nullptr, 0);
+                      nullptr);
 
   _embedding_layer.forward(batch_index, categorical_features,
                            _embedding_layer_output[batch_index]);
 
   _top_mlp.forward(batch_index, _concat_layer_state[batch_index], output,
-                   nullptr, 0);
+                   nullptr);
 }
 
 void DLRM::backpropagate(uint32_t batch_index, BoltVector& dense_input,

@@ -1,4 +1,6 @@
 #include "DatasetPython.h"
+#include <bolt/src/layers/BoltVector.h>
+#include <dataset/src/batch_types/BoltInputBatch.h>
 #include <chrono>
 
 namespace thirdai::dataset::python {
@@ -14,10 +16,10 @@ void createDatasetSubmodule(py::module_& module) {
                                                  "InMemoryDenseDataset");
   (void)_imdd_;  // To get rid of clang tidy error
 
-  dataset_submodule.def("load_click_through_dataset", &loadClickThroughDataset,
-                        py::arg("filename"), py::arg("batch_size"),
-                        py::arg("num_dense_features"),
-                        py::arg("num_categorical_features"));
+  dataset_submodule.def(
+      "load_click_through_dataset", &loadClickThroughDataset,
+      py::arg("filename"), py::arg("batch_size"), py::arg("num_dense_features"),
+      py::arg("num_categorical_features"), py::arg("sparse_labels"));
 
   py::class_<
       thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>>
@@ -30,14 +32,26 @@ void createDatasetSubmodule(py::module_& module) {
   dataset_submodule.def("load_csv_dataset", &loadCSVDataset,
                         py::arg("filename"), py::arg("batch_size"),
                         py::arg("delimiter") = ",");
+
+  py::class_<InMemoryDataset<BoltInputBatch>> _bolt_dataset_(dataset_submodule,
+                                                             "BoltDataset");
+  (void)_bolt_dataset_;  // To get rid of clang tidy error
+
+  dataset_submodule.def("load_bolt_svm_dataset", &loadBoltSVMDataset,
+                        py::arg("filename"), py::arg("batch_size"));
+
+  dataset_submodule.def("load_bolt_csv_dataset", &loadBoltCSVDataset,
+                        py::arg("filename"), py::arg("batch_size"),
+                        py::arg("delimiter") = ",");
 }
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
     const std::string& filename, uint32_t batch_size,
-    uint32_t num_dense_features, uint32_t num_categorical_features) {
+    uint32_t num_dense_features, uint32_t num_categorical_features,
+    bool sparse_labels) {
   auto start = std::chrono::high_resolution_clock::now();
-  thirdai::dataset::ClickThroughBatchFactory factory(num_dense_features,
-                                                     num_categorical_features);
+  thirdai::dataset::ClickThroughBatchFactory factory(
+      num_dense_features, num_categorical_features, sparse_labels);
   InMemoryDataset<ClickThroughBatch> data(filename, batch_size,
                                           std::move(factory));
   auto end = std::chrono::high_resolution_clock::now();
@@ -70,6 +84,38 @@ InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
   InMemoryDataset<DenseBatch> data(
       filename, batch_size,
       thirdai::dataset::CsvDenseBatchFactory(delimiter.at(0)));
+  auto end = std::chrono::high_resolution_clock::now();
+
+  std::cout
+      << "Read " << data.len() << " vectors in "
+      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
+      << " seconds" << std::endl;
+
+  return data;
+}
+
+InMemoryDataset<BoltInputBatch> loadBoltSVMDataset(const std::string& filename,
+                                                   uint32_t batch_size) {
+  auto start = std::chrono::high_resolution_clock::now();
+  InMemoryDataset<BoltInputBatch> data(filename, batch_size,
+                                       thirdai::dataset::BoltSvmBatchFactory{});
+  auto end = std::chrono::high_resolution_clock::now();
+
+  std::cout
+      << "Read " << data.len() << " vectors from " << filename << " in "
+      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
+      << " seconds" << std::endl;
+
+  return data;
+}
+
+InMemoryDataset<BoltInputBatch> loadBoltCSVDataset(const std::string& filename,
+                                                   uint32_t batch_size,
+                                                   std::string delimiter) {
+  auto start = std::chrono::high_resolution_clock::now();
+  InMemoryDataset<BoltInputBatch> data(
+      filename, batch_size,
+      thirdai::dataset::BoltCsvBatchFactory(delimiter.at(0)));
   auto end = std::chrono::high_resolution_clock::now();
 
   std::cout
@@ -212,6 +258,66 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
 
     batches.emplace_back(std::move(batch_vectors), std::move(batch_labels),
                          starting_id + start_vec_idx);
+  }
+
+  return InMemoryDataset(std::move(batches), num_examples);
+}
+
+InMemoryDataset<BoltInputBatch> denseBoltDatasetFromNumpy(
+    const py::array_t<float, py::array::c_style | py::array::forcecast>&
+        examples,
+    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+        labels,
+    uint32_t batch_size) {
+  // Get information from examples
+  const py::buffer_info examples_buf = examples.request();
+  const auto examples_shape = examples_buf.shape;
+  if (examples_shape.size() != 2) {
+    throw std::invalid_argument(
+        "For now, Numpy dense data must be 2D (each row is a dense data "
+        "vector).");
+  }
+
+  uint64_t num_examples = static_cast<uint64_t>(examples_shape.at(0));
+  uint64_t dimension = static_cast<uint64_t>(examples_shape.at(1));
+  float* examples_raw_data = static_cast<float*>(examples_buf.ptr);
+
+  // Get information from labels
+
+  const py::buffer_info labels_buf = labels.request();
+  const auto labels_shape = labels_buf.shape;
+  if (labels_shape.size() != 1) {
+    throw std::invalid_argument(
+        "For now, Numpy labels must be 1D (each element is an integer).");
+  }
+
+  uint64_t num_labels = static_cast<uint64_t>(labels_shape.at(0));
+  if (num_labels != num_examples) {
+    throw std::invalid_argument(
+        "The size of the label array must be equal to the number of rows in "
+        "the examples array.");
+  }
+  uint32_t* labels_raw_data = static_cast<uint32_t*>(labels_buf.ptr);
+
+  // Build batches
+
+  uint64_t num_batches = (num_examples + batch_size - 1) / batch_size;
+  std::vector<BoltInputBatch> batches;
+
+  for (uint32_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
+    std::vector<BoltVector> batch_vectors;
+    std::vector<BoltVector> batch_labels;
+
+    uint64_t start_vec_idx = batch_idx * batch_size;
+    uint64_t end_vec_idx = std::min(start_vec_idx + batch_size, num_examples);
+    for (uint64_t vec_idx = start_vec_idx; vec_idx < end_vec_idx; ++vec_idx) {
+      batch_vectors.emplace_back(
+          nullptr, examples_raw_data + dimension * vec_idx, nullptr, dimension);
+      batch_labels.push_back(
+          BoltVector::makeSparseVector({labels_raw_data[vec_idx]}, {1.0}));
+    }
+
+    batches.emplace_back(std::move(batch_vectors), std::move(batch_labels));
   }
 
   return InMemoryDataset(std::move(batches), num_examples);

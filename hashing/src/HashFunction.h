@@ -115,6 +115,8 @@ class HashFunction {
 
   inline uint32_t range() const { return _range; }
 
+  virtual ~HashFunction() {}
+
  protected:
   const uint32_t _num_tables, _range;
 };

@@ -2,6 +2,7 @@
 
 #include <dataset/src/Factory.h>
 #include <dataset/src/Vectors.h>
+#include <dataset/src/parsers/CsvParser.h>
 #include <cassert>
 #include <exception>
 #include <fstream>
@@ -55,8 +56,19 @@ class DenseBatch {
 };
 
 class CsvDenseBatchFactory : public Factory<DenseBatch> {
+ private:
+  CsvParser<DenseVector, std::vector<uint32_t>> _parser;
+
  public:
-  explicit CsvDenseBatchFactory(char delimiter) : _delimiter(delimiter) {
+  explicit CsvDenseBatchFactory(char delimiter)
+      : _parser(
+            [](const std::vector<float>& values) -> DenseVector {
+              DenseVector vec(values.size());
+              std::copy(values.begin(), values.end(), vec._values);
+              return vec;
+            },
+            [](uint32_t label) -> std::vector<uint32_t> { return {label}; },
+            delimiter) {
     if (delimiter == '.' || (delimiter >= '0' && delimiter <= '9')) {
       std::string msg = "Invalid delimiter: ";
       msg.push_back(delimiter);
@@ -66,80 +78,13 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
 
   DenseBatch parse(std::ifstream& file, uint32_t target_batch_size,
                    uint64_t start_id) override {
-    DenseBatch batch(start_id);
+    std::vector<DenseVector> vectors;
+    std::vector<std::vector<uint32_t>> labels;
 
-    uint32_t dim = 0;
+    _parser.parseBatch(target_batch_size, file, vectors, labels);
 
-    std::string line;
-    while (batch._batch_size < target_batch_size && std::getline(file, line)) {
-      if (line.empty()) {
-        continue;
-      }
-
-      const char* start = line.c_str();
-      const char* const line_end = line.c_str() + line.size();
-      char* end;
-
-      uint32_t label = std::strtoul(start, &end, 10);
-      if (start == end) {
-        throw std::invalid_argument(
-            "Invalid dataset file: Found a line that doesn't start with a "
-            "label.");
-      }
-      batch._labels.push_back({label});
-      if (line_end - end < 1) {
-        throw std::invalid_argument(
-            "Invalid dataset file: The line only contains a label.");
-      }
-      start = end;
-      std::vector<float> values;
-      while (start < line_end) {
-        if (*start != _delimiter) {
-          std::stringstream error_ss;
-          error_ss << "Invalid dataset file: Found invalid character: "
-                   << *start;
-          throw std::invalid_argument(error_ss.str());
-        }
-        start++;
-        if (start == line_end) {
-          values.push_back(0);
-        } else {
-          float value = std::strtof(start, &end);
-          if (start == end && *start != _delimiter) {
-            std::stringstream error_ss;
-            error_ss << "Invalid dataset file: Found invalid character: "
-                     << *start;
-            throw std::invalid_argument(error_ss.str());
-          }
-          // value defaults to 0, So if start == end but start == delimiter,
-          // value = 0.
-          values.push_back(value);
-          start = end;
-        }
-      }
-
-      if (dim != 0 && dim != values.size()) {
-        throw std::invalid_argument(
-            "Invalid dataset file: Contains different-dimensional vectors.\n");
-      }
-
-      dim = values.size();
-
-      DenseVector v(values.size());
-      uint32_t cnt = 0;
-      for (const auto& x : values) {
-        v._values[cnt] = x;
-        cnt++;
-      }
-
-      batch._vectors.push_back(std::move(v));
-      batch._batch_size++;
-    }
-    return batch;
+    return DenseBatch(std::move(vectors), std::move(labels), start_id);
   }
-
- private:
-  char _delimiter;
 };
 
 }  // namespace thirdai::dataset

@@ -1,90 +1,80 @@
 #pragma once
 
 #include <bolt/src/layers/BoltVector.h>
+#include <algorithm>
 
 namespace thirdai::bolt {
 
-class SparseCategoricalCrossEntropyLoss {
- private:
-  template <bool DENSE>
-  void computeLoss(BoltVector& output, uint32_t batch_size,
-                   const uint32_t* labels, uint32_t label_len) const {
-    float frac = 1.0 / label_len;
+class LossFunction {
+ public:
+  LossFunction() {}
 
-    for (uint64_t n = 0; n < output.len; n++) {
-      // Because DENSE is known at compile time the compiler can remove
-      // this conditional
-      uint32_t act_neuron = DENSE ? n : output.active_neurons[n];
-      if (std::find(labels, labels + label_len, act_neuron) !=
-          labels + label_len) {
-        output.gradients[n] = (frac - output.activations[n]) / batch_size;
+  void loss(BoltVector& output, const BoltVector& labels,
+            uint32_t batch_size) const {
+    if (output.isDense()) {
+      if (labels.isDense()) {
+        computeLossImpl<true, true>(output, labels, batch_size);
       } else {
-        output.gradients[n] = -output.activations[n] / batch_size;
+        computeLossImpl<true, false>(output, labels, batch_size);
+      }
+    } else {
+      if (labels.isDense()) {
+        computeLossImpl<false, true>(output, labels, batch_size);
+      } else {
+        computeLossImpl<false, false>(output, labels, batch_size);
       }
     }
   }
 
- public:
-  void operator()(BoltVector& output, uint32_t batch_size,
-                  const uint32_t* labels, uint32_t label_len) const {
-    if (output.active_neurons == nullptr) {
-      computeLoss<true>(output, batch_size, labels, label_len);
+  virtual ~LossFunction() {}
 
-    } else {
-      computeLoss<false>(output, batch_size, labels, label_len);
+ private:
+  template <bool OUTPUT_DENSE, bool LABEL_DENSE>
+  void computeLossImpl(BoltVector& output, const BoltVector& labels,
+                       uint32_t batch_size) const {
+    assert(!OUTPUT_DENSE || output.active_neurons == nullptr);
+    assert(!LABEL_DENSE || labels.active_neurons == nullptr);
+    if (OUTPUT_DENSE && LABEL_DENSE) {
+      assert(output.len == labels.len);
     }
+
+    for (uint32_t i = 0; i < output.len; i++) {
+      uint32_t active_neuron = OUTPUT_DENSE ? i : output.active_neurons[i];
+      float label_val;
+      if (LABEL_DENSE) {
+        label_val = labels.activations[active_neuron];
+      } else {
+        const uint32_t* label_start = labels.active_neurons;
+        const uint32_t* label_end = labels.active_neurons + labels.len;
+        const uint32_t* itr = std::find(label_start, label_end, active_neuron);
+        if (itr == label_end) {
+          label_val = 0.0;
+        } else {
+          label_val = labels.activations[std::distance(label_start, itr)];
+        }
+      }
+      output.gradients[i] =
+          elementLoss(label_val, output.activations[i], batch_size);
+    }
+  }
+
+  virtual float elementLoss(float label, float activation,
+                            uint32_t batch_size) const = 0;
+};
+
+class CategoricalCrossEntropyLoss final : public LossFunction {
+ private:
+  float elementLoss(float label, float activation,
+                    uint32_t batch_size) const override {
+    return (label - activation) / batch_size;
   }
 };
 
-class MeanSquaredError {
+class MeanSquaredError final : public LossFunction {
  private:
-  template <bool DENSE, bool TRUTH_DENSE>
-  void computeLoss(BoltVector& output, uint32_t batch_size,
-                   const uint32_t* truth_indices, const float* truth_values,
-                   uint32_t truth_len) const {
-    for (uint64_t n = 0; n < output.len; n++) {
-      uint32_t act_neuron = DENSE ? n : output.active_neurons[n];
-      float matching_truth_value;
-      if (TRUTH_DENSE) {
-        matching_truth_value = truth_values[act_neuron];
-      } else {
-        const unsigned int* itr =
-            std::find(truth_indices, truth_indices + truth_len, act_neuron);
-        if (itr != truth_indices + truth_len) {
-          matching_truth_value =
-              truth_values[std::distance(truth_indices, itr)];
-        } else {
-          matching_truth_value = 0.0;
-        }
-      }
-      output.gradients[n] =
-          2 * (matching_truth_value - output.activations[n]) / batch_size;
-    }
-  }
-
- public:
-  void operator()(BoltVector& output, uint32_t batch_size,
-                  const uint32_t* truth_indices, const float* truth_values,
-                  uint32_t truth_len) const {
-    if (output.active_neurons == nullptr) {
-      if (truth_indices == nullptr) {
-        computeLoss<true, true>(output, batch_size, truth_indices, truth_values,
-                                truth_len);
-
-      } else {
-        computeLoss<true, false>(output, batch_size, truth_indices,
-                                 truth_values, truth_len);
-      }
-    } else {
-      if (truth_indices == nullptr) {
-        computeLoss<false, true>(output, batch_size, truth_indices,
-                                 truth_values, truth_len);
-
-      } else {
-        computeLoss<false, false>(output, batch_size, truth_indices,
-                                  truth_values, truth_len);
-      }
-    }
+  float elementLoss(float label, float activation,
+                    uint32_t batch_size) const override {
+    return 2 * (label - activation) / batch_size;
   }
 };
 
