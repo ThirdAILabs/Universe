@@ -34,4 +34,4 @@ jobs:
           cd docker/docsearch
           ./create_docsearch_dir.sh
           docker build -t docsearch .
-          docker run docsearch pytest
+          docker run --privileged docsearch pytest
