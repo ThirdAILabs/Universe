@@ -2,22 +2,25 @@ FROM ubuntu:20.04
 LABEL Description="Build Environment"
 ENV HOME /root
 SHELL ["/bin/bash", "-c"]
-RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends install \
+RUN apt update ; DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends install \
     build-essential \
     git \
     curl \
+    mpich \
+    libmpich-dev \
+    clang-tidy-12 \
     clang \
     cmake \
-    clang-tidy \
     clang-format \
     gdb \
     python3 \
     python3-dev \
     pip \
-    && pip3 install \
+    ; pip3 install \
     dark \
     pytest \
     mlflow \
     toml \
     psutil \
-    && echo "export PYTHONPATH=/src/build:$PYTHONPATH" >> $HOME/.bash_profile
+    ; echo "export PYTHONPATH=/src/build:$PYTHONPATH" >> $HOME/.bash_profile \
+    ; ln -s /usr/bin/clang-tidy-12 /usr/bin/clang-tidy
