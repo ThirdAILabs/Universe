@@ -1,4 +1,4 @@
-name: Lint C++ Code
+name: DocSearch Integration Test
 
 # Controls when the workflow will run
 on:
@@ -12,13 +12,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  clang-tidy:
+  docsearch:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v2
 
-      - name: Run clang-tidy linting on all files
+      - name: Build and test the DocSearch Docker image
         run: |
-          docker build -t lint_image -f docker/develop/Dockerfile .  
-          docker run --mount type=bind,source=${PWD},target=/src lint_image src/bin/lint.sh
+          cd docker/docsearch
+          ./create_docsearch_dir.sh
+          docker build -t docsearch .
+          docker run docsearch pytest
