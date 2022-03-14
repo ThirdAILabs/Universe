@@ -11,8 +11,8 @@ RUN apt-get update --yes ; \
     git \
     curl \
     cmake \
-    gdb ; \
-    cd Universe ; \
+    gdb ;
+RUN cd /Universe ; \
     bin/build.sh ;
 
 
