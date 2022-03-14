@@ -33,8 +33,18 @@ that the thirdai so file is on your path.
 4. Run `$ bin/python-format.sh` from anywhere to format all Python code.
 4. Run `$ bin/lint.sh` from anywhere to run linting on all code (primarily 
 these are clang-tidy checks).
-5. Run `$ generate_compile_commands.sh` from anywhere to generate the compile
-commands database (you shouldn't ever need to call this script manually).
+5. Run `$ bin/generate_compile_commands.sh` from anywhere to generate the compile
+commands database (you shouldn't often need to do this manually, but try it
+if your intellisense is acting strangely).
+
+## Docker
+1. You can run all of the above scripts, including building and testing your
+code, in our development docker container. To do this, you can create the 
+development docker container by running `$ bin/docker-build.sh` and enter
+a bash shell in the container by running `$ bin/docker-run.sh`. Universe will
+be mounted as a folder in the root of the container. Note that there may be 
+some issues with existing cache information if you have last build on your local
+machine, and you may need to run a clean build or delete your build folder.
 
 
 ## Manual building and testing (DEPRECATED, use scripts in bin, see above)

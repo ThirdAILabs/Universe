@@ -31,7 +31,6 @@ jobs:
 
       - name: Build and test the DocSearch Docker image
         run: |
-          git branch
           cd docker/docsearch
           ./create_docsearch_dir.sh
           docker build -t docsearch .
