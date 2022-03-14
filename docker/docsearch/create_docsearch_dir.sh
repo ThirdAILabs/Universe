@@ -4,5 +4,6 @@ BASEDIR=$(dirname "$0")
 cd $BASEDIR
 BASEDIR=$(pwd)
 
+CURRENT_BRANCH=$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
 cd ../../
-git archive main | bzip2 > $BASEDIR/Universe.tar.bz2
+git archive $CURRENT_BRANCH | bzip2 > $BASEDIR/Universe.tar.bz2
