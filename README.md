@@ -46,6 +46,21 @@ be mounted as a folder in the root of the container. Note that there may be
 some issues with existing cache information if you have last build on your local
 machine, and you may need to run a clean build or delete your build folder.
 
+## Debugging with DDB and ASan from Python
+1. Do a debug build
+2. Run `export LD_PRELOAD=$(gcc -print-file-name=libasan.so):\$LD_PRELOAD`. This
+is NOT run automatically when you startup a development docker container, as 
+it makes all python code run twice as slow and we want it to be a conscious
+decision.
+3. Run `export ASAN_OPTIONS=suppressions=leak-suppresions.supp`. This is run automatically
+when you startup a development docker container, so you don't need to do this 
+step in that case. It basically prevents all leak checks for python code, as
+this is very noisy.
+4. Run your python code/test with perf or gdb. You can also just run it normally
+and ASan will run.
+See https://github.com/google/sanitizers/issues/1086 and 
+https://github.com/tobywf/python-ext-asan for more details.
+
 
 ## Manual building and testing (DEPRECATED, use scripts in bin, see above)
 1. Clone this repository and navigate into it.
@@ -72,7 +87,7 @@ the library. To do this, you can run
 home directory). This will work until you open a new shell; to 
 automatically update your PYTHONPATH when you start your shell add the above
 command to your ~/.bash_profile or ~/.bash_rc, or equivalently run
-`echo "export PYTHONPATH=~/Universe/build:$PYTHONPATH" >> $HOME/.bash_profile`. 
+`echo "export PYTHONPATH=~/Universe/build:\$PYTHONPATH" >> $HOME/.bash_profile`. 
 Alternatively you can run `pip3 install .`. This installs thirdi without messing
 around with environment variables, but is not preferred for development since it
 is performs an entirely seperate parallel build from `bin/build.sh`, and so is
