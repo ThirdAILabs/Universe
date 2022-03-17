@@ -1,6 +1,7 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Dataset.h>
+#include <dataset/src/batch_types/BoltInputBatch.h>
 #include <algorithm>
 #include <random>
 #include <vector>
@@ -50,17 +51,17 @@ class FullyConnectedNetworkTestFixture : public testing::Test {
 TEST_F(FullyConnectedNetworkTestFixture, TrainSimpleDataset) {
   auto data = genDataset(false);
 
-  _network.train(data, 0.001, 5);
-  float acc = _network.predict(data);
-  ASSERT_GE(acc, 0.99);
+  _network.train(data, "categoricalcrossEntropy", 0.001, 5);
+  auto test_metrics = _network.predict(data, nullptr, {"categorical_accuracy"});
+  ASSERT_GE(test_metrics["categorical_accuracy"].front(), 0.99);
 }
 
 TEST_F(FullyConnectedNetworkTestFixture, TrainNoisyDataset) {
   auto data = genDataset(true);
 
-  _network.train(data, 0.001, 5);
-  float acc = _network.predict(data);
-  ASSERT_LE(acc, 0.2);
+  _network.train(data, "categoricalcrossEntropy", 0.001, 5);
+  auto test_metrics = _network.predict(data, nullptr, {"categorical_accuracy"});
+  ASSERT_LE(test_metrics["categorical_accuracy"].front(), 0.2);
 }
 
 }  // namespace thirdai::bolt::tests

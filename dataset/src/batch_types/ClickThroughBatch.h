@@ -25,7 +25,7 @@ class ClickThroughBatch {
 
   const bolt::BoltVector& at(uint32_t i) const { return _dense_features.at(i); }
 
-  const bolt::BoltVector& label(uint32_t i) const { return _labels[i]; }
+  const bolt::BoltVector& labels(uint32_t i) const { return _labels[i]; }
 
   const std::vector<uint32_t>& categoricalFeatures(uint32_t i) const {
     return _categorical_features[i];

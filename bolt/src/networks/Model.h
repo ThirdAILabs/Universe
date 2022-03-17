@@ -1,3 +1,5 @@
+#pragma once
+
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <dataset/src/Dataset.h>
@@ -12,7 +14,7 @@ namespace thirdai::bolt {
 template <typename BATCH_T>
 class Model {
  public:
-  Model() : _epoch_count(0), _batch_iter(0), _sparse_inference_enabled(false) {}
+  Model() : _epoch_count(0), _batch_iter(0) {}
   /**
    * This function takes in a dataset and training parameters and trains the
    * network for the specified number of epochs with the given parameters. Note
@@ -41,10 +43,10 @@ class Model {
    * returns the final accuracy. The batch_limit parameter limits the number of
    * test batches used, this is intended for intermediate accuracy checks during
    * training with large datasets. Metrics can be passed in to be computed for
-   the test set, and the function optionally store the activations for the
-   output layer in the output_activations array.
+   * the test set, and the function optionally store the activations for the
+   * output layer in the output_activations array.
    */
-  void predict(
+  std::unordered_map<std::string, std::vector<double>> predict(
       // Test dataset
       const dataset::InMemoryDataset<BATCH_T>& test_data,
       // Array to store output activations in, will not return activations if
@@ -57,19 +59,13 @@ class Model {
       // Limit the number of batches used in the dataset
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
-  // Sets flag to enable sparse inference.
-  void useSparseInference() {
-    _sparse_inference_enabled = true;
-    useSparseInferenceImpl();
-  }
-
   // Computes forward path through the network.
   virtual void forward(uint32_t batch_index, BATCH_T& input,
                        BoltVector& output) = 0;
 
   // Backpropagates gradients through the network
-  virtual void backward(uint32_t batch_index, BATCH_T& input,
-                        BoltVector& output) = 0;
+  virtual void backpropagate(uint32_t batch_index, BATCH_T& input,
+                             BoltVector& output) = 0;
 
   // Performs parameter updates for the network.
   virtual void updateParameters(float learning_rate) = 0;
@@ -88,12 +84,8 @@ class Model {
   // Shuffles neurons for random sampling.
   virtual void shuffleRandomNeurons() = 0;
 
-  // Any network specific behavior that must be invoked when sparse inference is
-  // enabled.
-  virtual void useSparseInferenceImpl() = 0;
-
   // Allocates storage for activations and gradients for output layer.
-  virtual BoltBatch getOutputs(bool force_dense) = 0;
+  virtual BoltBatch getOutputs(uint32_t batch_size, bool force_dense) = 0;
 
   // Gets the dimension of the output layer.
   virtual uint32_t outputDim() = 0;
@@ -111,7 +103,6 @@ class Model {
 
  protected:
   uint32_t _batch_iter;
-  bool _sparse_inference_enabled;
 };
 
 }  // namespace thirdai::bolt

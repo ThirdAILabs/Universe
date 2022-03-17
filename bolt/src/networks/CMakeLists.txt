@@ -1,4 +1,4 @@
-add_library(bolt_network_lib Model.cc FullyConnectedNetwork.cc DLRM.cc)
+add_library(bolt_network_lib FullyConnectedNetwork.cc DLRM.cc Model.cc )
 
 target_link_libraries(bolt_network_lib bolt_layer_lib)
 

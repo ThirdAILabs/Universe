@@ -55,12 +55,12 @@ class CategoricalAccuracy final : public Metric {
 
   double getAndReset(bool verbose) final {
     double acc = static_cast<double>(_correct) / _num_samples;
-    _correct = 0;
-    _num_samples = 0;
     if (verbose) {
       std::cout << "Accuracy: " << acc << " (" << _correct << "/"
                 << _num_samples << ")" << std::endl;
     }
+    _correct = 0;
+    _num_samples = 0;
     return acc;
   }
 
@@ -73,10 +73,10 @@ class CategoricalAccuracy final : public Metric {
   std::atomic<uint32_t> _num_samples;
 };
 
-class CompoundMetric {
+class MetricAggregator {
  public:
-  explicit CompoundMetric(const std::vector<std::string>& metrics,
-                          bool verbose = true)
+  explicit MetricAggregator(const std::vector<std::string>& metrics,
+                            bool verbose = true)
       : _verbose(verbose) {
     for (const auto& name : metrics) {
       if (name == CategoricalAccuracy::_name) {

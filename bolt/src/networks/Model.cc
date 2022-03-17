@@ -1,10 +1,17 @@
 #include "Model.h"
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/utils/ProgressBar.h>
+#include <dataset/src/batch_types/BoltInputBatch.h>
+#include <dataset/src/batch_types/ClickThroughBatch.h>
 #include <algorithm>
+#include <cctype>
 #include <chrono>
+#include <iostream>
 
 namespace thirdai::bolt {
+
+template class Model<dataset::BoltInputBatch>;
+template class Model<dataset::ClickThroughBatch>;
 
 template <typename BATCH_T>
 std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
@@ -21,13 +28,13 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
   initializeNetworkState(batch_size, false);
-  BoltBatch outputs = getOutputs(false);
+  BoltBatch outputs = getOutputs(batch_size, false);
 
   std::vector<double> time_per_epoch;
 
   auto loss_fn = getLossFunction(loss_fn_name);
 
-  CompoundMetric metrics(metric_names, verbose);
+  MetricAggregator metrics(metric_names, verbose);
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
     std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
@@ -41,9 +48,9 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
 
       BATCH_T& inputs = const_cast<BATCH_T&>(train_data[batch]);
 
-#pragma omp parallel for default(none) shared(inputs, outputs, loss_fn)
+#pragma omp parallel for default(none) shared(inputs, outputs, loss_fn, metrics)
       for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
-        forward(i, inputs, outputs[i], &inputs.labels(i));
+        forward(i, inputs, outputs[i]);
 
         loss_fn->loss(outputs[i], inputs.labels(i), inputs.getBatchSize());
 
@@ -52,16 +59,14 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
         metrics.processSample(outputs[i], inputs.labels(i));
       }
 
-      updateParameters(learning_rate);
       _batch_iter++;
+      updateParameters(learning_rate);
 
-      if (!_sparse_inference_enabled) {
-        if (_batch_iter % rebuild_batch == (rebuild_batch - 1)) {
-          reBuildHashFunctions();
-          buildHashTables();
-        } else if (_batch_iter % rehash_batch == (rehash_batch - 1)) {
-          buildHashTables();
-        }
+      if (_batch_iter % rebuild_batch == (rebuild_batch - 1)) {
+        reBuildHashFunctions();
+        buildHashTables();
+      } else if (_batch_iter % rehash_batch == (rehash_batch - 1)) {
+        buildHashTables();
       }
 
       bar.increment();
@@ -77,6 +82,8 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
               << "Processed " << num_train_batches << " training batches in "
               << epoch_time << " seconds" << std::endl;
     _epoch_count++;
+
+    metrics.logAndReset();
   }
 
   auto metric_data = metrics.getOutput();
@@ -86,11 +93,10 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
 }
 
 template <typename BATCH_T>
-
-void Model<BATCH_T>::predict(const dataset::InMemoryDataset<BATCH_T>& test_data,
-                             float* output_activations,
-                             const std::vector<std::string>& metric_names,
-                             bool verbose, uint32_t batch_limit) {
+std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::predict(
+    const dataset::InMemoryDataset<BATCH_T>& test_data,
+    float* output_activations, const std::vector<std::string>& metric_names,
+    bool verbose, uint32_t batch_limit) {
   uint32_t batch_size = test_data[0].getBatchSize();
 
   uint64_t num_test_batches = std::min(test_data.numBatches(), batch_limit);
@@ -99,10 +105,10 @@ void Model<BATCH_T>::predict(const dataset::InMemoryDataset<BATCH_T>& test_data,
   // a batch size larger than this so we can just set the batch size here.
   // If sparse inference is not enabled we want the outptus to be dense,
   // otherwise we want whatever the default for the layer is.
-  initializeNetworkState(batch_size, !_sparse_inference_enabled);
-  BoltBatch outputs = getOutputs(!_sparse_inference_enabled);
+  initializeNetworkState(batch_size, true);
+  BoltBatch outputs = getOutputs(batch_size, true);
 
-  CompoundMetric metrics(metric_names, verbose);
+  MetricAggregator metrics(metric_names, verbose);
 
   ProgressBar bar(num_test_batches);
 
@@ -110,7 +116,8 @@ void Model<BATCH_T>::predict(const dataset::InMemoryDataset<BATCH_T>& test_data,
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
     BATCH_T& inputs = const_cast<BATCH_T&>(test_data[batch]);
 
-#pragma omp parallel for default(none) shared(inputs, outputs, metrics)
+#pragma omp parallel for default(none) \
+    shared(inputs, outputs, output_activations, metrics, batch, batch_size)
     for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
       forward(i, inputs, outputs[i]);
 
@@ -134,15 +141,26 @@ void Model<BATCH_T>::predict(const dataset::InMemoryDataset<BATCH_T>& test_data,
             << "Processed " << num_test_batches << " test batches in "
             << test_time << " milliseconds" << std::endl;
   metrics.logAndReset();
+
+  auto metric_vals = metrics.getOutput();
+
+  metric_vals["test_time"].push_back(test_time);
+
+  return metric_vals;
 }
 
 template <typename BATCH_T>
 std::unique_ptr<LossFunction> Model<BATCH_T>::getLossFunction(
     const std::string& fn_name) {
-  if (fn_name == "CategoricalCrossEntropy") {
+  std::string lower_name;
+  for (char c : fn_name) {
+    lower_name.push_back(std::tolower(c));
+  }
+
+  if (lower_name == "categoricalcrossentropy") {
     return std::make_unique<CategoricalCrossEntropyLoss>();
   }
-  if (fn_name == "MeanSquaredError") {
+  if (lower_name == "meansquarederror") {
     return std::make_unique<MeanSquaredError>();
   }
   throw std::invalid_argument("'" + fn_name +

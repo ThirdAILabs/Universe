@@ -80,9 +80,9 @@ void DLRM::train(
         forward(b, inputs[b], inputs.categoricalFeatures(b), output[b]);
 
         if (_softmax) {
-          loss.loss(output[b], inputs.label(b), batch_size);
+          loss.loss(output[b], inputs.labels(b), batch_size);
         } else {
-          MSE.loss(output[b], inputs.label(b), batch_size);
+          MSE.loss(output[b], inputs.labels(b), batch_size);
         }
 
         backpropagate(b, inputs[b], output[b]);
@@ -160,7 +160,7 @@ void DLRM::initializeNetworkForBatchSize(uint32_t batch_size,
   _concat_layer_state = BoltBatch(_concat_layer_dim, batch_size, true);
 
   uint32_t embedding_dim = _embedding_layer.getEmbeddingDim();
-  uint32_t bottom_mlp_output_dim = _bottom_mlp.getLayerSizes().back();
+  uint32_t bottom_mlp_output_dim = _bottom_mlp.outputDim();
 
   _bottom_mlp_output.clear();
   _embedding_layer_output.clear();
@@ -179,8 +179,8 @@ void DLRM::initializeNetworkForBatchSize(uint32_t batch_size,
 
   _embedding_layer.initializeLayer(batch_size);
 
-  _bottom_mlp.createBatchStates(batch_size, force_dense);
-  _top_mlp.createBatchStates(batch_size, force_dense);
+  _bottom_mlp.initializeNetworkState(batch_size, force_dense);
+  _top_mlp.initializeNetworkState(batch_size, force_dense);
 }
 
 void DLRM::forward(uint32_t batch_index, const BoltVector& dense_input,
