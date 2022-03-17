@@ -24,18 +24,18 @@ DLRM::DLRM(EmbeddingLayerConfig embedding_config,
   }
 
   if (top_mlp_configs.back().dim == 1 &&
-      top_mlp_configs.back().act_func != ActivationFunc::MeanSquared) {
+      top_mlp_configs.back().act_func != ActivationFunction::Linear) {
     throw std::invalid_argument(
         "Output layer must have MeanSqauredError if dimension is 1");
   }
 
   if (top_mlp_configs.back().dim != 1 &&
-      top_mlp_configs.back().act_func != ActivationFunc::Softmax) {
+      top_mlp_configs.back().act_func != ActivationFunction::Softmax) {
     throw std::invalid_argument(
         "Output layer must have Softmax if dimension is > 1");
   }
 
-  _softmax = top_mlp_configs.back().act_func == ActivationFunc::Softmax;
+  _softmax = top_mlp_configs.back().act_func == ActivationFunction::Softmax;
   _output_dim = top_mlp_configs.back().dim;
 
   _concat_layer_dim =

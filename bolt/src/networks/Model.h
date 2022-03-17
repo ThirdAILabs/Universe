@@ -26,7 +26,7 @@ class Model {
       // Train dataset
       const dataset::InMemoryDataset<BATCH_T>& train_data,
       // Loss function to use
-      const std::string& loss_fn_name,
+      std::shared_ptr<LossFunction> loss_fn,
       // Learning rate for training
       float learning_rate,
       // Number of training epochs
@@ -91,8 +91,6 @@ class Model {
   virtual uint32_t outputDim() = 0;
 
  private:
-  std::unique_ptr<LossFunction> getLossFunction(const std::string& fn_name);
-
   uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,
                           uint32_t data_len);
 

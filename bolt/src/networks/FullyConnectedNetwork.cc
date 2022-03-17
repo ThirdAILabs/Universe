@@ -24,7 +24,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(
   for (uint32_t i = 0; i < _num_layers; i++) {
     uint64_t prev_dim = (i > 0) ? _configs[i - 1].dim : _input_dim;
     if (i < _num_layers - 1) {
-      if (_configs[i].act_func == ActivationFunc::Softmax) {
+      if (_configs[i].act_func == ActivationFunction::Softmax) {
         throw std::invalid_argument(
             "Softmax activation function is not supported for hidden layers.");
       }

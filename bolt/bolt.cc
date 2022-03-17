@@ -102,7 +102,7 @@ std::vector<bolt::FullyConnectedLayerConfig> createFullyConnectedLayerConfigs(
     float sparsity = getFloatValue(table, "sparsity", true, 1.0);
 
     layers.push_back(bolt::FullyConnectedLayerConfig(
-        dim, sparsity, activation,
+        dim, sparsity, thirdai::bolt::getActivationFunction(activation),
         bolt::SamplingConfig(hashes_per_table, num_tables, range_pow,
                              reservoir_size)));
   }
@@ -228,7 +228,8 @@ void trainFCN(toml::table& config) {
   auto train_metrics = getMetrics(param_table, "train_metrics");
   auto test_metrics = getMetrics(param_table, "test_metrics");
 
-  std::string loss_fn = getStrValue(param_table, "loss_fn");
+  auto loss_fn =
+      thirdai::bolt::getLossFunction(getStrValue(param_table, "loss_fn"));
   uint32_t sparse_inference_epoch = 0;
   bool use_sparse_inference = param_table->contains("sparse_inference_epoch");
   if (use_sparse_inference) {

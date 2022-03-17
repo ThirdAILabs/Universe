@@ -13,8 +13,9 @@ class FullyConnectedNetworkTestFixture : public testing::Test {
   static const uint32_t n_classes = 100, n_batches = 100, batch_size = 100;
 
   FullyConnectedNetworkTestFixture()
-      : _network({FullyConnectedLayerConfig{n_classes, "Softmax"}}, n_classes) {
-  }
+      : _network(
+            {FullyConnectedLayerConfig{n_classes, ActivationFunction::Softmax}},
+            n_classes) {}
 
   static dataset::InMemoryDataset<dataset::BoltInputBatch> genDataset(
       bool add_noise) {
@@ -51,7 +52,9 @@ class FullyConnectedNetworkTestFixture : public testing::Test {
 TEST_F(FullyConnectedNetworkTestFixture, TrainSimpleDataset) {
   auto data = genDataset(false);
 
-  _network.train(data, "categoricalcrossEntropy", 0.001, 5);
+  _network.train(data,
+                 CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss(),
+                 0.001, 5);
   auto test_metrics = _network.predict(data, nullptr, {"categorical_accuracy"});
   ASSERT_GE(test_metrics["categorical_accuracy"].front(), 0.99);
 }
@@ -59,7 +62,9 @@ TEST_F(FullyConnectedNetworkTestFixture, TrainSimpleDataset) {
 TEST_F(FullyConnectedNetworkTestFixture, TrainNoisyDataset) {
   auto data = genDataset(true);
 
-  _network.train(data, "categoricalcrossEntropy", 0.001, 5);
+  _network.train(data,
+                 CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss(),
+                 0.001, 5);
   auto test_metrics = _network.predict(data, nullptr, {"categorical_accuracy"});
   ASSERT_LE(test_metrics["categorical_accuracy"].front(), 0.2);
 }

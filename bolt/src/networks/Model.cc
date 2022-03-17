@@ -16,8 +16,10 @@ template class Model<dataset::ClickThroughBatch>;
 template <typename BATCH_T>
 std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
     const dataset::InMemoryDataset<BATCH_T>& train_data,
-    const std::string& loss_fn_name, float learning_rate, uint32_t epochs,
-    uint32_t rehash, uint32_t rebuild,
+    // Clang tidy is disabled for this line because it wants to pass by
+    // reference, but shared_ptrs should not be passed by reference
+    std::shared_ptr<LossFunction> loss_fn,  // NOLINT
+    float learning_rate, uint32_t epochs, uint32_t rehash, uint32_t rebuild,
     const std::vector<std::string>& metric_names, bool verbose) {
   uint32_t batch_size = train_data[0].getBatchSize();
   uint32_t rebuild_batch =
@@ -31,8 +33,6 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
   BoltBatch outputs = getOutputs(batch_size, false);
 
   std::vector<double> time_per_epoch;
-
-  auto loss_fn = getLossFunction(loss_fn_name);
 
   MetricAggregator metrics(metric_names, verbose);
 
@@ -147,24 +147,6 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::predict(
   metric_vals["test_time"].push_back(test_time);
 
   return metric_vals;
-}
-
-template <typename BATCH_T>
-std::unique_ptr<LossFunction> Model<BATCH_T>::getLossFunction(
-    const std::string& fn_name) {
-  std::string lower_name;
-  for (char c : fn_name) {
-    lower_name.push_back(std::tolower(c));
-  }
-
-  if (lower_name == "categoricalcrossentropy") {
-    return std::make_unique<CategoricalCrossEntropyLoss>();
-  }
-  if (lower_name == "meansquarederror") {
-    return std::make_unique<MeanSquaredError>();
-  }
-  throw std::invalid_argument("'" + fn_name +
-                              "' is not a valid loss function.");
 }
 
 static constexpr uint32_t RehashAutoTuneThreshold = 100000;

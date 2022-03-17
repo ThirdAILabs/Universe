@@ -131,26 +131,26 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
     assert(!std::isnan(act));
 
     switch (_act_func) {
-      case ActivationFunc::ReLU:
+      case ActivationFunction::ReLU:
         if (act < 0) {
           output.activations[n] = 0;
         } else {
           output.activations[n] = act;
         }
         break;
-      case ActivationFunc::Softmax:
+      case ActivationFunction::Softmax:
         output.activations[n] = act;
         if (max_act < act) {
           max_act = act;
         }
         break;
-      case ActivationFunc::MeanSquared:
+      case ActivationFunction::Linear:
         output.activations[n] = act;
         break;
     }
   }
 
-  if (_act_func == ActivationFunc::Softmax) {
+  if (_act_func == ActivationFunction::Softmax) {
     float total = 0;
     for (uint64_t n = 0; n < len_out; n++) {
       output.activations[n] = std::exp(output.activations[n] - max_act);
@@ -198,12 +198,12 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
 
 constexpr float FullyConnectedLayer::actFuncDerivative(float x) {
   switch (_act_func) {
-    case ActivationFunc::ReLU:
+    case ActivationFunction::ReLU:
       return x > 0 ? 1.0 : 0.0;
-    case ActivationFunc::Softmax:
+    case ActivationFunction::Softmax:
       // return 1.0; // Commented out because Clang tidy doesn't like
       // consecutive identical branches
-    case ActivationFunc::MeanSquared:
+    case ActivationFunction::Linear:
       return 1.0;
       // default:
       //   return 0.0;
@@ -275,7 +275,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                               input.len, hashes);
   }
 
-  if (_force_sparse_for_inference && _act_func == ActivationFunc::Softmax) {
+  if (_force_sparse_for_inference && _act_func == ActivationFunction::Softmax) {
     _hash_table->queryAndInsertForInference(hashes, active_set, _sparse_dim);
   } else {
     _hash_table->queryBySet(hashes, active_set);

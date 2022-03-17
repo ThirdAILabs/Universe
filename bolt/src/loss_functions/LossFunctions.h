@@ -2,6 +2,8 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <algorithm>
+#include <memory>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -63,6 +65,12 @@ class LossFunction {
 };
 
 class CategoricalCrossEntropyLoss final : public LossFunction {
+ public:
+  static std::shared_ptr<CategoricalCrossEntropyLoss>
+  makeCategoricalCrossEntropyLoss() {
+    return std::make_shared<CategoricalCrossEntropyLoss>();
+  }
+
  private:
   float elementLoss(float label, float activation,
                     uint32_t batch_size) const override {
@@ -71,11 +79,30 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
 };
 
 class MeanSquaredError final : public LossFunction {
+ public:
+  static std::shared_ptr<MeanSquaredError> makeMeanSquaredError() {
+    return std::make_shared<MeanSquaredError>();
+  }
+
  private:
   float elementLoss(float label, float activation,
                     uint32_t batch_size) const override {
     return 2 * (label - activation) / batch_size;
   }
 };
+
+static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
+  std::string lower_name;
+  for (char c : name) {
+    lower_name.push_back(std::tolower(c));
+  }
+  if (lower_name == "categoricalcrossentropy") {
+    return CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss();
+  }
+  if (lower_name == "meansquarederror") {
+    return MeanSquaredError::makeMeanSquaredError();
+  }
+  throw std::invalid_argument("'" + name + "' is not a valid loss function");
+}
 
 }  // namespace thirdai::bolt
