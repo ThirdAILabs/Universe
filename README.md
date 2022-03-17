@@ -46,16 +46,19 @@ be mounted as a folder in the root of the container. Note that there may be
 some issues with existing cache information if you have last build on your local
 machine, and you may need to run a clean build or delete your build folder.
 
-## Debugging with DDB and ASan from Python
-1. Do a debug build
-2. Run `export LD_PRELOAD=$(gcc -print-file-name=libasan.so):\$LD_PRELOAD`. This
+## Debugging with GDB and ASan from Python
+1. Do a debug build. If you try to run a python test at this point, you may
+encounter errors or the python test won't run at all.
+2. Run `export LD_PRELOAD=$(gcc -print-file-name=libasan.so):$LD_PRELOAD`. This
 is NOT run automatically when you startup a development docker container, as 
-it makes all python code run twice as slow and we want it to be a conscious
-decision.
-3. Run `export ASAN_OPTIONS=suppressions=leak-suppresions.supp`. This is run automatically
-when you startup a development docker container, so you don't need to do this 
-step in that case. It basically prevents all leak checks for python code, as
-this is very noisy.
+it makes all python code run twice as slow and it should be a conscious
+decision. If you try to run a python test now, you will get lot's of noise
+memory leak errors from python itself. In fact, even running python3 and 
+immediately exiting will cause errors.
+3. Run `export LSAN_OPTIONS=suppressions=~/Universe/leak-suppresions.supp`. This will
+supress memory leak errors from Python calls (basically this is all memory 
+leaks, so ASan will mostly be useful for illegal memory accesses). This DOES
+get run automatically as part of the docker container.
 4. Run your python code/test with perf or gdb. You can also just run it normally
 and ASan will run.
 See https://github.com/google/sanitizers/issues/1086 and 
