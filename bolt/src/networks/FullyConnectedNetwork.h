@@ -69,7 +69,7 @@ class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
     }
   }
 
-  BoltBatch getOutputs(uint32_t batch_size, bool force_dense, int layer_no = -1) final {
+  BoltBatch getOutputs(uint32_t batch_size, bool force_dense, int layer_no) final {
     if (layer_no == -1) {
       return _layers.back()->createBatchState(batch_size,
                                             useDenseComputations(force_dense));
