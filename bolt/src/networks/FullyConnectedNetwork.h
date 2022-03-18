@@ -26,9 +26,9 @@ class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
   void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
 
   void forward(uint32_t batch_index, const dataset::BoltInputBatch& inputs,
-               BoltVector& output) final {
+               BoltVector& output, int layer_no = -1) final {
     forward(batch_index, inputs[batch_index], output,
-            &inputs.labels(batch_index));
+            &inputs.labels(batch_index), layer_no);
   }
 
   void backpropagate(uint32_t batch_index, dataset::BoltInputBatch& inputs,
@@ -69,8 +69,12 @@ class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
     }
   }
 
-  BoltBatch getOutputs(uint32_t batch_size, bool force_dense) final {
-    return _layers.back()->createBatchState(batch_size,
+  BoltBatch getOutputs(uint32_t batch_size, bool force_dense, int layer_no = -1) final {
+    if (layer_no = -1)
+      return _layers.back()->createBatchState(batch_size,
+                                            useDenseComputations(force_dense));
+    else
+      return _layers[layer_no]->createBatchState(batch_size,
                                             useDenseComputations(force_dense));
   }
 
@@ -78,6 +82,19 @@ class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
 
   void enableSparseInference() {
     _layers[_num_layers - 1]->forceSparseForInference();
+  }
+
+  /*
+    - Users should be able to set the weights and biases of a particular layer of the network.
+    - The format of the weights to be passed in should be clear and well documented.
+    - replace the weights buffer with input weights buffer if its of the same size. If fails, should return useful error messages on expected format
+  */
+  void setWeights(int layer_no, float* weights, int weightsLen) {
+    std::copy(_layers[layer_no]->weights, _layers[layer_no]->weights + weightsLen, weights);
+  }
+
+  void setBias(int layer_no, float* biases, int biasesLen) {
+    std::copy(_layers[layer_no]->biases, _layers[layer_no]->biases + biasesLen, biases);
   }
 
  private:
