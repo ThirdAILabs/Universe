@@ -7,6 +7,9 @@ dense_features = 15
 categorical_features = 24
 
 [params]
+loss_fn = "MeanSquaredError"
+train_metrics = []
+test_metrics = ["categorical_accuracy"]
 learning_rate = 0.001
 epochs = 2
 batch_size = 255
@@ -47,4 +50,4 @@ range_pow = 9
 
 [[top_mlp_layers]]
 dim = 1
-activation = 'MeanSquared'
+activation = 'Linear'

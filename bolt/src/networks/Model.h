@@ -68,7 +68,7 @@ class Model {
                              BoltVector& output) = 0;
 
   // Performs parameter updates for the network.
-  virtual void updateParameters(float learning_rate) = 0;
+  virtual void updateParameters(float learning_rate, uint32_t iter) = 0;
 
   // Called for network to allocate any necessary state to store activations and
   // gradients.

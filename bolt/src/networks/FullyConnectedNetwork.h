@@ -36,25 +36,34 @@ class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
     backpropagate<true>(batch_index, inputs[batch_index], output);
   }
 
-  void updateParameters(float learning_rate) final {
+  void updateParameters(float learning_rate, uint32_t iter) final {
     for (auto& layer : _layers) {
-      layer->updateParameters(learning_rate, _batch_iter, BETA1, BETA2, EPS);
+      layer->updateParameters(learning_rate, iter, BETA1, BETA2, EPS);
     }
   }
 
   void reBuildHashFunctions() final {
+    if (_sparse_inference_enabled) {
+      return;
+    }
     for (auto& layer : _layers) {
       layer->reBuildHashFunction();
     }
   }
 
   void buildHashTables() final {
+    if (_sparse_inference_enabled) {
+      return;
+    }
     for (auto& layer : _layers) {
       layer->buildHashTables();
     }
   }
 
   void shuffleRandomNeurons() final {
+    if (_sparse_inference_enabled) {
+      return;
+    }
     for (auto& layer : _layers) {
       layer->shuffleRandNeurons();
     }

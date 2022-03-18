@@ -59,8 +59,7 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
         metrics.processSample(outputs[i], inputs.labels(i));
       }
 
-      _batch_iter++;
-      updateParameters(learning_rate);
+      updateParameters(learning_rate, ++_batch_iter);
 
       if (_batch_iter % rebuild_batch == (rebuild_batch - 1)) {
         reBuildHashFunctions();

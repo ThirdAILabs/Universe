@@ -88,10 +88,10 @@ void DLRM::train(
         backpropagate(b, inputs[b], output[b]);
       }
 
-      _bottom_mlp.updateParameters(learning_rate);
+      _bottom_mlp.updateParameters(learning_rate, _iter);
       _embedding_layer.updateParameters(learning_rate, ++_iter, BETA1, BETA2,
                                         EPS);
-      _top_mlp.updateParameters(learning_rate);
+      _top_mlp.updateParameters(learning_rate, _iter);
 
       if (_iter % rebuild_batch == (rebuild_batch - 1)) {
         reBuildHashFunctions();
