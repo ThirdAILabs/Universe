@@ -52,7 +52,7 @@ class DLRM final : public Model<dataset::ClickThroughBatch> {
 
   BoltBatch getOutputs(uint32_t batch_size, bool force_dense, int layer_no) final {
     (void) layer_no;
-    return _top_mlp.getOutputs(batch_size, force_dense);
+    return _top_mlp.getOutputs(batch_size, force_dense, -1);
   }
 
   EmbeddingLayer _embedding_layer;
