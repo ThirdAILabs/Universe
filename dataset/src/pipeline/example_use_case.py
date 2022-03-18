@@ -55,10 +55,9 @@ for batch in dataset.process():
   print(batch.to_string())
 
 # Integrate with colbert
-# Get the packaging right
+# Get the packaging right (also, pybind doesnt give autocomplete and documentation)
 # Talk to nick about passing generator to BOLT (if in memory, that should be handled by dataset)
 # Also talk to nick about n tower models and making things efficient. And parallel.
-
 
 
 

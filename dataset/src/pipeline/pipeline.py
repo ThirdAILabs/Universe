@@ -10,7 +10,8 @@ from thirdai import dataset
 
 class Pipeline:
   def __init__(self):
-    return
+    self._batch_size = 1
+    self._shuffle = False
 
   def set_source(self, location: SourceLocation, format: SourceFormat):
     """Determine where the data source is located and its format.
@@ -43,6 +44,14 @@ class Pipeline:
         ct.curried.accumulate(and_)
       ))[-1]
     return self ### Returns self so we can chain the set() method calls.
+
+  def set_batch_size(self, size: int):
+    self._batch_size = size
+    return self ### Returns self so we can chain the set() method calls.
+
+  def shuffle(self):
+    self._shuffle = True
+    return self ### Returns self so we can chain the set() method calls.
   
   def process_row(self, input_row: List[str], dense, blocks, offsets) -> Tuple[Vector, Vector]:
 
@@ -70,7 +79,7 @@ class Pipeline:
 
     return shared_vec.to_bolt_vector()
 
-  def process(self, batch_size: int, shuffle: bool=False) -> Generator[Batch, None, None]:
+  def process(self) -> Generator[Batch, None, None]:
     """The generator yields a batch of input and target vectors as specified by 
     the schema. The input vectors in the yielded batch are dense only if all 
     input feature blocks return dense features. Input vectors are sparse otherwise.
@@ -109,21 +118,21 @@ class Pipeline:
 
       next_row = next(rows)
 
-    if shuffle and target_vectors:
+    if self._shuffle and target_vectors:
       temp = list(zip(input_vectors, target_vectors))
       random.shuffle(temp)
       input_vectors, target_vectors = zip(*temp)
       # res1 and res2 come out as tuples, and so must be converted to lists.
       input_vectors, target_vectors = list(input_vectors), list(target_vectors)
     
-    elif shuffle:
+    elif self._shuffle:
       random.shuffle(input_vectors)
     
-    n_batches = (len(input_vectors) + batch_size - 1) // batch_size
+    n_batches = (len(input_vectors) + self._batch_size - 1) // self._batch_size
 
     for batch in range(n_batches):
-      start_idx = batch * batch_size
-      end_idx = min((batch + 1) * batch_size, len(input_vectors))
+      start_idx = batch * self._batch_size
+      end_idx = min((batch + 1) * self._batch_size, len(input_vectors))
 
       #############
       # MOCK UP
