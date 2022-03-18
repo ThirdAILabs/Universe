@@ -21,7 +21,7 @@ machine_info = {
     "architecture": platform.machine(),
     "processor": platform.processor(),
     "hostname": socket.gethostname(),
-    "ram_gb": round(psutil.virtual_memory().total / (1024.0**3)),
+    "ram_gb": round(psutil.virtual_memory().total / (1024.0 ** 3)),
     "num_cores": psutil.cpu_count(logical=True),
 }
 
@@ -80,9 +80,7 @@ class ProductRecommendationLogger:
 
     def __enter__(self):
         mlflow.set_experiment("Product Recommendation")
-        mlflow.start_run(
-            tags={"dataset": self.dataset, "algorithm": self.algorithm},
-        )
+        mlflow.start_run(tags={"dataset": self.dataset, "algorithm": self.algorithm},)
         _log_machine_info()
         mlflow.log_param("learning_rate", self.learning_rate)
 
