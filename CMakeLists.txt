@@ -22,8 +22,7 @@ add_compile_options(
   $<$<CONFIG:DEBUG>:-g>
   $<$<CONFIG:DEBUG>:-fno-omit-frame-pointer>
   $<$<CONFIG:RELEASE>:-DNDEBUG>
-  $<$<CONFIG:RELEASE>:-Ofast>
-  $<$<CONFIG:RELEASE>:-ffast-math>
+  $<$<CONFIG:RELEASE>:-O3>
   $<$<CONFIG:RELEASE>:-funroll-loops>
   $<$<CONFIG:RELEASE>:-ftree-vectorize>
 )
