@@ -6,6 +6,7 @@ from builder_vectors import Vector, SparseVector, DenseVector
 from typing import List, Generator, Tuple
 import cytoolz as ct
 import random
+from thirdai import dataset
 
 class Pipeline:
   def __init__(self):
@@ -53,7 +54,7 @@ class Pipeline:
 
     for block, offset in zip(blocks, offsets):
       block.process(input_row, shared_vec, offset)
-    shared_vec.finalize()
+
 
     #############
     # MOCK
@@ -67,7 +68,7 @@ class Pipeline:
 
     #############
 
-    return shared_vec
+    return shared_vec.to_bolt_vector()
 
   def process(self, batch_size: int, shuffle: bool=False) -> Generator[Batch, None, None]:
     """The generator yields a batch of input and target vectors as specified by 
@@ -135,9 +136,7 @@ class Pipeline:
 
       #############
 
-      yield Batch(
-        self.returns_dense_input_vector, 
-        self.returns_dense_target_vector, 
+      yield dataset.BoltInputBatch(
         input_vectors[start_idx:end_idx], 
-        target_vectors if target_vectors is None else target_vectors[start_idx:end_idx]
-        )
+        [] if target_vectors is None else target_vectors[start_idx:end_idx]
+      )

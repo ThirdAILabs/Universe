@@ -1,16 +1,11 @@
-import imp
 from typing import Callable, Generator, List
 import cytoolz as ct
 import mmh3
 
-from pipeline import Pipeline
-from feature_schema import Schema
 from text_embedding_model import TextEmbeddingModel
 from builder_vectors import Vector, SparseVector, DenseVector
 from block import Block
 from source import SourceLocation, SourceFormat
-
-
 
 class TextOneHotEncoding(TextEmbeddingModel):
   def __init__(self, seed, output_dim):
@@ -50,7 +45,7 @@ class TextBlock(Block):
       return self.embedding_model.returns_dense_features()
 
 
-class PythonObject(SourceLocation):
+class InMemoryCollection(SourceLocation):
   def __init__(self, obj) -> None:
     self.obj = obj
   
@@ -68,32 +63,3 @@ class CsvPythonList(SourceFormat):
     # If exhausted
     while True:
       yield None
-
-list_of_passages = [
-  "Hello World",
-  "I love ThirdAI",
-  "i love thirdai so much",
-  "Fantastic Bugs and Where to Find them"
-]
-
-source_location = PythonObject(list_of_passages)
-source_format = CsvPythonList()
-
-pipeline = Pipeline()
-pipeline.set_source(source_location, source_format)
-
-map_lower = lambda str_list: [str.lower(s) for s in str_list]
-map_word_unigram = lambda str_list: [item for s in str_list for item in s.split(' ')]
-
-text_pipeline = [map_lower, map_word_unigram]
-text_embed = TextOneHotEncoding(seed=10, output_dim=1000)
-text_block = TextBlock(column=0, pipeline=text_pipeline, embedding_model=text_embed)
-schema = Schema(input_feature_blocks=[text_block])
-
-pipeline.set_schema(schema=schema)
-
-for batch in pipeline.process(2, False):
-  print(batch)
-
-
-# TODO: CLEANUP!!!! SPLIT INTO FILESS!!! DOCUMENTTTTT

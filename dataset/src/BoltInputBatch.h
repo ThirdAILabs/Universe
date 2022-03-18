@@ -1,10 +1,10 @@
 #pragma once
 
 #include "BoltVector.h"
+#include <string>
+#include <sstream>
 
 namespace thirdai::dataset {
-
-using bolt::BoltVector;
 
 // TODO(Geordie): Bolt input batch must also support lack of labels.
 
@@ -29,6 +29,25 @@ class BoltInputBatch {
   const BoltVector& labels(size_t i) const {
     assert(i < _labels.size());
     return _labels[i];
+  }
+
+  std::string toString() const {
+    std::stringstream ss;
+    ss << "========================================================================\n";
+    ss << "Batch | size = " << _vectors.size() << "\n\n";
+    if (_labels.size() == _vectors.size()) {
+      for (size_t i = 0; i < _vectors.size(); i++) {
+        ss << "Vector " << i << ":\n";
+        ss << "Input: " << _vectors.at(i).toString() << "\n";
+        ss << "Target: " << _labels.at(i).toString() << "\n";
+      }
+    } else {
+      for (size_t i = 0; i < _vectors.size(); i++) {
+        ss << "Vector " << i << ": " << _vectors.at(i).toString() << "\n\n";
+      }
+    }
+    ss << "========================================================================";
+    return ss.str();
   }
 
  private:

@@ -4,8 +4,9 @@
 #include <cstdint>
 #include <iostream>
 #include <vector>
+#include <string>
 
-namespace thirdai::bolt {
+namespace thirdai::dataset {
 
 constexpr float BETA1 = 0.9;
 constexpr float BETA2 = 0.999;
@@ -152,6 +153,31 @@ struct BoltVector {
 
   constexpr bool isDense() const { return this->active_neurons == nullptr; }
 
+  std::string toString() const {
+    std::stringstream ss;
+    ss << "[";
+
+    if (isDense()) {
+      for (size_t i = 0; i < len; i++) {
+        ss << activations[i];
+        if (i < len - 1) {
+          ss << ", ";
+        }
+      } 
+    } else {
+      for (size_t i = 0; i < len; i++) {
+        ss << "(" << active_neurons[i] << ", " <<  activations[i] << ")";
+        if (i < len - 1) {
+          ss << ", ";
+        }
+      }
+    }
+
+    ss << "]";
+    
+    return ss.str();
+  }
+
   ~BoltVector() { freeMemory(); }
 
  private:
@@ -166,60 +192,4 @@ struct BoltVector {
   }
 };
 
-class BoltBatch {
- private:
-  std::vector<BoltVector> _vector_states;
-  uint32_t _batch_size;
-
- public:
-  BoltBatch() : _batch_size(0) {}
-
-  BoltBatch(const uint32_t dim, const uint32_t batch_size, bool is_dense)
-      : _batch_size(batch_size) {
-    for (uint32_t i = 0; i < _batch_size; i++) {
-      _vector_states.push_back(BoltVector(dim, is_dense));
-    }
-  }
-
-  BoltVector& operator[](size_t i) {
-    assert(i < _batch_size);
-    return _vector_states[i];
-  }
-
-  const BoltVector& operator[](size_t i) const {
-    assert(i < _batch_size);
-    return _vector_states[i];
-  }
-
-  BoltBatch(const BoltBatch& other) = delete;
-
-  BoltBatch(BoltBatch&& other)
-      : _vector_states(std::move(other._vector_states)),
-        _batch_size(other._batch_size) {
-    other._batch_size = 0;
-  }
-
-  BoltBatch& operator=(const BoltBatch& other) = delete;
-
-  BoltBatch& operator=(BoltBatch&& other) {
-    _vector_states = std::move(other._vector_states);
-    _batch_size = other._batch_size;
-    other._batch_size = 0;
-    return *this;
-  }
-
-  friend std::ostream& operator<<(std::ostream& out, const BoltBatch& state) {
-    std::cout << "-------------------------------------------------------------"
-              << std::endl;
-    for (uint32_t i = 0; i < state._batch_size; i++) {
-      std::cout << "Vector: " << i << ":\n"
-                << state._vector_states.at(i) << std::endl;
-    }
-    std::cout << "-------------------------------------------------------------"
-              << std::endl;
-    return out;
-  }
-  
-};
-
-}  // namespace thirdai::bolt
+}  // namespace thirdai::dataset

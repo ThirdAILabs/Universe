@@ -1,4 +1,5 @@
 import numpy as np
+from thirdai import dataset
 
 """
 *** Vector ***
@@ -26,7 +27,7 @@ class Vector:
   def addDenseFeatures(self, start_dim: int, values: np.ndarray) -> None:
     return
 
-  def finalize(self):
+  def to_bolt_vector(self) -> dataset.BoltVector:
     return
 
 class SparseVector(Vector):
@@ -52,7 +53,7 @@ class SparseVector(Vector):
     self._indices.extend(np.arange(start_dim, start_dim + values.shape[0]))
     self._values.extend(values.tolist())
   
-  def finalize(self) -> None:
+  def to_bolt_vector(self) -> None:
     sorted_lists = sorted(zip(self._indices, self._values))
     # Dedupe
     real_size = -1
@@ -73,6 +74,8 @@ class SparseVector(Vector):
     self._indices = self._indices[:real_size]
     self._values = self._values[:real_size]
 
+    return dataset.make_sparse_vector(self._indices, self._values)
+
 class DenseVector(Vector):
   def __init__(self):
     self._values = []
@@ -92,8 +95,8 @@ class DenseVector(Vector):
   def addDenseFeatures(self, start_dim: int, values: np.ndarray) -> None:
     self._values.extend(values.tolist())
   
-  def finalize(self) -> None:
-    return
+  def to_bolt_vector(self) -> dataset.BoltVector:
+    return dataset.make_dense_vector(self._values)
 
 """
 Implementation details:
