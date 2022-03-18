@@ -51,6 +51,7 @@ class DLRM final : public Model<dataset::ClickThroughBatch> {
   uint32_t outputDim() const final { return _top_mlp.outputDim(); }
 
   BoltBatch getOutputs(uint32_t batch_size, bool force_dense, int layer_no = -1) final {
+    (void) layer_no;
     return _top_mlp.getOutputs(batch_size, force_dense);
   }
 
