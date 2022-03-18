@@ -4,17 +4,19 @@ from thirdai import bolt
 
 
 def train_simple_bolt_model(examples, labels):
-    layers = [bolt.LayerConfig(dim=10, load_factor=1, activation_function="Softmax")]
+    layers = [bolt.LayerConfig(
+        dim=10, load_factor=1, activation_function=bolt.ActivationFunctions.Softmax)]
     network = bolt.Network(layers=layers, input_dim=10)
 
     batch_size = 64
     learning_rate = 0.001
     epochs = 5
 
-    network.train(examples, labels, batch_size, learning_rate, epochs)
-    acc = network.predict(examples, labels, batch_size)
+    network.train(train_examples=examples, train_labels=labels, batch_size=batch_size,
+                  loss_fn=bolt.CategoricalCrossEntropyLoss(), learning_rate=learning_rate, epochs=epochs, verbose=False)
+    acc, _ = network.predict(examples, labels, batch_size, ["categorical_accuracy"], verbose=False)
 
-    return acc
+    return acc["categorical_accuracy"][0]
 
 
 @pytest.mark.unit
