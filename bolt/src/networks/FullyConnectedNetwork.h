@@ -25,7 +25,7 @@ class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
 
   void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
 
-  void forward(uint32_t batch_index, dataset::BoltInputBatch& inputs,
+  void forward(uint32_t batch_index, const dataset::BoltInputBatch& inputs,
                BoltVector& output) final {
     forward(batch_index, inputs[batch_index], output,
             &inputs.labels(batch_index));
@@ -74,7 +74,7 @@ class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
                                             useDenseComputations(force_dense));
   }
 
-  uint32_t outputDim() final { return _configs.back().dim; }
+  uint32_t outputDim() const final { return _configs.back().dim; }
 
   void enableSparseInference() {
     _layers[_num_layers - 1]->forceSparseForInference();

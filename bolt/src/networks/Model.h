@@ -60,7 +60,7 @@ class Model {
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
   // Computes forward path through the network.
-  virtual void forward(uint32_t batch_index, BATCH_T& input,
+  virtual void forward(uint32_t batch_index, const BATCH_T& input,
                        BoltVector& output) = 0;
 
   // Backpropagates gradients through the network
@@ -88,7 +88,7 @@ class Model {
   virtual BoltBatch getOutputs(uint32_t batch_size, bool force_dense) = 0;
 
   // Gets the dimension of the output layer.
-  virtual uint32_t outputDim() = 0;
+  virtual uint32_t outputDim() const = 0;
 
  private:
   uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,

@@ -7,6 +7,9 @@ format = "svm"
 input_dim = 784
 
 [params]
+loss_fn = "CategoricalCrossEntropy"
+train_metrics = []
+test_metrics = ["categorical_accuracy"]
 learning_rate = 0.0001
 epochs = 2
 batch_size = 250
