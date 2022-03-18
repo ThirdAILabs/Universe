@@ -21,7 +21,7 @@ machine_info = {
     "architecture": platform.machine(),
     "processor": platform.processor(),
     "hostname": socket.gethostname(),
-    "ram_gb": round(psutil.virtual_memory().total / (1024.0 ** 3)),
+    "ram_gb": round(psutil.virtual_memory().total / (1024.0**3)),
     "num_cores": psutil.cpu_count(logical=True),
 }
 
@@ -44,15 +44,11 @@ class ProductRecommendationLogger:
         hashes_per_table=5,
         sparsity=0.01,
         algorithm="bolt") as mlflow_logger:
-
         <Code to init model>
-
         mlflow_logger.log_start_training()
-
         for each epoch:
           <train model a single epoch>
           mlflow_logger.log_epoch(accuracy)
-
     To use with something like TensorFlow that does not have num_hash_tables
     , hashes_per_table, or sparsity, you can leave those fields out. Note
     mlflow only supports a single run at a time, so don't nest "with"
@@ -80,7 +76,9 @@ class ProductRecommendationLogger:
 
     def __enter__(self):
         mlflow.set_experiment("Product Recommendation")
-        mlflow.start_run(tags={"dataset": self.dataset, "algorithm": self.algorithm},)
+        mlflow.start_run(
+            tags={"dataset": self.dataset, "algorithm": self.algorithm},
+        )
         _log_machine_info()
         mlflow.log_param("learning_rate", self.learning_rate)
 
