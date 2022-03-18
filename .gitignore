@@ -13,3 +13,7 @@ thirdai.egg-info
 
 # Ignore .serialized files
 *.serialized 
+
+# Ignore zipped files
+*.bz2
+*.gz
