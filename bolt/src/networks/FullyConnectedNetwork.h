@@ -26,7 +26,7 @@ class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
   void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
 
   void forward(uint32_t batch_index, const dataset::BoltInputBatch& inputs,
-               BoltVector& output, int layer_no = -1) final {
+               BoltVector& output, int layer_no = -1) {
     forward(batch_index, inputs[batch_index], output,
             &inputs.labels(batch_index), layer_no);
   }
@@ -70,12 +70,13 @@ class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
   }
 
   BoltBatch getOutputs(uint32_t batch_size, bool force_dense, int layer_no = -1) final {
-    if (layer_no = -1)
+    if (layer_no = -1) {
       return _layers.back()->createBatchState(batch_size,
                                             useDenseComputations(force_dense));
-    else
+    } else {
       return _layers[layer_no]->createBatchState(batch_size,
                                             useDenseComputations(force_dense));
+    }
   }
 
   uint32_t outputDim() const final { return _configs.back().dim; }
@@ -90,11 +91,11 @@ class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
     - replace the weights buffer with input weights buffer if its of the same size. If fails, should return useful error messages on expected format
   */
   void setWeights(int layer_no, float* weights, int weightsLen) {
-    std::copy(_layers[layer_no]->weights, _layers[layer_no]->weights + weightsLen, weights);
+    std::copy(_layers[layer_no]->_weights, _layers[layer_no]->_weights + weightsLen, weights);
   }
 
   void setBias(int layer_no, float* biases, int biasesLen) {
-    std::copy(_layers[layer_no]->biases, _layers[layer_no]->biases + biasesLen, biases);
+    std::copy(_layers[layer_no]->_biases, _layers[layer_no]->_biases + biasesLen, biases);
   }
 
  private:

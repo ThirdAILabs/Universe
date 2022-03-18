@@ -63,7 +63,7 @@ class Model {
 
   // Computes forward path through the network.
   virtual void forward(uint32_t batch_index, const BATCH_T& input,
-                       BoltVector& output) = 0;
+                       BoltVector& output, int layer_no) = 0;
 
   // Backpropagates gradients through the network
   virtual void backpropagate(uint32_t batch_index, BATCH_T& input,
