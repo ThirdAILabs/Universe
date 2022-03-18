@@ -8,7 +8,7 @@ input_dim = 135909
 max_test_batches = 20
 
 [params]
-loss_fn = "CategoricalCrossEntropy"
+loss_fn = "CategoricalCrossEntropyLoss"
 train_metrics = []
 test_metrics = ["categorical_accuracy"]
 learning_rate = 0.0001

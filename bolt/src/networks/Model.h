@@ -2,6 +2,7 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/metrics/Metric.h>
 #include <dataset/src/Dataset.h>
 #include <algorithm>
 #include <limits>
@@ -22,11 +23,11 @@ class Model {
    * gives access to the times per epoch and any metrics that were computed
    * during training.
    */
-  std::unordered_map<std::string, std::vector<double>> train(
+  MetricData train(
       // Train dataset
       const dataset::InMemoryDataset<BATCH_T>& train_data,
       // Loss function to use
-      std::shared_ptr<LossFunction> loss_fn,
+      const LossFunction& loss_fn,
       // Learning rate for training
       float learning_rate,
       // Number of training epochs
@@ -46,7 +47,7 @@ class Model {
    * the test set, and the function optionally store the activations for the
    * output layer in the output_activations array.
    */
-  std::unordered_map<std::string, std::vector<double>> predict(
+  MetricData predict(
       // Test dataset
       const dataset::InMemoryDataset<BATCH_T>& test_data,
       // Array to store output activations in, will not return activations if

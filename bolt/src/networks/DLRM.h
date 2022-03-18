@@ -11,12 +11,14 @@
 
 namespace thirdai::bolt {
 
-class DLRM final : public Model<dataset::ClickThroughBatch> {
+class DLRM : public Model<dataset::ClickThroughBatch> {
  public:
   DLRM(EmbeddingLayerConfig embedding_config,
        std::vector<FullyConnectedLayerConfig> bottom_mlp_configs,
        std::vector<FullyConnectedLayerConfig> top_mlp_configs,
        uint32_t dense_feature_dim);
+
+  uint32_t outputDim() const final { return _top_mlp.outputDim(); }
 
  private:
   void forward(uint32_t batch_index, const dataset::ClickThroughBatch& inputs,
@@ -47,8 +49,6 @@ class DLRM final : public Model<dataset::ClickThroughBatch> {
     _bottom_mlp.buildHashTables();
     _top_mlp.buildHashTables();
   }
-
-  uint32_t outputDim() const final { return _top_mlp.outputDim(); }
 
   BoltBatch getOutputs(uint32_t batch_size, bool force_dense) final {
     return _top_mlp.getOutputs(batch_size, force_dense);

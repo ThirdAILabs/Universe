@@ -16,7 +16,7 @@ namespace thirdai::bolt {
 
 class DLRM;
 
-class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
+class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
   friend class DLRM;
 
  public:

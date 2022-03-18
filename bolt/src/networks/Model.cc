@@ -14,11 +14,11 @@ template class Model<dataset::BoltInputBatch>;
 template class Model<dataset::ClickThroughBatch>;
 
 template <typename BATCH_T>
-std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
+MetricData Model<BATCH_T>::train(
     const dataset::InMemoryDataset<BATCH_T>& train_data,
     // Clang tidy is disabled for this line because it wants to pass by
     // reference, but shared_ptrs should not be passed by reference
-    std::shared_ptr<LossFunction> loss_fn,  // NOLINT
+    const LossFunction& loss_fn,  // NOLINT
     float learning_rate, uint32_t epochs, uint32_t rehash, uint32_t rebuild,
     const std::vector<std::string>& metric_names, bool verbose) {
   uint32_t batch_size = train_data[0].getBatchSize();
@@ -54,7 +54,7 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
       for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
         forward(i, inputs, outputs[i]);
 
-        loss_fn->loss(outputs[i], inputs.labels(i), inputs.getBatchSize());
+        loss_fn.loss(outputs[i], inputs.labels(i), inputs.getBatchSize());
 
         backpropagate(i, inputs, outputs[i]);
 
@@ -96,7 +96,7 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
 }
 
 template <typename BATCH_T>
-std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::predict(
+MetricData Model<BATCH_T>::predict(
     const dataset::InMemoryDataset<BATCH_T>& test_data,
     float* output_activations, const std::vector<std::string>& metric_names,
     bool verbose, uint32_t batch_limit) {
@@ -129,7 +129,7 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::predict(
       if (output_activations != nullptr && outputs[i].isDense()) {
         const float* start = outputs[i].activations;
         std::copy(start, start + outputs[i].len,
-                  output_activations + batch * batch_size + i);
+                  output_activations + (batch * batch_size + i) * outputDim());
       }
     }
 

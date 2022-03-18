@@ -96,7 +96,7 @@ static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
   for (char c : name) {
     lower_name.push_back(std::tolower(c));
   }
-  if (lower_name == "categoricalcrossentropy") {
+  if (lower_name == "categoricalcrossentropyloss") {
     return CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss();
   }
   if (lower_name == "meansquarederror") {

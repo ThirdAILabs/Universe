@@ -94,7 +94,7 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
     output_file.close();
   }
 
-  // void TearDown() override { ASSERT_FALSE(std::remove(_filename.c_str())); }
+  void TearDown() override { ASSERT_FALSE(std::remove(_filename.c_str())); }
 
   static uint32_t getNumDenseFeatures() { return _num_dense_features; }
   static uint32_t getNumCategoricalFeatures() {
@@ -116,15 +116,15 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
       ASSERT_EQ(batch.id(v), vec_count_base + v);
 
-      ASSERT_EQ(batch.label(v).len, 1);
+      ASSERT_EQ(batch.labels(v).len, 1);
 
       if (sparse_labels) {
-        ASSERT_EQ(batch.label(v).active_neurons[0],
+        ASSERT_EQ(batch.labels(v).active_neurons[0],
                   _vectors.at(vec_count_base + v).label);
-        ASSERT_EQ(batch.label(v).activations[0], 1.0);
+        ASSERT_EQ(batch.labels(v).activations[0], 1.0);
       } else {
-        ASSERT_EQ(batch.label(v).active_neurons, nullptr);
-        ASSERT_EQ(batch.label(v).activations[0],
+        ASSERT_EQ(batch.labels(v).active_neurons, nullptr);
+        ASSERT_EQ(batch.labels(v).activations[0],
                   _vectors.at(vec_count_base + v).label);
       }
 
