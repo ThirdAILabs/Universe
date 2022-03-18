@@ -26,7 +26,7 @@ class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
   void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
 
   void forward(uint32_t batch_index, const dataset::BoltInputBatch& inputs,
-               BoltVector& output, int layer_no = -1) {
+               BoltVector& output, int layer_no) final {
     forward(batch_index, inputs[batch_index], output,
             &inputs.labels(batch_index), layer_no);
   }
@@ -100,7 +100,7 @@ class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
 
  private:
   void forward(uint32_t batch_index, const BoltVector& input,
-               BoltVector& output, const BoltVector* labels);
+               BoltVector& output, const BoltVector* labels, int layer_no);
 
   template <bool FROM_INPUT>
   void backpropagate(uint32_t batch_index, BoltVector& input,
