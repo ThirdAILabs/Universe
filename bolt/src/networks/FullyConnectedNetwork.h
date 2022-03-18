@@ -91,11 +91,11 @@ class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
     - replace the weights buffer with input weights buffer if its of the same size. If fails, should return useful error messages on expected format
   */
   void setWeights(int layer_no, float* weights, int weightsLen) {
-    std::copy(_layers[layer_no]->_weights, _layers[layer_no]->_weights + weightsLen, weights);
+    std::copy(_layers[layer_no]->getWeights(), _layers[layer_no]->getWeights() + weightsLen, weights);
   }
 
   void setBias(int layer_no, float* biases, int biasesLen) {
-    std::copy(_layers[layer_no]->_biases, _layers[layer_no]->_biases + biasesLen, biases);
+    std::copy(_layers[layer_no]->getBiases(), _layers[layer_no]->getBiases() + biasesLen, biases);
   }
 
  private:
