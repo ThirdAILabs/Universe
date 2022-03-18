@@ -24,6 +24,19 @@ target_link_libraries(
   gtest_main
 )
 
+add_executable(
+  tiny_table_test
+  TinyTableTest.cc
+)
+
+target_link_libraries(
+  tiny_table_test
+  PRIVATE
+  hash_table_lib
+  gtest_main
+)
+
 include(GoogleTest)
 gtest_discover_tests(vector_hash_table_test)
 gtest_discover_tests(sampled_hash_table_test)
+gtest_discover_tests(tiny_table_test)

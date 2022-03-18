@@ -11,5 +11,5 @@ thirdai.egg-info
 # Mac stuff
 .DS_Store
 
-# Ignore benchmarking folder
-benchmarking
+# Ignore .serialized files
+*.serialized 
