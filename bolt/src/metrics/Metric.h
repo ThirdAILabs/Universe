@@ -20,6 +20,8 @@ class Metric {
   virtual double getAndReset(bool verbose) = 0;
 
   virtual std::string getName() = 0;
+
+  virtual ~Metric() = default;
 };
 
 class CategoricalAccuracy final : public Metric {

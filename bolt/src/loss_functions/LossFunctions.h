@@ -28,7 +28,7 @@ class LossFunction {
     }
   }
 
-  virtual ~LossFunction() {}
+  virtual ~LossFunction() = default;
 
  private:
   template <bool OUTPUT_DENSE, bool LABEL_DENSE>
