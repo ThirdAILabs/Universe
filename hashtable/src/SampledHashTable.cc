@@ -97,10 +97,9 @@ void SampledHashTable<LABEL_T>::queryAndInsertForInference(
   uint32_t remaining = outputsize - store.size();
 
   uint64_t table = 0;
-  while (table < _num_tables) {
+  for (table = 0; table < _num_tables; table++) {
     uint32_t row_index = hashes[table];
     assert(row_index < _range);
-    table++;
     uint32_t counter = _counters[CounterIdx(table, row_index)];
 
     uint32_t elements_found = std::min<uint64_t>(counter, _reservoir_size);
@@ -120,7 +119,7 @@ void SampledHashTable<LABEL_T>::queryAndInsertForInference(
   // relevant bucket in the tables probed.)
   for (auto x : store) {
     if (temp_store.find(x) == temp_store.end()) {
-      for (uint32_t i = 0; i < table; i++) {
+      for (uint32_t i = 0; i < table+1; i++) {
         uint32_t row_id = hashes[i];
         assert(row_id < _range);
 
