@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/archives/binary.hpp>
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/HashFunction.h>
 #include <dataset/python_bindings/DatasetPython.h>
@@ -9,6 +10,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <cmath>
+#include <fstream>
+#include <memory>
 
 namespace py = pybind11;
 
@@ -64,6 +67,32 @@ class PyMaxFlashArray final : public MaxFlashArray<uint8_t> {
 
     return to_return;
   }
+
+  void serialize_to_file(const std::string& path) {
+    std::ofstream filestream(path, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<PyMaxFlashArray> deserialize_from_file(
+      const std::string& path) {
+    std::ifstream filestream(path, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<PyMaxFlashArray> serialize_into(new PyMaxFlashArray());
+    iarchive(*serialize_into);
+    return serialize_into;
+  }
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& ar) {
+    // See https://uscilab.github.io/cereal/inheritance.html
+    ar(cereal::base_class<MaxFlashArray<uint8_t>>(this));
+  }
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
+  PyMaxFlashArray() : MaxFlashArray<uint8_t>() {}
 };
 
 }  // namespace thirdai::search::python

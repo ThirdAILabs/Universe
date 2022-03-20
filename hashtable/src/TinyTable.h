@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/vector.hpp>
 #include <atomic>
 #include <exception>
 #include <iostream>
@@ -86,12 +87,21 @@ class TinyTable final {
   TinyTable& operator=(const TinyTable&) = delete;
 
  private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_hash_range, _num_elements, _num_tables, _table_start, _index);
+  }
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
+  TinyTable<LABEL_T>(){};
+
   // Techincally this is 16 + sizeof(LABEL_T) wasted bytes per table,
   // but it's fine for now
-  const uint32_t _hash_range;
-  const LABEL_T _num_elements;
-  const uint32_t _num_tables;
-  const uint64_t _table_start =
+  uint32_t _hash_range;
+  LABEL_T _num_elements;
+  uint32_t _num_tables;
+  uint64_t _table_start =
       static_cast<uint64_t>(_num_tables) * (_hash_range + 1);
   /** _index is a compact representation of a multitable hashtable. Each of the
    * hash table repetitions are conceptually split into two parts: a list of

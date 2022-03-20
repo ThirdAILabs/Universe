@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
 #include "HashUtils.h"
 #include <dataset/src/batch_types/DenseBatch.h>
 #include <dataset/src/batch_types/SparseBatch.h>
@@ -118,7 +119,15 @@ class HashFunction {
   virtual ~HashFunction() {}
 
  protected:
-  const uint32_t _num_tables, _range;
+  uint32_t _num_tables, _range;
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_num_tables, _range);
+  }
 };
 
 }  // namespace thirdai::hashing

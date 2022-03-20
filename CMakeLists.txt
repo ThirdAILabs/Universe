@@ -22,8 +22,7 @@ add_compile_options(
   $<$<CONFIG:DEBUG>:-g>
   $<$<CONFIG:DEBUG>:-fno-omit-frame-pointer>
   $<$<CONFIG:RELEASE>:-DNDEBUG>
-  $<$<CONFIG:RELEASE>:-Ofast>
-  $<$<CONFIG:RELEASE>:-ffast-math>
+  $<$<CONFIG:RELEASE>:-O3>
   $<$<CONFIG:RELEASE>:-funroll-loops>
   $<$<CONFIG:RELEASE>:-ftree-vectorize>
 )
@@ -91,6 +90,17 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(tomlplusplus)
 include_directories(${tomlplusplus_SOURCE_DIR})
+
+set (JUST_INSTALL_CEREAL ON)
+FetchContent_Declare(
+    cereal
+    GIT_REPOSITORY https://github.com/USCiLab/cereal.git
+    GIT_TAG        v1.3.2
+)
+FetchContent_MakeAvailable(
+  cereal
+)
+include_directories(${cereal_SOURCE_DIR}/include)
 
 # So we can include using e.g. #include <hashtable/src/SampledHashTable.h>
 include_directories(".")
