@@ -64,10 +64,8 @@ def load_dataset(
         return train, test
     elif config["dataset"]["format"].lower() == "csv":
         delimiter = config["dataset"].get("delimeter", ",")
-        train = dataset.load_bolt_csv_dataset(
-            train_filename, batch_size, delimiter)
-        test = dataset.load_bolt_csv_dataset(
-            test_filename, batch_size, delimiter)
+        train = dataset.load_bolt_csv_dataset(train_filename, batch_size, delimiter)
+        test = dataset.load_bolt_csv_dataset(test_filename, batch_size, delimiter)
         return train, test
     else:
         print("Invalid dataset format specified")
@@ -147,8 +145,7 @@ def train_fcn(config: MutableMapping[str, Any]):
 
 def train_dlrm(config: MutableMapping[str, Any]):
     embedding_layer = create_embedding_layer_config(config["embedding_layer"])
-    bottom_mlp = create_fully_connected_layer_configs(
-        config["bottom_mlp_layers"])
+    bottom_mlp = create_fully_connected_layer_configs(config["bottom_mlp_layers"])
     top_mlp = create_fully_connected_layer_configs(config["top_mlp_layers"])
     input_dim = config["dataset"]["dense_features"]
     dlrm = bolt.DLRM(
@@ -189,7 +186,7 @@ def train_dlrm(config: MutableMapping[str, Any]):
             auc = roc_auc_score(labels, scores)
             print("AUC: ", auc)
         elif use_auc and len(scores.shape) == 2 and scores.shape[1] == 2:
-            auc = roc_auc_score(labels, scores[:,1])
+            auc = roc_auc_score(labels, scores[:, 1])
             print("AUC: ", auc)
 
 
