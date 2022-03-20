@@ -91,7 +91,7 @@ class Model {
   // Gets the dimension of the output layer.
   virtual uint32_t outputDim() const = 0;
 
-  virtual ~Metric() = default;
+  virtual ~Model() = default;
 
  private:
   uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,
