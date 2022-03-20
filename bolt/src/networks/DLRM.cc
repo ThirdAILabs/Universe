@@ -165,16 +165,18 @@ void DLRM::initializeNetworkForBatchSize(uint32_t batch_size,
   _bottom_mlp_output.clear();
   _embedding_layer_output.clear();
 
+  _bottom_mlp_output.reserve(batch_size);
+  _embedding_layer_output.reserve(batch_size);
+
   for (uint32_t b = 0; b < batch_size; b++) {
     const BoltVector& concat_vec = _concat_layer_state[b];
+    _bottom_mlp_output.emplace_back(nullptr, concat_vec.activations,
+                                    concat_vec.gradients,
+                                    bottom_mlp_output_dim);
 
-    _bottom_mlp_output.push_back(BoltVector(nullptr, concat_vec.activations,
-                                            concat_vec.gradients,
-                                            bottom_mlp_output_dim));
-
-    _embedding_layer_output.push_back(BoltVector(
+    _embedding_layer_output.emplace_back(
         nullptr, concat_vec.activations + bottom_mlp_output_dim,
-        concat_vec.gradients + bottom_mlp_output_dim, embedding_dim));
+        concat_vec.gradients + bottom_mlp_output_dim, embedding_dim);
   }
 
   _embedding_layer.initializeLayer(batch_size);
