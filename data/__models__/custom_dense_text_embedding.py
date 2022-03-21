@@ -7,6 +7,9 @@ class CustomDenseTextEmbedding(TextEmbeddingModel):
     self.embed_fn = embed_fn
     self.out_dim = out_dim
   
+  def returns_dense_features(self) -> bool:
+      return True
+
   def feature_dim(self) -> int:
     return self.out_dim
 
