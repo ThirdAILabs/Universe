@@ -157,7 +157,9 @@ MetricData Model<BATCH_T>::predict(
 
 template <typename BATCH_T>
 BoltBatch Model<BATCH_T>::getEmbeddings(uint32_t layer_no, 
-    const BoltVector& input_batch, uint32_t test_batch_size) {
+    const dataset::InMemoryDataset<BATCH_T>& test_data, 
+    uint32_t test_batch_size) {
+
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
   // If sparse inference is not enabled we want the outptus to be dense,
@@ -165,7 +167,7 @@ BoltBatch Model<BATCH_T>::getEmbeddings(uint32_t layer_no,
   initializeNetworkState(test_batch_size, true);
   BoltBatch outputs = getOutputs(test_batch_size, true, layer_no);
 
-  BATCH_T& inputs = const_cast<BATCH_T&>(input_batch);
+  BATCH_T& inputs = const_cast<BATCH_T&>(test_data[0]);
 
 #pragma omp parallel for default(none) \
     shared(inputs, outputs, layer_no)

@@ -82,10 +82,11 @@ class PyNetwork final : public FullyConnectedNetwork {
   }
 
   BoltBatch getEmbeddings(
-      uint32_t layer_no, const dataset::BoltInputBatch& input_batch, 
+      uint32_t layer_no, 
+      const dataset::InMemoryDataset<dataset::BoltInputBatch>& test_data,
       uint32_t test_batch_size) {
 
-    return getEmbeddings(layer_no, input_batch, test_batch_size);
+    return getEmbeddings(layer_no, test_data, test_batch_size);
   }
 
   std::pair<MetricData,

@@ -75,7 +75,7 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
       .def("enable_sparse_inference", &PyNetwork::enableSparseInference)
       .def("get_embeddings",  &PyNetwork::getEmbeddings,
-           py::arg("layer_no"), py::arg("input_batch"),
+           py::arg("layer_no"), py::arg("test_data"),
            py::arg("test_batch_size"));
 
   py::class_<PyDLRM>(bolt_submodule, "DLRM")
