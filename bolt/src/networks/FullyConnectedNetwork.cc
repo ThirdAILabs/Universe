@@ -48,7 +48,7 @@ void FullyConnectedNetwork::forward(uint32_t batch_index,
   int temp_stop = layer_no;
   if (layer_no == -1) temp_stop = _num_layers;
 
-  for (uint32_t i = 0; i < temp_stop; i++) {
+  for (int i = 0; i < temp_stop; i++) {
     if (i == 0 &&
         (_num_layers == 1 || temp_stop == 1)) {  // First and last layer
       _layers[0]->forward(input, output, labels);
