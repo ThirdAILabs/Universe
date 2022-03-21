@@ -1,8 +1,8 @@
 from typing import List
-from builder_vectors import Vector
+from ..__utils__.builder_vectors import BuilderVector
 
 class TextEmbeddingModel:
-  def embedText(self, text: List[str], shared_feature_vector: Vector, offset: int) -> None:
+  def embedText(self, text: List[str], shared_feature_vector: BuilderVector, offset: int) -> None:
     return
   
   def returns_dense_features(self) -> bool:

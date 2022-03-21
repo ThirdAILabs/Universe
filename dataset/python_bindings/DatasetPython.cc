@@ -18,7 +18,8 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("vectors"), py::arg("labels"))
       .def("to_string", &BoltInputBatch::toString)
       .def("__str__", &BoltInputBatch::toString)
-      .def("__repr__", &BoltInputBatch::toString);
+      .def("__repr__", &BoltInputBatch::toString)
+      .def("size", &BoltInputBatch::getBatchSize);
 
   py::class_<InMemoryDataset<SparseBatch>> _imsd_(dataset_submodule,
                                                   "InMemorySparseDataset");

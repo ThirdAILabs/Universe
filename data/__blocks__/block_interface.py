@@ -1,4 +1,4 @@
-from builder_vectors import Vector
+from ..__utils__.builder_vectors import BuilderVector
 from typing import List
 
 class Block:
@@ -6,8 +6,8 @@ class Block:
     return
   
   def process(self, input_row: List[str], 
-              shared_feature_vector: Vector=None, 
-              idx_offset=0) -> Vector:
+              shared_feature_vector: BuilderVector=None, 
+              idx_offset=0) -> BuilderVector:
     """The block can return either dense or sparse features, depending on 
     what is best for the feature that it produces.
     
@@ -21,12 +21,6 @@ class Block:
       idx_offset: the offset to shift the feature indices by if the preceeding 
         section of the output vector is occupied by other features, only needed 
         if shared_feature_vector is supplied. 
-        Can rename to "start_dim"?.
-      
-      NOTE: If shared_feature_vector and idx_offset make this method confusing, we 
-      can split this into two separate methods, one to be called by the pipeline 
-      object and fills out a shared vector, and another to be called by a user 
-      and produces its own vector.
 
     Return value:
       A vector

@@ -1,5 +1,5 @@
+from ..__blocks__.block_interface import Block
 from typing import List
-from block import Block
 
 class Schema:
   def __init__(self, input_feature_blocks: List[Block]=[], 

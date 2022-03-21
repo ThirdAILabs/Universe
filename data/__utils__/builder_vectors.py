@@ -2,22 +2,10 @@ import numpy as np
 from thirdai import dataset
 
 """
-*** Vector ***
-Right now, we have two types of vectors:
-1. Sparse vector
-2. Dense vector
-Soon we may have a third one, the sparsity-agnostic Bolt vector.
-
-Since we want to support all of them, and because different blocks may produce different types of 
-vectors, the vectors should share an interface. I propose the following methods:
-
-addSingleFeature(start_dim: int, value: float): Used when the block only produces a single feature.
-addSparseFeatures(idxs: np.array[int], vals: np.array[float]): Used when the block produces sparse features.
-addDenseFeatures(start_dim: int, vals: np.array[float]): Used when the block produces dense features.
-
-This can look something like the following:
+A builder vector is a data structure for composing features
+from different blocks into a single vector.
 """
-class Vector:
+class BuilderVector:
   def addSingleFeature(self, start_dim: int, value: float) -> None:
     return
   
@@ -30,7 +18,7 @@ class Vector:
   def to_bolt_vector(self) -> dataset.BoltVector:
     return
 
-class SparseVector(Vector):
+class SparseBuilderVector(BuilderVector):
   def __init__(self) -> None:
     self._indices = []
     self._values = []
@@ -55,7 +43,8 @@ class SparseVector(Vector):
   
   def to_bolt_vector(self) -> None:
     sorted_lists = sorted(zip(self._indices, self._values))
-    # Dedupe
+    
+    # Deduplicate entries by aggregating the values for the same index.
     real_size = -1
     last_idx = -1
     for iv in sorted_lists:
@@ -76,7 +65,7 @@ class SparseVector(Vector):
 
     return dataset.make_sparse_vector(self._indices, self._values)
 
-class DenseVector(Vector):
+class DenseBuilderVector(BuilderVector):
   def __init__(self):
     self._values = []
 
@@ -97,21 +86,3 @@ class DenseVector(Vector):
   
   def to_bolt_vector(self) -> dataset.BoltVector:
     return dataset.make_dense_vector(self._values)
-
-"""
-Implementation details:
-While Python lists are probably implemented as C++ vectors, they are implemented as vectors of references. 
-E.g. A list of integers in python is a vector of references to integers stored in the heap, which makes 
-even sequential access very slow in native Python code. When a list is passed to a C++ function through 
-PyBind, a new vector is constructed and the values of the list are copied into this new vector. This is 
-also slow.
-
-Vectors can be implemented in Python using numpy arrays or in C++ as vectors.
-If we implement in Python, then the whole dataset should be stored in Python then wrapped into a dataset 
-at the end to prevent copying. Note that we cannot wrap individual vectors or batches in C++ and transfer
-control to Python in between because PyBind does not guarantee that a memory location remains valid beyond 
-a single C++ function call.
-If we implement in C++, we just have to extend the existing vector classes with a few extra methods, wrap 
-the methods in a Python interface, and we're fine. And we can easily control data ownership. This seems 
-to be the simpler option. 
-"""
