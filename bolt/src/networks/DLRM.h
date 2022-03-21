@@ -22,7 +22,7 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
 
  private:
   void forward(uint32_t batch_index, const dataset::ClickThroughBatch& inputs,
-               BoltVector& output, int layer_no) final;
+               BoltVector& output) final;
 
   void backpropagate(uint32_t batch_index, dataset::ClickThroughBatch& inputs,
                      BoltVector& output) final;
@@ -50,12 +50,8 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
     _top_mlp.buildHashTables();
   }
 
-  uint32_t outputDim() const final { return _top_mlp.outputDim(); }
-
-  BoltBatch getOutputs(uint32_t batch_size, bool force_dense,
-                       int layer_no) final {
-    (void)layer_no;
-    return _top_mlp.getOutputs(batch_size, force_dense, -1);
+  BoltBatch getOutputs(uint32_t batch_size, bool force_dense) final {
+    return _top_mlp.getOutputs(batch_size, force_dense);
   }
 
   EmbeddingLayer _embedding_layer;
