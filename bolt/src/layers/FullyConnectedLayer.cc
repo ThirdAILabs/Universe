@@ -15,10 +15,10 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sparse_dim(config.sparsity * config.dim),
       _sparsity(config.sparsity),
       _act_func(config.act_func),
-      _weights(config.dim*prev_dim),
-      _w_gradient(config.dim*prev_dim, 0),
-      _w_momentum(config.dim*prev_dim, 0),
-      _w_velocity(config.dim*prev_dim, 0),
+      _weights(config.dim * prev_dim),
+      _w_gradient(config.dim * prev_dim, 0),
+      _w_momentum(config.dim * prev_dim, 0),
+      _w_velocity(config.dim * prev_dim, 0),
       _biases(config.dim),
       _b_gradient(config.dim, 0),
       _b_momentum(config.dim, 0),
@@ -26,7 +26,6 @@ FullyConnectedLayer::FullyConnectedLayer(
       _is_active(config.dim, false),
       _sampling_config(config.sampling_config),
       _force_sparse_for_inference(false) {
-
   // _is_active = new bool[_dim]();  // TODO(nicholas): bitvector?
   // assert(_is_active != nullptr);
 
@@ -53,7 +52,8 @@ FullyConnectedLayer::FullyConnectedLayer(
     _rand_neurons = std::vector<uint32_t>(_dim);
 
     int rn = 0;
-    std::generate(_rand_neurons.begin(), _rand_neurons.end(), [&]() { return rn++; });
+    std::generate(_rand_neurons.begin(), _rand_neurons.end(),
+                  [&]() { return rn++; });
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
   } else {
     _hasher = nullptr;
@@ -375,7 +375,8 @@ void FullyConnectedLayer::reBuildHashFunction() {
 
 void FullyConnectedLayer::shuffleRandNeurons() {
   if (_sparsity < 1.0) {
-    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), std::random_device{});
+    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(),
+                 std::random_device{});
   }
 }
 
