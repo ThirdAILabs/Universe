@@ -22,7 +22,7 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
 
  private:
   void forward(uint32_t batch_index, const dataset::ClickThroughBatch& inputs,
-               BoltVector& output, int layer_no) final;
+               BoltVector& output) final;
 
   void backpropagate(uint32_t batch_index, dataset::ClickThroughBatch& inputs,
                      BoltVector& output) final;
