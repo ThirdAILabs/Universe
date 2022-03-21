@@ -16,7 +16,7 @@ namespace thirdai::bolt {
 
 class DLRM;
 
-class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
+class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
   friend class DLRM;
 
  public:
@@ -79,11 +79,9 @@ class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
     }
   }
 
-  uint32_t outputDim() const final { return _configs.back().dim; }
+  uint32_t outputDim() const final { return _layers.back()->getDim(); }
 
-  void enableSparseInference() {
-    _layers[_num_layers - 1]->forceSparseForInference();
-  }
+  void enableSparseInference() { _layers.back()->forceSparseForInference(); }
 
   /*
     - Users should be able to set the weights and biases of a particular layer of the network.
@@ -111,7 +109,6 @@ class FullyConnectedNetwork final : public Model<dataset::BoltInputBatch> {
   }
 
  protected:
-  std::vector<FullyConnectedLayerConfig> _configs;
   uint64_t _input_dim;
   std::vector<std::shared_ptr<FullyConnectedLayer>> _layers;
   std::vector<BoltBatch> _states;

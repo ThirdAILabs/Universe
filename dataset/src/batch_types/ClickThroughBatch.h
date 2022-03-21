@@ -17,6 +17,15 @@ class ClickThroughBatch {
   explicit ClickThroughBatch(uint64_t start_id)
       : _batch_size(0), _start_id(start_id) {}
 
+  ClickThroughBatch(std::vector<bolt::BoltVector>&& dense_features,
+                    std::vector<std::vector<uint32_t>>&& categorical_features,
+                    std::vector<bolt::BoltVector>&& labels)
+      : _dense_features(std::move(dense_features)),
+        _categorical_features(std::move(categorical_features)),
+        _labels(std::move(labels)),
+        _batch_size(_dense_features.size()),
+        _start_id(0) {}
+
   const bolt::BoltVector& operator[](uint32_t i) const {
     return _dense_features[i];
   };

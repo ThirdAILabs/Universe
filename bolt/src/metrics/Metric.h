@@ -20,6 +20,8 @@ class Metric {
   virtual double getAndReset(bool verbose) = 0;
 
   virtual std::string getName() = 0;
+
+  virtual ~Metric() = default;
 };
 
 class CategoricalAccuracy final : public Metric {
@@ -73,6 +75,8 @@ class CategoricalAccuracy final : public Metric {
   std::atomic<uint32_t> _num_samples;
 };
 
+using MetricData = std::unordered_map<std::string, std::vector<double>>;
+
 class MetricAggregator {
  public:
   explicit MetricAggregator(const std::vector<std::string>& metrics,
@@ -99,13 +103,11 @@ class MetricAggregator {
     }
   }
 
-  std::unordered_map<std::string, std::vector<double>> getOutput() {
-    return _output;
-  }
+  MetricData getOutput() { return _output; }
 
  private:
   std::vector<std::unique_ptr<Metric>> _metrics;
-  std::unordered_map<std::string, std::vector<double>> _output;
+  MetricData _output;
   bool _verbose;
 };
 

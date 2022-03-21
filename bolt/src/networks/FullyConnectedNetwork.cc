@@ -12,27 +12,25 @@ namespace thirdai::bolt {
 
 FullyConnectedNetwork::FullyConnectedNetwork(
     std::vector<FullyConnectedLayerConfig> configs, uint32_t input_dim)
-    : _configs(std::move(configs)),
-      _input_dim(input_dim),
+    : _input_dim(input_dim),
+      _num_layers(configs.size()),
       _sparse_inference_enabled(false) {
   auto start = std::chrono::high_resolution_clock::now();
-
-  _num_layers = _configs.size();
 
   std::cout << "====== Building Fully Connected Network ======" << std::endl;
 
   for (uint32_t i = 0; i < _num_layers; i++) {
-    uint64_t prev_dim = (i > 0) ? _configs[i - 1].dim : _input_dim;
+    uint64_t prev_dim = (i > 0) ? configs[i - 1].dim : _input_dim;
     if (i < _num_layers - 1) {
-      if (_configs[i].act_func == ActivationFunction::Softmax) {
+      if (configs[i].act_func == ActivationFunction::Softmax) {
         throw std::invalid_argument(
             "Softmax activation function is not supported for hidden layers.");
       }
     }
 
-    std::cout << _configs[i] << std::endl;
+    std::cout << configs[i] << std::endl;
     _layers.push_back(
-        std::make_shared<FullyConnectedLayer>(_configs[i], prev_dim));
+        std::make_shared<FullyConnectedLayer>(configs[i], prev_dim));
   }
 
   auto end = std::chrono::high_resolution_clock::now();

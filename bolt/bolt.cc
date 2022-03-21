@@ -269,7 +269,7 @@ void trainFCN(toml::table& config) {
       test_filename, batch_size, std::move(*test_fac));
 
   for (uint32_t e = 0; e < epochs; e++) {
-    network.train(train_data, loss_fn, learning_rate, 1, rehash, rebuild,
+    network.train(train_data, *loss_fn, learning_rate, 1, rehash, rebuild,
                   train_metrics);
     if (use_sparse_inference && e == sparse_inference_epoch) {
       network.enableSparseInference();
@@ -346,7 +346,7 @@ void trainDLRM(toml::table& config) {
                               categorical_features, top_mlp.back().dim > 1);
 
   for (uint32_t e = 0; e < epochs; e++) {
-    dlrm.train(train_data, loss_fn, learning_rate, 1, rehash, rebuild,
+    dlrm.train(train_data, *loss_fn, learning_rate, 1, rehash, rebuild,
                train_metrics);
     dlrm.predict(test_data, nullptr, test_metrics);
   }

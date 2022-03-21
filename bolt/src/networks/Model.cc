@@ -14,11 +14,11 @@ template class Model<dataset::BoltInputBatch>;
 template class Model<dataset::ClickThroughBatch>;
 
 template <typename BATCH_T>
-std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
+MetricData Model<BATCH_T>::train(
     const dataset::InMemoryDataset<BATCH_T>& train_data,
     // Clang tidy is disabled for this line because it wants to pass by
     // reference, but shared_ptrs should not be passed by reference
-    std::shared_ptr<LossFunction> loss_fn,  // NOLINT
+    const LossFunction& loss_fn,  // NOLINT
     float learning_rate, uint32_t epochs, uint32_t rehash, uint32_t rebuild,
     const std::vector<std::string>& metric_names, bool verbose) {
   uint32_t batch_size = train_data[0].getBatchSize();
@@ -37,8 +37,10 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
   MetricAggregator metrics(metric_names, verbose);
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
-    std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
-    ProgressBar bar(num_train_batches);
+    if (verbose) {
+      std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
+    }
+    ProgressBar bar(num_train_batches, verbose);
     auto train_start = std::chrono::high_resolution_clock::now();
 
     for (uint32_t batch = 0; batch < num_train_batches; batch++) {
@@ -52,7 +54,7 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
       for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
         forward(i, inputs, outputs[i]);
 
-        loss_fn->loss(outputs[i], inputs.labels(i), inputs.getBatchSize());
+        loss_fn.loss(outputs[i], inputs.labels(i), inputs.getBatchSize());
 
         backpropagate(i, inputs, outputs[i]);
 
@@ -77,9 +79,11 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
                              .count();
 
     time_per_epoch.push_back(static_cast<double>(epoch_time));
-    std::cout << std::endl
-              << "Processed " << num_train_batches << " training batches in "
-              << epoch_time << " seconds" << std::endl;
+    if (verbose) {
+      std::cout << std::endl
+                << "Processed " << num_train_batches << " training batches in "
+                << epoch_time << " seconds" << std::endl;
+    }
     _epoch_count++;
 
     metrics.logAndReset();
@@ -92,7 +96,7 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::train(
 }
 
 template <typename BATCH_T>
-std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::predict(
+MetricData Model<BATCH_T>::predict(
     const dataset::InMemoryDataset<BATCH_T>& test_data,
     float* output_activations, const std::vector<std::string>& metric_names,
     bool verbose, uint32_t batch_limit) {
@@ -109,7 +113,7 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::predict(
 
   MetricAggregator metrics(metric_names, verbose);
 
-  ProgressBar bar(num_test_batches);
+  ProgressBar bar(num_test_batches, verbose);
 
   auto test_start = std::chrono::high_resolution_clock::now();
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
@@ -125,7 +129,7 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::predict(
       if (output_activations != nullptr && outputs[i].isDense()) {
         const float* start = outputs[i].activations;
         std::copy(start, start + outputs[i].len,
-                  output_activations + batch * batch_size + i);
+                  output_activations + (batch * batch_size + i) * outputDim());
       }
     }
 
@@ -136,9 +140,12 @@ std::unordered_map<std::string, std::vector<double>> Model<BATCH_T>::predict(
   int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
                           test_end - test_start)
                           .count();
-  std::cout << std::endl
-            << "Processed " << num_test_batches << " test batches in "
-            << test_time << " milliseconds" << std::endl;
+  if (verbose) {
+    std::cout << std::endl
+              << "Processed " << num_test_batches << " test batches in "
+              << test_time << " milliseconds" << std::endl;
+  }
+
   metrics.logAndReset();
 
   auto metric_vals = metrics.getOutput();
