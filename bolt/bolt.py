@@ -1,3 +1,4 @@
+import scipy as sp
 import toml
 import sys
 import os
@@ -5,7 +6,7 @@ from thirdai import bolt, dataset
 import numpy as np
 import numpy.typing as npt
 from sklearn.metrics import roc_auc_score
-from typing import MutableMapping, List, Tuple, Any, Union, Optional
+from typing import MutableMapping, List, Tuple, Any, Optional
 
 
 def create_fully_connected_layer_configs(
@@ -51,23 +52,20 @@ def find_full_filepath(filename: str) -> str:
     sys.exit(1)
 
 
-AnyBoltDataset = Union[dataset.InMemorySparseDataset, dataset.InMemoryDenseDataset]
-
-
 def load_dataset(
     config: MutableMapping[str, Any]
-) -> Optional[Tuple[AnyBoltDataset, AnyBoltDataset]]:
+) -> Optional[Tuple[dataset.BoltDataset, dataset.BoltDataset]]:
     train_filename = find_full_filepath(config["dataset"]["train_data"])
     test_filename = find_full_filepath(config["dataset"]["test_data"])
     batch_size = config["params"]["batch_size"]
     if config["dataset"]["format"].lower() == "svm":
-        train = dataset.load_svm_dataset(train_filename, batch_size)
-        test = dataset.load_svm_dataset(test_filename, batch_size)
+        train = dataset.load_bolt_svm_dataset(train_filename, batch_size)
+        test = dataset.load_bolt_svm_dataset(test_filename, batch_size)
         return train, test
     elif config["dataset"]["format"].lower() == "csv":
         delimiter = config["dataset"].get("delimeter", ",")
-        train = dataset.load_csv_dataset(train_filename, batch_size, delimiter)
-        test = dataset.load_csv_dataset(test_filename, batch_size, delimiter)
+        train = dataset.load_bolt_csv_dataset(train_filename, batch_size, delimiter)
+        test = dataset.load_bolt_csv_dataset(test_filename, batch_size, delimiter)
         return train, test
     else:
         print("Invalid dataset format specified")
@@ -75,7 +73,7 @@ def load_dataset(
 
 
 def load_click_through_dataset(
-    config: MutableMapping[str, Any]
+    config: MutableMapping[str, Any], sparse_labels: bool
 ) -> Tuple[dataset.ClickThroughDataset, dataset.ClickThroughDataset]:
     train_filename = find_full_filepath(config["dataset"]["train_data"])
     test_filename = find_full_filepath(config["dataset"]["test_data"])
@@ -83,10 +81,10 @@ def load_click_through_dataset(
     dense_features = config["dataset"]["dense_features"]
     categorical_features = config["dataset"]["categorical_features"]
     train = dataset.load_click_through_dataset(
-        train_filename, batch_size, dense_features, categorical_features
+        train_filename, batch_size, dense_features, categorical_features, sparse_labels
     )
     test = dataset.load_click_through_dataset(
-        test_filename, batch_size, dense_features, categorical_features
+        test_filename, batch_size, dense_features, categorical_features, sparse_labels
     )
     return train, test
 
@@ -112,7 +110,10 @@ def train_fcn(config: MutableMapping[str, Any]):
     rehash = config["params"]["rehash"]
     rebuild = config["params"]["rebuild"]
     use_sparse_inference = "sparse_inference_epoch" in config["params"].keys()
-    sparse_inference_epoch = config["params"]["sparse_inference_epoch"]
+    if use_sparse_inference:
+        sparse_inference_epoch = config["params"]["sparse_inference_epoch"]
+    else:
+        sparse_inference_epoch = None
 
     data = load_dataset(config)
     if data is None:
@@ -148,9 +149,12 @@ def train_dlrm(config: MutableMapping[str, Any]):
     rehash = config["params"]["rehash"]
     rebuild = config["params"]["rebuild"]
 
-    use_auc = config["params"].get("use_auc", False)
+    use_auc = "use_auc" in config["params"].keys() and config["params"].get(
+        "use_auc", False
+    )
 
-    train, test = load_click_through_dataset(config)
+    use_sparse_labels = config["top_mlp_layers"][-1]["dim"] > 1
+    train, test = load_click_through_dataset(config, use_sparse_labels)
     labels = get_labels(config["dataset"]["test_data"])
 
     for _ in range(epochs):
