@@ -54,7 +54,7 @@ void FullyConnectedNetwork::forward(uint32_t batch_index,
       _layers[0]->forward(input, output, labels);
     } else if (i == 0) {  // First layer
       _layers[0]->forward(input, _states[0][batch_index]);
-    } else if (i == _num_layers - 1 || i == temp_stop - 1) {  // Last layer
+    } else if (i == (int) _num_layers - 1 || i == temp_stop - 1) {  // Last layer
       _layers[i]->forward(_states[i - 1][batch_index], output, labels);
     } else {  // Middle layer
       _layers[i]->forward(_states[i - 1][batch_index], _states[i][batch_index]);
