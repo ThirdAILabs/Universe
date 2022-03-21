@@ -12,7 +12,6 @@ FullyConnectedLayer::FullyConnectedLayer(
     const FullyConnectedLayerConfig& config, uint64_t prev_dim)
     : _dim(config.dim),
       _prev_dim(prev_dim),
-      _max_batch_size(0),
       _sparse_dim(config.sparsity * config.dim),
       _sparsity(config.sparsity),
       _act_func(config.act_func),

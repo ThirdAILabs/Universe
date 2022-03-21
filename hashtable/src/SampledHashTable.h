@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 #include "HashTable.h"
 #include <iostream>
 #include <unordered_set>
@@ -34,6 +36,16 @@ class SampledHashTable final : public HashTable<LABEL_T> {
 
   /** Helper method that inserts a given label into the hash tables */
   void insertIntoTables(LABEL_T label, const uint32_t* hashes);
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<HashTable<LABEL_T>>(this), _num_tables,
+            _reservoir_size, _range, _max_rand, _data, _counters, _gen_rand);
+  }
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
+  SampledHashTable<LABEL_T>(){};
 
  public:
   /**
@@ -106,3 +118,7 @@ class SampledHashTable final : public HashTable<LABEL_T> {
 };
 
 }  // namespace thirdai::hashtable
+
+CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint16_t>);
+CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint32_t>);
+CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint64_t>);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/vector.hpp>
 #include <cctype>
 #include <cmath>
 #include <fstream>
@@ -41,6 +42,14 @@ struct SamplingConfig {
         num_tables(num_tables),
         range_pow(range_pow),
         reservoir_size(reservoir_size) {}
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(hashes_per_table, num_tables, range_pow, reservoir_size);
+  }
 };
 
 struct FullyConnectedLayerConfig {

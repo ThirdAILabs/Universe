@@ -169,3 +169,74 @@ def test_mnist_sparse_hidden():
     accs, times = train(
         args, train_fn=train_mnist_sparse_hidden_layer, accuracy_threshold=0.95
     )
+
+
+@pytest.mark.integration
+def test_load_save_fc_network():
+    layers = [
+        bolt.LayerConfig(
+            dim=1000,
+            load_factor=0.2,
+            activation_function=bolt.ActivationFunctions.ReLU,
+            sampling_config=bolt.SamplingConfig(
+                hashes_per_table=3,
+                num_tables=64,
+                range_pow=9,
+                reservoir_size=32,
+            ),
+        ),
+        bolt.LayerConfig(dim=10, activation_function=bolt.ActivationFunctions.Softmax),
+    ]
+    network = bolt.Network(layers=layers, input_dim=784)
+
+    train_data = dataset.load_bolt_svm_dataset("mnist", 250)
+    test_data = dataset.load_bolt_svm_dataset("mnist.t", 250)
+
+    times = network.train(
+        train_data,
+        bolt.CategoricalCrossEntropyLoss(),
+        0.0001,
+        2,
+        rehash=3000,
+        rebuild=10000,
+        metrics=[],
+        verbose=False,
+    )
+
+    original_acc, _ = network.predict(
+        test_data, metrics=["categorical_accuracy"], verbose=False
+    )
+
+    save_loc = "./bolt_model_save"
+
+    if os.path.exists(save_loc):
+        os.remove(save_loc)
+
+    network.save(save_loc)
+
+    new_network = bolt.Network.load(save_loc)
+
+    new_acc, _ = new_network.predict(
+        test_data, metrics=["categorical_accuracy"], verbose=False
+    )
+
+    assert new_acc["categorical_accuracy"][0] == original_acc["categorical_accuracy"][0]
+
+    new_network.train(
+        train_data,
+        bolt.CategoricalCrossEntropyLoss(),
+        0.0001,
+        2,
+        rehash=3000,
+        rebuild=10000,
+        metrics=[],
+        verbose=False,
+    )
+
+    another_acc, _ = new_network.predict(
+        test_data, metrics=["categorical_accuracy"], verbose=False
+    )
+
+    assert another_acc["categorical_accuracy"][0] >= new_acc["categorical_accuracy"][0]
+
+    os.remove(save_loc)
