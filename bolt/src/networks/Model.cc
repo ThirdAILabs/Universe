@@ -155,6 +155,24 @@ MetricData Model<BATCH_T>::predict(
   return metric_vals;
 }
 
+BoltBatch* getEmbeddings(uint32_t layer_no, const BATCH_T& input_batch, 
+                    uint32_t test_batch_size) {
+
+  // Because of how the datasets are read we know that all batches will not have
+  // a batch size larger than this so we can just set the batch size here.
+  // If sparse inference is not enabled we want the outptus to be dense,
+  // otherwise we want whatever the default for the layer is.
+  initializeNetworkState(test_batch_size, true);
+  BoltBatch outputs = getOutputs(test_batch_size, true, layer_no);
+
+#pragma omp parallel for default(none) \
+    shared(input_batch, outputs, output_activations, layer_no)
+  for (uint32_t i = 0; i < input_batch.getBatchSize(); i++) {
+    forward(i, input_batch, outputs[i], layer_no);
+  }    
+  return outputs;
+}
+
 static constexpr uint32_t RehashAutoTuneThreshold = 100000;
 static constexpr uint32_t RehashAutoTuneFactor1 = 100;
 static constexpr uint32_t RehashAutoTuneFactor2 = 20;

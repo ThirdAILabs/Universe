@@ -60,9 +60,11 @@ class Model {
       // Limit the number of batches used in the dataset
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
+  float* getEmbeddings(uint32_t layer_no, const BATCH_T& input_batch, uint32_t test_batch_size);
+
   // Computes forward path through the network.
   virtual void forward(uint32_t batch_index, const BATCH_T& input,
-                       BoltVector& output) = 0;
+                       BoltVector& output, int layer_no = -1) = 0;
 
   // Backpropagates gradients through the network
   virtual void backpropagate(uint32_t batch_index, BATCH_T& input,
@@ -86,12 +88,17 @@ class Model {
   virtual void shuffleRandomNeurons() = 0;
 
   // Allocates storage for activations and gradients for output layer.
-  virtual BoltBatch getOutputs(uint32_t batch_size, bool force_dense) = 0;
+  virtual BoltBatch getOutputs(uint32_t batch_size, bool force_dense, int layer_no) = 0;
 
   // Gets the dimension of the output layer.
   virtual uint32_t outputDim() const = 0;
 
   virtual ~Model() = default;
+
+  virtual void setWeights(int layer_no, float* weights, int weightsLen) = 0;
+
+  virtual void setBias(int layer_no, float* biases, int biasesLen) = 0;
+
 
  private:
   uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,
