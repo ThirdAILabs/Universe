@@ -69,13 +69,14 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
     }
   }
 
-  BoltBatch getOutputs(uint32_t batch_size, bool force_dense, int layer_no) final {
+  BoltBatch getOutputs(uint32_t batch_size, bool force_dense,
+                       int layer_no) final {
     if (layer_no == -1) {
-      return _layers.back()->createBatchState(batch_size,
-                                            useDenseComputations(force_dense));
+      return _layers.back()->createBatchState(
+          batch_size, useDenseComputations(force_dense));
     } else {
-      return _layers[layer_no]->createBatchState(batch_size,
-                                            useDenseComputations(force_dense));
+      return _layers[layer_no]->createBatchState(
+          batch_size, useDenseComputations(force_dense));
     }
   }
 
@@ -84,16 +85,21 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
   void enableSparseInference() { _layers.back()->forceSparseForInference(); }
 
   /*
-    - Users should be able to set the weights and biases of a particular layer of the network.
-    - The format of the weights to be passed in should be clear and well documented.
-    - replace the weights buffer with input weights buffer if its of the same size. If fails, should return useful error messages on expected format
+    - Users should be able to set the weights and biases of a particular layer
+    of the network.
+    - The format of the weights to be passed in should be clear and well
+    documented.
+    - replace the weights buffer with input weights buffer if its of the same
+    size. If fails, should return useful error messages on expected format
   */
   void setWeights(int layer_no, float* weights, int weightsLen) {
-    std::copy(_layers[layer_no]->getWeights(), _layers[layer_no]->getWeights() + weightsLen, weights);
+    std::copy(_layers[layer_no]->getWeights(),
+              _layers[layer_no]->getWeights() + weightsLen, weights);
   }
 
   void setBias(int layer_no, float* biases, int biasesLen) {
-    std::copy(_layers[layer_no]->getBiases(), _layers[layer_no]->getBiases() + biasesLen, biases);
+    std::copy(_layers[layer_no]->getBiases(),
+              _layers[layer_no]->getBiases() + biasesLen, biases);
   }
 
  private:
