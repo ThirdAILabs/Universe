@@ -1,7 +1,6 @@
 #pragma once
 
 #include "HashTable.h"
-#include <atomic>
 #include <iostream>
 #include <unordered_set>
 #include <vector>
@@ -20,10 +19,9 @@ class SampledHashTable final : public HashTable<LABEL_T> {
  private:
   uint64_t _num_tables, _reservoir_size, _range, _max_rand;
 
-  LABEL_T* _data;
-  std::atomic<uint32_t>* _counters;
-
-  uint32_t* _gen_rand;
+  std::vector<LABEL_T> _data;
+  std::vector<uint32_t> _counters;
+  std::vector<uint32_t> _gen_rand;
 
   constexpr uint64_t CounterIdx(uint64_t table, uint64_t row) const {
     return table * _range + row;
@@ -53,35 +51,6 @@ class SampledHashTable final : public HashTable<LABEL_T> {
   SampledHashTable(const SampledHashTable& other) = delete;
 
   SampledHashTable& operator=(const SampledHashTable& other) = delete;
-
-  SampledHashTable(SampledHashTable&& other)
-      : _num_tables(other._num_tables),
-        _reservoir_size(other._reservoir_size),
-        _range(other._range),
-        _max_rand(other._max_rand),
-        _data(other._data),
-        _counters(other._counters),
-        _gen_rand(other._gen_rand) {
-    other._data = nullptr;
-    other._counters = nullptr;
-    other._gen_rand = nullptr;
-  }
-
-  SampledHashTable& operator=(SampledHashTable&& other) {
-    _num_tables = other._num_tables;
-    _reservoir_size = other._reservoir_size;
-    _range = other._range;
-    _max_rand = other._max_rand;
-    _data = other._data;
-    _counters = other._counters;
-    _gen_rand = other._gen_rand;
-
-    other._data = nullptr;
-    other._counters = nullptr;
-    other._gen_rand = nullptr;
-
-    return *this;
-  }
 
   /**
    * Inserts n elements with the specified labels.
@@ -133,7 +102,7 @@ class SampledHashTable final : public HashTable<LABEL_T> {
 
   inline uint64_t tableRange() const override { return _range; };
 
-  ~SampledHashTable() override;
+  ~SampledHashTable() = default;
 };
 
 }  // namespace thirdai::hashtable

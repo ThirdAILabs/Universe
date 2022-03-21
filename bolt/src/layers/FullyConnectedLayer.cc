@@ -16,62 +16,49 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sparse_dim(config.sparsity * config.dim),
       _sparsity(config.sparsity),
       _act_func(config.act_func),
+      _weights(config.dim*prev_dim),
+      _w_gradient(config.dim*prev_dim, 0),
+      _w_momentum(config.dim*prev_dim, 0),
+      _w_velocity(config.dim*prev_dim, 0),
+      _biases(config.dim),
+      _b_gradient(config.dim, 0),
+      _b_momentum(config.dim, 0),
+      _b_velocity(config.dim, 0),
+      _is_active(config.dim, false),
       _sampling_config(config.sampling_config),
       _force_sparse_for_inference(false) {
-  uint64_t total_size = _dim * _prev_dim;
 
-  _weights = new float[total_size];
-  _w_gradient = new float[total_size]();
-  _w_momentum = new float[total_size]();
-  _w_velocity = new float[total_size]();
-  assert(_weights != nullptr);
-  assert(_w_gradient != nullptr);
-  assert(_w_momentum != nullptr);
-  assert(_w_velocity != nullptr);
-
-  _biases = new float[_dim];
-  _b_gradient = new float[_dim]();
-  _b_momentum = new float[_dim]();
-  _b_velocity = new float[_dim]();
-  assert(_biases != nullptr);
-  assert(_b_gradient != nullptr);
-  assert(_b_momentum != nullptr);
-  assert(_b_velocity != nullptr);
-
-  _is_active = new bool[_dim]();  // TODO(nicholas): bitvector?
-  assert(_is_active != nullptr);
+  // _is_active = new bool[_dim]();  // TODO(nicholas): bitvector?
+  // assert(_is_active != nullptr);
 
   std::random_device rd;
   std::default_random_engine eng(rd());
   std::normal_distribution<float> dist(0.0, 0.01);
 
-  std::generate(_weights, _weights + total_size, [&]() { return dist(eng); });
-  std::generate(_biases, _biases + _dim, [&]() { return dist(eng); });
+  std::generate(_weights.begin(), _weights.end(), [&]() { return dist(eng); });
+  std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
-    _hasher = new hashing::DWTAHashFunction(
+    _hasher = std::make_unique<hashing::DWTAHashFunction>(
         _prev_dim, _sampling_config.hashes_per_table,
         _sampling_config.num_tables, _sampling_config.range_pow);
     assert(_hasher != nullptr);
 
-    _hash_table = new hashtable::SampledHashTable<uint32_t>(
+    _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow);
     assert(_hash_table != nullptr);
 
     buildHashTables();
 
-    _rand_neurons = new uint32_t[_dim];
-    assert(_rand_neurons != nullptr);
-    for (uint32_t i = 0; i < _dim; i++) {
-      _rand_neurons[i] = i;
-    }
+    _rand_neurons = std::vector<uint32_t>(_dim);
 
-    std::shuffle(_rand_neurons, _rand_neurons + _dim, rd);
+    int rn = 0;
+    std::generate(_rand_neurons.begin(), _rand_neurons.end(), [&]() { return rn++; });
+    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
   } else {
     _hasher = nullptr;
     _hash_table = nullptr;
-    _rand_neurons = nullptr;
   }
 }
 
@@ -368,7 +355,7 @@ void FullyConnectedLayer::buildHashTables() {
 
 #pragma omp parallel for default(none) shared(num_tables, hashes)
   for (uint64_t n = 0; n < _dim; n++) {
-    _hasher->hashSingleDense(_weights + n * _prev_dim, _prev_dim,
+    _hasher->hashSingleDense(_weights.data() + n * _prev_dim, _prev_dim,
                              hashes + n * num_tables);
   }
 
@@ -382,57 +369,37 @@ void FullyConnectedLayer::reBuildHashFunction() {
   if (_sparsity >= 1.0) {
     return;
   }
-  delete _hasher;
-
-  _hasher = new hashing::DWTAHashFunction(
+  _hasher = std::make_unique<hashing::DWTAHashFunction>(
       _prev_dim, _sampling_config.hashes_per_table, _sampling_config.num_tables,
       _sampling_config.range_pow);
 }
 
 void FullyConnectedLayer::shuffleRandNeurons() {
   if (_sparsity < 1.0) {
-    std::shuffle(_rand_neurons, _rand_neurons + _dim, std::random_device{});
+    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), std::random_device{});
   }
 }
 
 float* FullyConnectedLayer::getWeights() {
   float* weights_copy = new float[_dim * _prev_dim];
-  std::copy(_weights, _weights + _dim * _prev_dim, weights_copy);
+  std::copy(_weights.begin(), _weights.end(), weights_copy);
 
   return weights_copy;
 }
 
 float* FullyConnectedLayer::getBiases() {
   float* biases_copy = new float[_dim];
-  std::copy(_biases, _biases + _dim, biases_copy);
+  std::copy(_biases.begin(), _biases.end(), biases_copy);
 
   return biases_copy;
 }
 
 void FullyConnectedLayer::setWeights(float* new_weights) {
-  std::copy(new_weights, new_weights + _dim * _prev_dim, _weights);
+  std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
 }
 
 void FullyConnectedLayer::setBiases(float* new_biases) {
-  std::copy(new_biases, new_biases + _dim, _biases);
-}
-
-FullyConnectedLayer::~FullyConnectedLayer() {
-  delete[] _weights;
-  delete[] _w_gradient;
-  delete[] _w_momentum;
-  delete[] _w_velocity;
-
-  delete[] _biases;
-  delete[] _b_gradient;
-  delete[] _b_momentum;
-  delete[] _b_velocity;
-
-  delete[] _is_active;
-
-  delete _hasher;
-  delete _hash_table;
-  delete[] _rand_neurons;
+  std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
 }  // namespace thirdai::bolt

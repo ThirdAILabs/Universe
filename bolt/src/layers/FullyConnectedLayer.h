@@ -66,7 +66,7 @@ class FullyConnectedLayer final {
 
   void setBiases(float* new_biases);
 
-  ~FullyConnectedLayer();
+  virtual ~FullyConnectedLayer() = default;
 
  private:
   template <bool DENSE, bool PREV_DENSE>
@@ -86,22 +86,22 @@ class FullyConnectedLayer final {
   float _sparsity;
   ActivationFunction _act_func;
 
-  float* _weights;
-  float* _w_gradient;
-  float* _w_momentum;
-  float* _w_velocity;
+  std::vector<float> _weights;
+  std::vector<float> _w_gradient;
+  std::vector<float> _w_momentum;
+  std::vector<float> _w_velocity;
 
-  float* _biases;
-  float* _b_gradient;
-  float* _b_momentum;
-  float* _b_velocity;
+  std::vector<float> _biases;
+  std::vector<float> _b_gradient;
+  std::vector<float> _b_momentum;
+  std::vector<float> _b_velocity;
 
-  bool* _is_active;
+  std::vector<bool> _is_active;
 
   SamplingConfig _sampling_config;
-  hashing::DWTAHashFunction* _hasher;
-  hashtable::SampledHashTable<uint32_t>* _hash_table;
-  uint32_t* _rand_neurons;
+  std::unique_ptr<hashing::DWTAHashFunction> _hasher;
+  std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
+  std::vector<uint32_t> _rand_neurons;
 
   bool _force_sparse_for_inference;
 };

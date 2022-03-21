@@ -1,6 +1,7 @@
 #pragma once
 
 #include "HashFunction.h"
+#include <vector>
 
 namespace thirdai::hashing {
 
@@ -8,8 +9,8 @@ class DWTAHashFunction final : public HashFunction {
  private:
   const uint32_t _hashes_per_table, _num_hashes, _dim, _binsize, _log_binsize,
       _permute;
-  uint32_t* _bin_map;
-  uint32_t* _positions;
+  std::vector<uint32_t> _bin_map;
+  std::vector<uint32_t> _positions;
   uint32_t _rand_double_hash_seed;
 
   void compactHashes(const uint32_t* hashes, uint32_t* final_hashes) const;
@@ -25,7 +26,7 @@ class DWTAHashFunction final : public HashFunction {
   void hashSingleDense(const float* values, uint32_t dim,
                        uint32_t* output) const override;
 
-  ~DWTAHashFunction();
+  ~DWTAHashFunction() = default;
 };
 
 }  // namespace thirdai::hashing
