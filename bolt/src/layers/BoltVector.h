@@ -61,6 +61,8 @@ struct BoltVector {
     return vec;
   }
 
+  // TODO(nicholas): delete copy constructor/assignment and make load dataset
+  // return smart pointer
   BoltVector(const BoltVector& other) : len(other.len), _owns_data(true) {
     if (other.active_neurons != nullptr) {
       active_neurons = new uint32_t[len];
@@ -93,6 +95,8 @@ struct BoltVector {
     other.len = 0;
   }
 
+  // TODO(nicholas): delete copy constructor/assignment and make load dataset
+  // return smart pointer
   BoltVector& operator=(const BoltVector& other) {
     if (&other == this) {
       return *this;

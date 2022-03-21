@@ -10,6 +10,11 @@ namespace thirdai::dataset {
 
 static constexpr int CATEGORICAL_FEATURE_BASE = 10;
 
+/**
+ * The click through batch is the format used by the DLRM model. It expects a
+ * label followed by a series of values to be interpreted as a dense vector, and
+ * finally a series of categorical features.
+ */
 class ClickThroughBatch {
   friend class ClickThroughBatchFactory;
 
@@ -45,6 +50,12 @@ class ClickThroughBatch {
 
 class ClickThroughBatchFactory : public Factory<ClickThroughBatch> {
  public:
+  // _sparse_labels controls if we want the label as a single dense value or
+  // as a categorical label. This is because DLRM uses either a single
+  // output neuron and MeanSquaredError in which case the value of label
+  // vector should be the label, or softmax and categorical cross entropy in
+  // which case the index of the label vector should be the label and the
+  // value should be 1.0.
   ClickThroughBatchFactory(uint32_t num_dense_features,
                            uint32_t num_categorical_features,
                            bool sparse_labels)

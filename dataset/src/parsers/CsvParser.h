@@ -33,6 +33,7 @@ class CsvParser {
       const char* const line_end = line.c_str() + line.size();
       char* end;
 
+      // Parse the label (first column of row in csv file).
       uint32_t label = std::strtoul(start, &end, 10);
       if (start == end) {
         throw std::invalid_argument(
@@ -45,6 +46,8 @@ class CsvParser {
             "Invalid dataset file: The line only contains a label.");
       }
       start = end;
+
+      // Parse the vector itself (remaining columns of csv file).
       std::vector<float> values;
       while (start < line_end) {
         if (*start != _delimiter) {

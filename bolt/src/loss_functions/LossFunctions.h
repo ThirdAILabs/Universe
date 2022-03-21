@@ -102,7 +102,10 @@ static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
   if (lower_name == "meansquarederror") {
     return MeanSquaredError::makeMeanSquaredError();
   }
-  throw std::invalid_argument("'" + name + "' is not a valid loss function");
+  throw std::invalid_argument(
+      "'" + name +
+      "' is not a valid loss function. Use CategoricalCrossEntropyLoss or "
+      "MeanSquaredError");
 }
 
 }  // namespace thirdai::bolt
