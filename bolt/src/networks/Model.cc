@@ -155,8 +155,9 @@ MetricData Model<BATCH_T>::predict(
   return metric_vals;
 }
 
-BoltBatch getEmbeddings(uint32_t layer_no, const BoltVector& input_batch,
-                         uint32_t test_batch_size) {
+template <typename BATCH_T>
+BoltBatch Model<BATCH_T>::getEmbeddings(uint32_t layer_no, 
+    const BoltVector& input_batch, uint32_t test_batch_size) {
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
   // If sparse inference is not enabled we want the outptus to be dense,

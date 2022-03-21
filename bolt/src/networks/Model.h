@@ -60,7 +60,7 @@ class Model {
       // Limit the number of batches used in the dataset
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
-  float* getEmbeddings(uint32_t layer_no, const BoltVector& input_batch,
+  BoltBatch getEmbeddings(uint32_t layer_no, const BoltVector& input_batch,
                        uint32_t test_batch_size);
 
   // Computes forward path through the network.
