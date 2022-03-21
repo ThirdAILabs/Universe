@@ -81,6 +81,13 @@ class PyNetwork final : public FullyConnectedNetwork {
     return {metric_data, activations_array};
   }
 
+  BoltBatch getEmbeddings(
+      uint32_t layer_no, const dataset::BoltInputBatch& input_batch, 
+      uint32_t test_batch_size) {
+
+    return getEmbeddings(layer_no, input_batch, test_batch_size);
+  }
+
   std::pair<MetricData,
             py::array_t<float, py::array::c_style | py::array::forcecast>>
   predictWithDenseNumpyArray(
