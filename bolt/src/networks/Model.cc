@@ -165,10 +165,12 @@ BoltBatch Model<BATCH_T>::getEmbeddings(uint32_t layer_no,
   initializeNetworkState(test_batch_size, true);
   BoltBatch outputs = getOutputs(test_batch_size, true, layer_no);
 
+  BATCH_T& inputs = const_cast<BATCH_T&>(input_batch);
+
 #pragma omp parallel for default(none) \
-    shared(input_batch, outputs, layer_no)
-  for (uint32_t i = 0; i < input_batch.getBatchSize(); i++) {
-    forward(i, input_batch, outputs[i], layer_no);
+    shared(inputs, outputs, layer_no)
+  for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
+    forward(i, inputs, outputs[i], layer_no);
   }
   return outputs;
 }
