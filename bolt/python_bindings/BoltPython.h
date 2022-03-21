@@ -197,4 +197,4 @@ class PyDLRM final : public DLRM {
 
 }  // namespace thirdai::bolt::python
 
-CEREAL_REGISTER_TYPE(thirdai::bolt::python::PyNetwork);
+CEREAL_REGISTER_TYPE(thirdai::bolt::python::PyNetwork)

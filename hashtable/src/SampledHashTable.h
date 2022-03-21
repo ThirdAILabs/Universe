@@ -119,6 +119,6 @@ class SampledHashTable final : public HashTable<LABEL_T> {
 
 }  // namespace thirdai::hashtable
 
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint16_t>);
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint32_t>);
-CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint64_t>);
+CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint16_t>)
+CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint32_t>)
+CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint64_t>)
