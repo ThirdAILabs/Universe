@@ -50,12 +50,26 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
     _top_mlp.buildHashTables();
   }
 
-  uint32_t outputDim() const final { return _top_mlp.outputDim(); }
-
   BoltBatch getOutputs(uint32_t batch_size, bool force_dense,
                        int layer_no) final {
     (void)layer_no;
     return _top_mlp.getOutputs(batch_size, force_dense, -1);
+  }
+  
+  void setWeights(int layer_no, float* weights, int weightsLen) {
+    (void) layer_no;
+    (void) weights;
+    (void) weightsLen;
+    std::cout << "setWeights not supported for DLRM" 
+                << std::endl;
+  }
+
+  void setBias(int layer_no, float* biases, int biasesLen) {
+    (void) layer_no;
+    (void) biases;
+    (void) biasesLen;
+    std::cout << "setWeights not supported for DLRM" 
+                << std::endl;
   }
 
   EmbeddingLayer _embedding_layer;
