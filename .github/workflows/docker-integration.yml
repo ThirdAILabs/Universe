@@ -30,4 +30,4 @@ jobs:
           fetch-depth: 0
 
       - name: Build and test the product Docker images
-        run: docker/product/test_all_product_dockers.sh
+        run: docker/product/test_all_product_dockers.sh linux/amd64

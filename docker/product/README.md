@@ -77,7 +77,7 @@ to run basic integration tests as the jovyan user.
 
 For example, you may run
 ```bash
-nohup docker run --rm -p 10000:8888 -v docsearch-work:/home/jovyan/work docsearch:<git-tag> &
+nohup docker run --rm -p 10000:8888 -v docsearch-work:/home/jovyan/work thirdai_docsearch_release:<git-tag> &
 ```
 which will start a Jupyter Lab server in the background and a new Docker volume
 called docsearch-work mounted in /home/jovyan/work. You can cat nohup.out
@@ -88,7 +88,8 @@ command like
 ssh -v -N -L 10000:localhost:10000 <you>@<remote_server>.
 ```
 
-Note that you can run the jupyter notebook containers with GRANT_SUDO=yes
+Note that you can run the jupyter notebook containers with 
+```bash -e GRANT_SUDO=yes ```
 to give the default jovyan user sudo permissions. You may also wish to run 
 the container with --privileged, which speeds up the container to native levels 
 (only do this if you trust the code in the Docker container; here it is just
