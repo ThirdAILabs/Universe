@@ -5,6 +5,10 @@
 namespace thirdai::bolt::tests {
 
 TEST(MetricTest, CategoricalAccuracy) {
+  // For the following test 'metric' is a metric that computes the metric for
+  // all of the samples whereas'single' is checked for each sample. This is to
+  // ensure that both the computed value is per sample and that the overall
+  // value is correct.
   CategoricalAccuracy metric;
   CategoricalAccuracy single;
 
@@ -18,11 +22,13 @@ TEST(MetricTest, CategoricalAccuracy) {
     BoltVector l_b =
         BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 1.0, 0.0});
 
+    // Check correct value is computed for each sample
     single.processSample(a, l_a);
-    ASSERT_DOUBLE_EQ(single.getAndReset(false), 1.0);
+    ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 1.0);
     single.processSample(b, l_b);
-    ASSERT_DOUBLE_EQ(single.getAndReset(false), 0.0);
+    ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.0);
 
+    // Accumulate in overall metric
     metric.processSample(a, l_a);
     metric.processSample(b, l_b);
   }
@@ -37,11 +43,13 @@ TEST(MetricTest, CategoricalAccuracy) {
     BoltVector l_b =
         BoltVector::makeSparseVector({0, 1, 4, 5}, {1.0, 1.0, 1.0, 1.0});
 
+    // Check correct value is computed for each sample
     single.processSample(a, l_a);
-    ASSERT_DOUBLE_EQ(single.getAndReset(false), 1.0);
+    ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 1.0);
     single.processSample(b, l_b);
-    ASSERT_DOUBLE_EQ(single.getAndReset(false), 0.0);
+    ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.0);
 
+    // Accumulate in overall metric
     metric.processSample(a, l_a);
     metric.processSample(b, l_b);
   }
@@ -58,11 +66,13 @@ TEST(MetricTest, CategoricalAccuracy) {
     BoltVector l_b =
         BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 1.0, 0.0});
 
+    // Check correct value is computed for each sample
     single.processSample(a, l_a);
-    ASSERT_DOUBLE_EQ(single.getAndReset(false), 1.0);
+    ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 1.0);
     single.processSample(b, l_b);
-    ASSERT_DOUBLE_EQ(single.getAndReset(false), 0.0);
+    ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.0);
 
+    // Accumulate in overall metric
     metric.processSample(a, l_a);
     metric.processSample(b, l_b);
   }
@@ -79,16 +89,18 @@ TEST(MetricTest, CategoricalAccuracy) {
     BoltVector l_b =
         BoltVector::makeSparseVector({0, 1, 4, 5}, {1.0, 1.0, 1.0, 1.0});
 
+    // Check correct value is computed for each sample
     single.processSample(a, l_a);
-    ASSERT_DOUBLE_EQ(single.getAndReset(false), 1.0);
+    ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 1.0);
     single.processSample(b, l_b);
-    ASSERT_DOUBLE_EQ(single.getAndReset(false), 0.0);
+    ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.0);
 
+    // Accumulate in overall metric
     metric.processSample(a, l_a);
     metric.processSample(b, l_b);
   }
 
-  ASSERT_DOUBLE_EQ(metric.getAndReset(false), 0.5);
+  ASSERT_DOUBLE_EQ(metric.getMetricAndReset(false), 0.5);
 }
 
 }  // namespace thirdai::bolt::tests
