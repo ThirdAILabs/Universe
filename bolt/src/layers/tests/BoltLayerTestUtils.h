@@ -8,6 +8,10 @@
 
 namespace thirdai::bolt::tests {
 
+/**
+ * This is a simple matrix class with basic matrix functions to perform dense
+ * computations to check the outputs for the fully connected layer in bolt.
+ */
 class Matrix {
  public:
   Matrix() {}
@@ -36,6 +40,10 @@ class Matrix {
     }
   }
 
+  // This vectors are intended to represent a sparse batch and so there should
+  // be a vector of sparse indices and values for each row. i.e. the length of
+  // indices and values here should be the batch size as only the inner
+  // dimension (columns) should be sparse.
   explicit Matrix(const std::vector<std::vector<uint32_t>>& indices,
                   const std::vector<std::vector<float>>& values,
                   uint32_t max_col)
@@ -79,7 +87,10 @@ class Matrix {
 
   const float& operator()(uint32_t i, uint32_t j) const {
     if (i >= _rows || j >= _cols) {
-      throw std::out_of_range("Invalid (i,j) for matrix");
+      throw std::out_of_range("Invalid (i,j) = (" + std::to_string(i) + ", " +
+                              std::to_string(j) + ") for matrix of size = (" +
+                              std::to_string(_rows) + ", " +
+                              std::to_string(_cols) + ")");
     }
     return _data.at(i * _row_stride + j * _col_stride);
   }
@@ -106,7 +117,11 @@ class Matrix {
     return Matrix(_cols, _rows, _col_stride, _row_stride, _data);
   }
 
-  void add(const Matrix& other) {
+  // Adds a matrix to the matrix rowwise. This is used for adding the bias
+  // during feedforward. The number of columns in the matrix argument should be
+  // the same as the matrix its being added to, and it should only have a single
+  // row.
+  void addRowwise(const Matrix& other) {
     if (other.nCols() != nCols() || other.nRows() != 1) {
       throw std::invalid_argument("Matrices must have same num cols");
     }

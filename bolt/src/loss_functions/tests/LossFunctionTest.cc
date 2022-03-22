@@ -11,22 +11,25 @@ BoltVector makeVector(const std::vector<uint32_t>& indices,
   return vec;
 }
 
+const uint32_t BATCH_SIZE = 4;
+
 template <typename LOSS>
 void testDenseLabelDenseOutput() {
   BoltVector output = makeVector({}, {0.25, 0.375, 0.5, 0.625, 0.125, 0.875});
   BoltVector labels = makeVector({}, {0.5, 0.25, 0.5, 0.75, 0.0, 0.25});
 
   LOSS loss;
-  loss.loss(output, labels, 4);
+  loss.loss(output, labels, BATCH_SIZE);
 
-  uint32_t factor = 4;
+  uint32_t derivative_coefficient = 1;
   if (std::is_same<LOSS, MeanSquaredError>::value) {
-    factor = 2;
+    derivative_coefficient = 2;
   }
 
   std::vector<float> deltas = {0.25, -0.125, 0.0, 0.125, -0.125, -0.625};
   for (uint32_t i = 0; i < deltas.size(); i++) {
-    ASSERT_FLOAT_EQ(output.gradients[i], deltas.at(i) / factor);
+    ASSERT_FLOAT_EQ(output.gradients[i],
+                    derivative_coefficient * deltas.at(i) / BATCH_SIZE);
   }
 }
 
@@ -36,16 +39,17 @@ void testSparseLabelDenseOutput() {
   BoltVector labels = makeVector({0, 1, 3, 5}, {0.5, 0.25, 0.75, 0.25});
 
   LOSS loss;
-  loss.loss(output, labels, 4);
+  loss.loss(output, labels, BATCH_SIZE);
 
-  uint32_t factor = 4;
+  uint32_t derivative_coefficient = 1;
   if (std::is_same<LOSS, MeanSquaredError>::value) {
-    factor = 2;
+    derivative_coefficient = 2;
   }
 
   std::vector<float> deltas = {0.25, -0.125, -0.5, 0.125, -0.125, -0.625};
   for (uint32_t i = 0; i < deltas.size(); i++) {
-    ASSERT_FLOAT_EQ(output.gradients[i], deltas.at(i) / factor);
+    ASSERT_FLOAT_EQ(output.gradients[i],
+                    derivative_coefficient * deltas.at(i) / BATCH_SIZE);
   }
 }
 
@@ -55,16 +59,17 @@ void testDenseLabelSparseOutput() {
   BoltVector labels = makeVector({}, {0.5, 0.25, 0.5, 0.75, 0.0, 0.25});
 
   LOSS loss;
-  loss.loss(output, labels, 4);
+  loss.loss(output, labels, BATCH_SIZE);
 
-  uint32_t factor = 4;
+  uint32_t derivative_coefficient = 1;
   if (std::is_same<LOSS, MeanSquaredError>::value) {
-    factor = 2;
+    derivative_coefficient = 2;
   }
 
   std::vector<float> deltas = {-0.125, 0.0, -0.125, -0.625};
   for (uint32_t i = 0; i < deltas.size(); i++) {
-    ASSERT_FLOAT_EQ(output.gradients[i], deltas.at(i) / factor);
+    ASSERT_FLOAT_EQ(output.gradients[i],
+                    derivative_coefficient * deltas.at(i) / BATCH_SIZE);
   }
 }
 
@@ -74,16 +79,17 @@ void testSparseLabelSparseOutput() {
   BoltVector labels = makeVector({0, 1, 3, 5}, {0.5, 0.25, 0.75, 0.875});
 
   LOSS loss;
-  loss.loss(output, labels, 4);
+  loss.loss(output, labels, BATCH_SIZE);
 
-  uint32_t factor = 4;
+  uint32_t derivative_coefficient = 1;
   if (std::is_same<LOSS, MeanSquaredError>::value) {
-    factor = 2;
+    derivative_coefficient = 2;
   }
 
   std::vector<float> deltas = {-0.125, -0.5, -0.125, 0.625};
   for (uint32_t i = 0; i < deltas.size(); i++) {
-    ASSERT_FLOAT_EQ(output.gradients[i], deltas.at(i) / factor);
+    ASSERT_FLOAT_EQ(output.gradients[i],
+                    derivative_coefficient * deltas.at(i) / BATCH_SIZE);
   }
 }
 

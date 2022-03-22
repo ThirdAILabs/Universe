@@ -9,6 +9,10 @@ namespace thirdai::dataset {
 
 using bolt::BoltVector;
 
+/**
+ * This class is a dataset batch using the BoltVector data format. This differs
+ * from the BoltBatch because it also includes the labels.
+ */
 class BoltInputBatch {
  public:
   BoltInputBatch(std::vector<BoltVector>&& vectors,
@@ -42,6 +46,9 @@ class BoltSvmBatchFactory : public Factory<BoltInputBatch> {
   SvmParser<BoltVector, BoltVector> _parser;
 
  public:
+  // We can use the SVM parser with takes in functions that construct the
+  // desired vector/label format (in this case BoltVector) from vectors of
+  // indices and values and the labels
   BoltSvmBatchFactory()
       : _parser(BoltVector::makeSparseVector,
                 [](const std::vector<uint32_t>& labels) -> BoltVector {
@@ -67,6 +74,9 @@ class BoltCsvBatchFactory : public Factory<BoltInputBatch> {
   CsvParser<BoltVector, BoltVector> _parser;
 
  public:
+  // We can use the CSV parser with takes in functions that construct the
+  // desired vector/label format (in this case BoltVector) from a vector of
+  // values and the labels.
   explicit BoltCsvBatchFactory(char delimiter)
       : _parser(
             BoltVector::makeDenseVector,

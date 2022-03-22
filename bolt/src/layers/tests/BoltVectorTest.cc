@@ -6,7 +6,8 @@ namespace thirdai::bolt::tests {
 
 constexpr uint32_t VEC_LEN = 100;
 
-void checkVectorsAfterCopy(const BoltVector& a, const BoltVector& b) {
+// a is the original vector, b is where it is copied.
+void checkVectorEqualityAfterCopy(const BoltVector& a, const BoltVector& b) {
   ASSERT_EQ(a.len, b.len);
   ASSERT_EQ(a.active_neurons == nullptr, b.active_neurons == nullptr);
   ASSERT_EQ(a.gradients == nullptr, b.gradients == nullptr);
@@ -23,16 +24,17 @@ void checkVectorsAfterCopy(const BoltVector& a, const BoltVector& b) {
 
 void testCopy(BoltVector& a) {
   BoltVector b(a);  // NOLINT clang tidy complains about copy here
-  checkVectorsAfterCopy(a, b);
+  checkVectorEqualityAfterCopy(a, b);
 }
 
 void testCopyAssign(BoltVector& a) {
   BoltVector b = a;  // NOLINT clang tidy complains about copy here
-  checkVectorsAfterCopy(a, b);
+  checkVectorEqualityAfterCopy(a, b);
 }
 
-void checkVectorsAfterMove(const BoltVector& a, const BoltVector& b, bool dense,
-                           bool has_grad) {
+// a is the original vector, b is where it is moved.
+void checkVectorEqualityAfterMove(const BoltVector& a, const BoltVector& b,
+                                  bool dense, bool has_grad) {
   ASSERT_EQ(a.len, 0);
   ASSERT_EQ(a.active_neurons, nullptr);
   ASSERT_EQ(a.activations, nullptr);
@@ -59,7 +61,7 @@ void testMove(BoltVector& a) {
 
   BoltVector b(std::move(a));
   // Prevent linting because clang tidy doesn't like using a after move
-  checkVectorsAfterMove(a, b, dense, has_grad);  // NOLINT
+  checkVectorEqualityAfterMove(a, b, dense, has_grad);  // NOLINT
 }
 
 void testMoveAssign(BoltVector& a) {
@@ -67,7 +69,7 @@ void testMoveAssign(BoltVector& a) {
   bool has_grad = a.gradients != nullptr;
   BoltVector b = std::move(a);
   // Prevent linting because clang tidy doesn't like using a after move
-  checkVectorsAfterMove(a, b, dense, has_grad);  // NOLINT
+  checkVectorEqualityAfterMove(a, b, dense, has_grad);  // NOLINT
 }
 
 BoltVector makeVectorForTest(bool dense, bool has_grad) {
@@ -85,6 +87,9 @@ BoltVector makeVectorForTest(bool dense, bool has_grad) {
 }
 
 void runTest(const std::function<void(BoltVector&)>& test_func) {
+  // Note that the separate curly braces just make sure each vector is scoped
+  // and so each check is independent without adding a bunch of additional unit
+  // tests.
   {
     // Test sparse with gradients
     BoltVector a = makeVectorForTest(false, true);
