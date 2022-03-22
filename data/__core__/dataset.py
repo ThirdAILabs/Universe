@@ -11,6 +11,7 @@ class Dataset:
   def __init__(self):
     self._batch_size = 1
     self._shuffle = False
+    self._loaded_entire_dataset_in_memory = False
 
   def set_source(self, location: SourceLocation, format: SourceFormat):
     """Determine where the data source is located and its format.
@@ -66,56 +67,57 @@ class Dataset:
     return shared_vec.to_bolt_vector()
 
   def __load_all_and_process(self):
-    file = self.source_location.open()
-    row_generator = self.source_format.rows(file)
+    if not self._loaded_entire_dataset_in_memory:
+      file = self.source_location.open()
+      row_generator = self.source_format.rows(file)
 
-    input_vectors = []
-    target_vectors = None if len(self.schema.target_feature_blocks) == 0 else []
-
-    next_row = next(row_generator)
-    while next_row is not None:
-      input_vec = self.process_row(
-        next_row, 
-        self.returns_dense_input_vector, 
-        self.schema.input_feature_blocks, 
-        self.schema.input_feature_offsets)
-      
-      input_vectors.append(input_vec)
-
-      if target_vectors:
-        target_vec = self.process_row(
-          next_row, 
-          self.returns_dense_target_vector, 
-          self.schema.target_feature_blocks, 
-          self.schema.target_feature_offsets)
-        target_vectors.append(target_vec)
+      self._input_vectors = []
+      self._target_vectors = None if len(self.schema.target_feature_blocks) == 0 else []
 
       next_row = next(row_generator)
+      while next_row is not None:
+        input_vec = self.process_row(
+          next_row, 
+          self.returns_dense_input_vector, 
+          self.schema.input_feature_blocks, 
+          self.schema.input_feature_offsets)
+        
+        self._input_vectors.append(input_vec)
 
-    if self._shuffle and target_vectors:
-      temp = list(zip(input_vectors, target_vectors))
+        if self._target_vectors:
+          target_vec = self.process_row(
+            next_row, 
+            self.returns_dense_target_vector, 
+            self.schema.target_feature_blocks, 
+            self.schema.target_feature_offsets)
+          self._target_vectors.append(target_vec)
+
+        next_row = next(row_generator)
+      
+      self.source_location.close()
+
+      self._loaded_entire_dataset_in_memory = True
+
+    if self._shuffle and self._target_vectors:
+      temp = list(zip(self._input_vectors, self._target_vectors))
       random.shuffle(temp)
-      input_vectors, target_vectors = zip(*temp)
+      self._input_vectors, self._target_vectors = zip(*temp)
       # res1 and res2 come out as tuples, and so must be converted to lists.
-      input_vectors, target_vectors = list(input_vectors), list(target_vectors)
+      self._input_vectors, self._target_vectors = list(self._input_vectors), list(self._target_vectors)
     
     elif self._shuffle:
-      random.shuffle(input_vectors)
+      random.shuffle(self._input_vectors)
     
-    n_batches = (len(input_vectors) + self._batch_size - 1) // self._batch_size
+    n_batches = (len(self._input_vectors) + self._batch_size - 1) // self._batch_size
 
     for batch in range(n_batches):
       start_idx = batch * self._batch_size
-      end_idx = min((batch + 1) * self._batch_size, len(input_vectors))
+      end_idx = min((batch + 1) * self._batch_size, len(self._input_vectors))
 
       yield dataset.BoltInputBatch(
-        input_vectors[start_idx:end_idx], 
-        [] if target_vectors is None else target_vectors[start_idx:end_idx]
+        self._input_vectors[start_idx:end_idx], 
+        [] if self._target_vectors is None else self._target_vectors[start_idx:end_idx]
       )
-    
-    self.source_location.close()
-    
-
 
   def __stream_batch_and_process(self):
     file = self.source_location.open()
