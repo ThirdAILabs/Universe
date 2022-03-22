@@ -10,10 +10,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
-#include <cstddef>
 #include <iostream>
 #include <limits>
-#include <new>
 #include <string>
 #include <unordered_map>
 

@@ -15,7 +15,7 @@ template class Model<dataset::ClickThroughBatch>;
 
 template <typename BATCH_T>
 MetricData Model<BATCH_T>::train(
-    const dataset::InMemoryDataset<BATCH_T>& train_data,
+    dataset::InMemoryDataset<BATCH_T>& train_data,
     // Clang tidy is disabled for this line because it wants to pass by
     // reference, but shared_ptrs should not be passed by reference
     const LossFunction& loss_fn,  // NOLINT
@@ -48,7 +48,7 @@ MetricData Model<BATCH_T>::train(
         shuffleRandomNeurons();
       }
 
-      BATCH_T& inputs = const_cast<BATCH_T&>(train_data[batch]);
+      BATCH_T& inputs = train_data[batch];
 
 #pragma omp parallel for default(none) shared(inputs, outputs, loss_fn, metrics)
       for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
@@ -117,7 +117,7 @@ MetricData Model<BATCH_T>::predict(
 
   auto test_start = std::chrono::high_resolution_clock::now();
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
-    BATCH_T& inputs = const_cast<BATCH_T&>(test_data[batch]);
+    const BATCH_T& inputs = test_data[batch];
 
 #pragma omp parallel for default(none) \
     shared(inputs, outputs, output_activations, metrics, batch, batch_size)

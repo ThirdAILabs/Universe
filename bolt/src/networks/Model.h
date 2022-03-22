@@ -25,7 +25,7 @@ class Model {
    */
   MetricData train(
       // Train dataset
-      const dataset::InMemoryDataset<BATCH_T>& train_data,
+      dataset::InMemoryDataset<BATCH_T>& train_data,
       // Loss function to use
       const LossFunction& loss_fn,
       // Learning rate for training
