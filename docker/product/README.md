@@ -19,6 +19,18 @@ To test all product Dockerfiles to this directory (this also builds them), run
 ./test_all_product_dockers.sh
 ```
 
+Right now our images are all tagged with the git commit id they were build with
+using the result of the command
+ ```bash
+git log -1 --pretty=format:%h
+```
+Thus if you make a new commit and run one of the build scripts, you will build
+new docker images. This also means you should always specify a tag when running
+one of the docker images. To get this tag, you can either list all Docker images
+by running  ```bash docker images ``` and choose the most recent one, or by
+yourself running  ```bash git log -1 --pretty=format:%h```. The build script
+will also print the images it is building.
+
 Once you have built/distributed a product Docker image, you have different 
 options on how to run it.
 You can run any of the commands on https://jupyter-docker-stacks.readthedocs.io/en/latest/
@@ -32,11 +44,11 @@ GRANT_SUDO=yes, and allowing you to specify any user and then copying/linking
 the jovyan home directory.
 You can also run
 ```bash
-docker run --user 1000:100 docsearch -it bash 
+docker run --user 1000:100 docsearch:<git tag> -it bash 
 ```
 to just jump into bash as the jovyan user, and
 ```bash
-docker run --user 1000:100 docsearch pytest
+docker run:<git tag> --user 1000:100 docsearch pytest
 ```
 to run basic integration tests as the jovyan user.
 
@@ -59,4 +71,4 @@ the container with --privileged, which speeds up the container to native levels
 (only do this if you trust the code in the Docker container; here it is just
 ours).
 
-Right now our images are all tagged with the git commit id they were build with.
+<!-- TODO (Josh): We should probably eventually migrate to Docker compose -->

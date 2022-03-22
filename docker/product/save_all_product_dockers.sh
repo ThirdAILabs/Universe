@@ -6,5 +6,6 @@ BASEDIR=$(pwd)
 
 ./build_all_product_dockers.sh
 
-docker save -o $BASEDIR/docsearch.tar docsearch
+REV_TAG=$(git log -1 --pretty=format:%h)
+docker save -o $BASEDIR/docsearch.tar docsearch:$REV_TAG
 gzip $BASEDIR/docsearch.tar

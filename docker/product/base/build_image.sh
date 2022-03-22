@@ -19,3 +19,7 @@ REV_TAG=$(git log -1 --pretty=format:%h)
 
 cd $BASEDIR
 docker build . -t base_product:$REV_TAG
+
+echo "================================================================="
+echo "Built docker image base_product:${REV_TAG}"
+echo "================================================================="

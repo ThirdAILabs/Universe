@@ -9,5 +9,6 @@ BASEDIR=$(pwd)
 
 ./build_all_product_dockers.sh
 
-docker run --user 1000:100 -t base_product /bin/bash -c "pytest ."
-docker run --user 1000:100 -t docsearch /bin/bash -c "pytest ."
+REV_TAG=$(git log -1 --pretty=format:%h)
+docker run --user 1000:100 -t base_product:$REV_TAG /bin/bash -c "pytest ."
+docker run --user 1000:100 -t docsearch:$REV_TAG /bin/bash -c "pytest ."
