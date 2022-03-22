@@ -54,4 +54,4 @@ cd "$BASEDIR/../build"
 
 cmake .. -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE=$BUILD_MODE
 
-make VERBOSE=1 -s -j$NUM_JOBS 
+make $TARGET -s -j$NUM_JOBS

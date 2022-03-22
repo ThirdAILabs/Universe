@@ -28,14 +28,12 @@ add_compile_options(
   $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
 
   $<$<CONFIG:Release>:-DNDEBUG>
-  $<$<CONFIG:Release>:-Ofast>
-  $<$<CONFIG:Release>:-ffast-math>
+  $<$<CONFIG:Release>:-O3>
   $<$<CONFIG:Release>:-funroll-loops>
   $<$<CONFIG:Release>:-ftree-vectorize>
 
   $<$<CONFIG:RelWithDebInfo>:-DNDEBUG>
-  $<$<CONFIG:RelWithDebInfo>:-Ofast>
-  $<$<CONFIG:RelWithDebInfo>:-ffast-math>
+  $<$<CONFIG:RelWithDebInfo>:-O3>
   $<$<CONFIG:RelWithDebInfo>:-funroll-loops>
   $<$<CONFIG:RelWithDebInfo>:-ftree-vectorize>
   $<$<CONFIG:RelWithDebInfo>:-g>
