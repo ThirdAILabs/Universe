@@ -38,7 +38,7 @@ class FullyConnectedLayerTestFixture : public testing::Test {
       : _rng(329),
         _layer(FullyConnectedLayerConfig(LAYER_DIM, 0.25,
                                          ActivationFunction::Linear,
-                                         SamplingConfig(1, 1, 3, 10)),
+                                         SamplingConfig(1, 64, 3, 10)),
                INPUT_DIM) {}
 
   void SetUp() override {
