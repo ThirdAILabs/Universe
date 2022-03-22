@@ -15,5 +15,7 @@ cd ../../../
 # just the .so file, see the DocSearch Dockerfile for more details).
 git archive $CURRENT_BRANCH | bzip2 > $BASEDIR/Universe.tar.bz2
 
+REV_TAG=$(git log -1 --pretty=format:%h)
+
 cd $BASEDIR
-docker build . -t base_product
+docker build . -t base_product:$REV_TAG

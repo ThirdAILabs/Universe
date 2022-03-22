@@ -1,8 +1,9 @@
-FROM base_product
+ARG REV_TAG
+FROM base_product:${REV_TAG}
 LABEL Description="Document Search"
 SHELL ["/bin/bash", "-c"]
 USER root
 RUN \
   apt-get -y update ; \
   apt-get -y install git ; \
-  pip3 install torch pytest numpy tqdm ujson GitPython transformers faiss-cpu pandas ipywidgets; 
+  pip3 install torch tqdm ujson GitPython transformers faiss-cpu pandas ipywidgets; 

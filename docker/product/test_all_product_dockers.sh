@@ -9,5 +9,5 @@ BASEDIR=$(pwd)
 
 ./build_all_product_dockers.sh
 
-docker run -t base_product pytest
-docker run -t docsearch pytest
+docker run --user 1000:100 -t base_product /bin/bash -c "pytest ."
+docker run --user 1000:100 -t docsearch /bin/bash -c "pytest ."
