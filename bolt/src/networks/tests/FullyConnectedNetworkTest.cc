@@ -15,32 +15,32 @@ class FullyConnectedNetworkTestFixture : public testing::Test {
       : _network({FullyConnectedLayerConfig{n_classes, "Softmax"}}, n_classes) {
   }
 
-  static dataset::InMemoryDataset<dataset::DenseBatch> genDataset(
+  static dataset::InMemoryDataset<dataset::BoltInputBatch> genDataset(
       bool add_noise) {
     std::mt19937 gen(892734);
     std::uniform_int_distribution<uint32_t> label_dist(0, n_classes - 1);
     std::normal_distribution<float> data_dist(0, add_noise ? 1.0 : 0.1);
 
-    std::vector<dataset::DenseBatch> batches;
+    std::vector<dataset::BoltInputBatch> batches;
     for (uint32_t b = 0; b < n_batches; b++) {
-      std::vector<std::vector<uint32_t>> labels;
-      std::vector<dataset::DenseVector> vectors;
+      std::vector<bolt::BoltVector> labels;
+      std::vector<bolt::BoltVector> vectors;
       for (uint32_t i = 0; i < batch_size; i++) {
         uint32_t label = label_dist(gen);
-        dataset::DenseVector v(n_classes);
-        std::generate(v._values, v._values + n_classes,
+        bolt::BoltVector v(n_classes, true, false);
+        std::generate(v.activations, v.activations + n_classes,
                       [&]() { return data_dist(gen); });
         if (!add_noise) {
-          v._values[label] += 1.0;
+          v.activations[label] += 1.0;
         }
         vectors.push_back(std::move(v));
-        labels.push_back({label});
+        labels.push_back(BoltVector::makeSparseVector({label}, {1.0}));
       }
       batches.push_back(
-          dataset::DenseBatch(std::move(vectors), std::move(labels), 0));
+          dataset::BoltInputBatch(std::move(vectors), std::move(labels)));
     }
 
-    return dataset::InMemoryDataset<dataset::DenseBatch>(
+    return dataset::InMemoryDataset<dataset::BoltInputBatch>(
         std::move(batches), n_batches * batch_size);
   }
 

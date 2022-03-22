@@ -2,11 +2,8 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <cstddef>
 #include <exception>
 #include <random>
-#include <sstream>
-#include <tuple>
 #include <unordered_map>
 
 namespace thirdai::bolt {
@@ -79,19 +76,19 @@ FullyConnectedLayer::FullyConnectedLayer(
 }
 
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
-                                  const uint32_t* labels, uint32_t label_len) {
+                                  const BoltVector* labels) {
   if (output.active_neurons == nullptr) {
     if (input.len == _prev_dim) {
       // TODO(Nicholas): Re-implement this case with dense matrix library
-      forwardImpl<true, true>(input, output, labels, label_len);
+      forwardImpl<true, true>(input, output, labels);
     } else {
-      forwardImpl<true, false>(input, output, labels, label_len);
+      forwardImpl<true, false>(input, output, labels);
     }
   } else {
     if (input.len == _prev_dim) {
-      forwardImpl<false, true>(input, output, labels, label_len);
+      forwardImpl<false, true>(input, output, labels);
     } else {
-      forwardImpl<false, false>(input, output, labels, label_len);
+      forwardImpl<false, false>(input, output, labels);
     }
   }
 }
@@ -99,8 +96,7 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
 template <bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::forwardImpl(const BoltVector& input,
                                       BoltVector& output,
-                                      const uint32_t* labels,
-                                      uint32_t label_len) {
+                                      const BoltVector* labels) {
   assert((input.len < _prev_dim && !PREV_DENSE) ||
          (input.len == _prev_dim && PREV_DENSE));
   assert((input.active_neurons == nullptr && PREV_DENSE) ||
@@ -108,10 +104,9 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   assert((output.len < _dim && !DENSE) || (output.len == _dim && DENSE));
   assert((output.active_neurons == nullptr && DENSE) ||
          (output.active_neurons != nullptr && !DENSE));
-  assert((labels == nullptr && label_len == 0) ||
-         (labels != nullptr && label_len > 0));
+  assert(labels == nullptr || labels->len > 0);
 
-  selectActiveNeurons<DENSE, PREV_DENSE>(input, output, labels, label_len);
+  selectActiveNeurons<DENSE, PREV_DENSE>(input, output, labels);
 
   float max_act = 0;
   uint32_t len_out = DENSE ? _dim : _sparse_dim;
@@ -259,17 +254,17 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
 template <bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                                               BoltVector& output,
-                                              const uint32_t* labels,
-                                              uint32_t label_len) {
+                                              const BoltVector* labels) {
   if (DENSE) {
     return;
   }
 
   std::unordered_set<uint32_t> active_set;
 
+  uint32_t label_len = labels != nullptr ? labels->len : 0;
   for (uint32_t i = 0; i < label_len; i++) {
-    assert(labels[i] < _dim);
-    active_set.insert(labels[i]);
+    assert(labels->active_neurons[i] < _dim);
+    active_set.insert(labels->active_neurons[i]);
   }
 
   uint32_t* hashes = new uint32_t[_hash_table->numTables()];
@@ -301,8 +296,8 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     if (cnt >= _sparse_dim) {
       break;
     }
-    output.active_neurons[cnt++] = labels[i];
-    active_set.erase(labels[i]);
+    output.active_neurons[cnt++] = labels->active_neurons[i];
+    active_set.erase(labels->active_neurons[i]);
   }
 
   for (auto x : active_set) {
@@ -412,6 +407,14 @@ float* FullyConnectedLayer::getBiases() {
   std::copy(_biases, _biases + _dim, biases_copy);
 
   return biases_copy;
+}
+
+void FullyConnectedLayer::setWeights(float* new_weights) {
+  std::copy(new_weights, new_weights + _dim * _prev_dim, _weights);
+}
+
+void FullyConnectedLayer::setBiases(float* new_biases) {
+  std::copy(new_biases, new_biases + _dim, _biases);
 }
 
 FullyConnectedLayer::~FullyConnectedLayer() {

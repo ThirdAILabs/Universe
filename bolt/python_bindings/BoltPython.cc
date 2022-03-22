@@ -32,21 +32,14 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<std::vector<thirdai::bolt::FullyConnectedLayerConfig>,
                     uint64_t>(),
            py::arg("layers"), py::arg("input_dim"))
-      .def("train", &PyNetwork::train<thirdai::dataset::SparseBatch>,
-           py::arg("train_data"), py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("rehash") = 0, py::arg("rebuild") = 0)
-      .def("train", &PyNetwork::train<thirdai::dataset::DenseBatch>,
-           py::arg("train_data"), py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("rehash") = 0, py::arg("rebuild") = 0)
+      .def("train", &PyNetwork::train, py::arg("train_data"),
+           py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
+           py::arg("rebuild") = 0)
       .def("train", &PyNetwork::trainWithDenseNumpyArray,
            py::arg("train_examples"), py::arg("train_labels"),
            py::arg("batch_size"), py::arg("learning_rate"), py::arg("epochs"),
            py::arg("rehash") = 0, py::arg("rebuild") = 0)
-      .def("predict", &PyNetwork::predict<thirdai::dataset::SparseBatch>,
-           py::arg("test_data"),
-           py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
-      .def("predict", &PyNetwork::predict<thirdai::dataset::DenseBatch>,
-           py::arg("test_data"),
+      .def("predict", &PyNetwork::predict, py::arg("test_data"),
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
       .def("predict", &PyNetwork::predictWithDenseNumpyArray,
            py::arg("test_examples"), py::arg("test_labels"),

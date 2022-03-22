@@ -51,21 +51,10 @@ FullyConnectedNetwork::FullyConnectedNetwork(
   std::cout << "==============================" << std::endl;
 }
 
-template std::vector<int64_t>
-FullyConnectedNetwork::train<dataset::SparseBatch>(
-    const dataset::InMemoryDataset<dataset::SparseBatch>& train_data,
-    float learning_rate, uint32_t epochs, uint32_t rehash_in,
-    uint32_t rebuild_in);
-
-template std::vector<int64_t> FullyConnectedNetwork::train<dataset::DenseBatch>(
-    const dataset::InMemoryDataset<dataset::DenseBatch>& train_data,
-    float learning_rate, uint32_t epochs, uint32_t rehash_in,
-    uint32_t rebuild_in);
-
-template <typename BATCH_T>
 std::vector<int64_t> FullyConnectedNetwork::train(
-    const dataset::InMemoryDataset<BATCH_T>& train_data, float learning_rate,
-    uint32_t epochs, uint32_t rehash_in, uint32_t rebuild_in) {
+    const dataset::InMemoryDataset<dataset::BoltInputBatch>& train_data,
+    float learning_rate, uint32_t epochs, uint32_t rehash_in,
+    uint32_t rebuild_in) {
   uint32_t rehash = rehash_in;
   if (rehash_in == 0) {
     if (train_data.len() < RehashAutoTuneThreshold) {
@@ -96,7 +85,7 @@ std::vector<int64_t> FullyConnectedNetwork::train(
 
   BoltBatch outputs = _layers[_num_layers - 1]->createBatchState(batch_size);
 
-  SparseCategoricalCrossEntropyLoss loss;
+  CategoricalCrossEntropyLoss loss;
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
     std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
@@ -108,20 +97,16 @@ std::vector<int64_t> FullyConnectedNetwork::train(
         shuffleRandomNeurons();
       }
 
-      const BATCH_T& input_batch = train_data[batch];
+      dataset::BoltInputBatch& inputs =
+          const_cast<dataset::BoltInputBatch&>(train_data[batch]);
 
-#pragma omp parallel for default(none) shared(input_batch, outputs, loss)
-      for (uint32_t i = 0; i < input_batch.getBatchSize(); i++) {
-        BoltVector input =
-            BoltVector::makeInputStateFromBatch<BATCH_T>(input_batch, i);
+#pragma omp parallel for default(none) shared(inputs, outputs, loss)
+      for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
+        this->forward(i, inputs[i], outputs[i], &inputs.labels(i));
 
-        this->forward(i, input, outputs[i], input_batch.labels(i).data(),
-                      input_batch.labels(i).size());
+        loss.loss(outputs[i], inputs.labels(i), inputs.getBatchSize());
 
-        loss(outputs[i], input_batch.getBatchSize(),
-             input_batch.labels(i).data(), input_batch.labels(i).size());
-
-        this->backpropagate<true>(i, input, outputs[i]);
+        this->backpropagate<true>(i, inputs[i], outputs[i]);
       }
 
       this->updateParameters(learning_rate);
@@ -152,17 +137,9 @@ std::vector<int64_t> FullyConnectedNetwork::train(
   return time_per_epoch;
 }
 
-template float FullyConnectedNetwork::predict<dataset::SparseBatch>(
-    const dataset::InMemoryDataset<dataset::SparseBatch>& test_data,
-    uint32_t batch_limit);
-
-template float FullyConnectedNetwork::predict<dataset::DenseBatch>(
-    const dataset::InMemoryDataset<dataset::DenseBatch>& test_data,
-    uint32_t batch_limit);
-
-template <typename BATCH_T>
 float FullyConnectedNetwork::predict(
-    const dataset::InMemoryDataset<BATCH_T>& test_data, uint32_t batch_limit) {
+    const dataset::InMemoryDataset<dataset::BoltInputBatch>& test_data,
+    uint32_t batch_limit) {
   uint32_t batch_size = test_data[0].getBatchSize();
 
   uint64_t num_test_batches = std::min(test_data.numBatches(), batch_limit);
@@ -179,13 +156,12 @@ float FullyConnectedNetwork::predict(
 
   auto test_start = std::chrono::high_resolution_clock::now();
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
-    const BATCH_T& input_batch = test_data[batch];
+    dataset::BoltInputBatch& inputs =
+        const_cast<dataset::BoltInputBatch&>(test_data[batch]);
 
-#pragma omp parallel for default(none) shared(input_batch, outputs, correct)
-    for (uint32_t i = 0; i < input_batch.getBatchSize(); i++) {
-      BoltVector input = BoltVector::makeInputStateFromBatch(input_batch, i);
-
-      this->forward(i, input, outputs[i], nullptr, 0);
+#pragma omp parallel for default(none) shared(inputs, outputs, correct)
+    for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
+      this->forward(i, inputs[i], outputs[i], nullptr);
 
       const float* activations = outputs[i].activations;
       float max_act = std::numeric_limits<float>::min();
@@ -203,8 +179,10 @@ float FullyConnectedNetwork::predict(
         }
       }
 
-      if (std::find(input_batch.labels(i).begin(), input_batch.labels(i).end(),
-                    pred) != input_batch.labels(i).end()) {
+      const uint32_t* label_start = inputs.labels(i).active_neurons;
+      const uint32_t* label_end =
+          inputs.labels(i).active_neurons + inputs.labels(i).len;
+      if (std::find(label_start, label_end, pred) != label_end) {
         correct++;
       }
     }
@@ -231,16 +209,14 @@ float FullyConnectedNetwork::predict(
 
 void FullyConnectedNetwork::forward(uint32_t batch_index,
                                     const BoltVector& input, BoltVector& output,
-                                    const uint32_t* labels,
-                                    uint32_t label_len) {
+                                    const BoltVector* labels) {
   for (uint32_t i = 0; i < _num_layers; i++) {
     if (i == 0 && _num_layers == 1) {  // First and last layer
-      _layers[0]->forward(input, output, labels, label_len);
+      _layers[0]->forward(input, output, labels);
     } else if (i == 0) {  // First layer
       _layers[0]->forward(input, _states[0][batch_index]);
     } else if (i == _num_layers - 1) {  // Last layer
-      _layers[i]->forward(_states[i - 1][batch_index], output, labels,
-                          label_len);
+      _layers[i]->forward(_states[i - 1][batch_index], output, labels);
     } else {  // Middle layer
       _layers[i]->forward(_states[i - 1][batch_index], _states[i][batch_index]);
     }

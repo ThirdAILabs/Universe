@@ -94,7 +94,7 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
     output_file.close();
   }
 
-  // void TearDown() override { ASSERT_FALSE(std::remove(_filename.c_str())); }
+  void TearDown() override { ASSERT_FALSE(std::remove(_filename.c_str())); }
 
   static uint32_t getNumDenseFeatures() { return _num_dense_features; }
   static uint32_t getNumCategoricalFeatures() {
@@ -108,21 +108,34 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
   std::uniform_int_distribution<uint32_t> _dense_feature_dist;
   std::uniform_int_distribution<uint32_t> _categorical_feature_dist;
 
-  void verifyBatch(const ClickThroughBatch& batch, uint32_t vec_count_base) {
+  void verifyBatch(const ClickThroughBatch& batch, uint32_t vec_count_base,
+                   bool sparse_labels) {
     ASSERT_TRUE(batch.getBatchSize() == _batch_size ||
                 batch.getBatchSize() == _num_vectors % _batch_size);
 
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
       ASSERT_EQ(batch.id(v), vec_count_base + v);
 
-      ASSERT_EQ(batch.label(v), _vectors.at(vec_count_base + v).label);
-
-      ASSERT_EQ(batch[v].dim(), getNumDenseFeatures());
-      for (uint32_t i = 0; i < getNumDenseFeatures(); i++) {
-        float val = _vectors.at(vec_count_base + v).dense_features.at(i);
-        ASSERT_EQ(batch.at(v)._values[i], val);
+      // Check labels are correct.
+      ASSERT_EQ(batch.label(v).len, 1);
+      if (sparse_labels) {
+        ASSERT_EQ(batch.label(v).active_neurons[0],
+                  _vectors.at(vec_count_base + v).label);
+        ASSERT_EQ(batch.label(v).activations[0], 1.0);
+      } else {
+        ASSERT_EQ(batch.label(v).active_neurons, nullptr);
+        ASSERT_EQ(batch.label(v).activations[0],
+                  _vectors.at(vec_count_base + v).label);
       }
 
+      // CHeck dense features are correct.
+      ASSERT_EQ(batch[v].len, getNumDenseFeatures());
+      for (uint32_t i = 0; i < getNumDenseFeatures(); i++) {
+        float val = _vectors.at(vec_count_base + v).dense_features.at(i);
+        ASSERT_EQ(batch.at(v).activations[i], val);
+      }
+
+      // Check Categorical features are correct.
       ASSERT_EQ(batch.categoricalFeatures(v).size(),
                 getNumCategoricalFeatures());
       for (uint32_t i = 0; i < getNumCategoricalFeatures(); i++) {
@@ -140,29 +153,57 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
                             std::numeric_limits<uint32_t>::max();
 };
 
-TEST_F(ClickThroughDatasetTestFixture, InMemoryDatasetTest) {
+TEST_F(ClickThroughDatasetTestFixture, InMemoryDatasetTestSparseLabel) {
   InMemoryDataset<ClickThroughBatch> dataset(
       _filename, _batch_size,
       ClickThroughBatchFactory(getNumDenseFeatures(),
-                               getNumCategoricalFeatures()));
+                               getNumCategoricalFeatures(), true));
 
   uint32_t vec_count = 0;
   for (const auto& batch : dataset) {
-    verifyBatch(batch, vec_count);
+    verifyBatch(batch, vec_count, true);
     vec_count += batch.getBatchSize();
   }
   ASSERT_EQ(vec_count, _num_vectors);
 }
 
-TEST_F(ClickThroughDatasetTestFixture, StreamedDatasetTest) {
+TEST_F(ClickThroughDatasetTestFixture, InMemoryDatasetTestDenseLabel) {
+  InMemoryDataset<ClickThroughBatch> dataset(
+      _filename, _batch_size,
+      ClickThroughBatchFactory(getNumDenseFeatures(),
+                               getNumCategoricalFeatures(), false));
+
+  uint32_t vec_count = 0;
+  for (const auto& batch : dataset) {
+    verifyBatch(batch, vec_count, false);
+    vec_count += batch.getBatchSize();
+  }
+  ASSERT_EQ(vec_count, _num_vectors);
+}
+
+TEST_F(ClickThroughDatasetTestFixture, StreamedDatasetTestSparseLabel) {
   StreamedDataset<ClickThroughBatch> dataset(
       _filename, _batch_size,
-      std::make_unique<ClickThroughBatchFactory>(getNumDenseFeatures(),
-                                                 getNumCategoricalFeatures()));
+      std::make_unique<ClickThroughBatchFactory>(
+          getNumDenseFeatures(), getNumCategoricalFeatures(), true));
 
   uint32_t vec_count = 0;
   while (auto batch_opt = dataset.nextBatch()) {
-    verifyBatch(*batch_opt, vec_count);
+    verifyBatch(*batch_opt, vec_count, true);
+    vec_count += batch_opt->getBatchSize();
+  }
+  ASSERT_EQ(vec_count, _num_vectors);
+}
+
+TEST_F(ClickThroughDatasetTestFixture, StreamedDatasetTestDenseLabel) {
+  StreamedDataset<ClickThroughBatch> dataset(
+      _filename, _batch_size,
+      std::make_unique<ClickThroughBatchFactory>(
+          getNumDenseFeatures(), getNumCategoricalFeatures(), false));
+
+  uint32_t vec_count = 0;
+  while (auto batch_opt = dataset.nextBatch()) {
+    verifyBatch(*batch_opt, vec_count, false);
     vec_count += batch_opt->getBatchSize();
   }
   ASSERT_EQ(vec_count, _num_vectors);

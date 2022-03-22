@@ -15,14 +15,12 @@ class DLRM {
        std::vector<FullyConnectedLayerConfig> top_mlp_configs,
        uint32_t dense_feature_dim);
 
-  void train(
-      const dataset::InMemoryDataset<dataset::ClickThroughBatch>& train_data,
-      float learning_rate, uint32_t epochs, uint32_t rehash = 0,
-      uint32_t rebuild = 0);
+  void train(dataset::InMemoryDataset<dataset::ClickThroughBatch>& train_data,
+             float learning_rate, uint32_t epochs, uint32_t rehash = 0,
+             uint32_t rebuild = 0);
 
-  void predict(
-      const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
-      float* scores);
+  void predict(dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
+               float* scores);
 
  private:
   void forward(uint32_t batch_index, const BoltVector& dense_input,

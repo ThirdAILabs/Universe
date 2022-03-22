@@ -27,7 +27,7 @@ class FullyConnectedLayer final {
                       uint64_t prev_dim);
 
   void forward(const BoltVector& input, BoltVector& output,
-               const uint32_t* labels = nullptr, uint32_t label_len = 0);
+               const BoltVector* labels = nullptr);
 
   void backpropagate(BoltVector& input, BoltVector& output);
 
@@ -60,19 +60,23 @@ class FullyConnectedLayer final {
 
   float* getBiases();
 
+  void setWeights(float* new_weights);
+
+  void setBiases(float* new_biases);
+
   ~FullyConnectedLayer();
 
  private:
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output,
-                   const uint32_t* labels, uint32_t label_len);
+                   const BoltVector* labels);
 
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
   void backpropagateImpl(BoltVector& input, BoltVector& output);
 
   template <bool DENSE, bool PREV_DENSE>
   void selectActiveNeurons(const BoltVector& input, BoltVector& output,
-                           const uint32_t* labels, uint32_t label_len);
+                           const BoltVector* labels);
 
   constexpr float actFuncDerivative(float x);
 
