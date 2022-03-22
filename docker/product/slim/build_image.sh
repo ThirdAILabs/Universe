@@ -18,8 +18,8 @@ git archive $CURRENT_BRANCH | bzip2 > $BASEDIR/Universe.tar.bz2
 REV_TAG=$(git log -1 --pretty=format:%h)
 
 cd $BASEDIR
-docker build . -t base_product:$REV_TAG
+docker build . -t thirdai_slim_release:$REV_TAG
 
 echo "================================================================="
-echo "Built docker image base_product:${REV_TAG}"
+echo "Built docker image thirdai_slim_release:${REV_TAG}"
 echo "================================================================="

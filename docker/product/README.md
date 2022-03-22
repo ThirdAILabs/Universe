@@ -29,7 +29,9 @@ new docker images. This also means you should always specify a tag when running
 one of the docker images. To get this tag, you can either list all Docker images
 by running  ```bash docker images ``` and choose the most recent one, or by
 yourself running  ```bash git log -1 --pretty=format:%h```. The build script
-will also print the images it is building.
+will also print the images it is building. Note that the git archive that
+creates the base image only works off of the last complete commit, so if you
+want to test changes you need to create a new commit and rerun the build command.
 
 Once you have built/distributed a product Docker image, you have different 
 options on how to run it.
