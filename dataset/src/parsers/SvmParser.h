@@ -26,6 +26,9 @@ class SvmParser {
       const char* start = line.c_str();
       const char* const line_end = line.c_str() + line.size();
       char* end;
+
+      // Parse the labels. The labels are comma separated without spaces.
+      // Ex: 3,4,13
       std::vector<uint32_t> labels;
       do {
         uint32_t label = std::strtoul(start, &end, 10);
@@ -34,6 +37,9 @@ class SvmParser {
       } while ((*start++) == ',');
       labels_out.push_back(this->_label_builder(labels));
 
+      // Parse the vector itself. The elements are given in <index>:<value>
+      // pairs with tabs or spaces between each pair. There should also be a
+      // tab/space between the labels and first pair.
       std::vector<uint32_t> indices;
       std::vector<float> values;
       do {

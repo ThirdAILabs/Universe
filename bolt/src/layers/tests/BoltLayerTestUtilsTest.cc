@@ -39,6 +39,7 @@ TEST(BoltLayerTestUtilsTests, MatrixTranspose) {
   }
 }
 
+// Simple test for matrix multiplication with a 2x3 matrix and a 3x2 matrix
 TEST(BoltLayerTestUtilsTests, MatrixMultiplication1) {
   Matrix a({{1, 2, 3}, {4, 5, 6}});
   Matrix b({{3, 4}, {2, 1}, {7, 4}});
@@ -68,6 +69,7 @@ TEST(BoltLayerTestUtilsTests, MatrixMultiplication1) {
   }
 }
 
+// Simple test for matrix multiplication with a 3x2 matrix and a 2x4 matrix
 TEST(BoltLayerTestUtilsTests, MatrixMultiplication2) {
   Matrix a({{3, 5}, {8, 2}, {1, 9}});
   Matrix b({{3, 4, 2, 1}, {7, 4, 6, 3}});
@@ -101,7 +103,7 @@ TEST(BoltLayerTestUtilsTests, MatrixAdd) {
   Matrix a({{3, 5, 1}, {8, 2, 14}, {1, 9, 7}});
   Matrix b({{3, 7, -2}});
 
-  a.add(b);
+  a.addRowwise(b);
 
   Matrix correct({{6, 12, -1}, {11, 9, 12}, {4, 16, 5}});
 

@@ -42,6 +42,9 @@ class FullyConnectedLayerTestFixture : public testing::Test {
                INPUT_DIM) {}
 
   void SetUp() override {
+    // Initialize the weights and biases to random values. Use decimal powers of
+    // 2 to reduce floating point error and make the tests more deterministic.
+
     std::vector<float> w = genRandomValues(INPUT_DIM * LAYER_DIM);
     _layer.setWeights(w.data());
     _weights = Matrix(LAYER_DIM, INPUT_DIM);
@@ -52,8 +55,6 @@ class FullyConnectedLayerTestFixture : public testing::Test {
     _biases = Matrix(1, LAYER_DIM);
     _biases.init(b);
   }
-
-  void TearDown() override {}
 
   float const* getWeightGradients() { return _layer._w_gradient; }
 
@@ -155,7 +156,7 @@ TEST_F(FullyConnectedLayerTestFixture, DenseDenseTest) {
   }
 
   Matrix correct_act = _input_matrix.multiply(_weights.transpose());
-  correct_act.add(_biases);
+  correct_act.addRowwise(_biases);
 
   for (uint32_t b = 0; b < BATCH_SIZE; b++) {
     ASSERT_EQ(outputs[b].len, LAYER_DIM);
@@ -201,7 +202,7 @@ TEST_F(FullyConnectedLayerTestFixture, SparseDenseTest) {
   }
 
   Matrix correct_act = _input_matrix.multiply(_weights.transpose());
-  correct_act.add(_biases);
+  correct_act.addRowwise(_biases);
 
   for (uint32_t b = 0; b < BATCH_SIZE; b++) {
     ASSERT_EQ(outputs[b].len, LAYER_DIM);
@@ -248,7 +249,7 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSparseTest) {
   }
 
   Matrix correct_act = _input_matrix.multiply(_weights.transpose());
-  correct_act.add(_biases);
+  correct_act.addRowwise(_biases);
 
   for (uint32_t b = 0; b < BATCH_SIZE; b++) {
     ASSERT_EQ(outputs[b].len, SPARSE_LAYER_DIM);
@@ -296,7 +297,7 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSparseTest) {
   }
 
   Matrix correct_act = _input_matrix.multiply(_weights.transpose());
-  correct_act.add(_biases);
+  correct_act.addRowwise(_biases);
 
   for (uint32_t b = 0; b < BATCH_SIZE; b++) {
     ASSERT_EQ(outputs[b].len, SPARSE_LAYER_DIM);

@@ -56,6 +56,9 @@ class SvmSparseBatchFactory : public Factory<SparseBatch> {
   SvmParser<SparseVector, std::vector<uint32_t>> _parser;
 
  public:
+  // We can use the SVM parser with takes in functions that construct the
+  // desired vector/label format (in this case SparseVector and a regular
+  // vector) from vectors of indices and values and the labels.
   SvmSparseBatchFactory()
       : _parser(
             [](const std::vector<uint32_t>& indices,
