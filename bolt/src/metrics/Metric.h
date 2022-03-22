@@ -12,6 +12,7 @@
 
 namespace thirdai::bolt {
 
+// Metric interface
 class Metric {
  public:
   // Computes and updates the value of the metric given the sample.
