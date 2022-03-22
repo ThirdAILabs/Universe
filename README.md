@@ -12,7 +12,8 @@ directory. e.g. the mpi_example executable will be in
 `Universe/build/examples/mpi-example/mpi_example`. By default this will
 run in parallel and build all unbuilt targets or targets whose component source
 files have been updated, but you can pass in parameters to run in serial or build
-only a specific target. See the source of `$ bin/build.sh` for more details.
+only a specific target. You can also build in Debug or RelWithDebInfo, see the 
+source of `$ bin/build.sh` for more details.
 2. Run `$ bin/cpp-test.sh` from anywhere to have cmake run all c++ tests. To run specific
 tests, you can also pass a regular expression to filter tests 
 (or provide an explicit test name):
@@ -47,7 +48,7 @@ some issues with existing cache information if you have last build on your local
 machine, and you may need to run a clean build or delete your build folder.
 
 ## Debugging with GDB and ASan from Python
-1. Do a debug build. If you try to run a python test at this point, you may
+1. Do a Debug or RelWithDebInfo build. If you try to run a python test at this point, you may
 encounter errors or the python test won't run at all.
 2. Run `export LD_PRELOAD=$(gcc -print-file-name=libasan.so):$LD_PRELOAD`. This
 is NOT run automatically when you startup a development docker container, as 
@@ -63,6 +64,9 @@ get run automatically as part of the docker container.
 and ASan will run.
 See https://github.com/google/sanitizers/issues/1086 and 
 https://github.com/tobywf/python-ext-asan for more details.
+5. Alternatively, instead of steps 2 and 3, you can just comment out the lines
+that enable ASan in CMakeLists.txt before you do a debug build. This is a bit
+simpler but won't check illegal memory accesses.
 
 
 ## Manual building and testing (DEPRECATED, use scripts in bin, see above)
