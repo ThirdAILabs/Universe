@@ -30,8 +30,4 @@ jobs:
           fetch-depth: 0
 
       - name: Build and test the DocSearch Docker image
-        run: |
-          cd docker/docsearch
-          ./create_docsearch_dir.sh
-          docker build -t docsearch .
-          docker run --privileged docsearch pytest
+        run: ./Universe/docker/product/test_all_product_dockers.sh

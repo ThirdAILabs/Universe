@@ -10,18 +10,19 @@ RUN apt-get update --yes ; \
     build-essential \
     git \
     curl \
-    cmake \
-    gdb ;
-RUN cd /Universe ; \
-    bin/build.sh ;
+    cmake
+RUN /Universe/bin/build.sh
 
 
 FROM jupyter/base-notebook:python-3.9.10
 LABEL Description="Document Search"
 SHELL ["/bin/bash", "-c"]
 USER root
-RUN pip3 install torch pytest numpy
 COPY --from=0 /Universe/build/thirdai.cpython-* ./
-# This line is temporary, eventually we will test with a custom script
-COPY --from=0 /Universe/flash/python_tests/*doc_retrieval* ./
-RUN echo "export PYTHONPATH=~" >> ~/.bashrc
+COPY thirdai_smoke_test.py ./thirdai_smoke_test/test.py
+RUN echo "export PYTHONPATH=~" >> ~/.bashrc ; 
+USER jovyan
+RUN \
+    ipython profile create ; \
+    echo "c.InteractiveShellApp.exec_lines = ['import sys; sys.path.insert(0, \'/home/jovyan\'); sys.path.insert(0, \'/home/jovyan/msmarco/colbert_modified\')']" \
+      >> ~/.ipython/profile_default/ipython_config.py
