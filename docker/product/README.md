@@ -54,7 +54,7 @@ to run basic integration tests as the jovyan user.
 
 For example, you may run
 ```bash
-nohup docker run --rm -p 10000:8888 -v docsearch-work:/home/jovyan/work docsearch &
+nohup docker run --rm -p 10000:8888 -v docsearch-work:/home/jovyan/work docsearch:<git-tag> &
 ```
 which will start a Jupyter Lab server in the background and a new Docker volume
 called docsearch-work mounted in /home/jovyan/work. You can cat nohup.out
