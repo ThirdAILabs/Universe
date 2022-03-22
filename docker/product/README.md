@@ -1,22 +1,40 @@
 # Product Dockerfile Instructions
 
-To build a product Dockerfile, run the build_image.sh script in the respective
-sub directory. All product Dockerfiles are based on the Dockerfile in the base
-folder. Note that the integration test currently runs pytest in the base 
+<!-- TODO (Josh): We should probably eventually migrate to Docker compose -->
+
+## What are all of these Dockerfiles?
+
+There are a number of Docker images in this folder. The slim folder contains
+the smallest, and is basically just an Ubuntu image with python, pip, and the 
+thirdai.so file. The base_jupyter folder contains a base interactive docker
+image with justour thirdai.so file (copied from slim). Other folders contain 
+images that extend one of these two images. These are our product images.
+
+## How do I build/test/save a Dockerfile?
+
+To build one of the Dockerfiles, run the build_image.sh script in the respective
+sub directory. If you are on m1, you may also need to pass in linux/arm64
+as the first positional argument into the script, which will forward it to
+the Docker build command (Docker's automatic platform detection doesn't always 
+seem to work, although you are free to try it by just leaving this field 
+blank). Passing in the build platform also allows you to build a 
+different platform than the one you are currently on, if that is supported.
+
+Note that the github actions integration test currently runs pytest in the base 
 directory of the image (the home directory), so put any python tests you want to
 run in a subdirectory and call them test_<test name>.py, like normal pytest tests.
 
 To build all product Dockerfiles, run
 ```bash
-./build_all_product_dockers.sh
+./build_all_product_dockers.sh <platform, one of linux/arm64|linux/amd64|etc>
 ```
 To save and zip all product Dockerfiles to this directory (this also builds them), run
  ```bash
-./save_all_product_dockers.sh
+./save_all_product_dockers.sh <platform>
 ```
 To test all product Dockerfiles to this directory (this also builds them), run
  ```bash
-./test_all_product_dockers.sh
+./test_all_product_dockers.sh <platform>
 ```
 
 Right now our images are all tagged with the git commit id they were build with
@@ -29,9 +47,12 @@ new docker images. This also means you should always specify a tag when running
 one of the docker images. To get this tag, you can either list all Docker images
 by running  ```bash docker images ``` and choose the most recent one, or by
 yourself running  ```bash git log -1 --pretty=format:%h```. The build script
-will also print the images it is building. Note that the git archive that
-creates the base image only works off of the last complete commit, so if you
-want to test changes you need to create a new commit and rerun the build command.
+will also print the full name (including the tag) of the images it is building. 
+Note that the git archive that creates the base image only works off of the last 
+complete commit, so if you want to test changes you need to create a new commit 
+and rerun the build command.
+
+## How do I run a Dockerfiles?
 
 Once you have built/distributed a product Docker image, you have different 
 options on how to run it.
@@ -72,5 +93,3 @@ to give the default jovyan user sudo permissions. You may also wish to run
 the container with --privileged, which speeds up the container to native levels 
 (only do this if you trust the code in the Docker container; here it is just
 ours).
-
-<!-- TODO (Josh): We should probably eventually migrate to Docker compose -->
