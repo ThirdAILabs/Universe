@@ -12,12 +12,9 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
-#include <cstddef>
 #include <fstream>
 #include <iostream>
 #include <limits>
-#include <memory>
-#include <new>
 #include <string>
 #include <unordered_map>
 
@@ -49,40 +46,6 @@ class PyNetwork final : public FullyConnectedNetwork {
     // Prent clang tidy because it wants to pass the smart pointer by reference
     return train(data, loss_fn, learning_rate, epochs, rehash,  // NOLINT
                  rebuild, metrics, verbose);
-  }
-
-  std::pair<MetricData, py::object> predict(
-      const dataset::InMemoryDataset<dataset::BoltInputBatch>& test_data,
-      const std::vector<std::string>& metrics = {}, bool verbose = true,
-      uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
-    uint32_t num_samples = test_data.len();
-
-    float* activations;
-    try {
-      activations = new float[num_samples * outputDim()];
-    } catch (std::bad_alloc& e) {
-      activations = nullptr;
-      std::cout << "Out of memory error: cannot allocate " << num_samples
-                << " x " << outputDim() << " array for activations"
-                << std::endl;
-    }
-
-    auto metric_data = FullyConnectedNetwork::predict(
-        test_data, activations, metrics, verbose, batch_limit);
-
-    if (activations == nullptr) {
-      return {metric_data, py::none()};
-    }
-
-    py::capsule free_when_done(
-        activations, [](void* ptr) { delete static_cast<float*>(ptr); });
-
-    py::array_t<float> activations_array(
-        {num_samples, outputDim()},
-        {outputDim() * sizeof(float), sizeof(float)}, activations,
-        free_when_done);
-
-    return {metric_data, activations_array};
   }
 
   std::pair<MetricData,
@@ -126,6 +89,40 @@ class PyNetwork final : public FullyConnectedNetwork {
     return {metric_data, activations_array};
   }
 
+  std::pair<MetricData, py::object> predict(
+      const dataset::InMemoryDataset<dataset::BoltInputBatch>& test_data,
+      const std::vector<std::string>& metrics = {}, bool verbose = true,
+      uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
+    uint32_t num_samples = test_data.len();
+
+    float* activations;
+    try {
+      activations = new float[num_samples * outputDim()];
+    } catch (std::bad_alloc& e) {
+      activations = nullptr;
+      std::cout << "Out of memory error: cannot allocate " << num_samples
+                << " x " << outputDim() << " array for activations"
+                << std::endl;
+    }
+
+    auto metric_data = FullyConnectedNetwork::predict(
+        test_data, activations, metrics, verbose, batch_limit);
+
+    if (activations == nullptr) {
+      return {metric_data, py::none()};
+    }
+
+    py::capsule free_when_done(
+        activations, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+    py::array_t<float> activations_array(
+        {num_samples, outputDim()},
+        {outputDim() * sizeof(float), sizeof(float)}, activations,
+        free_when_done);
+
+    return {metric_data, activations_array};
+  }
+
   void save(const std::string& filename) {
     std::ofstream filestream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
@@ -147,6 +144,7 @@ class PyNetwork final : public FullyConnectedNetwork {
   void serialize(Archive& archive) {
     archive(cereal::base_class<FullyConnectedNetwork>(this));
   }
+
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   PyNetwork() : FullyConnectedNetwork(){};
 };

@@ -60,6 +60,9 @@ class CsvDenseBatchFactory : public Factory<DenseBatch> {
   CsvParser<DenseVector, std::vector<uint32_t>> _parser;
 
  public:
+  // We can use the CSV parser with takes in functions that construct the
+  // desired vector/label format (in this case DenseVector and a regular
+  // vector) from a vector of alues and the labels.
   explicit CsvDenseBatchFactory(char delimiter)
       : _parser(
             [](const std::vector<float>& values) -> DenseVector {

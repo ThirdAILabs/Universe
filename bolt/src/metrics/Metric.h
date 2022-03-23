@@ -12,18 +12,28 @@
 
 namespace thirdai::bolt {
 
+// Metric interface
 class Metric {
  public:
+  // Computes and updates the value of the metric given the sample.
+  // For instance this may update the accuracy.
   virtual void processSample(const BoltVector& output,
                              const BoltVector& labels) = 0;
 
-  virtual double getAndReset(bool verbose) = 0;
+  // Returns the value of the metric and resets it. For instance this would be
+  // called ad the end of each epoch.
+  virtual double getMetricAndReset(bool verbose) = 0;
 
+  // Returns the name of the metric.
   virtual std::string getName() = 0;
 
   virtual ~Metric() = default;
 };
 
+/**
+ * The categorical accuracy is the accuracy @1 which measures for what fraction
+ * of the samples the neuron with the highest activation is in the labels.
+ */
 class CategoricalAccuracy final : public Metric {
  public:
   CategoricalAccuracy() : _correct(0), _num_samples(0) {}
@@ -38,14 +48,18 @@ class CategoricalAccuracy final : public Metric {
       }
     }
 
+    // The nueron with the largest activation is the prediction
     uint32_t pred =
         output.isDense() ? max_act_index : output.active_neurons[max_act_index];
 
     if (labels.isDense()) {
+      // If labels are dense we check if the predection has a non-zero label.
       if (labels.activations[pred] > 0) {
         _correct++;
       }
     } else {
+      // If the labels are sparse then we have to search the list of labels for
+      // the prediction.
       const uint32_t* label_start = labels.active_neurons;
       const uint32_t* label_end = labels.active_neurons + labels.len;
       if (std::find(label_start, label_end, pred) != label_end) {
@@ -55,7 +69,7 @@ class CategoricalAccuracy final : public Metric {
     _num_samples++;
   }
 
-  double getAndReset(bool verbose) final {
+  double getMetricAndReset(bool verbose) final {
     double acc = static_cast<double>(_correct) / _num_samples;
     if (verbose) {
       std::cout << "Accuracy: " << acc << " (" << _correct << "/"
@@ -66,9 +80,9 @@ class CategoricalAccuracy final : public Metric {
     return acc;
   }
 
-  static constexpr const char* _name = "categorical_accuracy";
+  static constexpr const char* name = "categorical_accuracy";
 
-  std::string getName() final { return _name; }
+  std::string getName() final { return name; }
 
  private:
   std::atomic<uint32_t> _correct;
@@ -83,7 +97,7 @@ class MetricAggregator {
                             bool verbose = true)
       : _verbose(verbose) {
     for (const auto& name : metrics) {
-      if (name == CategoricalAccuracy::_name) {
+      if (name == CategoricalAccuracy::name) {
         _metrics.push_back(std::make_unique<CategoricalAccuracy>());
       } else {
         throw std::invalid_argument("'" + name + "' is not a valid metric.");
@@ -99,7 +113,7 @@ class MetricAggregator {
 
   void logAndReset() {
     for (auto& m : _metrics) {
-      _output[m->getName()].push_back(m->getAndReset(_verbose));
+      _output[m->getName()].push_back(m->getMetricAndReset(_verbose));
     }
   }
 
