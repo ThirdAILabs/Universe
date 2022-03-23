@@ -39,9 +39,7 @@ RUN \
     sudo \
     python3 \
     libgomp1 \
-    pip ; \
-    # Numpy adds extra 60 MB but we need it for our method calls
-    pip3 install pytest numpy;
+    pip ;
 
 # Swtich to to new thirdai user
 USER thirdai
