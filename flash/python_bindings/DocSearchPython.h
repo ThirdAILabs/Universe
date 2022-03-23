@@ -4,7 +4,7 @@
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/HashFunction.h>
 #include <dataset/python_bindings/DatasetPython.h>
-#include <flash/src/MaxFlashArray.h>
+#include <flash/src/DocSearch.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -21,51 +21,45 @@ using thirdai::dataset::python::wrapNumpyIntoDenseBatch;
 
 // TODO(josh): Make uint8_t configurable, will currently cut off all documents
 // at 256 embeddings
-class PyMaxFlashArray final : public MaxFlashArray<uint8_t> {
+class PyDocSearch final : public DocSearch {
  public:
-  PyMaxFlashArray(uint32_t hashes_per_table, uint32_t num_tables,
-                  uint32_t dense_input_dimension,
-                  uint32_t max_allowable_doc_size)
-      : MaxFlashArray<uint8_t>(
-            new thirdai::hashing::FastSRP(dense_input_dimension,
-                                          hashes_per_table, num_tables),
-            hashes_per_table, max_allowable_doc_size) {}
+  PyDocSearch(const std::vector<std::vector<float>>& centroids,
+              uint32_t hashes_per_table, uint32_t num_tables,
+              uint32_t dense_dim)
+      : DocSearch(hashes_per_table, num_tables, dense_dim, centroids) {}
 
-  uint64_t addDocument(
+  bool addDocument(
+      const std::string& doc_id, const std::string& doc_text,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
-          data) {
-    return MaxFlashArray<uint8_t>::addDocument(
-        wrapNumpyIntoDenseBatch(data, 0));
+          embeddings) {
+    return DocSearch::addDocument(wrapNumpyIntoDenseBatch(embeddings, 0),
+                                  doc_id, doc_text);
   }
 
-  py::array rankDocuments(
+  bool addDocumentWithCentroids(
+      const std::string& doc_id, const std::string& doc_text,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
-          queries,
-      const std::vector<uint32_t>& flashes_to_query) {
-    auto query_batch = wrapNumpyIntoDenseBatch(queries, 0);
-    std::vector<float> sim_sums = MaxFlashArray<uint8_t>::getDocumentScores(
-        query_batch, flashes_to_query);
+          embeddings,
+      const std::vector<uint32_t>& centroid_ids) {
+    return DocSearch::addDocument(wrapNumpyIntoDenseBatch(embeddings, 0),
+                                  centroid_ids, doc_id, doc_text);
+  }
 
-    std::vector<size_t> idx(sim_sums.size());
-    std::iota(idx.begin(), idx.end(), 0);
+  bool deleteDocument(const std::string& doc_id) {
+    return DocSearch::deleteDocument(doc_id);
+  }
 
-    // sort indexes based on comparing values in v
-    // using std::stable_sort instead of std::sort
-    // to avoid unnecessary index re-orderings
-    // when v contains elements of equal values
-    std::stable_sort(idx.begin(), idx.end(), [&sim_sums](size_t i1, size_t i2) {
-      return sim_sums[i1] > sim_sums[i2];
-    });
+  std::optional<std::string> getDocument(const std::string& doc_id) {
+    return DocSearch::getDocument(doc_id);
+  }
 
-    assert(flashes_to_query.size() == idx.size());
-    std::vector<uint32_t> final_result(flashes_to_query.size());
-    for (uint32_t i = 0; i < final_result.size(); i++) {
-      final_result[i] = flashes_to_query.at(idx[i]);
-    }
-
-    auto to_return = py::cast(std::move(final_result));
-
-    return to_return;
+  py::array query(
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          embeddings,
+      uint64_t top_k) {
+    std::vector<std::pair<std::string, std::string>> result =
+        DocSearch::query(wrapNumpyIntoDenseBatch(embeddings, 0), top_k);
+    return py::cast(std::move(result));
   }
 
   void serialize_to_file(const std::string& path) {
@@ -74,11 +68,11 @@ class PyMaxFlashArray final : public MaxFlashArray<uint8_t> {
     oarchive(*this);
   }
 
-  static std::unique_ptr<PyMaxFlashArray> deserialize_from_file(
+  static std::unique_ptr<PyDocSearch> deserialize_from_file(
       const std::string& path) {
     std::ifstream filestream(path, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<PyMaxFlashArray> serialize_into(new PyMaxFlashArray());
+    std::unique_ptr<PyDocSearch> serialize_into(new PyDocSearch());
     iarchive(*serialize_into);
     return serialize_into;
   }
@@ -89,10 +83,10 @@ class PyMaxFlashArray final : public MaxFlashArray<uint8_t> {
   template <class Archive>
   void serialize(Archive& ar) {
     // See https://uscilab.github.io/cereal/inheritance.html
-    ar(cereal::base_class<MaxFlashArray<uint8_t>>(this));
+    ar(cereal::base_class<DocSearch>(this));
   }
-  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
-  PyMaxFlashArray() : MaxFlashArray<uint8_t>() {}
+  // Private constructor to construct an empty object for Cereal.
+  PyDocSearch() : DocSearch() {}
 };
 
 }  // namespace thirdai::search::python

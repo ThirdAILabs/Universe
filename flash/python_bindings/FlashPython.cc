@@ -1,5 +1,6 @@
 #include "FlashPython.h"
 #include "DocSearchPython.h"
+#include <pybind11/stl.h>
 
 namespace thirdai::search::python {
 
@@ -38,20 +39,25 @@ void createSearchSubmodule(py::module_& module) {
            "approximate top_k neighbors as a row for each of the passed in "
            "queries.");
 
-  // TODO(josh): Right now this only has support for dense input
-  py::class_<PyMaxFlashArray>(search_submodule, "doc_retrieval_index")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
-           py::arg("hashes_per_table"), py::arg("num_tables"),
-           py::arg("dense_input_dimension"),
-           py::arg("max_allowable_doc_size") = 256)
-      .def("add_document", &PyMaxFlashArray::addDocument,
-           py::arg("document_embeddings"))
-      .def("rank_documents", &PyMaxFlashArray::rankDocuments,
-           py::arg("query_embeddings"), py::arg("document_ids_to_rank"))
-      .def("serialize_to_file", &PyMaxFlashArray::serialize_to_file,
+  // TODO(josh): Right now this only has support for dense input and documents
+  // with a max of 256 embeddings, and can not be parallilized
+  py::class_<PyDocSearch>(search_submodule, "doc_retrieval_index")
+      .def(py::init<const std::vector<std::vector<float>>&, uint32_t, uint32_t,
+                    uint32_t>(),
+           py::arg("centroids"), py::arg("hashes_per_table"),
+           py::arg("num_tables"), py::arg("dense_input_dimension"))
+      .def("add_document", &PyDocSearch::addDocumentWithCentroids,
+           py::arg("doc_id"), py::arg("doc_text"),
+           py::arg("document_embeddings"), py::arg("centroid_ids"))
+      .def("add_document", &PyDocSearch::addDocument, py::arg("doc_id"),
+           py::arg("doc_text"), py::arg("document_embeddings"))
+      .def("delete_document", &PyDocSearch::deleteDocument, py::arg("doc_id"))
+      .def("get_document", &PyDocSearch::getDocument, py::arg("doc_id"))
+      .def("query", &PyDocSearch::query, py::arg("query_embeddings"),
+           py::arg("top_k"))
+      .def("serialize_to_file", &PyDocSearch::serialize_to_file,
            py::arg("output_path"))
-      .def_static("deserialize_from_file",
-                  &PyMaxFlashArray::deserialize_from_file,
+      .def_static("deserialize_from_file", &PyDocSearch::deserialize_from_file,
                   py::arg("input_path"));
 }
 

@@ -11,7 +11,7 @@ import random
 # somehwhere in the vector space. A doc is made up of a vector from each
 # of words_per_doc normal distributions. A ground truth query is made up of
 # some words from a single doc's word distributions and some random words.
-def get_build_and_run_functions(num_docs=1000, num_queries=100):
+def get_build_and_run_functions(num_docs=100, num_queries=100):
 
     hashes_per_table = 7
     num_tables = 32
@@ -63,20 +63,25 @@ def get_build_and_run_functions(num_docs=1000, num_queries=100):
             query.append(query_offsets[i][j] + word_centers[query_word_ids[i][j]])
         queries.append(query)
 
-    index_func = lambda: _build_index(docs, hashes_per_table, num_tables, data_dim)
+    index_func = lambda: _build_index(
+        docs, hashes_per_table, num_tables, data_dim, word_centers
+    )
     query_func = lambda index: _do_queries(index, queries, num_docs)
 
     return index_func, query_func
 
 
-def _build_index(docs, hashes_per_table, num_tables, data_dim):
+def _build_index(docs, hashes_per_table, num_tables, data_dim, centroids):
     index = thirdai.search.doc_retrieval_index(
+        centroids=centroids.tolist(),
         hashes_per_table=hashes_per_table,
         num_tables=num_tables,
         dense_input_dimension=data_dim,
     )
-    for doc in docs:
-        index.add_document(document_embeddings=np.array(doc))
+    for i, doc in enumerate(docs):
+        index.add_document(
+            doc_id=str(i), doc_text="test", document_embeddings=np.array(doc)
+        )
     return index
 
 
@@ -84,11 +89,7 @@ def _do_queries(index, queries, num_docs):
     result = []
     gts = []
     for gt, query in enumerate(queries):
-        result.append(
-            index.rank_documents(
-                query_embeddings=np.array(query),
-                document_ids_to_rank=np.array(range(num_docs)),
-            )
-        )
-        gts.append(gt)
+        query_result = index.query(query_embeddings=np.array(query), top_k=1)
+        gts.append(query_result[0][0])
+        assert query_result[0][1] == "test"
     return result, gts
