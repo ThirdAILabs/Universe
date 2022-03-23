@@ -1,4 +1,8 @@
-FROM ubuntu:20.04
+# Ubuntu 20.04 (focal)
+# https://hub.docker.com/_/ubuntu/?tab=tags&name=focal
+ARG ROOT_CONTAINER=ubuntu:focal
+FROM $ROOT_CONTAINER
+
 LABEL Description="Build Environment"
 ENV HOME /root
 SHELL ["/bin/bash", "-c"]

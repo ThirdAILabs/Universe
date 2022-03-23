@@ -1,4 +1,4 @@
-name: DocSearch Integration Test
+name: Docker Integration Tests
 
 # Controls when the workflow will run
 on:
@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  docsearch:
+  docker-integration:
     runs-on: ubuntu-latest
     steps:
 
@@ -29,9 +29,5 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build and test the DocSearch Docker image
-        run: |
-          cd docker/docsearch
-          ./create_docsearch_dir.sh
-          docker build -t docsearch .
-          docker run --privileged docsearch pytest
+      - name: Build and test the product Docker images
+        run: docker/product/test_all_product_dockers.sh
