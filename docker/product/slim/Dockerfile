@@ -39,7 +39,9 @@ RUN \
     sudo \
     python3 \
     libgomp1 \
-    pip ;
+    pip ; \
+    # Numpy increases image size by 50% but is necessary for our API calls
+    pip3 install pytest numpy
 
 # Swtich to to new thirdai user
 USER thirdai

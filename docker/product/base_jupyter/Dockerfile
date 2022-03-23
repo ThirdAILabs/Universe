@@ -7,14 +7,14 @@ SHELL ["/bin/bash", "-c"]
 # Go into root 
 USER root
 
-# Copy jupyter start script
-COPY start.sh /usr/local/bin/
-
 # Install necessary additional packages for jupyterlab and jupyterlab
 RUN apt-get update --yes ; \
     apt-get upgrade --yes ; \
     apt-get install --yes --no-install-recommends \
       gcc \
+      g++ \
+      make \
+      libc6-dev \
       python3-dev ;
 RUN pip3 install jupyterlab
 
