@@ -1,22 +1,29 @@
-from typing import Generator, List
+from typing import Iterator, List
 
 class SourceLocation:
-  """Abstract class for data source location. E.g. S3, local file system, python array
+  """Interface for an object that defines how the dataset is accessed, e.g.
+  through a database connector or through the local file system.
   """
   def open(self):
-    """Opens the data file.
+    """Opens the data source.
     """
     return
   
   def close(self):
-    """Closes the data file.
+    """Closes the data source.
     """
     return
 
 class SourceFormat:
-  """Abstract class for data source format. E.g. CSV, or Parquet
+  """Interface for an object that defines how individual samples (rows) are streamed 
+  from the the data source and parsed into a row of features.
   """
-  def rows(self, file) -> Generator[List[str],None,None]:
-    """Yields the columns of the next row.
+  def rows(self, source: any) -> Iterator[List[str]]:
+    """Streams the next sample from the data source and parses it into a row of 
+    features.
+    
+    Arguments:
+      source: depends on the concrete implementation - the data source
+        returned by SourceLocation.open()
     """
     yield

@@ -2,29 +2,83 @@ from ..__blocks__.block_interface import Block
 from typing import List
 
 class Schema:
-  def __init__(self, input_feature_blocks: List[Block]=[], 
-               target_feature_blocks: List[Block]=[]):
-    self.input_feature_offsets = [0]
-    for block in input_feature_blocks:
-      self.input_feature_offsets.append(block.feature_dim() + self.input_feature_offsets[-1])
-    self.input_feature_blocks = input_feature_blocks
+  """Identifies the raw features to be processed in each sample and how to 
+  process them.
 
-    self.target_feature_offsets = [0]
-    for block in input_feature_blocks:
-      self.target_feature_offsets.append(block.feature_dim() + self.target_feature_offsets[-1])
-    self.target_feature_blocks = target_feature_blocks
-  
-  def add_input_feature_block(self, block: Block) -> None:
-    """Just like how tf.Sequential supports both initialization with a list of 
-    models and add() methods.
+  The schema identifies the features of both the input and target vectors.
+  Input vectors are vectors that are passed as input into a downstream 
+  machine learning model while target vectors are what the model must 
+  learn to predict given the input vectors.
+
+  The order of features in the generated vectors is the same as the order 
+  of the corresponding blocks. 
+
+  Example usage:
+    product_name = TextBlock(column=0)
+    sales_volume = NumberBlock(column=1)
+    color = CategoryBlock(column=2)
+
+    schema = (
+      Schema()
+        .add_input_block(product_name)
+        .add_input_block(color)
+        .add_target_block(sales_volume)
+    )
+
+  This means:
+  - For each sample, we produce an input vector that encodes textual 
+    information from column 0 and categorical information from column 2 of
+    the sample.
+  - For each sample, we also produce a target vector that encodes 
+    numerical information from column 1 of the sample.
+  - Suppose TextBlock produces a 1000-dimensional embedding, NumberBlock 
+    produces a 1-dimensional embedding, and CategoryBlock produces a 
+    10-dimensional embedding. 
+    
+    This means the first 1000 dimensions of the generated input vector 
+    encode the product name while the next 10 dimensions encode product
+    color, adding up to a 1010-dimensional input vector.
+    The target vector encodes sales volume in 1 dimension.
+  """
+  def __init__(self, input_blocks: List[Block]=[], 
+               target_blocks: List[Block]=[]):
+    """Constructor.
+
+    Arguments:
+      input_blocks: list of Blocks - identifies how a sample's raw 
+        features are encoded into an input vector for a downstream 
+        machine learning model.
+      target_blocks: list of Blocks - identifies how a sample's raw 
+        features are encoded into a target vector for a downstream 
+        machine learning model.
+    
+    Arguments can be omitted in exchange for a builder pattern 
+    invocation.
     """
-    next_offset = self.input_feature_offsets[-1] + block.feature_dim()
-    self.input_feature_offsets.append(next_offset)
-    self.input_feature_blocks.append(block)
+    self.input_offsets = [0]
+    for block in input_blocks:
+      self.input_offsets.append(block.feature_dim() + self.input_offsets[-1])
+    self.input_blocks = input_blocks
+
+    self.target_offsets = [0]
+    for block in input_blocks:
+      self.target_offsets.append(block.feature_dim() + self.target_offsets[-1])
+    self.target_blocks = target_blocks
   
-  def add_target_feature_block(self, block: Block) -> None:
-    """Same as above
+  def add_input_block(self, block: Block) -> None:
+    """A method to add features to the processed input vectors.
+    This method facilitates a builder pattern invocation.
     """
-    next_offset = self.target_feature_offsets[-1] + block.feature_dim()
-    self.target_feature_offsets.append(next_offset)
-    self.target_feature_blocks.append(block)
+    next_offset = self.input_offsets[-1] + block.feature_dim()
+    self.input_offsets.append(next_offset)
+    self.input_blocks.append(block)
+    return self # Return self so we can chain method calls
+  
+  def add_target_block(self, block: Block) -> None:
+    """A method to add features to the processed target vectors.
+    This method facilitates a builder pattern invocation.
+    """
+    next_offset = self.target_offsets[-1] + block.feature_dim()
+    self.target_offsets.append(next_offset)
+    self.target_blocks.append(block)
+    return self # Return self so we can chain method calls
