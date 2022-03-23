@@ -12,7 +12,8 @@ directory. e.g. the mpi_example executable will be in
 `Universe/build/examples/mpi-example/mpi_example`. By default this will
 run in parallel and build all unbuilt targets or targets whose component source
 files have been updated, but you can pass in parameters to run in serial or build
-only a specific target. See the source of `$ bin/build.sh` for more details.
+only a specific target. You can also build in Debug or RelWithDebInfo, see the 
+source of `$ bin/build.sh` for more details.
 2. Run `$ bin/cpp-test.sh` from anywhere to have cmake run all c++ tests. To run specific
 tests, you can also pass a regular expression to filter tests 
 (or provide an explicit test name):
@@ -46,6 +47,27 @@ be mounted as a folder in the root of the container. Note that there may be
 some issues with existing cache information if you have last build on your local
 machine, and you may need to run a clean build or delete your build folder.
 
+## Debugging with GDB and ASan from Python
+1. Do a Debug or RelWithDebInfo build. If you try to run a python test at this point, you may
+encounter errors or the python test won't run at all.
+2. Run `export LD_PRELOAD=$(gcc -print-file-name=libasan.so):$LD_PRELOAD`. This
+is NOT run automatically when you startup a development docker container, as 
+it makes all python code run twice as slow and it should be a conscious
+decision. If you try to run a python test now, you will get lot's of noise
+memory leak errors from python itself. In fact, even running python3 and 
+immediately exiting will cause errors.
+3. Run `export LSAN_OPTIONS=suppressions=~/Universe/leak-suppresions.supp`. This will
+supress memory leak errors from Python calls (basically this is all memory 
+leaks, so ASan will mostly be useful for illegal memory accesses). This DOES
+get run automatically as part of the docker container.
+4. Run your python code/test with perf or gdb. You can also just run it normally
+and ASan will run.
+See https://github.com/google/sanitizers/issues/1086 and 
+https://github.com/tobywf/python-ext-asan for more details.
+5. Alternatively, instead of steps 2 and 3, you can just comment out the lines
+that enable ASan in CMakeLists.txt before you do a debug build. This is a bit
+simpler but won't check illegal memory accesses.
+
 
 ## Manual building and testing (DEPRECATED, use scripts in bin, see above)
 1. Clone this repository and navigate into it.
@@ -72,7 +94,7 @@ the library. To do this, you can run
 home directory). This will work until you open a new shell; to 
 automatically update your PYTHONPATH when you start your shell add the above
 command to your ~/.bash_profile or ~/.bash_rc, or equivalently run
-`echo "export PYTHONPATH=~/Universe/build:$PYTHONPATH" >> $HOME/.bash_profile`. 
+`echo "export PYTHONPATH=~/Universe/build:\$PYTHONPATH" >> $HOME/.bash_profile`. 
 Alternatively you can run `pip3 install .`. This installs thirdi without messing
 around with environment variables, but is not preferred for development since it
 is performs an entirely seperate parallel build from `bin/build.sh`, and so is
