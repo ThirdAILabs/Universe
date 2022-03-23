@@ -238,7 +238,7 @@ class Dataset:
 
         self.source_location.close()
 
-    def process(self) -> Iterator[dataset.BoltInputBatch, None, None]:
+    def process(self) -> Iterator[dataset.BoltInputBatch]:
         """The generator yields a batch of input and target vectors as specified by
         the schema. The input vectors in the yielded batch are dense only if all
         input feature blocks return dense features. Input vectors are sparse otherwise.
