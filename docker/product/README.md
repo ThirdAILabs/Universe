@@ -26,7 +26,7 @@ run in a subdirectory and call them test_<test name>.py, like normal pytest test
 
 To build all product Dockerfiles, run
 ```bash
-./build_all_product_dockers.sh <platform, one of linux/arm64|linux/amd64|etc>
+./build_all_product_dockers.sh <platform, one of linux/arm64 or linux/amd64>
 ```
 To save and zip all product Dockerfiles to this directory (this also builds them), run
  ```bash
