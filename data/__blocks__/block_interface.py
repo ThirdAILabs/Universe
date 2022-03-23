@@ -20,9 +20,9 @@ class Block:
         what is best for the feature that it produces.
 
         Arguments:
-          input_row: a list of columns for a single row.
+          input_row: a list of raw features from a single sample.
           shared_feature_vector: a vector that is shared among all blocks operating on
-            a particular row. This make it easier for the pipeline object to
+            a particular row. This make it easier for the dataset object to
             concatenate the features produced by each block. If not provided, the
             method creates its own vector, which could be sparse or dense, whatever
             is best suited for the feature it produces.
@@ -31,8 +31,7 @@ class Block:
             if shared_feature_vector is supplied.
 
         Return value:
-          A vector
-
+          A builder vector
         """
         return
 

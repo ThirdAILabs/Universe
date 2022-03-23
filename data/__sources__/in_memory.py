@@ -1,9 +1,24 @@
 from typing import Generator, List
 from .source_interfaces import SourceLocation, SourceFormat
 
+
 class InMemoryCollection(SourceLocation):
-  def __init__(self, obj) -> None:
-    self.obj = obj
-  
-  def open(self):
-    return self.obj
+    """Used when the dataset is already loaded into memory
+    and assigned to a variable, e.g. a list or a numpy array.
+    """
+
+    def __init__(self, obj: any) -> None:
+        """Constructor.
+
+        Arguments:
+          obj: any object in memory.
+        """
+        self.obj = obj
+
+    def open(self):
+        """Returns the accepted object."""
+        return self.obj
+
+    def close(self):
+        """Does nothing."""
+        return

@@ -1,4 +1,4 @@
-from typing import Iterator, List
+from typing import Iterator, List, Optional
 
 
 class SourceLocation:
@@ -20,7 +20,7 @@ class SourceFormat:
     from the the data source and parsed into a row of features.
     """
 
-    def rows(self, source: any) -> Iterator[List[str]]:
+    def rows(self, source: any) -> Iterator[Optional[List[str]]]:
         """Streams the next sample from the data source and parses it into a row of
         features.
 
