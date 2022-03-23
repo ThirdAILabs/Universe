@@ -2,18 +2,19 @@ from typing import List
 from ..__utils__.builder_vectors import BuilderVector
 
 class TextEmbeddingModel:
+  """Interface for embedding models used in conjunction with TextBlock.
+  """
   def embedText(self, text: List[str], shared_feature_vector: BuilderVector, offset: int) -> None:
+    """Encodes a list of strings as an integer. This method is only called by TextBlock.
+    """
     return
   
-  def returns_dense_features(self) -> bool:
+  def is_dense(self) -> bool:
+    """True if the model produces dense features, False otherwise.
+    """
     return
 
   def feature_dim(self) -> int:
-    """Only needed if used by pipeline object, which is when inputs will
-    be processed in batches. This enforces that all output vectors must 
-    be the same dimension.
-    
-    In the case of ColBERT, this enforces that max_tokens must be set if 
-    we process in batches.
+    """The dimension of the embedding produced by this model.
     """
     return

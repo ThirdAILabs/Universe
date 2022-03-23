@@ -2,12 +2,15 @@ from ..__utils__.builder_vectors import BuilderVector
 from typing import List
 
 class Block:
-  def __init__(self, column: int, *args):
-    return
-  
+  """Block interface.
+  A block encodes a sample's raw features as a vector.
+
+  Concerete implementations of this interface handles specific types of raw 
+  features, e.g. text, category, number, timestamp.
+  """
   def process(self, input_row: List[str], 
               shared_feature_vector: BuilderVector=None, 
-              idx_offset=0) -> BuilderVector:
+              idx_offset: int=0) -> BuilderVector:
     """The block can return either dense or sparse features, depending on 
     what is best for the feature that it produces.
     
@@ -29,12 +32,12 @@ class Block:
     return
 
   def feature_dim(self) -> int:
-    """We need to know the dimension of the output vectors.
-    This also helps when composing the feature blocks.
+    """Returns the dimension of output vectors.
+    This is needed when composing different features into a single vector.
     """
     return
 
-  def returns_dense_features(self) -> bool:
-    """True if the return value is dense, false otherwise.
+  def is_dense(self) -> bool:
+    """True if the block produces dense features, False otherwise.
     """
     return 
