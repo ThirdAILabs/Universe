@@ -6,35 +6,34 @@
 
 There are a number of Docker images in this folder. The slim folder contains
 the smallest, and is basically just an Ubuntu image with python, pip, and the 
-thirdai.so file. The base_jupyter folder contains a base interactive docker
-image with justour thirdai.so file (copied from slim). Other folders contain 
-images that extend one of these two images. These are our product images.
+thirdai.so file. The base_jupyter extends the slim image with a jupyer lab 
+server. Other folders contain images that extend one of these two images. 
+These are our product images.
 
 ## How do I build/test/save a Dockerfile?
 
 To build one of the Dockerfiles, run the build_image.sh script in the respective
-sub directory. If you are on m1, you may also need to pass in linux/arm64
-as the first positional argument into the script, which will forward it to
-the Docker build command (Docker's automatic platform detection doesn't always 
-seem to work, although you are free to try it by just leaving this field 
-blank). Passing in the build platform also allows you to build a 
-different platform than the one you are currently on, if that is supported.
+sub directory. If you want to build for a different platform than the one you 
+are on, you may pass in that platform as the first positional argument (this
+should be one of linux/arm64 or linux/amd64), which will forward it to the 
+Docker build command. 
 
 Note that the github actions integration test currently runs pytest in the base 
 directory of the image (the home directory), so put any python tests you want to
-run in a subdirectory and call them test_<test name>.py, like normal pytest tests.
+run in a subdirectory and call them test_<test name>.py or <test name>_test.py, 
+like normal pytest tests.
 
 To build all product Dockerfiles, run
 ```bash
-./build_all_product_dockers.sh <platform, one of linux/arm64 or linux/amd64>
+./build_all_product_dockers.sh <optional platform arg>
 ```
 To save and zip all product Dockerfiles to this directory (this also builds them), run
  ```bash
-./save_all_product_dockers.sh <platform>
+./save_all_product_dockers.sh <optional platform arg>
 ```
 To test all product Dockerfiles to this directory (this also builds them), run
  ```bash
-./test_all_product_dockers.sh <platform>
+./test_all_product_dockers.sh <optional platform arg>
 ```
 
 Right now our images are all tagged with the git commit id they were build with
@@ -54,43 +53,41 @@ and rerun the build command.
 
 ## How do I run a Dockerfiles?
 
-Once you have built/distributed a product Docker image, you have different 
-options on how to run it.
-You can run any of the commands on https://jupyter-docker-stacks.readthedocs.io/en/latest/
-to start a jupyter notebook. Note that you may need to SSH tunnel to view the
-Jupyter labs gui locally if you are running the container on a remote machine. 
-Also note that the Jupyter lab startup script 
-(https://github.com/jupyter/docker-stacks/blob/master/base-notebook/start.sh)
-does lots of nice things, like by default running with jovyan as a user (where
-we have preistalled pip packes), allowing you to grant your user sudo with
-GRANT_SUDO=yes, and allowing you to specify any user and then copying/linking
-the jovyan home directory.
-You can also run
-```bash
-docker run --user 1000:100 docsearch:<git tag> -it bash 
-```
-to just jump into bash as the jovyan user, and
-```bash
-docker run:<git tag> --user 1000:100 docsearch pytest
-```
-to run basic integration tests as the jovyan user.
+Once you have built a product Docker image, you have two different 
+options on how to run it. 
 
-For example, you may run
+Note that the docker container will start up with the 
+thirdai user, which has sudo permission. You may also wish to run the container 
+with --privileged, which speeds up the container to native levels (only do this 
+if you trust the code in the Docker container; here it is just ours so we trust 
+it).
+
+Your options are:
+1. Run a jupyter lab server by running 
 ```bash
-nohup docker run --rm -p 10000:8888 -v docsearch-work:/home/jovyan/work thirdai_docsearch_release:<git-tag> &
+docker run -p 8888:8888 <image name>:<git tag> 
+```
+This will start a jupyter lab server running in the container and forward the 
+jupyter lab port out of the container to your local machine. You can then
+open the link that gets printed out in your browser and start using jupyter.
+2. Use an interactive bash terminal by running
+```bash
+docker run -it -p 8888:8888 <image name>:<git tag> bash
+```
+You will enter as the thirdai user which has sudo privledges, and can do 
+anything you want, including starting up a jupter lab server.
+
+
+For example, a typical customer may run
+```bash
+nohup docker run -p 8888:8888 -v docsearch-work:/home/thirdai/work thirdai_docsearch_release:<git-tag> &
 ```
 which will start a Jupyter Lab server in the background and a new Docker volume
-called docsearch-work mounted in /home/jovyan/work. You can cat nohup.out
-to get the Jupyter Lab token and url, and then paste it into your browser
-(changing the port to 10000), possibly performing port forwarding with a 
-command like 
+called docsearch-work mounted in /home/thirdai/work. Any changed to the docker
+image you make not in a volume won't be saved. You can then cat nohup.out
+to get the Jupyter Lab token and url, and then paste it into your browser. If
+you are running the container on a remote server, you will need to perform
+port forwarding with a command like 
 ```bash
-ssh -v -N -L 10000:localhost:10000 <you>@<remote_server>.
+ssh -v -N -L 8888:localhost:8888 <you>@<remote_server>.
 ```
-
-Note that you can run the jupyter notebook containers with 
-```bash -e GRANT_SUDO=yes ```
-to give the default jovyan user sudo permissions. You may also wish to run 
-the container with --privileged, which speeds up the container to native levels 
-(only do this if you trust the code in the Docker container; here it is just
-ours).

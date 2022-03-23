@@ -1,18 +1,33 @@
-# See https://github.com/moby/moby/issues/34482 for why we need this stage
 ARG REV_TAG
-FROM thirdai_slim_release:${REV_TAG} AS stageforcopy
+FROM thirdai_slim_release:${REV_TAG}
 
-FROM jupyter/base-notebook:python-3.8.8
+# Setup shell and current user and env
 SHELL ["/bin/bash", "-c"]
+
+# Go into root 
 USER root
-# Copy Universe so file
-COPY --from=stageforcopy thirdai.cpython-* ./
-# Copy python integration tests
-COPY --from=stageforcopy /*.py ./
-RUN pip3 install numpy pytest ; 
-USER jovyan
+
+# Copy jupyter start script
+COPY start.sh /usr/local/bin/
+
+# Install necessary additional packages for jupyterlab and jupyterlab
+RUN apt-get update --yes ; \
+    apt-get upgrade --yes ; \
+    apt-get install --yes --no-install-recommends \
+      gcc \
+      python3-dev ;
+RUN pip3 install jupyterlab
+
+# Expose port for running jupyter notebooks
+EXPOSE 8888
+
+# Add thirdai so file to PYTHONPATH (for terminal) and ipython startup (for jupyter)
+USER thirdai
 RUN \
     echo "export PYTHONPATH=~" >> ~/.bashrc ; \
     ipython profile create ; \
-    echo "c.InteractiveShellApp.exec_lines = ['import sys; sys.path.insert(0, \'/home/jovyan\'); sys.path.insert(0, \'/home/jovyan/msmarco/colbert_modified\')']" \
+    echo "c.InteractiveShellApp.exec_lines = ['import sys; sys.path.insert(0, \'/home/thirdai\');']" \
       >> ~/.ipython/profile_default/ipython_config.py
+
+# Set default starting script, which starts up a jupyter lab server
+CMD jupyter lab --ip=0.0.0.0

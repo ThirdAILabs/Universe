@@ -1,16 +1,20 @@
 # Ubuntu 20.04 (focal)
 # https://hub.docker.com/_/ubuntu/?tab=tags&name=focal
 ARG ROOT_CONTAINER=ubuntu:focal
+
+# First stage, only for building the thirdai.so file
 FROM $ROOT_CONTAINER
 
+USER root
 SHELL ["/bin/bash", "-c"]
+
 ADD Universe.tar.bz2 /Universe
 ADD thirdai_smoke_test.py /
-USER root
-ENV DEBIAN_FRONTEND noninteractive
+
 RUN apt-get update --yes ; \
     apt-get upgrade --yes ;
-RUN apt-get install --yes --no-install-recommends \
+RUN DEBIAN_FRONTEND=noninteractive \ 
+    apt-get install --yes --no-install-recommends \
     build-essential \
     git \
     curl \
@@ -20,12 +24,32 @@ RUN apt-get install --yes --no-install-recommends \
     pip
 RUN /Universe/bin/build.sh
 
+
+# Second stage, we only copy the so file from the first stage
 FROM $ROOT_CONTAINER
-COPY --from=0 /Universe/build/thirdai.cpython-* ./
-COPY thirdai_smoke_test.py /
-RUN RUN apt-get update --yes ; \
+
+RUN \
+    # Add thirdai user with sudo privledges
+    useradd -m -s /bin/bash thirdai ; \
+    usermod -aG sudo thirdai ; \
+    # Install python and pip
+    apt-get update --yes ; \
     apt-get upgrade --yes ; \
     apt-get install --yes --no-install-recommends \
+    sudo \
     python3 \
+    libgomp1 \
     pip ; \
-    echo "export PYTHONPATH=/" >> ~/.bashrc
+    # Numpy adds extra 60 MB but we need it for our method calls
+    pip3 install pytest numpy;
+
+# Swtich to to new thirdai user
+USER thirdai
+WORKDIR /home/thirdai
+
+# Copy in smoke test and thirdai so
+COPY thirdai_smoke_test.py .
+COPY --from=0 /Universe/build/thirdai.cpython-* .
+
+# Allow us to use so from anywhere
+RUN echo "export PYTHONPATH=/" >> ~/.bashrc ;

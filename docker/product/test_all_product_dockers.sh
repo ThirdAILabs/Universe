@@ -11,7 +11,7 @@ BASEDIR=$(pwd)
 
 REV_TAG=$(git log -1 --pretty=format:%h)
 
-docker run --privledged --user 1000:100 -t thirdai_slim_release:$REV_TAG /bin/bash -c "pytest ."
-docker run --privledged --user 1000:100 -t thirdai_jupyter_release:$REV_TAG /bin/bash -c "pytest ."
+docker run --privileged -t thirdai_slim_release:$REV_TAG /bin/bash -c "pytest ."
+docker run --privileged -t thirdai_jupyter_release:$REV_TAG /bin/bash -c "pytest ."
 
-docker run --privledged --user 1000:100 -t thirdai_docsearch_release:$REV_TAG /bin/bash -c "pytest ."
+docker run --privileged -t thirdai_docsearch_release:$REV_TAG /bin/bash -c "pytest ."

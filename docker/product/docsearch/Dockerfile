@@ -7,3 +7,4 @@ RUN \
   apt-get -y update ; \
   apt-get -y install git ; \
   pip3 install torch tqdm ujson GitPython transformers faiss-cpu pandas ipywidgets; 
+USER thirdai
