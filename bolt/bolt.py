@@ -17,7 +17,7 @@ def create_fully_connected_layer_configs(
         layer = bolt.LayerConfig(
             dim=config.get("dim"),
             load_factor=config.get("sparsity", 1.0),
-            activation_function=config.get("activation"),
+            activation_function=bolt.getActivationFunction(config.get("activation")),
             sampling_config=bolt.SamplingConfig(
                 hashes_per_table=config.get("hashes_per_table", 0),
                 num_tables=config.get("num_tables", 0),
@@ -120,16 +120,27 @@ def train_fcn(config: MutableMapping[str, Any]):
         return
     train, test = data
 
+    if config["params"]["loss_fn"].lower() == "categoricalcrossentropyloss":
+        loss = bolt.CategoricalCrossEntropyLoss()
+    elif config["params"]["loss_fn"].lower() == "meansquarederror":
+        loss = bolt.MeanSquaredError()
+    else:
+        print("'{}' is not a valid loss function".format(config["params"]["loss_fn"]))
+        return
+
+    train_metrics = config["params"]["train_metrics"]
+    test_metrics = config["params"]["test_metrics"]
+
     for e in range(epochs):
-        network.train(train, learning_rate, 1, rehash, rebuild)
+        network.train(train, loss, learning_rate, 1, rehash, rebuild, train_metrics)
         if use_sparse_inference and e == sparse_inference_epoch:
             network.use_sparse_inference()
         if max_test_batches is None:
-            network.predict(test)
+            network.predict(test, test_metrics)
         else:
-            network.predict(test, max_test_batches)
+            network.predict(test, test_metrics, True, max_test_batches)
     if not max_test_batches is None:
-        network.predict(test)
+        network.predict(test, test_metrics)
 
 
 def train_dlrm(config: MutableMapping[str, Any]):
@@ -149,6 +160,14 @@ def train_dlrm(config: MutableMapping[str, Any]):
     rehash = config["params"]["rehash"]
     rebuild = config["params"]["rebuild"]
 
+    if config["params"]["loss_fn"].lower() == "categoricalcrossentropyloss":
+        loss = bolt.CategoricalCrossEntropyLoss()
+    elif config["params"]["loss_fn"].lower() == "meansquarederror":
+        loss = bolt.MeanSquaredError()
+
+    train_metrics = config["params"]["train_metrics"]
+    test_metrics = config["params"]["test_metrics"]
+
     use_auc = "use_auc" in config["params"].keys() and config["params"].get(
         "use_auc", False
     )
@@ -158,13 +177,16 @@ def train_dlrm(config: MutableMapping[str, Any]):
     labels = get_labels(config["dataset"]["test_data"])
 
     for _ in range(epochs):
-        dlrm.train(train, learning_rate, 1, rehash, rebuild)
-        scores = dlrm.predict(test)
+        dlrm.train(train, loss, learning_rate, 1, rehash, rebuild, train_metrics)
+        _, scores = dlrm.predict(test, test_metrics)
         preds = np.argmax(scores, axis=1)
         acc = np.mean(preds == labels)
         print("Accuracy: ", acc)
-        if use_auc:
+        if use_auc and len(scores.shape) == 1:
             auc = roc_auc_score(labels, scores)
+            print("AUC: ", auc)
+        elif use_auc and len(scores.shape) == 2 and scores.shape[1] == 2:
+            auc = roc_auc_score(labels, scores[:, 1])
             print("AUC: ", auc)
 
 

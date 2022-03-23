@@ -56,6 +56,8 @@ class FullyConnectedLayer final {
 
   void shuffleRandNeurons();
 
+  uint32_t getDim() const { return _dim; }
+
   float* getWeights();
 
   float* getBiases();
@@ -82,7 +84,7 @@ class FullyConnectedLayer final {
 
   uint64_t _dim, _prev_dim, _max_batch_size, _sparse_dim;
   float _sparsity;
-  ActivationFunc _act_func;
+  ActivationFunction _act_func;
 
   float* _weights;
   float* _w_gradient;

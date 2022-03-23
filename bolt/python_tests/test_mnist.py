@@ -21,11 +21,11 @@ def setup_module():
 
 def train_mnist_sparse_output_layer(args):
     layers = [
-        bolt.LayerConfig(dim=256, activation_function="ReLU"),
+        bolt.LayerConfig(dim=256, activation_function=bolt.ActivationFunctions.ReLU),
         bolt.LayerConfig(
             dim=10,
             load_factor=args.sparsity,
-            activation_function="Softmax",
+            activation_function=bolt.ActivationFunctions.Softmax,
             sampling_config=bolt.SamplingConfig(
                 hashes_per_table=args.hashes_per_table,
                 num_tables=args.num_tables,
@@ -41,10 +41,21 @@ def train_mnist_sparse_output_layer(args):
     epoch_times = []
     epoch_accuracies = []
     for _ in range(args.epochs):
-        times = network.train(train_data, args.lr, 1, rehash=3000, rebuild=10000)
-        epoch_times.append(times[0])
-        acc = network.predict(test_data)
-        epoch_accuracies.append(acc)
+        times = network.train(
+            train_data,
+            bolt.CategoricalCrossEntropyLoss(),
+            args.lr,
+            1,
+            rehash=3000,
+            rebuild=10000,
+            metrics=[],
+            verbose=False,
+        )
+        epoch_times.append(times["epoch_times"][0])
+        acc, _ = network.predict(
+            test_data, metrics=["categorical_accuracy"], verbose=False
+        )
+        epoch_accuracies.append(acc["categorical_accuracy"][0])
 
     return epoch_accuracies[-1], epoch_accuracies, epoch_times
 
@@ -54,7 +65,7 @@ def train_mnist_sparse_hidden_layer(args):
         bolt.LayerConfig(
             dim=20000,
             load_factor=args.sparsity,
-            activation_function="ReLU",
+            activation_function=bolt.ActivationFunctions.ReLU,
             sampling_config=bolt.SamplingConfig(
                 hashes_per_table=args.hashes_per_table,
                 num_tables=args.num_tables,
@@ -62,7 +73,7 @@ def train_mnist_sparse_hidden_layer(args):
                 reservoir_size=32,
             ),
         ),
-        bolt.LayerConfig(dim=10, activation_function="Softmax"),
+        bolt.LayerConfig(dim=10, activation_function=bolt.ActivationFunctions.Softmax),
     ]
     network = bolt.Network(layers=layers, input_dim=784)
 
@@ -71,10 +82,21 @@ def train_mnist_sparse_hidden_layer(args):
     epoch_times = []
     epoch_accuracies = []
     for _ in range(args.epochs):
-        times = network.train(train_data, args.lr, 1, rehash=3000, rebuild=10000)
-        epoch_times.append(times[0])
-        acc = network.predict(test_data)
-        epoch_accuracies.append(acc)
+        times = network.train(
+            train_data,
+            bolt.CategoricalCrossEntropyLoss(),
+            args.lr,
+            1,
+            rehash=3000,
+            rebuild=10000,
+            metrics=[],
+            verbose=False,
+        )
+        epoch_times.append(times["epoch_times"][0])
+        acc, _ = network.predict(
+            test_data, metrics=["categorical_accuracy"], verbose=False
+        )
+        epoch_accuracies.append(acc["categorical_accuracy"][0])
     return epoch_accuracies[-1], epoch_accuracies, epoch_times
 
 

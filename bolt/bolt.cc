@@ -102,7 +102,7 @@ std::vector<bolt::FullyConnectedLayerConfig> createFullyConnectedLayerConfigs(
     float sparsity = getFloatValue(table, "sparsity", true, 1.0);
 
     layers.push_back(bolt::FullyConnectedLayerConfig(
-        dim, sparsity, activation,
+        dim, sparsity, thirdai::bolt::getActivationFunction(activation),
         bolt::SamplingConfig(hashes_per_table, num_tables, range_pow,
                              reservoir_size)));
   }
@@ -128,6 +128,27 @@ bolt::EmbeddingLayerConfig createEmbeddingLayerConfig(toml::table& config) {
 
   return bolt::EmbeddingLayerConfig(num_embedding_lookups, lookup_size,
                                     log_embedding_block_size);
+}
+
+std::vector<std::string> getMetrics(toml::table const* config,
+                                    const std::string& metric_name) {
+  if (!config->contains(metric_name) || !config->get(metric_name)->is_array()) {
+    std::cerr << "Invalid config file format: expected array for metrics."
+              << std::endl;
+    exit(1);
+  }
+  std::vector<std::string> metrics;
+
+  const auto* array = config->get(metric_name)->as_array();
+  for (const auto& m : *array) {
+    if (!m.is_string()) {
+      std::cerr << "Invalid config file format: expected metrics as strings."
+                << std::endl;
+      exit(1);
+    }
+    metrics.push_back(m.as_string()->get());
+  }
+  return metrics;
 }
 
 std::string findFullFilepath(const std::string& filename) {
@@ -203,6 +224,13 @@ void trainFCN(toml::table& config) {
   uint32_t epochs = getIntValue(param_table, "epochs");
   uint32_t rehash = getIntValue(param_table, "rehash");
   uint32_t rebuild = getIntValue(param_table, "rebuild");
+
+  auto train_metrics = getMetrics(param_table, "train_metrics");
+  auto test_metrics = getMetrics(param_table, "test_metrics");
+
+  auto loss_fn =
+      thirdai::bolt::getLossFunction(getStrValue(param_table, "loss_fn"));
+
   uint32_t sparse_inference_epoch = 0;
   bool use_sparse_inference = param_table->contains("sparse_inference_epoch");
   if (use_sparse_inference) {
@@ -241,11 +269,12 @@ void trainFCN(toml::table& config) {
       test_filename, batch_size, std::move(*test_fac));
 
   for (uint32_t e = 0; e < epochs; e++) {
-    network.train(train_data, learning_rate, 1, rehash, rebuild);
+    network.train(train_data, *loss_fn, learning_rate, 1, rehash, rebuild,
+                  train_metrics);
     if (use_sparse_inference && e == sparse_inference_epoch) {
-      network.useSparseInference();
+      network.enableSparseInference();
     }
-    network.predict(test_data, max_test_batches);
+    network.predict(test_data, nullptr, test_metrics, max_test_batches);
   }
 }
 
@@ -274,7 +303,6 @@ void trainDLRM(toml::table& config) {
   auto bottom_mlp =
       createFullyConnectedLayerConfigs(config["bottom_mlp_layers"]);
   auto top_mlp = createFullyConnectedLayerConfigs(config["top_mlp_layers"]);
-  uint32_t output_dim = top_mlp.back().dim;
 
   if (!config.contains("dataset") || !config["dataset"].is_table()) {
     std::cerr << "Invalid config file format: expected table for dataset info."
@@ -302,6 +330,12 @@ void trainDLRM(toml::table& config) {
   uint32_t rehash = getIntValue(param_table, "rehash");
   uint32_t rebuild = getIntValue(param_table, "rebuild");
 
+  auto train_metrics = getMetrics(param_table, "train_metrics");
+  auto test_metrics = getMetrics(param_table, "test_metrics");
+
+  auto loss_fn =
+      thirdai::bolt::getLossFunction(getStrValue(param_table, "loss_fn"));
+
   bolt::DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, dense_features);
 
   auto train_data =
@@ -311,10 +345,10 @@ void trainDLRM(toml::table& config) {
       loadClickThroughDataset(test_filename, batch_size, dense_features,
                               categorical_features, top_mlp.back().dim > 1);
 
-  std::vector<float> scores(test_data.len() * output_dim);
   for (uint32_t e = 0; e < epochs; e++) {
-    dlrm.train(train_data, learning_rate, 1, rehash, rebuild);
-    dlrm.predict(test_data, scores.data());
+    dlrm.train(train_data, *loss_fn, learning_rate, 1, rehash, rebuild,
+               train_metrics);
+    dlrm.predict(test_data, nullptr, test_metrics);
   }
 }
 
