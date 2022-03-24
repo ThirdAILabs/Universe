@@ -106,7 +106,7 @@ def train_mnist_sparse_hidden_inference(args):
         bolt.LayerConfig(
             dim=20000,
             load_factor=args.sparsity,
-            activation_function="ReLU",
+            activation_function=bolt.ActivationFunctions.ReLU,
             sampling_config=bolt.SamplingConfig(
                 hashes_per_table=args.hashes_per_table,
                 num_tables=args.num_tables,
@@ -114,7 +114,7 @@ def train_mnist_sparse_hidden_inference(args):
                 reservoir_size=32,
             ),
         ),
-        bolt.LayerConfig(dim=10, activation_function="Softmax"),
+        bolt.LayerConfig(dim=10, activation_function=bolt.ActivationFunctions.Softmax),
     ]
     network = bolt.Network(layers=layers, input_dim=784)
 
@@ -125,7 +125,7 @@ def train_mnist_sparse_hidden_inference(args):
     epoch_accuracies = []
     for i in range(args.epochs):
         if i == (args.epochs - 1):
-            network.use_sparse_inference()
+            network.enable_sparse_inference()
         times = network.train(train_data, args.lr, 1, rehash=3000, rebuild=10000)
         epoch_times.append(times[0])
         t0 = time.time()
