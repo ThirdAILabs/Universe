@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.14)
 set(CMAKE_CXX_COMPILER "g++")
 set(CMAKE_C_COMPILER "gcc")
 
+# When I set LD_PRELOAD to be able use ASan with python tests, for some reason 
+# CMake can't find Python unless we set it to an empty string.
+set(ENV{LD_PRELOAD} "")
+
 project(ThirdAI LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -18,14 +22,22 @@ add_compile_options(
   -Werror
   -Wno-unused-function
   -pedantic 
-  $<$<CONFIG:DEBUG>:-O0>
-  $<$<CONFIG:DEBUG>:-g>
-  $<$<CONFIG:DEBUG>:-fno-omit-frame-pointer>
-  $<$<CONFIG:RELEASE>:-DNDEBUG>
-  $<$<CONFIG:RELEASE>:-Ofast>
-  $<$<CONFIG:RELEASE>:-ffast-math>
-  $<$<CONFIG:RELEASE>:-funroll-loops>
-  $<$<CONFIG:RELEASE>:-ftree-vectorize>
+  
+  $<$<CONFIG:Debug>:-O0>
+  $<$<CONFIG:Debug>:-g>
+  $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
+
+  $<$<CONFIG:Release>:-DNDEBUG>
+  $<$<CONFIG:Release>:-O3>
+  $<$<CONFIG:Release>:-funroll-loops>
+  $<$<CONFIG:Release>:-ftree-vectorize>
+
+  $<$<CONFIG:RelWithDebInfo>:-DNDEBUG>
+  $<$<CONFIG:RelWithDebInfo>:-O3>
+  $<$<CONFIG:RelWithDebInfo>:-funroll-loops>
+  $<$<CONFIG:RelWithDebInfo>:-ftree-vectorize>
+  $<$<CONFIG:RelWithDebInfo>:-g>
+  $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
 )
 
 add_link_options(

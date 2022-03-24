@@ -1,14 +1,19 @@
 #!/bin/bash
 # Usage ./bin/build.sh [make_target] [build mode] [num_jobs]
+# 
 # The first positional argument is the make target. If omitted, make will use 'all', but
 # you can pass in a specific one if you just want to make one target. e.g.
 # run "bin/build.sh clean" if you want to delete objects and executables.
-# The second positional argument is whether to use debug or build mode. If ommited it  
-# will automatically build in release mode.
+# 
+# The second positional argument specifies the build mode. It must be one of
+# [Release, Debug, RelWithDebInfo]. If ommited we will automatically build in 
+# release mode.
+# 
 # The third positional argument is the number of jobs you wish to run
 # make with. If ommited, make will automatically run make with
-# the number of jobs = 1.5 * the number of threads on your machine. e.g. to
-# run a single thread build of all targets run "bin/build.sh all 1".
+# the number of jobs = 1.5 * the number of threads on your machine.
+# For example, to run a single thread build of all targets run "bin/build.sh all 1".
+# To do a debug build RUN WITH "Debug", NOT "debug" or "DEBUG".
 
 BASEDIR=$(dirname "$0")
 
@@ -19,11 +24,18 @@ else
   TARGET="$1"
 fi
 
-if [ -z "$2" ] 
+if [ -z "$2" ] || [ $2 == "Release" ]
 then 
-  BUILD_MODE=release
-else 
-  BUILD_MODE=$2
+  BUILD_MODE=Release
+elif [ "$2" == "Debug" ]
+then
+  BUILD_MODE=Debug
+elif [ "$2" == "RelWithDebInfo" ]
+then
+  BUILD_MODE=RelWithDebInfo
+else
+  echo "If present, build mode must be one of [Release, Debug, RelWithDebInfo]. Note the capitilization."
+  exit 1
 fi
 
 if [ -z "$3" ] 

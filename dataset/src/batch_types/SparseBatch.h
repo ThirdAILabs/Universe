@@ -2,6 +2,8 @@
 
 #include <dataset/src/Factory.h>
 #include <dataset/src/Vectors.h>
+#include <dataset/src/parsers/SvmParser.h>
+#include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <vector>
@@ -50,51 +52,34 @@ class SparseBatch {
 };
 
 class SvmSparseBatchFactory : public Factory<SparseBatch> {
+ private:
+  SvmParser<SparseVector, std::vector<uint32_t>> _parser;
+
  public:
-  SvmSparseBatchFactory() {}
+  // We can use the SVM parser with takes in functions that construct the
+  // desired vector/label format (in this case SparseVector and a regular
+  // vector) from vectors of indices and values and the labels.
+  SvmSparseBatchFactory()
+      : _parser(
+            [](const std::vector<uint32_t>& indices,
+               const std::vector<float>& values) -> SparseVector {
+              SparseVector vec(indices.size());
+              std::copy(indices.begin(), indices.end(), vec._indices);
+              std::copy(values.begin(), values.end(), vec._values);
+              return vec;
+            },
+            [](const std::vector<uint32_t>& labels) -> std::vector<uint32_t> {
+              return labels;
+            }) {}
 
   SparseBatch parse(std::ifstream& file, uint32_t target_batch_size,
                     uint64_t start_id) override {
-    SparseBatch batch(start_id);
+    std::vector<SparseVector> vectors;
+    std::vector<std::vector<uint32_t>> labels;
 
-    std::string line;
-    while (batch._batch_size < target_batch_size && std::getline(file, line)) {
-      const char* start = line.c_str();
-      const char* const line_end = line.c_str() + line.size();
-      char* end;
-      std::vector<uint32_t> labels;
-      do {
-        uint32_t label = std::strtoul(start, &end, 10);
-        labels.push_back(label);
-        start = end;
-      } while ((*start++) == ',');
-      batch._labels.push_back(std::move(labels));
+    _parser.parseBatch(target_batch_size, file, vectors, labels);
 
-      std::vector<std::pair<uint32_t, float>> nonzeros;
-      do {
-        uint32_t index = std::strtoul(start, &end, 10);
-        start = end + 1;
-        float value = std::strtof(start, &end);
-        nonzeros.push_back({index, value});
-        start = end;
-
-        while ((*start == ' ' || *start == '\t') && start < line_end) {
-          start++;
-        }
-      } while (*start != '\n' && start < line_end);
-
-      SparseVector v(nonzeros.size());
-      uint32_t cnt = 0;
-      for (const auto& x : nonzeros) {
-        v._indices[cnt] = x.first;
-        v._values[cnt] = x.second;
-        cnt++;
-      }
-
-      batch._vectors.push_back(std::move(v));
-      batch._batch_size++;
-    }
-    return batch;
+    return SparseBatch(std::move(vectors), std::move(labels), start_id);
   }
 };
 

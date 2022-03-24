@@ -7,6 +7,9 @@ dense_features = 15
 categorical_features = 24
 
 [params]
+loss_fn = "CategoricalCrossEntropyLoss"
+train_metrics = []
+test_metrics = ["categorical_accuracy"]
 learning_rate = 0.001
 epochs = 2
 batch_size = 255
@@ -46,5 +49,5 @@ reservoir_size = 32
 range_pow = 9
 
 [[top_mlp_layers]]
-dim = 1
-activation = 'MeanSquared'
+dim = 2
+activation = 'Softmax'
