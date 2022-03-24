@@ -8,6 +8,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/iostream.h>
 
 namespace py = pybind11;
 
@@ -55,6 +56,29 @@ class PyNetwork final : public FullyConnectedNetwork {
     return py::array_t<float>({dim}, {sizeof(float)}, mem, free_when_done);
   }
 
+  template <typename BATCH_T>
+  std::vector<int64_t> trainWithPythonStdout(
+    const dataset::InMemoryDataset<BATCH_T>& train_data, float learning_rate,
+    uint32_t epochs, uint32_t rehash_in, uint32_t rebuild_in) {
+    // Redirect to python output.
+    py::scoped_ostream_redirect stream(
+      std::cout,
+      py::module_::import("sys").attr("stdout")
+    );
+    return train(train_data, learning_rate, epochs, rehash_in, rebuild_in);
+  }
+
+  template <typename BATCH_T>
+  float predictWithPythonStdout(
+    const dataset::InMemoryDataset<BATCH_T>& test_data, uint32_t batch_limit) {
+    // Redirect to python output.
+    py::scoped_ostream_redirect stream(
+      std::cout,
+      py::module_::import("sys").attr("stdout")
+    );
+    return predict(test_data, batch_limit);
+  }
+
   // Does not return py::array_t because this is consistent with the original
   // train method.
   std::vector<int64_t> trainWithDenseNumpyArray(
@@ -64,6 +88,10 @@ class PyNetwork final : public FullyConnectedNetwork {
           labels,
       uint32_t batch_size, float learning_rate, uint32_t epochs,
       uint32_t rehash, uint32_t rebuild) {
+    py::scoped_ostream_redirect stream(
+      std::cout,
+      py::module_::import("sys").attr("stdout")
+    );
     uint32_t starting_id = 0;
     auto data = thirdai::dataset::python::denseInMemoryDatasetFromNumpy(
         examples, labels, batch_size, starting_id);
@@ -76,6 +104,10 @@ class PyNetwork final : public FullyConnectedNetwork {
       const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           labels,
       uint32_t batch_size, uint32_t batch_limit) {
+    py::scoped_ostream_redirect stream(
+      std::cout,
+      py::module_::import("sys").attr("stdout")
+    );
     uint32_t starting_id = 0;
     auto data = thirdai::dataset::python::denseInMemoryDatasetFromNumpy(
         examples, labels, batch_size, starting_id);
@@ -95,6 +127,10 @@ class PyNetwork final : public FullyConnectedNetwork {
           y_offsets,
       uint32_t batch_size, float learning_rate, uint32_t epochs,
       uint32_t rehash, uint32_t rebuild) {
+    py::scoped_ostream_redirect stream(
+      std::cout,
+      py::module_::import("sys").attr("stdout")
+    );
     uint32_t starting_id = 0;
     auto data = thirdai::dataset::python::sparseInMemoryDatasetFromNumpy(
         x_idxs, x_vals, x_offsets, y_idxs, y_offsets, batch_size, starting_id);
@@ -113,6 +149,10 @@ class PyNetwork final : public FullyConnectedNetwork {
 	  const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           y_offsets,
       uint32_t batch_size, uint32_t batch_limit) {
+    py::scoped_ostream_redirect stream(
+      std::cout,
+      py::module_::import("sys").attr("stdout")
+    );
     uint32_t starting_id = 0;
     auto data = thirdai::dataset::python::sparseInMemoryDatasetFromNumpy(
         x_idxs, x_vals, x_offsets, y_idxs, y_offsets, batch_size, starting_id);
