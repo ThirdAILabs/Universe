@@ -79,7 +79,10 @@ def _build_index_random(docs, hashes_per_table, num_tables, data_dim, centroids)
         dense_input_dimension=data_dim,
     )
     for i, doc in enumerate(docs):
+        import time
+        start = time.time()
         index.add_document(doc_id=str(i), doc_text="test", doc_embeddings=np.array(doc))
+        print(time.time() - start)
     return index
 
 

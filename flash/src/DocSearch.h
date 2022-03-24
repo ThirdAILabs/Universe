@@ -14,6 +14,10 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <chrono>
+
+using namespace std::chrono;
+
 
 namespace thirdai::search {
 
@@ -31,23 +35,25 @@ class DocSearch {
       : _dense_dim(dense_dim),
         _nprobe_query(2),
         _largest_internal_id(0),
+        _num_centroids(centroids_input.size()),
         _document_array(new thirdai::hashing::FastSRP(
                             dense_dim, hashes_per_table, num_tables),
                         hashes_per_table),
+        _centroids(dense_dim * centroids_input.size()),
         _centroid_id_to_internal_id(centroids_input.size()) {
     // We copy the centroids here because I couldn't get pybind keep_alive to
     // work.
-    for (const std::vector<float>& c : centroids_input) {
-      _centroids.push_back(c);
-    }
-    for (uint32_t i = 0; i < _centroids.size(); i++) {
-      if (_dense_dim != _centroids.at(i).size()) {
+    for (uint32_t i = 0; i < centroids_input.size(); i++) {
+      if (_dense_dim != centroids_input.at(i).size()) {
         throw std::invalid_argument(
             "Every centroids must have dimension equal to dense_dim. Instead"
             " found centroid " +
             std::to_string(i) + " with dimension of " +
-            std::to_string(_centroids.at(i).size()) +
+            std::to_string(centroids_input.at(i).size()) +
             " and passed in dense_dim of " + std::to_string(_dense_dim));
+      }
+      for (uint32_t d = 0; d < dense_dim; d++) {
+        _centroids.at(i * dense_dim + d) = centroids_input.at(i).at(d);
       }
     }
   }
@@ -56,7 +62,9 @@ class DocSearch {
   // and we updated it.
   bool addDocument(const dataset::DenseBatch& embeddings,
                    const std::string& doc_id, const std::string& doc_text) {
+    std::cout << "start " << duration_cast< milliseconds >(system_clock::now().time_since_epoch()).count() << std::endl;
     std::vector<uint32_t> centroid_ids = getNearestCentroids(embeddings, 1);
+    std::cout << duration_cast< milliseconds >(system_clock::now().time_since_epoch()).count() << std::endl;
     return addDocument(embeddings, centroid_ids, doc_id, doc_text);
   }
 
@@ -67,12 +75,17 @@ class DocSearch {
                    const std::string& doc_id, const std::string& doc_text) {
     bool deletedOldDoc = deleteDocument(doc_id);
 
+
     uint32_t internal_id = _document_array.addDocument(embeddings);
     _largest_internal_id = std::max(_largest_internal_id, internal_id);
+
+    std::cout << duration_cast< milliseconds >(system_clock::now().time_since_epoch()).count() << std::endl;
 
     for (uint32_t centroid_id : centroid_ids) {
       _centroid_id_to_internal_id.at(centroid_id).push_back(internal_id);
     }
+
+    std::cout << duration_cast< milliseconds >(system_clock::now().time_since_epoch()).count() << std::endl;
 
     _doc_id_to_doc_text[doc_id] = doc_text;
 
@@ -105,6 +118,7 @@ class DocSearch {
     if (embeddings.getBatchSize() == 0) {
       throw std::invalid_argument("Need at least one query vector but found 0");
     }
+    std::cout << duration_cast< milliseconds >(system_clock::now().time_since_epoch()).count() << std::endl;
     for (uint32_t i = 0; i < embeddings.getBatchSize(); i++) {
       if (embeddings.at(i).dim() != _dense_dim) {
         throw std::invalid_argument("Vector " + std::to_string(i) +
@@ -144,14 +158,15 @@ class DocSearch {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_dense_dim, _nprobe_query, _largest_internal_id, _document_array,
-            _centroids, _centroid_id_to_internal_id, _doc_id_to_doc_text,
-            _doc_id_to_internal_id, _internal_id_to_doc_id);
+    archive(_dense_dim, _nprobe_query, _largest_internal_id, _num_centroids, 
+            _document_array, _centroids, _centroid_id_to_internal_id, 
+            _doc_id_to_doc_text, _doc_id_to_internal_id, 
+            _internal_id_to_doc_id);
   }
 
-  uint32_t _dense_dim, _nprobe_query, _largest_internal_id;
+  uint32_t _dense_dim, _nprobe_query, _largest_internal_id, _num_centroids;
   MaxFlashArray<uint8_t> _document_array;
-  std::vector<std::vector<float>> _centroids;
+  std::vector<float> _centroids;
   std::vector<std::vector<uint32_t>> _centroid_id_to_internal_id;
   std::unordered_map<std::string, std::string> _doc_id_to_doc_text;
   std::unordered_map<std::string, uint32_t> _doc_id_to_internal_id;
@@ -162,8 +177,12 @@ class DocSearch {
   std::vector<uint32_t> getNearestCentroids(const dataset::DenseBatch& batch,
                                             uint32_t nprobe) const {
     std::vector<uint32_t> result;
+#pragma omp parallel for default(none) shared(batch, nprobe, result)
     for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
+      std::vector<uint32_t> nearest_centroids = getNearestCentroids(batch.at(i), nprobe);
       for (uint32_t probe : getNearestCentroids(batch.at(i), nprobe)) {
+        (void)probe;
+#pragma omp critical      
         result.push_back(probe);
       }
     }
@@ -175,12 +194,11 @@ class DocSearch {
   // Finds the nearest nprobe centroids for the single vector passed in
   std::vector<uint32_t> getNearestCentroids(const dataset::DenseVector& vec,
                                             uint32_t nprobe) const {
-    std::vector<float> scores(_centroids.size());
-#pragma omp parallel for default(none) shared(vec, scores)
-    for (uint32_t i = 0; i < _centroids.size(); i++) {
+    std::vector<float> scores(_num_centroids);
+    for (uint32_t i = 0; i < _num_centroids; i++) {
       float dot = 0;
-      for (uint32_t j = 0; j < _dense_dim; j++) {
-        dot += _centroids.at(i).at(j) * vec.at(j);
+      for (uint32_t d = 0; d < _dense_dim; d++) {
+        dot += _centroids.at(i * _dense_dim + d) * vec.at(d);
       }
       scores.at(i) = dot;
     }
@@ -222,14 +240,49 @@ class DocSearch {
 
   std::vector<uint32_t> frequencyCountCentroidBuckets(
       const std::vector<uint32_t>& centroid_ids, uint32_t top_k) const {
-    // TODO(josh): This can be made much more efficient
+    
+    // Populate initial counts array.
     std::vector<int32_t> counts(_largest_internal_id + 1, 0);
+// #pragma omp parallel for default(none) shared(centroid_ids, counts)
     for (uint32_t centroid_id : centroid_ids) {
       for (uint32_t internal_id : _centroid_id_to_internal_id.at(centroid_id)) {
         counts.at(internal_id) += 1;
       }
     }
-    return argmax(counts, top_k);
+
+    // Find the top k by looping through the input again to know what counts
+    // values to examine (we can avoid traversing all possible counts, many
+    // of which are zero). We negate a counts element when we have seen it so
+    // that if we come across it again (if there is more than one occurence 
+    // of it) we can ignore it. 
+    // Note also that the heap is a max heap, so we negate everything to make
+    // it a min heap in effect.
+
+    std::priority_queue<std::pair<int32_t, uint32_t>> heap;
+    for (uint32_t centroid_id : centroid_ids) {
+      for (uint32_t internal_id : _centroid_id_to_internal_id.at(centroid_id)) {
+        if (counts.at(internal_id) < 0) {
+          continue;
+        }
+        counts.at(internal_id) *= -1;
+        int32_t negative_count = counts.at(internal_id);
+        if (heap.size() < top_k || negative_count < heap.top().first) {
+          heap.emplace(negative_count, internal_id);
+        }
+        if (heap.size() > top_k) {
+          heap.pop();
+        }
+      }
+    }
+
+    std::vector<uint32_t> result;
+    while (!heap.empty()) {
+      result.push_back(heap.top().second);
+      heap.pop();
+    }
+
+    std::reverse(result.begin(), result.end());
+    return result;
   }
 
   std::vector<uint32_t> rankDocuments(
