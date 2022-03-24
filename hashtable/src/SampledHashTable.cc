@@ -119,7 +119,7 @@ void SampledHashTable<LABEL_T>::queryAndInsertForInference(
   // relevant bucket in the tables probed.)
   for (auto x : store) {
     if (temp_store.find(x) == temp_store.end()) {
-      for (uint32_t i = 0; i < table + 1; i++) {
+      for (uint32_t i = 0; i < _num_tables; i++) {
         uint32_t row_id = hashes[i];
         assert(row_id < _range);
 
