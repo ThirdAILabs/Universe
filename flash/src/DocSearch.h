@@ -14,10 +14,6 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
-#include <chrono>
-
-using namespace std::chrono;
-
 
 namespace thirdai::search {
 
@@ -62,9 +58,7 @@ class DocSearch {
   // and we updated it.
   bool addDocument(const dataset::DenseBatch& embeddings,
                    const std::string& doc_id, const std::string& doc_text) {
-    std::cout << "start " << duration_cast< milliseconds >(system_clock::now().time_since_epoch()).count() << std::endl;
     std::vector<uint32_t> centroid_ids = getNearestCentroids(embeddings, 1);
-    std::cout << duration_cast< milliseconds >(system_clock::now().time_since_epoch()).count() << std::endl;
     return addDocument(embeddings, centroid_ids, doc_id, doc_text);
   }
 
@@ -79,13 +73,9 @@ class DocSearch {
     uint32_t internal_id = _document_array.addDocument(embeddings);
     _largest_internal_id = std::max(_largest_internal_id, internal_id);
 
-    std::cout << duration_cast< milliseconds >(system_clock::now().time_since_epoch()).count() << std::endl;
-
     for (uint32_t centroid_id : centroid_ids) {
       _centroid_id_to_internal_id.at(centroid_id).push_back(internal_id);
     }
-
-    std::cout << duration_cast< milliseconds >(system_clock::now().time_since_epoch()).count() << std::endl;
 
     _doc_id_to_doc_text[doc_id] = doc_text;
 
@@ -118,7 +108,6 @@ class DocSearch {
     if (embeddings.getBatchSize() == 0) {
       throw std::invalid_argument("Need at least one query vector but found 0");
     }
-    std::cout << duration_cast< milliseconds >(system_clock::now().time_since_epoch()).count() << std::endl;
     for (uint32_t i = 0; i < embeddings.getBatchSize(); i++) {
       if (embeddings.at(i).dim() != _dense_dim) {
         throw std::invalid_argument("Vector " + std::to_string(i) +
