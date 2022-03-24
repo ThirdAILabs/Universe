@@ -1,9 +1,10 @@
 from typing import List, Iterator, Tuple
 import random
 from .schema import Schema
-from ..__blocks__.block_interface import Block
-from ..__sources__.source_interfaces import SourceLocation, SourceFormat
-from ..__utils__.builder_vectors import (
+from ..blocks.block_interface import Block
+from ..sources.source_interface import Source
+from ..parsers.parser_interface import Parser
+from ..utils.builder_vectors import (
     BuilderVector,
     SparseBuilderVector,
     DenseBuilderVector,
@@ -26,54 +27,57 @@ class Dataset:
     The source and schema can be set using the set_source() and
     set_schema() methods respectively.
 
-    Example usage:
-      dataset = (
-        Dataset()
-          .set_source(location, format)
-          .set_schema(schema)
-          .set_batch_size(256)
-          .shuffle()
-      )
-
-      for batch in dataset.process():
-        do_something_to(batch)
-
     Usage notes:
     - The default batch size is 1.
     - If the shuffle() method is called, the whole dataset is loaded into memory.
       Otherwise, rows is streamed from the file in batches.
+    - Calling process() before setting source, parser and schema 
 
     """
 
-    def __init__(self):
+    def __init__(self, source: Source=None, parser: Parser=None, schema: Schema=None, batch_size: int=1, shuffle: bool=False, shuffle_seed: int=None):
         """Constructor.
-        No argument since it uses a builder pattern;
-        Example usage:
-
-        dataset = (
-          Dataset()
-            .set_source(location, format)
-            .set_schema(schema)
-            .set_batch_size(256)
-            .shuffle()
-        )
-
-        """
-        self._batch_size = 1
-        self._shuffle_rows = False
-        self._loaded_entire_dataset_in_memory = False
-
-    def set_source(self, location: SourceLocation, format: SourceFormat):
-        """Defines the location and format of the dataset.
 
         Arguments:
-          location: SourceLocation object - defines how the dataset is accessed, e.g.
+            source: Source object - defines how the dataset is accessed, e.g.
+                through a database connector or through the local file system.
+            parser: Parser object - defines how individual samples (rows) are retrieved
+                from the the data source and parses the sample into a row of features.
+            schema: Schema object - identifies the raw features to be processed in each
+                sample and how to process them.
+            batch_size: int - size of each generated batch of vectors.
+            shuffle: bool - whether the dataset's samples are shuffled before being batched.
+
+        Arguments can be omitted in exchange for a builder pattern
+        invocation.
+        """
+        self.set_source(source)
+        self.set_parser(parser)
+        self.set_schema(schema)
+        self.set_batch_size(batch_size)
+        if shuffle:
+            self.shuffle(shuffle_seed)
+        self._last_random_state = None
+        self._loaded_entire_dataset_in_memory = False
+
+    def set_source(self, source: Source):
+        """Defines the location of the dataset.
+
+        Arguments:
+          location: Source object - defines how the dataset is accessed, e.g.
             through a database connector or through the local file system.
-          format: SourceFormat object - defines how individual samples (rows) are retrieved
+        """
+        self._source = source
+        return self  ### Returns self so we can chain the set() method calls.
+    
+    def set_parser(self, parser: Parser):
+        """Defines how the dataset can be parsed.
+
+        Arguments:
+          format: Parser object - defines how individual samples (rows) are retrieved
             from the the data source and parses the sample into a row of features.
         """
-        self.source_location = location
-        self.source_format = format
+        self._parser = parser
         return self  ### Returns self so we can chain the set() method calls.
 
     def set_schema(self, schema: Schema):
@@ -83,18 +87,20 @@ class Dataset:
           schema: Schema object - identifies the raw features to be processed in each
             sample and how to process them.
         """
-        self.schema = schema
+        self._schema = schema
+        if schema == None:
+            return
         # Returns input vector as dense vector if all input feature blocks are
         # dense, returns sparse vector otherwise
-        self.dense_input = all([block.is_dense() for block in self.schema.input_blocks])
+        self.dense_input = all([block.is_dense() for block in self._schema.input_blocks])
         # Returns target vector as dense vector if all target feature blocks are
         # dense, returns sparse vector otherwise
         # This edge case is super ugly. Fix this later.
-        if len(self.schema.target_blocks) == 0:
+        if len(self._schema.target_blocks) == 0:
             self.dense_target = False
         else:
             self.dense_target = all(
-                [block.is_dense() for block in self.schema.target_blocks]
+                [block.is_dense() for block in self._schema.target_blocks]
             )
         return self  ### Returns self so we can chain the set() method calls.
 
@@ -107,9 +113,10 @@ class Dataset:
         self._batch_size = size
         return self  ### Returns self so we can chain the set() method calls.
 
-    def shuffle(self):
+    def shuffle(self, seed: int=None):
         """Samples will be shuffled before being batched."""
         self._shuffle_rows = True
+        self._shuffle_seed = seed
         return self  ### Returns self so we can chain the set() method calls.
 
     def __process_row(
@@ -132,11 +139,11 @@ class Dataset:
 
         # Don't load and process the data all over again if it had been loaded before.
         if not self._loaded_entire_dataset_in_memory:
-            file = self.source_location.open()
-            row_generator = self.source_format.rows(file)
+            file = self._source_location.open()
+            row_generator = self._source_format.rows(file)
 
             self._input_vectors = []
-            self._target_vectors = None if len(self.schema.target_blocks) == 0 else []
+            self._target_vectors = None if len(self._schema.target_blocks) == 0 else []
 
             # Stream rows (samples) and process each one according to the schema.
             next_row = next(row_generator)
@@ -144,8 +151,8 @@ class Dataset:
                 input_vec = self.__process_row(
                     next_row,
                     self.dense_input,
-                    self.schema.input_blocks,
-                    self.schema.input_offsets,
+                    self._schema.input_blocks,
+                    self._schema.input_offsets,
                 )
 
                 self._input_vectors.append(input_vec)
@@ -154,20 +161,32 @@ class Dataset:
                     target_vec = self.__process_row(
                         next_row,
                         self.dense_target,
-                        self.schema.target_blocks,
-                        self.schema.target_offsets,
+                        self._schema.target_blocks,
+                        self._schema.target_offsets,
                     )
                     self._target_vectors.append(target_vec)
 
                 next_row = next(row_generator)
 
             # Close the source when we are done with it.
-            self.source_location.close()
+            self._source_location.close()
             # Remember that we have loaded and processed the whole dataset
             # and saved the results in memory.
             self._loaded_entire_dataset_in_memory = True
 
         # Shuffle if necessary.
+        if self._shuffle_seed is not None:
+            # The random module might be used by other programs, so we have
+            # to save this state and revert it when we're done.
+            default_random_state = random.getstate()
+            if self._last_random_state is not None:
+                # we don't want to reseed if we had previously shuffled
+                # because then we will have the same shuffle permutation 
+                # between epochs.
+                random.setstate(self._last_random_state)
+            else:
+                random.seed(self._shuffle_seed)
+
         if self._shuffle_rows and self._target_vectors:
             temp = list(zip(self._input_vectors, self._target_vectors))
             random.shuffle(temp)
@@ -179,6 +198,12 @@ class Dataset:
 
         elif self._shuffle_rows:
             random.shuffle(self._input_vectors)
+        
+        if self._shuffle_seed is not None:
+            # Save our random state and revert the random state
+            # to what it was before we used the random module.
+            self._last_random_state = random.getstate
+            random.setstate(default_random_state)
 
         # Yield the vectors in batches.
         n_batches = (
@@ -198,14 +223,14 @@ class Dataset:
 
     def __stream_batch_and_process(self):
         """Helper function to stream samples and process them in batches."""
-        file = self.source_location.open()
-        row_generator = self.source_format.rows(file)
+        file = self._source_location.open()
+        row_generator = self._source_format.rows(file)
 
         next_row = next(row_generator)
         while next_row is not None:
             # New batch, new set of input and target vectors.
             input_vectors = []
-            target_vectors = None if len(self.schema.target_blocks) == 0 else []
+            target_vectors = None if len(self._schema.target_blocks) == 0 else []
 
             # Process a batch according to the schema.
             current_batch_size = 0
@@ -213,8 +238,8 @@ class Dataset:
                 input_vec = self.__process_row(
                     next_row,
                     self.dense_input,
-                    self.schema.input_blocks,
-                    self.schema.input_offsets,
+                    self._schema.input_blocks,
+                    self._schema.input_offsets,
                 )
 
                 input_vectors.append(input_vec)
@@ -223,8 +248,8 @@ class Dataset:
                     target_vec = self.__process_row(
                         next_row,
                         self.dense_target,
-                        self.schema.target_blocks,
-                        self.schema.target_offsets,
+                        self._schema.target_blocks,
+                        self._schema.target_offsets,
                     )
                     target_vectors.append(target_vec)
 
@@ -236,7 +261,7 @@ class Dataset:
                 input_vectors, [] if target_vectors is None else target_vectors
             )
 
-        self.source_location.close()
+        self._source_location.close()
 
     def process(self) -> Iterator[dataset.BoltInputBatch]:
         """The generator yields a batch of input and target vectors as specified by
@@ -249,13 +274,13 @@ class Dataset:
         fields.
         """
 
-        if self.schema is None:
+        if self._schema is None:
             raise RuntimeError(
                 "Dataset: schema is not set. Check that the set_schema() method"
                 + "is called before calling process()."
             )
 
-        if self.source_location or self.source_format is None:
+        if self._source_location or self._source_format is None:
             raise RuntimeError(
                 "Dataset: source is not set. Check that the set_source() method"
                 + "is called before calling process()."

@@ -1,4 +1,4 @@
-from ..__blocks__.block_interface import Block
+from ..blocks.block_interface import Block
 from typing import List
 
 
@@ -14,16 +14,14 @@ class Schema:
     The order of features in the generated vectors is the same as the order
     of the corresponding blocks.
 
-    Example usage:
+    Example usage 1:
       product_name = TextBlock(column=0)
       sales_volume = NumberBlock(column=1)
       color = CategoryBlock(column=2)
 
-      schema = (
-        Schema()
-          .add_input_block(product_name)
-          .add_input_block(color)
-          .add_target_block(sales_volume)
+      schema = Schema(
+        input_blocks=[product_name, color],
+        target_blocks=[sales_volume]
       )
 
     This means:

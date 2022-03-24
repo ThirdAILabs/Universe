@@ -1,21 +1,6 @@
 from typing import Iterator, List
 
-
-class SourceLocation:
-    """Interface for an object that defines how the dataset is accessed, e.g.
-    through a database connector or through the local file system.
-    """
-
-    def open(self):
-        """Opens the data source."""
-        return
-
-    def close(self):
-        """Closes the data source."""
-        return
-
-
-class SourceFormat:
+class Parser:
     """Interface for an object that defines how individual samples (rows) are streamed
     from the the data source and parsed into a row of features.
     """
@@ -26,6 +11,6 @@ class SourceFormat:
 
         Arguments:
           source: depends on the concrete implementation - the data source
-            returned by SourceLocation.open()
+            returned by Source.open()
         """
         yield
