@@ -203,9 +203,9 @@ def train_with_inference(
         assert final_accuracies[-1] > accuracy_threshold
         assert final_epoch_times[-1] < epoch_time_threshold
         assert total_times[-1] < total_time_threshold
-        avg_non_inf = sum(inf_times[:-1]) / (args.epochs - 1)
-        # print(avg_non_inf, inf_times[-1])
-        assert avg_non_inf >= inf_times[-1] * speed_multiplier_threshold
+        sparse_inf_time = inf_times[-1]
+        avg_dense_inf_time = sum(inf_times[:-1]) / (args.epochs - 1)
+        assert avg_dense_inf_time >= sparse_inf_time * speed_multiplier_threshold
 
     return final_accuracies, final_epoch_times
 

@@ -76,7 +76,10 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
 
   uint32_t outputDim() const final { return _layers.back()->getDim(); }
 
-  void enableSparseInference() { _layers.back()->forceSparseForInference(); }
+  void enableSparseInference() {
+    _sparse_inference_enabled = true;
+    _layers.back()->forceSparseForInference();
+  }
 
  private:
   void forward(uint32_t batch_index, const BoltVector& input,
