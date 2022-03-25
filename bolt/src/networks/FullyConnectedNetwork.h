@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 #include "Model.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
@@ -100,6 +102,21 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
   std::vector<BoltBatch> _states;
   uint32_t _num_layers;
   bool _sparse_inference_enabled;
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Model<dataset::BoltInputBatch>>(this),
+            _input_dim, _layers, _num_layers, _sparse_inference_enabled);
+  }
+
+ protected:
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
+  FullyConnectedNetwork(){};
 };
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedNetwork)
