@@ -85,7 +85,8 @@ class PyDocSearch final : public DocSearch {
     // See https://uscilab.github.io/cereal/inheritance.html
     ar(cereal::base_class<DocSearch>(this));
   }
-  // Private constructor to construct an empty object for Cereal.
+  // Private constructor to construct an empty object for Cereal. See
+  // https://uscilab.github.io/cereal/
   PyDocSearch() : DocSearch() {}
 };
 

@@ -73,7 +73,7 @@ def get_build_and_run_functions_random(num_docs=100, num_queries=100):
 
 def _build_index_random(docs, hashes_per_table, num_tables, data_dim, centroids):
     index = thirdai.search.DocRetrieval(
-        centroids=centroids.tolist(),
+        centroids=centroids,
         hashes_per_table=hashes_per_table,
         num_tables=num_tables,
         dense_input_dimension=data_dim,
