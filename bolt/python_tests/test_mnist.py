@@ -128,11 +128,11 @@ def train_mnist_sparse_hidden_inference(args):
             network.enable_sparse_inference()
 
         times = network.train(
-            train_data, 
+            train_data,
             bolt.CategoricalCrossEntropyLoss(),
-            args.lr, 
-            1, 
-            rehash=3000, 
+            args.lr,
+            1,
+            rehash=3000,
             rebuild=10000,
             metrics=[],
             verbose=False,
