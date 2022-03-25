@@ -1,7 +1,8 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 #include "HashTable.h"
-#include <atomic>
 #include <iostream>
 #include <unordered_set>
 #include <vector>
@@ -20,10 +21,9 @@ class SampledHashTable final : public HashTable<LABEL_T> {
  private:
   uint64_t _num_tables, _reservoir_size, _range, _max_rand;
 
-  LABEL_T* _data;
-  std::atomic<uint32_t>* _counters;
-
-  uint32_t* _gen_rand;
+  std::vector<LABEL_T> _data;
+  std::vector<uint32_t> _counters;
+  std::vector<uint32_t> _gen_rand;
 
   constexpr uint64_t CounterIdx(uint64_t table, uint64_t row) const {
     return table * _range + row;
@@ -36,6 +36,16 @@ class SampledHashTable final : public HashTable<LABEL_T> {
 
   /** Helper method that inserts a given label into the hash tables */
   void insertIntoTables(LABEL_T label, const uint32_t* hashes);
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<HashTable<LABEL_T>>(this), _num_tables,
+            _reservoir_size, _range, _max_rand, _data, _counters, _gen_rand);
+  }
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
+  SampledHashTable<LABEL_T>(){};
 
  public:
   /**
@@ -53,35 +63,6 @@ class SampledHashTable final : public HashTable<LABEL_T> {
   SampledHashTable(const SampledHashTable& other) = delete;
 
   SampledHashTable& operator=(const SampledHashTable& other) = delete;
-
-  SampledHashTable(SampledHashTable&& other)
-      : _num_tables(other._num_tables),
-        _reservoir_size(other._reservoir_size),
-        _range(other._range),
-        _max_rand(other._max_rand),
-        _data(other._data),
-        _counters(other._counters),
-        _gen_rand(other._gen_rand) {
-    other._data = nullptr;
-    other._counters = nullptr;
-    other._gen_rand = nullptr;
-  }
-
-  SampledHashTable& operator=(SampledHashTable&& other) {
-    _num_tables = other._num_tables;
-    _reservoir_size = other._reservoir_size;
-    _range = other._range;
-    _max_rand = other._max_rand;
-    _data = other._data;
-    _counters = other._counters;
-    _gen_rand = other._gen_rand;
-
-    other._data = nullptr;
-    other._counters = nullptr;
-    other._gen_rand = nullptr;
-
-    return *this;
-  }
 
   /**
    * Inserts n elements with the specified labels.
@@ -133,7 +114,11 @@ class SampledHashTable final : public HashTable<LABEL_T> {
 
   inline uint64_t tableRange() const override { return _range; };
 
-  ~SampledHashTable() override;
+  ~SampledHashTable() = default;
 };
 
 }  // namespace thirdai::hashtable
+
+CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint16_t>)
+CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint32_t>)
+CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint64_t>)

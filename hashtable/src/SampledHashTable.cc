@@ -16,21 +16,15 @@ SampledHashTable<LABEL_T>::SampledHashTable(uint64_t num_tables,
     : _num_tables(num_tables),
       _reservoir_size(reservoir_size),
       _range(range),
-      _max_rand(max_rand) {
-  _data = new LABEL_T[_num_tables * _range * _reservoir_size];
-  assert(_data != nullptr);
-
-  _gen_rand = new uint32_t[_max_rand];
-  assert(_gen_rand != nullptr);
-
+      _max_rand(max_rand),
+      _data(num_tables * range * reservoir_size, 0),
+      _counters(num_tables * range, 0),
+      _gen_rand(max_rand) {
   std::mt19937 generator(seed);
 
   for (uint64_t i = 1; i < _max_rand; i++) {
     _gen_rand[i] = generator();
   }
-
-  _counters = new std::atomic<uint32_t>[_num_tables * _range]();
-  assert(_counters != nullptr);
 }
 
 template <typename LABEL_T>
@@ -58,7 +52,10 @@ inline void SampledHashTable<LABEL_T>::insertIntoTables(
     uint32_t row_index = hashes[table];
     assert(row_index < _range);
 
-    uint32_t counter = _counters[CounterIdx(table, row_index)]++;
+    // This is the gcc primitive for atomic operations
+    // https://gcc.gnu.org/onlinedocs/gcc-4.8.2/gcc/_005f_005fatomic-Builtins.html
+    uint32_t counter = __atomic_fetch_add(
+        &_counters[CounterIdx(table, row_index)], 1, __ATOMIC_SEQ_CST);
 
     if (counter < _reservoir_size) {
       _data[DataIdx(table, row_index, counter)] = label;
@@ -125,7 +122,10 @@ void SampledHashTable<LABEL_T>::queryAndInsertForInference(
         uint32_t row_id = hashes[i];
         assert(row_id < _range);
 
-        uint64_t ctr = _counters[CounterIdx(i, row_id)]++;
+        // This is the gcc primitive for atomic operations
+        // https://gcc.gnu.org/onlinedocs/gcc-4.8.2/gcc/_005f_005fatomic-Builtins.html
+        uint64_t ctr = __atomic_fetch_add(&_counters[CounterIdx(i, row_id)], 1,
+                                          __ATOMIC_SEQ_CST);
 
         if (ctr < _reservoir_size) {
           _data[DataIdx(i, row_id, ctr)] = x;
@@ -185,13 +185,6 @@ void SampledHashTable<LABEL_T>::clearTables() {
       _counters[CounterIdx(table, row)] = 0;
     }
   }
-}
-
-template <typename LABEL_T>
-SampledHashTable<LABEL_T>::~SampledHashTable() {
-  delete[] _data;
-  delete[] _counters;
-  delete[] _gen_rand;
 }
 
 }  // namespace thirdai::hashtable
