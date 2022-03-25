@@ -38,6 +38,15 @@ class DocSearch {
                         hashes_per_table),
         _centroids(dense_dim * centroids_input.size()),
         _centroid_id_to_internal_id(centroids_input.size()) {
+    if (dense_dim == 0 || num_tables == 0 || hashes_per_table == 0) {
+      throw std::invalid_argument(
+          "The passed in dense dimension, number of tables, and hashes per "
+          "table must all be greater than 0.");
+    }
+    if (centroids_input.empty()) {
+      throw std::invalid_argument(
+          "Must pass in at least one centroid, found 0.");
+    }
     for (uint32_t i = 0; i < centroids_input.size(); i++) {
       if (_dense_dim != centroids_input.at(i).size()) {
         throw std::invalid_argument(
@@ -107,6 +116,10 @@ class DocSearch {
       const dataset::DenseBatch& embeddings, uint32_t top_k) const {
     if (embeddings.getBatchSize() == 0) {
       throw std::invalid_argument("Need at least one query vector but found 0");
+    }
+    if (top_k == 0) {
+      throw std::invalid_argument(
+          "The passed in top_k must be at least 1, was 0");
     }
     for (uint32_t i = 0; i < embeddings.getBatchSize(); i++) {
       if (embeddings.at(i).dim() != _dense_dim) {

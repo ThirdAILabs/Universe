@@ -72,14 +72,14 @@ def get_build_and_run_functions_random(num_docs=100, num_queries=100):
 
 
 def _build_index_random(docs, hashes_per_table, num_tables, data_dim, centroids):
-    index = thirdai.search.doc_retrieval_index(
+    index = thirdai.search.DocRetrieval(
         centroids=centroids.tolist(),
         hashes_per_table=hashes_per_table,
         num_tables=num_tables,
         dense_input_dimension=data_dim,
     )
     for i, doc in enumerate(docs):
-        index.add_document(doc_id=str(i), doc_text="test", doc_embeddings=np.array(doc))
+        index.add_doc(doc_id=str(i), doc_text="test", doc_embeddings=np.array(doc))
     return index
 
 
@@ -105,14 +105,14 @@ def _build_index_restful(single_test_vector):
     np.random.seed(42)
     random.seed(42)
 
-    index = thirdai.search.doc_retrieval_index(
+    index = thirdai.search.DocRetrieval(
         centroids=single_test_vector,
         hashes_per_table=1,
         num_tables=1,
         dense_input_dimension=single_test_vector.shape[1],
     )
 
-    index.add_document(doc_id="A", doc_text="B", doc_embeddings=single_test_vector)
+    index.add_doc(doc_id="A", doc_text="B", doc_embeddings=single_test_vector)
     return index
 
 
@@ -120,14 +120,14 @@ def _do_queries_restful(index, single_test_vector):
     result = []
 
     # From index building
-    result.append(index.get_document(doc_id="A"))
+    result.append(index.get_doc(doc_id="A"))
 
     # After index building (will only be any different for serialized tests)
-    index.add_document(doc_id="B", doc_text="C", doc_embeddings=single_test_vector)
-    result.append(index.get_document(doc_id="B"))
+    index.add_doc(doc_id="B", doc_text="C", doc_embeddings=single_test_vector)
+    result.append(index.get_doc(doc_id="B"))
 
     # Try getting something we never added
-    result.append(index.get_document(doc_id="C"))
+    result.append(index.get_doc(doc_id="C"))
 
     assert result[0] == "B"
     assert result[1] == "C"

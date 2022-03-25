@@ -41,18 +41,22 @@ void createSearchSubmodule(py::module_& module) {
 
   // TODO(josh): Right now this only has support for dense input and documents
   // with a max of 256 embeddings, and can not be parallilized
-  py::class_<PyDocSearch>(search_submodule, "doc_retrieval_index")
+  // TODO(josh): Comment this class more
+  py::class_<PyDocSearch>(
+      search_submodule, "DocRetrieval",
+      "The DocRetrieval module allows you to build, query, save, and load a "
+      "semantic document search index.")
       .def(py::init<const std::vector<std::vector<float>>&, uint32_t, uint32_t,
                     uint32_t>(),
            py::arg("centroids"), py::arg("hashes_per_table"),
            py::arg("num_tables"), py::arg("dense_input_dimension"))
-      .def("add_document", &PyDocSearch::addDocumentWithCentroids,
-           py::arg("doc_id"), py::arg("doc_text"), py::arg("doc_embeddings"),
+      .def("add_doc", &PyDocSearch::addDocumentWithCentroids, py::arg("doc_id"),
+           py::arg("doc_text"), py::arg("doc_embeddings"),
            py::arg("centroid_ids"))
-      .def("add_document", &PyDocSearch::addDocument, py::arg("doc_id"),
+      .def("add_doc", &PyDocSearch::addDocument, py::arg("doc_id"),
            py::arg("doc_text"), py::arg("doc_embeddings"))
-      .def("delete_document", &PyDocSearch::deleteDocument, py::arg("doc_id"))
-      .def("get_document", &PyDocSearch::getDocument, py::arg("doc_id"))
+      .def("delete_doc", &PyDocSearch::deleteDocument, py::arg("doc_id"))
+      .def("get_doc", &PyDocSearch::getDocument, py::arg("doc_id"))
       .def("query", &PyDocSearch::query, py::arg("query_embeddings"),
            py::arg("top_k"))
       .def("serialize_to_file", &PyDocSearch::serialize_to_file,
