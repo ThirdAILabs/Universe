@@ -276,7 +276,8 @@ def test_mnist_sparse_inference():
         accuracy_threshold=0.90,
         speed_multiplier_threshold=5,
     )
-    
+
+
 def test_load_save_fc_network():
     layers = [
         bolt.LayerConfig(

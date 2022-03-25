@@ -372,7 +372,7 @@ void FullyConnectedLayer::reBuildHashFunction() {
 
 void FullyConnectedLayer::shuffleRandNeurons() {
   if (_sparsity < 1.0 && !_force_sparse_for_inference) {
-    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), 
+    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(),
                  std::random_device{});
   }
 }
