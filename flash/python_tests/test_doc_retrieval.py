@@ -41,33 +41,40 @@ def test_restful_serialization():
     for a, b in zip(query_results1, query_results2):
         assert a == b
 
-def expect_error_on_construction(num_tables = 1, dense_input_dimension = 1, hashes_per_table = 1, centroids=[[0]]):
-  with pytest.raises(Exception):
-    thirdai.search.DocRetrieval(
-        centroids=centroids,
-        hashes_per_table=hashes_per_table,
-        num_tables=num_tables,
-        dense_input_dimension=dense_input_dimension
-    )
+
+def expect_error_on_construction(
+    num_tables=1, dense_input_dimension=1, hashes_per_table=1, centroids=[[0]]
+):
+    with pytest.raises(Exception):
+        thirdai.search.DocRetrieval(
+            centroids=centroids,
+            hashes_per_table=hashes_per_table,
+            num_tables=num_tables,
+            dense_input_dimension=dense_input_dimension,
+        )
+
 
 @pytest.mark.unit
 def test_error_inputs():
-  import time
-  start = time.time()
-  # expect_error_on_construction(num_tables=0)
-  # expect_error_on_construction(num_tables=-7)
-  expect_error_on_construction(dense_input_dimension=0)
-  # expect_error_on_construction(dense_input_dimension=-7)
-  # expect_error_on_construction(dense_input_dimension=100) # Since the default centroids will still be dim=1
-  # expect_error_on_construction(hashes_per_table=0)
-  # expect_error_on_construction(hashes_per_table=-7)
-  # expect_error_on_construction(centroids=[]) 
-  end = time.time()
-  # We should catch input errors quickly and not e.g. build any big objects with a negative number wrap around
-  assert(end - start < 0.001)
+    import time
 
+    start = time.time()
+    expect_error_on_construction(num_tables=0)
+    expect_error_on_construction(num_tables=-7)
+    expect_error_on_construction(dense_input_dimension=0)
+    expect_error_on_construction(dense_input_dimension=-7)
+    expect_error_on_construction(
+        dense_input_dimension=100
+    )  # Since the default centroids will still be dim=1
+    expect_error_on_construction(hashes_per_table=0)
+    expect_error_on_construction(hashes_per_table=-7)
+    expect_error_on_construction(centroids=[])
+    end = time.time()
 
-test_error_inputs()
+    # We have a time assertion because should catch input errors quickly and
+    # not e.g. build any big objects with invalid input
+    assert end - start < 0.01
+
 
 # TOOD(josh): Add the following tests:
 # 1. Test with lots of elements to ensure centroid reranking is reasonably fast

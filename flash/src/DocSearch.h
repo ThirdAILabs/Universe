@@ -33,9 +33,6 @@ class DocSearch {
         _nprobe_query(2),
         _largest_internal_id(0),
         _num_centroids(centroids_input.size()),
-        _document_array(new thirdai::hashing::FastSRP(
-                            dense_dim, hashes_per_table, num_tables),
-                        hashes_per_table),
         _centroids(dense_dim * centroids_input.size()),
         _centroid_id_to_internal_id(centroids_input.size()) {
     if (dense_dim == 0 || num_tables == 0 || hashes_per_table == 0) {
@@ -56,6 +53,14 @@ class DocSearch {
             std::to_string(centroids_input.at(i).size()) +
             " and passed in dense_dim of " + std::to_string(_dense_dim));
       }
+
+      // We delay constructing this so that we can do input checking all here
+      // rather than in FastSRP
+      _document_array = std::make_unique<MaxFlashArray<uint8_t>>(
+          new thirdai::hashing::FastSRP(dense_dim, hashes_per_table,
+                                        num_tables),
+          hashes_per_table);
+
       // We copy the centroids because I couldn't get pybind keep_alive to work.
       for (uint32_t d = 0; d < dense_dim; d++) {
         _centroids.at(i * dense_dim + d) = centroids_input.at(i).at(d);
@@ -78,7 +83,7 @@ class DocSearch {
                    const std::string& doc_id, const std::string& doc_text) {
     bool deletedOldDoc = deleteDocument(doc_id);
 
-    uint32_t internal_id = _document_array.addDocument(embeddings);
+    uint32_t internal_id = _document_array->addDocument(embeddings);
     _largest_internal_id = std::max(_largest_internal_id, internal_id);
 
     for (uint32_t centroid_id : centroid_ids) {
@@ -167,7 +172,7 @@ class DocSearch {
   }
 
   uint32_t _dense_dim, _nprobe_query, _largest_internal_id, _num_centroids;
-  MaxFlashArray<uint8_t> _document_array;
+  std::unique_ptr<MaxFlashArray<uint8_t>> _document_array;
   std::vector<float> _centroids;
   std::vector<std::vector<uint32_t>> _centroid_id_to_internal_id;
   std::unordered_map<std::string, std::string> _doc_id_to_doc_text;
@@ -259,7 +264,7 @@ class DocSearch {
   std::vector<uint32_t> rankDocuments(
       const dataset::DenseBatch& query_embeddings,
       const std::vector<uint32_t>& internal_ids_to_rerank) const {
-    std::vector<float> document_scores = _document_array.getDocumentScores(
+    std::vector<float> document_scores = _document_array->getDocumentScores(
         query_embeddings, internal_ids_to_rerank);
 
     // This is a little confusing, these are indices into the
