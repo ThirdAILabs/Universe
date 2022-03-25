@@ -25,10 +25,11 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
 
   void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
 
+  // TODO: Change the name of the private forward? This is confusing.
   void forward(uint32_t batch_index, const dataset::BoltInputBatch& inputs,
-               BoltVector& output) final {
+               BoltVector& output, bool train) final {
     forward(batch_index, inputs[batch_index], output,
-            &inputs.labels(batch_index));
+            train ? &inputs.labels(batch_index) : nullptr);
   }
 
   void backpropagate(uint32_t batch_index, dataset::BoltInputBatch& inputs,
