@@ -1,3 +1,5 @@
+#pragma once
+
 #include <numeric>
 #include <queue>
 #include <vector>
