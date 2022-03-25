@@ -4,6 +4,8 @@ import sys
 import pytest
 from collections import namedtuple
 
+LEARNING_RATE = 0.0001
+
 
 def setup_module():
     if not os.path.exists("mnist"):
@@ -139,7 +141,7 @@ def test_mnist_sparse_output():
         "hashes_per_table": 1,
         "num_tables": 32,
         "sparsity": 0.4,
-        "lr": 0.0001,
+        "lr": LEARNING_RATE,
         "enable_checks": True,
         "runs": 1,
     }
@@ -161,7 +163,7 @@ def test_mnist_sparse_hidden():
         "hashes_per_table": 3,
         "num_tables": 64,
         "sparsity": 0.01,
-        "lr": 0.0001,
+        "lr": LEARNING_RATE,
         "enable_checks": True,
         "runs": 1,
     }
@@ -195,7 +197,7 @@ def test_load_save_fc_network():
     times = network.train(
         train_data,
         bolt.CategoricalCrossEntropyLoss(),
-        0.0001,
+        LEARNING_RATE,
         2,
         rehash=3000,
         rebuild=10000,
@@ -225,7 +227,7 @@ def test_load_save_fc_network():
     new_network.train(
         train_data,
         bolt.CategoricalCrossEntropyLoss(),
-        0.0001,
+        LEARNING_RATE,
         2,
         rehash=3000,
         rebuild=10000,

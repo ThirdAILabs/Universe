@@ -26,9 +26,6 @@ FullyConnectedLayer::FullyConnectedLayer(
       _is_active(config.dim, false),
       _sampling_config(config.sampling_config),
       _force_sparse_for_inference(false) {
-  // _is_active = new bool[_dim]();  // TODO(nicholas): bitvector?
-  // assert(_is_active != nullptr);
-
   std::random_device rd;
   std::default_random_engine eng(rd());
   std::normal_distribution<float> dist(0.0, 0.01);
