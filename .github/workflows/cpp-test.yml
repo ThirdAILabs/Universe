@@ -13,20 +13,14 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  test:
+  cpp-tests:
     runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
 
-      - name: download-openmpi
+      - name: Run all c++ tests
         run: |
-          sudo apt-get update
-          sudo apt-get install gcc g++
-          sudo apt-get install -y mpich libmpich-dev
-          sudo apt-get install -y openmpi-bin openmpi-doc libopenmpi-dev
-      - name: Build and Run Tests
-        run: |
-          bin/build.sh all debug
-          bin/cpp-test.sh -V
+          docker build -t test_image -f docker/develop/Dockerfile .  
+          docker run --privileged --mount type=bind,source=${PWD},target=/src test_image /bin/bash -c "src/bin/build.sh all Debug ; src/bin/cpp-test.sh -V"

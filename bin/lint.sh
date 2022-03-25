@@ -14,4 +14,5 @@ then
   exit 1
 fi
 
-python3 $BASEDIR/run-clang-tidy.py
+cd $BASEDIR/../
+python3 bin/run-clang-tidy.py

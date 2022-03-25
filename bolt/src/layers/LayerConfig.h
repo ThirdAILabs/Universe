@@ -1,12 +1,33 @@
 #pragma once
 
+#include <cctype>
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
-enum class ActivationFunc { ReLU, Softmax, MeanSquared };
+enum class ActivationFunction { ReLU, Softmax, Linear };
+
+static ActivationFunction getActivationFunction(
+    const std::string& act_func_name) {
+  std::string lower_name;
+  for (char c : act_func_name) {
+    lower_name.push_back(std::tolower(c));
+  }
+  if (lower_name == "relu") {
+    return ActivationFunction::ReLU;
+  }
+  if (lower_name == "softmax") {
+    return ActivationFunction::Softmax;
+  }
+  if (lower_name == "linear") {
+    return ActivationFunction::Linear;
+  }
+  throw std::invalid_argument("'" + act_func_name +
+                              "' is not a valid activation function");
+}
 
 struct SamplingConfig {
   uint32_t hashes_per_table, num_tables, range_pow, reservoir_size;
@@ -25,24 +46,8 @@ struct SamplingConfig {
 struct FullyConnectedLayerConfig {
   uint64_t dim;
   float sparsity;
-  ActivationFunc act_func;
+  ActivationFunction act_func;
   SamplingConfig sampling_config;
-
-  static ActivationFunc activationFuncFromStr(const std::string& str) {
-    if (str == "ReLU") {
-      return ActivationFunc::ReLU;
-    }
-    if (str == "Softmax") {
-      return ActivationFunc::Softmax;
-    }
-    if (str == "MeanSquared") {
-      return ActivationFunc::MeanSquared;
-    }
-    throw std::invalid_argument(
-        "'" + str +
-        "' is not a valid activation function. Supported activation "
-        "functions: 'ReLU', 'Softmax'");
-  }
 
   static void checkSparsity(float sparsity) {
     if (0.2 < sparsity && sparsity < 1.0) {
@@ -52,30 +57,26 @@ struct FullyConnectedLayerConfig {
   }
 
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
-                            ActivationFunc _act_func, SamplingConfig _config)
+                            ActivationFunction _act_func,
+                            SamplingConfig _config)
       : dim(_dim),
         sparsity(_sparsity),
         act_func(_act_func),
-        sampling_config(_config) {}
-
-  FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
-                            const std::string& act_func_str,
-                            SamplingConfig _config)
-      : dim(_dim), sparsity(_sparsity), sampling_config(_config) {
-    act_func = activationFuncFromStr(act_func_str);
+        sampling_config(_config) {
     checkSparsity(sparsity);
   }
 
-  FullyConnectedLayerConfig(uint64_t _dim, const std::string& act_func_str)
-      : dim(_dim), sparsity(1.0), sampling_config(SamplingConfig()) {
-    act_func = activationFuncFromStr(act_func_str);
+  FullyConnectedLayerConfig(uint64_t _dim, ActivationFunction _act_func)
+      : dim(_dim),
+        sparsity(1.0),
+        act_func(_act_func),
+        sampling_config(SamplingConfig()) {
     checkSparsity(sparsity);
   }
 
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
-                            const std::string& act_func_str)
-      : dim(_dim), sparsity(_sparsity) {
-    act_func = activationFuncFromStr(act_func_str);
+                            ActivationFunction _act_func)
+      : dim(_dim), sparsity(_sparsity), act_func(_act_func) {
     checkSparsity(sparsity);
     if (sparsity < 1.0) {
       uint32_t rp = (static_cast<uint32_t>(log2(dim)) / 3) * 3;
@@ -92,14 +93,14 @@ struct FullyConnectedLayerConfig {
                                   const FullyConnectedLayerConfig& config) {
     out << "Layer: dim=" << config.dim << ", load_factor=" << config.sparsity;
     switch (config.act_func) {
-      case ActivationFunc::ReLU:
+      case ActivationFunction::ReLU:
         out << ", act_func=ReLU";
         break;
-      case ActivationFunc::Softmax:
+      case ActivationFunction::Softmax:
         out << ", act_func=Softmax";
         break;
-      case ActivationFunc::MeanSquared:
-        out << ", act_func=MeanSquared";
+      case ActivationFunction::Linear:
+        out << ", act_func=Linear";
         break;
     }
     if (config.sparsity < 1.0) {
