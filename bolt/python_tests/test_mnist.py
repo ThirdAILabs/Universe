@@ -118,21 +118,33 @@ def train_mnist_sparse_hidden_inference(args):
     ]
     network = bolt.Network(layers=layers, input_dim=784)
 
-    train_data = dataset.load_svm_dataset(args.train, 250)
-    test_data = dataset.load_svm_dataset(args.test, 250)
+    train_data = dataset.load_bolt_svm_dataset(args.train, 250)
+    test_data = dataset.load_bolt_svm_dataset(args.test, 250)
     epoch_times = []
     inf_times = []
     epoch_accuracies = []
     for i in range(args.epochs):
         if i == (args.epochs - 1):
             network.enable_sparse_inference()
-        times = network.train(train_data, args.lr, 1, rehash=3000, rebuild=10000)
-        epoch_times.append(times[0])
+
+        times = network.train(
+            train_data, 
+            bolt.CategoricalCrossEntropyLoss(),
+            args.lr, 
+            1, 
+            rehash=3000, 
+            rebuild=10000,
+            metrics=[],
+            verbose=False,
+        )
+        epoch_times.append(times["epoch_times"][0])
         t0 = time.time()
-        acc = network.predict(test_data)
+        acc, _ = network.predict(
+            test_data, metrics=["categorical_accuracy"], verbose=False
+        )
         t1 = time.time()
         inf_times.append(t1 - t0)
-        epoch_accuracies.append(acc)
+        epoch_accuracies.append(acc["categorical_accuracy"][0])
     return epoch_accuracies[-1], epoch_accuracies, epoch_times, inf_times
 
 
