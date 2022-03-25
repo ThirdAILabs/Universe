@@ -224,6 +224,7 @@ def test_load_save_fc_network():
 
     assert new_acc["categorical_accuracy"][0] == original_acc["categorical_accuracy"][0]
 
+    # Continue to train loaded network
     new_network.train(
         train_data,
         bolt.CategoricalCrossEntropyLoss(),
