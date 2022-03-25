@@ -5,6 +5,7 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
 #include "MaxFlashArray.h"
+#include "Utils.h"
 #include <hashing/src/FastSRP.h>
 #include <dataset/src/Vectors.h>
 #include <dataset/src/batch_types/DenseBatch.h>
@@ -37,8 +38,6 @@ class DocSearch {
                         hashes_per_table),
         _centroids(dense_dim * centroids_input.size()),
         _centroid_id_to_internal_id(centroids_input.size()) {
-    // We copy the centroids here because I couldn't get pybind keep_alive to
-    // work.
     for (uint32_t i = 0; i < centroids_input.size(); i++) {
       if (_dense_dim != centroids_input.at(i).size()) {
         throw std::invalid_argument(
@@ -48,6 +47,7 @@ class DocSearch {
             std::to_string(centroids_input.at(i).size()) +
             " and passed in dense_dim of " + std::to_string(_dense_dim));
       }
+      // We copy the centroids because I couldn't get pybind keep_alive to work.
       for (uint32_t d = 0; d < dense_dim; d++) {
         _centroids.at(i * dense_dim + d) = centroids_input.at(i).at(d);
       }
@@ -68,7 +68,6 @@ class DocSearch {
                    const std::vector<uint32_t>& centroid_ids,
                    const std::string& doc_id, const std::string& doc_text) {
     bool deletedOldDoc = deleteDocument(doc_id);
-
 
     uint32_t internal_id = _document_array.addDocument(embeddings);
     _largest_internal_id = std::max(_largest_internal_id, internal_id);
@@ -93,7 +92,8 @@ class DocSearch {
     }
 
     // TODO(josh)
-    throw thirdai::exceptions::NotImplemented();
+    throw thirdai::exceptions::NotImplemented(
+        "Deleting documents is not yet implemented.");
   }
 
   std::optional<std::string> getDocument(const std::string& doc_id) const {
@@ -147,9 +147,9 @@ class DocSearch {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_dense_dim, _nprobe_query, _largest_internal_id, _num_centroids, 
-            _document_array, _centroids, _centroid_id_to_internal_id, 
-            _doc_id_to_doc_text, _doc_id_to_internal_id, 
+    archive(_dense_dim, _nprobe_query, _largest_internal_id, _num_centroids,
+            _document_array, _centroids, _centroid_id_to_internal_id,
+            _doc_id_to_doc_text, _doc_id_to_internal_id,
             _internal_id_to_doc_id);
   }
 
@@ -168,10 +168,11 @@ class DocSearch {
     std::vector<uint32_t> result;
 #pragma omp parallel for default(none) shared(batch, nprobe, result)
     for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
-      std::vector<uint32_t> nearest_centroids = getNearestCentroids(batch.at(i), nprobe);
+      std::vector<uint32_t> nearest_centroids =
+          getNearestCentroids(batch.at(i), nprobe);
       for (uint32_t probe : getNearestCentroids(batch.at(i), nprobe)) {
         (void)probe;
-#pragma omp critical      
+#pragma omp critical
         result.push_back(probe);
       }
     }
@@ -194,45 +195,10 @@ class DocSearch {
     return argmax(scores, nprobe);
   }
 
-  static void removeDuplicates(std::vector<uint32_t>& v) {
-    std::sort(v.begin(), v.end());
-    v.erase(unique(v.begin(), v.end()), v.end());
-  }
-
-  // TODO(josh): Move some of these static functions to different file
-  template <class T>
-  static std::vector<uint32_t> argmax(const std::vector<T>& input,
-                                      uint32_t top_k) {
-    static_assert(std::is_signed<T>::value,
-                  "The input to the argmax needs to be signed so we can negate "
-                  "the values for the priority queue.");
-    std::priority_queue<std::pair<T, uint32_t>> min_heap;
-    for (uint32_t i = 0; i < input.size(); i++) {
-      if (min_heap.size() < top_k) {
-        min_heap.emplace(-input[i], i);
-      } else if (-input[i] < min_heap.top().first) {
-        min_heap.pop();
-        min_heap.emplace(-input[i], i);
-      }
-    }
-
-    std::vector<uint32_t> result;
-    while (!min_heap.empty()) {
-      result.push_back(min_heap.top().second);
-      min_heap.pop();
-    }
-
-    std::reverse(result.begin(), result.end());
-
-    return result;
-  }
-
   std::vector<uint32_t> frequencyCountCentroidBuckets(
       const std::vector<uint32_t>& centroid_ids, uint32_t top_k) const {
-    
     // Populate initial counts array.
     std::vector<int32_t> counts(_largest_internal_id + 1, 0);
-// #pragma omp parallel for default(none) shared(centroid_ids, counts)
     for (uint32_t centroid_id : centroid_ids) {
       for (uint32_t internal_id : _centroid_id_to_internal_id.at(centroid_id)) {
         counts.at(internal_id) += 1;
@@ -241,9 +207,10 @@ class DocSearch {
 
     // Find the top k by looping through the input again to know what counts
     // values to examine (we can avoid traversing all possible counts, many
-    // of which are zero). We negate a counts element when we have seen it so
-    // that if we come across it again (if there is more than one occurence 
-    // of it) we can ignore it. 
+    // of which are zero). Since we do it this way for performance we can't
+    // use the argmax util function. We negate a counts element when we have
+    // seen it so that if we come across it again (if there is more than one
+    // occurence of it) we can ignore it.
     // Note also that the heap is a max heap, so we negate everything to make
     // it a min heap in effect.
 
@@ -274,27 +241,25 @@ class DocSearch {
     return result;
   }
 
+  // This method returns a permutation of the input internal_ids_to_rerank
+  // sorted in descending order by the approximated score of that document.
   std::vector<uint32_t> rankDocuments(
       const dataset::DenseBatch& query_embeddings,
-      const std::vector<uint32_t>& documents_to_rerank) const {
+      const std::vector<uint32_t>& internal_ids_to_rerank) const {
     std::vector<float> document_scores = _document_array.getDocumentScores(
-        query_embeddings, documents_to_rerank);
+        query_embeddings, internal_ids_to_rerank);
 
-    // Get indices of top elements in sim_sums
-    std::vector<uint32_t> idx(document_scores.size());
-    std::iota(idx.begin(), idx.end(), 0);
-    std::stable_sort(idx.begin(), idx.end(),
-                     [&document_scores](size_t i1, size_t i2) {
-                       return document_scores[i1] > document_scores[i2];
-                     });
+    // This is a little confusing, these are indices into the
+    // internal_ids_to_rerank array. We then need to convert them back to
+    // document internal_ids, which we do below.
+    std::vector<uint32_t> sorted_indices = argsort_descending(document_scores);
 
-    assert(documents_to_rerank.size() == idx.size());
-    std::vector<uint32_t> final_result(documents_to_rerank.size());
-    for (uint32_t i = 0; i < final_result.size(); i++) {
-      final_result[i] = documents_to_rerank.at(idx[i]);
+    std::vector<uint32_t> permuted_ids(internal_ids_to_rerank.size());
+    for (uint32_t i = 0; i < permuted_ids.size(); i++) {
+      permuted_ids[i] = internal_ids_to_rerank.at(sorted_indices[i]);
     }
 
-    return final_result;
+    return permuted_ids;
   }
 };
 

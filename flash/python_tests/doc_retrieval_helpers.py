@@ -79,10 +79,7 @@ def _build_index_random(docs, hashes_per_table, num_tables, data_dim, centroids)
         dense_input_dimension=data_dim,
     )
     for i, doc in enumerate(docs):
-        import time
-        start = time.time()
         index.add_document(doc_id=str(i), doc_text="test", doc_embeddings=np.array(doc))
-        print(time.time() - start)
     return index
 
 
@@ -123,12 +120,16 @@ def _do_queries_restful(index, single_test_vector):
     result = []
 
     # From index building
-    result += index.get_document(doc_id="A")
+    result.append(index.get_document(doc_id="A"))
 
     # After index building (will only be any different for serialized tests)
     index.add_document(doc_id="B", doc_text="C", doc_embeddings=single_test_vector)
-    result += index.get_document(doc_id="B")
+    result.append(index.get_document(doc_id="B"))
+
+    # Try getting something we never added
+    result.append(index.get_document(doc_id="C"))
 
     assert result[0] == "B"
     assert result[1] == "C"
+    assert result[2] == None
     return result

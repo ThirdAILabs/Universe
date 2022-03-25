@@ -47,8 +47,8 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("centroids"), py::arg("hashes_per_table"),
            py::arg("num_tables"), py::arg("dense_input_dimension"))
       .def("add_document", &PyDocSearch::addDocumentWithCentroids,
-           py::arg("doc_id"), py::arg("doc_text"),
-           py::arg("doc_embeddings"), py::arg("centroid_ids"))
+           py::arg("doc_id"), py::arg("doc_text"), py::arg("doc_embeddings"),
+           py::arg("centroid_ids"))
       .def("add_document", &PyDocSearch::addDocument, py::arg("doc_id"),
            py::arg("doc_text"), py::arg("doc_embeddings"))
       .def("delete_document", &PyDocSearch::deleteDocument, py::arg("doc_id"))
