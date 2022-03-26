@@ -87,7 +87,7 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
-      .def("enable_sparse_inference", &PyNetwork::enableSparseInference);
+      .def("enable_sparse_inference", &PyNetwork::enableSparseInference)
       .def("save", &PyNetwork::save, py::arg("filename"))
       .def_static("load", &PyNetwork::load, py::arg("filename"));
 
