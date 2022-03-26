@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/networks/DLRM.h>
@@ -11,6 +13,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <pybind11/iostream.h>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <string>
@@ -235,6 +238,30 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     return {metric_data, activations_array};
   }
+  void save(const std::string& filename) {
+    std::ofstream filestream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<PyNetwork> load(const std::string& filename) {
+    std::ifstream filestream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<PyNetwork> deserialize_into(new PyNetwork());
+    iarchive(*deserialize_into);
+    return deserialize_into;
+  }
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<FullyConnectedNetwork>(this));
+  }
+
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
+  PyNetwork() : FullyConnectedNetwork(){};
 };
 
 class PyDLRM final : public DLRM {
@@ -282,3 +309,5 @@ class PyDLRM final : public DLRM {
 };
 
 }  // namespace thirdai::bolt::python
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::python::PyNetwork)
