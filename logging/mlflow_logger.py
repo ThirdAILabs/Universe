@@ -44,11 +44,15 @@ class ProductRecommendationLogger:
         hashes_per_table=5,
         sparsity=0.01,
         algorithm="bolt") as mlflow_logger:
+
         <Code to init model>
+
         mlflow_logger.log_start_training()
+
         for each epoch:
           <train model a single epoch>
           mlflow_logger.log_epoch(accuracy)
+
     To use with something like TensorFlow that does not have num_hash_tables
     , hashes_per_table, or sparsity, you can leave those fields out. Note
     mlflow only supports a single run at a time, so don't nest "with"
