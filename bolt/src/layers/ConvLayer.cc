@@ -128,6 +128,35 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
 
     template <bool DENSE, bool PREV_DENSE>
     void selectActiveFilters(const BoltVector& input, BoltVector& output,
-                        uint32_t in_patch, uint64_t out_patch);
+                        uint32_t in_patch, uint64_t out_patch) {
 
+    };
+
+    void ConvLayer::reBuildHashFunction() {
+        if (_sparsity >= 1.0) {
+            return;
+        }
+        _hasher = std::make_unique<hashing::DWTAHashFunction>(
+            _patch_dim, _sampling_config.hashes_per_table, _sampling_config.num_tables,
+            _sampling_config.range_pow);
+    }
+
+    void ConvLayer::buildHashTables() {
+        if (_sparsity >= 1.0) {
+            return;
+        }
+        uint64_t num_tables = _hash_table->numTables();
+        uint32_t* hashes = new uint32_t[num_tables * _num_filters];
+
+        #pragma omp parallel for default(none) shared(num_tables, hashes)
+        for (uint64_t n = 0; n < _num_filters; n++) {
+            _hasher->hashSingleDense(_weights.data() + n * _patch_dim, _patch_dim,
+                                    hashes + n * num_tables);
+        }
+
+        _hash_table->clearTables();
+        _hash_table->insertSequential(_num_filters, 0, hashes);
+
+        delete[] hashes;
+    }
 }  // namespace thirdai::bolt
