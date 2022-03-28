@@ -122,7 +122,6 @@ MetricData Model<BATCH_T>::predict(
 #pragma omp parallel for default(none) \
     shared(inputs, outputs, output_activations, metrics, batch, batch_size)
     for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
-      constexpr bool train = false;
       forward(i, inputs, outputs[i], /* train= */ false);
 
       metrics.processSample(outputs[i], inputs.labels(i));
