@@ -52,7 +52,6 @@ MetricData Model<BATCH_T>::train(
 
 #pragma omp parallel for default(none) shared(inputs, outputs, loss_fn, metrics)
       for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
-        constexpr bool train = true;
         forward(i, inputs, outputs[i], /* train=*/ true);
 
         loss_fn.loss(outputs[i], inputs.labels(i), inputs.getBatchSize());
