@@ -9,9 +9,9 @@ from modeling.colbert import ColBERT
 
 class Checkpoint(ColBERT):
     """
-        Easy inference with ColBERT.
+    Easy inference with ColBERT.
 
-        TODO: Add .cast() accepting [also] an object instance-of(Checkpoint) as first argument.
+    TODO: Add .cast() accepting [also] an object instance-of(Checkpoint) as first argument.
     """
 
     def __init__(self, name):
@@ -39,7 +39,9 @@ class Checkpoint(ColBERT):
                 return D
 
     def queryFromText(self, queries, context=None):
-        input_ids, attention_mask = self.query_tokenizer.tensorize(queries, context=context)
+        input_ids, attention_mask = self.query_tokenizer.tensorize(
+            queries, context=context
+        )
         return self.query(input_ids, attention_mask)
 
     def docFromText(self, docs):

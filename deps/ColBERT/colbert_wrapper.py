@@ -1,5 +1,6 @@
 from modeling.checkpoint import Checkpoint
 
+
 class Colbert:
     def __init__(self, checkpoint_path):
         self.checkpoint = Checkpoint(checkpoint_path).cpu()

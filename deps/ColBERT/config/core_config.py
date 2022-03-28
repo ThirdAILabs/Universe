@@ -9,7 +9,6 @@ from dataclasses import dataclass, fields
 from utils.utils import timestamp, torch_load_dnn
 
 
-
 @dataclass
 class DefaultVal:
     val: Any
@@ -32,7 +31,7 @@ class CoreConfig:
 
             if not isinstance(field_val, DefaultVal):
                 self.assigned[field.name] = True
-    
+
     def assign_defaults(self):
         for field in fields(self):
             setattr(self, field.name, field.default.val)
@@ -66,7 +65,7 @@ class CoreConfig:
         print(ujson.dumps(dataclasses.asdict(self), indent=4))
 
     def __export_value(self, v):
-        v = v.provenance() if hasattr(v, 'provenance') else v
+        v = v.provenance() if hasattr(v, "provenance") else v
 
         if isinstance(v, list) and len(v) > 100:
             v = (f"list with {len(v)} elements starting with...", v[:3])

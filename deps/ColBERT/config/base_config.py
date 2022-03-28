@@ -20,7 +20,7 @@ class BaseConfig(CoreConfig):
         for source in sources:
             if source is None:
                 continue
-                
+
             local_kw_args = dataclasses.asdict(source)
             local_kw_args = {k: local_kw_args[k] for k in source.assigned}
             kw_args = {**kw_args, **local_kw_args}
@@ -41,28 +41,31 @@ class BaseConfig(CoreConfig):
         with open(name) as f:
             args = ujson.load(f)
 
-            if 'config' in args:
-                args = args['config']
+            if "config" in args:
+                args = args["config"]
 
-        return cls.from_deprecated_args(args)  # the new, non-deprecated version functions the same at this level.
-    
+        return cls.from_deprecated_args(
+            args
+        )  # the new, non-deprecated version functions the same at this level.
+
     @classmethod
     def load_from_checkpoint(cls, checkpoint_path):
-        if checkpoint_path.endswith('.dnn'):
+        if checkpoint_path.endswith(".dnn"):
             dnn = torch_load_dnn(checkpoint_path)
-            config, _ = cls.from_deprecated_args(dnn.get('arguments', {}))
+            config, _ = cls.from_deprecated_args(dnn.get("arguments", {}))
 
             # TODO: FIXME: Decide if the line below will have any unintended consequences. We don't want to overwrite those!
-            config.set('checkpoint', checkpoint_path)
+            config.set("checkpoint", checkpoint_path)
 
             return config
 
-        loaded_config_path = os.path.join(checkpoint_path, 'artifact.metadata')
+        loaded_config_path = os.path.join(checkpoint_path, "artifact.metadata")
         if os.path.exists(loaded_config_path):
             loaded_config, _ = cls.from_path(loaded_config_path)
-            loaded_config.set('checkpoint', checkpoint_path)
+            loaded_config.set("checkpoint", checkpoint_path)
 
             return loaded_config
 
-        return None  # can happen if checkpoint_path is something like 'bert-base-uncased'
-
+        return (
+            None  # can happen if checkpoint_path is something like 'bert-base-uncased'
+        )
