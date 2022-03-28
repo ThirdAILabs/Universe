@@ -72,8 +72,9 @@ void DLRM::initializeNetworkState(uint32_t batch_size, bool force_dense) {
 }
 
 void DLRM::forward(uint32_t batch_index,
-                   const dataset::ClickThroughBatch& inputs,
-                   BoltVector& output) {
+                   const dataset::ClickThroughBatch& inputs, BoltVector& output,
+                   bool train) {
+  (void)train;
   _bottom_mlp.forward(batch_index, inputs[batch_index],
                       _bottom_mlp_output[batch_index], nullptr);
 
