@@ -76,7 +76,10 @@ void createBoltSubmodule(py::module_& module) {
       .def("enable_sparse_inference", &PyNetwork::enableSparseInference)
       .def("get_embeddings",  &PyNetwork::getEmbeddings,
            py::arg("layer_no"), py::arg("test_data"),
-           py::arg("test_batch_size"));
+           py::arg("test_batch_size"))
+      .def("get_embeddings", &PyNetwork::getEmbeddingsWithDenseNumpyArray,
+           py::arg("layer_no"), py::arg("test_examples"),
+           py::arg("test_labels"), py::arg("test_batch_size"));
 
   py::class_<PyDLRM>(bolt_submodule, "DLRM")
       .def(py::init<thirdai::bolt::EmbeddingLayerConfig,
