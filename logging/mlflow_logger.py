@@ -1,13 +1,15 @@
-import mlflow
-import toml
-import time
 import os
 import platform
 import socket
-import psutil
+import time
 
-fileDir = os.path.dirname(os.path.abspath(__file__))
-with open(fileDir + "/config.toml") as f:
+import mlflow
+import psutil
+import toml
+
+file_dir = os.path.dirname(os.path.abspath(__file__))
+file_name = os.path.join(file_dir, "config.toml")
+with open(file_name) as f:
     parsed_config = toml.load(f)
 mlflow.set_tracking_uri(parsed_config["tracking"]["uri"])
 
@@ -31,7 +33,7 @@ def _log_machine_info():
         mlflow.log_param(key, val)
 
 
-class ProductRecommendationLogger:
+class ExperimentLogger:
     """
     This class starts an mlflow run that logs metadata about a model run to
     our mlflow tracking server. It has fields for Bolt, but also can be used
@@ -62,36 +64,36 @@ class ProductRecommendationLogger:
 
     def __init__(
         self,
+        experiment_name,
         dataset,
-        learning_rate,
-        num_hash_tables=False,
-        hashes_per_table=False,
-        sparsity=False,
         algorithm="bolt",
+        experiment_args=None,
     ):
+        self.experiment_name = experiment_name
         self.dataset = dataset
-        self.num_hash_tables = num_hash_tables
-        self.hashes_per_table = hashes_per_table
-        self.sparsity = sparsity
-        self.learning_rate = learning_rate
         self.algorithm = algorithm
+        self.experiment_args = experiment_args
         self.epoch_times = []
         self.epoch_accuracies = []
 
     def __enter__(self):
-        mlflow.set_experiment("Product Recommendation")
+        mlflow.set_experiment(self.experiment_name)
         mlflow.start_run(
             tags={"dataset": self.dataset, "algorithm": self.algorithm},
         )
         _log_machine_info()
-        mlflow.log_param("learning_rate", self.learning_rate)
+        # mlflow.log_param("learning_rate", self.learning_rate)
 
-        if self.num_hash_tables:
-            mlflow.log_param("num_hash_tables", self.num_hash_tables)
-        if self.hashes_per_table:
-            mlflow.log_param("hashes_per_table", self.hashes_per_table)
-        if self.sparsity:
-            mlflow.log_param("sparsity", self.sparsity)
+        if self.experiment_args:
+            for k, v in vars(self.experiment_args).items():
+                mlflow.log_param(k, v)
+
+        # if self.num_hash_tables:
+        #     mlflow.log_param("num_hash_tables", self.num_hash_tables)
+        # if self.hashes_per_table:
+        #     mlflow.log_param("hashes_per_table", self.hashes_per_table)
+        # if self.sparsity:
+        #     mlflow.log_param("sparsity", self.sparsity)
         self.start_time = time.time()
         return self
 
@@ -137,6 +139,10 @@ class ProductRecommendationLogger:
                 sum(self.epoch_times) / (len(self.epoch_times) - 1),
             )
 
+
+
+# TODO: Change function signature
+# def log_run(experiment, dataset, algorithm, *args, **kwargs)
 
 def log_imagesearch_run(
     reservoir_size,

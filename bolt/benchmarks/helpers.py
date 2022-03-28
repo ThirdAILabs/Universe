@@ -1,6 +1,3 @@
-import sys
-
-
 def add_arguments(
     parser, train, test, epochs, hashes_per_table, num_tables, sparsity, lr
 ):
