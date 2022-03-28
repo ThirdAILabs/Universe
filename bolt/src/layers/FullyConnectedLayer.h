@@ -14,7 +14,7 @@ namespace tests {
 class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
-class FullyConnectedLayer final {
+class FullyConnectedLayer {
   friend class tests::FullyConnectedLayerTestFixture;
 
  public:
@@ -28,14 +28,14 @@ class FullyConnectedLayer final {
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
                       uint64_t prev_dim);
 
-  void forward(const BoltVector& input, BoltVector& output,
+  virtual void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels = nullptr);
 
-  void backpropagate(BoltVector& input, BoltVector& output);
+  virtual void backpropagate(BoltVector& input, BoltVector& output);
 
-  void backpropagateInputLayer(BoltVector& input, BoltVector& output);
+  virtual void backpropagateInputLayer(BoltVector& input, BoltVector& output);
 
-  void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
+  virtual void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
   BoltBatch createBatchState(const uint32_t batch_size,
                              bool force_dense = false) const {
@@ -52,9 +52,9 @@ class FullyConnectedLayer final {
 
   bool isForceSparsity() const { return _force_sparse_for_inference; }
 
-  void buildHashTables();
+  virtual void buildHashTables();
 
-  void reBuildHashFunction();
+  virtual void reBuildHashFunction();
 
   void shuffleRandNeurons();
 
