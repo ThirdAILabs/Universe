@@ -124,7 +124,7 @@ MetricData Model<BATCH_T>::predict(
     shared(inputs, outputs, output_activations, metrics, batch, batch_size)
     for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
       constexpr bool train = false;
-      forward(i, inputs, outputs[i], train);
+      forward(i, inputs, outputs[i], /* train= */ false);
 
       metrics.processSample(outputs[i], inputs.labels(i));
 
