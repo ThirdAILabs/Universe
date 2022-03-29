@@ -37,7 +37,7 @@ class FullyConnectedLayer {
 
   virtual void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
 
-  BoltBatch createBatchState(const uint32_t batch_size,
+  virtual BoltBatch createBatchState(const uint32_t batch_size,
                              bool force_dense = false) const {
     bool is_dense = (_sparse_dim == _dim) || force_dense;
 
@@ -70,6 +70,24 @@ class FullyConnectedLayer {
 
   virtual ~FullyConnectedLayer() = default;
 
+ protected:
+  constexpr float actFuncDerivative(float x) {
+    switch (_act_func) {
+      case ActivationFunction::ReLU:
+        return x > 0 ? 1.0 : 0.0;
+      case ActivationFunction::Softmax:
+        // return 1.0; // Commented out because Clang tidy doesn't like
+        // consecutive identical branches
+      case ActivationFunction::Linear:
+        return 1.0;
+        // default:
+        //   return 0.0;
+    }
+    // This is impossible to reach, but the compiler gave a warning saying it
+    // reached the end of a non void function without it.
+    return 0.0;
+  }
+
  private:
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output,
@@ -81,8 +99,6 @@ class FullyConnectedLayer {
   template <bool DENSE, bool PREV_DENSE>
   void selectActiveNeurons(const BoltVector& input, BoltVector& output,
                            const BoltVector* labels);
-
-  constexpr float actFuncDerivative(float x);
 
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;

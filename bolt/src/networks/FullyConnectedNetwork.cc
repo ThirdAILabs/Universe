@@ -34,7 +34,8 @@ FullyConnectedNetwork::FullyConnectedNetwork(
 
     uint64_t prev_dim;
     if (i > 0) {
-      if (is_conv_layer) {
+      bool prev_is_conv_layer = configs[i - 1].patch_dim != 0;
+      if (prev_is_conv_layer) {
         prev_dim = configs[i - 1].dim * configs[i - 1].num_patches;
       } else {
         prev_dim = configs[i - 1].dim;

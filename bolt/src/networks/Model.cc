@@ -50,7 +50,7 @@ MetricData Model<BATCH_T>::train(
 
       BATCH_T& inputs = train_data[batch];
 
-#pragma omp parallel for default(none) shared(inputs, outputs, loss_fn, metrics)
+// #pragma omp parallel for default(none) shared(inputs, outputs, loss_fn, metrics)
       for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
         forward(i, inputs, outputs[i]);
 
@@ -119,8 +119,8 @@ MetricData Model<BATCH_T>::predict(
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
     const BATCH_T& inputs = test_data[batch];
 
-#pragma omp parallel for default(none) \
-    shared(inputs, outputs, output_activations, metrics, batch, batch_size)
+// #pragma omp parallel for default(none) 
+//     shared(inputs, outputs, output_activations, metrics, batch, batch_size)
     for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
       forward(i, inputs, outputs[i]);
 

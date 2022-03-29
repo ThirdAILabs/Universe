@@ -179,23 +179,6 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
   }
 }
 
-constexpr float FullyConnectedLayer::actFuncDerivative(float x) {
-  switch (_act_func) {
-    case ActivationFunction::ReLU:
-      return x > 0 ? 1.0 : 0.0;
-    case ActivationFunction::Softmax:
-      // return 1.0; // Commented out because Clang tidy doesn't like
-      // consecutive identical branches
-    case ActivationFunction::Linear:
-      return 1.0;
-      // default:
-      //   return 0.0;
-  }
-  // This is impossible to reach, but the compiler gave a warning saying it
-  // reached the end of a non void function without it.
-  return 0.0;
-}
-
 template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
                                             BoltVector& output) {

@@ -34,6 +34,8 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
                 "Conv layers currently support only ReLU Activation.");
         }
 
+        buildPatchMaps();
+
         std::random_device rd;
         std::default_random_engine eng(rd());
         std::normal_distribution<float> dist(0.0, 0.01);
@@ -67,14 +69,14 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
     }
 
     void ConvLayer::forward(const BoltVector& input, BoltVector& output, const BoltVector*) {
-        if (output.active_neurons == nullptr) { // output is dense
-            if (input.active_neurons == nullptr) { // input is dense
+        if (output.isDense()) {
+            if (input.isDense()) { // input is dense
             forwardImpl<true, true>(input, output);
             } else {
             forwardImpl<true, false>(input, output);
             }
         } else {
-            if (input.active_neurons == nullptr) {
+            if (input.isDense()) {
             forwardImpl<false, true>(input, output);
             } else {
             forwardImpl<false, false>(input, output);
@@ -84,7 +86,7 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
 
     template <bool DENSE, bool PREV_DENSE>
     void ConvLayer::forwardImpl(const BoltVector& input, BoltVector& output) {
-        std::cout << "Starting forward pass with prev_dense: " << PREV_DENSE << " and dense: " << DENSE << std::endl;
+        std::cout << "Starting forward pass witih dim: " << _dim <<" with prev_dense: " << PREV_DENSE << " and dense: " << DENSE << std::endl;
 
         uint32_t num_active_filters; // if dense use all filters, otherwise use a sparse subset
         if (DENSE) {
@@ -127,14 +129,14 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
     }
 
     void ConvLayer::backpropagate(BoltVector& input, BoltVector& output) {
-        if (output.active_neurons == nullptr) {
-            if (input.active_neurons == nullptr) {
+        if (output.isDense()) {
+            if (input.isDense()) {
             backpropagateImpl<false, true, true>(input, output);
             } else {
             backpropagateImpl<false, true, false>(input, output);
             }
         } else {
-            if (input.active_neurons == nullptr) {
+            if (input.isDense()) {
             backpropagateImpl<false, false, true>(input, output);
             } else {
             backpropagateImpl<false, false, false>(input, output);
@@ -144,14 +146,14 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
 
     void ConvLayer::backpropagateInputLayer(BoltVector& input,
                                                   BoltVector& output) {
-        if (output.active_neurons == nullptr) {
-            if (input.active_neurons == nullptr) {
+        if (output.isDense()) {
+            if (input.isDense()) {
             backpropagateImpl<true, true, true>(input, output);
             } else {
             backpropagateImpl<true, true, false>(input, output);
             }
         } else {
-            if (input.active_neurons == nullptr) {
+            if (input.isDense()) {
             backpropagateImpl<true, false, true>(input, output);
             } else {
             backpropagateImpl<true, false, false>(input, output);
@@ -162,6 +164,11 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
     template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
     void ConvLayer::backpropagateImpl(BoltVector& input,
                                                 BoltVector& output) {
+                                                    std::cout << "CONV BACK " << _prev_dim << std::endl;
+        for (uint32_t j = 0; j < _num_patches; j++) {
+                        std::cout << _out_to_in[j] << " ";
+                    }
+                    std::cout << std::endl;
         uint32_t len_out = DENSE ? _dim : _sparse_dim;
         uint32_t num_active_filters = DENSE ? _num_filters : _num_sparse_filters;
 
@@ -174,8 +181,20 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
             uint32_t out_patch = n / num_active_filters;
             uint32_t in_patch = _out_to_in[out_patch];
             for (uint64_t i = 0; i < _patch_dim; i++) {
-                uint_64_t in_idx = in_patch * _patch_dim + i;
+                uint64_t in_idx = in_patch * _patch_dim + i;
                 uint32_t prev_act_neuron = PREV_DENSE ? in_idx : input.active_neurons[in_idx];
+                if (_prev_dim == 784 && n >= 496) {
+                    // std::cout << "FAILED: ";
+                    std::cout << "prev act" << prev_act_neuron << std::endl;
+                    std::cout << "in idx" << in_idx << std::endl;
+                    std::cout << "in patch" << in_patch << std::endl;
+                    std::cout << "out patch" << out_patch << std::endl;
+                    std::cout << "patch dim" << _patch_dim << std::endl;
+                    std::cout << "n" << n << std::endl;
+                    for (uint32_t j = 0; j < _num_patches; j++) {
+                        std::cout << _out_to_in[j] << " ";
+                    }
+                }
                 assert(prev_act_neuron < _prev_dim);
                 _w_gradient[act_filter * _patch_dim + i] +=
                     output.gradients[n] * input.activations[prev_act_neuron];
@@ -192,6 +211,10 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
     template <bool DENSE, bool PREV_DENSE>
     void ConvLayer::selectActiveFilters(const BoltVector& input, BoltVector& output,
                         uint32_t in_patch, uint64_t out_patch) {
+        if (DENSE) {
+            return;
+        }
+
         std::unordered_set<uint32_t> active_set;
         uint32_t* hashes = new uint32_t[_hash_table->numTables()];
         if (PREV_DENSE) {
@@ -296,5 +319,15 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
         _hash_table->insertSequential(_num_filters, 0, hashes);
 
         delete[] hashes;
+    }
+
+    void ConvLayer::buildPatchMaps() {
+        _in_to_out = std::vector<uint32_t>(_num_patches);
+        _out_to_in = std::vector<uint32_t>(_num_patches);
+
+        for (uint32_t i = 0; i < _num_patches; i++) {
+            _in_to_out[i] = i;
+            _out_to_in[i] = i;
+        }
     }
 }  // namespace thirdai::bolt

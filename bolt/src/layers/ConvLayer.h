@@ -21,6 +21,12 @@ class ConvLayer : public FullyConnectedLayer {
 
         void reBuildHashFunction();
 
+        BoltBatch createBatchState(const uint32_t batch_size,
+                                bool) const {
+            bool is_dense = _sparse_dim == _dim;
+            return BoltBatch(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
+        }
+
     private:
         template <bool DENSE, bool PREV_DENSE>
         void forwardImpl(const BoltVector& input, BoltVector& output);
@@ -31,6 +37,8 @@ class ConvLayer : public FullyConnectedLayer {
 
         template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
         void backpropagateImpl(BoltVector& input, BoltVector& output);
+
+        void buildPatchMaps();
 
         uint64_t _dim, _prev_dim, _sparse_dim;
         float _sparsity;
@@ -56,5 +64,6 @@ class ConvLayer : public FullyConnectedLayer {
         bool _force_sparse_for_inference;
 
         uint32_t _patch_dim, _num_patches, _num_filters, _num_sparse_filters;
+        std::vector<uint32_t> _in_to_out, _out_to_in;
 };
 }  // namespace thirdai::bolt
