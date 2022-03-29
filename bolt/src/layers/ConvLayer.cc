@@ -5,16 +5,16 @@
 namespace thirdai::bolt {
 
 ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
-                    uint64_t prev_dim, uint32_t patch_dim, uint32_t num_patches)
-        :   _dim(config.dim * num_patches), // user passes in total number of filters into config.dim
+                    uint64_t prev_dim)
+        :   _dim(config.dim * config.num_patches), // user passes in total number of filters into config.dim
             _prev_dim(prev_dim),
-            _sparse_dim(config.sparsity * config.dim * num_patches),
+            _sparse_dim(config.sparsity * config.dim * config.num_patches),
             _sparsity(config.sparsity),
             _act_func(config.act_func),
-            _weights(config.dim * patch_dim),
-            _w_gradient(config.dim * patch_dim, 0),
-            _w_momentum(config.dim * patch_dim, 0),
-            _w_velocity(config.dim * patch_dim, 0),
+            _weights(config.dim * config.patch_dim),
+            _w_gradient(config.dim * config.patch_dim, 0),
+            _w_momentum(config.dim * config.patch_dim, 0),
+            _w_velocity(config.dim * config.patch_dim, 0),
             _biases(config.dim),
             _b_gradient(config.dim, 0),
             _b_momentum(config.dim, 0),
@@ -22,8 +22,8 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
             _is_active(config.dim, false),
             _sampling_config(config.sampling_config),
             _force_sparse_for_inference(false),
-            _patch_dim(patch_dim),
-            _num_patches(num_patches),
+            _patch_dim(config.patch_dim),
+            _num_patches(config.num_patches),
             _num_filters(config.dim),
             _num_sparse_filters(config.dim * config.sparsity) {
 

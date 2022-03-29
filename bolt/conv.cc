@@ -31,9 +31,9 @@ int main() {
     uint32_t patch_size = 4;
     uint32_t num_patches = 196;
 
-    // layers.emplace_back(100, 1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(4, 256, 12, 10), patch_size, num_patches);
+    layers.emplace_back(100, 1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(4, 256, 12, 10), patch_size, num_patches);
 
-    // layers.emplace_back(200, 1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(4, 256, 12, 10), 2*2*10, 49);
+    layers.emplace_back(200, 1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(4, 256, 12, 10), 2*2*100, 49);
 
     layers.emplace_back(800, 0.1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(4, 256, 12, 10));
 

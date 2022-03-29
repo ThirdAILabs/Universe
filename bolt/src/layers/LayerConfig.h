@@ -57,6 +57,8 @@ struct FullyConnectedLayerConfig {
   float sparsity;
   ActivationFunction act_func;
   SamplingConfig sampling_config;
+  uint32_t patch_dim = 0;
+  uint32_t num_patches = 0;
 
   static void checkSparsity(float sparsity) {
     if (0.2 < sparsity && sparsity < 1.0) {
@@ -67,11 +69,14 @@ struct FullyConnectedLayerConfig {
 
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
                             ActivationFunction _act_func,
-                            SamplingConfig _config)
+                            SamplingConfig _config,
+                            uint64_t _patch_dim = 0, uint64_t _num_patches = 0)
       : dim(_dim),
         sparsity(_sparsity),
         act_func(_act_func),
-        sampling_config(_config) {
+        sampling_config(_config),
+        patch_dim(_patch_dim),
+        num_patches(_num_patches) {
     checkSparsity(sparsity);
   }
 
@@ -119,6 +124,10 @@ struct FullyConnectedLayerConfig {
           << ", range_pow=" << config.sampling_config.range_pow
           << ", reservoir_size=" << config.sampling_config.reservoir_size
           << "}";
+    }
+    if (config.patch_dim != 0) {
+      out << ", patch_dim=" << config.patch_dim
+          << ", num_patches=" << config.num_patches;
     }
     return out;
   }

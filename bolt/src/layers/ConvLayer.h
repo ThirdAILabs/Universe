@@ -6,9 +6,7 @@ namespace thirdai::bolt {
 class ConvLayer : public FullyConnectedLayer {
     public:
         ConvLayer(const FullyConnectedLayerConfig& config,
-                            uint64_t prev_dim,
-                            uint32_t patch_dim,
-                            uint32_t num_patches);
+                            uint64_t prev_dim);
 
         void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels = nullptr);

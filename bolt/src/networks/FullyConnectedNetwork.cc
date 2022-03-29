@@ -1,6 +1,7 @@
 #include "FullyConnectedNetwork.h"
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/utils/ProgressBar.h>
+#include <bolt/src/layers/ConvLayer.h>
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -20,17 +21,35 @@ FullyConnectedNetwork::FullyConnectedNetwork(
   std::cout << "====== Building Fully Connected Network ======" << std::endl;
 
   for (uint32_t i = 0; i < _num_layers; i++) {
-    uint64_t prev_dim = (i > 0) ? configs[i - 1].dim : _input_dim;
+    bool is_conv_layer = configs[i].patch_dim != 0;
     if (i < _num_layers - 1) {
       if (configs[i].act_func == ActivationFunction::Softmax) {
         throw std::invalid_argument(
             "Softmax activation function is not supported for hidden layers.");
       }
+    } else if (i == _num_layers - 1 && is_conv_layer) {
+      throw std::invalid_argument(
+            "ConvLayer not supported as final layer.");
+    }
+
+    uint64_t prev_dim;
+    if (i > 0) {
+      if (is_conv_layer) {
+        prev_dim = configs[i - 1].dim * configs[i - 1].num_patches;
+      } else {
+        prev_dim = configs[i - 1].dim;
+      }
+    } else {
+      prev_dim = input_dim;
     }
 
     std::cout << configs[i] << std::endl;
-    _layers.push_back(
-        std::make_shared<FullyConnectedLayer>(configs[i], prev_dim));
+    if (is_conv_layer) {
+      _layers.push_back(std::make_shared<ConvLayer>(configs[i], prev_dim));
+    } else {
+      _layers.push_back(
+          std::make_shared<FullyConnectedLayer>(configs[i], prev_dim));
+    }
   }
 
   auto end = std::chrono::high_resolution_clock::now();
