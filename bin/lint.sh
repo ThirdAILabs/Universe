@@ -25,7 +25,7 @@ find ./ -type f \( -iname \*.h -o -iname \*.cc \) \
   -not -path "./deps/*" -not -path "./build/*" \
     | while read fname; do 
       echo $fname 
-      clang-tidy $fname || num_failed++
+      clang-tidy $fname || ((num_failed++))
     done
 
 exit(num_failed)
