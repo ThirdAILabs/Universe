@@ -12,6 +12,12 @@ struct SparseVector {
   uint32_t* _indices;
   float* _values;
 
+  SparseVector():
+    _indices(nullptr),
+    _values(nullptr),
+    _len(0),
+    _owns_data(true) {}
+
   explicit SparseVector(uint32_t len)
       : _indices(new uint32_t[len]),
         _values(new float[len]),

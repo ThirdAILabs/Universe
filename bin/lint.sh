@@ -28,4 +28,4 @@ find ./ -type f \( -iname \*.h -o -iname \*.cc \) \
       clang-tidy $fname || ((num_failed++))
     done
 
-exit num_failed
+exit $num_failed
