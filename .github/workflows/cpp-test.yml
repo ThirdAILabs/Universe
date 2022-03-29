@@ -19,7 +19,9 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
-
+        with:           
+          submodules: 'recursive'
+          
       - name: Run all c++ tests
         run: |
           docker build -t test_image -f docker/develop/Dockerfile .  

@@ -62,31 +62,31 @@ endif()
 
 find_package(OpenMP REQUIRED)
 
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
-)
-# For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
-
-# If we need to add abseil for a warning, we can uncomment this:
+# include(FetchContent)
 # FetchContent_Declare(
-#        abseil
-#        GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
-#        GIT_TAG 20210324.2
+#   googletest
+#   URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
 # )
-# FetchContent_MakeAvailable(abseil)
 
-include(CTest)
+
 
 # The following is for creating the python bindings
 
-add_subdirectory(deps/pybind11)
+# Header only dependencies
 include_directories(deps/pybind11/include)
 include_directories(deps/cereal/include)
-include_directories(deps/tomlplusplus/include)
+include_directories(deps/tomlplusplus/include/toml++)
+include_directories(deps/eigen)
+
+# Source dependencies
+add_subdirectory(deps/pybind11)
+add_subdirectory(deps/googletest)
+
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+# Enable testing
+include(CTest)
 
 # So we can include using e.g. #include <hashtable/src/SampledHashTable.h>
 include_directories(".")

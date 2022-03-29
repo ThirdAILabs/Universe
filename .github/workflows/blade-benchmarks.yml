@@ -25,6 +25,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+      with:           
+        submodules: 'recursive'
+    
     # Declares workflow dispatch inputs, actions ID, and current branch information for blade session.
     - name: Declare variables
       shell: bash

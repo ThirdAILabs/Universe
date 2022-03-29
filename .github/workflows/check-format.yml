@@ -16,6 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+      with:           
+        submodules: 'recursive'
+            
     - name: Run clang-format
       uses: DoozyX/clang-format-lint-action@v0.12
       with:

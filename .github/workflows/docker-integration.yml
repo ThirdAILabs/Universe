@@ -23,6 +23,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.ref }}
+          submodules: 'recursive'
 
       - uses: actions/checkout@v2
         if: github.event_name == 'push'
