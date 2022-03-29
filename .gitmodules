@@ -10,3 +10,6 @@
 [submodule "deps/tomlplusplus"]
 	path = deps/tomlplusplus
 	url = https://github.com/ThirdAILabs/TomlPlusPlusFork
+[submodule "deps/pybind11"]
+	path = deps/pybind11
+	url = https://github.com/ThirdAILabs/PybindFork
