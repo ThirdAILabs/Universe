@@ -140,9 +140,9 @@ class ExperimentLogger:
             )
 
 
-
 # TODO: Change function signature
 # def log_run(experiment, dataset, algorithm, *args, **kwargs)
+
 
 def log_imagesearch_run(
     reservoir_size,

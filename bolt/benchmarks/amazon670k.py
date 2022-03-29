@@ -12,6 +12,7 @@ import sys
 sys.path.insert(1, sys.path[0] + "/../../logging/")
 from mlflow_logger import ExperimentLogger
 
+
 def _define_network(args):
     layers = [
         bolt.LayerConfig(dim=256, activation_function=bolt.ActivationFunctions.ReLU),
@@ -40,8 +41,17 @@ def train_amzn670(args, mlflow_logger):
     mlflow_logger.log_start_training()
 
     for _ in range(args.epochs):
-        network.train(train_data, bolt.CategoricalCrossEntropyLoss(), args.lr, epochs=1, rehash=6400, rebuild=128000)
-        acc = network.predict(test_data, metrics=["categorical_accuracy"], verbose=False)
+        network.train(
+            train_data,
+            bolt.CategoricalCrossEntropyLoss(),
+            args.lr,
+            epochs=1,
+            rehash=6400,
+            rebuild=128000,
+        )
+        acc = network.predict(
+            test_data, metrics=["categorical_accuracy"], verbose=False
+        )
         mlflow_logger.log_epoch(acc)
 
     final_accuracy = network.predict(test_data)

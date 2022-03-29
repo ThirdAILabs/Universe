@@ -12,6 +12,7 @@ import sys
 sys.path.insert(1, sys.path[0] + "/../../logging/")
 from mlflow_logger import ExperimentLogger
 
+
 def _define_network(args):
     layers = [
         bolt.LayerConfig(
@@ -23,11 +24,13 @@ def _define_network(args):
                 num_tables=args.num_tables,
                 range_pow=args.hashes_per_table * 3,
                 reservoir_size=128,
-            )),
-        bolt.LayerConfig(dim=2, activation_function=bolt.ActivationFunctions.Softmax)
+            ),
+        ),
+        bolt.LayerConfig(dim=2, activation_function=bolt.ActivationFunctions.Softmax),
     ]
     network = bolt.Network(layers=layers, input_dim=100000)
     return network
+
 
 def train_amazon_polarity(args, mlflow_logger):
     network = _define_network(args)
@@ -37,7 +40,14 @@ def train_amazon_polarity(args, mlflow_logger):
 
     mlflow_logger.log_start_training()
     for i in range(args.epochs):
-        network.train(train_data, bolt.CategoricalCrossEntropyLoss(), args.lr, 1, rehash=6400, rebuild=128000)
+        network.train(
+            train_data,
+            bolt.CategoricalCrossEntropyLoss(),
+            args.lr,
+            1,
+            rehash=6400,
+            rebuild=128000,
+        )
         acc = network.predict(test_data, batch_limit=20)
         mlflow_logger.log_epoch(acc)
 

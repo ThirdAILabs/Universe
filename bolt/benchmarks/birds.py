@@ -13,33 +13,57 @@ import sys
 sys.path.insert(1, sys.path[0] + "/../../logging/")
 from mlflow_logger import ExperimentLogger
 
+
 def _define_network(args):
     layers = [
-        bolt.LayerConfig(dim=3000, activation_function=bolt.ActivationFunctions.ReLU, load_factor=args.sparsity, 
-            sampling_config=bolt.SamplingConfig(hashes_per_table=args.hashes_per_table, num_tables=args.num_tables, range_pow=14, reservoir_size=32)),
-        bolt.LayerConfig(dim=100, activation_function=bolt.ActivationFunctions.Softmax)
-        ]
+        bolt.LayerConfig(
+            dim=3000,
+            activation_function=bolt.ActivationFunctions.ReLU,
+            load_factor=args.sparsity,
+            sampling_config=bolt.SamplingConfig(
+                hashes_per_table=args.hashes_per_table,
+                num_tables=args.num_tables,
+                range_pow=14,
+                reservoir_size=32,
+            ),
+        ),
+        bolt.LayerConfig(dim=100, activation_function=bolt.ActivationFunctions.Softmax),
+    ]
 
     network = bolt.Network(layers=layers, input_dim=1536)
     return network
 
-def train_birds(args, network, mlflow_logger):
-    tr_emb = np.load('/media/scratch/data/birds/extracted/tr_emb1.npy')
-    tr_labels = np.load('/media/scratch/data/birds/extracted/tr_labels.npy')
 
-    tst_emb = np.load('/media/scratch/data/birds/extracted/tst_emb.npy')
-    tst_labels = np.load('/media/scratch/data/birds/extracted/tst_labels.npy')
+def train_birds(args, network, mlflow_logger):
+    tr_emb = np.load("/media/scratch/data/birds/extracted/tr_emb1.npy")
+    tr_labels = np.load("/media/scratch/data/birds/extracted/tr_labels.npy")
+
+    tst_emb = np.load("/media/scratch/data/birds/extracted/tst_emb.npy")
+    tst_labels = np.load("/media/scratch/data/birds/extracted/tst_labels.npy")
 
     mlflow_logger.log_start_training()
     for _ in range(100):
-        network.train(tr_emb, tr_labels, batch_size=32768, loss_fn=bolt.CategoricalCrossEntropyLoss(), learning_rate=args.lr, epochs=1, rehash=3000, rebuild=10000)
-        acc, __ = network.predict(tst_emb, tst_labels, batch_size=2048, metrics=["categorical_accuracy"], verbose=False)
-        mlflow_logger.log_epoch(acc["categorical_accuracy"][0]
-)
-    
+        network.train(
+            tr_emb,
+            tr_labels,
+            batch_size=32768,
+            loss_fn=bolt.CategoricalCrossEntropyLoss(),
+            learning_rate=args.lr,
+            epochs=1,
+            rehash=3000,
+            rebuild=10000,
+        )
+        acc, __ = network.predict(
+            tst_emb,
+            tst_labels,
+            batch_size=2048,
+            metrics=["categorical_accuracy"],
+            verbose=False,
+        )
+        mlflow_logger.log_epoch(acc["categorical_accuracy"][0])
+
     final_accuracy = network.predict(tst_emb, tst_labels, batch_size=2048)
     mlflow_logger.log_final_accuracy(final_accuracy)
-
 
 
 def main():
@@ -60,10 +84,16 @@ def main():
     )
 
     layers = [
-        bolt.LayerConfig(dim=3000, activation_function=bolt.ActivationFunctions.ReLU, load_factor=0.05, 
-            sampling_config=bolt.SamplingConfig(hashes_per_table=4, num_tables=64, range_pow=14, reservoir_size=32)),
-        bolt.LayerConfig(dim=100, activation_function=bolt.ActivationFunctions.Softmax)
-        ]
+        bolt.LayerConfig(
+            dim=3000,
+            activation_function=bolt.ActivationFunctions.ReLU,
+            load_factor=0.05,
+            sampling_config=bolt.SamplingConfig(
+                hashes_per_table=4, num_tables=64, range_pow=14, reservoir_size=32
+            ),
+        ),
+        bolt.LayerConfig(dim=100, activation_function=bolt.ActivationFunctions.Softmax),
+    ]
 
     network = bolt.Network(layers=layers, input_dim=1536)
 
