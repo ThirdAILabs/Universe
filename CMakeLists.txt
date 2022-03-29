@@ -72,6 +72,8 @@ include_directories(deps/eigen)
 add_subdirectory(deps/pybind11)
 add_subdirectory(deps/googletest)
 
+find_package (Python3 COMPONENTS Interpreter Development)
+
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
