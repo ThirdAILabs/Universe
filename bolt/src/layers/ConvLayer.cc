@@ -126,6 +126,69 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
         }
     }
 
+    void ConvLayer::backpropagate(BoltVector& input, BoltVector& output) {
+        if (output.active_neurons == nullptr) {
+            if (input.active_neurons == nullptr) {
+            backpropagateImpl<false, true, true>(input, output);
+            } else {
+            backpropagateImpl<false, true, false>(input, output);
+            }
+        } else {
+            if (input.active_neurons == nullptr) {
+            backpropagateImpl<false, false, true>(input, output);
+            } else {
+            backpropagateImpl<false, false, false>(input, output);
+            }
+        }
+    }
+
+    void ConvLayer::backpropagateInputLayer(BoltVector& input,
+                                                  BoltVector& output) {
+        if (output.active_neurons == nullptr) {
+            if (input.active_neurons == nullptr) {
+            backpropagateImpl<true, true, true>(input, output);
+            } else {
+            backpropagateImpl<true, true, false>(input, output);
+            }
+        } else {
+            if (input.active_neurons == nullptr) {
+            backpropagateImpl<true, false, true>(input, output);
+            } else {
+            backpropagateImpl<true, false, false>(input, output);
+            }
+        }
+    }
+
+    template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
+    void ConvLayer::backpropagateImpl(BoltVector& input,
+                                                BoltVector& output) {
+        uint32_t len_out = DENSE ? _dim : _sparse_dim;
+        uint32_t num_active_filters = DENSE ? _num_filters : _num_sparse_filters;
+
+        for (uint64_t n = 0; n < len_out; n++) {
+            assert(!std::isnan(output.gradients[n]));
+            output.gradients[n] *= actFuncDerivative(output.activations[n]);
+            assert(!std::isnan(output.gradients[n]));
+            uint32_t act_neuron = DENSE ? n : output.active_neurons[n];
+            uint32_t act_filter = act_neuron % _num_filters;
+            uint32_t out_patch = n / num_active_filters;
+            uint32_t in_patch = _out_to_in[out_patch];
+            for (uint64_t i = 0; i < _patch_dim; i++) {
+                uint_64_t in_idx = in_patch * _patch_dim + i;
+                uint32_t prev_act_neuron = PREV_DENSE ? in_idx : input.active_neurons[in_idx];
+                assert(prev_act_neuron < _prev_dim);
+                _w_gradient[act_filter * _patch_dim + i] +=
+                    output.gradients[n] * input.activations[prev_act_neuron];
+                if (!FIRST_LAYER) {
+                    input.gradients[prev_act_neuron] +=
+                        output.gradients[n] *
+                        _weights[act_filter * _patch_dim + i];
+                }
+            }
+            _b_gradient[act_neuron] += output.gradients[n];
+        }
+    }
+
     template <bool DENSE, bool PREV_DENSE>
     void ConvLayer::selectActiveFilters(const BoltVector& input, BoltVector& output,
                         uint32_t in_patch, uint64_t out_patch) {
