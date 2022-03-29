@@ -127,10 +127,85 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
     }
 
     template <bool DENSE, bool PREV_DENSE>
-    void selectActiveFilters(const BoltVector& input, BoltVector& output,
+    void ConvLayer::selectActiveFilters(const BoltVector& input, BoltVector& output,
                         uint32_t in_patch, uint64_t out_patch) {
+        std::unordered_set<uint32_t> active_set;
+        uint32_t* hashes = new uint32_t[_hash_table->numTables()];
+        if (PREV_DENSE) {
+            _hasher->hashSingleDense(&input.activations[in_patch * _patch_dim], _patch_dim, hashes);
+        } else {
+            _hasher->hashSingleSparse(&input.active_neurons[in_patch * _patch_dim], &input.activations[in_patch * _patch_dim],
+                              _patch_dim, hashes); // TODO change patch_dim to represent width * height instead of being dependent on num channels/filters in previous layer
+        }
+        _hash_table->queryBySet(hashes, active_set);
 
-    };
+        delete[] hashes;
+
+        if (active_set.size() < _num_sparse_filters) {
+            uint32_t rand_offset = rand() % _num_filters;
+            while (active_set.size() < _num_sparse_filters) {
+                active_set.insert(_rand_neurons[rand_offset++]);
+                rand_offset = rand_offset % _num_filters;
+            }
+        }
+
+        uint32_t cnt = 0;
+        for (uint32_t x : active_set) {
+            if (cnt >= _num_sparse_filters) {
+            break;
+            }
+            assert(x < _num_filters);
+            output.active_neurons[out_patch * _num_sparse_filters + cnt++] = out_patch * _num_filters + x;
+        }
+    }
+
+    void ConvLayer::updateParameters(float lr, uint32_t iter, float B1,
+                                           float B2, float eps) {
+        float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
+        float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
+
+        #pragma omp parallel for default(none) \
+            shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
+        for (uint64_t n = 0; n < _num_filters; n++) {
+            if (!_is_active[n]) {
+            continue;
+            }
+
+            for (uint64_t i = 0; i < _patch_dim; i++) {
+                auto indx = n * _patch_dim + i;
+                float grad = _w_gradient[indx];
+                assert(!std::isnan(grad));
+
+                _w_momentum[indx] = B1 * _w_momentum[indx] + (1 - B1) * grad;
+                _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
+                assert(!std::isnan(_w_momentum[indx]));
+                assert(!std::isnan(_w_velocity[indx]));
+
+                _weights[indx] +=
+                    lr * (_w_momentum[indx] / B1_bias_corrected) /
+                    (std::sqrt(_w_velocity[indx] / B2_bias_corrected) + eps);
+                assert(!std::isnan(_weights[indx]));
+
+                _w_gradient[indx] = 0;
+            }
+
+            float grad = _b_gradient[n];
+            assert(!std::isnan(grad));
+
+            _b_momentum[n] = B1 * _b_momentum[n] + (1 - B1) * grad;
+            _b_velocity[n] = B2 * _b_velocity[n] + (1 - B2) * grad * grad;
+
+            assert(!std::isnan(_b_momentum[n]));
+            assert(!std::isnan(_b_velocity[n]));
+
+            _biases[n] += lr * (_b_momentum[n] / B1_bias_corrected) /
+                        (std::sqrt(_b_velocity[n] / B2_bias_corrected) + eps);
+            assert(!std::isnan(_biases[n]));
+
+            _b_gradient[n] = 0;
+            _is_active[n] = false;
+        }
+    }
 
     void ConvLayer::reBuildHashFunction() {
         if (_sparsity >= 1.0) {
