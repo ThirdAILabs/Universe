@@ -1,9 +1,6 @@
 [submodule "deps/eigen"]
 	path = deps/eigen
 	url = https://github.com/ThirdAILabs/EigenFork
-[submodule "deps/pybind11"]
-	path = deps/pybind11
-	url = https://github.com/ThirdAILabs/PybindFork
 [submodule "deps/cereal"]
 	path = deps/cereal
 	url = https://github.com/ThirdAILabs/CerealFork
