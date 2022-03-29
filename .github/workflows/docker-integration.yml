@@ -32,4 +32,6 @@ jobs:
           fetch-depth: 0
 
       - name: Build and test the product Docker images
-        run: docker/product/test_all_product_dockers.sh
+        run: |
+          pip3 install git-archive-all
+          docker/product/test_all_product_dockers.sh
