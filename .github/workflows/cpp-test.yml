@@ -21,6 +21,7 @@ jobs:
       - uses: actions/checkout@v2
         with:           
           submodules: 'recursive'
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
           
       - name: Run all c++ tests
         run: |

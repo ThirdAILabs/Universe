@@ -27,7 +27,8 @@ jobs:
     - uses: actions/checkout@v2
       with:           
         submodules: 'recursive'
-    
+        token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+        
     # Declares workflow dispatch inputs, actions ID, and current branch information for blade session.
     - name: Declare variables
       shell: bash

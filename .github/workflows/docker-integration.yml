@@ -24,6 +24,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.ref }}
           submodules: 'recursive'
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
       - uses: actions/checkout@v2
         if: github.event_name == 'push'
