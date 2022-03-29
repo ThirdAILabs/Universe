@@ -83,41 +83,13 @@ include(CTest)
 
 # The following is for creating the python bindings
 
-FetchContent_Declare(
-    pybind11
-    GIT_REPOSITORY https://github.com/pybind/pybind11
-    GIT_TAG        v2.7.1
-)
-FetchContent_GetProperties(pybind11)
-if(NOT pybind11_POPULATED)
-    FetchContent_Populate(pybind11)
-    add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
-endif()
-
-find_package (Python3 COMPONENTS Interpreter Development)
-
-FetchContent_Declare(
-    tomlplusplus
-    GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
-    GIT_TAG        v3.0.1
-)
-FetchContent_MakeAvailable(tomlplusplus)
-include_directories(${tomlplusplus_SOURCE_DIR})
-
-set (JUST_INSTALL_CEREAL ON)
-FetchContent_Declare(
-    cereal
-    GIT_REPOSITORY https://github.com/USCiLab/cereal.git
-    GIT_TAG        v1.3.2
-)
-FetchContent_MakeAvailable(
-  cereal
-)
-include_directories(${cereal_SOURCE_DIR}/include)
+add_subdirectory(deps/pybind11)
+include_directories(deps/pybind11/include)
+include_directories(deps/cereal/include)
+include_directories(deps/tomlplusplus/include)
 
 # So we can include using e.g. #include <hashtable/src/SampledHashTable.h>
 include_directories(".")
-include_directories(${pybind11_SOURCE_DIR}/include)
 
 add_subdirectory(bolt)
 add_subdirectory(dataset)
