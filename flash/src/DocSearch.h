@@ -97,7 +97,7 @@ class DocSearch {
     _internal_id_to_doc_id.resize(internal_id + 1);
     _internal_id_to_doc_id.at(internal_id) = doc_id;
 
-    return deletedOldDoc;
+    return !deletedOldDoc;
   }
 
   bool deleteDocument(const std::string& doc_id) {

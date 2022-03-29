@@ -49,20 +49,51 @@ void createSearchSubmodule(py::module_& module) {
       .def(py::init<const std::vector<std::vector<float>>&, uint32_t, uint32_t,
                     uint32_t>(),
            py::arg("centroids"), py::arg("hashes_per_table"),
-           py::arg("num_tables"), py::arg("dense_input_dimension"))
+           py::arg("num_tables"), py::arg("dense_input_dimension"),
+           "Constructs a new DocRetrieval index. Centroids should be a "
+           "two-dimensional array of floats, where each row is of length "
+           "dense_input_dimension (the dimension of the document embeddings). "
+           "hashes_per_table and num_tables are hyperparameters for the doc "
+           "sketches. Roughly, increase num_tables to increase accuracy at the"
+           "cost of speed and memory (you can try powers of 2; a good starting "
+           "value is 32). Hashes_per_table should be around log_2 the average"
+           "document size (by number of embeddings).")
+      .def("add_doc", &PyDocSearch::addDocument, py::arg("doc_id"),
+           py::arg("doc_text"), py::arg("doc_embeddings"),
+           "Adds a new document to the DocRetrieval index. If the doc_id "
+           "already exists in the index, this will overwrite it. The "
+           "doc_embeddings should be a two dimensional numpy array of the "
+           "document's embeddings. Each row should be of length "
+           "dense_input_dimension. doc_text is only needed if you want it to "
+           "be retrieved in calls to get_doc and query. Returns true if this"
+           "was a new document and false otherwise.")
       .def("add_doc", &PyDocSearch::addDocumentWithCentroids, py::arg("doc_id"),
            py::arg("doc_text"), py::arg("doc_embeddings"),
-           py::arg("centroid_ids"))
-      .def("add_doc", &PyDocSearch::addDocument, py::arg("doc_id"),
-           py::arg("doc_text"), py::arg("doc_embeddings"))
-      .def("delete_doc", &PyDocSearch::deleteDocument, py::arg("doc_id"))
-      .def("get_doc", &PyDocSearch::getDocument, py::arg("doc_id"))
-      .def("query", &PyDocSearch::query, py::arg("query_embeddings"),
-           py::arg("top_k"))
+           py::arg("doc_centroid_ids"),
+           "Same as add_doc, except also accepts the ids of the closest "
+           "to each of the doc_embeddings if these are "
+           "precomputed (helpful for batch adds).")
+      .def("delete_doc", &PyDocSearch::deleteDocument, py::arg("doc_id"),
+           "Delete the document with the passed doc_id if such a document "
+           "exists, otherwise this is a NOOP. Returns true if the document "
+           "was succesfully deleted, false if no document with doc_id was "
+           "found.")
+      .def("get_doc", &PyDocSearch::getDocument, py::arg("doc_id"),
+           "Returns the doc_text of the document with doc_id, or None if no "
+           "document with doc_id was found.")
+      .def(
+          "query", &PyDocSearch::query, py::arg("query_embeddings"),
+          py::arg("top_k"),
+          "Finds the best top_k documents that are most likely to semantically "
+          "answer the query. It is helpful to use a large value of top_k, like "
+          "8192, and then only take the top 1 or 5 or k results you actually "
+          "need.")
       .def("serialize_to_file", &PyDocSearch::serialize_to_file,
-           py::arg("output_path"))
+           py::arg("output_path"),
+           "Serialize the DocRetrieval index to a file.")
       .def_static("deserialize_from_file", &PyDocSearch::deserialize_from_file,
-                  py::arg("input_path"));
+                  py::arg("input_path"),
+                  "Deserialize the DocRetrieval index from a file.");
 }
 
 }  // namespace thirdai::search::python
