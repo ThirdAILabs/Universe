@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 #include "BoltVector.h"
 #include "LayerConfig.h"
 #include <hashing/src/DWTA.h>
@@ -66,7 +68,7 @@ class FullyConnectedLayer final {
 
   void setBiases(float* new_biases);
 
-  ~FullyConnectedLayer();
+  virtual ~FullyConnectedLayer() = default;
 
  private:
   template <bool DENSE, bool PREV_DENSE>
@@ -82,28 +84,38 @@ class FullyConnectedLayer final {
 
   constexpr float actFuncDerivative(float x);
 
-  uint64_t _dim, _prev_dim, _max_batch_size, _sparse_dim;
+  uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
   ActivationFunction _act_func;
 
-  float* _weights;
-  float* _w_gradient;
-  float* _w_momentum;
-  float* _w_velocity;
+  std::vector<float> _weights;
+  std::vector<float> _w_gradient;
+  std::vector<float> _w_momentum;
+  std::vector<float> _w_velocity;
 
-  float* _biases;
-  float* _b_gradient;
-  float* _b_momentum;
-  float* _b_velocity;
+  std::vector<float> _biases;
+  std::vector<float> _b_gradient;
+  std::vector<float> _b_momentum;
+  std::vector<float> _b_velocity;
 
-  bool* _is_active;
+  std::vector<bool> _is_active;
 
   SamplingConfig _sampling_config;
-  hashing::DWTAHashFunction* _hasher;
-  hashtable::SampledHashTable<uint32_t>* _hash_table;
-  uint32_t* _rand_neurons;
+  std::unique_ptr<hashing::DWTAHashFunction> _hasher;
+  std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
+  std::vector<uint32_t> _rand_neurons;
 
   bool _force_sparse_for_inference;
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+            _w_gradient, _w_momentum, _w_velocity, _biases, _b_gradient,
+            _b_momentum, _b_velocity, _is_active, _sampling_config, _hasher,
+            _hash_table, _rand_neurons, _force_sparse_for_inference);
+  }
 };
 
 }  // namespace thirdai::bolt

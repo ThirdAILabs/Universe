@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/vector.hpp>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
@@ -62,7 +63,7 @@ class Model {
 
   // Computes forward path through the network.
   virtual void forward(uint32_t batch_index, const BATCH_T& input,
-                       BoltVector& output) = 0;
+                       BoltVector& output, bool train) = 0;
 
   // Backpropagates gradients through the network
   virtual void backpropagate(uint32_t batch_index, BATCH_T& input,
@@ -104,6 +105,14 @@ class Model {
 
  protected:
   uint32_t _batch_iter;
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_epoch_count, _batch_iter);
+  }
 };
 
 }  // namespace thirdai::bolt

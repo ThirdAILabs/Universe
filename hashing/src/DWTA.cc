@@ -20,8 +20,8 @@ DWTAHashFunction::DWTAHashFunction(uint32_t input_dim,
       _permute(ceil((static_cast<double>(_num_hashes) * _binsize) / _dim)) {
   std::mt19937 gen(seed);
   uint32_t* n_array = new uint32_t[_dim];
-  _bin_map = new uint32_t[_dim * _permute];
-  _positions = new uint32_t[_dim * _permute];
+  _bin_map = std::vector<uint32_t>(_dim * _permute);
+  _positions = std::vector<uint32_t>(_dim * _permute);
 
   for (uint32_t i = 0; i < _dim; i++) {
     n_array[i] = i;
@@ -111,11 +111,6 @@ void DWTAHashFunction::compactHashes(const uint32_t* hashes,
     }
     final_hashes[i] = index;
   }
-}
-
-DWTAHashFunction::~DWTAHashFunction() {
-  delete[] _bin_map;
-  delete[] _positions;
 }
 
 }  // namespace thirdai::hashing

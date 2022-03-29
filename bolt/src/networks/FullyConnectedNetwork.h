@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 #include "Model.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
@@ -26,9 +28,9 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
   void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
 
   void forward(uint32_t batch_index, const dataset::BoltInputBatch& inputs,
-               BoltVector& output) final {
+               BoltVector& output, bool train) final {
     forward(batch_index, inputs[batch_index], output,
-            &inputs.labels(batch_index));
+            train ? &inputs.labels(batch_index) : nullptr);
   }
 
   void backpropagate(uint32_t batch_index, dataset::BoltInputBatch& inputs,
@@ -76,7 +78,10 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
 
   uint32_t outputDim() const final { return _layers.back()->getDim(); }
 
-  void enableSparseInference() { _layers.back()->forceSparseForInference(); }
+  void enableSparseInference() {
+    _sparse_inference_enabled = true;
+    _layers.back()->forceSparseForInference();
+  }
 
  private:
   void forward(uint32_t batch_index, const BoltVector& input,
@@ -96,6 +101,21 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
   std::vector<BoltBatch> _states;
   uint32_t _num_layers;
   bool _sparse_inference_enabled;
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Model<dataset::BoltInputBatch>>(this),
+            _input_dim, _layers, _num_layers, _sparse_inference_enabled);
+  }
+
+ protected:
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
+  FullyConnectedNetwork(){};
 };
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedNetwork)

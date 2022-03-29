@@ -134,7 +134,7 @@ def train_fcn(config: MutableMapping[str, Any]):
     for e in range(epochs):
         network.train(train, loss, learning_rate, 1, rehash, rebuild, train_metrics)
         if use_sparse_inference and e == sparse_inference_epoch:
-            network.use_sparse_inference()
+            network.enable_sparse_inference()
         if max_test_batches is None:
             network.predict(test, test_metrics)
         else:
