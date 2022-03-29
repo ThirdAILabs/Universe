@@ -62,16 +62,6 @@ endif()
 
 find_package(OpenMP REQUIRED)
 
-# include(FetchContent)
-# FetchContent_Declare(
-#   googletest
-#   URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
-# )
-
-
-
-# The following is for creating the python bindings
-
 # Header only dependencies
 include_directories(deps/pybind11/include)
 include_directories(deps/cereal/include)
@@ -91,6 +81,7 @@ include(CTest)
 # So we can include using e.g. #include <hashtable/src/SampledHashTable.h>
 include_directories(".")
 
+# Our source directories
 add_subdirectory(bolt)
 add_subdirectory(dataset)
 add_subdirectory(exceptions)
