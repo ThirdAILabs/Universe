@@ -19,9 +19,11 @@ cd $BASEDIR/../
 
 num_failed=0
 
+# TODO(josh): Do we want to check headers too? Makes it take longer but 
+# could easily add -iname \*.h -o
 # Run clang tidy on all headers and source file, ignoring the build and deps directories
 # Note this will break if a filename has a new line in it
-find ./ -type f \( -iname \*.h -o -iname \*.cc \) \
+find . -type f -name "*.cc" \
   -not -path "./deps/*" -not -path "./build/*" \
     | while read fname; do 
       echo $fname 
