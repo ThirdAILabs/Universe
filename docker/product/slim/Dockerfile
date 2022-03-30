@@ -8,7 +8,8 @@ FROM $ROOT_CONTAINER
 USER root
 SHELL ["/bin/bash", "-c"]
 
-ADD Universe.tar.bz2 /Universe
+COPY Universe.tar.bz2 /Universe.tar.bz2
+RUN tar -xf /Universe.tar.bz2
 ADD thirdai_smoke_test.py /
 
 RUN apt-get update --yes ; \
