@@ -60,6 +60,13 @@ if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
   )
 endif()
 
+if(${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
+  add_compile_options(
+    $<$<CONFIG:Release>:-march=x86-64>
+    $<$<CONFIG:RelWithDebInfo>:-march=x86-64>
+  )
+endif()
+
 find_package(OpenMP REQUIRED)
 
 # Header only dependencies
