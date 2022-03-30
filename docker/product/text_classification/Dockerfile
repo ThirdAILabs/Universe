@@ -6,5 +6,5 @@ USER root
 RUN \
   apt-get -y update ; \
   apt-get -y install git ; \
-  pip3 install tqdm GitPython transformers numpy pytest; 
+  pip3 install tqdm transformers numpy pytest; 
 USER thirdai
