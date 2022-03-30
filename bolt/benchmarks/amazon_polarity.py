@@ -39,7 +39,7 @@ def train_amazon_polarity(args, mlflow_logger):
     test_data = dataset.load_bolt_svm_dataset(args.test, 256)
 
     mlflow_logger.log_start_training()
-    for i in range(args.epochs):
+    for _ in range(args.epochs):
         network.train(
             train_data,
             bolt.CategoricalCrossEntropyLoss(),
@@ -48,10 +48,10 @@ def train_amazon_polarity(args, mlflow_logger):
             rehash=6400,
             rebuild=128000,
         )
-        acc = network.predict(test_data, batch_limit=20)
-        mlflow_logger.log_epoch(acc)
-
-    final_accuracy = network.predict(test_data)
+        acc, __ = network.predict(test_data, metrics=["categorical_accuracy"], verbose=False)
+        mlflow_logger.log_epoch(acc["categorical_accuracy"][0])
+    
+    final_accuracy, __ = network.predict(test_data, metrics=["categorical_accuracy"], verbose=False)
     mlflow_logger.log_final_accuracy(final_accuracy)
 
 

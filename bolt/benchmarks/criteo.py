@@ -47,7 +47,7 @@ def train_criteo(args, mlflow_logger):
     test_data = dataset.load_click_through_dataset(args.test, 256, 15, 26, True)
 
     mlflow_logger.log_start_training()
-    for _ in range(5):
+    for _ in range(args.epochs):
         network.train(
             train_data,
             loss_fn=bolt.MeanSquaredError(),

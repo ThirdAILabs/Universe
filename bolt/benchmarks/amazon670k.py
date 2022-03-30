@@ -63,7 +63,9 @@ def main():
     parser = argparse.ArgumentParser(
         description=f"Run BOLT on Amazon 670k with specified params."
     )
-
+    
+    # TODO(vihan) replace these hard-coded paths
+    # TODO(vihan) Replace args namespace with a dictionary
     args = add_arguments(
         parser=parser,
         train="/media/scratch/data/amazon-670k/train_shuffled_noHeader.txt",

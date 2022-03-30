@@ -42,7 +42,9 @@ def train_birds(args, network, mlflow_logger):
     tst_labels = np.load("/media/scratch/data/birds/extracted/tst_labels.npy")
 
     mlflow_logger.log_start_training()
-    for _ in range(100):
+    for _ in range(args.epochs):
+        # TODO(vihan) Add a default batch size to the train() function
+        # signature to avoid specifying it here. 
         network.train(
             tr_emb,
             tr_labels,
@@ -57,13 +59,13 @@ def train_birds(args, network, mlflow_logger):
             tst_emb,
             tst_labels,
             batch_size=2048,
-            metrics=["categorical_accuracy"],
+            metrics=['categorical_accuracy'],
             verbose=False,
         )
         mlflow_logger.log_epoch(acc["categorical_accuracy"][0])
-
-    final_accuracy = network.predict(tst_emb, tst_labels, batch_size=2048)
-    mlflow_logger.log_final_accuracy(final_accuracy)
+    
+    final_accuracy,_ = network.predict(tst_emb, tst_labels, batch_size=2048, metrics=['categorical_accuracy'], verbose=False)
+    mlflow_logger.log_final_accuracy(final_accuracy["categorical_accuracy"][0])
 
 
 def main():
@@ -76,7 +78,7 @@ def main():
         parser=parser,
         train="/share/data/birds/train.svm",
         test="/share/data/birds/test.svm",
-        epochs=25,
+        epochs=100,
         hashes_per_table=4,
         num_tables=64,
         sparsity=0.05,

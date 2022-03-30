@@ -36,15 +36,12 @@ def _log_machine_info():
 class ExperimentLogger:
     """
     This class starts an mlflow run that logs metadata about a model run to
-    our mlflow tracking server. It has fields for Bolt, but also can be used
+    our mlflow tracking server. It can be used for Bolt as well as
     with Tensorflow for a direct comparison. Example usage:
       from mlflow_logger import ModelLogger
-      with ModelLogger(
+      with ExperimentLogger(
+        experiment_name="Product Recommendation",
         dataset="amazon670k",
-        learning_rate=0.01,
-        num_hash_tables=10,
-        hashes_per_table=5,
-        sparsity=0.01,
         algorithm="bolt") as mlflow_logger:
 
         <Code to init model>
@@ -55,9 +52,7 @@ class ExperimentLogger:
           <train model a single epoch>
           mlflow_logger.log_epoch(accuracy)
 
-    To use with something like TensorFlow that does not have num_hash_tables
-    , hashes_per_table, or sparsity, you can leave those fields out. Note
-    mlflow only supports a single run at a time, so don't nest "with"
+    Note mlflow only supports a single run at a time, so don't nest "with"
     statements containing this class or other mlflow logging classes
     (similarly don't have a nested call to log_magsearch).
     """
@@ -82,7 +77,6 @@ class ExperimentLogger:
             tags={"dataset": self.dataset, "algorithm": self.algorithm},
         )
         _log_machine_info()
-        # mlflow.log_param("learning_rate", self.learning_rate)
 
         if self.experiment_args:
             for k, v in vars(self.experiment_args).items():
@@ -134,7 +128,7 @@ class ExperimentLogger:
             )
 
 
-# TODO: Change function signature
+# TODO(vihan): Change function signature
 # def log_run(experiment, dataset, algorithm, *args, **kwargs)
 
 
