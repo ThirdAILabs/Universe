@@ -18,6 +18,7 @@ jobs:
 
       # See https://github.com/actions/checkout/issues/124
       # We need the actual branch name so that the archive building the image works
+      # Small change to get tests to run
       - uses: actions/checkout@v2
         if: github.event_name == 'pull_request'
         with:
