@@ -135,10 +135,8 @@ def test_add_doc_find_centroids_is_fast():
         )
     avg_with_compute_time = (time.time() - with_compute_start) / len(docs)
 
-    print(avg_numpy_time, avg_precomputed_time, avg_with_compute_time)
     print(
-        (avg_with_compute_time - avg_precomputed_time) / avg_numpy_time,
-        (1 + max_percent_slowdown),
+        f"Average numpy time {avg_numpy_time}, average our time {avg_with_compute_time}"
     )
     assert (avg_with_compute_time - avg_precomputed_time) / avg_numpy_time < (
         1 + max_percent_slowdown
