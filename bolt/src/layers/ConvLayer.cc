@@ -94,6 +94,17 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
             num_active_filters = _num_sparse_filters;
             std::fill_n(output.gradients, _sparse_dim, 0);
         }
+
+
+        // std::cout << "PREV DIM AND INPUT LEN: " << _prev_dim << " " << input.len << std::endl;
+        // if (!PREV_DENSE) {
+        //     std::cout << "PRINTING PATCH: " << std::endl;
+        //     for (uint32_t j = 0; j < input.len; j++) {
+        //         std::cout << input.active_neurons[j] << ":" << input.activations[j] << ", ";
+        //     }
+        //     }
+
+
         // for each input patch
         for (uint32_t in_patch = 0; in_patch < _num_patches; in_patch++) {
             uint32_t out_patch = _in_to_out[in_patch];
@@ -109,6 +120,19 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
                 for (uint32_t i = 0; i < _patch_dim; i++) {
                     uint64_t in_idx = in_patch * _patch_dim + i;
                     uint64_t prev_act_neuron = PREV_DENSE ? in_idx : input.active_neurons[in_idx];
+                //     if (prev_act_neuron >= _prev_dim) {
+                //      std::cout << "FAILED: ";
+                //      std::cout << "prev act" << prev_act_neuron << std::endl;
+                //      std::cout << "in idx" << in_idx << std::endl;
+                //      std::cout << "in patch" << in_patch << std::endl;
+                //      std::cout << "out patch" << out_patch << std::endl;
+                //      std::cout << "patch dim" << _patch_dim << std::endl;
+                //      std::cout << "filter" << filter << std::endl;
+                //     std::cout << "Input len" << input.len << std::endl;
+                //     for (uint32_t j = 0; j < input.len; j++) {
+                //         std::cout << input.active_neurons[j] << " ";
+                //     }
+                //  }
                     assert(prev_act_neuron < _prev_dim);
 
                     act += _weights[act_filter * _patch_dim + i] * input.activations[prev_act_neuron];
