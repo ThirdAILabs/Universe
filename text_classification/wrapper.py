@@ -4,8 +4,7 @@ from sklearn.utils import murmurhash3_32 as mmh3
 import re
 from collections import defaultdict
 
-def predict_sentence_sentiment(network: bolt.Network, text):
-    seed = 0
+def predict_sentence_sentiment(network: bolt.Network, text, seed=42):
     feat_hash_dim = 100000
     
     sentence = re.sub(r'[^\w\s]','', text)
@@ -33,7 +32,7 @@ def predict_sentence_sentiment(network: bolt.Network, text):
         print('negative!', flush=True)
 
 
-def preprocess_data(file_name, batch_size, target_location=None, train=True):
+def preprocess_data(file_name, batch_size, target_location=None, train=True, seed=42):
     if file_name.find(".csv") == -1:
         raise ValueError("Only .csv files are supported")
 
