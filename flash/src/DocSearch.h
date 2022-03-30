@@ -112,7 +112,9 @@ class DocSearch {
     // push_back index, since if we concurrently add two documents at the same
     // time race conditions might reorder who gets assigned an id first and
     // who gets to this line first.
-    _internal_id_to_doc_id.resize(internal_id + 1);
+    if (internal_id >= _internal_id_to_doc_id.size()) {
+      _internal_id_to_doc_id.resize(internal_id + 1);
+    }
     _internal_id_to_doc_id.at(internal_id) = doc_id;
 
     return !deletedOldDoc;
