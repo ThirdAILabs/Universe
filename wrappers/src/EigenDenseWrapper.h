@@ -1,3 +1,5 @@
+#pragma once
+
 // You should include this file instead of <Eigen/Dense>. For now,
 // it gets rid of clang tidy errors, adds Cereal serialization for
 // dense Eigen matrices, and makes sure all included code is under
@@ -53,9 +55,8 @@ void save(Archive& ar, Eigen::PlainObjectBase<Derived> const& to_serialize) {
 
   // Since this is a PlainObjectBase the memory must be contiguous and we
   // can copy directly in, see
-  ar(binary_data(
-      to_serialize.data(),
-      to_serialize.size() * sizeof(typename EigenTypeToSerialize::Scalar)));
+  ar(binary_data(to_serialize.data(),
+                 to_serialize.size() * sizeof(EigenScalarType)));
 }
 
 // This method is very similar to the above load method, see comments there
@@ -64,10 +65,9 @@ void load(Archive& ar, Eigen::PlainObjectBase<Derived>& to_fill) {
   typedef Eigen::PlainObjectBase<Derived> EigenTypeToDeserialize;
   typedef typename EigenTypeToDeserialize::Scalar EigenScalarType;
   typedef BinaryData<EigenScalarType> CerealScalarType;
-  static_assert(
-      traits::is_output_serializable<CerealScalarType, Archive>::value,
-      "The type of the Eigen matrix or array you are trying to "
-      "deserialize must be serializable.");
+  static_assert(traits::is_input_serializable<CerealScalarType, Archive>::value,
+                "The type of the Eigen matrix or array you are trying to "
+                "deserialize must be deserializable.");
 
   // Different deserialization logic depending on whether the rows and cols
   // are dynamic to match the similar logic above
@@ -85,8 +85,7 @@ void load(Archive& ar, Eigen::PlainObjectBase<Derived>& to_fill) {
   }
 
   to_fill.resize(rows, cols);
-  ar(binary_data(to_fill.data(),
-                 static_cast<std::size_t>(rows * cols *
-                                          sizeof(typename Derived::Scalar))));
+  ar(binary_data(to_fill.data(), static_cast<std::size_t>(
+                                     rows * cols * sizeof(EigenScalarType))));
 }
 }  // namespace cereal

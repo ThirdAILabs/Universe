@@ -145,12 +145,7 @@ def test_add_doc_find_centroids_is_fast():
     )
 
 
-test_add_doc_find_centroids_is_fast()
-
 # TOOD(josh): Add the following tests:
 # 1. Test with lots of elements to ensure centroid reranking is reasonably fast
-# 2. Test to ensure that finding centroids in C++ is as fast as in numpy
-# (will need Eigen or similar
-# blas library in C++ for this)
-# 3. Test with overall benchmarking test, probably on blade node,
+# 2. Test with overall benchmarking test, probably on blade node,
 #    perhaps download msmarco index
