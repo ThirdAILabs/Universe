@@ -144,6 +144,7 @@ def test_add_doc_find_centroids_is_fast():
         1 + max_percent_slowdown
     )
 
+
 # TOOD(josh): Add the following tests:
 # 1. Test with lots of elements to ensure centroid reranking is reasonably fast
 # 2. Test with overall benchmarking test, probably on blade node,
