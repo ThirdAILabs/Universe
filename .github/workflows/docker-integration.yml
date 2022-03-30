@@ -16,20 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      # See https://github.com/actions/checkout/issues/124
-      # We need the actual branch name so that the archive building the image works
       - uses: actions/checkout@v2
-        if: github.event_name == 'pull_request'
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.ref }}
+        with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-
-      - uses: actions/checkout@v2
-        if: github.event_name == 'push'
-        with:
-          fetch-depth: 0
 
       - name: Build and test the product Docker images
         run: |
