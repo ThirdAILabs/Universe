@@ -41,8 +41,9 @@ class PyDocSearch final : public DocSearch {
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           embeddings,
       const std::vector<uint32_t>& doc_centroid_ids) {
-    return DocSearch::addDocument(wrapNumpyIntoDenseBatch(embeddings, 0),
-                                  doc_centroid_ids, doc_id, doc_text);
+    return DocSearch::addDocumentWithCentroids(
+        wrapNumpyIntoDenseBatch(embeddings, 0), doc_centroid_ids, doc_id,
+        doc_text);
   }
 
   bool deleteDocument(const std::string& doc_id) {

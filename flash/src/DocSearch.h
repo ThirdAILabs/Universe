@@ -20,7 +20,12 @@ namespace thirdai::search {
 
 // TODO(josh): This class is NOT currently safe to call concurrently.
 // TODO(josh): Right now this only has support for dense input and documents
-// with a max of 256 embeddings
+// with a max of 256 embeddings. If there are more than 256 embeddings, it
+// silently truncates. This should be fixed with a dynamic tiny table size,
+// but for now I think we should keep this a silent error. If we threw an
+// error existing scripts would fail, and printing out a warning is inelegant
+// (we may print out thousands of warnings). Note that the dense condition
+// is ensured since we only accept DenseBatch.
 /**
  * Represents a service that allows document addition, removal, and queries.
  * For now, can represent at most 2^32 - 1 documents.
@@ -54,8 +59,8 @@ class DocSearch {
             " and passed in dense_dim of " + std::to_string(_dense_dim));
       }
 
-      // We delay constructing this so that we can do input checking all here
-      // rather than in FastSRP
+      // We delay constructing this so that we can do sanitize input in
+      // this constructor rather than in FastSRP and MaxFlashArray
       _document_array = std::make_unique<MaxFlashArray<uint8_t>>(
           new thirdai::hashing::FastSRP(dense_dim, hashes_per_table,
                                         num_tables),
@@ -72,17 +77,25 @@ class DocSearch {
   // and we updated it.
   bool addDocument(const dataset::DenseBatch& embeddings,
                    const std::string& doc_id, const std::string& doc_text) {
-    std::vector<uint32_t> centroid_ids = getNearestCentroids(embeddings, 1);
-    return addDocument(embeddings, centroid_ids, doc_id, doc_text);
+    std::vector<uint32_t> centroid_ids =
+        getNearestCentroidsBatch(embeddings, 1);
+    return addDocumentWithCentroids(embeddings, centroid_ids, doc_id, doc_text);
   }
 
   // Returns true if this is a new document, false if this was an old document
   // and we updated it.
-  bool addDocument(const dataset::DenseBatch& embeddings,
-                   const std::vector<uint32_t>& centroid_ids,
-                   const std::string& doc_id, const std::string& doc_text) {
+  bool addDocumentWithCentroids(const dataset::DenseBatch& embeddings,
+                                const std::vector<uint32_t>& centroid_ids,
+                                const std::string& doc_id,
+                                const std::string& doc_text) {
     bool deletedOldDoc = deleteDocument(doc_id);
 
+    // The document array assigned the new document to an "internal_id" when
+    // we add it, which now becomes the integer representing this document in
+    // our system. They differ from the passed in doc_id, which is an arbitrary
+    // string that uniquely identifies the document; the internal_id is the
+    // next available smallest positive integer that from now on uniquely
+    // identifies the document.
     uint32_t internal_id = _document_array->addDocument(embeddings);
     _largest_internal_id = std::max(_largest_internal_id, internal_id);
 
@@ -94,6 +107,11 @@ class DocSearch {
 
     _doc_id_to_internal_id[doc_id] = internal_id;
 
+    // We need to call resize here instead of simply push_back because the
+    // internal_id we get assigned might not necessarily be equal to the
+    // push_back index, since if we concurrently add two documents at the same
+    // time race conditions might reorder who gets assigned an id first and
+    // who gets to this line first.
     _internal_id_to_doc_id.resize(internal_id + 1);
     _internal_id_to_doc_id.at(internal_id) = doc_id;
 
@@ -137,7 +155,7 @@ class DocSearch {
     }
 
     std::vector<uint32_t> centroid_ids =
-        getNearestCentroids(embeddings, _nprobe_query);
+        getNearestCentroidsBatch(embeddings, _nprobe_query);
     std::vector<uint32_t> top_k_internal_ids =
         frequencyCountCentroidBuckets(centroid_ids, top_k);
     std::vector<uint32_t> reranked =
@@ -172,6 +190,9 @@ class DocSearch {
   }
 
   uint32_t _dense_dim, _nprobe_query, _largest_internal_id, _num_centroids;
+  // This is a uinque_ptr rather than the object itself so that we can delay
+  // constructing it until after input sanitization; see the constructor for m
+  // more information.
   std::unique_ptr<MaxFlashArray<uint8_t>> _document_array;
   std::vector<float> _centroids;
   std::vector<std::vector<uint32_t>> _centroid_id_to_internal_id;
@@ -181,15 +202,14 @@ class DocSearch {
 
   // Finds the nearest nprobe centroids for each vector in the batch and
   // then concatenates all of the centroid ids across the batch.
-  std::vector<uint32_t> getNearestCentroids(const dataset::DenseBatch& batch,
-                                            uint32_t nprobe) const {
+  std::vector<uint32_t> getNearestCentroidsBatch(
+      const dataset::DenseBatch& batch, uint32_t nprobe) const {
     std::vector<uint32_t> result;
 #pragma omp parallel for default(none) shared(batch, nprobe, result)
     for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
       std::vector<uint32_t> nearest_centroids =
-          getNearestCentroids(batch.at(i), nprobe);
-      for (uint32_t probe : getNearestCentroids(batch.at(i), nprobe)) {
-        (void)probe;
+          getNearestCentroidsSingle(batch.at(i), nprobe);
+      for (uint32_t probe : getNearestCentroidsSingle(batch.at(i), nprobe)) {
 #pragma omp critical
         result.push_back(probe);
       }
@@ -200,8 +220,8 @@ class DocSearch {
   }
 
   // Finds the nearest nprobe centroids for the single vector passed in
-  std::vector<uint32_t> getNearestCentroids(const dataset::DenseVector& vec,
-                                            uint32_t nprobe) const {
+  std::vector<uint32_t> getNearestCentroidsSingle(
+      const dataset::DenseVector& vec, uint32_t nprobe) const {
     std::vector<float> scores(_num_centroids);
     for (uint32_t i = 0; i < _num_centroids; i++) {
       float dot = 0;
@@ -251,6 +271,9 @@ class DocSearch {
 
     std::vector<uint32_t> result;
     while (!heap.empty()) {
+      // Top is the pair with the smallest score still in the heap as the first
+      // element and the internal_id as the second element, so we push back
+      // the second element, the internal_id, into the result vector.
       result.push_back(heap.top().second);
       heap.pop();
     }
@@ -264,12 +287,15 @@ class DocSearch {
   std::vector<uint32_t> rankDocuments(
       const dataset::DenseBatch& query_embeddings,
       const std::vector<uint32_t>& internal_ids_to_rerank) const {
+    // This returns a vector of scores, where the ith score is the score of
+    // the document with the internal_id at internal_ids_to_rerank[i]
     std::vector<float> document_scores = _document_array->getDocumentScores(
         query_embeddings, internal_ids_to_rerank);
 
-    // This is a little confusing, these are indices into the
-    // internal_ids_to_rerank array. We then need to convert them back to
-    // document internal_ids, which we do below.
+    // This is a little confusing, these sorted_indices are indices into
+    // the document_scores array and represent a ranking of the
+    // internal_ids_to_rerank. We still need to use this ranking to permute and
+    // return internal_ids_to_rerank, which we do below.
     std::vector<uint32_t> sorted_indices = argsort_descending(document_scores);
 
     std::vector<uint32_t> permuted_ids(internal_ids_to_rerank.size());
