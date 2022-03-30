@@ -10,8 +10,10 @@ PointerAlignment: Left
 IncludeBlocks: Merge
 IncludeCategories:
 # Matches common headers first, but sorts them after project includes
-# Cereal comes first for include reasons, see
+# Wrappers and then cereal comes first for include reasons, see
 # https://uscilab.github.io/cereal/polymorphism.html#poly_relation
+- Regex: '^<wrappers/*'
+  Priority: 800
 - Regex: '^<cereal/*'
   Priority: 1000
 - Regex: '^\"'

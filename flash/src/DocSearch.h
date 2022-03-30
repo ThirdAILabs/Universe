@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wrappers/src/EigenDenseWrapper.h>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/unordered_map.hpp>
