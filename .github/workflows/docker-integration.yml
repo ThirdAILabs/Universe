@@ -21,11 +21,6 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
-      - uses: actions/checkout@v2
-        if: github.event_name == 'push'
-        with:
-          fetch-depth: 0
-
       - name: Build and test the product Docker images
         run: |
           pip3 install git-archive-all
