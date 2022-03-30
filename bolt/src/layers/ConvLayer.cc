@@ -19,7 +19,7 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
             _b_gradient(config.dim, 0),
             _b_momentum(config.dim, 0),
             _b_velocity(config.dim, 0),
-            _is_active(config.dim, false),
+            _is_active(config.dim * config.num_patches, false),
             _sampling_config(config.sampling_config),
             _force_sparse_for_inference(false),
             _patch_dim(config.patch_dim),
@@ -86,8 +86,6 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
 
     template <bool DENSE, bool PREV_DENSE>
     void ConvLayer::forwardImpl(const BoltVector& input, BoltVector& output) {
-        std::cout << "Starting forward pass witih dim: " << _dim <<" with prev_dense: " << PREV_DENSE << " and dense: " << DENSE << std::endl;
-
         uint32_t num_active_filters; // if dense use all filters, otherwise use a sparse subset
         if (DENSE) {
             num_active_filters = _num_filters;
@@ -96,18 +94,15 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
             num_active_filters = _num_sparse_filters;
             std::fill_n(output.gradients, _sparse_dim, 0);
         }
-
         // for each input patch
         for (uint32_t in_patch = 0; in_patch < _num_patches; in_patch++) {
             uint32_t out_patch = _in_to_out[in_patch];
             selectActiveFilters<DENSE, PREV_DENSE>(input, output, in_patch, out_patch); // TODO hash differently for sparse/dense input
-
             // for each filter selected
             for (uint32_t filter = 0; filter < num_active_filters; filter++) {
                 uint64_t out_idx = out_patch * num_active_filters + filter; // output size is num_patches * num_active_filters
                 uint64_t act_neuron = DENSE ? out_idx : output.active_neurons[out_idx];
                 assert(act_neuron < _dim);
-
                 uint32_t act_filter = act_neuron % num_active_filters; // the actual act_filter is not always filter bc sparse
                 _is_active[act_neuron] = true;
                 float act = _biases[act_filter];
@@ -164,11 +159,6 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
     template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
     void ConvLayer::backpropagateImpl(BoltVector& input,
                                                 BoltVector& output) {
-                                                    std::cout << "CONV BACK " << _prev_dim << std::endl;
-        for (uint32_t j = 0; j < _num_patches; j++) {
-                        std::cout << _out_to_in[j] << " ";
-                    }
-                    std::cout << std::endl;
         uint32_t len_out = DENSE ? _dim : _sparse_dim;
         uint32_t num_active_filters = DENSE ? _num_filters : _num_sparse_filters;
 
@@ -183,18 +173,6 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
             for (uint64_t i = 0; i < _patch_dim; i++) {
                 uint64_t in_idx = in_patch * _patch_dim + i;
                 uint32_t prev_act_neuron = PREV_DENSE ? in_idx : input.active_neurons[in_idx];
-                if (_prev_dim == 784 && n >= 496) {
-                    // std::cout << "FAILED: ";
-                    std::cout << "prev act" << prev_act_neuron << std::endl;
-                    std::cout << "in idx" << in_idx << std::endl;
-                    std::cout << "in patch" << in_patch << std::endl;
-                    std::cout << "out patch" << out_patch << std::endl;
-                    std::cout << "patch dim" << _patch_dim << std::endl;
-                    std::cout << "n" << n << std::endl;
-                    for (uint32_t j = 0; j < _num_patches; j++) {
-                        std::cout << _out_to_in[j] << " ";
-                    }
-                }
                 assert(prev_act_neuron < _prev_dim);
                 _w_gradient[act_filter * _patch_dim + i] +=
                     output.gradients[n] * input.activations[prev_act_neuron];
@@ -204,7 +182,7 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
                         _weights[act_filter * _patch_dim + i];
                 }
             }
-            _b_gradient[act_neuron] += output.gradients[n];
+            _b_gradient[act_filter] += output.gradients[n];
         }
     }
 
