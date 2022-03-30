@@ -48,10 +48,14 @@ def train_amazon_polarity(args, mlflow_logger):
             rehash=6400,
             rebuild=128000,
         )
-        acc, __ = network.predict(test_data, metrics=["categorical_accuracy"], verbose=False)
+        acc, __ = network.predict(
+            test_data, metrics=["categorical_accuracy"], verbose=False
+        )
         mlflow_logger.log_epoch(acc["categorical_accuracy"][0])
-    
-    final_accuracy, __ = network.predict(test_data, metrics=["categorical_accuracy"], verbose=False)
+
+    final_accuracy, __ = network.predict(
+        test_data, metrics=["categorical_accuracy"], verbose=False
+    )
     mlflow_logger.log_final_accuracy(final_accuracy)
 
 

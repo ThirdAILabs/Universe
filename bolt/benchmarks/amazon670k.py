@@ -51,10 +51,12 @@ def train_amzn670(args, mlflow_logger):
         )
         acc, __ = network.predict(
             test_data, metrics=["categorical_accuracy"], verbose=False
-         )
+        )
         mlflow_logger.log_epoch(acc["categorical_accuracy"][0])
-    
-    final_accuracy, __ = network.predict(test_data, metrics=["categorical_accuracy"], verbose=False)
+
+    final_accuracy, __ = network.predict(
+        test_data, metrics=["categorical_accuracy"], verbose=False
+    )
     mlflow_logger.log_epoch(final_accuracy["categorical_accuracy"][0])
 
 
@@ -63,7 +65,7 @@ def main():
     parser = argparse.ArgumentParser(
         description=f"Run BOLT on Amazon 670k with specified params."
     )
-    
+
     # TODO(vihan) replace these hard-coded paths
     # TODO(vihan) Replace args namespace with a dictionary
     args = add_arguments(
