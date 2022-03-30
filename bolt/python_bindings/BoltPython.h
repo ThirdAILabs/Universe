@@ -210,7 +210,7 @@ class PyNetwork final : public FullyConnectedNetwork {
     );
     auto data = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
         x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, batch_size);
-    uint32_t num_samples = x_idxs.shape()[0];
+    uint32_t num_samples = x_offsets.shape()[0] - 1;
     float* activations;
     try {
       activations = new float[num_samples * outputDim()];
