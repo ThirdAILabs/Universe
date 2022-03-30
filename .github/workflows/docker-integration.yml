@@ -23,6 +23,8 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.ref }}
+          submodules: 'recursive'
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
       - uses: actions/checkout@v2
         if: github.event_name == 'push'
@@ -30,4 +32,6 @@ jobs:
           fetch-depth: 0
 
       - name: Build and test the product Docker images
-        run: docker/product/test_all_product_dockers.sh
+        run: |
+          pip3 install git-archive-all
+          docker/product/test_all_product_dockers.sh

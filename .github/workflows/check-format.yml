@@ -16,11 +16,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+      with:           
+        submodules: 'recursive'
+        token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+            
     - name: Run clang-format
       uses: DoozyX/clang-format-lint-action@v0.12
       with:
         source: '.'
-        exclude: './third_party ./external'
+        exclude: './deps'
         clangFormatVersion: 10
         style: file
 
