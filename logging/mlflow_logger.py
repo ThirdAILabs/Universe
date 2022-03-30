@@ -88,12 +88,6 @@ class ExperimentLogger:
             for k, v in vars(self.experiment_args).items():
                 mlflow.log_param(k, v)
 
-        # if self.num_hash_tables:
-        #     mlflow.log_param("num_hash_tables", self.num_hash_tables)
-        # if self.hashes_per_table:
-        #     mlflow.log_param("hashes_per_table", self.hashes_per_table)
-        # if self.sparsity:
-        #     mlflow.log_param("sparsity", self.sparsity)
         self.start_time = time.time()
         return self
 

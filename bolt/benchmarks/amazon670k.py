@@ -49,13 +49,13 @@ def train_amzn670(args, mlflow_logger):
             rehash=6400,
             rebuild=128000,
         )
-        acc = network.predict(
+        acc, __ = network.predict(
             test_data, metrics=["categorical_accuracy"], verbose=False
-        )
-        mlflow_logger.log_epoch(acc)
-
-    final_accuracy = network.predict(test_data)
-    mlflow_logger.log_final_accuracy(final_accuracy)
+         )
+        mlflow_logger.log_epoch(acc["categorical_accuracy"][0])
+    
+    final_accuracy, __ = network.predict(test_data, metrics=["categorical_accuracy"], verbose=False)
+    mlflow_logger.log_epoch(final_accuracy["categorical_accuracy"][0])
 
 
 def main():
@@ -66,12 +66,12 @@ def main():
 
     args = add_arguments(
         parser=parser,
-        train="/media/scratch/data/amazon-670k/test_shuffled_noHeader.txt",
-        test="/media/scratch/data/amazon-670k/test_shuffled_noHeader.txt",
-        epochs=25,
+        train="/media/scratch/data/amazon-670k/train_shuffled_noHeader.txt",
+        test="/media/scratch/data/amazon-670k/test_shuffled_noHeader_sampled.txt",
+        epochs=10,
         hashes_per_table=5,
         num_tables=128,
-        sparsity=0.05,
+        sparsity=0.005,
         lr=0.0001,
     )
 
