@@ -101,7 +101,7 @@ class PyNetwork final : public FullyConnectedNetwork {
     auto test_data = thirdai::dataset::python::denseBoltDatasetFromNumpy(
         examples, labels, test_batch_size);
 
-    //std::cout << "return embeddings" << std::endl;
+    std::cout << "return embeddings" << std::endl;
     return FullyConnectedNetwork::getEmbeddings(layer_no, test_data, test_batch_size);
   }
 

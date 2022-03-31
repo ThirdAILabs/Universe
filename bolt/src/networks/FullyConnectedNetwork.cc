@@ -49,9 +49,11 @@ void FullyConnectedNetwork::forward(uint32_t batch_index,
   if (layer_no == -1) temp_stop = _num_layers;
 
   for (int i = 0; i < temp_stop; i++) {
-    if (i == 0 &&
-        (_num_layers == 1 || temp_stop == 1)) {  // First and last layer
+    if (i == 0 && _num_layers == 1) {  // First and last layer
       _layers[0]->forward(input, output, labels);
+    } else if (i == 0 && temp_stop == 1) {
+      std::cout << "calling forward" << std::endl;
+      _layers[0]->forward(input, output);
     } else if (i == 0) {  // First layer
       _layers[0]->forward(input, _states[0][batch_index]);
     } else if (i == (int) _num_layers - 1 || i == temp_stop - 1) {  // Last layer

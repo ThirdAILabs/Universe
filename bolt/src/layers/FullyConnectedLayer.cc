@@ -105,7 +105,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   assert((output.active_neurons == nullptr && DENSE) ||
          (output.active_neurons != nullptr && !DENSE));
   assert(labels == nullptr || labels->len > 0);
-
+  
   selectActiveNeurons<DENSE, PREV_DENSE>(input, output, labels);
 
   float max_act = 0;
@@ -116,6 +116,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
     // Because DENSE is known at compile time the compiler can remove this
     // conditional
     uint64_t act_neuron = DENSE ? n : output.active_neurons[n];
+    std::cout << "act_neurons is " << act_neuron << " _dim is " << _dim << std::endl;
     assert(act_neuron < _dim);
     _is_active[act_neuron] = true;
     float act = _biases[act_neuron];
@@ -149,7 +150,8 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
         break;
     }
   }
-
+  
+  std::cout << "softmax" << std::endl;
   if (_act_func == ActivationFunction::Softmax) {
     float total = 0;
     for (uint64_t n = 0; n < len_out; n++) {
@@ -260,13 +262,13 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
   }
 
   std::unordered_set<uint32_t> active_set;
-
+  
   uint32_t label_len = labels != nullptr ? labels->len : 0;
   for (uint32_t i = 0; i < label_len; i++) {
     assert(labels->active_neurons[i] < _dim);
     active_set.insert(labels->active_neurons[i]);
   }
-
+  
   uint32_t* hashes = new uint32_t[_hash_table->numTables()];
   if (PREV_DENSE) {
     _hasher->hashSingleDense(input.activations, input.len, hashes);
@@ -274,7 +276,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     _hasher->hashSingleSparse(input.active_neurons, input.activations,
                               input.len, hashes);
   }
-
+  
   if (_force_sparse_for_inference && _act_func == ActivationFunction::Softmax) {
     _hash_table->queryAndInsertForInference(hashes, active_set, _sparse_dim);
   } else {
@@ -282,7 +284,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
   }
 
   delete[] hashes;
-
+  
   if (active_set.size() < _sparse_dim) {
     uint32_t rand_offset = rand() % _dim;
     while (active_set.size() < _sparse_dim) {
@@ -290,7 +292,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
       rand_offset = rand_offset % _dim;
     }
   }
-
+  
   uint32_t cnt = 0;
   for (uint32_t i = 0; i < label_len; i++) {
     if (cnt >= _sparse_dim) {
@@ -299,14 +301,16 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     output.active_neurons[cnt++] = labels->active_neurons[i];
     active_set.erase(labels->active_neurons[i]);
   }
-
+  std::cout << "DENSE is " << DENSE << std::endl;
   for (auto x : active_set) {
     if (cnt >= _sparse_dim) {
       break;
     }
     assert(x < _dim);
+    //std::cout << "_dim is " << _dim << " sparse dim is " << _sparse_dim << " cnt is " << cnt << std::endl;
     output.active_neurons[cnt++] = x;
   }
+  std::cout << "Done" << std::endl;
 }
 
 void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
