@@ -50,10 +50,8 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
     _top_mlp.buildHashTables();
   }
 
-  BoltBatch getOutputs(uint32_t batch_size, bool force_dense,
-                       int layer_no) final {
-    (void)layer_no;
-    return _top_mlp.getOutputs(batch_size, force_dense, -1);
+  BoltBatch getOutputs(uint32_t batch_size, bool force_dense) final {
+    return _top_mlp.getOutputs(batch_size, force_dense);
   }
   
   void setWeights(int layer_no, float* weights, int weightsLen) {

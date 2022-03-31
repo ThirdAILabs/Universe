@@ -116,7 +116,6 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
     // Because DENSE is known at compile time the compiler can remove this
     // conditional
     uint64_t act_neuron = DENSE ? n : output.active_neurons[n];
-    std::cout << "act_neurons is " << act_neuron << " _dim is " << _dim << std::endl;
     assert(act_neuron < _dim);
     _is_active[act_neuron] = true;
     float act = _biases[act_neuron];
@@ -151,7 +150,6 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
     }
   }
   
-  std::cout << "softmax" << std::endl;
   if (_act_func == ActivationFunction::Softmax) {
     float total = 0;
     for (uint64_t n = 0; n < len_out; n++) {
@@ -301,7 +299,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     output.active_neurons[cnt++] = labels->active_neurons[i];
     active_set.erase(labels->active_neurons[i]);
   }
-  std::cout << "DENSE is " << DENSE << std::endl;
+  
   for (auto x : active_set) {
     if (cnt >= _sparse_dim) {
       break;
@@ -310,7 +308,6 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     //std::cout << "_dim is " << _dim << " sparse dim is " << _sparse_dim << " cnt is " << cnt << std::endl;
     output.active_neurons[cnt++] = x;
   }
-  std::cout << "Done" << std::endl;
 }
 
 void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,

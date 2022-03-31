@@ -30,7 +30,7 @@ MetricData Model<BATCH_T>::train(
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
   initializeNetworkState(batch_size, false);
-  BoltBatch outputs = getOutputs(batch_size, false, -1);
+  BoltBatch outputs = getOutputs(batch_size, false);
 
   std::vector<double> time_per_epoch;
 
@@ -109,7 +109,7 @@ MetricData Model<BATCH_T>::predict(
   // If sparse inference is not enabled we want the outptus to be dense,
   // otherwise we want whatever the default for the layer is.
   initializeNetworkState(batch_size, true);
-  BoltBatch outputs = getOutputs(batch_size, true, -1);
+  BoltBatch outputs = getOutputs(batch_size, true);
 
   MetricAggregator metrics(metric_names, verbose);
 
@@ -164,23 +164,18 @@ BoltBatch Model<BATCH_T>::getEmbeddings(uint32_t layer_no,
   // a batch size larger than this so we can just set the batch size here.
   // If sparse inference is not enabled we want the outptus to be dense,
   // otherwise we want whatever the default for the layer is.
-  std::cout << "Initialize network state" << std::endl;
   initializeNetworkState(test_batch_size, false);
   
-  std::cout << "Initialize outputs" << std::endl;
-  BoltBatch outputs = getOutputs(test_batch_size, false, layer_no);
+  BoltBatch outputs = getOutputs(test_batch_size, false);
 
-  std::cout << "get input" << std::endl;
   BATCH_T& inputs = const_cast<BATCH_T&>(test_data[0]);
 
 // #pragma omp parallel for default(none) shared(inputs, outputs, layer_no)
   
-  std::cout << "forward pass batch size is " << inputs.getBatchSize() << std::endl;
   for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
     forward(i, inputs, outputs[i], layer_no);
   }
 
-  std::cout << "return" << std::endl;
   return outputs;
 }
 

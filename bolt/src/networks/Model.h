@@ -90,8 +90,7 @@ class Model {
   virtual void shuffleRandomNeurons() = 0;
 
   // Allocates storage for activations and gradients for output layer.
-  virtual BoltBatch getOutputs(uint32_t batch_size, bool force_dense,
-                               int layer_no) = 0;
+  virtual BoltBatch getOutputs(uint32_t batch_size, bool force_dense) = 0;
 
   // Gets the dimension of the output layer.
   virtual uint32_t outputDim() const = 0;

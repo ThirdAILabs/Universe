@@ -81,15 +81,15 @@ class PyNetwork final : public FullyConnectedNetwork {
     return {metric_data, activations_array};
   }
 
-  BoltBatch getEmbeddings(
+  py::object getEmbeddings(
       uint32_t layer_no, 
       const dataset::InMemoryDataset<dataset::BoltInputBatch>& test_data,
       uint32_t test_batch_size) {
-
-    return FullyConnectedNetwork::getEmbeddings(layer_no, test_data, test_batch_size);
+    auto output = FullyConnectedNetwork::getEmbeddings(layer_no, test_data, test_batch_size);
+    return py::cast(output);
   }
 
-  BoltBatch getEmbeddingsWithDenseNumpyArray(
+  py::object getEmbeddingsWithDenseNumpyArray(
       uint32_t layer_no, 
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           examples,
@@ -101,8 +101,9 @@ class PyNetwork final : public FullyConnectedNetwork {
     auto test_data = thirdai::dataset::python::denseBoltDatasetFromNumpy(
         examples, labels, test_batch_size);
 
+    auto output = FullyConnectedNetwork::getEmbeddings(layer_no, test_data, test_batch_size);
     std::cout << "return embeddings" << std::endl;
-    return FullyConnectedNetwork::getEmbeddings(layer_no, test_data, test_batch_size);
+    return py::cast(output);
   }
 
   std::pair<MetricData,
