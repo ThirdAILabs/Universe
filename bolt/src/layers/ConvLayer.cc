@@ -23,11 +23,12 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
             _sampling_config(config.sampling_config),
             _force_sparse_for_inference(false),
             _patch_dim(config.patch_dim),
+            _sparse_patch_dim(40),
             _num_patches(config.num_patches),
             _num_filters(config.dim),
             _num_sparse_filters(config.dim * config.sparsity) {
-
-        // TODO calculate num_patches in constructor, dont pass in
+        
+        // TODO(david) calculate num_patches in constructor, dont pass in
 
         if (config.act_func != ActivationFunction::ReLU) {
             throw std::invalid_argument(
@@ -95,47 +96,34 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
             std::fill_n(output.gradients, _sparse_dim, 0);
         }
 
-
         // std::cout << "PREV DIM AND INPUT LEN: " << _prev_dim << " " << input.len << std::endl;
-        // if (!PREV_DENSE) {
-        //     std::cout << "PRINTING PATCH: " << std::endl;
-        //     for (uint32_t j = 0; j < input.len; j++) {
-        //         std::cout << input.active_neurons[j] << ":" << input.activations[j] << ", ";
-        //     }
-        //     }
 
+        uint32_t pd = PREV_DENSE ? _patch_dim : _sparse_patch_dim;
+
+        uint32_t* prev_active_filters = new uint32_t[input.len];;
+        if (!PREV_DENSE) {
+            for (uint32_t i = 0; i < input.len; i++) {
+                prev_active_filters[i] = input.active_neurons[i] % _patch_dim;
+            }
+        }
 
         // for each input patch
         for (uint32_t in_patch = 0; in_patch < _num_patches; in_patch++) {
             uint32_t out_patch = _in_to_out[in_patch];
-            selectActiveFilters<DENSE, PREV_DENSE>(input, output, in_patch, out_patch); // TODO hash differently for sparse/dense input
+            selectActiveFilters<DENSE, PREV_DENSE>(input, output, in_patch, out_patch, prev_active_filters);
             // for each filter selected
             for (uint32_t filter = 0; filter < num_active_filters; filter++) {
                 uint64_t out_idx = out_patch * num_active_filters + filter; // output size is num_patches * num_active_filters
                 uint64_t act_neuron = DENSE ? out_idx : output.active_neurons[out_idx];
                 assert(act_neuron < _dim);
-                uint32_t act_filter = act_neuron % num_active_filters; // the actual act_filter is not always filter bc sparse
+                uint32_t act_filter = act_neuron % _num_filters;
                 _is_active[act_neuron] = true;
                 float act = _biases[act_filter];
-                for (uint32_t i = 0; i < _patch_dim; i++) {
-                    uint64_t in_idx = in_patch * _patch_dim + i;
-                    uint64_t prev_act_neuron = PREV_DENSE ? in_idx : input.active_neurons[in_idx];
-                //     if (prev_act_neuron >= _prev_dim) {
-                //      std::cout << "FAILED: ";
-                //      std::cout << "prev act" << prev_act_neuron << std::endl;
-                //      std::cout << "in idx" << in_idx << std::endl;
-                //      std::cout << "in patch" << in_patch << std::endl;
-                //      std::cout << "out patch" << out_patch << std::endl;
-                //      std::cout << "patch dim" << _patch_dim << std::endl;
-                //      std::cout << "filter" << filter << std::endl;
-                //     std::cout << "Input len" << input.len << std::endl;
-                //     for (uint32_t j = 0; j < input.len; j++) {
-                //         std::cout << input.active_neurons[j] << " ";
-                //     }
-                //  }
-                    assert(prev_act_neuron < _prev_dim);
-
-                    act += _weights[act_filter * _patch_dim + i] * input.activations[prev_act_neuron];
+                for (uint32_t i = 0; i < pd; i++) {
+                    uint64_t in_idx = in_patch * pd + i;
+                    assert(in_idx < input.len);
+                    uint64_t prev_act_neuron = PREV_DENSE ? i : prev_active_filters[in_idx];
+                    act += _weights[act_filter * _patch_dim + prev_act_neuron] * input.activations[in_idx];
                 }
                 assert(!std::isnan(act));
                 if (act < 0) {
@@ -186,6 +174,15 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
         uint32_t len_out = DENSE ? _dim : _sparse_dim;
         uint32_t num_active_filters = DENSE ? _num_filters : _num_sparse_filters;
 
+        uint32_t pd = PREV_DENSE ? _patch_dim : _sparse_patch_dim;
+
+        uint32_t* prev_active_filters = new uint32_t[input.len];;
+        if (!PREV_DENSE) {
+            for (uint32_t i = 0; i < input.len; i++) {
+                prev_active_filters[i] = input.active_neurons[i] % _patch_dim;
+            }
+        }
+
         for (uint64_t n = 0; n < len_out; n++) {
             assert(!std::isnan(output.gradients[n]));
             output.gradients[n] *= actFuncDerivative(output.activations[n]);
@@ -194,16 +191,16 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
             uint32_t act_filter = act_neuron % _num_filters;
             uint32_t out_patch = n / num_active_filters;
             uint32_t in_patch = _out_to_in[out_patch];
-            for (uint64_t i = 0; i < _patch_dim; i++) {
-                uint64_t in_idx = in_patch * _patch_dim + i;
-                uint32_t prev_act_neuron = PREV_DENSE ? in_idx : input.active_neurons[in_idx];
+            for (uint64_t i = 0; i < pd; i++) {
+                uint64_t in_idx = in_patch * pd + i;
+                uint32_t prev_act_neuron = PREV_DENSE ? i : prev_active_filters[in_idx];
                 assert(prev_act_neuron < _prev_dim);
-                _w_gradient[act_filter * _patch_dim + i] +=
-                    output.gradients[n] * input.activations[prev_act_neuron];
+                _w_gradient[act_filter * _patch_dim + prev_act_neuron] +=
+                    output.gradients[n] * input.activations[in_idx];
                 if (!FIRST_LAYER) {
-                    input.gradients[prev_act_neuron] +=
+                    input.gradients[in_idx] +=
                         output.gradients[n] *
-                        _weights[act_filter * _patch_dim + i];
+                        _weights[act_filter * _patch_dim + prev_act_neuron];
                 }
             }
             _b_gradient[act_filter] += output.gradients[n];
@@ -212,7 +209,7 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
 
     template <bool DENSE, bool PREV_DENSE>
     void ConvLayer::selectActiveFilters(const BoltVector& input, BoltVector& output,
-                        uint32_t in_patch, uint64_t out_patch) {
+                        uint32_t in_patch, uint64_t out_patch, uint32_t* prev_active_filters) {
         if (DENSE) {
             return;
         }
@@ -221,9 +218,9 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
         uint32_t* hashes = new uint32_t[_hash_table->numTables()];
         if (PREV_DENSE) {
             _hasher->hashSingleDense(&input.activations[in_patch * _patch_dim], _patch_dim, hashes);
-        } else {
-            _hasher->hashSingleSparse(&input.active_neurons[in_patch * _patch_dim], &input.activations[in_patch * _patch_dim],
-                              _patch_dim, hashes); // TODO change patch_dim to represent width * height instead of being dependent on num channels/filters in previous layer
+        } else { //TODO(david) add if active filters
+            _hasher->hashSingleSparse(&prev_active_filters[in_patch * _sparse_patch_dim], &input.activations[in_patch * _sparse_patch_dim],
+                              _sparse_patch_dim, hashes); // TODO(david) change patch_dim to represent width * height instead of being dependent on num channels/filters in previous layer
         }
         _hash_table->queryBySet(hashes, active_set);
 
