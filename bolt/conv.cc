@@ -18,22 +18,22 @@ int main() {
 
     uint64_t batch_size = 64;
     dataset::InMemoryDataset<dataset::BoltInputBatch> train_data(
-        "/home/david/data/train_mnist2x2.txt", batch_size,
+        "/Users/david/Documents/python_/train_birds_4x4.txt", batch_size,
         std::move(*train_fac));
     dataset::InMemoryDataset<dataset::BoltInputBatch> test_data(
-        "/home/david/data/test_mnist2x2.txt", batch_size,
+        "/Users/david/Documents/python_/test_birds_4x4.txt", batch_size,
         std::move(*test_fac));
 
     std::cout << "Finished reading train and test data" << std::endl;
 
     std::vector<bolt::FullyConnectedLayerConfig> layers;
 
-    uint32_t patch_size = 4;
-    uint32_t num_patches = 196;
+    uint32_t patch_size = 48;
+    uint32_t num_patches = 3136;
 
-    layers.emplace_back(100, .1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(4, 256, 12, 10), patch_size, num_patches);
+    layers.emplace_back(200, .1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(3, 64, 9, 5), patch_size, num_patches);
 
-    layers.emplace_back(200, .1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(4, 256, 12, 10), 2*2*100, 49);
+    layers.emplace_back(400, .1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(4, 256, 12, 10), 2*2*200, 784);
 
     layers.emplace_back(800, 0.1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(4, 256, 12, 10));
 

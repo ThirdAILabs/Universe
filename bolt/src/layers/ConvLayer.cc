@@ -324,9 +324,37 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
         _in_to_out = std::vector<uint32_t>(_num_patches);
         _out_to_in = std::vector<uint32_t>(_num_patches);
 
-        for (uint32_t i = 0; i < _num_patches; i++) {
-            _in_to_out[i] = i;
-            _out_to_in[i] = i;
+
+        uint32_t next_filter_size = 2; 
+        if (_num_patches == 49) { // TODO(david) this is hard coded, need a fix for when non overlapping patches dont fit into output well
+            next_filter_size = 1;
+        }
+        // TODO(david) only accepts square filters, enforce this somehow
+        // TODO(david) get this when initializing, if next layer not conv or max pool then set to 1
+        uint32_t hp = std::sqrt(_num_patches); // assumes square images
+
+        uint32_t i = 0;
+        std::vector<uint32_t> top_left_patch_vals;
+        while (i <= _num_patches - next_filter_size - ((next_filter_size - 1) * hp)) {
+            top_left_patch_vals.push_back(i);
+            if (((i + next_filter_size) % hp) == 0) {
+                i += (next_filter_size - 1) * hp;
+            }
+            i += next_filter_size;
+        }
+        uint32_t patch = 0;
+        for (uint32_t start : top_left_patch_vals) {
+            // given a filter top left patch val, set all patch vals within that filter
+            uint32_t base_val = start;
+            for (uint32_t y = 0; y < next_filter_size; y++) {
+                for (uint32_t x = 0; x < next_filter_size; x++) {
+                    uint32_t new_patch = base_val + x;
+                    _in_to_out[patch] = new_patch;
+                    _out_to_in[new_patch] = patch;
+                    patch++;
+                }
+                base_val += hp;
+            }
         }
     }
 }  // namespace thirdai::bolt
