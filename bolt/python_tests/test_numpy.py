@@ -97,7 +97,7 @@ def test_mock_sparse_data():
     np.random.shuffle(y_idxs)
     y_idxs %= n_classes
     y_vals = np.ones(2*n_samples)+0.1*np.random.rand(2*n_samples)
-    y_offsets = 2*np.arange(n_samples)
+    y_offsets = 2*np.arange(n_samples+1)
     acc = train_sparse_bolt_model(x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, inp_dim, n_classes)
     assert acc > 0.9
 
