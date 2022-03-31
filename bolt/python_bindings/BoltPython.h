@@ -102,7 +102,7 @@ class PyNetwork final : public FullyConnectedNetwork {
         examples, labels, test_batch_size);
 
     auto output = FullyConnectedNetwork::getEmbeddings(layer_no, test_data, test_batch_size);
-    std::cout << "return embeddings" << std::endl;
+    //std::cout << "return embeddings" << std::endl;
     return py::cast(output);
   }
 
