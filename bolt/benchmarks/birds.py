@@ -77,9 +77,10 @@ def train_birds(args, network, mlflow_logger):
 def main():
 
     parser = argparse.ArgumentParser(
-        description=f"Run BOLT on Amazon 670k with specified params."
+        description=f"Run BOLT on Birds-400 with specified params."
     )
-
+    
+    # TODO(vihan): Fix the train/test paths for numpy inputs 
     args = add_arguments(
         parser=parser,
         train="/share/data/birds/train.svm",
