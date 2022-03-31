@@ -1,6 +1,5 @@
 #include "DWTA.h"
 #include <algorithm>
-#include <iostream>
 #include <limits>
 #include <random>
 

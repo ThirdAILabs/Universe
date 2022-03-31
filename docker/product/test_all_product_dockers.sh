@@ -15,3 +15,4 @@ docker run --privileged -t thirdai_slim_release:$REV_TAG /bin/bash -c "pytest ."
 docker run --privileged -t thirdai_jupyter_release:$REV_TAG /bin/bash -c "pytest ."
 
 docker run --privileged -t thirdai_docsearch_release:$REV_TAG /bin/bash -c "pytest ."
+docker run --privileged -t thirdai_text_classification_release:$REV_TAG /bin/bash -c "pytest ."
