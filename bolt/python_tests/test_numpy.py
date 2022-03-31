@@ -31,10 +31,14 @@ def train_simple_bolt_model(examples, labels):
     return acc["categorical_accuracy"][0]
 
 
-def train_sparse_bolt_model(x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, inp_dim, n_classes):
+def train_sparse_bolt_model(
+    x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, inp_dim, n_classes
+):
     layers = [
         bolt.LayerConfig(
-            dim=n_classes, load_factor=1, activation_function=bolt.getActivationFunction('ReLU')
+            dim=n_classes,
+            load_factor=1,
+            activation_function=bolt.getActivationFunction("ReLU"),
         )
     ]
     network = bolt.Network(layers=layers, input_dim=inp_dim)
@@ -57,7 +61,15 @@ def train_sparse_bolt_model(x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets
         verbose=False,
     )
     acc, _ = network.predict(
-        x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, batch_size, ["categorical_accuracy"], verbose=False
+        x_idxs,
+        x_vals,
+        x_offsets,
+        y_idxs,
+        y_vals,
+        y_offsets,
+        batch_size,
+        ["categorical_accuracy"],
+        verbose=False,
     )
     ##
     return acc["categorical_accuracy"][0]
@@ -88,17 +100,19 @@ def test_mock_sparse_data():
     inp_dim = 100
     n_classes = 10
     n_samples = 50
-    x_idxs = np.arange(2*n_samples)
+    x_idxs = np.arange(2 * n_samples)
     np.random.shuffle(x_idxs)
     x_idxs %= inp_dim
-    x_vals = np.ones(2*n_samples)+0.1*np.random.rand(2*n_samples)
-    x_offsets = 2*np.arange(n_samples+1)
-    y_idxs = np.arange(2*n_samples)
+    x_vals = np.ones(2 * n_samples) + 0.1 * np.random.rand(2 * n_samples)
+    x_offsets = 2 * np.arange(n_samples + 1)
+    y_idxs = np.arange(2 * n_samples)
     np.random.shuffle(y_idxs)
     y_idxs %= n_classes
-    y_vals = np.ones(2*n_samples)+0.1*np.random.rand(2*n_samples)
-    y_offsets = 2*np.arange(n_samples+1)
-    acc = train_sparse_bolt_model(x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, inp_dim, n_classes)
+    y_vals = np.ones(2 * n_samples) + 0.1 * np.random.rand(2 * n_samples)
+    y_offsets = 2 * np.arange(n_samples + 1)
+    acc = train_sparse_bolt_model(
+        x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, inp_dim, n_classes
+    )
     assert acc > 0.9
 
 

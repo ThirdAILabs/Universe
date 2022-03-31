@@ -8,11 +8,11 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <pybind11/cast.h>
+#include <pybind11/iostream.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
-#include <pybind11/iostream.h>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -32,18 +32,18 @@ class PyNetwork final : public FullyConnectedNetwork {
       : FullyConnectedNetwork(std::move(configs), input_dim) {}
 
   MetricData train(
-    dataset::InMemoryDataset<dataset::BoltInputBatch>& train_data,
-    // Clang tidy is disabled for this line because it wants to pass by
-    // reference, but shared_ptrs should not be passed by reference
-    const LossFunction& loss_fn,  // NOLINT
-    float learning_rate, uint32_t epochs, uint32_t rehash, uint32_t rebuild,
-    const std::vector<std::string>& metric_names, bool verbose) {
+      dataset::InMemoryDataset<dataset::BoltInputBatch>& train_data,
+      // Clang tidy is disabled for this line because it wants to pass by
+      // reference, but shared_ptrs should not be passed by reference
+      const LossFunction& loss_fn,  // NOLINT
+      float learning_rate, uint32_t epochs, uint32_t rehash, uint32_t rebuild,
+      const std::vector<std::string>& metric_names, bool verbose) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
-      std::cout,
-      py::module_::import("sys").attr("stdout")
-    );
-    return FullyConnectedNetwork::train(train_data, loss_fn, learning_rate, epochs, rehash, rebuild, metric_names, verbose);
+        std::cout, py::module_::import("sys").attr("stdout"));
+    return FullyConnectedNetwork::train(train_data, loss_fn, learning_rate,
+                                        epochs, rehash, rebuild, metric_names,
+                                        verbose);
   }
 
   // Does not return py::array_t because this is consistent with the original
@@ -58,9 +58,7 @@ class PyNetwork final : public FullyConnectedNetwork {
       const std::vector<std::string>& metrics, bool verbose) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
-      std::cout,
-      py::module_::import("sys").attr("stdout")
-    );
+        std::cout, py::module_::import("sys").attr("stdout"));
     auto data = thirdai::dataset::python::denseBoltDatasetFromNumpy(
         examples, labels, batch_size);
 
@@ -87,9 +85,7 @@ class PyNetwork final : public FullyConnectedNetwork {
       const std::vector<std::string>& metrics, bool verbose) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
-      std::cout,
-      py::module_::import("sys").attr("stdout")
-    );
+        std::cout, py::module_::import("sys").attr("stdout"));
     auto data = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
         x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, batch_size);
 
@@ -102,12 +98,9 @@ class PyNetwork final : public FullyConnectedNetwork {
       const dataset::InMemoryDataset<dataset::BoltInputBatch>& test_data,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
-    
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
-      std::cout,
-      py::module_::import("sys").attr("stdout")
-    );
+        std::cout, py::module_::import("sys").attr("stdout"));
 
     uint32_t num_samples = test_data.len();
 
@@ -150,9 +143,7 @@ class PyNetwork final : public FullyConnectedNetwork {
       bool verbose, uint32_t batch_limit) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
-      std::cout,
-      py::module_::import("sys").attr("stdout")
-    );
+        std::cout, py::module_::import("sys").attr("stdout"));
 
     auto data = thirdai::dataset::python::denseBoltDatasetFromNumpy(
         examples, labels, batch_size);
@@ -189,25 +180,23 @@ class PyNetwork final : public FullyConnectedNetwork {
   std::pair<MetricData,
             py::array_t<float, py::array::c_style | py::array::forcecast>>
   predictWithSparseNumpyArray(
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           x_idxs,
-	  const py::array_t<float, py::array::c_style | py::array::forcecast>&
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
           x_vals,
-	  const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           x_offsets,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           y_idxs,
-    const py::array_t<float, py::array::c_style | py::array::forcecast>&
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
           y_vals,
-	  const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           y_offsets,
-    uint32_t batch_size, const std::vector<std::string>& metrics,
+      uint32_t batch_size, const std::vector<std::string>& metrics,
       bool verbose, uint32_t batch_limit) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
-      std::cout,
-      py::module_::import("sys").attr("stdout")
-    );
+        std::cout, py::module_::import("sys").attr("stdout"));
     auto data = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
         x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, batch_size);
     uint32_t num_samples = x_offsets.shape()[0] - 1;
