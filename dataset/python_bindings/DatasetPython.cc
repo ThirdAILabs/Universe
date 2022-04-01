@@ -350,12 +350,6 @@ InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
 
   // Get information from labels
 
-  // const auto labels_shape = labels_buf.shape;
-  // if (labels_shape.size() != 1) {
-  //   throw std::invalid_argument(
-  //       "For now, Numpy labels must be 1D (each element is an integer).");
-  // }
-
   uint64_t num_labels = static_cast<uint64_t>(y_offsets_buf.shape.at(0) - 1);
   if (num_labels != num_examples) {
     throw std::invalid_argument(
@@ -427,12 +421,6 @@ InMemoryDataset<BoltInputBatch> sparseBoltDatasetFromNumpy(
   uint32_t* y_offsets_raw_data = static_cast<uint32_t*>(y_offsets_buf.ptr);
 
   // Get information from labels
-
-  // const auto labels_shape = labels_buf.shape;
-  // if (labels_shape.size() != 1) {
-  //   throw std::invalid_argument(
-  //       "For now, Numpy labels must be 1D (each element is an integer).");
-  // }
 
   uint64_t num_labels = static_cast<uint64_t>(y_offsets_buf.shape.at(0) - 1);
   if (num_labels != num_examples) {
