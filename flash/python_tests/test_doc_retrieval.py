@@ -94,8 +94,9 @@ def test_add_doc_find_centroids_is_fast():
     words_per_doc = 256
     num_docs = 10
     # It would be nice if this were much smaller (this is 300%) but I don't want
-    # a flaky test (it is because we can't fully optimize CPU vectorization)
-    max_percent_slowdown = 3.00
+    # a flaky test (it is this high because we can't fully optimize CPU
+    # vectorization)
+    max_slowdown_factor = 3.00
     centroids = np.random.rand(num_centroids, data_dim)
     centroids_transposed = centroids.transpose().copy()
     docs = np.random.rand(num_docs, words_per_doc, data_dim)
@@ -140,9 +141,9 @@ def test_add_doc_find_centroids_is_fast():
     print(
         f"Average numpy time {avg_numpy_time}, average our time {avg_with_compute_time}"
     )
-    assert (avg_with_compute_time - avg_precomputed_time) / avg_numpy_time < (
-        1 + max_percent_slowdown
-    )
+    assert (
+        avg_with_compute_time - avg_precomputed_time
+    ) / avg_numpy_time < max_slowdown_factor
 
 
 # TOOD(josh): Add the following tests:

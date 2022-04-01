@@ -60,6 +60,11 @@ if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
   )
 endif()
 
+# It seems this gives us a small improvement on our blade server. Ideally we
+# could run with march=native, which gives us performance improvements, but
+# that would mean it wasn't portable to different cpus in a Docker container.
+# TODO(any): Investigate whether we should do something similar for arm, and
+# whether we can compile with march=native even with Docker.
 if(${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
   add_compile_options(
     $<$<CONFIG:Release>:-march=x86-64>

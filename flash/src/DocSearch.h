@@ -8,6 +8,7 @@
 #include "MaxFlashArray.h"
 #include "Utils.h"
 #include <hashing/src/FastSRP.h>
+#include <Eigen/src/Core/util/Constants.h>
 #include <dataset/src/Vectors.h>
 #include <dataset/src/batch_types/DenseBatch.h>
 #include <exceptions/src/Exceptions.h>
@@ -79,6 +80,8 @@ class DocSearch {
             " and passed in dense_dim of " + std::to_string(_dense_dim));
       }
       for (uint32_t d = 0; d < dense_dim; d++) {
+        // Note we are populating the centroid matrix so that it is tranposed,.
+        // so we don't have to transpose during multiplication.
         _centroids(d, centroid_id) = centroids_input.at(centroid_id).at(d);
       }
     }
@@ -224,8 +227,8 @@ class DocSearch {
       }
     }
 
-    Eigen::Matrix<float, -1, -1, Eigen::RowMajor> eigen_result =
-        eigen_batch * _centroids;
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+        eigen_result = eigen_batch * _centroids;
     std::vector<uint32_t> nearest_centroids(batch.getBatchSize() * nprobe);
 
 #pragma omp parallel for default(none) \
