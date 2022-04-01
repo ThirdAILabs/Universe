@@ -80,8 +80,8 @@ class DocSearch {
             " and passed in dense_dim of " + std::to_string(_dense_dim));
       }
       for (uint32_t d = 0; d < dense_dim; d++) {
-        // Note we are populating the centroid matrix so that it is tranposed,.
-        // so we don't have to transpose during multiplication.
+        // Note we are populating the centroid matrix so that it is tranposed,
+        // allowing us to avoid transposing during multiplication.
         _centroids(d, centroid_id) = centroids_input.at(centroid_id).at(d);
       }
     }
