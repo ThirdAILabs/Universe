@@ -21,6 +21,14 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__repr__", &BoltInputBatch::toString)
       .def("size", &BoltInputBatch::getBatchSize);
 
+  py::class_<BoltBatch> (dataset_submodule, "BoltBatch")
+      .def(py::init<std::vector<BoltVector>&&, std::vector<BoltVector>&&>(),
+           py::arg("vectors"))
+      .def("to_string", &BoltBatch::toString)
+      .def("__str__", &BoltBatch::toString)
+      .def("__repr__", &BoltBatch::toString)
+      .def("size", &BoltBatch::getBatchSize);
+
   py::class_<InMemoryDataset<SparseBatch>> _imsd_(dataset_submodule,
                                                   "InMemorySparseDataset");
   (void)_imsd_;  // To get rid of clang tidy error
