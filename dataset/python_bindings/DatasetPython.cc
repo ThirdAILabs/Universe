@@ -1,6 +1,7 @@
 #include "DatasetPython.h"
 #include <dataset/src/BoltVector.h>
 #include <dataset/src/BoltInputBatch.h>
+#include <dataset/src/BoltBatch.h>
 #include <chrono>
 
 namespace thirdai::dataset::python {
@@ -22,8 +23,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("size", &BoltInputBatch::getBatchSize);
 
   py::class_<BoltBatch> (dataset_submodule, "BoltBatch")
-      .def(py::init<std::vector<BoltVector>&&, std::vector<BoltVector>&&>(),
-           py::arg("vectors"))
+      .def(py::init<std::vector<BoltVector>&&>(), py::arg("vectors"))
       .def("to_string", &BoltBatch::toString)
       .def("__str__", &BoltBatch::toString)
       .def("__repr__", &BoltBatch::toString)
