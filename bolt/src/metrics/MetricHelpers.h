@@ -40,6 +40,7 @@ inline void visitActiveNeuronsImpl(const BoltVector& output, const BoltVector& l
     float label_val;
     if (LABEL_DENSE) {
       label_val = labels.activations[active_neuron];
+      labels_positions_touched[active_neuron] = true;
     } else {
       const uint32_t* label_start = labels.active_neurons;
       const uint32_t* label_end = labels.active_neurons + labels.len;

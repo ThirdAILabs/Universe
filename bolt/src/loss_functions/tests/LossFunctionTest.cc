@@ -1,5 +1,6 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <gtest/gtest.h>
+#include <cmath>
 
 namespace thirdai::bolt::tests {
 
@@ -123,6 +124,83 @@ TEST(LossFunctionTest, MeanSquaredErrorDenseLabelSparseOutput) {
 
 TEST(LossFunctionTest, MeanSquaredErrorSparseLabelSparseOutput) {
   testSparseLabelSparseOutput<MeanSquaredError>();
+}
+
+void testWMAPEDenseLabelDenseOutput() {
+  BoltVector output = makeVector({}, {0.25, 0.375, 0.5, 0.625, 0.125, 0.875});
+  BoltVector labels = makeVector({}, {0.5, 0.25, 0.5, 0.75, 0.0, 0.25});
+  float label_magnitude = std::sqrt(0.5 * 0.5 + 0.25 * 0.25 + 0.5 * 0.5 + 0.75 * 0.75 + 0.25 * 0.25);
+
+  WeightedMeanAbsolutePercentageErrorLoss loss;
+  loss.loss(output, labels, BATCH_SIZE);
+
+  std::vector<float> coefficients = {1.0, -1.0, 0.0, 1.0, -1.0, -1.0};
+  for (uint32_t i = 0; i < coefficients.size(); i++) {
+    ASSERT_FLOAT_EQ(output.gradients[i],
+                    coefficients.at(i) / (label_magnitude * BATCH_SIZE));
+  }
+}
+
+void testWMAPESparseLabelDenseOutput() {
+  BoltVector output = makeVector({}, {0.25, 0.375, 0.5, 0.625, 0.125, 0.875});
+  BoltVector labels = makeVector({0, 1, 3, 5}, {0.5, 0.25, 0.75, 0.25});
+  float label_magnitude = std::sqrt(0.5 * 0.5 + 0.25 * 0.25 + 0.75 * 0.75 + 0.25 * 0.25);
+
+  WeightedMeanAbsolutePercentageErrorLoss loss;
+  loss.loss(output, labels, BATCH_SIZE);
+
+  std::vector<float> coefficients = {1.0, -1.0, -1.0, 1.0, -1.0, -1.0};
+  for (uint32_t i = 0; i < coefficients.size(); i++) {
+    ASSERT_FLOAT_EQ(output.gradients[i],
+                    coefficients.at(i) / (label_magnitude * BATCH_SIZE));
+  }
+}
+
+void testWMAPEDenseLabelSparseOutput() {
+  BoltVector output = makeVector({1, 2, 4, 5}, {0.375, 0.5, 0.125, 0.875});
+  BoltVector labels = makeVector({}, {0.5, 0.25, 0.5, 0.75, 0.0, 0.25});
+  float label_magnitude = std::sqrt(0.5 * 0.5 + 0.25 * 0.25 + 0.5 * 0.5 + 0.75 * 0.75 + 0.25 * 0.25);
+
+  WeightedMeanAbsolutePercentageErrorLoss loss;
+  loss.loss(output, labels, BATCH_SIZE);
+
+  std::vector<float> coefficients = {-1.0, 0.0, -1.0, -1.0};
+  for (uint32_t i = 0; i < coefficients.size(); i++) {
+    ASSERT_FLOAT_EQ(output.gradients[i],
+                    coefficients.at(i) / (label_magnitude * BATCH_SIZE));
+  }
+}
+
+template <typename LOSS>
+void testWMAPESparseLabelSparseOutput() {
+  BoltVector output = makeVector({1, 2, 4, 5}, {0.375, 0.5, 0.125, 0.25});
+  BoltVector labels = makeVector({0, 1, 3, 5}, {0.5, 0.25, 0.75, 0.875});
+  float label_magnitude = std::sqrt(0.5 * 0.5 + 0.25 * 0.25 + 0.75 * 0.75 + 0.875 * 0.875);
+
+  WeightedMeanAbsolutePercentageErrorLoss loss;
+  loss.loss(output, labels, BATCH_SIZE);
+
+  std::vector<float> coefficients = {-1.0, -1.0, -1.0, 1.0};
+  for (uint32_t i = 0; i < coefficients.size(); i++) {
+    ASSERT_FLOAT_EQ(output.gradients[i],
+                    coefficients.at(i) / (label_magnitude * BATCH_SIZE));
+  }
+}
+
+TEST(LossFunctionTest, WeightedMAPEDenseLabelDenseOutput) {
+  testDenseLabelDenseOutput<CategoricalCrossEntropyLoss>();
+}
+
+TEST(LossFunctionTest, WeightedMAPESparseLabelDenseOutput) {
+  testSparseLabelDenseOutput<CategoricalCrossEntropyLoss>();
+}
+
+TEST(LossFunctionTest, WeightedMAPEDenseLabelSparseOutput) {
+  testDenseLabelSparseOutput<CategoricalCrossEntropyLoss>();
+}
+
+TEST(LossFunctionTest, WeightedMAPESparseLabelSparseOutput) {
+  testSparseLabelSparseOutput<CategoricalCrossEntropyLoss>();
 }
 
 }  // namespace thirdai::bolt::tests

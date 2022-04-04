@@ -97,10 +97,10 @@ class MeanSquaredError final : public LossFunction {
   }
 };
 
-class WeightedMeanAbsolutePercentageError final : public LossFunction {
+class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
  public:
-  static std::shared_ptr<WeightedMeanAbsolutePercentageError> makeWeightedMeanAbsolutePercentageError() {
-    return std::make_shared<WeightedMeanAbsolutePercentageError>();
+  static std::shared_ptr<WeightedMeanAbsolutePercentageErrorLoss> makeWeightedMeanAbsolutePercentageErrorLoss() {
+    return std::make_shared<WeightedMeanAbsolutePercentageErrorLoss>();
   }
 
   void loss(BoltVector &output, const BoltVector &labels, uint32_t batch_size) const override {
@@ -111,7 +111,8 @@ class WeightedMeanAbsolutePercentageError final : public LossFunction {
     float almost_zero = 0.0000001;
     float abs_truth = std::max(std::sqrt(sum_of_squared_truth_elems), almost_zero);
     computeLoss(output, labels, [&](float label, float activation) {
-      auto factor = activation > label ? -1 : 1;
+      auto factor = activation == label ? 0.0 
+        : activation > label ? -1.0 : 1.0;
       return factor / (abs_truth * batch_size);
     });
   }
@@ -129,7 +130,7 @@ static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
     return MeanSquaredError::makeMeanSquaredError();
   }
   if (lower_name == "weightedmeanabsolutepercentageerror") {
-    return WeightedMeanAbsolutePercentageError::makeWeightedMeanAbsolutePercentageError();
+    return WeightedMeanAbsolutePercentageErrorLoss::makeWeightedMeanAbsolutePercentageErrorLoss();
   }
   throw std::invalid_argument(
       "'" + name +
