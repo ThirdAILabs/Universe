@@ -42,29 +42,6 @@ class ConvLayer : public FullyConnectedLayer {
 
         void buildPatchMaps();
 
-        uint64_t _dim, _prev_dim, _sparse_dim;
-        float _sparsity;
-        ActivationFunction _act_func;
-
-        std::vector<float> _weights;
-        std::vector<float> _w_gradient;
-        std::vector<float> _w_momentum;
-        std::vector<float> _w_velocity;
-
-        std::vector<float> _biases;
-        std::vector<float> _b_gradient;
-        std::vector<float> _b_momentum;
-        std::vector<float> _b_velocity;
-
-        std::vector<bool> _is_active;
-
-        SamplingConfig _sampling_config;
-        std::unique_ptr<hashing::DWTAHashFunction> _hasher;
-        std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
-        std::vector<uint32_t> _rand_neurons;
-
-        bool _force_sparse_for_inference;
-
         uint32_t _patch_dim, _sparse_patch_dim, _num_patches, _num_filters, _num_sparse_filters, _prev_num_filters, _prev_num_sparse_filters, _kernel_size;
         std::vector<uint32_t> _in_to_out, _out_to_in;
 };

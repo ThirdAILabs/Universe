@@ -88,18 +88,6 @@ class FullyConnectedLayer {
     return 0.0;
   }
 
- private:
-  template <bool DENSE, bool PREV_DENSE>
-  void forwardImpl(const BoltVector& input, BoltVector& output,
-                   const BoltVector* labels);
-
-  template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
-  void backpropagateImpl(BoltVector& input, BoltVector& output);
-
-  template <bool DENSE, bool PREV_DENSE>
-  void selectActiveNeurons(const BoltVector& input, BoltVector& output,
-                           const BoltVector* labels);
-
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
   ActivationFunction _act_func;
@@ -122,6 +110,18 @@ class FullyConnectedLayer {
   std::vector<uint32_t> _rand_neurons;
 
   bool _force_sparse_for_inference;
+
+ private:
+  template <bool DENSE, bool PREV_DENSE>
+  void forwardImpl(const BoltVector& input, BoltVector& output,
+                   const BoltVector* labels);
+
+  template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
+  void backpropagateImpl(BoltVector& input, BoltVector& output);
+
+  template <bool DENSE, bool PREV_DENSE>
+  void selectActiveNeurons(const BoltVector& input, BoltVector& output,
+                           const BoltVector* labels);
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;

@@ -8,13 +8,14 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
                     uint64_t prev_dim, 
                     uint32_t prev_num_filters,
                     uint32_t prev_num_sparse_filters)
-        :   _prev_dim(prev_dim),
-            _sparsity(config.sparsity),
-            _act_func(config.act_func),
-            _sampling_config(config.sampling_config),
-            _force_sparse_for_inference(false),
-            _prev_num_filters(prev_num_filters),
+        :   _prev_num_filters(prev_num_filters),
             _prev_num_sparse_filters(prev_num_sparse_filters) {
+
+        _prev_dim = prev_dim;
+        _sparsity = config.sparsity;
+        _act_func = config.act_func;
+        _sampling_config = config.sampling_config;
+        _force_sparse_for_inference = false;
         
         _num_filters = config.dim;
         _num_sparse_filters = _num_filters * _sparsity;

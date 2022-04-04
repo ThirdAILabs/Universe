@@ -30,19 +30,18 @@ int main() {
 
     // uint32_t patch_size = 48;
     // uint32_t num_patches = 3136;
-    uint32_t patch_size = 4;
     uint32_t kernel_size = 2*2;
     uint32_t num_patches = 196;
 
-    layers.emplace_back(16, 1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(1, 64, 3, 5), patch_size, num_patches);
+    layers.emplace_back(16, 1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(1, 64, 3, 5), kernel_size, num_patches);
 
-    layers.emplace_back(400, .1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(3, 256, 9, 5), kernel_size, 49);
+    layers.emplace_back(200, 1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(3, 256, 9, 5), kernel_size, 49);
 
     layers.emplace_back(1000, .1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(4, 256, 12, 10));
 
     layers.emplace_back(10, bolt::ActivationFunction::Softmax);
 
-    bolt::FullyConnectedNetwork network(layers, patch_size * num_patches);
+    bolt::FullyConnectedNetwork network(layers, kernel_size * num_patches);
 
     auto loss_fn =
       thirdai::bolt::getLossFunction("categoricalcrossentropyloss");
