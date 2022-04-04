@@ -2,6 +2,7 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <stdexcept>
 
@@ -11,19 +12,22 @@ class LossFunction {
  public:
   LossFunction() {}
 
-  void loss(BoltVector& output, const BoltVector& labels,
-            uint32_t batch_size) const {
+  virtual void loss(BoltVector& output, const BoltVector& labels,
+            uint32_t batch_size) const = 0;
+
+  void computeLoss(BoltVector& output, const BoltVector& labels,
+                          const std::function<float(float, float)>& element_loss) const {
     if (output.isDense()) {
       if (labels.isDense()) {
-        computeLossImpl<true, true>(output, labels, batch_size);
+        computeLossImpl<true, true>(output, labels, element_loss);
       } else {
-        computeLossImpl<true, false>(output, labels, batch_size);
+        computeLossImpl<true, false>(output, labels, element_loss);
       }
     } else {
       if (labels.isDense()) {
-        computeLossImpl<false, true>(output, labels, batch_size);
+        computeLossImpl<false, true>(output, labels, element_loss);
       } else {
-        computeLossImpl<false, false>(output, labels, batch_size);
+        computeLossImpl<false, false>(output, labels, element_loss);
       }
     }
   }
@@ -33,13 +37,18 @@ class LossFunction {
  private:
   template <bool OUTPUT_DENSE, bool LABEL_DENSE>
   void computeLossImpl(BoltVector& output, const BoltVector& labels,
-                       uint32_t batch_size) const {
+                              const std::function<float(float, float)>& element_loss) const {
     assert(!OUTPUT_DENSE || output.active_neurons == nullptr);
     assert(!LABEL_DENSE || labels.active_neurons == nullptr);
     if (OUTPUT_DENSE && LABEL_DENSE) {
       assert(output.len == labels.len);
     }
 
+    // Loss functions are only used in training.
+    // Since active neurons in labels are automatically included in 
+    // the final layer's active neurons during training, we don't 
+    // have to consider the case where there are active neurons in
+    // labels that are not a subset of output's active neurons.
     for (uint32_t i = 0; i < output.len; i++) {
       uint32_t active_neuron = OUTPUT_DENSE ? i : output.active_neurons[i];
       float label_val;
@@ -55,13 +64,10 @@ class LossFunction {
           label_val = labels.activations[std::distance(label_start, itr)];
         }
       }
-      output.gradients[i] =
-          elementLoss(label_val, output.activations[i], batch_size);
+
+      output.gradients[i] = element_loss(label_val, output.activations[i]);
     }
   }
-
-  virtual float elementLoss(float label, float activation,
-                            uint32_t batch_size) const = 0;
 };
 
 class CategoricalCrossEntropyLoss final : public LossFunction {
@@ -71,10 +77,10 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
     return std::make_shared<CategoricalCrossEntropyLoss>();
   }
 
- private:
-  float elementLoss(float label, float activation,
-                    uint32_t batch_size) const override {
-    return (label - activation) / batch_size;
+  void loss(BoltVector &output, const BoltVector &labels, uint32_t batch_size) const override {
+    computeLoss(output, labels, [&](float label, float activation) {
+      return (label - activation) / batch_size;
+    });
   }
 };
 
@@ -84,10 +90,30 @@ class MeanSquaredError final : public LossFunction {
     return std::make_shared<MeanSquaredError>();
   }
 
- private:
-  float elementLoss(float label, float activation,
-                    uint32_t batch_size) const override {
-    return 2 * (label - activation) / batch_size;
+  void loss(BoltVector &output, const BoltVector &labels, uint32_t batch_size) const override {
+    computeLoss(output, labels, [&](float label, float activation) {
+      return 2 * (label - activation) / batch_size;
+    });
+  }
+};
+
+class WeightedMeanAbsolutePercentageError final : public LossFunction {
+ public:
+  static std::shared_ptr<WeightedMeanAbsolutePercentageError> makeWeightedMeanAbsolutePercentageError() {
+    return std::make_shared<WeightedMeanAbsolutePercentageError>();
+  }
+
+  void loss(BoltVector &output, const BoltVector &labels, uint32_t batch_size) const override {
+    float sum_of_squared_truth_elems = 0.0;
+    for (uint32_t i = 0; i < labels.len; i++) {
+      sum_of_squared_truth_elems += labels.activations[i] * labels.activations[i];
+    }
+    float almost_zero = 0.0000001;
+    float abs_truth = std::max(std::sqrt(sum_of_squared_truth_elems), almost_zero);
+    computeLoss(output, labels, [&](float label, float activation) {
+      auto factor = activation > label ? -1 : 1;
+      return factor / (abs_truth * batch_size);
+    });
   }
 };
 
@@ -102,10 +128,13 @@ static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
   if (lower_name == "meansquarederror") {
     return MeanSquaredError::makeMeanSquaredError();
   }
+  if (lower_name == "weightedmeanabsolutepercentageerror") {
+    return WeightedMeanAbsolutePercentageError::makeWeightedMeanAbsolutePercentageError();
+  }
   throw std::invalid_argument(
       "'" + name +
-      "' is not a valid loss function. Use CategoricalCrossEntropyLoss or "
-      "MeanSquaredError");
+      "' is not a valid loss function. Use CategoricalCrossEntropyLoss, "
+      "MeanSquaredError, or WeightedMeanAbsolutePercentageError");
 }
 
 }  // namespace thirdai::bolt

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/layers/BoltVector.h>
+#include <bolt/src/metrics/MetricHelpers.h>
 #include <algorithm>
 #include <atomic>
 #include <limits>
@@ -8,8 +9,6 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
-#include <vector>
-#include <cmath>
 
 namespace thirdai::bolt {
 
@@ -100,33 +99,32 @@ class CategoricalAccuracy final : public Metric {
  */
 class WeightedMeanAbsolutePercentageError final : public Metric {
  public:
-  WeightedMeanAbsolutePercentageError() : _correct(0), _num_samples(0) {}
+  WeightedMeanAbsolutePercentageError() : _sum_of_deviations(0.0), _sum_of_truths(0.0) {}
 
   void processSample(const BoltVector& output, const BoltVector& labels) final {
-    // Calculate |actual - predicted|
-    
-
-    // Calculate |actual|
+    // Calculate |actual - predicted| and |actual|.
+    float sum_of_squared_differences = 0.0;
     float sum_of_squared_label_elems = 0.0;
-    for (uint32_t i = 0; i < labels.len; i++) {
-      sum_of_squared_label_elems += labels.activations[i] * labels.activations[i];
-    }
-    float label_magnitude = std::sqrt(sum_of_squared_label_elems);
-
-    // Adding to atomic float
-    float current_sum_of_truths = _sum_of_truths.load(std::memory_order_relaxed);
-    while (!_sum_of_truths.compare_exchange_weak(
-      current_sum_of_truths, 
-      current_sum_of_truths + label_magnitude, 
-      std::memory_order_relaxed)) {};
+    visitActiveNeurons(output, labels, [&](float label_val, float output_val) {
+      float difference = label_val - output_val;
+      sum_of_squared_differences += difference * difference;
+      sum_of_squared_label_elems += label_val * label_val;
+    });  
+    
+    // Add to respective atomic accumulators
+    incrementAtomicFloat(_sum_of_deviations, std::sqrt(sum_of_squared_differences));
+    incrementAtomicFloat(_sum_of_truths, std::sqrt(sum_of_squared_label_elems));
   }
 
   double getMetricAndReset(bool verbose) final {
     // replace 0 with small number 10^-7 to avoid dividing by 0.
-    _sum_of_truths = _sum_of_truths > 0 ? _sum_of_truths : 0.0000001; 
-    float wmape = 100 * _sum_of_truths_sum_of_deviations / _sum_of_truths;
-    _sum_of_deviations = 0;
-    _sum_of_truths = 0;
+    float almost_zero = 0.0000001;
+    double wmape = 100 * _sum_of_deviations / std::max(_sum_of_truths.load(std::memory_order_relaxed), almost_zero);
+    if (verbose) {
+      std::cout << "Weighted Mean Absolute Percentage Error: " << wmape << "%" << std::endl;
+    }
+    _sum_of_deviations = 0.0;
+    _sum_of_truths = 0.0;
     return wmape;
   }
 
@@ -135,6 +133,7 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   std::string getName() final { return name; }
 
  private:
+
   std::atomic<float> _sum_of_deviations;
   std::atomic<float> _sum_of_truths;
 };
