@@ -9,6 +9,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <cmath>
 
 namespace thirdai::bolt {
 
@@ -91,61 +92,51 @@ class CategoricalAccuracy final : public Metric {
 
 /**
  * The weighted mean absolute percentage error is a regression error that measures
- * the absolute deviation of the prediction from the ground truth
+ * the absolute deviation of predictions from the true values, weighted in proportion
+ * to the true values.
+ * WMAPE = 100% * sum(|actual - prediction|) / sum(|actual|)
+ * Here, the actual value is assumed to be non-negative.
+ * The returned metric is in %; 100 is 100%.
  */
 class WeightedMeanAbsolutePercentageError final : public Metric {
  public:
-  CategoricalAccuracy() : _correct(0), _num_samples(0) {}
+  WeightedMeanAbsolutePercentageError() : _correct(0), _num_samples(0) {}
 
   void processSample(const BoltVector& output, const BoltVector& labels) final {
-    float max_act = std::numeric_limits<float>::min();
-    uint32_t max_act_index = std::numeric_limits<uint32_t>::max();
-    for (uint32_t i = 0; i < output.len; i++) {
-      if (output.activations[i] > max_act) {
-        max_act = output.activations[i];
-        max_act_index = i;
-      }
-    }
+    // Calculate |actual - predicted|
+    
 
-    // The nueron with the largest activation is the prediction
-    uint32_t pred =
-        output.isDense() ? max_act_index : output.active_neurons[max_act_index];
-
-    if (labels.isDense()) {
-      // If labels are dense we check if the predection has a non-zero label.
-      if (labels.activations[pred] > 0) {
-        _correct++;
-      }
-    } else {
-      // If the labels are sparse then we have to search the list of labels for
-      // the prediction.
-      const uint32_t* label_start = labels.active_neurons;
-      const uint32_t* label_end = labels.active_neurons + labels.len;
-      if (std::find(label_start, label_end, pred) != label_end) {
-        _correct++;
-      }
+    // Calculate |actual|
+    float sum_of_squared_label_elems = 0.0;
+    for (uint32_t i = 0; i < labels.len; i++) {
+      sum_of_squared_label_elems += labels.activations[i] * labels.activations[i];
     }
-    _num_samples++;
+    float label_magnitude = std::sqrt(sum_of_squared_label_elems);
+
+    // Adding to atomic float
+    float current_sum_of_truths = _sum_of_truths.load(std::memory_order_relaxed);
+    while (!_sum_of_truths.compare_exchange_weak(
+      current_sum_of_truths, 
+      current_sum_of_truths + label_magnitude, 
+      std::memory_order_relaxed)) {};
   }
 
   double getMetricAndReset(bool verbose) final {
-    double acc = static_cast<double>(_correct) / _num_samples;
-    if (verbose) {
-      std::cout << "Accuracy: " << acc << " (" << _correct << "/"
-                << _num_samples << ")" << std::endl;
-    }
-    _correct = 0;
-    _num_samples = 0;
-    return acc;
+    // replace 0 with small number 10^-7 to avoid dividing by 0.
+    _sum_of_truths = _sum_of_truths > 0 ? _sum_of_truths : 0.0000001; 
+    float wmape = 100 * _sum_of_truths_sum_of_deviations / _sum_of_truths;
+    _sum_of_deviations = 0;
+    _sum_of_truths = 0;
+    return wmape;
   }
 
-  static constexpr const char* name = "categorical_accuracy";
+  static constexpr const char* name = "weighted_mean_absolute_percentage_error";
 
   std::string getName() final { return name; }
 
  private:
-  std::atomic<uint32_t> _correct;
-  std::atomic<uint32_t> _num_samples;
+  std::atomic<float> _sum_of_deviations;
+  std::atomic<float> _sum_of_truths;
 };
 
 
