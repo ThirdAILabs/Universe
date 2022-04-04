@@ -6,9 +6,20 @@ namespace thirdai::bolt {
 
 ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
                      uint32_t prev_num_filters,
-                     uint32_t prev_num_sparse_filters)
+                     uint32_t prev_num_sparse_filters,
+                     uint32_t next_kernel_size)
     : _prev_num_filters(prev_num_filters),
       _prev_num_sparse_filters(prev_num_sparse_filters) {
+  if (((sqrt(config.kernel_size) - floor(sqrt(config.kernel_size))) != 0)) {
+    throw std::invalid_argument(
+        "Conv layers currently support only square kernels.");
+  }
+
+  if (config.act_func != ActivationFunction::ReLU) {
+    throw std::invalid_argument(
+        "Conv layers currently support only ReLU Activation.");
+  }
+
   _prev_dim = prev_dim;
   _sparsity = config.sparsity;
   _act_func = config.act_func;
@@ -22,7 +33,7 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
   _patch_dim = _kernel_size * _prev_num_filters;
   _sparse_patch_dim = _kernel_size * _prev_num_sparse_filters;
   _num_patches = config.num_patches;  // TODO(david) calculate this instead of
-                                      // passing in (_prev_dim / _patch_dim?)
+                                      // passing in. (_prev_dim / _patch_dim?)
 
   _dim = _num_filters * _num_patches,
   _sparse_dim = _sparsity * _num_filters * _num_patches,
@@ -39,12 +50,7 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
 
   _is_active = std::vector<bool>(_num_filters * _num_patches, false);
 
-  if (config.act_func != ActivationFunction::ReLU) {
-    throw std::invalid_argument(
-        "Conv layers currently support only ReLU Activation.");
-  }
-
-  buildPatchMaps();
+  buildPatchMaps(next_kernel_size);
 
   std::random_device rd;
   std::default_random_engine eng(rd());
@@ -234,13 +240,11 @@ void ConvLayer::selectActiveFilters(const BoltVector& input, BoltVector& output,
   if (PREV_DENSE) {
     _hasher->hashSingleDense(&input.activations[in_patch * _patch_dim],
                              _patch_dim, hashes);
-  } else {  // TODO(david) add if active filters
+  } else {
     _hasher->hashSingleSparse(
         &prev_active_filters[in_patch * _sparse_patch_dim],
         &input.activations[in_patch * _sparse_patch_dim], _sparse_patch_dim,
-        hashes);  // TODO(david) change patch_dim to represent width * height
-                  // instead of being dependent on num channels/filters in
-                  // previous layer
+        hashes);
   }
   _hash_table->queryBySet(hashes, active_set);
 
@@ -341,37 +345,29 @@ void ConvLayer::buildHashTables() {
   delete[] hashes;
 }
 
-void ConvLayer::buildPatchMaps() {
+void ConvLayer::buildPatchMaps(uint32_t next_kernel_size) {
   _in_to_out = std::vector<uint32_t>(_num_patches);
   _out_to_in = std::vector<uint32_t>(_num_patches);
 
-  uint32_t next_filter_size = 2;
-
-  // TODO(david) get _num_patches when initializing, if next layer not conv or
-  // max pool then set to 1
-  if (_num_patches ==
-      49) {  // TODO(david) this is hard coded, need a fix for when non
-             // overlapping patches dont fit into output well
-    next_filter_size = 1;
-  }
-  // TODO(david) only accepts square filters, enforce this somehow
+  uint32_t next_filter_length = std::sqrt(next_kernel_size);
   uint32_t hp = std::sqrt(_num_patches);  // assumes square images
 
   uint32_t i = 0;
   std::vector<uint32_t> top_left_patch_vals;
-  while (i <= _num_patches - next_filter_size - ((next_filter_size - 1) * hp)) {
+  while (i <=
+         _num_patches - next_filter_length - ((next_filter_length - 1) * hp)) {
     top_left_patch_vals.push_back(i);
-    if (((i + next_filter_size) % hp) == 0) {
-      i += (next_filter_size - 1) * hp;
+    if (((i + next_filter_length) % hp) == 0) {
+      i += (next_filter_length - 1) * hp;
     }
-    i += next_filter_size;
+    i += next_filter_length;
   }
   uint32_t patch = 0;
   for (uint32_t start : top_left_patch_vals) {
     // given a filter top left patch val, set all patch vals within that filter
     uint32_t base_val = start;
-    for (uint32_t y = 0; y < next_filter_size; y++) {
-      for (uint32_t x = 0; x < next_filter_size; x++) {
+    for (uint32_t y = 0; y < next_filter_length; y++) {
+      for (uint32_t x = 0; x < next_filter_length; x++) {
         uint32_t new_patch = base_val + x;
         _in_to_out[patch] = new_patch;
         _out_to_in[new_patch] = patch;

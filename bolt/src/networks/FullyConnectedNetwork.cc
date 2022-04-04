@@ -53,10 +53,15 @@ FullyConnectedNetwork::FullyConnectedNetwork(
       prev_num_sparse_filters = 1;
     }
 
+    bool next_is_conv_layer = configs[i + 1].kernel_size != 0;
+    uint32_t next_kernel_size =
+        next_is_conv_layer ? configs[i + 1].kernel_size : 1;
+
     std::cout << configs[i] << std::endl;
     if (is_conv_layer) {
       _layers.push_back(std::make_shared<ConvLayer>(
-          configs[i], prev_dim, prev_num_filters, prev_num_sparse_filters));
+          configs[i], prev_dim, prev_num_filters, prev_num_sparse_filters,
+          next_kernel_size));
     } else {
       _layers.push_back(
           std::make_shared<FullyConnectedLayer>(configs[i], prev_dim));
