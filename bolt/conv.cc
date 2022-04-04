@@ -17,20 +17,20 @@ int main() {
 
   uint64_t batch_size = 1024;
   dataset::InMemoryDataset<dataset::BoltInputBatch> train_data(
-      "/Users/david/Documents/python_/train_mnist2x2.txt", batch_size,
+      "/Users/david/Documents/python_/train_birds_4x4.txt", batch_size,
       std::move(*train_fac));
   dataset::InMemoryDataset<dataset::BoltInputBatch> test_data(
-      "/Users/david/Documents/python_/test_mnist2x2.txt", batch_size,
+      "/Users/david/Documents/python_/test_birds_4x4.txt", batch_size,
       std::move(*test_fac));
 
   std::cout << "Finished reading train and test data" << std::endl;
 
   std::vector<bolt::FullyConnectedLayerConfig> layers;
 
-  // uint32_t patch_size = 48;
-  // uint32_t num_patches = 3136;
-  uint32_t kernel_size = 2 * 2;
-  uint32_t num_patches = 196;
+  uint32_t kernel_size = 4 * 4;
+  uint32_t num_patches = 3136;
+  // uint32_t kernel_size = 2 * 2;
+  // uint32_t num_patches = 196;
 
   layers.emplace_back(16, 1, bolt::ActivationFunction::ReLU,
                       bolt::SamplingConfig(1, 64, 3, 5), kernel_size,

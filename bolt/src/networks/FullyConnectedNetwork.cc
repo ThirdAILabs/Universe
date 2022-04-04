@@ -42,15 +42,15 @@ FullyConnectedNetwork::FullyConnectedNetwork(
         prev_num_sparse_filters = configs[i - 1].dim * configs[i - 1].sparsity;
       } else {
         prev_dim = configs[i - 1].dim;
-        // TODO(david) edge case for when convlayer comes after another layer,
-        // what is prev_num_filters??
+        // TODO(david) edge case for when convlayer comes after another non-conv
+        // layer, what is prev_num_filters??
       }
     } else {
       prev_dim = input_dim;
       prev_num_filters =
-          1;  // TODO(david) change input dim to vector to accept 3d input? then
+          3;  // TODO(david) change input dim to vector to accept 3d input? then
               // prev_num_filters = num_input_channels
-      prev_num_sparse_filters = 1;
+      prev_num_sparse_filters = 3;
     }
 
     bool next_is_conv_layer = configs[i + 1].kernel_size != 0;
