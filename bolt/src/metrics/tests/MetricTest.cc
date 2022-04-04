@@ -137,15 +137,17 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageError) {
   {  // Dense outputs, sparse labels
 
     // In this example, both vectors have same nonzero neurons.
-    BoltVector a = BoltVector::makeDenseVector({6.0, 4.5, 0.0, 9.0, 0.0, 1.5, 0.0, 1.5, 1.5});
-    BoltVector l_a =
-        BoltVector::makeSparseVector({0, 1, 3, 5, 7, 8}, {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
+    BoltVector a = BoltVector::makeDenseVector(
+        {6.0, 4.5, 0.0, 9.0, 0.0, 1.5, 0.0, 1.5, 1.5});
+    BoltVector l_a = BoltVector::makeSparseVector(
+        {0, 1, 3, 5, 7, 8}, {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
 
-    // In this example, there is an active neuron in b that is not active in l_b.
-    // Make sure the this active neuron is accounted for.
-    BoltVector b = BoltVector::makeDenseVector({4.0, 4.5, 2.0, 9.0, 0.0, 1.5, 0.0, 1.5, 1.5});
-    BoltVector l_b =
-        BoltVector::makeSparseVector({0, 1, 3, 5, 7, 8}, {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
+    // In this example, there is an active neuron in b that is not active in
+    // l_b. Make sure the this active neuron is accounted for.
+    BoltVector b = BoltVector::makeDenseVector(
+        {4.0, 4.5, 2.0, 9.0, 0.0, 1.5, 0.0, 1.5, 1.5});
+    BoltVector l_b = BoltVector::makeSparseVector(
+        {0, 1, 3, 5, 7, 8}, {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
     single.processSample(a, l_a);
@@ -161,17 +163,17 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageError) {
   {  // Sparse outputs, dense labels
 
     // In this example, both vectors have same nonzero neurons.
-    BoltVector a =
-        BoltVector::makeSparseVector({0, 1, 3, 5, 7, 8}, {6.0, 4.5, 9.0, 1.5, 1.5, 1.5});
-    BoltVector l_a =
-        BoltVector::makeDenseVector({4.0, 3.0, 0.0, 6.0, 0.0, 1.0, 0.0, 1.0, 1.0});
+    BoltVector a = BoltVector::makeSparseVector({0, 1, 3, 5, 7, 8},
+                                                {6.0, 4.5, 9.0, 1.5, 1.5, 1.5});
+    BoltVector l_a = BoltVector::makeDenseVector(
+        {4.0, 3.0, 0.0, 6.0, 0.0, 1.0, 0.0, 1.0, 1.0});
 
-    // In this example, there is an active neuron in l_b that is not active in b, and vice versa.
-    // Make sure the these active neurons are accounted for.
-    BoltVector b =
-        BoltVector::makeSparseVector({0, 1, 2, 3, 5, 7, 8}, {4.0, 4.5, 1.0, 9.0, 1.5, 1.5, 1.5});
-    BoltVector l_b =
-        BoltVector::makeDenseVector({4.0, 3.0, 0.0, 6.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0});
+    // In this example, there is an active neuron in l_b that is not active in
+    // b, and vice versa. Make sure the these active neurons are accounted for.
+    BoltVector b = BoltVector::makeSparseVector(
+        {0, 1, 2, 3, 5, 7, 8}, {4.0, 4.5, 1.0, 9.0, 1.5, 1.5, 1.5});
+    BoltVector l_b = BoltVector::makeDenseVector(
+        {4.0, 3.0, 0.0, 6.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0});
 
     // Check correct value is computed for each sample
     single.processSample(a, l_a);
@@ -187,18 +189,17 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageError) {
   {  // Sparse outputs, sparse labels
 
     // In this example, both vectors have same nonzero neurons.
-    BoltVector a =
-        BoltVector::makeSparseVector({0, 1, 3, 5, 7, 8}, {6.0, 4.5, 9.0, 1.5, 1.5, 1.5});
-    BoltVector l_a =
-        BoltVector::makeSparseVector({0, 1, 3, 5, 7, 8}, {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
+    BoltVector a = BoltVector::makeSparseVector({0, 1, 3, 5, 7, 8},
+                                                {6.0, 4.5, 9.0, 1.5, 1.5, 1.5});
+    BoltVector l_a = BoltVector::makeSparseVector(
+        {0, 1, 3, 5, 7, 8}, {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
 
-    // In this example, there is an active neuron in l_b that is not active in b, and vice versa.
-    // Make sure the these active neurons are accounted for.
-    BoltVector b =
-        BoltVector::makeSparseVector({0, 1, 2, 3, 5, 7, 8}, {4.0, 4.5, 1.0, 9.0, 1.5, 1.5, 1.5});
-    BoltVector l_b =
-        BoltVector::makeSparseVector({0, 1, 3, 5, 7, 9}, {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
-
+    // In this example, there is an active neuron in l_b that is not active in
+    // b, and vice versa. Make sure the these active neurons are accounted for.
+    BoltVector b = BoltVector::makeSparseVector(
+        {0, 1, 2, 3, 5, 7, 8}, {4.0, 4.5, 1.0, 9.0, 1.5, 1.5, 1.5});
+    BoltVector l_b = BoltVector::makeSparseVector(
+        {0, 1, 3, 5, 7, 9}, {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
     single.processSample(a, l_a);
@@ -213,6 +214,5 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageError) {
 
   ASSERT_DOUBLE_EQ(metric.getMetricAndReset(false), 50);
 }
-
 
 }  // namespace thirdai::bolt::tests

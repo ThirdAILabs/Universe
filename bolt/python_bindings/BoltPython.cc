@@ -30,8 +30,9 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<MeanSquaredError, LossFunction>(bolt_submodule, "MeanSquaredError")
       .def(py::init<>());
-  
-  py::class_<WeightedMeanAbsolutePercentageErrorLoss, LossFunction>(bolt_submodule, "WeightedMeanAbsolutePercentageError")
+
+  py::class_<WeightedMeanAbsolutePercentageErrorLoss, LossFunction>(
+      bolt_submodule, "WeightedMeanAbsolutePercentageError")
       .def(py::init<>());
 
   py::class_<thirdai::bolt::FullyConnectedLayerConfig>(bolt_submodule,

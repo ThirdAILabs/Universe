@@ -129,7 +129,8 @@ TEST(LossFunctionTest, MeanSquaredErrorSparseLabelSparseOutput) {
 void testWMAPEDenseLabelDenseOutput() {
   BoltVector output = makeVector({}, {0.25, 0.375, 0.5, 0.625, 0.125, 0.875});
   BoltVector labels = makeVector({}, {0.5, 0.25, 0.5, 0.75, 0.0, 0.25});
-  float label_magnitude = std::sqrt(0.5 * 0.5 + 0.25 * 0.25 + 0.5 * 0.5 + 0.75 * 0.75 + 0.25 * 0.25);
+  float label_magnitude = std::sqrt(0.5 * 0.5 + 0.25 * 0.25 + 0.5 * 0.5 +
+                                    0.75 * 0.75 + 0.25 * 0.25);
 
   WeightedMeanAbsolutePercentageErrorLoss loss;
   loss.loss(output, labels, BATCH_SIZE);
@@ -144,7 +145,8 @@ void testWMAPEDenseLabelDenseOutput() {
 void testWMAPESparseLabelDenseOutput() {
   BoltVector output = makeVector({}, {0.25, 0.375, 0.5, 0.625, 0.125, 0.875});
   BoltVector labels = makeVector({0, 1, 3, 5}, {0.5, 0.25, 0.75, 0.25});
-  float label_magnitude = std::sqrt(0.5 * 0.5 + 0.25 * 0.25 + 0.75 * 0.75 + 0.25 * 0.25);
+  float label_magnitude =
+      std::sqrt(0.5 * 0.5 + 0.25 * 0.25 + 0.75 * 0.75 + 0.25 * 0.25);
 
   WeightedMeanAbsolutePercentageErrorLoss loss;
   loss.loss(output, labels, BATCH_SIZE);
@@ -159,7 +161,8 @@ void testWMAPESparseLabelDenseOutput() {
 void testWMAPEDenseLabelSparseOutput() {
   BoltVector output = makeVector({1, 2, 4, 5}, {0.375, 0.5, 0.125, 0.875});
   BoltVector labels = makeVector({}, {0.5, 0.25, 0.5, 0.75, 0.0, 0.25});
-  float label_magnitude = std::sqrt(0.5 * 0.5 + 0.25 * 0.25 + 0.5 * 0.5 + 0.75 * 0.75 + 0.25 * 0.25);
+  float label_magnitude = std::sqrt(0.5 * 0.5 + 0.25 * 0.25 + 0.5 * 0.5 +
+                                    0.75 * 0.75 + 0.25 * 0.25);
 
   WeightedMeanAbsolutePercentageErrorLoss loss;
   loss.loss(output, labels, BATCH_SIZE);
@@ -175,7 +178,8 @@ template <typename LOSS>
 void testWMAPESparseLabelSparseOutput() {
   BoltVector output = makeVector({1, 2, 4, 5}, {0.375, 0.5, 0.125, 0.25});
   BoltVector labels = makeVector({0, 1, 3, 5}, {0.5, 0.25, 0.75, 0.875});
-  float label_magnitude = std::sqrt(0.5 * 0.5 + 0.25 * 0.25 + 0.75 * 0.75 + 0.875 * 0.875);
+  float label_magnitude =
+      std::sqrt(0.5 * 0.5 + 0.25 * 0.25 + 0.75 * 0.75 + 0.875 * 0.875);
 
   WeightedMeanAbsolutePercentageErrorLoss loss;
   loss.loss(output, labels, BATCH_SIZE);

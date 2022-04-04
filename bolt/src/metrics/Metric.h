@@ -90,16 +90,16 @@ class CategoricalAccuracy final : public Metric {
 };
 
 /**
- * The weighted mean absolute percentage error is a regression error that measures
- * the absolute deviation of predictions from the true values, weighted in proportion
- * to the true values.
- * WMAPE = 100% * sum(|actual - prediction|) / sum(|actual|)
- * Here, the actual value is assumed to be non-negative.
- * The returned metric is in %; 100 is 100%.
+ * The weighted mean absolute percentage error is a regression error that
+ * measures the absolute deviation of predictions from the true values, weighted
+ * in proportion to the true values. WMAPE = 100% * sum(|actual - prediction|) /
+ * sum(|actual|) Here, the actual value is assumed to be non-negative. The
+ * returned metric is in %; 100 is 100%.
  */
 class WeightedMeanAbsolutePercentageError final : public Metric {
  public:
-  WeightedMeanAbsolutePercentageError() : _sum_of_deviations(0.0), _sum_of_truths(0.0) {}
+  WeightedMeanAbsolutePercentageError()
+      : _sum_of_deviations(0.0), _sum_of_truths(0.0) {}
 
   void processSample(const BoltVector& output, const BoltVector& labels) final {
     // Calculate |actual - predicted| and |actual|.
@@ -109,19 +109,23 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
       float difference = label_val - output_val;
       sum_of_squared_differences += difference * difference;
       sum_of_squared_label_elems += label_val * label_val;
-    });  
-    
+    });
+
     // Add to respective atomic accumulators
-    incrementAtomicFloat(_sum_of_deviations, std::sqrt(sum_of_squared_differences));
+    incrementAtomicFloat(_sum_of_deviations,
+                         std::sqrt(sum_of_squared_differences));
     incrementAtomicFloat(_sum_of_truths, std::sqrt(sum_of_squared_label_elems));
   }
 
   double getMetricAndReset(bool verbose) final {
     // replace 0 with small number 10^-7 to avoid dividing by 0.
     float almost_zero = 0.0000001;
-    double wmape = 100 * _sum_of_deviations / std::max(_sum_of_truths.load(std::memory_order_relaxed), almost_zero);
+    double wmape =
+        100 * _sum_of_deviations /
+        std::max(_sum_of_truths.load(std::memory_order_relaxed), almost_zero);
     if (verbose) {
-      std::cout << "Weighted Mean Absolute Percentage Error: " << wmape << "%" << std::endl;
+      std::cout << "Weighted Mean Absolute Percentage Error: " << wmape << "%"
+                << std::endl;
     }
     _sum_of_deviations = 0.0;
     _sum_of_truths = 0.0;
@@ -133,11 +137,9 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   std::string getName() final { return name; }
 
  private:
-
   std::atomic<float> _sum_of_deviations;
   std::atomic<float> _sum_of_truths;
 };
-
 
 using MetricData = std::unordered_map<std::string, std::vector<double>>;
 
