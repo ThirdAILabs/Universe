@@ -27,6 +27,12 @@ class Metric {
   // Returns the name of the metric.
   virtual std::string getName() = 0;
 
+  // Returns whether this metric allows forced dense inference.
+  // Use case: for regression metrics such as RMSE and WMAPE, inference sparsity 
+  // must be consistent with training sparsity so forced dense inference is not 
+  // allowed.
+  virtual bool allowForceDenseInference() = 0;
+
   virtual ~Metric() = default;
 };
 
@@ -84,6 +90,8 @@ class CategoricalAccuracy final : public Metric {
 
   std::string getName() final { return name; }
 
+  bool allowForceDenseInference() final { return true; }
+
  private:
   std::atomic<uint32_t> _correct;
   std::atomic<uint32_t> _num_samples;
@@ -136,6 +144,8 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
 
   std::string getName() final { return name; }
 
+  bool allowForceDenseInference() final { return false; }
+
  private:
   std::atomic<float> _sum_of_deviations;
   std::atomic<float> _sum_of_truths;
@@ -147,13 +157,18 @@ class MetricAggregator {
  public:
   explicit MetricAggregator(const std::vector<std::string>& metrics,
                             bool verbose = true)
-      : _verbose(verbose) {
+      : _verbose(verbose), _allow_force_dense_inference(true) {
     for (const auto& name : metrics) {
       if (name == CategoricalAccuracy::name) {
         _metrics.push_back(std::make_unique<CategoricalAccuracy>());
+      } else if (name == WeightedMeanAbsolutePercentageError::name) {
+        _metrics.push_back(std::make_unique<WeightedMeanAbsolutePercentageError>());
       } else {
         throw std::invalid_argument("'" + name + "' is not a valid metric.");
       }
+      // If at least one metric does not allow forced dense inference, forced dense inference
+      // is not allowed.
+      _allow_force_dense_inference &= _metrics.at(_metrics.size() - 1)->allowForceDenseInference();
     }
   }
 
@@ -171,10 +186,13 @@ class MetricAggregator {
 
   MetricData getOutput() { return _output; }
 
+  bool allowForceDenseInference() const { return _allow_force_dense_inference; }
+
  private:
   std::vector<std::unique_ptr<Metric>> _metrics;
   MetricData _output;
   bool _verbose;
+  bool _allow_force_dense_inference;
 };
 
 }  // namespace thirdai::bolt
