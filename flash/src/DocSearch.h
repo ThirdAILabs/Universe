@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wrappers/src/EigenDenseWrapper.h>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/unordered_map.hpp>
@@ -7,6 +8,7 @@
 #include "MaxFlashArray.h"
 #include "Utils.h"
 #include <hashing/src/FastSRP.h>
+#include <Eigen/src/Core/util/Constants.h>
 #include <dataset/src/Vectors.h>
 #include <dataset/src/batch_types/DenseBatch.h>
 #include <exceptions/src/Exceptions.h>
@@ -38,7 +40,7 @@ class DocSearch {
         _nprobe_query(2),
         _largest_internal_id(0),
         _num_centroids(centroids_input.size()),
-        _centroids(dense_dim * centroids_input.size()),
+        _centroids(dense_dim, centroids_input.size()),
         _centroid_id_to_internal_id(centroids_input.size()) {
     if (dense_dim == 0 || num_tables == 0 || hashes_per_table == 0) {
       throw std::invalid_argument(
@@ -65,10 +67,22 @@ class DocSearch {
           new thirdai::hashing::FastSRP(dense_dim, hashes_per_table,
                                         num_tables),
           hashes_per_table);
+    }
 
-      // We copy the centroids because I couldn't get pybind keep_alive to work.
+    for (uint32_t centroid_id = 0; centroid_id < centroids_input.size();
+         centroid_id++) {
+      if (_dense_dim != centroids_input.at(centroid_id).size()) {
+        throw std::invalid_argument(
+            "Every centroids must have dimension equal to dense_dim. Instead"
+            " found centroid " +
+            std::to_string(centroid_id) + " with dimension of " +
+            std::to_string(centroids_input.at(centroid_id).size()) +
+            " and passed in dense_dim of " + std::to_string(_dense_dim));
+      }
       for (uint32_t d = 0; d < dense_dim; d++) {
-        _centroids.at(i * dense_dim + d) = centroids_input.at(i).at(d);
+        // Note we are populating the centroid matrix so that it is tranposed,
+        // allowing us to avoid transposing during multiplication.
+        _centroids(d, centroid_id) = centroids_input.at(centroid_id).at(d);
       }
     }
   }
@@ -77,8 +91,7 @@ class DocSearch {
   // and we updated it.
   bool addDocument(const dataset::DenseBatch& embeddings,
                    const std::string& doc_id, const std::string& doc_text) {
-    std::vector<uint32_t> centroid_ids =
-        getNearestCentroidsBatch(embeddings, 1);
+    std::vector<uint32_t> centroid_ids = getNearestCentroids(embeddings, 1);
     return addDocumentWithCentroids(embeddings, centroid_ids, doc_id, doc_text);
   }
 
@@ -157,7 +170,7 @@ class DocSearch {
     }
 
     std::vector<uint32_t> centroid_ids =
-        getNearestCentroidsBatch(embeddings, _nprobe_query);
+        getNearestCentroids(embeddings, _nprobe_query);
     std::vector<uint32_t> top_k_internal_ids =
         frequencyCountCentroidBuckets(centroid_ids, top_k);
     std::vector<uint32_t> reranked =
@@ -196,7 +209,8 @@ class DocSearch {
   // constructing it until after input sanitization; see the constructor for m
   // more information.
   std::unique_ptr<MaxFlashArray<uint8_t>> _document_array;
-  std::vector<float> _centroids;
+  // These are stored tranposed for ease of multiplication
+  Eigen::MatrixXf _centroids;
   std::vector<std::vector<uint32_t>> _centroid_id_to_internal_id;
   std::unordered_map<std::string, std::string> _doc_id_to_doc_text;
   std::unordered_map<std::string, uint32_t> _doc_id_to_internal_id;
@@ -204,35 +218,30 @@ class DocSearch {
 
   // Finds the nearest nprobe centroids for each vector in the batch and
   // then concatenates all of the centroid ids across the batch.
-  std::vector<uint32_t> getNearestCentroidsBatch(
-      const dataset::DenseBatch& batch, uint32_t nprobe) const {
-    std::vector<uint32_t> result;
-#pragma omp parallel for default(none) shared(batch, nprobe, result)
+  std::vector<uint32_t> getNearestCentroids(const dataset::DenseBatch& batch,
+                                            uint32_t nprobe) const {
+    Eigen::MatrixXf eigen_batch(batch.getBatchSize(), _dense_dim);
     for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
-      std::vector<uint32_t> nearest_centroids =
-          getNearestCentroidsSingle(batch.at(i), nprobe);
-      for (uint32_t probe : getNearestCentroidsSingle(batch.at(i), nprobe)) {
-#pragma omp critical
-        result.push_back(probe);
-      }
-    }
-
-    removeDuplicates(result);
-    return result;
-  }
-
-  // Finds the nearest nprobe centroids for the single vector passed in
-  std::vector<uint32_t> getNearestCentroidsSingle(
-      const dataset::DenseVector& vec, uint32_t nprobe) const {
-    std::vector<float> scores(_num_centroids);
-    for (uint32_t i = 0; i < _num_centroids; i++) {
-      float dot = 0;
       for (uint32_t d = 0; d < _dense_dim; d++) {
-        dot += _centroids.at(i * _dense_dim + d) * vec.at(d);
+        eigen_batch(i, d) = batch.at(i).at(d);
       }
-      scores.at(i) = dot;
     }
-    return argmax(scores, nprobe);
+
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+        eigen_result = eigen_batch * _centroids;
+    std::vector<uint32_t> nearest_centroids(batch.getBatchSize() * nprobe);
+
+#pragma omp parallel for default(none) \
+    shared(batch, eigen_result, nprobe, nearest_centroids)
+    for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
+      std::vector<uint32_t> probe_results = argmax(eigen_result.row(i), nprobe);
+      for (uint32_t p = 0; p < nprobe; p++) {
+        nearest_centroids.at(i * nprobe + p) = probe_results.at(p);
+      }
+    }
+
+    removeDuplicates(nearest_centroids);
+    return nearest_centroids;
   }
 
   std::vector<uint32_t> frequencyCountCentroidBuckets(
