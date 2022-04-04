@@ -215,4 +215,18 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageError) {
   ASSERT_DOUBLE_EQ(metric.getMetricAndReset(false), 50);
 }
 
+TEST(MetricTest, WeightedMeanAbsolutePercentageErrorParallel) {
+  WeightedMeanAbsolutePercentageError metric;
+#pragma omp parallel for default(none) shared(metric)
+  for (uint32_t i = 0; i < 100000; i++) {
+    BoltVector a = BoltVector::makeSparseVector({0, 1, 3, 5, 7, 8},
+                                                {6.0, 4.5, 9.0, 1.5, 1.5, 1.5});
+    BoltVector l_a = BoltVector::makeSparseVector(
+        {0, 1, 3, 5, 7, 8}, {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
+
+    metric.processSample(a, l_a);
+  }
+  ASSERT_DOUBLE_EQ(metric.getMetricAndReset(false), 50);
+}
+
 }  // namespace thirdai::bolt::tests
