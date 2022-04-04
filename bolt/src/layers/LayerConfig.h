@@ -69,8 +69,7 @@ struct FullyConnectedLayerConfig {
 
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
                             ActivationFunction _act_func,
-                            SamplingConfig _config,
-                            uint32_t _kernel_size = 0,
+                            SamplingConfig _config, uint32_t _kernel_size = 0,
                             uint32_t _num_patches = 0)
       : dim(_dim),
         sparsity(_sparsity),

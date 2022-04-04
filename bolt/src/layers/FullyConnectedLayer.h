@@ -29,16 +29,17 @@ class FullyConnectedLayer {
                       uint64_t prev_dim);
 
   virtual void forward(const BoltVector& input, BoltVector& output,
-               const BoltVector* labels = nullptr);
+                       const BoltVector* labels = nullptr);
 
   virtual void backpropagate(BoltVector& input, BoltVector& output);
 
   virtual void backpropagateInputLayer(BoltVector& input, BoltVector& output);
 
-  virtual void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
+  virtual void updateParameters(float lr, uint32_t iter, float B1, float B2,
+                                float eps);
 
   virtual BoltBatch createBatchState(const uint32_t batch_size,
-                             bool force_dense = false) const {
+                                     bool force_dense = false) const {
     bool is_dense = (_sparse_dim == _dim) || force_dense;
 
     return BoltBatch(is_dense ? _dim : _sparse_dim, batch_size, is_dense);

@@ -1,7 +1,7 @@
 #include "FullyConnectedNetwork.h"
+#include <bolt/src/layers/ConvLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/utils/ProgressBar.h>
-#include <bolt/src/layers/ConvLayer.h>
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -28,8 +28,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(
             "Softmax activation function is not supported for hidden layers.");
       }
     } else if (i == _num_layers - 1 && is_conv_layer) {
-      throw std::invalid_argument(
-            "ConvLayer not supported as final layer.");
+      throw std::invalid_argument("ConvLayer not supported as final layer.");
     }
 
     uint64_t prev_dim;
@@ -43,17 +42,21 @@ FullyConnectedNetwork::FullyConnectedNetwork(
         prev_num_sparse_filters = configs[i - 1].dim * configs[i - 1].sparsity;
       } else {
         prev_dim = configs[i - 1].dim;
-        //TODO(david) edge case for when convlayer comes after another layer, what is prev_num_filters??
+        // TODO(david) edge case for when convlayer comes after another layer,
+        // what is prev_num_filters??
       }
     } else {
       prev_dim = input_dim;
-      prev_num_filters = 1; // TODO(david) change input dim to vector to accept 3d input? then prev_num_filters = num_input_channels
+      prev_num_filters =
+          1;  // TODO(david) change input dim to vector to accept 3d input? then
+              // prev_num_filters = num_input_channels
       prev_num_sparse_filters = 1;
     }
 
     std::cout << configs[i] << std::endl;
     if (is_conv_layer) {
-      _layers.push_back(std::make_shared<ConvLayer>(configs[i], prev_dim, prev_num_filters, prev_num_sparse_filters));
+      _layers.push_back(std::make_shared<ConvLayer>(
+          configs[i], prev_dim, prev_num_filters, prev_num_sparse_filters));
     } else {
       _layers.push_back(
           std::make_shared<FullyConnectedLayer>(configs[i], prev_dim));
