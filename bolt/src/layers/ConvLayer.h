@@ -6,7 +6,9 @@ namespace thirdai::bolt {
 class ConvLayer : public FullyConnectedLayer {
     public:
         ConvLayer(const FullyConnectedLayerConfig& config,
-                            uint64_t prev_dim);
+                            uint64_t prev_dim, 
+                            uint32_t prev_num_filters,
+                            uint32_t prev_num_sparse_filters);
 
         void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels = nullptr);
@@ -63,7 +65,7 @@ class ConvLayer : public FullyConnectedLayer {
 
         bool _force_sparse_for_inference;
 
-        uint32_t _patch_dim, _sparse_patch_dim, _num_patches, _num_filters, _num_sparse_filters;
+        uint32_t _patch_dim, _sparse_patch_dim, _num_patches, _num_filters, _num_sparse_filters, _prev_num_filters, _prev_num_sparse_filters, _kernel_size;
         std::vector<uint32_t> _in_to_out, _out_to_in;
 };
 }  // namespace thirdai::bolt

@@ -21,7 +21,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(
   std::cout << "====== Building Fully Connected Network ======" << std::endl;
 
   for (uint32_t i = 0; i < _num_layers; i++) {
-    bool is_conv_layer = configs[i].patch_dim != 0;
+    bool is_conv_layer = configs[i].kernel_size != 0;
     if (i < _num_layers - 1) {
       if (configs[i].act_func == ActivationFunction::Softmax) {
         throw std::invalid_argument(
@@ -33,20 +33,27 @@ FullyConnectedNetwork::FullyConnectedNetwork(
     }
 
     uint64_t prev_dim;
+    uint64_t prev_num_filters;
+    uint64_t prev_num_sparse_filters;
     if (i > 0) {
-      bool prev_is_conv_layer = configs[i - 1].patch_dim != 0;
+      bool prev_is_conv_layer = configs[i - 1].kernel_size != 0;
       if (prev_is_conv_layer) {
         prev_dim = configs[i - 1].dim * configs[i - 1].num_patches;
+        prev_num_filters = configs[i - 1].dim;
+        prev_num_sparse_filters = configs[i - 1].dim * configs[i - 1].sparsity;
       } else {
         prev_dim = configs[i - 1].dim;
+        //TODO(david) edge case for when convlayer comes after another layer, what is prev_num_filters??
       }
     } else {
       prev_dim = input_dim;
+      prev_num_filters = 1; // TODO(david) change input dim to vector to accept 3d input? then prev_num_filters = num_input_channels
+      prev_num_sparse_filters = 1;
     }
 
     std::cout << configs[i] << std::endl;
     if (is_conv_layer) {
-      _layers.push_back(std::make_shared<ConvLayer>(configs[i], prev_dim));
+      _layers.push_back(std::make_shared<ConvLayer>(configs[i], prev_dim, prev_num_filters, prev_num_sparse_filters));
     } else {
       _layers.push_back(
           std::make_shared<FullyConnectedLayer>(configs[i], prev_dim));

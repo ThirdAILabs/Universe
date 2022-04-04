@@ -16,26 +16,29 @@ int main() {
     train_fac = std::make_unique<dataset::BoltCsvBatchFactory>(' ');
     test_fac = std::make_unique<dataset::BoltCsvBatchFactory>(' ');
 
-    uint64_t batch_size = 64;
+    uint64_t batch_size = 1024;
     dataset::InMemoryDataset<dataset::BoltInputBatch> train_data(
-        "/Users/david/Documents/python_/train_birds_4x4.txt", batch_size,
+        "/Users/david/Documents/python_/train_mnist2x2.txt", batch_size,
         std::move(*train_fac));
     dataset::InMemoryDataset<dataset::BoltInputBatch> test_data(
-        "/Users/david/Documents/python_/test_birds_4x4.txt", batch_size,
+        "/Users/david/Documents/python_/test_mnist2x2.txt", batch_size,
         std::move(*test_fac));
 
     std::cout << "Finished reading train and test data" << std::endl;
 
     std::vector<bolt::FullyConnectedLayerConfig> layers;
 
-    uint32_t patch_size = 48;
-    uint32_t num_patches = 3136;
+    // uint32_t patch_size = 48;
+    // uint32_t num_patches = 3136;
+    uint32_t patch_size = 4;
+    uint32_t kernel_size = 2*2;
+    uint32_t num_patches = 196;
 
-    layers.emplace_back(200, .1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(3, 64, 9, 5), patch_size, num_patches);
+    layers.emplace_back(16, 1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(1, 64, 3, 5), patch_size, num_patches);
 
-    layers.emplace_back(400, .1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(4, 256, 12, 10), 2*2*200, 784);
+    layers.emplace_back(400, .1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(3, 256, 9, 5), kernel_size, 49);
 
-    layers.emplace_back(800, 0.1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(4, 256, 12, 10));
+    layers.emplace_back(1000, .1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(4, 256, 12, 10));
 
     layers.emplace_back(10, bolt::ActivationFunction::Softmax);
 
@@ -45,10 +48,10 @@ int main() {
       thirdai::bolt::getLossFunction("categoricalcrossentropyloss");
     std::vector<std::string> metrics = {"categorical_accuracy"};
 
-    float learning_rate = 0.0001;
+    float learning_rate = 0.001;
     uint32_t epochs = 25;
-    uint32_t rehash = 1000;
-    uint32_t rebuild = 1000; // 0.2 times number of images times patches per image
+    uint32_t rehash = 3000;
+    uint32_t rebuild = 10000; // 0.2 times number of images times patches per image
     uint32_t max_test_batches = std::numeric_limits<uint32_t>::max();      
 
     for (uint32_t e = 0; e < epochs; e++) {

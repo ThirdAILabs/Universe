@@ -5,30 +5,39 @@
 namespace thirdai::bolt {
 
 ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
-                    uint64_t prev_dim)
-        :   _dim(config.dim * config.num_patches), // user passes in total number of filters into config.dim
-            _prev_dim(prev_dim),
-            _sparse_dim(config.sparsity * config.dim * config.num_patches),
+                    uint64_t prev_dim, 
+                    uint32_t prev_num_filters,
+                    uint32_t prev_num_sparse_filters)
+        :   _prev_dim(prev_dim),
             _sparsity(config.sparsity),
             _act_func(config.act_func),
-            _weights(config.dim * config.patch_dim),
-            _w_gradient(config.dim * config.patch_dim, 0),
-            _w_momentum(config.dim * config.patch_dim, 0),
-            _w_velocity(config.dim * config.patch_dim, 0),
-            _biases(config.dim),
-            _b_gradient(config.dim, 0),
-            _b_momentum(config.dim, 0),
-            _b_velocity(config.dim, 0),
-            _is_active(config.dim * config.num_patches, false),
             _sampling_config(config.sampling_config),
             _force_sparse_for_inference(false),
-            _patch_dim(config.patch_dim),
-            _sparse_patch_dim(40),
-            _num_patches(config.num_patches),
-            _num_filters(config.dim),
-            _num_sparse_filters(config.dim * config.sparsity) {
+            _prev_num_filters(prev_num_filters),
+            _prev_num_sparse_filters(prev_num_sparse_filters) {
         
-        // TODO(david) calculate num_patches in constructor, dont pass in
+        _num_filters = config.dim;
+        _num_sparse_filters = _num_filters * _sparsity;
+        _kernel_size = config.kernel_size;
+
+        _patch_dim = _kernel_size * _prev_num_filters;
+        _sparse_patch_dim = _kernel_size * _prev_num_sparse_filters;
+        _num_patches = config.num_patches; //TODO(david) calculate this instead of passing in (_prev_dim / _patch_dim?)
+
+        _dim = _num_filters * _num_patches,
+        _sparse_dim = _sparsity * _num_filters * _num_patches,
+
+        _weights = std::vector<float>(_num_filters * _patch_dim);
+        _w_gradient = std::vector<float>(_num_filters * _patch_dim, 0);
+        _w_momentum = std::vector<float>(_num_filters * _patch_dim, 0);
+        _w_velocity = std::vector<float>(_num_filters * _patch_dim, 0);
+
+        _biases = std::vector<float>(_num_filters);
+        _b_gradient = std::vector<float>(_num_filters, 0);
+        _b_momentum = std::vector<float>(_num_filters, 0);
+        _b_velocity = std::vector<float>(_num_filters, 0);
+
+        _is_active = std::vector<bool>(_num_filters * _num_patches, false);
 
         if (config.act_func != ActivationFunction::ReLU) {
             throw std::invalid_argument(
@@ -96,10 +105,9 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
             std::fill_n(output.gradients, _sparse_dim, 0);
         }
 
-        // std::cout << "PREV DIM AND INPUT LEN: " << _prev_dim << " " << input.len << std::endl;
-
         uint32_t pd = PREV_DENSE ? _patch_dim : _sparse_patch_dim;
 
+        // TODO(david) calculate once instead of in both forward and backward?
         uint32_t* prev_active_filters = new uint32_t[input.len];;
         if (!PREV_DENSE) {
             for (uint32_t i = 0; i < input.len; i++) {
@@ -324,13 +332,13 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config,
         _in_to_out = std::vector<uint32_t>(_num_patches);
         _out_to_in = std::vector<uint32_t>(_num_patches);
 
-
-        uint32_t next_filter_size = 2; 
+        uint32_t next_filter_size = 2;
+        
+        // TODO(david) get _num_patches when initializing, if next layer not conv or max pool then set to 1
         if (_num_patches == 49) { // TODO(david) this is hard coded, need a fix for when non overlapping patches dont fit into output well
             next_filter_size = 1;
         }
         // TODO(david) only accepts square filters, enforce this somehow
-        // TODO(david) get this when initializing, if next layer not conv or max pool then set to 1
         uint32_t hp = std::sqrt(_num_patches); // assumes square images
 
         uint32_t i = 0;
