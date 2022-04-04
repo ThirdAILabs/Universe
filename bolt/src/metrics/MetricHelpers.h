@@ -12,6 +12,10 @@ namespace thirdai::bolt {
  * Helper function for incrementing an atomic float.
  * This is because there is no specialization for atomic floats prior to C++20
  * and we were using C++17 at the time that this function was written.
+ *
+ * Lambda type is templated because this helps the compiler inline
+ * the lambda call.
+ * https://stackoverflow.com/questions/13722426/why-can-lambdas-be-better-optimized-by-the-compiler-than-plain-functions
  */
 inline void incrementAtomicFloat(std::atomic<float>& atomic_float,
                                  float increment) {
@@ -24,11 +28,15 @@ inline void incrementAtomicFloat(std::atomic<float>& atomic_float,
 /**
  * Implementation of the helper function below that will be compiled for any
  * combination of sparse and dense vectors to minimize boolean checking.
+ *
+ * Lambda type is templated because this helps the compiler inline
+ * the lambda call.
+ * https://stackoverflow.com/questions/13722426/why-can-lambdas-be-better-optimized-by-the-compiler-than-plain-functions
  */
-template <bool OUTPUT_DENSE, bool LABEL_DENSE>
-inline void visitActiveNeuronsImpl(
-    const BoltVector& output, const BoltVector& labels,
-    const std::function<void(float, float)>& process_elem_pair) {
+template <bool OUTPUT_DENSE, bool LABEL_DENSE, typename F>
+inline void visitActiveNeuronsImpl(const BoltVector& output,
+                                   const BoltVector& labels,
+                                   F process_elem_pair) {
   assert(!OUTPUT_DENSE || output.active_neurons == nullptr);
   assert(!LABEL_DENSE || labels.active_neurons == nullptr);
   if (OUTPUT_DENSE && LABEL_DENSE) {
@@ -73,9 +81,9 @@ inline void visitActiveNeuronsImpl(
  *
  * Redirects function call to the appropriate templated implementation.
  */
-inline void visitActiveNeurons(
-    const BoltVector& output, const BoltVector& labels,
-    const std::function<void(float, float)>& process_elem_pair) {
+template <typename F>
+inline void visitActiveNeurons(const BoltVector& output,
+                               const BoltVector& labels, F process_elem_pair) {
   if (output.isDense()) {
     if (labels.isDense()) {
       visitActiveNeuronsImpl<true, true>(output, labels, process_elem_pair);

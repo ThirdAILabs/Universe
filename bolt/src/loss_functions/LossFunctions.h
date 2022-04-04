@@ -15,9 +15,14 @@ class LossFunction {
   virtual void loss(BoltVector& output, const BoltVector& labels,
                     uint32_t batch_size) const = 0;
 
-  void computeLoss(
-      BoltVector& output, const BoltVector& labels,
-      const std::function<float(float, float)>& element_loss) const {
+  /**
+   * Lambda type is templated because this helps the compiler inline
+   * the lambda call.
+   * https://stackoverflow.com/questions/13722426/why-can-lambdas-be-better-optimized-by-the-compiler-than-plain-functions
+   */
+  template <typename F>
+  void computeLoss(BoltVector& output, const BoltVector& labels,
+                   F element_loss) const {
     if (output.isDense()) {
       if (labels.isDense()) {
         computeLossImpl<true, true>(output, labels, element_loss);
@@ -36,10 +41,14 @@ class LossFunction {
   virtual ~LossFunction() = default;
 
  private:
-  template <bool OUTPUT_DENSE, bool LABEL_DENSE>
-  void computeLossImpl(
-      BoltVector& output, const BoltVector& labels,
-      const std::function<float(float, float)>& element_loss) const {
+  /**
+   * Lambda type is templated because this helps the compiler inline
+   * the lambda call.
+   * https://stackoverflow.com/questions/13722426/why-can-lambdas-be-better-optimized-by-the-compiler-than-plain-functions
+   */
+  template <bool OUTPUT_DENSE, bool LABEL_DENSE, typename F>
+  void computeLossImpl(BoltVector& output, const BoltVector& labels,
+                       F element_loss) const {
     assert(!OUTPUT_DENSE || output.active_neurons == nullptr);
     assert(!LABEL_DENSE || labels.active_neurons == nullptr);
     if (OUTPUT_DENSE && LABEL_DENSE) {
