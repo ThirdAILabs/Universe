@@ -47,30 +47,22 @@ class ProgressBar {
       return;
     }
 
-    // Clear percent
-    if (_prev_percent < 10) {
-      std::cout << "\b\b";
-    } else if (_prev_percent < 100) {
-      std::cout << "\b\b\b";
-    } else if (_prev_percent == 100) {
-      std::cout << "\b\b\b\b";
-    }
-    // Clear space and close bracket
-    std::cout << "\b\b";
+    // Go back to start of line
+    std::cout << '\r';
 
-    for (uint32_t i = 0; i < BAR_SIZE - _prev_ticks; i++) {
-      std::cout << '\b';
-    }
+    std::cout << OPEN;
 
+    // Fill ticks
     uint32_t new_ticks = (new_percent + 1) / 2;
-
-    for (uint32_t i = 0; i < new_ticks - _prev_ticks; i++) {
+    for (uint32_t i = 0; i < new_ticks; i++) {
       std::cout << DONE;
     }
 
-    for (uint32_t i = 0; i < BAR_SIZE - new_ticks; i++) {
+    // Fill the rest of the space
+    for (uint32_t i = new_ticks; i < BAR_SIZE; i++) {
       std::cout << TODO;
     }
+
     std::cout << CLOSE << " " << new_percent << "%" << std::flush;
 
     _prev_ticks = new_ticks;

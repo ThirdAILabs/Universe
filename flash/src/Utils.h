@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wrappers/src/EigenDenseWrapper.h>
 #include <numeric>
 #include <queue>
 #include <vector>
@@ -33,16 +34,12 @@ std::vector<uint32_t> minHeapPairsToDescending(
   return result;
 }
 
-// Identifies the indices of the largest k elements in a vector of arbitrary
-// (signed) type
-template <class T>
-std::vector<uint32_t> argmax(const std::vector<T>& input, uint32_t top_k) {
-  static_assert(std::is_signed<T>::value,
-                "The input to the argmax needs to be signed so we can negate "
-                "the values for the priority queue.");
+// Identifies the indices of the largest k elements in an Eigen Float Vector
+inline std::vector<uint32_t> argmax(const Eigen::VectorXf& input,
+                                    uint32_t top_k) {
   // We negate values so that we can treat the stl priority queue, which is a
   // max-heap, as a min-heap.
-  std::priority_queue<std::pair<T, uint32_t>> min_heap;
+  std::priority_queue<std::pair<float, uint32_t>> min_heap;
   for (uint32_t i = 0; i < input.size(); i++) {
     if (min_heap.size() < top_k) {
       min_heap.emplace(-input[i], i);

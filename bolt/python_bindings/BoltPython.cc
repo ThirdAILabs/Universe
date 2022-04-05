@@ -63,12 +63,26 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("epochs"), py::arg("rehash") = 0, py::arg("rebuild") = 0,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true)
+      .def("train", &PyNetwork::trainWithSparseNumpyArray, py::arg("x_idxs"),
+           py::arg("x_vals"), py::arg("x_offsets"), py::arg("y_idxs"),
+           py::arg("y_vals"), py::arg("y_offsets"), py::arg("batch_size"),
+           py::arg("loss_fn"), py::arg("learning_rate"), py::arg("epochs"),
+           py::arg("rehash") = 0, py::arg("rebuild") = 0,
+           py::arg("metrics") = std::vector<std::string>(),
+           py::arg("verbose") = true)
       .def("predict", &PyNetwork::predict, py::arg("test_data"),
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
       .def("predict", &PyNetwork::predictWithDenseNumpyArray,
            py::arg("test_examples"), py::arg("test_labels"),
+           py::arg("batch_size"),
+           py::arg("metrics") = std::vector<std::string>(),
+           py::arg("verbose") = true,
+           py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
+      .def("predict", &PyNetwork::predictWithSparseNumpyArray,
+           py::arg("x_idxs"), py::arg("x_vals"), py::arg("x_offsets"),
+           py::arg("y_idxs"), py::arg("y_vals"), py::arg("y_offsets"),
            py::arg("batch_size"),
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,

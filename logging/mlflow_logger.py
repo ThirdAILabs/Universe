@@ -43,16 +43,14 @@ class ExperimentLogger:
         experiment_name="Product Recommendation",
         dataset="amazon670k",
         algorithm="bolt") as mlflow_logger:
-
         <Code to init model>
-
         mlflow_logger.log_start_training()
-
         for each epoch:
           <train model a single epoch>
           mlflow_logger.log_epoch(accuracy)
-
-    Note mlflow only supports a single run at a time, so don't nest "with"
+    To use with something like TensorFlow that does not have num_hash_tables
+    , hashes_per_table, or sparsity, you can leave those fields out. Note
+    mlflow only supports a single run at a time, so don't nest "with"
     statements containing this class or other mlflow logging classes
     (similarly don't have a nested call to log_magsearch).
     """
