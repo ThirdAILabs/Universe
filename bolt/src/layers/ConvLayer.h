@@ -10,7 +10,7 @@ class ConvLayer : public FullyConnectedLayer {
             uint32_t next_kernel_size);
 
   void forward(const BoltVector& input, BoltVector& output,
-               const BoltVector* labels = nullptr);
+               const BoltVector* labels);
 
   void backpropagate(BoltVector& input, BoltVector& output);
 

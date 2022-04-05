@@ -60,11 +60,10 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
   std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
-    _hasher =
-        std::make_unique<hashing::DWTAHashFunction>(  // hashes an input of size
-                                                      // _patch_dim
-            _patch_dim, _sampling_config.hashes_per_table,
-            _sampling_config.num_tables, _sampling_config.range_pow);
+    // hashes input of size _patch_dim
+    _hasher = std::make_unique<hashing::DWTAHashFunction>(
+        _patch_dim, _sampling_config.hashes_per_table,
+        _sampling_config.num_tables, _sampling_config.range_pow);
     assert(_hasher != nullptr);
 
     _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
@@ -72,7 +71,7 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
         1 << _sampling_config.range_pow);
     assert(_hash_table != nullptr);
 
-    buildHashTables();
+    buildHashTables();  // NOLINT
 
     _rand_neurons = std::vector<uint32_t>(_num_filters);
 
@@ -87,7 +86,8 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
 }
 
 void ConvLayer::forward(const BoltVector& input, BoltVector& output,
-                        const BoltVector*) {
+                        const BoltVector* labels) {
+  assert(labels == nullptr);
   if (output.isDense()) {
     if (input.isDense()) {
       forwardImpl<true, true>(input, output);
@@ -105,8 +105,7 @@ void ConvLayer::forward(const BoltVector& input, BoltVector& output,
 
 template <bool DENSE, bool PREV_DENSE>
 void ConvLayer::forwardImpl(const BoltVector& input, BoltVector& output) {
-  uint32_t num_active_filters;  // if dense use all filters, otherwise use a
-                                // sparse subset
+  uint32_t num_active_filters;
   if (DENSE) {
     num_active_filters = _num_filters;
     std::fill_n(output.gradients, _dim, 0);
@@ -132,9 +131,7 @@ void ConvLayer::forwardImpl(const BoltVector& input, BoltVector& output) {
                                            prev_active_filters);
     // for each filter selected
     for (uint32_t filter = 0; filter < num_active_filters; filter++) {
-      uint64_t out_idx =
-          out_patch * num_active_filters +
-          filter;  // output size is num_patches * num_active_filters
+      uint64_t out_idx = out_patch * num_active_filters + filter;
       uint64_t act_neuron = DENSE ? out_idx : output.active_neurons[out_idx];
       assert(act_neuron < _dim);
       uint32_t act_filter = act_neuron % _num_filters;
@@ -155,6 +152,7 @@ void ConvLayer::forwardImpl(const BoltVector& input, BoltVector& output) {
       }
     }
   }
+  delete[] prev_active_filters;
 }
 
 void ConvLayer::backpropagate(BoltVector& input, BoltVector& output) {
@@ -193,7 +191,6 @@ template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
 void ConvLayer::backpropagateImpl(BoltVector& input, BoltVector& output) {
   uint32_t len_out = DENSE ? _dim : _sparse_dim;
   uint32_t num_active_filters = DENSE ? _num_filters : _num_sparse_filters;
-
   uint32_t pd = PREV_DENSE ? _patch_dim : _sparse_patch_dim;
 
   uint32_t* prev_active_filters = new uint32_t[input.len];
@@ -225,6 +222,7 @@ void ConvLayer::backpropagateImpl(BoltVector& input, BoltVector& output) {
     }
     _b_gradient[act_filter] += output.gradients[n];
   }
+  delete[] prev_active_filters;
 }
 
 template <bool DENSE, bool PREV_DENSE>
