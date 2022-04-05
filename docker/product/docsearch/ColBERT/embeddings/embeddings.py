@@ -1,4 +1,4 @@
-from modeling.checkpoint import Checkpoint
+from colbertmodeling.checkpoint import Checkpoint
 import pathlib
 import numpy as np
 

@@ -18,5 +18,5 @@ thirdai.egg-info
 *.bz2
 *.gz
 
-# ColBERT
-deps/ColBERT/downloads/
+# Python builds
+*egg-info*

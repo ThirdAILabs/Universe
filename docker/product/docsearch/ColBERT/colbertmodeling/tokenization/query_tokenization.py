@@ -1,7 +1,7 @@
 import torch
 
-from modeling.hf_colbert import HF_ColBERT
-from config import ColBERTConfig
+from colbertmodeling.hf_colbert import HF_ColBERT
+from colbertconfig import ColBERTConfig
 
 
 class QueryTokenizer:

@@ -1,10 +1,10 @@
 import torch
 
 
-from modeling.tokenization import QueryTokenizer, DocTokenizer
-from utils.amp import MixedPrecisionManager
+from colbertmodeling.tokenization import QueryTokenizer, DocTokenizer
+from colbertutils.amp import MixedPrecisionManager
 
-from modeling.colbert import ColBERT
+from colbertmodeling.colbert import ColBERT
 
 
 class Checkpoint(ColBERT):

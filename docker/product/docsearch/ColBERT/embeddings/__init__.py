@@ -1,1 +1,1 @@
-from wrapper.embeddings import *
+from embeddings.embeddings import *

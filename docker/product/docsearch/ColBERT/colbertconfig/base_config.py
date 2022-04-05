@@ -6,7 +6,7 @@ import dataclasses
 from typing import Any
 from collections import defaultdict
 from dataclasses import dataclass, fields
-from utils.utils import timestamp, torch_load_dnn
+from colbertutils.utils import timestamp, torch_load_dnn
 
 from .core_config import *
 

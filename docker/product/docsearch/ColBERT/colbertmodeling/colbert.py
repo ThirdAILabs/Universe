@@ -1,6 +1,6 @@
-from config import ColBERTConfig
-from utils.utils import print_message, flatten
-from modeling.base_colbert import BaseColBERT
+from colbertconfig import ColBERTConfig
+from colbertutils.utils import print_message, flatten
+from colbertmodeling.base_colbert import BaseColBERT
 
 import torch
 import string
