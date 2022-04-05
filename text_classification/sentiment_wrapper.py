@@ -49,6 +49,8 @@ def preprocess_data(file_name, batch_size, target_location=None, train=True, see
         for line in f:
             sentence = re.sub(r'[^\w\s]','', line)
             sentence = sentence.lower()
+            
+            ### BOLT TOKENIZER START
             itms = sentence.split()
             label = 1 if itms[0] == "pos" else 0
             fw.write(str(label) + ' ')
@@ -56,6 +58,8 @@ def preprocess_data(file_name, batch_size, target_location=None, train=True, see
             for single in itms[1:]:
                 temp = mmh3(single, seed=seed, positive=True) % murmur_dim
                 raw[temp] += 1
+
+            ### BOLT TOKENIZER END
 
             for k,v in raw.items():
                 fw.write(str(k) + ':' + str(v) + ' ')
