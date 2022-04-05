@@ -37,12 +37,10 @@ FullyConnectedLayer::FullyConnectedLayer(
     _hasher = std::make_unique<hashing::DWTAHashFunction>(
         _prev_dim, _sampling_config.hashes_per_table,
         _sampling_config.num_tables, _sampling_config.range_pow);
-    assert(_hasher != nullptr);
 
     _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow);
-    assert(_hash_table != nullptr);
 
     buildHashTables();
 
@@ -52,9 +50,6 @@ FullyConnectedLayer::FullyConnectedLayer(
     std::generate(_rand_neurons.begin(), _rand_neurons.end(),
                   [&]() { return rn++; });
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
-  } else {
-    _hasher = nullptr;
-    _hash_table = nullptr;
   }
 }
 

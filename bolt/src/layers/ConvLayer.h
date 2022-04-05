@@ -31,10 +31,10 @@ class ConvLayer : public FullyConnectedLayer {
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output);
 
-  template <bool DENSE, bool PREV_DENSE>
+  template <bool PREV_DENSE>
   void selectActiveFilters(const BoltVector& input, BoltVector& output,
                            uint32_t in_patch, uint64_t out_patch,
-                           uint32_t* active_filters);
+                           const std::vector<uint32_t>& active_filters);
 
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
   void backpropagateImpl(BoltVector& input, BoltVector& output);

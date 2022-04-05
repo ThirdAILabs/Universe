@@ -17,33 +17,35 @@ int main() {
 
   uint64_t batch_size = 1024;
   dataset::InMemoryDataset<dataset::BoltInputBatch> train_data(
-      "/home/david/data/train_mnist2x2.txt", batch_size, std::move(*train_fac));
+      "/Users/david/Documents/python_/train_mnist2x2.txt", batch_size,
+      std::move(*train_fac));
   dataset::InMemoryDataset<dataset::BoltInputBatch> test_data(
-      "/home/david/data/test_mnist2x2.txt", batch_size, std::move(*test_fac));
+      "/Users/david/Documents/python_/test_mnist2x2.txt", batch_size,
+      std::move(*test_fac));
 
   std::cout << "Finished reading train and test data" << std::endl;
 
   std::vector<bolt::FullyConnectedLayerConfig> layers;
 
-  uint32_t kernel_size = 4 * 4;
-  uint32_t num_patches = 3136;
-  // uint32_t kernel_size = 2 * 2;
-  // uint32_t num_patches = 196;
+  // uint32_t kernel_size = 4 * 4;
+  // uint32_t num_patches = 3136;
+  uint32_t kernel_size = 2 * 2;
+  uint32_t num_patches = 196;
 
   layers.emplace_back(200, 1, bolt::ActivationFunction::ReLU,
                       bolt::SamplingConfig(3, 64, 9, 5), kernel_size,
                       num_patches);
 
   layers.emplace_back(400, .1, bolt::ActivationFunction::ReLU,
-                      bolt::SamplingConfig(3, 256, 9, 5), kernel_size, 196);
+                      bolt::SamplingConfig(3, 256, 9, 5), kernel_size, 49);
 
-  layers.emplace_back(800, .1, bolt::ActivationFunction::ReLU,
-                      bolt::SamplingConfig(4, 256, 12, 5), 2 * 2, 49);
+  // layers.emplace_back(800, .1, bolt::ActivationFunction::ReLU,
+  //                     bolt::SamplingConfig(4, 256, 12, 5), 2 * 2, 49);
 
-  layers.emplace_back(20000, .05, bolt::ActivationFunction::ReLU,
+  layers.emplace_back(1000, .1, bolt::ActivationFunction::ReLU,
                       bolt::SamplingConfig(4, 256, 12, 10));
 
-  layers.emplace_back(325, bolt::ActivationFunction::Softmax);
+  layers.emplace_back(10, bolt::ActivationFunction::Softmax);
 
   bolt::FullyConnectedNetwork network(layers, kernel_size * num_patches);
 

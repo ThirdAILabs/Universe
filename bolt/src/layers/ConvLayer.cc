@@ -64,14 +64,13 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
     _hasher = std::make_unique<hashing::DWTAHashFunction>(
         _patch_dim, _sampling_config.hashes_per_table,
         _sampling_config.num_tables, _sampling_config.range_pow);
-    assert(_hasher != nullptr);
 
     _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow);
-    assert(_hash_table != nullptr);
 
-    buildHashTables();  // NOLINT
+    buildHashTables();  // NOLINT calling virtual function from constructor of
+                        // inhereted class
 
     _rand_neurons = std::vector<uint32_t>(_num_filters);
 
@@ -79,9 +78,6 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
     std::generate(_rand_neurons.begin(), _rand_neurons.end(),
                   [&]() { return rn++; });
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
-  } else {
-    _hasher = nullptr;
-    _hash_table = nullptr;
   }
 }
 
@@ -113,10 +109,10 @@ void ConvLayer::forwardImpl(const BoltVector& input, BoltVector& output) {
     std::fill_n(output.gradients, _sparse_dim, 0);
   }
 
-  uint32_t pd = PREV_DENSE ? _patch_dim : _sparse_patch_dim;
+  uint32_t effective_patch_dim = PREV_DENSE ? _patch_dim : _sparse_patch_dim;
 
   // TODO(david) calculate once instead of in both forward and backward?
-  uint32_t* prev_active_filters = new uint32_t[input.len];
+  std::vector<uint32_t> prev_active_filters(input.len);
   if (!PREV_DENSE) {
     for (uint32_t i = 0; i < input.len; i++) {
       prev_active_filters[i] = input.active_neurons[i] % _patch_dim;
@@ -126,8 +122,10 @@ void ConvLayer::forwardImpl(const BoltVector& input, BoltVector& output) {
   // for each input patch
   for (uint32_t in_patch = 0; in_patch < _num_patches; in_patch++) {
     uint32_t out_patch = _in_to_out[in_patch];
-    selectActiveFilters<DENSE, PREV_DENSE>(input, output, in_patch, out_patch,
-                                           prev_active_filters);
+    if (!DENSE) {
+      selectActiveFilters<PREV_DENSE>(input, output, in_patch, out_patch,
+                                      prev_active_filters);
+    }
     // for each filter selected
     for (uint32_t filter = 0; filter < num_active_filters; filter++) {
       uint64_t out_idx = out_patch * num_active_filters + filter;
@@ -136,22 +134,29 @@ void ConvLayer::forwardImpl(const BoltVector& input, BoltVector& output) {
       uint32_t act_filter = act_neuron % _num_filters;
       _is_active[act_neuron] = true;
       float act = _biases[act_filter];
-      for (uint32_t i = 0; i < pd; i++) {
-        uint64_t in_idx = in_patch * pd + i;
+      for (uint32_t i = 0; i < effective_patch_dim; i++) {
+        uint64_t in_idx = in_patch * effective_patch_dim + i;
+        if (in_idx >= input.len) {
+          std::cout << "in_idx " << in_idx << std::endl;
+          std::cout << "input.len " << input.len << std::endl;
+          std::cout << "effective_patch_dim " << effective_patch_dim
+                    << std::endl;
+          std::cout << "i " << i << std::endl;
+          std::cout << "_prev_dim " << _prev_dim << std::endl;
+          std::cout << "num_active_filters " << num_active_filters << std::endl;
+          // std::cout << "LMFAO " << lmfao << std::endl;
+          // std::cout << "LMFAO " << lmfao << std::endl;
+          // std::cout << "LMFAO " << lmfao << std::endl;
+        }
         assert(in_idx < input.len);
         uint64_t prev_act_neuron = PREV_DENSE ? i : prev_active_filters[in_idx];
         act += _weights[act_filter * _patch_dim + prev_act_neuron] *
                input.activations[in_idx];
       }
       assert(!std::isnan(act));
-      if (act < 0) {
-        output.activations[out_idx] = 0;
-      } else {
-        output.activations[out_idx] = act;
-      }
+      output.activations[out_idx] = std::max((float)0, act);
     }
   }
-  delete[] prev_active_filters;
 }
 
 void ConvLayer::backpropagate(BoltVector& input, BoltVector& output) {
@@ -190,9 +195,9 @@ template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
 void ConvLayer::backpropagateImpl(BoltVector& input, BoltVector& output) {
   uint32_t len_out = DENSE ? _dim : _sparse_dim;
   uint32_t num_active_filters = DENSE ? _num_filters : _num_sparse_filters;
-  uint32_t pd = PREV_DENSE ? _patch_dim : _sparse_patch_dim;
+  uint32_t effective_patch_dim = PREV_DENSE ? _patch_dim : _sparse_patch_dim;
 
-  uint32_t* prev_active_filters = new uint32_t[input.len];
+  std::vector<uint32_t> prev_active_filters(input.len);
   if (!PREV_DENSE) {
     for (uint32_t i = 0; i < input.len; i++) {
       prev_active_filters[i] = input.active_neurons[i] % _patch_dim;
@@ -207,8 +212,8 @@ void ConvLayer::backpropagateImpl(BoltVector& input, BoltVector& output) {
     uint32_t act_filter = act_neuron % _num_filters;
     uint32_t out_patch = n / num_active_filters;
     uint32_t in_patch = _out_to_in[out_patch];
-    for (uint64_t i = 0; i < pd; i++) {
-      uint64_t in_idx = in_patch * pd + i;
+    for (uint64_t i = 0; i < effective_patch_dim; i++) {
+      uint64_t in_idx = in_patch * effective_patch_dim + i;
       uint32_t prev_act_neuron = PREV_DENSE ? i : prev_active_filters[in_idx];
       assert(prev_act_neuron < _prev_dim);
       _w_gradient[act_filter * _patch_dim + prev_act_neuron] +=
@@ -221,17 +226,12 @@ void ConvLayer::backpropagateImpl(BoltVector& input, BoltVector& output) {
     }
     _b_gradient[act_filter] += output.gradients[n];
   }
-  delete[] prev_active_filters;
 }
 
-template <bool DENSE, bool PREV_DENSE>
-void ConvLayer::selectActiveFilters(const BoltVector& input, BoltVector& output,
-                                    uint32_t in_patch, uint64_t out_patch,
-                                    uint32_t* prev_active_filters) {
-  if (DENSE) {
-    return;
-  }
-
+template <bool PREV_DENSE>
+void ConvLayer::selectActiveFilters(
+    const BoltVector& input, BoltVector& output, uint32_t in_patch,
+    uint64_t out_patch, const std::vector<uint32_t>& prev_active_filters) {
   std::unordered_set<uint32_t> active_set;
   uint32_t* hashes = new uint32_t[_hash_table->numTables()];
   if (PREV_DENSE) {
@@ -239,7 +239,7 @@ void ConvLayer::selectActiveFilters(const BoltVector& input, BoltVector& output,
                              _patch_dim, hashes);
   } else {
     _hasher->hashSingleSparse(
-        &prev_active_filters[in_patch * _sparse_patch_dim],
+        prev_active_filters.data() + in_patch * _sparse_patch_dim,
         &input.activations[in_patch * _sparse_patch_dim], _sparse_patch_dim,
         hashes);
   }
@@ -257,12 +257,13 @@ void ConvLayer::selectActiveFilters(const BoltVector& input, BoltVector& output,
 
   uint32_t cnt = 0;
   for (uint32_t x : active_set) {
-    if (cnt >= _num_sparse_filters) {
+    if (cnt == _num_sparse_filters) {
       break;
     }
     assert(x < _num_filters);
-    output.active_neurons[out_patch * _num_sparse_filters + cnt++] =
+    output.active_neurons[out_patch * _num_sparse_filters + cnt] =
         out_patch * _num_filters + x;
+    cnt++;
   }
 }
 

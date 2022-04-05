@@ -48,9 +48,9 @@ FullyConnectedNetwork::FullyConnectedNetwork(
     } else {
       prev_dim = input_dim;
       prev_num_filters =
-          3;  // TODO(david) change input dim to vector to accept 3d input? then
+          1;  // TODO(david) change input dim to vector to accept 3d input? then
               // prev_num_filters = num_input_channels
-      prev_num_sparse_filters = 3;
+      prev_num_sparse_filters = 1;
     }
 
     bool next_is_conv_layer = configs[i + 1].kernel_size != 0;

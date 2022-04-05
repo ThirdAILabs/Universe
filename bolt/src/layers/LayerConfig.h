@@ -127,7 +127,7 @@ struct FullyConnectedLayerConfig {
     }
     if (config.kernel_size != 0) {
       out << ", kernel_width=" << config.kernel_size
-          << ", num_patche=" << config.num_patches;
+          << ", num_patches=" << config.num_patches;
     }
     return out;
   }
