@@ -1,7 +1,7 @@
 from thirdai import bolt, dataset
 import numpy as np
 import csv
-from sklearn.utils import murmurhash3_32 as mmh3
+import mmh3
 import re
 
 
@@ -11,7 +11,7 @@ def predict_sentence_sentiment(network: bolt.Network, text, seed=42):
     sentence = re.sub(r"[^\w\s]", "", text)
     sentence = sentence.lower()
 
-    x_idxs = [mmh3(itm, seed=seed) % feat_hash_dim for itm in sentence.split()]
+    x_idxs = [mmh3.hash(itm, seed=seed) % feat_hash_dim for itm in sentence.split()]
     x_idxs = np.array(x_idxs)
     x_offsets = np.int32([0, len(x_idxs)])
     x_vals = np.ones(len(x_idxs))
