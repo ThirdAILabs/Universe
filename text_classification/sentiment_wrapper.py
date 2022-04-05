@@ -10,7 +10,7 @@ def predict_sentence_sentiment(network: bolt.Network, text, seed=42):
     sentence = re.sub(r'[^\w\s]','', text)
     sentence = sentence.lower()
     
-    x_idxs = [mmh3.hash(itm, seed) % feat_hash_dim for itm in sentence.split()]
+    x_idxs = [mmh3(itm, seed=seed) % feat_hash_dim for itm in sentence.split()]
     x_idxs = np.array(x_idxs)
     x_offsets = np.int32([0,len(x_idxs)])
     x_vals = np.ones(len(x_idxs))
@@ -22,14 +22,15 @@ def predict_sentence_sentiment(network: bolt.Network, text, seed=42):
         x_idxs, x_vals, x_offsets, 
         y_idxs, y_vals, y_offsets, 
         batch_size=1, 
-        metrics=["categorical_accuracy"]
+        metrics=["categorical_accuracy"],
+        verbose=False
     )
     pred = np.argmax(temp[1][0])
 
-    if pred > 0:
-        print('positive!', flush=True)
-    else:
-        print('negative!', flush=True)
+    # if pred > 0:
+    #     print('positive!', flush=True)
+    # else:
+    #     print('negative!', flush=True)
     
     return 1 if pred > 0 else 0
 

@@ -1,21 +1,24 @@
 import pytest
-from wrapper import *
+from sentiment_wrapper import *
 from datasets import load_dataset_builder
 from datasets import load_dataset
 from sklearn.utils import murmurhash3_32 as mmh3
 from tqdm import tqdm
 import re
+from collections import namedtuple
 
 name = "yelp_review_full"
 content = 'text'
 label = 'label'
 train_file_path = "./" + name + "_train.svm"
 test_file_path = "./" + name + "_test.svm"
-label_dict = {'0':0,  '1':0, '2':0, '3':-1, '4':1, '5':1}
+label_dict = {0:0,  1:0, 2:0, 3:-1, 4:1, 5:1}
 model_path = "./sentiment_pretrained_yelp_cp"
+murmur_dim = 100000
+seed = 42
 
 
-def preprocess_dataset(name, svm_path_1, svm_path_2, content_name, label_name, extra=None):
+def download_dataset(name, svm_path_1, svm_path_2, content_name, label_name, extra=None):
     dataset = load_dataset(name, extra, split='train')
     dataset_2 = load_dataset(name, extra, split='test')
 
@@ -24,10 +27,11 @@ def preprocess_dataset(name, svm_path_1, svm_path_2, content_name, label_name, e
     fw_2 = open(svm_path_2, 'w')
     f_lst = (fw_1, fw_2)
     d_lst = (dataset, dataset_2)
+    
     for data_ind in range(2):
         dataset = d_lst[data_ind]
         fw = f_lst[data_ind]
-        for data in tqdm(dataset[0:400000]):
+        for data in tqdm(dataset):
             label_ori = label_dict[data[label_name]]
             if label_ori == -1:
                 continue
@@ -47,6 +51,7 @@ def preprocess_dataset(name, svm_path_1, svm_path_2, content_name, label_name, e
                 fw.write(str(k) + ':' + str(v) + ' ')
     
             fw.write('\n')
+            
 
     fw_1.close()
     fw_2.close()
@@ -120,15 +125,18 @@ def train_yelp(args):
 
 @pytest.mark.unit
 def test_train_yelp():
-    args = bolt.ArgumentParser(
-        dataset="amazon_reviews_multi",
-        epochs=2,
-        lr=0.0001,
-        sparsity=0.1,
-        hashes_per_table=4,
-        num_tables=64,
-        runs=1,
-    )
+    download_dataset(name, train_file_path, test_file_path, content, label)
+
+    args = {
+        "dataset": name,
+        "epochs": 2,
+        "lr": 0.0001,
+        "sparsity": 0.1,
+        "hashes_per_table": 4,
+        "num_tables": 64,
+        "runs":1,
+    }
+    args = namedtuple("args", args.keys())(*args.values())
     train(args, train_yelp, 0.9)
 
 @pytest.mark.unit
@@ -136,3 +144,4 @@ def test_predict_sentence_sentiment():
     sentiment_analysis_network = bolt.Network.load(filename=model_path)
     assert predict_sentence_sentiment(sentiment_analysis_network, "I love this great product very much") == 1
     assert predict_sentence_sentiment(sentiment_analysis_network, "I hate this terrible product, not worth it") == 0
+
