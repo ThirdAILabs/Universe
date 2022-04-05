@@ -1,5 +1,3 @@
-from distutils.core import setup
-setup(name='embeddings',
-      version='1.0',
-      py_modules=['embeddings'],
-      )
+from setuptools import setup, find_packages
+
+setup(name="embeddings", packages=find_packages())
