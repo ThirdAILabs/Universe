@@ -17,10 +17,9 @@ int main() {
 
   uint64_t batch_size = 1024;
   dataset::InMemoryDataset<dataset::BoltInputBatch> train_data(
-      "/home/david/data/train_birds_4x4.txt", batch_size,
-      std::move(*train_fac));
+      "/home/david/data/train_mnist2x2.txt", batch_size, std::move(*train_fac));
   dataset::InMemoryDataset<dataset::BoltInputBatch> test_data(
-      "/home/david/data/test_birds_4x4.txt", batch_size, std::move(*test_fac));
+      "/home/david/data/test_mnist2x2.txt", batch_size, std::move(*test_fac));
 
   std::cout << "Finished reading train and test data" << std::endl;
 

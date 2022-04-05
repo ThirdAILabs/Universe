@@ -1,8 +1,6 @@
-#include "BoltLayerTestUtils.h"
-#include <bolt/src/layers/BoltVector.h>
-#include <bolt/src/layers/FullyConnectedLayer.h>
-#include <bolt/src/layers/LayerConfig.h>
+#include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <gtest/gtest.h>
+#include <dataset/src/Dataset.h>
 #include <cstddef>
 #include <random>
 #include <unordered_set>
@@ -10,22 +8,121 @@
 
 namespace thirdai::bolt::tests {
 
-constexpr uint32_t LAYER_DIM = 100, INPUT_DIM = 160, BATCH_SIZE = 4;
-constexpr uint32_t SPARSE_INPUT_DIM = INPUT_DIM / 4;
-constexpr uint32_t SPARSE_LAYER_DIM = LAYER_DIM / 4;
-
 class ConvLayerTestFixture : public testing::Test {
-  ConvLayerTestFixture() {}
+ public:
+  uint32_t _kernel_size = 2 * 2;
+  uint32_t _num_patches_l1 = 196;
+  uint32_t _num_patches_l2 = 49;
+  std::unique_ptr<dataset::Factory<dataset::BoltInputBatch>> train_fac =
+      std::make_unique<dataset::BoltCsvBatchFactory>(' ');
+  std::unique_ptr<dataset::Factory<dataset::BoltInputBatch>> test_fac =
+      std::make_unique<dataset::BoltCsvBatchFactory>(' ');
 
-  void SetUp() override {}
+  uint64_t _batch_size = 1024;
+
+  dataset::InMemoryDataset<dataset::BoltInputBatch> _train_data;
+  dataset::InMemoryDataset<dataset::BoltInputBatch> _test_data;
+
+  // TODO(david) change minst file location/create patches
+  ConvLayerTestFixture()
+      : _train_data("/home/david/data/train_mnist2x2.txt", _batch_size,
+                    std::move(*train_fac)),
+        _test_data("/home/david/data/test_mnist2x2.txt", _batch_size,
+                   std::move(*test_fac)) {}
+
+  MetricData trainNetwork(std::vector<bolt::FullyConnectedLayerConfig> layers) {
+    bolt::FullyConnectedNetwork network(layers, _kernel_size * _num_patches_l1);
+
+    auto loss_fn =
+        thirdai::bolt::getLossFunction("categoricalcrossentropyloss");
+    std::vector<std::string> metrics = {"categorical_accuracy"};
+
+    float learning_rate = 0.001;
+    uint32_t epochs = 25;
+    uint32_t rehash = 3000;
+    uint32_t rebuild = 10000;
+    uint32_t max_test_batches = std::numeric_limits<uint32_t>::max();
+
+    MetricData result;
+    for (uint32_t e = 0; e < epochs; e++) {
+      network.train(_train_data, *loss_fn, learning_rate, 1, rehash, rebuild,
+                    metrics);
+      result = network.predict(_test_data, nullptr, metrics, max_test_batches);
+    }
+    return result;
+  }
 };
 
-TEST_F(ConvLayerTestFixture, DenseDenseTest) {}
+TEST_F(ConvLayerTestFixture, DenseDenseTest) {
+  std::vector<bolt::FullyConnectedLayerConfig> layers;
+  layers.emplace_back(100, 1, bolt::ActivationFunction::ReLU,
+                      bolt::SamplingConfig(), _kernel_size, _num_patches_l1);
 
-TEST_F(ConvLayerTestFixture, SparseDenseTest) {}
+  layers.emplace_back(400, 1, bolt::ActivationFunction::ReLU,
+                      bolt::SamplingConfig(), _kernel_size, _num_patches_l2);
 
-TEST_F(ConvLayerTestFixture, DenseSparseTest) {}
+  layers.emplace_back(1000, .1, bolt::ActivationFunction::ReLU,
+                      bolt::SamplingConfig(4, 256, 12, 10));
 
-TEST_F(ConvLayerTestFixture, SparseSparseTest) {}
+  layers.emplace_back(10, bolt::ActivationFunction::Softmax);
+
+  MetricData result = trainNetwork(layers);
+  ASSERT_GE(result["categorical_accuracy"].front(), 0.97);
+}
+
+TEST_F(ConvLayerTestFixture, SparseDenseTest) {
+  std::vector<bolt::FullyConnectedLayerConfig> layers;
+  layers.emplace_back(100, .1, bolt::ActivationFunction::ReLU,
+                      bolt::SamplingConfig(3, 64, 9, 5), _kernel_size,
+                      _num_patches_l1);
+
+  layers.emplace_back(400, 1, bolt::ActivationFunction::ReLU,
+                      bolt::SamplingConfig(), _kernel_size, _num_patches_l2);
+
+  layers.emplace_back(1000, .1, bolt::ActivationFunction::ReLU,
+                      bolt::SamplingConfig(4, 256, 12, 10));
+
+  layers.emplace_back(10, bolt::ActivationFunction::Softmax);
+
+  MetricData result = trainNetwork(layers);
+  ASSERT_GE(result["categorical_accuracy"].front(), 0.9);
+}
+
+TEST_F(ConvLayerTestFixture, DenseSparseTest) {
+  std::vector<bolt::FullyConnectedLayerConfig> layers;
+  layers.emplace_back(100, 1, bolt::ActivationFunction::ReLU,
+                      bolt::SamplingConfig(), _kernel_size, _num_patches_l1);
+
+  layers.emplace_back(400, .1, bolt::ActivationFunction::ReLU,
+                      bolt::SamplingConfig(3, 256, 9, 5), _kernel_size,
+                      _num_patches_l2);
+
+  layers.emplace_back(1000, .1, bolt::ActivationFunction::ReLU,
+                      bolt::SamplingConfig(4, 256, 12, 10));
+
+  layers.emplace_back(10, bolt::ActivationFunction::Softmax);
+
+  MetricData result = trainNetwork(layers);
+  ASSERT_GE(result["categorical_accuracy"].front(), 0.9);
+}
+
+TEST_F(ConvLayerTestFixture, SparseSparseTest) {
+  std::vector<bolt::FullyConnectedLayerConfig> layers;
+  layers.emplace_back(100, .1, bolt::ActivationFunction::ReLU,
+                      bolt::SamplingConfig(3, 64, 9, 5), _kernel_size,
+                      _num_patches_l1);
+
+  layers.emplace_back(400, .1, bolt::ActivationFunction::ReLU,
+                      bolt::SamplingConfig(3, 256, 9, 5), _kernel_size,
+                      _num_patches_l2);
+
+  layers.emplace_back(1000, .1, bolt::ActivationFunction::ReLU,
+                      bolt::SamplingConfig(4, 256, 12, 10));
+
+  layers.emplace_back(10, bolt::ActivationFunction::Softmax);
+
+  MetricData result = trainNetwork(layers);
+  ASSERT_GE(result["categorical_accuracy"].front(), 0.9);
+}
 
 }  // namespace thirdai::bolt::tests

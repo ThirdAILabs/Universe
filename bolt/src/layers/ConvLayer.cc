@@ -86,8 +86,7 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
 }
 
 void ConvLayer::forward(const BoltVector& input, BoltVector& output,
-                        const BoltVector* labels) {
-  assert(labels == nullptr);
+                        const BoltVector*) {
   if (output.isDense()) {
     if (input.isDense()) {
       forwardImpl<true, true>(input, output);
