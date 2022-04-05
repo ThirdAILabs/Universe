@@ -7,26 +7,27 @@ import re
 from collections import namedtuple
 
 name = "yelp_review_full"
-content = 'text'
-label = 'label'
+content = "text"
+label = "label"
 train_file_path = "./" + name + "_train.svm"
 test_file_path = "./" + name + "_test.svm"
-label_dict = {0:0,  1:0, 2:0, 3:-1, 4:1, 5:1}
+label_dict = {0: 0, 1: 0, 2: 0, 3: -1, 4: 1, 5: 1}
 model_path = "./sentiment_pretrained_yelp_cp"
 murmur_dim = 100000
 seed = 42
 
 
-def download_dataset(name, svm_path_1, svm_path_2, content_name, label_name, extra=None):
-    dataset_1 = load_dataset(name, extra, split='train')
-    dataset_2 = load_dataset(name, extra, split='test')
+def download_dataset(
+    name, svm_path_1, svm_path_2, content_name, label_name, extra=None
+):
+    dataset_1 = load_dataset(name, extra, split="train")
+    dataset_2 = load_dataset(name, extra, split="test")
 
-
-    fw_1 = open(svm_path_1, 'w')
-    fw_2 = open(svm_path_2, 'w')
+    fw_1 = open(svm_path_1, "w")
+    fw_2 = open(svm_path_2, "w")
     f_lst = (fw_1, fw_2)
     d_lst = (dataset_1, dataset_2)
-    
+
     for data_ind in range(2):
         data_set = d_lst[data_ind]
         fw = f_lst[data_ind]
@@ -35,18 +36,19 @@ def download_dataset(name, svm_path_1, svm_path_2, content_name, label_name, ext
             if label_ori == -1:
                 continue
             label = str(label_ori)
-            fw.write(str(label) + ' ')
+            fw.write(str(label) + " ")
 
-            sentence = data[content_name]  # "content" for dbpedia & amazon_polarity, "text" for ag_news
-            sentence = re.sub(r'[^\w\s]','',sentence)
+            sentence = data[
+                content_name
+            ]  # "content" for dbpedia & amazon_polarity, "text" for ag_news
+            sentence = re.sub(r"[^\w\s]", "", sentence)
             sentence = sentence.lower()
 
             tup = dataset.bolt_tokenizer(sentence)
             for idx, val in zip(tup[0], tup[1]):
-                fw.write(str(idx) + ':' + str(val) + ' ')
-    
-            fw.write('\n')
-            
+                fw.write(str(idx) + ":" + str(val) + " ")
+
+            fw.write("\n")
 
     fw_1.close()
     fw_2.close()
@@ -83,36 +85,46 @@ def train(
 
 def train_yelp(args):
     layers = [
-        bolt.LayerConfig(dim=2000, 
-            load_factor=args.sparsity, 
+        bolt.LayerConfig(
+            dim=2000,
+            load_factor=args.sparsity,
             activation_function=bolt.ActivationFunctions.ReLU,
             sampling_config=bolt.SamplingConfig(
                 hashes_per_table=args.hashes_per_table,
                 num_tables=args.num_tables,
                 range_pow=args.hashes_per_table * 3,
                 reservoir_size=64,
-            )),
-        bolt.LayerConfig(dim=2,
-            load_factor=1.0, 
+            ),
+        ),
+        bolt.LayerConfig(
+            dim=2,
+            load_factor=1.0,
             activation_function=bolt.ActivationFunctions.Softmax,
-            )     
+        ),
     ]
 
     train_data = dataset.load_bolt_svm_dataset(train_file_path, 1024)
     test_data = dataset.load_bolt_svm_dataset(test_file_path, 256)
-    
+
     network = bolt.Network(layers=layers, input_dim=100000)
     epoch_times = []
     epoch_accuracies = []
 
     for _ in range(args.epochs):
-        times = network.train(train_data,bolt.CategoricalCrossEntropyLoss(), args.lr, 1, rehash=6400, rebuild=128000)
+        times = network.train(
+            train_data,
+            bolt.CategoricalCrossEntropyLoss(),
+            args.lr,
+            1,
+            rehash=6400,
+            rebuild=128000,
+        )
         epoch_times.append(times["epoch_times"][0])
         acc, _ = network.predict(
             test_data, metrics=["categorical_accuracy"], verbose=True
         )
         epoch_accuracies.append(acc["categorical_accuracy"][0])
-    
+
     network.save(model_path)
 
     return epoch_accuracies[-1], epoch_accuracies, epoch_times
@@ -129,13 +141,24 @@ def test_train_yelp():
         "sparsity": 0.1,
         "hashes_per_table": 4,
         "num_tables": 64,
-        "runs":1,
+        "runs": 1,
     }
     args = namedtuple("args", args.keys())(*args.values())
     train(args, train_yelp, 0.9)
 
+
 @pytest.mark.unit
 def test_predict_sentence_sentiment():
     sentiment_analysis_network = bolt.Network.load(filename=model_path)
-    assert predict_sentence_sentiment(sentiment_analysis_network, "I love this great product very much") == 1
-    assert predict_sentence_sentiment(sentiment_analysis_network, "I hate this terrible product, not worth it") == 0
+    assert (
+        predict_sentence_sentiment(
+            sentiment_analysis_network, "I love this great product very much"
+        )
+        == 1
+    )
+    assert (
+        predict_sentence_sentiment(
+            sentiment_analysis_network, "I hate this terrible product, not worth it"
+        )
+        == 0
+    )
