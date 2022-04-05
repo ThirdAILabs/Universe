@@ -1,8 +1,8 @@
 from thirdai import bolt, dataset
 import numpy as np
+import csv
 from sklearn.utils import murmurhash3_32 as mmh3
 import re
-from collections import defaultdict
 
 def predict_sentence_sentiment(network: bolt.Network, text, seed=42):
     feat_hash_dim = 100000
@@ -45,27 +45,30 @@ def preprocess_data(file_name, batch_size, target_location=None, train=True, see
     target_location = target_location + post + ".svm"
 
     fw = open(target_location, 'w')
-    with open(file_name) as f:
-        for line in f:
-            sentence = re.sub(r'[^\w\s]','', line)
-            sentence = sentence.lower()
-            
-            ### BOLT TOKENIZER START
-            itms = sentence.split()
-            label = 1 if itms[0] == "pos" else 0
-            fw.write(str(label) + ' ')
-            
-            raw = defaultdict(int)
-            for single in itms[1:]:
-                temp = mmh3(single, seed=seed, positive=True) % murmur_dim
-                raw[temp] += 1
+    csvreader = csv.reader(open(file_name, 'r'))
 
-            ### BOLT TOKENIZER END
+    for line in csvreader:
+        label = 1 if line[0] == "pos" else 0
+        fw.write(str(label) + ' ')
 
-            for k,v in raw.items():
-                fw.write(str(k) + ':' + str(v) + ' ')
-    
-            fw.write('\n')
+        sentence = re.sub(r'[^\w\s]','', line[1])
+        sentence = sentence.lower()
+        ### BOLT TOKENIZER START
+        tup = dataset.bolt_tokenizer(sentence)
+        for idx, val in zip(tup[0], tup[1]):
+            fw.write(str(idx) + ':' + str(val) + ' ')
+        ### BOLT TOKENIZER END
+
+        fw.write('\n')
     fw.close()
 
     return target_location
+
+# Just tests
+if __name__ == "__main__":
+    rows = [['pos', 'I love this movie'], ['neg', 'I hate this movie']]
+    with open('countries.csv', 'w', encoding='UTF8', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerows(rows)
+
+    preprocess_data('countries.csv', 1, train=True)

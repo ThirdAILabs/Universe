@@ -18,19 +18,19 @@ seed = 42
 
 
 def download_dataset(name, svm_path_1, svm_path_2, content_name, label_name, extra=None):
-    dataset = load_dataset(name, extra, split='train')
+    dataset_1 = load_dataset(name, extra, split='train')
     dataset_2 = load_dataset(name, extra, split='test')
 
 
     fw_1 = open(svm_path_1, 'w')
     fw_2 = open(svm_path_2, 'w')
     f_lst = (fw_1, fw_2)
-    d_lst = (dataset, dataset_2)
+    d_lst = (dataset_1, dataset_2)
     
     for data_ind in range(2):
-        dataset = d_lst[data_ind]
+        data_set = d_lst[data_ind]
         fw = f_lst[data_ind]
-        for data in dataset:
+        for data in data_set:
             label_ori = label_dict[data[label_name]]
             if label_ori == -1:
                 continue
@@ -41,8 +41,8 @@ def download_dataset(name, svm_path_1, svm_path_2, content_name, label_name, ext
             sentence = re.sub(r'[^\w\s]','',sentence)
             sentence = sentence.lower()
 
-            idxs, vals = dataset.bolt_tokenizer(sentence)
-            for idx, val in zip(idxs, vals):
+            tup = dataset.bolt_tokenizer(sentence)
+            for idx, val in zip(tup[0], tup[1]):
                 fw.write(str(idx) + ':' + str(val) + ' ')
     
             fw.write('\n')
@@ -109,7 +109,7 @@ def train_yelp(args):
         times = network.train(train_data,bolt.CategoricalCrossEntropyLoss(), args.lr, 1, rehash=6400, rebuild=128000)
         epoch_times.append(times["epoch_times"][0])
         acc, _ = network.predict(
-            test_data, metrics=["categorical_accuracy"], verbose=False
+            test_data, metrics=["categorical_accuracy"], verbose=True
         )
         epoch_accuracies.append(acc["categorical_accuracy"][0])
     
