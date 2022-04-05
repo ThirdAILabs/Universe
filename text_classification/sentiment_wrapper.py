@@ -54,7 +54,8 @@ def preprocess_data(file_name, batch_size, target_location=None, train=True, see
             itms = sentence.split()
             label = 1 if itms[0] == "pos" else 0
             fw.write(str(label) + ' ')
-
+            
+            raw = defaultdict(int)
             for single in itms[1:]:
                 temp = mmh3(single, seed=seed, positive=True) % murmur_dim
                 raw[temp] += 1

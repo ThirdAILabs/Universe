@@ -3,7 +3,6 @@ from sentiment_wrapper import *
 from datasets import load_dataset_builder
 from datasets import load_dataset
 from sklearn.utils import murmurhash3_32 as mmh3
-from tqdm import tqdm
 import re
 from collections import namedtuple
 
@@ -31,7 +30,7 @@ def download_dataset(name, svm_path_1, svm_path_2, content_name, label_name, ext
     for data_ind in range(2):
         dataset = d_lst[data_ind]
         fw = f_lst[data_ind]
-        for data in tqdm(dataset):
+        for data in dataset:
             label_ori = label_dict[data[label_name]]
             if label_ori == -1:
                 continue
@@ -42,13 +41,9 @@ def download_dataset(name, svm_path_1, svm_path_2, content_name, label_name, ext
             sentence = re.sub(r'[^\w\s]','',sentence)
             sentence = sentence.lower()
 
-            raw = defaultdict(int)
-            for single in sentence.split():
-                temp = mmh3(single, seed=seed, positive=True) % murmur_dim
-                raw[temp] += 1
-
-            for k,v in raw.items():
-                fw.write(str(k) + ':' + str(v) + ' ')
+            idxs, vals = dataset.bolt_tokenizer(sentence)
+            for idx, val in zip(idxs, vals):
+                fw.write(str(idx) + ':' + str(val) + ' ')
     
             fw.write('\n')
             
@@ -144,4 +139,3 @@ def test_predict_sentence_sentiment():
     sentiment_analysis_network = bolt.Network.load(filename=model_path)
     assert predict_sentence_sentiment(sentiment_analysis_network, "I love this great product very much") == 1
     assert predict_sentence_sentiment(sentiment_analysis_network, "I hate this terrible product, not worth it") == 0
-
