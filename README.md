@@ -1,7 +1,7 @@
 # Universe 
 Main Repository (follow monorepositry) 
 
-[Repository Setup Instructions](https://docs.google.com/document/d/196ajXaVUUqpTFigkMmBhdlhTAiKy7LxgYS95xqpB2Ys/edit?usp=sharing)
+[Repository Setup Instructions](https://www.notion.so/Universe-Setup-ed71176c2cf44b038ece8aee9fb64d35)
 
 ## Development Scripts
 There are some script in the bin folder that allow you to easily build, test,

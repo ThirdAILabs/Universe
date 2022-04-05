@@ -6,7 +6,7 @@
 #include <chrono>
 #include <filesystem>
 #include <iostream>
-#include <toml.hpp>
+#include <toml.h>
 #include <vector>
 
 namespace bolt = thirdai::bolt;
