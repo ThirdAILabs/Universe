@@ -2,7 +2,6 @@ import pytest
 from sentiment_wrapper import *
 from datasets import load_dataset_builder
 from datasets import load_dataset
-from sklearn.utils import murmurhash3_32 as mmh3
 import re
 from collections import namedtuple
 
@@ -121,7 +120,7 @@ def train_yelp(args):
         )
         epoch_times.append(times["epoch_times"][0])
         acc, _ = network.predict(
-            test_data, metrics=["categorical_accuracy"], verbose=True
+            test_data, metrics=["categorical_accuracy"], verbose=False
         )
         epoch_accuracies.append(acc["categorical_accuracy"][0])
 
