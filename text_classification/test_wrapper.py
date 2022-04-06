@@ -57,8 +57,8 @@ def train(
     args,
     train_fn,
     accuracy_threshold,
-    epoch_time_threshold=150,
-    total_time_threshold=10000,
+    epoch_time_threshold=600,
+    total_time_threshold=2000,
 ):
     final_accuracies = []
     final_epoch_times = []
