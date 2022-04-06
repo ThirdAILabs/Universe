@@ -136,18 +136,6 @@ void ConvLayer::forwardImpl(const BoltVector& input, BoltVector& output) {
       float act = _biases[act_filter];
       for (uint32_t i = 0; i < effective_patch_dim; i++) {
         uint64_t in_idx = in_patch * effective_patch_dim + i;
-        if (in_idx >= input.len) {
-          std::cout << "in_idx " << in_idx << std::endl;
-          std::cout << "input.len " << input.len << std::endl;
-          std::cout << "effective_patch_dim " << effective_patch_dim
-                    << std::endl;
-          std::cout << "i " << i << std::endl;
-          std::cout << "_prev_dim " << _prev_dim << std::endl;
-          std::cout << "num_active_filters " << num_active_filters << std::endl;
-          // std::cout << "LMFAO " << lmfao << std::endl;
-          // std::cout << "LMFAO " << lmfao << std::endl;
-          // std::cout << "LMFAO " << lmfao << std::endl;
-        }
         assert(in_idx < input.len);
         uint64_t prev_act_neuron = PREV_DENSE ? i : prev_active_filters[in_idx];
         act += _weights[act_filter * _patch_dim + prev_act_neuron] *
@@ -343,20 +331,36 @@ void ConvLayer::buildHashTables() {
   delete[] hashes;
 }
 
+// this function is only called from constructor
 void ConvLayer::buildPatchMaps(uint32_t next_kernel_size) {
+  /** each patch of the input is passed through some filters to get an outout
+  for that patch. that patch output needs to be placed somewhere in memory that
+  is efficient for the next kernel size. Since we are dealing with flattened
+  images, we need to remap the patches such that all patches within a kernel are
+  next to each other. Patches are next to each other if their ids are adjacent.
+  For example this patch remapping prepares the next layer to perform a 2x2
+  convolution since patches 0 1 2 3 will be next to each other in memory.
+
+    0 1 2 3           0 1 4 5
+    4 5 6 7    -->    2 3 6 7
+    8 9 10 11         8 9 12 13
+    12 13 14 15       10 11 14 15
+  **/
+
   _in_to_out = std::vector<uint32_t>(_num_patches);
   _out_to_in = std::vector<uint32_t>(_num_patches);
 
   uint32_t next_filter_length = std::sqrt(next_kernel_size);
-  uint32_t hp = std::sqrt(_num_patches);  // assumes square images
+  uint32_t num_patches_for_side =
+      std::sqrt(_num_patches);  // assumes square images
 
   uint32_t i = 0;
   std::vector<uint32_t> top_left_patch_vals;
-  while (i <=
-         _num_patches - next_filter_length - ((next_filter_length - 1) * hp)) {
+  while (i <= _num_patches - next_filter_length -
+                  ((next_filter_length - 1) * num_patches_for_side)) {
     top_left_patch_vals.push_back(i);
-    if (((i + next_filter_length) % hp) == 0) {
-      i += (next_filter_length - 1) * hp;
+    if (((i + next_filter_length) % num_patches_for_side) == 0) {
+      i += (next_filter_length - 1) * num_patches_for_side;
     }
     i += next_filter_length;
   }
@@ -371,7 +375,7 @@ void ConvLayer::buildPatchMaps(uint32_t next_kernel_size) {
         _out_to_in[new_patch] = patch;
         patch++;
       }
-      base_val += hp;
+      base_val += num_patches_for_side;
     }
   }
 }

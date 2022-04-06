@@ -10,22 +10,24 @@ class ConvLayer : public FullyConnectedLayer {
             uint32_t next_kernel_size);
 
   void forward(const BoltVector& input, BoltVector& output,
-               const BoltVector* labels);
+               const BoltVector* labels) override;
 
-  void backpropagate(BoltVector& input, BoltVector& output);
+  void backpropagate(BoltVector& input, BoltVector& output) override;
 
-  void backpropagateInputLayer(BoltVector& input, BoltVector& output);
+  void backpropagateInputLayer(BoltVector& input, BoltVector& output) override;
 
-  void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
+  void updateParameters(float lr, uint32_t iter, float B1, float B2,
+                        float eps) override;
 
-  void buildHashTables();
+  void buildHashTables() override;
 
-  void reBuildHashFunction();
+  void reBuildHashFunction() override;
 
-  BoltBatch createBatchState(const uint32_t batch_size, bool) const {
-    bool is_dense = _sparse_dim == _dim;
-    return BoltBatch(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
-  }
+  // BoltBatch createBatchState(const uint32_t batch_size, bool) const { // TODO
+  // remove virtual from FCL
+  //   bool is_dense = _sparse_dim == _dim;
+  //   return BoltBatch(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
+  // }
 
  private:
   template <bool DENSE, bool PREV_DENSE>

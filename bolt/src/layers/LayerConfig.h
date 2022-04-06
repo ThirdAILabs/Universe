@@ -5,6 +5,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::bolt {
@@ -131,6 +132,8 @@ struct FullyConnectedLayerConfig {
     }
     return out;
   }
+
+  bool isConvLayer() { return kernel_size != 0; }
 };
 
 struct EmbeddingLayerConfig {

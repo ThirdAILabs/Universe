@@ -47,9 +47,10 @@ class ConvLayerTestFixture : public testing::Test {
     for (uint32_t e = 0; e < epochs; e++) {
       network.train(_train_data, *loss_fn, learning_rate, 1, rehash, rebuild,
                     metrics);
-      result = network.predict(_test_data, nullptr, metrics, max_test_batches);
+      if (e == epochs - 1) {
+        return network.predict(_test_data, nullptr, metrics, max_test_batches);
+      }
     }
-    return result;
   }
 };
 
