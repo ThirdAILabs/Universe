@@ -38,8 +38,8 @@ class FullyConnectedLayer {
   virtual void updateParameters(float lr, uint32_t iter, float B1, float B2,
                                 float eps);
 
-  virtual BoltBatch createBatchState(const uint32_t batch_size,
-                                     bool force_dense = false) const {
+  BoltBatch createBatchState(const uint32_t batch_size,
+                             bool force_dense = false) const {
     bool is_dense = (_sparse_dim == _dim) || force_dense;
 
     return BoltBatch(is_dense ? _dim : _sparse_dim, batch_size, is_dense);

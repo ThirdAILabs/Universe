@@ -23,12 +23,6 @@ class ConvLayer : public FullyConnectedLayer {
 
   void reBuildHashFunction() override;
 
-  // BoltBatch createBatchState(const uint32_t batch_size, bool) const { // TODO
-  // remove virtual from FCL
-  //   bool is_dense = _sparse_dim == _dim;
-  //   return BoltBatch(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
-  // }
-
  private:
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output);
