@@ -65,7 +65,7 @@ def main():
         parser=parser,
         train="/data/mnist/mnist",
         test="/data/mnist/mnist.t",
-        epochs=100,
+        epochs=10,
         hashes_per_table=4,
         num_tables=64,
         sparsity=0.05,

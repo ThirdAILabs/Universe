@@ -36,7 +36,7 @@ def train(ds_train, ds_test, mlflow_logger):
     mlflow_logger.log_start_training()
     model.fit(
         ds_train,
-        epochs=6,
+        epochs=10,
         validation_data=ds_test,
         callbacks=[validation_callback],
     )
