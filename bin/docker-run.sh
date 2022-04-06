@@ -7,5 +7,6 @@ cd $BASEDIR/../
 docker run \
   --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
   -it --rm \
+  --mount type=bind,source=/share/data,target=/data \
   --mount type=bind,source=${PWD},target=/Universe thirdai/universe_dev_build \
   bash

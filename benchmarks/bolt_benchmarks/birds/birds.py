@@ -1,17 +1,9 @@
-from thirdai import bolt, dataset
-import sys
 import argparse
-from helpers import add_arguments
-import requests
-import time
-from datetime import date
+
 import numpy as np
-
-# Add the logging folder to the system path
-import sys
-
-# sys.path.insert(1, sys.path[0] + "/../../logging/")
+from helpers import add_arguments
 from mlflow_logger import ExperimentLogger
+from thirdai import bolt
 
 
 def _define_network(args):
@@ -35,11 +27,11 @@ def _define_network(args):
 
 
 def train_birds(args, network, mlflow_logger):
-    tr_emb = np.load("/media/scratch/data/birds/extracted/tr_emb1.npy")
-    tr_labels = np.load("/media/scratch/data/birds/extracted/tr_labels.npy")
+    tr_emb = np.load("/data/birds/extracted/tr_emb1.npy")
+    tr_labels = np.load("/data/birds/extracted/tr_labels.npy")
 
-    tst_emb = np.load("/media/scratch/data/birds/extracted/tst_emb.npy")
-    tst_labels = np.load("/media/scratch/data/birds/extracted/tst_labels.npy")
+    tst_emb = np.load("/data/birds/extracted/tst_emb.npy")
+    tst_labels = np.load("/data/birds/extracted/tst_labels.npy")
 
     mlflow_logger.log_start_training()
     for _ in range(args.epochs):
@@ -83,8 +75,8 @@ def main():
     # TODO(vihan): Fix the train/test paths for numpy inputs
     args = add_arguments(
         parser=parser,
-        train="/share/data/birds/train.svm",
-        test="/share/data/birds/test.svm",
+        train="/data/birds/train.svm",
+        test="/data/birds/test.svm",
         epochs=100,
         hashes_per_table=4,
         num_tables=64,
@@ -111,7 +103,8 @@ def main():
     with ExperimentLogger(
         experiment_name="Birds Benchmark",
         dataset="birds",
-        algorithm="Bolt",
+        algorithm="feedforward",
+        framework="bolt",
     ) as mlflow_logger:
         train_birds(args, network, mlflow_logger)
 

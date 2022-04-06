@@ -6,11 +6,6 @@ import requests
 import time
 from datetime import date
 import numpy as np
-
-# Add the logging folder to the system path
-import sys
-
-# sys.path.insert(1, sys.path[0] + "/../../logging/")
 from mlflow_logger import ExperimentLogger
 
 
@@ -27,7 +22,7 @@ def _define_network(args):
     return network
 
 
-def train_birds(args, network, mlflow_logger):
+def train_mnist(args, network, mlflow_logger):
     train_data = dataset.load_bolt_svm_dataset(args.train, 256)
     test_data = dataset.load_bolt_svm_dataset(args.test, 256)
 
@@ -56,7 +51,6 @@ def train_birds(args, network, mlflow_logger):
         verbose=False,
     )
 
-    print(final_accuracy)
     mlflow_logger.log_final_accuracy(final_accuracy["categorical_accuracy"][0])
 
 
@@ -69,8 +63,8 @@ def main():
     # TODO(vihan): Fix the train/test paths for numpy inputs
     args = add_arguments(
         parser=parser,
-        train="/share/data/mnist/mnist",
-        test="/share/data/mnist/mnist.t",
+        train="/data/mnist/mnist",
+        test="/data/mnist/mnist.t",
         epochs=100,
         hashes_per_table=4,
         num_tables=64,
@@ -97,9 +91,10 @@ def main():
     with ExperimentLogger(
         experiment_name="MNIST Benchmark",
         dataset="mnist",
-        algorithm="Bolt",
+        algorithm="feedforward",
+        framework="bolt",
     ) as mlflow_logger:
-        train_birds(args, network, mlflow_logger)
+        train_mnist(args, network, mlflow_logger)
 
 
 if __name__ == "__main__":

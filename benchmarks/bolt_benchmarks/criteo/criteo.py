@@ -1,13 +1,8 @@
 import argparse
-import sys
-
-from thirdai import bolt, dataset
 
 from helpers import add_arguments
-
-# Add the logging folder to the system path
-sys.path.insert(1, sys.path[0] + "/../../logging/")
 from mlflow_logger import ExperimentLogger
+from thirdai import bolt, dataset
 
 
 def _define_network(args):
@@ -73,8 +68,8 @@ def main():
 
     args = add_arguments(
         parser=parser,
-        train="/share/data/criteo/train_shuf.txt",
-        test="/share/data/criteo/test_shuf.txt",
+        train="/data/criteo/train_shuf.txt",
+        test="/data/criteo/test_shuf.txt",
         epochs=5,
         hashes_per_table=5,
         num_tables=128,
@@ -86,6 +81,7 @@ def main():
         experiment_name="Criteo Click Prediction",
         dataset="criteo",
         algorithm="DLRM",
+        framework="bolt",
     ) as mlflow_logger:
         train_criteo(args, mlflow_logger)
 
