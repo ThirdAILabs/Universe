@@ -100,7 +100,6 @@ def main():
         dataset="mnist",
         algorithm="feedforward",
         framework="PyTorch",
-
     ) as mlflow_logger:
         train(train_loader, test_loader, mlflow_logger)
 

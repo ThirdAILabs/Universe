@@ -74,7 +74,11 @@ class ExperimentLogger:
     def __enter__(self):
         mlflow.set_experiment(self.experiment_name)
         mlflow.start_run(
-            tags={"dataset": self.dataset, "algorithm": self.algorithm, "framework": self.framework},
+            tags={
+                "dataset": self.dataset,
+                "algorithm": self.algorithm,
+                "framework": self.framework,
+            },
         )
         _log_machine_info()
 
