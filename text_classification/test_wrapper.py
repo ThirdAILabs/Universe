@@ -135,7 +135,7 @@ def test_train_yelp():
 
     args = {
         "dataset": name,
-        "epochs": 2,
+        "epochs": 1,
         "lr": 0.0001,
         "sparsity": 0.1,
         "hashes_per_table": 4,
@@ -143,7 +143,7 @@ def test_train_yelp():
         "runs": 1,
     }
     args = namedtuple("args", args.keys())(*args.values())
-    train(args, train_yelp, 0.9)
+    train(args, train_yelp, 0.88)
 
 
 @pytest.mark.unit
