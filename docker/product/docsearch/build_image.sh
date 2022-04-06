@@ -12,6 +12,10 @@ PLATFORM=$1
 REV_TAG=$(git log -1 --pretty=format:%h)
 $BASEDIR/../base_jupyter/build_image.sh $PLATFORM
 
+# Download the files the container depends on 
+# For now this will only work on blade
+./download.sh
+
 cd $BASEDIR
 
 echo "================================================================="
