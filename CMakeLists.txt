@@ -23,9 +23,13 @@ add_compile_options(
   -Wno-unused-function
   -pedantic 
   
-  $<$<CONFIG:Debug>:-O0>
+  $<$<CONFIG:Debug>:-Og>
   $<$<CONFIG:Debug>:-g>
   $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
+
+  $<$<CONFIG:DebugWithAsan>:-Og>
+  $<$<CONFIG:DebugWithAsan>:-g>
+  $<$<CONFIG:DebugWithAsan>:-fno-omit-frame-pointer>
 
   $<$<CONFIG:Release>:-DNDEBUG>
   $<$<CONFIG:Release>:-O3>
@@ -38,6 +42,13 @@ add_compile_options(
   $<$<CONFIG:RelWithDebInfo>:-ftree-vectorize>
   $<$<CONFIG:RelWithDebInfo>:-g>
   $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
+
+  $<$<CONFIG:RelWithAsan>:-DNDEBUG>
+  $<$<CONFIG:RelWithAsan>:-O3>
+  $<$<CONFIG:RelWithAsan>:-funroll-loops>
+  $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
+  $<$<CONFIG:RelWithAsan>:-g>
+  $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
 )
 
 add_link_options(
@@ -52,11 +63,13 @@ add_link_options(
 # ASan does not work with GCC on M1 Macs yet. We would have to switch to clang. 
 if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64") 
   add_compile_options(
-    $<$<CONFIG:DEBUG>:-fsanitize=address>
+    $<$<CONFIG:RelWithAsan>:-fsanitize=address>
+    $<$<CONFIG:RelWithDebInfo>:-fsanitize=address>
   )
 
   add_link_options(
-    $<$<CONFIG:DEBUG>:-fsanitize=address>
+    $<$<CONFIG:RelWithAsan>:-fsanitize=address>
+    $<$<CONFIG:RelWithDebInfo>:-fsanitize=address>
   )
 endif()
 
@@ -69,6 +82,7 @@ if(${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
   add_compile_options(
     $<$<CONFIG:Release>:-march=x86-64>
     $<$<CONFIG:RelWithDebInfo>:-march=x86-64>
+    $<$<CONFIG:RelWithAsan>:-march=x86-64>
   )
 endif()
 
@@ -124,6 +138,11 @@ file(
   GLOB_RECURSE HASHTABLE_SOURCES
   hashtable/src/*.cc
 )
+
+# pybind11_add_module automatically adds debug info to RelWithDebInfo and
+# Debug builds, but not our ASan builds. This means that for now we can't run
+# ASan from python, but honestly this is more trouble than it's worth so for
+# now this is actually a feature rather than a bug.
 
 pybind11_add_module(thirdai 
   python_bindings/thirdai.cc 
