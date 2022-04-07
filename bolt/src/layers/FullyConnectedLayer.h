@@ -28,7 +28,8 @@ class FullyConnectedLayer {
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
                       uint64_t prev_dim);
 
-  virtual void forward(const BoltVector& input, BoltVector& output,
+  // TODO(david) fix nolint here with default params and layer interface
+  virtual void forward(const BoltVector& input, BoltVector& output,  // NOLINT
                        const BoltVector* labels = nullptr);
 
   virtual void backpropagate(BoltVector& input, BoltVector& output);

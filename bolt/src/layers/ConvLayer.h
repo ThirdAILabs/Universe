@@ -1,13 +1,14 @@
 #pragma once
 
 #include "FullyConnectedLayer.h"
+#include <tuple>
 
 namespace thirdai::bolt {
 class ConvLayer : public FullyConnectedLayer {
  public:
   ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
             uint32_t prev_num_filters, uint32_t prev_num_sparse_filters,
-            uint32_t next_kernel_size);
+            std::tuple<uint32_t, uint32_t> next_kernel_size);
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels) override;
@@ -35,7 +36,7 @@ class ConvLayer : public FullyConnectedLayer {
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
   void backpropagateImpl(BoltVector& input, BoltVector& output);
 
-  void buildPatchMaps(uint32_t next_kernel_size);
+  void buildPatchMaps(std::tuple<uint32_t, uint32_t> next_kernel_size);
 
   uint32_t _patch_dim, _sparse_patch_dim, _num_patches, _num_filters,
       _num_sparse_filters, _prev_num_filters, _prev_num_sparse_filters,

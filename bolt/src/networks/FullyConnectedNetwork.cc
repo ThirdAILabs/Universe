@@ -37,7 +37,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(
       uint64_t prev_num_filters;
       uint64_t prev_num_sparse_filters;
       if (i > 0) {
-        bool prev_is_conv_layer = configs[i - 1].kernel_size != 0;
+        bool prev_is_conv_layer = configs[i - 1].isConvLayer();
         if (prev_is_conv_layer) {
           prev_dim = configs[i - 1].dim * configs[i - 1].num_patches;
           prev_num_filters = configs[i - 1].dim;
@@ -56,9 +56,11 @@ FullyConnectedNetwork::FullyConnectedNetwork(
         prev_num_sparse_filters = 1;
       }
 
-      bool next_is_conv_layer = configs[i + 1].kernel_size != 0;
-      uint32_t next_kernel_size =
-          next_is_conv_layer ? configs[i + 1].kernel_size : 1;
+      bool next_is_conv_layer = configs[i + 1].isConvLayer();
+      std::tuple<uint32_t, uint32_t> next_kernel_size =
+          next_is_conv_layer ? configs[i + 1].kernel_size
+                             : std::make_tuple(static_cast<uint32_t>(1),
+                                               static_cast<uint32_t>(1));
       _layers.push_back(std::make_shared<ConvLayer>(
           configs[i], prev_dim, prev_num_filters, prev_num_sparse_filters,
           next_kernel_size));

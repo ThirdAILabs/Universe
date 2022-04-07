@@ -7,7 +7,7 @@
 namespace bolt = thirdai::bolt;
 namespace dataset = thirdai::dataset;
 
-int main() {
+int main() {  // NOLINT exceptions
   std::cout << "Starting Convolution Tests" << std::endl;
 
   std::unique_ptr<dataset::Factory<dataset::BoltInputBatch>> train_fac;
@@ -17,11 +17,9 @@ int main() {
 
   uint64_t batch_size = 1024;
   dataset::InMemoryDataset<dataset::BoltInputBatch> train_data(
-      "/Users/david/Documents/python_/train_mnist2x2.txt", batch_size,
-      std::move(*train_fac));
+      "/share/david/train_mnist2x2.txt", batch_size, std::move(*train_fac));
   dataset::InMemoryDataset<dataset::BoltInputBatch> test_data(
-      "/Users/david/Documents/python_/test_mnist2x2.txt", batch_size,
-      std::move(*test_fac));
+      "/share/david/test_mnist2x2.txt", batch_size, std::move(*test_fac));
 
   std::cout << "Finished reading train and test data" << std::endl;
 
@@ -29,7 +27,8 @@ int main() {
 
   // uint32_t kernel_size = 4 * 4;
   // uint32_t num_patches = 3136;
-  uint32_t kernel_size = 2 * 2;
+
+  std::tuple<uint32_t, uint32_t> kernel_size(2, 2);
   uint32_t num_patches = 196;
 
   layers.emplace_back(200, 1, bolt::ActivationFunction::ReLU,
@@ -47,7 +46,9 @@ int main() {
 
   layers.emplace_back(10, bolt::ActivationFunction::Softmax);
 
-  bolt::FullyConnectedNetwork network(layers, kernel_size * num_patches);
+  bolt::FullyConnectedNetwork network(
+      layers,
+      std::get<0>(kernel_size) * std::get<1>(kernel_size) * num_patches);
 
   auto loss_fn = thirdai::bolt::getLossFunction("categoricalcrossentropyloss");
   std::vector<std::string> metrics = {"categorical_accuracy"};

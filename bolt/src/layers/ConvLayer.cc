@@ -1,16 +1,17 @@
 #include "ConvLayer.h"
 #include "FullyConnectedLayer.h"
 #include <random>
+#include <tuple>
 
 namespace thirdai::bolt {
 
 ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
                      uint32_t prev_num_filters,
                      uint32_t prev_num_sparse_filters,
-                     uint32_t next_kernel_size)
+                     std::tuple<uint32_t, uint32_t> next_kernel_size)
     : _prev_num_filters(prev_num_filters),
       _prev_num_sparse_filters(prev_num_sparse_filters) {
-  if (((sqrt(config.kernel_size) - floor(sqrt(config.kernel_size))) != 0)) {
+  if (std::get<0>(config.kernel_size) != std::get<1>(config.kernel_size)) {
     throw std::invalid_argument(
         "Conv layers currently support only square kernels.");
   }
@@ -28,7 +29,8 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
 
   _num_filters = config.dim;
   _num_sparse_filters = _num_filters * _sparsity;
-  _kernel_size = config.kernel_size;
+  _kernel_size =
+      std::get<0>(config.kernel_size) * std::get<1>(config.kernel_size);
 
   _patch_dim = _kernel_size * _prev_num_filters;
   _sparse_patch_dim = _kernel_size * _prev_num_sparse_filters;
@@ -81,8 +83,9 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
   }
 }
 
-void ConvLayer::forward(const BoltVector& input, BoltVector& output,
-                        const BoltVector*) {
+void ConvLayer::forward(
+    const BoltVector& input, BoltVector& output,
+    const BoltVector*) {  // NOLINT all params should be named
   if (output.isDense()) {
     if (input.isDense()) {
       forwardImpl<true, true>(input, output);
@@ -142,7 +145,7 @@ void ConvLayer::forwardImpl(const BoltVector& input, BoltVector& output) {
                input.activations[in_idx];
       }
       assert(!std::isnan(act));
-      output.activations[out_idx] = std::max((float)0, act);
+      output.activations[out_idx] = std::max(static_cast<float>(0), act);
     }
   }
 }
@@ -332,7 +335,8 @@ void ConvLayer::buildHashTables() {
 }
 
 // this function is only called from constructor
-void ConvLayer::buildPatchMaps(uint32_t next_kernel_size) {
+void ConvLayer::buildPatchMaps(
+    std::tuple<uint32_t, uint32_t> next_kernel_size) {
   /** each patch of the input is passed through some filters to get an outout
   for that patch. that patch output needs to be placed somewhere in memory that
   is efficient for the next kernel size. Since we are dealing with flattened
@@ -346,11 +350,15 @@ void ConvLayer::buildPatchMaps(uint32_t next_kernel_size) {
     8 9 10 11         8 9 12 13
     12 13 14 15       10 11 14 15
   **/
+  if (std::get<0>(next_kernel_size) != std::get<1>(next_kernel_size)) {
+    throw std::invalid_argument(
+        "Conv layers currently support only square kernels.");
+  }
 
   _in_to_out = std::vector<uint32_t>(_num_patches);
   _out_to_in = std::vector<uint32_t>(_num_patches);
 
-  uint32_t next_filter_length = std::sqrt(next_kernel_size);
+  uint32_t next_filter_length = std::get<0>(next_kernel_size);
   uint32_t num_patches_for_side =
       std::sqrt(_num_patches);  // assumes square images
 
