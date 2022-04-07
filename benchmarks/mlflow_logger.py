@@ -78,9 +78,9 @@ class ExperimentLogger:
                 "dataset": self.dataset,
             },
         )
-        
-        mlflow.log_param('algorithm', self.algorithm)
-        mlflow.log_param('framework', self.framework)
+
+        mlflow.log_param("algorithm", self.algorithm)
+        mlflow.log_param("framework", self.framework)
 
         _log_machine_info()
 
