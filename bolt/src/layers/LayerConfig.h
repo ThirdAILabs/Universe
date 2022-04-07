@@ -131,7 +131,7 @@ struct FullyConnectedLayerConfig {
     }
     if (config.isConvLayer()) {
       out << ", kernel_width=" << std::get<0>(config.kernel_size)
-          << ", kernel_width=" << std::get<1>(config.kernel_size)
+          << ", kernel_height=" << std::get<1>(config.kernel_size)
           << ", num_patches=" << config.num_patches;
     }
     return out;

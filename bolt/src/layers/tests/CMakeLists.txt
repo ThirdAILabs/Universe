@@ -16,15 +16,6 @@ target_link_libraries(
   gtest_main
 )
 
-add_executable(conv_layer_test ConvLayerTest.cc)
-target_link_libraries(
-  conv_layer_test 
-  PRIVATE 
-  bolt_layer_lib
-  bolt_network_lib
-  gtest_main
-)
-
 add_executable(bolt_vector_test BoltVectorTest.cc)
 target_link_libraries(
   bolt_vector_test
