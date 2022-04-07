@@ -34,6 +34,5 @@ target_link_libraries(
 include(GoogleTest)
 gtest_discover_tests(fully_connected_layer_test)
 gtest_discover_tests(embedding_layer_test)
-gtest_discover_tests(conv_layer_test)
 gtest_discover_tests(bolt_vector_test)
 gtest_discover_tests(bolt_layer_test_utils_test)
