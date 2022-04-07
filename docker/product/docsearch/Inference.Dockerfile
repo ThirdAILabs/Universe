@@ -1,15 +1,17 @@
 ARG REV_TAG
-FROM thirdai_jupyter_release:${REV_TAG}
-LABEL Description="Document Search"
-SHELL ["/bin/bash", "-c"]
-
-USER root
-RUN apt-get -y update ; apt-get -y install git ;
+FROM thirdai_slim_release:${REV_TAG}
+LABEL Description="Document Search Inference"
 
 USER thirdai
-ADD ColBERT saved 
+ADD ColBERT saved
+COPY docsearch_flask_app.py .
 RUN \
-  pip3 install torch tqdm ujson GitPython transformers faiss-cpu pandas ipywidgets; \  
-# Install ColBERT wrapper
+  # Install ColBERT wrapper
+  pip3 install flask ; \
   cd saved ; \
   pip3 install . 
+
+# Set default starting script, which runs a flask server that serves the
+# maxflash index mounted to /home/thirdai/index on the port 5000
+ENV FLASK_APP docsearch_flask_app
+CMD flask run
