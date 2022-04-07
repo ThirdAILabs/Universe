@@ -21,8 +21,7 @@ def setup_module():
 
 def build_sparse_output_layer_network():
     layers = [
-        bolt.LayerConfig(
-            dim=256, activation_function=bolt.ActivationFunctions.ReLU),
+        bolt.LayerConfig(dim=256, activation_function=bolt.ActivationFunctions.ReLU),
         bolt.LayerConfig(
             dim=10,
             load_factor=0.4,
@@ -52,8 +51,7 @@ def build_sparse_hidden_layer_network(dim, sparsity):
                 reservoir_size=32,
             ),
         ),
-        bolt.LayerConfig(
-            dim=10, activation_function=bolt.ActivationFunctions.Softmax),
+        bolt.LayerConfig(dim=10, activation_function=bolt.ActivationFunctions.Softmax),
     ]
     network = bolt.Network(layers=layers, input_dim=784)
     return network
@@ -68,7 +66,7 @@ def train_network(network, train_data, epochs, learning_rate=LEARNING_RATE):
         rehash=3000,
         rebuild=10000,
         metrics=[],
-        verbose=True
+        verbose=True,
     )
     return times
 
@@ -87,11 +85,9 @@ def test_mnist_sparse_output_layer():
 
     train_network(network, train_data=train, epochs=10)
 
-    acc, _ = network.predict(
-        test, metrics=["categorical_accuracy"], verbose=False
-    )
+    acc, _ = network.predict(test, metrics=["categorical_accuracy"], verbose=False)
 
-    assert acc['categorical_accuracy'][0] >= 0.95
+    assert acc["categorical_accuracy"][0] >= 0.95
 
 
 @pytest.mark.integration
@@ -102,11 +98,9 @@ def test_mnist_sparse_hidden_layer():
 
     train_network(network, train_data=train, epochs=10)
 
-    acc, _ = network.predict(
-        test, metrics=["categorical_accuracy"], verbose=False
-    )
+    acc, _ = network.predict(test, metrics=["categorical_accuracy"], verbose=False)
 
-    assert acc['categorical_accuracy'][0] >= 0.95
+    assert acc["categorical_accuracy"][0] >= 0.95
 
 
 @pytest.mark.integration
@@ -125,7 +119,7 @@ def test_mnist_sparse_inference():
             rehash=3000,
             rebuild=10000,
             metrics=[],
-            verbose=True
+            verbose=True,
         )
         dense_predict, _ = network.predict(
             test, metrics=["categorical_accuracy"], verbose=True
@@ -135,7 +129,7 @@ def test_mnist_sparse_inference():
         test, metrics=["categorical_accuracy"], verbose=True
     )
 
-    assert dense_predict['categorical_accuracy'][0] >= 0.95
+    assert dense_predict["categorical_accuracy"][0] >= 0.95
 
     network.enable_sparse_inference()
 
