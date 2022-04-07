@@ -5,7 +5,7 @@ cd $BASEDIR/../
 # Run with --cap-add and --security-opt to be able to trace exectuion, see
 # https://stackoverflow.com/questions/19215177/how-to-solve-ptrace-operation-not-permitted-when-trying-to-attach-gdb-to-a-pro
 
-DATADIR="/shared/data"
+DATADIR="/share/data"
 if [ -d "${DATADIR}" ]; then
     docker run \
       --privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \

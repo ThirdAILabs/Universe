@@ -42,7 +42,7 @@ def compute_validation_accuracy(model, test_loader):
             n_samples += labels.size(0)
             n_correct += (predicted == labels).sum().item()
 
-    return 100.0 * n_correct / n_samples
+    return n_correct / n_samples
 
 
 def train(train_loader, test_loader, mlflow_logger):

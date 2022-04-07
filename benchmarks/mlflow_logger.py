@@ -76,10 +76,12 @@ class ExperimentLogger:
         mlflow.start_run(
             tags={
                 "dataset": self.dataset,
-                "algorithm": self.algorithm,
-                "framework": self.framework,
             },
         )
+        
+        mlflow.log_param('algorithm', self.algorithm)
+        mlflow.log_param('framework', self.framework)
+
         _log_machine_info()
 
         if self.experiment_args:
