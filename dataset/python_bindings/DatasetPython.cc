@@ -486,7 +486,6 @@ parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
     }
   }
 
-
   auto result = py::array_t<uint32_t>(idx_to_val_map.size());
   py::buffer_info indx_buf = result.request();
   uint32_t* indx_ptr = static_cast<uint32_t*>(indx_buf.ptr);
