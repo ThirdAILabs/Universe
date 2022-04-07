@@ -14,4 +14,4 @@ RUN \
 # Set default starting script, which runs a flask server that serves the
 # maxflash index mounted to /home/thirdai/index on the port 5000
 ENV FLASK_APP docsearch_flask_app
-CMD flask run
+CMD python3 -m flask run
