@@ -10,7 +10,8 @@ namespace thirdai::bolt::tests {
 
 class ConvLayerTestFixture : public testing::Test {
  public:
-  uint32_t _kernel_size = 2 * 2;
+  std::tuple<uint32_t, uint32_t> _kernel_size =
+      std::make_tuple(static_cast<uint32_t>(0), static_cast<uint32_t>(0));
   uint32_t _num_patches_l1 = 196;
   uint32_t _num_patches_l2 = 49;
   std::unique_ptr<dataset::Factory<dataset::BoltInputBatch>> train_fac =
@@ -30,8 +31,11 @@ class ConvLayerTestFixture : public testing::Test {
         _test_data("/home/david/data/test_mnist2x2.txt", _batch_size,
                    std::move(*test_fac)) {}
 
-  MetricData trainNetwork(std::vector<bolt::FullyConnectedLayerConfig> layers) {
-    bolt::FullyConnectedNetwork network(layers, _kernel_size * _num_patches_l1);
+  MetricData trainNetwork(
+      std::vector<bolt::FullyConnectedLayerConfig>& layers) {
+    bolt::FullyConnectedNetwork network(layers, std::get<0>(_kernel_size) *
+                                                    std::get<1>(_kernel_size) *
+                                                    _num_patches_l1);
 
     auto loss_fn =
         thirdai::bolt::getLossFunction("categoricalcrossentropyloss");
@@ -47,10 +51,9 @@ class ConvLayerTestFixture : public testing::Test {
     for (uint32_t e = 0; e < epochs; e++) {
       network.train(_train_data, *loss_fn, learning_rate, 1, rehash, rebuild,
                     metrics);
-      if (e == epochs - 1) {
-        return network.predict(_test_data, nullptr, metrics, max_test_batches);
-      }
+      result = network.predict(_test_data, nullptr, metrics, max_test_batches);
     }
+    return result;  // should never get here
   }
 };
 
