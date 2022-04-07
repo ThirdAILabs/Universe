@@ -21,7 +21,7 @@ cd $BASEDIR
 echo "================================================================="
 echo "Building docker thirdai_docsearch_release:${REV_TAG} with platform $PLATFORM"
 echo "================================================================="
-docker build --platform=$PLATFORM --build-arg REV_TAG=${REV_TAG} . -t thirdai_docsearch_release:${REV_TAG}
+docker build --platform=$PLATFORM --build-arg REV_TAG=${REV_TAG} . -t thirdai_docsearch_release:${REV_TAG} -f Interactive.Dockerfile
 echo "================================================================="
 echo "Built docker thirdai_docsearch_release:${REV_TAG} with platform $PLATFORM"
 echo "================================================================="

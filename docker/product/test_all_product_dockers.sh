@@ -11,8 +11,15 @@ BASEDIR=$(pwd)
 
 REV_TAG=$(git log -1 --pretty=format:%h)
 
-docker run --privileged -t thirdai_slim_release:$REV_TAG /bin/bash -c "pytest ."
-docker run --privileged -t thirdai_jupyter_release:$REV_TAG /bin/bash -c "pytest ."
+docker images | grep $REV_TAG | while read -r line ; do
 
-docker run --privileged -t thirdai_docsearch_release:$REV_TAG /bin/bash -c "pytest ."
-docker run --privileged -t thirdai_text_classification_release:$REV_TAG /bin/bash -c "pytest ."
+  IMAGE_AND_TAG = $($line | tr -s [:space:] : | cut -f1,2 -d':')
+  echo "Testing $IMAGE_AND_TAG"
+
+done
+
+# docker run --privileged -t thirdai_slim_release:$REV_TAG /bin/bash -c "pytest ."
+# docker run --privileged -t thirdai_jupyter_release:$REV_TAG /bin/bash -c "pytest ."
+
+# docker run --privileged -t thirdai_docsearch_release:$REV_TAG /bin/bash -c "pytest ."
+# docker run --privileged -t thirdai_text_classification_release:$REV_TAG /bin/bash -c "pytest ."

@@ -10,6 +10,7 @@ PLATFORM=$1
 
 # Go out to Universe folder for archive
 cd ../../../
+
 # Archive the current branch into a zipped file. This can then be
 # added directly into the first stage of DocSearch Docker build 
 # (we don't include it in the final stage, instead we include
