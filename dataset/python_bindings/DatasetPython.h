@@ -89,6 +89,13 @@ InMemoryDataset<BoltInputBatch> sparseBoltDatasetFromNumpy(
         y_offsets,
     uint32_t batch_size);
 
+/*
+ * This function takes a single sentence, and parses it into an sparse
+ * vector of features. Right now it only supports the following parsing:
+ * unigram tokenizer + murmurhash tokens into indices.
+ * This function returns a tuple of python arrays, where the first array is the
+ * indices of the features in the dataset, and the second array is the values.
+ */
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
 parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
                            uint32_t dimension);

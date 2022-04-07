@@ -473,11 +473,6 @@ parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
   std::istream_iterator<std::string> end;
   std::vector<std::string> tokens(begin, end);
 
-  // std::cout << "TEST PRINT TOKENS" << std::endl;
-  // for (auto &s: tokens) {
-  //       std::cout << s << std::endl;
-  // }
-
   std::unordered_map<uint32_t, uint32_t> idx_to_val_map;
 
   for (auto& s : tokens) {
@@ -491,7 +486,6 @@ parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
     }
   }
 
-  // std::cout << "MAP SIZE " << idx_to_val_map.size() << std::endl;
 
   auto result = py::array_t<uint32_t>(idx_to_val_map.size());
   py::buffer_info indx_buf = result.request();

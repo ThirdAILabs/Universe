@@ -15,7 +15,10 @@ model_path = "./sentiment_pretrained_yelp_cp"
 murmur_dim = 100000
 seed = 42
 
-
+# Download and proprocess a dataset using Huggingface api
+# Need to specify the dataset name, content name, label name for
+# each dataset. You can find the specifics of each dataset on the
+# Huggingface website. https://huggingface.co/datasets
 def download_dataset(
     name, svm_path_1, svm_path_2, content_name, label_name, extra=None
 ):
@@ -24,26 +27,23 @@ def download_dataset(
 
     fw_1 = open(svm_path_1, "w")
     fw_2 = open(svm_path_2, "w")
-    f_lst = (fw_1, fw_2)
-    d_lst = (dataset_1, dataset_2)
 
-    for data_ind in range(2):
-        data_set = d_lst[data_ind]
-        fw = f_lst[data_ind]
+    for data_set, fw in zip([dataset_1, dataset_2], [fw_1, fw_2]):
         for data in data_set:
-            label_ori = label_dict[data[label_name]]
-            if label_ori == -1:
+            # Map the star rating (0~5) to a sentiment label(0~1)
+            original_label = label_dict[data[label_name]]
+            if original_label == -1:
                 continue
-            label = str(label_ori)
+            label = str(original_label)
             fw.write(str(label) + " ")
 
-            sentence = data[
-                content_name
-            ]  # "content" for dbpedia & amazon_polarity, "text" for ag_news
+            sentence = data[content_name]
+            # Remove punctuations and convert to lowercase
             sentence = re.sub(r"[^\w\s]", "", sentence)
             sentence = sentence.lower()
 
-            tup = dataset.bolt_tokenizer(sentence)
+            # Tokenize the sentence and featurized it
+            tup = dataset.bolt_tokenizer(sentence, seed=seed, dimension=murmur_dim)
             for idx, val in zip(tup[0], tup[1]):
                 fw.write(str(idx) + ":" + str(val) + " ")
 
@@ -53,6 +53,7 @@ def download_dataset(
     fw_2.close()
 
 
+# A generic bolt training test function imported from our mnist test.
 def train(
     args,
     train_fn,
@@ -82,6 +83,7 @@ def train(
     return final_accuracies, final_epoch_times
 
 
+# An example of the "train_fn" in train()
 def train_yelp(args):
     layers = [
         bolt.LayerConfig(
@@ -129,6 +131,7 @@ def train_yelp(args):
     return epoch_accuracies[-1], epoch_accuracies, epoch_times
 
 
+# Benchmark for sentiment prediction on the yelp_review_full dataset
 @pytest.mark.unit
 def test_train_yelp():
     download_dataset(name, train_file_path, test_file_path, content, label)
@@ -146,18 +149,42 @@ def test_train_yelp():
     train(args, train_yelp, 0.88)
 
 
+# Test to make sure that the prediction wrapper is working properly
 @pytest.mark.unit
 def test_predict_sentence_sentiment():
     sentiment_analysis_network = bolt.Network.load(filename=model_path)
     assert (
         predict_sentence_sentiment(
-            sentiment_analysis_network, "I love this great product very much"
+            sentiment_analysis_network, "I love this great product very much", seed=seed
         )
         == 1
     )
     assert (
         predict_sentence_sentiment(
-            sentiment_analysis_network, "I hate this terrible product, not worth it"
+            sentiment_analysis_network,
+            "I hate this terrible product, not worth it",
+            seed=seed,
         )
         == 0
     )
+
+
+# Test to make sure that the preprocess function is working properly
+@pytest.mark.unit
+def test_preprocess():
+    rows = [
+        ["pos", "I love this great product very much"],
+        ["neg", "I hate this terrible product, not worth it"],
+    ]
+    with open("mock.csv", "w", encoding="UTF8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerows(rows)
+
+    location = preprocess_data("mock.csv", is_train=False)
+
+    sentiment_analysis_network = bolt.Network.load(filename=model_path)
+    test_data = dataset.load_bolt_svm_dataset(location, 256)
+    acc, _ = sentiment_analysis_network.predict(
+        test_data, metrics=["categorical_accuracy"], verbose=False
+    )
+    assert acc["categorical_accuracy"][0] > 0.5
