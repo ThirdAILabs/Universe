@@ -15,13 +15,16 @@ model_path = "./sentiment_pretrained_yelp_cp"
 murmur_dim = 100000
 seed = 42
 
-# Download and proprocess a dataset using Huggingface api
-# Need to specify the dataset name, content name, label name for
-# each dataset. You can find the specifics of each dataset on the
-# Huggingface website. https://huggingface.co/datasets
+
 def download_dataset(
     name, svm_path_1, svm_path_2, content_name, label_name, extra=None
 ):
+    """
+    Download and proprocess a dataset using Huggingface api
+    Need to specify the dataset name, content name, label name for
+    each dataset. You can find the specifics of each dataset on the
+    Huggingface website. https://huggingface.co/datasets
+    """
     dataset_1 = load_dataset(name, extra, split="train")
     dataset_2 = load_dataset(name, extra, split="test")
 
@@ -53,7 +56,6 @@ def download_dataset(
     fw_2.close()
 
 
-# A generic bolt training test function imported from our mnist test.
 def train(
     args,
     train_fn,
@@ -61,6 +63,9 @@ def train(
     epoch_time_threshold=600,
     total_time_threshold=2000,
 ):
+    """
+    A generic bolt training test function imported from our mnist test.
+    """
     final_accuracies = []
     final_epoch_times = []
     total_times = []
@@ -83,8 +88,10 @@ def train(
     return final_accuracies, final_epoch_times
 
 
-# An example of the "train_fn" in train()
 def train_yelp(args):
+    """
+    An example of the "train_fn" in train()
+    """
     layers = [
         bolt.LayerConfig(
             dim=2000,
@@ -131,9 +138,11 @@ def train_yelp(args):
     return epoch_accuracies[-1], epoch_accuracies, epoch_times
 
 
-# Benchmark for sentiment prediction on the yelp_review_full dataset
 @pytest.mark.unit
 def test_train_yelp():
+    """
+    Benchmark for sentiment prediction on the yelp_review_full dataset
+    """
     download_dataset(name, train_file_path, test_file_path, content, label)
 
     args = {
@@ -149,9 +158,11 @@ def test_train_yelp():
     train(args, train_yelp, 0.88)
 
 
-# Test to make sure that the prediction wrapper is working properly
 @pytest.mark.unit
 def test_predict_sentence_sentiment():
+    """
+    Test to make sure that the prediction wrapper is working properly
+    """
     sentiment_analysis_network = bolt.Network.load(filename=model_path)
     assert (
         predict_sentence_sentiment(
@@ -169,9 +180,11 @@ def test_predict_sentence_sentiment():
     )
 
 
-# Test to make sure that the preprocess function is working properly
 @pytest.mark.unit
 def test_preprocess():
+    """
+    Test to make sure that the preprocess function is working properly
+    """
     rows = [
         ["pos", "I love this great product very much"],
         ["neg", "I hate this terrible product, not worth it"],

@@ -4,9 +4,12 @@ import csv
 import mmh3
 import re
 
-# Wrapper for predicting the sentiment of one sentence. User specifies the network
-# and the sentence to be predicted. Returns 1 for positive, 0 for negative.
+
 def predict_sentence_sentiment(network: bolt.Network, text, seed=42):
+    """
+    Wrapper for predicting the sentiment of one sentence. User specifies the network
+    and the sentence to be predicted. Returns 1 for positive, 0 for negative.
+    """
     feat_hash_dim = 100000
 
     # Remove punctuations and convert to lowercase
@@ -38,11 +41,13 @@ def predict_sentence_sentiment(network: bolt.Network, text, seed=42):
     return 1 if pred > 0 else 0
 
 
-# Wrapper for preprocessing text file into svm format. The function accepts .csv file
-# with two columns, where the first column is a single word "pos" or "neg", and the
-# second column is the sentence.
-# The function returns the path to the svm file.
 def preprocess_data(file_name, is_train, target_location=None, seed=42):
+    """
+    Wrapper for preprocessing text file into svm format. The function accepts .csv file
+    with two columns, where the first column is a single word "pos" or "neg", and the
+    second column is the sentence.
+    The function returns the path to the svm file.
+    """
     dimension = 100000
     if file_name.find(".csv") == -1:
         raise ValueError("Only .csv files are supported")
