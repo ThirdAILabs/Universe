@@ -27,10 +27,6 @@ To build all product Dockerfiles, run
 ```bash
 ./build_all_product_dockers.sh <optional platform arg>
 ```
-To save and zip all product Dockerfiles to this directory (this also builds them), run
- ```bash
-./save_all_product_dockers.sh <optional platform arg>
-```
 To test all product Dockerfiles to this directory (this also builds them), run
  ```bash
 ./test_all_product_dockers.sh <optional platform arg>

@@ -19,9 +19,9 @@ $BASEDIR/../base_jupyter/build_image.sh $PLATFORM
 cd $BASEDIR
 
 echo "================================================================="
-echo "Building docker thirdai_docsearch_release:${REV_TAG} with platform $PLATFORM"
+echo "Building docker thirdai_docsearch_inference:${REV_TAG} with platform $PLATFORM"
 echo "================================================================="
 docker build --platform=$PLATFORM --build-arg REV_TAG=${REV_TAG} . -t thirdai_docsearch_inference:${REV_TAG} -f Inference.Dockerfile
 echo "================================================================="
-echo "Built docker thirdai_docsearch_release:${REV_TAG} with platform $PLATFORM"
+echo "Built docker thirdai_docsearch_inference:${REV_TAG} with platform $PLATFORM"
 echo "================================================================="

@@ -11,15 +11,16 @@ BASEDIR=$(pwd)
 
 REV_TAG=$(git log -1 --pretty=format:%h)
 
+# Loop through all Docker images ending with REV_TAG (we assume that all valid
+# images to test end with this)
 docker images | grep $REV_TAG | while read -r line ; do
 
-  IMAGE_AND_TAG = $($line | tr -s [:space:] : | cut -f1,2 -d':')
+  # Parse the docker images output by replacing the spaces with colons and 
+  # removing everything after the last colon
+  IMAGE_AND_TAG=$(echo $line | tr -s [:space:] : | cut -f1,2 -d':')
   echo "Testing $IMAGE_AND_TAG"
 
+  # Run tests on the image
+  docker run --privileged -t $IMAGE_AND_TAG /bin/bash -c "pytest ."
+
 done
-
-# docker run --privileged -t thirdai_slim_release:$REV_TAG /bin/bash -c "pytest ."
-# docker run --privileged -t thirdai_jupyter_release:$REV_TAG /bin/bash -c "pytest ."
-
-# docker run --privileged -t thirdai_docsearch_release:$REV_TAG /bin/bash -c "pytest ."
-# docker run --privileged -t thirdai_text_classification_release:$REV_TAG /bin/bash -c "pytest ."
