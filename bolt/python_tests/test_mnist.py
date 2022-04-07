@@ -66,7 +66,7 @@ def train_network(network, train_data, epochs, learning_rate=LEARNING_RATE):
         rehash=3000,
         rebuild=10000,
         metrics=[],
-        verbose=True,
+        verbose=False,
     )
     return times
 
@@ -109,24 +109,10 @@ def test_mnist_sparse_inference():
 
     train, test = load_mnist()
 
-    # train_network(network, train_data=train, epochs=10)
-    for i in range(10):
-        network.train(
-            train,
-            bolt.CategoricalCrossEntropyLoss(),
-            LEARNING_RATE,
-            1,
-            rehash=3000,
-            rebuild=10000,
-            metrics=[],
-            verbose=True,
-        )
-        dense_predict, _ = network.predict(
-            test, metrics=["categorical_accuracy"], verbose=True
-        )
+    train_network(network, train_data=train, epochs=9)
 
     dense_predict, _ = network.predict(
-        test, metrics=["categorical_accuracy"], verbose=True
+        test, metrics=["categorical_accuracy"], verbose=False
     )
 
     assert dense_predict["categorical_accuracy"][0] >= 0.95
@@ -136,7 +122,7 @@ def test_mnist_sparse_inference():
     train_network(network, train_data=train, epochs=1)
 
     sparse_predict, _ = network.predict(
-        test, metrics=["categorical_accuracy"], verbose=True
+        test, metrics=["categorical_accuracy"], verbose=False
     )
 
     assert sparse_predict["categorical_accuracy"][0] >= 0.9
