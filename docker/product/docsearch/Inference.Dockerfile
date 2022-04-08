@@ -6,8 +6,10 @@ USER thirdai
 ADD ColBERT saved
 COPY docsearch_flask_app.py .
 RUN \
-  # Install ColBERT wrapper
+  # Install flask for the webserver
   pip3 install flask ; \
+  # Install ColBERT model and dependencies
+  pip3 install torch transformers ujson; \  
   cd saved ; \
   pip3 install . 
 
