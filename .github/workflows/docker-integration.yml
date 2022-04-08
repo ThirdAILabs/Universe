@@ -21,7 +21,10 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
-      - name: Build and test the product Docker images
+      - name: Build product Docker images
         run: |
           pip3 install git-archive-all
-          docker/product/test_all_product_dockers.sh
+          docker/product/build_all_product_dockers.sh
+
+      - name: Test product Docker images
+        run: docker/product/test_all_product_dockers.sh

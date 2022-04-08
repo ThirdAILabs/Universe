@@ -2,7 +2,7 @@
 # runner working
 
 ARG REV_TAG
-FROM thirdai_slim_interactive:${REV_TAG}
+FROM thirdai_slim:${REV_TAG}
 LABEL Description="Document Search Inference"
 
 USER thirdai

@@ -57,3 +57,12 @@ and rerun the build command.
 
 See thirdai.com/resources/documentation/dockerimages/ (or if this isn't up
 yet see https://www.notion.so/Use-ThirdAI-Docker-Container-c3524be84fec486f92122caff6ad4696).
+
+## How do I create a new Dockerfile?
+
+To make a new Interactive Dockerfile, create an Interactive.Dockerfile and a
+build_interactive_image.sh script modeled off of one of the existing ones
+(e.g. docsearch). Then simply add the build command to build_all_product_dockers.sh
+and increment the expected count in build_all_product_dockers.sh by 1. A new
+Inference Dockerfile can be created in a very similar way by going off of the
+existing examples.
