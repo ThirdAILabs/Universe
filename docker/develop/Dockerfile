@@ -28,6 +28,8 @@ RUN apt update ; DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends i
     toml \
     psutil \
     ipython \
+    datasets \
+    mmh3 \
     tensorflow \
     tensorflow-datasets \
     torch \
