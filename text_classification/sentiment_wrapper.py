@@ -68,7 +68,7 @@ def preprocess_data(file_name, is_train, target_location=None, seed=42):
         sentence = re.sub(r"[^\w\s]", "", line[1])
         sentence = sentence.lower()
 
-        # Tokenize the sentence and featurized it
+        # Tokenize the sentence and write to file in SVM format"
         tup = dataset.bolt_tokenizer(sentence, seed=seed, dimension=dimension)
         for idx, val in zip(tup[0], tup[1]):
             fw.write(str(idx) + ":" + str(val) + " ")

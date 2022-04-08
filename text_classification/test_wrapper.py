@@ -64,7 +64,8 @@ def train(
     total_time_threshold=2000,
 ):
     """
-    A generic bolt training test function imported from our mnist test.
+    A generic bolt training test function that make assertions about training times and accuracies
+    for results obtained from running bolt mlp.
     """
     final_accuracies = []
     final_epoch_times = []
@@ -90,7 +91,8 @@ def train(
 
 def train_yelp(args):
     """
-    An example of the "train_fn" in train()
+    A training and evaluation routine for sentiment analysis on the Yelp Reviews dataset.
+    This function is to be used as the "train_fn" argument to train().
     """
     layers = [
         bolt.LayerConfig(
@@ -161,7 +163,7 @@ def test_train_yelp():
 @pytest.mark.unit
 def test_predict_sentence_sentiment():
     """
-    Test to make sure that the prediction wrapper is working properly
+    Test to make sure that the prediction wrapper correctly identifies the sentiment of simple sentences.
     """
     sentiment_analysis_network = bolt.Network.load(filename=model_path)
     assert (
@@ -183,7 +185,7 @@ def test_predict_sentence_sentiment():
 @pytest.mark.unit
 def test_preprocess():
     """
-    Test to make sure that the preprocess function is working properly
+    Checks that the preprocess function properly parses and featurizes the input file.
     """
     rows = [
         ["pos", "I love this great product very much"],
