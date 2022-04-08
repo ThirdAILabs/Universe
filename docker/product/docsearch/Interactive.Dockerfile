@@ -1,5 +1,5 @@
 ARG REV_TAG
-FROM thirdai_jupyter_release:${REV_TAG}
+FROM thirdai_jupyter_interactive:${REV_TAG}
 LABEL Description="Document Search"
 SHELL ["/bin/bash", "-c"]
 

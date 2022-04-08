@@ -10,7 +10,6 @@ PLATFORM=$1
 
 # Build the base jupyter image since we depend on it
 REV_TAG=$(git log -1 --pretty=format:%h)
-$BASEDIR/../base_jupyter/build_image.sh $PLATFORM
 
 # Download the files the container depends on 
 # For now this will only work on blade
@@ -19,9 +18,9 @@ $BASEDIR/../base_jupyter/build_image.sh $PLATFORM
 cd $BASEDIR
 
 echo "================================================================="
-echo "Building docker thirdai_docsearch_release:${REV_TAG} with platform $PLATFORM"
+echo "Building docker thirdai_docsearch_interactive:${REV_TAG} with platform $PLATFORM"
 echo "================================================================="
-docker build --platform=$PLATFORM --build-arg REV_TAG=${REV_TAG} . -t thirdai_docsearch_release:${REV_TAG} -f Interactive.Dockerfile
+docker build --platform=$PLATFORM --build-arg REV_TAG=${REV_TAG} . -t thirdai_docsearch_interactive:${REV_TAG} -f Interactive.Dockerfile
 echo "================================================================="
-echo "Built docker thirdai_docsearch_release:${REV_TAG} with platform $PLATFORM"
+echo "Built docker thirdai_docsearch_interactive:${REV_TAG} with platform $PLATFORM"
 echo "================================================================="

@@ -8,9 +8,7 @@ BASEDIR=$(pwd)
 
 PLATFORM=$1
 
-# Build the base jupyter image since we depend on it
 REV_TAG=$(git log -1 --pretty=format:%h)
-$BASEDIR/../base_jupyter/build_image.sh $PLATFORM
 
 # Download the files the container depends on 
 # For now this will only work on blade

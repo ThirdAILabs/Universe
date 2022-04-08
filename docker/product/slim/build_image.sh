@@ -21,9 +21,9 @@ REV_TAG=$(git log -1 --pretty=format:%h)
 
 cd $BASEDIR
 echo "================================================================="
-echo "Building docker image thirdai_slim_release:${REV_TAG} with platform $PLATFORM"
+echo "Building docker image thirdai_slim_interactive:${REV_TAG} with platform $PLATFORM"
 echo "================================================================="
-docker build --platform=$PLATFORM . -t thirdai_slim_release:$REV_TAG
+docker build --platform=$PLATFORM . -t thirdai_slim_interactive:$REV_TAG
 echo "================================================================="
-echo "Built docker image thirdai_slim_release:${REV_TAG} with platform $PLATFORM"
+echo "Built docker image thirdai_slim_interactive:${REV_TAG} with platform $PLATFORM"
 echo "================================================================="
