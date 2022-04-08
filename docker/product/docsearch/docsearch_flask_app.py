@@ -10,6 +10,7 @@ embedding_model = DocSearchModel()
 index_to_query = DocRetrieval.deserialize_from_file("/home/thirdai/index")
 
 from flask import Flask
+from flask import request
 app = Flask(__name__)
 
 @app.route('/documents', methods=["GET"])

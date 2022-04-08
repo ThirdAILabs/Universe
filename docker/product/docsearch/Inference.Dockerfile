@@ -14,6 +14,7 @@ RUN \
   pip3 install . 
 
 # Set default starting script, which runs a flask server that serves the
-# maxflash index mounted to /home/thirdai/index on the port 5000
+# maxflash index mounted to /home/thirdai/index on the port 5000. Set timeout
+# to 500 seconds to allow load
 ENV FLASK_APP docsearch_flask_app
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "-w", "1", "docsearch_flask_app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "-w", "1", "--timeout", "500",  "docsearch_flask_app:app"]
