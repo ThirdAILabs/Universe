@@ -52,4 +52,6 @@ def perform_query_top_1():
 
     result = index_to_query.query(query_embedding, top_k=internal_top_k)
 
-    return jsonify(results=[r[0] for r in result[:top_k]])
+    # We return the second element in each item of the results because 
+    # the first element is the doc_id and the second is the doc_text
+    return jsonify(results=[r[1] for r in result[:top_k]])
