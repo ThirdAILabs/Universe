@@ -13,7 +13,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  cpp-tests:
+  cpp-release-tests:
     runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
@@ -26,4 +26,20 @@ jobs:
       - name: Run all c++ tests
         run: |
           docker build -t test_image -f docker/develop/Dockerfile .  
-          docker run --privileged --mount type=bind,source=${PWD},target=/src test_image /bin/bash -c "src/bin/build.sh all Debug ; src/bin/cpp-test.sh -V"
+          docker run --privileged --mount type=bind,source=${PWD},target=/src test_image /bin/bash -c "src/bin/build.sh all ; src/bin/cpp-test.sh -V"
+          
+  cpp-asan-tests:
+    runs-on: ubuntu-latest
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
+      # the rest of the steps
+      - uses: actions/checkout@v2
+        with:           
+          submodules: 'recursive'
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+          
+      - name: Run all c++ tests
+        run: |
+          docker build -t test_image -f docker/develop/Dockerfile .  
+          docker run --privileged --mount type=bind,source=${PWD},target=/src test_image /bin/bash -c "src/bin/build.sh all RelWithAsan ; src/bin/cpp-test.sh -V"
+

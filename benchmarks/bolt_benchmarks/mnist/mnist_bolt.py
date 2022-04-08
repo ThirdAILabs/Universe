@@ -6,49 +6,32 @@ import requests
 import time
 from datetime import date
 import numpy as np
-
-# Add the logging folder to the system path
-import sys
-
-sys.path.insert(1, sys.path[0] + "/../../logging/")
 from mlflow_logger import ExperimentLogger
 
 
 def _define_network(args):
     layers = [
         bolt.LayerConfig(
-            dim=3000,
+            dim=256,
             activation_function=bolt.ActivationFunctions.ReLU,
-            load_factor=args.sparsity,
-            sampling_config=bolt.SamplingConfig(
-                hashes_per_table=args.hashes_per_table,
-                num_tables=args.num_tables,
-                range_pow=14,
-                reservoir_size=32,
-            ),
         ),
-        bolt.LayerConfig(dim=100, activation_function=bolt.ActivationFunctions.Softmax),
+        bolt.LayerConfig(dim=10, activation_function=bolt.ActivationFunctions.Softmax),
     ]
 
-    network = bolt.Network(layers=layers, input_dim=1536)
+    network = bolt.Network(layers=layers, input_dim=784)
     return network
 
 
-def train_birds(args, network, mlflow_logger):
-    tr_emb = np.load("/media/scratch/data/birds/extracted/tr_emb1.npy")
-    tr_labels = np.load("/media/scratch/data/birds/extracted/tr_labels.npy")
-
-    tst_emb = np.load("/media/scratch/data/birds/extracted/tst_emb.npy")
-    tst_labels = np.load("/media/scratch/data/birds/extracted/tst_labels.npy")
+def train_mnist(args, network, mlflow_logger):
+    train_data = dataset.load_bolt_svm_dataset(args.train, 256)
+    test_data = dataset.load_bolt_svm_dataset(args.test, 256)
 
     mlflow_logger.log_start_training()
     for _ in range(args.epochs):
         # TODO(vihan) Add a default batch size to the train() function
         # signature to avoid specifying it here.
         network.train(
-            tr_emb,
-            tr_labels,
-            batch_size=32768,
+            train_data,
             loss_fn=bolt.CategoricalCrossEntropyLoss(),
             learning_rate=args.lr,
             epochs=1,
@@ -56,21 +39,18 @@ def train_birds(args, network, mlflow_logger):
             rebuild=10000,
         )
         acc, __ = network.predict(
-            tst_emb,
-            tst_labels,
-            batch_size=2048,
+            test_data,
             metrics=["categorical_accuracy"],
             verbose=False,
         )
         mlflow_logger.log_epoch(acc["categorical_accuracy"][0])
 
     final_accuracy, _ = network.predict(
-        tst_emb,
-        tst_labels,
-        batch_size=2048,
+        test_data,
         metrics=["categorical_accuracy"],
         verbose=False,
     )
+
     mlflow_logger.log_final_accuracy(final_accuracy["categorical_accuracy"][0])
 
 
@@ -83,9 +63,9 @@ def main():
     # TODO(vihan): Fix the train/test paths for numpy inputs
     args = add_arguments(
         parser=parser,
-        train="/share/data/birds/train.svm",
-        test="/share/data/birds/test.svm",
-        epochs=100,
+        train="/data/mnist/mnist",
+        test="/data/mnist/mnist.t",
+        epochs=10,
         hashes_per_table=4,
         num_tables=64,
         sparsity=0.05,
@@ -109,11 +89,12 @@ def main():
     network = _define_network(args)
 
     with ExperimentLogger(
-        experiment_name="Birds Benchmark",
-        dataset="birds",
-        algorithm="Bolt",
+        experiment_name="MNIST Benchmark",
+        dataset="mnist",
+        algorithm="feedforward",
+        framework="bolt",
     ) as mlflow_logger:
-        train_birds(args, network, mlflow_logger)
+        train_mnist(args, network, mlflow_logger)
 
 
 if __name__ == "__main__":
