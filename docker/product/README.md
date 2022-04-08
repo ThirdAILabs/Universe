@@ -56,7 +56,17 @@ and rerun the build command.
 ## How do I run a Dockerfiles?
 
 See thirdai.com/resources/documentation/dockerimages/ (or if this isn't up
-yet see https://www.notion.so/Use-ThirdAI-Docker-Container-c3524be84fec486f92122caff6ad4696).
+yet see https://www.notion.so/Use-ThirdAI-Docker-Container-c3524be84fec486f92122caff6ad4696)
+for how to run interactive containers. 
+
+The DocSearch inference container should be run as
+``` docker run -p 5000:5000 -v /path/to/serialized/index:/home/thirdai/index:ro thirdai_docsearch_inference:<REF_TAG> ```
+which mounts the serialized index and forwards port 5000 in the Docker container
+to port 5000 on the launching machine. Once the container starts it will run
+a Flask service on port 5000. Currently the only API endpoint is
+/documents?query="query-text"
+which embeds the query text and returns the most semantically similar results.
+
 
 ## How do I create a new Dockerfile?
 
