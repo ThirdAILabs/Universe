@@ -1,16 +1,8 @@
-from thirdai import bolt, dataset
-import sys
 import argparse
+
 from helpers import add_arguments
-import requests
-import time
-from datetime import date
-
-# Add the logging folder to the system path
-import sys
-
-sys.path.insert(1, sys.path[0] + "/../../logging/")
 from mlflow_logger import ExperimentLogger
+from thirdai import bolt, dataset
 
 
 def _define_network(args):
@@ -66,8 +58,8 @@ def main():
 
     args = add_arguments(
         parser=parser,
-        train="/share/data/amazon_polarity/svm_train.txt",
-        test="/share/data/amazon_polarity/svm_test.txt",
+        train="/data/amazon_polarity/svm_train.txt",
+        test="/data/amazon_polarity/svm_test.txt",
         epochs=5,
         hashes_per_table=5,
         num_tables=128,
@@ -78,7 +70,8 @@ def main():
     with ExperimentLogger(
         experiment_name="Amazon Polarity",
         dataset="amazon polarity",
-        algorithm="Bolt",
+        algorithm="feedforward",
+        framework="bolt",
     ) as mlflow_logger:
         train_amazon_polarity(args, mlflow_logger)
 

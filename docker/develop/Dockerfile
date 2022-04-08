@@ -28,6 +28,10 @@ RUN apt update ; DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends i
     toml \
     psutil \
     ipython \
-    ; echo "export PYTHONPATH=/Universe/build:\$PYTHONPATH" >> $HOME/.bashrc \
+    tensorflow \
+    tensorflow-datasets \
+    torch \
+    torchvision \
+    ; echo "export PYTHONPATH=/Universe/build:/Universe/benchmarks:\$PYTHONPATH" >> $HOME/.bashrc \
     ; ln -s /usr/bin/clang-tidy-12 /usr/bin/clang-tidy \
     ; echo "export LSAN_OPTIONS=suppressions=/Universe/leak-suppressions.txt" >> $HOME/.bashrc

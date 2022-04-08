@@ -1,16 +1,8 @@
-from thirdai import bolt, dataset
-import sys
 import argparse
+
 from helpers import add_arguments
-import requests
-import time
-from datetime import date
-
-# Add the logging folder to the system path
-import sys
-
-sys.path.insert(1, sys.path[0] + "/../../logging/")
 from mlflow_logger import ExperimentLogger
+from thirdai import bolt, dataset
 
 
 def _define_network(args):
@@ -70,8 +62,8 @@ def main():
     # TODO(vihan) Replace args namespace with a dictionary
     args = add_arguments(
         parser=parser,
-        train="/media/scratch/data/amazon-670k/train_shuffled_noHeader.txt",
-        test="/media/scratch/data/amazon-670k/test_shuffled_noHeader_sampled.txt",
+        train="/data/amazon-670k/train_shuffled_noHeader.txt",
+        test="/data/amazon-670k/test_shuffled_noHeader_sampled.txt",
         epochs=10,
         hashes_per_table=5,
         num_tables=128,
@@ -82,7 +74,8 @@ def main():
     with ExperimentLogger(
         experiment_name="Product Recommendation",
         dataset="amazon670k",
-        algorithm="Bolt",
+        algorithm="feedforward",
+        framework="bolt",
         experiment_args=args,
     ) as mlflow_logger:
         train_amzn670(args, mlflow_logger)
