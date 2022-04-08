@@ -112,35 +112,50 @@ void ConvLayer::forwardImpl(const BoltVector& input, BoltVector& output) {
     std::fill_n(output.gradients, _sparse_dim, 0);
   }
 
+  // elements to loop through to calculate a dot product filter act on a patch
   uint32_t effective_patch_dim = PREV_DENSE ? _patch_dim : _sparse_patch_dim;
 
-  // TODO(david) calculate once instead of in both forward and backward?
+  // input.active_neurons[i] is an index into input.activations with an offset
+  // we mod here to remove that offset
   std::vector<uint32_t> prev_active_filters(input.len);
   if (!PREV_DENSE) {
+    // TODO(david) calculate once instead of in both forward and backward?
     for (uint32_t i = 0; i < input.len; i++) {
       prev_active_filters[i] = input.active_neurons[i] % _patch_dim;
     }
   }
 
-  // for each input patch
+  // for each patch, we look at a section of the input (an input patch) and
+  // populate a section of the output (an output patch) with that input's
+  // filter activations. in_patch and out_patch tell us what patch we are
+  // looking at in the input/output respectively
   for (uint32_t in_patch = 0; in_patch < _num_patches; in_patch++) {
     uint32_t out_patch = _in_to_out[in_patch];
+
     if (!DENSE) {
       selectActiveFilters<PREV_DENSE>(input, output, in_patch, out_patch,
                                       prev_active_filters);
     }
+
     // for each filter selected
     for (uint32_t filter = 0; filter < num_active_filters; filter++) {
+      // out_idx: the actual INDEX in the output that corresponds to where a
+      // patch's filter activations lie
       uint64_t out_idx = out_patch * num_active_filters + filter;
       uint64_t act_neuron = DENSE ? out_idx : output.active_neurons[out_idx];
       assert(act_neuron < _dim);
-      uint32_t act_filter = act_neuron % _num_filters;
-      _is_active[act_neuron] = true;
+
+      uint32_t act_filter = act_neuron % _num_filters;  // remove offset again
+
+      _is_active[act_neuron] = true;  // used in updateParameters
+
+      // calculate filter activation via dot product
       float act = _biases[act_filter];
       for (uint32_t i = 0; i < effective_patch_dim; i++) {
         uint64_t in_idx = in_patch * effective_patch_dim + i;
         assert(in_idx < input.len);
         uint64_t prev_act_neuron = PREV_DENSE ? i : prev_active_filters[in_idx];
+
         act += _weights[act_filter * _patch_dim + prev_act_neuron] *
                input.activations[in_idx];
       }
@@ -223,6 +238,8 @@ template <bool PREV_DENSE>
 void ConvLayer::selectActiveFilters(
     const BoltVector& input, BoltVector& output, uint32_t in_patch,
     uint64_t out_patch, const std::vector<uint32_t>& prev_active_filters) {
+  // hash a section of the input (the input patch) and populate a section of the
+  // output (the output patch) with that input's active filters (with an offset)
   std::unordered_set<uint32_t> active_set;
   uint32_t* hashes = new uint32_t[_hash_table->numTables()];
   if (PREV_DENSE) {
@@ -337,18 +354,39 @@ void ConvLayer::buildHashTables() {
 // this function is only called from constructor
 void ConvLayer::buildPatchMaps(
     std::tuple<uint32_t, uint32_t> next_kernel_size) {
-  /** each patch of the input is passed through some filters to get an outout
-  for that patch. that patch output needs to be placed somewhere in memory that
-  is efficient for the next kernel size. Since we are dealing with flattened
-  images, we need to remap the patches such that all patches within a kernel are
-  next to each other. Patches are next to each other if their ids are adjacent.
-  For example this patch remapping prepares the next layer to perform a 2x2
-  convolution since patches 0 1 2 3 will be next to each other in memory.
+  /** TODO(David): btw this will be factored out soon into an N-tower model and
+  a patch remapping
 
-    0 1 2 3           0 1 4 5
-    4 5 6 7    -->    2 3 6 7
-    8 9 10 11         8 9 12 13
-    12 13 14 15       10 11 14 15
+  Suppose we have an image that can be broken into 16 patches (numbers 0-15)
+  with kernel size K x K as follows:
+    0  1  2  3
+    4  5  6  7
+    8  9  10 11
+    12 13 14 15
+
+  Suppose then that each patch is flattened into a (K x K x channels)
+  dimensional vector and concatenated next to each other in patch order (patch
+  0, patch 1, ...). This is the input to the ConvLayer.
+
+  To prepare for a possible future ConvLayer, we need to
+  distribute the patches in memory in a way that is amenable for another
+  convolution. Therefore, we accept a next_kernel_size and calculate an in_patch
+  to out_patch mapping. The patch output needs to be placed somewhere in memory
+  that is efficient for the next kernel size. Since we are dealing with
+  flattened images, we need to remap the patches such that all patches within a
+  future kernel are next to each other.
+
+  Take this for example, where we are preparing for a future 2x2 kernel_size. We
+  have patches 0, 1, 4, 5 that all will be together in a future 2x2 kernel and
+  should be placed next to each other for the next ConvLayer. However, since
+  their indices are not adjacent, they won't be placed next to each other. Thus
+  we must remap them. Under this remapping, the 2x2 kernels in the next layer
+  will function contain the
+
+    0  1  2  3           0  1  4  5
+    4  5  6  7    -->    2  3  6  7
+    8  9  10 11          8  9  12 13
+    12 13 14 15          10 11 14 15
   **/
   if (std::get<0>(next_kernel_size) != std::get<1>(next_kernel_size)) {
     throw std::invalid_argument(
