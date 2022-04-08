@@ -210,14 +210,18 @@ void ConvLayer::backpropagateImpl(BoltVector& input, BoltVector& output) {
     }
   }
 
+  // loop through every output neuron
   for (uint64_t n = 0; n < len_out; n++) {
     assert(!std::isnan(output.gradients[n]));
     output.gradients[n] *= actFuncDerivative(output.activations[n]);
     assert(!std::isnan(output.gradients[n]));
+
     uint32_t act_neuron = DENSE ? n : output.active_neurons[n];
     uint32_t act_filter = act_neuron % _num_filters;
+
     uint32_t out_patch = n / num_active_filters;
     uint32_t in_patch = _out_to_in[out_patch];
+
     for (uint64_t i = 0; i < effective_patch_dim; i++) {
       uint64_t in_idx = in_patch * effective_patch_dim + i;
       uint32_t prev_act_neuron = PREV_DENSE ? i : prev_active_filters[in_idx];
