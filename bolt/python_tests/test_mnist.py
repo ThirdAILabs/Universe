@@ -19,6 +19,7 @@ def setup_module():
         os.system("bzip2 -d mnist.t.bz2")
 
 
+# Constructs a bolt network for mnist with a sparse output layer.
 def build_sparse_output_layer_network():
     layers = [
         bolt.LayerConfig(dim=256, activation_function=bolt.ActivationFunctions.ReLU),
@@ -38,6 +39,7 @@ def build_sparse_output_layer_network():
     return network
 
 
+# Constructs a bolt network for mnist with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
 def build_sparse_hidden_layer_network(dim, sparsity):
     layers = [
         bolt.LayerConfig(
@@ -77,6 +79,10 @@ def load_mnist():
     return train_data, test_data
 
 
+ACCURACY_THRESHOLD = 0.94
+SPARSE_INFERENCE_ACCURACY_THRESHOLD = 0.9
+
+
 @pytest.mark.integration
 def test_mnist_sparse_output_layer():
     network = build_sparse_output_layer_network()
@@ -87,7 +93,7 @@ def test_mnist_sparse_output_layer():
 
     acc, _ = network.predict(test, metrics=["categorical_accuracy"], verbose=False)
 
-    assert acc["categorical_accuracy"][0] >= 0.95
+    assert acc["categorical_accuracy"][0] >= ACCURACY_THRESHOLD
 
 
 @pytest.mark.integration
@@ -100,7 +106,7 @@ def test_mnist_sparse_hidden_layer():
 
     acc, _ = network.predict(test, metrics=["categorical_accuracy"], verbose=False)
 
-    assert acc["categorical_accuracy"][0] >= 0.95
+    assert acc["categorical_accuracy"][0] >= ACCURACY_THRESHOLD
 
 
 @pytest.mark.integration
@@ -115,7 +121,7 @@ def test_mnist_sparse_inference():
         test, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert dense_predict["categorical_accuracy"][0] >= 0.95
+    assert dense_predict["categorical_accuracy"][0] >= ACCURACY_THRESHOLD
 
     network.enable_sparse_inference()
 
@@ -125,7 +131,9 @@ def test_mnist_sparse_inference():
         test, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert sparse_predict["categorical_accuracy"][0] >= 0.9
+    assert (
+        sparse_predict["categorical_accuracy"][0] >= SPARSE_INFERENCE_ACCURACY_THRESHOLD
+    )
 
     dense_time = dense_predict["test_time"][0]
     sparse_time = sparse_predict["test_time"][0]
