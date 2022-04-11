@@ -22,8 +22,7 @@ def setup_module():
 # Constructs a bolt network for mnist with a sparse output layer.
 def build_sparse_output_layer_network():
     layers = [
-        bolt.LayerConfig(
-            dim=256, activation_function=bolt.ActivationFunctions.ReLU),
+        bolt.LayerConfig(dim=256, activation_function=bolt.ActivationFunctions.ReLU),
         bolt.LayerConfig(
             dim=10,
             load_factor=0.4,
@@ -54,8 +53,7 @@ def build_sparse_hidden_layer_network(dim, sparsity):
                 reservoir_size=32,
             ),
         ),
-        bolt.LayerConfig(
-            dim=10, activation_function=bolt.ActivationFunctions.Softmax),
+        bolt.LayerConfig(dim=10, activation_function=bolt.ActivationFunctions.Softmax),
     ]
     network = bolt.Network(layers=layers, input_dim=784)
     return network
@@ -93,8 +91,7 @@ def test_mnist_sparse_output_layer():
 
     train_network(network, train_data=train, epochs=10)
 
-    acc, _ = network.predict(
-        test, metrics=["categorical_accuracy"], verbose=False)
+    acc, _ = network.predict(test, metrics=["categorical_accuracy"], verbose=False)
 
     assert acc["categorical_accuracy"][0] >= ACCURACY_THRESHOLD
 
@@ -107,8 +104,7 @@ def test_mnist_sparse_hidden_layer():
 
     train_network(network, train_data=train, epochs=10)
 
-    acc, _ = network.predict(
-        test, metrics=["categorical_accuracy"], verbose=False)
+    acc, _ = network.predict(test, metrics=["categorical_accuracy"], verbose=False)
 
     assert acc["categorical_accuracy"][0] >= ACCURACY_THRESHOLD
 
