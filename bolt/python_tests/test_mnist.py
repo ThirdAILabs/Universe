@@ -202,8 +202,11 @@ def test_get_set_weights():
     untrained_network.set_weights(0, network.get_weights(0))
     untrained_network.set_weights(1, network.get_weights(1))
 
+    untrained_network.set_biases(0, network.get_biases(0))
+    untrained_network.set_biases(1, network.get_biases(1))
+
     new_acc, _ = untrained_network.predict(
         test_data, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert new_acc["categorical_accuracy"][0] >= ACCURACY_THRESHOLD
+    assert new_acc["categorical_accuracy"][0] == original_acc["categorical_accuracy"][0]
