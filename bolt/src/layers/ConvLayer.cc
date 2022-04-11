@@ -397,7 +397,7 @@ void ConvLayer::buildPatchMaps(
   should be placed next to each other for the next ConvLayer. However, since
   their indices are not adjacent, they won't be placed next to each other. Thus
   we must remap them. Under this remapping, the 2x2 kernels in the next layer
-  will function contain the
+  will each contain the 4 patch outputs necessary for the kernels to work.
 
     0  1  2  3           0  1  4  5
     4  5  6  7    -->    2  3  6  7
