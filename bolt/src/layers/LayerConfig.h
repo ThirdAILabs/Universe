@@ -7,7 +7,6 @@
 #include <iostream>
 #include <optional>
 #include <stdexcept>
-#include <tuple>
 
 namespace thirdai::bolt {
 
@@ -59,8 +58,8 @@ struct FullyConnectedLayerConfig {
   float sparsity;
   ActivationFunction act_func;
   SamplingConfig sampling_config;
-  std::tuple<uint32_t, uint32_t> kernel_size =
-      std::make_tuple(static_cast<uint32_t>(0), static_cast<uint32_t>(0));
+  std::pair<uint32_t, uint32_t> kernel_size =
+      std::make_pair(static_cast<uint32_t>(0), static_cast<uint32_t>(0));
   uint32_t num_patches = 0;
 
   static void checkSparsity(float sparsity) {
@@ -70,11 +69,13 @@ struct FullyConnectedLayerConfig {
     }
   }
 
-  FullyConnectedLayerConfig(
-      uint64_t _dim, float _sparsity, ActivationFunction _act_func,
-      SamplingConfig _config,
-      std::tuple<uint32_t, uint32_t> _kernel_size = std::make_tuple(0, 0),
-      uint32_t _num_patches = 0)
+  FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
+                            ActivationFunction _act_func,
+                            SamplingConfig _config,
+                            std::pair<uint32_t, uint32_t> _kernel_size =
+                                std::make_pair(static_cast<uint32_t>(0),
+                                               static_cast<uint32_t>(0)),
+                            uint32_t _num_patches = 0)
       : dim(_dim),
         sparsity(_sparsity),
         act_func(_act_func),
@@ -108,7 +109,7 @@ struct FullyConnectedLayerConfig {
   }
 
   friend std::ostream& operator<<(std::ostream& out,
-                                  FullyConnectedLayerConfig& config) {
+                                  const FullyConnectedLayerConfig& config) {
     out << "Layer: dim=" << config.dim << ", load_factor=" << config.sparsity;
     switch (config.act_func) {
       case ActivationFunction::ReLU:
@@ -130,14 +131,14 @@ struct FullyConnectedLayerConfig {
           << "}";
     }
     if (config.isConvLayer()) {
-      out << ", kernel_width=" << std::get<0>(config.kernel_size)
-          << ", kernel_height=" << std::get<1>(config.kernel_size)
+      out << ", kernel_width=" << config.kernel_size.first
+          << ", kernel_height=" << config.kernel_size.second
           << ", num_patches=" << config.num_patches;
     }
     return out;
   }
 
-  bool isConvLayer() { return std::get<0>(kernel_size) != 0; }
+  bool isConvLayer() const { return kernel_size.first != 0; }
 };
 
 struct EmbeddingLayerConfig {

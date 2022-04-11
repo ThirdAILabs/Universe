@@ -73,6 +73,8 @@ class FullyConnectedLayer {
   virtual ~FullyConnectedLayer() = default;
 
  protected:
+  // can't be inlined .cc if part of an interface. see here:
+  // https://stackoverflow.com/questions/27345284/is-it-possible-to-declare-constexpr-class-in-a-header-and-define-it-in-a-separat
   constexpr float actFuncDerivative(float x) {
     switch (_act_func) {
       case ActivationFunction::ReLU:

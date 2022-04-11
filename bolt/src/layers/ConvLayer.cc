@@ -8,10 +8,10 @@ namespace thirdai::bolt {
 ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
                      uint32_t prev_num_filters,
                      uint32_t prev_num_sparse_filters,
-                     std::tuple<uint32_t, uint32_t> next_kernel_size)
+                     std::pair<uint32_t, uint32_t> next_kernel_size)
     : _prev_num_filters(prev_num_filters),
       _prev_num_sparse_filters(prev_num_sparse_filters) {
-  if (std::get<0>(config.kernel_size) != std::get<1>(config.kernel_size)) {
+  if (config.kernel_size.first != config.kernel_size.second) {
     throw std::invalid_argument(
         "Conv layers currently support only square kernels.");
   }
@@ -83,9 +83,9 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
   }
 }
 
-void ConvLayer::forward(
-    const BoltVector& input, BoltVector& output,
-    const BoltVector*) {  // NOLINT all params should be named
+void ConvLayer::forward(const BoltVector& input, BoltVector& output,
+                        const BoltVector* labels) {
+  (void)labels;
   if (output.isDense()) {
     if (input.isDense()) {
       forwardImpl<true, true>(input, output);
@@ -117,7 +117,7 @@ void ConvLayer::forwardImpl(const BoltVector& input, BoltVector& output) {
 
   // input.active_neurons[i] is an index into input.activations with an offset
   // we mod here to remove that offset
-  std::vector<uint32_t> prev_active_filters(input.len);
+  std::vector<uint32_t> prev_active_filters(input.len);  // unused if DENSE
   if (!PREV_DENSE) {
     // TODO(david) calculate once instead of in both forward and backward?
     for (uint32_t i = 0; i < input.len; i++) {
@@ -142,27 +142,38 @@ void ConvLayer::forwardImpl(const BoltVector& input, BoltVector& output) {
       // out_idx: the actual INDEX in the output that corresponds to where a
       // patch's filter activations lie
       uint64_t out_idx = out_patch * num_active_filters + filter;
-      uint64_t act_neuron = DENSE ? out_idx : output.active_neurons[out_idx];
-      assert(act_neuron < _dim);
-
-      uint32_t act_filter = act_neuron % _num_filters;  // remove offset again
-
-      _is_active[act_neuron] = true;  // used in updateParameters
-
-      // calculate filter activation via dot product
-      float act = _biases[act_filter];
-      for (uint32_t i = 0; i < effective_patch_dim; i++) {
-        uint64_t in_idx = in_patch * effective_patch_dim + i;
-        assert(in_idx < input.len);
-        uint64_t prev_act_neuron = PREV_DENSE ? i : prev_active_filters[in_idx];
-
-        act += _weights[act_filter * _patch_dim + prev_act_neuron] *
-               input.activations[in_idx];
-      }
+      float act = calculateFilterActivation<DENSE, PREV_DENSE>(
+          input, output, in_patch, out_idx, prev_active_filters,
+          effective_patch_dim);
       assert(!std::isnan(act));
-      output.activations[out_idx] = std::max(static_cast<float>(0), act);
+      output.activations[out_idx] = std::max(0.0f, act);
     }
   }
+}
+
+template <bool DENSE, bool PREV_DENSE>
+float ConvLayer::calculateFilterActivation(
+    const BoltVector& input, const BoltVector& output, uint32_t in_patch,
+    uint64_t out_idx, std::vector<uint32_t> prev_active_filters,
+    uint32_t effective_patch_dim) {
+  uint64_t act_neuron = DENSE ? out_idx : output.active_neurons[out_idx];
+  assert(act_neuron < _dim);
+
+  uint32_t act_filter = act_neuron % _num_filters;  // remove offset again
+
+  _is_active[act_neuron] = true;  // used in updateParameters
+
+  // calculate filter activation via dot product
+  float act = _biases[act_filter];
+  for (uint32_t i = 0; i < effective_patch_dim; i++) {
+    uint64_t in_idx = in_patch * effective_patch_dim + i;
+    assert(in_idx < input.len);
+    uint64_t prev_act_neuron = PREV_DENSE ? i : prev_active_filters[in_idx];
+
+    act += _weights[act_filter * _patch_dim + prev_act_neuron] *
+           input.activations[in_idx];
+  }
+  return act;
 }
 
 void ConvLayer::backpropagate(BoltVector& input, BoltVector& output) {
@@ -203,7 +214,7 @@ void ConvLayer::backpropagateImpl(BoltVector& input, BoltVector& output) {
   uint32_t num_active_filters = DENSE ? _num_filters : _num_sparse_filters;
   uint32_t effective_patch_dim = PREV_DENSE ? _patch_dim : _sparse_patch_dim;
 
-  std::vector<uint32_t> prev_active_filters(input.len);
+  std::vector<uint32_t> prev_active_filters(input.len);  // unused if DENSE
   if (!PREV_DENSE) {
     for (uint32_t i = 0; i < input.len; i++) {
       prev_active_filters[i] = input.active_neurons[i] % _patch_dim;
@@ -222,6 +233,7 @@ void ConvLayer::backpropagateImpl(BoltVector& input, BoltVector& output) {
     uint32_t out_patch = n / num_active_filters;
     uint32_t in_patch = _out_to_in[out_patch];
 
+    // loop through each input neuron and update the gradients
     for (uint64_t i = 0; i < effective_patch_dim; i++) {
       uint64_t in_idx = in_patch * effective_patch_dim + i;
       uint32_t prev_act_neuron = PREV_DENSE ? i : prev_active_filters[in_idx];
@@ -404,23 +416,30 @@ void ConvLayer::buildPatchMaps(
   uint32_t num_patches_for_side =
       std::sqrt(_num_patches);  // assumes square images
 
-  uint32_t i = 0;
+  // this is a vector of the top left patch values for the next kernel size. in
+  // the example above, this vector would be <0, 2, 8, 10>
   std::vector<uint32_t> top_left_patch_vals;
-  while (i <= _num_patches - next_filter_length -
-                  ((next_filter_length - 1) * num_patches_for_side)) {
+  for (uint32_t i = 0;
+       i <= _num_patches - next_filter_length -
+                ((next_filter_length - 1) * num_patches_for_side);
+       i += next_filter_length) {
     top_left_patch_vals.push_back(i);
+    std::cout << i << " " << std::endl;
     if (((i + next_filter_length) % num_patches_for_side) == 0) {
       i += (next_filter_length - 1) * num_patches_for_side;
     }
-    i += next_filter_length;
   }
+
   uint32_t patch = 0;
+  // for each top left patch val, map the patches in order to the values within
+  // the filter for that patch val
   for (uint32_t start : top_left_patch_vals) {
-    // given a filter top left patch val, set all patch vals within that filter
     uint32_t base_val = start;
     for (uint32_t y = 0; y < next_filter_length; y++) {
       for (uint32_t x = 0; x < next_filter_length; x++) {
         uint32_t new_patch = base_val + x;
+        std::cout << "Start: " << start << std::endl;
+        std::cout << patch << " maps to " << new_patch << std::endl;
         _in_to_out[patch] = new_patch;
         _out_to_in[new_patch] = patch;
         patch++;
