@@ -22,7 +22,8 @@ def setup_module():
 # Constructs a bolt network for mnist with a sparse output layer.
 def build_sparse_output_layer_network():
     layers = [
-        bolt.LayerConfig(dim=256, activation_function=bolt.ActivationFunctions.ReLU),
+        bolt.LayerConfig(
+            dim=256, activation_function=bolt.ActivationFunctions.ReLU),
         bolt.LayerConfig(
             dim=10,
             load_factor=0.4,
@@ -53,7 +54,8 @@ def build_sparse_hidden_layer_network(dim, sparsity):
                 reservoir_size=32,
             ),
         ),
-        bolt.LayerConfig(dim=10, activation_function=bolt.ActivationFunctions.Softmax),
+        bolt.LayerConfig(
+            dim=10, activation_function=bolt.ActivationFunctions.Softmax),
     ]
     network = bolt.Network(layers=layers, input_dim=784)
     return network
@@ -91,7 +93,8 @@ def test_mnist_sparse_output_layer():
 
     train_network(network, train_data=train, epochs=10)
 
-    acc, _ = network.predict(test, metrics=["categorical_accuracy"], verbose=False)
+    acc, _ = network.predict(
+        test, metrics=["categorical_accuracy"], verbose=False)
 
     assert acc["categorical_accuracy"][0] >= ACCURACY_THRESHOLD
 
@@ -104,7 +107,8 @@ def test_mnist_sparse_hidden_layer():
 
     train_network(network, train_data=train, epochs=10)
 
-    acc, _ = network.predict(test, metrics=["categorical_accuracy"], verbose=False)
+    acc, _ = network.predict(
+        test, metrics=["categorical_accuracy"], verbose=False)
 
     assert acc["categorical_accuracy"][0] >= ACCURACY_THRESHOLD
 
@@ -181,3 +185,29 @@ def test_load_save_fc_network():
     assert another_acc["categorical_accuracy"][0] >= new_acc["categorical_accuracy"][0]
 
     os.remove(save_loc)
+
+
+@pytest.mark.integration
+def test_get_set_weights():
+    network = build_sparse_output_layer_network()
+
+    train_data, test_data = load_mnist()
+
+    train_network(network, train_data=train_data, epochs=10)
+
+    original_acc, _ = network.predict(
+        test_data, metrics=["categorical_accuracy"], verbose=False
+    )
+
+    assert original_acc["categorical_accuracy"][0] >= ACCURACY_THRESHOLD
+
+    untrained_network = build_sparse_output_layer_network()
+
+    untrained_network.set_weights(0, network.get_weights(0))
+    untrained_network.set_weights(1, network.get_weights(1))
+
+    new_acc, _ = untrained_network.predict(
+        test_data, metrics=["categorical_accuracy"], verbose=False
+    )
+
+    assert new_acc["categorical_accuracy"][0] >= ACCURACY_THRESHOLD
