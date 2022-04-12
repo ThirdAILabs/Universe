@@ -1,7 +1,6 @@
 #include "ConvLayer.h"
 #include "FullyConnectedLayer.h"
 #include <random>
-#include <tuple>
 
 namespace thirdai::bolt {
 
@@ -146,7 +145,7 @@ void ConvLayer::forwardImpl(const BoltVector& input, BoltVector& output) {
           input, output, in_patch, out_idx, prev_active_filters,
           effective_patch_dim);
       assert(!std::isnan(act));
-      output.activations[out_idx] = std::max(0.0f, act);
+      output.activations[out_idx] = std::max(0.0F, act);
     }
   }
 }
@@ -365,6 +364,35 @@ void ConvLayer::buildHashTables() {
   _hash_table->insertSequential(_num_filters, 0, hashes);
 
   delete[] hashes;
+}
+
+void ConvLayer::shuffleRandNeurons() {
+  if (_sparsity < 1.0) {
+    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(),
+                 std::random_device{});
+  }
+}
+
+float* ConvLayer::getWeights() {
+  float* weights_copy = new float[_dim * _prev_dim];
+  std::copy(_weights.begin(), _weights.end(), weights_copy);
+
+  return weights_copy;
+}
+
+float* ConvLayer::getBiases() {
+  float* biases_copy = new float[_dim];
+  std::copy(_biases.begin(), _biases.end(), biases_copy);
+
+  return biases_copy;
+}
+
+void ConvLayer::setWeights(float* new_weights) {
+  std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
+}
+
+void ConvLayer::setBiases(float* new_biases) {
+  std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
 // this function is only called from constructor
