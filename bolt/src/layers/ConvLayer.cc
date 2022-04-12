@@ -28,8 +28,7 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
 
   _num_filters = config.dim;
   _num_sparse_filters = _num_filters * _sparsity;
-  _kernel_size =
-      std::get<0>(config.kernel_size) * std::get<1>(config.kernel_size);
+  _kernel_size = config.kernel_size.first * config.kernel_size.second;
 
   _patch_dim = _kernel_size * _prev_num_filters;
   _sparse_patch_dim = _kernel_size * _prev_num_sparse_filters;
@@ -390,8 +389,7 @@ void ConvLayer::setBiases(float* new_biases) {
 }
 
 // this function is only called from constructor
-void ConvLayer::buildPatchMaps(
-    std::tuple<uint32_t, uint32_t> next_kernel_size) {
+void ConvLayer::buildPatchMaps(std::pair<uint32_t, uint32_t> next_kernel_size) {
   /** TODO(David): btw this will be factored out soon into an N-tower model and
   a patch remapping
 
@@ -426,7 +424,7 @@ void ConvLayer::buildPatchMaps(
     8  9  10 11          8  9  12 13
     12 13 14 15          10 11 14 15
   **/
-  if (std::get<0>(next_kernel_size) != std::get<1>(next_kernel_size)) {
+  if (next_kernel_size.first != next_kernel_size.second) {
     throw std::invalid_argument(
         "Conv layers currently support only square kernels.");
   }
@@ -434,7 +432,7 @@ void ConvLayer::buildPatchMaps(
   _in_to_out = std::vector<uint32_t>(_num_patches);
   _out_to_in = std::vector<uint32_t>(_num_patches);
 
-  uint32_t next_filter_length = std::get<0>(next_kernel_size);
+  uint32_t next_filter_length = next_kernel_size.first;
   uint32_t num_patches_for_side =
       std::sqrt(_num_patches);  // assumes square images
 
