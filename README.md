@@ -12,9 +12,9 @@ directory. e.g. the mpi_example executable will be in
 `Universe/build/examples/mpi-example/mpi_example`. By default this will
 run in parallel and build all unbuilt targets or targets whose component source
 files have been updated, but you can pass in parameters to run in serial or build
-only a specific target. You can also build in Debug or RelWithDebInfo, see the 
-source of `$ bin/build.sh` for more details.
-2. Run `$ bin/cpp-test.sh` from anywhere to have cmake run all c++ tests. To run specific
+only a specific target. You can also build in other build modes (Debug, etc.).
+Run bin/build.sh -h for more info.
+1. Run `$ bin/cpp-test.sh` from anywhere to have cmake run all c++ tests. To run specific
 tests, you can also pass a regular expression to filter tests 
 (or provide an explicit test name):
 `$ bin/cpp-test.sh -R <test filter expression>`.
