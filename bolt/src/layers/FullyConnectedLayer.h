@@ -4,6 +4,7 @@
 #include <cereal/types/vector.hpp>
 #include "BoltVector.h"
 #include "LayerConfig.h"
+#include "SequentialLayer.h"
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <cstdint>
@@ -14,7 +15,7 @@ namespace tests {
 class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
-class FullyConnectedLayer {
+class FullyConnectedLayer : public SequentialLayer {
   friend class tests::FullyConnectedLayerTestFixture;
 
  public:
@@ -28,49 +29,48 @@ class FullyConnectedLayer {
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
                       uint64_t prev_dim);
 
-  // TODO(david) fix nolint here with default params and layer interface
-  virtual void forward(const BoltVector& input, BoltVector& output,  // NOLINT
-                       const BoltVector* labels = nullptr);
+  void forward(const BoltVector& input, BoltVector& output,
+               const BoltVector* labels) final;
 
-  virtual void backpropagate(BoltVector& input, BoltVector& output);
+  void backpropagate(BoltVector& input, BoltVector& output) final;
 
-  virtual void backpropagateInputLayer(BoltVector& input, BoltVector& output);
+  void backpropagateInputLayer(BoltVector& input, BoltVector& output) final;
 
-  virtual void updateParameters(float lr, uint32_t iter, float B1, float B2,
-                                float eps);
+  void updateParameters(float lr, uint32_t iter, float B1, float B2,
+                        float eps) final;
 
   BoltBatch createBatchState(const uint32_t batch_size,
-                             bool force_dense = false) const {
+                             bool force_dense) const final {
     bool is_dense = (_sparse_dim == _dim) || force_dense;
 
     return BoltBatch(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
   }
 
-  void forceSparseForInference() {
+  void forceSparseForInference() final {
     if (_sparsity < 1.0) {
       _force_sparse_for_inference = true;
     }
   }
 
-  bool isForceSparsity() const { return _force_sparse_for_inference; }
+  bool isForceSparsity() const final { return _force_sparse_for_inference; }
 
-  virtual void buildHashTables();
+  void buildHashTables() final;
 
-  virtual void reBuildHashFunction();
+  void reBuildHashFunction() final;
 
-  void shuffleRandNeurons();
+  void shuffleRandNeurons() final;
 
-  uint32_t getDim() const { return _dim; }
+  uint32_t getDim() const final { return _dim; }
 
-  float* getWeights();
+  float* getWeights() final;
 
-  float* getBiases();
+  float* getBiases() final;
 
-  void setWeights(float* new_weights);
+  void setWeights(float* new_weights) final;
 
-  void setBiases(float* new_biases);
+  void setBiases(float* new_biases) final;
 
-  virtual ~FullyConnectedLayer() = default;
+  ~FullyConnectedLayer() = default;
 
  protected:
   // can't be inlined .cc if part of an interface. see here:
