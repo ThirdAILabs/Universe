@@ -46,9 +46,7 @@ FullyConnectedLayer::FullyConnectedLayer(
 
     _rand_neurons = std::vector<uint32_t>(_dim);
 
-    int rn = 0;
-    std::generate(_rand_neurons.begin(), _rand_neurons.end(),
-                  [&]() { return rn++; });
+    std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
   }
 }
@@ -228,21 +226,20 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     active_set.insert(labels->active_neurons[i]);
   }
 
-  uint32_t* hashes = new uint32_t[_hash_table->numTables()];
+  std::vector<uint32_t> hashes;
   if (PREV_DENSE) {
-    _hasher->hashSingleDense(input.activations, input.len, hashes);
+    hashes = _hasher->hashSingleDense(input.activations, input.len);
   } else {
-    _hasher->hashSingleSparse(input.active_neurons, input.activations,
-                              input.len, hashes);
+    hashes = _hasher->hashSingleSparse(input.active_neurons, input.activations,
+                                       input.len);
   }
 
   if (_force_sparse_for_inference && _act_func == ActivationFunction::Softmax) {
-    _hash_table->queryAndInsertForInference(hashes, active_set, _sparse_dim);
+    _hash_table->queryAndInsertForInference(hashes.data(), active_set,
+                                            _sparse_dim);
   } else {
-    _hash_table->queryBySet(hashes, active_set);
+    _hash_table->queryBySet(hashes.data(), active_set);
   }
-
-  delete[] hashes;
 
   if (active_set.size() < _sparse_dim) {
     uint32_t rand_offset = rand() % _dim;

@@ -106,6 +106,21 @@ class HashFunction {
     }
   }
 
+  std::vector<uint32_t> hashSingleSparse(const uint32_t* indices,
+                                         const float* values,
+                                         uint32_t length) const {
+    std::vector<uint32_t> result(_num_tables);
+    hashSingleSparse(indices, values, length, result.data());
+    return result;
+  }
+
+  std::vector<uint32_t> hashSingleDense(const float* values,
+                                        uint32_t dim) const {
+    std::vector<uint32_t> result(_num_tables);
+    hashSingleDense(values, dim, result.data());
+    return result;
+  }
+
   virtual void hashSingleSparse(const uint32_t* indices, const float* values,
                                 uint32_t length, uint32_t* output) const = 0;
 

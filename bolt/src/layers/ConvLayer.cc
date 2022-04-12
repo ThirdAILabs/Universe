@@ -70,14 +70,11 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow);
 
-    buildHashTables();  // NOLINT calling virtual function from constructor of
-                        // inhereted class
+    buildHashTables();
 
     _rand_neurons = std::vector<uint32_t>(_num_filters);
 
-    int rn = 0;
-    std::generate(_rand_neurons.begin(), _rand_neurons.end(),
-                  [&]() { return rn++; });
+    std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
   }
 }
@@ -256,19 +253,16 @@ void ConvLayer::selectActiveFilters(
   // hash a section of the input (the input patch) and populate a section of the
   // output (the output patch) with that input's active filters (with an offset)
   std::unordered_set<uint32_t> active_set;
-  uint32_t* hashes = new uint32_t[_hash_table->numTables()];
+  std::vector<uint32_t> hashes;
   if (PREV_DENSE) {
-    _hasher->hashSingleDense(&input.activations[in_patch * _patch_dim],
-                             _patch_dim, hashes);
+    hashes = _hasher->hashSingleDense(&input.activations[in_patch * _patch_dim],
+                                      _patch_dim);
   } else {
-    _hasher->hashSingleSparse(
+    hashes = _hasher->hashSingleSparse(
         prev_active_filters.data() + in_patch * _sparse_patch_dim,
-        &input.activations[in_patch * _sparse_patch_dim], _sparse_patch_dim,
-        hashes);
+        &input.activations[in_patch * _sparse_patch_dim], _sparse_patch_dim);
   }
-  _hash_table->queryBySet(hashes, active_set);
-
-  delete[] hashes;
+  _hash_table->queryBySet(hashes.data(), active_set);
 
   if (active_set.size() < _num_sparse_filters) {
     uint32_t rand_offset = rand() % _num_filters;

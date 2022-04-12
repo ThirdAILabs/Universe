@@ -33,6 +33,9 @@ class DWTAHashFunction final : public HashFunction {
                    uint32_t _num_tables, uint32_t range_pow,
                    uint32_t seed = time(nullptr));
 
+  using HashFunction::hashSingleDense;
+  using HashFunction::hashSingleSparse;
+
   void hashSingleSparse(const uint32_t* indices, const float* values,
                         uint32_t length, uint32_t* output) const override;
 
