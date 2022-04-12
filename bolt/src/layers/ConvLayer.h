@@ -90,7 +90,7 @@ class ConvLayer : public SequentialLayer {
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
   void backpropagateImpl(BoltVector& input, BoltVector& output);
 
-  void buildPatchMaps(std::tuple<uint32_t, uint32_t> next_kernel_size);
+  void buildPatchMaps(std::pair<uint32_t, uint32_t> next_kernel_size);
 
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
