@@ -424,7 +424,6 @@ void ConvLayer::buildPatchMaps(
                 ((next_filter_length - 1) * num_patches_for_side);
        i += next_filter_length) {
     top_left_patch_vals.push_back(i);
-    std::cout << i << " " << std::endl;
     if (((i + next_filter_length) % num_patches_for_side) == 0) {
       i += (next_filter_length - 1) * num_patches_for_side;
     }
@@ -438,8 +437,6 @@ void ConvLayer::buildPatchMaps(
     for (uint32_t y = 0; y < next_filter_length; y++) {
       for (uint32_t x = 0; x < next_filter_length; x++) {
         uint32_t new_patch = base_val + x;
-        std::cout << "Start: " << start << std::endl;
-        std::cout << patch << " maps to " << new_patch << std::endl;
         _in_to_out[patch] = new_patch;
         _out_to_in[new_patch] = patch;
         patch++;
