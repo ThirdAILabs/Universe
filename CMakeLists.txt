@@ -55,6 +55,9 @@ add_link_options(
   -fopenmp
 )
 
+# Add feature flags passed in from python
+add_compile_definitions(${FEATURE_FLAGS})
+
 # In debug mode we are using ASan (address sanitizer) to provide better information on errors.
 # We only run with this in debug mode because it carries a performace penalty. 
 # See https://github.com/google/sanitizers/wiki/AddressSanitizer for more information.
