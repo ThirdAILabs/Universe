@@ -4,6 +4,7 @@
 #include <bolt/src/metrics/MetricHelpers.h>
 #include <algorithm>
 #include <atomic>
+#include <iomanip>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -28,8 +29,8 @@ class Metric {
   virtual std::string getName() = 0;
 
   // Returns whether this metric allows forced dense inference.
-  // Use case: for regression metrics such as RMSE and WMAPE, inference sparsity 
-  // must be consistent with training sparsity so forced dense inference is not 
+  // Use case: for regression metrics such as RMSE and WMAPE, inference sparsity
+  // must be consistent with training sparsity so forced dense inference is not
   // allowed.
   virtual bool allowForceDenseInference() = 0;
 
@@ -100,9 +101,9 @@ class CategoricalAccuracy final : public Metric {
 /**
  * The weighted mean absolute percentage error is a regression error that
  * measures the absolute deviation of predictions from the true values, weighted
- * in proportion to the true values. WMAPE = 100% * sum(|actual - prediction|) /
+ * in proportion to the true values. WMAPE = sum(|actual - prediction|) /
  * sum(|actual|) Here, the actual value is assumed to be non-negative. The
- * returned metric is in %; 100 is 100%.
+ * returned metric is in absolute terms; 1.0 is 100%.
  */
 class WeightedMeanAbsolutePercentageError final : public Metric {
  public:
@@ -113,26 +114,27 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
     // Calculate |actual - predicted| and |actual|.
     float sum_of_squared_differences = 0.0;
     float sum_of_squared_label_elems = 0.0;
-    visitActiveNeurons(output, labels, [&](float label_val, float output_val) {
-      float difference = label_val - output_val;
-      sum_of_squared_differences += difference * difference;
-      sum_of_squared_label_elems += label_val * label_val;
-    });
+    MetricUtilities::visitActiveNeurons(
+        output, labels, [&](float label_val, float output_val) {
+          float difference = label_val - output_val;
+          sum_of_squared_differences += difference * difference;
+          sum_of_squared_label_elems += label_val * label_val;
+        });
 
     // Add to respective atomic accumulators
-    incrementAtomicFloat(_sum_of_deviations,
-                         std::sqrt(sum_of_squared_differences));
-    incrementAtomicFloat(_sum_of_truths, std::sqrt(sum_of_squared_label_elems));
+    MetricUtilities::incrementAtomicFloat(
+        _sum_of_deviations, std::sqrt(sum_of_squared_differences));
+    MetricUtilities::incrementAtomicFloat(
+        _sum_of_truths, std::sqrt(sum_of_squared_label_elems));
   }
 
   double getMetricAndReset(bool verbose) final {
-    // replace 0 with small number 10^-7 to avoid dividing by 0.
-    float almost_zero = 0.0000001;
-    double wmape =
-        100 * _sum_of_deviations /
-        std::max(_sum_of_truths.load(std::memory_order_relaxed), almost_zero);
+    double wmape = _sum_of_deviations /
+                   std::max(_sum_of_truths.load(std::memory_order_relaxed),
+                            std::numeric_limits<float>::epsilon());
     if (verbose) {
-      std::cout << "Weighted Mean Absolute Percentage Error: " << wmape << "%"
+      std::cout << "Weighted Mean Absolute Percentage Error: "
+                << std::setprecision(3) << wmape << " (" << wmape * 100 << "%)"
                 << std::endl;
     }
     _sum_of_deviations = 0.0;
@@ -153,6 +155,7 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
 
 using MetricData = std::unordered_map<std::string, std::vector<double>>;
 
+// TODO(Geordie): Instead of hard coding the options, use a static map.
 class MetricAggregator {
  public:
   explicit MetricAggregator(const std::vector<std::string>& metrics,
@@ -162,13 +165,15 @@ class MetricAggregator {
       if (name == CategoricalAccuracy::name) {
         _metrics.push_back(std::make_unique<CategoricalAccuracy>());
       } else if (name == WeightedMeanAbsolutePercentageError::name) {
-        _metrics.push_back(std::make_unique<WeightedMeanAbsolutePercentageError>());
+        _metrics.push_back(
+            std::make_unique<WeightedMeanAbsolutePercentageError>());
       } else {
         throw std::invalid_argument("'" + name + "' is not a valid metric.");
       }
-      // If at least one metric does not allow forced dense inference, forced dense inference
-      // is not allowed.
-      _allow_force_dense_inference &= _metrics.at(_metrics.size() - 1)->allowForceDenseInference();
+      // If at least one metric does not allow forced dense inference, forced
+      // dense inference is not allowed.
+      _allow_force_dense_inference &=
+          _metrics.at(_metrics.size() - 1)->allowForceDenseInference();
     }
   }
 
