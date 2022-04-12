@@ -34,7 +34,7 @@ def train_bolt_with_wmape(
             y_vals=y_vals,
             y_offsets=y_offsets,
             batch_size=batch_size,
-            loss_fn=bolt.WeightedMeanAbsolutePercentageErrorLoss(),
+            loss_fn=bolt.WeightedMeanAbsolutePercentageError(),
             learning_rate=learning_rate,
             epochs=1,
             verbose=True,

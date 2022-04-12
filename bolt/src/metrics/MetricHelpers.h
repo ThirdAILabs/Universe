@@ -44,11 +44,6 @@ class MetricUtilities {
   static void visitActiveNeurons(
       const BoltVector& output, const BoltVector& labels,
       PROCESS_ELEM_PAIR_LAMBDA_T process_elem_pair_lambda) {
-    // Asserts that the lambda takes in 2 floats and does not return anything.
-    static_assert(
-        std::is_convertible<PROCESS_ELEM_PAIR_LAMBDA_T,
-                            std::function<void(float, float)>>::value);
-
     if (output.isDense()) {
       if (labels.isDense()) {
         visitActiveNeuronsImpl<true, true>(output, labels,

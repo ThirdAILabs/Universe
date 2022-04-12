@@ -22,6 +22,7 @@ void createBoltSubmodule(py::module_& module) {
   bolt_submodule.def("getActivationFunction", &getActivationFunction,
                      py::arg("name"));
 
+  // TODO(Geordie, Nicholas): put loss functions in its own submodule
   py::class_<LossFunction>(bolt_submodule, "LossFunction");  // NOLINT
 
   py::class_<CategoricalCrossEntropyLoss, LossFunction>(
@@ -32,7 +33,7 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<>());
 
   py::class_<WeightedMeanAbsolutePercentageErrorLoss, LossFunction>(
-      bolt_submodule, "WeightedMeanAbsolutePercentageErrorLoss")
+      bolt_submodule, "WeightedMeanAbsolutePercentageError")
       .def(py::init<>());
 
   py::class_<thirdai::bolt::FullyConnectedLayerConfig>(bolt_submodule,
