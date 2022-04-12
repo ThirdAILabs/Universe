@@ -17,7 +17,7 @@ import logging
 
 gunicorn_logger = logging.getLogger("gunicorn.error")
 app.logger.handlers = gunicorn_logger.handlers
-app.logger.setLevel(logging.INFO)
+app.logger.setLevel(gunicorn_logger.level)
 
 app.logger.info("Loading index and model")
 embedding_model = DocSearchModel()
@@ -29,18 +29,18 @@ app.logger.info("Index and model loaded")
 def perform_query_top_1():
 
     if "query" not in request.args:
-        app.logger.info(f"query not in args, args were {request.args}, aborting")
+        app.logger.error(f"query not in args, args were {request.args}, aborting")
         abort(400)
 
     if "top_k" not in request.args:
-        app.logger.info(f"top_k not in args, args were {request.args}, aborting")
+        app.logger.error(f"top_k not in args, args were {request.args}, aborting")
         abort(400)
 
     query_text = request.args.get("query")
 
     top_k = int(request.args.get("top_k"))
 
-    app.logger.info(
+    app.logger.debug(
         f'Handling document search query: query="{query_text}", top_k="{top_k}"'
     )
 
@@ -53,7 +53,7 @@ def perform_query_top_1():
     result = index_to_query.query(query_embedding, top_k=internal_top_k)
 
     app.logger.info(
-        f'For query="{query_text}", found {len(result)} results, returning {min(len(result), top_k)} results'
+        f'For query="{query_text}" and top_k="{top_k}", found {len(result)} results, returning {min(len(result), top_k)} results'
     )
 
     return jsonify(

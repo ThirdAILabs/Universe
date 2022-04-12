@@ -20,4 +20,4 @@ RUN \
 # maxflash index mounted to /home/thirdai/index on the port 5000. Set timeout
 # to 600 seconds to allow load time of 10 minutes to load index on startup
 ENV FLASK_APP docsearch_flask_app
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "-w", "1", "--timeout", "500",  "docsearch_flask_app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "-w", "1", "--timeout", "500",  "--log-level", "debug", "docsearch_flask_app:app"]
