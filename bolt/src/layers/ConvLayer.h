@@ -12,11 +12,11 @@ class ConvLayer : public SequentialLayer {
             std::pair<uint32_t, uint32_t> next_kernel_size);
 
   void forward(const BoltVector& input, BoltVector& output,
-               const BoltVector* labels) override;
+               const BoltVector* labels) final;
 
-  void backpropagate(BoltVector& input, BoltVector& output) override;
+  void backpropagate(BoltVector& input, BoltVector& output) final;
 
-  void backpropagateInputLayer(BoltVector& input, BoltVector& output) override;
+  void backpropagateInputLayer(BoltVector& input, BoltVector& output) final;
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2,
                         float eps) override;
@@ -36,9 +36,9 @@ class ConvLayer : public SequentialLayer {
 
   bool isForceSparsity() const final { return _force_sparse_for_inference; }
 
-  void buildHashTables() override;
+  void buildHashTables() final;
 
-  void reBuildHashFunction() override;
+  void reBuildHashFunction() final;
 
   void shuffleRandNeurons() final;
 
