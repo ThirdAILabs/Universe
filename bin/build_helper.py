@@ -66,7 +66,7 @@ parser.add_argument(
     default=[],
     metavar="",  # Don't print the metavar because it's ugly
     type=parse_feature_flag,
-    help="Whitespace seperated preprocessor flags to pass to the compiler to turn on and off features. These shou",
+    help="Whitespace seperated preprocessor flags to pass to the compiler to turn on and off features.",
 )
 args = parser.parse_args()
 
