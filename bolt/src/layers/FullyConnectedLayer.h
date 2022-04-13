@@ -131,11 +131,14 @@ class FullyConnectedLayer final : public SequentialLayer {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _w_gradient, _w_momentum, _w_velocity, _biases, _b_gradient,
-            _b_momentum, _b_velocity, _is_active, _sampling_config, _hasher,
-            _hash_table, _rand_neurons, _force_sparse_for_inference);
+    archive(cereal::base_class<SequentialLayer>(this), _dim, _prev_dim,
+            _sparse_dim, _sparsity, _act_func, _weights, _w_gradient,
+            _w_momentum, _w_velocity, _biases, _b_gradient, _b_momentum,
+            _b_velocity, _is_active, _sampling_config, _hasher, _hash_table,
+            _rand_neurons, _force_sparse_for_inference);
   }
 };
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedLayer)

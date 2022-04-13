@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 #include "SequentialLayer.h"
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
@@ -124,5 +126,21 @@ class ConvLayer final : public SequentialLayer {
   uint32_t _prev_num_sparse_filters;
   uint32_t _kernel_size;
   std::vector<uint32_t> _in_to_out, _out_to_in;  // patch mappings
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<SequentialLayer>(this), _dim, _prev_dim,
+            _sparse_dim, _sparsity, _act_func, _weights, _w_gradient,
+            _w_momentum, _w_velocity, _biases, _b_gradient, _b_momentum,
+            _b_velocity, _is_active, _sampling_config, _hasher, _hash_table,
+            _rand_neurons, _force_sparse_for_inference, _patch_dim,
+            _sparse_patch_dim, _num_patches, _num_filters, _num_sparse_filters,
+            _prev_num_filters, _prev_num_sparse_filters, _kernel_size,
+            _in_to_out, _out_to_in);
+  }
 };
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::ConvLayer)
