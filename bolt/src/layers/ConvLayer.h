@@ -131,11 +131,10 @@ class ConvLayer final : public SequentialLayer {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<SequentialLayer>(this), _dim, _prev_dim,
-            _sparse_dim, _sparsity, _act_func, _weights, _w_gradient,
-            _w_momentum, _w_velocity, _biases, _b_gradient, _b_momentum,
-            _b_velocity, _is_active, _sampling_config, _hasher, _hash_table,
-            _rand_neurons, _force_sparse_for_inference, _patch_dim,
+    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+            _w_gradient, _w_momentum, _w_velocity, _biases, _b_gradient,
+            _b_momentum, _b_velocity, _is_active, _sampling_config, _hasher,
+            _hash_table, _rand_neurons, _force_sparse_for_inference, _patch_dim,
             _sparse_patch_dim, _num_patches, _num_filters, _num_sparse_filters,
             _prev_num_filters, _prev_num_sparse_filters, _kernel_size,
             _in_to_out, _out_to_in);
@@ -144,3 +143,5 @@ class ConvLayer final : public SequentialLayer {
 }  // namespace thirdai::bolt
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::ConvLayer)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(thirdai::bolt::SequentialLayer,
+                                     thirdai::bolt::ConvLayer)
