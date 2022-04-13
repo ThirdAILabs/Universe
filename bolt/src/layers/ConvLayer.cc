@@ -252,14 +252,15 @@ void ConvLayer::selectActiveFilters(
   // hash a section of the input (the input patch) and populate a section of the
   // output (the output patch) with that input's active filters (with an offset)
   std::unordered_set<uint32_t> active_set;
-  std::vector<uint32_t> hashes;
+  std::vector<uint32_t> hashes(_hasher->numTables());
   if (PREV_DENSE) {
-    hashes = _hasher->hashSingleDense(&input.activations[in_patch * _patch_dim],
-                                      _patch_dim);
+    _hasher->hashSingleDense(&input.activations[in_patch * _patch_dim],
+                             _patch_dim, hashes.data());
   } else {
-    hashes = _hasher->hashSingleSparse(
+    _hasher->hashSingleSparse(
         prev_active_filters.data() + in_patch * _sparse_patch_dim,
-        &input.activations[in_patch * _sparse_patch_dim], _sparse_patch_dim);
+        &input.activations[in_patch * _sparse_patch_dim], _sparse_patch_dim,
+        hashes.data());
   }
   _hash_table->queryBySet(hashes.data(), active_set);
 

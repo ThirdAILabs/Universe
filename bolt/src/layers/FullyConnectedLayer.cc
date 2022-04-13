@@ -226,12 +226,12 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     active_set.insert(labels->active_neurons[i]);
   }
 
-  std::vector<uint32_t> hashes;
+  std::vector<uint32_t> hashes(_hasher->numTables());
   if (PREV_DENSE) {
-    hashes = _hasher->hashSingleDense(input.activations, input.len);
+    _hasher->hashSingleDense(input.activations, input.len, hashes.data());
   } else {
-    hashes = _hasher->hashSingleSparse(input.active_neurons, input.activations,
-                                       input.len);
+    _hasher->hashSingleSparse(input.active_neurons, input.activations,
+                              input.len, hashes.data());
   }
 
   if (_force_sparse_for_inference && _act_func == ActivationFunction::Softmax) {
