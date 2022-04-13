@@ -15,8 +15,8 @@ def parse_feature_flag(flag):
         raise argparse.ArgumentTypeError(
             f"""
             Feature flag {flag} doesn't follow {pattern.pattern}. Flag must 
-            start with THIRDAI, can then contain any combination of lower/upper 
-            case and underscores, and the last character cannot be an
+            start with THIRDAI, then contain any combination of lower/upper 
+            case and underscores, and then the last character cannot be an
             underscore.
             """
         )
