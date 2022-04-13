@@ -8,6 +8,19 @@ namespace thirdai::dataset::python {
 void createDatasetSubmodule(py::module_& module) {
   auto dataset_submodule = module.def_submodule("dataset");
 
+  py::class_<BoltVector>(dataset_submodule, "BoltVector")
+      .def("to_string", &BoltVector::toString)
+      .def("__str__", &BoltVector::toString)
+      .def("__repr__", &BoltVector::toString);
+
+  py::class_<BoltInputBatch>(dataset_submodule, "BoltInputBatch")
+      .def(py::init<std::vector<BoltVector>&&, std::vector<BoltVector>&&>(),
+           py::arg("vectors"), py::arg("labels"))
+      .def("to_string", &BoltInputBatch::toString)
+      .def("__str__", &BoltInputBatch::toString)
+      .def("__repr__", &BoltInputBatch::toString)
+      .def("size", &BoltInputBatch::getBatchSize);
+
   py::class_<InMemoryDataset<SparseBatch>> _imsd_(dataset_submodule,
                                                   "InMemorySparseDataset");
   (void)_imsd_;  // To get rid of clang tidy error
@@ -32,6 +45,12 @@ void createDatasetSubmodule(py::module_& module) {
   dataset_submodule.def("load_csv_dataset", &loadCSVDataset,
                         py::arg("filename"), py::arg("batch_size"),
                         py::arg("delimiter") = ",");
+
+  dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
+                        py::arg("indices"), py::arg("values"));
+
+  dataset_submodule.def("make_dense_vector", &BoltVector::makeDenseVector,
+                        py::arg("values"));
 
   py::class_<InMemoryDataset<BoltInputBatch>> _bolt_dataset_(dataset_submodule,
                                                              "BoltDataset");

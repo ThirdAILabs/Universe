@@ -3,6 +3,8 @@
 #include <cassert>
 #include <cstdint>
 #include <iostream>
+#include <sstream>
+#include <string>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -155,6 +157,31 @@ struct BoltVector {
   }
 
   constexpr bool isDense() const { return this->active_neurons == nullptr; }
+
+  std::string toString() const {
+    std::stringstream ss;
+    ss << "[";
+
+    if (isDense()) {
+      for (size_t i = 0; i < len; i++) {
+        ss << activations[i];
+        if (i < len - 1) {
+          ss << ", ";
+        }
+      }
+    } else {
+      for (size_t i = 0; i < len; i++) {
+        ss << "(" << active_neurons[i] << ", " << activations[i] << ")";
+        if (i < len - 1) {
+          ss << ", ";
+        }
+      }
+    }
+
+    ss << "]";
+
+    return ss.str();
+  }
 
   ~BoltVector() { freeMemory(); }
 

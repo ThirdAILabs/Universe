@@ -36,6 +36,27 @@ class BoltInputBatch {
     return _labels[i];
   }
 
+  std::string toString() const {
+    std::stringstream ss;
+    ss << "===================================================================="
+          "====\n";
+    ss << "Batch | size = " << _vectors.size() << "\n\n";
+    if (_labels.size() == _vectors.size()) {
+      for (size_t i = 0; i < _vectors.size(); i++) {
+        ss << "Vector " << i << ":\n";
+        ss << "Input: " << _vectors.at(i).toString() << "\n";
+        ss << "Target: " << _labels.at(i).toString() << "\n";
+      }
+    } else {
+      for (size_t i = 0; i < _vectors.size(); i++) {
+        ss << "Vector " << i << ": " << _vectors.at(i).toString() << "\n\n";
+      }
+    }
+    ss << "===================================================================="
+          "====";
+    return ss.str();
+  }
+
  private:
   std::vector<BoltVector> _vectors;
   std::vector<BoltVector> _labels;
