@@ -34,7 +34,7 @@ class LossFunction {
   template <bool OUTPUT_DENSE, bool LABEL_DENSE>
   void computeLossGradientsImpl(BoltVector& output, const BoltVector& labels,
                                 uint32_t batch_size) const {
-    assert(!OUTPUT_DENSE || output.active_neurons == nullptr);
+    assert(!(OUTPUT_DENSE && output.active_neurons != nullptr));
     assert(!LABEL_DENSE || labels.active_neurons == nullptr);
     if (OUTPUT_DENSE && LABEL_DENSE) {
       assert(output.len == labels.len);
@@ -105,7 +105,7 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const override {
     auto direction = activation > label ? -1.0 : 1.0;
-    return direction / (batch_size);
+    return direction / batch_size;
   }
 };
 

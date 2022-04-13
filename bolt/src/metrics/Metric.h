@@ -32,7 +32,7 @@ class Metric {
   // Use case: for regression metrics such as RMSE and WMAPE, inference sparsity
   // must be consistent with training sparsity so forced dense inference is not
   // allowed.
-  virtual bool allowForceDenseInference() = 0;
+  virtual bool forceDenseInference() = 0;
 
   virtual ~Metric() = default;
 };
@@ -91,7 +91,7 @@ class CategoricalAccuracy final : public Metric {
 
   std::string getName() final { return name; }
 
-  bool allowForceDenseInference() final { return true; }
+  bool forceDenseInference() final { return true; }
 
  private:
   std::atomic<uint32_t> _correct;
@@ -146,7 +146,7 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
 
   std::string getName() final { return name; }
 
-  bool allowForceDenseInference() final { return false; }
+  bool forceDenseInference() final { return false; }
 
  private:
   std::atomic<float> _sum_of_deviations;
@@ -173,7 +173,7 @@ class MetricAggregator {
       // If at least one metric does not allow forced dense inference, forced
       // dense inference is not allowed.
       _allow_force_dense_inference &=
-          _metrics.at(_metrics.size() - 1)->allowForceDenseInference();
+          _metrics.at(_metrics.size() - 1)->forceDenseInference();
     }
   }
 
@@ -191,7 +191,7 @@ class MetricAggregator {
 
   MetricData getOutput() { return _output; }
 
-  bool allowForceDenseInference() const { return _allow_force_dense_inference; }
+  bool forceDenseInference() const { return _allow_force_dense_inference; }
 
  private:
   std::vector<std::unique_ptr<Metric>> _metrics;

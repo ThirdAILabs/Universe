@@ -111,7 +111,7 @@ MetricData Model<BATCH_T>::predict(
   // a batch size larger than this so we can just set the batch size here.
   // If sparse inference is not enabled we want the outptus to be dense,
   // otherwise we want whatever the default for the layer is.
-  initializeNetworkState(batch_size, metrics.allowForceDenseInference());
+  initializeNetworkState(batch_size, metrics.forceDenseInference());
 
   ProgressBar bar(num_test_batches, verbose);
 
@@ -119,7 +119,7 @@ MetricData Model<BATCH_T>::predict(
   // This is not the same as enable_sparse_inference(), which also freezes hash
   // tables.
   BoltBatch outputs =
-      getOutputs(batch_size, metrics.allowForceDenseInference());
+      getOutputs(batch_size, metrics.forceDenseInference());
 
   auto test_start = std::chrono::high_resolution_clock::now();
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {

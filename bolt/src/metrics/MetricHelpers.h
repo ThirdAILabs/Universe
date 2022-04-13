@@ -83,7 +83,7 @@ class MetricUtilities {
         std::is_convertible<PROCESS_ELEM_PAIR_LAMBDA_T,
                             std::function<void(float, float)>>::value);
 
-    assert(!OUTPUT_DENSE || output.active_neurons == nullptr);
+    assert(!(OUTPUT_DENSE && output.active_neurons != nullptr));
     assert(!LABEL_DENSE || labels.active_neurons == nullptr);
     if (OUTPUT_DENSE && LABEL_DENSE) {
       assert(output.len == labels.len);
