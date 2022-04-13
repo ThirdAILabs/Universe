@@ -1,13 +1,12 @@
 from typing import List, Iterator, Tuple
 import random
-from .schema import Schema
-from ..blocks.block_interface import Block
+from .schema import Schema, __BlockList__
 from ..sources.source_interface import Source
 from ..parsers.parser_interface import Parser
 from ..utils.builder_vectors import (
-    BuilderVector,
-    SparseBuilderVector,
-    DenseBuilderVector,
+    __BuilderVector__,
+    __SparseBuilderVector__,
+    __DenseBuilderVector__,
 )
 from thirdai import dataset
 
@@ -88,20 +87,6 @@ class Dataset:
             sample and how to process them.
         """
         self._schema = schema
-        if schema == None:
-            return
-        # Returns input vector as dense vector if all input feature blocks are
-        # dense, returns sparse vector otherwise
-        self.dense_input = all([block.is_dense() for block in self._schema.input_blocks])
-        # Returns target vector as dense vector if all target feature blocks are
-        # dense, returns sparse vector otherwise
-        # This edge case is super ugly. Fix this later.
-        if len(self._schema.target_blocks) == 0:
-            self.dense_target = False
-        else:
-            self.dense_target = all(
-                [block.is_dense() for block in self._schema.target_blocks]
-            )
         return self  ### Returns self so we can chain the set() method calls.
 
     def set_batch_size(self, size: int):
@@ -120,14 +105,14 @@ class Dataset:
         return self  ### Returns self so we can chain the set() method calls.
 
     def __process_row(
-        self, input_row: List[str], dense: bool, blocks: List[Block], offsets: List[int]
-    ) -> Tuple[BuilderVector, BuilderVector]:
+        self, input_row: List[str], blocks: __BlockList__
+    ) -> Tuple[__BuilderVector__, __BuilderVector__]:
         """Helper function that processes a single row (sample) into a vector embedding."""
 
         # Process input vec
-        shared_vec = DenseBuilderVector() if dense else SparseBuilderVector()
+        shared_vec = __DenseBuilderVector__() if blocks.is_dense() else __SparseBuilderVector__()
 
-        for block, offset in zip(blocks, offsets):
+        for block, offset in blocks:
             block.process(input_row, shared_vec, offset)
 
         return shared_vec.to_bolt_vector()
@@ -150,9 +135,7 @@ class Dataset:
             while next_row is not None:
                 input_vec = self.__process_row(
                     next_row,
-                    self.dense_input,
                     self._schema.input_blocks,
-                    self._schema.input_offsets,
                 )
 
                 self._input_vectors.append(input_vec)
@@ -160,9 +143,7 @@ class Dataset:
                 if self._target_vectors:
                     target_vec = self.__process_row(
                         next_row,
-                        self.dense_target,
                         self._schema.target_blocks,
-                        self._schema.target_offsets,
                     )
                     self._target_vectors.append(target_vec)
 
@@ -188,6 +169,7 @@ class Dataset:
                 random.seed(self._shuffle_seed)
 
         if self._shuffle_rows and self._target_vectors:
+            # TODO(Geordie): Zipping seems to be expensive. Look into this if need speedup.
             temp = list(zip(self._input_vectors, self._target_vectors))
             random.shuffle(temp)
             self._input_vectors, self._target_vectors = zip(*temp)
@@ -214,6 +196,7 @@ class Dataset:
             start_idx = batch * self._batch_size
             end_idx = min((batch + 1) * self._batch_size, len(self._input_vectors))
 
+            # TODO(Geordie): Port to C++ soon.
             yield dataset.BoltInputBatch(
                 self._input_vectors[start_idx:end_idx],
                 []
@@ -237,9 +220,7 @@ class Dataset:
             while next_row is not None and current_batch_size < self._batch_size:
                 input_vec = self.__process_row(
                     next_row,
-                    self.dense_input,
                     self._schema.input_blocks,
-                    self._schema.input_offsets,
                 )
 
                 input_vectors.append(input_vec)
@@ -247,16 +228,14 @@ class Dataset:
                 if target_vectors:
                     target_vec = self.__process_row(
                         next_row,
-                        self.dense_target,
                         self._schema.target_blocks,
-                        self._schema.target_offsets,
                     )
                     target_vectors.append(target_vec)
 
                 next_row = next(row_generator)
                 current_batch_size += 1
 
-            # Yield the batch.
+            # Yield the batch. TODO(Geordie): Port to C++ soon.
             yield dataset.BoltInputBatch(
                 input_vectors, [] if target_vectors is None else target_vectors
             )
@@ -268,10 +247,6 @@ class Dataset:
         the schema. The input vectors in the yielded batch are dense only if all
         input feature blocks return dense features. Input vectors are sparse otherwise.
         The same for target vectors.
-
-        This information is readily available before batch generation in
-        self.dense_input and self.dense_target member
-        fields.
         """
 
         if self._schema is None:

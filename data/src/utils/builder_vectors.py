@@ -2,8 +2,9 @@ import numpy as np
 from thirdai import dataset
 
 
-class BuilderVector:
-    """Builder vector interface.
+class __BuilderVector__:
+    """Builder vector interface. 
+    Only to be used internally, so it is private (surrounded by __).
     A builder vector is a data structure for composing features
     from different blocks into a single vector.
     """
@@ -25,7 +26,7 @@ class BuilderVector:
         return
 
 
-class SparseBuilderVector(BuilderVector):
+class __SparseBuilderVector__(__BuilderVector__):
     """A concrete implementation of BuilderVector for sparse vectors."""
 
     def __init__(self) -> None:
@@ -68,32 +69,33 @@ class SparseBuilderVector(BuilderVector):
         """Converts the vector to the fixed-sized, sparsity-agnostic bolt vector."""
         sorted_lists = sorted(zip(self._indices, self._values))
 
-        # Deduplicate entries by aggregating the values for the same index.
-        # We use arrays and then sort and deduplicate instead of using hash maps
-        # because hash maps are slow.
-        real_size = -1
+        # Sort the arrays and throw error if there is a duplicate.
+        # TODO(Geordie): It's a nice check but is this expensive? Is it necessary?
+        self._indices = [idx for idx, _ in sorted_lists]
+        self._values = [val for _, val in sorted_lists]
         last_idx = -1
-        for iv in sorted_lists:
-            if iv[0] != last_idx:
-                real_size += 1
-                last_idx = iv[0]
-
-                self._indices[real_size] = iv[0]
-                self._values[real_size] = iv[1]
-
+        for idx in self._indices:
+            if idx != last_idx:
+                last_idx = idx
             else:
-                self._values[real_size] += iv[1]
-
-        real_size += 1
-
-        self._indices = self._indices[:real_size]
-        self._values = self._values[:real_size]
+                raise RuntimeError("Found produced duplicate entries for the same"
+                    + "position in the sparse vector")
 
         return dataset.make_sparse_vector(self._indices, self._values)
 
 
-class DenseBuilderVector(BuilderVector):
-    """A concrete implementation of BuilderVector for dense vectors."""
+class __DenseBuilderVector__(__BuilderVector__):
+    """A concrete implementation of __BuilderVector__ for dense vectors.
+    
+    Note that the dense builder vector expects that features are appended 
+    in order (lower vector offset followed by higher vector offset) 
+    and contiguously (the end of the vector section occupied by a feature
+    marks the start of the vector section occupied by another feature).
+
+    In effect, the first call to addDenseFeatures() / addSingleFeature()
+    must have start_dim = 0, and the next call to these methods must have
+    start_dim = the dimension of the previously added feature, and so on.
+    """
 
     def __init__(self):
         """Constructor.
@@ -111,12 +113,7 @@ class DenseBuilderVector(BuilderVector):
 
     def addSingleFeature(self, start_dim: int, value: float) -> None:
         """Sets the start_dim-th dimension of the vector to value."""
-        if len(self._values > start_dim):
-            raise RuntimeError(
-                f"DenseBuilderVector: Adding feature at dimension {start_dim} but vector is already {len(self._values)} dimensions."
-            )
-        if len(self._values) < start_dim:
-            self._values.extend([0 for _ in range(start_dim - len(self._values))])
+        assert len(self._values) == start_dim
         self._values.append(value)
 
     def addSparseFeatures(self, indices: np.ndarray, values: np.ndarray) -> None:
@@ -127,6 +124,7 @@ class DenseBuilderVector(BuilderVector):
 
     def addDenseFeatures(self, start_dim: int, values: np.ndarray) -> None:
         """Appends a dense array of features to the vector starting at start_dim."""
+        assert len(self._values) == start_dim
         self._values.extend(values.tolist())
 
     def to_bolt_vector(self) -> dataset.BoltVector:

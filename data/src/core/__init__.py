@@ -1,2 +1,2 @@
-from .dataset import *
-from .schema import *
+from .dataset import Dataset
+from .schema import Schema

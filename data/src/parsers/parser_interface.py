@@ -5,7 +5,8 @@ class Parser:
     from the the data source and parsed into a row of features.
     """
 
-    def rows(self, source: any) -> Iterator[List[str]]:
+    # TODO(Geordie): Support returning lists of other types.
+    def rows(self, source: any) -> Iterator[List[str]]: 
         """Streams the next sample from the data source and parses it into a row of
         features.
 

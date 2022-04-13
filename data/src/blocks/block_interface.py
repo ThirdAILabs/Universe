@@ -1,4 +1,4 @@
-from ..utils.builder_vectors import BuilderVector
+from ..utils.builder_vectors import __BuilderVector__
 from typing import List
 
 
@@ -12,10 +12,11 @@ class Block:
 
     def process(
         self,
-        input_row: List[str],
-        shared_feature_vector: BuilderVector = None,
+        input_row: List[str], # TODO(Geordie): Find a way to support other 
+                              # representations of input rows.
+        shared_feature_vector: __BuilderVector__ = None,
         idx_offset: int = 0,
-    ) -> BuilderVector:
+    ) -> __BuilderVector__:
         """The block can return either dense or sparse features, depending on
         what is best for the feature that it produces.
 
