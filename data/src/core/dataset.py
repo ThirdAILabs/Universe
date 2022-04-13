@@ -30,11 +30,19 @@ class Dataset:
     - The default batch size is 1.
     - If the shuffle() method is called, the whole dataset is loaded into memory.
       Otherwise, rows is streamed from the file in batches.
-    - Calling process() before setting source, parser and schema 
+    - Calling process() before setting source, parser and schema
 
     """
 
-    def __init__(self, source: Source=None, parser: Parser=None, schema: Schema=None, batch_size: int=1, shuffle: bool=False, shuffle_seed: int=None):
+    def __init__(
+        self,
+        source: Source = None,
+        parser: Parser = None,
+        schema: Schema = None,
+        batch_size: int = 1,
+        shuffle: bool = False,
+        shuffle_seed: int = None,
+    ):
         """Constructor.
 
         Arguments:
@@ -68,7 +76,7 @@ class Dataset:
         """
         self._source = source
         return self  ### Returns self so we can chain the set() method calls.
-    
+
     def set_parser(self, parser: Parser):
         """Defines how the dataset can be parsed.
 
@@ -98,7 +106,7 @@ class Dataset:
         self._batch_size = size
         return self  ### Returns self so we can chain the set() method calls.
 
-    def shuffle(self, seed: int=None):
+    def shuffle(self, seed: int = None):
         """Samples will be shuffled before being batched."""
         self._shuffle_rows = True
         self._shuffle_seed = seed
@@ -110,7 +118,9 @@ class Dataset:
         """Helper function that processes a single row (sample) into a vector embedding."""
 
         # Process input vec
-        shared_vec = __DenseBuilderVector__() if blocks.is_dense() else __SparseBuilderVector__()
+        shared_vec = (
+            __DenseBuilderVector__() if blocks.is_dense() else __SparseBuilderVector__()
+        )
 
         for block, offset in blocks:
             block.process(input_row, shared_vec, offset)
@@ -162,7 +172,7 @@ class Dataset:
             default_random_state = random.getstate()
             if self._last_random_state is not None:
                 # we don't want to reseed if we had previously shuffled
-                # because then we will have the same shuffle permutation 
+                # because then we will have the same shuffle permutation
                 # between epochs.
                 random.setstate(self._last_random_state)
             else:
@@ -180,7 +190,7 @@ class Dataset:
 
         elif self._shuffle_rows:
             random.shuffle(self._input_vectors)
-        
+
         if self._shuffle_seed is not None:
             # Save our random state and revert the random state
             # to what it was before we used the random module.
@@ -257,8 +267,8 @@ class Dataset:
 
         if len(self._schema.input_blocks) == 0:
             raise RuntimeError(
-                "Dataset: schema does not have input blocks. Make sure it is " 
-                + "constructed with the input_blocks parameter, or that " 
+                "Dataset: schema does not have input blocks. Make sure it is "
+                + "constructed with the input_blocks parameter, or that "
                 + "the add_input_block() method is called."
             )
 
@@ -271,7 +281,7 @@ class Dataset:
         # Loads the whole dataset in memory if we need to shuffle.
         # Otherwise, stream batch by batch.
         # Eventually, whether or not the whole dataset is kept in memory
-        # is based on whether it fits, regardless of whether we need to 
+        # is based on whether it fits, regardless of whether we need to
         # shuffle.
         if self._shuffle_rows:
             return self.__load_all_and_process()

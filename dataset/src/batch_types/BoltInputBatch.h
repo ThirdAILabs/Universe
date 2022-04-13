@@ -38,7 +38,8 @@ class BoltInputBatch {
 
   std::string toString() const {
     std::stringstream ss;
-    ss << "========================================================================\n";
+    ss << "===================================================================="
+          "====\n";
     ss << "Batch | size = " << _vectors.size() << "\n\n";
     if (_labels.size() == _vectors.size()) {
       for (size_t i = 0; i < _vectors.size(); i++) {
@@ -51,7 +52,8 @@ class BoltInputBatch {
         ss << "Vector " << i << ": " << _vectors.at(i).toString() << "\n\n";
       }
     }
-    ss << "========================================================================";
+    ss << "===================================================================="
+          "====";
     return ss.str();
   }
 

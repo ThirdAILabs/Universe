@@ -3,7 +3,7 @@ from thirdai import dataset
 
 
 class __BuilderVector__:
-    """Builder vector interface. 
+    """Builder vector interface.
     Only to be used internally, so it is private (surrounded by __).
     A builder vector is a data structure for composing features
     from different blocks into a single vector.
@@ -78,17 +78,19 @@ class __SparseBuilderVector__(__BuilderVector__):
             if idx != last_idx:
                 last_idx = idx
             else:
-                raise RuntimeError("Found produced duplicate entries for the same"
-                    + "position in the sparse vector")
+                raise RuntimeError(
+                    "Found produced duplicate entries for the same"
+                    + "position in the sparse vector"
+                )
 
         return dataset.make_sparse_vector(self._indices, self._values)
 
 
 class __DenseBuilderVector__(__BuilderVector__):
     """A concrete implementation of __BuilderVector__ for dense vectors.
-    
-    Note that the dense builder vector expects that features are appended 
-    in order (lower vector offset followed by higher vector offset) 
+
+    Note that the dense builder vector expects that features are appended
+    in order (lower vector offset followed by higher vector offset)
     and contiguously (the end of the vector section occupied by a feature
     marks the start of the vector section occupied by another feature).
 

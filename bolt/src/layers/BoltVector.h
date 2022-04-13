@@ -4,8 +4,8 @@
 #include <cstdint>
 #include <iostream>
 #include <sstream>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace thirdai::bolt {
 
@@ -168,10 +168,10 @@ struct BoltVector {
         if (i < len - 1) {
           ss << ", ";
         }
-      } 
+      }
     } else {
       for (size_t i = 0; i < len; i++) {
-        ss << "(" << active_neurons[i] << ", " <<  activations[i] << ")";
+        ss << "(" << active_neurons[i] << ", " << activations[i] << ")";
         if (i < len - 1) {
           ss << ", ";
         }
@@ -179,7 +179,7 @@ struct BoltVector {
     }
 
     ss << "]";
-    
+
     return ss.str();
   }
 

@@ -12,8 +12,8 @@ class Block:
 
     def process(
         self,
-        input_row: List[str], # TODO(Geordie): Find a way to support other 
-                              # representations of input rows.
+        input_row: List[str],  # TODO(Geordie): Find a way to support other
+        # representations of input rows.
         shared_feature_vector: __BuilderVector__ = None,
         idx_offset: int = 0,
     ) -> __BuilderVector__:
