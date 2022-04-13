@@ -5,7 +5,7 @@
 #include <hashtable/src/SampledHashTable.h>
 
 namespace thirdai::bolt {
-class ConvLayer : public SequentialLayer {
+class ConvLayer final : public SequentialLayer {
  public:
   ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
             uint32_t prev_num_filters, uint32_t prev_num_sparse_filters,
