@@ -22,8 +22,9 @@ class JaccardSim : public Similarity {
   DenseVecPair getRandomDenseVectors(float sim, uint32_t dim) override {
     (void)sim;
     (void)dim;
-    // Jaccard is only for sparse vectors
-    throw thirdai::exceptions::NotImplemented();
+    throw thirdai::exceptions::NotImplemented(
+        "Jaccard similarity is only for sparse vectors, cannot call "
+        "getRandomDenseVectors on JaccardSim");
   }
 
   SparseVecPair getRandomSparseVectors(float sim, uint32_t num_non_zeros,
@@ -87,7 +88,9 @@ class JaccardSim : public Similarity {
                thirdai::dataset::DenseVector& v2) override {
     (void)v1;
     (void)v2;
-    throw thirdai::exceptions::NotImplemented();
+    throw thirdai::exceptions::NotImplemented(
+        "Jaccard similarity is only for sparse vectors, cannot call getSim on "
+        "JaccardSim");
   }
 
   float getSim(const thirdai::dataset::SparseVector& v1,

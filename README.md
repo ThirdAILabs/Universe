@@ -1,7 +1,7 @@
 # Universe 
 Main Repository (follow monorepositry) 
 
-[Repository Setup Instructions](https://docs.google.com/document/d/196ajXaVUUqpTFigkMmBhdlhTAiKy7LxgYS95xqpB2Ys/edit?usp=sharing)
+[Repository Setup Instructions](https://www.notion.so/Universe-Setup-ed71176c2cf44b038ece8aee9fb64d35)
 
 ## Development Scripts
 There are some script in the bin folder that allow you to easily build, test,
@@ -12,7 +12,8 @@ directory. e.g. the mpi_example executable will be in
 `Universe/build/examples/mpi-example/mpi_example`. By default this will
 run in parallel and build all unbuilt targets or targets whose component source
 files have been updated, but you can pass in parameters to run in serial or build
-only a specific target. See the source of `$ bin/build.sh` for more details.
+only a specific target. You can also build in Debug or RelWithDebInfo, see the 
+source of `$ bin/build.sh` for more details.
 2. Run `$ bin/cpp-test.sh` from anywhere to have cmake run all c++ tests. To run specific
 tests, you can also pass a regular expression to filter tests 
 (or provide an explicit test name):
@@ -46,6 +47,22 @@ be mounted as a folder in the root of the container. Note that there may be
 some issues with existing cache information if you have last build on your local
 machine, and you may need to run a clean build or delete your build folder.
 
+## Debugging your Pybound C++ code from python
+1. Simply build the code in RelWithDebInfo or Debug mode, and
+run your python code with perf or gdb. To run with gdb, run `gdb python3` and then
+`your_py_script.py` (and feel free to set breakpoints in C++ code). 
+2. You can also now run performance profile your python code. To run with
+perf, simply run normal perf commands attached to your python process. 
+2. Debugging Pybound code with ASan isn't supported anymore, if you really need
+it we can add it back.
+
+## Debugging your C++ code
+1. The simplest way it to build your code in RelWithDebInfo or Debug mode and 
+then run gdb.
+2. If you want to run with ASan (an adress sanitizier), build with RelWithAsan
+or DebugWithAsan.
+
+
 
 ## Manual building and testing (DEPRECATED, use scripts in bin, see above)
 1. Clone this repository and navigate into it.
@@ -72,7 +89,7 @@ the library. To do this, you can run
 home directory). This will work until you open a new shell; to 
 automatically update your PYTHONPATH when you start your shell add the above
 command to your ~/.bash_profile or ~/.bash_rc, or equivalently run
-`echo "export PYTHONPATH=~/Universe/build:$PYTHONPATH" >> $HOME/.bash_profile`. 
+`echo "export PYTHONPATH=~/Universe/build:\$PYTHONPATH" >> $HOME/.bash_profile`. 
 Alternatively you can run `pip3 install .`. This installs thirdi without messing
 around with environment variables, but is not preferred for development since it
 is performs an entirely seperate parallel build from `bin/build.sh`, and so is

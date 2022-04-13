@@ -1,0 +1,30 @@
+name: Docker Integration Tests
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  docker-integration:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v2
+        with:           
+          submodules: 'recursive'
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+
+      - name: Build product Docker images
+        run: |
+          pip3 install git-archive-all
+          docker/product/build_all_product_dockers.sh
+
+      - name: Test product Docker images
+        run: docker/product/test_all_product_dockers.sh

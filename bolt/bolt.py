@@ -1,3 +1,4 @@
+import scipy as sp
 import toml
 import sys
 import os
@@ -5,7 +6,7 @@ from thirdai import bolt, dataset
 import numpy as np
 import numpy.typing as npt
 from sklearn.metrics import roc_auc_score
-from typing import MutableMapping, List, Tuple, Any, Union, Optional
+from typing import MutableMapping, List, Tuple, Any, Optional
 
 
 def create_fully_connected_layer_configs(
@@ -16,7 +17,7 @@ def create_fully_connected_layer_configs(
         layer = bolt.LayerConfig(
             dim=config.get("dim"),
             load_factor=config.get("sparsity", 1.0),
-            activation_function=config.get("activation"),
+            activation_function=bolt.getActivationFunction(config.get("activation")),
             sampling_config=bolt.SamplingConfig(
                 hashes_per_table=config.get("hashes_per_table", 0),
                 num_tables=config.get("num_tables", 0),
@@ -51,23 +52,20 @@ def find_full_filepath(filename: str) -> str:
     sys.exit(1)
 
 
-AnyBoltDataset = Union[dataset.InMemorySparseDataset, dataset.InMemoryDenseDataset]
-
-
 def load_dataset(
     config: MutableMapping[str, Any]
-) -> Optional[Tuple[AnyBoltDataset, AnyBoltDataset]]:
+) -> Optional[Tuple[dataset.BoltDataset, dataset.BoltDataset]]:
     train_filename = find_full_filepath(config["dataset"]["train_data"])
     test_filename = find_full_filepath(config["dataset"]["test_data"])
     batch_size = config["params"]["batch_size"]
     if config["dataset"]["format"].lower() == "svm":
-        train = dataset.load_svm_dataset(train_filename, batch_size)
-        test = dataset.load_svm_dataset(test_filename, batch_size)
+        train = dataset.load_bolt_svm_dataset(train_filename, batch_size)
+        test = dataset.load_bolt_svm_dataset(test_filename, batch_size)
         return train, test
     elif config["dataset"]["format"].lower() == "csv":
         delimiter = config["dataset"].get("delimeter", ",")
-        train = dataset.load_csv_dataset(train_filename, batch_size, delimiter)
-        test = dataset.load_csv_dataset(test_filename, batch_size, delimiter)
+        train = dataset.load_bolt_csv_dataset(train_filename, batch_size, delimiter)
+        test = dataset.load_bolt_csv_dataset(test_filename, batch_size, delimiter)
         return train, test
     else:
         print("Invalid dataset format specified")
@@ -75,7 +73,7 @@ def load_dataset(
 
 
 def load_click_through_dataset(
-    config: MutableMapping[str, Any]
+    config: MutableMapping[str, Any], sparse_labels: bool
 ) -> Tuple[dataset.ClickThroughDataset, dataset.ClickThroughDataset]:
     train_filename = find_full_filepath(config["dataset"]["train_data"])
     test_filename = find_full_filepath(config["dataset"]["test_data"])
@@ -83,10 +81,10 @@ def load_click_through_dataset(
     dense_features = config["dataset"]["dense_features"]
     categorical_features = config["dataset"]["categorical_features"]
     train = dataset.load_click_through_dataset(
-        train_filename, batch_size, dense_features, categorical_features
+        train_filename, batch_size, dense_features, categorical_features, sparse_labels
     )
     test = dataset.load_click_through_dataset(
-        test_filename, batch_size, dense_features, categorical_features
+        test_filename, batch_size, dense_features, categorical_features, sparse_labels
     )
     return train, test
 
@@ -112,23 +110,37 @@ def train_fcn(config: MutableMapping[str, Any]):
     rehash = config["params"]["rehash"]
     rebuild = config["params"]["rebuild"]
     use_sparse_inference = "sparse_inference_epoch" in config["params"].keys()
-    sparse_inference_epoch = config["params"]["sparse_inference_epoch"]
+    if use_sparse_inference:
+        sparse_inference_epoch = config["params"]["sparse_inference_epoch"]
+    else:
+        sparse_inference_epoch = None
 
     data = load_dataset(config)
     if data is None:
         return
     train, test = data
 
+    if config["params"]["loss_fn"].lower() == "categoricalcrossentropyloss":
+        loss = bolt.CategoricalCrossEntropyLoss()
+    elif config["params"]["loss_fn"].lower() == "meansquarederror":
+        loss = bolt.MeanSquaredError()
+    else:
+        print("'{}' is not a valid loss function".format(config["params"]["loss_fn"]))
+        return
+
+    train_metrics = config["params"]["train_metrics"]
+    test_metrics = config["params"]["test_metrics"]
+
     for e in range(epochs):
-        network.train(train, learning_rate, 1, rehash, rebuild)
+        network.train(train, loss, learning_rate, 1, rehash, rebuild, train_metrics)
         if use_sparse_inference and e == sparse_inference_epoch:
-            network.use_sparse_inference()
+            network.enable_sparse_inference()
         if max_test_batches is None:
-            network.predict(test)
+            network.predict(test, test_metrics)
         else:
-            network.predict(test, max_test_batches)
+            network.predict(test, test_metrics, True, max_test_batches)
     if not max_test_batches is None:
-        network.predict(test)
+        network.predict(test, test_metrics)
 
 
 def train_dlrm(config: MutableMapping[str, Any]):
@@ -148,19 +160,33 @@ def train_dlrm(config: MutableMapping[str, Any]):
     rehash = config["params"]["rehash"]
     rebuild = config["params"]["rebuild"]
 
-    use_auc = config["params"].get("use_auc", False)
+    if config["params"]["loss_fn"].lower() == "categoricalcrossentropyloss":
+        loss = bolt.CategoricalCrossEntropyLoss()
+    elif config["params"]["loss_fn"].lower() == "meansquarederror":
+        loss = bolt.MeanSquaredError()
 
-    train, test = load_click_through_dataset(config)
+    train_metrics = config["params"]["train_metrics"]
+    test_metrics = config["params"]["test_metrics"]
+
+    use_auc = "use_auc" in config["params"].keys() and config["params"].get(
+        "use_auc", False
+    )
+
+    use_sparse_labels = config["top_mlp_layers"][-1]["dim"] > 1
+    train, test = load_click_through_dataset(config, use_sparse_labels)
     labels = get_labels(config["dataset"]["test_data"])
 
     for _ in range(epochs):
-        dlrm.train(train, learning_rate, 1, rehash, rebuild)
-        scores = dlrm.predict(test)
+        dlrm.train(train, loss, learning_rate, 1, rehash, rebuild, train_metrics)
+        _, scores = dlrm.predict(test, test_metrics)
         preds = np.argmax(scores, axis=1)
         acc = np.mean(preds == labels)
         print("Accuracy: ", acc)
-        if use_auc:
+        if use_auc and len(scores.shape) == 1:
             auc = roc_auc_score(labels, scores)
+            print("AUC: ", auc)
+        elif use_auc and len(scores.shape) == 2 and scores.shape[1] == 2:
+            auc = roc_auc_score(labels, scores[:, 1])
             print("AUC: ", auc)
 
 

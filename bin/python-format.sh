@@ -2,4 +2,4 @@
 
 BASEDIR=$(dirname "$0")
 cd $BASEDIR/..
-black .
+black . --exclude deps

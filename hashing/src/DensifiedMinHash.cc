@@ -5,7 +5,6 @@
 #include <climits>
 #include <cmath>
 #include <cstdint>
-#include <iostream>
 #include <queue>
 #include <random>
 #include <stdexcept>
@@ -27,7 +26,8 @@ void DensifiedMinHash::hashSingleDense(const float* values, uint32_t dim,
   (void)values;
   (void)dim;
   (void)output;
-  throw thirdai::exceptions::NotImplemented();
+  throw thirdai::exceptions::NotImplemented(
+      "DensifiedMinHash cannot hash dense arrays.");
 }
 
 void DensifiedMinHash::hashSingleSparse(const uint32_t* indices,
