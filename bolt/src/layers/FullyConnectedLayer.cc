@@ -322,18 +322,16 @@ void FullyConnectedLayer::buildHashTables() {
   uint64_t num_tables = _hash_table->numTables();
   // TODO(nicholas): hashes could be array with size max(batch size, dim) that
   // is allocated once
-  uint32_t* hashes = new uint32_t[num_tables * _dim];
+  std::vector<uint32_t> hashes(num_tables * _dim);
 
 #pragma omp parallel for default(none) shared(num_tables, hashes)
   for (uint64_t n = 0; n < _dim; n++) {
     _hasher->hashSingleDense(_weights.data() + n * _prev_dim, _prev_dim,
-                             hashes + n * num_tables);
+                             hashes.data() + n * num_tables);
   }
 
   _hash_table->clearTables();
-  _hash_table->insertSequential(_dim, 0, hashes);
-
-  delete[] hashes;
+  _hash_table->insertSequential(_dim, 0, hashes.data());
 }
 
 void FullyConnectedLayer::reBuildHashFunction() {

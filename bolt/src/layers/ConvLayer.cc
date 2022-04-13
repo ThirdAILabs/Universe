@@ -346,18 +346,16 @@ void ConvLayer::buildHashTables() {
     return;
   }
   uint64_t num_tables = _hash_table->numTables();
-  uint32_t* hashes = new uint32_t[num_tables * _num_filters];
+  std::vector<uint32_t> hashes(num_tables * _num_filters);
 
 #pragma omp parallel for default(none) shared(num_tables, hashes)
   for (uint64_t n = 0; n < _num_filters; n++) {
     _hasher->hashSingleDense(_weights.data() + n * _patch_dim, _patch_dim,
-                             hashes + n * num_tables);
+                             hashes.data() + n * num_tables);
   }
 
   _hash_table->clearTables();
-  _hash_table->insertSequential(_num_filters, 0, hashes);
-
-  delete[] hashes;
+  _hash_table->insertSequential(_num_filters, 0, hashes.data());
 }
 
 void ConvLayer::shuffleRandNeurons() {
