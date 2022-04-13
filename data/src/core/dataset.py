@@ -276,8 +276,15 @@ class Dataset:
 
         if self._schema is None:
             raise RuntimeError(
-                "Dataset: schema is not set. Check that the set_schema() method"
+                "Dataset: schema is not set. Check that the set_schema() method "
                 + "is called before calling process()."
+            )
+
+        if len(self._schema.input_blocks) == 0:
+            raise RuntimeError(
+                "Dataset: schema does not have input blocks. Make sure it is " 
+                + "constructed with the input_blocks parameter, or that " 
+                + "the add_input_block() method is called."
             )
 
         if self._source_location or self._source_format is None:
@@ -288,10 +295,9 @@ class Dataset:
 
         # Loads the whole dataset in memory if we need to shuffle.
         # Otherwise, stream batch by batch.
-        # Ultimately, we want to load into a fixed-size buffer. We keep loading the
-        # dataset until the buffer is full, after which we will stream the data batch
-        # by batch. This way, we don't have to keep reloading data if the whole dataset
-        # fits in memory.
+        # Eventually, whether or not the whole dataset is kept in memory
+        # is based on whether it fits, regardless of whether we need to 
+        # shuffle.
         if self._shuffle_rows:
             return self.__load_all_and_process()
         else:
