@@ -6,7 +6,7 @@ Main Repository (follow monorepositry)
 ## Development Scripts
 There are some script in the bin folder that allow you to easily build, test,
 and lint you code.
-1. Run `$ bin/build.sh` from anywhere to have cmake build everything in universe.
+1. Run `$ bin/build.py` from anywhere to have cmake build everything in universe.
 All executables will be in their corresponding directory within the build 
 directory. e.g. the mpi_example executable will be in 
 `Universe/build/examples/mpi-example/mpi_example`. By default this will
@@ -92,7 +92,7 @@ command to your ~/.bash_profile or ~/.bash_rc, or equivalently run
 `echo "export PYTHONPATH=~/Universe/build:\$PYTHONPATH" >> $HOME/.bash_profile`. 
 Alternatively you can run `pip3 install .`. This installs thirdi without messing
 around with environment variables, but is not preferred for development since it
-is performs an entirely seperate parallel build from `bin/build.sh`, and so is
+is performs an entirely seperate parallel build from `bin/build.py`, and so is
 much slower.
 
 ## Using cmake
