@@ -1,5 +1,5 @@
 ARG REV_TAG
-FROM thirdai_slim_release:${REV_TAG}
+FROM thirdai_slim:${REV_TAG}
 
 # Setup shell and current user and env
 SHELL ["/bin/bash", "-c"]

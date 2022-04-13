@@ -6,14 +6,20 @@
 
 There are a number of Docker images in this folder. The slim folder contains
 the smallest, and is basically just an Ubuntu image with python, pip, and the 
-thirdai.so file. The base_jupyter extends the slim image with a jupyer lab 
-server. Other folders contain images that extend one of these two images. 
+thirdai.so file. The base_jupyter extends the slim image with a JupyerLab 
+server. Other folders contain Inference images that extend the slim image and
+Interactive images that extend the jupyter notebook image. 
 These are our product images.
 
 ## How do I build/test/save a Dockerfile?
 
-To build one of the Dockerfiles, run the build_image.sh script in the respective
-sub directory. If you want to build for a different platform than the one you 
+To build one of the Dockerfiles, run the build_inference_image.sh or
+build_interactive_image.sh script in the respective sub directory. You may also 
+need to build the dependencies of that image first. The Interactive Dockerfiles 
+depend on the base_jupyter Dockerfile, which depends on the slim Dockerfile. The
+Inference Dockerfiles just depend on the slim Dockerfile. 
+
+If you want to build for a different platform than the one you 
 are on, you may pass in that platform as the first positional argument (this
 should be one of linux/arm64 or linux/amd64), which will forward it to the 
 Docker build command. 
@@ -26,10 +32,6 @@ like normal pytest tests.
 To build all product Dockerfiles, run
 ```bash
 ./build_all_product_dockers.sh <optional platform arg>
-```
-To save and zip all product Dockerfiles to this directory (this also builds them), run
- ```bash
-./save_all_product_dockers.sh <optional platform arg>
 ```
 To test all product Dockerfiles to this directory (this also builds them), run
  ```bash
@@ -53,41 +55,24 @@ and rerun the build command.
 
 ## How do I run a Dockerfiles?
 
-Once you have built a product Docker image, you have two different 
-options on how to run it. 
+See thirdai.com/resources/documentation/dockerimages/ (or if this isn't up
+yet see https://www.notion.so/Use-ThirdAI-Docker-Container-c3524be84fec486f92122caff6ad4696)
+for how to run interactive containers. 
 
-Note that the docker container will start up with the 
-thirdai user, which has sudo permission. You may also wish to run the container 
-with --privileged, which speeds up the container to native levels (only do this 
-if you trust the code in the Docker container; here it is just ours so we trust 
-it).
-
-Your options are:
-1. Run a jupyter lab server by running 
-```bash
-docker run -p 8888:8888 <image name>:<git tag> 
-```
-This will start a jupyter lab server running in the container and forward the 
-jupyter lab port out of the container to your local machine. You can then
-open the link that gets printed out in your browser and start using jupyter.
-2. Use an interactive bash terminal by running
-```bash
-docker run -it -p 8888:8888 <image name>:<git tag> bash
-```
-You will enter as the thirdai user which has sudo privledges, and can do 
-anything you want, including starting up a jupter lab server.
+The DocSearch inference container should be run as
+``` docker run -p 5000:5000 -v /path/to/serialized/index:/home/thirdai/index:ro thirdai_docsearch_inference:<REF_TAG> ```
+which mounts the serialized index and forwards port 5000 in the Docker container
+to port 5000 on the launching machine. Once the container starts it will run
+a Flask service on port 5000. Currently the only API endpoint is
+/documents?query="query-text"
+which embeds the query text and returns the most semantically similar results.
 
 
-For example, a typical customer may run
-```bash
-nohup docker run -p 8888:8888 -v docsearch-work:/home/thirdai/work thirdai_docsearch_release:<git-tag> &
-```
-which will start a Jupyter Lab server in the background and a new Docker volume
-called docsearch-work mounted in /home/thirdai/work. Any changed to the docker
-image you make not in a volume won't be saved. You can then cat nohup.out
-to get the Jupyter Lab token and url, and then paste it into your browser. If
-you are running the container on a remote server, you will need to perform
-port forwarding with a command like 
-```bash
-ssh -v -N -L 8888:localhost:8888 <you>@<remote_server>.
-```
+## How do I create a new Dockerfile?
+
+To make a new Interactive Dockerfile, create an Interactive.Dockerfile and a
+build_interactive_image.sh script modeled off of one of the existing ones
+(e.g. docsearch). Then simply add the build command to build_all_product_dockers.sh
+and increment the expected count in build_all_product_dockers.sh by 1. A new
+Inference Dockerfile can be created in a very similar way by going off of the
+existing examples.

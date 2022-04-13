@@ -5,6 +5,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::bolt {
@@ -57,6 +58,9 @@ struct FullyConnectedLayerConfig {
   float sparsity;
   ActivationFunction act_func;
   SamplingConfig sampling_config;
+  std::pair<uint32_t, uint32_t> kernel_size =
+      std::make_pair(static_cast<uint32_t>(0), static_cast<uint32_t>(0));
+  uint32_t num_patches = 0;
 
   static void checkSparsity(float sparsity) {
     if (0.2 < sparsity && sparsity < 1.0) {
@@ -67,11 +71,17 @@ struct FullyConnectedLayerConfig {
 
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
                             ActivationFunction _act_func,
-                            SamplingConfig _config)
+                            SamplingConfig _config,
+                            std::pair<uint32_t, uint32_t> _kernel_size =
+                                std::make_pair(static_cast<uint32_t>(0),
+                                               static_cast<uint32_t>(0)),
+                            uint32_t _num_patches = 0)
       : dim(_dim),
         sparsity(_sparsity),
         act_func(_act_func),
-        sampling_config(_config) {
+        sampling_config(_config),
+        kernel_size(std::move(_kernel_size)),
+        num_patches(_num_patches) {
     checkSparsity(sparsity);
   }
 
@@ -120,8 +130,15 @@ struct FullyConnectedLayerConfig {
           << ", reservoir_size=" << config.sampling_config.reservoir_size
           << "}";
     }
+    if (config.isConvLayer()) {
+      out << ", kernel_width=" << config.kernel_size.first
+          << ", kernel_height=" << config.kernel_size.second
+          << ", num_patches=" << config.num_patches;
+    }
     return out;
   }
+
+  bool isConvLayer() const { return kernel_size.first != 0; }
 };
 
 struct EmbeddingLayerConfig {

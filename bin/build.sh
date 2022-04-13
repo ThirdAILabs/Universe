@@ -27,14 +27,25 @@ fi
 if [ -z "$2" ] || [ $2 == "Release" ]
 then 
   BUILD_MODE=Release
+
 elif [ "$2" == "Debug" ]
 then
   BUILD_MODE=Debug
+
+elif [ "$2" == "DebugWithAsan" ]
+then
+  BUILD_MODE=DebugWithAsan
+  
 elif [ "$2" == "RelWithDebInfo" ]
 then
   BUILD_MODE=RelWithDebInfo
+
+elif [ "$2" == "RelWithAsan" ]
+then
+  BUILD_MODE=RelWithAsan
+
 else
-  echo "If present, build mode must be one of [Release, Debug, RelWithDebInfo]. Note the capitilization."
+  echo "If present, build mode must be one of [Release, RelWithDebInfo, RelWithAsan, Debug, DebugWithAsan]. Note the capitilization."
   exit 1
 fi
 

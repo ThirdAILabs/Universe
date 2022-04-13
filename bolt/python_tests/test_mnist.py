@@ -39,7 +39,7 @@ def build_sparse_output_layer_network():
     return network
 
 
-# Constructs a bolt network for mnist with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
+  # Constructs a bolt network for mnist with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
 def build_sparse_hidden_layer_network(dim, sparsity):
     layers = [
         bolt.LayerConfig(
@@ -72,7 +72,7 @@ def train_network(network, train_data, epochs, learning_rate=LEARNING_RATE):
     )
     return times
 
-
+  
 def load_mnist():
     train_data = dataset.load_bolt_svm_dataset("mnist", 250)
     test_data = dataset.load_bolt_svm_dataset("mnist.t", 250)
@@ -134,6 +134,7 @@ def test_mnist_sparse_inference():
     assert (
         sparse_predict["categorical_accuracy"][0] >= SPARSE_INFERENCE_ACCURACY_THRESHOLD
     )
+
 
     dense_time = dense_predict["test_time"][0]
     sparse_time = sparse_predict["test_time"][0]
