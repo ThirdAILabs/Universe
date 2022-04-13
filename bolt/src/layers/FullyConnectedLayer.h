@@ -15,7 +15,7 @@ namespace tests {
 class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
-class FullyConnectedLayer : public SequentialLayer {
+class FullyConnectedLayer final : public SequentialLayer {
   friend class tests::FullyConnectedLayerTestFixture;
 
  public:
