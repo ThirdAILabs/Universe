@@ -13,7 +13,7 @@ directory. e.g. the mpi_example executable will be in
 run in parallel and build all unbuilt targets or targets whose component source
 files have been updated, but you can pass in parameters to run in serial or build
 only a specific target. You can also build in other build modes (Debug, etc.).
-Run bin/build.sh -h for more info.
+Run bin/build.py -h for more info.
 1. Run `$ bin/cpp-test.sh` from anywhere to have cmake run all c++ tests. To run specific
 tests, you can also pass a regular expression to filter tests 
 (or provide an explicit test name):
@@ -76,7 +76,7 @@ for best performance).
 
 ## Installing python bindings
 1. The building target `thirdai` will compile the `thirdai.so` library in the build directory. 
-This is automatically run on a full build, so you can run `bin/build.sh` as normal.
+This is automatically run on a full build, so you can run `bin/build.py` as normal.
 Note this will use the version of python you get from running `which python3`, 
 and even with the PYTHONPATH changes below a different version of python will
 not be able to find the so file.

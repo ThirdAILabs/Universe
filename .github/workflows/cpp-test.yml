@@ -41,5 +41,5 @@ jobs:
       - name: Run all c++ tests
         run: |
           docker build -t test_image -f docker/develop/Dockerfile .  
-          docker run --privileged --mount type=bind,source=${PWD},target=/src test_image /bin/bash -c "src/bin/build.sh all RelWithAsan ; src/bin/cpp-test.sh -V"
+          docker run --privileged --mount type=bind,source=${PWD},target=/src test_image /bin/bash -c "src/bin/build.py all RelWithAsan ; src/bin/cpp-test.sh -V"
 

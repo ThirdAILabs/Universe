@@ -23,7 +23,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
     python3 \
     python3-dev \
     pip
-RUN /Universe/bin/build.sh
+RUN /Universe/bin/build.py
 
 
 # Second stage, we only copy the so file from the first stage
