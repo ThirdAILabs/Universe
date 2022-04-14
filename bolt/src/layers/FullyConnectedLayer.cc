@@ -323,7 +323,6 @@ void FullyConnectedLayer::buildHashTables() {
   // TODO(nicholas): hashes could be array with size max(batch size, dim) that
   // is allocated once
   std::vector<uint32_t> hashes(num_tables * _dim);
-
 #pragma omp parallel for default(none) shared(num_tables, hashes)
   for (uint64_t n = 0; n < _dim; n++) {
     _hasher->hashSingleDense(_weights.data() + n * _prev_dim, _prev_dim,

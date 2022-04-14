@@ -347,7 +347,6 @@ void ConvLayer::buildHashTables() {
   }
   uint64_t num_tables = _hash_table->numTables();
   std::vector<uint32_t> hashes(num_tables * _num_filters);
-
 #pragma omp parallel for default(none) shared(num_tables, hashes)
   for (uint64_t n = 0; n < _num_filters; n++) {
     _hasher->hashSingleDense(_weights.data() + n * _patch_dim, _patch_dim,
