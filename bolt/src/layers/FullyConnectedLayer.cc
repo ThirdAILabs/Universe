@@ -37,12 +37,10 @@ FullyConnectedLayer::FullyConnectedLayer(
     _hasher = std::make_unique<hashing::DWTAHashFunction>(
         _prev_dim, _sampling_config.hashes_per_table,
         _sampling_config.num_tables, _sampling_config.range_pow);
-    assert(_hasher != nullptr);
 
     _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow);
-    assert(_hash_table != nullptr);
 
     buildHashTables();
 
@@ -52,9 +50,6 @@ FullyConnectedLayer::FullyConnectedLayer(
     std::generate(_rand_neurons.begin(), _rand_neurons.end(),
                   [&]() { return rn++; });
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
-  } else {
-    _hasher = nullptr;
-    _hash_table = nullptr;
   }
 }
 
@@ -177,23 +172,6 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
       backpropagateImpl<true, false, false>(input, output);
     }
   }
-}
-
-constexpr float FullyConnectedLayer::actFuncDerivative(float x) {
-  switch (_act_func) {
-    case ActivationFunction::ReLU:
-      return x > 0 ? 1.0 : 0.0;
-    case ActivationFunction::Softmax:
-      // return 1.0; // Commented out because Clang tidy doesn't like
-      // consecutive identical branches
-    case ActivationFunction::Linear:
-      return 1.0;
-      // default:
-      //   return 0.0;
-  }
-  // This is impossible to reach, but the compiler gave a warning saying it
-  // reached the end of a non void function without it.
-  return 0.0;
 }
 
 template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>

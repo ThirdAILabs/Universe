@@ -6,15 +6,15 @@ Main Repository (follow monorepositry)
 ## Development Scripts
 There are some script in the bin folder that allow you to easily build, test,
 and lint you code.
-1. Run `$ bin/build.sh` from anywhere to have cmake build everything in universe.
+1. Run `$ bin/build.py` from anywhere to have cmake build everything in universe.
 All executables will be in their corresponding directory within the build 
 directory. e.g. the mpi_example executable will be in 
 `Universe/build/examples/mpi-example/mpi_example`. By default this will
 run in parallel and build all unbuilt targets or targets whose component source
 files have been updated, but you can pass in parameters to run in serial or build
-only a specific target. You can also build in Debug or RelWithDebInfo, see the 
-source of `$ bin/build.sh` for more details.
-2. Run `$ bin/cpp-test.sh` from anywhere to have cmake run all c++ tests. To run specific
+only a specific target. You can also build in other build modes (Debug, etc.).
+Run bin/build.py -h for more info.
+1. Run `$ bin/cpp-test.sh` from anywhere to have cmake run all c++ tests. To run specific
 tests, you can also pass a regular expression to filter tests 
 (or provide an explicit test name):
 `$ bin/cpp-test.sh -R <test filter expression>`.
@@ -47,26 +47,21 @@ be mounted as a folder in the root of the container. Note that there may be
 some issues with existing cache information if you have last build on your local
 machine, and you may need to run a clean build or delete your build folder.
 
-## Debugging with GDB and ASan from Python
-1. Do a Debug or RelWithDebInfo build. If you try to run a python test at this point, you may
-encounter errors or the python test won't run at all.
-2. Run `export LD_PRELOAD=$(gcc -print-file-name=libasan.so):$LD_PRELOAD`. This
-is NOT run automatically when you startup a development docker container, as 
-it makes all python code run twice as slow and it should be a conscious
-decision. If you try to run a python test now, you will get lot's of noise
-memory leak errors from python itself. In fact, even running python3 and 
-immediately exiting will cause errors.
-3. Run `export LSAN_OPTIONS=suppressions=~/Universe/leak-suppresions.supp`. This will
-supress memory leak errors from Python calls (basically this is all memory 
-leaks, so ASan will mostly be useful for illegal memory accesses). This DOES
-get run automatically as part of the docker container.
-4. Run your python code/test with perf or gdb. You can also just run it normally
-and ASan will run.
-See https://github.com/google/sanitizers/issues/1086 and 
-https://github.com/tobywf/python-ext-asan for more details.
-5. Alternatively, instead of steps 2 and 3, you can just comment out the lines
-that enable ASan in CMakeLists.txt before you do a debug build. This is a bit
-simpler but won't check illegal memory accesses.
+## Debugging your Pybound C++ code from python
+1. Simply build the code in RelWithDebInfo or Debug mode, and
+run your python code with perf or gdb. To run with gdb, run `gdb python3` and then
+`your_py_script.py` (and feel free to set breakpoints in C++ code). 
+2. You can also now run performance profile your python code. To run with
+perf, simply run normal perf commands attached to your python process. 
+2. Debugging Pybound code with ASan isn't supported anymore, if you really need
+it we can add it back.
+
+## Debugging your C++ code
+1. The simplest way it to build your code in RelWithDebInfo or Debug mode and 
+then run gdb.
+2. If you want to run with ASan (an adress sanitizier), build with RelWithAsan
+or DebugWithAsan.
+
 
 
 ## Manual building and testing (DEPRECATED, use scripts in bin, see above)
@@ -81,7 +76,7 @@ for best performance).
 
 ## Installing python bindings
 1. The building target `thirdai` will compile the `thirdai.so` library in the build directory. 
-This is automatically run on a full build, so you can run `bin/build.sh` as normal.
+This is automatically run on a full build, so you can run `bin/build.py` as normal.
 Note this will use the version of python you get from running `which python3`, 
 and even with the PYTHONPATH changes below a different version of python will
 not be able to find the so file.
@@ -97,7 +92,7 @@ command to your ~/.bash_profile or ~/.bash_rc, or equivalently run
 `echo "export PYTHONPATH=~/Universe/build:\$PYTHONPATH" >> $HOME/.bash_profile`. 
 Alternatively you can run `pip3 install .`. This installs thirdi without messing
 around with environment variables, but is not preferred for development since it
-is performs an entirely seperate parallel build from `bin/build.sh`, and so is
+is performs an entirely seperate parallel build from `bin/build.py`, and so is
 much slower.
 
 ## Using cmake

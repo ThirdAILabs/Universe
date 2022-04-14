@@ -10,6 +10,7 @@ PLATFORM=$1
 
 # Go out to Universe folder for archive
 cd ../../../
+
 # Archive the current branch into a zipped file. This can then be
 # added directly into the first stage of DocSearch Docker build 
 # (we don't include it in the final stage, instead we include
@@ -20,9 +21,9 @@ REV_TAG=$(git log -1 --pretty=format:%h)
 
 cd $BASEDIR
 echo "================================================================="
-echo "Building docker image thirdai_slim_release:${REV_TAG} with platform $PLATFORM"
+echo "Building docker image thirdai_slim:${REV_TAG} with platform $PLATFORM"
 echo "================================================================="
-docker build --platform=$PLATFORM . -t thirdai_slim_release:$REV_TAG
+docker build --platform=$PLATFORM . -t thirdai_slim:$REV_TAG
 echo "================================================================="
-echo "Built docker image thirdai_slim_release:${REV_TAG} with platform $PLATFORM"
+echo "Built docker image thirdai_slim:${REV_TAG} with platform $PLATFORM"
 echo "================================================================="

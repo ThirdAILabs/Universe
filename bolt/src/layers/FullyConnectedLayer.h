@@ -14,7 +14,7 @@ namespace tests {
 class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
-class FullyConnectedLayer final {
+class FullyConnectedLayer {
   friend class tests::FullyConnectedLayerTestFixture;
 
  public:
@@ -28,14 +28,16 @@ class FullyConnectedLayer final {
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
                       uint64_t prev_dim);
 
-  void forward(const BoltVector& input, BoltVector& output,
-               const BoltVector* labels = nullptr);
+  // TODO(david) fix nolint here with default params and layer interface
+  virtual void forward(const BoltVector& input, BoltVector& output,  // NOLINT
+                       const BoltVector* labels = nullptr);
 
-  void backpropagate(BoltVector& input, BoltVector& output);
+  virtual void backpropagate(BoltVector& input, BoltVector& output);
 
-  void backpropagateInputLayer(BoltVector& input, BoltVector& output);
+  virtual void backpropagateInputLayer(BoltVector& input, BoltVector& output);
 
-  void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
+  virtual void updateParameters(float lr, uint32_t iter, float B1, float B2,
+                                float eps);
 
   BoltBatch createBatchState(const uint32_t batch_size,
                              bool force_dense = false) const {
@@ -52,9 +54,9 @@ class FullyConnectedLayer final {
 
   bool isForceSparsity() const { return _force_sparse_for_inference; }
 
-  void buildHashTables();
+  virtual void buildHashTables();
 
-  void reBuildHashFunction();
+  virtual void reBuildHashFunction();
 
   void shuffleRandNeurons();
 
@@ -70,19 +72,25 @@ class FullyConnectedLayer final {
 
   virtual ~FullyConnectedLayer() = default;
 
- private:
-  template <bool DENSE, bool PREV_DENSE>
-  void forwardImpl(const BoltVector& input, BoltVector& output,
-                   const BoltVector* labels);
-
-  template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
-  void backpropagateImpl(BoltVector& input, BoltVector& output);
-
-  template <bool DENSE, bool PREV_DENSE>
-  void selectActiveNeurons(const BoltVector& input, BoltVector& output,
-                           const BoltVector* labels);
-
-  constexpr float actFuncDerivative(float x);
+ protected:
+  // can't be inlined .cc if part of an interface. see here:
+  // https://stackoverflow.com/questions/27345284/is-it-possible-to-declare-constexpr-class-in-a-header-and-define-it-in-a-separat
+  constexpr float actFuncDerivative(float x) {
+    switch (_act_func) {
+      case ActivationFunction::ReLU:
+        return x > 0 ? 1.0 : 0.0;
+      case ActivationFunction::Softmax:
+        // return 1.0; // Commented out because Clang tidy doesn't like
+        // consecutive identical branches
+      case ActivationFunction::Linear:
+        return 1.0;
+        // default:
+        //   return 0.0;
+    }
+    // This is impossible to reach, but the compiler gave a warning saying it
+    // reached the end of a non void function without it.
+    return 0.0;
+  }
 
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
@@ -106,6 +114,18 @@ class FullyConnectedLayer final {
   std::vector<uint32_t> _rand_neurons;
 
   bool _force_sparse_for_inference;
+
+ private:
+  template <bool DENSE, bool PREV_DENSE>
+  void forwardImpl(const BoltVector& input, BoltVector& output,
+                   const BoltVector* labels);
+
+  template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
+  void backpropagateImpl(BoltVector& input, BoltVector& output);
+
+  template <bool DENSE, bool PREV_DENSE>
+  void selectActiveNeurons(const BoltVector& input, BoltVector& output,
+                           const BoltVector* labels);
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
