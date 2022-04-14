@@ -11,7 +11,7 @@ target_link_libraries(
   PRIVATE
   gtest_main
   license_lib
-  libcryptopp
+  ${CRYPTOPP_LIB}
 )
 
 gtest_discover_tests(license_test)

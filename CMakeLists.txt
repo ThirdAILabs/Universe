@@ -101,6 +101,14 @@ include_directories(deps/eigen)
 add_subdirectory(deps/pybind11)
 add_subdirectory(deps/googletest)
 
+# Install CRYPTOPP and set the static lib to be libcryptopp.a. This is pretty
+# ugly (the build happens at configure time, not build time) but honestly
+# okay (I spent way too long getting anything at all to work). Plus, it's 
+# gated by a feature flag anyways.
+set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/libcryptopp.a)
+execute_process(COMMAND make static CXX=g++ -C /Users/josh/Universe/deps/cryptopp)
+include_directories(deps)
+
 find_package (Python3 COMPONENTS Interpreter Development)
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
@@ -119,6 +127,7 @@ add_subdirectory(exceptions)
 add_subdirectory(flash)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
+add_subdirectory(licensing)
 
 file(
   GLOB BOLT_SOURCES 
