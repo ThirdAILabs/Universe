@@ -5,6 +5,8 @@
 #include "LayerUtils.h"
 #include "SequentialLayer.h"
 #include <cmath>
+#include <fstream>
+#include <iostream>
 
 namespace thirdai::bolt {
 
@@ -184,7 +186,8 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
     const ConvLayerConfig* prev_config_casted =
         dynamic_cast<const ConvLayerConfig*>(&prev_config);
     if (!prev_config_casted) {  // prev layer is not ConvLayer
-      throw std::invalid_argument("ConvLayer cannot come after another layer.");
+      throw std::invalid_argument(
+          "ConvLayer cannot come after another non-Conv layer.");
     } else {  // prev layer is ConvLayer
       return createLayer(
           prev_config_casted->getDim(), prev_config_casted->num_filters,

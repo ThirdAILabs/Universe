@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/types/vector.hpp>
+#include <cctype>
 
 namespace thirdai::bolt {
 
