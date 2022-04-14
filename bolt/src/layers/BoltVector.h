@@ -5,9 +5,9 @@
 #include <cstdint>
 #include <iostream>
 #include <optional>
-#include <utility>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace thirdai::bolt {
