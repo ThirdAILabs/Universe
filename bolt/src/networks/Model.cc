@@ -118,8 +118,7 @@ MetricData Model<BATCH_T>::predict(
   // Don't force dense inference if the metric does not allow it.
   // This is not the same as enable_sparse_inference(), which also freezes hash
   // tables.
-  BoltBatch outputs =
-      getOutputs(batch_size, metrics.forceDenseInference());
+  BoltBatch outputs = getOutputs(batch_size, metrics.forceDenseInference());
 
   auto test_start = std::chrono::high_resolution_clock::now();
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
