@@ -8,6 +8,19 @@ namespace thirdai::dataset::python {
 void createDatasetSubmodule(py::module_& module) {
   auto dataset_submodule = module.def_submodule("dataset");
 
+  py::class_<BoltVector>(dataset_submodule, "BoltVector")
+      .def("to_string", &BoltVector::toString)
+      .def("__str__", &BoltVector::toString)
+      .def("__repr__", &BoltVector::toString);
+
+  py::class_<BoltInputBatch>(dataset_submodule, "BoltInputBatch")
+      .def(py::init<std::vector<BoltVector>&&, std::vector<BoltVector>&&>(),
+           py::arg("vectors"), py::arg("labels"))
+      .def("to_string", &BoltInputBatch::toString)
+      .def("__str__", &BoltInputBatch::toString)
+      .def("__repr__", &BoltInputBatch::toString)
+      .def("size", &BoltInputBatch::getBatchSize);
+
   py::class_<InMemoryDataset<SparseBatch>> _imsd_(dataset_submodule,
                                                   "InMemorySparseDataset");
   (void)_imsd_;  // To get rid of clang tidy error
@@ -33,6 +46,12 @@ void createDatasetSubmodule(py::module_& module) {
                         py::arg("filename"), py::arg("batch_size"),
                         py::arg("delimiter") = ",");
 
+  dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
+                        py::arg("indices"), py::arg("values"));
+
+  dataset_submodule.def("make_dense_vector", &BoltVector::makeDenseVector,
+                        py::arg("values"));
+
   py::class_<InMemoryDataset<BoltInputBatch>> _bolt_dataset_(dataset_submodule,
                                                              "BoltDataset");
   (void)_bolt_dataset_;  // To get rid of clang tidy error
@@ -43,6 +62,10 @@ void createDatasetSubmodule(py::module_& module) {
   dataset_submodule.def("load_bolt_csv_dataset", &loadBoltCSVDataset,
                         py::arg("filename"), py::arg("batch_size"),
                         py::arg("delimiter") = ",");
+
+  dataset_submodule.def("bolt_tokenizer", &parseSentenceToSparseArray,
+                        py::arg("sentence"), py::arg("seed") = 42,
+                        py::arg("dimension") = 100000);
 }
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
@@ -459,6 +482,45 @@ InMemoryDataset<BoltInputBatch> sparseBoltDatasetFromNumpy(
   }
 
   return InMemoryDataset(std::move(batches), num_examples);
+}
+
+std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
+parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
+                           uint32_t dimension) {
+  std::stringstream ss(sentence);
+  std::istream_iterator<std::string> begin(ss);
+  std::istream_iterator<std::string> end;
+  std::vector<std::string> tokens(begin, end);
+
+  std::unordered_map<uint32_t, uint32_t> idx_to_val_map;
+
+  for (auto& s : tokens) {
+    const char* cstr = s.c_str();
+    uint32_t hash =
+        thirdai::hashing::MurmurHash(cstr, s.length(), seed) % dimension;
+    if (idx_to_val_map.find(hash) == idx_to_val_map.end()) {
+      idx_to_val_map[hash] = 1;
+    } else {
+      idx_to_val_map[hash]++;
+    }
+  }
+
+  auto result = py::array_t<uint32_t>(idx_to_val_map.size());
+  py::buffer_info indx_buf = result.request();
+  uint32_t* indx_ptr = static_cast<uint32_t*>(indx_buf.ptr);
+
+  auto result_2 = py::array_t<uint32_t>(idx_to_val_map.size());
+  py::buffer_info val_buf = result_2.request();
+  uint32_t* val_ptr = static_cast<uint32_t*>(val_buf.ptr);
+
+  int i = 0;
+  for (auto kv : idx_to_val_map) {
+    indx_ptr[i] = kv.first;
+    val_ptr[i] = kv.second;
+    i += 1;
+  }
+
+  return std::make_tuple(result, result_2);
 }
 
 }  // namespace thirdai::dataset::python

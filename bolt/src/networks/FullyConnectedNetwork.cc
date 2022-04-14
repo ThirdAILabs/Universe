@@ -1,4 +1,5 @@
 #include "FullyConnectedNetwork.h"
+#include <bolt/src/layers/ConvLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <algorithm>
@@ -19,18 +20,66 @@ FullyConnectedNetwork::FullyConnectedNetwork(
 
   std::cout << "====== Building Fully Connected Network ======" << std::endl;
 
-  for (uint32_t i = 0; i < _num_layers; i++) {
-    uint64_t prev_dim = (i > 0) ? configs[i - 1].dim : _input_dim;
-    if (i < _num_layers - 1) {
-      if (configs[i].act_func == ActivationFunction::Softmax) {
+  for (uint32_t cur_layer = 0; cur_layer < _num_layers; cur_layer++) {
+    bool is_conv_layer = configs[cur_layer].isConvLayer();
+    if (cur_layer < _num_layers - 1) {
+      if (configs[cur_layer].act_func == ActivationFunction::Softmax) {
         throw std::invalid_argument(
             "Softmax activation function is not supported for hidden layers.");
       }
+    } else if (cur_layer == _num_layers - 1 && is_conv_layer) {
+      throw std::invalid_argument("ConvLayer not supported as final layer.");
     }
 
-    std::cout << configs[i] << std::endl;
-    _layers.push_back(
-        std::make_shared<FullyConnectedLayer>(configs[i], prev_dim));
+    uint64_t prev_dim;
+    std::cout << configs[cur_layer] << std::endl;
+    if (is_conv_layer) {
+      uint64_t prev_num_filters;
+      uint64_t prev_num_sparse_filters;
+      if (cur_layer > 0) {
+        bool prev_is_conv_layer = configs[cur_layer - 1].isConvLayer();
+        if (prev_is_conv_layer) {
+          prev_dim =
+              configs[cur_layer - 1].dim * configs[cur_layer - 1].num_patches;
+          prev_num_filters = configs[cur_layer - 1].dim;
+          prev_num_sparse_filters =
+              configs[cur_layer - 1].dim * configs[cur_layer - 1].sparsity;
+        } else {
+          prev_dim = configs[cur_layer - 1].dim;
+          // TODO(david) edge case for when convlayer comes after another
+          // non-conv layer, what is prev_num_filters??
+        }
+      } else {
+        prev_dim = input_dim;
+        prev_num_filters =
+            1;  // TODO(david) change input dim to vector to accept 3d input?
+                // then prev_num_filters = num_input_channels
+        prev_num_sparse_filters = 1;
+      }
+
+      bool next_is_conv_layer = configs[cur_layer + 1].isConvLayer();
+      std::pair<uint32_t, uint32_t> next_kernel_size =
+          next_is_conv_layer ? configs[cur_layer + 1].kernel_size
+                             : std::make_pair(static_cast<uint32_t>(1),
+                                              static_cast<uint32_t>(1));
+      _layers.push_back(std::make_shared<ConvLayer>(
+          configs[cur_layer], prev_dim, prev_num_filters,
+          prev_num_sparse_filters, next_kernel_size));
+    } else {
+      if (cur_layer > 0) {
+        bool prev_is_conv_layer = configs[cur_layer - 1].isConvLayer();
+        if (prev_is_conv_layer) {
+          prev_dim =
+              configs[cur_layer - 1].dim * configs[cur_layer - 1].num_patches;
+        } else {
+          prev_dim = configs[cur_layer - 1].dim;
+        }
+      } else {
+        prev_dim = input_dim;
+      }
+      _layers.push_back(
+          std::make_shared<FullyConnectedLayer>(configs[cur_layer], prev_dim));
+    }
   }
 
   auto end = std::chrono::high_resolution_clock::now();
