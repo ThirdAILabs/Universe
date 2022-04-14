@@ -2,6 +2,7 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
+#include "LayerUtils.h"
 #include "SequentialLayer.h"
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
@@ -9,8 +10,11 @@
 namespace thirdai::bolt {
 class ConvLayer final : public SequentialLayer {
  public:
-  ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
-            uint32_t prev_num_filters, uint32_t prev_num_sparse_filters,
+  ConvLayer(uint64_t _num_filters, float _sparsity,
+            ActivationFunction _act_func, SamplingConfig _config,
+            std::pair<uint32_t, uint32_t> _kernel_size, uint32_t _num_patches,
+            uint64_t prev_dim, uint32_t prev_num_filters,
+            uint32_t prev_num_sparse_filters,
             std::pair<uint32_t, uint32_t> next_kernel_size);
 
   void forward(const BoltVector& input, BoltVector& output,

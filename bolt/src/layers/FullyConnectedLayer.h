@@ -3,7 +3,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include "BoltVector.h"
-#include "LayerConfig.h"
+#include "LayerUtils.h"
 #include "SequentialLayer.h"
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
@@ -26,8 +26,8 @@ class FullyConnectedLayer final : public SequentialLayer {
   FullyConnectedLayer& operator=(const FullyConnectedLayer&) = delete;
   FullyConnectedLayer& operator=(FullyConnectedLayer&&) = delete;
 
-  FullyConnectedLayer(const FullyConnectedLayerConfig& config,
-                      uint64_t prev_dim);
+  FullyConnectedLayer(uint64_t dim, float sparsity, ActivationFunction act_func,
+                      SamplingConfig sampling_config, uint64_t prev_dim);
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels) final;
