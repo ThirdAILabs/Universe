@@ -210,8 +210,8 @@ class MetricAggregator {
       } else if (name == WeightedMeanAbsolutePercentageError::name) {
         _metrics.push_back(
             std::make_unique<WeightedMeanAbsolutePercentageError>());
-      } else if (name == MeanSquaredE) {
-
+      } else if (name == RootMeanSquaredError::name) {
+        _metrics.push_back(std::make_unique<RootMeanSquaredError>());
       } else {
         throw std::invalid_argument("'" + name + "' is not a valid metric.");
       }
