@@ -13,7 +13,6 @@ using std::chrono::system_clock;
 
 class License {
  public:
-
   License() {}
 
   License(std::unordered_map<std::string, std::string> metadata,
@@ -35,10 +34,22 @@ class License {
 
   std::string getMetadataValue(const std::string& key) const {
     return metadata.at(key);
-  } 
+  }
 
-  int64_t getExpireTimeMillis() const {
-    return expire_time_epoch_millis;
+  int64_t getExpireTimeMillis() const { return expire_time_epoch_millis; }
+
+  // Gets a string that represents the state of the license. This is the state
+  // that is signed by our private key and later verified by the public key.
+  std::string toString() {
+    std::string to_verify;
+    to_verify += std::to_string(expire_time_epoch_millis);
+    to_verify += "|";
+    for (auto const& [key, val] : metadata) {
+      to_verify += key;
+      to_verify += ":";
+      to_verify += val;
+    }
+    return to_verify;
   }
 
  private:

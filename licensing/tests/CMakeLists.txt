@@ -10,7 +10,6 @@ target_link_libraries(
   license_test
   PRIVATE
   gtest_main
-  license_lib
   ${CRYPTOPP_LIB}
 )
 
