@@ -10,7 +10,8 @@
 
 namespace thirdai::bolt {
 
-struct SequentialLayerConfig {
+class SequentialLayerConfig {
+ public:
   virtual void verifyLayer(bool is_last) = 0;
 
   // TODO(david) when we refactor ConvLayer we wont need this next_config part
@@ -35,12 +36,8 @@ struct SequentialLayerConfig {
   }
 };
 
-struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
-  uint64_t dim;
-  float sparsity;
-  ActivationFunction act_func;
-  SamplingConfig sampling_config;
-
+class FullyConnectedLayerConfig final : public SequentialLayerConfig {
+ public:
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
                             ActivationFunction _act_func,
                             SamplingConfig _config)
@@ -119,27 +116,27 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
     return createLayer(prev_config.getDim());
   }
 
-  std::shared_ptr<SequentialLayer> createLayer(uint64_t prev_dim) {
-    return std::static_pointer_cast<SequentialLayer>(
-        std::make_shared<FullyConnectedLayer>(dim, sparsity, act_func,
-                                              sampling_config, prev_dim));
-  }
-
   uint64_t getDim() const { return dim; }
 
   float getSparsity() const { return sparsity; }
 
   ActivationFunction getActFunc() const { return act_func; }
-};
 
-struct ConvLayerConfig final : public SequentialLayerConfig {
-  uint64_t num_filters;
+ private:
+  uint64_t dim;
   float sparsity;
   ActivationFunction act_func;
   SamplingConfig sampling_config;
-  std::pair<uint32_t, uint32_t> kernel_size;
-  uint32_t num_patches;
 
+  std::shared_ptr<SequentialLayer> createLayer(uint64_t prev_dim) {
+    return std::static_pointer_cast<SequentialLayer>(
+        std::make_shared<FullyConnectedLayer>(dim, sparsity, act_func,
+                                              sampling_config, prev_dim));
+  }
+};
+
+class ConvLayerConfig final : public SequentialLayerConfig {
+ public:
   ConvLayerConfig(uint64_t _num_filters, float _sparsity,
                   ActivationFunction _act_func, SamplingConfig _config,
                   std::pair<uint32_t, uint32_t> _kernel_size,
@@ -187,6 +184,20 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
     }
   }
 
+  uint64_t getDim() const { return num_filters * num_patches; }
+
+  float getSparsity() const { return sparsity; }
+
+  ActivationFunction getActFunc() const { return act_func; }
+
+ private:
+  uint64_t num_filters;
+  float sparsity;
+  ActivationFunction act_func;
+  SamplingConfig sampling_config;
+  std::pair<uint32_t, uint32_t> kernel_size;
+  uint32_t num_patches;
+
   std::shared_ptr<SequentialLayer> createLayer(
       uint64_t prev_dim, uint32_t prev_num_filters,
       uint32_t prev_num_sparse_filters,
@@ -212,12 +223,6 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
     }
     return next_kernel_size;
   }
-
-  uint64_t getDim() const { return num_filters * num_patches; }
-
-  float getSparsity() const { return sparsity; }
-
-  ActivationFunction getActFunc() const { return act_func; }
 };
 
 struct EmbeddingLayerConfig {
