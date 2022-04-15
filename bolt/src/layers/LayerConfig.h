@@ -15,11 +15,11 @@ struct SequentialLayerConfig {
 
   // TODO(david) when we refactor ConvLayer we wont need this next_config part
   virtual std::shared_ptr<SequentialLayer> createInputLayer(
-      uint64_t input_dim, SequentialLayerConfig const& next_config) = 0;
+      uint64_t input_dim, const SequentialLayerConfig& next_config) = 0;
 
   virtual std::shared_ptr<SequentialLayer> createHiddenLayer(
-      SequentialLayerConfig const& prev_config,
-      SequentialLayerConfig const& next_config) = 0;
+      const SequentialLayerConfig& prev_config,
+      const SequentialLayerConfig& next_config) = 0;
 
   virtual uint64_t getDim() const = 0;
 
@@ -40,9 +40,6 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
   float sparsity;
   ActivationFunction act_func;
   SamplingConfig sampling_config;
-  std::pair<uint32_t, uint32_t> kernel_size =
-      std::make_pair(static_cast<uint32_t>(0), static_cast<uint32_t>(0));
-  uint32_t num_patches = 0;
 
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
                             ActivationFunction _act_func,
@@ -54,9 +51,7 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
       : dim(_dim),
         sparsity(_sparsity),
         act_func(_act_func),
-        sampling_config(_config),
-        kernel_size(std::move(_kernel_size)),
-        num_patches(_num_patches) {
+        sampling_config(_config) {
     checkSparsity(sparsity);
   }
 
@@ -116,14 +111,14 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
   }
 
   std::shared_ptr<SequentialLayer> createInputLayer(
-      uint64_t input_dim, SequentialLayerConfig const& next_config) {
+      uint64_t input_dim, const SequentialLayerConfig& next_config) {
     (void)next_config;
     return createLayer(input_dim);
   }
 
   std::shared_ptr<SequentialLayer> createHiddenLayer(
-      SequentialLayerConfig const& prev_config,
-      SequentialLayerConfig const& next_config) {
+      const SequentialLayerConfig& prev_config,
+      const SequentialLayerConfig& next_config) {
     (void)next_config;
     return createLayer(prev_config.getDim());
   }
@@ -175,14 +170,14 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
   }
 
   std::shared_ptr<SequentialLayer> createInputLayer(
-      uint64_t input_dim, SequentialLayerConfig const& next_config) {
+      uint64_t input_dim, const SequentialLayerConfig& next_config) {
     // TODO(david) change input_dim to a vector. hardcode input channels for now
     return createLayer(input_dim, 3, 3, getKernelSize(next_config));
   }
 
   std::shared_ptr<SequentialLayer> createHiddenLayer(
-      SequentialLayerConfig const& prev_config,
-      SequentialLayerConfig const& next_config) {
+      const SequentialLayerConfig& prev_config,
+      const SequentialLayerConfig& next_config) {
     const ConvLayerConfig* prev_config_casted =
         dynamic_cast<const ConvLayerConfig*>(&prev_config);
     if (!prev_config_casted) {  // prev layer is not ConvLayer

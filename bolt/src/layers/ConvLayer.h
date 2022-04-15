@@ -143,6 +143,10 @@ class ConvLayer final : public SequentialLayer {
             _prev_num_filters, _prev_num_sparse_filters, _kernel_size,
             _in_to_out, _out_to_in);
   }
+
+ protected:
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
+  ConvLayer() {}
 };
 }  // namespace thirdai::bolt
 
