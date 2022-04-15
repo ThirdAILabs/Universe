@@ -43,11 +43,7 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
 
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
                             ActivationFunction _act_func,
-                            SamplingConfig _config,
-                            std::pair<uint32_t, uint32_t> _kernel_size =
-                                std::make_pair(static_cast<uint32_t>(0),
-                                               static_cast<uint32_t>(0)),
-                            uint32_t _num_patches = 0)
+                            SamplingConfig _config)
       : dim(_dim),
         sparsity(_sparsity),
         act_func(_act_func),
