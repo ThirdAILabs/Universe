@@ -81,6 +81,11 @@ class LicenseWithSignature {
     return serialize_into;
   }
 
+  const License& get_license() { return _license; }
+
+  // For now this is just used for testing
+  void set_license(License new_license) { _license = std::move(new_license); }
+
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;

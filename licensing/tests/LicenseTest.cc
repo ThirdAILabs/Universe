@@ -22,6 +22,12 @@ class LicenseTest : public testing::Test {
 
     return {private_key, public_key};
   }
+
+  static License createLicense(int64_t num_days = 30) {
+    std::map<std::string, std::string> metadata{
+        {"company", "abc"}, {"person", "def"}, {"machine type", "ghi"}};
+    return License::createLicenseWithNDaysLeft(metadata, num_days);
+  }
 };
 
 TEST(LicenseTest, SignVerifyTest) {
@@ -29,9 +35,7 @@ TEST(LicenseTest, SignVerifyTest) {
   auto [private_key, public_key] = LicenseTest::generateKeyPair();
 
   // Create license
-  std::map<std::string, std::string> metadata{
-      {"company", "abc"}, {"person", "def"}, {"machine type", "ghi"}};
-  License license = License::createLicenseWithNDaysLeft(metadata, 30);
+  auto license = LicenseTest::createLicense();
 
   // Create signed license
   LicenseWithSignature signed_license(license, private_key);
@@ -44,9 +48,7 @@ TEST(LicenseTest, SignSerializeDeserializeVerifyTest) {
   auto [private_key, public_key] = LicenseTest::generateKeyPair();
 
   // Create license
-  std::map<std::string, std::string> metadata{
-      {"company", "abc"}, {"person", "def"}, {"machine type", "ghi"}};
-  License license = License::createLicenseWithNDaysLeft(metadata, 30);
+  auto license = LicenseTest::createLicense();
 
   // Create signed license
   LicenseWithSignature signed_license(license, private_key);
@@ -65,9 +67,7 @@ TEST(LicenseTest, SignModifyVerifyTest) {
   auto [private_key, public_key] = LicenseTest::generateKeyPair();
 
   // Create license
-  std::map<std::string, std::string> metadata{
-      {"company", "abc"}, {"person", "def"}, {"machine type", "ghi"}};
-  License license = License::createLicenseWithNDaysLeft(metadata, 30);
+  auto license = LicenseTest::createLicense();
 
   // Create signed license
   LicenseWithSignature signed_license(license, private_key);
@@ -75,6 +75,10 @@ TEST(LicenseTest, SignModifyVerifyTest) {
   // Verifying with a different public key should fail
   auto [private_key_2, public_key_2] = LicenseTest::generateKeyPair();
   ASSERT_FALSE(signed_license.verify(public_key_2));
+
+  // Modifying the license and then verifying with the original key should fail
+  signed_license.set_license(LicenseTest::createLicense(1000));
+  ASSERT_FALSE(signed_license.verify(public_key));
 }
 
 }  // namespace thirdai::licensing
