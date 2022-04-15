@@ -65,13 +65,13 @@ class LicenseWithSignature {
     return true;
   }
 
-  void writeLicenseAndSignatureToFile(const std::string& path) {
+  void writeToFile(const std::string& path) {
     std::ofstream filestream(path, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
     oarchive(*this);
   }
 
-  static std::unique_ptr<LicenseWithSignature> readLicenseAndSignatureFromFile(
+  static std::unique_ptr<LicenseWithSignature> readFromFile(
       const std::string& path) {
     std::ifstream filestream(path, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);

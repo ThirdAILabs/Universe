@@ -42,7 +42,7 @@ class License {
 
   // Gets a string that represents the state of the license. This is the state
   // that is signed by our private key and later verified by the public key.
-  std::string toString() {
+  std::string toString() const {
     std::string to_verify;
     to_verify += std::to_string(_expire_time_epoch_millis);
     to_verify += "|";
@@ -50,6 +50,7 @@ class License {
       to_verify += key;
       to_verify += ":";
       to_verify += val;
+      to_verify += ",";
     }
     return to_verify;
   }
