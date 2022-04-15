@@ -32,7 +32,7 @@ class MaxFlashArray {
   // TODO(josh): Make LABEL_T allowed to be different for each document, so
   // it is as space efficient as possible
   MaxFlashArray(hashing::HashFunction* function, uint32_t hashes_per_table,
-                uint64_t max_doc_size);
+                uint64_t max_doc_size = std::numeric_limits<LABEL_T>::max());
 
   // This needs to be public since it's a top level serialization target, but
   // DO NOT call it unless you are creating a temporary object to serialize

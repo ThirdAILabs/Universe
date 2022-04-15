@@ -2,11 +2,8 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <cstddef>
 #include <exception>
 #include <random>
-#include <sstream>
-#include <tuple>
 #include <unordered_map>
 
 namespace thirdai::bolt {
@@ -15,83 +12,61 @@ FullyConnectedLayer::FullyConnectedLayer(
     const FullyConnectedLayerConfig& config, uint64_t prev_dim)
     : _dim(config.dim),
       _prev_dim(prev_dim),
-      _max_batch_size(0),
       _sparse_dim(config.sparsity * config.dim),
       _sparsity(config.sparsity),
       _act_func(config.act_func),
+      _weights(config.dim * prev_dim),
+      _w_gradient(config.dim * prev_dim, 0),
+      _w_momentum(config.dim * prev_dim, 0),
+      _w_velocity(config.dim * prev_dim, 0),
+      _biases(config.dim),
+      _b_gradient(config.dim, 0),
+      _b_momentum(config.dim, 0),
+      _b_velocity(config.dim, 0),
+      _is_active(config.dim, false),
       _sampling_config(config.sampling_config),
       _force_sparse_for_inference(false) {
-  uint64_t total_size = _dim * _prev_dim;
-
-  _weights = new float[total_size];
-  _w_gradient = new float[total_size]();
-  _w_momentum = new float[total_size]();
-  _w_velocity = new float[total_size]();
-  assert(_weights != nullptr);
-  assert(_w_gradient != nullptr);
-  assert(_w_momentum != nullptr);
-  assert(_w_velocity != nullptr);
-
-  _biases = new float[_dim];
-  _b_gradient = new float[_dim]();
-  _b_momentum = new float[_dim]();
-  _b_velocity = new float[_dim]();
-  assert(_biases != nullptr);
-  assert(_b_gradient != nullptr);
-  assert(_b_momentum != nullptr);
-  assert(_b_velocity != nullptr);
-
-  _is_active = new bool[_dim]();  // TODO(nicholas): bitvector?
-  assert(_is_active != nullptr);
-
   std::random_device rd;
   std::default_random_engine eng(rd());
   std::normal_distribution<float> dist(0.0, 0.01);
 
-  std::generate(_weights, _weights + total_size, [&]() { return dist(eng); });
-  std::generate(_biases, _biases + _dim, [&]() { return dist(eng); });
+  std::generate(_weights.begin(), _weights.end(), [&]() { return dist(eng); });
+  std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
-    _hasher = new hashing::DWTAHashFunction(
+    _hasher = std::make_unique<hashing::DWTAHashFunction>(
         _prev_dim, _sampling_config.hashes_per_table,
         _sampling_config.num_tables, _sampling_config.range_pow);
-    assert(_hasher != nullptr);
 
-    _hash_table = new hashtable::SampledHashTable<uint32_t>(
+    _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow);
-    assert(_hash_table != nullptr);
 
     buildHashTables();
 
-    _rand_neurons = new uint32_t[_dim];
-    assert(_rand_neurons != nullptr);
-    for (uint32_t i = 0; i < _dim; i++) {
-      _rand_neurons[i] = i;
-    }
+    _rand_neurons = std::vector<uint32_t>(_dim);
 
-    std::shuffle(_rand_neurons, _rand_neurons + _dim, rd);
-  } else {
-    _hasher = nullptr;
-    _hash_table = nullptr;
-    _rand_neurons = nullptr;
+    int rn = 0;
+    std::generate(_rand_neurons.begin(), _rand_neurons.end(),
+                  [&]() { return rn++; });
+    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
   }
 }
 
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
-                                  const uint32_t* labels, uint32_t label_len) {
+                                  const BoltVector* labels) {
   if (output.active_neurons == nullptr) {
     if (input.len == _prev_dim) {
       // TODO(Nicholas): Re-implement this case with dense matrix library
-      forwardImpl<true, true>(input, output, labels, label_len);
+      forwardImpl<true, true>(input, output, labels);
     } else {
-      forwardImpl<true, false>(input, output, labels, label_len);
+      forwardImpl<true, false>(input, output, labels);
     }
   } else {
     if (input.len == _prev_dim) {
-      forwardImpl<false, true>(input, output, labels, label_len);
+      forwardImpl<false, true>(input, output, labels);
     } else {
-      forwardImpl<false, false>(input, output, labels, label_len);
+      forwardImpl<false, false>(input, output, labels);
     }
   }
 }
@@ -99,8 +74,7 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
 template <bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::forwardImpl(const BoltVector& input,
                                       BoltVector& output,
-                                      const uint32_t* labels,
-                                      uint32_t label_len) {
+                                      const BoltVector* labels) {
   assert((input.len < _prev_dim && !PREV_DENSE) ||
          (input.len == _prev_dim && PREV_DENSE));
   assert((input.active_neurons == nullptr && PREV_DENSE) ||
@@ -108,10 +82,9 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   assert((output.len < _dim && !DENSE) || (output.len == _dim && DENSE));
   assert((output.active_neurons == nullptr && DENSE) ||
          (output.active_neurons != nullptr && !DENSE));
-  assert((labels == nullptr && label_len == 0) ||
-         (labels != nullptr && label_len > 0));
+  assert(labels == nullptr || labels->len > 0);
 
-  selectActiveNeurons<DENSE, PREV_DENSE>(input, output, labels, label_len);
+  selectActiveNeurons<DENSE, PREV_DENSE>(input, output, labels);
 
   float max_act = 0;
   uint32_t len_out = DENSE ? _dim : _sparse_dim;
@@ -136,26 +109,26 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
     assert(!std::isnan(act));
 
     switch (_act_func) {
-      case ActivationFunc::ReLU:
+      case ActivationFunction::ReLU:
         if (act < 0) {
           output.activations[n] = 0;
         } else {
           output.activations[n] = act;
         }
         break;
-      case ActivationFunc::Softmax:
+      case ActivationFunction::Softmax:
         output.activations[n] = act;
         if (max_act < act) {
           max_act = act;
         }
         break;
-      case ActivationFunc::MeanSquared:
+      case ActivationFunction::Linear:
         output.activations[n] = act;
         break;
     }
   }
 
-  if (_act_func == ActivationFunc::Softmax) {
+  if (_act_func == ActivationFunction::Softmax) {
     float total = 0;
     for (uint64_t n = 0; n < len_out; n++) {
       output.activations[n] = std::exp(output.activations[n] - max_act);
@@ -201,23 +174,6 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
   }
 }
 
-constexpr float FullyConnectedLayer::actFuncDerivative(float x) {
-  switch (_act_func) {
-    case ActivationFunc::ReLU:
-      return x > 0 ? 1.0 : 0.0;
-    case ActivationFunc::Softmax:
-      // return 1.0; // Commented out because Clang tidy doesn't like
-      // consecutive identical branches
-    case ActivationFunc::MeanSquared:
-      return 1.0;
-      // default:
-      //   return 0.0;
-  }
-  // This is impossible to reach, but the compiler gave a warning saying it
-  // reached the end of a non void function without it.
-  return 0.0;
-}
-
 template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
                                             BoltVector& output) {
@@ -259,17 +215,17 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
 template <bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                                               BoltVector& output,
-                                              const uint32_t* labels,
-                                              uint32_t label_len) {
+                                              const BoltVector* labels) {
   if (DENSE) {
     return;
   }
 
   std::unordered_set<uint32_t> active_set;
 
+  uint32_t label_len = labels != nullptr ? labels->len : 0;
   for (uint32_t i = 0; i < label_len; i++) {
-    assert(labels[i] < _dim);
-    active_set.insert(labels[i]);
+    assert(labels->active_neurons[i] < _dim);
+    active_set.insert(labels->active_neurons[i]);
   }
 
   uint32_t* hashes = new uint32_t[_hash_table->numTables()];
@@ -280,7 +236,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                               input.len, hashes);
   }
 
-  if (_force_sparse_for_inference && _act_func == ActivationFunc::Softmax) {
+  if (_force_sparse_for_inference && _act_func == ActivationFunction::Softmax) {
     _hash_table->queryAndInsertForInference(hashes, active_set, _sparse_dim);
   } else {
     _hash_table->queryBySet(hashes, active_set);
@@ -301,8 +257,8 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     if (cnt >= _sparse_dim) {
       break;
     }
-    output.active_neurons[cnt++] = labels[i];
-    active_set.erase(labels[i]);
+    output.active_neurons[cnt++] = labels->active_neurons[i];
+    active_set.erase(labels->active_neurons[i]);
   }
 
   for (auto x : active_set) {
@@ -363,7 +319,7 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
 }
 
 void FullyConnectedLayer::buildHashTables() {
-  if (_sparsity >= 1.0) {
+  if (_sparsity >= 1.0 || _force_sparse_for_inference) {
     return;
   }
   uint64_t num_tables = _hash_table->numTables();
@@ -373,7 +329,7 @@ void FullyConnectedLayer::buildHashTables() {
 
 #pragma omp parallel for default(none) shared(num_tables, hashes)
   for (uint64_t n = 0; n < _dim; n++) {
-    _hasher->hashSingleDense(_weights + n * _prev_dim, _prev_dim,
+    _hasher->hashSingleDense(_weights.data() + n * _prev_dim, _prev_dim,
                              hashes + n * num_tables);
   }
 
@@ -384,52 +340,41 @@ void FullyConnectedLayer::buildHashTables() {
 }
 
 void FullyConnectedLayer::reBuildHashFunction() {
-  if (_sparsity >= 1.0) {
+  if (_sparsity >= 1.0 || _force_sparse_for_inference) {
     return;
   }
-  delete _hasher;
-
-  _hasher = new hashing::DWTAHashFunction(
+  _hasher = std::make_unique<hashing::DWTAHashFunction>(
       _prev_dim, _sampling_config.hashes_per_table, _sampling_config.num_tables,
       _sampling_config.range_pow);
 }
 
 void FullyConnectedLayer::shuffleRandNeurons() {
-  if (_sparsity < 1.0) {
-    std::shuffle(_rand_neurons, _rand_neurons + _dim, std::random_device{});
+  if (_sparsity < 1.0 && !_force_sparse_for_inference) {
+    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(),
+                 std::random_device{});
   }
 }
 
 float* FullyConnectedLayer::getWeights() {
   float* weights_copy = new float[_dim * _prev_dim];
-  std::copy(_weights, _weights + _dim * _prev_dim, weights_copy);
+  std::copy(_weights.begin(), _weights.end(), weights_copy);
 
   return weights_copy;
 }
 
 float* FullyConnectedLayer::getBiases() {
   float* biases_copy = new float[_dim];
-  std::copy(_biases, _biases + _dim, biases_copy);
+  std::copy(_biases.begin(), _biases.end(), biases_copy);
 
   return biases_copy;
 }
 
-FullyConnectedLayer::~FullyConnectedLayer() {
-  delete[] _weights;
-  delete[] _w_gradient;
-  delete[] _w_momentum;
-  delete[] _w_velocity;
+void FullyConnectedLayer::setWeights(const float* new_weights) {
+  std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
+}
 
-  delete[] _biases;
-  delete[] _b_gradient;
-  delete[] _b_momentum;
-  delete[] _b_velocity;
-
-  delete[] _is_active;
-
-  delete _hasher;
-  delete _hash_table;
-  delete[] _rand_neurons;
+void FullyConnectedLayer::setBiases(const float* new_biases) {
+  std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
 }  // namespace thirdai::bolt

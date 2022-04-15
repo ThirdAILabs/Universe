@@ -19,8 +19,11 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
       - uses: actions/checkout@v2
-
+        with:           
+          submodules: 'recursive'
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+        
       - name: Run all python tests
         run: |
           docker build -t test_image -f docker/develop/Dockerfile .  
-          docker run --privileged --mount type=bind,source=${PWD},target=/src test_image /bin/bash -c "src/bin/build.sh ; src/bin/python-test.sh"
+          docker run --privileged --mount type=bind,source=${PWD},target=/src test_image /bin/bash -c "src/bin/build.py ; src/bin/python-test.sh"

@@ -1,107 +1,121 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
+#include "Model.h"
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <dataset/src/Dataset.h>
+#include <dataset/src/batch_types/BoltInputBatch.h>
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
 namespace thirdai::bolt {
 
-class FullyConnectedNetwork {
+class DLRM;
+
+class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
+  friend class DLRM;
+
  public:
   FullyConnectedNetwork(std::vector<FullyConnectedLayerConfig> configs,
                         uint32_t input_dim);
 
-  /**
-   * This function takes in a dataset and training parameters and trains the
-   * network for the specified number of epochs with the given parameters. Note
-   * that it can be called multiple times to train a network. This function
-   * returns a list of the durations (in seconds) of each epoch.
-   */
-  template <typename BATCH_T>
-  std::vector<int64_t> train(
-      const dataset::InMemoryDataset<BATCH_T>& train_data, float learning_rate,
-      uint32_t epochs, uint32_t rehash = 0, uint32_t rebuild = 0);
+  void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
 
-  /**
-   * This function takes in a test dataset and uses it to evaluate the model. It
-   * returns the final accuracy. The batch_limit parameter limits the number of
-   * test batches used, this is intended for intermediate accuracy checks during
-   * training with large datasets.
-   */
-  template <typename BATCH_T>
-  float predict(const dataset::InMemoryDataset<BATCH_T>& test_data,
-                uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
+  void forward(uint32_t batch_index, const dataset::BoltInputBatch& inputs,
+               BoltVector& output, bool train) final {
+    forward(batch_index, inputs[batch_index], output,
+            train ? &inputs.labels(batch_index) : nullptr);
+  }
 
-  void createBatchStates(uint32_t batch_size, bool force_dense);
+  void backpropagate(uint32_t batch_index, dataset::BoltInputBatch& inputs,
+                     BoltVector& output) final {
+    backpropagate<true>(batch_index, inputs[batch_index], output);
+  }
 
+  void updateParameters(float learning_rate, uint32_t iter) final {
+    for (auto& layer : _layers) {
+      layer->updateParameters(learning_rate, iter, BETA1, BETA2, EPS);
+    }
+  }
+
+  void reBuildHashFunctions() final {
+    if (_sparse_inference_enabled) {
+      return;
+    }
+    for (auto& layer : _layers) {
+      layer->reBuildHashFunction();
+    }
+  }
+
+  void buildHashTables() final {
+    if (_sparse_inference_enabled) {
+      return;
+    }
+    for (auto& layer : _layers) {
+      layer->buildHashTables();
+    }
+  }
+
+  void shuffleRandomNeurons() final {
+    if (_sparse_inference_enabled) {
+      return;
+    }
+    for (auto& layer : _layers) {
+      layer->shuffleRandNeurons();
+    }
+  }
+
+  BoltBatch getOutputs(uint32_t batch_size, bool force_dense) final {
+    return _layers.back()->createBatchState(batch_size,
+                                            useDenseComputations(force_dense));
+  }
+
+  uint32_t outputDim() const final { return _layers.back()->getDim(); }
+
+  void enableSparseInference() {
+    _sparse_inference_enabled = true;
+    _layers.back()->forceSparseForInference();
+  }
+
+ private:
   void forward(uint32_t batch_index, const BoltVector& input,
-               BoltVector& output, const uint32_t* labels, uint32_t label_len);
+               BoltVector& output, const BoltVector* labels);
 
   template <bool FROM_INPUT>
   void backpropagate(uint32_t batch_index, BoltVector& input,
                      BoltVector& output);
 
-  void updateParameters(float learning_rate);
-
-  void reBuildHashFunctions();
-
-  void buildHashTables();
-
-  void shuffleRandomNeurons();
-
-  void useSparseInference() {
-    _sparse_inference = true;
-    _layers[_num_layers - 1]->forceSparseForInference();
+  bool useDenseComputations(bool force_dense) const {
+    return force_dense && !_sparse_inference_enabled;
   }
-
-  uint32_t getNumLayers() const { return _num_layers; }
-
-  uint32_t getInputDim() const { return _input_dim; }
-
-  std::vector<uint32_t> getLayerSizes() {
-    std::vector<uint32_t> layer_sizes;
-    for (const auto& c : _configs) {
-      layer_sizes.push_back(c.dim);
-    }
-    return layer_sizes;
-  }
-
-  std::vector<std::string> getActivationFunctions() {
-    std::vector<std::string> funcs;
-    for (const auto& c : _configs) {
-      switch (c.act_func) {
-        case ActivationFunc::ReLU:
-          funcs.emplace_back("ReLU");
-          break;
-
-        case ActivationFunc::Softmax:
-          funcs.emplace_back("Softmax");
-          break;
-
-        case ActivationFunc::MeanSquared:
-          funcs.emplace_back("MeanSquared");
-          break;
-      }
-    }
-    return funcs;
-  }
-
-  ~FullyConnectedNetwork();
 
  protected:
-  std::vector<FullyConnectedLayerConfig> _configs;
   uint64_t _input_dim;
-  FullyConnectedLayer** _layers;
-  BoltBatch* _states;
+  std::vector<std::shared_ptr<FullyConnectedLayer>> _layers;
+  std::vector<BoltBatch> _states;
   uint32_t _num_layers;
-  uint32_t _iter;
-  uint32_t _epoch_count;
+  bool _sparse_inference_enabled;
 
-  bool _sparse_inference;
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Model<dataset::BoltInputBatch>>(this),
+            _input_dim, _layers, _num_layers, _sparse_inference_enabled);
+  }
+
+ protected:
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
+  FullyConnectedNetwork(){};
 };
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedNetwork)

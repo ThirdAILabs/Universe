@@ -91,7 +91,6 @@ std::vector<float> MaxFlashArray<LABEL_T>::getDocumentScores(
 template <typename LABEL_T>
 template <typename BATCH_T>
 std::vector<uint32_t> MaxFlashArray<LABEL_T>::hash(const BATCH_T& batch) const {
-  // TODO(josh): Parallilize across documents
   return _hash_function->hashBatchParallel(batch);
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
 #include <cstdint>
 #include <unordered_set>
 #include <vector>
@@ -67,6 +68,14 @@ class HashTable {
  protected:
   /** The default number of random pregenerated numbers to use for sampling */
   const static uint32_t DEFAULT_MAX_RAND = 10000;
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 template <typename LABEL_T>

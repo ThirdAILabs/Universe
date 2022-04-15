@@ -17,3 +17,6 @@ thirdai.egg-info
 # Ignore zipped files
 *.bz2
 *.gz
+
+# Python builds
+*egg-info*
