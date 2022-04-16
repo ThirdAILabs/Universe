@@ -66,9 +66,9 @@ class FullyConnectedLayer {
 
   float* getBiases();
 
-  void setWeights(float* new_weights);
+  void setWeights(const float* new_weights);
 
-  void setBiases(float* new_biases);
+  void setBiases(const float* new_biases);
 
   virtual ~FullyConnectedLayer() = default;
 

@@ -181,3 +181,32 @@ def test_load_save_fc_network():
     assert another_acc["categorical_accuracy"][0] >= new_acc["categorical_accuracy"][0]
 
     os.remove(save_loc)
+
+
+@pytest.mark.integration
+def test_get_set_weights():
+    network = build_sparse_output_layer_network()
+
+    train_data, test_data = load_mnist()
+
+    train_network(network, train_data=train_data, epochs=10)
+
+    original_acc, _ = network.predict(
+        test_data, metrics=["categorical_accuracy"], verbose=False
+    )
+
+    assert original_acc["categorical_accuracy"][0] >= ACCURACY_THRESHOLD
+
+    untrained_network = build_sparse_output_layer_network()
+
+    untrained_network.set_weights(0, network.get_weights(0))
+    untrained_network.set_weights(1, network.get_weights(1))
+
+    untrained_network.set_biases(0, network.get_biases(0))
+    untrained_network.set_biases(1, network.get_biases(1))
+
+    new_acc, _ = untrained_network.predict(
+        test_data, metrics=["categorical_accuracy"], verbose=False
+    )
+
+    assert new_acc["categorical_accuracy"][0] == original_acc["categorical_accuracy"][0]
