@@ -131,12 +131,12 @@ class LicenseWithSignature {
           "no public key file found");
     }
 
-    if (license->verify(public_key.value())) {
+    if (!license->verify(public_key.value())) {
       throw thirdai::exceptions::LicenseCheckException(
           "license verification failure");
     }
 
-    if (!license->get_license().isExpired()) {
+    if (license->get_license().isExpired()) {
       throw thirdai::exceptions::LicenseCheckException("license expired");
     }
   }
