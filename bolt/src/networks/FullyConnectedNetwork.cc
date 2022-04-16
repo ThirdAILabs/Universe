@@ -8,6 +8,7 @@
 #include <iostream>
 #include <limits>
 #include <stdexcept>
+#include <wrappers/src/LicenseWrapper.h>
 
 namespace thirdai::bolt {
 
@@ -16,6 +17,9 @@ FullyConnectedNetwork::FullyConnectedNetwork(
     : _input_dim(input_dim),
       _num_layers(configs.size()),
       _sparse_inference_enabled(false) {
+
+  thirdai::licensing::LicenseWrapper::checkLicense();
+
   auto start = std::chrono::high_resolution_clock::now();
 
   std::cout << "====== Building Fully Connected Network ======" << std::endl;

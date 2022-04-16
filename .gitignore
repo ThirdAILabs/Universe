@@ -20,3 +20,7 @@ thirdai.egg-info
 
 # Python builds
 *egg-info*
+
+# Ignore all .der key files except the single public license key
+*.der
+!docker/product/license-public-key.der
