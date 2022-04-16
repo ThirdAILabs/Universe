@@ -1,4 +1,5 @@
 #include "FullyConnectedNetwork.h"
+#include <wrappers/src/LicenseWrapper.h>
 #include <bolt/src/layers/ConvLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/utils/ProgressBar.h>
@@ -8,7 +9,6 @@
 #include <iostream>
 #include <limits>
 #include <stdexcept>
-#include <wrappers/src/LicenseWrapper.h>
 
 namespace thirdai::bolt {
 
@@ -17,7 +17,6 @@ FullyConnectedNetwork::FullyConnectedNetwork(
     : _input_dim(input_dim),
       _num_layers(configs.size()),
       _sparse_inference_enabled(false) {
-
   thirdai::licensing::LicenseWrapper::checkLicense();
 
   auto start = std::chrono::high_resolution_clock::now();

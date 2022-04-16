@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wrappers/src/LicenseWrapper.h>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include "Model.h"
@@ -13,7 +14,6 @@
 #include <memory>
 #include <stdexcept>
 #include <vector>
-#include <wrappers/src/LicenseWrapper.h>
 
 namespace thirdai::bolt {
 
@@ -114,8 +114,8 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
 
  protected:
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
-  FullyConnectedNetwork(){
-        thirdai::licensing::LicenseWrapper::checkLicense();
+  FullyConnectedNetwork() {
+    thirdai::licensing::LicenseWrapper::checkLicense();
   };
 };
 

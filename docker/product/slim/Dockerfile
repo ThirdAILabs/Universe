@@ -23,7 +23,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
     python3 \
     python3-dev \
     pip
-RUN /Universe/bin/build.py
+RUN /Universe/bin/build.py -f THIRDAI_CHECK_LICENSE THIRDAI_BUILD_LICENSE
 
 
 # Second stage, we only copy the so file from the first stage
@@ -58,6 +58,10 @@ RUN sudo apt-get update
 # Copy in smoke test and thirdai so
 COPY thirdai_smoke_test.py .
 COPY --from=0 /Universe/build/thirdai.cpython-* .
+
+# Copy in license files
+COPY license-public-key.der .
+COPY license.serialized .
 
 # Allow us to use so from anywhere
 ENV PYTHONPATH="/home/thirdai:${PYTHONPATH}"

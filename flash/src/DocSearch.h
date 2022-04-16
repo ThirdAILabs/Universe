@@ -194,9 +194,7 @@ class DocSearch {
   // This needs to be protected since it's a top level serialization target
   // called by a child class, but DO NOT call it unless you are creating a
   // temporary object to serialize into.
-  DocSearch(){
-    thirdai::licensing::LicenseWrapper::checkLicense();
-  };
+  DocSearch() { thirdai::licensing::LicenseWrapper::checkLicense(); };
 
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/

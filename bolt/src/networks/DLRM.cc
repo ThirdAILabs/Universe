@@ -1,10 +1,10 @@
 #include "DLRM.h"
+#include <wrappers/src/LicenseWrapper.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <atomic>
 #include <chrono>
 #include <stdexcept>
-#include <wrappers/src/LicenseWrapper.h>
 
 namespace thirdai::bolt {
 
@@ -20,7 +20,6 @@ DLRM::DLRM(EmbeddingLayerConfig embedding_config,
 
       _iter(0),
       _epoch_count(0) {
-
   thirdai::licensing::LicenseWrapper::checkLicense();
 
   if (bottom_mlp_configs.back().sparsity != 1.0) {

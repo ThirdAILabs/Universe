@@ -102,9 +102,12 @@ add_subdirectory(deps/pybind11)
 add_subdirectory(deps/googletest)
 
 # Check if there is a license flag, and only if so add the cryptopp lib
-list (FIND FEATURE_FLAGS "THIRDAI_CHECK_LICENSE" _index)
-SET (LICENSE_FLAG_FOUND ${_index} GREATER -1)
-if (${LICENSE_FLAG_FOUND})
+# We have two different License flags, one for if to build the license files
+# (THIRDAI_BUILD_LICENSE) and one for if to check the license (THIRDAI_CHECK_LICENSE).
+# If just the THIRDAI_CHECK_LICENSE flag is set there will be a linker error.
+list (FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
+SET (LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
+if (${LICENSE_BUILD_FLAG_FOUND})
 
   # Install CRYPTOPP and set the static lib to be libcryptopp.a. This is pretty
   # ugly (the build happens at configure time, not build time) but honestly
@@ -138,7 +141,7 @@ add_subdirectory(hashtable)
 add_subdirectory(wrappers)
 
 # Only add the licensing subdirectory if the corresponding flag is set
-if (${LICENSE_FLAG_FOUND})
+if (${LICENSE_BUILD_FLAG_FOUND})
   add_subdirectory(licensing)
 endif()
 
@@ -188,6 +191,6 @@ pybind11_add_module(thirdai
   ${WRAPPER_SOURCES}
 )
 
-if (${LICENSE_FLAG_FOUND})
+if (${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(thirdai PRIVATE ${CRYPTOPP_LIB})
 endif()

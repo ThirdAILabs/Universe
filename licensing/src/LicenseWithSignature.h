@@ -85,10 +85,10 @@ class LicenseWithSignature {
   }
 
   /** Checks for a license file named license.serialized in...
-   *  1. /home/thirdai/
+   *  1. /home/thirdai/work
    *  2. The current directory
    * Using a public key named license-public-key.der in...
-   *  1. /home/thirdai
+   *  1. /home/thirdai/work
    *  2. The current directory
    * If no license is found, throws an error. If no public key is found, throws
    * an error. We check 1. and use it if we find something, and otherwise
@@ -98,9 +98,9 @@ class LicenseWithSignature {
    */
   static void findVerifyAndCheckLicense() {
     std::vector<std::string> license_file_name_options = {
-        "/home/thirdai/license.serialized", "license.serialized"};
+        "/home/thirdai/work/license.serialized", "license.serialized"};
     std::vector<std::string> public_key_file_name_options = {
-        "/home/thirdai/license-public-key.der", "license-public-key.der"};
+        "/home/thirdai/work/license-public-key.der", "license-public-key.der"};
 
     std::unique_ptr<LicenseWithSignature> license;
     for (const std::string& license_file_name : license_file_name_options) {

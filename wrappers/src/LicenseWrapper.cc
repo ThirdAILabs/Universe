@@ -6,9 +6,9 @@
 
 namespace thirdai::licensing {
 
-  void LicenseWrapper::checkLicense() {
+void LicenseWrapper::checkLicense() {
 #if THIRDAI_CHECK_LICENSE
-    LicenseWithSignature::findVerifyAndCheckLicense();
+  LicenseWithSignature::findVerifyAndCheckLicense();
 #endif
 };
 
