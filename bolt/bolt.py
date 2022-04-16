@@ -10,6 +10,7 @@ import socket
 import platform
 import psutil
 import mlflow
+import argparse
 
 
 def log_subconfig(name: str, subconfig: Dict[str, Any]):
@@ -33,22 +34,19 @@ def log_machine_info():
     mlflow.log_params(machine_info)
 
 
-def initialize_mlfow_logging_for_bolt(config_filename: str, config: Dict[str, Any]):
+def initialize_mlfow_logging_for_bolt(
+    run_name: str, config_filename: str, config: Dict[str, Any]
+):
     mlflow.set_experiment(config["job"])
+
+    dataset = config["dataset"]["train_data"].split("/")[-1]
     mlflow.start_run(
-        tags={
-            "dataset": config["dataset"]["train_data"],
-        },
+        run_name=run_name,
+        tags={"dataset": dataset},
     )
 
-    mlflow.set_experiment(config["job"])
-    mlflow.start_run(
-        tags={
-            "dataset": config["dataset"]["train_data"],
-        },
-    )
-
-    mlflow.log_artifact(config_filename)
+    # TODO(nicholas): this is giving an auth error
+    # mlflow.log_artifact(config_filename)
 
     log_machine_info()
 
@@ -56,7 +54,7 @@ def initialize_mlfow_logging_for_bolt(config_filename: str, config: Dict[str, An
         if isinstance(subconfig, dict):
             log_subconfig(name, subconfig)
         if isinstance(subconfig, list):
-            for i, subconfig_i in subconfig:
+            for i, subconfig_i in enumerate(subconfig):
                 log_subconfig(f"{name}_{i}", subconfig_i)
 
 
@@ -154,7 +152,7 @@ def get_labels(dataset: str) -> npt.NDArray[np.int32]:
     return np.array(labels)
 
 
-def train_fcn(config: Dict[str, Any]):
+def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
     layers = create_fully_connected_layer_configs(config["layers"])
     input_dim = config["dataset"]["input_dim"]
     network = bolt.Network(layers=layers, input_dim=input_dim)
@@ -190,25 +188,29 @@ def train_fcn(config: Dict[str, Any]):
         metrics = network.train(
             train, loss, learning_rate, 1, rehash, rebuild, train_metrics
         )
-        log_training_metrics(metrics)
+        if mlflow_enabled:
+            log_training_metrics(metrics)
 
         if use_sparse_inference and e == sparse_inference_epoch:
             network.enable_sparse_inference()
 
         if max_test_batches is None:
             metrics, _ = network.predict(test, test_metrics)
-            mlflow.log_metrics(metrics)
+            if mlflow_enabled:
+                mlflow.log_metrics(metrics)
         else:
             metrics, _ = network.predict(test, test_metrics, True, max_test_batches)
-            mlflow.log_metrics(metrics)
+            if mlflow_enabled:
+                mlflow.log_metrics(metrics)
 
     if not max_test_batches is None:
         # If we limited the number of test batches during training we run on the whole test set at the end.
         metrics, _ = network.predict(test, test_metrics)
-        mlflow.log_metrics(metrics)
+        if mlflow_enabled:
+            mlflow.log_metrics(metrics)
 
 
-def train_dlrm(config: Dict[str, Any]):
+def train_dlrm(config: Dict[str, Any], mlflow_enabled: bool):
     embedding_layer = create_embedding_layer_config(config["embedding_layer"])
     bottom_mlp = create_fully_connected_layer_configs(config["bottom_mlp_layers"])
     top_mlp = create_fully_connected_layer_configs(config["top_mlp_layers"])
@@ -245,10 +247,12 @@ def train_dlrm(config: Dict[str, Any]):
         metrics = dlrm.train(
             train, loss, learning_rate, 1, rehash, rebuild, train_metrics
         )
-        log_training_metrics(metrics)
+        if mlflow_enabled:
+            log_training_metrics(metrics)
 
         metrics, scores = dlrm.predict(test, test_metrics)
-        mlflow.log_metrics(metrics)
+        if mlflow_enabled:
+            mlflow.log_metrics(metrics)
 
         if len(scores.shape) == 2:
             preds = np.argmax(scores, axis=1)
@@ -257,11 +261,13 @@ def train_dlrm(config: Dict[str, Any]):
 
         if use_auc and len(scores.shape) == 1:
             auc = roc_auc_score(labels, scores)
-            mlflow.log_metric("auc", auc)
+            if mlflow_enabled:
+                mlflow.log_metric("auc", auc)
             print("AUC: ", auc)
         elif use_auc and len(scores.shape) == 2 and scores.shape[1] == 2:
             auc = roc_auc_score(labels, scores[:, 1])
-            mlflow.log_metric("auc", auc)
+            if mlflow_enabled:
+                mlflow.log_metric("auc", auc)
             print("AUC: ", auc)
 
 
@@ -274,14 +280,56 @@ def is_fcn(config: Dict[str, Any]) -> bool:
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Runs creates and trains a bolt network on the specified config."
+    )
+
+    parser.add_argument(
+        "config_file",
+        type=str,
+        help="Name of the config file to use to run experiment.",
+    )
+    parser.add_argument(
+        "--disable_mlflow",
+        default=False,
+        action="store_true",
+        help="Disable mlflow logging for the current run.",
+    )
+    parser.add_argument(
+        "--run_name",
+        default="",
+        type=str,
+        help="The name of the run to use in mlflow, if mlflow is not disabled this is required.",
+    )
+
+    args = parser.parse_args()
+
+    mlflow_enabled = not args.disable_mlflow
+
+    if mlflow_enabled and not args.run_name:
+        parser.print_usage()
+        print("Error: --run_name is required when using mlflow logging.")
+        return
+
     config = toml.load(sys.argv[1])
-    initialize_mlfow_logging_for_bolt(sys.argv[1], config)
+
+    if mlflow_enabled:
+        file_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = os.path.join(file_dir, "../benchmarks/config.toml")
+        with open(file_name) as f:
+            parsed_config = toml.load(f)
+        mlflow.set_tracking_uri(parsed_config["tracking"]["uri"])
+
+        initialize_mlfow_logging_for_bolt(args.run_name, sys.argv[1], config)
+
     if is_fcn(config):
-        train_fcn(config)
+        train_fcn(config, mlflow_enabled)
     elif is_dlrm(config):
-        train_dlrm(config)
+        train_dlrm(config, mlflow_enabled)
     else:
         print("Invalid network architecture specified")
+
+    mlflow.end_run()
 
 
 if __name__ == "__main__":
