@@ -96,7 +96,7 @@ class PyNetwork final : public FullyConnectedNetwork {
                  rebuild, metrics, verbose);
   }
 
-  std::pair<MetricData, py::object> predict(
+  std::pair<InferenceMetricData, py::object> predict(
       const dataset::InMemoryDataset<dataset::BoltInputBatch>& test_data,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
@@ -134,7 +134,7 @@ class PyNetwork final : public FullyConnectedNetwork {
     return {metric_data, activations_array};
   }
 
-  std::pair<MetricData,
+  std::pair<InferenceMetricData,
             py::array_t<float, py::array::c_style | py::array::forcecast>>
   predictWithDenseNumpyArray(
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
@@ -179,7 +179,7 @@ class PyNetwork final : public FullyConnectedNetwork {
     return {metric_data, activations_array};
   }
 
-  std::pair<MetricData,
+  std::pair<InferenceMetricData,
             py::array_t<float, py::array::c_style | py::array::forcecast>>
   predictWithSparseNumpyArray(
       const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
@@ -347,7 +347,7 @@ class PyDLRM final : public DLRM {
       : DLRM(embedding_config, std::move(bottom_mlp_configs),
              std::move(top_mlp_configs), input_dim) {}
 
-  std::pair<MetricData,
+  std::pair<InferenceMetricData,
             py::array_t<float, py::array::c_style | py::array::forcecast>>
   predict(const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
           const std::vector<std::string>& metrics = {}, bool verbose = true,

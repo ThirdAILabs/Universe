@@ -48,7 +48,7 @@ class Model {
    * the test set, and the function optionally store the activations for the
    * output layer in the output_activations array.
    */
-  MetricData predict(
+  InferenceMetricData predict(
       // Test dataset
       const dataset::InMemoryDataset<BATCH_T>& test_data,
       // Array to store output activations in, will not return activations if

@@ -90,6 +90,7 @@ class CategoricalAccuracy final : public Metric {
 };
 
 using MetricData = std::unordered_map<std::string, std::vector<double>>;
+using InferenceMetricData = std::unordered_map<std::string, double>;
 
 class MetricAggregator {
  public:
@@ -118,6 +119,14 @@ class MetricAggregator {
   }
 
   MetricData getOutput() { return _output; }
+
+  InferenceMetricData getOutputFromInference() {
+    InferenceMetricData data;
+    for (const auto& metric : _output) {
+      data[metric.first] = metric.second.at(0);
+    }
+    return data;
+  }
 
  private:
   std::vector<std::unique_ptr<Metric>> _metrics;
