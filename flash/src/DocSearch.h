@@ -152,6 +152,14 @@ class DocSearch {
 
   std::vector<std::pair<std::string, std::string>> query(
       const dataset::DenseBatch& embeddings, uint32_t top_k) const {
+    std::vector<uint32_t> centroid_ids =
+        getNearestCentroids(embeddings, _nprobe_query);
+    return queryWithCentroids(embeddings, centroid_ids, top_k);
+  }
+
+  std::vector<std::pair<std::string, std::string>> queryWithCentroids(
+      const dataset::DenseBatch& embeddings,
+      const std::vector<uint32_t>& centroid_ids, uint32_t top_k) const {
     if (embeddings.getBatchSize() == 0) {
       throw std::invalid_argument("Need at least one query vector but found 0");
     }
@@ -169,8 +177,6 @@ class DocSearch {
       }
     }
 
-    std::vector<uint32_t> centroid_ids =
-        getNearestCentroids(embeddings, _nprobe_query);
     std::vector<uint32_t> top_k_internal_ids =
         frequencyCountCentroidBuckets(centroid_ids, top_k);
     std::vector<uint32_t> reranked =

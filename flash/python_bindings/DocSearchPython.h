@@ -63,6 +63,16 @@ class PyDocSearch final : public DocSearch {
     return py::cast(std::move(result));
   }
 
+  py::array queryWithCentroids(
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          embeddings,
+      const std::vector<uint32_t>& query_centroid_ids, uint64_t top_k) {
+    std::vector<std::pair<std::string, std::string>> result =
+        DocSearch::queryWithCentroids(wrapNumpyIntoDenseBatch(embeddings, 0),
+                                      query_centroid_ids, top_k);
+    return py::cast(std::move(result));
+  }
+
   void serialize_to_file(const std::string& path) {
     std::ofstream filestream(path, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);

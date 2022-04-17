@@ -70,7 +70,7 @@ void createSearchSubmodule(py::module_& module) {
       .def("add_doc", &PyDocSearch::addDocumentWithCentroids, py::arg("doc_id"),
            py::arg("doc_text"), py::arg("doc_embeddings"),
            py::arg("doc_centroid_ids"),
-           "Same as add_doc, except also accepts the ids of the closest "
+           "A normal add, except also accepts the ids of the closest centroid"
            "to each of the doc_embeddings if these are "
            "precomputed (helpful for batch adds).")
       .def("delete_doc", &PyDocSearch::deleteDocument, py::arg("doc_id"),
@@ -88,6 +88,11 @@ void createSearchSubmodule(py::module_& module) {
           "answer the query. It is helpful to use a large value of top_k, like "
           "8192, and then only take the top 1 or 5 or k results you actually "
           "need.")
+      .def("query", &PyDocSearch::queryWithCentroids,
+           py::arg("query_embeddings"), py::arg("query_centroid_ids"),
+           py::arg("top_k"),
+           "A normal query, except also accepts the ids of the closest centroid"
+           "to each of the query_embeddings")
       .def("serialize_to_file", &PyDocSearch::serialize_to_file,
            py::arg("output_path"),
            "Serialize the DocRetrieval index to a file.")
