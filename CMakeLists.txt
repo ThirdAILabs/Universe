@@ -114,7 +114,7 @@ if (${LICENSE_BUILD_FLAG_FOUND})
   # okay (I spent way too long getting anything at all to work). Plus, it's 
   # gated by a feature flag anyways.
   set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/libcryptopp.a)
-  execute_process(COMMAND make static CXX=g++ -C /Users/josh/Universe/deps/cryptopp)
+  execute_process(COMMAND make static CXX=g++ -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
   include_directories(deps) # This is so we can include cryptopp/*.h
 
 endif()

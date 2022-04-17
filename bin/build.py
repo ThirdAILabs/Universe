@@ -82,7 +82,7 @@ def main():
     joined_feature_flags = ";".join(args.feature_flags)
 
     # Create cmake and make commands
-    cmake_command = f"cmake .. -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE={args.build_mode} \"-DFEATURE_FLAGS={joined_feature_flags}\""
+    cmake_command = f'cmake .. -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE={args.build_mode} "-DFEATURE_FLAGS={joined_feature_flags}"'
     make_command = f"make {args.target} -s -j {args.jobs}"
 
     if args.verbose:

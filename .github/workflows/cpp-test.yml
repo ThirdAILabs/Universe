@@ -26,7 +26,7 @@ jobs:
       - name: Run all c++ tests
         run: |
           docker build -t test_image -f docker/develop/Dockerfile .  
-          docker run --privileged --mount type=bind,source=${PWD},target=/src test_image /bin/bash -c "src/bin/build.py all ; src/bin/cpp-test.sh -V"
+          docker run --privileged --mount type=bind,source=${PWD},target=/src test_image /bin/bash -c "src/bin/build.py -f THIRDAI_BUILD_LICENSE; src/bin/cpp-test.sh -V"
           
   cpp-asan-tests:
     runs-on: ubuntu-latest

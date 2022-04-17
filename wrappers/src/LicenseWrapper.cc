@@ -10,6 +10,6 @@ void LicenseWrapper::checkLicense() {
 #if THIRDAI_CHECK_LICENSE
   LicenseWithSignature::findVerifyAndCheckLicense();
 #endif
-};
+}
 
 }  // namespace thirdai::licensing
