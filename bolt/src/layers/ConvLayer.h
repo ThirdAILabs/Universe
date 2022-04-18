@@ -121,11 +121,11 @@ class ConvLayer final : public SequentialLayer {
 
   bool _force_sparse_for_inference;
 
-  uint32_t _patch_dim;         // the dim of a patch if the input was dense
-  uint32_t _sparse_patch_dim;  // the actual dim of a patch
-  uint32_t _num_patches;
   uint32_t _num_filters;         // number of convolutional filters
   uint32_t _num_sparse_filters;  // _num_filters * sparsity
+  uint32_t _patch_dim;           // the dim of a patch if the input was dense
+  uint32_t _sparse_patch_dim;    // the actual dim of a patch
+  uint32_t _num_patches;
   uint32_t _prev_num_filters;
   uint32_t _prev_num_sparse_filters;
   uint32_t _kernel_size;

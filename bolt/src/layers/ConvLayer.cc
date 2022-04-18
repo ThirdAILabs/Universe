@@ -12,25 +12,21 @@ ConvLayer::ConvLayer(uint64_t num_filters, float sparsity,
                      uint32_t prev_num_filters,
                      uint32_t prev_num_sparse_filters,
                      std::pair<uint32_t, uint32_t> next_kernel_size)
-    : _prev_num_filters(prev_num_filters),
-      _prev_num_sparse_filters(prev_num_sparse_filters) {
-  _prev_dim = prev_dim;
-  _sparsity = sparsity;
-  _act_func = act_func;
-  _sampling_config = sampling_config;
-  _force_sparse_for_inference = false;
-
-  _num_filters = num_filters;
-  _num_sparse_filters = _num_filters * _sparsity;
-  _kernel_size = kernel_size.first * kernel_size.second;
-
+    : _dim(num_filters * num_patches),
+      _prev_dim(prev_dim),
+      _sparse_dim(sparsity * num_filters * num_patches),
+      _sparsity(sparsity),
+      _act_func(act_func),
+      _sampling_config(sampling_config),
+      _force_sparse_for_inference(false),
+      _num_filters(num_filters),
+      _num_sparse_filters(num_filters * sparsity),
+      _num_patches(num_patches),
+      _prev_num_filters(prev_num_filters),
+      _prev_num_sparse_filters(prev_num_sparse_filters),
+      _kernel_size(kernel_size.first * kernel_size.second) {
   _patch_dim = _kernel_size * _prev_num_filters;
   _sparse_patch_dim = _kernel_size * _prev_num_sparse_filters;
-  _num_patches = num_patches;  // TODO(david) calculate this instead of
-                               // passing in. (_prev_dim / _patch_dim?)
-
-  _dim = _num_filters * _num_patches,
-  _sparse_dim = _sparsity * _num_filters * _num_patches,
 
   _weights = std::vector<float>(_num_filters * _patch_dim);
   _w_gradient = std::vector<float>(_num_filters * _patch_dim, 0);
