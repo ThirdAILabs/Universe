@@ -54,7 +54,8 @@ MetricData Model<BATCH_T>::train(
       for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
         forward(i, inputs, outputs[i], /* train=*/true);
 
-        loss_fn.loss(outputs[i], inputs.labels(i), inputs.getBatchSize());
+        loss_fn.lossGradients(outputs[i], inputs.labels(i),
+                              inputs.getBatchSize());
 
         backpropagate(i, inputs, outputs[i]);
 
@@ -104,16 +105,20 @@ MetricData Model<BATCH_T>::predict(
 
   uint64_t num_test_batches = std::min(test_data.numBatches(), batch_limit);
 
+  MetricAggregator metrics(metric_names, verbose);
+
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
   // If sparse inference is not enabled we want the outptus to be dense,
   // otherwise we want whatever the default for the layer is.
-  initializeNetworkState(batch_size, true);
-  BoltBatch outputs = getOutputs(batch_size, true);
-
-  MetricAggregator metrics(metric_names, verbose);
+  initializeNetworkState(batch_size, metrics.forceDenseInference());
 
   ProgressBar bar(num_test_batches, verbose);
+
+  // Don't force dense inference if the metric does not allow it.
+  // This is not the same as enable_sparse_inference(), which also freezes hash
+  // tables.
+  BoltBatch outputs = getOutputs(batch_size, metrics.forceDenseInference());
 
   auto test_start = std::chrono::high_resolution_clock::now();
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
