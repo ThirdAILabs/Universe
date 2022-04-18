@@ -8,6 +8,9 @@
 #include <iostream>
 #include <toml.h>
 #include <vector>
+#define OMPI_SKIP_MPICXX 1
+#include <mpi.h>
+
 
 namespace bolt = thirdai::bolt;
 namespace dataset = thirdai::dataset;
@@ -195,6 +198,7 @@ std::string findFullFilepath(const std::string& filename) {
 }
 
 void trainFCN(toml::table& config, int my_rank, int world_size) {
+  (void) my_rank;
   auto layers = createFullyConnectedLayerConfigs(config["layers"]);
 
   if (!config.contains("dataset") || !config["dataset"].is_table()) {
@@ -269,8 +273,8 @@ void trainFCN(toml::table& config, int my_rank, int world_size) {
       test_filename, batch_size, std::move(*test_fac));
 
   for (uint32_t e = 0; e < epochs; e++) {
-    network.train(train_data, *loss_fn, learning_rate, 1, rehash, rebuild,
-                  train_metrics, world_size);
+    network.train(train_data, *loss_fn, learning_rate, 1, world_size, rehash, rebuild,
+                  train_metrics);
     if (use_sparse_inference && e == sparse_inference_epoch) {
       network.enableSparseInference();
     }
@@ -298,7 +302,8 @@ ClickThroughDataset loadClickThroughDataset(const std::string& filename,
   return data;
 }
 
-void trainDLRM(toml::table& config) {
+void trainDLRM(toml::table& config, int my_rank, int world_size) {
+  (void) my_rank;
   auto embedding_layer = createEmbeddingLayerConfig(config);
   auto bottom_mlp =
       createFullyConnectedLayerConfigs(config["bottom_mlp_layers"]);
@@ -346,7 +351,7 @@ void trainDLRM(toml::table& config) {
                               categorical_features, top_mlp.back().dim > 1);
 
   for (uint32_t e = 0; e < epochs; e++) {
-    dlrm.train(train_data, *loss_fn, learning_rate, 1, rehash, rebuild,
+    dlrm.train(train_data, *loss_fn, learning_rate, 1, world_size, rehash, rebuild,
                train_metrics);
     dlrm.predict(test_data, nullptr, test_metrics);
   }
@@ -371,7 +376,7 @@ int main(int argc, const char** argv) {
       trainFCN(table, my_rank, world_size);
     } else if (table.contains("bottom_mlp_layers") &&
                table.contains("top_mlp_layers")) {
-      trainDLRM(table);
+      trainDLRM(table, my_rank, world_size);
     }
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;

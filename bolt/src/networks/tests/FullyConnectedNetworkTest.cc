@@ -50,7 +50,7 @@ TEST_F(FullyConnectedNetworkTestFixture, TrainSimpleDatasetSingleLayerNetwork) {
 
   auto data = genDataset(false);
 
-  network.train(data, CategoricalCrossEntropyLoss(), 0.001, 5);
+  network.train(data, CategoricalCrossEntropyLoss(), 0.001, 5, 1);
   auto test_metrics = network.predict(data, nullptr, {"categorical_accuracy"});
   ASSERT_GE(test_metrics["categorical_accuracy"].front(), 0.99);
 }
@@ -62,7 +62,7 @@ TEST_F(FullyConnectedNetworkTestFixture, TrainNoisyDatasetSingleLayerNetwork) {
 
   auto data = genDataset(true);
 
-  network.train(data, CategoricalCrossEntropyLoss(), 0.001, 5);
+  network.train(data, CategoricalCrossEntropyLoss(), 0.001, 5, 1);
   auto test_metrics = network.predict(data, nullptr, {"categorical_accuracy"});
   ASSERT_LE(test_metrics["categorical_accuracy"].front(), 0.2);
 }
@@ -76,7 +76,7 @@ TEST_F(FullyConnectedNetworkTestFixture, TrainSimpleDatasetMultiLayerNetwork) {
 
   auto data = genDataset(false);
 
-  network.train(data, CategoricalCrossEntropyLoss(), 0.001, 2);
+  network.train(data, CategoricalCrossEntropyLoss(), 0.001, 2, 1);
   auto test_metrics = network.predict(data, nullptr, {"categorical_accuracy"});
   ASSERT_GE(test_metrics["categorical_accuracy"].front(), 0.99);
 }
@@ -90,7 +90,7 @@ TEST_F(FullyConnectedNetworkTestFixture, TrainNoisyDatasetMultiLayerNetwork) {
 
   auto data = genDataset(true);
 
-  network.train(data, CategoricalCrossEntropyLoss(), 0.001, 2);
+  network.train(data, CategoricalCrossEntropyLoss(), 0.001, 2, 1);
   auto test_metrics = network.predict(data, nullptr, {"categorical_accuracy"});
   ASSERT_LE(test_metrics["categorical_accuracy"].front(), 0.2);
 }

@@ -98,15 +98,16 @@ void createBoltSubmodule(py::module_& module) {
                     uint32_t>(),
            py::arg("embedding_layer"), py::arg("bottom_mlp"),
            py::arg("top_mlp"), py::arg("input_dim"))
-      .def("train", &PyDLRM::train, py::arg("train_data"), py::arg("loss_fn"),
-           py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
-           py::arg("rebuild") = 0,
-           py::arg("metrics") = std::vector<std::string>(),
-           py::arg("verbose") = true)
       .def("predict", &PyDLRM::predict, py::arg("test_data"),
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max());
+
+      //.def("train", &PyDLRM::train, py::arg("train_data"), py::arg("loss_fn"),
+      //     py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
+      //     py::arg("rebuild") = 0,
+      //     py::arg("metrics") = std::vector<std::string>(),
+      //     py::arg("verbose") = true)
 }
 
 }  // namespace thirdai::bolt::python
