@@ -335,6 +335,33 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
                   (std::sqrt(_b_velocity[n] / B2_bias_corrected) + eps);
     assert(!std::isnan(_biases[n]));
 
+    #pragma omp critical
+    {
+      MPI_Allreduce(MPI_IN_PLACE, &_weights + n * _prev_dim, _prev_dim, 
+              MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE, &_w_momentum + n * _prev_dim, _prev_dim, 
+              MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE, &_w_velocity + n * _prev_dim, _prev_dim, 
+              MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+
+      MPI_Allreduce(MPI_IN_PLACE, &_biases + n, 1, MPI_FLOAT, MPI_SUM, 
+              MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE, &_b_momentum + n, 1, MPI_FLOAT, MPI_SUM, 
+              MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE, &_b_velocity + n, 1, MPI_FLOAT, MPI_SUM, 
+              MPI_COMM_WORLD);
+    }
+
+    for (uint64_t i = 0; i < _prev_dim; i++) {
+      _weights[n * _prev_dim + i] /= world_size;
+      _w_momentum[n * _prev_dim + i] /= world_size;
+      _w_velocity[n * _prev_dim + i] /= world_size;
+    }
+
+    _biases[n] /= world_size;
+    _b_momentum[n] /= world_size;
+    _b_velocity[n] /= world_size;
+
     _b_gradient[n] = 0;
     _is_active[n] = false;
   }

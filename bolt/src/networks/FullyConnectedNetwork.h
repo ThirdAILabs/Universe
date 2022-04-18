@@ -38,9 +38,11 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
     backpropagate<true>(batch_index, inputs[batch_index], output);
   }
 
-  void updateParameters(float learning_rate, uint32_t iter) final {
+  void updateParameters(float learning_rate, uint32_t iter, 
+                        int world_size) final {
     for (auto& layer : _layers) {
-      layer->updateParameters(learning_rate, iter, BETA1, BETA2, EPS);
+      layer->updateParameters(learning_rate, iter, world_size, BETA1, BETA2, 
+                              EPS);
     }
   }
 

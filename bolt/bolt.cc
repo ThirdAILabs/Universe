@@ -194,7 +194,7 @@ std::string findFullFilepath(const std::string& filename) {
   }
 }
 
-void trainFCN(toml::table& config) {
+void trainFCN(toml::table& config, int my_rank, int world_size) {
   auto layers = createFullyConnectedLayerConfigs(config["layers"]);
 
   if (!config.contains("dataset") || !config["dataset"].is_table()) {
@@ -270,7 +270,7 @@ void trainFCN(toml::table& config) {
 
   for (uint32_t e = 0; e < epochs; e++) {
     network.train(train_data, *loss_fn, learning_rate, 1, rehash, rebuild,
-                  train_metrics);
+                  train_metrics, world_size);
     if (use_sparse_inference && e == sparse_inference_epoch) {
       network.enableSparseInference();
     }
@@ -358,11 +358,17 @@ int main(int argc, const char** argv) {
     return 1;
   }
 
+  int provided;
+  MPI_Init_thread(0, 0, MPI_THREAD_FUNNELED, &provided);
+  int my_rank, world_size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
   try {
     toml::table table = toml::parse_file(argv[1]);
 
     if (table.contains("layers")) {
-      trainFCN(table);
+      trainFCN(table, my_rank, world_size);
     } else if (table.contains("bottom_mlp_layers") &&
                table.contains("top_mlp_layers")) {
       trainDLRM(table);
@@ -371,6 +377,8 @@ int main(int argc, const char** argv) {
     std::cerr << e.what() << std::endl;
     return 1;
   }
+
+  MPI_Finalize();
 
   return 0;
 }

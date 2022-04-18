@@ -20,7 +20,8 @@ MetricData Model<BATCH_T>::train(
     // reference, but shared_ptrs should not be passed by reference
     const LossFunction& loss_fn,  // NOLINT
     float learning_rate, uint32_t epochs, uint32_t rehash, uint32_t rebuild,
-    const std::vector<std::string>& metric_names, bool verbose) {
+    const std::vector<std::string>& metric_names, bool verbose, 
+    int world_size) {
   uint32_t batch_size = train_data[0].getBatchSize();
   uint32_t rebuild_batch =
       getRebuildBatch(rebuild, batch_size, train_data.len());
@@ -61,7 +62,7 @@ MetricData Model<BATCH_T>::train(
         metrics.processSample(outputs[i], inputs.labels(i));
       }
 
-      updateParameters(learning_rate, ++_batch_iter);
+      updateParameters(learning_rate, ++_batch_iter, world_size);
 
       if (_batch_iter % rebuild_batch == (rebuild_batch - 1)) {
         reBuildHashFunctions();
