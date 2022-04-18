@@ -292,7 +292,8 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
   }
 }
 
-void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
+void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, 
+                                           int world_size, float B1,
                                            float B2, float eps) {
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));

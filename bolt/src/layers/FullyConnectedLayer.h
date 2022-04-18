@@ -35,7 +35,8 @@ class FullyConnectedLayer final {
 
   void backpropagateInputLayer(BoltVector& input, BoltVector& output);
 
-  void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
+  void updateParameters(float lr, uint32_t iter, int world_size, float B1, 
+                        float B2, float eps);
 
   BoltBatch createBatchState(const uint32_t batch_size,
                              bool force_dense = false) const {

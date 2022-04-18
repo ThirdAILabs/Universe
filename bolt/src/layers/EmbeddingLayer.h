@@ -24,7 +24,8 @@ class EmbeddingLayer {
 
   void backpropagate(uint32_t batch_indx, const BoltVector& output);
 
-  void updateParameters(float lr, uint32_t iter, float B1, float B2, float eps);
+  void updateParameters(float lr, uint32_t iter, int world_size, float B1, 
+                        float B2, float eps);
 
   uint32_t getEmbeddingDim() const { return _total_embedding_dim; }
 

@@ -29,9 +29,9 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
 
   void updateParameters(float learning_rate, uint32_t iter, int world_size) final {
     (void) world_size;
-    _bottom_mlp.updateParameters(learning_rate, iter);
-    _embedding_layer.updateParameters(learning_rate, iter, BETA1, BETA2, EPS);
-    _top_mlp.updateParameters(learning_rate, iter);
+    _bottom_mlp.updateParameters(learning_rate, iter, 1);
+    _embedding_layer.updateParameters(learning_rate, iter, 1, BETA1, BETA2, EPS);
+    _top_mlp.updateParameters(learning_rate, iter, 1);
   }
 
   void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
