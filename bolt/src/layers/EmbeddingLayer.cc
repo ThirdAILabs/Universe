@@ -123,9 +123,8 @@ EmbeddingLayer::getDisjointUpdateRanges() {
   return disjoint_ranges;
 }
 
-void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1, 
-                                      int world_size,
-                                      float B2, float eps) {
+void EmbeddingLayer::updateParameters(float lr, uint32_t iter, int world_size,
+                                      float B1, float B2, float eps) {
   (void) world_size;
 
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
