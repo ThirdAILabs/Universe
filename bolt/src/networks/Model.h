@@ -33,6 +33,7 @@ class Model {
       float learning_rate,
       // Number of training epochs
       uint32_t epochs,
+      int world_size,
       // Rehash, rebuild parameters for hash functions/tables
       uint32_t rehash = 0, uint32_t rebuild = 0,
       // Metrics to compute during training

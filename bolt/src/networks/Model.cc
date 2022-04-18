@@ -19,9 +19,8 @@ MetricData Model<BATCH_T>::train(
     // Clang tidy is disabled for this line because it wants to pass by
     // reference, but shared_ptrs should not be passed by reference
     const LossFunction& loss_fn,  // NOLINT
-    float learning_rate, uint32_t epochs, uint32_t rehash, uint32_t rebuild,
-    const std::vector<std::string>& metric_names, bool verbose, 
-    int world_size) {
+    float learning_rate, uint32_t epochs, int world_size, uint32_t rehash, uint32_t rebuild,
+    const std::vector<std::string>& metric_names, bool verbose) {
   uint32_t batch_size = train_data[0].getBatchSize();
   uint32_t rebuild_batch =
       getRebuildBatch(rebuild, batch_size, train_data.len());

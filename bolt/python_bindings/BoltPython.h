@@ -41,8 +41,8 @@ class PyNetwork final : public FullyConnectedNetwork {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
-    return FullyConnectedNetwork::train(train_data, loss_fn, learning_rate,
-                                        epochs, rehash, rebuild, metric_names,
+    return FullyConnectedNetwork::train(train_data, loss_fn, learning_rate, epochs,
+                                        1, rehash, rebuild, metric_names,
                                         verbose);
   }
 

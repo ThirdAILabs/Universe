@@ -301,7 +301,7 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter,
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 
 #pragma omp parallel for default(none) \
-    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
+    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps, world_size, ompi_mpi_comm_world, ompi_mpi_op_sum, ompi_mpi_float)
   for (uint64_t n = 0; n < _dim; n++) {
     if (!_is_active[n]) {
       continue;
