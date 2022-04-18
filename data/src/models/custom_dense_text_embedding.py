@@ -1,7 +1,7 @@
 from typing import List, Callable
 import numpy as np
 from .text_embedding_model_interface import TextEmbeddingModel
-from ..__utils__.builder_vectors import BuilderVector
+from utils.builder_vectors import __BuilderVector__
 
 
 class CustomDenseTextEmbedding(TextEmbeddingModel):
@@ -36,7 +36,7 @@ class CustomDenseTextEmbedding(TextEmbeddingModel):
         return self.out_dim
 
     def embedText(
-        self, text: List[str], shared_feature_vector: BuilderVector, offset: int
+        self, text: List[str], shared_feature_vector: __BuilderVector__, offset: int
     ) -> None:
         """Encodes a list of strings as an integer. This method is only called by TextBlock."""
         shared_feature_vector.addDenseFeatures(offset, self.embed_fn(text))

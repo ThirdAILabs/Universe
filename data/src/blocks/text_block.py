@@ -1,12 +1,12 @@
 from typing import List, Callable
 import cytoolz as ct
-from ...__blocks__.block_interface import Block
-from ...__utils__.builder_vectors import (
-    BuilderVector,
-    SparseBuilderVector,
-    DenseBuilderVector,
+from .block_interface import Block
+from utils.builder_vectors import (
+    __BuilderVector__,
+    __SparseBuilderVector__,
+    __DenseBuilderVector__,
 )
-from ...__models__.text_embedding_model_interface import TextEmbeddingModel
+from models.text_embedding_model_interface import TextEmbeddingModel
 
 
 class TextBlock(Block):
@@ -36,9 +36,9 @@ class TextBlock(Block):
     def process(
         self,
         input_row: List[str],
-        shared_feature_vector: BuilderVector = None,
+        shared_feature_vector: __BuilderVector__ = None,
         idx_offset=0,
-    ) -> BuilderVector:
+    ) -> __BuilderVector__:
         """Produces a vector out of textual information from the specified column
         of a sample.
 
@@ -59,7 +59,7 @@ class TextBlock(Block):
         if shared_feature_vector is None:
             idx_offset = 0
             shared_feature_vector = (
-                DenseBuilderVector if self.dense else SparseBuilderVector
+                __DenseBuilderVector__ if self.dense else __SparseBuilderVector__
             )
         preprocessed_list_of_strings = self.preprocess([input_row[self.column]])
         self.embedding_model.embedText(

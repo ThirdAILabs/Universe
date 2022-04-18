@@ -1,7 +1,8 @@
 from typing import List
 import mmh3
+import numpy as np
 from .text_embedding_model_interface import TextEmbeddingModel
-from ..__utils__.builder_vectors import BuilderVector
+from utils.builder_vectors import __BuilderVector__
 
 
 class TextOneHotEncoding(TextEmbeddingModel):
@@ -20,12 +21,36 @@ class TextOneHotEncoding(TextEmbeddingModel):
         self.output_dim = output_dim
 
     def embedText(
-        self, text: List[str], shared_feature_vector: BuilderVector, offset: int
+        self, text: List[str], shared_feature_vector: __BuilderVector__, offset: int
     ) -> None:
         """Encodes a list of strings as an integer. This method is only called by TextBlock."""
-        for string in text:
-            hash = mmh3.hash(string)
-            shared_feature_vector.addSingleFeature(hash % self.output_dim + offset, 1.0)
+        tokens = sorted(
+            [
+                mmh3.hash(string, signed=False) % self.output_dim + offset
+                for string in text
+            ]
+        )
+
+        last_char = ""
+        unique = 0
+        for t in tokens:
+            if t != last_char:
+                unique += 1
+                last_char = t
+
+        idxs = np.zeros((unique,))
+        vals = np.zeros((unique,))
+
+        last_char = ""
+        i = -1
+        for t in tokens:
+            if t != last_char:
+                i += 1
+                last_char = t
+                idxs[i] = t
+            vals[i] += 1
+
+        shared_feature_vector.addSparseFeatures(idxs, vals)
 
     def is_dense(self) -> bool:
         """True if the model produces dense features, False otherwise."""

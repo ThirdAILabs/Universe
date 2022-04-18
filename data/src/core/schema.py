@@ -1,4 +1,4 @@
-from ..blocks.block_interface import Block
+from blocks.block_interface import Block
 from typing import Iterator, List, Tuple
 
 

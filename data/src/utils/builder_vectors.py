@@ -71,7 +71,7 @@ class __SparseBuilderVector__(__BuilderVector__):
 
         # Sort the arrays and throw error if there is a duplicate.
         # TODO(Geordie): It's a nice check but is this expensive? Is it necessary?
-        self._indices = [idx for idx, _ in sorted_lists]
+        self._indices = [int(idx) for idx, _ in sorted_lists]
         self._values = [val for _, val in sorted_lists]
         last_idx = -1
         for idx in self._indices:
@@ -80,9 +80,8 @@ class __SparseBuilderVector__(__BuilderVector__):
             else:
                 raise RuntimeError(
                     "Found produced duplicate entries for the same"
-                    + "position in the sparse vector"
+                    + " position in the sparse vector"
                 )
-
         return dataset.make_sparse_vector(self._indices, self._values)
 
 

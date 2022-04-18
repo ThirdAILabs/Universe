@@ -1,5 +1,5 @@
 from typing import List
-from ..utils.builder_vectors import __BuilderVector__
+from utils.builder_vectors import __BuilderVector__
 
 
 class TextEmbeddingModel:
