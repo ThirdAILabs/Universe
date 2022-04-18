@@ -27,7 +27,8 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
   void backpropagate(uint32_t batch_index, dataset::ClickThroughBatch& inputs,
                      BoltVector& output) final;
 
-  void updateParameters(float learning_rate, uint32_t iter) final {
+  void updateParameters(float learning_rate, uint32_t iter, int world_size) final {
+    (void) world_size;
     _bottom_mlp.updateParameters(learning_rate, iter);
     _embedding_layer.updateParameters(learning_rate, iter, BETA1, BETA2, EPS);
     _top_mlp.updateParameters(learning_rate, iter);
