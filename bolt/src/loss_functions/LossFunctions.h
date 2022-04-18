@@ -11,19 +11,19 @@ class LossFunction {
  public:
   LossFunction() {}
 
-  void loss(BoltVector& output, const BoltVector& labels,
-            uint32_t batch_size) const {
+  void lossGradients(BoltVector& output, const BoltVector& labels,
+                     uint32_t batch_size) const {
     if (output.isDense()) {
       if (labels.isDense()) {
-        computeLossImpl<true, true>(output, labels, batch_size);
+        computeLossGradientsImpl<true, true>(output, labels, batch_size);
       } else {
-        computeLossImpl<true, false>(output, labels, batch_size);
+        computeLossGradientsImpl<true, false>(output, labels, batch_size);
       }
     } else {
       if (labels.isDense()) {
-        computeLossImpl<false, true>(output, labels, batch_size);
+        computeLossGradientsImpl<false, true>(output, labels, batch_size);
       } else {
-        computeLossImpl<false, false>(output, labels, batch_size);
+        computeLossGradientsImpl<false, false>(output, labels, batch_size);
       }
     }
   }
@@ -32,36 +32,32 @@ class LossFunction {
 
  private:
   template <bool OUTPUT_DENSE, bool LABEL_DENSE>
-  void computeLossImpl(BoltVector& output, const BoltVector& labels,
-                       uint32_t batch_size) const {
-    assert(!OUTPUT_DENSE || output.active_neurons == nullptr);
+  void computeLossGradientsImpl(BoltVector& output, const BoltVector& labels,
+                                uint32_t batch_size) const {
+    assert(!(OUTPUT_DENSE && output.active_neurons != nullptr));
     assert(!LABEL_DENSE || labels.active_neurons == nullptr);
     if (OUTPUT_DENSE && LABEL_DENSE) {
       assert(output.len == labels.len);
     }
 
+    // Loss functions are only used in training.
+    // If the label is sparse, the neurons of the network's final
+    // layer that correspond to the label's nonzero elements are
+    // automatically selected and activated during training.
+    // Thus, we don't have to consider the case where there are
+    // nonzeros in the label that correspond to inactive neurons in
+    // the output layer.
     for (uint32_t i = 0; i < output.len; i++) {
       uint32_t active_neuron = OUTPUT_DENSE ? i : output.active_neurons[i];
-      float label_val;
-      if (LABEL_DENSE) {
-        label_val = labels.activations[active_neuron];
-      } else {
-        const uint32_t* label_start = labels.active_neurons;
-        const uint32_t* label_end = labels.active_neurons + labels.len;
-        const uint32_t* itr = std::find(label_start, label_end, active_neuron);
-        if (itr == label_end) {
-          label_val = 0.0;
-        } else {
-          label_val = labels.activations[std::distance(label_start, itr)];
-        }
-      }
+      float label_val =
+          labels.findActiveNeuron<LABEL_DENSE>(active_neuron).activation;
       output.gradients[i] =
-          elementLoss(label_val, output.activations[i], batch_size);
+          elementLossGradient(label_val, output.activations[i], batch_size);
     }
   }
 
-  virtual float elementLoss(float label, float activation,
-                            uint32_t batch_size) const = 0;
+  virtual float elementLossGradient(float label, float activation,
+                                    uint32_t batch_size) const = 0;
 };
 
 class CategoricalCrossEntropyLoss final : public LossFunction {
@@ -72,8 +68,8 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
   }
 
  private:
-  float elementLoss(float label, float activation,
-                    uint32_t batch_size) const override {
+  float elementLossGradient(float label, float activation,
+                            uint32_t batch_size) const override {
     return (label - activation) / batch_size;
   }
 };
@@ -85,9 +81,31 @@ class MeanSquaredError final : public LossFunction {
   }
 
  private:
-  float elementLoss(float label, float activation,
-                    uint32_t batch_size) const override {
+  float elementLossGradient(float label, float activation,
+                            uint32_t batch_size) const override {
     return 2 * (label - activation) / batch_size;
+  }
+};
+
+/**
+ * This class computes gradients to optimize the model for weighted mean
+ * absolute percentage error (WMAPE).
+ * WMAPE is a regression error that measures the absolute deviation of
+ * predictions from the true values, weighted in proportion to the true
+ * values. WMAPE = 100% * sum(|actual - prediction|) / sum(|actual|)
+ */
+class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
+ public:
+  static std::shared_ptr<WeightedMeanAbsolutePercentageErrorLoss>
+  makeWeightedMeanAbsolutePercentageErrorLoss() {
+    return std::make_shared<WeightedMeanAbsolutePercentageErrorLoss>();
+  }
+
+ private:
+  float elementLossGradient(float label, float activation,
+                            uint32_t batch_size) const override {
+    auto direction = activation > label ? -1.0 : 1.0;
+    return direction / batch_size;
   }
 };
 
@@ -99,13 +117,19 @@ static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
   if (lower_name == "categoricalcrossentropyloss") {
     return CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss();
   }
-  if (lower_name == "meansquarederror") {
+  if (lower_name == "meansquarederror" || lower_name == "mse") {
     return MeanSquaredError::makeMeanSquaredError();
+  }
+  if (lower_name == "weightedmeanabsolutepercentageerror" ||
+      lower_name == "wmape") {
+    return WeightedMeanAbsolutePercentageErrorLoss::
+        makeWeightedMeanAbsolutePercentageErrorLoss();
   }
   throw std::invalid_argument(
       "'" + name +
-      "' is not a valid loss function. Use CategoricalCrossEntropyLoss or "
-      "MeanSquaredError");
+      "' is not a valid loss function. Use 'CategoricalCrossEntropyLoss', "
+      "'MeanSquaredError'/'MSE', or "
+      "'WeightedMeanAbsolutePercentageError'/'WMAPE'");
 }
 
 }  // namespace thirdai::bolt
