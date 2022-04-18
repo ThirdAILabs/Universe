@@ -177,15 +177,21 @@ class DocSearch {
       }
     }
 
+    uint32_t internal_top_k = 8192;
+
     std::vector<uint32_t> top_k_internal_ids =
-        frequencyCountCentroidBuckets(centroid_ids, top_k);
+        frequencyCountCentroidBuckets(centroid_ids, internal_top_k);
+
     std::vector<uint32_t> reranked =
         rankDocuments(embeddings, top_k_internal_ids);
+
     std::vector<std::pair<std::string, std::string>> result;
-    for (uint32_t id : reranked) {
+    for (uint32_t i = 0; i < std::min(internal_top_k, top_k); i++) {
+      uint32_t id = reranked.at(i);
       std::string doc_id = _internal_id_to_doc_id.at(id);
       result.emplace_back(doc_id, _doc_id_to_doc_text.at(doc_id));
     }
+
     return result;
   }
 

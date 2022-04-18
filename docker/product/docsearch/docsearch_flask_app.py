@@ -6,6 +6,7 @@ from thirdai.search import DocRetrieval
 
 from embeddings import DocSearchModel
 
+import torch
 
 from flask import Flask, request, abort, jsonify
 import sys
@@ -21,6 +22,7 @@ app.logger.setLevel(gunicorn_logger.level)
 
 app.logger.info("Loading index and model")
 embedding_model = DocSearchModel()
+centroids = torch.from_numpy(embedding_model.getCentroids())
 index_to_query = DocRetrieval.deserialize_from_file("/home/thirdai/index")
 app.logger.info("Index and model loaded")
 
@@ -44,18 +46,32 @@ def perform_query_top_1():
         f'Handling document search query: query="{query_text}", top_k="{top_k}"'
     )
 
+    start = time.time()
+
     query_embedding = embedding_model.encodeQuery(query_text)
 
-    # For now k is hardcoded to be 8192 for the MaxFlash serarch, and we just
-    # return the top 1
-    internal_top_k = 8192
+    app.logger.info(time.time() - start)
 
-    result = index_to_query.query(query_embedding, top_k=internal_top_k)
+    multiplied = centroids @ query_embedding.T
+
+    app.logger.info(time.time() - start)
+
+    centroid_ids = torch.argmax(multiplied, dim=0)
+
+    app.logger.info(time.time() - start)
+
+    app.logger.info(time.time())
+
+    result = index_to_query.query(
+        query_embedding.numpy(), centroid_ids.numpy(), top_k=top_k
+    )
+
+    app.logger.info(time.time())
+
+    app.logger.info(time.time() - start)
 
     app.logger.info(
-        f'For query="{query_text}" and top_k="{top_k}", found {len(result)} results, returning {min(len(result), top_k)} results'
+        f'For query="{query_text}" and top_k="{top_k}", found {len(result)} result(s)'
     )
 
-    return jsonify(
-        doc_ids=[r[0] for r in result[:top_k]], doc_texts=[r[1] for r in result[:top_k]]
-    )
+    return jsonify(doc_ids=[r[0] for r in result], doc_texts=[r[1] for r in result])
