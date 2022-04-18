@@ -32,7 +32,8 @@ add_compile_options(
   $<$<CONFIG:DebugWithAsan>:-fno-omit-frame-pointer>
 
   $<$<CONFIG:Release>:-DNDEBUG>
-  $<$<CONFIG:Release>:-O3>
+  $<$<CONFIG:Release>:-Ofast>
+  $<$<CONFIG:Release>:-fno-finite-math-only>
   $<$<CONFIG:Release>:-funroll-loops>
   $<$<CONFIG:Release>:-ftree-vectorize>
 
