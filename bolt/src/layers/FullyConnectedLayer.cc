@@ -5,6 +5,8 @@
 #include <exception>
 #include <random>
 #include <unordered_map>
+#define OMPI_SKIP_MPICXX 1
+#include <mpi.h>
 
 namespace thirdai::bolt {
 

@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 
-set(CMAKE_CXX_COMPILER "g++")
+#set(CMAKE_CXX_COMPILER "g++")
+set(CMAKE_CXX_COMPILER "mpicxx")
 set(CMAKE_C_COMPILER "gcc")
 
 # When I set LD_PRELOAD to be able use ASan with python tests, for some reason 
