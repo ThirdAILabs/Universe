@@ -44,9 +44,9 @@ class FullyConnectedNetworkTestFixture : public testing::Test {
 };
 
 TEST_F(FullyConnectedNetworkTestFixture, TrainSimpleDatasetSingleLayerNetwork) {
-  FullyConnectedNetwork network(
-      {FullyConnectedLayerConfig{n_classes, ActivationFunction::Softmax}},
-      n_classes);
+  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
+                                    n_classes, ActivationFunction::Softmax)},
+                                n_classes);
 
   auto data = genDataset(false);
 
@@ -56,9 +56,9 @@ TEST_F(FullyConnectedNetworkTestFixture, TrainSimpleDatasetSingleLayerNetwork) {
 }
 
 TEST_F(FullyConnectedNetworkTestFixture, TrainNoisyDatasetSingleLayerNetwork) {
-  FullyConnectedNetwork network(
-      {FullyConnectedLayerConfig{n_classes, ActivationFunction::Softmax}},
-      n_classes);
+  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
+                                    n_classes, ActivationFunction::Softmax)},
+                                n_classes);
 
   auto data = genDataset(true);
 
@@ -69,9 +69,10 @@ TEST_F(FullyConnectedNetworkTestFixture, TrainNoisyDatasetSingleLayerNetwork) {
 
 TEST_F(FullyConnectedNetworkTestFixture, TrainSimpleDatasetMultiLayerNetwork) {
   FullyConnectedNetwork network(
-      {FullyConnectedLayerConfig(10000, 0.1, ActivationFunction::ReLU,
-                                 SamplingConfig(3, 32, 9, 32)),
-       FullyConnectedLayerConfig(n_classes, ActivationFunction::Softmax)},
+      {std::make_shared<FullyConnectedLayerConfig>(
+           10000, 0.1, ActivationFunction::ReLU, SamplingConfig(3, 32, 9, 32)),
+       std::make_shared<FullyConnectedLayerConfig>(
+           n_classes, ActivationFunction::Softmax)},
       n_classes);
 
   auto data = genDataset(false);
@@ -83,9 +84,10 @@ TEST_F(FullyConnectedNetworkTestFixture, TrainSimpleDatasetMultiLayerNetwork) {
 
 TEST_F(FullyConnectedNetworkTestFixture, TrainNoisyDatasetMultiLayerNetwork) {
   FullyConnectedNetwork network(
-      {FullyConnectedLayerConfig(10000, 0.1, ActivationFunction::ReLU,
-                                 SamplingConfig(3, 32, 9, 32)),
-       FullyConnectedLayerConfig(n_classes, ActivationFunction::Softmax)},
+      {std::make_shared<FullyConnectedLayerConfig>(
+           10000, 0.1, ActivationFunction::ReLU, SamplingConfig(3, 32, 9, 32)),
+       std::make_shared<FullyConnectedLayerConfig>(
+           n_classes, ActivationFunction::Softmax)},
       n_classes);
 
   auto data = genDataset(true);

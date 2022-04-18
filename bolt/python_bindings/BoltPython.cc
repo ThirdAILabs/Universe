@@ -31,8 +31,9 @@ void createBoltSubmodule(py::module_& module) {
   py::class_<MeanSquaredError, LossFunction>(bolt_submodule, "MeanSquaredError")
       .def(py::init<>());
 
-  py::class_<thirdai::bolt::SequentialLayerConfig>(bolt_submodule,
-                                                   "SequentialLayerConfig");
+  py::class_<thirdai::bolt::SequentialLayerConfig,
+             std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>(
+      bolt_submodule, "SequentialLayerConfig");
 
   py::class_<thirdai::bolt::FullyConnectedLayerConfig,
              thirdai::bolt::SequentialLayerConfig>(bolt_submodule,
@@ -63,7 +64,8 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("log_embedding_block_size"));
 
   py::class_<PyNetwork>(bolt_submodule, "Network")
-      .def(py::init<std::vector<thirdai::bolt::SequentialLayerConfig>,
+      .def(py::init<std::vector<
+                        std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
                     uint64_t>(),
            py::arg("layers"), py::arg("input_dim"))
       .def("train", &PyNetwork::train, py::arg("train_data"),
@@ -107,8 +109,10 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<PyDLRM>(bolt_submodule, "DLRM")
       .def(py::init<thirdai::bolt::EmbeddingLayerConfig,
-                    std::vector<thirdai::bolt::SequentialLayerConfig>,
-                    std::vector<thirdai::bolt::SequentialLayerConfig>,
+                    std::vector<
+                        std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
+                    std::vector<
+                        std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
                     uint32_t>(),
            py::arg("embedding_layer"), py::arg("bottom_mlp"),
            py::arg("top_mlp"), py::arg("input_dim"))

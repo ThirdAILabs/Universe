@@ -11,7 +11,8 @@
 namespace thirdai::bolt {
 
 FullyConnectedNetwork::FullyConnectedNetwork(
-    std::vector<SequentialLayerConfig> configs, uint32_t input_dim)
+    std::vector<std::shared_ptr<SequentialLayerConfig>> configs,
+    uint32_t input_dim)
     : _input_dim(input_dim),
       _num_layers(configs.size()),
       _sparse_inference_enabled(false) {
@@ -21,15 +22,16 @@ FullyConnectedNetwork::FullyConnectedNetwork(
 
   for (uint32_t i = 0; i < _num_layers; i++) {
     bool is_last = i == _num_layers - 1;
-    configs[i].verifyLayer(is_last);
+    configs[i]->verifyLayer(is_last);
 
-    SequentialLayerConfig* next_config = !is_last ? &configs[i + 1] : nullptr;
+    std::shared_ptr<SequentialLayerConfig> next_config =
+        !is_last ? configs[i + 1] : nullptr;
 
     if (i == 0) {
-      _layers.push_back(configs[i].createInputLayer(input_dim, *next_config));
+      _layers.push_back(configs[i]->createInputLayer(input_dim, next_config));
     } else {
-      _layers.push_back(
-          configs[i].createHiddenLayer(configs[i - 1], *next_config));
+      _layers.push_back(configs[i]->createHiddenLayer(std::move(configs[i - 1]),
+                                                      next_config));
     }
   }
 

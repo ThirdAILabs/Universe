@@ -16,11 +16,12 @@ class SequentialLayerConfig {
 
   // TODO(david) when we refactor ConvLayer we wont need this next_config part
   virtual std::shared_ptr<SequentialLayer> createInputLayer(
-      uint64_t input_dim, const SequentialLayerConfig& next_config) = 0;
+      uint64_t input_dim,
+      const std::shared_ptr<SequentialLayerConfig>& next_config) = 0;
 
   virtual std::shared_ptr<SequentialLayer> createHiddenLayer(
-      const SequentialLayerConfig& prev_config,
-      const SequentialLayerConfig& next_config) = 0;
+      const std::shared_ptr<SequentialLayerConfig>& prev_config,
+      const std::shared_ptr<SequentialLayerConfig>& next_config) = 0;
 
   virtual uint64_t getDim() const = 0;
 
@@ -97,23 +98,24 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
   }
 
   void verifyLayer(bool is_last) {
-    if (is_last && act_func == ActivationFunction::Softmax) {
+    if (!is_last && act_func == ActivationFunction::Softmax) {
       throw std::invalid_argument(
           "Softmax activation function is not supported for hidden layers.");
     }
   }
 
   std::shared_ptr<SequentialLayer> createInputLayer(
-      uint64_t input_dim, const SequentialLayerConfig& next_config) {
+      uint64_t input_dim,
+      const std::shared_ptr<SequentialLayerConfig>& next_config) {
     (void)next_config;
     return createLayer(input_dim);
   }
 
   std::shared_ptr<SequentialLayer> createHiddenLayer(
-      const SequentialLayerConfig& prev_config,
-      const SequentialLayerConfig& next_config) {
+      const std::shared_ptr<SequentialLayerConfig>& prev_config,
+      const std::shared_ptr<SequentialLayerConfig>& next_config) {
     (void)next_config;
-    return createLayer(prev_config.getDim());
+    return createLayer(prev_config->getDim());
   }
 
   uint64_t getDim() const { return dim; }
@@ -163,16 +165,17 @@ class ConvLayerConfig final : public SequentialLayerConfig {
   }
 
   std::shared_ptr<SequentialLayer> createInputLayer(
-      uint64_t input_dim, const SequentialLayerConfig& next_config) {
+      uint64_t input_dim,
+      const std::shared_ptr<SequentialLayerConfig>& next_config) {
     // TODO(david) change input_dim to a vector. hardcode input channels for now
     return createLayer(input_dim, 3, 3, getKernelSize(next_config));
   }
 
   std::shared_ptr<SequentialLayer> createHiddenLayer(
-      const SequentialLayerConfig& prev_config,
-      const SequentialLayerConfig& next_config) {
-    const ConvLayerConfig* prev_config_casted =
-        dynamic_cast<const ConvLayerConfig*>(&prev_config);
+      const std::shared_ptr<SequentialLayerConfig>& prev_config,
+      const std::shared_ptr<SequentialLayerConfig>& next_config) {
+    std::shared_ptr<ConvLayerConfig> prev_config_casted =
+        std::dynamic_pointer_cast<ConvLayerConfig>(prev_config);
     if (!prev_config_casted) {  // prev layer is not ConvLayer
       throw std::invalid_argument(
           "ConvLayer cannot come after another non-Conv layer.");
@@ -210,9 +213,9 @@ class ConvLayerConfig final : public SequentialLayerConfig {
   }
 
   std::pair<uint32_t, uint32_t> getKernelSize(
-      SequentialLayerConfig const& next_config) {
-    const ConvLayerConfig* next_config_casted =
-        dynamic_cast<const ConvLayerConfig*>(&next_config);
+      const std::shared_ptr<SequentialLayerConfig>& next_config) {
+    std::shared_ptr<ConvLayerConfig> next_config_casted =
+        std::dynamic_pointer_cast<ConvLayerConfig>(next_config);
     std::pair<uint32_t, uint32_t> next_kernel_size;
     if (next_config_casted) {
       next_kernel_size =

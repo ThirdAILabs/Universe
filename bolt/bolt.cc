@@ -73,15 +73,15 @@ std::string getStrValue(toml::table const* table, const std::string& key,
   return table->get(key)->as_string()->get();
 }
 
-std::vector<bolt::FullyConnectedLayerConfig> createFullyConnectedLayerConfigs(
-    toml::node_view<toml::node> configs) {
+std::vector<std::shared_ptr<bolt::SequentialLayerConfig>>
+createSequentialLayerConfigs(toml::node_view<toml::node> configs) {
   if (!configs.is_array_of_tables()) {
     std::cerr
         << "Invalid config file format: expected array of layer config tables."
         << std::endl;
     exit(1);
   }
-  std::vector<bolt::FullyConnectedLayerConfig> layers;
+  std::vector<std::shared_ptr<bolt::SequentialLayerConfig>> layers;
 
   auto* array = configs.as_array();
   for (auto& config : *array) {
@@ -101,7 +101,7 @@ std::vector<bolt::FullyConnectedLayerConfig> createFullyConnectedLayerConfigs(
     std::string activation = getStrValue(table, "activation");
     float sparsity = getFloatValue(table, "sparsity", true, 1.0);
 
-    layers.push_back(bolt::FullyConnectedLayerConfig(
+    layers.push_back(std::make_shared<bolt::FullyConnectedLayerConfig>(
         dim, sparsity, thirdai::bolt::getActivationFunction(activation),
         bolt::SamplingConfig(hashes_per_table, num_tables, range_pow,
                              reservoir_size)));
@@ -195,7 +195,7 @@ std::string findFullFilepath(const std::string& filename) {
 }
 
 void trainFCN(toml::table& config) {
-  auto layers = createFullyConnectedLayerConfigs(config["layers"]);
+  auto layers = createSequentialLayerConfigs(config["layers"]);
 
   if (!config.contains("dataset") || !config["dataset"].is_table()) {
     std::cerr << "Invalid config file format: expected table for dataset info."
@@ -300,9 +300,8 @@ ClickThroughDataset loadClickThroughDataset(const std::string& filename,
 
 void trainDLRM(toml::table& config) {
   auto embedding_layer = createEmbeddingLayerConfig(config);
-  auto bottom_mlp =
-      createFullyConnectedLayerConfigs(config["bottom_mlp_layers"]);
-  auto top_mlp = createFullyConnectedLayerConfigs(config["top_mlp_layers"]);
+  auto bottom_mlp = createSequentialLayerConfigs(config["bottom_mlp_layers"]);
+  auto top_mlp = createSequentialLayerConfigs(config["top_mlp_layers"]);
 
   if (!config.contains("dataset") || !config["dataset"].is_table()) {
     std::cerr << "Invalid config file format: expected table for dataset info."
@@ -338,12 +337,12 @@ void trainDLRM(toml::table& config) {
 
   bolt::DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, dense_features);
 
-  auto train_data =
-      loadClickThroughDataset(train_filename, batch_size, dense_features,
-                              categorical_features, top_mlp.back().dim > 1);
-  auto test_data =
-      loadClickThroughDataset(test_filename, batch_size, dense_features,
-                              categorical_features, top_mlp.back().dim > 1);
+  auto train_data = loadClickThroughDataset(
+      train_filename, batch_size, dense_features, categorical_features,
+      top_mlp.back()->getDim() > 1);
+  auto test_data = loadClickThroughDataset(test_filename, batch_size,
+                                           dense_features, categorical_features,
+                                           top_mlp.back()->getDim() > 1);
 
   for (uint32_t e = 0; e < epochs; e++) {
     dlrm.train(train_data, *loss_fn, learning_rate, 1, rehash, rebuild,
