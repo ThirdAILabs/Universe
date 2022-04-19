@@ -7,8 +7,8 @@ from thirdai import bolt, dataset
 
 def _define_network(args):
     layers = [
-        bolt.LayerConfig(dim=256, activation_function=bolt.ActivationFunctions.ReLU),
-        bolt.LayerConfig(
+        bolt.FullyConnected(dim=256, activation_function=bolt.ActivationFunctions.ReLU),
+        bolt.FullyConnected(
             dim=670091,
             load_factor=args.sparsity,
             activation_function=bolt.ActivationFunctions.Softmax,
