@@ -36,8 +36,9 @@ void createBoltSubmodule(py::module_& module) {
       bolt_submodule, "SequentialLayerConfig");
 
   py::class_<thirdai::bolt::FullyConnectedLayerConfig,
+             std::shared_ptr<thirdai::bolt::FullyConnectedLayerConfig>,
              thirdai::bolt::SequentialLayerConfig>(bolt_submodule,
-                                                   "FullyConnectedLayerConfig")
+                                                   "FullyConnected")
       .def(py::init<uint64_t, float, ActivationFunction,
                     thirdai::bolt::SamplingConfig>(),
            py::arg("dim"), py::arg("load_factor"),
@@ -48,8 +49,8 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("load_factor"), py::arg("activation_function"));
 
   py::class_<thirdai::bolt::ConvLayerConfig,
-             thirdai::bolt::SequentialLayerConfig>(bolt_submodule,
-                                                   "ConvLayerConfig")
+             std::shared_ptr<thirdai::bolt::ConvLayerConfig>,
+             thirdai::bolt::SequentialLayerConfig>(bolt_submodule, "Conv")
       .def(py::init<uint64_t, float, ActivationFunction,
                     thirdai::bolt::SamplingConfig,
                     std::pair<uint32_t, uint32_t>, uint32_t>(),
