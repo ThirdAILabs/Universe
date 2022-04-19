@@ -38,14 +38,16 @@ add_compile_options(
   $<$<CONFIG:Release>:-ftree-vectorize>
 
   $<$<CONFIG:RelWithDebInfo>:-DNDEBUG>
-  $<$<CONFIG:RelWithDebInfo>:-O3>
+  $<$<CONFIG:RelWithDebInfo>:-Ofast>
+  $<$<CONFIG:Release>:-fno-finite-math-only>
   $<$<CONFIG:RelWithDebInfo>:-funroll-loops>
   $<$<CONFIG:RelWithDebInfo>:-ftree-vectorize>
   $<$<CONFIG:RelWithDebInfo>:-g>
   $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
 
   $<$<CONFIG:RelWithAsan>:-DNDEBUG>
-  $<$<CONFIG:RelWithAsan>:-O3>
+  $<$<CONFIG:RelWithAsan>:-Ofast>
+  $<$<CONFIG:Release>:-fno-finite-math-only>
   $<$<CONFIG:RelWithAsan>:-funroll-loops>
   $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
   $<$<CONFIG:RelWithAsan>:-g>
@@ -68,12 +70,12 @@ add_compile_definitions(${FEATURE_FLAGS})
 if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64") 
   add_compile_options(
     $<$<CONFIG:RelWithAsan>:-fsanitize=address>
-    $<$<CONFIG:RelWithDebInfo>:-fsanitize=address>
+    $<$<CONFIG:DebugWithAsan>:-fsanitize=address>
   )
 
   add_link_options(
     $<$<CONFIG:RelWithAsan>:-fsanitize=address>
-    $<$<CONFIG:RelWithDebInfo>:-fsanitize=address>
+    $<$<CONFIG:DebugWithAsan>:-fsanitize=address>
   )
 endif()
 
