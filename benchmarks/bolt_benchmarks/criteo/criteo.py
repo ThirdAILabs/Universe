@@ -17,7 +17,7 @@ def _define_network(args):
         ),
         bolt.FullyConnected(dim=100, activation_function=bolt.ActivationFunctions.ReLU),
     ]
-    embedding = bolt.EmbeddingLayerConfig(
+    embedding = bolt.EmbeddingLayer(
         num_embedding_lookups=8, lookup_size=16, log_embedding_block_size=10
     )
     top_mlp = [
