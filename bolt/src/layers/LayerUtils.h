@@ -26,6 +26,23 @@ static ActivationFunction getActivationFunction(
                               "' is not a valid activation function");
 }
 
+constexpr float actFuncDerivative(float x, ActivationFunction act_func) {
+  switch (act_func) {
+    case ActivationFunction::ReLU:
+      return x > 0 ? 1.0 : 0.0;
+    case ActivationFunction::Softmax:
+      // return 1.0; // Commented out because Clang tidy doesn't like
+      // consecutive identical branches
+    case ActivationFunction::Linear:
+      return 1.0;
+      // default:
+      //   return 0.0;
+  }
+  // This is impossible to reach, but the compiler gave a warning saying it
+  // reached the end of a non void function without it.
+  return 0.0;
+}
+
 struct SamplingConfig {
   uint32_t hashes_per_table, num_tables, range_pow, reservoir_size;
 

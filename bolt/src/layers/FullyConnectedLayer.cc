@@ -189,7 +189,7 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
 
   for (uint64_t n = 0; n < len_out; n++) {
     assert(!std::isnan(output.gradients[n]));
-    output.gradients[n] *= actFuncDerivative(output.activations[n]);
+    output.gradients[n] *= actFuncDerivative(output.activations[n], _act_func);
     assert(!std::isnan(output.gradients[n]));
     // Because DENSE is known at compile time the compiler can remove this
     // conditional

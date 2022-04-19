@@ -72,26 +72,7 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   ~FullyConnectedLayer() = default;
 
- protected:
-  // can't be inlined .cc if part of an interface. see here:
-  // https://stackoverflow.com/questions/27345284/is-it-possible-to-declare-constexpr-class-in-a-header-and-define-it-in-a-separat
-  constexpr float actFuncDerivative(float x) {
-    switch (_act_func) {
-      case ActivationFunction::ReLU:
-        return x > 0 ? 1.0 : 0.0;
-      case ActivationFunction::Softmax:
-        // return 1.0; // Commented out because Clang tidy doesn't like
-        // consecutive identical branches
-      case ActivationFunction::Linear:
-        return 1.0;
-        // default:
-        //   return 0.0;
-    }
-    // This is impossible to reach, but the compiler gave a warning saying it
-    // reached the end of a non void function without it.
-    return 0.0;
-  }
-
+ private:
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
   ActivationFunction _act_func;
