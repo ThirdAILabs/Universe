@@ -1,14 +1,15 @@
 #pragma once
 
 #include <bolt/src/layers/BoltVector.h>
+#include <bolt/src/metrics/MetricHelpers.h>
 #include <algorithm>
 #include <atomic>
+#include <iomanip>
 #include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
-#include <vector>
 
 namespace thirdai::bolt {
 
@@ -26,6 +27,12 @@ class Metric {
 
   // Returns the name of the metric.
   virtual std::string getName() = 0;
+
+  // Returns whether this metric allows forced dense inference.
+  // Use case: for regression metrics such as RMSE and WMAPE, inference sparsity
+  // must be consistent with training sparsity so forced dense inference is not
+  // allowed.
+  virtual bool forceDenseInference() = 0;
 
   virtual ~Metric() = default;
 };
@@ -84,24 +91,89 @@ class CategoricalAccuracy final : public Metric {
 
   std::string getName() final { return name; }
 
+  bool forceDenseInference() final { return true; }
+
  private:
   std::atomic<uint32_t> _correct;
   std::atomic<uint32_t> _num_samples;
 };
 
+/**
+ * The weighted mean absolute percentage error is a regression error that
+ * measures the absolute deviation of predictions from the true values, weighted
+ * in proportion to the true values. WMAPE = sum(|actual - prediction|) /
+ * sum(|actual|) Here, the actual value is assumed to be non-negative. The
+ * returned metric is in absolute terms; 1.0 is 100%.
+ */
+class WeightedMeanAbsolutePercentageError final : public Metric {
+ public:
+  WeightedMeanAbsolutePercentageError()
+      : _sum_of_deviations(0.0), _sum_of_truths(0.0) {}
+
+  void processSample(const BoltVector& output, const BoltVector& labels) final {
+    // Calculate |actual - predicted| and |actual|.
+    float sum_of_squared_differences = 0.0;
+    float sum_of_squared_label_elems = 0.0;
+    MetricUtilities::visitActiveNeurons(
+        output, labels, [&](float label_val, float output_val) {
+          float difference = label_val - output_val;
+          sum_of_squared_differences += difference * difference;
+          sum_of_squared_label_elems += label_val * label_val;
+        });
+
+    // Add to respective atomic accumulators
+    MetricUtilities::incrementAtomicFloat(
+        _sum_of_deviations, std::sqrt(sum_of_squared_differences));
+    MetricUtilities::incrementAtomicFloat(
+        _sum_of_truths, std::sqrt(sum_of_squared_label_elems));
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double wmape = _sum_of_deviations /
+                   std::max(_sum_of_truths.load(std::memory_order_relaxed),
+                            std::numeric_limits<float>::epsilon());
+    if (verbose) {
+      std::cout << "Weighted Mean Absolute Percentage Error: "
+                << std::setprecision(3) << wmape << " (" << wmape * 100 << "%)"
+                << std::endl;
+    }
+    _sum_of_deviations = 0.0;
+    _sum_of_truths = 0.0;
+    return wmape;
+  }
+
+  static constexpr const char* name = "weighted_mean_absolute_percentage_error";
+
+  std::string getName() final { return name; }
+
+  bool forceDenseInference() final { return false; }
+
+ private:
+  std::atomic<float> _sum_of_deviations;
+  std::atomic<float> _sum_of_truths;
+};
+
 using MetricData = std::unordered_map<std::string, std::vector<double>>;
 
+// TODO(Geordie): Instead of hard coding the options, use a static map.
 class MetricAggregator {
  public:
   explicit MetricAggregator(const std::vector<std::string>& metrics,
                             bool verbose = true)
-      : _verbose(verbose) {
+      : _verbose(verbose), _allow_force_dense_inference(true) {
     for (const auto& name : metrics) {
       if (name == CategoricalAccuracy::name) {
         _metrics.push_back(std::make_unique<CategoricalAccuracy>());
+      } else if (name == WeightedMeanAbsolutePercentageError::name) {
+        _metrics.push_back(
+            std::make_unique<WeightedMeanAbsolutePercentageError>());
       } else {
         throw std::invalid_argument("'" + name + "' is not a valid metric.");
       }
+      // If at least one metric does not allow forced dense inference, forced
+      // dense inference is not allowed.
+      _allow_force_dense_inference &=
+          _metrics.at(_metrics.size() - 1)->forceDenseInference();
     }
   }
 
@@ -119,10 +191,13 @@ class MetricAggregator {
 
   MetricData getOutput() { return _output; }
 
+  bool forceDenseInference() const { return _allow_force_dense_inference; }
+
  private:
   std::vector<std::unique_ptr<Metric>> _metrics;
   MetricData _output;
   bool _verbose;
+  bool _allow_force_dense_inference;
 };
 
 }  // namespace thirdai::bolt
