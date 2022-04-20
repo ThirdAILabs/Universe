@@ -151,21 +151,27 @@ class DocSearch {
   }
 
   std::vector<std::pair<std::string, std::string>> query(
-      const dataset::DenseBatch& embeddings, uint32_t top_k) const {
+      const dataset::DenseBatch& embeddings, uint32_t top_k,
+      uint32_t internal_top_k) const {
     std::vector<uint32_t> centroid_ids =
         getNearestCentroids(embeddings, _nprobe_query);
-    return queryWithCentroids(embeddings, centroid_ids, top_k);
+    return queryWithCentroids(embeddings, centroid_ids, top_k, internal_top_k);
   }
 
   std::vector<std::pair<std::string, std::string>> queryWithCentroids(
       const dataset::DenseBatch& embeddings,
-      const std::vector<uint32_t>& centroid_ids, uint32_t top_k) const {
+      const std::vector<uint32_t>& centroid_ids, uint32_t top_k,
+      uint32_t internal_top_k) const {
     if (embeddings.getBatchSize() == 0) {
       throw std::invalid_argument("Need at least one query vector but found 0");
     }
     if (top_k == 0) {
       throw std::invalid_argument(
           "The passed in top_k must be at least 1, was 0");
+    }
+    if (internal_top_k == 0) {
+      throw std::invalid_argument(
+          "The passed in internal_top_k must be at least 1, was 0");
     }
     for (uint32_t i = 0; i < embeddings.getBatchSize(); i++) {
       if (embeddings.at(i).dim() != _dense_dim) {
@@ -176,8 +182,6 @@ class DocSearch {
                                     std::to_string(_dense_dim));
       }
     }
-
-    uint32_t internal_top_k = 8192;
 
     std::vector<uint32_t> top_k_internal_ids =
         frequencyCountCentroidBuckets(centroid_ids, internal_top_k);

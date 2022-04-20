@@ -50,28 +50,16 @@ def perform_query_top_1():
 
     query_embedding = embedding_model.encodeQuery(query_text)
 
-    app.logger.info(time.time() - start)
-
     multiplied = centroids @ query_embedding.T
 
-    app.logger.info(time.time() - start)
-
     centroid_ids = torch.argmax(multiplied, dim=0)
-
-    app.logger.info(time.time() - start)
-
-    app.logger.info(time.time())
 
     result = index_to_query.query(
         query_embedding.numpy(), centroid_ids.numpy(), top_k=top_k
     )
 
-    app.logger.info(time.time())
-
-    app.logger.info(time.time() - start)
-
     app.logger.info(
-        f'For query="{query_text}" and top_k="{top_k}", found {len(result)} result(s)'
+        f'For query="{query_text}" and top_k="{top_k}", found {len(result)} result(s) in {time.time() - start} seconds'
     )
 
     return jsonify(doc_ids=[r[0] for r in result], doc_texts=[r[1] for r in result])
