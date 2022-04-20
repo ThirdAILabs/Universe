@@ -91,14 +91,16 @@ class LicenseWithSignature {
   void serializeToFile(const std::string& path) {
     std::ofstream filestream(path, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
-    oarchive(this);
+    oarchive(*this);
   }
 
   static LicenseWithSignature deserializeFromFile(const std::string& path) {
     std::ifstream filestream(path, std::ios::binary);
-    cereal::BinaryInputArchive iarchive(filestream);
     LicenseWithSignature serialize_into;
-    { iarchive(serialize_into); }
+    {
+      cereal::BinaryInputArchive iarchive(filestream);
+      iarchive(serialize_into);
+    }
     return serialize_into;
   }
 
