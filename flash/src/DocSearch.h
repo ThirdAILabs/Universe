@@ -173,6 +173,10 @@ class DocSearch {
       throw std::invalid_argument(
           "The passed in internal_top_k must be at least 1, was 0");
     }
+    if (top_k > internal_top_k) {
+      throw std::invalid_argument(
+          "The passed in top_k must be <= the passed in internal_top_k");
+    }
     for (uint32_t i = 0; i < embeddings.getBatchSize(); i++) {
       if (embeddings.at(i).dim() != _dense_dim) {
         throw std::invalid_argument("Vector " + std::to_string(i) +
