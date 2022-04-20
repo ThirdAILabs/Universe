@@ -32,9 +32,16 @@ class SequentialLayerConfig {
     throw std::invalid_argument("getActFunc() not implemented");
   }
 
-  // virtual void print(std::ostream& out) const {
-  //   throw std::invalid_argument("print() not implemented");
-  // }
+  virtual void print(std::ostream& out) const {
+    (void)out;
+    throw std::invalid_argument("print() not implemented");
+  }
+
+  friend std::ostream& operator<<(std::ostream& out,
+                                  const SequentialLayerConfig& config) {
+    config.print(out);
+    return out;
+  }
 
   static void checkSparsity(float sparsity) {
     if (0.2 < sparsity && sparsity < 1.0) {
@@ -108,10 +115,9 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
 
   ActivationFunction getActFunc() const { return act_func; }
 
-  friend std::ostream& operator<<(std::ostream& out,
-                                  const FullyConnectedLayerConfig& config) {
-    out << "Layer: dim=" << config.dim << ", load_factor=" << config.sparsity;
-    switch (config.act_func) {
+  void print(std::ostream& out) const {
+    out << "Layer: dim=" << dim << ", load_factor=" << sparsity;
+    switch (act_func) {
       case ActivationFunction::ReLU:
         out << ", act_func=ReLU";
         break;
@@ -122,15 +128,13 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
         out << ", act_func=Linear";
         break;
     }
-    if (config.sparsity < 1.0) {
+    if (sparsity < 1.0) {
       out << ", sampling: {";
-      out << "hashes_per_table=" << config.sampling_config.hashes_per_table
-          << ", num_tables=" << config.sampling_config.num_tables
-          << ", range_pow=" << config.sampling_config.range_pow
-          << ", reservoir_size=" << config.sampling_config.reservoir_size
-          << "}";
+      out << "hashes_per_table=" << sampling_config.hashes_per_table
+          << ", num_tables=" << sampling_config.num_tables
+          << ", range_pow=" << sampling_config.range_pow
+          << ", reservoir_size=" << sampling_config.reservoir_size << "}";
     }
-    return out;
   }
 
  private:
@@ -198,6 +202,29 @@ class ConvLayerConfig final : public SequentialLayerConfig {
   float getSparsity() const { return sparsity; }
 
   ActivationFunction getActFunc() const { return act_func; }
+
+  void print(std::ostream& out) const {
+    out << "Layer: num_filters=" << num_filters << ", load_factor=" << sparsity
+        << ", num_patches=" << num_patches;
+    switch (act_func) {
+      case ActivationFunction::ReLU:
+        out << ", act_func=ReLU";
+        break;
+      case ActivationFunction::Softmax:
+        out << ", act_func=Softmax";
+        break;
+      case ActivationFunction::Linear:
+        out << ", act_func=Linear";
+        break;
+    }
+    if (sparsity < 1.0) {
+      out << ", sampling: {";
+      out << "hashes_per_table=" << sampling_config.hashes_per_table
+          << ", num_tables=" << sampling_config.num_tables
+          << ", range_pow=" << sampling_config.range_pow
+          << ", reservoir_size=" << sampling_config.reservoir_size << "}";
+    }
+  }
 
  private:
   uint64_t num_filters;

@@ -21,7 +21,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(
   std::cout << "====== Building Fully Connected Network ======" << std::endl;
 
   for (uint32_t i = 0; i < _num_layers; i++) {
-    // std::cout << configs[i] << std::endl;
+    std::cout << *configs[i].get() << std::endl;
 
     std::shared_ptr<SequentialLayerConfig> prev_config =
         i == 0 ? std::dynamic_pointer_cast<SequentialLayerConfig>(
