@@ -93,7 +93,7 @@ def test_mnist_sparse_output_layer():
 
     acc, _ = network.predict(test, metrics=["categorical_accuracy"], verbose=False)
 
-    assert acc["categorical_accuracy"][0] >= ACCURACY_THRESHOLD
+    assert acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
 
 @pytest.mark.integration
@@ -106,7 +106,7 @@ def test_mnist_sparse_hidden_layer():
 
     acc, _ = network.predict(test, metrics=["categorical_accuracy"], verbose=False)
 
-    assert acc["categorical_accuracy"][0] >= ACCURACY_THRESHOLD
+    assert acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
 
 @pytest.mark.integration
@@ -121,7 +121,7 @@ def test_mnist_sparse_inference():
         test, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert dense_predict["categorical_accuracy"][0] >= ACCURACY_THRESHOLD
+    assert dense_predict["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
     network.enable_sparse_inference()
 
@@ -131,12 +131,10 @@ def test_mnist_sparse_inference():
         test, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert (
-        sparse_predict["categorical_accuracy"][0] >= SPARSE_INFERENCE_ACCURACY_THRESHOLD
-    )
+    assert sparse_predict["categorical_accuracy"] >= SPARSE_INFERENCE_ACCURACY_THRESHOLD
 
-    dense_time = dense_predict["test_time"][0]
-    sparse_time = sparse_predict["test_time"][0]
+    dense_time = dense_predict["test_time"]
+    sparse_time = sparse_predict["test_time"]
 
     SPARSE_INFERENCE_SPEED_MULTIPLIER = 5
 
@@ -169,7 +167,7 @@ def test_load_save_fc_network():
         test_data, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert new_acc["categorical_accuracy"][0] == original_acc["categorical_accuracy"][0]
+    assert new_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
 
     # Continue to train loaded network
     train_network(new_network, train_data=train_data, epochs=2)
@@ -178,7 +176,7 @@ def test_load_save_fc_network():
         test_data, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert another_acc["categorical_accuracy"][0] >= new_acc["categorical_accuracy"][0]
+    assert another_acc["categorical_accuracy"] >= new_acc["categorical_accuracy"]
 
     os.remove(save_loc)
 
@@ -195,7 +193,7 @@ def test_get_set_weights():
         test_data, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert original_acc["categorical_accuracy"][0] >= ACCURACY_THRESHOLD
+    assert original_acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
     untrained_network = build_sparse_output_layer_network()
 
@@ -209,4 +207,4 @@ def test_get_set_weights():
         test_data, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert new_acc["categorical_accuracy"][0] == original_acc["categorical_accuracy"][0]
+    assert new_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]

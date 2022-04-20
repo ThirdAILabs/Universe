@@ -1,3 +1,5 @@
+from distutils.command.build import build
+from email import parser
 import toml
 import sys
 import os
@@ -279,7 +281,7 @@ def is_fcn(config: Dict[str, Any]) -> bool:
     return "layers" in config.keys()
 
 
-def main():
+def build_arg_parser():
     parser = argparse.ArgumentParser(
         description="Runs creates and trains a bolt network on the specified config."
     )
@@ -291,7 +293,6 @@ def main():
     )
     parser.add_argument(
         "--disable_mlflow",
-        default=False,
         action="store_true",
         help="Disable mlflow logging for the current run.",
     )
@@ -302,14 +303,18 @@ def main():
         help="The name of the run to use in mlflow, if mlflow is not disabled this is required.",
     )
 
+    return parser
+
+
+def main():
+    parser = build_arg_parser()
     args = parser.parse_args()
 
     mlflow_enabled = not args.disable_mlflow
 
     if mlflow_enabled and not args.run_name:
         parser.print_usage()
-        print("Error: --run_name is required when using mlflow logging.")
-        return
+        raise ValueError("Error: --run_name is required when using mlflow logging.")
 
     config = toml.load(sys.argv[1])
 

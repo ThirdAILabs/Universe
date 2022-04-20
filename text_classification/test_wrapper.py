@@ -133,7 +133,7 @@ def train_yelp(args):
         acc, _ = network.predict(
             test_data, metrics=["categorical_accuracy"], verbose=False
         )
-        epoch_accuracies.append(acc["categorical_accuracy"][0])
+        epoch_accuracies.append(acc["categorical_accuracy"])
 
     network.save(model_path)
 
@@ -202,4 +202,4 @@ def test_preprocess():
     acc, _ = sentiment_analysis_network.predict(
         test_data, metrics=["categorical_accuracy"], verbose=False
     )
-    assert acc["categorical_accuracy"][0] > 0.5
+    assert acc["categorical_accuracy"] > 0.5
