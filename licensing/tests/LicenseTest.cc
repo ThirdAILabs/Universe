@@ -54,12 +54,12 @@ TEST(LicenseTest, SignSerializeDeserializeVerifyTest) {
   LicenseWithSignature signed_license(license, private_key);
 
   // Write to disk and then read from disk
-  signed_license.writeToFile("license.serialized");
-  std::unique_ptr<LicenseWithSignature> license_from_disk =
-      LicenseWithSignature::readFromFile("license.serialized");
+  signed_license.serializeToFile("license.serialized");
+  LicenseWithSignature license_from_disk =
+      LicenseWithSignature::deserializeFromFile("license.serialized");
 
   // Verify License
-  ASSERT_TRUE(license_from_disk->verify(public_key));
+  ASSERT_TRUE(license_from_disk.verify(public_key));
 }
 
 TEST(LicenseTest, SignModifyVerifyTest) {

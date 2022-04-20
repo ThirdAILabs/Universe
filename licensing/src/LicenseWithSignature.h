@@ -68,19 +68,20 @@ class LicenseWithSignature {
     return true;
   }
 
-  void writeToFile(const std::string& path) {
+  void serializeToFile(const std::string& path) {
     std::ofstream filestream(path, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
-    oarchive(*this);
+    oarchive(this);
   }
 
-  static std::unique_ptr<LicenseWithSignature> readFromFile(
+  static LicenseWithSignature deserializeFromFile(
       const std::string& path) {
     std::ifstream filestream(path, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<LicenseWithSignature> serialize_into(
-        new LicenseWithSignature());
-    iarchive(*serialize_into);
+    LicenseWithSignature serialize_into;
+    {
+    iarchive(serialize_into);
+    }
     return serialize_into;
   }
 
@@ -102,14 +103,14 @@ class LicenseWithSignature {
     std::vector<std::string> public_key_file_name_options = {
         "/home/thirdai/work/license-public-key.der", "license-public-key.der"};
 
-    std::unique_ptr<LicenseWithSignature> license;
+    std::optional<LicenseWithSignature> license;
     for (const std::string& license_file_name : license_file_name_options) {
       if (can_access_file(license_file_name)) {
-        license = readFromFile(license_file_name);
+        license = deserializeFromFile(license_file_name);
         break;
       }
     }
-    if (!license) {
+    if (!license.has_value()) {
       throw thirdai::exceptions::LicenseCheckException("no license file found");
     }
 

@@ -23,7 +23,7 @@ int main(int32_t argc, const char** argv) {
   std::string output_file(argv[3]);
   int64_t num_days = std::stoi(argv[4]);
   std::map<std::string, std::string> metadata;
-  for (uint32_t i = 5; i < num_args; i++) {
+  for (uint32_t i = 5; i < num_args; i+=2) {
     std::string key(argv[i]);
     std::string val(argv[i + 1]);
     metadata.at(key) = val;
@@ -43,18 +43,17 @@ int main(int32_t argc, const char** argv) {
 
   // Create and sign license
   License license = License::createLicenseWithNDaysLeft(metadata, num_days);
-  LicenseWithSignature license_with_signature =
-      LicenseWithSignature(license, private_key);
+  LicenseWithSignature license_with_signature(license, private_key);
 
   // Write license with signature to file
-  license_with_signature.writeToFile(output_file);
+  license_with_signature.serializeToFile(output_file);
 
   // Read the license back
-  std::unique_ptr<LicenseWithSignature> read_from_file =
-      LicenseWithSignature::readFromFile(output_file);
+  LicenseWithSignature read_from_file =
+      LicenseWithSignature::deserializeFromFile(output_file);
 
   // Make sure the public key works
-  if (!read_from_file->verify(public_key)) {
+  if (!read_from_file.verify(public_key)) {
     std::cout << "Was not able to verify license with the public key, do not "
                  "use this license file!"
               << std::endl;
@@ -63,7 +62,7 @@ int main(int32_t argc, const char** argv) {
     std::cout << "Was able to verify license with the public key!" << std::endl;
   }
 
-  std::cout << "Saved license " << read_from_file->get_license().toString()
+  std::cout << "Saved license " << read_from_file.get_license().toString()
             << std::endl;
 
   return 0;
