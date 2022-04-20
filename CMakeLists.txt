@@ -39,7 +39,7 @@ add_compile_options(
 
   $<$<CONFIG:RelWithDebInfo>:-DNDEBUG>
   $<$<CONFIG:RelWithDebInfo>:-Ofast>
-  $<$<CONFIG:Release>:-fno-finite-math-only>
+  $<$<CONFIG:RelWithDebInfo>:-fno-finite-math-only>
   $<$<CONFIG:RelWithDebInfo>:-funroll-loops>
   $<$<CONFIG:RelWithDebInfo>:-ftree-vectorize>
   $<$<CONFIG:RelWithDebInfo>:-g>
@@ -47,7 +47,7 @@ add_compile_options(
 
   $<$<CONFIG:RelWithAsan>:-DNDEBUG>
   $<$<CONFIG:RelWithAsan>:-Ofast>
-  $<$<CONFIG:Release>:-fno-finite-math-only>
+  $<$<CONFIG:RelWithAsan>:-fno-finite-math-only>
   $<$<CONFIG:RelWithAsan>:-funroll-loops>
   $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
   $<$<CONFIG:RelWithAsan>:-g>
