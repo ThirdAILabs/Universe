@@ -12,22 +12,29 @@ namespace thirdai::bolt {
 
 class SequentialLayerConfig {
  public:
-  virtual void verifyLayer(bool is_last) = 0;
-
-  // TODO(david) when we refactor ConvLayer we wont need this next_config part
-  virtual std::shared_ptr<SequentialLayer> createInputLayer(
-      uint64_t input_dim,
-      const std::shared_ptr<SequentialLayerConfig>& next_config) = 0;
-
-  virtual std::shared_ptr<SequentialLayer> createHiddenLayer(
+  virtual std::shared_ptr<SequentialLayer> createLayer(
       const std::shared_ptr<SequentialLayerConfig>& prev_config,
-      const std::shared_ptr<SequentialLayerConfig>& next_config) = 0;
+      const std::shared_ptr<SequentialLayerConfig>& next_config) {
+    (void)prev_config;
+    (void)next_config;
+    throw std::invalid_argument("createLayer() not implemented");
+  }
 
-  virtual uint64_t getDim() const = 0;
+  virtual uint64_t getDim() const {
+    throw std::invalid_argument("getDim() not implemented");
+  }
 
-  virtual float getSparsity() const = 0;
+  virtual float getSparsity() const {
+    throw std::invalid_argument("getSparsity() not implemented");
+  }
 
-  virtual ActivationFunction getActFunc() const = 0;
+  virtual ActivationFunction getActFunc() const {
+    throw std::invalid_argument("getActFunc() not implemented");
+  }
+
+  // virtual void print(std::ostream& out) const {
+  //   throw std::invalid_argument("print() not implemented");
+  // }
 
   static void checkSparsity(float sparsity) {
     if (0.2 < sparsity && sparsity < 1.0) {
@@ -35,6 +42,19 @@ class SequentialLayerConfig {
                 << " in Layer, consider decreasing load_factor" << std::endl;
     }
   }
+};
+
+// Not meant to be used for anything. Simply implemented to make creating layers
+// easier
+// TODO(david): refactor to support multidimensional input
+class InputConfig final : public SequentialLayerConfig {
+ public:
+  InputConfig(uint64_t _input_dim) { input_dim = _input_dim; }
+
+  uint64_t getDim() const { return input_dim; }
+
+ private:
+  uint64_t input_dim;
 };
 
 class FullyConnectedLayerConfig final : public SequentialLayerConfig {
@@ -72,6 +92,22 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
     }
   }
 
+  std::shared_ptr<SequentialLayer> createLayer(
+      const std::shared_ptr<SequentialLayerConfig>& prev_config,
+      const std::shared_ptr<SequentialLayerConfig>& next_config) {
+    if (next_config != nullptr && act_func == ActivationFunction::Softmax) {
+      throw std::invalid_argument(
+          "Softmax activation function is not supported for hidden layers.");
+    }
+    return createLayerHelper(prev_config->getDim());
+  }
+
+  uint64_t getDim() const { return dim; }
+
+  float getSparsity() const { return sparsity; }
+
+  ActivationFunction getActFunc() const { return act_func; }
+
   friend std::ostream& operator<<(std::ostream& out,
                                   const FullyConnectedLayerConfig& config) {
     out << "Layer: dim=" << config.dim << ", load_factor=" << config.sparsity;
@@ -97,40 +133,13 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
     return out;
   }
 
-  void verifyLayer(bool is_last) {
-    if (!is_last && act_func == ActivationFunction::Softmax) {
-      throw std::invalid_argument(
-          "Softmax activation function is not supported for hidden layers.");
-    }
-  }
-
-  std::shared_ptr<SequentialLayer> createInputLayer(
-      uint64_t input_dim,
-      const std::shared_ptr<SequentialLayerConfig>& next_config) {
-    (void)next_config;
-    return createLayer(input_dim);
-  }
-
-  std::shared_ptr<SequentialLayer> createHiddenLayer(
-      const std::shared_ptr<SequentialLayerConfig>& prev_config,
-      const std::shared_ptr<SequentialLayerConfig>& next_config) {
-    (void)next_config;
-    return createLayer(prev_config->getDim());
-  }
-
-  uint64_t getDim() const { return dim; }
-
-  float getSparsity() const { return sparsity; }
-
-  ActivationFunction getActFunc() const { return act_func; }
-
  private:
   uint64_t dim;
   float sparsity;
   ActivationFunction act_func;
   SamplingConfig sampling_config;
 
-  std::shared_ptr<SequentialLayer> createLayer(uint64_t prev_dim) {
+  std::shared_ptr<SequentialLayer> createLayerHelper(uint64_t prev_dim) {
     return std::static_pointer_cast<SequentialLayer>(
         std::make_shared<FullyConnectedLayer>(dim, sparsity, act_func,
                                               sampling_config, prev_dim));
@@ -152,8 +161,10 @@ class ConvLayerConfig final : public SequentialLayerConfig {
     checkSparsity(sparsity);
   }
 
-  void verifyLayer(bool is_last) {
-    if (is_last)
+  std::shared_ptr<SequentialLayer> createLayer(
+      const std::shared_ptr<SequentialLayerConfig>& prev_config,
+      const std::shared_ptr<SequentialLayerConfig>& next_config) {
+    if (next_config == nullptr)
       throw std::invalid_argument("ConvLayer not supported as final layer.");
     if (act_func != ActivationFunction::ReLU)
       throw std::invalid_argument(
@@ -162,27 +173,22 @@ class ConvLayerConfig final : public SequentialLayerConfig {
       throw std::invalid_argument(
           "Conv layers currently support only square kernels.");
     }
-  }
 
-  std::shared_ptr<SequentialLayer> createInputLayer(
-      uint64_t input_dim,
-      const std::shared_ptr<SequentialLayerConfig>& next_config) {
-    // TODO(david) change input_dim to a vector. hardcode input channels for now
-    return createLayer(input_dim, 3, 3, getKernelSize(next_config));
-  }
-
-  std::shared_ptr<SequentialLayer> createHiddenLayer(
-      const std::shared_ptr<SequentialLayerConfig>& prev_config,
-      const std::shared_ptr<SequentialLayerConfig>& next_config) {
-    std::shared_ptr<ConvLayerConfig> prev_config_casted =
+    std::shared_ptr<ConvLayerConfig> prev_config_conv_cast =
         std::dynamic_pointer_cast<ConvLayerConfig>(prev_config);
-    if (!prev_config_casted) {  // prev layer is not ConvLayer
+    std::shared_ptr<InputConfig> prev_config_input_cast =
+        std::dynamic_pointer_cast<InputConfig>(prev_config);
+
+    if (prev_config_input_cast) {  // prev is input layer
+      return createLayerHelper(prev_config_input_cast->getDim(), 3, 3,
+                               getKernelSize(next_config));
+    } else if (!prev_config_conv_cast) {  // prev layer is not ConvLayer
       throw std::invalid_argument(
           "ConvLayer cannot come after another non-Conv layer.");
     } else {  // prev layer is ConvLayer
-      return createLayer(
-          prev_config_casted->getDim(), prev_config_casted->num_filters,
-          prev_config_casted->num_filters * prev_config_casted->sparsity,
+      return createLayerHelper(
+          prev_config_conv_cast->getDim(), prev_config_conv_cast->num_filters,
+          prev_config_conv_cast->num_filters * prev_config_conv_cast->sparsity,
           getKernelSize(next_config));
     }
   }
@@ -201,7 +207,7 @@ class ConvLayerConfig final : public SequentialLayerConfig {
   std::pair<uint32_t, uint32_t> kernel_size;
   uint32_t num_patches;
 
-  std::shared_ptr<SequentialLayer> createLayer(
+  std::shared_ptr<SequentialLayer> createLayerHelper(
       uint64_t prev_dim, uint32_t prev_num_filters,
       uint32_t prev_num_sparse_filters,
       std::pair<uint32_t, uint32_t> next_kernel_size) {

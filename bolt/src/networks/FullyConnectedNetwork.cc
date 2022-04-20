@@ -21,18 +21,16 @@ FullyConnectedNetwork::FullyConnectedNetwork(
   std::cout << "====== Building Fully Connected Network ======" << std::endl;
 
   for (uint32_t i = 0; i < _num_layers; i++) {
-    bool is_last = i == _num_layers - 1;
-    configs[i]->verifyLayer(is_last);
+    // std::cout << configs[i] << std::endl;
 
+    std::shared_ptr<SequentialLayerConfig> prev_config =
+        i == 0 ? std::dynamic_pointer_cast<SequentialLayerConfig>(
+                     std::make_shared<InputConfig>(input_dim))
+               : configs[i - 1];
     std::shared_ptr<SequentialLayerConfig> next_config =
-        !is_last ? configs[i + 1] : nullptr;
+        i != _num_layers - 1 ? configs[i + 1] : nullptr;
 
-    if (i == 0) {
-      _layers.push_back(configs[i]->createInputLayer(input_dim, next_config));
-    } else {
-      _layers.push_back(configs[i]->createHiddenLayer(std::move(configs[i - 1]),
-                                                      next_config));
-    }
+    _layers.push_back(configs[i]->createLayer(prev_config, next_config));
   }
 
   auto end = std::chrono::high_resolution_clock::now();
