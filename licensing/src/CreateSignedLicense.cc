@@ -23,7 +23,7 @@ int main(int32_t argc, const char** argv) {
   std::string output_file(argv[3]);
   int64_t num_days = std::stoi(argv[4]);
   std::map<std::string, std::string> metadata;
-  for (uint32_t i = 5; i < num_args; i+=2) {
+  for (uint32_t i = 5; i < num_args; i += 2) {
     std::string key(argv[i]);
     std::string val(argv[i + 1]);
     metadata.at(key) = val;

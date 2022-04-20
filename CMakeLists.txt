@@ -101,6 +101,11 @@ include_directories(deps/eigen)
 add_subdirectory(deps/pybind11)
 add_subdirectory(deps/googletest)
 
+# This is so we can include cryptopp/*.h. We want this even if the build flag
+# isn't there so it always gets included in the compile_commands.json file and
+# can work with vscode
+include_directories(deps) 
+
 # Check if there is a license flag, and only if so add the cryptopp lib
 # We have two different License flags, one for if to build the license files
 # (THIRDAI_BUILD_LICENSE) and one for if to check the license (THIRDAI_CHECK_LICENSE).
@@ -115,7 +120,6 @@ if (${LICENSE_BUILD_FLAG_FOUND})
   # gated by a feature flag anyways.
   set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/libcryptopp.a)
   execute_process(COMMAND make static CXX=g++ -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
-  include_directories(deps) # This is so we can include cryptopp/*.h
 
 endif()
 

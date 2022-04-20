@@ -31,16 +31,25 @@ class LicenseWithSignature {
     // This is automatically seeded with the OS's randomness source
     CryptoPP::AutoSeededRandomPool rng;
 
-    // These new objects are automatically deleted, it's the recommendec way to
-    // use this library. Just defining the pipeline source -> filter -> sink
-    // causes it to run.
+    // These lines sign the License state for later verification.
+    // The objects created with the "new" keyword are automatically deleted,
+    // it's the recommended way use this library.
+    // We don't need to do anything besides defining the
+    // "source -> signer -> sink" pipeline using a nested builder pattern.
+    // This is because the pumpAll boolean is set to true, so the source will
+    // automatically be pumped into the SignerVerifier, which will in turn pump
+    // the signature into the sink and therefore the _signature field. Thus
+    // after these next lines _signature will contain the signature of the
+    // license state and this object will be ready for serialization. See
+    // https://cryptopp.com/wiki/RSA_Cryptography for more details.
     CryptoPP::RSASSA_PKCS1v15_SHA_Signer signer(private_key);
-    CryptoPP::StringSource ss1(
-        license_state_to_sign, true,
+    CryptoPP::StringSource source(
+        /* string = */ license_state_to_sign, /* pumpAll = */ true,
         new CryptoPP::SignerFilter(
-            rng, signer,
-            new CryptoPP::StringSink(_signature))  // SignerFilter
-    );                                             // StringSource
+            /* rng = */ rng, /* signer = */ signer,
+            new CryptoPP::StringSink(
+                /* output = */ _signature))  // SignerFilter
+    );                                       // StringSource
   }
 
   // Returns true if the content of the license can be verified with the public
@@ -50,13 +59,24 @@ class LicenseWithSignature {
 
     std::string license_state_to_sign = _license.toString();
 
+    // These lines try to verify the License with the signature field
+    // and the passed in public key. Similar to in the constructor above, the
+    // objects created with the "new" keyword are automatically deleted and the
+    // "source -> verifier" pipeline automatically runs on construction.
+    // The verificaiton process works as follows: the license state concatenated
+    //  with the signature is verified by the VerificaitonFilter, which does the
+    // verification with the public key it was constructed with.
+    // If the verification fails the cryptopp library
+    // throws an error, which we catch, and then we return false. See
+    // https://cryptopp.com/wiki/RSA_Cryptography for more details.
     CryptoPP::RSASSA_PKCS1v15_SHA_Verifier verifier(public_key);
-
     try {
-      CryptoPP::StringSource ss2(
-          license_state_to_sign + _signature, true,
+      CryptoPP::StringSource source(
+          /* string = */ license_state_to_sign + _signature,
+          /* pumpAll = */ true,
           new CryptoPP::SignatureVerificationFilter(
-              verifier, NULL,
+              /* verifier = */ verifier, /* attachment = */ NULL,
+              /* flags = */
               CryptoPP::SignatureVerificationFilter::
                   THROW_EXCEPTION)  // SignatureVerificationFilter
       );                            // StringSource
@@ -74,14 +94,11 @@ class LicenseWithSignature {
     oarchive(this);
   }
 
-  static LicenseWithSignature deserializeFromFile(
-      const std::string& path) {
+  static LicenseWithSignature deserializeFromFile(const std::string& path) {
     std::ifstream filestream(path, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
     LicenseWithSignature serialize_into;
-    {
-    iarchive(serialize_into);
-    }
+    { iarchive(serialize_into); }
     return serialize_into;
   }
 
