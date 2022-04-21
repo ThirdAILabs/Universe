@@ -51,7 +51,7 @@ def train_bolt_with_wmape(
             verbose=True,
         )
 
-    return metrics["weighted_mean_absolute_percentage_error"][0]
+    return metrics["weighted_mean_absolute_percentage_error"]
 
 
 @pytest.mark.unit
