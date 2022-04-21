@@ -32,13 +32,13 @@ class SequentialLayer {
 
   virtual uint32_t getDim() const = 0;
 
-  virtual float* getWeights() = 0;
+  virtual std::vector<float> getWeights() = 0;
 
-  virtual float* getBiases() = 0;
+  virtual std::vector<float> getBiases() = 0;
 
-  virtual void setWeights(float* new_weights) = 0;
+  virtual void setWeights(const std::vector<float> new_weights) = 0;
 
-  virtual void setBiases(float* new_biases) = 0;
+  virtual void setBiases(const std::vector<float> new_biases) = 0;
 
   virtual ~SequentialLayer() = default;
 };

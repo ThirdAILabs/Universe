@@ -62,13 +62,13 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   uint32_t getDim() const final { return _dim; }
 
-  float* getWeights() final;
+  std::vector<float> getWeights() final;
 
-  float* getBiases() final;
+  std::vector<float> getBiases() final;
 
-  void setWeights(float* new_weights) final;
+  void setWeights(const std::vector<float> new_weights) final;
 
-  void setBiases(float* new_biases) final;
+  void setBiases(const std::vector<float> new_biases) final;
 
   ~FullyConnectedLayer() = default;
 
