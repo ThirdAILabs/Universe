@@ -1,11 +1,8 @@
-from distutils.command.build import build
-from email import parser
 import toml
 import sys
 import os
 from thirdai import bolt, dataset
 import numpy as np
-import numpy.typing as npt
 from sklearn.metrics import roc_auc_score
 from typing import Tuple, Any, Optional, Dict, List
 import socket
@@ -61,7 +58,8 @@ def initialize_mlfow_logging_for_bolt(
 
 
 def log_training_metrics(metrics: Dict[str, List[float]]):
-    # In this benchmarking script, train is only called with one epoch at a time so we can simplify the logging for mlflow in this way.
+    # In this benchmarking script, train is only called with one epoch
+    # at a time so we can simplify the logging for mlflow in this way.
     mlflow_metrics = {k: v[0] for k, v in metrics.items()}
     mlflow.log_metrics(mlflow_metrics)
 
@@ -95,7 +93,10 @@ def create_embedding_layer_config(config: Dict[str, Any]) -> bolt.EmbeddingLayer
 
 
 def find_full_filepath(filename: str) -> str:
-    prefix_table = toml.load(sys.path[0] + "/../dataset_paths.toml")
+    data_path_file = (
+        os.path.dirname(os.path.abspath(__file__)) + "/../../dataset_paths.toml"
+    )
+    prefix_table = toml.load(data_path_file)
     for prefix in prefix_table["prefixes"]:
         if os.path.exists(prefix + filename):
             return prefix + filename
@@ -144,7 +145,7 @@ def load_click_through_dataset(
     return train, test
 
 
-def get_labels(dataset: str) -> npt.NDArray[np.int32]:
+def get_labels(dataset: str):
     labels = []
     with open(find_full_filepath(dataset)) as file:
         for line in file.readlines():
@@ -320,7 +321,7 @@ def main():
 
     if mlflow_enabled:
         file_dir = os.path.dirname(os.path.abspath(__file__))
-        file_name = os.path.join(file_dir, "../benchmarks/config.toml")
+        file_name = os.path.join(file_dir, "../config.toml")
         with open(file_name) as f:
             parsed_config = toml.load(f)
         mlflow.set_tracking_uri(parsed_config["tracking"]["uri"])
