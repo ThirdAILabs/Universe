@@ -154,6 +154,7 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
 };
 
 using MetricData = std::unordered_map<std::string, std::vector<double>>;
+using InferenceMetricData = std::unordered_map<std::string, double>;
 
 // TODO(Geordie): Instead of hard coding the options, use a static map.
 class MetricAggregator {
@@ -190,6 +191,14 @@ class MetricAggregator {
   }
 
   MetricData getOutput() { return _output; }
+
+  InferenceMetricData getOutputFromInference() {
+    InferenceMetricData data;
+    for (const auto& metric : _output) {
+      data[metric.first] = metric.second.at(0);
+    }
+    return data;
+  }
 
   bool forceDenseInference() const { return _allow_force_dense_inference; }
 

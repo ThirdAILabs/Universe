@@ -53,7 +53,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   network.train(data, CategoricalCrossEntropyLoss(), 0.001, 5);
   auto test_metrics = network.predict(data, nullptr, {"categorical_accuracy"});
-  ASSERT_GE(test_metrics["categorical_accuracy"].front(), 0.99);
+  ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
@@ -66,7 +66,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   network.train(data, CategoricalCrossEntropyLoss(), 0.001, 5);
   auto test_metrics = network.predict(data, nullptr, {"categorical_accuracy"});
-  ASSERT_LE(test_metrics["categorical_accuracy"].front(), 0.2);
+  ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
 }
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
@@ -81,7 +81,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   network.train(data, CategoricalCrossEntropyLoss(), 0.001, 2);
   auto test_metrics = network.predict(data, nullptr, {"categorical_accuracy"});
-  ASSERT_GE(test_metrics["categorical_accuracy"].front(), 0.99);
+  ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
@@ -96,7 +96,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   network.train(data, CategoricalCrossEntropyLoss(), 0.001, 2);
   auto test_metrics = network.predict(data, nullptr, {"categorical_accuracy"});
-  ASSERT_LE(test_metrics["categorical_accuracy"].front(), 0.2);
+  ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
 }
 
 }  // namespace thirdai::bolt::tests
