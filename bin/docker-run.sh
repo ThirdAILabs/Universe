@@ -11,7 +11,6 @@ if [ -d "${DATADIR}" ]; then
       --privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
       -it --rm \
       --mount type=bind,source=${DATADIR},target=/data \
-      -v /share/data/perf_output:/output \
       --mount type=bind,source=${PWD},target=/Universe thirdai/universe_dev_build \
       bash
 else
