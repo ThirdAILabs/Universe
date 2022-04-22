@@ -1,6 +1,7 @@
 #include "License.h"
 #include "LicenseWithSignature.h"
 #include <cryptopp/files.h>
+#include <filesystem>
 #include <map>
 #include <unordered_map>
 
