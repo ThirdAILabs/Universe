@@ -73,6 +73,10 @@ class FullyConnectedLayer {
   virtual ~FullyConnectedLayer() = default;
 
  protected:
+  void updateGradient(uint64_t i, uint64_t n, float lr, float B1, float B2,
+                      float eps, float B1_bias_corrected,
+                      float B2_bias_corrected);
+
   // can't be inlined .cc if part of an interface. see here:
   // https://stackoverflow.com/questions/27345284/is-it-possible-to-declare-constexpr-class-in-a-header-and-define-it-in-a-separat
   constexpr float actFuncDerivative(float x) {
@@ -112,6 +116,10 @@ class FullyConnectedLayer {
   std::unique_ptr<hashing::DWTAHashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
   std::vector<uint32_t> _rand_neurons;
+
+  std::vector<
+      std::unique_ptr<std::pair<std::vector<uint64_t>, std::vector<uint64_t>>>>
+      _active_pairs;
 
   bool _force_sparse_for_inference;
 

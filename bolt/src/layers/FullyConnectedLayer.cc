@@ -3,8 +3,10 @@
 #include <cassert>
 #include <cmath>
 #include <exception>
+#include <memory>
 #include <random>
 #include <unordered_map>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -71,6 +73,8 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
   }
 }
 
+using pairhelper = std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
+
 template <bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::forwardImpl(const BoltVector& input,
                                       BoltVector& output,
@@ -89,6 +93,19 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   float max_act = 0;
   uint32_t len_out = DENSE ? _dim : _sparse_dim;
   std::fill_n(output.gradients, len_out, 0);
+
+  if (!DENSE and !PREV_DENSE) {
+    std::unique_ptr<pairhelper> active_pairs = std::make_unique<pairhelper>(
+        std::vector<uint64_t>(), std::vector<uint64_t>());
+    for (uint64_t i = 0; i < input.len; i++) {
+      active_pairs->first.push_back(input.active_neurons[i]);
+    }
+    for (uint64_t n = 0; n < len_out; n++) {
+      active_pairs->second.push_back(output.active_neurons[n]);
+    }
+#pragma omp critical
+    _active_pairs.push_back(std::move(active_pairs));
+  }
 
   for (uint64_t n = 0; n < len_out; n++) {
     // Because DENSE is known at compile time the compiler can remove this
@@ -275,6 +292,19 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 
+  if (!_active_pairs.empty()) {
+#pragma omp parallel for default(none) \
+    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
+    for (auto& _active_pair : _active_pairs) {
+      for (uint64_t j : _active_pair->first) {
+        for (uint64_t k : _active_pair->second) {
+          updateGradient(j, k, lr, B1, B2, eps, B1_bias_corrected,
+                         B2_bias_corrected);
+        }
+      }
+    }
+  }
+
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t n = 0; n < _dim; n++) {
@@ -282,22 +312,11 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
       continue;
     }
 
-    for (uint64_t i = 0; i < _prev_dim; i++) {
-      auto indx = n * _prev_dim + i;
-      float grad = _w_gradient[indx];
-      assert(!std::isnan(grad));
-
-      _w_momentum[indx] = B1 * _w_momentum[indx] + (1 - B1) * grad;
-      _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
-      assert(!std::isnan(_w_momentum[indx]));
-      assert(!std::isnan(_w_velocity[indx]));
-
-      _weights[indx] +=
-          lr * (_w_momentum[indx] / B1_bias_corrected) /
-          (std::sqrt(_w_velocity[indx] / B2_bias_corrected) + eps);
-      assert(!std::isnan(_weights[indx]));
-
-      _w_gradient[indx] = 0;
+    if (_active_pairs.empty()) {
+      for (uint64_t i = 0; i < _prev_dim; i++) {
+        updateGradient(i, n, lr, B1, B2, eps, B1_bias_corrected,
+                       B2_bias_corrected);
+      }
     }
 
     float grad = _b_gradient[n];
@@ -316,6 +335,32 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
     _b_gradient[n] = 0;
     _is_active[n] = false;
   }
+
+  _active_pairs.clear();
+}
+
+void FullyConnectedLayer::updateGradient(uint64_t i, uint64_t n, float lr,
+                                         float B1, float B2, float eps,
+                                         float B1_bias_corrected,
+                                         float B2_bias_corrected) {
+  auto indx = n * _prev_dim + i;
+  float grad = _w_gradient[indx];
+  assert(!std::isnan(grad));
+
+  if (grad == 0) {
+    return;
+  }
+
+  _w_momentum[indx] = B1 * _w_momentum[indx] + (1 - B1) * grad;
+  _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
+  assert(!std::isnan(_w_momentum[indx]));
+  assert(!std::isnan(_w_velocity[indx]));
+
+  _weights[indx] += lr * (_w_momentum[indx] / B1_bias_corrected) /
+                    (std::sqrt(_w_velocity[indx] / B2_bias_corrected) + eps);
+  assert(!std::isnan(_weights[indx]));
+
+  _w_gradient[indx] = 0;
 }
 
 void FullyConnectedLayer::buildHashTables() {
