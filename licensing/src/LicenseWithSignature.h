@@ -105,22 +105,21 @@ class LicenseWithSignature {
   }
 
   /** Checks for a license file named license.serialized in...
-   *  1. /home/thirdai/work
-   *  2. The current directory
+   *  1. /home/thirdai/work (user added)
+   *  2. /licenses (added automatically at Docker build time)
    * Using a public key named license-public-key.der in...
-   *  1. /home/thirdai/work
-   *  2. The current directory
+   *  1. /keys (added automatically at Docker build time)
    * If no license is found, throws an error. If no public key is found, throws
-   * an error. We check 1. and use it if we find something, and otherwise
-   * check 2. If a license is found we verify it with the passed in public key,
+   * an error. If a license is found we verify it with the passed in public key,
    * then check whether it has expired. If either check fails we throw an error.
    * Otherwise we just return.
    */
   static void findVerifyAndCheckLicense() {
     std::vector<std::string> license_file_name_options = {
-        "/home/thirdai/work/license.serialized", "license.serialized"};
+        "/home/thirdai/work/license.serialized",
+        "/licenses/license.serialized"};
     std::vector<std::string> public_key_file_name_options = {
-        "/home/thirdai/work/license-public-key.der", "license-public-key.der"};
+        "/keys/license-public-key.der"};
 
     std::optional<LicenseWithSignature> license;
     for (const std::string& license_file_name : license_file_name_options) {

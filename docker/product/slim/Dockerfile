@@ -59,9 +59,10 @@ RUN sudo apt-get update
 COPY thirdai_smoke_test.py .
 COPY --from=0 /Universe/build/thirdai.cpython-* .
 
-# Copy in license files
-COPY license-public-key.der .
-COPY license.serialized .
+# Copy in license files. Use *.serialized to handle case where we want to build
+# the docker initially with no license.
+COPY license-public-key.der /keys/
+COPY *.serialized /licenses/
 
 # Allow us to use so from anywhere
 ENV PYTHONPATH="/home/thirdai:${PYTHONPATH}"

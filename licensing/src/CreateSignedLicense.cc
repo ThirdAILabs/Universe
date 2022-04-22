@@ -54,9 +54,10 @@ int main(int32_t argc, const char** argv) {
 
   // Make sure the public key works
   if (!read_from_file.verify(public_key)) {
-    std::cout << "Was not able to verify license with the public key, do not "
-                 "use this license file!"
+    std::cout << "Was not able to verify license with the public key, deleting "
+                 " the created file."
               << std::endl;
+    std::filesystem::remove(output_file);
     exit(1);
   } else {
     std::cout << "Was able to verify license with the public key!" << std::endl;
