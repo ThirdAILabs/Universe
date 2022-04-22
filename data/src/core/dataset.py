@@ -1,9 +1,9 @@
 from typing import List, Iterator, Tuple
 import random
 from .schema import Schema, __BlockList__
-from ..sources.source_interface import Source
-from ..parsers.parser_interface import Parser
-from ..utils.builder_vectors import (
+from sources.source_interface import Source
+from parsers.parser_interface import Parser
+from utils.builder_vectors import (
     __BuilderVector__,
     __SparseBuilderVector__,
     __DenseBuilderVector__,
@@ -64,6 +64,8 @@ class Dataset:
         self.set_batch_size(batch_size)
         if shuffle:
             self.shuffle(shuffle_seed)
+        else:
+            self._shuffle_rows = False
         self._last_random_state = None
         self._loaded_entire_dataset_in_memory = False
 
@@ -134,8 +136,8 @@ class Dataset:
 
         # Don't load and process the data all over again if it had been loaded before.
         if not self._loaded_entire_dataset_in_memory:
-            file = self._source_location.open()
-            row_generator = self._source_format.rows(file)
+            file = self._source.open()
+            row_generator = self._parser.rows(file)
 
             self._input_vectors = []
             self._target_vectors = None if len(self._schema.target_blocks) == 0 else []
@@ -160,7 +162,7 @@ class Dataset:
                 next_row = next(row_generator)
 
             # Close the source when we are done with it.
-            self._source_location.close()
+            self._source.close()
             # Remember that we have loaded and processed the whole dataset
             # and saved the results in memory.
             self._loaded_entire_dataset_in_memory = True
@@ -216,8 +218,8 @@ class Dataset:
 
     def __stream_batch_and_process(self):
         """Helper function to stream samples and process them in batches."""
-        file = self._source_location.open()
-        row_generator = self._source_format.rows(file)
+        file = self._source.open()
+        row_generator = self._parser.rows(file)
 
         next_row = next(row_generator)
         while next_row is not None:
@@ -250,7 +252,7 @@ class Dataset:
                 input_vectors, [] if target_vectors is None else target_vectors
             )
 
-        self._source_location.close()
+        self._source.close()
 
     def process(self) -> Iterator[dataset.BoltInputBatch]:
         """The generator yields a batch of input and target vectors as specified by
@@ -272,10 +274,16 @@ class Dataset:
                 + "the add_input_block() method is called."
             )
 
-        if self._source_location or self._source_format is None:
+        if self._source is None:
             raise RuntimeError(
                 "Dataset: source is not set. Check that the set_source() method"
-                + "is called before calling process()."
+                + " is called before calling process()."
+            )
+
+        if self._parser is None:
+            raise RuntimeError(
+                "Dataset: parser is not set. Check that the set_parser() method"
+                + " is called before calling process()."
             )
 
         # Loads the whole dataset in memory if we need to shuffle.

@@ -1,4 +1,4 @@
-from ..utils.builder_vectors import __BuilderVector__
+from utils.builder_vectors import __BuilderVector__
 from typing import List
 
 
