@@ -73,10 +73,6 @@ class FullyConnectedLayer {
   virtual ~FullyConnectedLayer() = default;
 
  protected:
-  void updateGradient(uint64_t i, uint64_t n, float lr, float B1, float B2,
-                      float eps, float B1_bias_corrected,
-                      float B2_bias_corrected);
-
   // can't be inlined .cc if part of an interface. see here:
   // https://stackoverflow.com/questions/27345284/is-it-possible-to-declare-constexpr-class-in-a-header-and-define-it-in-a-separat
   constexpr float actFuncDerivative(float x) {
@@ -110,20 +106,51 @@ class FullyConnectedLayer {
   std::vector<float> _b_momentum;
   std::vector<float> _b_velocity;
 
-  std::vector<bool> _is_active;
-
   SamplingConfig _sampling_config;
   std::unique_ptr<hashing::DWTAHashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
   std::vector<uint32_t> _rand_neurons;
 
-  std::vector<
-      std::unique_ptr<std::pair<std::vector<uint64_t>, std::vector<uint64_t>>>>
-      _active_pairs;
+  using ActiveNeuronsPair =
+      std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
+
+  bool _prev_is_dense;
+  bool _this_is_dense;
+  // This is only used if _prev_is_dense == false and _this_is_dense == false
+  std::vector<std::unique_ptr<ActiveNeuronsPair>> _active_pairs;
+  // This is only used if _prev_is_dense == false
+  std::vector<bool> _prev_is_active;
+  // This is only used if _this_is_dense == false
+  std::vector<bool> _is_active;
 
   bool _force_sparse_for_inference;
 
  private:
+  inline void updateSparseSparseWeightGradients(float lr, float B1, float B2,
+                                                float eps,
+                                                float B1_bias_corrected,
+                                                float B2_bias_corrected);
+  inline void updateSparseDenseWeightGradients(float lr, float B1, float B2,
+                                               float eps,
+                                               float B1_bias_corrected,
+                                               float B2_bias_corrected);
+  inline void updateDenseSparseWeightGradients(float lr, float B1, float B2,
+                                               float eps,
+                                               float B1_bias_corrected,
+                                               float B2_bias_corrected);
+  inline void updateDenseDenseWeightGradients(float lr, float B1, float B2,
+                                              float eps,
+                                              float B1_bias_corrected,
+                                              float B2_bias_corrected);
+  inline void updateWeightGradient(uint64_t prev_neuron, uint64_t cur_neuron,
+                                   float lr, float B1, float B2, float eps,
+                                   float B1_bias_corrected,
+                                   float B2_bias_corrected);
+  inline void updateBiasGradients(float lr, float B1, float B2, float eps,
+                                  float B1_bias_corrected,
+                                  float B2_bias_corrected);
+  inline void cleanupWithinBatchVars();
+
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output,
                    const BoltVector* labels);
@@ -141,8 +168,9 @@ class FullyConnectedLayer {
   void serialize(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
             _w_gradient, _w_momentum, _w_velocity, _biases, _b_gradient,
-            _b_momentum, _b_velocity, _is_active, _sampling_config, _hasher,
-            _hash_table, _rand_neurons, _force_sparse_for_inference);
+            _b_momentum, _b_velocity, _sampling_config, _prev_is_active,
+            _is_active, _hasher, _hash_table, _rand_neurons,
+            _force_sparse_for_inference);
   }
 };
 
