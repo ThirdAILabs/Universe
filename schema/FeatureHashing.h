@@ -1,12 +1,15 @@
 #pragma once
 
 #include <cstdlib>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 #include "Schema.h"
+#include <schema/InProgressVector.h>
+#include <sys/types.h>
 
 namespace thirdai::schema {
 
@@ -18,19 +21,21 @@ struct FeatureHashingBlock: public ABlock {
     }
   }
 
-  void consume(std::vector<std::string_view> line, InProgressVector &output_vec) override {
+  void extractFeatures(std::vector<std::string_view> line, InProgressSparseVector &vec) override {
     auto num = getNumberU32(line[_col]);
+    std::vector<uint32_t> indices;
     for (size_t i = 0; i < _n_hashes; ++i) {
       size_t hash = (_hash_constants[i].first * num + _hash_constants[i].second) % _out_dim + _offset;
-      output_vec[hash]++;
+      indices.push_back(hash);
     }
+    vec.incrementAtIndices(indices, 1.0);
   }
 
-  static std::shared_ptr<ABlockBuilder> Builder(const uint32_t col, const uint32_t n_hashes, const uint32_t out_dim) {
-    return std::make_shared<FeatureHashingBlockBuilder>(col, n_hashes, out_dim);
+  static std::shared_ptr<ABlockConfig> Config(const uint32_t col, const uint32_t n_hashes, const uint32_t out_dim) {
+    return std::make_shared<FeatureHashingBlockConfig>(col, n_hashes, out_dim);
   }
-  struct FeatureHashingBlockBuilder: public ABlockBuilder {
-    FeatureHashingBlockBuilder(const uint32_t col, const uint32_t n_hashes, const uint32_t out_dim)
+  struct FeatureHashingBlockConfig: public ABlockConfig {
+    FeatureHashingBlockConfig(const uint32_t col, const uint32_t n_hashes, const uint32_t out_dim)
     : _col(col), _n_hashes(n_hashes), _out_dim(out_dim) {}
 
     std::unique_ptr<ABlock> build(uint32_t &offset) const override {
@@ -41,7 +46,7 @@ struct FeatureHashingBlock: public ABlock {
 
     size_t maxColumn() const override { return _col; }
 
-    size_t inputFeatDim() const override { return _out_dim; }
+    size_t featureDim() const override { return _out_dim; }
 
   private:
     const uint32_t _col;

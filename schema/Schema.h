@@ -2,29 +2,34 @@
 
 #include <dataset/src/Dataset.h>
 #include <dataset/src/Vectors.h>
+#include <dataset/src/batch_types/BoltInputBatch.h>
 #include <dataset/src/batch_types/SparseBatch.h>
+#include <sys/types.h>
 #include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <memory>
+#include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 #include <iomanip>
 #include "InProgressVector.h"
 #include "Date.h"
+#include <bolt/src/layers/BoltVector.h>
 
 namespace thirdai::schema {
 
 struct ABlock {
-  virtual void consume(std::vector<std::string_view> line, InProgressVector& output_vec) = 0;
+  virtual void extractFeatures(std::vector<std::string_view> line, InProgressSparseVector& output_vec) = 0;
 };
 
-struct ABlockBuilder {
+struct ABlockConfig {
   virtual size_t maxColumn() const = 0;
-  virtual size_t inputFeatDim() const = 0;
+  virtual size_t featureDim() const = 0;
   virtual std::unique_ptr<ABlock> build(uint32_t& offset) const = 0;
 };
 
@@ -53,23 +58,15 @@ const uint32_t SECONDS_IN_DAY = 60 * 60 * 24;
 
 class DataLoader {
  public:
-  DataLoader(std::vector<std::shared_ptr<ABlockBuilder>>& schema, uint32_t batch_size)
+  DataLoader(std::vector<std::shared_ptr<ABlockConfig>>& input_block_configs, std::vector<std::shared_ptr<ABlockConfig>>& label_block_configs, uint32_t batch_size)
   : _batch_size(batch_size) {
-    
-    _vectors_for_next_batch.reserve(batch_size);
-    _labels_for_next_batch.reserve(batch_size);
-
-    uint32_t offset = 0;
-    for (const auto& builder : schema) {
-      _blocks.push_back(builder->build(offset));
-      _line_length = std::max(_line_length, builder->maxColumn() + 1); // Columns are 0-indexed.
-      _input_feat_dim += builder->inputFeatDim();
-    }
-
-    _line_buf.resize(_line_length);
+    buildBlocks(input_block_configs, _input_blocks, _input_dim);
+    buildBlocks(label_block_configs, _label_blocks, _label_dim);
   }
 
-  size_t inputFeatDim() const { return _input_feat_dim; }
+  size_t inputDim() const { return _input_dim; }
+  
+  size_t labelDim() const { return _label_dim; }
 
   void readCSV(const std::string& filename, const char delimiter) {
     std::ifstream in(filename);
@@ -86,8 +83,6 @@ class DataLoader {
 
   // I want to consider how a line, say, from a CSV, is consumed.
   void consumeCSVLine(std::string_view line, char delimiter) {
-    _in_progress_vec.clear(); // Clear previous vector, if any.
-
     size_t start = 0;
     for (size_t i = 0; i < _line_length; ++i) {
       auto end = line.find(delimiter, start);
@@ -95,57 +90,73 @@ class DataLoader {
       start = end + 1;
     }
     
-    
-    for (auto& block : _blocks) {
-      block->consume(_line_buf, _in_progress_vec);
-    }
-    addToDataset();
+    addVector(_line_buf, _input_blocks, _inputs_for_next_export);
+    addVector(_line_buf, _label_blocks, _labels_for_next_export);
   }
 
-  dataset::InMemoryDataset<dataset::SparseBatch> exportDataset() {
-    auto n_elems_in_batches = _batches.size() * _batch_size;
-    auto n_elems_in_remaining_batch = _vectors_for_next_batch.size();
-    // Move tail of dataset to batch
-    if (!_vectors_for_next_batch.empty()) {
-      _batches.emplace_back(std::move(_vectors_for_next_batch), std::move(_labels_for_next_batch), n_elems_in_batches);
-      _vectors_for_next_batch = std::vector<dataset::SparseVector>();
-      _vectors_for_next_batch.reserve(_batch_size);
-      _labels_for_next_batch = std::vector<std::vector<uint32_t>>();
-      _labels_for_next_batch.reserve(_batch_size);
+  dataset::InMemoryDataset<dataset::BoltInputBatch> exportDataset(bool shuffle=true) {
+    assert(_inputs_for_next_export.size() == _labels_for_next_export.size());
+    uint32_t n_elems = _inputs_for_next_export.size();
+
+    std::vector<uint32_t> positions(n_elems);
+    for (uint32_t i = 0; i < n_elems; i++) {
+      positions[i] = i;
     }
 
-    std::cout << "Exporting " << n_elems_in_batches + n_elems_in_remaining_batch << " vectors in the dataset." << std::endl;
+    if (shuffle) {
+      auto rng = std::default_random_engine {};
+      std::shuffle(positions.begin(), positions.end(), rng);
+    }
+
+    std::vector<dataset::BoltInputBatch> batches;
+
+    for (uint32_t i = 0; i < n_elems; i += _batch_size) {
+      std::vector<bolt::BoltVector> batch_inputs;
+      std::vector<bolt::BoltVector> batch_labels;
+      for (uint32_t j = 0; j < std::min(_batch_size, n_elems - i); j++) {
+        batch_inputs.push_back(std::move(_inputs_for_next_export[positions[j]]));
+        batch_labels.push_back(std::move(_labels_for_next_export[positions[j]]));
+      }
+      batches.emplace_back(std::move(batch_inputs), std::move(batch_labels));
+    }
+    
+
+    std::cout << "Exporting Bolt dataset with " << n_elems << " elements." << std::endl;
 
     // Then move to dataset
-    auto dataset = dataset::InMemoryDataset<dataset::SparseBatch>(std::move(_batches), n_elems_in_batches + n_elems_in_remaining_batch);
-    _batches = std::vector<dataset::SparseBatch>();
-    return dataset;
+    return { std::move(batches), n_elems };
   }
 
  private:
-  void addToDataset() {
-    dataset::SparseVector vec(_in_progress_vec.size(), _in_progress_vec.begin(), _in_progress_vec.end());
-    _vectors_for_next_batch.push_back(std::move(vec));
-    _labels_for_next_batch.emplace_back(_in_progress_vec.labels()); // labels() returns an L-value so this invokes copy constructor.
-    if (!(_vectors_for_next_batch.size() % _batch_size)) {
-      auto n_elems = _batches.size() * _batch_size;
-      _batches.emplace_back(std::move(_vectors_for_next_batch), std::move(_labels_for_next_batch), n_elems);
-      _vectors_for_next_batch = std::vector<dataset::SparseVector>();
-      _vectors_for_next_batch.reserve(_batch_size);
-      _labels_for_next_batch = std::vector<std::vector<uint32_t>>();
-      _labels_for_next_batch.reserve(_batch_size);
+
+  void buildBlocks(std::vector<std::shared_ptr<ABlockConfig>>& block_configs, std::vector<std::unique_ptr<ABlock>>& blocks, size_t& feature_dim) {
+    uint32_t offset = 0;
+    for (const auto& config : block_configs) {
+      blocks.push_back(config->build(offset));
+      _line_length = std::max(_line_length, config->maxColumn() + 1); // Columns are 0-indexed.
+      feature_dim += config->featureDim();
     }
+    _line_buf.resize(_line_length);
   }
+
+  static void addVector(std::vector<std::string_view>& line_buf, std::vector<std::unique_ptr<ABlock>>& blocks, std::vector<bolt::BoltVector>& vectors) {
+    InProgressSparseVector vec;
+    for (auto& block : blocks) {
+      block->extractFeatures(line_buf, vec);
+    }
+    vectors.push_back(vec.toBoltVector());
+  }
+
   
-  size_t _input_feat_dim = 0;
+  size_t _input_dim = 0;
+  size_t _label_dim = 0;
   size_t _line_length = 0;
   uint32_t _batch_size;
-  InProgressVector _in_progress_vec;
-  std::vector<dataset::SparseVector> _vectors_for_next_batch;
-  std::vector<std::vector<uint32_t>> _labels_for_next_batch;
-  std::vector<dataset::SparseBatch> _batches;
+  std::vector<bolt::BoltVector> _inputs_for_next_export;
+  std::vector<bolt::BoltVector> _labels_for_next_export;
   std::vector<std::string_view> _line_buf; // TODO(Geordie): Initialize
-  std::vector<std::unique_ptr<ABlock>> _blocks;
+  std::vector<std::unique_ptr<ABlock>> _input_blocks;
+  std::vector<std::unique_ptr<ABlock>> _label_blocks;
 };
 
 } // namespace thirdai::schema

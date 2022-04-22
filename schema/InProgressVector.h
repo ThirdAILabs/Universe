@@ -1,66 +1,59 @@
 #pragma once
 
+#include <bolt/src/layers/BoltVector.h>
+#include <sys/types.h>
 #include <algorithm>
 #include <cstdint>
+#include <iostream>
+#include <limits>
+#include <stdexcept>
 #include <vector>
 
 namespace thirdai::schema {
 
-template<size_t MAX_ACTIVE>
-struct InProgressVectorProto {
+struct InProgressSparseVector {
 
-  InProgressVectorProto() {}
+  InProgressSparseVector() {}
 
-  void add_label(uint32_t label) { _labels.push_back(label); }
-
-  const std::vector<uint32_t>& labels() const { 
-    return _labels;
+  void addSingleFeature(uint32_t index, float value) {
+    _indices.push_back(index);
+    _values.push_back(value);
   }
 
-  float& operator[](uint32_t idx) {
-    _kv[_i].first = idx;
-    _kv[_i].second = 0.0;
-    float& ref = _kv[_i].second;
-    _i++;
-    _i = _i == MAX_ACTIVE ? 0 : _i;
-    _n_active = std::min(MAX_ACTIVE, _n_active + 1);
-    return ref;
+  void addSparseFeatures(std::vector<uint32_t>& indices, std::vector<float>& values) {
+    assert(indices.size() == values.size());
+    _indices.insert(_indices.end(), indices.begin(), indices.end());
+    _values.insert(_values.end(), values.begin(), values.end());
   }
 
-  void clear() {
-    _i = 0;
-    _n_active = 0;
-    _labels.clear();
-  }
-
-  auto size() {
-    return _n_active;
-  }
-
-  struct Iterator {
-    std::pair<uint32_t, float>* p;
-    std::pair<uint32_t, float>& operator*() { return *p; }
-    bool operator != (const Iterator& rhs) {
-      return p != rhs.p;
+  void addDenseFeatures(uint32_t start_idx, std::vector<float>& values) {
+    _indices.reserve(_indices.size() + values.size());
+    for (uint32_t idx = start_idx; idx < start_idx + values.size(); idx++) {
+      _indices.push_back(idx);
     }
-    void operator ++() { ++p; }
-  };
-
-  auto begin() {
-    return Iterator{ _kv };
+    _values.insert(_values.end(), values.begin(), values.end());
   }
 
-  auto end() {
-    return Iterator{ _kv + _n_active };
+  void incrementAtIndices(std::vector<uint32_t>& indices, uint32_t inc) {
+    std::sort(indices.begin(), indices.end());
+    uint32_t last_idx = std::numeric_limits<uint32_t>::max();
+    for (const auto& idx : indices) {
+      if (idx != last_idx) {
+        addSingleFeature(idx, inc);
+      } else {
+        _values.back() += inc;
+      }
+    }
+  }
+
+  bolt::BoltVector toBoltVector() {
+    return bolt::BoltVector::makeSparseVector(_indices, _values);
   }
 
  private:
-  std::pair<uint32_t, float> _kv[MAX_ACTIVE];
-  size_t _i = 0;
-  size_t _n_active = 0;
-  std::vector<uint32_t> _labels;
+  std::vector<uint32_t> _indices;
+  std::vector<float> _values;
+  
 };
-
-using InProgressVector = InProgressVectorProto<10000>;
 
 } // namespace thirdai::schema

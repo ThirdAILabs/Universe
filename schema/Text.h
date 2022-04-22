@@ -9,6 +9,8 @@
 #include <vector>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/batch_types/SparseBatch.h>
+#include <schema/InProgressVector.h>
+#include <sys/types.h>
 #include <fstream>
 #include <string_view>
 #include "Schema.h"
@@ -20,13 +22,13 @@ namespace thirdai::schema {
 const uint32_t PRIME_BASE = 257;
 const uint32_t PRIME_MOD = 1000000007;
 
-struct CharacterNGramBlockBuilder;
-
 struct CharacterNGramBlock: public ABlock {
   CharacterNGramBlock(const uint32_t col, const uint32_t k, const uint32_t out_dim, const uint32_t offset)
   : _col(col), _k(k), _out_dim(out_dim), _offset(offset) {}
 
-  void consume(std::vector<std::string_view> line, InProgressVector &output_vec) override {
+  void extractFeatures(std::vector<std::string_view> line, InProgressSparseVector& vec) override {
+    std::vector<uint32_t> indices;
+
     if (line[_col].size() < _k) {
       return;
     }
@@ -51,16 +53,18 @@ struct CharacterNGramBlock: public ABlock {
       }
 
       if (i >= _k - 1) {
-        output_vec[hash % _out_dim + _offset]++;
+        indices.push_back(hash % _out_dim + _offset);
       }
     }
+
+    vec.incrementAtIndices(indices, 1.0);
   }
 
-  static std::shared_ptr<ABlockBuilder> Builder(const uint32_t col, const uint32_t k, const uint32_t out_dim) {
-    return std::make_shared<CharacterNGramBlockBuilder>(col, k, out_dim);
+  static std::shared_ptr<ABlockConfig> Config(const uint32_t col, const uint32_t k, const uint32_t out_dim) {
+    return std::make_shared<CharacterNGramBlockConfig>(col, k, out_dim);
   }
-  struct CharacterNGramBlockBuilder: public ABlockBuilder {
-    CharacterNGramBlockBuilder(const uint32_t col, const uint32_t k, const uint32_t out_dim)
+  struct CharacterNGramBlockConfig: public ABlockConfig {
+    CharacterNGramBlockConfig(const uint32_t col, const uint32_t k, const uint32_t out_dim)
     : _col(col), _k(k), _out_dim(out_dim) {}
 
     std::unique_ptr<ABlock> build(uint32_t &offset) const override {
@@ -71,7 +75,7 @@ struct CharacterNGramBlock: public ABlock {
 
     size_t maxColumn() const override { return _col; }
 
-    size_t inputFeatDim() const override { return _out_dim; }
+    size_t featureDim() const override { return _out_dim; }
 
   private:
     uint32_t _col;
@@ -92,7 +96,9 @@ struct WordNGramBlock: public ABlock {
   WordNGramBlock(const uint32_t col, const uint32_t k, const uint32_t out_dim, const uint32_t offset)
   : _col(col), _k(k), _out_dim(out_dim), _offset(offset) {}
 
-  void consume(std::vector<std::string_view> line, InProgressVector &output_vec) override {
+  void extractFeatures(std::vector<std::string_view> line, InProgressSparseVector& vec) override {
+    std::vector<uint32_t> indices;
+
     uint32_t n_words = 1;
     for (const auto& c : line[_col]) { n_words += c == ' ' ? 1 : 0; }
     if (n_words < _k) {
@@ -136,16 +142,18 @@ struct WordNGramBlock: public ABlock {
       }
 
       if (i >= _k - 1) {
-        output_vec[hash % _out_dim + _offset]++;
+        indices.push_back(hash % _out_dim + _offset);
       }
     }
+
+    vec.incrementAtIndices(indices, 1.0);
   }
 
-  static std::shared_ptr<ABlockBuilder> Builder(const uint32_t col, const uint32_t k, const uint32_t out_dim) {
-    return std::make_shared<WordNGramBlockBuilder>(col, k, out_dim);
+  static std::shared_ptr<ABlockConfig> Config(const uint32_t col, const uint32_t k, const uint32_t out_dim) {
+    return std::make_shared<WordNGramBlockConfig>(col, k, out_dim);
   }
-  struct WordNGramBlockBuilder: public ABlockBuilder {
-    WordNGramBlockBuilder(const uint32_t col, const uint32_t k, const uint32_t out_dim)
+  struct WordNGramBlockConfig: public ABlockConfig {
+    WordNGramBlockConfig(const uint32_t col, const uint32_t k, const uint32_t out_dim)
     : _col(col), _k(k), _out_dim(out_dim) {}
 
     std::unique_ptr<ABlock> build(uint32_t &offset) const override {
@@ -156,7 +164,7 @@ struct WordNGramBlock: public ABlock {
 
     size_t maxColumn() const override { return _col; }
 
-    size_t inputFeatDim() const override { return _out_dim; }
+    size_t featureDim() const override { return _out_dim; }
 
    private:
     uint32_t _col;

@@ -10,6 +10,7 @@
 #include <memory>
 #include <sstream>
 #include <vector>
+#include <schema/InProgressVector.h>
 #include <sys/types.h>
 #include "Schema.h"
 
@@ -126,9 +127,8 @@ struct Window {
   uint32_t _size;
 };
 struct DynamicCountsBlock: public ABlock {
-  DynamicCountsBlock(std::vector<Window> input_window_configs, std::vector<Window> label_window_configs, uint32_t max_window_size, uint32_t id_col, uint32_t timestamp_col, int32_t target_col, uint32_t offset, std::string timestamp_fmt)
-  : _input_window_configs(std::move(input_window_configs)),
-    _label_window_configs(std::move(label_window_configs)),
+  DynamicCountsBlock(std::vector<Window> window_configs, uint32_t max_window_size, uint32_t id_col, uint32_t timestamp_col, int32_t target_col, uint32_t offset, std::string timestamp_fmt)
+  : _window_configs(std::move(window_configs)),
     _dc(max_window_size),
     _id_col(id_col),
     _timestamp_col(timestamp_col),
@@ -136,7 +136,7 @@ struct DynamicCountsBlock: public ABlock {
     _offset(offset),
     _timestamp_fmt(std::move(timestamp_fmt)) {}
 
-  void consume(std::vector<std::string_view> line, InProgressVector& output_vec) override {
+  void extractFeatures(std::vector<std::string_view> line, InProgressSparseVector& vec) override {
 
     uint32_t id = getNumberU32(line[_id_col]);
     
@@ -151,25 +151,21 @@ struct DynamicCountsBlock: public ABlock {
     
     // Query
     size_t i = 0;
-    for (const auto& cfg : _input_window_configs) {
+    for (const auto& cfg : _window_configs) {
       uint32_t start_timestamp = timestamp - (cfg._lag + cfg._size - 1) * SECONDS_IN_DAY;
-      output_vec[_offset + i] = _dc.query(id, start_timestamp, cfg._size);
+      float value = _dc.query(id, start_timestamp, cfg._size);
+      vec.addSingleFeature(_offset + i, value);
       i++;
     }
-    for (const auto& cfg : _label_window_configs) {
-      uint32_t start_timestamp = timestamp - (cfg._lag + cfg._size - 1) * SECONDS_IN_DAY;
-      output_vec.add_label(static_cast<uint32_t>(_dc.query(id, start_timestamp, cfg._size)));
-    }
   }
 
-  static std::shared_ptr<ABlockBuilder> Builder(uint32_t id_col, uint32_t timestamp_col, int32_t target_col, std::vector<Window> input_window_configs, std::vector<Window> label_window_configs, std::string timestamp_fmt) {
-    return std::make_shared<DynamicCountsBlockBuilder>(id_col, timestamp_col, target_col, std::move(input_window_configs), std::move(label_window_configs), std::move(timestamp_fmt));
+  static std::shared_ptr<ABlockConfig> Config(uint32_t id_col, uint32_t timestamp_col, int32_t target_col, std::vector<Window> window_configs, std::string timestamp_fmt) {
+    return std::make_shared<DynamicCountsBlockConfig>(id_col, timestamp_col, target_col, std::move(window_configs), std::move(timestamp_fmt));
   }
 
-  struct DynamicCountsBlockBuilder: public ABlockBuilder {
-    DynamicCountsBlockBuilder(uint32_t id_col, uint32_t timestamp_col, int32_t target_col, std::vector<Window> input_window_configs, std::vector<Window> label_window_configs, std::string timestamp_fmt)
-    : _input_window_configs(std::move(input_window_configs)),
-      _label_window_configs(std::move(label_window_configs)),
+  struct DynamicCountsBlockConfig: public ABlockConfig {
+    DynamicCountsBlockConfig(uint32_t id_col, uint32_t timestamp_col, int32_t target_col, std::vector<Window> window_configs, std::string timestamp_fmt)
+    : _window_configs(std::move(window_configs)),
       _id_col(id_col),
       _timestamp_col(timestamp_col),
       _target_col(target_col),
@@ -177,14 +173,11 @@ struct DynamicCountsBlock: public ABlock {
 
     std::unique_ptr<ABlock> build(uint32_t &offset) const override {
       uint32_t max_window_size = 0;
-      for (const auto& cfg : _input_window_configs) {
+      for (const auto& cfg : _window_configs) {
         max_window_size = std::max(max_window_size, cfg._size);
       }
-      for (const auto& cfg : _label_window_configs) {
-        max_window_size = std::max(max_window_size, cfg._size);
-      }
-      auto built = std::make_unique<DynamicCountsBlock>(_input_window_configs, _label_window_configs, max_window_size, _id_col, _timestamp_col, _target_col, offset, _timestamp_fmt);
-      offset += _input_window_configs.size();
+      auto built = std::make_unique<DynamicCountsBlock>(_window_configs, max_window_size, _id_col, _timestamp_col, _target_col, offset, _timestamp_fmt);
+      offset += _window_configs.size();
       // We do not add increment based on label windows since labels are dense, 
       // and even if it wasn't, we need to use a different offset variable.
       return built;
@@ -197,13 +190,12 @@ struct DynamicCountsBlock: public ABlock {
       return std::max(static_cast<int32_t>(max_col), _target_col);
     }
 
-    size_t inputFeatDim() const override {
-      return _input_window_configs.size();
+    size_t featureDim() const override {
+      return _window_configs.size();
     }
 
   private:
-    std::vector<Window> _input_window_configs;
-    std::vector<Window> _label_window_configs;
+    std::vector<Window> _window_configs;
     uint32_t _id_col;
     uint32_t _timestamp_col;
     int32_t _target_col;
@@ -211,8 +203,7 @@ struct DynamicCountsBlock: public ABlock {
   };
 
  private:
-  std::vector<Window> _input_window_configs;
-  std::vector<Window> _label_window_configs;
+  std::vector<Window> _window_configs;
   DynamicCounts _dc;
   uint32_t _id_col;
   uint32_t _timestamp_col;
