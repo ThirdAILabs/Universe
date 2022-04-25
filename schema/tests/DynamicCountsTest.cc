@@ -13,9 +13,9 @@ TEST(DynamicCountsBlockTest, ProperlyHandlesOffset) {
   window_configs.push_back({3, 3});
   std::string timestamp_fmt = "%Y-%b-%d";
   uint32_t offset = 0;
-  DynamicCountsBlock::Builder(id_col, timestamp_col, target_col, window_configs, window_configs, timestamp_fmt)->build(offset);
-  DynamicCountsBlock::Builder(id_col, timestamp_col, target_col, window_configs, window_configs, timestamp_fmt)->build(offset);
-  DynamicCountsBlock::Builder(id_col, timestamp_col, target_col, window_configs, window_configs, timestamp_fmt)->build(offset);
+  DynamicCountsBlock::Config(id_col, timestamp_col, target_col, window_configs, timestamp_fmt)->build(offset);
+  DynamicCountsBlock::Config(id_col, timestamp_col, target_col, window_configs, timestamp_fmt)->build(offset);
+  DynamicCountsBlock::Config(id_col, timestamp_col, target_col, window_configs, timestamp_fmt)->build(offset);
 
   ASSERT_EQ(offset, 3);
 }
@@ -29,7 +29,7 @@ TEST(DynamicCountsBlockTest, CorrectOutput) {
   window_configs.push_back({3, 3});
   std::string timestamp_fmt = "%Y-%b-%d";
   uint32_t offset = 0;
-  auto dcb = DynamicCountsBlock::Builder(id_col, timestamp_col, target_col, window_configs, window_configs, timestamp_fmt)->build(offset);
+  auto dcb = DynamicCountsBlock::Config(id_col, timestamp_col, target_col, window_configs, timestamp_fmt)->build(offset);
   
   InProgressVector output_vec;
 
