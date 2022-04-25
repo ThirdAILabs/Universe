@@ -60,7 +60,7 @@ def train(
     args,
     train_fn,
     accuracy_threshold,
-    epoch_time_threshold=600,
+    epoch_time_threshold=1200,
     total_time_threshold=2000,
 ):
     """
