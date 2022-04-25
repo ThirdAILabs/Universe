@@ -17,6 +17,14 @@ cd ../../../
 # just the .so file, see the DocSearch Dockerfile for more details).
 git-archive-all $BASEDIR/Universe.tar.bz2
 
+# TODO(josh): We need to build the license.serialized file here, using a private
+# key stored locally (probably we will run this on our AWS machine and store 
+# key there). For now license.serialized is just stored in our github repo, I've
+# set it to expire in 90 days so in 90 days the smoke test will start failing, 
+# this is not a permanent solution! Also dynamically generating it will allow
+# us to write integration tests (right now we have no ASSERT_FAIL tests for
+# the Dockerfile).
+
 REV_TAG=$(git log -1 --pretty=format:%h)
 
 cd $BASEDIR

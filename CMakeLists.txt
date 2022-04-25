@@ -104,6 +104,29 @@ include_directories(deps/eigen)
 add_subdirectory(deps/pybind11)
 add_subdirectory(deps/googletest)
 
+# This is so we can include cryptopp/*.h. We want this even if the build flag
+# isn't there so it always gets included in the compile_commands.json file and
+# can work with vscode
+include_directories(deps) 
+
+# Check if there is a license flag, and only if so add the cryptopp lib
+# We have two different License flags, one for if to build the license files
+# (THIRDAI_BUILD_LICENSE) and one for if to check the license (THIRDAI_CHECK_LICENSE).
+# If just the THIRDAI_CHECK_LICENSE flag is set there will be a linker error.
+list (FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
+SET (LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
+if (${LICENSE_BUILD_FLAG_FOUND})
+
+  # Install CRYPTOPP and set the static lib to be libcryptopp.a. This is pretty
+  # ugly (the build happens at configure time, not build time) but honestly
+  # okay (I spent way too long getting anything at all to work). Plus, it's 
+  # gated by a feature flag anyways.
+  set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/libcryptopp.a)
+  execute_process(COMMAND make static CXX=g++ -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
+
+endif()
+
+
 find_package (Python3 COMPONENTS Interpreter Development)
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
@@ -122,6 +145,12 @@ add_subdirectory(exceptions)
 add_subdirectory(flash)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
+add_subdirectory(wrappers)
+
+# Only add the licensing subdirectory if the corresponding flag is set
+if (${LICENSE_BUILD_FLAG_FOUND})
+  add_subdirectory(licensing)
+endif()
 
 file(
   GLOB BOLT_SOURCES 
@@ -145,6 +174,11 @@ file(
   hashtable/src/*.cc
 )
 
+file (
+  GLOB_RECURSE WRAPPER_SOURCES
+  wrappers/src/*.cc
+)
+
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and
 # Debug builds, but not our ASan builds. This means that for now we can't run
 # ASan from python, but honestly this is more trouble than it's worth so for
@@ -161,4 +195,9 @@ pybind11_add_module(thirdai
   ${FLASH_SOURCES} 
   ${HASHING_SOURCES}
   ${HASHTABLE_SOURCES}
+  ${WRAPPER_SOURCES}
 )
+
+if (${LICENSE_BUILD_FLAG_FOUND})
+  target_link_libraries(thirdai PRIVATE ${CRYPTOPP_LIB})
+endif()
