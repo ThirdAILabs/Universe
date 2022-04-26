@@ -22,8 +22,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
     cmake \
     python3 \
     python3-dev \
-    pip \
-    wget
+    pip
 RUN /Universe/bin/build.py -f THIRDAI_CHECK_LICENSE THIRDAI_BUILD_LICENSE
 
 
@@ -43,6 +42,7 @@ RUN \
     apt-get upgrade --yes ; \
     apt-get install --yes --no-install-recommends \
     sudo \
+    wget \
     python3 \
     libgomp1 \
     pip ; \
