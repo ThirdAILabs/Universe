@@ -355,8 +355,7 @@ std::vector<float> FullyConnectedLayer::getWeights() {
 }
 
 std::vector<float> FullyConnectedLayer::getBiases() {
-  std::vector<float> biases_copy(_biases);
-  return biases_copy;
+  return _biases;
 }
 
 void FullyConnectedLayer::setWeights(const std::vector<float> new_weights) {
