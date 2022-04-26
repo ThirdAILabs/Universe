@@ -28,3 +28,8 @@ thirdai.egg-info
 # Ignore all .der key files except the single public license key
 *.der
 !docker/product/slim/license-public-key.der
+
+# Docs
+docs/_build
+docs/_static
+docs/_templates
