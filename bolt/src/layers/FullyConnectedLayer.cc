@@ -365,11 +365,11 @@ void FullyConnectedLayer::setWeights(const std::vector<float> new_weights) {
   _weights = std::vector<float>(new_weights);
 }
 
-void FullyConnectedLayer::setBiases(const std::vector<float> new_biases) {
+void FullyConnectedLayer::setBiases(const std::vector<float>& new_biases) {
   if (new_biases.size() != _biases.size()) {
     throw std::invalid_argument("Biases should have size = dim.");
   }
-  _biases = std::vector<float>(new_biases);
+  _biases = new_biases; // C++ copies by default
 }
 
 }  // namespace thirdai::bolt
