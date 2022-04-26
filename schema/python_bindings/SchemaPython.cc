@@ -12,6 +12,11 @@ namespace thirdai::schema::python {
 
 void createSchemaSubmodule(py::module_& module) {
   #if THIRDAI_BUILD_SCHEMA
+    createSchemaSubmoduleImpl(module);
+  #endif
+}
+
+void createSchemaSubmoduleImpl(py::module_& module) {
     auto schema_submodule = module.def_submodule("schema");
 
     py::class_<ABlockConfig, std::shared_ptr<ABlockConfig>> _schema_block_config_(schema_submodule, "BlockConfig",
@@ -87,6 +92,5 @@ void createSchemaSubmodule(py::module_& module) {
 
     schema_submodule.def("Date", &DateBlock::Config, 
                           py::arg("col"), py::arg("timestamp_fmt"), py::arg("n_years")=10);
-  #endif
 }
 }  // namespace thirdai::schema::python
