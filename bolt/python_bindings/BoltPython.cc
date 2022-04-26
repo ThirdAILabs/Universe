@@ -58,8 +58,7 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("activation_function"), py::arg("sampling_config"),
            py::arg("kernel_size"), py::arg("num_patches"));
 
-  py::class_<thirdai::bolt::EmbeddingLayerConfig>(bolt_submodule,
-                                                  "EmbeddingLayer")
+  py::class_<thirdai::bolt::EmbeddingLayerConfig>(bolt_submodule, "Embedding")
       .def(py::init<uint32_t, uint32_t, uint32_t>(),
            py::arg("num_embedding_lookups"), py::arg("lookup_size"),
            py::arg("log_embedding_block_size"));

@@ -31,8 +31,8 @@ def create_fully_connected_layer_configs(
 
 def create_embedding_layer_config(
     config: MutableMapping[str, Any]
-) -> bolt.EmbeddingLayer:
-    return bolt.EmbeddingLayer(
+) -> bolt.Embedding:
+    return bolt.Embedding(
         num_embedding_lookups=config.get("num_embedding_lookups"),
         lookup_size=config.get("lookup_size"),
         log_embedding_block_size=config.get("log_embedding_block_size"),

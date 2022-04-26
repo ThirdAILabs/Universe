@@ -21,16 +21,21 @@ FullyConnectedNetwork::FullyConnectedNetwork(
   std::cout << "====== Building Fully Connected Network ======" << std::endl;
 
   for (uint32_t i = 0; i < _num_layers; i++) {
-    std::cout << *configs[i].get() << std::endl;
+    std::cout << *configs[i] << std::endl;
 
-    std::shared_ptr<SequentialLayerConfig> prev_config =
-        i == 0 ? std::dynamic_pointer_cast<SequentialLayerConfig>(
-                     std::make_shared<InputConfig>(input_dim))
-               : configs[i - 1];
-    std::shared_ptr<SequentialLayerConfig> next_config =
-        i != _num_layers - 1 ? configs[i + 1] : nullptr;
-
-    _layers.push_back(configs[i]->createLayer(prev_config, next_config));
+    bool is_first = i == 0;
+    bool is_last = i == _num_layers - 1;
+    if (is_first && is_last) {
+      _layers.push_back(configs[i]->createSingleHiddenLayer(input_dim));
+    } else if (is_first) {
+      _layers.push_back(
+          configs[i]->createInputLayer(input_dim, *configs[i + 1]));
+    } else if (is_last) {
+      _layers.push_back(configs[i]->createOutputLayer(*configs[i - 1]));
+    } else {
+      _layers.push_back(
+          configs[i]->createHiddenLayer(*configs[i - 1], *configs[i + 1]));
+    }
   }
 
   auto end = std::chrono::high_resolution_clock::now();
