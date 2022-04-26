@@ -43,18 +43,11 @@ class FullyConnectedClassificationNetworkTestFixture : public testing::Test {
   }
 };
 
-<<<<<<< HEAD
-TEST_F(FullyConnectedNetworkTestFixture, TrainSimpleDatasetSingleLayerNetwork) {
+TEST_F(FullyConnectedClassificationNetworkTestFixture,
+       TrainSimpleDatasetSingleLayerNetwork) {
   FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
                                     n_classes, ActivationFunction::Softmax)},
                                 n_classes);
-=======
-TEST_F(FullyConnectedClassificationNetworkTestFixture,
-       TrainSimpleDatasetSingleLayerNetwork) {
-  FullyConnectedNetwork network(
-      {FullyConnectedLayerConfig{n_classes, ActivationFunction::Softmax}},
-      n_classes);
->>>>>>> LayerInterface
 
   auto data = genDataset(false);
 
@@ -63,18 +56,11 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
 
-<<<<<<< HEAD
-TEST_F(FullyConnectedNetworkTestFixture, TrainNoisyDatasetSingleLayerNetwork) {
+TEST_F(FullyConnectedClassificationNetworkTestFixture,
+       TrainNoisyDatasetSingleLayerNetwork) {
   FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
                                     n_classes, ActivationFunction::Softmax)},
                                 n_classes);
-=======
-TEST_F(FullyConnectedClassificationNetworkTestFixture,
-       TrainNoisyDatasetSingleLayerNetwork) {
-  FullyConnectedNetwork network(
-      {FullyConnectedLayerConfig{n_classes, ActivationFunction::Softmax}},
-      n_classes);
->>>>>>> LayerInterface
 
   auto data = genDataset(true);
 

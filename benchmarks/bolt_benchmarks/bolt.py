@@ -65,13 +65,8 @@ def log_training_metrics(metrics: Dict[str, List[float]]):
 
 
 def create_fully_connected_layer_configs(
-<<<<<<< HEAD:bolt/bolt.py
-    configs: List[MutableMapping[str, Any]]
-) -> List[bolt.FullyConnected]:
-=======
     configs: List[Dict[str, Any]]
-) -> List[bolt.LayerConfig]:
->>>>>>> LayerInterface:benchmarks/bolt_benchmarks/bolt.py
+) -> List[bolt.SequentialLayer]:
     layers = []
     for config in configs:
         layer = bolt.FullyConnected(
@@ -89,15 +84,8 @@ def create_fully_connected_layer_configs(
     return layers
 
 
-<<<<<<< HEAD:bolt/bolt.py
-def create_embedding_layer_config(
-    config: MutableMapping[str, Any]
-) -> bolt.Embedding:
+def create_embedding_layer_config(config: Dict[str, Any]) -> bolt.Embedding:
     return bolt.Embedding(
-=======
-def create_embedding_layer_config(config: Dict[str, Any]) -> bolt.EmbeddingLayerConfig:
-    return bolt.EmbeddingLayerConfig(
->>>>>>> LayerInterface:benchmarks/bolt_benchmarks/bolt.py
         num_embedding_lookups=config.get("num_embedding_lookups"),
         lookup_size=config.get("lookup_size"),
         log_embedding_block_size=config.get("log_embedding_block_size"),
