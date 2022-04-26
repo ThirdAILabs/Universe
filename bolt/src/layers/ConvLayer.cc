@@ -364,25 +364,25 @@ void ConvLayer::shuffleRandNeurons() {
   }
 }
 
-float* FullyConnectedLayer::getWeights() {
+float* ConvLayer::getWeights() {
   float* weights_copy = new float[_dim * _prev_dim];
   std::copy(_weights.begin(), _weights.end(), weights_copy);
 
   return weights_copy;
 }
 
-float* FullyConnectedLayer::getBiases() {
+float* ConvLayer::getBiases() {
   float* biases_copy = new float[_dim];
   std::copy(_biases.begin(), _biases.end(), biases_copy);
 
   return biases_copy;
 }
 
-void FullyConnectedLayer::setWeights(const float* new_weights) {
+void ConvLayer::setWeights(const float* new_weights) {
   std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
 }
 
-void FullyConnectedLayer::setBiases(const float* new_biases) {
+void ConvLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
