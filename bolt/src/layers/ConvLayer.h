@@ -46,13 +46,13 @@ class ConvLayer final : public SequentialLayer {
 
   uint32_t getDim() const final { return _dim; }
 
-  std::vector<float> getWeights() final;
+  float* getWeights() final;
 
-  std::vector<float> getBiases() final;
+  float* getBiases() final;
 
-  void setWeights(const std::vector<float>& new_weights) final;
+  void setWeights(const float* new_weights) final;
 
-  void setBiases(const std::vector<float>& new_biases) final;
+  void setBiases(const float* new_biases) final;
 
  private:
   // can't be inlined .cc if part of an interface. see here:

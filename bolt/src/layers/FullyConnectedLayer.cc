@@ -349,22 +349,26 @@ void FullyConnectedLayer::shuffleRandNeurons() {
   }
 }
 
-std::vector<float> FullyConnectedLayer::getWeights() { return _weights; }
+float* FullyConnectedLayer::getWeights() {
+  float* weights_copy = new float[_dim * _prev_dim];
+  std::copy(_weights.begin(), _weights.end(), weights_copy);
 
-std::vector<float> FullyConnectedLayer::getBiases() { return _biases; }
-
-void FullyConnectedLayer::setWeights(const std::vector<float>& new_weights) {
-  if (new_weights.size() != _weights.size()) {
-    throw std::invalid_argument("Weights should have size = dim * prev_dim.");
-  }
-  _weights = new_weights;  // C++ copies by default
+  return weights_copy;
 }
 
-void FullyConnectedLayer::setBiases(const std::vector<float>& new_biases) {
-  if (new_biases.size() != _biases.size()) {
-    throw std::invalid_argument("Biases should have size = dim.");
-  }
-  _biases = new_biases;  // C++ copies by default
+float* FullyConnectedLayer::getBiases() {
+  float* biases_copy = new float[_dim];
+  std::copy(_biases.begin(), _biases.end(), biases_copy);
+
+  return biases_copy;
+}
+
+void FullyConnectedLayer::setWeights(const float* new_weights) {
+  std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
+}
+
+void FullyConnectedLayer::setBiases(const float* new_biases) {
+  std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
 }  // namespace thirdai::bolt
