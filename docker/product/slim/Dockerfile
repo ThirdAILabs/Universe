@@ -23,7 +23,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
     python3 \
     python3-dev \
     pip
-RUN /Universe/bin/build.sh
+RUN /Universe/bin/build.py -f THIRDAI_CHECK_LICENSE THIRDAI_BUILD_LICENSE
 
 
 # Second stage, we only copy the so file from the first stage
@@ -42,6 +42,7 @@ RUN \
     apt-get upgrade --yes ; \
     apt-get install --yes --no-install-recommends \
     sudo \
+    wget \
     python3 \
     libgomp1 \
     pip ; \
@@ -58,6 +59,11 @@ RUN sudo apt-get update
 # Copy in smoke test and thirdai so
 COPY thirdai_smoke_test.py .
 COPY --from=0 /Universe/build/thirdai.cpython-* .
+
+# Copy in license files. Use *.serialized to handle case where we want to build
+# the docker initially with no license.
+COPY license-public-key.der /keys/
+COPY *.serialized /licenses/
 
 # Allow us to use so from anywhere
 ENV PYTHONPATH="/home/thirdai:${PYTHONPATH}"

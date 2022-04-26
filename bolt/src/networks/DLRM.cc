@@ -1,4 +1,5 @@
 #include "DLRM.h"
+#include <wrappers/src/LicenseWrapper.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <atomic>
@@ -20,6 +21,8 @@ DLRM::DLRM(
 
       _iter(0),
       _epoch_count(0) {
+  thirdai::licensing::LicenseWrapper::checkLicense();
+
   if (bottom_mlp_configs.back()->getSparsity() != 1.0) {
     throw std::invalid_argument("Dense feature layer must have sparsity 1.0");
   }

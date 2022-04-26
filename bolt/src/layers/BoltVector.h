@@ -1,8 +1,13 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <iostream>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -10,6 +15,11 @@ namespace thirdai::bolt {
 constexpr float BETA1 = 0.9;
 constexpr float BETA2 = 0.999;
 constexpr float EPS = 0.0000001;
+
+struct FoundActiveNeuron {
+  std::optional<size_t> pos;
+  float activation;
+};
 
 struct BoltVector {
  public:
@@ -154,11 +164,69 @@ struct BoltVector {
     return out;
   }
 
+  /**
+   * Finds the position and activation (value) of an active neuron.
+   * Whether or not the vector is dense is templated because this is
+   * likely used in loops where the density is known beforehand. This
+   * allows us to reuse that information and prevent checking at every
+   * iteration.
+   */
+  template <bool DENSE>
+  FoundActiveNeuron findActiveNeuron(uint32_t active_neuron) const {
+    if (DENSE) {
+      return {active_neuron, activations[active_neuron]};
+    }
+    return findSparseActiveNeuron(active_neuron);
+  }
+
   constexpr bool isDense() const { return this->active_neurons == nullptr; }
+
+  std::string toString() const {
+    std::stringstream ss;
+    ss << "[";
+
+    if (isDense()) {
+      for (size_t i = 0; i < len; i++) {
+        ss << activations[i];
+        if (i < len - 1) {
+          ss << ", ";
+        }
+      }
+    } else {
+      for (size_t i = 0; i < len; i++) {
+        ss << "(" << active_neurons[i] << ", " << activations[i] << ")";
+        if (i < len - 1) {
+          ss << ", ";
+        }
+      }
+    }
+
+    ss << "]";
+
+    return ss.str();
+  }
 
   ~BoltVector() { freeMemory(); }
 
  private:
+  /**
+   * Finds the position and activation (value) of an active neuron in
+   * a sparse vector. Assumes that the vector is sparse; the active_neurons
+   * array must not be nullptr.
+   */
+  FoundActiveNeuron findSparseActiveNeuron(uint32_t active_neuron) const {
+    assert(active_neurons != nullptr);
+
+    const uint32_t* start = active_neurons;
+    const uint32_t* end = active_neurons + len;
+    const uint32_t* itr = std::find(start, end, active_neuron);
+    if (itr == end) {
+      return {{}, 0.0};
+    }
+    uint32_t pos = std::distance(start, itr);
+    return {pos, activations[pos]};
+  }
+
   bool _owns_data;
 
   void freeMemory() {  // NOLINT clang tidy thinks this method should be const

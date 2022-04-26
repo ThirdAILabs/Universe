@@ -9,7 +9,7 @@
 
 namespace thirdai::bolt::tests {
 
-class FullyConnectedNetworkTestFixture : public testing::Test {
+class FullyConnectedClassificationNetworkTestFixture : public testing::Test {
  public:
   static const uint32_t n_classes = 100, n_batches = 100, batch_size = 100;
 
@@ -43,31 +43,48 @@ class FullyConnectedNetworkTestFixture : public testing::Test {
   }
 };
 
+<<<<<<< HEAD
 TEST_F(FullyConnectedNetworkTestFixture, TrainSimpleDatasetSingleLayerNetwork) {
   FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
                                     n_classes, ActivationFunction::Softmax)},
                                 n_classes);
+=======
+TEST_F(FullyConnectedClassificationNetworkTestFixture,
+       TrainSimpleDatasetSingleLayerNetwork) {
+  FullyConnectedNetwork network(
+      {FullyConnectedLayerConfig{n_classes, ActivationFunction::Softmax}},
+      n_classes);
+>>>>>>> LayerInterface
 
   auto data = genDataset(false);
 
   network.train(data, CategoricalCrossEntropyLoss(), 0.001, 5);
   auto test_metrics = network.predict(data, nullptr, {"categorical_accuracy"});
-  ASSERT_GE(test_metrics["categorical_accuracy"].front(), 0.99);
+  ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
 
+<<<<<<< HEAD
 TEST_F(FullyConnectedNetworkTestFixture, TrainNoisyDatasetSingleLayerNetwork) {
   FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
                                     n_classes, ActivationFunction::Softmax)},
                                 n_classes);
+=======
+TEST_F(FullyConnectedClassificationNetworkTestFixture,
+       TrainNoisyDatasetSingleLayerNetwork) {
+  FullyConnectedNetwork network(
+      {FullyConnectedLayerConfig{n_classes, ActivationFunction::Softmax}},
+      n_classes);
+>>>>>>> LayerInterface
 
   auto data = genDataset(true);
 
   network.train(data, CategoricalCrossEntropyLoss(), 0.001, 5);
   auto test_metrics = network.predict(data, nullptr, {"categorical_accuracy"});
-  ASSERT_LE(test_metrics["categorical_accuracy"].front(), 0.2);
+  ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
 }
 
-TEST_F(FullyConnectedNetworkTestFixture, TrainSimpleDatasetMultiLayerNetwork) {
+TEST_F(FullyConnectedClassificationNetworkTestFixture,
+       TrainSimpleDatasetMultiLayerNetwork) {
   FullyConnectedNetwork network(
       {std::make_shared<FullyConnectedLayerConfig>(
            10000, 0.1, ActivationFunction::ReLU, SamplingConfig(3, 32, 9, 32)),
@@ -79,10 +96,11 @@ TEST_F(FullyConnectedNetworkTestFixture, TrainSimpleDatasetMultiLayerNetwork) {
 
   network.train(data, CategoricalCrossEntropyLoss(), 0.001, 2);
   auto test_metrics = network.predict(data, nullptr, {"categorical_accuracy"});
-  ASSERT_GE(test_metrics["categorical_accuracy"].front(), 0.99);
+  ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
 
-TEST_F(FullyConnectedNetworkTestFixture, TrainNoisyDatasetMultiLayerNetwork) {
+TEST_F(FullyConnectedClassificationNetworkTestFixture,
+       TrainNoisyDatasetMultiLayerNetwork) {
   FullyConnectedNetwork network(
       {std::make_shared<FullyConnectedLayerConfig>(
            10000, 0.1, ActivationFunction::ReLU, SamplingConfig(3, 32, 9, 32)),
@@ -94,7 +112,7 @@ TEST_F(FullyConnectedNetworkTestFixture, TrainNoisyDatasetMultiLayerNetwork) {
 
   network.train(data, CategoricalCrossEntropyLoss(), 0.001, 2);
   auto test_metrics = network.predict(data, nullptr, {"categorical_accuracy"});
-  ASSERT_LE(test_metrics["categorical_accuracy"].front(), 0.2);
+  ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
 }
 
 }  // namespace thirdai::bolt::tests

@@ -368,11 +368,11 @@ float* ConvLayer::getBiases() {
   return biases_copy;
 }
 
-void ConvLayer::setWeights(float* new_weights) {
+void ConvLayer::setWeights(const float* new_weights) {
   std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
 }
 
-void ConvLayer::setBiases(float* new_biases) {
+void ConvLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 

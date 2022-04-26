@@ -1,17 +1,77 @@
-import scipy as sp
 import toml
 import sys
 import os
 from thirdai import bolt, dataset
 import numpy as np
-import numpy.typing as npt
 from sklearn.metrics import roc_auc_score
-from typing import MutableMapping, List, Tuple, Any, Optional
+from typing import Tuple, Any, Optional, Dict, List
+import socket
+import platform
+import psutil
+import mlflow
+import argparse
+
+
+def log_subconfig(name: str, subconfig: Dict[str, Any]):
+    for param, val in subconfig.items():
+        mlflow.log_param(f"{name}_{param}", val)
+
+
+def log_machine_info():
+    machine_info = {
+        "load_before_experiment": os.getloadavg()[2],
+        "platform": platform.platform(),
+        "platform_version": platform.version(),
+        "platform_release": platform.release(),
+        "architecture": platform.machine(),
+        "processor": platform.processor(),
+        "hostname": socket.gethostname(),
+        "ram_gb": round(psutil.virtual_memory().total / (1024.0**3)),
+        "num_cores": psutil.cpu_count(logical=True),
+    }
+
+    mlflow.log_params(machine_info)
+
+
+def initialize_mlfow_logging_for_bolt(
+    run_name: str, config_filename: str, config: Dict[str, Any]
+):
+    mlflow.set_experiment(config["job"])
+
+    dataset = config["dataset"]["train_data"].split("/")[-1]
+    mlflow.start_run(
+        run_name=run_name,
+        tags={"dataset": dataset},
+    )
+
+    # TODO(nicholas): this is giving an auth error
+    # mlflow.log_artifact(config_filename)
+
+    log_machine_info()
+
+    for name, subconfig in config.items():
+        if isinstance(subconfig, dict):
+            log_subconfig(name, subconfig)
+        if isinstance(subconfig, list):
+            for i, subconfig_i in enumerate(subconfig):
+                log_subconfig(f"{name}_{i}", subconfig_i)
+
+
+def log_training_metrics(metrics: Dict[str, List[float]]):
+    # In this benchmarking script, train is only called with one epoch
+    # at a time so we can simplify the logging for mlflow in this way.
+    mlflow_metrics = {k: v[0] for k, v in metrics.items()}
+    mlflow.log_metrics(mlflow_metrics)
 
 
 def create_fully_connected_layer_configs(
+<<<<<<< HEAD:bolt/bolt.py
     configs: List[MutableMapping[str, Any]]
 ) -> List[bolt.FullyConnected]:
+=======
+    configs: List[Dict[str, Any]]
+) -> List[bolt.LayerConfig]:
+>>>>>>> LayerInterface:benchmarks/bolt_benchmarks/bolt.py
     layers = []
     for config in configs:
         layer = bolt.FullyConnected(
@@ -29,10 +89,15 @@ def create_fully_connected_layer_configs(
     return layers
 
 
+<<<<<<< HEAD:bolt/bolt.py
 def create_embedding_layer_config(
     config: MutableMapping[str, Any]
 ) -> bolt.Embedding:
     return bolt.Embedding(
+=======
+def create_embedding_layer_config(config: Dict[str, Any]) -> bolt.EmbeddingLayerConfig:
+    return bolt.EmbeddingLayerConfig(
+>>>>>>> LayerInterface:benchmarks/bolt_benchmarks/bolt.py
         num_embedding_lookups=config.get("num_embedding_lookups"),
         lookup_size=config.get("lookup_size"),
         log_embedding_block_size=config.get("log_embedding_block_size"),
@@ -40,7 +105,10 @@ def create_embedding_layer_config(
 
 
 def find_full_filepath(filename: str) -> str:
-    prefix_table = toml.load(sys.path[0] + "/../dataset_paths.toml")
+    data_path_file = (
+        os.path.dirname(os.path.abspath(__file__)) + "/../../dataset_paths.toml"
+    )
+    prefix_table = toml.load(data_path_file)
     for prefix in prefix_table["prefixes"]:
         if os.path.exists(prefix + filename):
             return prefix + filename
@@ -53,7 +121,7 @@ def find_full_filepath(filename: str) -> str:
 
 
 def load_dataset(
-    config: MutableMapping[str, Any]
+    config: Dict[str, Any]
 ) -> Optional[Tuple[dataset.BoltDataset, dataset.BoltDataset]]:
     train_filename = find_full_filepath(config["dataset"]["train_data"])
     test_filename = find_full_filepath(config["dataset"]["test_data"])
@@ -73,7 +141,7 @@ def load_dataset(
 
 
 def load_click_through_dataset(
-    config: MutableMapping[str, Any], sparse_labels: bool
+    config: Dict[str, Any], sparse_labels: bool
 ) -> Tuple[dataset.ClickThroughDataset, dataset.ClickThroughDataset]:
     train_filename = find_full_filepath(config["dataset"]["train_data"])
     test_filename = find_full_filepath(config["dataset"]["test_data"])
@@ -89,7 +157,7 @@ def load_click_through_dataset(
     return train, test
 
 
-def get_labels(dataset: str) -> npt.NDArray[np.int32]:
+def get_labels(dataset: str):
     labels = []
     with open(find_full_filepath(dataset)) as file:
         for line in file.readlines():
@@ -99,7 +167,7 @@ def get_labels(dataset: str) -> npt.NDArray[np.int32]:
     return np.array(labels)
 
 
-def train_fcn(config: MutableMapping[str, Any]):
+def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
     layers = create_fully_connected_layer_configs(config["layers"])
     input_dim = config["dataset"]["input_dim"]
     network = bolt.Network(layers=layers, input_dim=input_dim)
@@ -132,18 +200,32 @@ def train_fcn(config: MutableMapping[str, Any]):
     test_metrics = config["params"]["test_metrics"]
 
     for e in range(epochs):
-        network.train(train, loss, learning_rate, 1, rehash, rebuild, train_metrics)
+        metrics = network.train(
+            train, loss, learning_rate, 1, rehash, rebuild, train_metrics
+        )
+        if mlflow_enabled:
+            log_training_metrics(metrics)
+
         if use_sparse_inference and e == sparse_inference_epoch:
             network.enable_sparse_inference()
+
         if max_test_batches is None:
-            network.predict(test, test_metrics)
+            metrics, _ = network.predict(test, test_metrics)
+            if mlflow_enabled:
+                mlflow.log_metrics(metrics)
         else:
-            network.predict(test, test_metrics, True, max_test_batches)
+            metrics, _ = network.predict(test, test_metrics, True, max_test_batches)
+            if mlflow_enabled:
+                mlflow.log_metrics(metrics)
+
     if not max_test_batches is None:
-        network.predict(test, test_metrics)
+        # If we limited the number of test batches during training we run on the whole test set at the end.
+        metrics, _ = network.predict(test, test_metrics)
+        if mlflow_enabled:
+            mlflow.log_metrics(metrics)
 
 
-def train_dlrm(config: MutableMapping[str, Any]):
+def train_dlrm(config: Dict[str, Any], mlflow_enabled: bool):
     embedding_layer = create_embedding_layer_config(config["embedding_layer"])
     bottom_mlp = create_fully_connected_layer_configs(config["bottom_mlp_layers"])
     top_mlp = create_fully_connected_layer_configs(config["top_mlp_layers"])
@@ -177,35 +259,95 @@ def train_dlrm(config: MutableMapping[str, Any]):
     labels = get_labels(config["dataset"]["test_data"])
 
     for _ in range(epochs):
-        dlrm.train(train, loss, learning_rate, 1, rehash, rebuild, train_metrics)
-        _, scores = dlrm.predict(test, test_metrics)
-        preds = np.argmax(scores, axis=1)
-        acc = np.mean(preds == labels)
-        print("Accuracy: ", acc)
+        metrics = dlrm.train(
+            train, loss, learning_rate, 1, rehash, rebuild, train_metrics
+        )
+        if mlflow_enabled:
+            log_training_metrics(metrics)
+
+        metrics, scores = dlrm.predict(test, test_metrics)
+        if mlflow_enabled:
+            mlflow.log_metrics(metrics)
+
+        if len(scores.shape) == 2:
+            preds = np.argmax(scores, axis=1)
+            acc = np.mean(preds == labels)
+            print("Accuracy: ", acc)
+
         if use_auc and len(scores.shape) == 1:
             auc = roc_auc_score(labels, scores)
+            if mlflow_enabled:
+                mlflow.log_metric("auc", auc)
             print("AUC: ", auc)
         elif use_auc and len(scores.shape) == 2 and scores.shape[1] == 2:
             auc = roc_auc_score(labels, scores[:, 1])
+            if mlflow_enabled:
+                mlflow.log_metric("auc", auc)
             print("AUC: ", auc)
 
 
-def is_dlrm(config: MutableMapping[str, Any]) -> bool:
+def is_dlrm(config: Dict[str, Any]) -> bool:
     return "bottom_mlp_layers" in config.keys() and "top_mlp_layers" in config.keys()
 
 
-def is_fcn(config: MutableMapping[str, Any]) -> bool:
+def is_fcn(config: Dict[str, Any]) -> bool:
     return "layers" in config.keys()
 
 
+def build_arg_parser():
+    parser = argparse.ArgumentParser(
+        description="Runs creates and trains a bolt network on the specified config."
+    )
+
+    parser.add_argument(
+        "config_file",
+        type=str,
+        help="Name of the config file to use to run experiment.",
+    )
+    parser.add_argument(
+        "--disable_mlflow",
+        action="store_true",
+        help="Disable mlflow logging for the current run.",
+    )
+    parser.add_argument(
+        "--run_name",
+        default="",
+        type=str,
+        help="The name of the run to use in mlflow, if mlflow is not disabled this is required.",
+    )
+
+    return parser
+
+
 def main():
+    parser = build_arg_parser()
+    args = parser.parse_args()
+
+    mlflow_enabled = not args.disable_mlflow
+
+    if mlflow_enabled and not args.run_name:
+        parser.print_usage()
+        raise ValueError("Error: --run_name is required when using mlflow logging.")
+
     config = toml.load(sys.argv[1])
+
+    if mlflow_enabled:
+        file_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = os.path.join(file_dir, "../config.toml")
+        with open(file_name) as f:
+            parsed_config = toml.load(f)
+        mlflow.set_tracking_uri(parsed_config["tracking"]["uri"])
+
+        initialize_mlfow_logging_for_bolt(args.run_name, sys.argv[1], config)
+
     if is_fcn(config):
-        train_fcn(config)
+        train_fcn(config, mlflow_enabled)
     elif is_dlrm(config):
-        train_dlrm(config)
+        train_dlrm(config, mlflow_enabled)
     else:
         print("Invalid network architecture specified")
+
+    mlflow.end_run()
 
 
 if __name__ == "__main__":

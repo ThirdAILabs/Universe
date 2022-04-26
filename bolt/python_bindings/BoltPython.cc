@@ -1,6 +1,7 @@
 #include "BoltPython.h"
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
 
 namespace thirdai::bolt::python {
@@ -22,6 +23,7 @@ void createBoltSubmodule(py::module_& module) {
   bolt_submodule.def("getActivationFunction", &getActivationFunction,
                      py::arg("name"));
 
+  // TODO(Geordie, Nicholas): put loss functions in its own submodule
   py::class_<LossFunction>(bolt_submodule, "LossFunction");  // NOLINT
 
   py::class_<CategoricalCrossEntropyLoss, LossFunction>(
@@ -29,6 +31,10 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<>());
 
   py::class_<MeanSquaredError, LossFunction>(bolt_submodule, "MeanSquaredError")
+      .def(py::init<>());
+
+  py::class_<WeightedMeanAbsolutePercentageErrorLoss, LossFunction>(
+      bolt_submodule, "WeightedMeanAbsolutePercentageError")
       .def(py::init<>());
 
   py::class_<thirdai::bolt::SequentialLayerConfig,
@@ -105,7 +111,13 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max())
       .def("enable_sparse_inference", &PyNetwork::enableSparseInference)
       .def("save", &PyNetwork::save, py::arg("filename"))
-      .def_static("load", &PyNetwork::load, py::arg("filename"));
+      .def_static("load", &PyNetwork::load, py::arg("filename"))
+      .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"))
+      .def("set_weights", &PyNetwork::setWeights, py::arg("layer_index"),
+           py::arg("new_weights"))
+      .def("get_biases", &PyNetwork::getBiases, py::arg("layer_index"))
+      .def("set_biases", &PyNetwork::setBiases, py::arg("layer_index"),
+           py::arg("new_biases"));
 
   py::class_<PyDLRM>(bolt_submodule, "DLRM")
       .def(py::init<thirdai::bolt::EmbeddingLayerConfig,

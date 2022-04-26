@@ -365,11 +365,11 @@ float* FullyConnectedLayer::getBiases() {
   return biases_copy;
 }
 
-void FullyConnectedLayer::setWeights(float* new_weights) {
+void FullyConnectedLayer::setWeights(const float* new_weights) {
   std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
 }
 
-void FullyConnectedLayer::setBiases(float* new_biases) {
+void FullyConnectedLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 

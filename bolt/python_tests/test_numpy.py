@@ -28,7 +28,7 @@ def train_simple_bolt_model(examples, labels):
         examples, labels, batch_size, ["categorical_accuracy"], verbose=False
     )
 
-    return acc["categorical_accuracy"][0]
+    return acc["categorical_accuracy"]
 
 
 def train_sparse_bolt_model(
@@ -72,7 +72,7 @@ def train_sparse_bolt_model(
         verbose=False,
     )
     ##
-    return acc["categorical_accuracy"][0]
+    return acc["categorical_accuracy"]
 
 
 @pytest.mark.unit
