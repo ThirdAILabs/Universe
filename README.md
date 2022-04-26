@@ -6,15 +6,15 @@ Main Repository (follow monorepositry)
 ## Development Scripts
 There are some script in the bin folder that allow you to easily build, test,
 and lint you code.
-1. Run `$ bin/build.sh` from anywhere to have cmake build everything in universe.
+1. Run `$ bin/build.py` from anywhere to have cmake build everything in universe.
 All executables will be in their corresponding directory within the build 
 directory. e.g. the mpi_example executable will be in 
 `Universe/build/examples/mpi-example/mpi_example`. By default this will
 run in parallel and build all unbuilt targets or targets whose component source
 files have been updated, but you can pass in parameters to run in serial or build
-only a specific target. You can also build in Debug or RelWithDebInfo, see the 
-source of `$ bin/build.sh` for more details.
-2. Run `$ bin/cpp-test.sh` from anywhere to have cmake run all c++ tests. To run specific
+only a specific target. You can also build in other build modes (Debug, etc.).
+Run bin/build.py -h for more info.
+1. Run `$ bin/cpp-test.sh` from anywhere to have cmake run all c++ tests. To run specific
 tests, you can also pass a regular expression to filter tests 
 (or provide an explicit test name):
 `$ bin/cpp-test.sh -R <test filter expression>`.
@@ -76,7 +76,7 @@ for best performance).
 
 ## Installing python bindings
 1. The building target `thirdai` will compile the `thirdai.so` library in the build directory. 
-This is automatically run on a full build, so you can run `bin/build.sh` as normal.
+This is automatically run on a full build, so you can run `bin/build.py` as normal.
 Note this will use the version of python you get from running `which python3`, 
 and even with the PYTHONPATH changes below a different version of python will
 not be able to find the so file.
@@ -92,7 +92,7 @@ command to your ~/.bash_profile or ~/.bash_rc, or equivalently run
 `echo "export PYTHONPATH=~/Universe/build:\$PYTHONPATH" >> $HOME/.bash_profile`. 
 Alternatively you can run `pip3 install .`. This installs thirdi without messing
 around with environment variables, but is not preferred for development since it
-is performs an entirely seperate parallel build from `bin/build.sh`, and so is
+is performs an entirely seperate parallel build from `bin/build.py`, and so is
 much slower.
 
 ## Using cmake

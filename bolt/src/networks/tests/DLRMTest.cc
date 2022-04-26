@@ -67,7 +67,7 @@ class DLRMTestFixture : public testing::Test {
 //   auto test_metrics = dlrm.predict(dataset, nullptr,
 //   {"categorical_accuracy"});
 
-//   ASSERT_GE(test_metrics["categorical_accuracy"].front(), 0.99);
+//   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 // }
 
 TEST_F(DLRMTestFixture, NoisyCategoricalFeatures) {
@@ -85,10 +85,10 @@ TEST_F(DLRMTestFixture, NoisyCategoricalFeatures) {
 
   auto dataset = genDataset(false, true);
 
-  dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 12);
+  dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 32);
   auto test_metrics = dlrm.predict(dataset, nullptr, {"categorical_accuracy"});
 
-  ASSERT_GE(test_metrics["categorical_accuracy"].front(), 0.9);
+  ASSERT_GE(test_metrics["categorical_accuracy"], 0.9);
 }
 
 TEST_F(DLRMTestFixture, NoisyDenseFeatures) {
@@ -109,7 +109,7 @@ TEST_F(DLRMTestFixture, NoisyDenseFeatures) {
   dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 3);
   auto test_metrics = dlrm.predict(dataset, nullptr, {"categorical_accuracy"});
 
-  ASSERT_GE(test_metrics["categorical_accuracy"].front(), 0.99);
+  ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
 
 TEST_F(DLRMTestFixture, NoisyDenseAndCategoricalFeatures) {
@@ -130,7 +130,7 @@ TEST_F(DLRMTestFixture, NoisyDenseAndCategoricalFeatures) {
   dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 5);
   auto test_metrics = dlrm.predict(dataset, nullptr, {"categorical_accuracy"});
 
-  ASSERT_LE(test_metrics["categorical_accuracy"].front(), 0.1);
+  ASSERT_LE(test_metrics["categorical_accuracy"], 0.1);
 }
 
 }  // namespace thirdai::bolt::tests

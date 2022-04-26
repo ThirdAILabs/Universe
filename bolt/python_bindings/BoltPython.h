@@ -16,6 +16,8 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 
@@ -94,7 +96,7 @@ class PyNetwork final : public FullyConnectedNetwork {
                  rebuild, metrics, verbose);
   }
 
-  std::pair<MetricData, py::object> predict(
+  std::pair<InferenceMetricData, py::object> predict(
       const dataset::InMemoryDataset<dataset::BoltInputBatch>& test_data,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
@@ -132,7 +134,7 @@ class PyNetwork final : public FullyConnectedNetwork {
     return {metric_data, activations_array};
   }
 
-  std::pair<MetricData,
+  std::pair<InferenceMetricData,
             py::array_t<float, py::array::c_style | py::array::forcecast>>
   predictWithDenseNumpyArray(
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
@@ -177,7 +179,7 @@ class PyNetwork final : public FullyConnectedNetwork {
     return {metric_data, activations_array};
   }
 
-  std::pair<MetricData,
+  std::pair<InferenceMetricData,
             py::array_t<float, py::array::c_style | py::array::forcecast>>
   predictWithSparseNumpyArray(
       const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
@@ -227,6 +229,7 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     return {metric_data, activations_array};
   }
+
   void save(const std::string& filename) {
     std::ofstream filestream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
@@ -239,6 +242,88 @@ class PyNetwork final : public FullyConnectedNetwork {
     std::unique_ptr<PyNetwork> deserialize_into(new PyNetwork());
     iarchive(*deserialize_into);
     return deserialize_into;
+  }
+
+  py::array_t<float> getWeights(uint32_t layer_index) {
+    if (layer_index >= _num_layers) {
+      return py::none();
+    }
+
+    float* mem = _layers[layer_index]->getWeights();
+
+    py::capsule free_when_done(
+        mem, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+    size_t dim = _layers.at(layer_index)->getDim();
+    size_t prev_dim =
+        (layer_index > 0) ? _layers.at(layer_index - 1)->getDim() : _input_dim;
+
+    return py::array_t<float>({dim, prev_dim},
+                              {prev_dim * sizeof(float), sizeof(float)}, mem,
+                              free_when_done);
+  }
+
+  void setWeights(
+      uint32_t layer_index,
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          new_weights) {
+    int64_t dim = _layers.at(layer_index)->getDim();
+    int64_t prev_dim =
+        (layer_index > 0) ? _layers.at(layer_index - 1)->getDim() : _input_dim;
+
+    if (new_weights.ndim() != 2) {
+      std::stringstream err;
+      err << "Expected weight matrix to have 2 dimensions, received matrix "
+             "with "
+          << new_weights.ndim() << " dimensions.";
+      throw std::invalid_argument(err.str());
+    }
+    if (new_weights.shape(0) != dim || new_weights.shape(1) != prev_dim) {
+      std::stringstream err;
+      err << "Expected weight matrix to have dim (" << dim << ", " << prev_dim
+          << ") received matrix with dim (" << new_weights.shape(0) << ", "
+          << new_weights.shape(1) << ").";
+      throw std::invalid_argument(err.str());
+    }
+
+    _layers.at(layer_index)->setWeights(new_weights.data());
+  }
+
+  void setBiases(
+      uint32_t layer_index,
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          new_biases) {
+    int64_t dim = _layers.at(layer_index)->getDim();
+    if (new_biases.ndim() != 1) {
+      std::stringstream err;
+      err << "Expected weight matrix to have 1 dimension, received matrix "
+             "with "
+          << new_biases.ndim() << " dimensions.";
+      throw std::invalid_argument(err.str());
+    }
+    if (new_biases.shape(0) != dim) {
+      std::stringstream err;
+      err << "Expected weight matrix to have dim " << dim
+          << " received matrix with dim " << new_biases.shape(0) << ".";
+      throw std::invalid_argument(err.str());
+    }
+
+    _layers.at(layer_index)->setBiases(new_biases.data());
+  }
+
+  py::array_t<float> getBiases(uint32_t layer_index) {
+    if (layer_index >= _num_layers) {
+      return py::none();
+    }
+
+    float* mem = _layers[layer_index]->getBiases();
+
+    py::capsule free_when_done(
+        mem, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+    size_t dim = _layers.at(layer_index)->getDim();
+
+    return py::array_t<float>({dim}, {sizeof(float)}, mem, free_when_done);
   }
 
  private:
@@ -262,7 +347,7 @@ class PyDLRM final : public DLRM {
       : DLRM(embedding_config, std::move(bottom_mlp_configs),
              std::move(top_mlp_configs), input_dim) {}
 
-  std::pair<MetricData,
+  std::pair<InferenceMetricData,
             py::array_t<float, py::array::c_style | py::array::forcecast>>
   predict(const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
           const std::vector<std::string>& metrics = {}, bool verbose = true,

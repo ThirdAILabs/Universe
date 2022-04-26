@@ -1,4 +1,5 @@
 #include "Flash.h"
+#include <wrappers/src/LicenseWrapper.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <hashtable/src/VectorHashTable.h>
 #include <algorithm>
@@ -15,8 +16,10 @@ Flash<LABEL_T>::Flash(const hashing::HashFunction& function)
     : _function(function),
       _num_tables(_function.numTables()),
       _range(_function.range()),
-      _hashtable(new hashtable::VectorHashTable<LABEL_T, false>(_num_tables,
-                                                                _range)) {}
+      _hashtable(
+          new hashtable::VectorHashTable<LABEL_T, false>(_num_tables, _range)) {
+  thirdai::licensing::LicenseWrapper::checkLicense();
+}
 
 template <typename LABEL_T>
 Flash<LABEL_T>::Flash(const hashing::HashFunction& function,

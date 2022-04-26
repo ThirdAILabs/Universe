@@ -74,7 +74,7 @@ def test_error_inputs():
 
     # We have a time assertion because should catch input errors quickly and
     # not e.g. build any big objects with invalid input
-    assert end - start < 0.01
+    assert end - start < 0.1
 
 
 @pytest.mark.unit
