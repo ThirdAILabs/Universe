@@ -10,6 +10,6 @@ USER thirdai
 ADD ColBERT saved 
 RUN \
   # Install ColBERT model and dependencies
-  pip3 install torch transformers ujson; \  
+  pip3 install torch transformers ujson --extra-index-url https://download.pytorch.org/whl/cpu; \  
   cd saved ; \
   pip3 install .

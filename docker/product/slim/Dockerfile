@@ -22,7 +22,8 @@ RUN DEBIAN_FRONTEND=noninteractive \
     cmake \
     python3 \
     python3-dev \
-    pip
+    pip \
+    wget
 RUN /Universe/bin/build.py -f THIRDAI_CHECK_LICENSE THIRDAI_BUILD_LICENSE
 
 
