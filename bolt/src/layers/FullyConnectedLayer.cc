@@ -358,11 +358,11 @@ std::vector<float> FullyConnectedLayer::getBiases() {
   return _biases;
 }
 
-void FullyConnectedLayer::setWeights(const std::vector<float> new_weights) {
+void FullyConnectedLayer::setWeights(const std::vector<float>& new_weights) {
   if (new_weights.size() != _weights.size()) {
     throw std::invalid_argument("Weights should have size = dim * prev_dim.");
   }
-  _weights = std::vector<float>(new_weights);
+  _weights = new_weights; // C++ copies by default
 }
 
 void FullyConnectedLayer::setBiases(const std::vector<float>& new_biases) {
