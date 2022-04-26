@@ -50,9 +50,9 @@ class ConvLayer final : public SequentialLayer {
 
   std::vector<float> getBiases() final;
 
-  void setWeights(const std::vector<float> new_weights) final;
+  void setWeights(const std::vector<float>& new_weights) final;
 
-  void setBiases(const std::vector<float> new_biases) final;
+  void setBiases(const std::vector<float>& new_biases) final;
 
  private:
   // can't be inlined .cc if part of an interface. see here:

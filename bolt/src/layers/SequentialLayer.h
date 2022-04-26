@@ -36,9 +36,9 @@ class SequentialLayer {
 
   virtual std::vector<float> getBiases() = 0;
 
-  virtual void setWeights(const std::vector<float> new_weights) = 0;
+  virtual void setWeights(const std::vector<float>& new_weights) = 0;
 
-  virtual void setBiases(const std::vector<float> new_biases) = 0;
+  virtual void setBiases(const std::vector<float>& new_biases) = 0;
 
   virtual ~SequentialLayer() = default;
 };

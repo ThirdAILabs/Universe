@@ -349,27 +349,22 @@ void FullyConnectedLayer::shuffleRandNeurons() {
   }
 }
 
-std::vector<float> FullyConnectedLayer::getWeights() {
-  std::vector<float> weights_copy(_weights);
-  return weights_copy;
-}
+std::vector<float> FullyConnectedLayer::getWeights() { return _weights; }
 
-std::vector<float> FullyConnectedLayer::getBiases() {
-  return _biases;
-}
+std::vector<float> FullyConnectedLayer::getBiases() { return _biases; }
 
 void FullyConnectedLayer::setWeights(const std::vector<float>& new_weights) {
   if (new_weights.size() != _weights.size()) {
     throw std::invalid_argument("Weights should have size = dim * prev_dim.");
   }
-  _weights = new_weights; // C++ copies by default
+  _weights = new_weights;  // C++ copies by default
 }
 
 void FullyConnectedLayer::setBiases(const std::vector<float>& new_biases) {
   if (new_biases.size() != _biases.size()) {
     throw std::invalid_argument("Biases should have size = dim.");
   }
-  _biases = new_biases; // C++ copies by default
+  _biases = new_biases;  // C++ copies by default
 }
 
 }  // namespace thirdai::bolt
