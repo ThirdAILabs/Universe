@@ -368,19 +368,19 @@ std::vector<float> ConvLayer::getWeights() { return _weights; }
 
 std::vector<float> ConvLayer::getBiases() { return _biases; }
 
-void ConvLayer::setWeights(const std::vector<float> new_weights) {
+void ConvLayer::setWeights(const std::vector<float>& new_weights) {
   if (new_weights.size() != _weights.size()) {
     throw std::invalid_argument(
         "Weights should have size = num_patches * num_filters.");
   }
-  _weights = std::vector<float>(new_weights);
+  _weights = new_weights;
 }
 
-void ConvLayer::setBiases(const std::vector<float> new_biases) {
+void ConvLayer::setBiases(const std::vector<float>& new_biases) {
   if (new_biases.size() != _biases.size()) {
     throw std::invalid_argument("Biases should have size = num_filters.");
   }
-  _biases = std::vector<float>(new_biases);
+  _biases = new_biases;
 }
 
 // this function is only called from constructor
