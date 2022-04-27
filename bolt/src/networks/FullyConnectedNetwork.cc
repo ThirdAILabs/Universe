@@ -29,7 +29,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(
     bool is_first = i == 0;
     bool is_last = i == _num_layers - 1;
     if (is_first && is_last) {
-      _layers.push_back(configs[i]->createSingleHiddenLayer(input_dim));
+      _layers.push_back(configs[i]->createSingleLayer(input_dim));
     } else if (is_first) {
       _layers.push_back(
           configs[i]->createInputLayer(input_dim, *configs[i + 1]));
