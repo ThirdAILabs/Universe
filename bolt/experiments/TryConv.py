@@ -1,4 +1,5 @@
 from thirdai import bolt, dataset
+from benchmarks.mlflow_logger import ExperimentLogger
 
 # TODO: make sure it works with birds
 # TODO: calculate num patches in conv layer
@@ -49,17 +50,19 @@ def _define_network(args):
     network = bolt.Network(layers=layers, input_dim=224*224*3)
     return network
      
-def train_conv_birds_325():
-    network = _define_network()
+def train_conv_birds_325(args):
+    network = _define_network(None)
 
-    train_data = dataset.load_bolt_svm_dataset(args.train, 256)
-    test_data = dataset.load_bolt_svm_dataset(args.test, 256)
+    print("FINISHED CREATING NETWORK")
+
+    train_data = dataset.load_bolt_csv_dataset(args["train"], 256)
+    test_data = dataset.load_bolt_csv_dataset(args["test"], 256)
 
     for _ in range(args.epochs):
         network.train(
             train_data,
             bolt.CategoricalCrossEntropyLoss(),
-            args.lr,
+            args["lr"],
             epochs=1,
             rehash=6400,
             rebuild=128000,
@@ -73,7 +76,24 @@ def train_conv_birds_325():
     )
 
 def main():
-    train_conv_birds_325()
+    args = {
+        "train": "/data/augment/train_birds_4x4_v1.txt",
+        "test": "/data/augment/test_birds_4x4.txt",
+        "lr": 0.001,
+        "epochs": 1
+    }
+
+    # with ExperimentLogger(
+    #     experiment_name="ConvLayer Test",
+    #     dataset="birds325",
+    #     algorithm="convolution",
+    #     framework="bolt",
+    #     experiment_args=args,
+    # ) as mlflow_logger:
+    #     train_amzn670(args, mlflow_logger)
+
+    train_conv_birds_325(args)
+
 
 if __name__ == "__main__":
     main()
