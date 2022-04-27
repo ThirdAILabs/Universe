@@ -19,7 +19,8 @@
 
 project = 'thirdai'
 copyright = '2022, t'
-author = 't'
+# Alphabetized by last name
+author = ' Josh Engels, Benito Geordie, Vihan Lakshman, Tharun Medini, Nicholas Meisburger, Anshumali Shrivastava, David Torres, Patrick Yan, Henry Zhang'
 
 
 # -- General configuration ---------------------------------------------------
