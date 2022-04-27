@@ -83,15 +83,15 @@ void createSearchSubmodule(py::module_& module) {
            "document with doc_id was found.")
       .def(
           "query", &PyDocSearch::query, py::arg("query_embeddings"),
-          py::arg("top_k"), py::arg("internal_top_k") = 8192,
+          py::arg("top_k"), py::arg("num_to_rerank") = 8192,
           "Finds the best top_k documents that are most likely to semantically "
           "answer the query. There is an additional optional parameter here "
-          "called internal_top_k that represents how many documents you want "
+          "called num_to_rerank that represents how many documents you want "
           "us to "
-          "internally rerank. The default of 8092 is fine for most use cases.")
+          "internally rerank. The default of 8192 is fine for most use cases.")
       .def("query", &PyDocSearch::queryWithCentroids,
            py::arg("query_embeddings"), py::arg("query_centroid_ids"),
-           py::arg("top_k"), py::arg("internal_top_k") = 8192,
+           py::arg("top_k"), py::arg("num_to_rerank") = 8192,
            "A normal query, except also accepts the ids of the closest centroid"
            "to each of the query_embeddings")
       .def("serialize_to_file", &PyDocSearch::serialize_to_file,
