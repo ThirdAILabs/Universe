@@ -22,7 +22,7 @@ class SequentialLayerConfig {
   virtual std::shared_ptr<SequentialLayer> createOutputLayer(
       const SequentialLayerConfig& prev_config) = 0;
 
-  virtual std::shared_ptr<SequentialLayer> createSingleHiddenLayer(
+  virtual std::shared_ptr<SequentialLayer> createSingleLayer(
       uint64_t input_dim) = 0;
 
   virtual uint64_t getDim() const = 0;
@@ -99,7 +99,7 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
     return createAsSequentialLayer(prev_config.getDim());
   }
 
-  std::shared_ptr<SequentialLayer> createSingleHiddenLayer(uint64_t input_dim) {
+  std::shared_ptr<SequentialLayer> createSingleLayer(uint64_t input_dim) {
     return createAsSequentialLayer(input_dim);
   }
 
@@ -198,7 +198,7 @@ class ConvLayerConfig final : public SequentialLayerConfig {
     throw std::invalid_argument("ConvLayer not supported as final layer.");
   }
 
-  std::shared_ptr<SequentialLayer> createSingleHiddenLayer(uint64_t input_dim) {
+  std::shared_ptr<SequentialLayer> createSingleLayer(uint64_t input_dim) {
     (void)input_dim;
     throw std::invalid_argument("ConvLayer not supported as final layer.");
   }

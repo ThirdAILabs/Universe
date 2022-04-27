@@ -39,7 +39,7 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<thirdai::bolt::SequentialLayerConfig,
              std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>(
-      bolt_submodule, "SequentialLayerConfig");
+      bolt_submodule, "Sequential");
 
   py::class_<thirdai::bolt::FullyConnectedLayerConfig,
              std::shared_ptr<thirdai::bolt::FullyConnectedLayerConfig>,

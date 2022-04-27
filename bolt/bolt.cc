@@ -74,7 +74,7 @@ std::string getStrValue(toml::table const* table, const std::string& key,
 }
 
 std::vector<std::shared_ptr<bolt::SequentialLayerConfig>>
-createSequentialLayerConfigs(toml::node_view<toml::node> configs) {
+createFullyConnectedLayerConfigs(toml::node_view<toml::node> configs) {
   if (!configs.is_array_of_tables()) {
     std::cerr
         << "Invalid config file format: expected array of layer config tables."
@@ -195,7 +195,7 @@ std::string findFullFilepath(const std::string& filename) {
 }
 
 void trainFCN(toml::table& config) {
-  auto layers = createSequentialLayerConfigs(config["layers"]);
+  auto layers = createFullyConnectedLayerConfigs(config["layers"]);
 
   if (!config.contains("dataset") || !config["dataset"].is_table()) {
     std::cerr << "Invalid config file format: expected table for dataset info."
@@ -300,8 +300,9 @@ ClickThroughDataset loadClickThroughDataset(const std::string& filename,
 
 void trainDLRM(toml::table& config) {
   auto embedding_layer = createEmbeddingLayerConfig(config);
-  auto bottom_mlp = createSequentialLayerConfigs(config["bottom_mlp_layers"]);
-  auto top_mlp = createSequentialLayerConfigs(config["top_mlp_layers"]);
+  auto bottom_mlp =
+      createFullyConnectedLayerConfigs(config["bottom_mlp_layers"]);
+  auto top_mlp = createFullyConnectedLayerConfigs(config["top_mlp_layers"]);
 
   if (!config.contains("dataset") || !config["dataset"].is_table()) {
     std::cerr << "Invalid config file format: expected table for dataset info."

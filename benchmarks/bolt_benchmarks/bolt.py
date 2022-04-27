@@ -66,7 +66,7 @@ def log_training_metrics(metrics: Dict[str, List[float]]):
 
 def create_fully_connected_layer_configs(
     configs: List[Dict[str, Any]]
-) -> List[bolt.SequentialLayer]:
+) -> List[bolt.FullyConnected]:
     layers = []
     for config in configs:
         layer = bolt.FullyConnected(
