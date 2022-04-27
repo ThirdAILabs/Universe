@@ -71,13 +71,13 @@ class DLRMTestFixture : public testing::Test {
 // }
 
 TEST_F(DLRMTestFixture, NoisyCategoricalFeatures) {
-  std::vector<std::shared_ptr<SequentialLayerConfig>> bottom_mlp = {
+  SequentialConfigList bottom_mlp = {
       std::make_shared<FullyConnectedLayerConfig>(200,
                                                   ActivationFunction::ReLU)};
 
   EmbeddingLayerConfig embedding_layer = EmbeddingLayerConfig(8, 16, 12);
 
-  std::vector<std::shared_ptr<SequentialLayerConfig>> top_mlp = {
+  SequentialConfigList top_mlp = {
       std::make_shared<FullyConnectedLayerConfig>(
           1000, 0.1, ActivationFunction::ReLU, SamplingConfig(2, 32, 6, 32)),
       std::make_shared<FullyConnectedLayerConfig>(n_classes,
@@ -94,13 +94,13 @@ TEST_F(DLRMTestFixture, NoisyCategoricalFeatures) {
 }
 
 TEST_F(DLRMTestFixture, NoisyDenseFeatures) {
-  std::vector<std::shared_ptr<SequentialLayerConfig>> bottom_mlp = {
+  SequentialConfigList bottom_mlp = {
       std::make_shared<FullyConnectedLayerConfig>(200,
                                                   ActivationFunction::ReLU)};
 
   EmbeddingLayerConfig embedding_layer = EmbeddingLayerConfig(8, 16, 12);
 
-  std::vector<std::shared_ptr<SequentialLayerConfig>> top_mlp = {
+  SequentialConfigList top_mlp = {
       std::make_shared<FullyConnectedLayerConfig>(
           1000, 0.1, ActivationFunction::ReLU, SamplingConfig(2, 32, 6, 32)),
       std::make_shared<FullyConnectedLayerConfig>(n_classes,
@@ -117,13 +117,13 @@ TEST_F(DLRMTestFixture, NoisyDenseFeatures) {
 }
 
 TEST_F(DLRMTestFixture, NoisyDenseAndCategoricalFeatures) {
-  std::vector<std::shared_ptr<SequentialLayerConfig>> bottom_mlp = {
+  SequentialConfigList bottom_mlp = {
       std::make_shared<FullyConnectedLayerConfig>(200,
                                                   ActivationFunction::ReLU)};
 
   EmbeddingLayerConfig embedding_layer = EmbeddingLayerConfig(8, 16, 12);
 
-  std::vector<std::shared_ptr<SequentialLayerConfig>> top_mlp = {
+  SequentialConfigList top_mlp = {
       std::make_shared<FullyConnectedLayerConfig>(
           1000, 0.1, ActivationFunction::ReLU, SamplingConfig(2, 32, 6, 32)),
       std::make_shared<FullyConnectedLayerConfig>(n_classes,

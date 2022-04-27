@@ -18,7 +18,9 @@ def _define_network(args):
                 reservoir_size=128,
             ),
         ),
-        bolt.FullyConnected(dim=2, activation_function=bolt.ActivationFunctions.Softmax),
+        bolt.FullyConnected(
+            dim=2, activation_function=bolt.ActivationFunctions.Softmax
+        ),
     ]
     network = bolt.Network(layers=layers, input_dim=100000)
     return network

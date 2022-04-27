@@ -8,11 +8,9 @@
 
 namespace thirdai::bolt {
 
-DLRM::DLRM(
-    EmbeddingLayerConfig embedding_config,
-    std::vector<std::shared_ptr<SequentialLayerConfig>> bottom_mlp_configs,
-    std::vector<std::shared_ptr<SequentialLayerConfig>> top_mlp_configs,
-    uint32_t dense_feature_dim)
+DLRM::DLRM(EmbeddingLayerConfig embedding_config,
+           SequentialConfigList bottom_mlp_configs,
+           SequentialConfigList top_mlp_configs, uint32_t dense_feature_dim)
     : _embedding_layer(embedding_config),
       _bottom_mlp(bottom_mlp_configs, dense_feature_dim),
       _top_mlp(top_mlp_configs, (embedding_config.lookup_size *

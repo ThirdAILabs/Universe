@@ -24,9 +24,7 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
   friend class DLRM;
 
  public:
-  FullyConnectedNetwork(
-      std::vector<std::shared_ptr<SequentialLayerConfig>> configs,
-      uint32_t input_dim);
+  FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim);
 
   void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
 

@@ -4,27 +4,31 @@
 
 namespace thirdai::bolt {
 
-ConvLayer::ConvLayer(uint64_t num_filters, float sparsity,
-                     ActivationFunction act_func,
-                     SamplingConfig sampling_config,
-                     std::pair<uint32_t, uint32_t> kernel_size,
-                     uint32_t num_patches, uint64_t prev_dim,
+ConvLayer::ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
                      uint32_t prev_num_filters,
                      uint32_t prev_num_sparse_filters,
                      std::pair<uint32_t, uint32_t> next_kernel_size)
-    : _dim(num_filters * num_patches),
+    : _dim(config.num_filters * config.num_patches),
       _prev_dim(prev_dim),
-      _sparse_dim(sparsity * num_filters * num_patches),
-      _sparsity(sparsity),
-      _act_func(act_func),
-      _sampling_config(sampling_config),
+      _sparse_dim(config.sparsity * config.num_filters * config.num_patches),
+      _sparsity(config.sparsity),
+      _act_func(config.act_func),
+      _sampling_config(config.sampling_config),
       _force_sparse_for_inference(false),
-      _num_filters(num_filters),
-      _num_sparse_filters(num_filters * sparsity),
-      _num_patches(num_patches),
+      _num_filters(config.num_filters),
+      _num_sparse_filters(config.num_filters * config.sparsity),
+      _num_patches(config.num_patches),
       _prev_num_filters(prev_num_filters),
       _prev_num_sparse_filters(prev_num_sparse_filters),
-      _kernel_size(kernel_size.first * kernel_size.second) {
+      _kernel_size(config.kernel_size.first * config.kernel_size.second) {
+  if (_act_func != ActivationFunction::ReLU)
+    throw std::invalid_argument(
+        "Conv layers currently support only ReLU Activation.");
+
+  if (config.kernel_size.first != config.kernel_size.second)
+    throw std::invalid_argument(
+        "Conv layers currently support only square kernels.");
+
   _patch_dim = _kernel_size * _prev_num_filters;
   _sparse_patch_dim = _kernel_size * _prev_num_sparse_filters;
 
