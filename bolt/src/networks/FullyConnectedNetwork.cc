@@ -1,5 +1,7 @@
 #include "FullyConnectedNetwork.h"
 #include <wrappers/src/LicenseWrapper.h>
+#include <bolt/src/layers/ConvLayer.h>
+#include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <algorithm>
@@ -26,18 +28,44 @@ FullyConnectedNetwork::FullyConnectedNetwork(
   for (uint32_t i = 0; i < _num_layers; i++) {
     std::cout << *configs[i] << std::endl;
 
-    bool is_first = i == 0;
-    bool is_last = i == _num_layers - 1;
-    if (is_first && is_last) {
-      _layers.push_back(configs[i]->createSingleLayer(input_dim));
-    } else if (is_first) {
+    uint64_t prev_dim = i == 0 ? input_dim : configs[i - 1]->getDim();
+
+    // if FullyConnectedConfig
+    if (auto fully_connected_config =
+            std::dynamic_pointer_cast<FullyConnectedLayerConfig>(configs[i])) {
+      _layers.push_back(std::make_shared<FullyConnectedLayer>(
+          *fully_connected_config, prev_dim));
+      // if ConvConfig
+    } else if (auto conv_config =
+                   std::static_pointer_cast<ConvLayerConfig>(configs[i])) {
+      if (i == _num_layers - 1)
+        throw std::invalid_argument("ConvLayer not supported as final layer.");
+      uint64_t prev_channels;
+      uint64_t prev_sparse_channels;
+      if (i == 0) {
+        // TODO(david): handle 3d input, change hardcoded input channels
+        prev_channels = 3;
+        prev_sparse_channels = 3;
+      } else {
+        if (auto prev_conv_config =
+                std::dynamic_pointer_cast<ConvLayerConfig>(configs[i - 1])) {
+          prev_channels = prev_conv_config->num_filters;
+          prev_sparse_channels =
+              prev_conv_config->num_filters * prev_conv_config->sparsity;
+        } else {
+          throw std::invalid_argument(
+              "ConvLayer can only come after input or another ConvLayer");
+        }
+      }
+      auto next_conv_config =
+          std::dynamic_pointer_cast<ConvLayerConfig>(configs[i + 1]);
+      std::pair<uint32_t, uint32_t> next_kernel_size =
+          next_conv_config ? next_conv_config->kernel_size
+                           : std::make_pair<uint32_t, uint32_t>(1, 1);
+
       _layers.push_back(
-          configs[i]->createInputLayer(input_dim, *configs[i + 1]));
-    } else if (is_last) {
-      _layers.push_back(configs[i]->createOutputLayer(*configs[i - 1]));
-    } else {
-      _layers.push_back(
-          configs[i]->createHiddenLayer(*configs[i - 1], *configs[i + 1]));
+          std::make_shared<ConvLayer>(*conv_config, prev_dim, prev_channels,
+                                      prev_sparse_channels, next_kernel_size));
     }
   }
 

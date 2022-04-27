@@ -8,25 +8,23 @@
 
 namespace thirdai::bolt {
 
-FullyConnectedLayer::FullyConnectedLayer(uint64_t dim, float sparsity,
-                                         ActivationFunction act_func,
-                                         SamplingConfig sampling_config,
-                                         uint64_t prev_dim)
-    : _dim(dim),
+FullyConnectedLayer::FullyConnectedLayer(
+    const FullyConnectedLayerConfig& config, uint64_t prev_dim)
+    : _dim(config.dim),
       _prev_dim(prev_dim),
-      _sparse_dim(sparsity * dim),
-      _sparsity(sparsity),
-      _act_func(act_func),
-      _weights(dim * prev_dim),
-      _w_gradient(dim * prev_dim, 0),
-      _w_momentum(dim * prev_dim, 0),
-      _w_velocity(dim * prev_dim, 0),
-      _biases(dim),
-      _b_gradient(dim, 0),
-      _b_momentum(dim, 0),
-      _b_velocity(dim, 0),
-      _is_active(dim, false),
-      _sampling_config(sampling_config),
+      _sparse_dim(config.sparsity * config.dim),
+      _sparsity(config.sparsity),
+      _act_func(config.act_func),
+      _weights(config.dim * prev_dim),
+      _w_gradient(config.dim * prev_dim, 0),
+      _w_momentum(config.dim * prev_dim, 0),
+      _w_velocity(config.dim * prev_dim, 0),
+      _biases(config.dim),
+      _b_gradient(config.dim, 0),
+      _b_momentum(config.dim, 0),
+      _b_velocity(config.dim, 0),
+      _is_active(config.dim, false),
+      _sampling_config(config.sampling_config),
       _force_sparse_for_inference(false) {
   std::random_device rd;
   std::default_random_engine eng(rd());
