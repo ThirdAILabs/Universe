@@ -6,5 +6,15 @@
 Welcome to thirdai's documentation!
 ===================================
 
-.. automodule:: thirdai.search
-    :members:
+This is the *complete* API documentation for the ThirdAI python package. 
+To get access to our package, refer to `thirdai.com
+<https://www.thirdai.com/>`_. Once you have access, you can simply run
+``import thirdai`` in a python notebook or script! The following packages
+contain complete documentation for each of the submodules within thirdai.
+
+.. toctree::
+   :maxdepth: 2
+
+   thirdaisearch
+   thirdaibolt
+
