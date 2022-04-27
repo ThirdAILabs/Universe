@@ -117,6 +117,8 @@ class FullyConnectedLayer {
   bool _prev_is_dense;
   bool _this_is_dense;
   // This is only used if _prev_is_dense == false and _this_is_dense == false
+  // This is a vector of unique_ptr so that the push_back in the critical
+  // region is just a pointer move and can be very fast
   std::vector<std::unique_ptr<ActiveNeuronsPair>> _active_pairs;
   // This is only used if _prev_is_dense == false
   std::vector<bool> _prev_is_active;
@@ -126,29 +128,30 @@ class FullyConnectedLayer {
   bool _force_sparse_for_inference;
 
  private:
-  inline void updateSparseSparseWeightGradients(float lr, float B1, float B2,
+  inline void updateSparseSparseWeightParameters(float lr, float B1, float B2,
+                                                 float eps,
+                                                 float B1_bias_corrected,
+                                                 float B2_bias_corrected);
+  inline void updateSparseDenseWeightParameters(float lr, float B1, float B2,
                                                 float eps,
                                                 float B1_bias_corrected,
                                                 float B2_bias_corrected);
-  inline void updateSparseDenseWeightGradients(float lr, float B1, float B2,
+  inline void updateDenseSparseWeightParameters(float lr, float B1, float B2,
+                                                float eps,
+                                                float B1_bias_corrected,
+                                                float B2_bias_corrected);
+  inline void updateDenseDenseWeightParameters(float lr, float B1, float B2,
                                                float eps,
                                                float B1_bias_corrected,
                                                float B2_bias_corrected);
-  inline void updateDenseSparseWeightGradients(float lr, float B1, float B2,
-                                               float eps,
-                                               float B1_bias_corrected,
-                                               float B2_bias_corrected);
-  inline void updateDenseDenseWeightGradients(float lr, float B1, float B2,
-                                              float eps,
-                                              float B1_bias_corrected,
-                                              float B2_bias_corrected);
-  inline void updateWeightGradient(uint64_t prev_neuron, uint64_t cur_neuron,
-                                   float lr, float B1, float B2, float eps,
+  inline void updateSingleWeightParameters(uint64_t prev_neuron,
+                                           uint64_t cur_neuron, float lr,
+                                           float B1, float B2, float eps,
+                                           float B1_bias_corrected,
+                                           float B2_bias_corrected);
+  inline void updateBiasParameters(float lr, float B1, float B2, float eps,
                                    float B1_bias_corrected,
                                    float B2_bias_corrected);
-  inline void updateBiasGradients(float lr, float B1, float B2, float eps,
-                                  float B1_bias_corrected,
-                                  float B2_bias_corrected);
   inline void cleanupWithinBatchVars();
 
   template <bool DENSE, bool PREV_DENSE>
