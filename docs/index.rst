@@ -6,15 +6,5 @@
 Welcome to thirdai's documentation!
 ===================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. automodule:: thirdai.search
+    :members:

@@ -30,6 +30,4 @@ thirdai.egg-info
 !docker/product/slim/license-public-key.der
 
 # Docs
-docs/_build
-docs/_static
-docs/_templates
+docs/_*
