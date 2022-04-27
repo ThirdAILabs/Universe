@@ -2,12 +2,15 @@
 
 #include <dataset/src/Dataset.h>
 #include <dataset/src/Vectors.h>
+#include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/batch_types/BoltInputBatch.h>
 #include <dataset/src/batch_types/SparseBatch.h>
 #include <sys/types.h>
 #include <algorithm>
+#include <cstddef>
 #include <iostream>
 #include <fstream>
+#include <limits>
 #include <memory>
 #include <random>
 #include <sstream>
@@ -19,7 +22,6 @@
 #include <iomanip>
 #include "InProgressVector.h"
 #include "Date.h"
-#include <bolt/src/layers/BoltVector.h>
 
 namespace thirdai::schema {
 
@@ -90,16 +92,16 @@ class DataLoader {
       start = end + 1;
     }
     
-    addVector(_line_buf, _input_blocks, _inputs_for_next_export);
-    addVector(_line_buf, _label_blocks, _labels_for_next_export);
+    addVector(_line_buf, _input_blocks, _input_vectors);
+    addVector(_line_buf, _label_blocks, _label_vectors);
   }
 
-  dataset::InMemoryDataset<dataset::BoltInputBatch> exportDataset(uint32_t max_exported=num, bool shuffle=true) {
-    assert(_inputs_for_next_export.size() == _labels_for_next_export.size());
-    uint32_t n_elems = _inputs_for_next_export.size();
+  dataset::InMemoryDataset<dataset::BoltInputBatch> exportDataset(size_t max_exported=std::numeric_limits<size_t>::max(), bool shuffle=true) {
+    assert(_input_vectors.size() == _label_vectors.size());
+    uint32_t n_exported = std::min(_input_vectors.size(), max_exported);
 
-    std::vector<uint32_t> positions(n_elems);
-    for (uint32_t i = 0; i < n_elems; i++) {
+    std::vector<uint32_t> positions(n_exported);
+    for (uint32_t i = 0; i < n_exported; i++) {
       positions[i] = i;
     }
 
@@ -110,21 +112,27 @@ class DataLoader {
 
     std::vector<dataset::BoltInputBatch> batches;
 
-    for (uint32_t i = 0; i < n_elems; i += _batch_size) {
+    for (uint32_t i = 0; i < n_exported; i += _batch_size) {
       std::vector<bolt::BoltVector> batch_inputs;
       std::vector<bolt::BoltVector> batch_labels;
-      for (uint32_t j = 0; j < std::min(_batch_size, n_elems - i); j++) {
-        batch_inputs.push_back(std::move(_inputs_for_next_export[positions[j]]));
-        batch_labels.push_back(std::move(_labels_for_next_export[positions[j]]));
+      for (uint32_t j = 0; j < std::min(_batch_size, n_exported - i); j++) {
+        batch_inputs.push_back(std::move(_input_vectors[positions[j]]));
+        batch_labels.push_back(std::move(_label_vectors[positions[j]]));
       }
       batches.emplace_back(std::move(batch_inputs), std::move(batch_labels));
     }
+
+    _input_vectors.insert(_input_vectors.begin(), _input_vectors.begin() + n_exported, _input_vectors.end());
+    _input_vectors.resize(_input_vectors.size() - n_exported);
+    
+    _label_vectors.insert(_label_vectors.begin(), _label_vectors.begin() + n_exported, _label_vectors.end());
+    _label_vectors.resize(_label_vectors.size() - n_exported);
     
 
-    std::cout << "Exporting Bolt dataset with " << n_elems << " elements." << std::endl;
+    std::cout << "Exporting Bolt dataset with " << n_exported << " elements." << std::endl;
 
     // Then move to dataset
-    return { std::move(batches), n_elems };
+    return { std::move(batches), n_exported };
   }
 
  private:
@@ -152,8 +160,8 @@ class DataLoader {
   size_t _label_dim = 0;
   size_t _line_length = 0;
   uint32_t _batch_size;
-  std::vector<bolt::BoltVector> _inputs_for_next_export;
-  std::vector<bolt::BoltVector> _labels_for_next_export;
+  std::vector<bolt::BoltVector> _input_vectors;
+  std::vector<bolt::BoltVector> _label_vectors;
   std::vector<std::string_view> _line_buf; // TODO(Geordie): Initialize
   std::vector<std::unique_ptr<ABlock>> _input_blocks;
   std::vector<std::unique_ptr<ABlock>> _label_blocks;
