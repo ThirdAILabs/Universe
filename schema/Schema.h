@@ -94,7 +94,7 @@ class DataLoader {
     addVector(_line_buf, _label_blocks, _labels_for_next_export);
   }
 
-  dataset::InMemoryDataset<dataset::BoltInputBatch> exportDataset(bool shuffle=true) {
+  dataset::InMemoryDataset<dataset::BoltInputBatch> exportDataset(uint32_t max_exported=num, bool shuffle=true) {
     assert(_inputs_for_next_export.size() == _labels_for_next_export.size());
     uint32_t n_elems = _inputs_for_next_export.size();
 
