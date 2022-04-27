@@ -1,7 +1,6 @@
 #include "ConvLayer.h"
 #include "FullyConnectedLayer.h"
 #include <random>
-#include <tuple>
 
 namespace thirdai::bolt {
 
@@ -29,8 +28,7 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
 
   _num_filters = config.dim;
   _num_sparse_filters = _num_filters * _sparsity;
-  _kernel_size =
-      std::get<0>(config.kernel_size) * std::get<1>(config.kernel_size);
+  _kernel_size = config.kernel_size.first * config.kernel_size.second;
 
   _patch_dim = _kernel_size * _prev_num_filters;
   _sparse_patch_dim = _kernel_size * _prev_num_sparse_filters;
@@ -71,14 +69,11 @@ ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow);
 
-    buildHashTables();  // NOLINT calling virtual function from constructor of
-                        // inhereted class
+    buildHashTables();
 
     _rand_neurons = std::vector<uint32_t>(_num_filters);
 
-    int rn = 0;
-    std::generate(_rand_neurons.begin(), _rand_neurons.end(),
-                  [&]() { return rn++; });
+    std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
   }
 }
@@ -146,7 +141,7 @@ void ConvLayer::forwardImpl(const BoltVector& input, BoltVector& output) {
           input, output, in_patch, out_idx, prev_active_filters,
           effective_patch_dim);
       assert(!std::isnan(act));
-      output.activations[out_idx] = std::max(0.0f, act);
+      output.activations[out_idx] = std::max(0.0F, act);
     }
   }
 }
@@ -257,19 +252,17 @@ void ConvLayer::selectActiveFilters(
   // hash a section of the input (the input patch) and populate a section of the
   // output (the output patch) with that input's active filters (with an offset)
   std::unordered_set<uint32_t> active_set;
-  uint32_t* hashes = new uint32_t[_hash_table->numTables()];
+  std::vector<uint32_t> hashes(_hasher->numTables());
   if (PREV_DENSE) {
     _hasher->hashSingleDense(&input.activations[in_patch * _patch_dim],
-                             _patch_dim, hashes);
+                             _patch_dim, hashes.data());
   } else {
     _hasher->hashSingleSparse(
         prev_active_filters.data() + in_patch * _sparse_patch_dim,
         &input.activations[in_patch * _sparse_patch_dim], _sparse_patch_dim,
-        hashes);
+        hashes.data());
   }
-  _hash_table->queryBySet(hashes, active_set);
-
-  delete[] hashes;
+  _hash_table->queryBySet(hashes.data(), active_set);
 
   if (active_set.size() < _num_sparse_filters) {
     uint32_t rand_offset = rand() % _num_filters;
@@ -340,7 +333,7 @@ void ConvLayer::updateParameters(float lr, uint32_t iter, float B1, float B2,
 }
 
 void ConvLayer::reBuildHashFunction() {
-  if (_sparsity >= 1.0) {
+  if (_sparsity >= 1.0 || _force_sparse_for_inference) {
     return;
   }
   _hasher = std::make_unique<hashing::DWTAHashFunction>(
@@ -349,27 +342,52 @@ void ConvLayer::reBuildHashFunction() {
 }
 
 void ConvLayer::buildHashTables() {
-  if (_sparsity >= 1.0) {
+  if (_sparsity >= 1.0 || _force_sparse_for_inference) {
     return;
   }
   uint64_t num_tables = _hash_table->numTables();
-  uint32_t* hashes = new uint32_t[num_tables * _num_filters];
-
+  std::vector<uint32_t> hashes(num_tables * _num_filters);
 #pragma omp parallel for default(none) shared(num_tables, hashes)
   for (uint64_t n = 0; n < _num_filters; n++) {
     _hasher->hashSingleDense(_weights.data() + n * _patch_dim, _patch_dim,
-                             hashes + n * num_tables);
+                             hashes.data() + n * num_tables);
   }
 
   _hash_table->clearTables();
-  _hash_table->insertSequential(_num_filters, 0, hashes);
+  _hash_table->insertSequential(_num_filters, 0, hashes.data());
+}
 
-  delete[] hashes;
+void ConvLayer::shuffleRandNeurons() {
+  if (_sparsity < 1.0 && !_force_sparse_for_inference) {
+    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(),
+                 std::random_device{});
+  }
+}
+
+float* ConvLayer::getWeights() {
+  float* weights_copy = new float[_dim * _prev_dim];
+  std::copy(_weights.begin(), _weights.end(), weights_copy);
+
+  return weights_copy;
+}
+
+float* ConvLayer::getBiases() {
+  float* biases_copy = new float[_dim];
+  std::copy(_biases.begin(), _biases.end(), biases_copy);
+
+  return biases_copy;
+}
+
+void ConvLayer::setWeights(const float* new_weights) {
+  std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
+}
+
+void ConvLayer::setBiases(const float* new_biases) {
+  std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
 // this function is only called from constructor
-void ConvLayer::buildPatchMaps(
-    std::tuple<uint32_t, uint32_t> next_kernel_size) {
+void ConvLayer::buildPatchMaps(std::pair<uint32_t, uint32_t> next_kernel_size) {
   /** TODO(David): btw this will be factored out soon into an N-tower model and
   a patch remapping
 
@@ -404,7 +422,7 @@ void ConvLayer::buildPatchMaps(
     8  9  10 11          8  9  12 13
     12 13 14 15          10 11 14 15
   **/
-  if (std::get<0>(next_kernel_size) != std::get<1>(next_kernel_size)) {
+  if (next_kernel_size.first != next_kernel_size.second) {
     throw std::invalid_argument(
         "Conv layers currently support only square kernels.");
   }
@@ -412,7 +430,7 @@ void ConvLayer::buildPatchMaps(
   _in_to_out = std::vector<uint32_t>(_num_patches);
   _out_to_in = std::vector<uint32_t>(_num_patches);
 
-  uint32_t next_filter_length = std::get<0>(next_kernel_size);
+  uint32_t next_filter_length = next_kernel_size.first;
   uint32_t num_patches_for_side =
       std::sqrt(_num_patches);  // assumes square images
 

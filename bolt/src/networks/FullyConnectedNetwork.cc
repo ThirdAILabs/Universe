@@ -1,6 +1,7 @@
 #include "FullyConnectedNetwork.h"
 #include <wrappers/src/LicenseWrapper.h>
 #include <bolt/src/layers/ConvLayer.h>
+#include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <algorithm>
@@ -101,11 +102,12 @@ void FullyConnectedNetwork::forward(uint32_t batch_index,
     if (i == 0 && _num_layers == 1) {  // First and last layer
       _layers[0]->forward(input, output, labels);
     } else if (i == 0) {  // First layer
-      _layers[0]->forward(input, _states[0][batch_index]);
+      _layers[0]->forward(input, _states[0][batch_index], nullptr);
     } else if (i == _num_layers - 1) {  // Last layer
       _layers[i]->forward(_states[i - 1][batch_index], output, labels);
     } else {  // Middle layer
-      _layers[i]->forward(_states[i - 1][batch_index], _states[i][batch_index]);
+      _layers[i]->forward(_states[i - 1][batch_index], _states[i][batch_index],
+                          nullptr);
     }
   }
 }

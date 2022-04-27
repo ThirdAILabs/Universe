@@ -46,9 +46,7 @@ FullyConnectedLayer::FullyConnectedLayer(
 
     _rand_neurons = std::vector<uint32_t>(_dim);
 
-    int rn = 0;
-    std::generate(_rand_neurons.begin(), _rand_neurons.end(),
-                  [&]() { return rn++; });
+    std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
   }
 }
@@ -228,21 +226,20 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     active_set.insert(labels->active_neurons[i]);
   }
 
-  uint32_t* hashes = new uint32_t[_hash_table->numTables()];
+  std::vector<uint32_t> hashes(_hasher->numTables());
   if (PREV_DENSE) {
-    _hasher->hashSingleDense(input.activations, input.len, hashes);
+    _hasher->hashSingleDense(input.activations, input.len, hashes.data());
   } else {
     _hasher->hashSingleSparse(input.active_neurons, input.activations,
-                              input.len, hashes);
+                              input.len, hashes.data());
   }
 
   if (_force_sparse_for_inference && _act_func == ActivationFunction::Softmax) {
-    _hash_table->queryAndInsertForInference(hashes, active_set, _sparse_dim);
+    _hash_table->queryAndInsertForInference(hashes.data(), active_set,
+                                            _sparse_dim);
   } else {
-    _hash_table->queryBySet(hashes, active_set);
+    _hash_table->queryBySet(hashes.data(), active_set);
   }
-
-  delete[] hashes;
 
   if (active_set.size() < _sparse_dim) {
     uint32_t rand_offset = rand() % _dim;
@@ -254,7 +251,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
 
   uint32_t cnt = 0;
   for (uint32_t i = 0; i < label_len; i++) {
-    if (cnt >= _sparse_dim) {
+    if (cnt == _sparse_dim) {
       break;
     }
     output.active_neurons[cnt++] = labels->active_neurons[i];
@@ -262,7 +259,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
   }
 
   for (auto x : active_set) {
-    if (cnt >= _sparse_dim) {
+    if (cnt == _sparse_dim) {
       break;
     }
     assert(x < _dim);
@@ -325,18 +322,15 @@ void FullyConnectedLayer::buildHashTables() {
   uint64_t num_tables = _hash_table->numTables();
   // TODO(nicholas): hashes could be array with size max(batch size, dim) that
   // is allocated once
-  uint32_t* hashes = new uint32_t[num_tables * _dim];
-
+  std::vector<uint32_t> hashes(num_tables * _dim);
 #pragma omp parallel for default(none) shared(num_tables, hashes)
   for (uint64_t n = 0; n < _dim; n++) {
     _hasher->hashSingleDense(_weights.data() + n * _prev_dim, _prev_dim,
-                             hashes + n * num_tables);
+                             hashes.data() + n * num_tables);
   }
 
   _hash_table->clearTables();
-  _hash_table->insertSequential(_dim, 0, hashes);
-
-  delete[] hashes;
+  _hash_table->insertSequential(_dim, 0, hashes.data());
 }
 
 void FullyConnectedLayer::reBuildHashFunction() {
