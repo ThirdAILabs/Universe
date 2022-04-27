@@ -31,6 +31,9 @@ struct SequentialLayerConfig {
   virtual void print(std::ostream& out) const = 0;
 };
 
+using SequentialConfigList =
+    std::vector<std::shared_ptr<bolt::SequentialLayerConfig>>;
+
 struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
   uint64_t dim;
   float sparsity;

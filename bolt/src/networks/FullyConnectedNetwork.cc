@@ -13,9 +13,8 @@
 
 namespace thirdai::bolt {
 
-FullyConnectedNetwork::FullyConnectedNetwork(
-    std::vector<std::shared_ptr<SequentialLayerConfig>> configs,
-    uint32_t input_dim)
+FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
+                                             uint32_t input_dim)
     : _input_dim(input_dim),
       _num_layers(configs.size()),
       _sparse_inference_enabled(false) {

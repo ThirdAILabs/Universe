@@ -29,8 +29,7 @@ void createBoltSubmodule(py::module_& module);
 
 class PyNetwork final : public FullyConnectedNetwork {
  public:
-  PyNetwork(std::vector<std::shared_ptr<bolt::SequentialLayerConfig>> configs,
-            uint64_t input_dim)
+  PyNetwork(SequentialConfigList configs, uint64_t input_dim)
       : FullyConnectedNetwork(std::move(configs), input_dim) {}
 
   MetricData train(
@@ -340,12 +339,9 @@ class PyNetwork final : public FullyConnectedNetwork {
 
 class PyDLRM final : public DLRM {
  public:
-  PyDLRM(
-      bolt::EmbeddingLayerConfig embedding_config,
-      std::vector<std::shared_ptr<bolt::SequentialLayerConfig>>
-          bottom_mlp_configs,
-      std::vector<std::shared_ptr<bolt::SequentialLayerConfig>> top_mlp_configs,
-      uint32_t input_dim)
+  PyDLRM(bolt::EmbeddingLayerConfig embedding_config,
+         SequentialConfigList bottom_mlp_configs,
+         SequentialConfigList top_mlp_configs, uint32_t input_dim)
       : DLRM(embedding_config, std::move(bottom_mlp_configs),
              std::move(top_mlp_configs), input_dim) {}
 

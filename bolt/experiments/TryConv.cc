@@ -28,7 +28,7 @@ int main() {  // NOLINT exceptions
   std::pair<uint32_t, uint32_t> kernel_size(2, 2);
   uint32_t num_patches = 196;
 
-  std::vector<std::shared_ptr<bolt::SequentialLayerConfig>> layers;
+  bolt::SequentialConfigList layers;
 
   layers.push_back(std::make_shared<bolt::ConvLayerConfig>(
       16, 1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(3, 64, 9, 5),

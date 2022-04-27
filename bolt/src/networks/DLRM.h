@@ -14,9 +14,8 @@ namespace thirdai::bolt {
 class DLRM : public Model<dataset::ClickThroughBatch> {
  public:
   DLRM(EmbeddingLayerConfig embedding_config,
-       std::vector<std::shared_ptr<SequentialLayerConfig>> bottom_mlp_configs,
-       std::vector<std::shared_ptr<SequentialLayerConfig>> top_mlp_configs,
-       uint32_t dense_feature_dim);
+       SequentialConfigList bottom_mlp_configs,
+       SequentialConfigList top_mlp_configs, uint32_t dense_feature_dim);
 
   uint32_t outputDim() const final { return _top_mlp.outputDim(); }
 

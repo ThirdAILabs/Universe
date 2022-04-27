@@ -73,15 +73,15 @@ std::string getStrValue(toml::table const* table, const std::string& key,
   return table->get(key)->as_string()->get();
 }
 
-std::vector<std::shared_ptr<bolt::SequentialLayerConfig>>
-createFullyConnectedLayerConfigs(toml::node_view<toml::node> configs) {
+bolt::SequentialConfigList createFullyConnectedLayerConfigs(
+    toml::node_view<toml::node> configs) {
   if (!configs.is_array_of_tables()) {
     std::cerr
         << "Invalid config file format: expected array of layer config tables."
         << std::endl;
     exit(1);
   }
-  std::vector<std::shared_ptr<bolt::SequentialLayerConfig>> layers;
+  bolt::SequentialConfigList layers;
 
   auto* array = configs.as_array();
   for (auto& config : *array) {
