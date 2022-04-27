@@ -15,7 +15,9 @@ def _define_network(args):
             dim=256,
             activation_function=bolt.ActivationFunctions.ReLU,
         ),
-        bolt.FullyConnected(dim=10, activation_function=bolt.ActivationFunctions.Softmax),
+        bolt.FullyConnected(
+            dim=10, activation_function=bolt.ActivationFunctions.Softmax
+        ),
     ]
 
     network = bolt.Network(layers=layers, input_dim=784)
@@ -81,7 +83,9 @@ def main():
                 hashes_per_table=4, num_tables=64, range_pow=14, reservoir_size=32
             ),
         ),
-        bolt.FullyConnected(dim=100, activation_function=bolt.ActivationFunctions.Softmax),
+        bolt.FullyConnected(
+            dim=100, activation_function=bolt.ActivationFunctions.Softmax
+        ),
     ]
 
     network = bolt.Network(layers=layers, input_dim=1536)
