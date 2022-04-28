@@ -4,39 +4,33 @@
 
 namespace thirdai::bolt {
 
-ConvLayer::ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
+ConvLayer::ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
                      uint32_t prev_num_filters,
                      uint32_t prev_num_sparse_filters,
                      std::pair<uint32_t, uint32_t> next_kernel_size)
-    : _prev_num_filters(prev_num_filters),
-      _prev_num_sparse_filters(prev_num_sparse_filters) {
-  if (config.kernel_size.first != config.kernel_size.second) {
-    throw std::invalid_argument(
-        "Conv layers currently support only square kernels.");
-  }
-
-  if (config.act_func != ActivationFunction::ReLU) {
+    : _dim(config.num_filters * config.num_patches),
+      _prev_dim(prev_dim),
+      _sparse_dim(config.sparsity * config.num_filters * config.num_patches),
+      _sparsity(config.sparsity),
+      _act_func(config.act_func),
+      _sampling_config(config.sampling_config),
+      _force_sparse_for_inference(false),
+      _num_filters(config.num_filters),
+      _num_sparse_filters(config.num_filters * config.sparsity),
+      _num_patches(config.num_patches),
+      _prev_num_filters(prev_num_filters),
+      _prev_num_sparse_filters(prev_num_sparse_filters),
+      _kernel_size(config.kernel_size.first * config.kernel_size.second) {
+  if (_act_func != ActivationFunction::ReLU)
     throw std::invalid_argument(
         "Conv layers currently support only ReLU Activation.");
-  }
 
-  _prev_dim = prev_dim;
-  _sparsity = config.sparsity;
-  _act_func = config.act_func;
-  _sampling_config = config.sampling_config;
-  _force_sparse_for_inference = false;
-
-  _num_filters = config.dim;
-  _num_sparse_filters = _num_filters * _sparsity;
-  _kernel_size = config.kernel_size.first * config.kernel_size.second;
+  if (config.kernel_size.first != config.kernel_size.second)
+    throw std::invalid_argument(
+        "Conv layers currently support only square kernels.");
 
   _patch_dim = _kernel_size * _prev_num_filters;
   _sparse_patch_dim = _kernel_size * _prev_num_sparse_filters;
-  _num_patches = config.num_patches;  // TODO(david) calculate this instead of
-                                      // passing in. (_prev_dim / _patch_dim?)
-
-  _dim = _num_filters * _num_patches,
-  _sparse_dim = _sparsity * _num_filters * _num_patches,
 
   _weights = std::vector<float>(_num_filters * _patch_dim);
   _w_gradient = std::vector<float>(_num_filters * _patch_dim, 0);
@@ -219,7 +213,7 @@ void ConvLayer::backpropagateImpl(BoltVector& input, BoltVector& output) {
   // loop through every output neuron
   for (uint64_t n = 0; n < len_out; n++) {
     assert(!std::isnan(output.gradients[n]));
-    output.gradients[n] *= actFuncDerivative(output.activations[n]);
+    output.gradients[n] *= actFuncDerivative(output.activations[n], _act_func);
     assert(!std::isnan(output.gradients[n]));
 
     uint32_t act_neuron = DENSE ? n : output.active_neurons[n];

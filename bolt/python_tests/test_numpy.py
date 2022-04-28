@@ -5,7 +5,7 @@ from thirdai import bolt
 
 def train_simple_bolt_model(examples, labels):
     layers = [
-        bolt.LayerConfig(
+        bolt.FullyConnected(
             dim=10, load_factor=1, activation_function=bolt.ActivationFunctions.Softmax
         )
     ]
@@ -35,7 +35,7 @@ def train_sparse_bolt_model(
     x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, inp_dim, n_classes
 ):
     layers = [
-        bolt.LayerConfig(
+        bolt.FullyConnected(
             dim=n_classes,
             load_factor=1,
             activation_function=bolt.getActivationFunction("ReLU"),

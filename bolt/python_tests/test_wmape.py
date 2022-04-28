@@ -12,12 +12,12 @@ def train_bolt_with_wmape(
     y_offsets,
 ):
     layers = [
-        bolt.LayerConfig(
+        bolt.FullyConnected(
             dim=1000,
             load_factor=0.1,
             activation_function=bolt.ActivationFunctions.ReLU,
         ),
-        bolt.LayerConfig(dim=1, activation_function=bolt.ActivationFunctions.Linear),
+        bolt.FullyConnected(dim=1, activation_function=bolt.ActivationFunctions.Linear),
     ]
 
     network = bolt.Network(layers=layers, input_dim=10)
