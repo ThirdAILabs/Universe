@@ -32,7 +32,8 @@ void createDatasetSubmodule(py::module_& module) {
   dataset_submodule.def(
       "load_click_through_dataset", &loadClickThroughDataset,
       py::arg("filename"), py::arg("batch_size"), py::arg("num_dense_features"),
-      py::arg("num_categorical_features"), py::arg("sparse_labels"));
+      py::arg("num_categorical_features"), py::arg("sparse_labels"),
+      "Loads a Clickthrough dataset from an SVM file. To be used with DLRM.");
 
   py::class_<
       thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>>
@@ -57,15 +58,19 @@ void createDatasetSubmodule(py::module_& module) {
   (void)_bolt_dataset_;  // To get rid of clang tidy error
 
   dataset_submodule.def("load_bolt_svm_dataset", &loadBoltSVMDataset,
-                        py::arg("filename"), py::arg("batch_size"));
+                        py::arg("filename"), py::arg("batch_size"),
+                        "Loads a BoltDataset from an SVM file.");
 
   dataset_submodule.def("load_bolt_csv_dataset", &loadBoltCSVDataset,
                         py::arg("filename"), py::arg("batch_size"),
-                        py::arg("delimiter") = ",");
+                        py::arg("delimiter") = ",",
+                        "Loads a BoltDataset from a CSV file.");
 
   dataset_submodule.def("bolt_tokenizer", &parseSentenceToSparseArray,
                         py::arg("sentence"), py::arg("seed") = 42,
-                        py::arg("dimension") = 100000);
+                        py::arg("dimension") = 100000,
+                        "Utility that turns a sentence into a sequence of tokens. To be used for "
+                        "text classification tasks.");
 }
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
