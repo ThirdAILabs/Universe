@@ -172,9 +172,9 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
 
     data = load_dataset(config)
     if data is None:
-        return
-    else:
-        train, test = data
+        raise ValueError("Unable to load a dataset. Please check the config")
+
+    train, test = data
 
     if config["params"]["loss_fn"].lower() == "categoricalcrossentropyloss":
         loss = bolt.CategoricalCrossEntropyLoss()
@@ -200,16 +200,16 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
         if max_test_batches is None:
             metrics, _ = network.predict(test, test_metrics)
             if mlflow_enabled:
-                log_training_metrics(metrics)
+                mlflow.log_metrics(metrics)
         else:
             metrics, _ = network.predict(test, test_metrics, True, max_test_batches)
             if mlflow_enabled:
-                log_training_metrics(metrics)
+                mlflow.log_metrics(metrics)
     if not max_test_batches is None:
         # If we limited the number of test batches during training we run on the whole test set at the end.
         metrics, _ = network.predict(test, test_metrics)
         if mlflow_enabled:
-            log_training_metrics(metrics)
+            mlflow.log_metrics(metrics)
 
 
 def train_dlrm(config: Dict[str, Any], mlflow_enabled: bool):
@@ -254,7 +254,7 @@ def train_dlrm(config: Dict[str, Any], mlflow_enabled: bool):
 
         metrics, scores = dlrm.predict(test, test_metrics)
         if mlflow_enabled:
-            log_training_metrics(metrics)
+            mlflow.log_metrics(metrics)
 
         if len(scores.shape) == 2:
             preds = np.argmax(scores, axis=1)
