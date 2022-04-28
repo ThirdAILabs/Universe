@@ -66,11 +66,11 @@ void createDatasetSubmodule(py::module_& module) {
                         py::arg("delimiter") = ",",
                         "Loads a BoltDataset from a CSV file.");
 
-  dataset_submodule.def("bolt_tokenizer", &parseSentenceToSparseArray,
-                        py::arg("sentence"), py::arg("seed") = 42,
-                        py::arg("dimension") = 100000,
-                        "Utility that turns a sentence into a sequence of tokens. To be used for "
-                        "text classification tasks.");
+  dataset_submodule.def(
+      "bolt_tokenizer", &parseSentenceToSparseArray, py::arg("sentence"),
+      py::arg("seed") = 42, py::arg("dimension") = 100000,
+      "Utility that turns a sentence into a sequence of tokens. To be used for "
+      "text classification tasks.");
 }
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
