@@ -1,3 +1,4 @@
+#include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/src/Dataset.h>
 #include <chrono>
@@ -27,22 +28,22 @@ int main() {  // NOLINT exceptions
   std::pair<uint32_t, uint32_t> kernel_size(2, 2);
   uint32_t num_patches = 196;
 
-  std::vector<bolt::FullyConnectedLayerConfig> layers;
+  bolt::SequentialConfigList layers;
 
-  layers.emplace_back(/* num_filters = */ 16, /* sparsity = */ 1,
-                      bolt::ActivationFunction::ReLU,
-                      bolt::SamplingConfig(3, 64, 9, 5), kernel_size,
-                      num_patches);
+  layers.push_back(std::make_shared<bolt::ConvLayerConfig>(
+      16, 1, bolt::ActivationFunction::ReLU, bolt::SamplingConfig(3, 64, 9, 5),
+      kernel_size, num_patches));
 
-  layers.emplace_back(/* num_filters = */ 200, /* sparsity = */ .1,
-                      bolt::ActivationFunction::ReLU,
-                      bolt::SamplingConfig(3, 256, 9, 5), kernel_size, 49);
+  layers.push_back(std::make_shared<bolt::ConvLayerConfig>(
+      200, .1, bolt::ActivationFunction::ReLU,
+      bolt::SamplingConfig(3, 256, 9, 5), kernel_size, 49));
 
-  layers.emplace_back(/* dim = */ 1000, /* sparsity = */ .1,
-                      bolt::ActivationFunction::ReLU,
-                      bolt::SamplingConfig(4, 256, 12, 10));
+  layers.push_back(std::make_shared<bolt::FullyConnectedLayerConfig>(
+      1000, .1, bolt::ActivationFunction::ReLU,
+      bolt::SamplingConfig(4, 256, 12, 10)));
 
-  layers.emplace_back(10, bolt::ActivationFunction::Softmax);
+  layers.push_back(std::make_shared<bolt::FullyConnectedLayerConfig>(
+      10, bolt::ActivationFunction::Softmax));
 
   bolt::FullyConnectedNetwork network(
       layers, kernel_size.first * kernel_size.second * num_patches);

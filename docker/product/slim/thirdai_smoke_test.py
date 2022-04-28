@@ -6,7 +6,9 @@ def test_bolt_smoke():
 
     bolt.Network(
         layers=[
-            bolt.LayerConfig(dim=256, activation_function=bolt.ActivationFunctions.ReLU)
+            bolt.FullyConnected(
+                dim=256, activation_function=bolt.ActivationFunctions.ReLU
+            )
         ],
         input_dim=10,
     )

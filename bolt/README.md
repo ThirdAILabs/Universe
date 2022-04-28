@@ -27,8 +27,8 @@ Training Example (Dense hidden layer and a sparse output layer):
 from thirdai import bolt
 
 layers = [
-    bolt.LayerConfig(dim=256, activation_function="ReLU"),
-    bolt.LayerConfig(dim=10, load_factor=0.4, activation_function="Softmax")]
+    bolt.FullyConnected(dim=256, activation_function="ReLU"),
+    bolt.FullyConnected(dim=10, load_factor=0.4, activation_function="Softmax")]
 
 network = bolt.Network(layers=layers, input_dim=784)
 
@@ -43,11 +43,11 @@ Training Example (Dense hidden layer, 1 sparse hidden layer and a dense output l
 from thirdai import bolt
 
 layers = [
-    bolt.LayerConfig(dim=128, activation_function="ReLU"),
-    bolt.LayerConfig(dim=1024, sparsity=0.01, activation_function="ReLU",
+    bolt.FullyConnected(dim=128, activation_function="ReLU"),
+    bolt.FullyConnected(dim=1024, sparsity=0.01, activation_function="ReLU",
                       sampling_config=bolt.SamplingConfig(K=3, L=128, 
                                                            range_pow=9, reservoir_size=32)),
-    bolt.LayerConfig(dim=10, activation_function="Softmax")
+    bolt.FullyConnected(dim=10, activation_function="Softmax")
 ]
 
 network = bolt.Network(layers=layers, input_dim=780)
@@ -64,9 +64,9 @@ from thirdai import bolt
 import tensorflow as tf
 
 layers = [
-    bolt.LayerConfig(dim=128, activation_function="ReLU"),
-    bolt.LayerConfig(dim=1024, load_factor=0.05, activation_function="ReLU"),
-    bolt.LayerConfig(dim=10, activation_function="Softmax")
+    bolt.FullyConnected(dim=128, activation_function="ReLU"),
+    bolt.FullyConnected(dim=1024, load_factor=0.05, activation_function="ReLU"),
+    bolt.FullyConnected(dim=10, activation_function="Softmax")
 ]
 
 network = bolt.Network(layers=layers, input_dim=780)
