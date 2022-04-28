@@ -1,7 +1,6 @@
 #pragma once
 
 #include "BoltVector.h"
-#include "LayerConfig.h"
 
 namespace thirdai::bolt {
 class SequentialLayer {

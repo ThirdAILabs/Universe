@@ -7,7 +7,7 @@ from thirdai import bolt, dataset
 
 def _define_network(args):
     bottom_mlp = [
-        bolt.LayerConfig(
+        bolt.FullyConnected(
             dim=1000,
             load_factor=0.2,
             activation_function=bolt.ActivationFunctions.ReLU,
@@ -15,14 +15,14 @@ def _define_network(args):
                 hashes_per_table=3, num_tables=128, range_pow=9, reservoir_size=10
             ),
         ),
-        bolt.LayerConfig(dim=100, activation_function=bolt.ActivationFunctions.ReLU),
+        bolt.FullyConnected(dim=100, activation_function=bolt.ActivationFunctions.ReLU),
     ]
-    embedding = bolt.EmbeddingLayerConfig(
+    embedding = bolt.Embedding(
         num_embedding_lookups=8, lookup_size=16, log_embedding_block_size=10
     )
     top_mlp = [
-        bolt.LayerConfig(dim=100, activation_function=bolt.ActivationFunctions.ReLU),
-        bolt.LayerConfig(
+        bolt.FullyConnected(dim=100, activation_function=bolt.ActivationFunctions.ReLU),
+        bolt.FullyConnected(
             dim=1000,
             load_factor=0.2,
             activation_function=bolt.ActivationFunctions.ReLU,
@@ -30,7 +30,7 @@ def _define_network(args):
                 hashes_per_table=3, num_tables=128, range_pow=9, reservoir_size=10
             ),
         ),
-        bolt.LayerConfig(dim=1, activation_function=bolt.ActivationFunctions.Linear),
+        bolt.FullyConnected(dim=1, activation_function=bolt.ActivationFunctions.Linear),
     ]
     network = bolt.DLRM(embedding, bottom_mlp, top_mlp, 15)
     return network

@@ -63,13 +63,19 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");
 
-  py::class_<thirdai::bolt::FullyConnectedLayerConfig>(
-      bolt_submodule, "LayerConfig", "Defines a fully-connected layer.\n")
+  py::class_<thirdai::bolt::SequentialLayerConfig,
+             std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>(
+      bolt_submodule, "Sequential");
+
+  py::class_<thirdai::bolt::FullyConnectedLayerConfig,
+             std::shared_ptr<thirdai::bolt::FullyConnectedLayerConfig>,
+             thirdai::bolt::SequentialLayerConfig>(
+      bolt_submodule, "FullyConnected", "Defines a fully-connected layer.\n")
       .def(py::init<uint64_t, float, ActivationFunction,
                     thirdai::bolt::SamplingConfig>(),
            py::arg("dim"), py::arg("load_factor"),
            py::arg("activation_function"), py::arg("sampling_config"),
-           "Constructs the LayerConfig object.\n"
+           "Constructs the FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            "  dim: Int - The dimension of the layer.\n"
            "  load_factor: Float - The fraction of neurons to use during "
@@ -80,18 +86,20 @@ void createBoltSubmodule(py::module_& module) {
            "  activation_function: ActivationFunctions enum - We support three "
            "activation "
            "functions: ReLU, Softmax, and Linear.\n"
-           "  sampling_config: SamplingConfig - sampling configuration.")
-      .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
-           py::arg("activation_function"),
-           "Constructs the LayerConfig object for a dense layer.\n"
-           "Arguments:\n"
-           "  dim: Int - The dimension of the layer.\n"
-           "  activation_function: ActivationFunctions enum - We support three "
-           "activation "
-           "functions: ReLU, Softmax, and Linear.")
+           "  sampling_config: SamplingConfig - Sampling configuration.")
+      .def(
+          py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
+          py::arg("activation_function"),
+          "Constructs the FullyConnectedLayerConfig object for a dense layer.\n"
+          "Arguments:\n"
+          "  dim: Int - The dimension of the layer.\n"
+          "  activation_function: ActivationFunctions enum - We support three "
+          "activation "
+          "functions: ReLU, Softmax, and Linear.")
       .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
            py::arg("load_factor"), py::arg("activation_function"),
-           "Constructs the LayerConfig object for a sparse layer with a "
+           "Constructs the FullyConnectedLayerConfig object for a sparse layer "
+           "with a "
            "default sampling "
            "configuration.\n"
            "Arguments:\n"
@@ -100,8 +108,35 @@ void createBoltSubmodule(py::module_& module) {
            "activation "
            "functions: ReLU, Softmax, and Linear.");
 
+  py::class_<thirdai::bolt::ConvLayerConfig,
+             std::shared_ptr<thirdai::bolt::ConvLayerConfig>,
+             thirdai::bolt::SequentialLayerConfig>(
+      bolt_submodule, "Conv",
+      "Defines a 2D convolutional layer that convolves over "
+      "non-overlapping patches.")
+      .def(py::init<uint64_t, float, ActivationFunction,
+                    thirdai::bolt::SamplingConfig,
+                    std::pair<uint32_t, uint32_t>, uint32_t>(),
+           py::arg("num_filters"), py::arg("load_factor"),
+           py::arg("activation_function"), py::arg("sampling_config"),
+           py::arg("kernel_size"), py::arg("num_patches"),
+           "Constructs the ConvLayerConfig object.\n"
+           "Arguments:\n"
+           "  num_filters: Int - Number of convolutional filters.\n"
+           "  load_factor: Float - The fraction of filters to use during "
+           "sparse training and sparse inference. For example, "
+           "load_factor=0.05 means the layer uses 5% of the filters "
+           "when processing each patch.\n"
+           "  activation_function: ActivationFunctions enum - We support three "
+           "activation "
+           "functions: ReLU, Softmax, and Linear.\n"
+           "  sampling_config: SamplingConfig - Sampling configuration.\n"
+           "  kernel_size: Pair of ints - 2D dimensions of each patch.\n"
+           "  num_patches: Int - Number of patches.");
+
   py::class_<thirdai::bolt::EmbeddingLayerConfig>(
-      bolt_submodule, "EmbeddingLayerConfig",
+      bolt_submodule,
+      "Embedding"
       "Defines a space-efficient embedding table lookup layer.")
       .def(py::init<uint32_t, uint32_t, uint32_t>(),
            py::arg("num_embedding_lookups"), py::arg("lookup_size"),
@@ -116,12 +151,14 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<PyNetwork>(bolt_submodule, "Network",
                         "Fully connected neural network.")
-      .def(py::init<std::vector<thirdai::bolt::FullyConnectedLayerConfig>,
+      .def(py::init<std::vector<
+                        std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
                     uint64_t>(),
            py::arg("layers"), py::arg("input_dim"),
            "Constructs the neural network.\n"
            "Arguments:\n"
-           "  layers: List of LayerConfig - Configurations for the sequence of "
+           "  layers: List of SequentialLayerConfig - Configurations for the "
+           "sequence of "
            "layers in the neural network.\n"
            "  input_dim: Int - Dimension of input vectors in the dataset.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
@@ -419,8 +456,10 @@ void createBoltSubmodule(py::module_& module) {
   py::class_<PyDLRM>(bolt_submodule, "DLRM",
                      "DLRM network with space-efficient embedding tables.")
       .def(py::init<thirdai::bolt::EmbeddingLayerConfig,
-                    std::vector<thirdai::bolt::FullyConnectedLayerConfig>,
-                    std::vector<thirdai::bolt::FullyConnectedLayerConfig>,
+                    std::vector<
+                        std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
+                    std::vector<
+                        std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
                     uint32_t>(),
            py::arg("embedding_layer"), py::arg("bottom_mlp"),
            py::arg("top_mlp"), py::arg("input_dim"),
@@ -428,9 +467,11 @@ void createBoltSubmodule(py::module_& module) {
            "Arguments:\n"
            "  embedding_layer: EmbeddingLayerConfig - Configuration of the "
            "embedding layer.\n"
-           "  bottom_mlp: List of LayerConfig - Configurations of the sequence "
+           "  bottom_mlp: List of SequentialLayerConfig - Configurations of "
+           "the sequence "
            "of layers in DLRM's bottom MLP.\n"
-           "  top_mlp: List of LayerConfig - Configurations of the sequence of "
+           "  top_mlp: List of SequentialLayerConfig - Configurations of the "
+           "sequence of "
            "layers in DLRM's top MLP.\n"
            "  input_dim: Int - Dimension of input vectors in the dataset.")
       .def("train", &PyDLRM::train, py::arg("train_data"), py::arg("loss_fn"),

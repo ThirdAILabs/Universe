@@ -2,6 +2,8 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
+#include "LayerConfig.h"
+#include "LayerUtils.h"
 #include "SequentialLayer.h"
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
@@ -9,7 +11,7 @@
 namespace thirdai::bolt {
 class ConvLayer final : public SequentialLayer {
  public:
-  ConvLayer(const FullyConnectedLayerConfig& config, uint64_t prev_dim,
+  ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
             uint32_t prev_num_filters, uint32_t prev_num_sparse_filters,
             std::pair<uint32_t, uint32_t> next_kernel_size);
 
@@ -55,25 +57,6 @@ class ConvLayer final : public SequentialLayer {
   void setBiases(const float* new_biases) final;
 
  private:
-  // can't be inlined .cc if part of an interface. see here:
-  // https://stackoverflow.com/questions/27345284/is-it-possible-to-declare-constexpr-class-in-a-header-and-define-it-in-a-separat
-  constexpr float actFuncDerivative(float x) {
-    switch (_act_func) {
-      case ActivationFunction::ReLU:
-        return x > 0 ? 1.0 : 0.0;
-      case ActivationFunction::Softmax:
-        // return 1.0; // Commented out because Clang tidy doesn't like
-        // consecutive identical branches
-      case ActivationFunction::Linear:
-        return 1.0;
-        // default:
-        //   return 0.0;
-    }
-    // This is impossible to reach, but the compiler gave a warning saying it
-    // reached the end of a non void function without it.
-    return 0.0;
-  }
-
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output);
 
@@ -117,11 +100,11 @@ class ConvLayer final : public SequentialLayer {
 
   bool _force_sparse_for_inference;
 
-  uint32_t _patch_dim;         // the dim of a patch if the input was dense
-  uint32_t _sparse_patch_dim;  // the actual dim of a patch
-  uint32_t _num_patches;
   uint32_t _num_filters;         // number of convolutional filters
   uint32_t _num_sparse_filters;  // _num_filters * sparsity
+  uint32_t _patch_dim;           // the dim of a patch if the input was dense
+  uint32_t _sparse_patch_dim;    // the actual dim of a patch
+  uint32_t _num_patches;
   uint32_t _prev_num_filters;
   uint32_t _prev_num_sparse_filters;
   uint32_t _kernel_size;
@@ -139,6 +122,10 @@ class ConvLayer final : public SequentialLayer {
             _prev_num_filters, _prev_num_sparse_filters, _kernel_size,
             _in_to_out, _out_to_in);
   }
+
+ protected:
+  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
+  ConvLayer() {}
 };
 }  // namespace thirdai::bolt
 

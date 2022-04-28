@@ -66,10 +66,10 @@ def log_training_metrics(metrics: Dict[str, List[float]]):
 
 def create_fully_connected_layer_configs(
     configs: List[Dict[str, Any]]
-) -> List[bolt.LayerConfig]:
+) -> List[bolt.FullyConnected]:
     layers = []
     for config in configs:
-        layer = bolt.LayerConfig(
+        layer = bolt.FullyConnected(
             dim=config.get("dim"),
             load_factor=config.get("sparsity", 1.0),
             activation_function=bolt.getActivationFunction(config.get("activation")),
@@ -84,8 +84,8 @@ def create_fully_connected_layer_configs(
     return layers
 
 
-def create_embedding_layer_config(config: Dict[str, Any]) -> bolt.EmbeddingLayerConfig:
-    return bolt.EmbeddingLayerConfig(
+def create_embedding_layer_config(config: Dict[str, Any]) -> bolt.Embedding:
+    return bolt.Embedding(
         num_embedding_lookups=config.get("num_embedding_lookups"),
         lookup_size=config.get("lookup_size"),
         log_embedding_block_size=config.get("log_embedding_block_size"),
