@@ -136,7 +136,7 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<thirdai::bolt::EmbeddingLayerConfig>(
       bolt_submodule,
-      "Embedding"
+      "Embedding",
       "Defines a space-efficient embedding table lookup layer.")
       .def(py::init<uint32_t, uint32_t, uint32_t>(),
            py::arg("num_embedding_lookups"), py::arg("lookup_size"),
