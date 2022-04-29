@@ -4,6 +4,8 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from skimage.util import view_as_blocks
 import numpy as np
 import time
+import argparse
+import mlflow
 
 # TODO: speedup numpy stuff
 # TODO: calculate num patches in conv layer
@@ -121,7 +123,7 @@ def transform_to_flat_patches(data, patch_size):
     return np.array(new_data)
 
 
-def train_conv_birds_325(args):
+def train_conv_birds_325(args, mlflow_logger):
     network = _define_network(None)
 
     train_generator, test_generator = get_data_generators()
@@ -129,7 +131,9 @@ def train_conv_birds_325(args):
     # patch size should be same as the patch size of the first conv layer
     patch_size = (4, 4)  # width x height
 
-    for e in range(args["epochs"]):
+    mlflow_logger.log_start_training()
+
+    for e in range(args.epochs):
         print(f"Starting epoch {e}")
 
         start = time.time()
@@ -143,9 +147,9 @@ def train_conv_birds_325(args):
         network.train(
             train_data_flat_patches,
             train_labels,
-            batch_size=args["batch_size"],
+            batch_size=args.batch_size,
             loss_fn=bolt.CategoricalCrossEntropyLoss(),
-            learning_rate=args["lr"],
+            learning_rate=args.lr,
             epochs=1,
             rehash=6400,
             rebuild=128000,
@@ -153,33 +157,46 @@ def train_conv_birds_325(args):
         acc, __ = network.predict(
             test_data_flat_patches,
             test_labels,
-            batch_size=args["batch_size"],
+            batch_size=args.batch_size,
             metrics=["categorical_accuracy"],
             verbose=True,
         )
+        mlflow_logger.log_epoch(acc["categorical_accuracy"][0])
 
     final_accuracy, __ = network.predict(
         test_data_flat_patches,
         test_labels,
-        batch_size=args["batch_size"],
+        batch_size=args.batch_size,
         metrics=["categorical_accuracy"],
         verbose=True,
     )
+    mlflow_logger.log_epoch(acc["categorical_accuracy"][0])
 
 
 def main():
-    args = {"lr": 0.001, "epochs": 1, "batch_size": 256}
+    parser = argparse.ArgumentParser(
+        description=f"Run BOLT on Birds with ConvLayer."
+    )
+    parser.add_argument(
+        "--lr", default=0.001, type=float, required=False, help="learning rate"
+    )
+    parser.add_argument(
+        "--epochs", default=10, type=int, required=False, help="number of epochs"
+    )
+    parser.add_argument(
+        "--batch_size", default=0.001, type=float, required=False, help="batch size"
+    )
 
-    # with ExperimentLogger(
-    #     experiment_name="ConvLayer Test",
-    #     dataset="birds325",
-    #     algorithm="convolution",
-    #     framework="bolt",
-    #     experiment_args=args,
-    # ) as mlflow_logger:
-    #     train_amzn670(args, mlflow_logger)
+    args = parser.parse_args()
 
-    train_conv_birds_325(args)
+    with ExperimentLogger(
+        experiment_name="ConvLayer Test",
+        dataset="birds325",
+        algorithm="convolution",
+        framework="bolt",
+        experiment_args=args,
+    ) as mlflow_logger:
+        train_conv_birds_325(args, mlflow_logger)
 
 
 if __name__ == "__main__":
