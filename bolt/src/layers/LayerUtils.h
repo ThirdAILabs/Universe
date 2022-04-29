@@ -2,6 +2,7 @@
 
 #include <cereal/types/vector.hpp>
 #include <cctype>
+#include <cmath>
 
 namespace thirdai::bolt {
 
@@ -55,6 +56,17 @@ struct SamplingConfig {
         num_tables(num_tables),
         range_pow(range_pow),
         reservoir_size(reservoir_size) {}
+
+  SamplingConfig(uint64_t dim, float sparsity) {
+    if (sparsity < 1.0) {
+      range_pow = (static_cast<uint32_t>(log2(dim)) / 3) * 3;
+      hashes_per_table = range_pow / 3;
+      reservoir_size = (dim * 4) / (1 << range_pow);
+      num_tables = sparsity < 0.1 ? 256 : 64;
+    } else {
+      hashes_per_table = 0, num_tables = 0, range_pow = 0, reservoir_size = 0;
+    }
+  }
 
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/

@@ -5,13 +5,10 @@ from skimage.util import view_as_blocks
 import numpy as np
 import time
 import argparse
-import mlflow
 
-# TODO: speedup numpy stuff
+# TODO: figure out why numpy is slow
 # TODO: calculate num patches in conv layer
 # TODO: default sampling config when its not passed in
-# TODO: integrate with MLFlow
-
 
 # ============================> Instructions <===============================
 
