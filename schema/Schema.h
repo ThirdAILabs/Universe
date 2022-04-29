@@ -71,6 +71,9 @@ class DataLoader {
   size_t labelDim() const { return _label_dim; }
 
   void readCSV(const std::string& filename, const char delimiter) {
+    if (_in.is_open()) {
+      _in.close();
+    }
     _in.open(filename);
     _delimiter = delimiter;
     if (!_in.is_open()) {
@@ -134,6 +137,9 @@ class DataLoader {
       }
       batches.emplace_back(std::move(batch_inputs), std::move(batch_labels));
     }
+
+    _input_vectors = std::vector<bolt::BoltVector>();
+    _label_vectors = std::vector<bolt::BoltVector>();
 
     std::cout << "Exporting Bolt dataset with " << n_exported << " elements." << std::endl;
 
