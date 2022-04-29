@@ -128,12 +128,12 @@ class DataLoader {
 
     std::vector<dataset::BoltInputBatch> batches;
 
-    for (uint32_t i = 0; i < n_exported; i += _batch_size) {
+    for (uint32_t batch_start_index = 0; batch_start_index < n_exported; batch_start_index += _batch_size) {
       std::vector<bolt::BoltVector> batch_inputs;
       std::vector<bolt::BoltVector> batch_labels;
-      for (uint32_t j = 0; j < std::min(_batch_size, n_exported - i); j++) {
-        batch_inputs.push_back(std::move(_input_vectors[positions[j]]));
-        batch_labels.push_back(std::move(_label_vectors[positions[j]]));
+      for (uint32_t index_in_batch = 0; index_in_batch < std::min(_batch_size, n_exported - batch_start_index); index_in_batch++) {
+        batch_inputs.push_back(std::move(_input_vectors[positions[batch_start_index + index_in_batch]]));
+        batch_labels.push_back(std::move(_label_vectors[positions[batch_start_index + index_in_batch]]));
       }
       batches.emplace_back(std::move(batch_inputs), std::move(batch_labels));
     }
