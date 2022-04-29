@@ -71,15 +71,21 @@ class DataLoader {
   size_t labelDim() const { return _label_dim; }
 
   void readCSV(const std::string& filename, const char delimiter) {
-    std::ifstream in(filename);
-    std::string line;
-    if (!in.is_open()) {
+    _in.open(filename);
+    _delimiter = delimiter;
+    if (!_in.is_open()) {
       std::stringstream ss;
       ss << "File not found: " << filename << std::endl;
       throw std::invalid_argument(ss.str());
     }
-    while (std::getline(in, line)) {
-      consumeCSVLine(line, delimiter);
+  }
+
+  void processCSV(uint32_t max_lines=std::numeric_limits<uint32_t>::max()) {
+    std::string line;
+    uint32_t i = 0;
+    while (i < max_lines && std::getline(_in, line)) {
+      consumeCSVLine(line, _delimiter);
+      i++;
     }
   }
 
@@ -97,8 +103,15 @@ class DataLoader {
   }
 
   dataset::InMemoryDataset<dataset::BoltInputBatch> exportDataset(size_t max_exported=std::numeric_limits<size_t>::max(), bool shuffle=true) {
+    if (!_in.is_open()) {
+      std::stringstream ss;
+      throw std::invalid_argument("Error: readCSV() not called before exportDataset()");
+    }
+
+    processCSV(max_exported);
+
     assert(_input_vectors.size() == _label_vectors.size());
-    uint32_t n_exported = std::min(_input_vectors.size(), max_exported);
+    uint32_t n_exported = _input_vectors.size();
 
     std::vector<uint32_t> positions(n_exported);
     for (uint32_t i = 0; i < n_exported; i++) {
@@ -121,13 +134,6 @@ class DataLoader {
       }
       batches.emplace_back(std::move(batch_inputs), std::move(batch_labels));
     }
-
-    _input_vectors.insert(_input_vectors.begin(), _input_vectors.begin() + n_exported, _input_vectors.end());
-    _input_vectors.resize(_input_vectors.size() - n_exported);
-    
-    _label_vectors.insert(_label_vectors.begin(), _label_vectors.begin() + n_exported, _label_vectors.end());
-    _label_vectors.resize(_label_vectors.size() - n_exported);
-    
 
     std::cout << "Exporting Bolt dataset with " << n_exported << " elements." << std::endl;
 
@@ -156,10 +162,12 @@ class DataLoader {
   }
 
   
+  char _delimiter = ',';
   size_t _input_dim = 0;
   size_t _label_dim = 0;
   size_t _line_length = 0;
   uint32_t _batch_size;
+  std::ifstream _in;
   std::vector<bolt::BoltVector> _input_vectors;
   std::vector<bolt::BoltVector> _label_vectors;
   std::vector<std::string_view> _line_buf; // TODO(Geordie): Initialize

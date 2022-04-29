@@ -7,6 +7,7 @@
 #include <schema/OneHotEncoding.h>
 #include <schema/Schema.h>
 #include <schema/Text.h>
+#include <limits>
 
 namespace thirdai::schema::python {
 
@@ -55,6 +56,7 @@ void createSchemaSubmodule(py::module_& module) {
         .def("read_csv", &DataLoader::readCSV,
             py::arg("filename"), py::arg("delimiter"))
         .def("export_dataset", &DataLoader::exportDataset,
+            py::arg("max_export") = std::numeric_limits<size_t>::max(),
             py::arg("shuffle") = true);
 
 
