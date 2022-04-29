@@ -4,7 +4,9 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/string.hpp>
 #include "License.h"
+#include <cryptopp/base64.h>
 #include <cryptopp/files.h>
+#include <cryptopp/filters.h>
 #include <cryptopp/osrng.h>
 #include <cryptopp/rsa.h>
 #include <exceptions/src/Exceptions.h>
@@ -14,6 +16,18 @@
 #include <utility>
 
 namespace thirdai::licensing {
+
+const std::string PUBLIC_KEY_BASE_64 =
+    "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAsIv9g8w+"
+    "DLlepzpE02luu6lV2DY7g5N0cnqhbaoArE5UOEiKK2EFPCeQTp8+TkYk64/"
+    "ieMab4CoIU3ZmVp5GUyKkWsLJhDUE3dXJrLhIDTg7HFr6qwrFDosRWI26grq+"
+    "CFPsiVLTjlJCd+7sv1EtR5TPhympKAKRbUI1pffnK8QTJ8F5Bfg/"
+    "1tLHk3lpUp4vF90se0TWgmXe7CW6GtWeXqiwsfzK9IzkgLbX4DQJnyIRPS9MLoQr/"
+    "nSws7jMPDtUIuSjUIOQojxIhxTO5iL+"
+    "mfiV2h7nRLMtJM6lLKmrDK09sE4geE8zJytCcP1l15s7gZy7g7i1mwrpfiulmfNVvDj0LoKYD2"
+    "nx1mj+gCgnUasqLWILNUXgV19eGGLd23+"
+    "hc7NzF10KFVXIcLebrG7o6WfFY5NSYu2pDzialgpCXmiysyIKj/HXY1hpbi0/dMII/"
+    "lVN2QhDb5zTVIjzBr+kMuJ9dNNl9Sn4eso+dMNjQrQ2F9WvcgS1ZQ4Ju/5qOZrRAgMBAAE=";
 
 class LicenseWithSignature {
  public:
@@ -116,10 +130,8 @@ class LicenseWithSignature {
    */
   static void findVerifyAndCheckLicense() {
     std::vector<std::string> license_file_name_options = {
-        "/home/thirdai/work/license.serialized",
+        "license.serialized", "/home/thirdai/work/license.serialized",
         "/licenses/license.serialized"};
-    std::vector<std::string> public_key_file_name_options = {
-        "/keys/license-public-key.der"};
 
     std::optional<LicenseWithSignature> license;
     for (const std::string& license_file_name : license_file_name_options) {
@@ -132,25 +144,12 @@ class LicenseWithSignature {
       throw thirdai::exceptions::LicenseCheckException("no license file found");
     }
 
-    std::optional<CryptoPP::RSA::PublicKey> public_key;
-    for (const std::string& public_key_file_name :
-         public_key_file_name_options) {
-      if (can_access_file(public_key_file_name)) {
-        CryptoPP::RSA::PublicKey load_into;
-        {
-          CryptoPP::FileSource input(public_key_file_name.c_str(), true);
-          load_into.BERDecode(input);
-        }
-        public_key = load_into;
-        break;
-      }
-    }
-    if (!public_key) {
-      throw thirdai::exceptions::LicenseCheckException(
-          "no public key file found");
-    }
+    CryptoPP::RSA::PublicKey public_key;
+    CryptoPP::StringSource ss(PUBLIC_KEY_BASE_64, true,
+                              new CryptoPP::Base64Decoder);
+    public_key.BERDecode(ss);
 
-    if (!license->verify(public_key.value())) {
+    if (!license->verify(public_key)) {
       throw thirdai::exceptions::LicenseCheckException(
           "license verification failure");
     }

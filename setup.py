@@ -104,10 +104,9 @@ class CMakeBuild(build_ext):
             if archs:
                 cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
 
-
         build_args += ["-j{}".format(int(2 * multiprocessing.cpu_count()))]
         joined_feature_flags = ";".join(feature_flags)
-        cmake_args += [f"\"-DFEATURE_FLAGS={joined_feature_flags}\""]
+        cmake_args += [f'"-DFEATURE_FLAGS={joined_feature_flags}"']
 
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
@@ -123,9 +122,9 @@ class CMakeBuild(build_ext):
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="thirdai",
-    version="0.0.1",
-    author="Nicholas Meisburger",
-    author_email="nicholas@thirdai.com",
+    version="0.0.2",
+    author="ThirdAI",
+    author_email="contact@thirdai.com",
     description="A faster cpu machine learning library",
     long_description="",
     ext_modules=[CMakeExtension("thirdai")],
