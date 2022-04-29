@@ -3,9 +3,12 @@ import os
 import re
 import subprocess
 import sys
+import multiprocessing
 
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
+
+feature_flags = ["THIRDAI_BUILD_LICENSE", "THIRDAI_CHECK_LICENSE"]
 
 # Convert distutils Windows platform specifiers to CMake -A arguments
 PLAT_TO_CMAKE = {
@@ -101,21 +104,16 @@ class CMakeBuild(build_ext):
             if archs:
                 cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
 
-        # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
-        # across all generators.
-        if "CMAKE_BUILD_PARALLEL_LEVEL" not in os.environ:
-            # self.parallel is a Python 3 only way to set parallel jobs by hand
-            # using -j in the build_ext call, not supported by pip or PyPA-build.
-            if hasattr(self, "parallel") and self.parallel:
-                # CMake 3.12+ only.
-                build_args += ["-j{}".format(self.parallel)]
+
+        build_args += ["-j{}".format(int(2 * multiprocessing.cpu_count()))]
+        joined_feature_flags = ";".join(feature_flags)
+        cmake_args += [f"\"-DFEATURE_FLAGS={joined_feature_flags}\""]
 
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
 
-        subprocess.check_call(
-            ["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp
-        )
+        cmake_call = f"cmake {ext.sourcedir} {' '.join(cmake_args)}"
+        subprocess.check_call(cmake_call, cwd=self.build_temp, shell=True)
         subprocess.check_call(
             ["cmake", "--build", "."] + build_args, cwd=self.build_temp
         )

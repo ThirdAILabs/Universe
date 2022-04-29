@@ -31,3 +31,6 @@ thirdai.egg-info
 
 # Docs
 docs/_*
+
+# Wheels
+dist
