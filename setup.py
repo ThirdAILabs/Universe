@@ -122,13 +122,14 @@ class CMakeBuild(build_ext):
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="thirdai",
-    version="0.0.2",
+    version="0.0.3",
     author="ThirdAI",
     author_email="contact@thirdai.com",
     description="A faster cpu machine learning library",
     long_description="",
     ext_modules=[CMakeExtension("thirdai")],
     cmdclass={"build_ext": CMakeBuild},
+    license_files = ('LICENSE',),
     zip_safe=False,
     extras_require={"test": ["pytest"]},
 )
