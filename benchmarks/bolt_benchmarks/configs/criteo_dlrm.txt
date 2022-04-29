@@ -1,38 +1,38 @@
 job = "Criteo DLRM"
 
 [dataset]
-train_data = "intent/train_shuf_criteo.txt"
-test_data = "intent/test_shuf_criteo.txt"
-dense_features = 512
-categorical_features = 26
+train_data = "criteo/train_shuf.txt"
+test_data = "criteo/test_shuf.txt"
+dense_features = 15
+categorical_features = 24
 
 [params]
 loss_fn = "CategoricalCrossEntropyLoss"
 train_metrics = []
 test_metrics = ["categorical_accuracy"]
-learning_rate = 0.001
-epochs = 30
+learning_rate = 0.0001
+epochs = 2
 batch_size = 255
-rehash = 5000
-rebuild = 10000
+rehash = 6400
+rebuild = 128000
 use_auc = false
 
 [embedding_layer]
-num_embedding_lookups = 16
+num_embedding_lookups = 8
 lookup_size = 16
-log_embedding_block_size = 16
+log_embedding_block_size = 10
 
 [[bottom_mlp_layers]]
-dim = 10000
+dim = 1000
 activation = 'ReLU'
 sparsity = 0.2
 hashes_per_table = 3
 num_tables = 128
+reservoir_size = 10
 range_pow = 9
-reservoir_size = 32
 
 [[bottom_mlp_layers]]
-dim = 250
+dim = 100
 activation = "ReLU"
 
 [[top_mlp_layers]]
@@ -40,14 +40,14 @@ dim = 100
 activation = "ReLU"
 
 [[top_mlp_layers]]
-dim = 10000
+dim = 1000
 activation = 'ReLU'
 sparsity = 0.2
 hashes_per_table = 3
 num_tables = 128
+reservoir_size = 10
 range_pow = 9
-reservoir_size = 32
 
 [[top_mlp_layers]]
-dim = 151
+dim = 2
 activation = 'Softmax'
