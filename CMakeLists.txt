@@ -121,8 +121,9 @@ if (${LICENSE_BUILD_FLAG_FOUND})
   # ugly (the build happens at configure time, not build time) but honestly
   # okay (I spent way too long getting anything at all to work). Plus, it's 
   # gated by a feature flag anyways.
+  # For now use default 32 jobs to build.
   set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/libcryptopp.a)
-  execute_process(COMMAND make static CXX=g++ -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
+  execute_process(COMMAND make static CXX=g++ -j32 -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
 
 endif()
 
