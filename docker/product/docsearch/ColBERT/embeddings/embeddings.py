@@ -13,10 +13,10 @@ class DocSearchModel:
         self.config.configure(**kw_args)
 
     def encodeQuery(self, query):
-        return self.checkpoint.queryFromText([query]).numpy()[0]
+        return self.checkpoint.queryFromText([query])[0]
 
     def encodeDocs(self, docs):
-        return self.checkpoint.docFromText(docs).numpy()
+        return self.checkpoint.docFromText(docs)[0]
 
     def getCentroids(self):
         return self.centroids
