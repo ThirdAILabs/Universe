@@ -31,7 +31,7 @@ user_watch_rolling_feats = schema.DynamicCounts(
     window_configs=
         [schema.Window(lag=31 + i, size=1) for i in range(31)]
         + [schema.Window(lag=31 * i, size=7) for i in range(1, 13)]
-        + [schema.Window(lag=365 * i, size=7) for i in range(5)], 
+        + [schema.Window(lag=365 * i, size=7) for i in range(1, 5)], 
     timestamp_fmt="%Y-%m-%d") 
 input_blocks.append(user_watch_rolling_feats)
 
@@ -42,7 +42,7 @@ movie_watch_rolling_feats = schema.DynamicCounts(
     window_configs=
         [schema.Window(lag=31 + i, size=1) for i in range(31)]
         + [schema.Window(lag=31 * i, size=7) for i in range(1, 13)]
-        + [schema.Window(lag=365 * i, size=7) for i in range(5)], 
+        + [schema.Window(lag=365 * i, size=7) for i in range(1, 5)], 
     timestamp_fmt="%Y-%m-%d") 
 input_blocks.append(movie_watch_rolling_feats)
 
