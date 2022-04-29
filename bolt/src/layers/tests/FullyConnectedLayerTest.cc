@@ -36,9 +36,9 @@ class FullyConnectedLayerTestFixture : public testing::Test {
 
   FullyConnectedLayerTestFixture()
       : _rng(329),
-        _layer(FullyConnectedLayerConfig(LAYER_DIM, 0.25,
+        _layer(FullyConnectedLayerConfig{LAYER_DIM, 0.25,
                                          ActivationFunction::Linear,
-                                         SamplingConfig(1, 64, 3, 10)),
+                                         SamplingConfig(1, 64, 3, 10)},
                INPUT_DIM) {}
 
   void SetUp() override {
@@ -152,7 +152,7 @@ TEST_F(FullyConnectedLayerTestFixture, DenseDenseTest) {
   BoltBatch outputs = _layer.createBatchState(BATCH_SIZE, true);
 
   for (uint32_t b = 0; b < BATCH_SIZE; b++) {
-    _layer.forward(_bolt_inputs[b], outputs[b]);
+    _layer.forward(_bolt_inputs[b], outputs[b], nullptr);
   }
 
   Matrix correct_act = _input_matrix.multiply(_weights.transpose());
@@ -198,7 +198,7 @@ TEST_F(FullyConnectedLayerTestFixture, SparseDenseTest) {
   BoltBatch outputs = _layer.createBatchState(BATCH_SIZE, true);
 
   for (uint32_t b = 0; b < BATCH_SIZE; b++) {
-    _layer.forward(_bolt_inputs[b], outputs[b]);
+    _layer.forward(_bolt_inputs[b], outputs[b], nullptr);
   }
 
   Matrix correct_act = _input_matrix.multiply(_weights.transpose());

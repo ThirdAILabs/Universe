@@ -95,7 +95,7 @@ def train_yelp(args):
     This function is to be used as the "train_fn" argument to train().
     """
     layers = [
-        bolt.LayerConfig(
+        bolt.FullyConnected(
             dim=2000,
             load_factor=args.sparsity,
             activation_function=bolt.ActivationFunctions.ReLU,
@@ -106,7 +106,7 @@ def train_yelp(args):
                 reservoir_size=64,
             ),
         ),
-        bolt.LayerConfig(
+        bolt.FullyConnected(
             dim=2,
             load_factor=1.0,
             activation_function=bolt.ActivationFunctions.Softmax,

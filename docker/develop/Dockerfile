@@ -11,10 +11,12 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends 
     # Install tools neccesary for building, writing, and running code
     build-essential \
     git \
+    awscli\
     curl \
     wget \
     mpich \
     nano \
+    vim \
     libmpich-dev \
     clang-tidy-12 \
     clang \
@@ -30,7 +32,7 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends 
   
 # Split this into a different RUN command for clarity, and also so if you want
 # to add a python package you don't need to rebuild everything
-RUN pip3 install \
+RUN pip3 install --upgrade \
     black \
     pytest \
     mlflow \
@@ -39,7 +41,10 @@ RUN pip3 install \
     ipython \
     datasets \
     mmh3 \
-    numpy \ 
+    numpy \
+    boto3 \
+    awscli \
+    sklearn \
     pandas
 
 # The exit 0 means these commands will still continue even if the install fails, 

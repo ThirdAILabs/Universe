@@ -57,9 +57,20 @@ class PyDocSearch final : public DocSearch {
   py::array query(
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           embeddings,
-      uint64_t top_k) {
+      uint32_t top_k, uint32_t num_to_rerank) {
+    std::vector<std::pair<std::string, std::string>> result = DocSearch::query(
+        wrapNumpyIntoDenseBatch(embeddings, 0), top_k, num_to_rerank);
+    return py::cast(std::move(result));
+  }
+
+  py::array queryWithCentroids(
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          embeddings,
+      const std::vector<uint32_t>& query_centroid_ids, uint32_t top_k,
+      uint32_t num_to_rerank) {
     std::vector<std::pair<std::string, std::string>> result =
-        DocSearch::query(wrapNumpyIntoDenseBatch(embeddings, 0), top_k);
+        DocSearch::queryWithCentroids(wrapNumpyIntoDenseBatch(embeddings, 0),
+                                      query_centroid_ids, top_k, num_to_rerank);
     return py::cast(std::move(result));
   }
 

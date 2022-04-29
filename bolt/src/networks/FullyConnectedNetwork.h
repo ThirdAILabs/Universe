@@ -5,7 +5,8 @@
 #include <cereal/types/vector.hpp>
 #include "Model.h"
 #include <bolt/src/layers/BoltVector.h>
-#include <bolt/src/layers/FullyConnectedLayer.h>
+#include <bolt/src/layers/LayerConfig.h>
+#include <bolt/src/layers/SequentialLayer.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/batch_types/BoltInputBatch.h>
 #include <cmath>
@@ -23,8 +24,7 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
   friend class DLRM;
 
  public:
-  FullyConnectedNetwork(std::vector<FullyConnectedLayerConfig> configs,
-                        uint32_t input_dim);
+  FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim);
 
   void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
 
@@ -98,7 +98,7 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
 
  protected:
   uint64_t _input_dim;
-  std::vector<std::shared_ptr<FullyConnectedLayer>> _layers;
+  std::vector<std::shared_ptr<SequentialLayer>> _layers;
   std::vector<BoltBatch> _states;
   uint32_t _num_layers;
   bool _sparse_inference_enabled;

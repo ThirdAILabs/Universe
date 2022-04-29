@@ -42,6 +42,7 @@ RUN \
     apt-get upgrade --yes ; \
     apt-get install --yes --no-install-recommends \
     sudo \
+    wget \
     python3 \
     libgomp1 \
     pip ; \
