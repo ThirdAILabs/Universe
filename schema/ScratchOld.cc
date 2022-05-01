@@ -1,8 +1,8 @@
 #include "Schema.h"
-#include "DynamicCounts.h"
+#include "DynamicCountsOld.h"
 #include <memory>
 
-using thirdai::schema::DynamicCountsBlock;
+using thirdai::schema::DynamicCountsOldBlock;
 using thirdai::schema::Window;
 using thirdai::schema::DataLoader;
 using thirdai::schema::ABlockConfig;
@@ -24,13 +24,13 @@ int main(int argc, char* argv[])
         windows.push_back(Window(/* lag = */ 365 + i, /* size = */ 7));
     } 
     
-    auto user_watch_rolling_feats = DynamicCountsBlock::Config(
+    auto user_watch_rolling_feats = DynamicCountsOldBlock::Config(
         /* id_col = */ 1, 
         /* timestamp_col = */ 0, 
         /* target_col = */ -1, 
         /* window_configs = */ windows,
         /* timestamp_fmt = */ "%Y-%m-%d");
-    auto movie_watch_rolling_feats = DynamicCountsBlock::Config(
+    auto movie_watch_rolling_feats = DynamicCountsOldBlock::Config(
         /* id_col = */ 2, 
         /* timestamp_col = */ 0, 
         /* target_col = */ -1, 
