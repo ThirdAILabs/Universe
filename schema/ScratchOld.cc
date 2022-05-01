@@ -44,6 +44,8 @@ int main(int argc, char* argv[])
     auto loader = DataLoader(input_feats, label_feats, 2048);
     loader.readCSV("/share/data/netflix/date_sorted_data_500k.csv", ',');
     std::cout << "Will start exporting..." << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
     loader.exportDataset();
-    std::cout << "Done exporting!" << std::endl;
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << "Done exporting! Took " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << " seconds." << std::endl;
 }
