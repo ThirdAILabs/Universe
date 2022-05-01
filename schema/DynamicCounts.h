@@ -9,52 +9,78 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <utility>
 #include <vector>
 #include <schema/InProgressVector.h>
 #include <sys/types.h>
 #include "Schema.h"
 
+/**
+ * TODO:
+ * - Reduce indirection.
+ * - Fix hash function.
+ * - Should I try to use circular buffer instead?
+ */
+
 namespace thirdai::schema {
 
-class CountMinSketch {
- public:
-  CountMinSketch(size_t n_arrays, size_t buckets_per_array)
-  : _arrays(n_arrays * buckets_per_array),
-    _hash_constants(n_arrays),
-    _n_arrays(n_arrays),
-    _buckets_per_array(buckets_per_array) {
+struct CountMinSketch {
+  CountMinSketch(size_t n_rows, uint32_t range_pow, std::vector<float>& sketch, std::vector<std::pair<uint32_t, uint32_t>>& hash_constants):
+    _n_rows(n_rows), 
+    _range_pow(range_pow),
+    _range(1 << range_pow), 
+    _sketch_offset(sketch.size()), 
+    _hash_constants_offset(sketch.size()), 
+    _sketch(sketch),
+    _hash_constants(hash_constants) {
+      _sketch.resize(_sketch.size() + _n_rows * _range);
+      _hash_constants.resize(_hash_constants.size() + _n_rows);
 
-    for (size_t i = 0; i < _n_arrays; ++i) {
-      _hash_constants[i] = std::pair<size_t, size_t>(std::rand(), std::rand());
+      for (size_t i = _hash_constants_offset; i < _hash_constants_offset + _n_rows; ++i) {
+        uint32_t a = rand();
+        if (!(a & 1)) {
+          a += 1;
+        }
+        uint32_t b = rand() << range_pow >> range_pow;
+        _hash_constants[i] = {a, b};
+      }
     }
-  }
 
-  void index(uint64_t x, uint32_t inc) {
-    for (size_t i = 0; i < _n_arrays; ++i) {
-      _arrays[i * _buckets_per_array + getIthIdx(x, i)] += inc;
+  void index(uint64_t x, float inc) {
+    for (size_t i = 0; i < _n_rows; ++i) {
+      updateIthCount(x, i, inc);
     }
   }
 
   float query(uint64_t x) const {
     float min = MAXFLOAT;
-    for (size_t i = 0; i < _n_arrays; ++i) {
-      min = std::min(min, _arrays[i * _buckets_per_array + getIthIdx(x, i)]);
+    for (size_t i = 0; i < _n_rows; ++i) {
+      min = std::min(min, getIthCount(x, i));
     }
     return min;
   }
   
  private:
-  size_t getIthIdx(uint64_t x, size_t i) const {
-    const auto& a_b = _hash_constants[i];
-    return static_cast<size_t>((a_b.first * x + a_b.second) % _buckets_per_array);
+  float updateIthCount(uint64_t x, size_t i, float inc) {
+    return _sketch[_sketch_offset + i * _range + getIthIdx(x, i)] += inc;
   }
   
-  /// We use arrays of floats here knowing that we eventually need to convert 
-  /// the counts to floats to be compatible with dataset vectors.
-  std::vector<float> _arrays;
-  std::vector<std::pair<uint64_t, uint64_t>> _hash_constants;
-  size_t _n_arrays;
-  size_t _buckets_per_array;
+  float getIthCount(uint64_t x, size_t i) const {
+    return _sketch[_sketch_offset + i * _range + getIthIdx(x, i)];
+  }
+
+  size_t getIthIdx(uint64_t x, size_t i) const {
+    const auto& [a, b] = _hash_constants[i];
+    return static_cast<size_t>((a * x + b) >> (32 - _range_pow));
+  }
+
+  size_t _n_rows;
+  size_t _range_pow;
+  size_t _range;
+  size_t _sketch_offset; 
+  size_t _hash_constants_offset; 
+  std::vector<float>& _sketch;
+  std::vector<std::pair<uint32_t, uint32_t>>& _hash_constants;
 };
 
 class DynamicCounts {
@@ -65,19 +91,18 @@ class DynamicCounts {
     for (size_t largest_interval = 1; largest_interval <= max_range; largest_interval <<= 1) {
       _n_sketches++;
     }
-    _sketches.reserve(_n_sketches);
-    size_t _interval_n_buckets = 1000000;
+    size_t n_buckets_pow = 20; // n_buckets ~ 1,000,000 // TODO(Geordie): this prolly needs to change. For now I just want to know the speedup.
     for (size_t i = 0; i < _n_sketches; i++) {
-      _sketches.push_back(CountMinSketch(15, _interval_n_buckets));
+      _count_min_sketches.push_back(CountMinSketch(15, n_buckets_pow, _sketch_buffer, _hash_constants_buffer)); // TODO(Geordie): n rows also needs to change.
       // _interval_n_buckets >>= 1;
     }
   }
 
-  void index(uint32_t id, uint32_t timestamp, uint32_t inc = 1) {
+  void index(uint32_t id, uint32_t timestamp, float inc = 1.0) {
     for (size_t i = 0; i < _n_sketches; ++i) {
       auto cms_idx = i;
       auto cms_timestamp = timestampToDay(timestamp) >> i;
-      _sketches[cms_idx].index(pack(id, cms_timestamp), inc);
+      _count_min_sketches[cms_idx].index(pack(id, cms_timestamp), inc);
     }
   }  
   
@@ -102,7 +127,7 @@ class DynamicCounts {
       }
       uint32_t cms_idx = next_cms_idx - 1;
 
-      count += _sketches[cms_idx].query(pack(id, day >> cms_idx));;
+      count += _count_min_sketches[cms_idx].query(pack(id, day >> cms_idx));;
 
       day += (1 << cms_idx);
     }
@@ -117,8 +142,9 @@ class DynamicCounts {
   static uint32_t timestampToDay(uint32_t timestamp) { return timestamp / SECONDS_IN_DAY; }
 
   size_t _n_sketches = 0;
-  std::vector<CountMinSketch> _sketches;
-
+  std::vector<float> _sketch_buffer;
+  std::vector<std::pair<uint32_t, uint32_t>> _hash_constants_buffer;
+  std::vector<CountMinSketch> _count_min_sketches;
 };
 
 struct Window {
