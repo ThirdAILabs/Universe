@@ -1,5 +1,6 @@
 #include "Schema.h"
 #include "DynamicCountsOld.h"
+#include <chrono>
 #include <memory>
 
 using thirdai::schema::DynamicCountsOldBlock;
