@@ -1,5 +1,8 @@
 #include "Schema.h"
 #include "DynamicCountsOld.h"
+#include <schema/DateFeatures.h>
+#include <schema/OneHotEncoding.h>
+#include <schema/Text.h>
 #include <chrono>
 #include <memory>
 #include <sstream>
@@ -8,6 +11,10 @@ using thirdai::schema::DynamicCountsOldBlock;
 using thirdai::schema::Window;
 using thirdai::schema::DataLoader;
 using thirdai::schema::ABlockConfig;
+using thirdai::schema::DateBlock;
+using thirdai::schema::OneHotEncodingBlock;
+using thirdai::schema::CharacterNGramBlock;
+using thirdai::schema::WordNGramBlock;
 
 int main(int argc, char* argv[])
 {
@@ -38,9 +45,24 @@ int main(int argc, char* argv[])
         /* window_configs = */ windows,
         /* timestamp_fmt = */ "%Y-%m-%d");
     
-
-    std::vector<std::shared_ptr<ABlockConfig>> input_feats = {user_watch_rolling_feats, movie_watch_rolling_feats};
-    std::vector<std::shared_ptr<ABlockConfig>> label_feats = {};
+    auto date_feats = DateBlock::Config(0, "%Y-%m-%d", 7);
+    auto user_id_feats = OneHotEncodingBlock::Config(1, 480189);
+    auto movie_id_feats = OneHotEncodingBlock::Config(2, 17770);
+    auto rating_feats = OneHotEncodingBlock::Config(3, 5);
+    auto movie_title_char_feats = CharacterNGramBlock::Config(4, 3, 15000);
+    auto movie_title_word_feats = WordNGramBlock::Config(4, 1, 15000);
+    auto release_year_feats = OneHotEncodingBlock::Config(5, 100);
+    
+    std::vector<std::shared_ptr<ABlockConfig>> input_feats = {
+        date_feats,
+        user_id_feats,
+        movie_id_feats,
+        movie_title_char_feats,
+        movie_title_word_feats,
+        release_year_feats,
+        user_watch_rolling_feats, 
+        movie_watch_rolling_feats};
+    std::vector<std::shared_ptr<ABlockConfig>> label_feats = {rating_feats};
 
     auto loader = DataLoader(input_feats, label_feats, 2048);
 
