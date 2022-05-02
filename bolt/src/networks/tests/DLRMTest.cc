@@ -67,40 +67,44 @@ class DLRMTestFixture : public testing::Test {
 //   auto test_metrics = dlrm.predict(dataset, nullptr,
 //   {"categorical_accuracy"});
 
-//   ASSERT_GE(test_metrics["categorical_accuracy"].front(), 0.99);
+//   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 // }
 
 TEST_F(DLRMTestFixture, NoisyCategoricalFeatures) {
-  std::vector<FullyConnectedLayerConfig> bottom_mlp = {
-      FullyConnectedLayerConfig(200, ActivationFunction::ReLU)};
+  SequentialConfigList bottom_mlp = {
+      std::make_shared<FullyConnectedLayerConfig>(200,
+                                                  ActivationFunction::ReLU)};
 
   EmbeddingLayerConfig embedding_layer = EmbeddingLayerConfig(8, 16, 12);
 
-  std::vector<FullyConnectedLayerConfig> top_mlp = {
-      FullyConnectedLayerConfig(1000, 0.1, ActivationFunction::ReLU,
-                                SamplingConfig(2, 32, 6, 32)),
-      FullyConnectedLayerConfig(n_classes, ActivationFunction::Softmax)};
+  SequentialConfigList top_mlp = {
+      std::make_shared<FullyConnectedLayerConfig>(
+          1000, 0.1, ActivationFunction::ReLU, SamplingConfig(2, 32, 6, 32)),
+      std::make_shared<FullyConnectedLayerConfig>(n_classes,
+                                                  ActivationFunction::Softmax)};
 
   DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes);
 
   auto dataset = genDataset(false, true);
 
-  dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 12);
+  dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 32);
   auto test_metrics = dlrm.predict(dataset, nullptr, {"categorical_accuracy"});
 
-  ASSERT_GE(test_metrics["categorical_accuracy"].front(), 0.9);
+  ASSERT_GE(test_metrics["categorical_accuracy"], 0.9);
 }
 
 TEST_F(DLRMTestFixture, NoisyDenseFeatures) {
-  std::vector<FullyConnectedLayerConfig> bottom_mlp = {
-      FullyConnectedLayerConfig(200, ActivationFunction::ReLU)};
+  SequentialConfigList bottom_mlp = {
+      std::make_shared<FullyConnectedLayerConfig>(200,
+                                                  ActivationFunction::ReLU)};
 
   EmbeddingLayerConfig embedding_layer = EmbeddingLayerConfig(8, 16, 12);
 
-  std::vector<FullyConnectedLayerConfig> top_mlp = {
-      FullyConnectedLayerConfig(1000, 0.1, ActivationFunction::ReLU,
-                                SamplingConfig(2, 32, 6, 32)),
-      FullyConnectedLayerConfig(n_classes, ActivationFunction::Softmax)};
+  SequentialConfigList top_mlp = {
+      std::make_shared<FullyConnectedLayerConfig>(
+          1000, 0.1, ActivationFunction::ReLU, SamplingConfig(2, 32, 6, 32)),
+      std::make_shared<FullyConnectedLayerConfig>(n_classes,
+                                                  ActivationFunction::Softmax)};
 
   DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes);
 
@@ -109,19 +113,21 @@ TEST_F(DLRMTestFixture, NoisyDenseFeatures) {
   dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 3);
   auto test_metrics = dlrm.predict(dataset, nullptr, {"categorical_accuracy"});
 
-  ASSERT_GE(test_metrics["categorical_accuracy"].front(), 0.99);
+  ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
 
 TEST_F(DLRMTestFixture, NoisyDenseAndCategoricalFeatures) {
-  std::vector<FullyConnectedLayerConfig> bottom_mlp = {
-      FullyConnectedLayerConfig(200, ActivationFunction::ReLU)};
+  SequentialConfigList bottom_mlp = {
+      std::make_shared<FullyConnectedLayerConfig>(200,
+                                                  ActivationFunction::ReLU)};
 
   EmbeddingLayerConfig embedding_layer = EmbeddingLayerConfig(8, 16, 12);
 
-  std::vector<FullyConnectedLayerConfig> top_mlp = {
-      FullyConnectedLayerConfig(1000, 0.1, ActivationFunction::ReLU,
-                                SamplingConfig(2, 32, 6, 32)),
-      FullyConnectedLayerConfig(n_classes, ActivationFunction::Softmax)};
+  SequentialConfigList top_mlp = {
+      std::make_shared<FullyConnectedLayerConfig>(
+          1000, 0.1, ActivationFunction::ReLU, SamplingConfig(2, 32, 6, 32)),
+      std::make_shared<FullyConnectedLayerConfig>(n_classes,
+                                                  ActivationFunction::Softmax)};
 
   DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes);
 
@@ -130,7 +136,7 @@ TEST_F(DLRMTestFixture, NoisyDenseAndCategoricalFeatures) {
   dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 5);
   auto test_metrics = dlrm.predict(dataset, nullptr, {"categorical_accuracy"});
 
-  ASSERT_LE(test_metrics["categorical_accuracy"].front(), 0.1);
+  ASSERT_LE(test_metrics["categorical_accuracy"], 0.1);
 }
 
 }  // namespace thirdai::bolt::tests

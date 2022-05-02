@@ -23,8 +23,9 @@ FullyConnectedLayer::FullyConnectedLayer(
       _b_gradient(config.dim, 0),
       _b_momentum(config.dim, 0),
       _b_velocity(config.dim, 0),
-      _is_active(config.dim, false),
       _sampling_config(config.sampling_config),
+      _prev_is_active(_prev_dim, false),
+      _is_active(config.dim, false),
       _force_sparse_for_inference(false) {
   std::random_device rd;
   std::default_random_engine eng(rd());
@@ -46,9 +47,7 @@ FullyConnectedLayer::FullyConnectedLayer(
 
     _rand_neurons = std::vector<uint32_t>(_dim);
 
-    int rn = 0;
-    std::generate(_rand_neurons.begin(), _rand_neurons.end(),
-                  [&]() { return rn++; });
+    std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
   }
 }
@@ -90,12 +89,42 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   uint32_t len_out = DENSE ? _dim : _sparse_dim;
   std::fill_n(output.gradients, len_out, 0);
 
+  _prev_is_dense = PREV_DENSE;
+  _this_is_dense = DENSE;
+
+  if (!DENSE and !PREV_DENSE) {
+    std::unique_ptr<ActiveNeuronsPair> active_pairs =
+        std::make_unique<ActiveNeuronsPair>(std::vector<uint64_t>(),
+                                            std::vector<uint64_t>());
+    for (uint64_t i = 0; i < input.len; i++) {
+      active_pairs->first.push_back(input.active_neurons[i]);
+    }
+    for (uint64_t n = 0; n < len_out; n++) {
+      active_pairs->second.push_back(output.active_neurons[n]);
+    }
+#pragma omp critical
+    _active_pairs.push_back(std::move(active_pairs));
+  }
+
+  if (!DENSE) {
+    for (uint64_t n = 0; n < len_out; n++) {
+      uint64_t act_neuron = output.active_neurons[n];
+      _is_active[act_neuron] = true;
+    }
+  }
+
+  if (!PREV_DENSE) {
+    for (uint64_t i = 0; i < input.len; i++) {
+      uint64_t act_neuron = input.active_neurons[i];
+      _prev_is_active[act_neuron] = true;
+    }
+  }
+
   for (uint64_t n = 0; n < len_out; n++) {
     // Because DENSE is known at compile time the compiler can remove this
     // conditional
     uint64_t act_neuron = DENSE ? n : output.active_neurons[n];
     assert(act_neuron < _dim);
-    _is_active[act_neuron] = true;
     float act = _biases[act_neuron];
     for (uint64_t i = 0; i < input.len; i++) {
       // Because PREV_DENSE is known at compile time the compiler can remove
@@ -189,7 +218,7 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
 
   for (uint64_t n = 0; n < len_out; n++) {
     assert(!std::isnan(output.gradients[n]));
-    output.gradients[n] *= actFuncDerivative(output.activations[n]);
+    output.gradients[n] *= actFuncDerivative(output.activations[n], _act_func);
     assert(!std::isnan(output.gradients[n]));
     // Because DENSE is known at compile time the compiler can remove this
     // conditional
@@ -228,21 +257,20 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     active_set.insert(labels->active_neurons[i]);
   }
 
-  uint32_t* hashes = new uint32_t[_hash_table->numTables()];
+  std::vector<uint32_t> hashes(_hasher->numTables());
   if (PREV_DENSE) {
-    _hasher->hashSingleDense(input.activations, input.len, hashes);
+    _hasher->hashSingleDense(input.activations, input.len, hashes.data());
   } else {
     _hasher->hashSingleSparse(input.active_neurons, input.activations,
-                              input.len, hashes);
+                              input.len, hashes.data());
   }
 
   if (_force_sparse_for_inference && _act_func == ActivationFunction::Softmax) {
-    _hash_table->queryAndInsertForInference(hashes, active_set, _sparse_dim);
+    _hash_table->queryAndInsertForInference(hashes.data(), active_set,
+                                            _sparse_dim);
   } else {
-    _hash_table->queryBySet(hashes, active_set);
+    _hash_table->queryBySet(hashes.data(), active_set);
   }
-
-  delete[] hashes;
 
   if (active_set.size() < _sparse_dim) {
     uint32_t rand_offset = rand() % _dim;
@@ -254,7 +282,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
 
   uint32_t cnt = 0;
   for (uint32_t i = 0; i < label_len; i++) {
-    if (cnt >= _sparse_dim) {
+    if (cnt == _sparse_dim) {
       break;
     }
     output.active_neurons[cnt++] = labels->active_neurons[i];
@@ -262,7 +290,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
   }
 
   for (auto x : active_set) {
-    if (cnt >= _sparse_dim) {
+    if (cnt == _sparse_dim) {
       break;
     }
     assert(x < _dim);
@@ -275,47 +303,153 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 
+  if (!_prev_is_dense && !_this_is_dense) {
+    updateSparseSparseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
+                                       B2_bias_corrected);
+  } else if (!_prev_is_dense && _this_is_dense) {
+    updateSparseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
+                                      B2_bias_corrected);
+  } else if (_prev_is_dense && !_this_is_dense) {
+    updateDenseSparseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
+                                      B2_bias_corrected);
+  } else {
+    updateDenseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
+                                     B2_bias_corrected);
+  }
+
+  updateBiasParameters(lr, B1, B2, eps, B1_bias_corrected, B2_bias_corrected);
+
+  cleanupWithinBatchVars();
+}
+
+inline void FullyConnectedLayer::updateSparseSparseWeightParameters(
+    float lr, float B1, float B2, float eps, float B1_bias_corrected,
+    float B2_bias_corrected) {
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
-  for (uint64_t n = 0; n < _dim; n++) {
-    if (!_is_active[n]) {
+  // TODO(Josh): It is possible to update the same active pair multiple times
+  // with the full gradient. Possible solutions include:
+  // 1. Including the gradient in the active pair and doing an update multiple
+  //    times with the smaller gradients. This is effectively equal to batch
+  //     size 1, but we basically already have batch size 1 with sparse sparse.
+  // 2. Having a bloom filter where we cheaply hash the active pairs to a bloom
+  //    filter bit, and if it is already set in the bloom filter skip it,
+  //    otherwise set the bit and do the gradient update.
+  for (auto& _active_pair : _active_pairs) {
+    for (uint64_t prev_neuron : _active_pair->first) {
+      for (uint64_t cur_neuron : _active_pair->second) {
+        updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
+                                     B1_bias_corrected, B2_bias_corrected);
+      }
+    }
+  }
+}
+
+inline void FullyConnectedLayer::updateSparseDenseWeightParameters(
+    float lr, float B1, float B2, float eps, float B1_bias_corrected,
+    float B2_bias_corrected) {
+  // TODO(josh): Possibly reorder these loops to put the _is_active on the
+  // outside? I worry this will hurt cache efficiency on the gradient lookups.
+  // It also might eventually depend on the underlying memory layout of the
+  // weights/parameters, which will be optimized for easy vectorization.
+#pragma omp parallel for default(none) \
+    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
+  for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
+    for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
+      if (_prev_is_active[prev_neuron]) {
+        updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
+                                     B1_bias_corrected, B2_bias_corrected);
+      }
+    }
+  }
+}
+
+inline void FullyConnectedLayer::updateDenseSparseWeightParameters(
+    float lr, float B1, float B2, float eps, float B1_bias_corrected,
+    float B2_bias_corrected) {
+#pragma omp parallel for default(none) \
+    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
+  for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
+    if (_is_active[cur_neuron]) {
+      for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
+        updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
+                                     B1_bias_corrected, B2_bias_corrected);
+      }
+    }
+  }
+}
+
+inline void FullyConnectedLayer::updateDenseDenseWeightParameters(
+    float lr, float B1, float B2, float eps, float B1_bias_corrected,
+    float B2_bias_corrected) {
+#pragma omp parallel for default(none) \
+    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
+  for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
+    for (uint64_t prev_neuron = 0; prev_neuron < _prev_dim; prev_neuron++) {
+      updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
+                                   B1_bias_corrected, B2_bias_corrected);
+    }
+  }
+}
+
+inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
+                                                      float B2, float eps,
+                                                      float B1_bias_corrected,
+                                                      float B2_bias_corrected) {
+#pragma omp parallel for default(none) \
+    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
+  for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
+    if (!_this_is_dense && !_is_active[cur_neuron]) {
       continue;
     }
 
-    for (uint64_t i = 0; i < _prev_dim; i++) {
-      auto indx = n * _prev_dim + i;
-      float grad = _w_gradient[indx];
-      assert(!std::isnan(grad));
-
-      _w_momentum[indx] = B1 * _w_momentum[indx] + (1 - B1) * grad;
-      _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
-      assert(!std::isnan(_w_momentum[indx]));
-      assert(!std::isnan(_w_velocity[indx]));
-
-      _weights[indx] +=
-          lr * (_w_momentum[indx] / B1_bias_corrected) /
-          (std::sqrt(_w_velocity[indx] / B2_bias_corrected) + eps);
-      assert(!std::isnan(_weights[indx]));
-
-      _w_gradient[indx] = 0;
-    }
-
-    float grad = _b_gradient[n];
+    float grad = _b_gradient[cur_neuron];
     assert(!std::isnan(grad));
 
-    _b_momentum[n] = B1 * _b_momentum[n] + (1 - B1) * grad;
-    _b_velocity[n] = B2 * _b_velocity[n] + (1 - B2) * grad * grad;
+    _b_momentum[cur_neuron] = B1 * _b_momentum[cur_neuron] + (1 - B1) * grad;
+    _b_velocity[cur_neuron] =
+        B2 * _b_velocity[cur_neuron] + (1 - B2) * grad * grad;
 
     assert(!std::isnan(_b_momentum[n]));
     assert(!std::isnan(_b_velocity[n]));
 
-    _biases[n] += lr * (_b_momentum[n] / B1_bias_corrected) /
-                  (std::sqrt(_b_velocity[n] / B2_bias_corrected) + eps);
+    _biases[cur_neuron] +=
+        lr * (_b_momentum[cur_neuron] / B1_bias_corrected) /
+        (std::sqrt(_b_velocity[cur_neuron] / B2_bias_corrected) + eps);
     assert(!std::isnan(_biases[n]));
 
-    _b_gradient[n] = 0;
+    _b_gradient[cur_neuron] = 0;
+    _is_active[cur_neuron] = false;
+  }
+}
+
+inline void FullyConnectedLayer::cleanupWithinBatchVars() {
+  _active_pairs.clear();
+  for (uint64_t i = 0; i < _prev_dim; i++) {
+    _prev_is_active[i] = false;
+  }
+  for (uint64_t n = 0; n < _dim; n++) {
     _is_active[n] = false;
   }
+}
+
+inline void FullyConnectedLayer::updateSingleWeightParameters(
+    uint64_t prev_neuron, uint64_t cur_neuron, float lr, float B1, float B2,
+    float eps, float B1_bias_corrected, float B2_bias_corrected) {
+  auto indx = cur_neuron * _prev_dim + prev_neuron;
+  float grad = _w_gradient[indx];
+  assert(!std::isnan(grad));
+
+  _w_momentum[indx] = B1 * _w_momentum[indx] + (1 - B1) * grad;
+  _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
+  assert(!std::isnan(_w_momentum[indx]));
+  assert(!std::isnan(_w_velocity[indx]));
+
+  _weights[indx] += lr * (_w_momentum[indx] / B1_bias_corrected) /
+                    (std::sqrt(_w_velocity[indx] / B2_bias_corrected) + eps);
+  assert(!std::isnan(_weights[indx]));
+
+  _w_gradient[indx] = 0;
 }
 
 void FullyConnectedLayer::buildHashTables() {
@@ -325,18 +459,15 @@ void FullyConnectedLayer::buildHashTables() {
   uint64_t num_tables = _hash_table->numTables();
   // TODO(nicholas): hashes could be array with size max(batch size, dim) that
   // is allocated once
-  uint32_t* hashes = new uint32_t[num_tables * _dim];
-
+  std::vector<uint32_t> hashes(num_tables * _dim);
 #pragma omp parallel for default(none) shared(num_tables, hashes)
   for (uint64_t n = 0; n < _dim; n++) {
     _hasher->hashSingleDense(_weights.data() + n * _prev_dim, _prev_dim,
-                             hashes + n * num_tables);
+                             hashes.data() + n * num_tables);
   }
 
   _hash_table->clearTables();
-  _hash_table->insertSequential(_dim, 0, hashes);
-
-  delete[] hashes;
+  _hash_table->insertSequential(_dim, 0, hashes.data());
 }
 
 void FullyConnectedLayer::reBuildHashFunction() {

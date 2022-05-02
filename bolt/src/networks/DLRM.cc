@@ -1,4 +1,5 @@
 #include "DLRM.h"
+#include <wrappers/src/LicenseWrapper.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <atomic>
@@ -8,38 +9,40 @@
 namespace thirdai::bolt {
 
 DLRM::DLRM(EmbeddingLayerConfig embedding_config,
-           std::vector<FullyConnectedLayerConfig> bottom_mlp_configs,
-           std::vector<FullyConnectedLayerConfig> top_mlp_configs,
-           uint32_t dense_feature_dim)
+           SequentialConfigList bottom_mlp_configs,
+           SequentialConfigList top_mlp_configs, uint32_t dense_feature_dim)
     : _embedding_layer(embedding_config),
       _bottom_mlp(bottom_mlp_configs, dense_feature_dim),
       _top_mlp(top_mlp_configs, (embedding_config.lookup_size *
                                  embedding_config.num_embedding_lookups) +
-                                    bottom_mlp_configs.back().dim),
+                                    bottom_mlp_configs.back()->getDim()),
 
       _iter(0),
       _epoch_count(0) {
-  if (bottom_mlp_configs.back().sparsity != 1.0) {
+  thirdai::licensing::LicenseWrapper::checkLicense();
+
+  if (bottom_mlp_configs.back()->getSparsity() != 1.0) {
     throw std::invalid_argument("Dense feature layer must have sparsity 1.0");
   }
 
-  if (top_mlp_configs.back().dim == 1 &&
-      top_mlp_configs.back().act_func != ActivationFunction::Linear) {
+  if (top_mlp_configs.back()->getDim() == 1 &&
+      top_mlp_configs.back()->getActFunc() != ActivationFunction::Linear) {
     throw std::invalid_argument(
         "Output layer must have MeanSqauredError if dimension is 1");
   }
 
-  if (top_mlp_configs.back().dim != 1 &&
-      top_mlp_configs.back().act_func != ActivationFunction::Softmax) {
+  if (top_mlp_configs.back()->getDim() != 1 &&
+      top_mlp_configs.back()->getActFunc() != ActivationFunction::Softmax) {
     throw std::invalid_argument(
         "Output layer must have Softmax if dimension is > 1");
   }
 
-  _softmax = top_mlp_configs.back().act_func == ActivationFunction::Softmax;
-  _output_dim = top_mlp_configs.back().dim;
+  _softmax =
+      top_mlp_configs.back()->getActFunc() == ActivationFunction::Softmax;
+  _output_dim = top_mlp_configs.back()->getDim();
 
   _concat_layer_dim =
-      _embedding_layer.getEmbeddingDim() + bottom_mlp_configs.back().dim;
+      _embedding_layer.getEmbeddingDim() + bottom_mlp_configs.back()->getDim();
 }
 
 void DLRM::initializeNetworkState(uint32_t batch_size, bool force_dense) {

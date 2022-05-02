@@ -13,3 +13,6 @@
 [submodule "deps/pybind11"]
 	path = deps/pybind11
 	url = https://github.com/ThirdAILabs/PybindFork
+[submodule "deps/cryptopp"]
+	path = deps/cryptopp
+	url = https://github.com/ThirdAILabs/CrypoppFork

@@ -9,7 +9,7 @@ RUN apt-get -y update ; apt-get -y install git ;
 USER thirdai
 ADD ColBERT saved 
 RUN \
-  # Install ColBERT model and dependencies
-  pip3 install torch transformers ujson; \  
+  # Install ColBERT model and dependencies. Torch is installed as cpu only.
+  pip3 install torch transformers ujson --extra-index-url https://download.pytorch.org/whl/cpu; \  
   cd saved ; \
   pip3 install .

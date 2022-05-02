@@ -5,4 +5,5 @@ target_link_libraries(
   PRIVATE 
   hash_function_lib
   hash_table_lib
+  license_wrapper_lib
 )

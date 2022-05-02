@@ -60,7 +60,7 @@ def train(
     args,
     train_fn,
     accuracy_threshold,
-    epoch_time_threshold=600,
+    epoch_time_threshold=1200,
     total_time_threshold=2000,
 ):
     """
@@ -95,7 +95,7 @@ def train_yelp(args):
     This function is to be used as the "train_fn" argument to train().
     """
     layers = [
-        bolt.LayerConfig(
+        bolt.FullyConnected(
             dim=2000,
             load_factor=args.sparsity,
             activation_function=bolt.ActivationFunctions.ReLU,
@@ -106,7 +106,7 @@ def train_yelp(args):
                 reservoir_size=64,
             ),
         ),
-        bolt.LayerConfig(
+        bolt.FullyConnected(
             dim=2,
             load_factor=1.0,
             activation_function=bolt.ActivationFunctions.Softmax,
@@ -133,7 +133,7 @@ def train_yelp(args):
         acc, _ = network.predict(
             test_data, metrics=["categorical_accuracy"], verbose=False
         )
-        epoch_accuracies.append(acc["categorical_accuracy"][0])
+        epoch_accuracies.append(acc["categorical_accuracy"])
 
     network.save(model_path)
 
@@ -202,4 +202,4 @@ def test_preprocess():
     acc, _ = sentiment_analysis_network.predict(
         test_data, metrics=["categorical_accuracy"], verbose=False
     )
-    assert acc["categorical_accuracy"][0] > 0.5
+    assert acc["categorical_accuracy"] > 0.5

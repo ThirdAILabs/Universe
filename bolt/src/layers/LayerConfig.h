@@ -1,66 +1,24 @@
 #pragma once
 
-#include <cereal/types/vector.hpp>
-#include <cctype>
+#include "LayerUtils.h"
 #include <cmath>
 #include <fstream>
 #include <iostream>
-#include <optional>
-#include <stdexcept>
 
 namespace thirdai::bolt {
 
-enum class ActivationFunction { ReLU, Softmax, Linear };
+struct SequentialLayerConfig {
+  virtual uint64_t getDim() const = 0;
 
-static ActivationFunction getActivationFunction(
-    const std::string& act_func_name) {
-  std::string lower_name;
-  for (char c : act_func_name) {
-    lower_name.push_back(std::tolower(c));
+  virtual float getSparsity() const = 0;
+
+  virtual ActivationFunction getActFunc() const = 0;
+
+  friend std::ostream& operator<<(std::ostream& out,
+                                  const SequentialLayerConfig& config) {
+    config.print(out);
+    return out;
   }
-  if (lower_name == "relu") {
-    return ActivationFunction::ReLU;
-  }
-  if (lower_name == "softmax") {
-    return ActivationFunction::Softmax;
-  }
-  if (lower_name == "linear") {
-    return ActivationFunction::Linear;
-  }
-  throw std::invalid_argument("'" + act_func_name +
-                              "' is not a valid activation function");
-}
-
-struct SamplingConfig {
-  uint32_t hashes_per_table, num_tables, range_pow, reservoir_size;
-
-  SamplingConfig()
-      : hashes_per_table(0), num_tables(0), range_pow(0), reservoir_size(0) {}
-
-  SamplingConfig(uint32_t hashes_per_table, uint32_t num_tables,
-                 uint32_t range_pow, uint32_t reservoir_size)
-      : hashes_per_table(hashes_per_table),
-        num_tables(num_tables),
-        range_pow(range_pow),
-        reservoir_size(reservoir_size) {}
-
- private:
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(hashes_per_table, num_tables, range_pow, reservoir_size);
-  }
-};
-
-struct FullyConnectedLayerConfig {
-  uint64_t dim;
-  float sparsity;
-  ActivationFunction act_func;
-  SamplingConfig sampling_config;
-  std::pair<uint32_t, uint32_t> kernel_size =
-      std::make_pair(static_cast<uint32_t>(0), static_cast<uint32_t>(0));
-  uint32_t num_patches = 0;
 
   static void checkSparsity(float sparsity) {
     if (0.2 < sparsity && sparsity < 1.0) {
@@ -69,19 +27,26 @@ struct FullyConnectedLayerConfig {
     }
   }
 
+ private:
+  virtual void print(std::ostream& out) const = 0;
+};
+
+using SequentialConfigList =
+    std::vector<std::shared_ptr<bolt::SequentialLayerConfig>>;
+
+struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
+  uint64_t dim;
+  float sparsity;
+  ActivationFunction act_func;
+  SamplingConfig sampling_config;
+
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
                             ActivationFunction _act_func,
-                            SamplingConfig _config,
-                            std::pair<uint32_t, uint32_t> _kernel_size =
-                                std::make_pair(static_cast<uint32_t>(0),
-                                               static_cast<uint32_t>(0)),
-                            uint32_t _num_patches = 0)
+                            SamplingConfig _config)
       : dim(_dim),
         sparsity(_sparsity),
         act_func(_act_func),
-        sampling_config(_config),
-        kernel_size(std::move(_kernel_size)),
-        num_patches(_num_patches) {
+        sampling_config(_config) {
     checkSparsity(sparsity);
   }
 
@@ -108,10 +73,16 @@ struct FullyConnectedLayerConfig {
     }
   }
 
-  friend std::ostream& operator<<(std::ostream& out,
-                                  const FullyConnectedLayerConfig& config) {
-    out << "Layer: dim=" << config.dim << ", load_factor=" << config.sparsity;
-    switch (config.act_func) {
+  uint64_t getDim() const { return dim; }
+
+  float getSparsity() const { return sparsity; }
+
+  ActivationFunction getActFunc() const { return act_func; }
+
+ private:
+  void print(std::ostream& out) const {
+    out << "FullyConnected: dim=" << dim << ", load_factor=" << sparsity;
+    switch (act_func) {
       case ActivationFunction::ReLU:
         out << ", act_func=ReLU";
         break;
@@ -122,23 +93,68 @@ struct FullyConnectedLayerConfig {
         out << ", act_func=Linear";
         break;
     }
-    if (config.sparsity < 1.0) {
+    if (sparsity < 1.0) {
       out << ", sampling: {";
-      out << "hashes_per_table=" << config.sampling_config.hashes_per_table
-          << ", num_tables=" << config.sampling_config.num_tables
-          << ", range_pow=" << config.sampling_config.range_pow
-          << ", reservoir_size=" << config.sampling_config.reservoir_size
-          << "}";
+      out << "hashes_per_table=" << sampling_config.hashes_per_table
+          << ", num_tables=" << sampling_config.num_tables
+          << ", range_pow=" << sampling_config.range_pow
+          << ", reservoir_size=" << sampling_config.reservoir_size << "}";
     }
-    if (config.isConvLayer()) {
-      out << ", kernel_width=" << config.kernel_size.first
-          << ", kernel_height=" << config.kernel_size.second
-          << ", num_patches=" << config.num_patches;
-    }
-    return out;
+  }
+};
+
+struct ConvLayerConfig final : public SequentialLayerConfig {
+  uint64_t num_filters;
+  float sparsity;
+  ActivationFunction act_func;
+  SamplingConfig sampling_config;
+  std::pair<uint32_t, uint32_t> kernel_size;
+  uint32_t num_patches;
+
+  ConvLayerConfig(uint64_t _num_filters, float _sparsity,
+                  ActivationFunction _act_func, SamplingConfig _config,
+                  std::pair<uint32_t, uint32_t> _kernel_size,
+                  uint32_t _num_patches)
+      : num_filters(_num_filters),
+        sparsity(_sparsity),
+        act_func(_act_func),
+        sampling_config(_config),
+        kernel_size(std::move(_kernel_size)),
+        num_patches(_num_patches) {
+    checkSparsity(sparsity);
   }
 
-  bool isConvLayer() const { return kernel_size.first != 0; }
+  uint64_t getDim() const { return num_filters * num_patches; }
+
+  float getSparsity() const { return sparsity; }
+
+  ActivationFunction getActFunc() const { return act_func; }
+
+ private:
+  void print(std::ostream& out) const {
+    out << "Conv: num_filters=" << num_filters << ", load_factor=" << sparsity
+        << ", num_patches=" << num_patches;
+    switch (act_func) {
+      case ActivationFunction::ReLU:
+        out << ", act_func=ReLU";
+        break;
+      case ActivationFunction::Softmax:
+        out << ", act_func=Softmax";
+        break;
+      case ActivationFunction::Linear:
+        out << ", act_func=Linear";
+        break;
+    }
+    out << ", kernel_size: (" << kernel_size.first << ", " << kernel_size.second
+        << ")";
+    if (sparsity < 1.0) {
+      out << ", sampling: {";
+      out << "hashes_per_table=" << sampling_config.hashes_per_table
+          << ", num_tables=" << sampling_config.num_tables
+          << ", range_pow=" << sampling_config.range_pow
+          << ", reservoir_size=" << sampling_config.reservoir_size << "}";
+    }
+  }
 };
 
 struct EmbeddingLayerConfig {

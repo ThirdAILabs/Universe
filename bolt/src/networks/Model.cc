@@ -97,7 +97,7 @@ MetricData Model<BATCH_T>::train(
 }
 
 template <typename BATCH_T>
-MetricData Model<BATCH_T>::predict(
+InferenceMetricData Model<BATCH_T>::predict(
     const dataset::InMemoryDataset<BATCH_T>& test_data,
     float* output_activations, const std::vector<std::string>& metric_names,
     bool verbose, uint32_t batch_limit) {
@@ -153,9 +153,9 @@ MetricData Model<BATCH_T>::predict(
 
   metrics.logAndReset();
 
-  auto metric_vals = metrics.getOutput();
+  auto metric_vals = metrics.getOutputFromInference();
 
-  metric_vals["test_time"].push_back(test_time);
+  metric_vals["test_time"] = test_time;
 
   return metric_vals;
 }
