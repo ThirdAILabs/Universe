@@ -80,8 +80,7 @@ class LicenseWithSignature {
               CryptoPP::SignatureVerificationFilter::
                   THROW_EXCEPTION)  // SignatureVerificationFilter
       );                            // StringSource
-    } catch (const CryptoPP::SignatureVerificationFilter::
-                 SignatureVerificationFailed& e) {
+    } catch (const std::exception& e) {
       return false;
     }
 

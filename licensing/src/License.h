@@ -27,7 +27,7 @@ class License {
     int64_t current_millis = getCurrentEpochMillis();
     int64_t millis_offset = num_days * 24 * 3600 * 1000;
     int64_t expire_time = current_millis + millis_offset;
-    return License(std::move(metadata), expire_time);
+    return {std::move(metadata), expire_time};
   }
 
   bool isExpired() const {
