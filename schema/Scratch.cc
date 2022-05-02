@@ -38,6 +38,20 @@ int main(int argc, char* argv[])
         /* window_configs = */ windows,
         /* timestamp_fmt = */ "%Y-%m-%d");
     
+    date_feats = schema.Date(col=0, timestamp_fmt="%Y-%m-%d", n_years=7)
+    input_blocks.append(date_feats)
+    user_id_feats = schema.OneHotEncoding(col=1, out_dim=480_189)
+    input_blocks.append(user_id_feats)
+    movie_id_feats = schema.OneHotEncoding(col=2, out_dim=17_770)
+    input_blocks.append(movie_id_feats)
+    rating_feats = schema.OneHotEncoding(col=3, out_dim=5)
+    label_blocks.append(rating_feats)
+    movie_title_char_feats = schema.CharacterNGram(col=4, k=3, out_dim=15_000)
+    input_blocks.append(movie_title_char_feats)
+    movie_title_word_feats = schema.WordNGram(col=4, k=1, out_dim=15_000)
+    input_blocks.append(movie_title_word_feats)
+    release_year_feats = schema.OneHotEncoding(col=5, out_dim=100)
+    input_blocks.append(release_year_feats)
 
     std::vector<std::shared_ptr<ABlockConfig>> input_feats = {user_watch_rolling_feats, movie_watch_rolling_feats};
     std::vector<std::shared_ptr<ABlockConfig>> label_feats = {};
