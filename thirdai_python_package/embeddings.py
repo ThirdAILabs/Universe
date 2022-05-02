@@ -1,7 +1,7 @@
-
 from ._deps.ColBERT.colbertmodeling.checkpoint import Checkpoint
 import pathlib
 import numpy as np
+
 
 class DocSearchModel:
     def __init__(self, path):

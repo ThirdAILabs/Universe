@@ -6,7 +6,7 @@ import dataclasses
 from typing import Any
 from collections import defaultdict
 from dataclasses import dataclass, fields
-from colbertutils.utils import timestamp, torch_load_dnn
+from ..thirdai._deps.ColBERT.colbertutils.utils import timestamp, torch_load_dnn
 
 
 @dataclass

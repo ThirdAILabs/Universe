@@ -1,11 +1,11 @@
 import os
 import torch
 
-from colbertutils.utils import torch_load_dnn
+from ..thirdai._deps.ColBERT.colbertutils.utils import torch_load_dnn
 
 from transformers import AutoTokenizer
-from colbertmodeling.hf_colbert import HF_ColBERT
-from colbertconfig import ColBERTConfig
+from thirdai._deps.ColBERT.colbertmodeling.hf_colbert import HF_ColBERT
+from thirdai._deps.ColBERT.colbertconfig import ColBERTConfig
 
 
 class BaseColBERT(torch.nn.Module):

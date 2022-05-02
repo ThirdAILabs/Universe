@@ -131,10 +131,11 @@ setup(
     long_description="",
     ext_modules=[CMakeExtension("thirdai._thirdai")],
     cmdclass=dict(build_ext=CMakeBuild),
-    license_files=('LICENSE',),
+    license_files=("LICENSE",),
     zip_safe=False,
     extras_require={"test": ["pytest"]},
-    packages = ["thirdai"] + ["thirdai." + p for p in find_packages(where="thirdai_python_package")],
-    package_dir = {"thirdai": "thirdai_python_package"}
+    packages=["thirdai"]
+    + ["thirdai." + p for p in find_packages(where="thirdai_python_package")],
+    package_dir={"thirdai": "thirdai_python_package"}
     # package_dir = {'thirdai.embeddings': 'docker/product/docsearch/ColBERT'}
 )

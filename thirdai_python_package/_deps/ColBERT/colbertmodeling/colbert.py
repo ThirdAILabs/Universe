@@ -1,6 +1,6 @@
-from colbertconfig import ColBERTConfig
-from colbertutils.utils import print_message, flatten
-from colbertmodeling.base_colbert import BaseColBERT
+from thirdai._deps.ColBERT.colbertconfig import ColBERTConfig
+from ..thirdai._deps.ColBERT.colbertutils.utils import print_message, flatten
+from thirdai._deps.ColBERT.colbertmodeling.base_colbert import BaseColBERT
 
 import torch
 import string
