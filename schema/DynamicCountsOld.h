@@ -11,14 +11,15 @@
 #include <sstream>
 #include <vector>
 #include <schema/InProgressVector.h>
+#include <schema/DynamicCounts.h>
 #include <sys/types.h>
 #include "Schema.h"
 
 namespace thirdai::schema {
 
-class CountMinSketch {
+class CountMinSketchOld {
  public:
-  CountMinSketch(size_t n_arrays, size_t buckets_per_array)
+  CountMinSketchOld(size_t n_arrays, size_t buckets_per_array)
   : _arrays(n_arrays * buckets_per_array),
     _hash_constants(n_arrays),
     _n_arrays(n_arrays),
@@ -57,18 +58,18 @@ class CountMinSketch {
   size_t _buckets_per_array;
 };
 
-class DynamicCounts {
+class DynamicCountsOld {
   // TODO(Geordie): In this case, the CMS-are not contiguous in memory. Might want to do it differently.
   // In fact, can completely do CMS in this class. No need for separate class, right?
  public:
-  explicit DynamicCounts(uint32_t max_range) {
+  explicit DynamicCountsOld(uint32_t max_range) {
     for (size_t largest_interval = 1; largest_interval <= max_range; largest_interval <<= 1) {
       _n_sketches++;
     }
     _sketches.reserve(_n_sketches);
     size_t _interval_n_buckets = 1000000;
     for (size_t i = 0; i < _n_sketches; i++) {
-      _sketches.push_back(CountMinSketch(15, _interval_n_buckets));
+      _sketches.push_back(CountMinSketchOld(15, _interval_n_buckets));
       // _interval_n_buckets >>= 1;
     }
   }
@@ -117,15 +118,11 @@ class DynamicCounts {
   static uint32_t timestampToDay(uint32_t timestamp) { return timestamp / SECONDS_IN_DAY; }
 
   size_t _n_sketches = 0;
-  std::vector<CountMinSketch> _sketches;
+  std::vector<CountMinSketchOld> _sketches;
 
 };
 
-struct Window {
-  Window(uint32_t lag, uint32_t size): _lag(lag), _size(size) {}
-  uint32_t _lag;
-  uint32_t _size;
-};
+
 struct DynamicCountsOldBlock: public ABlock {
   DynamicCountsOldBlock(std::vector<Window> window_configs, uint32_t max_window_size, uint32_t id_col, uint32_t timestamp_col, int32_t target_col, uint32_t offset, std::string timestamp_fmt)
   : _window_configs(std::move(window_configs)),
@@ -204,7 +201,7 @@ struct DynamicCountsOldBlock: public ABlock {
 
  private:
   std::vector<Window> _window_configs;
-  DynamicCounts _dc;
+  DynamicCountsOld _dc;
   uint32_t _id_col;
   uint32_t _timestamp_col;
   int32_t _target_col;
