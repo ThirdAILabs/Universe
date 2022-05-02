@@ -2,6 +2,7 @@
 #include "DynamicCountsOld.h"
 #include <chrono>
 #include <memory>
+#include <sstream>
 
 using thirdai::schema::DynamicCountsOldBlock;
 using thirdai::schema::Window;
@@ -11,7 +12,6 @@ using thirdai::schema::ABlockConfig;
 int main(int argc, char* argv[])
 {
     (void) argc;
-    (void) argv;
 
     std::vector<Window> windows;
     
@@ -43,7 +43,11 @@ int main(int argc, char* argv[])
     std::vector<std::shared_ptr<ABlockConfig>> label_feats = {};
 
     auto loader = DataLoader(input_feats, label_feats, 2048);
-    loader.readCSV("/share/data/netflix/date_sorted_data_500k.csv", ',');
+
+    std::stringstream ss;
+    ss << argv[1];
+    std::cout << "Reading from " << ss.str() << std::endl;
+    loader.readCSV(ss.str(), ',');
     std::cout << "Will start exporting..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
     loader.exportDataset();

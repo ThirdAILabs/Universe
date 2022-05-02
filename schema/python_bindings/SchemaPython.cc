@@ -71,6 +71,11 @@ void createSchemaSubmodule(py::module_& module) {
                           py::arg("target_col"), py::arg("window_configs"),
                           py::arg("timestamp_fmt"));
     
+    schema_submodule.def("DynamicCounts", &DynamicCountsBlock::Config,
+                          py::arg("id_col"), py::arg("timestamp_col"),
+                          py::arg("target_col"), py::arg("window_configs"),
+                          py::arg("timestamp_fmt"));
+                          
     schema_submodule.def("FeatureHashing", &FeatureHashingBlock::Config,
                           py::arg("col"), py::arg("n_hashes"),
                           py::arg("out_dim"));

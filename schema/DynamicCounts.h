@@ -17,8 +17,9 @@
 
 /**
  * TODO:
- * - Reduce indirection.
- * - Fix hash function.
+ * - srand
+ * - configurable cms sizes
+ * - based on counts
  * - Should I try to use circular buffer instead?
  */
 
