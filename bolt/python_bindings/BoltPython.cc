@@ -9,7 +9,6 @@ namespace thirdai::bolt::python {
 void createBoltSubmodule(py::module_& module) {
   auto bolt_submodule = module.def_submodule("bolt");
 
-#if THIRDAI_USE_DEV_PYBIND
   py::class_<thirdai::bolt::SamplingConfig>(
       bolt_submodule, "SamplingConfig",
       "SamplingConfig represents a layer's sampling hyperparameters.")
@@ -19,7 +18,6 @@ void createBoltSubmodule(py::module_& module) {
            "Builds a SamplingConfig object. range_pow must always be 3 * "
            "hashes_per_table.")
       .def(py::init<>(), "Builds a default SamplingConfig object.");
-#endif
 
   py::enum_<ActivationFunction>(
       bolt_submodule, "ActivationFunctions",
@@ -73,7 +71,6 @@ void createBoltSubmodule(py::module_& module) {
              std::shared_ptr<thirdai::bolt::FullyConnectedLayerConfig>,
              thirdai::bolt::SequentialLayerConfig>(
       bolt_submodule, "FullyConnected", "Defines a fully-connected layer.\n")
-#if THIRDAI_USE_DEV_PYBIND
       .def(
           py::init<uint64_t, float, ActivationFunction,
                    thirdai::bolt::SamplingConfig>(),
@@ -91,7 +88,6 @@ void createBoltSubmodule(py::module_& module) {
           "activation "
           "functions: ReLU, Softmax, and Linear.\n"
           " * sampling_config: SamplingConfig - Sampling configuration.")
-#endif
       .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
            py::arg("activation_function"),
            "Constructs a FullyConnectedLayerConfig object.\n"
@@ -117,7 +113,6 @@ void createBoltSubmodule(py::module_& module) {
       bolt_submodule, "Conv",
       "Defines a 2D convolutional layer that convolves over "
       "non-overlapping patches.")
-#if THIRDAI_USE_DEV_PYBIND
       .def(
           py::init<uint64_t, float, ActivationFunction,
                    thirdai::bolt::SamplingConfig, std::pair<uint32_t, uint32_t>,
@@ -137,27 +132,27 @@ void createBoltSubmodule(py::module_& module) {
           "functions: ReLU, Softmax, and Linear.\n"
           " * sampling_config: SamplingConfig - Sampling configuration.\n"
           " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
-          " * num_patches: Int - Number of patches.");
-#endif
-  .def(py::init<uint64_t, float, ActivationFunction,
-                std::pair<uint32_t, uint32_t>, uint32_t>(),
-       py::arg("num_filters"), py::arg("load_factor"),
-       py::arg("activation_function"), py::arg("kernel_size"),
-       py::arg("num_patches"),
-       "Constructs a ConvLayerConfig object.\n"
-       "Arguments:\n"
-       " * num_filters: Int (positive) - Number of convolutional filters.\n"
-       " * load_factor: Float (positive) - The fraction of filters to use "
-       "during "
-       "sparse training and sparse inference. For example, "
-       "load_factor=0.05 means the layer uses 5% of the filters "
-       "when processing each patch.\n"
-       " * activation_function: ActivationFunctions enum, e.g. ReLU, Softmax, "
-       "Linear. "
-       "Also accepts `getActivationFunction(function_name), e.g. "
-       "`getActivationFunction('ReLU')`\n"
-       " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
-       " * num_patches: Int (positive) - Number of patches.");
+          " * num_patches: Int - Number of patches.")
+      .def(py::init<uint64_t, float, ActivationFunction,
+                    std::pair<uint32_t, uint32_t>, uint32_t>(),
+           py::arg("num_filters"), py::arg("load_factor"),
+           py::arg("activation_function"), py::arg("kernel_size"),
+           py::arg("num_patches"),
+           "Constructs a ConvLayerConfig object.\n"
+           "Arguments:\n"
+           " * num_filters: Int (positive) - Number of convolutional filters.\n"
+           " * load_factor: Float (positive) - The fraction of filters to use "
+           "during "
+           "sparse training and sparse inference. For example, "
+           "load_factor=0.05 means the layer uses 5% of the filters "
+           "when processing each patch.\n"
+           " * activation_function: ActivationFunctions enum, e.g. ReLU, "
+           "Softmax, "
+           "Linear. "
+           "Also accepts `getActivationFunction(function_name), e.g. "
+           "`getActivationFunction('ReLU')`\n"
+           " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
+           " * num_patches: Int (positive) - Number of patches.");
   py::class_<thirdai::bolt::EmbeddingLayerConfig>(
       bolt_submodule, "Embedding",
       "Defines a space-efficient embedding table lookup layer.")
