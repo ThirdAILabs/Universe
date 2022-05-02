@@ -9,6 +9,7 @@ namespace thirdai::bolt::python {
 void createBoltSubmodule(py::module_& module) {
   auto bolt_submodule = module.def_submodule("bolt");
 
+  #if THIRDAI_USE_DEV_PYBIND
   py::class_<thirdai::bolt::SamplingConfig>(
       bolt_submodule, "SamplingConfig",
       "SamplingConfig represents a layer's sampling hyperparameters.")
@@ -17,7 +18,8 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("range_pow"), py::arg("reservoir_size"),
            "Builds a SamplingConfig object. range_pow must always be 3 * "
            "hashes_per_table.")
-      .def(py::init<>(), "Builds a SamplingConfig object.");
+      .def(py::init<>(), "Builds a default SamplingConfig object.");
+  #endif
 
   py::enum_<ActivationFunction>(
       bolt_submodule, "ActivationFunctions",
@@ -71,6 +73,7 @@ void createBoltSubmodule(py::module_& module) {
              std::shared_ptr<thirdai::bolt::FullyConnectedLayerConfig>,
              thirdai::bolt::SequentialLayerConfig>(
       bolt_submodule, "FullyConnected", "Defines a fully-connected layer.\n")
+      #if THIRDAI_USE_DEV_PYBIND
       .def(py::init<uint64_t, float, ActivationFunction,
                     thirdai::bolt::SamplingConfig>(),
            py::arg("dim"), py::arg("load_factor"),
@@ -87,26 +90,22 @@ void createBoltSubmodule(py::module_& module) {
            "activation "
            "functions: ReLU, Softmax, and Linear.\n"
            " * sampling_config: SamplingConfig - Sampling configuration.")
+      #endif
       .def(
           py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
           py::arg("activation_function"),
-          "Constructs the FullyConnectedLayerConfig object for a dense layer.\n"
+          "Constructs a FullyConnectedLayerConfig object.\n"
           "Arguments:\n"
-          " * dim: Int - The dimension of the layer.\n"
-          " * activation_function: ActivationFunctions enum - We support three "
-          "activation "
-          "functions: ReLU, Softmax, and Linear.")
+          " * dim: Int (positive) - The dimension of the layer.\n"
+          " * activation_function: ActivationFunctions enum, e.g. ReLU, Softmax, Linear. "
+           "Also accepts `getActivationFunction(function_name), e.g. `getActivationFunction('ReLU')`")
       .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
            py::arg("load_factor"), py::arg("activation_function"),
-           "Constructs the FullyConnectedLayerConfig object for a sparse layer "
-           "with a "
-           "default sampling "
-           "configuration.\n"
+           "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
-           " * dim: Int - The dimension of the layer.\n"
-           " * activation_function: ActivationFunctions enum - We support three "
-           "activation "
-           "functions: ReLU, Softmax, and Linear.");
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * activation_function: ActivationFunctions enum, e.g. ReLU, Softmax, Linear. "
+           "Also accepts `getActivationFunction(function_name), e.g. `getActivationFunction('ReLU')`");
 
   py::class_<thirdai::bolt::ConvLayerConfig,
              std::shared_ptr<thirdai::bolt::ConvLayerConfig>,
@@ -114,6 +113,7 @@ void createBoltSubmodule(py::module_& module) {
       bolt_submodule, "Conv",
       "Defines a 2D convolutional layer that convolves over "
       "non-overlapping patches.")
+      #if THIRDAI_USE_DEV_PYBIND
       .def(py::init<uint64_t, float, ActivationFunction,
                     thirdai::bolt::SamplingConfig,
                     std::pair<uint32_t, uint32_t>, uint32_t>(),
@@ -133,7 +133,23 @@ void createBoltSubmodule(py::module_& module) {
            " * sampling_config: SamplingConfig - Sampling configuration.\n"
            " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
            " * num_patches: Int - Number of patches.");
-
+      #endif
+      .def(py::init<uint64_t, float, ActivationFunction,
+                    std::pair<uint32_t, uint32_t>, uint32_t>(),
+           py::arg("num_filters"), py::arg("load_factor"),
+           py::arg("activation_function"), py::arg("kernel_size"), 
+           py::arg("num_patches"),
+           "Constructs a ConvLayerConfig object.\n"
+           "Arguments:\n"
+           " * num_filters: Int (positive) - Number of convolutional filters.\n"
+           " * load_factor: Float (positive) - The fraction of filters to use during "
+           "sparse training and sparse inference. For example, "
+           "load_factor=0.05 means the layer uses 5% of the filters "
+           "when processing each patch.\n"
+           " * activation_function: ActivationFunctions enum, e.g. ReLU, Softmax, Linear. "
+           "Also accepts `getActivationFunction(function_name), e.g. `getActivationFunction('ReLU')`\n"
+           " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
+           " * num_patches: Int (positive) - Number of patches.");
   py::class_<thirdai::bolt::EmbeddingLayerConfig>(
       bolt_submodule,
       "Embedding",
@@ -143,10 +159,10 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("log_embedding_block_size"),
            "Constructs an embedding layer.\n"
            "Arguments:\n"
-           " * num_embedding_lookups: Int - The number of embedding table "
+           " * num_embedding_lookups: Int (positive) - The number of embedding table "
            "lookups per categorical feature.\n"
-           " * lookup_size: Int - Embedding dimension.\n"
-           " * log_embedding_block_size: Int - log (base 2) of the size of the "
+           " * lookup_size: Int (positive) - Embedding dimension.\n"
+           " * log_embedding_block_size: Int (positive) - log (base 2) of the size of the "
            "embedding table.");
 
   py::class_<PyNetwork>(bolt_submodule, "Network",
@@ -155,12 +171,12 @@ void createBoltSubmodule(py::module_& module) {
                         std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
                     uint64_t>(),
            py::arg("layers"), py::arg("input_dim"),
-           "Constructs the neural network.\n"
+           "Constructs a neural network.\n"
            "Arguments:\n"
            " * layers: List of SequentialLayerConfig - Configurations for the "
            "sequence of "
            "layers in the neural network.\n"
-           " * input_dim: Int - Dimension of input vectors in the dataset.")
+           " * input_dim: Int (positive) - Dimension of input vectors in the dataset.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("loss_fn"), py::arg("learning_rate"), py::arg("epochs"),
            py::arg("rehash") = 0, py::arg("rebuild") = 0,
@@ -170,9 +186,9 @@ void createBoltSubmodule(py::module_& module) {
            "Arguments:\n"
            " * train_data: BoltDataset - Training data.\n"
            " * loss_fn: LossFunction - The loss function to minimize.\n"
-           " * learning_rate: Float - Learning rate.\n"
-           " * epochs: Int - Number of training epochs over the training data.\n"
-           " * rehash: Int - Optional. Number of training samples before "
+           " * learning_rate: Float (positive) - Learning rate.\n"
+           " * epochs: Int (positive) - Number of training epochs over the training data.\n"
+           " * rehash: Int (positive) - Optional. Number of training samples before "
            "rehashing neurons. "
            "If not provided, BOLT will autotune this parameter.\n\n"
            "\t\tBOLT's sparse training works by applying smart hash functions to "
@@ -180,14 +196,12 @@ void createBoltSubmodule(py::module_& module) {
            "network, and they have to be rehashed periodically. This parameter "
            "sets the frequency "
            "of rehashing.\n"
-           " * rebuild: Int - Optional. Number of training samples before "
-           "rebuilding hash tables "
-           "and generating new smart hash functions. If not provided, BOLT "
-           "will autotune this parameter.\n"
+           " * rebuild: Int (positive) - Optional. Number of training samples before "
+           "rebuilding hash tables and generating new smart hash functions. "
+           "This is typically around 5 times the value of `rehash`."
+           "If not provided, BOLT will autotune this parameter.\n"
            " * metrics: List of str - Optional. The metrics to keep track of during training. "
-           "Options:\n"
-           "\t * categorical_accuracy\n"
-           "\t * weighted_mean_absolute_percentage_error\n"
+           "See the section on metrics.\n"
            " * verbose: Boolean - Optional. If set to False, only displays "
            "progress bar. "
            "If set to True, prints additional information such as metrics and "
@@ -209,11 +223,11 @@ void createBoltSubmodule(py::module_& module) {
            "(input vectors).\n"
            " * train_labels: 1D Numpy array of integers - Categorical labels "
            "for training examples.\n"
-           " * batch_size: Int - Size of training data batches.\n"
+           " * batch_size: Int (positive) - Size of training data batches.\n"
            " * loss_fn: LossFunction - The loss function to minimize.\n"
-           " * learning_rate: Float - Learning rate.\n"
-           " * epochs: Int - Number of training epochs over the training data.\n"
-           " * rehash: Int - Optional. Number of training samples before "
+           " * learning_rate: Float (positive) - Learning rate.\n"
+           " * epochs: Int (positive) - Number of training epochs over the training data.\n"
+           " * rehash: Int (positive) - Optional. Number of training samples before "
            "rehashing neurons. "
            "If not provided, BOLT will autotune this parameter.\n\n"
            "\t\tBOLT's sparse training works by applying smart hash functions to "
@@ -221,14 +235,12 @@ void createBoltSubmodule(py::module_& module) {
            "network, and they have to be rehashed periodically. This parameter "
            "sets the frequency "
            "of rehashing.\n"
-           " * rebuild: Int - Optional. Number of training samples before "
+           " * rebuild: Int (positive) - Optional. Number of training samples before "
            "rebuilding hash tables "
            "and generating new smart hash functions. If not provided, BOLT "
            "will autotune this parameter.\n"
            " * metrics: List of str - Optional. The metrics to keep track of during training. "
-           "Options:\n"
-           "\t * categorical_accuracy\n"
-           "\t * weighted_mean_absolute_percentage_error\n"
+           "See the section on metrics.\n"
            " * verbose: Boolean - Optional. If set to False, only displays "
            "progress bar. "
            "If set to True, prints additional information such as metrics and "
@@ -260,7 +272,7 @@ void createBoltSubmodule(py::module_& module) {
            "0.0, 4.0}, the corresponding "
            "'values' array is [1.5, 9.0, 4.0]\n"
            " * Offsets: 1D Numpy array of integers - The i-th element of this "
-           "array is the number of nonzero "
+           "array is the i - 1-th element of the array plus the number of nonzero "
            "elements in the i - 1-th vector. The first element is 0. "
            "Effectively, this array maps each vector to the corresponding "
            "entries in 'indices' and 'values'. "
@@ -273,7 +285,7 @@ void createBoltSubmodule(py::module_& module) {
            "values of nonzero elements of vector i. "
            "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
            "0.0, 4.0}, the corresponding "
-           "'offsets' array is [0, 2, 1]\n\n"
+           "'offsets' array is [0, 2, 3]\n\n"
 
            "Arguments:\n"
            " * x_idxs: 1D Numpy array of integers - Indices array for training "
@@ -289,9 +301,9 @@ void createBoltSubmodule(py::module_& module) {
            " * y_offsets: 1D Numpy array of integers - Offsets array for "
            "training labels (ground truth vectors).\n"
            " * loss_fn: LossFunction - The loss function to minimize.\n"
-           " * learning_rate: Float - Learning rate.\n"
-           " * epochs: Int - Number of training epochs over the training data.\n"
-           " * rehash: Int - Optional. Number of training samples before "
+           " * learning_rate: Float (positive) - Learning rate.\n"
+           " * epochs: Int (positive) - Number of training epochs over the training data.\n"
+           " * rehash: Int (positive) - Optional. Number of training samples before "
            "rehashing neurons. "
            "If not provided, BOLT will autotune this parameter.\n\n"
            "\t\tBOLT's sparse training works by applying smart hash functions to "
@@ -299,14 +311,12 @@ void createBoltSubmodule(py::module_& module) {
            "network, and they have to be rehashed periodically. This parameter "
            "sets the frequency "
            "of rehashing.\n"
-           " * rebuild: Int - Optional. Number of training samples before "
+           " * rebuild: Int (positive) - Optional. Number of training samples before "
            "rebuilding hash tables "
            "and generating new smart hash functions. If not provided, BOLT "
            "will autotune this parameter.\n"
            " * metrics: List of str - Optional. The metrics to keep track of during training. "
-           "Options:\n"
-           "\t * categorical_accuracy\n"
-           "\t * weighted_mean_absolute_percentage_error\n"
+           "See the section on metrics.\n"
            " * verbose: Boolean - Optional. If set to False, only displays "
            "progress bar. "
            "If set to True, prints additional information such as metrics and "
@@ -322,9 +332,8 @@ void createBoltSubmodule(py::module_& module) {
            "predictions based on the given metrics.\n"
            "Arguments:\n"
            " * test_data: BoltDataset - Test data.\n"
-           " * metrics: List of str - Optional. The metrics to evaluate. Options:\n"
-           "\t * categorical_accuracy\n"
-           "\t * weighted_mean_absolute_percentage_error\n"
+           " * metrics: List of str - Optional. The metrics to keep track of during training. "
+           "See the section on metrics.\n"
            " * verbose: Boolean - Optional. If set to False, only displays "
            "progress bar. "
            "If set to True, prints additional information such as metrics and "
@@ -348,10 +357,9 @@ void createBoltSubmodule(py::module_& module) {
            "vectors).\n"
            " * test_labels: 1D Numpy array of integers - Categorical labels for "
            "test examples.\n"
-           " * batch_size: Int - Size of training data batches.\n"
-           " * metrics: List of str - Optional. The metrics to evaluate. Options:\n"
-           "\t * categorical_accuracy\n"
-           "\t * weighted_mean_absolute_percentage_error\n"
+           " * batch_size: Int (positive) - Size of training data batches.\n"
+           " * metrics: List of str - Optional. The metrics to keep track of during training. "
+           "See the section on metrics.\n"
            " * verbose: Boolean - Optional. If set to False, only displays "
            "progress bar. "
            "If set to True, prints additional information such as metrics and "
@@ -385,7 +393,7 @@ void createBoltSubmodule(py::module_& module) {
            "0.0, 4.0}, the corresponding "
            "'values' array is [1.5, 9.0, 4.0]\n"
            " * Offsets: 1D Numpy array of integers - The i-th element of this "
-           "array is the number of nonzero "
+           "array is the i - 1-th element of the array plus the number of nonzero "
            "elements in the i - 1-th vector. The first element is 0. "
            "Effectively, this array maps each vector to the corresponding "
            "entries in 'indices' and 'values'. "
@@ -398,17 +406,16 @@ void createBoltSubmodule(py::module_& module) {
            "values of nonzero elements of vector i. "
            "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
            "0.0, 4.0}, the corresponding "
-           "'offsets' array is [0, 2, 1]\n\n"
+           "'offsets' array is [0, 2, 3]\n\n"
 
            "Arguments:\n"
            " * test_examples: 2D Numpy matrix of floats - Test examples (input "
            "vectors).\n"
            " * test_labels: 1D Numpy array of integers - Categorical labels for "
            "test examples.\n"
-           " * batch_size: Int - Size of training data batches.\n"
-           " * metrics: List of str - Optional. The metrics to evaluate. Options:\n"
-           "\t * categorical_accuracy\n"
-           "\t * weighted_mean_absolute_percentage_error\n"
+           " * batch_size: Int (positive) - Size of training data batches.\n"
+           " * metrics: List of str - Optional. The metrics to keep track of during training. "
+           "See the section on metrics.\n"
            " * verbose: Boolean - Optional. If set to False, only displays "
            "progress bar. "
            "If set to True, prints additional information such as metrics and "
@@ -426,7 +433,8 @@ void createBoltSubmodule(py::module_& module) {
            "right before the last training "
            "epoch.")
       .def("save", &PyNetwork::save, py::arg("filename"),
-           "Saves the network to a file.")
+           "Saves the network to a file. The file path must not require any "
+           "folders to be created")
       .def_static("load", &PyNetwork::load, py::arg("filename"),
                   "Loads and builds a saved network from file.")
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),
@@ -435,7 +443,8 @@ void createBoltSubmodule(py::module_& module) {
       .def("set_weights", &PyNetwork::setWeights, py::arg("layer_index"),
            py::arg("new_weights"),
            "Sets the weight matrix at the given layer index to the given 2D "
-           "Numpy matrix.")
+           "Numpy matrix. Throws an error if the dimension of the given weight "
+           "matrix does not match the layer's current weight matrix.")
       .def("get_biases", &PyNetwork::getBiases, py::arg("layer_index"),
            "Returns the bias array at the given layer index as a 1D Numpy "
            "array.")
@@ -454,7 +463,7 @@ void createBoltSubmodule(py::module_& module) {
                     uint32_t>(),
            py::arg("embedding_layer"), py::arg("bottom_mlp"),
            py::arg("top_mlp"), py::arg("input_dim"),
-           "Constructs the DLRM.\n"
+           "Constructs a DLRM.\n"
            "Arguments:\n"
            " * embedding_layer: EmbeddingLayerConfig - Configuration of the "
            "embedding layer.\n"
@@ -464,7 +473,7 @@ void createBoltSubmodule(py::module_& module) {
            " * top_mlp: List of SequentialLayerConfig - Configurations of the "
            "sequence of "
            "layers in DLRM's top MLP.\n"
-           " * input_dim: Int - Dimension of input vectors in the dataset.")
+           " * input_dim: Int (positive) - Dimension of input vectors in the dataset.")
       .def("train", &PyDLRM::train, py::arg("train_data"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
            py::arg("rebuild") = 0,
@@ -474,9 +483,9 @@ void createBoltSubmodule(py::module_& module) {
            "Arguments:\n"
            " * train_data: ClickThroughDataset - Training data.\n"
            " * loss_fn: LossFunction - The loss function to minimize.\n"
-           " * learning_rate: Float - Learning rate.\n"
-           " * epochs: Int - Number of training epochs over the training data.\n"
-           " * rehash: Int - Optional. Number of training samples before "
+           " * learning_rate: Float (positive) - Learning rate.\n"
+           " * epochs: Int (positive) - Number of training epochs over the training data.\n"
+           " * rehash: Int (positive) - Optional. Number of training samples before "
            "rehashing neurons. "
            "If not provided, BOLT will autotune this parameter.\n\n"
            "\t\tBOLT's sparse training works by applying smart hash functions to "
@@ -484,14 +493,12 @@ void createBoltSubmodule(py::module_& module) {
            "network, and they have to be rehashed periodically. This parameter "
            "sets the frequency "
            "of rehashing.\n"
-           " * rebuild: Int - Optional. Number of training samples before "
+           " * rebuild: Int (positive) - Optional. Number of training samples before "
            "rebuilding hash tables "
            "and generating new smart hash functions. If not provided, BOLT "
            "will autotune this parameter.\n"
            " * metrics: List of str - Optional. The metrics to keep track of during training. "
-           "Options:\n"
-           "\t * categorical_accuracy\n"
-           "\t * weighted_mean_absolute_percentage_error\n"
+           "See the section on metrics.\n"
            " * verbose: Boolean - Optional. If set to False, only displays "
            "progress bar. "
            "If set to True, prints additional information such as metrics and "
@@ -507,9 +514,8 @@ void createBoltSubmodule(py::module_& module) {
            "predictions based on the given metrics.\n"
            "Arguments:\n"
            " * test_data: ClickThroughDataset - Test data.\n"
-           " * metrics: List of str - Optional. The metrics to evaluate. Options:\n"
-           "\t * categorical_accuracy\n"
-           "\t * weighted_mean_absolute_percentage_error\n"
+           " * metrics: List of str - Optional. The metrics to keep track of during training. "
+           "See the section on metrics.\n"
            " * verbose: Boolean - Optional. If set to False, only displays "
            "progress bar. "
            "If set to True, prints additional information such as metrics and "

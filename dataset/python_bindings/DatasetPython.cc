@@ -31,9 +31,28 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def(
       "load_click_through_dataset", &loadClickThroughDataset,
-      py::arg("filename"), py::arg("batch_size"), py::arg("num_dense_features"),
-      py::arg("num_categorical_features"), py::arg("sparse_labels"),
-      "Loads a Clickthrough dataset from an SVM file. To be used with DLRM.");
+      py::arg("filename"), py::arg("batch_size"), py::arg("num_numerical_features"),
+      py::arg("num_categorical_features"), py::arg("categorical_labels"),
+      "Loads a Clickthrough dataset from a file. To be used with DLRM. \n"
+      "Each line of the input file should follow this format:\n"
+      "```\n"
+      "l\td_1\td_2\t...\td_m\tc_1\tc_2\t...\tc_n"
+      "```\n"
+      "where `l` is the label, `d` is a numerical (quantitative) feature, `m` is the "
+      "expected number of numerical features, `c` is a categorical feature (integer only), and `n` is "
+      "the expected number of categorical features.\n\n"
+      "Arguments:\n"
+      " * filename: String - Path to input file.\n"
+      " * batch_size: Int (positive) - Size of each batch in the dataset.\n"
+      " * num_numerical_features: Int (positive) - Number of expected numerical features in each dataset.\n"
+      " * num_categorical_features: Int (positive) - Number of expected categorical features in each dataset.\n"
+      " * categorical_labels: Boolean - True if the labels are categorical (i.e. a label of 1 means the sample "
+      "belongs to category 1), False if the labels are numerical (i.e. a label of 1 means the sample corresponds "
+      "with the value of 1 on the real number line).\n"
+      "Each line of the input file should follow this format:\n"
+      "```\n"
+      ""
+      "```");
 
   py::class_<
       thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>>
@@ -59,18 +78,44 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def("load_bolt_svm_dataset", &loadBoltSVMDataset,
                         py::arg("filename"), py::arg("batch_size"),
-                        "Loads a BoltDataset from an SVM file.");
+                        "Loads a BoltDataset from an SVM file. Each line in the "
+                        "input file represents a sparse input vector and should follow this format:\n"
+                        "```\n"
+                        "l_0,l_1,...,l_m\ti_0:v_0\ti_1:v_1\t...\ti_n:v_n\n"
+                        "```\n"
+                        "where `l_0,l_1,...,l_m` is an arbitrary number of categorical "
+                        "labels (integers only), and each `i:v` is an index-value pair representing "
+                        "a non-zero element in the vector. There can be an arbitrary number "
+                        "of these index-value pairs.\n\n"
+                        "Arguments:\n"
+                        " * filename: String - Path to input file.\n"
+                        " * batch_size: Int (positive) - Size of each batch in the dataset.");
 
   dataset_submodule.def("load_bolt_csv_dataset", &loadBoltCSVDataset,
                         py::arg("filename"), py::arg("batch_size"),
                         py::arg("delimiter") = ",",
-                        "Loads a BoltDataset from a CSV file.");
+                        "Loads a BoltDataset from a CSV file. Each line in the "
+                        "input file consists of a categorical label (integer) followed by the "
+                        "elements of the input vector (float). These numbers are separated by a "
+                        "delimiter."
+                        "Arguments:\n"
+                        " * filename: String - Path to input file.\n"
+                        " * batch_size: Int (positive) - Size of each batch in the dataset.\n"
+                        " * delimiter: Char - Delimiter that separates the numbers in each CSV "
+                        "line. Defaults to ','");
+
 
   dataset_submodule.def(
       "bolt_tokenizer", &parseSentenceToSparseArray, py::arg("sentence"),
-      py::arg("seed") = 42, py::arg("dimension") = 100000,
-      "Utility that turns a sentence into a sequence of tokens. To be used for "
-      "text classification tasks.");
+      py::arg("seed") = 0, py::arg("dimension") = 100000,
+      "Utility that turns a sentence into a sequence of token embeddings. To "
+      "be used for text classification tasks.\n"
+      "Arguments:\n"
+      " * sentence: String - Sentence to be tokenized.\n"
+      " * seed: Int - (Optional) The tokenizer uses a random number generator "
+      "that needs to be seeded. Defaults to 0.\n"
+      " * dimensions: Int (positive) - (Optional) The dimension of each token embedding. "
+      "Defaults to 100,000.");
 }
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
