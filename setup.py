@@ -9,18 +9,18 @@ from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 
 # Default is release build with full parallelism
-if ("THIRDAI_NUM_JOBS" in os.environ):
-  num_jobs = os.environ["THIRDAI_NUM_JOBS"]
+if "THIRDAI_NUM_JOBS" in os.environ:
+    num_jobs = os.environ["THIRDAI_NUM_JOBS"]
 else:
-  num_jobs = multiprocessing.cpu_count() * 2
-if ("THIRDAI_BUILD_MODE" in os.environ):
-  build_mode = os.environ["THIRDAI_BUILD_MODE"]
+    num_jobs = multiprocessing.cpu_count() * 2
+if "THIRDAI_BUILD_MODE" in os.environ:
+    build_mode = os.environ["THIRDAI_BUILD_MODE"]
 else:
-  build_mode = "Release"
-if ("THIRDAI_FEATURE_FLAGS" in os.environ):
-  feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
+    build_mode = "Release"
+if "THIRDAI_FEATURE_FLAGS" in os.environ:
+    feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
 else:
-  feature_flags = "THIRDAI_BUILD_LICENSE;THIRDAI_CHECK_LICENSE"
+    feature_flags = "THIRDAI_BUILD_LICENSE;THIRDAI_CHECK_LICENSE"
 
 
 # A CMakeExtension needs a sourcedir instead of a file list.
@@ -53,7 +53,7 @@ class CMakeBuild(build_ext):
         ]
         build_args = []
 
-        build_args +=  [f"-j{num_jobs}"]
+        build_args += [f"-j{num_jobs}"]
         cmake_args += [f'"-DFEATURE_FLAGS={feature_flags}"']
 
         if not os.path.exists(build_dir):
@@ -62,9 +62,7 @@ class CMakeBuild(build_ext):
         cmake_call = f"cmake {ext.sourcedir} {' '.join(cmake_args)}"
         print(cmake_call)
         subprocess.check_call(cmake_call, cwd=build_dir, shell=True)
-        subprocess.check_call(
-            ["cmake", "--build", "."] + build_args, cwd=build_dir
-        )
+        subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=build_dir)
 
 
 print(find_packages(where="thirdai_python_package"))

@@ -84,9 +84,10 @@ def main():
     os.environ["THIRDAI_BUILD_MODE"] = args.build_mode
     os.environ["THIRDAI_FEATURE_FLAGS"] = joined_feature_flags
     os.environ["THIRDAI_NUM_JOBS"] = str(args.jobs)
-    
+
     os.chdir("..")
-    os.system('pip3 install . --verbose')
+    os.system("pip3 install . --verbose")
+
 
 if __name__ == "__main__":
     main()
