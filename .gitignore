@@ -35,3 +35,6 @@ docs/_*
 # Wheels
 dist
 wheelhouse
+
+# Shared libraries
+*.so

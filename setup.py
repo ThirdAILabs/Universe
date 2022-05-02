@@ -134,7 +134,7 @@ setup(
     license_files=('LICENSE',),
     zip_safe=False,
     extras_require={"test": ["pytest"]},
-    packages = find_packages(where="thirdai_python_package"),
-    package_dir = {"": "thirdai_python_package"}
+    packages = ["thirdai"] + ["thirdai." + p for p in find_packages(where="thirdai_python_package")],
+    package_dir = {"thirdai": "thirdai_python_package"}
     # package_dir = {'thirdai.embeddings': 'docker/product/docsearch/ColBERT'}
 )
