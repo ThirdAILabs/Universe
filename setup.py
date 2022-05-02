@@ -5,7 +5,7 @@ import subprocess
 import sys
 import multiprocessing
 
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 
 feature_flags = ["THIRDAI_BUILD_LICENSE", "THIRDAI_CHECK_LICENSE"]
@@ -118,6 +118,8 @@ class CMakeBuild(build_ext):
         )
 
 
+print(find_packages(where="thirdai_python_package"))
+
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
@@ -132,7 +134,7 @@ setup(
     license_files=('LICENSE',),
     zip_safe=False,
     extras_require={"test": ["pytest"]},
-    packages = ['thirdai'],
-    package_dir = {'thirdai': 'thirdai_python_package'}
+    packages = find_packages(where="thirdai_python_package"),
+    package_dir = {"": "thirdai_python_package"}
     # package_dir = {'thirdai.embeddings': 'docker/product/docsearch/ColBERT'}
 )

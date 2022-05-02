@@ -1,5 +1,5 @@
 
-from ._ColBERT.colbertmodeling.checkpoint import Checkpoint
+from ColBERT.colbertmodeling.checkpoint import Checkpoint
 import pathlib
 import numpy as np
 
