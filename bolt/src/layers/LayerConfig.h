@@ -123,7 +123,7 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
         num_patches(_num_patches) {
     checkSparsity(sparsity);
   }
-  
+
   ConvLayerConfig(uint64_t _num_filters, float _sparsity,
                   ActivationFunction _act_func,
                   std::pair<uint32_t, uint32_t> _kernel_size,
