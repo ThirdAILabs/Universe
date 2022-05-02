@@ -38,12 +38,12 @@ def main():
         metavar="MODE",  # Don't print the choices because they're ugly
         help='The releast mode to build with (see CMakeLists.txt for the specific compiler flags for each mode). Default is "Release".',
     )
-    parser.add_argument(
-        "-t",
-        "--target",
-        default="all",
-        help='CMake target to build. Default is "all", i.e. build everything.',
-    )
+    # parser.add_argument(
+    #     "-t",
+    #     "--target",
+    #     default="all",
+    #     help='CMake target to build. Default is "all", i.e. build everything.',
+    # )
     parser.add_argument(
         "-j",
         "--jobs",
@@ -75,23 +75,18 @@ def main():
 
     # Make sure build directory exists and cd to it
     os.system('mkdir -p "../build"')
-    os.chdir("../build")
 
     # Create feature flag list for cmake
     # https://stackoverflow.com/questions/33242956/cmake-passing-lists-on-command-line
     joined_feature_flags = ";".join(args.feature_flags)
 
-    # Create cmake and make commands
-    cmake_command = f'cmake .. -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE={args.build_mode} "-DFEATURE_FLAGS={joined_feature_flags}"'
-    make_command = f"make {args.target} -s -j {args.jobs}"
-
-    if args.verbose:
-        make_command += " VERBOSE=1"
-
-    # Run cmake and make commands
-    os.system(cmake_command)
-    os.system(make_command)
-
+    # Change dir to top level, set environment variables, and run pip install
+    os.environ["THIRDAI_BUILD_MODE"] = args.build_mode
+    os.environ["THIRDAI_FEATURE_FLAGS"] = joined_feature_flags
+    os.environ["THIRDAI_NUM_JOBS"] = str(args.jobs)
+    
+    os.chdir("..")
+    os.system('pip3 install . --verbose')
 
 if __name__ == "__main__":
     main()
