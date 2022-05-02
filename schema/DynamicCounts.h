@@ -25,8 +25,8 @@
 
 namespace thirdai::schema {
 
-struct CountMinSketchOld {
-  CountMinSketchOld(size_t n_rows, uint32_t range_pow, std::vector<float>& sketch, std::vector<std::pair<uint32_t, uint32_t>>& hash_constants):
+struct CountMinSketch {
+  CountMinSketch(size_t n_rows, uint32_t range_pow, std::vector<float>& sketch, std::vector<std::pair<uint32_t, uint32_t>>& hash_constants):
     _n_rows(n_rows), 
     _range_pow(range_pow),
     _range(1 << range_pow), 
@@ -86,17 +86,17 @@ struct CountMinSketchOld {
   std::vector<std::pair<uint32_t, uint32_t>>& _hash_constants;
 };
 
-class DynamicCountsOld {
+class DynamicCounts {
   // TODO(Geordie): In this case, the CMS-are not contiguous in memory. Might want to do it differently.
   // In fact, can completely do CMS in this class. No need for separate class, right?
  public:
-  explicit DynamicCountsOld(uint32_t max_range) {
+  explicit DynamicCounts(uint32_t max_range) {
     for (size_t largest_interval = 1; largest_interval <= max_range; largest_interval <<= 1) {
       _n_sketches++;
     }
     size_t n_buckets_pow = 20; // n_buckets ~ 1,000,000 // TODO(Geordie): this prolly needs to change. For now I just want to know the speedup.
     for (size_t i = 0; i < _n_sketches; i++) {
-      _count_min_sketches.push_back(CountMinSketchOld(15, n_buckets_pow, _sketch_buffer, _hash_constants_buffer)); // TODO(Geordie): n rows also needs to change.
+      _count_min_sketches.push_back(CountMinSketch(15, n_buckets_pow, _sketch_buffer, _hash_constants_buffer)); // TODO(Geordie): n rows also needs to change.
       // _interval_n_buckets >>= 1;
     }
   }
@@ -147,7 +147,7 @@ class DynamicCountsOld {
   size_t _n_sketches = 0;
   std::vector<float> _sketch_buffer;
   std::vector<std::pair<uint32_t, uint32_t>> _hash_constants_buffer;
-  std::vector<CountMinSketchOld> _count_min_sketches;
+  std::vector<CountMinSketch> _count_min_sketches;
 };
 
 struct Window {
@@ -233,7 +233,7 @@ struct DynamicCountsBlock: public ABlock {
 
  private:
   std::vector<Window> _window_configs;
-  DynamicCountsOld _dc;
+  DynamicCounts _dc;
   uint32_t _id_col;
   uint32_t _timestamp_col;
   int32_t _target_col;
