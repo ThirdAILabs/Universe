@@ -1,0 +1,1 @@
+"""The ThirdAI Python package"""

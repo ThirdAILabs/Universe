@@ -18,7 +18,7 @@
 // methods
 // TODO(any): Add docstrings to methods
 // TODO(any): Can we remove redudancy in the bindings?
-PYBIND11_MODULE(thirdai, m) {  // NOLINT
+PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
 #ifndef __clang__
   m.def("set_global_num_threads", &omp_set_num_threads,

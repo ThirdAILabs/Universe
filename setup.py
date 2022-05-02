@@ -127,9 +127,12 @@ setup(
     author_email="contact@thirdai.com",
     description="A faster cpu machine learning library",
     long_description="",
-    ext_modules=[CMakeExtension("thirdai")],
-    cmdclass={"build_ext": CMakeBuild},
-    license_files = ('LICENSE',),
+    ext_modules=[CMakeExtension("thirdai._thirdai")],
+    cmdclass=dict(build_ext=CMakeBuild),
+    license_files=('LICENSE',),
     zip_safe=False,
     extras_require={"test": ["pytest"]},
+    packages = ['thirdai'],
+    package_dir = {'thirdai': 'thirdai_python_package'}
+    # package_dir = {'thirdai.embeddings': 'docker/product/docsearch/ColBERT'}
 )
