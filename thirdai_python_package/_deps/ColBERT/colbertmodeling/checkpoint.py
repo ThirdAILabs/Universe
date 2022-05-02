@@ -2,7 +2,7 @@ import torch
 
 
 from thirdai._deps.ColBERT.colbertmodeling.tokenization import QueryTokenizer, DocTokenizer
-from ..thirdai._deps.ColBERT.colbertutils.amp import MixedPrecisionManager
+from thirdai._deps.ColBERT.colbertutils.amp import MixedPrecisionManager
 
 from thirdai._deps.ColBERT.colbertmodeling.colbert import ColBERT
 

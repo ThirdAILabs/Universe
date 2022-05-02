@@ -1,7 +1,7 @@
 import os
 import torch
 
-from ..thirdai._deps.ColBERT.colbertutils.utils import torch_load_dnn
+from thirdai._deps.ColBERT.colbertutils.utils import torch_load_dnn
 
 from transformers import AutoTokenizer
 from thirdai._deps.ColBERT.colbertmodeling.hf_colbert import HF_ColBERT
