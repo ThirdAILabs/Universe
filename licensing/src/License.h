@@ -62,7 +62,7 @@ class License {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_expire_time_epoch_millis, _metadata);
+    archive(_start_time_epoch_millis, _expire_time_epoch_millis, _metadata);
   }
 
   License();
