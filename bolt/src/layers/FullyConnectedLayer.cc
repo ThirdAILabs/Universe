@@ -299,10 +299,13 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter,
                                            float B2, float eps) {
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
-
+/*
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps, world_size, ompi_mpi_comm_world, ompi_mpi_op_sum, ompi_mpi_float)
-  for (uint64_t n = 0; n < _dim; n++) {
+*/
+#pragma omp parallel for default(none) \
+    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
+    for (uint64_t n = 0; n < _dim; n++) {
     if (!_is_active[n]) {
       continue;
     }
@@ -337,9 +340,9 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter,
     _biases[n] += lr * (_b_momentum[n] / B1_bias_corrected) /
                   (std::sqrt(_b_velocity[n] / B2_bias_corrected) + eps);
     assert(!std::isnan(_biases[n]));
-
-    #pragma omp critical
-    {
+    }
+    //#pragma omp critical
+    for (uint64_t n = 0; n < _dim; n++) {
       MPI_Allreduce(MPI_IN_PLACE, &_weights[0] + n * _prev_dim, _prev_dim, 
               MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
       MPI_Allreduce(MPI_IN_PLACE, &_w_momentum[0] + n * _prev_dim, _prev_dim, 
@@ -355,6 +358,8 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter,
               MPI_COMM_WORLD);
     }
 
+#pragma omp parallel for default(none) shared(world_size)
+  for (uint64_t n = 0; n < _dim; n++) {
     for (uint64_t i = 0; i < _prev_dim; i++) {
       _weights[n * _prev_dim + i] /= world_size;
       _w_momentum[n * _prev_dim + i] /= world_size;
