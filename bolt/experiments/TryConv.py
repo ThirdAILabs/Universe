@@ -171,9 +171,7 @@ def train_conv_birds_325(args, mlflow_logger):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description=f"Run BOLT on Birds with ConvLayer."
-    )
+    parser = argparse.ArgumentParser(description=f"Run BOLT on Birds with ConvLayer.")
     parser.add_argument(
         "--lr", default=0.001, type=float, required=False, help="learning rate"
     )
