@@ -1,5 +1,7 @@
 from typing import List, Iterator, Tuple
 import random
+import threading, queue
+import collections
 from .schema import Schema, __BlockList__
 from sources.source_interface import Source
 from parsers.parser_interface import Parser
@@ -42,6 +44,7 @@ class Dataset:
         batch_size: int = 1,
         shuffle: bool = False,
         shuffle_seed: int = None,
+        num_threads: int = 10,
     ):
         """Constructor.
 
@@ -69,6 +72,7 @@ class Dataset:
             self._shuffle_seed = None
         self._last_random_state = None
         self._loaded_entire_dataset_in_memory = False
+        self.num_threads = num_threads
 
     def set_source(self, source: Source):
         """Defines the location of the dataset.
@@ -140,27 +144,39 @@ class Dataset:
             file = self._source.open()
             row_generator = self._parser.rows(file)
 
-            self._input_vectors = []
-            self._target_vectors = None if len(self._schema.target_blocks) == 0 else []
+            self._input_vectors = collections.deque()
+            self._target_vectors = None if len(self._schema.target_blocks) == 0 else collections.deque()
+
+            q = queue.Queue()
+
+            def worker():
+                while True:
+                    next_row = q.get()
+                    input_vec = self.__process_row(
+                        next_row,
+                        self._schema.input_blocks,
+                    )
+
+                    self._input_vectors.append(input_vec)
+
+                    if self._target_vectors is not None:
+                        target_vec = self.__process_row(
+                            next_row,
+                            self._schema.target_blocks,
+                        )
+                        self._target_vectors.append(target_vec)
+
+            for i in range(self.num_threads):
+                print(f"Thread {i} started!")
+                threading.Thread(target=worker, daemon=True).start()
 
             # Stream rows (samples) and process each one according to the schema.
-            next_row = next(row_generator)
-            while next_row is not None:
-                input_vec = self.__process_row(
-                    next_row,
-                    self._schema.input_blocks,
-                )
+            for next_row in row_generator:
+                q.put(next_row)
 
-                self._input_vectors.append(input_vec)
-
-                if self._target_vectors is not None:
-                    target_vec = self.__process_row(
-                        next_row,
-                        self._schema.target_blocks,
-                    )
-                    self._target_vectors.append(target_vec)
-
-                next_row = next(row_generator)
+            q.join()
+            self._input_vectors = list(self._input_vectors)
+            self._target_vectors = list(self._target_vectors)
 
             # Close the source when we are done with it.
             self._source.close()
