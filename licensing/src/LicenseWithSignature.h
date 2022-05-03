@@ -142,7 +142,8 @@ class LicenseWithSignature {
     }
     if (!license.has_value()) {
       throw thirdai::exceptions::LicenseCheckException(
-          "no license file found. Go to thirdai.com/trybolt to get a license.");
+          "no license file found. Go to https://thirdai.com/try-bolt to get a "
+          "license.");
     }
 
     CryptoPP::RSA::PublicKey public_key;
@@ -152,13 +153,15 @@ class LicenseWithSignature {
 
     if (!license->verify(public_key)) {
       throw thirdai::exceptions::LicenseCheckException(
-          "license verification failure. Go to thirdai.com/trybolt to get a "
+          "license verification failure. Go to https://thirdai.com/try-bolt to "
+          "get a "
           "valid license.");
     }
 
     if (license->get_license().isExpired()) {
       throw thirdai::exceptions::LicenseCheckException(
-          "license expired. Go to thirdai.com/trybolt to renew your license.");
+          "license expired. Go to https://thirdai.com/try-bolt to renew your "
+          "license.");
     }
   }
 
