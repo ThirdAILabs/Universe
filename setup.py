@@ -78,7 +78,6 @@ setup(
     long_description="",
     ext_modules=[CMakeExtension("thirdai._thirdai")],
     cmdclass=dict(build_ext=CMakeBuild),
-    license_files=("LICENSE",),
     install_requires=["numpy", "tqdm"],
     zip_safe=False,
     extras_require={
