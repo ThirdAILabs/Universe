@@ -17,11 +17,9 @@ int main() {  // NOLINT exceptions
 
   uint64_t batch_size = 1024;
   dataset::InMemoryDataset<dataset::BoltInputBatch> train_data(
-      "/Users/david/Documents/python_/train_mnist2x2.txt", batch_size,
-      std::move(*factory));
+      "/share/david/train_mnist2x2.txt", batch_size, std::move(*factory));
   dataset::InMemoryDataset<dataset::BoltInputBatch> test_data(
-      "/Users/david/Documents/python_/test_mnist2x2.txt", batch_size,
-      std::move(*factory));
+      "/share/david/test_mnist2x2.txt", batch_size, std::move(*factory));
 
   std::cout << "Finished reading train and test data" << std::endl;
 
