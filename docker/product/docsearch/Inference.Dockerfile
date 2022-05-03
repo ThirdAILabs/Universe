@@ -12,9 +12,7 @@ RUN \
   # Install for the webserver
   pip3 install flask gunicorn; \
   # Install ColBERT model and dependencies. Torch is installed as cpu only
-  pip3 install torch transformers ujson  --extra-index-url https://download.pytorch.org/whl/cpu; \  
-  cd saved ; \
-  pip3 install . 
+  pip3 install torch transformers ujson  --extra-index-url https://download.pytorch.org/whl/cpu;
 
 # Set default starting script, which runs a flask server that serves the
 # maxflash index mounted to /home/thirdai/index on the port 5000. Set timeout

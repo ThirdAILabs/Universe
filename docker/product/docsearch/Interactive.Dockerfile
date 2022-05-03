@@ -10,6 +10,4 @@ USER thirdai
 ADD downloads saved 
 RUN \
   # Install ColBERT model and dependencies. Torch is installed as cpu only.
-  pip3 install torch transformers ujson --extra-index-url https://download.pytorch.org/whl/cpu; \  
-  cd saved ; \
-  pip3 install .
+  pip3 install torch transformers ujson --extra-index-url https://download.pytorch.org/whl/cpu;
