@@ -61,7 +61,7 @@ COPY thirdai_smoke_test.py .
 COPY --from=0 /Universe/dist/* .
 
 # Install thirdai from wheel
-RUN pip3 install .
+RUN pip3 install --find-links . thirdai
 
 # Copy in license files. Use *.serialized to handle case where we want to build
 # the docker initially with no license.
