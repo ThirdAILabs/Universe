@@ -23,3 +23,6 @@ EXPOSE 8888
 
 # Set default starting script, which starts up a jupyter lab server
 CMD jupyter lab --ip=0.0.0.0
+
+# Switch back to thirdai user
+USER thirdai
