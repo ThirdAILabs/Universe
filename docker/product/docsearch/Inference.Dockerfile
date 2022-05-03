@@ -6,7 +6,7 @@ FROM thirdai_slim:${REV_TAG}
 LABEL Description="Document Search Inference"
 
 USER thirdai
-ADD ColBERT saved
+ADD downloads saved
 COPY docsearch_flask_app.py .
 RUN \
   # Install for the webserver
