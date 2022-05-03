@@ -1,6 +1,9 @@
 #include "DatasetPython.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/batch_types/BoltInputBatch.h>
+#include <dataset/src/BuilderVectors.h>
+#include <dataset/src/text_embedding_models/CharKGram.h>
+#include <dataset/src/text_embedding_models/BoltTokenizer.h>
 #include <chrono>
 
 namespace thirdai::dataset::python {
@@ -20,7 +23,44 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__str__", &BoltInputBatch::toString)
       .def("__repr__", &BoltInputBatch::toString)
       .def("size", &BoltInputBatch::getBatchSize);
+  
+  py::class_<BuilderVector> _builder_vector_(dataset_submodule, "__BuilderVector__",
+        "An interface for builder vectors.");
 
+  py::class_<SparseBuilderVector, BuilderVector>(dataset_submodule, "__SparseBuilderVector__")
+      .def(py::init<>())
+      .def("addSingleFeature", &SparseBuilderVector::addSingleFeature,
+           py::arg("start_dim"), py::arg("value"))
+      .def("addSparseFeatures", &SparseBuilderVector::addSparseFeaturesNumpy,
+           py::arg("indices"), py::arg("values"))
+      .def("addDenseFeatures", &SparseBuilderVector::addDenseFeaturesNumpy,
+           py::arg("start_dim"), py::arg("values"))
+      .def("to_bolt_vector", &SparseBuilderVector::toBoltVector);
+      
+  py::class_<DenseBuilderVector, BuilderVector>(dataset_submodule, "__DenseBuilderVector__")
+      .def(py::init<>())
+      .def("addSingleFeature", &DenseBuilderVector::addSingleFeature,
+           py::arg("start_dim"), py::arg("value"))
+      .def("addSparseFeatures", &DenseBuilderVector::addSparseFeaturesNumpy,
+           py::arg("indices"), py::arg("values"))
+      .def("addDenseFeatures", &DenseBuilderVector::addDenseFeaturesNumpy,
+           py::arg("start_dim"), py::arg("values"))
+      .def("to_bolt_vector", &DenseBuilderVector::toBoltVector);
+  
+  py::class_<CharKGram>(dataset_submodule, "CharKGram")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("k"), py::arg("feature_dim"))
+      .def("embed_text", &CharKGram::embedText, 
+           py::arg("text"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
+      .def("is_dense", &CharKGram::isDense)
+      .def("feature_dim", &CharKGram::featureDim);;
+  
+  py::class_<BoltTokenizer>(dataset_submodule, "BoltTokenizer")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("seed")=42, py::arg("feature_dim")=100000)
+      .def("embed_text", &BoltTokenizer::embedText, 
+           py::arg("text"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
+      .def("is_dense", &BoltTokenizer::isDense)
+      .def("feature_dim", &BoltTokenizer::featureDim);;
+  
   py::class_<InMemoryDataset<SparseBatch>> _imsd_(dataset_submodule,
                                                   "InMemorySparseDataset");
   (void)_imsd_;  // To get rid of clang tidy error
@@ -52,9 +92,9 @@ void createDatasetSubmodule(py::module_& module) {
   dataset_submodule.def("make_dense_vector", &BoltVector::makeDenseVector,
                         py::arg("values"));
 
-  py::class_<InMemoryDataset<BoltInputBatch>> _bolt_dataset_(dataset_submodule,
-                                                             "BoltDataset");
-  (void)_bolt_dataset_;  // To get rid of clang tidy error
+  py::class_<InMemoryDataset<BoltInputBatch>>(dataset_submodule, "BoltDataset")
+      .def(py::init<std::vector<BoltInputBatch>&&, uint64_t>(),
+           py::arg("batches"), py::arg("num_elements"));
 
   dataset_submodule.def("load_bolt_svm_dataset", &loadBoltSVMDataset,
                         py::arg("filename"), py::arg("batch_size"));
@@ -66,6 +106,7 @@ void createDatasetSubmodule(py::module_& module) {
   dataset_submodule.def("bolt_tokenizer", &parseSentenceToSparseArray,
                         py::arg("sentence"), py::arg("seed") = 42,
                         py::arg("dimension") = 100000);
+
 }
 
 InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(

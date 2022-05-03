@@ -119,3 +119,13 @@ class Schema:
         """
         self.target_blocks.add_block(block)
         return self  # Return self so we can chain method calls
+
+    def input_dim(self) -> int:
+        """Returns the dimension of input vectors.
+        """
+        return self.input_blocks.offsets[-1]
+    
+    def target_dim(self) -> int:
+        """Returns the dimension of target vectors.
+        """
+        return self.target_blocks.offsets[-1]

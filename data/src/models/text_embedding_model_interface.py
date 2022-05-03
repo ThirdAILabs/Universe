@@ -5,10 +5,12 @@ from utils.builder_vectors import __BuilderVector__
 class TextEmbeddingModel:
     """Interface for text embedding models"""
 
-    def embedText(
+    def embed_text(
         self, text: List[str], shared_feature_vector: __BuilderVector__, offset: int
     ) -> None:
-        """Encodes a list of strings as an integer. This method is only called by TextBlock."""
+        """Tokenizes each string in text, embeds these tokens, 
+        and composes the shared feature vector with these embeddings.
+        """
         return
 
     def is_dense(self) -> bool:

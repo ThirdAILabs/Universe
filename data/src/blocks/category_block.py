@@ -6,32 +6,26 @@ from utils.builder_vectors import (
     __SparseBuilderVector__,
     __DenseBuilderVector__,
 )
-from models.text_embedding_model_interface import TextEmbeddingModel
 
-
-class TextBlock(Block):
-    """A block for embedding a sample's raw textual features."""
+class CategoryBlock(Block):
+    """A block for embedding a sample's categorical features."""
 
     def __init__(
         self,
         column: int,
-        embedding_model: TextEmbeddingModel,
-        pipeline: List[Callable[[List[str]], List[str]]] = [],
+        dim: int,
     ):
         """Constructor.
 
         Arguments:
           column: int - given a sample as a row of raw features, column is the position of
-            the text to be embedded within this row; "we want to embed the text in
+            the categorical feature to be embedded within this row; "we want to embed the text in
             column n of the sample."
-          embedding_model: TextEmbeddingModel - the model for encoding the text as vectors.
-          pipeline: list of functions that accept and return a list of strings - a pipeline
-            for preprocessing string tokens before they get encoded by the embedding model.
+          dim: int - number of possible categories. 
         """
         self.column = column
-        self.embedding_model = embedding_model
-        self.dense = embedding_model.is_dense()
-        self.preprocess = lambda str_list: ct.pipe(str_list, *pipeline)
+        self.dim = dim
+        self.dense = False
 
     def process(
         self,
@@ -53,19 +47,18 @@ class TextBlock(Block):
             section of the output vector is occupied by other features, only needed
             if shared_feature_vector is supplied.
         """
-        preprocessed_list_of_strings = self.preprocess([input_row[self.column]])
-        self.embedding_model.embed_text(
-            preprocessed_list_of_strings, shared_feature_vector, idx_offset
-        )
+        category = int(input_row[self.column])
+        shared_feature_vector.addSingleFeature(category % self.dim, 1.0)
+        
 
     def feature_dim(self) -> int:
         """Returns the dimension of output vectors.
         This is needed when composing different features into a single vector.
         """
-        return self.embedding_model.feature_dim()
+        return self.dim
 
     def is_dense(self) -> bool:
         """True if the block produces dense features, False otherwise.
         Follows the embedding model.
         """
-        return self.embedding_model.is_dense()
+        return self.dense

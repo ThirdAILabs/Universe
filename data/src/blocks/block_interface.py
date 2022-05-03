@@ -14,31 +14,24 @@ class Block:
         self,
         input_row: List[str],  # TODO(Geordie): Find a way to support other
         # representations of input rows.
-        shared_feature_vector: __BuilderVector__ = None,
+        shared_feature_vector: __BuilderVector__,
         idx_offset: int = 0,
-    ) -> __BuilderVector__:
-        """The block can return either dense or sparse features, depending on
-        what is best for the feature that it produces.
+    ) -> None:
+        """Extracts features from input row and adds it to shared feature vector.
 
         Arguments:
           input_row: a list of columns for a single row.
           shared_feature_vector: a vector that is shared among all blocks operating on
             a particular row. This make it easier for the pipeline object to
-            concatenate the features produced by each block. If not provided, the
-            method creates its own vector, which could be sparse or dense, whatever
-            is best suited for the feature it produces.
+            concatenate the features produced by each block.
           idx_offset: the offset to shift the feature indices by if the preceeding
-            section of the output vector is occupied by other features, only needed
-            if shared_feature_vector is supplied.
-
-        Return value:
-          A vector
+            section of the output vector is occupied by other features.
 
         """
         return
 
     def feature_dim(self) -> int:
-        """Returns the dimension of output vectors.
+        """Returns the dimension of extracted features.
         This is needed when composing different features into a single vector.
         """
         return

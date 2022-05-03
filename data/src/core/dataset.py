@@ -66,6 +66,7 @@ class Dataset:
             self.shuffle(shuffle_seed)
         else:
             self._shuffle_rows = False
+            self._shuffle_seed = None
         self._last_random_state = None
         self._loaded_entire_dataset_in_memory = False
 
@@ -152,7 +153,7 @@ class Dataset:
 
                 self._input_vectors.append(input_vec)
 
-                if self._target_vectors:
+                if self._target_vectors is not None:
                     target_vec = self.__process_row(
                         next_row,
                         self._schema.target_blocks,
@@ -237,7 +238,7 @@ class Dataset:
 
                 input_vectors.append(input_vec)
 
-                if target_vectors:
+                if target_vectors is not None:
                     target_vec = self.__process_row(
                         next_row,
                         self._schema.target_blocks,
@@ -295,3 +296,39 @@ class Dataset:
             return self.__load_all_and_process()
         else:
             return self.__stream_batch_and_process()
+
+    def processInMemory(self) -> dataset.BoltDataset:
+        """Produces an in-memory dataset of input and target vectors as specified by
+        the schema. The input vectors in the dataset are dense only if all
+        input feature blocks return dense features. Input vectors are sparse otherwise.
+        The same for target vectors.
+        """
+
+        if self._schema is None:
+            raise RuntimeError(
+                "Dataset: schema is not set. Check that the set_schema() method "
+                + "is called before calling process()."
+            )
+
+        if len(self._schema.input_blocks) == 0:
+            raise RuntimeError(
+                "Dataset: schema does not have input blocks. Make sure it is "
+                + "constructed with the input_blocks parameter, or that "
+                + "the add_input_block() method is called."
+            )
+
+        if self._source is None:
+            raise RuntimeError(
+                "Dataset: source is not set. Check that the set_source() method"
+                + " is called before calling process()."
+            )
+
+        if self._parser is None:
+            raise RuntimeError(
+                "Dataset: parser is not set. Check that the set_parser() method"
+                + " is called before calling process()."
+            )
+
+        return dataset.BoltDataset([
+            batch for batch in self.__load_all_and_process()
+        ], len(self._input_vectors))

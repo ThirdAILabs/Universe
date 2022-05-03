@@ -35,7 +35,7 @@ class CustomDenseTextEmbedding(TextEmbeddingModel):
         """The dimension of the embedding produced by this model."""
         return self.out_dim
 
-    def embedText(
+    def embed_text(
         self, text: List[str], shared_feature_vector: __BuilderVector__, offset: int
     ) -> None:
         """Encodes a list of strings as an integer. This method is only called by TextBlock."""
