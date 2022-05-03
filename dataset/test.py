@@ -11,7 +11,7 @@ from thirdai import bolt
 
 ######## DEFINE SOURCE ########
 
-source = LocalFileSystem("/Users/benitogeordie/Desktop/thirdai_datasets/amazon_polarity_train.txt")
+source = LocalFileSystem("/home/benito/amazon_polarity_train.txt")
 parser = CsvIterable(delimiter='\t')
 
 ######## DEFINE SCHEMA ########
@@ -20,7 +20,8 @@ map_lower = lambda str_list: [str.lower(s) for s in str_list]
 
 text_embed = BoltTokenizer(seed=10, feature_dim=100000)
 text_block = TextBlock(
-    column=1, pipeline=[map_lower], embedding_model=text_embed
+    # column=1, pipeline=[map_lower], embedding_model=text_embed
+    column=1, embedding_model=text_embed
 )
 
 label_block = CategoryBlock(column=0, dim=2)
@@ -39,26 +40,26 @@ train_data = dataset.processInMemory()
 end = time.time()
 print("That took", end - start, "seconds.")
 
-layers = [
+# layers = [
     
-    bolt.FullyConnected(
-        dim=2000, 
-        load_factor=0.2, 
-        activation_function=bolt.ActivationFunctions.ReLU),
+#     bolt.FullyConnected(
+#         dim=2000, 
+#         load_factor=0.2, 
+#         activation_function=bolt.ActivationFunctions.ReLU),
         
-    bolt.FullyConnected(
-        dim=2,
-        load_factor=1.0, 
-        activation_function=bolt.ActivationFunctions.Softmax)     
-]
+#     bolt.FullyConnected(
+#         dim=2,
+#         load_factor=1.0, 
+#         activation_function=bolt.ActivationFunctions.Softmax)     
+# ]
 
-network = bolt.Network(
-    layers=layers, 
-    input_dim=dataset._schema.input_dim())
+# network = bolt.Network(
+#     layers=layers, 
+#     input_dim=dataset._schema.input_dim())
 
-network.train(
-    train_data=train_data,
-    loss_fn=bolt.CategoricalCrossEntropyLoss(), 
-    learning_rate=0.0001, 
-    epochs=20, 
-    verbose=True)
+# network.train(
+#     train_data=train_data,
+#     loss_fn=bolt.CategoricalCrossEntropyLoss(), 
+#     learning_rate=0.0001, 
+#     epochs=20, 
+#     verbose=True)
