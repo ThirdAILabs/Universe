@@ -5,9 +5,10 @@
 BASEDIR=$(dirname "$0")
 cd $BASEDIR
 
-# TODO(josh): Move this stuff to backblaze so it is reproducible not just on our blade
-cp  /share/josh/msmarco/ColBERT/downloads/colbert/* downloads/checkpoint/
-tar -xvzf ColBERT/downloads/colbertv2.0.tar.gz -C downloads/
+# TODO(josh): Move this stuff to backblaze or a similar host so it is 
+# reproducible not just on our blade
+mkdir -p downloads/checkpoint
+cp  /share/josh/msmarco/ColBERT/downloads/colbertv2.0/* downloads/checkpoint/
 
 cp /share/josh/msmarco/centroids.npy downloads/
 

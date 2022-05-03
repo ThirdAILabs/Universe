@@ -20,6 +20,7 @@ class License {
   License(std::map<std::string, std::string> metadata,
           int64_t expire_time_epoch_millis)
       : _expire_time_epoch_millis(expire_time_epoch_millis),
+        _start_time_epoch_millis(getCurrentEpochMillis()),
         _metadata(std::move(metadata)) {}
 
   static License createLicenseWithNDaysLeft(
@@ -31,7 +32,8 @@ class License {
   }
 
   bool isExpired() const {
-    return _expire_time_epoch_millis < getCurrentEpochMillis();
+    return _start_time_epoch_millis > getCurrentEpochMillis() ||
+           _expire_time_epoch_millis < getCurrentEpochMillis();
   }
 
   std::string getMetadataValue(const std::string& key) const {
@@ -71,6 +73,7 @@ class License {
   }
 
   int64_t _expire_time_epoch_millis;
+  int64_t _start_time_epoch_millis;
   // This is a map rather than an unordered map because when creating
   // the string to verify, we want to be easily able to generate a deterministic
   // string from the map (and unordered maps have non deterministic orders)

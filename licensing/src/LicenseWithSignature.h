@@ -131,7 +131,7 @@ class LicenseWithSignature {
   static void findVerifyAndCheckLicense() {
     std::vector<std::string> license_file_name_options = {
         "license.serialized", "/home/thirdai/work/license.serialized",
-        "/licenses/license.serialized"};
+        "/licenses/license.serialized", "~/license.serialized"};
 
     std::optional<LicenseWithSignature> license;
     for (const std::string& license_file_name : license_file_name_options) {
@@ -141,7 +141,8 @@ class LicenseWithSignature {
       }
     }
     if (!license.has_value()) {
-      throw thirdai::exceptions::LicenseCheckException("no license file found");
+      throw thirdai::exceptions::LicenseCheckException(
+          "no license file found. Go to thirdai.com/trybolt to get a license.");
     }
 
     CryptoPP::RSA::PublicKey public_key;
@@ -151,11 +152,13 @@ class LicenseWithSignature {
 
     if (!license->verify(public_key)) {
       throw thirdai::exceptions::LicenseCheckException(
-          "license verification failure");
+          "license verification failure. Go to thirdai.com/trybolt to get a "
+          "valid license.");
     }
 
     if (license->get_license().isExpired()) {
-      throw thirdai::exceptions::LicenseCheckException("license expired");
+      throw thirdai::exceptions::LicenseCheckException(
+          "license expired. Go to thirdai.com/trybolt to renew your license.");
     }
   }
 
