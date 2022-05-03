@@ -340,18 +340,18 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter,
 
     #pragma omp critical
     {
-      MPI_Allreduce(MPI_IN_PLACE, &_weights + n * _prev_dim, _prev_dim, 
+      MPI_Allreduce(MPI_IN_PLACE, &_weights[0] + n * _prev_dim, _prev_dim, 
               MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
-      MPI_Allreduce(MPI_IN_PLACE, &_w_momentum + n * _prev_dim, _prev_dim, 
+      MPI_Allreduce(MPI_IN_PLACE, &_w_momentum[0] + n * _prev_dim, _prev_dim, 
               MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
-      MPI_Allreduce(MPI_IN_PLACE, &_w_velocity + n * _prev_dim, _prev_dim, 
+      MPI_Allreduce(MPI_IN_PLACE, &_w_velocity[0] + n * _prev_dim, _prev_dim, 
               MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
 
-      MPI_Allreduce(MPI_IN_PLACE, &_biases + n, 1, MPI_FLOAT, MPI_SUM, 
+      MPI_Allreduce(MPI_IN_PLACE, &_biases[0] + n, 1, MPI_FLOAT, MPI_SUM, 
               MPI_COMM_WORLD);
-      MPI_Allreduce(MPI_IN_PLACE, &_b_momentum + n, 1, MPI_FLOAT, MPI_SUM, 
+      MPI_Allreduce(MPI_IN_PLACE, &_b_momentum[0] + n, 1, MPI_FLOAT, MPI_SUM, 
               MPI_COMM_WORLD);
-      MPI_Allreduce(MPI_IN_PLACE, &_b_velocity + n, 1, MPI_FLOAT, MPI_SUM, 
+      MPI_Allreduce(MPI_IN_PLACE, &_b_velocity[0] + n, 1, MPI_FLOAT, MPI_SUM, 
               MPI_COMM_WORLD);
     }
 

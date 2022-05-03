@@ -2,4 +2,6 @@ prefixes = [
   "/Users/nmeisburger/ThirdAI/data/",
   "/media/temp/data/",
   "/share/data/",
+  "/data/",
+  "/home/ubuntu/data/",
 ]
