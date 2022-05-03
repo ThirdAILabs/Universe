@@ -6,3 +6,6 @@ import thirdai.bolt
 import thirdai.search
 import thirdai.dataset
 import thirdai.hashing
+
+# Don't import this for now because it requires pytorch + transformers.
+# import thirdai.embeddings

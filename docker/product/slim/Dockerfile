@@ -23,10 +23,10 @@ RUN DEBIAN_FRONTEND=noninteractive \
     python3 \
     python3-dev \
     pip
-RUN /Universe/bin/build.py -f THIRDAI_CHECK_LICENSE THIRDAI_BUILD_LICENSE
+RUN cd /Universe ; python3 setup.py bdist_wheel
 
 
-# Second stage, we only copy the so file from the first stage
+# Second stage, we only copy the wheel file from the first stage
 FROM $ROOT_CONTAINER
 
 RUN \
@@ -56,13 +56,15 @@ WORKDIR /home/thirdai
 # Checks if sudo works for the thirdai user and updates packages
 RUN sudo apt-get update 
 
-# Copy in smoke test and thirdai so
+# Copy in smoke test and thirdai wheel
 COPY thirdai_smoke_test.py .
-COPY --from=0 /Universe/build/thirdai.cpython-* .
+COPY --from=0 /Universe/dist/* .
+
+# Install thirdai from wheel
+RUN pip3 install .
 
 # Copy in license files. Use *.serialized to handle case where we want to build
 # the docker initially with no license.
-COPY license-public-key.der /keys/
 COPY *.serialized /licenses/
 
 # Allow us to use so from anywhere

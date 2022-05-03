@@ -1,3 +1,14 @@
+try:
+    import torch
+    import transformers
+except ImportError as e:
+    print(
+        "The embeddings package requires the PyTorch and Transformers "
+        "packages. Please install these before importing the embeddings "
+        "package by e.g. running `pip3 install torch transformers`."
+    )
+    raise e
+
 from ._deps.ColBERT.colbertmodeling.checkpoint import Checkpoint
 import pathlib
 import numpy as np

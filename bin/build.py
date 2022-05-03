@@ -86,7 +86,7 @@ def main():
     os.environ["THIRDAI_NUM_JOBS"] = str(args.jobs)
 
     os.chdir("..")
-    os.system("pip3 install . --verbose")
+    os.system("pip3 install . --verbose --force")
 
 
 if __name__ == "__main__":
