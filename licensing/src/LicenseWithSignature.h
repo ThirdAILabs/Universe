@@ -10,9 +10,12 @@
 #include <cryptopp/osrng.h>
 #include <cryptopp/rsa.h>
 #include <exceptions/src/Exceptions.h>
+#include <sys/types.h>
 #include <exception>
 #include <fstream>
 #include <optional>
+#include <pwd.h>
+#include <unistd.h>
 #include <utility>
 
 namespace thirdai::licensing {
@@ -118,20 +121,23 @@ class LicenseWithSignature {
     return serialize_into;
   }
 
-  /** Checks for a license file named license.serialized in...
-   *  1. /home/thirdai/work (user added)
-   *  2. /licenses (added automatically at Docker build time)
-   * Using a public key named license-public-key.der in...
-   *  1. /keys (added automatically at Docker build time)
-   * If no license is found, throws an error. If no public key is found, throws
-   * an error. If a license is found we verify it with the passed in public key,
+  /**
+   * Checks for a license file named license.serialized in a bunch of places,
+   * including the current direcotry and the home direcotry.
+   * If no license is found, we throw an error.
+   * If a license is found we verify it with the passed in public key,
    * then check whether it has expired. If either check fails we throw an error.
    * Otherwise we just return.
    */
   static void findVerifyAndCheckLicense() {
     std::vector<std::string> license_file_name_options = {
         "license.serialized", "/home/thirdai/work/license.serialized",
-        "/licenses/license.serialized", "~/license.serialized"};
+        "/licenses/license.serialized"};
+    auto optional_home_dir = get_home_directory();
+    if (!optional_home_dir->empty()) {
+      license_file_name_options.push_back(optional_home_dir.value() +
+                                          "/license.serialized");
+    }
 
     std::optional<LicenseWithSignature> license;
     for (const std::string& license_file_name : license_file_name_options) {
@@ -181,6 +187,18 @@ class LicenseWithSignature {
   static bool can_access_file(const std::string& fileName) {
     std::ifstream infile(fileName);
     return infile.good();
+  }
+
+  static std::optional<std::string> get_home_directory() {
+    struct passwd* pw = getpwuid(getuid());
+    if (pw == NULL) {
+      return std::nullopt;
+    }
+    char* dir = getpwuid(getuid())->pw_dir;
+    if (dir == NULL) {
+      return std::nullopt;
+    }
+    return std::string(dir);
   }
 
   License _license;
