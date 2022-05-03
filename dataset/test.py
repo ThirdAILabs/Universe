@@ -30,7 +30,7 @@ schema = Schema(input_blocks=[text_block], target_blocks=[label_block])
 ######## PUT TOGETHER ########
 
 dataset = (
-    Dataset().set_source(source).set_parser(parser).set_schema(schema).set_batch_size(256)
+    Dataset().set_source(source).set_parser(parser).set_schema(schema).set_batch_size(1024)
 )
 
 print("Starting")
@@ -44,7 +44,13 @@ layers = [
     bolt.FullyConnected(
         dim=2000, 
         load_factor=0.2, 
-        activation_function=bolt.ActivationFunctions.ReLU),
+        activation_function=bolt.ActivationFunctions.ReLU,
+        sampling_config=bolt.SamplingConfig(
+            hashes_per_table=5,
+            num_tables=128,
+            reservoir_size=128,
+            range_pow=15
+        )),
         
     bolt.FullyConnected(
         dim=2,
@@ -61,4 +67,5 @@ network.train(
     loss_fn=bolt.CategoricalCrossEntropyLoss(), 
     learning_rate=0.0001, 
     epochs=20, 
+    metrics=["categorical_accuracy"],
     verbose=True)
