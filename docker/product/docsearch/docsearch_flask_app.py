@@ -4,7 +4,7 @@ import time
 import thirdai
 from thirdai.search import DocRetrieval
 
-from embeddings import DocSearchModel
+from thirdai.embeddings import DocSearchModel
 
 import torch
 
@@ -21,7 +21,7 @@ app.logger.handlers = gunicorn_logger.handlers
 app.logger.setLevel(gunicorn_logger.level)
 
 app.logger.info("Loading index and model")
-embedding_model = DocSearchModel()
+embedding_model = DocSearchModel("/home/thirdai/saved")
 centroids = torch.from_numpy(embedding_model.getCentroids())
 index_to_query = DocRetrieval.deserialize_from_file("/home/thirdai/index")
 app.logger.info("Index and model loaded")

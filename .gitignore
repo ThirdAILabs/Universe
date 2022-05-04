@@ -25,9 +25,15 @@ thirdai.egg-info
 # Python builds
 *egg-info*
 
-# Ignore all .der key files except the single public license key
+# Ignore all .der key files
 *.der
-!docker/product/slim/license-public-key.der
 
 # Docs
 docs/_*
+
+# Wheels
+dist
+wheelhouse
+
+# Shared libraries
+*.so

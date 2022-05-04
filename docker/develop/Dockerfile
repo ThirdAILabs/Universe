@@ -54,6 +54,5 @@ RUN pip3 install torch torchvision ; exit 0
 RUN apt-get install linux-tools-common linux-tools-generic linux-tools-`uname -r` ; exit 0
 
 
-RUN echo "export PYTHONPATH=/Universe/build:/Universe/benchmarks:\$PYTHONPATH" >> $HOME/.bashrc \
-    ; ln -s /usr/bin/clang-tidy-12 /usr/bin/clang-tidy \
+RUN ln -s /usr/bin/clang-tidy-12 /usr/bin/clang-tidy \
     ; echo "export LSAN_OPTIONS=suppressions=/Universe/leak-suppressions.txt" >> $HOME/.bashrc
