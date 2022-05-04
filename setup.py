@@ -86,5 +86,6 @@ setup(
     },
     packages=["thirdai"]
     + ["thirdai." + p for p in find_packages(where="thirdai_python_package")],
+    licence="proprietary",
     package_dir={"thirdai": "thirdai_python_package"},
 )
