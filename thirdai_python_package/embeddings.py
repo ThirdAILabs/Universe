@@ -20,9 +20,6 @@ class DocSearchModel:
         self.checkpoint = Checkpoint(checkpoint_path).cpu()
         self.centroids = np.load(f"{path}/centroids.npy")
 
-    def configure(self, **kw_args):
-        self.config.configure(**kw_args)
-
     def encodeQuery(self, query):
         return self.checkpoint.queryFromText([query])[0]
 

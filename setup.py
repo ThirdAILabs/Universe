@@ -60,12 +60,9 @@ class CMakeBuild(build_ext):
             os.makedirs(build_dir)
 
         cmake_call = f"cmake {ext.sourcedir} {' '.join(cmake_args)}"
-        print(cmake_call)
         subprocess.check_call(cmake_call, cwd=build_dir, shell=True)
         subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=build_dir)
 
-
-print(find_packages(where="thirdai_python_package"))
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.

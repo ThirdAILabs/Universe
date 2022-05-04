@@ -38,12 +38,6 @@ def main():
         metavar="MODE",  # Don't print the choices because they're ugly
         help='The releast mode to build with (see CMakeLists.txt for the specific compiler flags for each mode). Default is "Release".',
     )
-    # parser.add_argument(
-    #     "-t",
-    #     "--target",
-    #     default="all",
-    #     help='CMake target to build. Default is "all", i.e. build everything.',
-    # )
     parser.add_argument(
         "-j",
         "--jobs",
