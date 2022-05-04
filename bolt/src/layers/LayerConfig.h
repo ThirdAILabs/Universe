@@ -63,10 +63,34 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
       : dim(_dim), sparsity(_sparsity), act_func(_act_func) {
     checkSparsity(sparsity);
     if (sparsity < 1.0) {
-      uint32_t rp = (static_cast<uint32_t>(log2(dim)) / 3) * 3;
-      uint32_t k = rp / 3;
-      uint32_t rs = (dim * 4) / (1 << rp);
-      uint32_t l = sparsity < 0.1 ? 256 : 64;
+      uint32_t k = (static_cast<uint32_t>(log2(dim)/3) - 2;
+      if(sparsity < 0.01) {k++;}
+      if(sparsity <= 0.001) {k++;}
+      if(k > 8){
+        //cannot be too big.
+        k = 8;
+      }
+      if(k < 3){
+        k=3;
+      }
+      uint32_t rp = (k < 6) ? k * 3 : 18;
+      //Future: Bitwisehashfunction like srp, k = rp. 
+      uint32_t rslog = log2((dim * 4) / (1 << rp)) + 1;
+      rs = 1 << rslog;
+      //clipping
+      if(rs < 16) {
+        rs = 16;
+      }
+      if(rs > 128) {
+        rs = 128;
+      }
+      uint32_t l = sparsity < 0.1 ? 128 : 64;
+      if(sparsity > 0.2){
+        l = 32;
+      }
+      if(sparsity < 0.005) {
+        l = 256;
+      }
       sampling_config = SamplingConfig(k, l, rp, rs);
     } else {
       sampling_config = SamplingConfig();
