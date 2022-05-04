@@ -72,7 +72,11 @@ setup(
     author="ThirdAI",
     author_email="contact@thirdai.com",
     description="A faster cpu machine learning library",
-    long_description="",
+    long_description="""
+      A faster cpu machine learning library that uses sparsity and hashing to 
+      accelerate inference and training. See https://thirdai.com for more 
+      details.
+    """,
     ext_modules=[CMakeExtension("thirdai._thirdai")],
     cmdclass=dict(build_ext=CMakeBuild),
     install_requires=["numpy", "tqdm"],
