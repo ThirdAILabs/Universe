@@ -64,14 +64,16 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
     checkSparsity(sparsity);
     if (sparsity < 1.0) {
       uint32_t k = (static_cast<uint32_t>(log2(dim)/3) - 2;
-      if(sparsity < 0.01) {k++;}
-      if(sparsity <= 0.001) {k++;}
+      if(sparsity < 0.01) {
+        k++;}
+      if(sparsity <= 0.001) {
+        k++;}
       if(k > 8){
-        //cannot be too big.
+        // cannot be too big.
         k = 8;
       }
       if(k < 3){
-        k=3;
+        k = 3;
       }
       uint32_t rp = (k < 6) ? k * 3 : 18;
       //Future: Bitwisehashfunction like srp, k = rp. 
