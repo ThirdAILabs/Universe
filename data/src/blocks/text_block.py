@@ -1,16 +1,15 @@
 from typing import List, Callable
 import cytoolz as ct
-from .block_interface import Block
 from utils.builder_vectors import (
     __BuilderVector__,
     __SparseBuilderVector__,
     __DenseBuilderVector__,
 )
 from models.text_embedding_model_interface import TextEmbeddingModel
-
+from thirdai.dataset import Block
 
 class TextBlock(Block):
-    """A block for embedding a sample's raw textual features."""
+    """A block for embedding a sampsssssssle's raw textual features."""
 
     def __init__(
         self,
@@ -28,6 +27,8 @@ class TextBlock(Block):
           pipeline: list of functions that accept and return a list of strings - a pipeline
             for preprocessing string tokens before they get encoded by the embedding model.
         """
+        Block.__init__(self) # Must do when extending a C++ class.
+        
         self.column = column
         self.embedding_model = embedding_model
         self.dense = embedding_model.is_dense()
