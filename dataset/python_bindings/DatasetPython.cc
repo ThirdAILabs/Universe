@@ -2,6 +2,8 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/batch_types/BoltInputBatch.h>
 #include <dataset/src/BuilderVectors.h>
+#include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/core/BatchProcessor.h>
 #include <dataset/src/text_embedding_models/CharKGram.h>
 #include <dataset/src/text_embedding_models/BoltTokenizer.h>
 #include <chrono>
@@ -47,19 +49,31 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("start_dim"), py::arg("values"))
       .def("to_bolt_vector", &DenseBuilderVector::toBoltVector);
   
+  py::class_<Block, PyBlock, std::shared_ptr<Block>>(dataset_submodule, "Block")
+      .def(py::init<>())
+      .def("process", &Block::process, py::arg("input_row"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
+      .def("feature_dim", &Block::featureDim)
+      .def("is_dense", &Block::isDense);
+
+  py::class_<BatchProcessor>(dataset_submodule, "BatchProcessor")
+      .def(py::init<std::vector<std::shared_ptr<Block>>&, std::vector<std::shared_ptr<Block>>&, uint32_t>(),
+           py::arg("input_blocks"), py::arg("target_blocks"), py::arg("output_batch_size"))
+      .def("process_batch", &BatchProcessor::processBatch, py::arg("row_batch"))
+      .def("export_in_memory_dataset", &BatchProcessor::exportInMemoryDataset, py::arg("shuffle")=false, py::arg("shuffle_seed")=0);
+
   py::class_<CharKGram>(dataset_submodule, "CharKGram")
       .def(py::init<uint32_t, uint32_t>(), py::arg("k"), py::arg("feature_dim"))
       .def("embed_text", &CharKGram::embedText, 
            py::arg("text"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
       .def("is_dense", &CharKGram::isDense)
-      .def("feature_dim", &CharKGram::featureDim);;
+      .def("feature_dim", &CharKGram::featureDim);
   
   py::class_<BoltTokenizer>(dataset_submodule, "BoltTokenizer")
       .def(py::init<uint32_t, uint32_t>(), py::arg("seed")=42, py::arg("feature_dim")=100000)
       .def("embed_text", &BoltTokenizer::embedText, 
            py::arg("text"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
       .def("is_dense", &BoltTokenizer::isDense)
-      .def("feature_dim", &BoltTokenizer::featureDim);;
+      .def("feature_dim", &BoltTokenizer::featureDim);
   
   py::class_<InMemoryDataset<SparseBatch>> _imsd_(dataset_submodule,
                                                   "InMemorySparseDataset");

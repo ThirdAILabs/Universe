@@ -1,7 +1,5 @@
 from typing import List, Iterator, Tuple
 import random
-import threading, queue
-import collections
 from .schema import Schema, __BlockList__
 from sources.source_interface import Source
 from parsers.parser_interface import Parser
@@ -41,10 +39,9 @@ class Dataset:
         source: Source = None,
         parser: Parser = None,
         schema: Schema = None,
-        batch_size: int = 1,
+        batch_size: int = 256,
         shuffle: bool = False,
         shuffle_seed: int = None,
-        num_threads: int = 10,
     ):
         """Constructor.
 
@@ -72,7 +69,6 @@ class Dataset:
             self._shuffle_seed = None
         self._last_random_state = None
         self._loaded_entire_dataset_in_memory = False
-        self.num_threads = num_threads
 
     def set_source(self, source: Source):
         """Defines the location of the dataset.
@@ -139,99 +135,34 @@ class Dataset:
         generates batches of vector embeddings.
         """
 
-        # Don't load and process the data all over again if it had been loaded before.
-        if not self._loaded_entire_dataset_in_memory:
-            file = self._source.open()
-            row_generator = self._parser.rows(file)
+        file = self._source.open()
+        row_generator = self._parser.rows(file)
 
-            self._input_vectors = collections.deque()
-            self._target_vectors = None if len(self._schema.target_blocks) == 0 else collections.deque()
+        self._input_vectors = []
+        self._target_vectors = None if len(self._schema.target_blocks) == 0 else []
 
-            q = queue.Queue()
+        processor = dataset.BatchProcessor(
+            self._schema.input_blocks.blocks,
+            self._schema.target_blocks.blocks,
+            self._batch_size)
 
-            def worker():
-                while True:
-                    next_row = q.get()
-                    input_vec = self.__process_row(
-                        next_row,
-                        self._schema.input_blocks,
-                    )
+        # Stream rows (samples) and process each one according to the schema.
+        counter = 0
+        raw_batch = []
+        for next_row in row_generator:
+            raw_batch.append(next_row)
+            counter += 1
 
-                    self._input_vectors.append(input_vec)
+            if counter == 512:
+                processor.process_batch(raw_batch)
+                raw_batch = []
 
-                    if self._target_vectors is not None:
-                        target_vec = self.__process_row(
-                            next_row,
-                            self._schema.target_blocks,
-                        )
-                        self._target_vectors.append(target_vec)
-
-            for i in range(self.num_threads):
-                print(f"Thread {i} started!")
-                threading.Thread(target=worker, daemon=True).start()
-
-            # Stream rows (samples) and process each one according to the schema.
-            for next_row in row_generator:
-                q.put(next_row)
-
-            q.join()
-            self._input_vectors = list(self._input_vectors)
-            self._target_vectors = list(self._target_vectors)
-
-            # Close the source when we are done with it.
-            self._source.close()
-            # Remember that we have loaded and processed the whole dataset
-            # and saved the results in memory.
-            self._loaded_entire_dataset_in_memory = True
-
-        # Shuffle if necessary.
-        if self._shuffle_seed is not None:
-            # The random module might be used by other programs, so we have
-            # to save this state and revert it when we're done.
-            default_random_state = random.getstate()
-            if self._last_random_state is not None:
-                # we don't want to reseed if we had previously shuffled
-                # because then we will have the same shuffle permutation
-                # between epochs.
-                random.setstate(self._last_random_state)
-            else:
-                random.seed(self._shuffle_seed)
-
-        if self._shuffle_rows and self._target_vectors:
-            # TODO(Geordie): Zipping seems to be expensive. Look into this if need speedup.
-            temp = list(zip(self._input_vectors, self._target_vectors))
-            random.shuffle(temp)
-            self._input_vectors, self._target_vectors = zip(*temp)
-            # input and target come out as tuples, and so must be converted to lists.
-            self._input_vectors, self._target_vectors = list(self._input_vectors), list(
-                self._target_vectors
-            )
-
-        elif self._shuffle_rows:
-            random.shuffle(self._input_vectors)
-
-        if self._shuffle_seed is not None:
-            # Save our random state and revert the random state
-            # to what it was before we used the random module.
-            self._last_random_state = random.getstate
-            random.setstate(default_random_state)
-
-        # Yield the vectors in batches.
-        n_batches = (
-            len(self._input_vectors) + self._batch_size - 1
-        ) // self._batch_size
-
-        for batch in range(n_batches):
-            start_idx = batch * self._batch_size
-            end_idx = min((batch + 1) * self._batch_size, len(self._input_vectors))
-
-            # TODO(Geordie): Port to C++ soon.
-            yield dataset.BoltInputBatch(
-                self._input_vectors[start_idx:end_idx],
-                []
-                if self._target_vectors is None
-                else self._target_vectors[start_idx:end_idx],
-            )
+        # Close the source when we are done with it.
+        self._source.close()
+        # Remember that we have loaded and processed the whole dataset
+        # and saved the results in memory.
+        
+        return processor.export_in_memory_dataset(shuffle=self._shuffle_rows, shuffle_seed=self._shuffle_seed)
 
     def __stream_batch_and_process(self):
         """Helper function to stream samples and process them in batches."""
@@ -345,6 +276,4 @@ class Dataset:
                 + " is called before calling process()."
             )
 
-        return dataset.BoltDataset([
-            batch for batch in self.__load_all_and_process()
-        ], len(self._input_vectors))
+        return self.__load_all_and_process()

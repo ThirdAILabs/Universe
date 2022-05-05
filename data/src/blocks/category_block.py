@@ -1,11 +1,11 @@
 from typing import List, Callable
 import cytoolz as ct
-from .block_interface import Block
 from utils.builder_vectors import (
     __BuilderVector__,
     __SparseBuilderVector__,
     __DenseBuilderVector__,
 )
+from thirdai.dataset import Block
 
 class CategoryBlock(Block):
     """A block for embedding a sample's categorical features."""
@@ -23,6 +23,8 @@ class CategoryBlock(Block):
             column n of the sample."
           dim: int - number of possible categories. 
         """
+        Block.__init__(self) # Must do when extending a C++ class.
+
         self.column = column
         self.dim = dim
         self.dense = False
