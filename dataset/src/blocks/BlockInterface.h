@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string_view>
 #include <dataset/src/BuilderVectors.h>
 
 namespace thirdai::dataset {
@@ -14,9 +13,6 @@ namespace thirdai::dataset {
  */
 struct Block {
 
-  // Default constructor.
-  Block() {}
-
   /**
    * Extracts features from input row and adds it to shared feature vector.
    *
@@ -28,7 +24,7 @@ struct Block {
    * idx_offset: the offset to shift the feature indices by if the preceeding
    *   section of the output vector is occupied by other features.
    */
-  virtual void process(std::vector<std::string>& input_row, BuilderVector& shared_feature_vector, uint32_t idx_offset) = 0;
+  virtual void process(const std::vector<std::string>& input_row, BuilderVector& shared_feature_vector, uint32_t idx_offset) = 0;
 
   /**
    * Returns the dimension of extracted features.

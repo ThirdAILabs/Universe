@@ -9,7 +9,7 @@ from models.text_embedding_model_interface import TextEmbeddingModel
 from thirdai.dataset import Block
 
 class TextBlock(Block):
-    """A block for embedding a sampsssssssle's raw textual features."""
+    """A block for embedding a sample's raw textual features."""
 
     def __init__(
         self,
@@ -58,14 +58,14 @@ class TextBlock(Block):
         self.embedding_model.embed_text(
             preprocessed_list_of_strings, shared_feature_vector, idx_offset
         )
-
-    def feature_dim(self) -> int:
+        
+    def featureDim(self) -> int:
         """Returns the dimension of output vectors.
         This is needed when composing different features into a single vector.
         """
         return self.embedding_model.feature_dim()
 
-    def is_dense(self) -> bool:
+    def isDense(self) -> bool:
         """True if the block produces dense features, False otherwise.
         Follows the embedding model.
         """

@@ -1,5 +1,5 @@
-from blocks.block_interface import Block
 from typing import Iterator, List, Tuple
+from thirdai.dataset import Block
 
 
 class __BlockList__:
@@ -22,22 +22,22 @@ class __BlockList__:
 
         self.offsets = [0]
         for block in blocks:
-            self.offsets.append(block.feature_dim() + self.offsets[-1])
+            self.offsets.append(block.featureDim() + self.offsets[-1])
         self.blocks = blocks
         # The collection of blocks produces dense features only if all blocks
         # produce dense features.
         # If any of the blocks produces a sparse feature, this collection of
         # blocks produces sparse features.
-        self._is_dense = all([block.is_dense() for block in self.blocks])
+        self._is_dense = all([block.isDense() for block in self.blocks])
 
     def add_block(self, block: Block) -> None:
         """A method to add blocks to this block list.
         This method facilitates a builder pattern invocation.
         """
-        next_offset = self.offsets[-1] + block.feature_dim()
+        next_offset = self.offsets[-1] + block.featureDim()
         self.offsets.append(next_offset)
         self.blocks.append(block)
-        self._is_dense = self._is_dense and block.is_dense()
+        self._is_dense = self._is_dense and block.isDense()
 
     def __len__(self) -> int:
         """Returns number of blocks."""

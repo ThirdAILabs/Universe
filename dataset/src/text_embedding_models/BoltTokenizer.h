@@ -2,7 +2,6 @@
 #pragma once
 
 #include <limits>
-#include <string_view>
 #include <sstream>
 #include <hashing/src/MurmurHash.h>
 #include "TextEmbeddingModelInterface.h"
@@ -13,21 +12,18 @@ struct BoltTokenizer: public TextEmbeddingModel {
   
   BoltTokenizer(uint32_t seed, uint32_t feature_dim): _seed(seed), _dim(feature_dim) {}
 
-  void embedText(std::vector<std::string_view>& text, BuilderVector& shared_feature_vector, uint32_t idx_offset) final {
+  void embedText(const std::string& text, BuilderVector& shared_feature_vector, uint32_t idx_offset) final {
     std::vector<uint32_t> indices;
-
-    for (std::string_view& str : text) {
-      std::stringstream ss;
-      ss << str;
-      std::istream_iterator<std::string> begin(ss);
-      std::istream_iterator<std::string> end;
-      std::vector<std::string> tokens(begin, end);
-      for (auto& s : tokens) {
-        const char* cstr = s.c_str();
-        uint32_t hash =
-          thirdai::hashing::MurmurHash(cstr, s.length(), _seed) % _dim + idx_offset;
-        indices.push_back(hash);
-      }
+    std::stringstream ss;
+    ss << text;
+    std::istream_iterator<std::string> begin(ss);
+    std::istream_iterator<std::string> end;
+    std::vector<std::string> tokens(begin, end);
+    for (auto& s : tokens) {
+      const char* cstr = s.c_str();
+      uint32_t hash =
+        thirdai::hashing::MurmurHash(cstr, s.length(), _seed) % _dim + idx_offset;
+      indices.push_back(hash);
     }
 
     incrementAtIndices(shared_feature_vector, indices, 1.0);

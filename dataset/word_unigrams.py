@@ -52,6 +52,13 @@ text_block = TextBlock(
     column=0, pipeline=text_preprocessing_pipeline, embedding_model=text_embed
 )
 
+TextBlock(
+    column=0, 
+    text_preprocessors=[], 
+    embedding=embeddings.custom_dense(
+        Colbert.tokenize, 
+        dim))
+
 schema = Schema(input_blocks=[text_block])
 
 ######## PUT TOGETHER ########

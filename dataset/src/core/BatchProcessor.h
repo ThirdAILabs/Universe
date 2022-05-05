@@ -2,7 +2,6 @@
 #include <limits>
 #include <memory>
 #include <random>
-#include <string_view>
 #include <vector>
 #include <dataset/src/BuilderVectors.h>
 #include <dataset/src/Dataset.h>
@@ -20,13 +19,11 @@ struct BatchProcessor {
 
   void processBatch(std::vector<std::vector<std::string>>& batch) {
     auto initial_num_elems = _input_vectors.size();
-    
     allocateMemoryForBatch(batch.size());
-
 #pragma omp parallel for default(none) shared(batch, initial_num_elems)
-    for (size_t i = initial_num_elems; i < initial_num_elems + batch.size(); ++i) {
-      _input_vectors[i] = makeVector(batch[i], _input_blocks);
-      _target_vectors[i] = makeVector(batch[i], _target_blocks);
+    for (size_t i = 0; i < batch.size(); ++i) {
+      _input_vectors[initial_num_elems + i] = makeVector(batch[i], _input_blocks);
+      _target_vectors[initial_num_elems + i] = makeVector(batch[i], _target_blocks);
     }
   }
 
@@ -82,13 +79,12 @@ struct BatchProcessor {
 
   static bolt::BoltVector makeVector(std::vector<std::string>& row, std::vector<std::shared_ptr<Block>>& blocks) {
     SparseBuilderVector vec;
-    
     uint32_t offset = 0;
     for (auto& block : blocks) {
       block->process(row, vec, offset);
       offset += block->featureDim();
     }
-
+    
     return vec.toBoltVector();
   }
 

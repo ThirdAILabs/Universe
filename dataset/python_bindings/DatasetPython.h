@@ -101,37 +101,4 @@ std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
 parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
                            uint32_t dimension);
 
-class PyBlock : public Block {
- public:
-  using Block::Block;
-
-  void process(std::vector<std::string>& input_row, BuilderVector& shared_feature_vector, uint32_t idx_offset) override {
-    PYBIND11_OVERRIDE_PURE(
-      void,
-      Block,
-      process,
-      input_row,
-      shared_feature_vector,
-      idx_offset
-    );
-  }
-
-  uint32_t featureDim() override {
-    PYBIND11_OVERRIDE_PURE(
-      uint32_t,
-      Block,
-      featureDim,
-    );
-  }
-
-  bool isDense() override {
-    PYBIND11_OVERRIDE_PURE(
-      bool,
-      Block,
-      isDense,
-    );
-  };
-  
-};
-
 }  // namespace thirdai::dataset::python

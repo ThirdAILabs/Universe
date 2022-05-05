@@ -53,13 +53,13 @@ class CategoryBlock(Block):
         shared_feature_vector.addSingleFeature(category % self.dim, 1.0)
         
 
-    def feature_dim(self) -> int:
+    def featureDim(self) -> int:
         """Returns the dimension of output vectors.
         This is needed when composing different features into a single vector.
         """
         return self.dim
 
-    def is_dense(self) -> bool:
+    def isDense(self) -> bool:
         """True if the block produces dense features, False otherwise.
         Follows the embedding model.
         """

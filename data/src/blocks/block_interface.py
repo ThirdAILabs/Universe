@@ -30,12 +30,12 @@ class Block:
         """
         return
 
-    def feature_dim(self) -> int:
+    def featureDim(self) -> int:
         """Returns the dimension of extracted features.
         This is needed when composing different features into a single vector.
         """
         return
 
-    def is_dense(self) -> bool:
+    def isDense(self) -> bool:
         """True if the block produces dense features, False otherwise."""
         return

@@ -3,7 +3,9 @@
 #include <dataset/src/batch_types/BoltInputBatch.h>
 #include <dataset/src/BuilderVectors.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/Text.h>
 #include <dataset/src/core/BatchProcessor.h>
+#include <dataset/src/text_embedding_models/TextEmbeddingModelInterface.h>
 #include <dataset/src/text_embedding_models/CharKGram.h>
 #include <dataset/src/text_embedding_models/BoltTokenizer.h>
 #include <chrono>
@@ -26,10 +28,10 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__repr__", &BoltInputBatch::toString)
       .def("size", &BoltInputBatch::getBatchSize);
   
-  py::class_<BuilderVector> _builder_vector_(dataset_submodule, "__BuilderVector__",
+  py::class_<BuilderVector, std::shared_ptr<BuilderVector>> _builder_vector_(dataset_submodule, "__BuilderVector__",
         "An interface for builder vectors.");
 
-  py::class_<SparseBuilderVector, BuilderVector>(dataset_submodule, "__SparseBuilderVector__")
+  py::class_<SparseBuilderVector, BuilderVector, std::shared_ptr<SparseBuilderVector>>(dataset_submodule, "__SparseBuilderVector__")
       .def(py::init<>())
       .def("addSingleFeature", &SparseBuilderVector::addSingleFeature,
            py::arg("start_dim"), py::arg("value"))
@@ -39,7 +41,7 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("start_dim"), py::arg("values"))
       .def("to_bolt_vector", &SparseBuilderVector::toBoltVector);
       
-  py::class_<DenseBuilderVector, BuilderVector>(dataset_submodule, "__DenseBuilderVector__")
+  py::class_<DenseBuilderVector, BuilderVector, std::shared_ptr<DenseBuilderVector>>(dataset_submodule, "__DenseBuilderVector__")
       .def(py::init<>())
       .def("addSingleFeature", &DenseBuilderVector::addSingleFeature,
            py::arg("start_dim"), py::arg("value"))
@@ -49,11 +51,16 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("start_dim"), py::arg("values"))
       .def("to_bolt_vector", &DenseBuilderVector::toBoltVector);
   
-  py::class_<Block, PyBlock, std::shared_ptr<Block>>(dataset_submodule, "Block")
-      .def(py::init<>())
+  py::class_<Block, std::shared_ptr<Block>>(dataset_submodule, "Block")
       .def("process", &Block::process, py::arg("input_row"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
-      .def("feature_dim", &Block::featureDim)
-      .def("is_dense", &Block::isDense);
+      .def("featureDim", &Block::featureDim)
+      .def("isDense", &Block::isDense);
+
+  py::class_<TextBlock, Block, std::shared_ptr<TextBlock>>(dataset_submodule, "TextBlock")
+      .def(py::init<uint32_t, std::shared_ptr<TextEmbeddingModel>&>(), py::arg("col"), py::arg("embedding"))
+      .def("process", &TextBlock::process, py::arg("input_row"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
+      .def("featureDim", &TextBlock::featureDim)
+      .def("isDense", &TextBlock::isDense);
 
   py::class_<BatchProcessor>(dataset_submodule, "BatchProcessor")
       .def(py::init<std::vector<std::shared_ptr<Block>>&, std::vector<std::shared_ptr<Block>>&, uint32_t>(),
@@ -61,14 +68,20 @@ void createDatasetSubmodule(py::module_& module) {
       .def("process_batch", &BatchProcessor::processBatch, py::arg("row_batch"))
       .def("export_in_memory_dataset", &BatchProcessor::exportInMemoryDataset, py::arg("shuffle")=false, py::arg("shuffle_seed")=0);
 
-  py::class_<CharKGram>(dataset_submodule, "CharKGram")
+  py::class_<TextEmbeddingModel, std::shared_ptr<TextEmbeddingModel>>(dataset_submodule, "TextEmbeddingModel")
+      .def("embed_text", &TextEmbeddingModel::embedText, 
+           py::arg("text"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
+      .def("is_dense", &TextEmbeddingModel::isDense)
+      .def("feature_dim", &TextEmbeddingModel::featureDim);
+
+  py::class_<CharKGram, TextEmbeddingModel, std::shared_ptr<CharKGram>>(dataset_submodule, "CharKGram")
       .def(py::init<uint32_t, uint32_t>(), py::arg("k"), py::arg("feature_dim"))
       .def("embed_text", &CharKGram::embedText, 
            py::arg("text"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
       .def("is_dense", &CharKGram::isDense)
       .def("feature_dim", &CharKGram::featureDim);
   
-  py::class_<BoltTokenizer>(dataset_submodule, "BoltTokenizer")
+  py::class_<BoltTokenizer, TextEmbeddingModel, std::shared_ptr<BoltTokenizer>>(dataset_submodule, "BoltTokenizer")
       .def(py::init<uint32_t, uint32_t>(), py::arg("seed")=42, py::arg("feature_dim")=100000)
       .def("embed_text", &BoltTokenizer::embedText, 
            py::arg("text"), py::arg("shared_feature_vector"), py::arg("idx_offset"))

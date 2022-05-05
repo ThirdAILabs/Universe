@@ -4,14 +4,14 @@ import time
 from core import Dataset, Schema
 from parsers import CsvIterable
 from sources import LocalFileSystem
-from blocks import TextBlock, CategoryBlock
+from thirdai.dataset import TextBlock
 # from models import TextOneHotEncoding
 from thirdai.dataset import BoltTokenizer
 from thirdai import bolt
 
 ######## DEFINE SOURCE ########
 
-source = LocalFileSystem("/home/benito/amazon_polarity_train.txt")
+source = LocalFileSystem("/Users/benitogeordie/Desktop/thirdai_datasets/amazon_polarity_train.txt")
 parser = CsvIterable(delimiter='\t')
 
 ######## DEFINE SCHEMA ########
@@ -21,12 +21,12 @@ map_lower = lambda str_list: [str.lower(s) for s in str_list]
 text_embed = BoltTokenizer(seed=10, feature_dim=100000)
 text_block = TextBlock(
     # column=1, pipeline=[map_lower], embedding_model=text_embed
-    column=1, embedding_model=text_embed
+    col=1, embedding=text_embed
 )
 
-label_block = CategoryBlock(column=0, dim=2)
+# label_block = CategoryBlock(column=0, dim=2)
 
-schema = Schema(input_blocks=[text_block], target_blocks=[label_block])
+schema = Schema(input_blocks=[text_block], target_blocks=[])
 
 ######## PUT TOGETHER ########
 
