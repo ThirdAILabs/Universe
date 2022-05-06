@@ -45,7 +45,6 @@ RUN pip3 install --upgrade \
     boto3 \
     awscli \
     sklearn \
-    shututil \
     pandas
 
 # The exit 0 means these commands will still continue even if the install fails, 

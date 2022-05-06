@@ -2,9 +2,9 @@ import pytest
 import shutil
 
 # MockModel.tar.gz is a zipped directory containing just an empty pytorch.bin
-# file and an empty centroids.npy file. We expect an error to be thrown
-# when we try to load the checkpoint, but the error's message will tell us
-# that the download itself was successful.
+# file, an empty centroids.npy file, and an empty confiy.json file. We expect an
+# error to be thrown when we try to load the checkpoint, but the error's message
+# will tell us that the download itself was successful.
 MOCK_URL = "https://www.dropbox.com/s/mfijqowbhe3uy3y/MockModel.tar.gz?dl=0"
 MOCK_DIR_NAME = "MockModel"
 
@@ -16,15 +16,10 @@ def test_dropbox_model_download():
 
     from thirdai import embeddings
 
-    try:
-        test = embeddings.DocSearchModel(
+    with pytest.raises(Exception, match=r".*not a valid JSON file.*") as e_info:
+        embeddings.DocSearchModel(
             local_path=None, download_metadata=(MOCK_URL, MOCK_DIR_NAME)
         )
-    except Exception as e:
-        assert "is not a valid JSON file" in str(e)
-        return
-
-    assert False
 
 
 @pytest.mark.unit
@@ -46,5 +41,5 @@ def test_model_caching():
         download_url=MOCK_URL, unzipped_dir_name=MOCK_DIR_NAME
     )
 
-    assert cached_before == False
-    assert cached_after == True
+    assert cached_before is False
+    assert cached_after is True
