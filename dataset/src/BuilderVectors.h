@@ -53,6 +53,12 @@ struct BuilderVector {
     uint32_t start_dim, 
     py::array_t<
         float, py::array::c_style | py::array::forcecast>& values) = 0;
+
+  /**
+   * Given a sequence of possibly-repeating indices, increment values at these 
+   * indices by the given amount. Repetitions accumulate.
+   */
+  virtual void incrementAtIndices(std::vector<uint32_t>& indices, float inc) = 0;
   
   /**
    * Makes a BoltVector.
@@ -154,6 +160,22 @@ struct SparseBuilderVector: public BuilderVector {
     }
     extendVectorByNumpyArray(_values, val_buf);
   }
+
+  void incrementAtIndices(std::vector<uint32_t>& indices, float inc) final {
+    std::sort(indices.begin(), indices.end());
+    uint32_t impossible = std::numeric_limits<uint32_t>::max(); // Way greater than prime mod so no index will be equal to this.
+    indices.push_back(impossible);
+    uint32_t last_idx = impossible;
+    float last_idx_val = 0.0;
+    for (uint32_t idx : indices) {
+      if (idx != last_idx && last_idx != impossible) {
+        addSingleFeature(last_idx, last_idx_val);
+        last_idx_val = 0.0;
+      }
+      last_idx = idx;
+      last_idx_val += inc;
+    }
+  }
   
   bolt::BoltVector toBoltVector() final {
     // TODO(Geordie): This copies. Is there a better way? Is it necessary to optimize?
@@ -180,7 +202,7 @@ struct DenseBuilderVector: public BuilderVector {
   void addSparseFeatures(std::vector<uint32_t>& indices, std::vector<float>& values) final {
     (void) indices;
     (void) values;
-    throw std::invalid_argument("[DenseBuilderVector::addSparseFeatures] Tried to add sparse features to dense vector.");
+    throw std::invalid_argument("[DenseBuilderVector::addSparseFeatures] Dense vector does not support this operation.");
   }
 
   /**
@@ -195,7 +217,7 @@ struct DenseBuilderVector: public BuilderVector {
     (void) indices;
     (void) values;
 
-    throw std::invalid_argument("[DenseBuilderVector::addSparseFeatures] Tried to add sparse features to dense vector.");
+    throw std::invalid_argument("[DenseBuilderVector::addSparseFeatures] Dense vector does not support this operation.");
   }
   
   void addDenseFeatures(uint32_t start_dim, std::vector<float>& values) final {
@@ -212,6 +234,13 @@ struct DenseBuilderVector: public BuilderVector {
     const py::buffer_info val_buf = values.request();
     checkNumpyArray1D(val_buf);
     extendVectorByNumpyArray(_values, val_buf);
+  }
+
+  void incrementAtIndices(std::vector<uint32_t>& indices, float inc) final {
+    (void) indices;
+    (void) inc;
+
+    throw std::invalid_argument("[DenseBuilderVector::incrementAtIndices] Dense vector does not support this operation.");
   }
   
   bolt::BoltVector toBoltVector() final {
