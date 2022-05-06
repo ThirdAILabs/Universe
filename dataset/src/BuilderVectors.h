@@ -1,8 +1,8 @@
+#pragma once
+
 #include <bolt/src/layers/BoltVector.h>
 #include <sstream>
 #include <stdexcept>
-#pragma once
-
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
