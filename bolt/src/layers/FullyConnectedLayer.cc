@@ -151,6 +151,12 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
           max_act = act;
         }
         break;
+      case ActivationFunction::Sigmoid:
+        output.activations[n] = act;
+        if (max_act < act) {
+          max_act = act;
+        }
+        break;
       case ActivationFunction::Linear:
         output.activations[n] = act;
         break;
@@ -165,6 +171,16 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
     }
     for (uint64_t n = 0; n < len_out; n++) {
       output.activations[n] /= (total + EPS);
+      assert(!std::isnan(output.activations[n]));
+    }
+  }
+
+  if (_act_func == ActivationFunction::Sigmoid) {
+    for (uint64_t n = 0; n < len_out; n++) {
+      output.activations[n] = std::exp(output.activations[n]);
+    }
+    for (uint64_t n = 0; n < len_out; n++) {
+      output.activations[n] /= (1+output.activations[n]);
       assert(!std::isnan(output.activations[n]));
     }
   }
@@ -265,7 +281,10 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                               input.len, hashes.data());
   }
 
-  if (_force_sparse_for_inference && _act_func == ActivationFunction::Softmax) {
+  if (_force_sparse_for_inference && _act_func == ActivationFunction::Softmax)  {
+    _hash_table->queryAndInsertForInference(hashes.data(), active_set,
+                                            _sparse_dim);
+  } else if (_force_sparse_for_inference && _act_func == ActivationFunction::Sigmoid)  {
     _hash_table->queryAndInsertForInference(hashes.data(), active_set,
                                             _sparse_dim);
   } else {

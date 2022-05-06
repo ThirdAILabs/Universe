@@ -5,7 +5,7 @@
 
 namespace thirdai::bolt {
 
-enum class ActivationFunction { ReLU, Softmax, Linear };
+enum class ActivationFunction { ReLU, Softmax, Sigmoid, Linear};
 
 static ActivationFunction getActivationFunction(
     const std::string& act_func_name) {
@@ -19,6 +19,9 @@ static ActivationFunction getActivationFunction(
   if (lower_name == "softmax") {
     return ActivationFunction::Softmax;
   }
+  if (lower_name == "sigmoid") {
+    return ActivationFunction::Sigmoid;
+  }
   if (lower_name == "linear") {
     return ActivationFunction::Linear;
   }
@@ -31,6 +34,9 @@ constexpr float actFuncDerivative(float x, ActivationFunction act_func) {
     case ActivationFunction::ReLU:
       return x > 0 ? 1.0 : 0.0;
     case ActivationFunction::Softmax:
+      // return 1.0; // Commented out because Clang tidy doesn't like
+      // consecutive identical branches
+	case ActivationFunction::Sigmoid:
       // return 1.0; // Commented out because Clang tidy doesn't like
       // consecutive identical branches
     case ActivationFunction::Linear:

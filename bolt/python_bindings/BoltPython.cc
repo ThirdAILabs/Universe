@@ -31,6 +31,10 @@ void createBoltSubmodule(py::module_& module) {
       .value("Softmax", ActivationFunction::Softmax,
              "Softmax activation function; converts logits to classification "
              "probabilities. Currently, this activation function can only be "
+             "applied to the final layer in the neural network.")
+      .value("Sigmoid", ActivationFunction::Sigmoid,
+             "Sigmoid activation function; converts logits to indepedent"
+             "probabilities. Currently, this activation function can only be "
              "applied to the final layer in the neural network.");
 
   bolt_submodule.def("getActivationFunction", &getActivationFunction,
@@ -86,7 +90,7 @@ void createBoltSubmodule(py::module_& module) {
           "its neurons when processing an individual sample.\n"
           " * activation_function: ActivationFunctions enum - We support three "
           "activation "
-          "functions: ReLU, Softmax, and Linear.\n"
+          "functions: ReLU, Softmax, Sigmoid and Linear.\n"
           " * sampling_config: SamplingConfig - Sampling configuration.")
       .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
            py::arg("activation_function"),
@@ -94,7 +98,7 @@ void createBoltSubmodule(py::module_& module) {
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
            " * activation_function: ActivationFunctions enum, e.g. ReLU, "
-           "Softmax, Linear. "
+           "Softmax, Sigmoid, Linear. "
            "Also accepts `getActivationFunction(function_name), e.g. "
            "`getActivationFunction('ReLU')`")
       .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
@@ -103,7 +107,7 @@ void createBoltSubmodule(py::module_& module) {
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
            " * activation_function: ActivationFunctions enum, e.g. ReLU, "
-           "Softmax, Linear. "
+           "Softmax, Sigmoid, Linear. "
            "Also accepts `getActivationFunction(function_name), e.g. "
            "`getActivationFunction('ReLU')`");
 
@@ -129,7 +133,7 @@ void createBoltSubmodule(py::module_& module) {
           "when processing each patch.\n"
           " * activation_function: ActivationFunctions enum - We support three "
           "activation "
-          "functions: ReLU, Softmax, and Linear.\n"
+          "functions: ReLU, Softmax, Sigmoid and Linear.\n"
           " * sampling_config: SamplingConfig - Sampling configuration.\n"
           " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
           " * num_patches: Int - Number of patches.")
@@ -148,6 +152,7 @@ void createBoltSubmodule(py::module_& module) {
            "when processing each patch.\n"
            " * activation_function: ActivationFunctions enum, e.g. ReLU, "
            "Softmax, "
+           "Sigmoid, "
            "Linear. "
            "Also accepts `getActivationFunction(function_name), e.g. "
            "`getActivationFunction('ReLU')`\n"
