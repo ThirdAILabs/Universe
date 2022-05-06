@@ -47,10 +47,11 @@ RUN pip3 install --upgrade \
     sklearn \
     pandas
 
-# The exit 0 means these commands will still continue even if the install fails, 
-# this is because tensorflow, perf, and possibly pytorch won't work on arm64
+# The exit 0 means these commands will still continue even if the install fails. 
+# This is because these downloads might not work on arm64
 RUN pip3 install tensorflow tensorflow-datasets ; exit 0
 RUN pip3 install torch torchvision ; exit 0
+RUN pip3 install transformers ; exit 0
 RUN apt-get install linux-tools-common linux-tools-generic linux-tools-`uname -r` ; exit 0
 
 
