@@ -133,7 +133,7 @@ class Dataset:
             raw_batch.append(next_row)
             counter += 1
 
-            if counter == 512:
+            if counter == 8192:
                 start = time.time()
                 processor.process_batch(raw_batch)
                 now = time.time()
