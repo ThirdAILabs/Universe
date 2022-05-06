@@ -25,12 +25,7 @@ def timestamp(daydir=False):
 
 
 def torch_load_dnn(path):
-    if path.startswith("http:") or path.startswith("https:"):
-        dnn = torch.hub.load_state_dict_from_url(path, map_location="cpu")
-    else:
-        dnn = torch.load(path, map_location="cpu")
-
-    return dnn
+    return torch.load(path, map_location="cpu")
 
 
 def save_checkpoint(path, epoch_idx, mb_idx, model, optimizer, arguments=None):

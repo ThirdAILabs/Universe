@@ -6,40 +6,28 @@ except ImportError as e:
     print(
         "The embeddings package requires the PyTorch, transformers, and numpy "
         "packages. Please install these before importing the embeddings "
-        "package by e.g. running `pip3 install torch transformers`."
+        "package by e.g. running `pip3 install torch transformers numpy`."
     )
     raise e
 
-from ._deps.ColBERT.colbertmodeling.checkpoint import Checkpoint
-import pathlib
-import os
+from thirdai._deps.ColBERT.colbertmodeling.checkpoint import Checkpoint
+from thirdai._download import ensure_targz_installed
 
-CACHE_DIR = pathlib.Path.home() / ".cache" / "thirdai"
-MSMARCO_MODEL_URL = "https://www.dropbox.com/s/s02nev64icelbkr/msmarco.tar.gz?dl=0"
-MSMARCO_DIR = CACHE_DIR / "msmarco"
-MSMARCO_DOWNLOAD_PATH = CACHE_DIR / "msmarco.tar.gz"
-
-
-def ensure_msmarco_model_installed():
-    # TODO(josh): This isn't really robust (it relies on the user having curl
-    # and tar working on their machine), but the python requests library wasn't
-    # working to download from dropbox so I am just going with this for now.
-    # We should make this a more robust solution like huggingface's dataset
-    # library.
-    if not MSMARCO_DIR.exists():
-        CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        os.system(f"curl -L {MSMARCO_MODEL_URL} -o {MSMARCO_DOWNLOAD_PATH}")
-        os.system(f"tar -xzf {MSMARCO_DOWNLOAD_PATH} -C {CACHE_DIR}")
-        MSMARCO_DOWNLOAD_PATH.unlink()
+MSMARCO_URL = "https://www.dropbox.com/s/s02nev64icelbkr/msmarco.tar.gz?dl=0"
+MSMARCO_DIR_NAME = "msmarco"
 
 
 class DocSearchModel:
-    def __init__(self, path=None):
-        if not path:
-            ensure_msmarco_model_installed()
-            path = MSMARCO_DIR
-        self.checkpoint = Checkpoint(str(path)).cpu()
-        self.centroids = np.load(f"{path}/centroids.npy")
+    def __init__(
+        self, local_path=None, download_metadata=(MSMARCO_URL, MSMARCO_DIR_NAME)
+    ):
+        if not local_path:
+            local_path, _ = ensure_targz_installed(
+                download_url=download_metadata[0],
+                unzipped_dir_name=download_metadata[1],
+            )
+        self.checkpoint = Checkpoint(str(local_path)).cpu()
+        self.centroids = np.load(f"{local_path}/centroids.npy")
 
     def encodeQuery(self, query):
         return self.checkpoint.queryFromText([query])[0]
