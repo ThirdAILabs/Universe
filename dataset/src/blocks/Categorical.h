@@ -1,32 +1,24 @@
 #pragma once
 
 #include "BlockInterface.h"
-#include "../embeddings/TextEmbeddingModelInterface.h"
-#include "../embeddings/BoltTokenizer.h"
+#include "../embeddings/CategoricalEmbeddingModelInterface.h"
+#include <hashing/src/MurmurHash.h>
+#include <dataset/src/embeddings/CategoricalEmbeddingModelInterface.h>
+#include <dataset/src/embeddings/OneHotEncoding.h>
+#include <dataset/src/utils/Conversions.h>
 #include <memory>
 
 namespace thirdai::dataset {
 
 /**
- * A block for embedding a sample's raw textual features.
+ * A block for embedding a sample's raw categorical features.
  */
-struct TextBlock : public Block {
+struct CategoricalBlock : public Block {
 
-  /**
-   * Constructor.
-   *
-   * Arguments:
-   *   column: int - given a sample as a row of raw features, column is the position of
-   *   the text to be embedded within this row; "we want to embed the text in
-   *   column n of the sample."
-   *   embedding_model: TextEmbeddingModel - the model for encoding the text as vectors.
-   *   pipeline: list of functions that accept and return a list of strings - a pipeline
-   *   for preprocessing string tokens before they get encoded by the embedding model.
-   */
-  TextBlock(uint32_t col, std::shared_ptr<TextEmbeddingModel>& embedding): _col(col), _embedding(embedding) {}
+  CategoricalBlock(uint32_t col, std::shared_ptr<CategoricalEmbeddingModel>& embedding, bool from_string=false): _col(col), _from_string(from_string), _embedding(embedding) {}
+
+  CategoricalBlock(uint32_t col, uint32_t dim, bool from_string=false): _col(col), _from_string(from_string), _embedding(std::make_shared<OneHotEncoding>(dim)) {}
   
-  TextBlock(uint32_t col, uint32_t dim): _col(col), _embedding(std::make_shared<BoltTokenizer>(42, dim)) {}
-
   /**
    * Extracts features from input row and adds it to shared feature vector.
    *
@@ -39,7 +31,13 @@ struct TextBlock : public Block {
    *   section of the output vector is occupied by other features.
    */
   void process(const std::vector<std::string>& input_row, BuilderVector& shared_feature_vector, uint32_t idx_offset) final {
-    _embedding->embedText(input_row[_col], shared_feature_vector, idx_offset);
+    
+    const std::string& col_str = input_row[_col];
+    uint32_t id = _from_string
+      ? hashing::MurmurHash(col_str.c_str(), col_str.length(), 0)
+      : getNumberU32(col_str);
+    
+    _embedding->embedCategory(id, shared_feature_vector, idx_offset);
   };
 
   /**
@@ -59,7 +57,8 @@ struct TextBlock : public Block {
 
  private:
   uint32_t _col;
-  std::shared_ptr<TextEmbeddingModel> _embedding;
+  bool _from_string;
+  std::shared_ptr<CategoricalEmbeddingModel> _embedding;
 
 };
 

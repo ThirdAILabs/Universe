@@ -4,11 +4,15 @@
 #include <dataset/src/BuilderVectors.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Text.h>
+#include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/core/BatchProcessor.h>
-#include <dataset/src/text_embedding_models/TextEmbeddingModelInterface.h>
-#include <dataset/src/text_embedding_models/CharKGram.h>
-#include <dataset/src/text_embedding_models/BoltTokenizer.h>
+#include <dataset/src/embeddings/CategoricalEmbeddingModelInterface.h>
+#include <dataset/src/embeddings/TextEmbeddingModelInterface.h>
+#include <dataset/src/embeddings/CharKGram.h>
+#include <dataset/src/embeddings/BoltTokenizer.h>
+#include <dataset/src/embeddings/OneHotEncoding.h>
 #include <chrono>
+#include <memory>
 
 namespace thirdai::dataset::python {
 
@@ -51,24 +55,7 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("start_dim"), py::arg("values"))
       .def("to_bolt_vector", &DenseBuilderVector::toBoltVector);
   
-  py::class_<Block, std::shared_ptr<Block>>(dataset_submodule, "Block")
-      .def("process", &Block::process, py::arg("input_row"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
-      .def("featureDim", &Block::featureDim)
-      .def("isDense", &Block::isDense);
-
-  py::class_<TextBlock, Block, std::shared_ptr<TextBlock>>(dataset_submodule, "TextBlock")
-      .def(py::init<uint32_t, std::shared_ptr<TextEmbeddingModel>&>(), py::arg("col"), py::arg("embedding"))
-      .def("process", &TextBlock::process, py::arg("input_row"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
-      .def("featureDim", &TextBlock::featureDim)
-      .def("isDense", &TextBlock::isDense);
-
-  py::class_<BatchProcessor>(dataset_submodule, "BatchProcessor")
-      .def(py::init<std::vector<std::shared_ptr<Block>>&, std::vector<std::shared_ptr<Block>>&, uint32_t>(),
-           py::arg("input_blocks"), py::arg("target_blocks"), py::arg("output_batch_size"))
-      .def("process_batch", &BatchProcessor::processBatch, py::arg("row_batch"))
-      .def("export_in_memory_dataset", &BatchProcessor::exportInMemoryDataset, py::arg("shuffle")=false, py::arg("shuffle_seed")=0);
-
-  py::class_<TextEmbeddingModel, std::shared_ptr<TextEmbeddingModel>>(dataset_submodule, "TextEmbeddingModel")
+  py::class_<TextEmbeddingModel, std::shared_ptr<TextEmbeddingModel>>(dataset_submodule, "TextEmbedding")
       .def("embed_text", &TextEmbeddingModel::embedText, 
            py::arg("text"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
       .def("is_dense", &TextEmbeddingModel::isDense)
@@ -88,6 +75,43 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &BoltTokenizer::isDense)
       .def("feature_dim", &BoltTokenizer::featureDim);
   
+  py::class_<CategoricalEmbeddingModel, std::shared_ptr<CategoricalEmbeddingModel>>(dataset_submodule, "CategoricalEmbedding")
+      .def("embedCategory", &CategoricalEmbeddingModel::embedCategory, py::arg("id"), py::arg("shared_feature_vector"), py::arg("offset"))
+      .def("featureDim", &CategoricalEmbeddingModel::featureDim)
+      .def("isDense", &CategoricalEmbeddingModel::isDense);
+  
+  py::class_<OneHotEncoding, CategoricalEmbeddingModel, std::shared_ptr<OneHotEncoding>>(dataset_submodule, "OneHot")
+      .def(py::init<uint32_t>(), py::arg("dim"))
+      .def("embedCategory", &OneHotEncoding::embedCategory, py::arg("id"), py::arg("shared_feature_vector"), py::arg("offset"))
+      .def("featureDim", &OneHotEncoding::featureDim)
+      .def("isDense", &OneHotEncoding::isDense);
+
+  py::class_<Block, std::shared_ptr<Block>>(dataset_submodule, "Block")
+      .def("process", &Block::process, py::arg("input_row"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
+      .def("featureDim", &Block::featureDim)
+      .def("isDense", &Block::isDense);
+
+  py::class_<TextBlock, Block, std::shared_ptr<TextBlock>>(dataset_submodule, "Text")
+      .def(py::init<uint32_t, std::shared_ptr<TextEmbeddingModel>&>(), py::arg("col"), 
+           py::arg("embedding"))
+      .def(py::init<uint32_t, uint32_t>(), py::arg("col"), py::arg("dim"))
+      .def("process", &TextBlock::process, py::arg("input_row"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
+      .def("featureDim", &TextBlock::featureDim)
+      .def("isDense", &TextBlock::isDense);
+  
+  py::class_<CategoricalBlock, Block, std::shared_ptr<CategoricalBlock>>(dataset_submodule, "Categorical")
+      .def(py::init<uint32_t, std::shared_ptr<CategoricalEmbeddingModel>&, bool>(), py::arg("col"), py::arg("embedding"), py::arg("from_string")=false)
+      .def(py::init<uint32_t, uint32_t, bool>(), py::arg("col"), py::arg("dim"), py::arg("from_string")=false)
+      .def("process", &CategoricalBlock::process, py::arg("input_row"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
+      .def("featureDim", &CategoricalBlock::featureDim)
+      .def("isDense", &CategoricalBlock::isDense);
+
+  py::class_<BatchProcessor>(dataset_submodule, "BatchProcessor")
+      .def(py::init<std::vector<std::shared_ptr<Block>>&, std::vector<std::shared_ptr<Block>>&, uint32_t>(),
+           py::arg("input_blocks"), py::arg("target_blocks"), py::arg("output_batch_size"))
+      .def("process_batch", &BatchProcessor::processBatch, py::arg("row_batch"))
+      .def("export_in_memory_dataset", &BatchProcessor::exportInMemoryDataset, py::arg("shuffle")=false, py::arg("shuffle_seed")=0);
+
   py::class_<InMemoryDataset<SparseBatch>> _imsd_(dataset_submodule,
                                                   "InMemorySparseDataset");
   (void)_imsd_;  // To get rid of clang tidy error

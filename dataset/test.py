@@ -4,7 +4,7 @@ import time
 from core import Dataset, Schema
 from parsers import CsvIterable
 from sources import LocalFileSystem
-from thirdai.dataset import TextBlock
+from thirdai.dataset import Text, Categorical
 # from models import TextOneHotEncoding
 from thirdai.dataset import BoltTokenizer
 from thirdai import bolt
@@ -19,14 +19,13 @@ parser = CsvIterable(delimiter='\t')
 map_lower = lambda str_list: [str.lower(s) for s in str_list]
 
 text_embed = BoltTokenizer(seed=10, feature_dim=100000)
-text_block = TextBlock(
-    # column=1, pipeline=[map_lower], embedding_model=text_embed
+text_block = Text(
     col=1, embedding=text_embed
 )
 
-# label_block = CategoryBlock(column=0, dim=2)
+label_block = Categorical(col=0, dim=2)
 
-schema = Schema(input_blocks=[text_block], target_blocks=[])
+schema = Schema(input_blocks=[text_block], target_blocks=[label_block])
 
 ######## PUT TOGETHER ########
 

@@ -1,3 +1,5 @@
+#pragma once
+
 #include <bolt/src/layers/BoltVector.h>
 #include <limits>
 #include <memory>
