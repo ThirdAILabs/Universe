@@ -9,11 +9,13 @@ namespace thirdai::bolt::python {
 void createBoltSubmodule(py::module_& module) {
   auto bolt_submodule = module.def_submodule("bolt");
 
+#if THIRDAI_EXPOSE_ALL
   py::class_<thirdai::bolt::SamplingConfig>(bolt_submodule, "SamplingConfig")
       .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
            py::arg("hashes_per_table"), py::arg("num_tables"),
            py::arg("range_pow"), py::arg("reservoir_size"))
       .def(py::init<>());
+#endif
 
   py::enum_<ActivationFunction>(bolt_submodule, "ActivationFunctions")
       .value("ReLU", ActivationFunction::ReLU)
@@ -45,15 +47,18 @@ void createBoltSubmodule(py::module_& module) {
              std::shared_ptr<thirdai::bolt::FullyConnectedLayerConfig>,
              thirdai::bolt::SequentialLayerConfig>(bolt_submodule,
                                                    "FullyConnected")
+#if THIRDAI_EXPOSE_ALL
       .def(py::init<uint64_t, float, ActivationFunction,
                     thirdai::bolt::SamplingConfig>(),
            py::arg("dim"), py::arg("load_factor"),
            py::arg("activation_function"), py::arg("sampling_config"))
+#endif
       .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
            py::arg("activation_function"))
       .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
            py::arg("load_factor"), py::arg("activation_function"));
 
+#if THIRDAI_EXPOSE_ALL
   py::class_<thirdai::bolt::ConvLayerConfig,
              std::shared_ptr<thirdai::bolt::ConvLayerConfig>,
              thirdai::bolt::SequentialLayerConfig>(bolt_submodule, "Conv")
@@ -63,6 +68,7 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("num_filters"), py::arg("load_factor"),
            py::arg("activation_function"), py::arg("sampling_config"),
            py::arg("kernel_size"), py::arg("num_patches"));
+#endif
 
   py::class_<thirdai::bolt::EmbeddingLayerConfig>(bolt_submodule, "Embedding")
       .def(py::init<uint32_t, uint32_t, uint32_t>(),
