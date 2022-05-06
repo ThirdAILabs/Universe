@@ -11,7 +11,8 @@ from thirdai import bolt
 
 ######## DEFINE SOURCE ########
 
-source = LocalFileSystem("/Users/benitogeordie/Desktop/thirdai_datasets/amazon_polarity_train.txt")
+source = LocalFileSystem("/home/benito/amazon_polarity_train.txt")
+# source = LocalFileSystem("/Users/benitogeordie/Desktop/thirdai_datasets/amazon_polarity_train.txt")
 parser = CsvIterable(delimiter='\t')
 
 ######## DEFINE SCHEMA ########
