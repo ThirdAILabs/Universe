@@ -5,14 +5,15 @@
 #include <ctype.h>
 #include <limits>
 #include <sstream>
+#include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include "TextEmbeddingModelInterface.h"
 
 namespace thirdai::dataset {
 
-struct BoltTokenizer: public TextEmbeddingModel {
+struct PairGram: public TextEmbeddingModel {
   
-  explicit BoltTokenizer(uint32_t dim=100000): _dim(dim) {}
+  explicit PairGram(uint32_t dim=100000): _dim(dim) {}
 
   void embedText(const std::string& text, BuilderVector& shared_feature_vector, uint32_t idx_offset) final {
     std::string lower_case_text = text;
@@ -20,6 +21,7 @@ struct BoltTokenizer: public TextEmbeddingModel {
       c = std::tolower(c);
     }
     std::vector<uint32_t> indices;
+    std::vector<uint32_t> hashes;
 
     const auto *start_ptr = lower_case_text.c_str();
     bool last_ptr_was_space = false;
@@ -28,8 +30,12 @@ struct BoltTokenizer: public TextEmbeddingModel {
         last_ptr_was_space = true;
 
         uint32_t hash =
-          hashing::MurmurHash(start_ptr, &c - start_ptr, /* seed = */ 314) % _dim + idx_offset;
-        indices.push_back(hash);
+          hashing::MurmurHash(start_ptr, &c - start_ptr, /* seed = */ 341) % _dim + idx_offset;
+        hashes.push_back(hash);
+
+        for (const auto& prev_word_hash : hashes) {
+            indices.push_back(hashing::HashUtils::combineHashes(prev_word_hash, hash));
+        }    
       }
       if (last_ptr_was_space && !isspace(c)) {
         last_ptr_was_space = false;
@@ -37,7 +43,7 @@ struct BoltTokenizer: public TextEmbeddingModel {
       }
     }
 
-    shared_feature_vector.incrementAtIndices(indices, 1.0);
+    shared_feature_vector.incrementAtIndices(hashes, 1.0);
   }
 
   uint32_t featureDim() final { return _dim; }

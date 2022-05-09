@@ -128,30 +128,22 @@ class Dataset:
         counter = 0
         raw_batch = []
         next_row = next(row_generator)
-        actual_processing_time = 0
         while next_row is not None:
             raw_batch.append(next_row)
             counter += 1
 
             if counter == 8192:
-                start = time.time()
                 processor.process_batch(raw_batch)
-                now = time.time()
-                actual_processing_time += now - start
                 raw_batch = []
                 counter = 0
             
             next_row = next(row_generator)
 
         if len(raw_batch) > 0:
-            start = time.time()
             processor.process_batch(raw_batch)
-            now = time.time()
-            actual_processing_time += now - start
             raw_batch = []
             counter = 0
 
-        print("Actual processing time:", actual_processing_time)
         # Close the source when we are done with it.
         self._source.close()
         # Remember that we have loaded and processed the whole dataset

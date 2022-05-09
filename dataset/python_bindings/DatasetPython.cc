@@ -7,10 +7,14 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/core/BatchProcessor.h>
 #include <dataset/src/embeddings/CategoricalEmbeddingModelInterface.h>
+#include <dataset/src/embeddings/PairGram.h>
 #include <dataset/src/embeddings/TextEmbeddingModelInterface.h>
 #include <dataset/src/embeddings/CharKGram.h>
 #include <dataset/src/embeddings/BoltTokenizer.h>
+#include <dataset/src/embeddings/PairGram.h>
+#include <dataset/src/embeddings/TextCustomDense.h>
 #include <dataset/src/embeddings/OneHotEncoding.h>
+#include <pybind11/attr.h>
 #include <chrono>
 #include <memory>
 
@@ -62,19 +66,26 @@ void createDatasetSubmodule(py::module_& module) {
       .def("feature_dim", &TextEmbeddingModel::featureDim);
 
   py::class_<CharKGram, TextEmbeddingModel, std::shared_ptr<CharKGram>>(dataset_submodule, "CharKGram")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("k"), py::arg("feature_dim"))
+      .def(py::init<uint32_t, uint32_t>(), py::arg("k"), py::arg("dim"))
       .def("embed_text", &CharKGram::embedText, 
            py::arg("text"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
       .def("is_dense", &CharKGram::isDense)
       .def("feature_dim", &CharKGram::featureDim);
   
   py::class_<BoltTokenizer, TextEmbeddingModel, std::shared_ptr<BoltTokenizer>>(dataset_submodule, "BoltTokenizer")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("seed")=42, py::arg("feature_dim")=100000)
+      .def(py::init<uint32_t>(), py::arg("dim")=100000)
       .def("embed_text", &BoltTokenizer::embedText, 
            py::arg("text"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
       .def("is_dense", &BoltTokenizer::isDense)
       .def("feature_dim", &BoltTokenizer::featureDim);
   
+  py::class_<PairGram, TextEmbeddingModel, std::shared_ptr<PairGram>>(dataset_submodule, "PairGram")
+      .def(py::init<uint32_t>(), py::arg("dim")=100000)
+      .def("embed_text", &PairGram::embedText, 
+           py::arg("text"), py::arg("shared_feature_vector"), py::arg("idx_offset"))
+      .def("is_dense", &PairGram::isDense)
+      .def("feature_dim", &PairGram::featureDim);
+
   py::class_<CategoricalEmbeddingModel, std::shared_ptr<CategoricalEmbeddingModel>>(dataset_submodule, "CategoricalEmbedding")
       .def("embedCategory", &CategoricalEmbeddingModel::embedCategory, py::arg("id"), py::arg("shared_feature_vector"), py::arg("offset"))
       .def("featureDim", &CategoricalEmbeddingModel::featureDim)
@@ -145,7 +156,8 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<InMemoryDataset<BoltInputBatch>>(dataset_submodule, "BoltDataset")
       .def(py::init<std::vector<BoltInputBatch>&&, uint64_t>(),
-           py::arg("batches"), py::arg("num_elements"));
+           py::arg("batches"), py::arg("num_elements"))
+      .def("at", &InMemoryDataset<BoltInputBatch>::at, py::arg("idx"));
 
   dataset_submodule.def("load_bolt_svm_dataset", &loadBoltSVMDataset,
                         py::arg("filename"), py::arg("batch_size"));
