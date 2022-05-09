@@ -10,6 +10,9 @@ from thirdai import bolt
 
 # TODO: rename embedding to encoding? or something else? vectorization? tokenization? featurization?
 # TODO: Play with huggingface
+source = LocalFileSystem("/home/benito/amazon_polarity_train.txt")
+# source = LocalFileSystem("/Users/benitogeordie/Desktop/thirdai_datasets/amazon_polarity_train.txt")
+parser = CsvIterable(delimiter='\t')
 
 schema = Schema(
     input_blocks=[
