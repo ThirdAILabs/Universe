@@ -7,8 +7,6 @@ BASEDIR=$(dirname "$0")
 cd $BASEDIR
 BASEDIR=$(pwd)
 
-./build_all_product_dockers.sh $1
-
 REV_TAG=$(git log -1 --pretty=format:%h)
 
 # Loop through all Docker images ending with REV_TAG (we assume that all valid

@@ -121,8 +121,9 @@ if (${LICENSE_BUILD_FLAG_FOUND})
   # ugly (the build happens at configure time, not build time) but honestly
   # okay (I spent way too long getting anything at all to work). Plus, it's 
   # gated by a feature flag anyways.
+  # For now use default 32 jobs to build.
   set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/libcryptopp.a)
-  execute_process(COMMAND make static CXX=g++ -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
+  execute_process(COMMAND make static CXX=g++ -j32 -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
 
 endif()
 
@@ -185,7 +186,7 @@ file (
 # ASan from python, but honestly this is more trouble than it's worth so for
 # now this is actually a feature rather than a bug.
 
-pybind11_add_module(thirdai 
+pybind11_add_module(_thirdai 
   python_bindings/thirdai.cc 
   bolt/python_bindings/BoltPython.cc
   dataset/python_bindings/DatasetPython.cc
@@ -201,5 +202,5 @@ pybind11_add_module(thirdai
 )
 
 if (${LICENSE_BUILD_FLAG_FOUND})
-  target_link_libraries(thirdai PRIVATE ${CRYPTOPP_LIB})
+  target_link_libraries(_thirdai PRIVATE ${CRYPTOPP_LIB})
 endif()

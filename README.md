@@ -11,12 +11,12 @@ All executables will be in their corresponding directory within the build
 directory. e.g. the mpi_example executable will be in 
 `Universe/build/examples/mpi-example/mpi_example`. By default this will
 run in parallel and build all unbuilt targets or targets whose component source
-files have been updated, but you can pass in parameters to run in serial or build
-only a specific target. You can also build in other build modes (Debug, etc.).
-Run bin/build.py -h for more info.
-1. Run `$ bin/cpp-test.sh` from anywhere to have cmake run all c++ tests. To run specific
-tests, you can also pass a regular expression to filter tests 
-(or provide an explicit test name):
+files have been updated. You can pass in parameters to run in serial and
+build in other build modes (Debug, etc.). Run bin/build.py -h for more info. 
+This will also install the thirdai package using pip.
+2. Run `$ bin/cpp-test.sh` after running `bin/build.py` from anywhere to have 
+cmake run all c++ tests. To run specific tests, you can also pass a regular 
+expression to filter tests (or provide an explicit test name):
 `$ bin/cpp-test.sh -R <test filter expression>`.
 Note you can actually pass any arguments you would pass to ctest to this
 script and it will forward them. 
@@ -62,8 +62,6 @@ then run gdb.
 2. If you want to run with ASan (an adress sanitizier), build with RelWithAsan
 or DebugWithAsan.
 
-
-
 ## Manual building and testing (DEPRECATED, use scripts in bin, see above)
 1. Clone this repository and navigate into it.
 2. `$ mkdir build && cd build`
@@ -75,25 +73,17 @@ for best performance).
 6. To run tests simply run `$ ctest` from within the build directory after compiling all of the targets, or optionally pass a regular expression to filter tests (or provide an explicit test names) `$ ctest -R <test filter expression>`. 
 
 ## Installing python bindings
-1. The building target `thirdai` will compile the `thirdai.so` library in the build directory. 
-This is automatically run on a full build, so you can run `bin/build.py` as normal.
-Note this will use the version of python you get from running `which python3`, 
-and even with the PYTHONPATH changes below a different version of python will
-not be able to find the so file.
-2. To use the bindings, you need to tell python where the `thirdai.so` file is.
-To do this, you can add the so file to your PYTHONPATH environment
-variable. This will allow you to automatically use the newest built version of 
-the library. To do this, you can run
-`export PYTHONPATH=~/Universe/build:$PYTHONPATH`
-(replace the path with the correct one if your Universe folder is not in your
-home directory). This will work until you open a new shell; to 
-automatically update your PYTHONPATH when you start your shell add the above
-command to your ~/.bash_profile or ~/.bash_rc, or equivalently run
-`echo "export PYTHONPATH=~/Universe/build:\$PYTHONPATH" >> $HOME/.bash_profile`. 
-Alternatively you can run `pip3 install .`. This installs thirdi without messing
-around with environment variables, but is not preferred for development since it
-is performs an entirely seperate parallel build from `bin/build.py`, and so is
-much slower.
+1. Running `bin/build.py` as normal will install python bindings on your machine
+automatically using pip.
+2. To build a wheel, run `python3 setup.py bdist_wheel`. This will generate a
+.whl file in the dist folder specific to your architecture and operating system.
+Note that this will do a release build with release flags; to build a wheel
+with other flags, you need to set environment variables (see setup.py for more
+details). In fact, `bin/build.py` sets environment variables in its process 
+namespace and then calls setup.py internally. You can then install 
+the wheel by running `pip3 install dist/<wheel>`. You can also upload whl files
+to pypi, but this should only be done with a release build, ideally as part of
+a CI pipeline.
 
 ## Using cmake
 To understand how to setup a executable, library, or test using cmake please see the examples in the `examples` directory. For more context here are a few things to know: 
