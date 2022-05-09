@@ -2,11 +2,11 @@
 
 #include <algorithm>
 #include <limits>
-#include "TextEmbeddingModelInterface.h"
+#include "TextEncodingInterface.h"
 
 namespace thirdai::dataset {
 
-struct CharKGram: public TextEmbeddingModel {
+struct CharKGram: public TextEncoding {
   
   CharKGram(uint32_t k, uint32_t dim): _k(k), _dim(dim) {}
 

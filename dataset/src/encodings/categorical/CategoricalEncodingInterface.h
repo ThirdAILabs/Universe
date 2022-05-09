@@ -1,15 +1,15 @@
 #pragma once
 
-#include <dataset/src/BuilderVectors.h>
+#include <dataset/src/utils/BuilderVectors.h>
 
 namespace thirdai::dataset {
 
 /**
- * Interface for text embedding models.
+ * Interface for text encoding models.
  */
-struct CategoricalEmbeddingModel {
+struct CategoricalEncoding {
   /**
-   * Maps an id to an embedding
+   * Maps an id to an encoding
    */
   virtual void embedCategory(uint32_t id, BuilderVector& shared_feature_vector, uint32_t offset) = 0;
 
@@ -19,7 +19,7 @@ struct CategoricalEmbeddingModel {
   virtual bool isDense() = 0;
 
   /**
-   * The dimension of the embedding produced by this model.
+   * The dimension of the encoding produced by this model.
    */
   virtual uint32_t featureDim() = 0;
 };

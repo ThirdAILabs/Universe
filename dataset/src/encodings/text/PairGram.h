@@ -7,11 +7,11 @@
 #include <sstream>
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
-#include "TextEmbeddingModelInterface.h"
+#include "TextEncodingInterface.h"
 
 namespace thirdai::dataset {
 
-struct PairGram: public TextEmbeddingModel {
+struct PairGram: public TextEncoding {
   
   explicit PairGram(uint32_t dim=100000): _dim(dim) {}
 

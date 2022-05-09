@@ -6,11 +6,11 @@
 #include <limits>
 #include <sstream>
 #include <hashing/src/MurmurHash.h>
-#include "TextEmbeddingModelInterface.h"
+#include "TextEncodingInterface.h"
 
 namespace thirdai::dataset {
 
-struct BoltTokenizer: public TextEmbeddingModel {
+struct BoltTokenizer: public TextEncoding {
   
   explicit BoltTokenizer(uint32_t dim=100000): _dim(dim) {}
 

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "BlockInterface.h"
-#include "../embeddings/TextEmbeddingModelInterface.h"
-#include "../embeddings/BoltTokenizer.h"
+#include "../encodings/text/TextEncodingInterface.h"
+#include "../encodings/text/BoltTokenizer.h"
 #include <memory>
 
 namespace thirdai::dataset {
@@ -23,9 +23,9 @@ struct TextBlock : public Block {
    *   pipeline: list of functions that accept and return a list of strings - a pipeline
    *   for preprocessing string tokens before they get encoded by the embedding model.
    */
-  TextBlock(uint32_t col, std::shared_ptr<TextEmbeddingModel>& embedding): _col(col), _embedding(embedding) {}
+  TextBlock(uint32_t col, std::shared_ptr<TextEncoding>& encoding): _col(col), _encoding(encoding) {}
   
-  TextBlock(uint32_t col, uint32_t dim): _col(col), _embedding(std::make_shared<BoltTokenizer>(42, dim)) {}
+  TextBlock(uint32_t col, uint32_t dim): _col(col), _encoding(std::make_shared<BoltTokenizer>(42, dim)) {}
 
   /**
    * Extracts features from input row and adds it to shared feature vector.
@@ -39,7 +39,7 @@ struct TextBlock : public Block {
    *   section of the output vector is occupied by other features.
    */
   void process(const std::vector<std::string>& input_row, BuilderVector& shared_feature_vector, uint32_t idx_offset) final {
-    _embedding->embedText(input_row[_col], shared_feature_vector, idx_offset);
+    _encoding->embedText(input_row[_col], shared_feature_vector, idx_offset);
   };
 
   /**
@@ -47,19 +47,19 @@ struct TextBlock : public Block {
    * This is needed when composing different features into a single vector.
    */
   uint32_t featureDim() final {
-    return _embedding->featureDim();
+    return _encoding->featureDim();
   };
 
   /**
    * True if the block produces dense features, False otherwise.
    */
   bool isDense() final {
-    return _embedding->isDense();
+    return _encoding->isDense();
   };
 
  private:
   uint32_t _col;
-  std::shared_ptr<TextEmbeddingModel> _embedding;
+  std::shared_ptr<TextEncoding> _encoding;
 
 };
 

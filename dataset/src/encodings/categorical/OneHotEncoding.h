@@ -1,10 +1,10 @@
 #pragma once
 
-#include "CategoricalEmbeddingModelInterface.h"
+#include "CategoricalEncodingInterface.h"
 
 namespace thirdai::dataset {
 
-struct OneHotEncoding : public CategoricalEmbeddingModel {
+struct OneHotEncoding : public CategoricalEncoding {
   explicit OneHotEncoding(uint32_t dim): _dim(dim) {}
 
   /**

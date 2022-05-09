@@ -1,6 +1,6 @@
 #pragma once
 
-#include <dataset/src/BuilderVectors.h>
+#include <dataset/src/utils/BuilderVectors.h>
 
 namespace thirdai::dataset {
 

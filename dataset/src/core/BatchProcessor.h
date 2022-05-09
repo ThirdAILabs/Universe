@@ -5,7 +5,7 @@
 #include <memory>
 #include <random>
 #include <vector>
-#include <dataset/src/BuilderVectors.h>
+#include <dataset/src/utils/BuilderVectors.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/blocks/BlockInterface.h>
 
