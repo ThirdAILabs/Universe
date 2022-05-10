@@ -41,7 +41,7 @@ struct CharKGram: public TextEncoding {
       }
     }
 
-    incrementAtIndices(shared_feature_vector, indices, 1.0);
+    shared_feature_vector.incrementAtIndices(indices, 1.0);
   }
 
   uint32_t featureDim() final { return _dim; }
@@ -49,22 +49,6 @@ struct CharKGram: public TextEncoding {
   bool isDense() final { return false; }
 
  private:
-
-  static void incrementAtIndices(BuilderVector& shared_feature_vector, std::vector<uint32_t>& indices, float inc) {
-    std::sort(indices.begin(), indices.end());
-    uint32_t impossible = std::numeric_limits<uint32_t>::max(); // Way greater than prime mod so no index will be equal to this.
-    indices.push_back(impossible);
-    uint32_t last_idx = impossible;
-    float last_idx_val = 0.0;
-    for (uint32_t idx : indices) {
-      if (idx != last_idx && last_idx != impossible) {
-        shared_feature_vector.addSingleFeature(idx, last_idx_val);
-        last_idx_val = 0.0;
-      }
-      last_idx = idx;
-      last_idx_val += inc;
-    }
-  }
   
   static constexpr uint32_t PRIME_BASE = 257;
   static constexpr uint32_t PRIME_MOD = 1000000007;
