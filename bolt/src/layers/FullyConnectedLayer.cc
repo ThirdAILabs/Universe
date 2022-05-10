@@ -410,13 +410,13 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
     _b_velocity[cur_neuron] =
         B2 * _b_velocity[cur_neuron] + (1 - B2) * grad * grad;
 
-    assert(!std::isnan(_b_momentum[n]));
-    assert(!std::isnan(_b_velocity[n]));
+    assert(!std::isnan(_b_momentum[cur_neuron]));
+    assert(!std::isnan(_b_velocity[cur_neuron]));
 
     _biases[cur_neuron] +=
         lr * (_b_momentum[cur_neuron] / B1_bias_corrected) /
         (std::sqrt(_b_velocity[cur_neuron] / B2_bias_corrected) + eps);
-    assert(!std::isnan(_biases[n]));
+    assert(!std::isnan(_biases[cur_neuron]));
 
     _b_gradient[cur_neuron] = 0;
     _is_active[cur_neuron] = false;
