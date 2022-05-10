@@ -1,22 +1,22 @@
 #pragma once
 
+#include "TextEncodingInterface.h"
 #include <algorithm>
 #include <limits>
-#include "TextEncodingInterface.h"
 
 namespace thirdai::dataset {
 
-struct CharKGram: public TextEncoding {
-  
-  CharKGram(uint32_t k, uint32_t dim): _k(k), _dim(dim) {}
+struct CharKGram : public TextEncoding {
+  CharKGram(uint32_t k, uint32_t dim) : _k(k), _dim(dim) {}
 
-  void embedText(const std::string& text, BuilderVector& shared_feature_vector, uint32_t idx_offset) final {
+  void embedText(const std::string& text, BuilderVector& shared_feature_vector,
+                 uint32_t idx_offset) final {
     std::vector<uint32_t> indices;
 
     if (text.size() < _k) {
       return;
     }
-    
+
     int64_t power = 1;
     for (size_t i = 0; i < _k; i++) {
       power = (power * PRIME_BASE) % PRIME_MOD;
@@ -49,12 +49,11 @@ struct CharKGram: public TextEncoding {
   bool isDense() final { return false; }
 
  private:
-  
   static constexpr uint32_t PRIME_BASE = 257;
   static constexpr uint32_t PRIME_MOD = 1000000007;
-  
+
   uint32_t _k;
   uint32_t _dim;
 };
 
-} // namespace thirdai::dataset
+}  // namespace thirdai::dataset
