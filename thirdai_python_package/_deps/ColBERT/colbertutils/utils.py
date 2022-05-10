@@ -1,5 +1,4 @@
 import os
-import tqdm
 import torch
 import datetime
 import itertools
@@ -25,26 +24,8 @@ def timestamp(daydir=False):
     return result
 
 
-def file_tqdm(file):
-    print(f"#> Reading {file.name}")
-
-    with tqdm.tqdm(
-        total=os.path.getsize(file.name) / 1024.0 / 1024.0, unit="MiB"
-    ) as pbar:
-        for line in file:
-            yield line
-            pbar.update(len(line) / 1024.0 / 1024.0)
-
-        pbar.close()
-
-
 def torch_load_dnn(path):
-    if path.startswith("http:") or path.startswith("https:"):
-        dnn = torch.hub.load_state_dict_from_url(path, map_location="cpu")
-    else:
-        dnn = torch.load(path, map_location="cpu")
-
-    return dnn
+    return torch.load(path, map_location="cpu")
 
 
 def save_checkpoint(path, epoch_idx, mb_idx, model, optimizer, arguments=None):
@@ -185,34 +166,6 @@ def int_or_float(val):
         return float(val)
 
     return int(val)
-
-
-def load_ranking(path, types=None, lazy=False):
-    print_message(f"#> Loading the ranked lists from {path} ..")
-
-    try:
-        lists = torch.load(path)
-        lists = zipstar([l.tolist() for l in tqdm.tqdm(lists)], lazy=lazy)
-    except:
-        if types is None:
-            types = itertools.cycle([int_or_float])
-
-        with open(path) as f:
-            lists = [
-                [typ(x) for typ, x in zip_first(types, line.strip().split("\t"))]
-                for line in file_tqdm(f)
-            ]
-
-    return lists
-
-
-def save_ranking(ranking, path):
-    lists = zipstar(ranking)
-    lists = [torch.tensor(l) for l in lists]
-
-    torch.save(lists, path)
-
-    return lists
 
 
 def groupby_first_item(lst):

@@ -4,16 +4,33 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/string.hpp>
 #include "License.h"
+#include <cryptopp/base64.h>
 #include <cryptopp/files.h>
+#include <cryptopp/filters.h>
 #include <cryptopp/osrng.h>
 #include <cryptopp/rsa.h>
 #include <exceptions/src/Exceptions.h>
+#include <sys/types.h>
 #include <exception>
 #include <fstream>
 #include <optional>
+#include <pwd.h>
+#include <unistd.h>
 #include <utility>
 
 namespace thirdai::licensing {
+
+const std::string PUBLIC_KEY_BASE_64 =
+    "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAsIv9g8w+"
+    "DLlepzpE02luu6lV2DY7g5N0cnqhbaoArE5UOEiKK2EFPCeQTp8+TkYk64/"
+    "ieMab4CoIU3ZmVp5GUyKkWsLJhDUE3dXJrLhIDTg7HFr6qwrFDosRWI26grq+"
+    "CFPsiVLTjlJCd+7sv1EtR5TPhympKAKRbUI1pffnK8QTJ8F5Bfg/"
+    "1tLHk3lpUp4vF90se0TWgmXe7CW6GtWeXqiwsfzK9IzkgLbX4DQJnyIRPS9MLoQr/"
+    "nSws7jMPDtUIuSjUIOQojxIhxTO5iL+"
+    "mfiV2h7nRLMtJM6lLKmrDK09sE4geE8zJytCcP1l15s7gZy7g7i1mwrpfiulmfNVvDj0LoKYD2"
+    "nx1mj+gCgnUasqLWILNUXgV19eGGLd23+"
+    "hc7NzF10KFVXIcLebrG7o6WfFY5NSYu2pDzialgpCXmiysyIKj/HXY1hpbi0/dMII/"
+    "lVN2QhDb5zTVIjzBr+kMuJ9dNNl9Sn4eso+dMNjQrQ2F9WvcgS1ZQ4Ju/5qOZrRAgMBAAE=";
 
 class LicenseWithSignature {
  public:
@@ -103,22 +120,23 @@ class LicenseWithSignature {
     return serialize_into;
   }
 
-  /** Checks for a license file named license.serialized in...
-   *  1. /home/thirdai/work (user added)
-   *  2. /licenses (added automatically at Docker build time)
-   * Using a public key named license-public-key.der in...
-   *  1. /keys (added automatically at Docker build time)
-   * If no license is found, throws an error. If no public key is found, throws
-   * an error. If a license is found we verify it with the passed in public key,
+  /**
+   * Checks for a license file named license.serialized in a bunch of places,
+   * including the current direcotry and the home direcotry.
+   * If no license is found, we throw an error.
+   * If a license is found we verify it with the passed in public key,
    * then check whether it has expired. If either check fails we throw an error.
    * Otherwise we just return.
    */
   static void findVerifyAndCheckLicense() {
     std::vector<std::string> license_file_name_options = {
-        "/home/thirdai/work/license.serialized",
+        "license.serialized", "/home/thirdai/work/license.serialized",
         "/licenses/license.serialized"};
-    std::vector<std::string> public_key_file_name_options = {
-        "/keys/license-public-key.der"};
+    auto optional_home_dir = get_home_directory();
+    if (!optional_home_dir->empty()) {
+      license_file_name_options.push_back(optional_home_dir.value() +
+                                          "/license.serialized");
+    }
 
     std::optional<LicenseWithSignature> license;
     for (const std::string& license_file_name : license_file_name_options) {
@@ -128,34 +146,27 @@ class LicenseWithSignature {
       }
     }
     if (!license.has_value()) {
-      throw thirdai::exceptions::LicenseCheckException("no license file found");
+      throw thirdai::exceptions::LicenseCheckException(
+          "no license file found. Go to https://thirdai.com/try-bolt to get a "
+          "license.");
     }
 
-    std::optional<CryptoPP::RSA::PublicKey> public_key;
-    for (const std::string& public_key_file_name :
-         public_key_file_name_options) {
-      if (can_access_file(public_key_file_name)) {
-        CryptoPP::RSA::PublicKey load_into;
-        {
-          CryptoPP::FileSource input(public_key_file_name.c_str(), true);
-          load_into.BERDecode(input);
-        }
-        public_key = load_into;
-        break;
-      }
-    }
-    if (!public_key) {
-      throw thirdai::exceptions::LicenseCheckException(
-          "no public key file found");
-    }
+    CryptoPP::RSA::PublicKey public_key;
+    CryptoPP::StringSource ss(PUBLIC_KEY_BASE_64, true,
+                              new CryptoPP::Base64Decoder);
+    public_key.BERDecode(ss);
 
-    if (!license->verify(public_key.value())) {
+    if (!license->verify(public_key)) {
       throw thirdai::exceptions::LicenseCheckException(
-          "license verification failure");
+          "license verification failure. Go to https://thirdai.com/try-bolt to "
+          "get a "
+          "valid license.");
     }
 
     if (license->get_license().isExpired()) {
-      throw thirdai::exceptions::LicenseCheckException("license expired");
+      throw thirdai::exceptions::LicenseCheckException(
+          "license expired. Go to https://thirdai.com/try-bolt to renew your "
+          "license.");
     }
   }
 
@@ -175,6 +186,18 @@ class LicenseWithSignature {
   static bool can_access_file(const std::string& fileName) {
     std::ifstream infile(fileName);
     return infile.good();
+  }
+
+  static std::optional<std::string> get_home_directory() {
+    struct passwd* pw = getpwuid(getuid());
+    if (pw == NULL) {
+      return std::nullopt;
+    }
+    char* dir = getpwuid(getuid())->pw_dir;
+    if (dir == NULL) {
+      return std::nullopt;
+    }
+    return std::string(dir);
   }
 
   License _license;

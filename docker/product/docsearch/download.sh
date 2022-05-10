@@ -5,14 +5,12 @@
 BASEDIR=$(dirname "$0")
 cd $BASEDIR
 
-# TODO(josh): Move this stuff to backblaze so it is reproducible not just on our blade
-cp  /share/josh/msmarco/ColBERT/downloads/colbertv2.0.tar.gz ColBERT/downloads/
-tar -xvzf ColBERT/downloads/colbertv2.0.tar.gz -C ColBERT/downloads/
+# TODO(josh): Move this stuff to backblaze or a similar host so it is 
+# reproducible not just on our blade
+mkdir -p downloads/checkpoint
+cp  /share/josh/msmarco/ColBERT/downloads/colbertv2.0/* downloads/checkpoint/
 
-cp /share/josh/msmarco/centroids.npy ColBERT/downloads
-
-# Override the existing artifact metadata
-cp ColBERT/artifact.metadata ColBERT/downloads/colbertv2.0/
+cp /share/josh/msmarco/centroids.npy downloads/
 
 # Exit 0 no matter what for now so it passes github actions
 exit 0
