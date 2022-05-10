@@ -13,9 +13,13 @@ namespace thirdai::dataset {
 
 struct BatchProcessor {
   BatchProcessor(std::vector<std::shared_ptr<Block>>& input_blocks,
+                 bool input_blocks_dense,
                  std::vector<std::shared_ptr<Block>>& target_blocks,
+                 bool target_blocks_dense,
                  uint32_t output_batch_size): 
                  _batch_size(output_batch_size),
+                 _input_blocks_dense(input_blocks_dense),
+                 _target_blocks_dense(target_blocks_dense),
                  _input_blocks(input_blocks),
                  _target_blocks(target_blocks) {}
 
@@ -24,8 +28,8 @@ struct BatchProcessor {
     allocateMemoryForBatch(batch.size());
 #pragma omp parallel for default(none) shared(batch, initial_num_elems)
     for (size_t i = 0; i < batch.size(); ++i) {
-      _input_vectors[initial_num_elems + i] = makeVector(batch[i], _input_blocks);
-      _target_vectors[initial_num_elems + i] = makeVector(batch[i], _target_blocks);
+      _input_vectors[initial_num_elems + i] = makeVector(batch[i], _input_blocks, _input_blocks_dense);
+      _target_vectors[initial_num_elems + i] = makeVector(batch[i], _target_blocks, _target_blocks_dense);
     }
   }
 
@@ -79,18 +83,22 @@ struct BatchProcessor {
     return positions;
   }
 
-  static bolt::BoltVector makeVector(std::vector<std::string>& row, std::vector<std::shared_ptr<Block>>& blocks) {
-    SparseBuilderVector vec;
+  static bolt::BoltVector makeVector(std::vector<std::string>& row, std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
+    std::shared_ptr<BuilderVector> vec_ptr = blocks_dense
+      ? std::static_pointer_cast<BuilderVector>(std::make_shared<DenseBuilderVector>())
+      : std::static_pointer_cast<BuilderVector>(std::make_shared<SparseBuilderVector>());
     uint32_t offset = 0;
     for (auto& block : blocks) {
-      block->process(row, vec, offset);
+      block->process(row, *vec_ptr, offset);
       offset += block->featureDim();
     }
     
-    return vec.toBoltVector();
+    return vec_ptr->toBoltVector();
   }
 
   uint32_t _batch_size;
+  bool _input_blocks_dense;
+  bool _target_blocks_dense;
   std::vector<bolt::BoltVector> _input_vectors;
   std::vector<bolt::BoltVector> _target_vectors;
   std::vector<std::shared_ptr<Block>> _input_blocks;

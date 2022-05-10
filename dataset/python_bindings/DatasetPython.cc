@@ -101,8 +101,9 @@ void createDatasetSubmodule(py::module_& module) {
       .def("isDense", &CategoricalBlock::isDense);
 
   py::class_<BatchProcessor>(internal_dataset_submodule, "BatchProcessor")
-      .def(py::init<std::vector<std::shared_ptr<Block>>&, std::vector<std::shared_ptr<Block>>&, uint32_t>(),
-           py::arg("input_blocks"), py::arg("target_blocks"), py::arg("output_batch_size"))
+      .def(py::init<std::vector<std::shared_ptr<Block>>&, bool, std::vector<std::shared_ptr<Block>>&, bool, uint32_t>(),
+           py::arg("input_blocks"), py::arg("input_blocks_dense"), py::arg("target_blocks"), 
+           py::arg("target_blocks_dense"), py::arg("output_batch_size"))
       .def("process_batch", &BatchProcessor::processBatch, py::arg("row_batch"))
       .def("export_in_memory_dataset", &BatchProcessor::exportInMemoryDataset, py::arg("shuffle")=false, py::arg("shuffle_seed")=0);
 
