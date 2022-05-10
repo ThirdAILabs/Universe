@@ -53,7 +53,7 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
           
-      - name: Just do a debug build (makes sure all asserts build)
+      - name: Just do a debug build
         run: |
           docker build -t test_image -f docker/develop/Dockerfile .  
-          docker run --privileged --mount type=bind,source=${PWD},target=/src test_image /bin/bash -c "src/bin/build.py -m Debug""
+          docker run --privileged --mount type=bind,source=${PWD},target=/src test_image /bin/bash -c "src/bin/build.py -m Debug -f THIRDAI_BUILD_LICENSE"
