@@ -73,14 +73,14 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
     }
   }
 
-  uint64_t getDim() const { return dim; }
+  uint64_t getDim() const final { return dim; }
 
-  float getSparsity() const { return sparsity; }
+  float getSparsity() const final { return sparsity; }
 
-  ActivationFunction getActFunc() const { return act_func; }
+  ActivationFunction getActFunc() const final { return act_func; }
 
  private:
-  void print(std::ostream& out) const {
+  void print(std::ostream& out) const final {
     out << "FullyConnected: dim=" << dim << ", load_factor=" << sparsity;
     switch (act_func) {
       case ActivationFunction::ReLU:
@@ -124,14 +124,14 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
     checkSparsity(sparsity);
   }
 
-  uint64_t getDim() const { return num_filters * num_patches; }
+  uint64_t getDim() const final { return num_filters * num_patches; }
 
-  float getSparsity() const { return sparsity; }
+  float getSparsity() const final { return sparsity; }
 
-  ActivationFunction getActFunc() const { return act_func; }
+  ActivationFunction getActFunc() const final { return act_func; }
 
  private:
-  void print(std::ostream& out) const {
+  void print(std::ostream& out) const final {
     out << "Conv: num_filters=" << num_filters << ", load_factor=" << sparsity
         << ", num_patches=" << num_patches;
     switch (act_func) {

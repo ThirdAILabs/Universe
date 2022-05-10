@@ -37,7 +37,7 @@ void createBoltSubmodule(py::module_& module) {
       bolt_submodule, "WeightedMeanAbsolutePercentageError")
       .def(py::init<>());
 
-  py::class_<thirdai::bolt::SequentialLayerConfig,
+  py::class_<thirdai::bolt::SequentialLayerConfig,  // NOLINT
              std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>(
       bolt_submodule, "Sequential");
 
