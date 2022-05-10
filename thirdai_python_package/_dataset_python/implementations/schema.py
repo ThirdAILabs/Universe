@@ -60,7 +60,7 @@ class Schema:
         self._target_dim = 0
 
     def add_input_block(self, block: Block) -> None:
-        """A method to add features to the processed input vectors.
+        """Adds a feature to the processed input vectors.
         This method facilitates a builder pattern invocation.
         """
         self._input_blocks.append(block)
@@ -68,9 +68,21 @@ class Schema:
         return self  # Return self so we can chain method calls
 
     def add_target_block(self, block: Block) -> None:
-        """A method to add features to the processed target vectors.
+        """Adds a feature to the processed target vectors.
         This method facilitates a builder pattern invocation.
         """
         self._target_blocks.append(block)
         self._target_dim += block.feature_dim()
         return self  # Return self so we can chain method calls
+
+    def input_is_dense(self) -> bool:
+        """Returns whether all input blocks are dense.
+        """
+        return all(block.is_dense() for block in self._input_blocks)
+    
+    def target_is_dense(self) -> bool:
+        """Returns whether all target blocks are dense.
+        """
+        return all(block.is_dense() for block in self._target_blocks)
+
+    

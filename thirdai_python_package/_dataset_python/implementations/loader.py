@@ -116,14 +116,11 @@ class Loader:
         file = self._source.open()
         row_generator = self._parser.rows(file)
 
-        input_blocks_dense = all(block.is_dense() for block in _schema._input_blocks)
-        target_blocks_dense = all(block.is_dense() for block in _schema._target_blocks)
-
         processor = internal_dataset.BatchProcessor(
             self._schema._input_blocks,
-            input_blocks_dense,
+            self._schema.input_is_dense(),
             self._schema._target_blocks,
-            target_blocks_dense,
+            self._schema.target_is_dense(),
             self._batch_size)
         # Stream rows (samples) and process each one according to the schema.
         counter = 0
