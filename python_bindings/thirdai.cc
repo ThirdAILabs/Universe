@@ -35,5 +35,4 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   thirdai::bolt::python::createBoltSubmodule(m);
 
   thirdai::search::python::createSearchSubmodule(m);
-
 }
