@@ -5,6 +5,7 @@
 #include <dataset/src/batch_types/BoltInputBatch.h>
 #include <dataset/src/batch_types/DenseBatch.h>
 #include <dataset/src/batch_types/SparseBatch.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>

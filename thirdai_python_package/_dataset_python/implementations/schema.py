@@ -1,54 +1,5 @@
-from ..blocks.block_interface import Block
 from typing import Iterator, List, Tuple
-
-
-class __BlockList__:
-    """Wrapper class around a list of blocks that also handles feature offsetting,
-    which ensures that the features extracted by different blocks occupy different
-    parts of the composed feature vector.
-    This prevents repeating code if Schema contains more than one list of blocks.
-    """
-
-    def __init__(self, blocks: List[Block] = []) -> None:
-        """Constructor. Optionally takes in a list of blocks."""
-        # self.offsets maps blocks to the starting positions of the corresponding
-        # extracted feature in the composed vector;
-        # self.offsets[i] = the starting position of the feature produced by
-        # self.blocks[i].process()
-
-        # The features produced by a block always starts where the features
-        # produced by the previous block ends;
-        # self.offsets[i] = self.offsets[i - 1] + dimension of self.blocks[i - 1]
-
-        self.offsets = [0]
-        for block in blocks:
-            self.offsets.append(block.feature_dim() + self.offsets[-1])
-        self.blocks = blocks
-        # The collection of blocks produces dense features only if all blocks
-        # produce dense features.
-        # If any of the blocks produces a sparse feature, this collection of
-        # blocks produces sparse features.
-        self._is_dense = all([block.is_dense() for block in self.blocks])
-
-    def add_block(self, block: Block) -> None:
-        """A method to add blocks to this block list.
-        This method facilitates a builder pattern invocation.
-        """
-        next_offset = self.offsets[-1] + block.feature_dim()
-        self.offsets.append(next_offset)
-        self.blocks.append(block)
-        self._is_dense = self._is_dense and block.is_dense()
-
-    def __len__(self) -> int:
-        """Returns number of blocks."""
-        return len(self.blocks)
-
-    def __iter__(self) -> Iterator[Tuple[Block, int]]:
-        """Iterates through (block, offset) pairs."""
-        return iter(zip(self.blocks, self.offsets))
-
-    def is_dense(self) -> bool:
-        return self._is_dense
+from thirdai._thirdai.dataset_internal import Block
 
 
 class Schema:
@@ -103,19 +54,31 @@ class Schema:
         Arguments can be omitted in exchange for a builder pattern
         invocation.
         """
-        self.input_blocks = __BlockList__(input_blocks)
-        self.target_blocks = __BlockList__(target_blocks)
+        self._input_blocks = input_blocks
+        self._input_dim = 0
+        self._target_blocks = target_blocks
+        self._target_dim = 0
 
     def add_input_block(self, block: Block) -> None:
-        """A method to add features to the processed input vectors.
+        """Adds a feature to the processed input vectors.
         This method facilitates a builder pattern invocation.
         """
-        self.input_blocks.add_block(block)
+        self._input_blocks.append(block)
+        self._input_dim += block.feature_dim()
         return self  # Return self so we can chain method calls
 
     def add_target_block(self, block: Block) -> None:
-        """A method to add features to the processed target vectors.
+        """Adds a feature to the processed target vectors.
         This method facilitates a builder pattern invocation.
         """
-        self.target_blocks.add_block(block)
+        self._target_blocks.append(block)
+        self._target_dim += block.feature_dim()
         return self  # Return self so we can chain method calls
+
+    def input_is_dense(self) -> bool:
+        """Returns whether all input blocks are dense."""
+        return all(block.is_dense() for block in self._input_blocks)
+
+    def target_is_dense(self) -> bool:
+        """Returns whether all target blocks are dense."""
+        return all(block.is_dense() for block in self._target_blocks)
