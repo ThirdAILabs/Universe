@@ -1,5 +1,5 @@
 from typing import Iterator, List, Iterable, Optional
-from .parser_interface import Parser
+from ...interfaces import Parser
 
 
 class CsvIterable(Parser):

@@ -25,7 +25,7 @@ struct TextBlock : public Block {
    */
   TextBlock(uint32_t col, std::shared_ptr<TextEncoding>& encoding): _col(col), _encoding(encoding) {}
   
-  TextBlock(uint32_t col, uint32_t dim): _col(col), _encoding(std::make_shared<BoltTokenizer>(42, dim)) {}
+  TextBlock(uint32_t col, uint32_t dim): _col(col), _encoding(std::make_shared<BoltTokenizer>(dim)) {}
 
   /**
    * Extracts features from input row and adds it to shared feature vector.

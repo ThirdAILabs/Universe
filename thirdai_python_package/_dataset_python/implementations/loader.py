@@ -1,17 +1,13 @@
-from typing import List, Iterator, Tuple
+import os
+
+from ..interfaces import Source, Parser
+from .schema import Schema
+from thirdai._thirdai import dataset
+from thirdai._thirdai import dataset_internal
 import random
-from .schema import Schema, __BlockList__
-from sources.source_interface import Source
-from parsers.parser_interface import Parser
-from utils.builder_vectors import (
-    __BuilderVector__,
-    __SparseBuilderVector__,
-    __DenseBuilderVector__,
-)
-from thirdai import dataset
 import time
 
-class Dataset:
+class Loader:
     """A dataset loader and preprocessor.
     This object loads data from a specified source and encodes it as
     vectors according to a specified schema.
@@ -120,9 +116,9 @@ class Dataset:
         file = self._source.open()
         row_generator = self._parser.rows(file)
 
-        processor = dataset.BatchProcessor(
-            self._schema.input_blocks.blocks,
-            self._schema.target_blocks.blocks,
+        processor = internal_dataset.BatchProcessor(
+            self._schema._input_blocks,
+            self._schema._target_blocks,
             self._batch_size)
         # Stream rows (samples) and process each one according to the schema.
         counter = 0
@@ -149,6 +145,16 @@ class Dataset:
         # Remember that we have loaded and processed the whole dataset
         # and saved the results in memory.
         return processor.export_in_memory_dataset(shuffle=self._shuffle_rows, shuffle_seed=self._shuffle_seed)
+    
+    def get_input_dim(self):
+        """Returns the dimension of input vectors.
+        """
+        return self._schema._input_dim
+    
+    def get_target_dim(self):
+        """Returns the dimension of target vectors.
+        """
+        return self._schema._target_dim
 
     def processInMemory(self) -> dataset.BoltDataset:
         """Produces an in-memory dataset of input and target vectors as specified by
@@ -163,7 +169,7 @@ class Dataset:
                 + "is called before calling process()."
             )
 
-        if len(self._schema.input_blocks) == 0:
+        if len(self._schema._input_blocks) == 0:
             raise RuntimeError(
                 "Dataset: schema does not have input blocks. Make sure it is "
                 + "constructed with the input_blocks parameter, or that "

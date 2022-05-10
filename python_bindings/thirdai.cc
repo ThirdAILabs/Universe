@@ -3,9 +3,6 @@
 #include <hashing/python_bindings/HashingPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <flash/python_bindings/FlashPython.h>
-// #if THIRDAI_BUILD_SCHEMA
-#include <schema/python_bindings/SchemaPython.h>
-// #endif
 
 // Pybind11 library
 #include <pybind11/cast.h>
@@ -39,7 +36,4 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
   thirdai::search::python::createSearchSubmodule(m);
 
-  // #if THIRDAI_BUILD_SCHEMA
-  thirdai::schema::python::createSchemaSubmodule(m);
-  // #endif
 }

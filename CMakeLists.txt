@@ -191,7 +191,6 @@ pybind11_add_module(_thirdai
   dataset/python_bindings/DatasetPython.cc
   flash/python_bindings/FlashPython.cc
   hashing/python_bindings/HashingPython.cc
-  schema/python_bindings/SchemaPython.cc
   ${BOLT_SOURCES} 
   ${DLRM_SOURCES}
   ${FLASH_SOURCES} 

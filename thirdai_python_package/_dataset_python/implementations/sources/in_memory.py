@@ -1,4 +1,4 @@
-from .source_interface import Source
+from ...interfaces import Source
 
 
 class InMemoryCollection(Source):
