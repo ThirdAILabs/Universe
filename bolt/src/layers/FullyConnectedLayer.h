@@ -109,7 +109,6 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   bool _force_sparse_for_inference;
 
- private:
   inline void updateSparseSparseWeightParameters(float lr, float B1, float B2,
                                                  float eps,
                                                  float B1_bias_corrected,

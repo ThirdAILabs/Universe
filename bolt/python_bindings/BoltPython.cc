@@ -39,8 +39,8 @@ void createBoltSubmodule(py::module_& module) {
                      "the corresponding enum.");
 
   // TODO(Geordie, Nicholas): put loss functions in its own submodule
-  py::class_<LossFunction>(bolt_submodule, "LossFunction",
-                           "Base class for all loss functions");  // NOLINT
+  py::class_<LossFunction>(bolt_submodule, "LossFunction",  // NOLINT
+                           "Base class for all loss functions");
 
   py::class_<CategoricalCrossEntropyLoss, LossFunction>(
       bolt_submodule, "CategoricalCrossEntropyLoss",
@@ -63,7 +63,7 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");
 
-  py::class_<thirdai::bolt::SequentialLayerConfig,
+  py::class_<thirdai::bolt::SequentialLayerConfig,  // NOLINT
              std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>(
       bolt_submodule, "Sequential");
 
