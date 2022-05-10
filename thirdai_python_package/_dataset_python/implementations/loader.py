@@ -7,6 +7,7 @@ from thirdai._thirdai import dataset_internal
 import random
 import time
 
+
 class Loader:
     """A dataset loader and preprocessor.
     This object loads data from a specified source and encodes it as
@@ -121,7 +122,8 @@ class Loader:
             self._schema.input_is_dense(),
             self._schema._target_blocks,
             self._schema.target_is_dense(),
-            self._batch_size)
+            self._batch_size,
+        )
         # Stream rows (samples) and process each one according to the schema.
         counter = 0
         raw_batch = []
@@ -134,7 +136,7 @@ class Loader:
                 processor.process_batch(raw_batch)
                 raw_batch = []
                 counter = 0
-            
+
             next_row = next(row_generator)
 
         if len(raw_batch) > 0:
@@ -146,16 +148,16 @@ class Loader:
         self._source.close()
         # Remember that we have loaded and processed the whole dataset
         # and saved the results in memory.
-        return processor.export_in_memory_dataset(shuffle=self._shuffle_rows, shuffle_seed=self._shuffle_seed)
-    
+        return processor.export_in_memory_dataset(
+            shuffle=self._shuffle_rows, shuffle_seed=self._shuffle_seed
+        )
+
     def get_input_dim(self):
-        """Returns the dimension of input vectors.
-        """
+        """Returns the dimension of input vectors."""
         return self._schema._input_dim
-    
+
     def get_target_dim(self):
-        """Returns the dimension of target vectors.
-        """
+        """Returns the dimension of target vectors."""
         return self._schema._target_dim
 
     def processInMemory(self) -> dataset.BoltDataset:

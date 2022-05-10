@@ -125,13 +125,14 @@ class HashUtils {
   /**
    * Combines two hashes into one unique hash.
    * Based on boost::hash_combine
-   * Reference: https://stackoverflow.com/questions/5889238/why-is-xor-the-default-way-to-combine-hashes
+   * Reference:
+   * https://stackoverflow.com/questions/5889238/why-is-xor-the-default-way-to-combine-hashes
    */
   static uint32_t combineHashes(uint32_t lhs, uint32_t rhs) {
     lhs ^= rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
     return lhs;
   }
-  
+
  private:
   /**
    * Does an in place densification of a power of 2 number of hashes. Starts

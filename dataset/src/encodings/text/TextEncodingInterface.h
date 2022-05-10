@@ -9,10 +9,12 @@ namespace thirdai::dataset {
  */
 struct TextEncoding {
   /**
-   * Tokenizes each string in text, embeds these tokens, 
+   * Tokenizes each string in text, embeds these tokens,
    * and composes the shared feature vector with these encodings.
    */
-  virtual void embedText(const std::string& text, BuilderVector& shared_feature_vector, uint32_t offset) = 0;
+  virtual void embedText(const std::string& text,
+                         BuilderVector& shared_feature_vector,
+                         uint32_t offset) = 0;
 
   /**
    * True if the model produces dense features, False otherwise.
@@ -25,4 +27,4 @@ struct TextEncoding {
   virtual uint32_t featureDim() = 0;
 };
 
-} // namespace thirdai::dataset
+}  // namespace thirdai::dataset

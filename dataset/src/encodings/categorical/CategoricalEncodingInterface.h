@@ -11,7 +11,8 @@ struct CategoricalEncoding {
   /**
    * Maps an id to an encoding
    */
-  virtual void embedCategory(uint32_t id, BuilderVector& shared_feature_vector, uint32_t offset) = 0;
+  virtual void embedCategory(uint32_t id, BuilderVector& shared_feature_vector,
+                             uint32_t offset) = 0;
 
   /**
    * True if the model produces dense features, False otherwise.
@@ -24,4 +25,4 @@ struct CategoricalEncoding {
   virtual uint32_t featureDim() = 0;
 };
 
-} // namespace thirdai::dataset
+}  // namespace thirdai::dataset

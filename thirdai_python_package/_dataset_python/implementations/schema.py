@@ -76,13 +76,9 @@ class Schema:
         return self  # Return self so we can chain method calls
 
     def input_is_dense(self) -> bool:
-        """Returns whether all input blocks are dense.
-        """
+        """Returns whether all input blocks are dense."""
         return all(block.is_dense() for block in self._input_blocks)
-    
-    def target_is_dense(self) -> bool:
-        """Returns whether all target blocks are dense.
-        """
-        return all(block.is_dense() for block in self._target_blocks)
 
-    
+    def target_is_dense(self) -> bool:
+        """Returns whether all target blocks are dense."""
+        return all(block.is_dense() for block in self._target_blocks)
