@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../encodings/array/ArrayEncodingInterface.h"
+#include <dataset/src/encodings/array/ArrayEncodingInterface.h>
 #include "BlockInterface.h"
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
@@ -15,8 +15,8 @@ namespace thirdai::dataset {
 /**
  * A block for embedding a column that contains delimited strings.
  */
-struct CsvColumnBlock : public Block {
-  CsvColumnBlock(uint32_t col, std::shared_ptr<ArrayEncoding>& encoding, char delim=',')
+struct CsvColumnArrayBlock : public Block {
+  CsvColumnArrayBlock(uint32_t col, std::shared_ptr<ArrayEncoding>& encoding, char delim=',')
       : _col(col), _delim(delim), _encoding(encoding) {}
 
   /**

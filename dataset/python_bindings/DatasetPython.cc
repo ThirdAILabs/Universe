@@ -3,8 +3,14 @@
 #include <dataset/src/batch_types/BoltInputBatch.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/CsvColumnArray.h>
+#include <dataset/src/blocks/MultiColumnArray.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/core/BatchProcessor.h>
+#include <dataset/src/encodings/array/ArrayEncodingInterface.h>
+#include <dataset/src/encodings/array/IndexValuePairs.h>
+#include <dataset/src/encodings/array/Indices.h>
+#include <dataset/src/encodings/array/Values.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/OneHotEncoding.h>
 #include <dataset/src/encodings/text/BoltTokenizer.h>
@@ -28,6 +34,8 @@ void createDatasetSubmodule(py::module_& module) {
       dataset_submodule.def_submodule("text_encodings");
   auto categorical_encoding_submodule =
       dataset_submodule.def_submodule("categorical_encodings");
+  auto array_encoding_submodule =
+      dataset_submodule.def_submodule("array_encodings");
   auto block_submodule = dataset_submodule.def_submodule("blocks");
 
   py::class_<BoltVector>(dataset_submodule, "BoltVector")
@@ -45,7 +53,7 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<TextEncoding, std::shared_ptr<TextEncoding>>(
       internal_dataset_submodule, "TextEncoding")
-      .def("embed_text", &TextEncoding::embedText, py::arg("text"),
+      .def("encode_text", &TextEncoding::encodeText, py::arg("text"),
            py::arg("shared_feature_vector"), py::arg("idx_offset"))
       .def("is_dense", &TextEncoding::isDense)
       .def("feature_dim", &TextEncoding::featureDim);
@@ -53,7 +61,7 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<CharKGram, TextEncoding, std::shared_ptr<CharKGram>>(
       text_encoding_submodule, "CharKGram")
       .def(py::init<uint32_t, uint32_t>(), py::arg("k"), py::arg("dim"))
-      .def("embed_text", &CharKGram::embedText, py::arg("text"),
+      .def("encode_text", &CharKGram::encodeText, py::arg("text"),
            py::arg("shared_feature_vector"), py::arg("idx_offset"))
       .def("is_dense", &CharKGram::isDense)
       .def("feature_dim", &CharKGram::featureDim);
@@ -61,7 +69,7 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<BoltTokenizer, TextEncoding, std::shared_ptr<BoltTokenizer>>(
       text_encoding_submodule, "BoltTokenizer")
       .def(py::init<uint32_t>(), py::arg("dim") = 100000)
-      .def("embed_text", &BoltTokenizer::embedText, py::arg("text"),
+      .def("encode_text", &BoltTokenizer::encodeText, py::arg("text"),
            py::arg("shared_feature_vector"), py::arg("idx_offset"))
       .def("is_dense", &BoltTokenizer::isDense)
       .def("feature_dim", &BoltTokenizer::featureDim);
@@ -69,32 +77,66 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<PairGram, TextEncoding, std::shared_ptr<PairGram>>(
       text_encoding_submodule, "PairGram")
       .def(py::init<uint32_t>(), py::arg("dim") = 100000)
-      .def("embed_text", &PairGram::embedText, py::arg("text"),
+      .def("encode_text", &PairGram::encodeText, py::arg("text"),
            py::arg("shared_feature_vector"), py::arg("idx_offset"))
       .def("is_dense", &PairGram::isDense)
       .def("feature_dim", &PairGram::featureDim);
 
   py::class_<CategoricalEncoding, std::shared_ptr<CategoricalEncoding>>(
       internal_dataset_submodule, "CategoricalEncoding")
-      .def("embedCategory", &CategoricalEncoding::embedCategory, py::arg("id"),
+      .def("encode_category", &CategoricalEncoding::encodeCategory, py::arg("id"),
            py::arg("shared_feature_vector"), py::arg("offset"))
-      .def("featureDim", &CategoricalEncoding::featureDim)
-      .def("isDense", &CategoricalEncoding::isDense);
+      .def("feature_dim", &CategoricalEncoding::featureDim)
+      .def("is_dense", &CategoricalEncoding::isDense);
 
   py::class_<OneHotEncoding, CategoricalEncoding,
              std::shared_ptr<OneHotEncoding>>(categorical_encoding_submodule,
                                               "OneHot")
       .def(py::init<uint32_t>(), py::arg("dim"))
-      .def("embedCategory", &OneHotEncoding::embedCategory, py::arg("id"),
+      .def("encode_category", &OneHotEncoding::encodeCategory, py::arg("id"),
            py::arg("shared_feature_vector"), py::arg("offset"))
-      .def("featureDim", &OneHotEncoding::featureDim)
-      .def("isDense", &OneHotEncoding::isDense);
+      .def("feature_dim", &OneHotEncoding::featureDim)
+      .def("is_dense", &OneHotEncoding::isDense);
+
+  py::class_<ArrayEncoding, std::shared_ptr<ArrayEncoding>>(
+      internal_dataset_submodule, "ArrayEncoding")
+      .def("encode_array", &ArrayEncoding::encodeArray, py::arg("next_elem"),
+           py::arg("shared_feature_vector"), py::arg("offset"))
+      .def("feature_dim", &ArrayEncoding::featureDim)
+      .def("is_dense", &ArrayEncoding::isDense);
+
+  py::class_<IndexValuePairs, ArrayEncoding, 
+             std::shared_ptr<IndexValuePairs>>(array_encoding_submodule, 
+                                               "IndexValuePairs")
+      .def(py::init<uint32_t>(), py::arg("dim"))
+      .def("encode_array", &IndexValuePairs::encodeArray, py::arg("next_elem"),
+           py::arg("shared_feature_vector"), py::arg("offset"))
+      .def("feature_dim", &IndexValuePairs::featureDim)
+      .def("is_dense", &IndexValuePairs::isDense);
+
+  py::class_<Indices, ArrayEncoding, 
+             std::shared_ptr<Indices>>(array_encoding_submodule, 
+                                               "Indices")
+      .def(py::init<uint32_t>(), py::arg("dim"))
+      .def("encode_array", &Indices::encodeArray, py::arg("next_elem"),
+           py::arg("shared_feature_vector"), py::arg("offset"))
+      .def("feature_dim", &Indices::featureDim)
+      .def("is_dense", &Indices::isDense);
+
+  py::class_<Values, ArrayEncoding, 
+             std::shared_ptr<Values>>(array_encoding_submodule, 
+                                               "Values")
+      .def(py::init<uint32_t>(), py::arg("dim"))
+      .def("encode_array", &Values::encodeArray, py::arg("next_elem"),
+           py::arg("shared_feature_vector"), py::arg("offset"))
+      .def("feature_dim", &Values::featureDim)
+      .def("is_dense", &Values::isDense);
 
   py::class_<Block, std::shared_ptr<Block>>(internal_dataset_submodule, "Block")
       .def("process", &Block::process, py::arg("input_row"),
            py::arg("shared_feature_vector"), py::arg("idx_offset"))
-      .def("featureDim", &Block::featureDim)
-      .def("isDense", &Block::isDense);
+      .def("feature_dim", &Block::featureDim)
+      .def("is_dense", &Block::isDense);
 
   py::class_<TextBlock, Block, std::shared_ptr<TextBlock>>(block_submodule,
                                                            "Text")
@@ -103,8 +145,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<uint32_t, uint32_t>(), py::arg("col"), py::arg("dim"))
       .def("process", &TextBlock::process, py::arg("input_row"),
            py::arg("shared_feature_vector"), py::arg("idx_offset"))
-      .def("featureDim", &TextBlock::featureDim)
-      .def("isDense", &TextBlock::isDense);
+      .def("feature_dim", &TextBlock::featureDim)
+      .def("is_dense", &TextBlock::isDense);
 
   py::class_<CategoricalBlock, Block, std::shared_ptr<CategoricalBlock>>(
       block_submodule, "Categorical")
@@ -114,8 +156,26 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("from_string") = false)
       .def("process", &CategoricalBlock::process, py::arg("input_row"),
            py::arg("shared_feature_vector"), py::arg("idx_offset"))
-      .def("featureDim", &CategoricalBlock::featureDim)
-      .def("isDense", &CategoricalBlock::isDense);
+      .def("feature_dim", &CategoricalBlock::featureDim)
+      .def("is_dense", &CategoricalBlock::isDense);
+
+  py::class_<CsvColumnArrayBlock, Block, std::shared_ptr<CsvColumnArrayBlock>>(
+      block_submodule, "CsvColumnArray")
+      .def(py::init<uint32_t, std::shared_ptr<ArrayEncoding>&, char>(),
+           py::arg("col"), py::arg("encoding"), py::arg("delim") = ',')
+      .def("process", &CsvColumnArrayBlock::process, py::arg("input_row"),
+           py::arg("shared_feature_vector"), py::arg("idx_offset"))
+      .def("feature_dim", &CsvColumnArrayBlock::featureDim)
+      .def("is_dense", &CsvColumnArrayBlock::isDense);
+  
+  py::class_<MultiColumnArrayBlock, Block, std::shared_ptr<MultiColumnArrayBlock>>(
+      block_submodule, "MultiColumnArray")
+      .def(py::init<uint32_t, std::shared_ptr<ArrayEncoding>&, uint32_t>(),
+           py::arg("start_col"), py::arg("encoding"), py::arg("end_col") = 0)
+      .def("process", &MultiColumnArrayBlock::process, py::arg("input_row"),
+           py::arg("shared_feature_vector"), py::arg("idx_offset"))
+      .def("feature_dim", &MultiColumnArrayBlock::featureDim)
+      .def("is_dense", &MultiColumnArrayBlock::isDense);
 
   py::class_<BatchProcessor>(internal_dataset_submodule, "BatchProcessor")
       .def(py::init<std::vector<std::shared_ptr<Block>>&, bool,
