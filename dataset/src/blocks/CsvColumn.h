@@ -33,12 +33,11 @@ struct CsvColumnBlock : public Block {
                BuilderVector& shared_feature_vector,
                uint32_t idx_offset) final {
     
-    std::string_view numstr_arr(input_row[_col]);
-    
     size_t start_pos = 0;
     while (start_pos != std::string_view::npos) {
-      auto end_pos = numstr_arr.find(_delim, start_pos);
-      _encoding->encodeNumstring(numstr_arr.substr(start_pos, end_pos), shared_feature_vector, idx_offset);  
+      auto end_pos = input_row[_col].find(_delim, start_pos);
+      _encoding->encodeNumstring(input_row[_col].substr(start_pos, end_pos), shared_feature_vector, idx_offset);  
+      start_pos = end_pos + 1;
     }
   };
 
