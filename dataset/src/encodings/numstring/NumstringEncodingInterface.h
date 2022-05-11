@@ -12,7 +12,7 @@ struct NumstringEncoding {
    * Encodes a numstring as vector features.
    * This method may update the offset parameter.
    */
-  virtual void encodeNumstring(std::string_view numstr, BuilderVector& shared_feature_vector,
+  virtual void encodeNumstring(const std::string& numstr, BuilderVector& shared_feature_vector,
                                uint32_t& offset) = 0;
 
   /**
