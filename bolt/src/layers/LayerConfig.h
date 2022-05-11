@@ -77,10 +77,12 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
     // Store hashes_per_table as a signed integer so it won't underflow.
     int32_t hashes_per_table = log2(dim) / 3 - 2;
     if (sparsity <= 0.001) {
-      hashes_per_table += 1;
-    } else if (sparsity <= 0.01) {
       hashes_per_table += 2;
-    }
+    } 
+    else if (sparsity <= 0.01) {
+      hashes_per_table += 1;
+    } 
+
     clip<int32_t>(hashes_per_table, /* low = */ 3, /* high = */ 6);
 
     uint32_t range_pow = hashes_per_table * 3;
