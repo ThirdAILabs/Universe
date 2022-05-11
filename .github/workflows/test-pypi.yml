@@ -13,8 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:           
-      with:
-        with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
