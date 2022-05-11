@@ -9,6 +9,8 @@
 #include <random>
 #include <vector>
 
+namespace py = pybind11;
+
 namespace thirdai::dataset {
 
 struct BatchProcessor {
@@ -23,6 +25,8 @@ struct BatchProcessor {
         _target_blocks(target_blocks) {}
 
   void processBatch(std::vector<std::vector<std::string>>& batch) {
+    py::gil_scoped_release release;
+    
     auto initial_num_elems = _input_vectors.size();
     allocateMemoryForBatch(batch.size());
 #pragma omp parallel for default(none) shared(batch, initial_num_elems)
