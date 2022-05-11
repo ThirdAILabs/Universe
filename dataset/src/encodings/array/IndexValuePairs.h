@@ -1,6 +1,6 @@
 #pragma once
 
-#include "NumstringEncodingInterface.h"
+#include "ArrayEncodingInterface.h"
 #include <stdexcept>
 
 namespace thirdai::dataset {
@@ -8,28 +8,33 @@ namespace thirdai::dataset {
 /**
  * Interface for numstring encoding models.
  */
-struct IndexValuePairs : public NumstringEncoding {
+struct IndexValuePairs : public ArrayEncoding {
 
   explicit IndexValuePairs(uint32_t dim): _dim(dim) {}
 
   /**
-   * Encodes a numstring as vector features.
+   * Encodes an array iterable as vector features.
    * This method may update the offset parameter.
    */
-  void encodeNumstring(const std::string& numstr, BuilderVector& shared_feature_vector,
-                       uint32_t& offset) final {
+  void encodeArray(const std::function<std::optional<std::string>()>& next_elem, 
+                   BuilderVector& shared_feature_vector,
+                   uint32_t& offset) final {
+    std::optional<std::string> elem;
+    while ((elem = next_elem()).has_value()) {
+      const auto& numstr = elem.value();
+      
+      char* end;
+      uint32_t index = std::strtoul(numstr.c_str(), &end, 10);
+      float value = std::strtof(end + 1, &end);
 
-    char* end;
-    uint32_t index = std::strtoul(numstr.c_str(), &end, 10);
-    float value = std::strtof(end + 1, &end);
+      if (index >= _dim) {
+        std::stringstream ss;
+        ss << "[IndexValuePairs] Given dim = " << _dim << " but got index = " << index;
+        throw std::invalid_argument(ss.str());
+      }
 
-    if (index >= _dim) {
-      std::stringstream ss;
-      ss << "[IndexValuePairs] Given dim = " << _dim << " but got index = " << index;
-      throw std::invalid_argument(ss.str());
+      shared_feature_vector.addSingleFeature(offset + index, value);
     }
-
-    shared_feature_vector.addSingleFeature(offset + index, value);
   }
 
   /**
