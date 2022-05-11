@@ -36,7 +36,7 @@ constexpr float actFuncDerivative(float x, ActivationFunction act_func) {
     case ActivationFunction::Softmax:
       // return 1.0; // Commented out because Clang tidy doesn't like
       // consecutive identical branches
-	case ActivationFunction::Sigmoid:
+	  case ActivationFunction::Sigmoid:
       // return 1.0; // Commented out because Clang tidy doesn't like
       // consecutive identical branches
     case ActivationFunction::Linear:
