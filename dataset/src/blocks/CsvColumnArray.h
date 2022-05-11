@@ -1,14 +1,9 @@
 #pragma once
 
-#include <dataset/src/encodings/array/ArrayEncodingInterface.h>
 #include "BlockInterface.h"
-#include <hashing/src/MurmurHash.h>
-#include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
-#include <dataset/src/encodings/categorical/OneHotEncoding.h>
-#include <dataset/src/utils/Conversions.h>
+#include <dataset/src/encodings/array/ArrayEncodingInterface.h>
 #include <memory>
 #include <optional>
-#include <string_view>
 
 namespace thirdai::dataset {
 
