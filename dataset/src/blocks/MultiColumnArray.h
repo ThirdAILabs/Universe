@@ -1,12 +1,13 @@
 #pragma once
 
-#include "../encodings/numstring/NumstringEncodingInterface.h"
+#include "../encodings/array/ArrayEncodingInterface.h"
 #include "BlockInterface.h"
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/OneHotEncoding.h>
 #include <dataset/src/utils/Conversions.h>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
@@ -17,7 +18,7 @@ namespace thirdai::dataset {
  * A block for embedding multiple columns as a single array.
  */
 struct MultiColumnArrayBlock : public Block {
-  MultiColumnArrayBlock(uint32_t start_col, std::shared_ptr<NumstringEncoding>& encoding, uint32_t end_col=0)
+  MultiColumnArrayBlock(uint32_t start_col, std::shared_ptr<ArrayEncoding>& encoding, uint32_t end_col=0)
       : _start_col(start_col), _end_col(end_col), _encoding(encoding) {}
 
   /**
@@ -45,14 +46,16 @@ struct MultiColumnArrayBlock : public Block {
       ? input_row.size()
       : _end_col;
 
-    for (uint32_t i = 0; i < end_col; ++i) {
-      if (idx_offset >= featureDim()) {
-        std::stringstream ss;
-        ss << "[MultiColumnArray] Given end_col = " << _end_col << " but row only has " << input_row.size() << " columns.";
-        throw std::invalid_argument(ss.str());
-      }
-      _encoding->encodeNumstring(input_row[i], shared_feature_vector, idx_offset);
-    }
+    uint32_t i = _start_col;
+    
+    _encoding->encodeArray([&]() -> std::optional<std::string> {
+      if (i < end_col) {
+        const auto& str = input_row[i];
+        ++i;
+        return {str};
+      } 
+      return {};
+    }, shared_feature_vector, idx_offset);
   };
 
   /**
@@ -67,9 +70,10 @@ struct MultiColumnArrayBlock : public Block {
   bool isDense() final { return _encoding->isDense(); };
 
  private:
+  
   uint32_t _start_col;
   uint32_t _end_col;
-  std::shared_ptr<NumstringEncoding> _encoding;
+  std::shared_ptr<ArrayEncoding> _encoding;
 };
 
 }  // namespace thirdai::dataset
