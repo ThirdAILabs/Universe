@@ -1,10 +1,11 @@
 import torch
 
 
-from colbertmodeling.tokenization import QueryTokenizer, DocTokenizer
-from colbertutils.amp import MixedPrecisionManager
-
-from colbertmodeling.colbert import ColBERT
+from thirdai._deps.ColBERT.colbertmodeling.tokenization import (
+    QueryTokenizer,
+    DocTokenizer,
+)
+from thirdai._deps.ColBERT.colbertmodeling.colbert import ColBERT
 
 
 class Checkpoint(ColBERT):
@@ -20,23 +21,20 @@ class Checkpoint(ColBERT):
 
         self.query_tokenizer = QueryTokenizer(self.colbert_config)
         self.doc_tokenizer = DocTokenizer(self.colbert_config)
-        self.amp_manager = MixedPrecisionManager(True)
 
     def query(self, *args, to_cpu=True, **kw_args):
         with torch.no_grad():
-            with self.amp_manager.context():
-                Q = super().query(*args, **kw_args)
-                return Q.cpu() if to_cpu else Q
+            Q = super().query(*args, **kw_args)
+            return Q.cpu() if to_cpu else Q
 
     def doc(self, *args, to_cpu=True, **kw_args):
         with torch.no_grad():
-            with self.amp_manager.context():
-                D = super().doc(*args, **kw_args)
+            D = super().doc(*args, **kw_args)
 
-                if to_cpu:
-                    return (D[0].cpu(), *D[1:]) if isinstance(D, tuple) else D.cpu()
+            if to_cpu:
+                return (D[0].cpu(), *D[1:]) if isinstance(D, tuple) else D.cpu()
 
-                return D
+            return D
 
     def queryFromText(self, queries, context=None):
         input_ids, attention_mask = self.query_tokenizer.tensorize(

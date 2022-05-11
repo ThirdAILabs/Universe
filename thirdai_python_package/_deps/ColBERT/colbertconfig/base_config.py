@@ -1,12 +1,12 @@
 import os
 import torch
-import ujson
+import json
 import dataclasses
 
 from typing import Any
 from collections import defaultdict
 from dataclasses import dataclass, fields
-from colbertutils.utils import timestamp, torch_load_dnn
+from thirdai._deps.ColBERT.colbertutils.utils import timestamp, torch_load_dnn
 
 from .core_config import *
 
@@ -39,7 +39,7 @@ class BaseConfig(CoreConfig):
     @classmethod
     def from_path(cls, name):
         with open(name) as f:
-            args = ujson.load(f)
+            args = json.load(f)
 
             if "config" in args:
                 args = args["config"]

@@ -2,8 +2,8 @@ import torch
 
 # from transformers import BertTokenizerFast
 
-from colbertmodeling.hf_colbert import HF_ColBERT
-from colbertconfig import ColBERTConfig
+from thirdai._deps.ColBERT.colbertmodeling.hf_colbert import HF_ColBERT
+from thirdai._deps.ColBERT.colbertconfig import ColBERTConfig
 
 
 class DocTokenizer:

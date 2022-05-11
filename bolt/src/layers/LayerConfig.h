@@ -115,11 +115,11 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
                                      /* reservoir_size = */ reservoir_size);
   }
 
-  uint64_t getDim() const { return dim; }
+  uint64_t getDim() const final { return dim; }
 
-  float getSparsity() const { return sparsity; }
+  float getSparsity() const final { return sparsity; }
 
-  ActivationFunction getActFunc() const { return act_func; }
+  ActivationFunction getActFunc() const final { return act_func; }
 
  private:
   template <typename T>
@@ -133,7 +133,7 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
     return input;
   }
 
-  void print(std::ostream& out) const {
+  void print(std::ostream& out) const final {
     out << "FullyConnected: dim=" << dim << ", load_factor=" << sparsity;
     switch (act_func) {
       case ActivationFunction::ReLU:
@@ -177,14 +177,35 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
     checkSparsity(sparsity);
   }
 
-  uint64_t getDim() const { return num_filters * num_patches; }
+  ConvLayerConfig(uint64_t _num_filters, float _sparsity,
+                  ActivationFunction _act_func,
+                  std::pair<uint32_t, uint32_t> _kernel_size,
+                  uint32_t _num_patches)
+      : num_filters(_num_filters),
+        sparsity(_sparsity),
+        act_func(_act_func),
+        kernel_size(std::move(_kernel_size)),
+        num_patches(_num_patches) {
+    checkSparsity(sparsity);
+    if (sparsity < 1.0) {
+      uint32_t rp = (static_cast<uint32_t>(log2(num_filters)) / 3) * 3;
+      uint32_t k = rp / 3;
+      uint32_t rs = (num_filters * 4) / (1 << rp);
+      uint32_t l = sparsity < 0.1 ? 256 : 64;
+      sampling_config = SamplingConfig(k, l, rp, rs);
+    } else {
+      sampling_config = SamplingConfig();
+    }
+  }
 
-  float getSparsity() const { return sparsity; }
+  uint64_t getDim() const final { return num_filters * num_patches; }
 
-  ActivationFunction getActFunc() const { return act_func; }
+  float getSparsity() const final { return sparsity; }
+
+  ActivationFunction getActFunc() const final { return act_func; }
 
  private:
-  void print(std::ostream& out) const {
+  void print(std::ostream& out) const final {
     out << "Conv: num_filters=" << num_filters << ", load_factor=" << sparsity
         << ", num_patches=" << num_patches;
     switch (act_func) {
