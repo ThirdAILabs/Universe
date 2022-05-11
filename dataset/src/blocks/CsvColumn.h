@@ -39,6 +39,7 @@ struct CsvColumnBlock : public Block {
     while (start_pos != std::string_view::npos) {
       auto end_pos = numstr_arr.find(_delim, start_pos);
       _encoding->encodeNumstring(numstr_arr.substr(start_pos, end_pos), shared_feature_vector, idx_offset);  
+      start_pos = end_pos + 1;
     }
   };
 
