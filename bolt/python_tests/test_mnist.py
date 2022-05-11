@@ -1,6 +1,7 @@
 import os
 from thirdai import bolt, dataset
 import pytest
+import numpy as np
 
 LEARNING_RATE = 0.0001
 
@@ -17,6 +18,15 @@ def setup_module():
             "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
         )
         os.system("bzip2 -d mnist.t.bz2")
+
+
+def load_mnist_labels():
+    labels = []
+    with open("mnist.t") as file:
+        for line in file.readlines():
+            label = int(line.split(" ")[0])
+            labels.append(label)
+    return np.array(labels)
 
 
 # Constructs a bolt network for mnist with a sparse output layer.
@@ -93,9 +103,18 @@ def test_mnist_sparse_output_layer():
 
     train_network(network, train_data=train, epochs=10)
 
-    acc, _ = network.predict(test, metrics=["categorical_accuracy"], verbose=False)
+    acc, activations = network.predict(
+        test, metrics=["categorical_accuracy"], verbose=False
+    )
 
     assert acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
+
+    predictions = np.argmax(activations, axis=1)
+
+    labels = load_mnist_labels()
+    acc_computed = np.mean(predictions == labels)
+
+    assert acc_computed == acc["categorical_accuracy"]
 
 
 @pytest.mark.integration
@@ -106,9 +125,18 @@ def test_mnist_sparse_hidden_layer():
 
     train_network(network, train_data=train, epochs=10)
 
-    acc, _ = network.predict(test, metrics=["categorical_accuracy"], verbose=False)
+    acc, activations = network.predict(
+        test, metrics=["categorical_accuracy"], verbose=False
+    )
 
     assert acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
+
+    predictions = np.argmax(activations, axis=1)
+
+    labels = load_mnist_labels()
+    acc_computed = np.mean(predictions == labels)
+
+    assert acc_computed == acc["categorical_accuracy"]
 
 
 @pytest.mark.integration

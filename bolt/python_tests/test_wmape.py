@@ -97,5 +97,5 @@ def test_wmape_one_hot_simple():
     assert err < 0.1
 
 
-test_wmape_dense_simple()
-test_wmape_one_hot_simple()
+# test_wmape_dense_simple()
+# test_wmape_one_hot_simple()
