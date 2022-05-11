@@ -68,7 +68,7 @@ class CMakeBuild(build_ext):
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="thirdai",
-    version="0.1.1",
+    version="0.1.2",
     author="ThirdAI",
     author_email="contact@thirdai.com",
     description="A faster cpu machine learning library",
