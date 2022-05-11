@@ -37,7 +37,7 @@ struct MultiColumnArrayBlock : public Block {
     
     if (_end_col > input_row.size()) {
       std::stringstream ss;
-      ss << "Given end_col = " << _end_col << " but row only has " << input_row.size() << " columns.";
+      ss << "[MultiColumnArray] Given end_col = " << _end_col << " but row only has " << input_row.size() << " columns.";
       throw std::invalid_argument(ss.str());
     }
 
@@ -46,6 +46,11 @@ struct MultiColumnArrayBlock : public Block {
       : _end_col;
 
     for (uint32_t i = 0; i < end_col; ++i) {
+      if (idx_offset >= featureDim()) {
+        std::stringstream ss;
+        ss << "[MultiColumnArray] Given end_col = " << _end_col << " but row only has " << input_row.size() << " columns.";
+        throw std::invalid_argument(ss.str());
+      }
       _encoding->encodeNumstring(input_row[i], shared_feature_vector, idx_offset);
     }
   };
