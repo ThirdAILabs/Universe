@@ -1,27 +1,22 @@
 #pragma once
 
-#include "../encodings/categorical/CategoricalEncodingInterface.h"
+#include "../encodings/numstring/NumstringEncodingInterface.h"
 #include "BlockInterface.h"
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/OneHotEncoding.h>
 #include <dataset/src/utils/Conversions.h>
 #include <memory>
+#include <string_view>
 
 namespace thirdai::dataset {
 
 /**
- * A block for embedding a sample's raw categorical features.
+ * A block for embedding a column that contains delimited strings.
  */
-struct CategoricalBlock : public Block {
-  CategoricalBlock(uint32_t col, std::shared_ptr<CategoricalEncoding>& encoding,
-                   bool from_string = false)
-      : _col(col), _from_string(from_string), _encoding(encoding) {}
-
-  CategoricalBlock(uint32_t col, uint32_t dim, bool from_string = false)
-      : _col(col),
-        _from_string(from_string),
-        _encoding(std::make_shared<OneHotEncoding>(dim)) {}
+struct CsvColumnBlock : public Block {
+  CsvColumnBlock(uint32_t col, std::shared_ptr<NumstringEncoding>& encoding, char delim=',')
+      : _col(col), _delim(delim), _encoding(encoding) {}
 
   /**
    * Extracts features from input row and adds it to shared feature vector.
@@ -37,12 +32,14 @@ struct CategoricalBlock : public Block {
   void process(const std::vector<std::string>& input_row,
                BuilderVector& shared_feature_vector,
                uint32_t idx_offset) final {
-    const std::string& col_str = input_row[_col];
-    uint32_t id =
-        _from_string ? hashing::MurmurHash(col_str.c_str(), col_str.length(), 0)
-                     : getNumberU32(col_str);
-
-    _encoding->encodeCategory(id, shared_feature_vector, idx_offset);
+    
+    std::string_view numstr_arr(input_row[_col]);
+    
+    size_t start_pos = 0;
+    while (start_pos != std::string_view::npos) {
+      auto end_pos = numstr_arr.find(_delim, start_pos);
+      _encoding->encodeNumstring(numstr_arr.substr(start_pos, end_pos), shared_feature_vector, idx_offset);  
+    }
   };
 
   /**
@@ -58,8 +55,8 @@ struct CategoricalBlock : public Block {
 
  private:
   uint32_t _col;
-  bool _from_string;
-  std::shared_ptr<CategoricalEncoding> _encoding;
+  char _delim;
+  std::shared_ptr<NumstringEncoding> _encoding;
 };
 
 }  // namespace thirdai::dataset

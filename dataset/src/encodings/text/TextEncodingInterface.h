@@ -12,7 +12,7 @@ struct TextEncoding {
    * Tokenizes each string in text, embeds these tokens,
    * and composes the shared feature vector with these encodings.
    */
-  virtual void embedText(const std::string& text,
+  virtual void encodeText(const std::string& text,
                          BuilderVector& shared_feature_vector,
                          uint32_t offset) = 0;
 

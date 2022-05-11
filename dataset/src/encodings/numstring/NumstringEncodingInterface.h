@@ -5,14 +5,15 @@
 namespace thirdai::dataset {
 
 /**
- * Interface for categorical encoding models.
+ * Interface for numstring encoding models.
  */
-struct CategoricalEncoding {
+struct NumstringEncoding {
   /**
-   * Maps an id to an encoding
+   * Encodes a numstring as vector features.
+   * This method may update the offset parameter.
    */
-  virtual void encodeCategory(uint32_t id, BuilderVector& shared_feature_vector,
-                             uint32_t offset) = 0;
+  virtual uint encodeNumstring(std::string_view numstr, BuilderVector& shared_feature_vector,
+                               uint32_t& offset) = 0;
 
   /**
    * True if the model produces dense features, False otherwise.
