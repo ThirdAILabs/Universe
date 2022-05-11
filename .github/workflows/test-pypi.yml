@@ -24,10 +24,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.5.0
         env:
           CIBW_ARCHS_MACOS: x86_64 arm64
-          CIBW_BEFORE_ALL_MACOS: >
-            brew install gcc@11 &&
-            ln -s /opt/homebrew/bin/gcc-11 /opt/homebrew/bin/gcc &&
-            ln -s /opt/homebrew/bin/g++-11 /opt/homebrew/bin/g++
+          CIBW_BEFORE_ALL_MACOS: export PATH=/opt/homebrew/bin:\$PATH
 
       - name: Upload wheels
         uses: actions/upload-artifact@v2
