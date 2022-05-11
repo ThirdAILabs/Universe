@@ -49,7 +49,7 @@ void DLRM::initializeNetworkState(uint32_t batch_size, bool force_dense) {
   _concat_layer_state = BoltBatch(_concat_layer_dim, batch_size, true);
 
   uint32_t embedding_dim = _embedding_layer.getEmbeddingDim();
-  uint32_t bottom_mlp_output_dim = _bottom_mlp.outputDim();
+  uint32_t bottom_mlp_output_dim = _bottom_mlp.getOutputDim();
 
   _bottom_mlp_output.clear();
   _embedding_layer_output.clear();

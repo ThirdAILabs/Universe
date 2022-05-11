@@ -95,7 +95,7 @@ class PyNetwork final : public FullyConnectedNetwork {
                  rebuild, metrics, verbose);
   }
 
-  std::pair<InferenceMetricData, py::object> predict(
+  py::tuple predict(
       const dataset::InMemoryDataset<dataset::BoltInputBatch>& test_data,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
@@ -105,37 +105,55 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     uint32_t num_samples = test_data.len();
 
-    float* activations;
+    bool output_sparse = getInferenceOutputDim() < getOutputDim();
+    uint32_t* active_neurons = nullptr;
+    float* activations = nullptr;
     try {
-      activations = new float[num_samples * outputDim()];
+      if (output_sparse) {
+        active_neurons = new uint32_t[num_samples * getInferenceOutputDim()];
+      }
+      activations = new float[num_samples * getInferenceOutputDim()];
     } catch (std::bad_alloc& e) {
-      activations = nullptr;
       std::cout << "Out of memory error: cannot allocate " << num_samples
-                << " x " << outputDim() << " array for activations"
+                << " x " << getInferenceOutputDim() << " array for activations"
                 << std::endl;
     }
 
     auto metric_data = FullyConnectedNetwork::predict(
-        test_data, activations, metrics, verbose, batch_limit);
+        test_data, active_neurons, activations, metrics, verbose, batch_limit);
+
+    py::dict py_metric_data = py::cast(metric_data);
 
     if (activations == nullptr) {
-      return {metric_data, py::none()};
+      return py::make_tuple(py_metric_data, py::none());
     }
 
-    py::capsule free_when_done(
+    py::capsule free_when_done_activations(
         activations, [](void* ptr) { delete static_cast<float*>(ptr); });
 
-    py::array_t<float> activations_array(
-        {num_samples, outputDim()},
-        {outputDim() * sizeof(float), sizeof(float)}, activations,
-        free_when_done);
+    py::array_t<float, py::array::c_style | py::array::forcecast>
+        activations_array(
+            {num_samples, getInferenceOutputDim()},
+            {getInferenceOutputDim() * sizeof(float), sizeof(float)},
+            activations, free_when_done_activations);
 
-    return {metric_data, activations_array};
+    if (output_sparse) {
+      py::capsule free_when_done_active_neurons(active_neurons, [](void* ptr) {
+        delete static_cast<uint32_t*>(ptr);
+      });
+
+      py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
+          active_neurons_array(
+              {num_samples, getInferenceOutputDim()},
+              {getInferenceOutputDim() * sizeof(uint32_t), sizeof(uint32_t)},
+              active_neurons, free_when_done_active_neurons);
+      return py::make_tuple(py_metric_data, active_neurons_array,
+                            activations_array);
+    }
+    return py::make_tuple(py_metric_data, activations_array);
   }
 
-  std::pair<InferenceMetricData,
-            py::array_t<float, py::array::c_style | py::array::forcecast>>
-  predictWithDenseNumpyArray(
+  py::tuple predictWithDenseNumpyArray(
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           examples,
       const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
@@ -149,38 +167,10 @@ class PyNetwork final : public FullyConnectedNetwork {
     auto data = thirdai::dataset::python::denseBoltDatasetFromNumpy(
         examples, labels, batch_size);
 
-    uint32_t num_samples = examples.shape()[0];
-    float* activations;
-    try {
-      activations = new float[num_samples * outputDim()];
-    } catch (std::bad_alloc& e) {
-      activations = nullptr;
-      std::cout << "Out of memory error: cannot allocate " << num_samples
-                << " x " << outputDim() << " array for activations"
-                << std::endl;
-    }
-
-    auto metric_data = FullyConnectedNetwork::predict(
-        data, activations, metrics, verbose, batch_limit);
-
-    if (activations == nullptr) {
-      return {metric_data, py::none()};
-    }
-
-    py::capsule free_when_done(
-        activations, [](void* ptr) { delete static_cast<float*>(ptr); });
-
-    py::array_t<float> activations_array(
-        {num_samples, outputDim()},
-        {outputDim() * sizeof(float), sizeof(float)}, activations,
-        free_when_done);
-
-    return {metric_data, activations_array};
+    return predict(data, metrics, verbose, batch_limit);
   }
 
-  std::pair<InferenceMetricData,
-            py::array_t<float, py::array::c_style | py::array::forcecast>>
-  predictWithSparseNumpyArray(
+  py::tuple predictWithSparseNumpyArray(
       const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           x_idxs,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
@@ -200,33 +190,8 @@ class PyNetwork final : public FullyConnectedNetwork {
         std::cout, py::module_::import("sys").attr("stdout"));
     auto data = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
         x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, batch_size);
-    uint32_t num_samples = x_offsets.shape()[0] - 1;
-    float* activations;
-    try {
-      activations = new float[num_samples * outputDim()];
-    } catch (std::bad_alloc& e) {
-      activations = nullptr;
-      std::cout << "Out of memory error: cannot allocate " << num_samples
-                << " x " << outputDim() << " array for activations"
-                << std::endl;
-    }
 
-    auto metric_data = FullyConnectedNetwork::predict(
-        data, activations, metrics, verbose, batch_limit);
-
-    if (activations == nullptr) {
-      return {metric_data, py::none()};
-    }
-
-    py::capsule free_when_done(
-        activations, [](void* ptr) { delete static_cast<float*>(ptr); });
-
-    py::array_t<float> activations_array(
-        {num_samples, outputDim()},
-        {outputDim() * sizeof(float), sizeof(float)}, activations,
-        free_when_done);
-
-    return {metric_data, activations_array};
+    return predict(data, metrics, verbose, batch_limit);
   }
 
   void save(const std::string& filename) {
@@ -345,38 +310,58 @@ class PyDLRM final : public DLRM {
       : DLRM(embedding_config, std::move(bottom_mlp_configs),
              std::move(top_mlp_configs), input_dim) {}
 
-  std::pair<InferenceMetricData,
-            py::array_t<float, py::array::c_style | py::array::forcecast>>
-  predict(const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
-          const std::vector<std::string>& metrics = {}, bool verbose = true,
-          uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
+  py::tuple predict(
+      const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
+      const std::vector<std::string>& metrics = {}, bool verbose = true,
+      uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
     uint32_t num_samples = test_data.len();
-    float* activations;
+
+    bool output_sparse = getInferenceOutputDim() < getOutputDim();
+    uint32_t* active_neurons = nullptr;
+    float* activations = nullptr;
     try {
-      activations = new float[num_samples * outputDim()];
+      if (getInferenceOutputDim() < getOutputDim()) {
+        active_neurons = new uint32_t[num_samples * getInferenceOutputDim()];
+      }
+      activations = new float[num_samples * getInferenceOutputDim()];
     } catch (std::bad_alloc& e) {
-      activations = nullptr;
       std::cout << "Out of memory error: cannot allocate " << num_samples
-                << " x " << outputDim() << " array for activations"
+                << " x " << getInferenceOutputDim() << " array for activations"
                 << std::endl;
     }
 
-    auto metric_data =
-        DLRM::predict(test_data, activations, metrics, verbose, batch_limit);
+    auto metric_data = DLRM::predict(test_data, active_neurons, activations,
+                                     metrics, verbose, batch_limit);
+    py::dict py_metric_data = py::cast(metric_data);
 
     if (activations == nullptr) {
-      return {metric_data, py::none()};
+      return py::make_tuple(py_metric_data, py::none());
     }
 
-    py::capsule free_when_done(
+    py::capsule free_when_done_activations(
         activations, [](void* ptr) { delete static_cast<float*>(ptr); });
 
-    py::array_t<float> activations_array(
-        {num_samples, outputDim()},
-        {outputDim() * sizeof(float), sizeof(float)}, activations,
-        free_when_done);
+    py::array_t<float, py::array::c_style | py::array::forcecast>
+        activations_array(
+            {num_samples, getInferenceOutputDim()},
+            {getInferenceOutputDim() * sizeof(float), sizeof(float)},
+            activations, free_when_done_activations);
 
-    return {metric_data, activations_array};
+    if (output_sparse) {
+      py::capsule free_when_done_active_neurons(active_neurons, [](void* ptr) {
+        delete static_cast<uint32_t*>(ptr);
+      });
+
+      py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
+          active_neurons_array(
+              {num_samples, getInferenceOutputDim()},
+              {getInferenceOutputDim() * sizeof(uint32_t), sizeof(uint32_t)},
+              active_neurons, free_when_done_active_neurons);
+      return py::make_tuple(py_metric_data, active_neurons_array,
+                            activations_array);
+    }
+
+    return py::make_tuple(py_metric_data, activations_array);
   }
 };
 

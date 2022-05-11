@@ -51,6 +51,10 @@ class Model {
   InferenceMetricData predict(
       // Test dataset
       const dataset::InMemoryDataset<BATCH_T>& test_data,
+      // Array to store output active neurons in. This should be null if it is
+      // not desired for the output values to be returned or if the output is
+      // dense.
+      uint32_t* output_active_neurons,
       // Array to store output activations in, will not return activations if
       // this is null
       float* output_activations,
@@ -89,8 +93,11 @@ class Model {
   // Allocates storage for activations and gradients for output layer.
   virtual BoltBatch getOutputs(uint32_t batch_size, bool force_dense) = 0;
 
-  // Gets the dimension of the output layer.
-  virtual uint32_t outputDim() const = 0;
+  virtual uint32_t getOutputDim() const = 0;
+
+  // Gets the dimension of the output layer during inference (depends of if
+  // sparse inference is enabled).
+  virtual uint32_t getInferenceOutputDim() const = 0;
 
   virtual ~Model() = default;
 

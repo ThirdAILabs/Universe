@@ -63,6 +63,13 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   uint32_t getDim() const final { return _dim; }
 
+  uint32_t getInferenceOutputDim() const final {
+    if (_force_sparse_for_inference) {
+      return _sparse_dim;
+    }
+    return _dim;
+  }
+
   float* getWeights() final;
 
   float* getBiases() final;

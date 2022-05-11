@@ -88,7 +88,8 @@ TEST_F(DLRMTestFixture, NoisyCategoricalFeatures) {
   auto dataset = genDataset(false, true);
 
   dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 32);
-  auto test_metrics = dlrm.predict(dataset, nullptr, {"categorical_accuracy"});
+  auto test_metrics =
+      dlrm.predict(dataset, nullptr, nullptr, {"categorical_accuracy"});
 
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.9);
 }
@@ -111,7 +112,8 @@ TEST_F(DLRMTestFixture, NoisyDenseFeatures) {
   auto dataset = genDataset(true, false);
 
   dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 3);
-  auto test_metrics = dlrm.predict(dataset, nullptr, {"categorical_accuracy"});
+  auto test_metrics =
+      dlrm.predict(dataset, nullptr, nullptr, {"categorical_accuracy"});
 
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
@@ -134,7 +136,8 @@ TEST_F(DLRMTestFixture, NoisyDenseAndCategoricalFeatures) {
   auto dataset = genDataset(true, true);
 
   dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 5);
-  auto test_metrics = dlrm.predict(dataset, nullptr, {"categorical_accuracy"});
+  auto test_metrics =
+      dlrm.predict(dataset, nullptr, nullptr, {"categorical_accuracy"});
 
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.1);
 }

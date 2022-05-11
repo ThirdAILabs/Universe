@@ -17,7 +17,11 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
        SequentialConfigList bottom_mlp_configs,
        SequentialConfigList top_mlp_configs, uint32_t dense_feature_dim);
 
-  uint32_t outputDim() const final { return _top_mlp.outputDim(); }
+  uint32_t getOutputDim() const final { return _top_mlp.getOutputDim(); }
+
+  uint32_t getInferenceOutputDim() const final {
+    return _top_mlp.getInferenceOutputDim();
+  }
 
  private:
   void forward(uint32_t batch_index, const dataset::ClickThroughBatch& inputs,

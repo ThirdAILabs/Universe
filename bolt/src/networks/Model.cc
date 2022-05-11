@@ -99,8 +99,11 @@ MetricData Model<BATCH_T>::train(
 template <typename BATCH_T>
 InferenceMetricData Model<BATCH_T>::predict(
     const dataset::InMemoryDataset<BATCH_T>& test_data,
-    float* output_activations, const std::vector<std::string>& metric_names,
-    bool verbose, uint32_t batch_limit) {
+    uint32_t* output_active_neurons, float* output_activations,
+    const std::vector<std::string>& metric_names, bool verbose,
+    uint32_t batch_limit) {
+  assert(output_activations != nullptr || output_active_neurons == nullptr);
+
   uint32_t batch_size = test_data[0].getBatchSize();
 
   uint64_t num_test_batches = std::min(test_data.numBatches(), batch_limit);
@@ -124,17 +127,28 @@ InferenceMetricData Model<BATCH_T>::predict(
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
     const BATCH_T& inputs = test_data[batch];
 
-#pragma omp parallel for default(none) \
-    shared(inputs, outputs, output_activations, metrics, batch, batch_size)
+#pragma omp parallel for default(none)                                 \
+    shared(inputs, outputs, output_active_neurons, output_activations, \
+           metrics, batch, batch_size)
     for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
       forward(i, inputs, outputs[i], /* train=*/false);
 
       metrics.processSample(outputs[i], inputs.labels(i));
 
-      if (output_activations != nullptr && outputs[i].isDense()) {
+      if (output_activations != nullptr) {
+        assert(outputs[i].len == inferenceOutputDim());
+
         const float* start = outputs[i].activations;
         std::copy(start, start + outputs[i].len,
-                  output_activations + (batch * batch_size + i) * outputDim());
+                  output_activations +
+                      (batch * batch_size + i) * getInferenceOutputDim());
+        if (!outputs[i].isDense()) {
+          assert(output_active_neurons != nullptr);
+          const uint32_t* start = outputs[i].active_neurons;
+          std::copy(start, start + outputs[i].len,
+                    output_active_neurons +
+                        (batch * batch_size + i) * getInferenceOutputDim());
+        }
       }
     }
 
