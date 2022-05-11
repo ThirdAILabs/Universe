@@ -21,6 +21,10 @@ struct SequentialLayerConfig {
   }
 
   static void checkSparsity(float sparsity) {
+    if (sparsity > 1 || sparsity <= 0) {
+      throw std::invalid_argument(
+          "sparsity must be between 0 exclusive and 1 inclusive.");
+    }
     if (0.2 < sparsity && sparsity < 1.0) {
       std::cout << "WARNING: Using large load_factor value " << sparsity
                 << " in Layer, consider decreasing load_factor" << std::endl;
@@ -62,41 +66,42 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
                             ActivationFunction _act_func)
       : dim(_dim), sparsity(_sparsity), act_func(_act_func) {
     checkSparsity(sparsity);
-    if (sparsity < 1.0) {
-      uint32_t k = (static_cast<uint32_t>(log2(dim)/3) - 2;
-      if(sparsity < 0.01) {
-        k++;}
-      if(sparsity <= 0.001) {
-        k++;}
-      if(k > 8){
-        // cannot be too big.
-        k = 8;
-      }
-      if(k < 3){
-        k = 3;
-      }
-      uint32_t rp = (k < 6) ? k * 3 : 18;
-      //Future: Bitwisehashfunction like srp, k = rp. 
-      uint32_t rslog = log2((dim * 4) / (1 << rp)) + 1;
-      rs = 1 << rslog;
-      //clipping
-      if(rs < 16) {
-        rs = 16;
-      }
-      if(rs > 128) {
-        rs = 128;
-      }
-      uint32_t l = sparsity < 0.1 ? 128 : 64;
-      if(sparsity > 0.2){
-        l = 32;
-      }
-      if(sparsity < 0.005) {
-        l = 256;
-      }
-      sampling_config = SamplingConfig(k, l, rp, rs);
-    } else {
-      sampling_config = SamplingConfig();
+
+    // We don't need a sampling config for a layer with sparsity equal to 1.0,
+    // so we can just return (the default value of the sampling_config will
+    // be everything set to 0s)
+    if (sparsity == 1.0) {
+      return;
     }
+
+    // Store hashes_per_table as a signed integer so it won't underflow.
+    int32_t hashes_per_table = log2(dim) / 3 - 2;
+    if (sparsity <= 0.001) {
+      hashes_per_table += 1;
+    } else if (sparsity <= 0.01) {
+      hashes_per_table += 2;
+    }
+    clip<int32_t>(hashes_per_table, /* low = */ 3, /* high = */ 6);
+
+    uint32_t range_pow = hashes_per_table * 3;
+
+    uint32_t reservoir_size_log = log2((dim * 4) / (1 << range_pow)) + 1;
+    uint32_t reservoir_size = 1 << reservoir_size_log;
+    clip<uint32_t>(reservoir_size, /* low = */ 16, /* high = */ 128);
+
+    uint32_t num_tables;
+    if (sparsity < 0.005) {
+      num_tables = 256;
+    } else if (sparsity < 0.2) {
+      num_tables = 128;
+    } else {
+      num_tables = 64;
+    }
+
+    sampling_config = SamplingConfig(/* hashes_per_table = */ hashes_per_table,
+                                     /* num_tables = */ num_tables,
+                                     /* range_pow = */ range_pow,
+                                     /* reservoir_size = */ reservoir_size);
   }
 
   uint64_t getDim() const { return dim; }
@@ -106,6 +111,17 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
   ActivationFunction getActFunc() const { return act_func; }
 
  private:
+  template <typename T>
+  static T clip(T input, T low, T high) {
+    if (input < low) {
+      return low;
+    }
+    if (input > high) {
+      return high;
+    }
+    return input;
+  }
+
   void print(std::ostream& out) const {
     out << "FullyConnected: dim=" << dim << ", load_factor=" << sparsity;
     switch (act_func) {
