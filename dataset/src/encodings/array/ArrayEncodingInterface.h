@@ -11,7 +11,6 @@ namespace thirdai::dataset {
 struct ArrayEncoding {
   /**
    * Encodes a numstring as vector features.
-   * This method may update the offset parameter.
    */
   virtual void encodeArray(const std::function<std::optional<std::string>()>& next_elem, 
                            BuilderVector& shared_feature_vector,

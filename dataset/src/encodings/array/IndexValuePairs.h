@@ -14,11 +14,10 @@ struct IndexValuePairs : public ArrayEncoding {
 
   /**
    * Encodes an array iterable as vector features.
-   * This method may update the offset parameter.
    */
   void encodeArray(const std::function<std::optional<std::string>()>& next_elem, 
                    BuilderVector& shared_feature_vector,
-                   uint32_t& offset) final {
+                   uint32_t offset) final {
     std::optional<std::string> elem;
     while ((elem = next_elem()).has_value()) {
       const auto& numstr = elem.value();
