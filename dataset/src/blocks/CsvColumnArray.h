@@ -1,12 +1,13 @@
 #pragma once
 
-#include "../encodings/numstring/NumstringEncodingInterface.h"
+#include "../encodings/array/ArrayEncodingInterface.h"
 #include "BlockInterface.h"
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/OneHotEncoding.h>
 #include <dataset/src/utils/Conversions.h>
 #include <memory>
+#include <optional>
 #include <string_view>
 
 namespace thirdai::dataset {
@@ -15,7 +16,7 @@ namespace thirdai::dataset {
  * A block for embedding a column that contains delimited strings.
  */
 struct CsvColumnBlock : public Block {
-  CsvColumnBlock(uint32_t col, std::shared_ptr<NumstringEncoding>& encoding, char delim=',')
+  CsvColumnBlock(uint32_t col, std::shared_ptr<ArrayEncoding>& encoding, char delim=',')
       : _col(col), _delim(delim), _encoding(encoding) {}
 
   /**
@@ -34,11 +35,17 @@ struct CsvColumnBlock : public Block {
                uint32_t idx_offset) final {
     
     size_t start_pos = 0;
-    while (start_pos != std::string_view::npos) {
-      auto end_pos = input_row[_col].find(_delim, start_pos);
-      _encoding->encodeNumstring(input_row[_col].substr(start_pos, end_pos), shared_feature_vector, idx_offset);  
-      start_pos = end_pos + 1;
-    }
+
+    _encoding->encodeArray([&]() -> std::optional<std::string> {
+      if (start_pos != std::string::npos) {
+        auto end_pos = input_row[_col].find(_delim, start_pos);
+        auto str = input_row[_col].substr(start_pos, end_pos);
+        start_pos = end_pos + 1;
+        return {str};
+      } 
+      return {};
+    }, shared_feature_vector, idx_offset);
+
   };
 
   /**
@@ -55,7 +62,7 @@ struct CsvColumnBlock : public Block {
  private:
   uint32_t _col;
   char _delim;
-  std::shared_ptr<NumstringEncoding> _encoding;
+  std::shared_ptr<ArrayEncoding> _encoding;
 };
 
 }  // namespace thirdai::dataset
