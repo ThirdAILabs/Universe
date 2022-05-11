@@ -41,7 +41,6 @@ dim = 100
 activation = "ReLU"
 
 [[top_mlp_layers]]
-use_default_sample = true
 dim = 1000
 activation = 'ReLU'
 sparsity = 0.2
