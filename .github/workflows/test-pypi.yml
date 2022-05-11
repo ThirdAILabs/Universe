@@ -1,6 +1,9 @@
 name: Upload to Test Pypi
 
 on: 
+  # TODO(josh): Remove this before merging, for now just gets this action to run 
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
