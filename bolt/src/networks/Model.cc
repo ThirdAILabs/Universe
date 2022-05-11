@@ -136,7 +136,7 @@ InferenceMetricData Model<BATCH_T>::predict(
       metrics.processSample(outputs[i], inputs.labels(i));
 
       if (output_activations != nullptr) {
-        assert(outputs[i].len == inferenceOutputDim());
+        assert(outputs[i].len == getInferenceOutputDim());
 
         const float* start = outputs[i].activations;
         std::copy(start, start + outputs[i].len,
