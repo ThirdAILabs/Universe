@@ -23,7 +23,6 @@ lookup_size = 16
 log_embedding_block_size = 10
 
 [[bottom_mlp_layers]]
-use_default_sampling = true
 dim = 1000
 activation = 'ReLU'
 sparsity = 0.2
