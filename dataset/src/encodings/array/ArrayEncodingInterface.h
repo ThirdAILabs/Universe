@@ -15,7 +15,7 @@ struct ArrayEncoding {
    */
   virtual void encodeArray(const std::function<std::optional<std::string>()>& next_elem, 
                            BuilderVector& shared_feature_vector,
-                           uint32_t& offset) = 0;
+                           uint32_t offset) = 0;
 
   /**
    * True if the model produces dense features, False otherwise.
