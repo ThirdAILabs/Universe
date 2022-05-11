@@ -74,38 +74,47 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
       return;
     }
 
-    // The number of items in the table is equal to the number of neurons in 
+    // The number of items in the table is equal to the number of neurons in
     // this layer, which is stored in the "dim" variable. By analyzing the
     // hash table, we find that
-    // E(num_elements_per_bucket) = dim / 2^(range_pow) = sparsity * dim * safety_factor / num_tables
-    // The first expression comes from analyzing a single hash table, while 
-    // the second comes from analyzing the total number of elements returned
-    // across the tables. safety_factor is a constant that equals how many more 
-    // times elements we want to expect to have across tables than the minimum.
-    // Simplifying, we have
-    // 1 / 2^(range_pow) = sparsity * C / num_tables
-    // This leaves us with 3 free variables: C, num_tables, and hashes_per_table. 
-    
-    // First, we will set num_tables = 128 and C = 2. This is just a heuristic.
-    uint32_t num_tables = 128;
-    uint32_t safety_factor = 2;
+    // E(num_elements_per_bucket) = dim / 2^(range_pow) = sparsity * dim *
+    // safety_factor / num_tables The first expression comes from analyzing a
+    // single hash table, while the second comes from analyzing the total number
+    // of elements returned across the tables. safety_factor is a constant that
+    // equals how many more times elements we want to expect to have across
+    // tables than the minimum. Simplifying, we have 1 / 2^(range_pow) =
+    // sparsity * safety_factor / num_tables This leaves us with 3 free
+    // variables: safety_factor, num_tables, and hashes_per_table.
+
+    // First, we will set num_tables_guess = 128 and safety_factor = 2.
+    // num_tables_guess is an initial guess to get a good value for range_pow,
+    // but we do not find the final num_tables until below because the rounding
+    // in the range_pow calculation step can mess things up.
+    uint32_t num_tables_guess = 128;
+    float safety_factor = 2;
 
     // We can now set range_pow: manipulating the equation, we have that
     // range_pow = log2(num_tables / (sparsity * safety_factor))
-    uint32_t range_pow = std::log2(num_tables / (sparsity * safety_factor));
-    // By the properties of DWTA, hashes_per_table = range_pow / 3. 
-    uint32_t hashes_per_table = range_pow / 3;
-    // Since range_pow might originally not have been a direct multiple of 3,
-    // we reset it here to be equal to hashes_per_table * 3. This might lower
-    // range_pow and mean that there are more elements per bucket than the 
-    // equation calls for, but that is better than raising it and there being 
-    // too few.
-    range_pow = hashes_per_table * 3;
+    float range_pow_float =
+        std::log2(num_tables_guess / (sparsity * safety_factor));
+    // By the properties of DWTA, hashes_per_table = range_pow / 3.
+    float hashes_per_table_float = range_pow_float / 3;
+    // We now round hashes_per_table to the nearest integer.
+    // Using round is more accurate than truncating it down.
+    uint32_t hashes_per_table = std::round(hashes_per_table_float);
+    // Finally, hashes_per_table needs to be clipped, and then we can
+    // recalculate range_pow
+    hashes_per_table = clip(hashes_per_table, /* low = */ 2, /* high = */ 8);
+    uint32_t range_pow = hashes_per_table * 3;
 
+    // We now calculate an exact value for num_tables using the formula
+    // num_tables = sparsity * safety_factor * 2^(range_pow)
+    uint32_t num_tables =
+        std::round(sparsity * safety_factor * (1 << range_pow));
 
     // Finally, we want to set reservoir_size to be somewhat larger than
-    // the number of expected elements per bucket. Here, we choose as a heuristic
-    // 2 times the number of expected elements per bucket.
+    // the number of expected elements per bucket. Here, we choose as a
+    // heuristic 2 times the number of expected elements per bucket.
     uint32_t expected_num_elements_per_bucket = dim / (1 << range_pow);
     uint32_t reservoir_size = 2 * expected_num_elements_per_bucket;
 
@@ -122,8 +131,7 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
   ActivationFunction getActFunc() const final { return act_func; }
 
  private:
-  template <typename T>
-  static T clip(T input, T low, T high) {
+  static uint32_t clip(uint32_t input, uint32_t low, uint32_t high) {
     if (input < low) {
       return low;
     }

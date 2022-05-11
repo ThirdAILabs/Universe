@@ -53,7 +53,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   network.train(data, CategoricalCrossEntropyLoss(), 0.001, 5);
   auto test_metrics = network.predict(data, nullptr, {"categorical_accuracy"});
-  ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
+  ASSERT_GE(test_metrics["categorical_accuracy"], 0.98);
 }
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
@@ -71,12 +71,11 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
        TrainSimpleDatasetMultiLayerNetwork) {
-  FullyConnectedNetwork network(
-      {std::make_shared<FullyConnectedLayerConfig>(
-           10000, 0.1, ActivationFunction::ReLU, SamplingConfig(3, 32, 9, 32)),
-       std::make_shared<FullyConnectedLayerConfig>(
-           n_classes, ActivationFunction::Softmax)},
-      n_classes);
+  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
+                                     10000, 0.1, ActivationFunction::ReLU),
+                                 std::make_shared<FullyConnectedLayerConfig>(
+                                     n_classes, ActivationFunction::Softmax)},
+                                n_classes);
 
   auto data = genDataset(false);
 
@@ -87,12 +86,11 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
        TrainNoisyDatasetMultiLayerNetwork) {
-  FullyConnectedNetwork network(
-      {std::make_shared<FullyConnectedLayerConfig>(
-           10000, 0.1, ActivationFunction::ReLU, SamplingConfig(3, 32, 9, 32)),
-       std::make_shared<FullyConnectedLayerConfig>(
-           n_classes, ActivationFunction::Softmax)},
-      n_classes);
+  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
+                                     10000, 0.1, ActivationFunction::ReLU),
+                                 std::make_shared<FullyConnectedLayerConfig>(
+                                     n_classes, ActivationFunction::Softmax)},
+                                n_classes);
 
   auto data = genDataset(true);
 
