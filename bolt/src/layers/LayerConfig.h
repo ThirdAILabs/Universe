@@ -74,31 +74,40 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
       return;
     }
 
-    // Store hashes_per_table as a signed integer so it won't underflow.
-    int32_t hashes_per_table = log2(dim) / 3 - 2;
-    if (sparsity <= 0.001) {
-      hashes_per_table += 2;
-    } 
-    else if (sparsity <= 0.01) {
-      hashes_per_table += 1;
-    } 
+    // The number of items in the table is equal to the number of neurons in 
+    // this layer, which is stored in the "dim" variable. By analyzing the
+    // hash table, we find that
+    // E(num_elements_per_bucket) = dim / 2^(range_pow) = sparsity * dim * safety_factor / num_tables
+    // The first expression comes from analyzing a single hash table, while 
+    // the second comes from analyzing the total number of elements returned
+    // across the tables. safety_factor is a constant that equals how many more 
+    // times elements we want to expect to have across tables than the minimum.
+    // Simplifying, we have
+    // 1 / 2^(range_pow) = sparsity * C / num_tables
+    // This leaves us with 3 free variables: C, num_tables, and hashes_per_table. 
+    
+    // First, we will set num_tables = 128 and C = 2. This is just a heuristic.
+    uint32_t num_tables = 128;
+    uint32_t safety_factor = 2;
 
-    clip<int32_t>(hashes_per_table, /* low = */ 3, /* high = */ 6);
+    // We can now set range_pow: manipulating the equation, we have that
+    // range_pow = log2(num_tables / (sparsity * safety_factor))
+    uint32_t range_pow = std::log2(num_tables / (sparsity * safety_factor));
+    // By the properties of DWTA, hashes_per_table = range_pow / 3. 
+    uint32_t hashes_per_table = range_pow / 3;
+    // Since range_pow might originally not have been a direct multiple of 3,
+    // we reset it here to be equal to hashes_per_table * 3. This might lower
+    // range_pow and mean that there are more elements per bucket than the 
+    // equation calls for, but that is better than raising it and there being 
+    // too few.
+    range_pow = hashes_per_table * 3;
 
-    uint32_t range_pow = hashes_per_table * 3;
 
-    uint32_t reservoir_size_log = log2((dim * 4) / (1 << range_pow)) + 1;
-    uint32_t reservoir_size = 1 << reservoir_size_log;
-    clip<uint32_t>(reservoir_size, /* low = */ 16, /* high = */ 128);
-
-    uint32_t num_tables;
-    if (sparsity < 0.005) {
-      num_tables = 256;
-    } else if (sparsity < 0.2) {
-      num_tables = 128;
-    } else {
-      num_tables = 64;
-    }
+    // Finally, we want to set reservoir_size to be somewhat larger than
+    // the number of expected elements per bucket. Here, we choose as a heuristic
+    // 2 times the number of expected elements per bucket.
+    uint32_t expected_num_elements_per_bucket = dim / (1 << range_pow);
+    uint32_t reservoir_size = 2 * expected_num_elements_per_bucket;
 
     sampling_config = SamplingConfig(/* hashes_per_table = */ hashes_per_table,
                                      /* num_tables = */ num_tables,
