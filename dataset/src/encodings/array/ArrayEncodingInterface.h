@@ -1,18 +1,20 @@
 #pragma once
 
 #include <dataset/src/utils/BuilderVectors.h>
+#include <optional>
 
 namespace thirdai::dataset {
 
 /**
- * Interface for categorical encoding models.
+ * Interface for numstring encoding models.
  */
-struct CategoricalEncoding {
+struct ArrayEncoding {
   /**
-   * Maps an id to an encoding
+   * Encodes a numstring as vector features.
    */
-  virtual void encodeCategory(uint32_t id, BuilderVector& shared_feature_vector,
-                             uint32_t offset) = 0;
+  virtual void encodeArray(const std::function<std::optional<std::string>()>& next_elem, 
+                           BuilderVector& shared_feature_vector,
+                           uint32_t offset) = 0;
 
   /**
    * True if the model produces dense features, False otherwise.

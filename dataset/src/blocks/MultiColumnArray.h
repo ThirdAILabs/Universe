@@ -1,27 +1,25 @@
 #pragma once
 
-#include "../encodings/categorical/CategoricalEncodingInterface.h"
+#include "../encodings/array/ArrayEncodingInterface.h"
 #include "BlockInterface.h"
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/OneHotEncoding.h>
 #include <dataset/src/utils/Conversions.h>
 #include <memory>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string_view>
 
 namespace thirdai::dataset {
 
 /**
- * A block for embedding a sample's raw categorical features.
+ * A block for embedding multiple columns as a single array.
  */
-struct CategoricalBlock : public Block {
-  CategoricalBlock(uint32_t col, std::shared_ptr<CategoricalEncoding>& encoding,
-                   bool from_string = false)
-      : _col(col), _from_string(from_string), _encoding(encoding) {}
-
-  CategoricalBlock(uint32_t col, uint32_t dim, bool from_string = false)
-      : _col(col),
-        _from_string(from_string),
-        _encoding(std::make_shared<OneHotEncoding>(dim)) {}
+struct MultiColumnArrayBlock : public Block {
+  MultiColumnArrayBlock(uint32_t start_col, std::shared_ptr<ArrayEncoding>& encoding, uint32_t end_col=0)
+      : _start_col(start_col), _end_col(end_col), _encoding(encoding) {}
 
   /**
    * Extracts features from input row and adds it to shared feature vector.
@@ -37,12 +35,27 @@ struct CategoricalBlock : public Block {
   void process(const std::vector<std::string>& input_row,
                BuilderVector& shared_feature_vector,
                uint32_t idx_offset) final {
-    const std::string& col_str = input_row[_col];
-    uint32_t id =
-        _from_string ? hashing::MurmurHash(col_str.c_str(), col_str.length(), 0)
-                     : getNumberU32(col_str);
+    
+    if (_end_col > input_row.size()) {
+      std::stringstream ss;
+      ss << "[MultiColumnArray] Given end_col = " << _end_col << " but row only has " << input_row.size() << " columns.";
+      throw std::invalid_argument(ss.str());
+    }
 
-    _encoding->encodeCategory(id, shared_feature_vector, idx_offset);
+    auto end_col = _end_col == 0 
+      ? input_row.size()
+      : _end_col;
+
+    uint32_t i = _start_col;
+    
+    _encoding->encodeArray([&]() -> std::optional<std::string> {
+      if (i < end_col) {
+        const auto& str = input_row[i];
+        ++i;
+        return {str};
+      } 
+      return {};
+    }, shared_feature_vector, idx_offset);
   };
 
   /**
@@ -57,9 +70,10 @@ struct CategoricalBlock : public Block {
   bool isDense() final { return _encoding->isDense(); };
 
  private:
-  uint32_t _col;
-  bool _from_string;
-  std::shared_ptr<CategoricalEncoding> _encoding;
+  
+  uint32_t _start_col;
+  uint32_t _end_col;
+  std::shared_ptr<ArrayEncoding> _encoding;
 };
 
 }  // namespace thirdai::dataset

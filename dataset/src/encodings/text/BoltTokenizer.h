@@ -13,7 +13,7 @@ namespace thirdai::dataset {
 struct BoltTokenizer : public TextEncoding {
   explicit BoltTokenizer(uint32_t dim = 100000) : _dim(dim) {}
 
-  void embedText(const std::string& text, BuilderVector& shared_feature_vector,
+  void encodeText(const std::string& text, BuilderVector& shared_feature_vector,
                  uint32_t idx_offset) final {
     std::string lower_case_text = text;
     for (auto& c : lower_case_text) {

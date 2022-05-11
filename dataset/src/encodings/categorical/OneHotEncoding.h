@@ -10,7 +10,7 @@ struct OneHotEncoding : public CategoricalEncoding {
   /**
    * Maps an id to an embedding
    */
-  void embedCategory(uint32_t id, BuilderVector& shared_feature_vector,
+  void encodeCategory(uint32_t id, BuilderVector& shared_feature_vector,
                      uint32_t offset) final {
     shared_feature_vector.addSingleFeature(id % _dim + offset, 1.0);
   };

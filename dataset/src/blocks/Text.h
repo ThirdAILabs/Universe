@@ -42,7 +42,7 @@ struct TextBlock : public Block {
   void process(const std::vector<std::string>& input_row,
                BuilderVector& shared_feature_vector,
                uint32_t idx_offset) final {
-    _encoding->embedText(input_row[_col], shared_feature_vector, idx_offset);
+    _encoding->encodeText(input_row[_col], shared_feature_vector, idx_offset);
   };
 
   /**
