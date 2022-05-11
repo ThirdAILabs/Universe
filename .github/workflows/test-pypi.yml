@@ -1,6 +1,7 @@
 name: Upload to Test Pypi
 
-on: workflow_dispatch
+on: 
+  workflow_dispatch:
 
 jobs:
   build_wheels:
