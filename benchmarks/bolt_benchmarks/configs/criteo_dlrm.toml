@@ -11,7 +11,7 @@ loss_fn = "CategoricalCrossEntropyLoss"
 train_metrics = []
 test_metrics = ["categorical_accuracy"]
 learning_rate = 0.0001
-epochs = 2
+epochs = 1
 batch_size = 255
 rehash = 6400
 rebuild = 128000
@@ -23,13 +23,15 @@ lookup_size = 16
 log_embedding_block_size = 10
 
 [[bottom_mlp_layers]]
+use_default_sampling = true
 dim = 1000
 activation = 'ReLU'
 sparsity = 0.2
-hashes_per_table = 3
-num_tables = 128
-reservoir_size = 10
-range_pow = 9
+use_default_sampling = true
+# hashes_per_table = 3
+# num_tables = 128
+# reservoir_size = 10
+# range_pow = 9
 
 [[bottom_mlp_layers]]
 dim = 100
@@ -40,13 +42,15 @@ dim = 100
 activation = "ReLU"
 
 [[top_mlp_layers]]
+use_default_sample = true
 dim = 1000
 activation = 'ReLU'
 sparsity = 0.2
-hashes_per_table = 3
-num_tables = 128
-reservoir_size = 10
-range_pow = 9
+use_default_sampling = true
+# hashes_per_table = 3
+# num_tables = 128
+# reservoir_size = 10
+# range_pow = 9
 
 [[top_mlp_layers]]
 dim = 2
