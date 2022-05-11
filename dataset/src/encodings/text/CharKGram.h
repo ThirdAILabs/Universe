@@ -9,7 +9,7 @@ namespace thirdai::dataset {
 struct CharKGram : public TextEncoding {
   CharKGram(uint32_t k, uint32_t dim) : _k(k), _dim(dim) {}
 
-  void embedText(const std::string& text, BuilderVector& shared_feature_vector,
+  void encodeText(const std::string& text, BuilderVector& shared_feature_vector,
                  uint32_t idx_offset) final {
     std::vector<uint32_t> indices;
 
