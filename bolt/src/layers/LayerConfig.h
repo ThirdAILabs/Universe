@@ -86,12 +86,12 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
     // sparsity * safety_factor / num_tables This leaves us with 3 free
     // variables: safety_factor, num_tables, and hashes_per_table.
 
-    // First, we will set num_tables_guess = 128 and safety_factor = 2.
+    // First, we will set num_tables_guess = 128 and safety_factor = 1.
     // num_tables_guess is an initial guess to get a good value for range_pow,
     // but we do not find the final num_tables until below because the rounding
     // in the range_pow calculation step can mess things up.
     uint32_t num_tables_guess = 128;
-    float safety_factor = 2;
+    float safety_factor = 1;
 
     // We can now set range_pow: manipulating the equation, we have that
     // range_pow = log2(num_tables / (sparsity * safety_factor))
@@ -114,9 +114,9 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
 
     // Finally, we want to set reservoir_size to be somewhat larger than
     // the number of expected elements per bucket. Here, we choose as a
-    // heuristic 2 times the number of expected elements per bucket.
+    // heuristic 8 times the number of expected elements per bucket.
     uint32_t expected_num_elements_per_bucket = dim / (1 << range_pow);
-    uint32_t reservoir_size = 2 * expected_num_elements_per_bucket;
+    uint32_t reservoir_size = 4 * expected_num_elements_per_bucket;
 
     sampling_config = SamplingConfig(/* hashes_per_table = */ hashes_per_table,
                                      /* num_tables = */ num_tables,
