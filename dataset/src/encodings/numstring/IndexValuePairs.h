@@ -1,7 +1,7 @@
 #pragma once
 
 #include "NumstringEncodingInterface.h"
-#include <dataset/src/utils/Conversions.h>
+#include <stdexcept>
 
 namespace thirdai::dataset {
 
@@ -10,20 +10,26 @@ namespace thirdai::dataset {
  */
 struct IndexValuePairs : public NumstringEncoding {
 
-  explicit IndexValuePairs(uint32_t dim, char delim=':'): _dim(dim), _delim(delim) {}
+  explicit IndexValuePairs(uint32_t dim): _dim(dim) {}
 
   /**
    * Encodes a numstring as vector features.
    * This method may update the offset parameter.
    */
-  void encodeNumstring(std::string_view numstr, BuilderVector& shared_feature_vector,
+  void encodeNumstring(const std::string& numstr, BuilderVector& shared_feature_vector,
                        uint32_t& offset) final {
-    size_t delim_pos = numstr.find(_delim);
-    const std::string_view s(numstr.substr(0, delim_pos));
-    uint32_t index = getNumberU32(s);
-    float value;
 
-    shared_feature_vector.addSingleFeature(offset + index, offset + value);
+    char* end;
+    uint32_t index = std::strtoul(numstr.c_str(), &end, 10);
+    float value = std::strtof(end + 1, &end);
+
+    if (index >= _dim) {
+      std::stringstream ss;
+      ss << "[IndexValuePairs] Given dim = " << _dim << " but got index = " << index;
+      throw std::invalid_argument(ss.str());
+    }
+
+    shared_feature_vector.addSingleFeature(offset + index, value);
   }
 
   /**
@@ -42,7 +48,6 @@ struct IndexValuePairs : public NumstringEncoding {
 
  private:
   uint32_t _dim;
-  char _delim;
 };
 
 }  // namespace thirdai::dataset
