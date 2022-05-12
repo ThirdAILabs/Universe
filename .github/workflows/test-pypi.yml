@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Test
-        run: which g++-11 ; which g++
+        run: ln -s /usr/local/bin/g++-11 /usr/bin/g++ ; g++
 
       - name: Test 2
         run: g++
