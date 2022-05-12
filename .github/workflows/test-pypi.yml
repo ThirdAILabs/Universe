@@ -16,7 +16,10 @@ jobs:
 
     steps:
       - name: Test
-        run: g++-11
+        run: alias g++="g++-11"
+
+      - name: Test 2
+        run: g++
 
 
 
