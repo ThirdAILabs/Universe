@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Test
-        run: ln -s /usr/local/bin/g++-11 /usr/bin/g++ ; g++
+        run: sudo ln -s /usr/local/bin/g++-11 /usr/bin/g++ ; g++
 
       - name: Test 2
         run: g++
