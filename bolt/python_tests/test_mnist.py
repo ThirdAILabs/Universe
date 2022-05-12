@@ -93,6 +93,7 @@ def load_mnist():
 
 ACCURACY_THRESHOLD = 0.94
 SPARSE_INFERENCE_ACCURACY_THRESHOLD = 0.9
+SPARSE_INFERENCE_SPARSE_OUTPUT_ACCURACY_THRESHOLD = 0.35
 
 
 @pytest.mark.integration
@@ -169,6 +170,42 @@ def test_mnist_sparse_inference():
     SPARSE_INFERENCE_SPEED_MULTIPLIER = 5
 
     assert (sparse_time * SPARSE_INFERENCE_SPEED_MULTIPLIER) < dense_time
+
+
+# This test will not get great accuracy because the output layer (10 neurons) is too small for good sampling. However this test makes sure we have a non random level of accuarcy, and also tests that the sparse activations returned are corretct.
+@pytest.mark.integration
+def test_sparse_inference_with_sparse_output():
+    network = build_sparse_output_layer_network()
+
+    train, test = load_mnist()
+
+    train_network(network, train_data=train, epochs=10)
+
+    dense_predict, _ = network.predict(
+        test, metrics=["categorical_accuracy"], verbose=False
+    )
+
+    assert dense_predict["categorical_accuracy"] >= ACCURACY_THRESHOLD
+
+    network.enable_sparse_inference()
+
+    train_network(network, train_data=train, epochs=1)
+
+    sparse_predict, active_neurons, activations = network.predict(
+        test, metrics=["categorical_accuracy"], verbose=False
+    )
+
+    assert (
+        sparse_predict["categorical_accuracy"]
+        >= SPARSE_INFERENCE_SPARSE_OUTPUT_ACCURACY_THRESHOLD
+    )
+
+    argmax_indices = np.argmax(activations, axis=1)
+    predictions = active_neurons[np.arange(len(active_neurons)), argmax_indices]
+    labels = load_mnist_labels()
+    acc_computed = np.mean(predictions == labels)
+
+    assert sparse_predict["categorical_accuracy"] == acc_computed
 
 
 @pytest.mark.integration

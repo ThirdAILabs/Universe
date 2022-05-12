@@ -576,4 +576,53 @@ void createBoltSubmodule(py::module_& module) {
            "of a 2D Numpy matrix of floats.");
 }
 
+bool activationAllocationHelper(uint32_t num_samples, uint32_t inference_dim,
+                                uint32_t** active_neurons, float** activations,
+                                bool output_sparse) {
+  try {
+    if (output_sparse) {
+      *active_neurons = new uint32_t[num_samples * inference_dim];
+    }
+    *activations = new float[num_samples * inference_dim];
+    return false;
+  } catch (std::bad_alloc& e) {
+    std::cout << "Out of memory error: cannot allocate " << num_samples << " x "
+              << inference_dim << " array for activations" << std::endl;
+    return true;
+  }
+}
+
+py::tuple activationNumpyArrayHelper(py::dict&& py_metric_data,
+                                     uint32_t num_samples,
+                                     uint32_t inference_dim,
+                                     uint32_t* active_neurons,
+                                     float* activations, bool output_sparse,
+                                     bool alloc_failed) {
+  if (alloc_failed) {
+    return py::make_tuple(py_metric_data, py::none());
+  }
+
+  py::capsule free_when_done_activations(
+      activations, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+  py::array_t<float, py::array::c_style | py::array::forcecast>
+      activations_array({num_samples, inference_dim},
+                        {inference_dim * sizeof(float), sizeof(float)},
+                        activations, free_when_done_activations);
+
+  if (!output_sparse) {
+    return py::make_tuple(py_metric_data, activations_array);
+  }
+
+  py::capsule free_when_done_active_neurons(
+      active_neurons, [](void* ptr) { delete static_cast<uint32_t*>(ptr); });
+
+  py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
+      active_neurons_array({num_samples, inference_dim},
+                           {inference_dim * sizeof(uint32_t), sizeof(uint32_t)},
+                           active_neurons, free_when_done_active_neurons);
+  return py::make_tuple(py_metric_data, active_neurons_array,
+                        activations_array);
+}
+
 }  // namespace thirdai::bolt::python
