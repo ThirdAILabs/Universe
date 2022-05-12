@@ -110,6 +110,9 @@ def test_mnist_sparse_output_layer():
 
     assert acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
+    # This last check is just to make sure that the accuracy computed in c++ matches 
+    # what we can compute here using the returned activations. This verifies that the 
+    # returned activations match and that the metrics are computed correctly.
     predictions = np.argmax(activations, axis=1)
 
     labels = load_mnist_labels()
@@ -132,6 +135,9 @@ def test_mnist_sparse_hidden_layer():
 
     assert acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
+    # This last check is just to make sure that the accuracy computed in c++ matches 
+    # what we can compute here using the returned activations. This verifies that the 
+    # returned activations match and that the metrics are computed correctly.
     predictions = np.argmax(activations, axis=1)
 
     labels = load_mnist_labels()
@@ -172,7 +178,10 @@ def test_mnist_sparse_inference():
     assert (sparse_time * SPARSE_INFERENCE_SPEED_MULTIPLIER) < dense_time
 
 
-# This test will not get great accuracy because the output layer (10 neurons) is too small for good sampling. However this test makes sure we have a non random level of accuarcy, and also tests that the sparse activations returned are corretct.
+# This test will not get great accuracy because the output layer (10 neurons) 
+# is too small for good sampling. 
+# However this test makes sure we have a non random level of accuarcy, and also 
+# tests that the sparse activations returned are corretct.
 @pytest.mark.integration
 def test_sparse_inference_with_sparse_output():
     network = build_sparse_output_layer_network()
@@ -200,8 +209,12 @@ def test_sparse_inference_with_sparse_output():
         >= SPARSE_INFERENCE_SPARSE_OUTPUT_ACCURACY_THRESHOLD
     )
 
+    # This last check is just to make sure that the accuracy computed in c++ matches 
+    # what we can compute here using the returned activations. This verifies that the 
+    # returned activations match and that the metrics are computed correctly.
     argmax_indices = np.argmax(activations, axis=1)
     predictions = active_neurons[np.arange(len(active_neurons)), argmax_indices]
+    
     labels = load_mnist_labels()
     acc_computed = np.mean(predictions == labels)
 
