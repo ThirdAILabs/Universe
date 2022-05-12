@@ -274,7 +274,8 @@ void trainFCN(toml::table& config) {
     if (use_sparse_inference && e == sparse_inference_epoch) {
       network.enableSparseInference();
     }
-    network.predict(test_data, nullptr, nullptr, test_metrics,
+    network.predict(test_data, /* output_active_neurons= */ nullptr,
+                    /* output_activations= */ nullptr, test_metrics,
                     max_test_batches);
   }
 }
@@ -349,7 +350,8 @@ void trainDLRM(toml::table& config) {
   for (uint32_t e = 0; e < epochs; e++) {
     dlrm.train(train_data, *loss_fn, learning_rate, 1, rehash, rebuild,
                train_metrics);
-    dlrm.predict(test_data, nullptr, nullptr, test_metrics);
+    dlrm.predict(test_data, /* output_active_neurons= */ nullptr,
+                 /* output_activations= */ nullptr, test_metrics);
   }
 }
 

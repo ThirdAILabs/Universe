@@ -89,7 +89,8 @@ TEST_F(DLRMTestFixture, NoisyCategoricalFeatures) {
 
   dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 32);
   auto test_metrics =
-      dlrm.predict(dataset, nullptr, nullptr, {"categorical_accuracy"});
+      dlrm.predict(dataset, /* output_active_neurons= */ nullptr,
+                   /* output_activations= */ nullptr, {"categorical_accuracy"});
 
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.9);
 }
@@ -113,7 +114,8 @@ TEST_F(DLRMTestFixture, NoisyDenseFeatures) {
 
   dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 3);
   auto test_metrics =
-      dlrm.predict(dataset, nullptr, nullptr, {"categorical_accuracy"});
+      dlrm.predict(dataset, /* output_active_neurons= */ nullptr,
+                   /* output_activations= */ nullptr, {"categorical_accuracy"});
 
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
@@ -137,7 +139,8 @@ TEST_F(DLRMTestFixture, NoisyDenseAndCategoricalFeatures) {
 
   dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 5);
   auto test_metrics =
-      dlrm.predict(dataset, nullptr, nullptr, {"categorical_accuracy"});
+      dlrm.predict(dataset, /* output_active_neurons= */ nullptr,
+                   /* output_activations= */ nullptr, {"categorical_accuracy"});
 
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.1);
 }

@@ -137,20 +137,20 @@ class PyNetwork final : public FullyConnectedNetwork {
             {getInferenceOutputDim() * sizeof(float), sizeof(float)},
             activations, free_when_done_activations);
 
-    if (output_sparse) {
-      py::capsule free_when_done_active_neurons(active_neurons, [](void* ptr) {
-        delete static_cast<uint32_t*>(ptr);
-      });
-
-      py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
-          active_neurons_array(
-              {num_samples, getInferenceOutputDim()},
-              {getInferenceOutputDim() * sizeof(uint32_t), sizeof(uint32_t)},
-              active_neurons, free_when_done_active_neurons);
-      return py::make_tuple(py_metric_data, active_neurons_array,
-                            activations_array);
+    if (!output_sparse) {
+      return py::make_tuple(py_metric_data, activations_array);
     }
-    return py::make_tuple(py_metric_data, activations_array);
+
+    py::capsule free_when_done_active_neurons(
+        active_neurons, [](void* ptr) { delete static_cast<uint32_t*>(ptr); });
+
+    py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
+        active_neurons_array(
+            {num_samples, getInferenceOutputDim()},
+            {getInferenceOutputDim() * sizeof(uint32_t), sizeof(uint32_t)},
+            active_neurons, free_when_done_active_neurons);
+    return py::make_tuple(py_metric_data, active_neurons_array,
+                          activations_array);
   }
 
   py::tuple predictWithDenseNumpyArray(
@@ -347,21 +347,20 @@ class PyDLRM final : public DLRM {
             {getInferenceOutputDim() * sizeof(float), sizeof(float)},
             activations, free_when_done_activations);
 
-    if (output_sparse) {
-      py::capsule free_when_done_active_neurons(active_neurons, [](void* ptr) {
-        delete static_cast<uint32_t*>(ptr);
-      });
-
-      py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
-          active_neurons_array(
-              {num_samples, getInferenceOutputDim()},
-              {getInferenceOutputDim() * sizeof(uint32_t), sizeof(uint32_t)},
-              active_neurons, free_when_done_active_neurons);
-      return py::make_tuple(py_metric_data, active_neurons_array,
-                            activations_array);
+    if (!output_sparse) {
+      return py::make_tuple(py_metric_data, activations_array);
     }
 
-    return py::make_tuple(py_metric_data, activations_array);
+    py::capsule free_when_done_active_neurons(
+        active_neurons, [](void* ptr) { delete static_cast<uint32_t*>(ptr); });
+
+    py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
+        active_neurons_array(
+            {num_samples, getInferenceOutputDim()},
+            {getInferenceOutputDim() * sizeof(uint32_t), sizeof(uint32_t)},
+            active_neurons, free_when_done_active_neurons);
+    return py::make_tuple(py_metric_data, active_neurons_array,
+                          activations_array);
   }
 };
 
