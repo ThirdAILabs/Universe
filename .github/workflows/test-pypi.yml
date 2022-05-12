@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Test
-        run: shopt -s expand_aliases ; alias g++="g++-11"
+        run: shopt -s expand_aliases ; alias g++="g++-11" ; g++
 
       - name: Test 2
         run: g++
