@@ -68,17 +68,30 @@ def create_fully_connected_layer_configs(
 ) -> List[bolt.FullyConnected]:
     layers = []
     for config in configs:
-        layer = bolt.FullyConnected(
-            dim=config.get("dim"),
-            load_factor=config.get("sparsity", 1.0),
-            activation_function=bolt.getActivationFunction(config.get("activation")),
-            sampling_config=bolt.SamplingConfig(
-                hashes_per_table=config.get("hashes_per_table", 0),
-                num_tables=config.get("num_tables", 0),
-                range_pow=config.get("range_pow", 0),
-                reservoir_size=config.get("reservoir_size", 128),
-            ),
-        )
+
+        if config.get("use_default_sampling", False):
+            layer = bolt.FullyConnected(
+                dim=config.get("dim"),
+                load_factor=config.get("sparsity", 1.0),
+                activation_function=bolt.getActivationFunction(
+                    config.get("activation")
+                ),
+            )
+        else:
+            layer = bolt.FullyConnected(
+                dim=config.get("dim"),
+                load_factor=config.get("sparsity", 1.0),
+                activation_function=bolt.getActivationFunction(
+                    config.get("activation")
+                ),
+                sampling_config=bolt.SamplingConfig(
+                    hashes_per_table=config.get("hashes_per_table", 0),
+                    num_tables=config.get("num_tables", 0),
+                    range_pow=config.get("range_pow", 0),
+                    reservoir_size=config.get("reservoir_size", 128),
+                ),
+            )
+
         layers.append(layer)
     return layers
 

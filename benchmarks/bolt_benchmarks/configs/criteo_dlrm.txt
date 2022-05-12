@@ -26,10 +26,11 @@ log_embedding_block_size = 10
 dim = 1000
 activation = 'ReLU'
 sparsity = 0.2
-hashes_per_table = 3
-num_tables = 128
-reservoir_size = 10
-range_pow = 9
+use_default_sampling = true
+# hashes_per_table = 3
+# num_tables = 128
+# reservoir_size = 10
+# range_pow = 9
 
 [[bottom_mlp_layers]]
 dim = 100
@@ -43,10 +44,11 @@ activation = "ReLU"
 dim = 1000
 activation = 'ReLU'
 sparsity = 0.2
-hashes_per_table = 3
-num_tables = 128
-reservoir_size = 10
-range_pow = 9
+use_default_sampling = true
+# hashes_per_table = 3
+# num_tables = 128
+# reservoir_size = 10
+# range_pow = 9
 
 [[top_mlp_layers]]
 dim = 2
