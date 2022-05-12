@@ -53,7 +53,7 @@ class CMakeBuild(build_ext):
         ]
         build_args = []
 
-        build_args += [f"-j{num_jobs}", "--verbose"]
+        build_args += [f"-j{num_jobs}"]
         cmake_args += [f'"-DFEATURE_FLAGS={feature_flags}"']
 
         if not os.path.exists(build_dir):
@@ -68,7 +68,7 @@ class CMakeBuild(build_ext):
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="thirdai",
-    version="0.1.2",
+    version="0.1.3",
     author="ThirdAI",
     author_email="contact@thirdai.com",
     description="A faster cpu machine learning library",
@@ -77,7 +77,7 @@ setup(
       accelerate inference and training. See https://thirdai.com for more 
       details.
     """,
-    license_files = ('LICENSE.txt',),
+    license_files=("LICENSE.txt",),
     ext_modules=[CMakeExtension("thirdai._thirdai")],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,

@@ -1,10 +1,18 @@
 name: Upload to Test Pypi
 
+# Run on pushes and releases. The actual upload will only happen on a 
+# release.
+# Note this action does not ever upload to the main Pypi repo. For now, do that
+# by downloading the build artifacts and doing it manually. See 
+# https://www.notion.so/Deploy-our-package-to-pypi-60d3c539e4fd4250897af043a329d08f
+# for more details.
 on: 
-  # TODO(josh): Remove this before merging, for now just gets this action to run 
-  pull_request:
+  push: 
     branches: [main]
-  workflow_dispatch:
+  release:
+    types:
+      - published
+
 
 jobs:
   build_wheels:
@@ -38,6 +46,7 @@ jobs:
     name: Upload to test pypi
     needs: [build_wheels]
     runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published'
 
     steps:
     - uses: actions/setup-python@v2
