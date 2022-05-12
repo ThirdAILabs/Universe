@@ -27,6 +27,7 @@ jobs:
         env:
           CIBW_ARCHS_MACOS: arm64
           CIBW_BEFORE_ALL_MACOS: ln -s /usr/local/bin/g++-11 /usr/local/bin/g++
+          CIBW_BUILD_VERBOSITY: 3
 
       - name: Upload wheels
         uses: actions/upload-artifact@v2

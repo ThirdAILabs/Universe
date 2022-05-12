@@ -53,7 +53,7 @@ class CMakeBuild(build_ext):
         ]
         build_args = []
 
-        build_args += [f"-j{num_jobs}"]
+        build_args += [f"-j{num_jobs}", "VERBOSE=1"]
         cmake_args += [f'"-DFEATURE_FLAGS={feature_flags}"']
 
         if not os.path.exists(build_dir):
