@@ -24,9 +24,19 @@ def train_simple_bolt_model(examples, labels):
         epochs=epochs,
         verbose=False,
     )
+    print(labels)
     acc, _ = network.predict(
         examples, labels, batch_size, ["categorical_accuracy"], verbose=False
     )
+
+    # Check predict function without labels
+    metrics, activations = network.predict(examples, None, batch_size,  [
+                                           "categorical_accuracy"], verbose=False)
+    assert len(metrics) == 1
+
+    print(labels)
+    acc_computed = np.mean(np.argmax(activations, axis=1) == labels)
+    assert acc_computed == acc["categorical_accuracy"]
 
     return acc["categorical_accuracy"]
 
@@ -71,7 +81,30 @@ def train_sparse_bolt_model(
         ["categorical_accuracy"],
         verbose=False,
     )
-    ##
+
+    # Check predict function without labels
+    metrics, activations = network.predict(
+        x_idxs,
+        x_vals,
+        x_offsets,
+        None,
+        None,
+        None,
+        batch_size,
+        ["categorical_accuracy"],
+        verbose=False,
+    )
+    assert len(metrics) == 1
+
+    predictions = np.argmax(activations, axis=1)
+    correct = 0
+    for i in range(len(predictions)):
+        pred = predictions[i]
+        if pred == y_idxs[i, 0] or pred == y_idxs[i, 1]:
+            correct += 1
+    acc_computed = correct / len(predictions)
+    assert acc["categorical_accuracy"] == acc_computed
+
     return acc["categorical_accuracy"]
 
 
@@ -84,6 +117,7 @@ def test_read_easy_mock_data():
     n_samples = 1000
     possible_one_hot_encodings = np.eye(n_classes)
     labels = np.random.choice(n_classes, size=n_samples)
+    print(labels)
     examples = possible_one_hot_encodings[labels]
     noise = np.random.normal(0, 0.1, examples.shape)
     examples = examples + noise
