@@ -2,10 +2,16 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/batch_types/BoltInputBatch.h>
 #include <chrono>
+#include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/core/BatchProcessor.h>
 
 namespace thirdai::dataset::python {
 
 void createDatasetSubmodule(py::module_& module) {
+  // Separate submodule for bindings that we don't want to expose to users.
+  auto internal_dataset_submodule = module.def_submodule("dataset_internal");
+
+  // Everything in this submodule is exposed to users.
   auto dataset_submodule = module.def_submodule("dataset");
 
   py::class_<BoltVector>(dataset_submodule, "BoltVector")
@@ -20,6 +26,48 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__str__", &BoltInputBatch::toString)
       .def("__repr__", &BoltInputBatch::toString)
       .def("size", &BoltInputBatch::getBatchSize);
+  
+  py::class_<Block, std::shared_ptr<Block>>(internal_dataset_submodule, "Block",
+      "Block abstract class.\n\n"
+      "A block accepts an input sample in the form of a sequence of strings "
+      "then encodes this sequence as a vector.")
+      .def("feature_dim", &Block::featureDim, 
+           "Returns the dimension of the vector encoding.")
+      .def("is_dense", &Block::isDense,
+           "True if the block produces dense features, False otherwise.");
+    
+  py::class_<BatchProcessor>(internal_dataset_submodule, "BatchProcessor",
+      "Encodes input samples – each represented by a sequence of strings – "
+      "as input and target BoltVectors according to the given blocks. "
+      "It processes these sequences in batches.\n\n"
+      "This is not consumer-facing.")
+      .def(py::init<std::vector<std::shared_ptr<Block>>&, bool,
+                    std::vector<std::shared_ptr<Block>>&, bool, uint32_t>(),
+           py::arg("input_blocks"), py::arg("target_blocks"), 
+           py::arg("output_batch_size"),
+           "Constructor\n\n"
+           "Arguments:\n"
+           " * input_blocks: List of Blocks - Blocks that encode input samples "
+           "as input vectors.\n"
+           " * target_blocks: List of Blocks - Blocks that encode input samples "
+           "as target vectors.\n"
+           " * output_batch_size: Int (positive) - Size of batches in the produced "
+           "dataset.")
+      .def("process_batch", &BatchProcessor::processBatch, py::arg("row_batch"),
+           "Consumes a batch of input samples and encodes them as vectors.\n\n"
+           "Arguments:\n"
+           " * row_batch: List of lists of strings - We expect to read tabular data "
+           "where each row is a sample, and each sample has many columns. "
+           "row_batch represents a batch of such samples.")
+      .def("export_in_memory_dataset", &BatchProcessor::exportInMemoryDataset,
+           py::arg("shuffle") = false, py::arg("shuffle_seed") = 0,
+           "Produces an InMemoryDataset of BoltInputBatches containing the "
+           "vectors processed so far. This method can optionally produce a "
+           "shuffled dataset.\n\n"
+           "Arguments:\n"
+           " * shuffle: Boolean (Optional) - The dataset will be shuffled if True.\n"
+           " * shuffle_seed: Int (Optional) - The seed for the RNG for shuffling the "
+           "dataset.");
 
   py::class_<InMemoryDataset<SparseBatch>> _imsd_(dataset_submodule,
                                                   "InMemorySparseDataset");
