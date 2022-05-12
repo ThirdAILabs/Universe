@@ -77,6 +77,7 @@ setup(
       accelerate inference and training. See https://thirdai.com for more 
       details.
     """,
+    license_files = ('LICENSE.txt',),
     ext_modules=[CMakeExtension("thirdai._thirdai")],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
