@@ -27,16 +27,18 @@ namespace thirdai::bolt::python {
 
 void createBoltSubmodule(py::module_& module);
 
-bool activationAllocationHelper(uint32_t num_samples, uint32_t inference_dim,
-                                uint32_t** active_neurons, float** activations,
-                                bool output_sparse);
+// Returns true on success and false on allocation failure.
+bool allocateActivations(uint32_t num_samples, uint32_t inference_dim,
+                         uint32_t** active_neurons, float** activations,
+                         bool output_sparse);
 
-py::tuple activationNumpyArrayHelper(py::dict&& py_metric_data,
-                                     uint32_t num_samples,
-                                     uint32_t inference_dim,
-                                     uint32_t* active_neurons,
-                                     float* activations, bool output_sparse,
-                                     bool alloc_failed);
+// Takes in the activations arrays (if they were allocated) and returns the
+// correct python tuple containing the activations (and active neurons if
+// sparse) and the metrics computed.
+py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
+                               uint32_t inference_dim, uint32_t* active_neurons,
+                               float* activations, bool output_sparse,
+                               bool alloc_success);
 
 class PyNetwork final : public FullyConnectedNetwork {
  public:
@@ -117,21 +119,26 @@ class PyNetwork final : public FullyConnectedNetwork {
     uint32_t num_samples = test_data.len();
 
     bool output_sparse = getInferenceOutputDim() < getOutputDim();
+
+    // Declare pointers to memory for activations and active neurons, if the
+    // allocation succeeds this will be assigned valid addresses by the
+    // allocateActivations function. Otherwise the nullptr will indicate that
+    // activations are not being computed.
     uint32_t* active_neurons = nullptr;
     float* activations = nullptr;
 
-    bool alloc_failed = activationAllocationHelper(
-        num_samples, getInferenceOutputDim(), &active_neurons, &activations,
-        output_sparse);
+    bool alloc_success =
+        allocateActivations(num_samples, getInferenceOutputDim(),
+                            &active_neurons, &activations, output_sparse);
 
     auto metric_data = FullyConnectedNetwork::predict(
         test_data, active_neurons, activations, metrics, verbose, batch_limit);
 
     py::dict py_metric_data = py::cast(metric_data);
 
-    return activationNumpyArrayHelper(std::move(py_metric_data), num_samples,
-                                      getInferenceOutputDim(), active_neurons,
-                                      activations, output_sparse, alloc_failed);
+    return constructNumpyArrays(std::move(py_metric_data), num_samples,
+                                getInferenceOutputDim(), active_neurons,
+                                activations, output_sparse, alloc_success);
   }
 
   py::tuple predictWithDenseNumpyArray(
@@ -298,20 +305,25 @@ class PyDLRM final : public DLRM {
     uint32_t num_samples = test_data.len();
 
     bool output_sparse = getInferenceOutputDim() < getOutputDim();
+
+    // Declare pointers to memory for activations and active neurons, if the
+    // allocation succeeds this will be assigned valid addresses by the
+    // allocateActivations function. Otherwise the nullptr will indicate that
+    // activations are not being computed.
     uint32_t* active_neurons = nullptr;
     float* activations = nullptr;
 
-    bool alloc_failed = activationAllocationHelper(
-        num_samples, getInferenceOutputDim(), &active_neurons, &activations,
-        output_sparse);
+    bool alloc_success =
+        allocateActivations(num_samples, getInferenceOutputDim(),
+                            &active_neurons, &activations, output_sparse);
 
     auto metric_data = DLRM::predict(test_data, active_neurons, activations,
                                      metrics, verbose, batch_limit);
     py::dict py_metric_data = py::cast(metric_data);
 
-    return activationNumpyArrayHelper(std::move(py_metric_data), num_samples,
-                                      getInferenceOutputDim(), active_neurons,
-                                      activations, output_sparse, alloc_failed);
+    return constructNumpyArrays(std::move(py_metric_data), num_samples,
+                                getInferenceOutputDim(), active_neurons,
+                                activations, output_sparse, alloc_success);
   }
 };
 

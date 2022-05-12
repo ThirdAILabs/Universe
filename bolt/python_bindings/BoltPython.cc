@@ -576,32 +576,31 @@ void createBoltSubmodule(py::module_& module) {
            "of a 2D Numpy matrix of floats.");
 }
 
-bool activationAllocationHelper(uint32_t num_samples, uint32_t inference_dim,
-                                uint32_t** active_neurons, float** activations,
-                                bool output_sparse) {
+bool allocateActivations(uint32_t num_samples, uint32_t inference_dim,
+                         uint32_t** active_neurons, float** activations,
+                         bool output_sparse) {
   try {
     if (output_sparse) {
       *active_neurons = new uint32_t[num_samples * inference_dim];
     }
     *activations = new float[num_samples * inference_dim];
-    return false;
+    return true;
   } catch (std::bad_alloc& e) {
     std::cout << "Out of memory error: cannot allocate " << num_samples << " x "
               << inference_dim << " array for activations" << std::endl;
-    return true;
+    return false;
   }
 }
 
-py::tuple activationNumpyArrayHelper(py::dict&& py_metric_data,
-                                     uint32_t num_samples,
-                                     uint32_t inference_dim,
-                                     uint32_t* active_neurons,
-                                     float* activations, bool output_sparse,
-                                     bool alloc_failed) {
-  if (alloc_failed) {
+py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
+                               uint32_t inference_dim, uint32_t* active_neurons,
+                               float* activations, bool output_sparse,
+                               bool alloc_success) {
+  if (!alloc_success) {
     return py::make_tuple(py_metric_data, py::none());
   }
 
+  // Deallocates the memory for the array since we are allocating it ourselves.
   py::capsule free_when_done_activations(
       activations, [](void* ptr) { delete static_cast<float*>(ptr); });
 
@@ -614,6 +613,7 @@ py::tuple activationNumpyArrayHelper(py::dict&& py_metric_data,
     return py::make_tuple(py_metric_data, activations_array);
   }
 
+  // Deallocates the memory for the array since we are allocating it ourselves.
   py::capsule free_when_done_active_neurons(
       active_neurons, [](void* ptr) { delete static_cast<uint32_t*>(ptr); });
 
