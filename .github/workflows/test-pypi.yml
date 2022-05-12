@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Test
-        run: which g++ ; which g++-10 ; which g++-11; g++ ; g++-10; g++-11
+        run: g++-11
 
 
 
