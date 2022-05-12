@@ -108,6 +108,7 @@ class PyNetwork final : public FullyConnectedNetwork {
     bool output_sparse = getInferenceOutputDim() < getOutputDim();
     uint32_t* active_neurons = nullptr;
     float* activations = nullptr;
+    bool alloc_failed = false;
     try {
       if (output_sparse) {
         active_neurons = new uint32_t[num_samples * getInferenceOutputDim()];
@@ -117,6 +118,7 @@ class PyNetwork final : public FullyConnectedNetwork {
       std::cout << "Out of memory error: cannot allocate " << num_samples
                 << " x " << getInferenceOutputDim() << " array for activations"
                 << std::endl;
+      alloc_failed = true;
     }
 
     auto metric_data = FullyConnectedNetwork::predict(
@@ -124,7 +126,7 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     py::dict py_metric_data = py::cast(metric_data);
 
-    if (activations == nullptr) {
+    if (alloc_failed) {
       return py::make_tuple(py_metric_data, py::none());
     }
 
@@ -319,6 +321,7 @@ class PyDLRM final : public DLRM {
     bool output_sparse = getInferenceOutputDim() < getOutputDim();
     uint32_t* active_neurons = nullptr;
     float* activations = nullptr;
+    bool alloc_failed = false;
     try {
       if (getInferenceOutputDim() < getOutputDim()) {
         active_neurons = new uint32_t[num_samples * getInferenceOutputDim()];
@@ -328,13 +331,14 @@ class PyDLRM final : public DLRM {
       std::cout << "Out of memory error: cannot allocate " << num_samples
                 << " x " << getInferenceOutputDim() << " array for activations"
                 << std::endl;
+      alloc_failed = true;
     }
 
     auto metric_data = DLRM::predict(test_data, active_neurons, activations,
                                      metrics, verbose, batch_limit);
     py::dict py_metric_data = py::cast(metric_data);
 
-    if (activations == nullptr) {
+    if (alloc_failed) {
       return py::make_tuple(py_metric_data, py::none());
     }
 
