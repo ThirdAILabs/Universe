@@ -13,6 +13,7 @@ namespace thirdai::dataset {
  * ExtendableVector.
  */
 struct Block;
+class ExtendableVectorTest;
 
 /**
  * Extendable vector abstract class.
@@ -22,6 +23,7 @@ struct Block;
  */
 struct ExtendableVector {
   friend Block;
+  friend ExtendableVectorTest;
 
  protected:
   /**
