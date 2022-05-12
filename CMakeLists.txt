@@ -80,7 +80,7 @@ if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
 endif()
 
 message("====================================")
-message("$CMAKE_OSX_ARCHITECTURES")
+message("${CMAKE_OSX_ARCHITECTURES}")
 message("====================================")
 
 
