@@ -54,7 +54,7 @@ class CMakeBuild(build_ext):
         build_args = []
 
         build_args += [f"-j{num_jobs}", "--verbose"]
-        cmake_args += [f'"-DFEATURE_FLAGS={feature_flags}"']
+        cmake_args += [f'"-DFEATURE_FLAGS={feature_flags}"', '-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"']
 
         if not os.path.exists(build_dir):
             os.makedirs(build_dir)
