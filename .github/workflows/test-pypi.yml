@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Test
-        run: sudo ln -s /usr/local/bin/g++-11 /usr/bin/g++ ; g++
+        run: echo $PATH ; ln -s /usr/local/bin/g++-11 /usr/local/bin/g++ ; g++
 
       - name: Test 2
         run: g++
