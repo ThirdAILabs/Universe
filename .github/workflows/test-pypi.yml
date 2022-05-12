@@ -23,6 +23,8 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.5.0
         env:
+          # TODO(josh): Get cross compiling working to build more types of wheels
+          CIBW_BUILD: "*macosx_x86_64 *manylinux_x86_64"
           CIBW_BEFORE_ALL_MACOS: ln -s /usr/local/bin/g++-11 /usr/local/bin/g++
 
 
