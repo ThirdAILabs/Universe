@@ -181,11 +181,11 @@ class PyNetwork final : public FullyConnectedNetwork {
           x_vals,
       const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           x_offsets,
-      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           y_idxs,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           y_vals,
-      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           y_offsets,
       uint32_t batch_size, const std::vector<std::string>& metrics,
       bool verbose, uint32_t batch_limit) {
