@@ -94,7 +94,7 @@ def train_sparse_bolt_model(
     correct = 0
     for i in range(len(predictions)):
         pred = predictions[i]
-        if pred == y_idxs[2*i] or pred == y_idxs[2*i+1]:
+        if pred == y_idxs[2 * i] or pred == y_idxs[2 * i + 1]:
             correct += 1
     acc_computed = correct / len(predictions)
     assert acc["categorical_accuracy"] == acc_computed
