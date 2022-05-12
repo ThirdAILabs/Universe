@@ -351,7 +351,10 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
 InMemoryDataset<BoltInputBatch> denseBoltDatasetFromNumpy(
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
         examples,
-    const py::object& labels, uint32_t batch_size) {
+    const std::optional<
+        py::array_t<uint32_t, py::array::c_style | py::array::forcecast>>&
+        labels,
+    uint32_t batch_size) {
   // Get information from examples
   const py::buffer_info examples_buf = examples.request();
   const auto examples_shape = examples_buf.shape;
@@ -365,16 +368,11 @@ InMemoryDataset<BoltInputBatch> denseBoltDatasetFromNumpy(
   uint64_t dimension = static_cast<uint64_t>(examples_shape.at(1));
   float* examples_raw_data = static_cast<float*>(examples_buf.ptr);
 
-  bool contains_labels = !labels.is_none();
+  bool contains_labels = labels.has_value();
   // Get information from labels
   uint32_t* labels_raw_data = nullptr;
   if (contains_labels) {
-    std::cout << py::str(labels.get_type()) << std::endl;
-
-    py::array_t<uint32_t, py::array::c_style | py::array::forcecast> new_labels(
-        labels);
-
-    const py::buffer_info labels_buf = new_labels.request();
+    const py::buffer_info labels_buf = labels->request();
 
     const auto labels_shape = labels_buf.shape;
     if (labels_shape.size() != 1) {
@@ -393,7 +391,6 @@ InMemoryDataset<BoltInputBatch> denseBoltDatasetFromNumpy(
 
   // Build batches
 
-  std::cout << "Start: " << labels_raw_data << std::endl;
   uint64_t num_batches = (num_examples + batch_size - 1) / batch_size;
   std::vector<BoltInputBatch> batches;
 
@@ -407,8 +404,6 @@ InMemoryDataset<BoltInputBatch> denseBoltDatasetFromNumpy(
       batch_vectors.emplace_back(
           nullptr, examples_raw_data + dimension * vec_idx, nullptr, dimension);
       if (contains_labels) {
-        std::cout << "Label[" << vec_idx << "]: " << labels_raw_data[vec_idx]
-                  << std::endl;
         batch_labels.push_back(
             BoltVector::makeSparseVector({labels_raw_data[vec_idx]}, {1.0}));
       } else {
@@ -421,7 +416,6 @@ InMemoryDataset<BoltInputBatch> denseBoltDatasetFromNumpy(
 
     batches.emplace_back(std::move(batch_vectors), std::move(batch_labels));
   }
-  std::cout << "End" << std::endl;
 
   return InMemoryDataset(std::move(batches), num_examples);
 }
@@ -501,19 +495,17 @@ InMemoryDataset<BoltInputBatch> sparseBoltDatasetFromNumpy(
     const py::array_t<float, py::array::c_style | py::array::forcecast>& x_vals,
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
         x_offsets,
-    const py::object& y_idxs, const py::object& y_vals,
-    const py::object& y_offsets, uint32_t batch_size) {
+    const std::optional<
+        py::array_t<uint32_t, py::array::c_style | py::array::forcecast>>&
+        y_idxs,
+    const std::optional<
+        py::array_t<float, py::array::c_style | py::array::forcecast>>& y_vals,
+    const std::optional<
+        py::array_t<uint32_t, py::array::c_style | py::array::forcecast>>&
+        y_offsets,
+    uint32_t batch_size) {
   // Get information from examples
-  bool all_none = y_idxs.is_none() && y_vals.is_none() && y_offsets.is_none();
-  bool all_objs =
-      !y_idxs.is_none() && !y_vals.is_none() && !y_offsets.is_none();
-  if (!all_none && !all_objs) {
-    throw std::invalid_argument(
-        "y_idxs, y_vals, y_offsets must either all be None to indicate no "
-        "labels are provided, or must all be the appropriate numpy arrays.");
-  }
-
-  bool contains_labels = !y_idxs.is_none();
+  bool contains_labels = y_idxs.has_value();
 
   const py::buffer_info x_idxs_buf = x_idxs.request();
   const py::buffer_info x_vals_buf = x_vals.request();
@@ -528,41 +520,26 @@ InMemoryDataset<BoltInputBatch> sparseBoltDatasetFromNumpy(
   float* y_vals_raw_data = nullptr;
   uint32_t* y_offsets_raw_data = nullptr;
 
-  uint64_t num_labels = 0;
-
   if (contains_labels) {
-    const py::buffer_info y_idxs_buf =
-        y_idxs
-            .cast<py::array_t<uint32_t,
-                              py::array::c_style | py::array::forcecast>>()
-            .request();
-    const py::buffer_info y_vals_buf =
-        y_vals
-            .cast<py::array_t<uint32_t,
-                              py::array::c_style | py::array::forcecast>>()
-            .request();
-    const py::buffer_info y_offsets_buf =
-        y_offsets
-            .cast<py::array_t<uint32_t,
-                              py::array::c_style | py::array::forcecast>>()
-            .request();
+    const py::buffer_info y_idxs_buf = y_idxs->request();
+    const py::buffer_info y_vals_buf = y_vals->request();
+    const py::buffer_info y_offsets_buf = y_offsets->request();
     y_idxs_raw_data = static_cast<uint32_t*>(y_idxs_buf.ptr);
     y_vals_raw_data = static_cast<float*>(y_vals_buf.ptr);
     y_offsets_raw_data = static_cast<uint32_t*>(y_offsets_buf.ptr);
 
-    num_labels = static_cast<uint64_t>(y_offsets_buf.shape.at(0) - 1);
-  }
-
-  // Get information from labels
-  if (num_labels != num_examples) {
-    throw std::invalid_argument(
-        "The size of the label array must be equal to the number of rows in "
-        "the examples array.");
+    uint64_t num_labels = static_cast<uint64_t>(y_offsets_buf.shape.at(0) - 1);
+    // Get information from labels
+    if (num_labels != num_examples) {
+      throw std::invalid_argument(
+          "The size of the label array must be equal to the number of rows in "
+          "the examples array.");
+    }
   }
 
   // Build batches
 
-  uint64_t num_batches = (num_labels + batch_size - 1) / batch_size;
+  uint64_t num_batches = (num_examples + batch_size - 1) / batch_size;
   std::vector<BoltInputBatch> batches;
 
   for (uint32_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {

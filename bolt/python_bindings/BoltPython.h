@@ -145,34 +145,33 @@ class PyNetwork final : public FullyConnectedNetwork {
   py::tuple predictWithDenseNumpyArray(
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           examples,
-      const py::object& labels, uint32_t batch_size,
-      const std::vector<std::string>& metrics, bool verbose,
-      uint32_t batch_limit) {
+      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+          labels,
+      uint32_t batch_size, const std::vector<std::string>& metrics,
+      bool verbose, uint32_t batch_limit) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
-    std::cout << "PREDICTION" << std::endl;
+
     auto data = thirdai::dataset::python::denseBoltDatasetFromNumpy(
         examples, labels, batch_size);
 
-    // std::cout << "---------------------------" << std::endl;
-    // for (const auto& batch : data) {
-    //   for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
-    //     std::cout << batch.labels(i) << std::endl;
-    //   }
-    // }
-    // std::cout << "---------------------------" << std::endl;
-
-    if (labels.is_none()) {
-      if (!metrics.empty()) {
-        std::cout << "Ignoring proided metrics, please provide labels in order "
-                     "to use metrics."
-                  << std::endl;
-      }
-      // If there are no labels then we avoid computing any metrics.
-      return predict(data, {}, verbose, batch_limit);
-    }
     return predict(data, metrics, verbose, batch_limit);
+  }
+
+  py::tuple inferenceWithDenseNumpyArray(
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          examples,
+      uint32_t batch_size, bool verbose, uint32_t batch_limit) {
+    // Redirect to python output.
+    py::scoped_ostream_redirect stream(
+        std::cout, py::module_::import("sys").attr("stdout"));
+
+    auto data = thirdai::dataset::python::denseBoltDatasetFromNumpy(
+        examples, std::nullopt, batch_size);
+
+    // If there are no labels then we avoid computing any metrics.
+    return predict(data, {}, verbose, batch_limit);
   }
 
   py::tuple predictWithSparseNumpyArray(
@@ -182,27 +181,40 @@ class PyNetwork final : public FullyConnectedNetwork {
           x_vals,
       const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           x_offsets,
-      const py::object& y_idxs, const py::object& y_vals,
-      const py::object& y_offsets, uint32_t batch_size,
-      const std::vector<std::string>& metrics, bool verbose,
-      uint32_t batch_limit) {
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          y_idxs,
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          y_vals,
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          y_offsets,
+      uint32_t batch_size, const std::vector<std::string>& metrics,
+      bool verbose, uint32_t batch_limit) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
     auto data = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
         x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, batch_size);
 
-    if (y_idxs.is_none()) {
-      if (!metrics.empty()) {
-        std::cout << "Ignoring proided metrics, please provide labels in order "
-                     "to use metrics."
-                  << std::endl;
-      }
-      // If there are no labels then we avoid computing any metrics.
-      return predict(data, {}, verbose, batch_limit);
-    }
-
     return predict(data, metrics, verbose, batch_limit);
+  }
+
+  py::tuple inferenceWithSparseNumpyArray(
+      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+          x_idxs,
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          x_vals,
+      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+          x_offsets,
+      uint32_t batch_size, bool verbose, uint32_t batch_limit) {
+    // Redirect to python output.
+    py::scoped_ostream_redirect stream(
+        std::cout, py::module_::import("sys").attr("stdout"));
+    auto data = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
+        x_idxs, x_vals, x_offsets, std::nullopt, std::nullopt, std::nullopt,
+        batch_size);
+
+    // If there are no labels then we avoid computing any metrics.
+    return predict(data, {}, verbose, batch_limit);
   }
 
   void save(const std::string& filename) {

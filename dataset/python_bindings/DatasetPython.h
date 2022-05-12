@@ -73,7 +73,10 @@ InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
 InMemoryDataset<BoltInputBatch> denseBoltDatasetFromNumpy(
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
         examples,
-    const py::object& labels, uint32_t batch_size);
+    const std::optional<
+        py::array_t<uint32_t, py::array::c_style | py::array::forcecast>>&
+        labels,
+    uint32_t batch_size);
 
 InMemoryDataset<BoltInputBatch> sparseBoltDatasetFromNumpy(
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
@@ -81,8 +84,14 @@ InMemoryDataset<BoltInputBatch> sparseBoltDatasetFromNumpy(
     const py::array_t<float, py::array::c_style | py::array::forcecast>& x_vals,
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
         x_offsets,
-    const py::object& y_idxs, const py::object& y_vals,
-    const py::object& y_offsets, uint32_t batch_size);
+    const std::optional<
+        py::array_t<uint32_t, py::array::c_style | py::array::forcecast>>&
+        y_idxs,
+    const std::optional<py::array_t<float, py::array::c_style | py::array::forcecast>>& y_vals,
+    const std::optional<
+        py::array_t<uint32_t, py::array::c_style | py::array::forcecast>>&
+        y_offsets,
+    uint32_t batch_size);
 
 /*
  * This function takes a single sentence, and parses it into an sparse

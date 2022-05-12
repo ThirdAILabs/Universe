@@ -408,6 +408,26 @@ void createBoltSubmodule(py::module_& module) {
           "their values "
           "and (1) output vectors (predictions) from the network in the form "
           "of a 2D Numpy matrix of floats.")
+      .def("predict", &PyNetwork::inferenceWithDenseNumpyArray,
+           py::arg("test_examples"), py::arg("batch_size"),
+           py::arg("verbose") = true,
+           py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
+           "Predicts the output given the input vectors and evaluates the "
+           "predictions based on the given metrics.\n"
+           "Arguments:\n"
+           " * test_examples: 2D Numpy matrix of floats - Test examples (input "
+           "vectors).\n"
+           " * batch_size: Int (positive) - Size of training data batches.\n"
+           " * verbose: Boolean - Optional. If set to False, only displays "
+           "progress bar. "
+           "If set to True, prints additional information such as metrics and "
+           "inference times. "
+           "Set to True by default.\n\n"
+
+           "Returns a tuple consisting of (0) a mapping from metric names to "
+           "their values "
+           "and (1) output vectors (predictions) from the network in the form "
+           "of a 2D Numpy matrix of floats.")
       .def(
           "predict", &PyNetwork::predictWithSparseNumpyArray, py::arg("x_idxs"),
           py::arg("x_vals"), py::arg("x_offsets"), py::arg("y_idxs"),
@@ -466,6 +486,56 @@ void createBoltSubmodule(py::module_& module) {
           "their values "
           "and (1) output vectors (predictions) from the network in the form "
           "of a 2D Numpy matrix of floats.")
+      .def("predict", &PyNetwork::inferenceWithSparseNumpyArray,
+           py::arg("x_idxs"), py::arg("x_vals"), py::arg("x_offsets"),
+           py::arg("batch_size"), py::arg("verbose") = true,
+           py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
+           "Predicts the output given the input vectors and evaluates the "
+           "predictions based on the given metrics.\n\n"
+
+           "Suppose we have N sparse vectors of floats. We represent this "
+           "using three arrays:\n"
+           " * Indices: 1D Numpy array of integers - Indices of nonzero "
+           "elements in each vector, concatenated. "
+           "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
+           "0.0, 4.0}, the corresponding "
+           "'indices' array is [1, 3, 3]\n"
+           " * Values: 1D Numpy array of floats - The values of nonzero "
+           "elements in each vector, concatenated. "
+           "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
+           "0.0, 4.0}, the corresponding "
+           "'values' array is [1.5, 9.0, 4.0]\n"
+           " * Offsets: 1D Numpy array of integers - The i-th element of this "
+           "array is the i - 1-th element of the array plus the number of "
+           "nonzero "
+           "elements in the i - 1-th vector. The first element is 0. "
+           "Effectively, this array maps each vector to the corresponding "
+           "entries in 'indices' and 'values'. "
+           "Specifically, offsets[i] is the starting position of vector i in "
+           "the 'indices' and 'values' arrays, "
+           "while offsets[i] is the stopping position (exclusive). "
+           "This means that indices[offsets[i], offsets[i + 1]] contain the "
+           "indices of nonzero elements of "
+           "vector i, and values[offsets[i], offsets[i + 1]] contain the "
+           "values of nonzero elements of vector i. "
+           "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
+           "0.0, 4.0}, the corresponding "
+           "'offsets' array is [0, 2, 3]\n\n"
+
+           "Arguments:\n"
+           " * test_examples: 2D Numpy matrix of floats - Test examples (input "
+           "vectors).\n"
+           " * batch_size: Int (positive) - Size of training data batches.\n"
+           " * verbose: Boolean - Optional. If set to False, only displays "
+           "progress bar. "
+           "If set to True, prints additional information such as metrics and "
+           "inference times. "
+           "Set to True by default.\n\n"
+
+           "Returns a tuple consisting of (0) a mapping from metric names to "
+           "their values "
+           "and (1) output vectors (predictions) from the network in the form "
+           "of a 2D Numpy matrix of floats.")
       .def("enable_sparse_inference", &PyNetwork::enableSparseInference,
            "Enables sparse inference. Freezes smart hash tables. Do not call "
            "this method early on "
