@@ -49,14 +49,6 @@ struct ExtendableVector {
   virtual void addExtensionDenseFeature(float value) = 0;
 
   /**
-   * Given a sequence of possibly-repeating indices,
-   * increment the features of the extension vector at
-   * these indices. Repetitions are summed.
-   */
-  virtual void incrementExtensionAtIndices(std::vector<uint32_t>& indices,
-                                           float inc) = 0;
-
-  /**
    * Converts this vector to a BoltVector.
    */
   virtual bolt::BoltVector toBoltVector() = 0;
