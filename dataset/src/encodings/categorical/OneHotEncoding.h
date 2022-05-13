@@ -9,7 +9,6 @@ namespace thirdai::dataset {
  * One-hot encodes categorical features.
  */
 struct OneHotEncoding : public CategoricalEncoding {
-
   /**
    * Constructor. Accepts the desired dimension of the encoding.
    */

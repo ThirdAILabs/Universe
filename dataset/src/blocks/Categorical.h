@@ -1,19 +1,18 @@
 #pragma once
 
 #include "BlockInterface.h"
+#include <hashing/src/MurmurHash.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/OneHotEncoding.h>
-#include <hashing/src/MurmurHash.h>
 #include <memory>
 
 namespace thirdai::dataset {
 
 /**
- * A block that encodes categorical features (e.g. a numerical ID or an 
+ * A block that encodes categorical features (e.g. a numerical ID or an
  * identification string).
  */
 struct CategoricalBlock : public Block {
-
   /**
    * Constructor.
    *
@@ -21,7 +20,7 @@ struct CategoricalBlock : public Block {
    *   col: int - the column number of the input row containing
    *     the categorical feature to be encoded.
    *   encoding: CategoricalEncoding - the categorical feature encoding model.
-   *   numerical_id: bool - whether the categorical feature is numerical. 
+   *   numerical_id: bool - whether the categorical feature is numerical.
    *     Defaults to true.
    */
   CategoricalBlock(uint32_t col, std::shared_ptr<CategoricalEncoding>& encoding,
@@ -35,7 +34,7 @@ struct CategoricalBlock : public Block {
    *   col: int - the column number of the input row containing
    *     the categorical feature to be encoded.
    *   dim: int - the dimension of the encoding.
-   *   numerical_id: bool - whether the categorical feature is numerical. 
+   *   numerical_id: bool - whether the categorical feature is numerical.
    *     Defaults to true.
    */
   CategoricalBlock(uint32_t col, uint32_t dim, bool numerical_id = true)
@@ -49,8 +48,7 @@ struct CategoricalBlock : public Block {
 
  protected:
   void buildExtension(const std::vector<std::string>& input_row,
-                    ExtendableVector& vec) final {
-    
+                      ExtendableVector& vec) final {
     const std::string& col_str = input_row[_col];
     char* end;
     uint32_t id;
@@ -58,11 +56,11 @@ struct CategoricalBlock : public Block {
     // Get numerical ID of categorical feature.
     // If ID is not originally a number, hash it to get one.
     if (_numerical_id) {
-        id = std::strtoul(col_str.c_str(), &end, 10);
+      id = std::strtoul(col_str.c_str(), &end, 10);
     } else {
-        id = hashing::MurmurHash(col_str.c_str(), col_str.length(), 0);
+      id = hashing::MurmurHash(col_str.c_str(), col_str.length(), 0);
     }
-        
+
     _encoding->encodeCategory(id, vec);
   }
 

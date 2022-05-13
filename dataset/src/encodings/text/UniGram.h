@@ -22,18 +22,20 @@ struct UniGram : public TextEncoding {
   explicit UniGram(uint32_t dim = 100000) : _dim(dim) {}
 
   void encodeText(const std::string& text, ExtendableVector& vec) final {
-    
     // TODO(Geordie): Do we need to make lower case?
     std::string lower_case_text = TextEncodingUtils::makeLowerCase(text);
-    
+
     std::vector<uint32_t> uni_grams;
 
-    TextEncodingUtils::forEachWord(lower_case_text, [&](const char* start_ptr, size_t len) {
-      uint32_t hash = hashing::MurmurHash(start_ptr, len, /* seed = */ 341) % _dim;
-      uni_grams.push_back(hash);
-    });
-    
-    // This deduplication helps to reduce number of entries in the sparse vector.
+    TextEncodingUtils::forEachWord(
+        lower_case_text, [&](const char* start_ptr, size_t len) {
+          uint32_t hash =
+              hashing::MurmurHash(start_ptr, len, /* seed = */ 341) % _dim;
+          uni_grams.push_back(hash);
+        });
+
+    // This deduplication helps to reduce number of entries in the sparse
+    // vector.
     TextEncodingUtils::sumRepeatedIndices(uni_grams, 1.0, vec);
   }
 

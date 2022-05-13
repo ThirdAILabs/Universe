@@ -110,15 +110,13 @@ class Loader:
         return self  ### Returns self so we can chain the set() method calls.
 
     def input_dim(self):
-        """Returns dimension of input vectors.
-        """
+        """Returns dimension of input vectors."""
         if self._schema is not None:
             return self._schema.input_dim()
         return 0
 
     def target_dim(self):
-        """Returns dimension of target vectors.
-        """
+        """Returns dimension of target vectors."""
         if self._schema is not None:
             return self._schema.target_dim()
         return 0

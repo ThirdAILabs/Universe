@@ -10,7 +10,7 @@ namespace thirdai::dataset {
  */
 struct CategoricalEncoding {
   /**
-   * Conceptually, encodes an categorical feature represented by an ID 
+   * Conceptually, encodes an categorical feature represented by an ID
    * as a vector and extends the given vector with this encoding.
    */
   virtual void encodeCategory(uint32_t id, ExtendableVector& vec) = 0;

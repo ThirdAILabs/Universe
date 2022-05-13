@@ -1,8 +1,8 @@
 #pragma once
 
 #include "BlockInterface.h"
-#include <dataset/src/encodings/text/UniGram.h>
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
+#include <dataset/src/encodings/text/UniGram.h>
 #include <memory>
 
 namespace thirdai::dataset {

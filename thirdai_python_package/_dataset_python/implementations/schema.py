@@ -58,11 +58,11 @@ class Schema:
         self._input_dim = 0
         self._target_blocks = []
         self._target_dim = 0
-        
+
         for block in input_blocks:
-          self.add_input_block(block)
+            self.add_input_block(block)
         for block in target_blocks:
-          self.add_target_block(block)
+            self.add_target_block(block)
 
     def add_input_block(self, block: Block) -> None:
         """Adds a feature to the processed input vectors.
@@ -81,11 +81,9 @@ class Schema:
         return self  # Return self so we can chain method calls
 
     def input_dim(self) -> int:
-        """Returns dimension of input vectors.
-        """
+        """Returns dimension of input vectors."""
         return self._input_dim
 
     def target_dim(self) -> int:
-        """Returns dimension of target vectors.
-        """
+        """Returns dimension of target vectors."""
         return self._target_dim
