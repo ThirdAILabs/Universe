@@ -59,7 +59,11 @@ BatchProcessor::exportInMemoryDataset(bool shuffle, uint32_t shuffle_seed) {
   uint32_t n_exported = _input_vectors.size();
   auto positions = makeFinalPositions(n_exported, shuffle, shuffle_seed);
 
-  return makeDatasetWithPositions(n_exported, positions);
+  bool has_target = !_target_blocks.empty();
+  if (has_target) {
+    return makeDatasetWithPositions<true>(n_exported, positions);
+  }
+  return makeDatasetWithPositions<false>(n_exported, positions);
 }
 
 void BatchProcessor::allocateMemoryForBatch(uint32_t size, bool has_target) {
@@ -77,7 +81,8 @@ BatchProcessor::makeDatasetWithPositions(uint32_t n_exported,
   std::vector<dataset::BoltInputBatch> batches(n_batches);
 
   // For each batch
-#pragma omp parallel for default(none) shared(n_exported, batches, positions)
+#pragma omp parallel for default(none) \
+    shared(n_exported, n_batches, batches, positions)
   for (size_t batch_idx = 0; batch_idx < n_batches; ++batch_idx) {
     uint32_t batch_start_idx = batch_idx * _batch_size;
 
