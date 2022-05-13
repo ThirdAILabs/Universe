@@ -54,10 +54,15 @@ class Schema:
         Arguments can be omitted in exchange for a builder pattern
         invocation.
         """
-        self._input_blocks = input_blocks
+        self._input_blocks = []
         self._input_dim = 0
-        self._target_blocks = target_blocks
+        self._target_blocks = []
         self._target_dim = 0
+        
+        for block in input_blocks:
+          self.add_input_block(block)
+        for block in target_blocks:
+          self.add_target_block(block)
 
     def add_input_block(self, block: Block) -> None:
         """Adds a feature to the processed input vectors.
@@ -74,3 +79,13 @@ class Schema:
         self._target_blocks.append(block)
         self._target_dim += block.feature_dim()
         return self  # Return self so we can chain method calls
+
+    def input_dim(self) -> int:
+        """Returns dimension of input vectors.
+        """
+        return self._input_dim
+
+    def target_dim(self) -> int:
+        """Returns dimension of target vectors.
+        """
+        return self._target_dim

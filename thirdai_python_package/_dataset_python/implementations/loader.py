@@ -109,6 +109,20 @@ class Loader:
         self._shuffle_seed = seed
         return self  ### Returns self so we can chain the set() method calls.
 
+    def input_dim(self):
+        """Returns dimension of input vectors.
+        """
+        if self._schema is not None:
+            return self._schema.input_dim()
+        return 0
+
+    def target_dim(self):
+        """Returns dimension of target vectors.
+        """
+        if self._schema is not None:
+            return self._schema.target_dim()
+        return 0
+
     def __load_all_and_process(self):
         """Helper function to load the whole dataset, processes each sample, and
         generates batches of vector embeddings.
