@@ -41,8 +41,8 @@ void createDatasetSubmodule(py::module_& module) {
       "as input and target BoltVectors according to the given blocks. "
       "It processes these sequences in batches.\n\n"
       "This is not consumer-facing.")
-      .def(py::init<std::vector<std::shared_ptr<Block>>&, bool,
-                    std::vector<std::shared_ptr<Block>>&, bool, uint32_t>(),
+      .def(py::init<std::vector<std::shared_ptr<Block>>&, 
+                    std::vector<std::shared_ptr<Block>>&, uint32_t>(),
            py::arg("input_blocks"), py::arg("target_blocks"), 
            py::arg("output_batch_size"),
            "Constructor\n\n"
