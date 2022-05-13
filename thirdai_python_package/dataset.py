@@ -18,12 +18,17 @@ def load_text_classification_dataset(
 
     # Define source
     source = sources.LocalFileSystem(file)
-    parser = parsers.CsvIterable(delimiter="\t")
+    parser = parsers.CsvIterable(delimiter=delim)
 
     # Define schema
-    text_block = blocks.Text(col=1, dim=100000)
-    label_block = blocks.Categorical(col=0, dim=2)
-    schema = Schema(input_blocks=[text_block], target_blocks=[label_block])
+    if labeled:
+        label_block = blocks.Categorical(col=0, dim=label_dim)
+        text_block = blocks.Text(col=1, dim=encoding_dim)
+        schema = Schema(input_blocks=[text_block], target_blocks=[label_block])
+    else:
+        # Text in first column if no label.
+        text_block = blocks.Text(col=0, dim=encoding_dim)
+        schema = Schema(input_blocks=[text_block])
 
     # Assemble
     loader = Loader(source, parser, schema, batch_size)
