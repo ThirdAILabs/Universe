@@ -68,7 +68,7 @@ class CMakeBuild(build_ext):
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="thirdai",
-    version="0.1.1",
+    version="0.1.3",
     author="ThirdAI",
     author_email="contact@thirdai.com",
     description="A faster cpu machine learning library",
@@ -77,6 +77,7 @@ setup(
       accelerate inference and training. See https://thirdai.com for more 
       details.
     """,
+    license_files=("LICENSE.txt",),
     ext_modules=[CMakeExtension("thirdai._thirdai")],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
@@ -85,6 +86,6 @@ setup(
     },
     packages=["thirdai"]
     + ["thirdai." + p for p in find_packages(where="thirdai_python_package")],
-    licence="proprietary",
+    license="proprietary",
     package_dir={"thirdai": "thirdai_python_package"},
 )
