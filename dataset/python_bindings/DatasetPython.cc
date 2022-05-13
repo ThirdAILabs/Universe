@@ -1,9 +1,19 @@
 #include "DatasetPython.h"
+
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/batch_types/BoltInputBatch.h>
-#include <chrono>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/core/BatchProcessor.h>
+
+#include <dataset/src/blocks/Text.h>
+#include <dataset/src/blocks/Categorical.h>
+
+#include <dataset/src/encodings/text/TextEncodingInterface.h>
+#include <dataset/src/encodings/text/PairGram.h>
+#include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
+#include <dataset/src/encodings/categorical/OneHotEncoding.h>
+
+#include <chrono>
 
 namespace thirdai::dataset::python {
 
