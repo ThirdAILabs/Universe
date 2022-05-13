@@ -10,6 +10,7 @@
 
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
 #include <dataset/src/encodings/text/PairGram.h>
+#include <dataset/src/encodings/text/UniGram.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/OneHotEncoding.h>
 
@@ -56,8 +57,18 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<uint32_t>(), py::arg("dim") = 100000,
            "Constructor. Accepts the desired dimension of the encoding.")
       .def("is_dense", &PairGram::isDense,
-           "True if the encoder produces dense features, False otherwise.")
+           "Returns False since this is a sparse encoding.")
       .def("feature_dim", &PairGram::featureDim,
+           "The dimension of the encoding.");
+
+  py::class_<UniGram, TextEncoding, std::shared_ptr<UniGram>>(
+      text_encoding_submodule, "UniGram",
+      "Encodes a sentence as a weighted set of words.")
+      .def(py::init<uint32_t>(), py::arg("dim") = 100000,
+           "Constructor. Accepts the desired dimension of the encoding.")
+      .def("is_dense", &UniGram::isDense,
+           "Returns False since this is a sparse encoding.")
+      .def("feature_dim", &UniGram::featureDim,
            "The dimension of the encoding.");
 
   py::class_<CategoricalEncoding, std::shared_ptr<CategoricalEncoding>>(
@@ -74,7 +85,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<uint32_t>(), py::arg("dim"),
            "Constructor. Accepts the desired dimension of the encoding.")
       .def("feature_dim", &OneHotEncoding::featureDim,
-           "True if the encoder produces dense features, False otherwise.")
+           "Returns False since this is a sparse encoding.")
       .def("is_dense", &OneHotEncoding::isDense,
            "The dimension of the encoding.");
   

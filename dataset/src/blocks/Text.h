@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BlockInterface.h"
-#include <dataset/src/encodings/text/PairGram.h>
+#include <dataset/src/encodings/text/UniGram.h>
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
 #include <memory>
 
@@ -31,7 +31,7 @@ struct TextBlock : public Block {
    *   dim: int - the dimension of the encoding.
    */
   TextBlock(uint32_t col, uint32_t dim)
-      : _col(col), _encoding(std::make_shared<PairGram>(dim)) {}
+      : _col(col), _encoding(std::make_shared<UniGram>(dim)) {}
 
   uint32_t featureDim() final { return _encoding->featureDim(); };
 
