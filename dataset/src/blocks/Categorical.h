@@ -21,10 +21,12 @@ struct CategoricalBlock : public Block {
    *   col: int - the column number of the input row containing
    *     the categorical feature to be encoded.
    *   encoding: CategoricalEncoding - the categorical feature encoding model.
+   *   numerical_id: bool - whether the categorical feature is numerical. 
+   *     Defaults to true.
    */
   CategoricalBlock(uint32_t col, std::shared_ptr<CategoricalEncoding>& encoding,
-                   bool from_string = false)
-      : _col(col), _from_string(from_string), _encoding(encoding) {}
+                   bool numerical_id = true)
+      : _col(col), _numerical_id(numerical_id), _encoding(encoding) {}
 
   /**
    * Constructor with default encoder.
@@ -33,10 +35,12 @@ struct CategoricalBlock : public Block {
    *   col: int - the column number of the input row containing
    *     the categorical feature to be encoded.
    *   dim: int - the dimension of the encoding.
+   *   numerical_id: bool - whether the categorical feature is numerical. 
+   *     Defaults to true.
    */
-  CategoricalBlock(uint32_t col, uint32_t dim, bool from_string = false)
+  CategoricalBlock(uint32_t col, uint32_t dim, bool numerical_id = true)
       : _col(col),
-        _from_string(from_string),
+        _numerical_id(numerical_id),
         _encoding(std::make_shared<OneHotEncoding>(dim)) {}
 
   uint32_t featureDim() final { return _encoding->featureDim(); };
@@ -51,12 +55,12 @@ struct CategoricalBlock : public Block {
     char* end;
     uint32_t id;
 
-    // Get ID of categorical feature.
+    // Get numerical ID of categorical feature.
     // If ID is not originally a number, hash it to get one.
-    if (_from_string) {
-        id = hashing::MurmurHash(col_str.c_str(), col_str.length(), 0);
-    } else {
+    if (_numerical_id) {
         id = std::strtoul(col_str.c_str(), &end, 10);
+    } else {
+        id = hashing::MurmurHash(col_str.c_str(), col_str.length(), 0);
     }
         
     _encoding->encodeCategory(id, vec);
@@ -64,7 +68,7 @@ struct CategoricalBlock : public Block {
 
  private:
   uint32_t _col;
-  bool _from_string;
+  bool _numerical_id;
   std::shared_ptr<CategoricalEncoding> _encoding;
 };
 
