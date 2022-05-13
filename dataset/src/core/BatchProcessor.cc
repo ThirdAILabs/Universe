@@ -1,6 +1,7 @@
 #include "BatchProcessor.h"
 #include <dataset/src/utils/ExtendableVectors.h>
 #include <pybind11/pybind11.h>
+#include <sys/types.h>
 #include <algorithm>
 #include <limits>
 #include <memory>
@@ -36,14 +37,13 @@ void BatchProcessor::processBatch(
   // Preallocate space for new vectors. This prevents data races and
   // preserves the order of vectors when processing them in parallel.
   auto initial_num_elems = _input_vectors.size();
-  allocateMemoryForBatch(batch.size());
+  bool has_target = !_target_blocks.empty();
+  allocateMemoryForBatch(batch.size(), has_target);
 
-#pragma omp parallel for default(none) shared(batch, initial_num_elems)
-  for (size_t i = 0; i < batch.size(); ++i) {
-    _input_vectors[initial_num_elems + i] =
-        makeVector(batch[i], _input_blocks, _input_blocks_dense);
-    _target_vectors[initial_num_elems + i] =
-        makeVector(batch[i], _target_blocks, _target_blocks_dense);
+  if (has_target) {
+    makeVectorsForBatch<true>(batch, initial_num_elems);
+  } else {
+    makeVectorsForBatch<false>(batch, initial_num_elems);
   }
 }
 
@@ -62,34 +62,42 @@ BatchProcessor::exportInMemoryDataset(bool shuffle, uint32_t shuffle_seed) {
   return makeDatasetWithPositions(n_exported, positions);
 }
 
-void BatchProcessor::allocateMemoryForBatch(uint32_t size) {
+void BatchProcessor::allocateMemoryForBatch(uint32_t size, bool has_target) {
   _input_vectors.resize(_input_vectors.size() + size);
-  _target_vectors.resize(_target_vectors.size() + size);
+  if (has_target) {
+    _target_vectors.resize(_target_vectors.size() + size);
+  }
 }
 
+template <bool HAS_TARGET>
 dataset::InMemoryDataset<dataset::BoltInputBatch>
 BatchProcessor::makeDatasetWithPositions(uint32_t n_exported,
                                          std::vector<uint32_t>& positions) {
-  std::vector<dataset::BoltInputBatch> batches;
+  size_t n_batches = (n_exported + _batch_size - 1) / _batch_size;
+  std::vector<dataset::BoltInputBatch> batches(n_batches);
 
   // For each batch
-  for (uint32_t batch_start_index = 0; batch_start_index < n_exported;
-       batch_start_index += _batch_size) {
-    uint32_t next_batch_start_index =
-        std::min(batch_start_index + _batch_size, n_exported);
+#pragma omp parallel for default(none) shared(n_exported, batches, positions)
+  for (size_t batch_idx = 0; batch_idx < n_batches; ++batch_idx) {
+    uint32_t batch_start_idx = batch_idx * _batch_size;
 
     // Vectors that hold the batch's input and target vectors.
-    std::vector<bolt::BoltVector> batch_inputs;
-    std::vector<bolt::BoltVector> batch_targets;
+    size_t cur_batch_size = std::min(_batch_size, n_exported - batch_start_idx);
+    std::vector<bolt::BoltVector> batch_inputs(cur_batch_size);
+    size_t target_batch_size = HAS_TARGET ? cur_batch_size : 0;
+    std::vector<bolt::BoltVector> batch_targets(target_batch_size);
 
     // For each vector in the batch
-    for (uint32_t vec_index = batch_start_index;
-         vec_index < next_batch_start_index; vec_index++) {
+    for (uint32_t vec_idx = 0; vec_idx < cur_batch_size; ++vec_idx) {
       // Move vectors to prevent copying.
-      batch_inputs.push_back(std::move(_input_vectors[positions[vec_index]]));
-      batch_targets.push_back(std::move(_target_vectors[positions[vec_index]]));
+      batch_inputs[vec_idx] =
+          std::move(_input_vectors[positions[batch_start_idx + vec_idx]]);
+      if (HAS_TARGET) {
+        batch_targets[vec_idx] =
+            std::move(_target_vectors[positions[batch_start_idx + vec_idx]]);
+      }
     }
-    batches.emplace_back(std::move(batch_inputs), std::move(batch_targets));
+    batches[batch_idx] = {std::move(batch_inputs), std::move(batch_targets)};
   }
 
   // Replenish after moves.
@@ -115,6 +123,23 @@ std::vector<uint32_t> BatchProcessor::makeFinalPositions(
   }
 
   return positions;
+}
+
+template <bool HAS_TARGET>
+void BatchProcessor::makeVectorsForBatch(
+    std::vector<std::vector<std::string>>& batch, uint32_t initial_num_elems) {
+#pragma omp parallel for default(none) shared(batch, initial_num_elems)
+  for (size_t i = 0; i < batch.size(); ++i) {
+    _input_vectors[initial_num_elems + i] =
+        makeVector(batch[i], _input_blocks, _input_blocks_dense);
+
+    // We use a template argument so we don't check for the has_target
+    // condition in each iteration.
+    if (HAS_TARGET) {
+      _target_vectors[initial_num_elems + i] =
+          makeVector(batch[i], _target_blocks, _target_blocks_dense);
+    }
+  }
 }
 
 bolt::BoltVector BatchProcessor::makeVector(
