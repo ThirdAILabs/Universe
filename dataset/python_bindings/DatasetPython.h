@@ -87,7 +87,8 @@ InMemoryDataset<BoltInputBatch> sparseBoltDatasetFromNumpy(
     const std::optional<
         py::array_t<uint32_t, py::array::c_style | py::array::forcecast>>&
         y_idxs,
-    const std::optional<py::array_t<float, py::array::c_style | py::array::forcecast>>& y_vals,
+    const std::optional<
+        py::array_t<float, py::array::c_style | py::array::forcecast>>& y_vals,
     const std::optional<
         py::array_t<uint32_t, py::array::c_style | py::array::forcecast>>&
         y_offsets,
