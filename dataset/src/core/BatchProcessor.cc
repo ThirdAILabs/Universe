@@ -36,14 +36,11 @@ void BatchProcessor::processBatch(
 
   // Preallocate space for new vectors. This prevents data races and
   // preserves the order of vectors when processing them in parallel.
-  auto initial_num_elems = _input_vectors.size();
   bool has_target = !_target_blocks.empty();
-  allocateMemoryForBatch(batch.size(), has_target);
-
   if (has_target) {
-    makeVectorsForBatch<true>(batch, initial_num_elems);
+    makeVectorsForBatch<true>(batch);
   } else {
-    makeVectorsForBatch<false>(batch, initial_num_elems);
+    makeVectorsForBatch<false>(batch);
   }
 }
 
@@ -64,13 +61,6 @@ BatchProcessor::exportInMemoryDataset(bool shuffle, uint32_t shuffle_seed) {
     return makeDatasetWithPositions<true>(n_exported, positions);
   }
   return makeDatasetWithPositions<false>(n_exported, positions);
-}
-
-void BatchProcessor::allocateMemoryForBatch(uint32_t size, bool has_target) {
-  _input_vectors.resize(_input_vectors.size() + size);
-  if (has_target) {
-    _target_vectors.resize(_target_vectors.size() + size);
-  }
 }
 
 template <bool HAS_TARGET>
@@ -132,7 +122,14 @@ std::vector<uint32_t> BatchProcessor::makeFinalPositions(
 
 template <bool HAS_TARGET>
 void BatchProcessor::makeVectorsForBatch(
-    std::vector<std::vector<std::string>>& batch, uint32_t initial_num_elems) {
+    std::vector<std::vector<std::string>>& batch) {
+  uint32_t initial_num_elems = _input_vectors.size();
+
+  _input_vectors.resize(_input_vectors.size() + batch.size());
+  if (HAS_TARGET) {
+    _target_vectors.resize(_target_vectors.size() + batch.size());
+  }
+
 #pragma omp parallel for default(none) shared(batch, initial_num_elems)
   for (size_t i = 0; i < batch.size(); ++i) {
     _input_vectors[initial_num_elems + i] =
