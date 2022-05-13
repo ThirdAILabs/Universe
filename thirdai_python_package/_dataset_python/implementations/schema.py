@@ -74,11 +74,3 @@ class Schema:
         self._target_blocks.append(block)
         self._target_dim += block.feature_dim()
         return self  # Return self so we can chain method calls
-
-    def input_is_dense(self) -> bool:
-        """Returns whether all input blocks are dense."""
-        return all(block.is_dense() for block in self._input_blocks)
-
-    def target_is_dense(self) -> bool:
-        """Returns whether all target blocks are dense."""
-        return all(block.is_dense() for block in self._target_blocks)
