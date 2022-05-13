@@ -36,8 +36,8 @@ struct PairGram : public TextEncoding {
           addPairGrams(seen_unigram_hashes, start_ptr, len, pair_grams);
         });
 
-    // This deduplication helps to reduce number of entries in the sparse
-    // vector.
+    // Deduplication helps to reduce number of entries in the sparse
+    // vector but has huge overheads. May want to remove in a future iteration.
     TextEncodingUtils::sumRepeatedIndices(pair_grams, 1.0, vec);
   }
 
