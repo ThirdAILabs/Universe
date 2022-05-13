@@ -1,5 +1,3 @@
-#pragma once
-
 #include "BatchProcessor.h"
 #include <dataset/src/utils/ExtendableVectors.h>
 #include <pybind11/pybind11.h>
