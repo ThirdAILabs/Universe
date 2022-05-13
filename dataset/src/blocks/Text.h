@@ -39,7 +39,7 @@ struct TextBlock : public Block {
 
  protected:
   void buildExtension(const std::vector<std::string>& input_row,
-                      ExtendableVector& vec) {
+                      ExtendableVector& vec) final {
     _encoding->encodeText(input_row[_col], vec);
   }
 

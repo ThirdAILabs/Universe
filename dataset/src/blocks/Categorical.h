@@ -48,8 +48,8 @@ struct CategoricalBlock : public Block {
   bool isDense() final { return _encoding->isDense(); };
 
  protected:
-  void extendVector(const std::vector<std::string>& input_row,
-                    ExtendableVector& vec) {
+  void buildExtension(const std::vector<std::string>& input_row,
+                    ExtendableVector& vec) final {
     
     const std::string& col_str = input_row[_col];
     char* end;
