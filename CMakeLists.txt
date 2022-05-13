@@ -180,6 +180,11 @@ file (
   wrappers/src/*.cc
 )
 
+file (
+  GLOB_RECURSE DATASET_SOURCES
+  dataset/src/*.cc
+)
+
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and
 # Debug builds, but not our ASan builds. This means that for now we can't run
 # ASan from python, but honestly this is more trouble than it's worth so for
@@ -197,6 +202,7 @@ pybind11_add_module(_thirdai
   ${HASHING_SOURCES}
   ${HASHTABLE_SOURCES}
   ${WRAPPER_SOURCES}
+  ${DATASET_SOURCES}
 )
 
 if (${LICENSE_BUILD_FLAG_FOUND})
