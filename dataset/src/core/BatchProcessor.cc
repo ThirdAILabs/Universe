@@ -123,14 +123,13 @@ std::vector<uint32_t> BatchProcessor::makeFinalPositions(
 template <bool HAS_TARGET>
 void BatchProcessor::makeVectorsForBatch(
     std::vector<std::vector<std::string>>& batch) {
-  
   uint32_t initial_num_elems = _input_vectors.size();
 
   _input_vectors.resize(_input_vectors.size() + batch.size());
   if (HAS_TARGET) {
     _target_vectors.resize(_target_vectors.size() + batch.size());
   }
-  
+
 #pragma omp parallel for default(none) shared(batch, initial_num_elems)
   for (size_t i = 0; i < batch.size(); ++i) {
     _input_vectors[initial_num_elems + i] =
