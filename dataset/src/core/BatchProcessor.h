@@ -31,7 +31,6 @@ struct BatchProcessor {
       bool shuffle = false, uint32_t shuffle_seed = 0);
 
  private:
-  
   /**
    * Produces an InMemoryDataset of BoltBatches containing the vectors
    * processed so far. Vectors are positioned according to the given
