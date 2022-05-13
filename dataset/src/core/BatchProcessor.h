@@ -47,7 +47,7 @@ struct BatchProcessor {
    * We use a template argument to avoid checking the condition in
    * every iteration of an internal loop.
    */
-  template<bool HAS_TARGET>
+  template <bool HAS_TARGET>
   dataset::InMemoryDataset<dataset::BoltInputBatch> makeDatasetWithPositions(
       uint32_t n_exported, std::vector<uint32_t>& positions);
 
@@ -65,8 +65,9 @@ struct BatchProcessor {
    * We use a template argument so we don't check for the has_target
    * condition in each iteration.
    */
-  template<bool HAS_TARGET>
-  void makeVectorsForBatch(std::vector<std::vector<std::string>>& batch, uint32_t initial_num_elems);
+  template <bool HAS_TARGET>
+  void makeVectorsForBatch(std::vector<std::vector<std::string>>& batch,
+                           uint32_t initial_num_elems);
 
   /**
    * Encodes a sample as a BoltVector according to the given blocks.
