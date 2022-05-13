@@ -7,6 +7,7 @@ __all__ = []
 __all__.extend(dir(thirdai._thirdai.dataset))
 __all__.extend(dir(thirdai._dataset_python.implementations))
 
+
 def load_text_classification_dataset(
     file: str,
     delim: str = "\t",
@@ -34,5 +35,6 @@ def load_text_classification_dataset(
     loader = Loader(source, parser, schema, batch_size)
 
     return loader.processInMemory(), loader.input_dim()
+
 
 __all__.append(load_text_classification_dataset)

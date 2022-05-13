@@ -6,6 +6,7 @@ from thirdai._thirdai import dataset
 from thirdai._thirdai import dataset_internal
 import random
 import time
+import threading
 
 
 class Loader:
@@ -121,41 +122,58 @@ class Loader:
             return self._schema.target_dim()
         return 0
 
+    def __read(self, row_generator, max_rows, destination):
+        """Helper function to read up to max_rows rows from
+        the source and into the destination batch.
+        """
+        counter = 0
+        next_row = next(row_generator)
+        while next_row is not None and counter < max_rows - 1:
+            destination.append(next_row)
+            counter += 1
+            next_row = next(row_generator)
+
+        # Don't leave out last row.
+        if next_row is not None:
+            destination.append(next_row)
+
     def __load_all_and_process(self):
         """Helper function to load the whole dataset, processes each sample, and
         generates batches of vector embeddings.
         """
 
+        # Initialization
         file = self._source.open()
         row_generator = self._parser.rows(file)
-
         processor = dataset_internal.BatchProcessor(
             self._schema._input_blocks,
             self._schema._target_blocks,
             self._batch_size,
         )
-        # Stream rows (samples) and process each one according to the schema.
-        counter = 0
-        raw_batch = []
-        next_row = next(row_generator)
-        while next_row is not None:
-            raw_batch.append(next_row)
-            counter += 1
 
-            if counter == 65536:
-                processor.process_batch(raw_batch)
-                raw_batch = []
-                counter = 0
+        # Read first batch of rows into memory.
+        # ~65,000 seems to be a good number based on empirical testing.
+        old_batch = []
+        self.__read(row_generator, 65536, old_batch)
 
-            next_row = next(row_generator)
+        # Define worker function for processing / featurizing thread.
+        def worker(batch):
+            processor.process_batch(batch)
 
-        if len(raw_batch) > 0:
-            processor.process_batch(raw_batch)
-            raw_batch = []
-            counter = 0
+        # Read subsequent batches while processing them in parallel.
+        while len(old_batch) > 0:
+            new_batch = []
+            t = threading.Thread(target=worker, daemon=True, args=(old_batch,))
+
+            t.start()
+            self.__read(row_generator, 65536, new_batch)
+
+            t.join()
+            old_batch = new_batch
 
         # Close the source when we are done with it.
         self._source.close()
+
         # Remember that we have loaded and processed the whole dataset
         # and saved the results in memory.
         return processor.export_in_memory_dataset(
