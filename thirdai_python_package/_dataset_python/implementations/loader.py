@@ -142,7 +142,7 @@ class Loader:
             raw_batch.append(next_row)
             counter += 1
 
-            if counter == 8192:
+            if counter == 65536:
                 processor.process_batch(raw_batch)
                 raw_batch = []
                 counter = 0
