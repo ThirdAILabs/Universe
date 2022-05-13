@@ -53,42 +53,6 @@ struct SparseExtendableVector : public ExtendableVector {
     _n_dense_added++;
   }
 
-  /**
-   * Deduplicates indices by summing values.
-   */
-  void incrementExtensionAtIndices(std::vector<uint32_t>& indices,
-                                   float inc) final {
-    // Put equivalent indices next to each other.
-    std::sort(indices.begin(), indices.end());
-
-    /**
-     * If current index is the same as the next index, keep accumulating
-     * val. Otherwise, add sparse feature at the current index with the
-     * accumulated value and reset val.
-     */
-    float val = 0.0;
-    uint32_t i = 0;
-    for (; i < indices.size() - 1; ++i) {
-      uint32_t idx = indices[i];
-      uint32_t next_idx = indices[i + 1];
-      val += inc;
-
-      if (idx != next_idx) {
-        addExtensionSparseFeature(idx, val);
-        val = 0.0;  // Reset val since next idx is different.
-      }
-    }
-
-    /**
-     * If we're looking at the last element, the next element is clearly
-     * "different", so we add a sparse feature accordingly.
-     */
-    if (i == indices.size() - 1) {
-      val += inc;
-      addExtensionSparseFeature(indices.back(), val);
-    }
-  }
-
   bolt::BoltVector toBoltVector() final {
     return bolt::BoltVector::makeSparseVector(_indices, _values);
   }
@@ -135,17 +99,6 @@ struct DenseExtendableVector : public ExtendableVector {
 
     _values.push_back(value);
     _n_dense_added++;
-  }
-
-  void incrementExtensionAtIndices(std::vector<uint32_t>& indices,
-                                   float inc) final {
-    (void)indices;
-    (void)inc;
-
-    throw std::invalid_argument(
-        "[DenseExtendableVector::incrementAtIndices] DenseExtendableVector "
-        "does not "
-        "support this operation.");
   }
 
   bolt::BoltVector toBoltVector() final {
