@@ -11,7 +11,7 @@ struct TextEncodingUtils {
    * Deduplicates indices by summing values and adds features to the given
    * vector. All indices expected to correspond to the same value.
    */
-  static void sumRepeatedIndices(std::vector<uint32_t>& indices, float value,
+  inline static void sumRepeatedIndices(std::vector<uint32_t>& indices, float value,
                                  ExtendableVector& vec) {
     // Put equivalent indices next to each other.
     std::sort(indices.begin(), indices.end());
@@ -48,7 +48,7 @@ struct TextEncodingUtils {
    * Parses through a sentence and does something to each word.
    */
   template <typename WORD_PROCESSOR_T>
-  static void forEachWord(std::string& sentence,
+  inline static void forEachWord(std::string& sentence,
                           WORD_PROCESSOR_T word_processor) {
     static_assert(
         std::is_convertible<WORD_PROCESSOR_T,
@@ -82,7 +82,7 @@ struct TextEncodingUtils {
   /**
    * Creates a copy of the original string where all characters are lowercase.
    */
-  static std::string makeLowerCase(const std::string& original) {
+  inline static std::string makeLowerCase(const std::string& original) {
     std::string lower_case_text = original;
     for (auto& c : lower_case_text) {
       c = std::tolower(c);
