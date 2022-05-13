@@ -37,8 +37,8 @@ struct ExtendableVector {
 
  public:
   /**
-   * Sets a feature of the extension vector according to the
-   * given index and value.
+   * Increments the feature of the extension vector at the given index
+   * by the given value.
    */
   virtual void addExtensionSparseFeature(uint32_t index, float value) = 0;
 

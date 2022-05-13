@@ -29,7 +29,6 @@ struct PairGram : public TextEncoding {
       c = std::tolower(c);
     }
     
-    std::vector<uint32_t> pairgram_indices;
     std::vector<uint32_t> seen_unigram_hashes;
     
     // Add pairgrams as we encounter new words.
@@ -40,7 +39,7 @@ struct PairGram : public TextEncoding {
       // Just saw a word boundary
       if (isspace(c) && !last_ptr_was_space) {
         last_ptr_was_space = true;
-        addPairGrams(seen_unigram_hashes, start_ptr, std::distance(start_ptr, &c), pairgram_indices);
+        addPairGrams(seen_unigram_hashes, start_ptr, std::distance(start_ptr, &c), vec);
       }
 
       // Encountered a new word
@@ -53,10 +52,8 @@ struct PairGram : public TextEncoding {
     // Don't leave out last word.
     if (!last_ptr_was_space) {
       size_t cur_pos = std::distance(text.c_str(), start_ptr);
-      addPairGrams(seen_unigram_hashes, start_ptr, text.size() - cur_pos, pairgram_indices);
+      addPairGrams(seen_unigram_hashes, start_ptr, text.size() - cur_pos, vec);
     }
-
-    vec.incrementExtensionAtIndices(pairgram_indices, 1.0);
   }
 
   uint32_t featureDim() final { return _dim; }
@@ -65,21 +62,19 @@ struct PairGram : public TextEncoding {
 
  private:
 
-  inline void addPairGrams(std::vector<uint32_t>& prev_unigram_hashes, const char* start_ptr, size_t len, std::vector<uint32_t>& pairgram_indices) const {
+  inline void addPairGrams(std::vector<uint32_t>& prev_unigram_hashes, const char* start_ptr, size_t len, ExtendableVector& vec) const {
     // Hash the new word
     uint32_t new_unigram_hash =
             hashing::MurmurHash(start_ptr, len, /* seed = */ 341);
 
     // Add new unigram here because same-word pairgrams also help.
     prev_unigram_hashes.push_back(new_unigram_hash);
-    // vec.addExtensionSparseFeature(new_unigram_hash % _dim, 1.0);
-
+    
     // Create ordered pairgrams by pairing with all previous words (including this one).
     // Combine the hashes of the unigrams that make up the pairgram.
     for (const auto& prev_word_hash : prev_unigram_hashes) {
-      pairgram_indices.push_back(hashing::HashUtils::combineHashes(prev_word_hash, new_unigram_hash) % _dim);
-      // vec.addExtensionSparseFeature(
-      //     hashing::HashUtils::combineHashes(prev_word_hash, new_unigram_hash) % _dim, 1.0);
+      vec.addExtensionSparseFeature(
+          hashing::HashUtils::combineHashes(prev_word_hash, new_unigram_hash) % _dim, 1.0);
     }
   }
 

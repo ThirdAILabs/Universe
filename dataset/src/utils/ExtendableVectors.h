@@ -27,6 +27,9 @@ struct SparseExtendableVector : public ExtendableVector {
       throw std::invalid_argument(ss.str());
     }
 
+    // We don't check whether we've seen this index before.
+    // This is fine because bolt iterates through all index-value pairs of 
+    // sparse input vectors, so duplicates are effectively summed.
     _indices.push_back(concat_index);
     _values.push_back(value);
     _added_sparse = true;
