@@ -116,6 +116,8 @@ struct SparseExtendableVector : public ExtendableVector {
 struct DenseExtendableVector : public ExtendableVector {
 
   void addExtensionSparseFeature(uint32_t index, float value) final {
+    (void) index;
+    (void) value;
     throw std::invalid_argument(
         "[DenseExtendableVector::addExtensionSparseFeature] "
         "DenseExtendableVector does not accept sparse features.");
