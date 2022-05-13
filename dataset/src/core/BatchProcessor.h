@@ -31,11 +31,7 @@ struct BatchProcessor {
       bool shuffle = false, uint32_t shuffle_seed = 0);
 
  private:
-  /**
-   * Helper function that preallocates space for new vectors.
-   */
-  void allocateMemoryForBatch(uint32_t size, bool has_target);
-
+  
   /**
    * Produces an InMemoryDataset of BoltBatches containing the vectors
    * processed so far. Vectors are positioned according to the given
@@ -66,8 +62,7 @@ struct BatchProcessor {
    * condition in each iteration.
    */
   template <bool HAS_TARGET>
-  void makeVectorsForBatch(std::vector<std::vector<std::string>>& batch,
-                           uint32_t initial_num_elems);
+  void makeVectorsForBatch(std::vector<std::vector<std::string>>& batch);
 
   /**
    * Encodes a sample as a BoltVector according to the given blocks.
