@@ -14,16 +14,18 @@ def load_text_classification_dataset(file: str, delim: str='\t', labeled: bool=T
     ######## PUT TOGETHER ########
     dataset = Loader(source, parser, schema, batch_size)
 
-    return dataset.processInMemory()
+    return dataset.processInMemory(), dataset.input_dim()
 
 import time
 from thirdai import bolt
 
 print("Starting")
 start = time.time()
-train_data = load_text_classification_dataset("/Users/benitogeordie/Desktop/thirdai_datasets/amazon_polarity_train_dupe.txt")
+train_data, input_dim = load_text_classification_dataset("/Users/benitogeordie/Desktop/thirdai_datasets/amazon_polarity_train_100k.txt")
 end = time.time()
 print("That took", end - start, "seconds.")
+
+print(input_dim)
 
 layers = [
     
@@ -46,12 +48,12 @@ layers = [
 
 network = bolt.Network(
     layers=layers, 
-    input_dim=dataset._schema.input_dim())
+    input_dim=input_dim)
 
-network.train(
-    train_data=train_data,
-    loss_fn=bolt.CategoricalCrossEntropyLoss(), 
-    learning_rate=0.0001, 
-    epochs=20, 
-    metrics=["categorical_accuracy"],
-    verbose=True)
+# network.train(
+#     train_data=train_data,
+#     loss_fn=bolt.CategoricalCrossEntropyLoss(), 
+#     learning_rate=0.0001, 
+#     epochs=20, 
+#     metrics=["categorical_accuracy"],
+#     verbose=True)
