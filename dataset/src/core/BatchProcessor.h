@@ -34,7 +34,7 @@ struct BatchProcessor {
   /**
    * Helper function that preallocates space for new vectors.
    */
-  void allocateMemoryForBatch(uint32_t size);
+  void allocateMemoryForBatch(uint32_t size, bool has_target);
 
   /**
    * Produces an InMemoryDataset of BoltBatches containing the vectors
@@ -43,7 +43,11 @@ struct BatchProcessor {
    *
    * positions[i] = the original position of the vector that will be
    *                in position i in the exported dataset.
+   *
+   * We use a template argument to avoid checking the condition in
+   * every iteration of an internal loop.
    */
+  template<bool HAS_TARGET>
   dataset::InMemoryDataset<dataset::BoltInputBatch> makeDatasetWithPositions(
       uint32_t n_exported, std::vector<uint32_t>& positions);
 
@@ -55,6 +59,14 @@ struct BatchProcessor {
   static std::vector<uint32_t> makeFinalPositions(uint32_t n_exported,
                                                   bool shuffle,
                                                   uint32_t shuffle_seed);
+
+  /**
+   * Helper function for making a batch of vectors in parallel.
+   * We use a template argument so we don't check for the has_target
+   * condition in each iteration.
+   */
+  template<bool HAS_TARGET>
+  void makeVectorsForBatch(std::vector<std::vector<std::string>>& batch, uint32_t initial_num_elems);
 
   /**
    * Encodes a sample as a BoltVector according to the given blocks.
