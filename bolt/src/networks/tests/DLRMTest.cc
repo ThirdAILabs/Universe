@@ -3,6 +3,9 @@
 #include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <gtest/gtest.h>
+#include <dataset/src/Dataset.h>
+#include <dataset/src/batch_types/ClickThroughBatch.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <algorithm>
 #include <random>
 #include <vector>
@@ -13,13 +16,14 @@ class DLRMTestFixture : public testing::Test {
  public:
   static const uint32_t n_classes = 100, n_batches = 100, batch_size = 100;
 
-  static dataset::InMemoryDataset<dataset::ClickThroughBatch> genDataset(
+  static dataset::ClickThroughDatasetWithLabels genDataset(
       bool noisy_dense, bool noisy_categorical) {
     std::mt19937 gen(892734);
     std::uniform_int_distribution<uint32_t> label_dist(0, n_classes - 1);
     std::normal_distribution<float> data_dist(0, noisy_dense ? 1.0 : 0.1);
 
-    std::vector<dataset::ClickThroughBatch> batches;
+    std::vector<dataset::ClickThroughBatch> data_batches;
+    std::vector<bolt::BoltBatch> label_batches;
     for (uint32_t b = 0; b < n_batches; b++) {
       std::vector<bolt::BoltVector> labels;
       std::vector<bolt::BoltVector> dense_features;
@@ -37,13 +41,15 @@ class DLRMTestFixture : public testing::Test {
             {noisy_categorical ? label + label_dist(gen) : label});
         labels.push_back(BoltVector::makeSparseVector({label}, {1.0}));
       }
-      batches.push_back(dataset::ClickThroughBatch(
-          std::move(dense_features), std::move(categorical_features),
-          std::move(labels)));
+      data_batches.push_back(dataset::ClickThroughBatch(
+          std::move(dense_features), std::move(categorical_features)));
+      label_batches.push_back(bolt::BoltBatch(std::move(labels)));
     }
 
-    return dataset::InMemoryDataset<dataset::ClickThroughBatch>(
-        std::move(batches), n_batches * batch_size);
+    return dataset::ClickThroughDatasetWithLabels(
+        dataset::InMemoryDataset<dataset::ClickThroughBatch>(
+            std::move(data_batches), n_batches * batch_size),
+        dataset::BoltDataset(std::move(label_batches), n_batches * batch_size));
   }
 };
 
@@ -62,9 +68,10 @@ class DLRMTestFixture : public testing::Test {
 //   DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes);
 
 //   auto dataset = genDataset(false, false);
+// std::optional<dataset::BoltDataset> labels_opt = std::move(dataset.labels);
 
-//   dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 6);
-//   auto test_metrics = dlrm.predict(dataset, nullptr,
+//   dlrm.train(dataset.data, *labels_opt, CategoricalCrossEntropyLoss(), 0.001,
+//   6); auto test_metrics = dlrm.predict(dataset.data, labels_opt, nullptr,
 //   {"categorical_accuracy"});
 
 //   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
@@ -86,11 +93,13 @@ TEST_F(DLRMTestFixture, NoisyCategoricalFeatures) {
   DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes);
 
   auto dataset = genDataset(false, true);
+  std::optional<dataset::BoltDataset> labels_opt = std::move(dataset.labels);
 
-  dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 32);
-  auto test_metrics =
-      dlrm.predict(dataset, /* output_active_neurons= */ nullptr,
-                   /* output_activations= */ nullptr, {"categorical_accuracy"});
+  dlrm.train(dataset.data, *labels_opt, CategoricalCrossEntropyLoss(), 0.001,
+             32);
+  auto test_metrics = dlrm.predict(
+      dataset.data, labels_opt, /* output_active_neurons= */ nullptr,
+      /* output_activations= */ nullptr, {"categorical_accuracy"});
 
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.9);
 }
@@ -111,11 +120,13 @@ TEST_F(DLRMTestFixture, NoisyDenseFeatures) {
   DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes);
 
   auto dataset = genDataset(true, false);
+  std::optional<dataset::BoltDataset> labels_opt = std::move(dataset.labels);
 
-  dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 3);
-  auto test_metrics =
-      dlrm.predict(dataset, /* output_active_neurons= */ nullptr,
-                   /* output_activations= */ nullptr, {"categorical_accuracy"});
+  dlrm.train(dataset.data, *labels_opt, CategoricalCrossEntropyLoss(), 0.001,
+             3);
+  auto test_metrics = dlrm.predict(
+      dataset.data, labels_opt, /* output_active_neurons= */ nullptr,
+      /* output_activations= */ nullptr, {"categorical_accuracy"});
 
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
@@ -136,11 +147,13 @@ TEST_F(DLRMTestFixture, NoisyDenseAndCategoricalFeatures) {
   DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes);
 
   auto dataset = genDataset(true, true);
+  std::optional<dataset::BoltDataset> labels_opt = std::move(dataset.labels);
 
-  dlrm.train(dataset, CategoricalCrossEntropyLoss(), 0.001, 5);
-  auto test_metrics =
-      dlrm.predict(dataset, /* output_active_neurons= */ nullptr,
-                   /* output_activations= */ nullptr, {"categorical_accuracy"});
+  dlrm.train(dataset.data, *labels_opt, CategoricalCrossEntropyLoss(), 0.001,
+             5);
+  auto test_metrics = dlrm.predict(
+      dataset.data, labels_opt, /* output_active_neurons= */ nullptr,
+      /* output_activations= */ nullptr, {"categorical_accuracy"});
 
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.1);
 }

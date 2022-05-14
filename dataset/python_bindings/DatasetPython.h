@@ -5,9 +5,11 @@
 #include <dataset/src/batch_types/BoltInputBatch.h>
 #include <dataset/src/batch_types/DenseBatch.h>
 #include <dataset/src/batch_types/SparseBatch.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 
 namespace py = pybind11;
@@ -16,11 +18,6 @@ namespace thirdai::dataset::python {
 
 void createDatasetSubmodule(py::module_& module);
 
-InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
-    const std::string& filename, uint32_t batch_size,
-    uint32_t num_dense_features, uint32_t num_categorical_features,
-    bool sparse_labels);
-
 InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
                                             uint32_t batch_size);
 
@@ -28,12 +25,17 @@ InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
                                            uint32_t batch_size,
                                            std::string delimiter);
 
-InMemoryDataset<BoltInputBatch> loadBoltSVMDataset(const std::string& filename,
-                                                   uint32_t batch_size);
+py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
+                                    uint32_t batch_size);
 
-InMemoryDataset<BoltInputBatch> loadBoltCSVDataset(const std::string& filename,
-                                                   uint32_t batch_size,
-                                                   std::string delimiter);
+py::tuple loadBoltCsvDatasetWrapper(const std::string& filename,
+                                    uint32_t batch_size, char delimiter);
+
+py::tuple loadClickThroughDatasetWrapper(const std::string& filename,
+                                         uint32_t batch_size,
+                                         uint32_t num_dense_features,
+                                         uint32_t num_categorical_features,
+                                         bool sparse_labels);
 
 // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=numpy#arrays
 // for explanation of why we do py::array::c_style and py::array::forcecast.

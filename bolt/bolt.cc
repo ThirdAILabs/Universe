@@ -337,10 +337,13 @@ void trainDLRM(toml::table& config) {
       test_filename, batch_size, dense_features, categorical_features,
       top_mlp.back()->getDim() > 1);
 
+  std::optional<thirdai::dataset::BoltDataset> test_labels_wrapped =
+      std::move(test_labels);
+
   for (uint32_t e = 0; e < epochs; e++) {
     dlrm.train(train_data, train_labels, *loss_fn, learning_rate, 1, rehash,
                rebuild, train_metrics);
-    dlrm.predict(test_data, std::move(test_labels),
+    dlrm.predict(test_data, test_labels_wrapped,
                  /* output_active_neurons= */ nullptr,
                  /* output_activations= */ nullptr, test_metrics);
   }

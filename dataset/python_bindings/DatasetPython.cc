@@ -1,6 +1,8 @@
 #include "DatasetPython.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/batch_types/BoltInputBatch.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <pybind11/cast.h>
 #include <chrono>
 
 namespace thirdai::dataset::python {
@@ -21,16 +23,37 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__repr__", &BoltInputBatch::toString)
       .def("size", &BoltInputBatch::getBatchSize);
 
-  py::class_<InMemoryDataset<SparseBatch>> _imsd_(dataset_submodule,
-                                                  "InMemorySparseDataset");
-  (void)_imsd_;  // To get rid of clang tidy error
+  // The no lint below is because clang tidy doesn't like the anonymous object
+  // instatiation and is worried it will be lonely.
+  py::class_<InMemoryDataset<SparseBatch>>(dataset_submodule,  // NOLINT
+                                           "InMemorySparseDataset");
 
-  py::class_<InMemoryDataset<DenseBatch>> _imdd_(dataset_submodule,
-                                                 "InMemoryDenseDataset");
-  (void)_imdd_;  // To get rid of clang tidy error
+  // The no lint below is because clang tidy doesn't like the anonymous object
+  // instatiation and is worried it will be lonely.
+  py::class_<InMemoryDataset<DenseBatch>>(dataset_submodule,  // NOLINT
+                                          "InMemoryDenseDataset");
+
+  dataset_submodule.def("load_svm_dataset", &loadSVMDataset,
+                        py::arg("filename"), py::arg("batch_size"));
+
+  dataset_submodule.def("load_csv_dataset", &loadCSVDataset,
+                        py::arg("filename"), py::arg("batch_size"),
+                        py::arg("delimiter") = ",");
+
+  dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
+                        py::arg("indices"), py::arg("values"));
+
+  dataset_submodule.def("make_dense_vector", &BoltVector::makeDenseVector,
+                        py::arg("values"));
+
+  // The no lint below is because clang tidy doesn't like the anonymous object
+  // instatiation and is worried it will be lonely.
+  py::class_<  // NOLINT
+      thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>>(
+      dataset_submodule, "ClickThroughDataset");
 
   dataset_submodule.def(
-      "load_click_through_dataset", &loadClickThroughDataset,
+      "load_click_through_dataset", &loadClickThroughDatasetWrapper,
       py::arg("filename"), py::arg("batch_size"),
       py::arg("num_numerical_features"), py::arg("num_categorical_features"),
       py::arg("categorical_labels"),
@@ -61,30 +84,13 @@ void createDatasetSubmodule(py::module_& module) {
       ""
       "```");
 
-  py::class_<
-      thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>>
-      _imctd_(dataset_submodule, "ClickThroughDataset");
-  (void)_imctd_;  // To get rid of clang tidy error.
-
-  dataset_submodule.def("load_svm_dataset", &loadSVMDataset,
-                        py::arg("filename"), py::arg("batch_size"));
-
-  dataset_submodule.def("load_csv_dataset", &loadCSVDataset,
-                        py::arg("filename"), py::arg("batch_size"),
-                        py::arg("delimiter") = ",");
-
-  dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
-                        py::arg("indices"), py::arg("values"));
-
-  dataset_submodule.def("make_dense_vector", &BoltVector::makeDenseVector,
-                        py::arg("values"));
-
-  py::class_<InMemoryDataset<BoltInputBatch>> _bolt_dataset_(dataset_submodule,
-                                                             "BoltDataset");
-  (void)_bolt_dataset_;  // To get rid of clang tidy error
+  // The no lint below is because clang tidy doesn't like the anonymous object
+  // instatiation and is worried it will be lonely.
+  py::class_<InMemoryDataset<bolt::BoltBatch>>(dataset_submodule,  // NOLINT
+                                               "BoltDataset");
 
   dataset_submodule.def(
-      "load_bolt_svm_dataset", &loadBoltSVMDataset, py::arg("filename"),
+      "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
       py::arg("batch_size"),
       "Loads a BoltDataset from an SVM file. Each line in the "
       "input file represents a sparse input vector and should follow this "
@@ -102,7 +108,7 @@ void createDatasetSubmodule(py::module_& module) {
       " * batch_size: Int (positive) - Size of each batch in the dataset.");
 
   dataset_submodule.def(
-      "load_bolt_csv_dataset", &loadBoltCSVDataset, py::arg("filename"),
+      "load_bolt_csv_dataset", &loadBoltCsvDatasetWrapper, py::arg("filename"),
       py::arg("batch_size"), py::arg("delimiter") = ",",
       "Loads a BoltDataset from a CSV file. Each line in the "
       "input file consists of a categorical label (integer) followed by the "
@@ -126,23 +132,6 @@ void createDatasetSubmodule(py::module_& module) {
       " * dimensions: Int (positive) - (Optional) The dimension of each token "
       "embedding. "
       "Defaults to 100,000.");
-}
-
-InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
-    const std::string& filename, uint32_t batch_size,
-    uint32_t num_dense_features, uint32_t num_categorical_features,
-    bool sparse_labels) {
-  auto start = std::chrono::high_resolution_clock::now();
-  thirdai::dataset::ClickThroughBatchFactory factory(
-      num_dense_features, num_categorical_features, sparse_labels);
-  InMemoryDataset<ClickThroughBatch> data(filename, batch_size,
-                                          std::move(factory));
-  auto end = std::chrono::high_resolution_clock::now();
-  std::cout
-      << "Read " << data.len() << " vectors from " << filename << " in "
-      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds" << std::endl;
-  return data;
 }
 
 InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
@@ -177,36 +166,26 @@ InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
   return data;
 }
 
-InMemoryDataset<BoltInputBatch> loadBoltSVMDataset(const std::string& filename,
-                                                   uint32_t batch_size) {
-  auto start = std::chrono::high_resolution_clock::now();
-  InMemoryDataset<BoltInputBatch> data(filename, batch_size,
-                                       thirdai::dataset::BoltSvmBatchFactory{});
-  auto end = std::chrono::high_resolution_clock::now();
-
-  std::cout
-      << "Read " << data.len() << " vectors from " << filename << " in "
-      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds" << std::endl;
-
-  return data;
+py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
+                                    uint32_t batch_size) {
+  auto res = loadBoltSvmDataset(filename, batch_size);
+  return py::make_tuple(std::move(res.data), std::move(res.labels));
 }
 
-InMemoryDataset<BoltInputBatch> loadBoltCSVDataset(const std::string& filename,
-                                                   uint32_t batch_size,
-                                                   std::string delimiter) {
-  auto start = std::chrono::high_resolution_clock::now();
-  InMemoryDataset<BoltInputBatch> data(
-      filename, batch_size,
-      thirdai::dataset::BoltCsvBatchFactory(delimiter.at(0)));
-  auto end = std::chrono::high_resolution_clock::now();
+py::tuple loadBoltCsvDatasetWrapper(const std::string& filename,
+                                    uint32_t batch_size, char delimiter) {
+  auto res = loadBoltCsvDataset(filename, batch_size, delimiter);
+  return py::make_tuple(std::move(res.data), std::move(res.labels));
+}
 
-  std::cout
-      << "Read " << data.len() << " vectors in "
-      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds" << std::endl;
-
-  return data;
+py::tuple loadClickThroughDatasetWrapper(const std::string& filename,
+                                         uint32_t batch_size,
+                                         uint32_t num_dense_features,
+                                         uint32_t num_categorical_features,
+                                         bool sparse_labels) {
+  auto res = loadClickThroughDataset(filename, batch_size, num_dense_features,
+                                     num_categorical_features, sparse_labels);
+  return py::make_tuple(std::move(res.data), std::move(res.labels));
 }
 
 // TODO(josh): Is this method in a good place?
