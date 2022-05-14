@@ -20,7 +20,7 @@ DatasetWithLabels loadBoltSvmDataset(const std::string& filename,
                                      uint32_t batch_size);
 
 DatasetWithLabels loadBoltCsvDataset(const std::string& filename,
-                                     uint32_t batch_size);
+                                     uint32_t batch_size, char delimiter);
 
 class ClickThroughDatasetWithLabels {
  public:
@@ -33,6 +33,8 @@ class ClickThroughDatasetWithLabels {
 };
 
 ClickThroughDatasetWithLabels loadClickThroughDataset(
-    const std::string& filename, uint32_t batch_size);
+    const std::string& filename, uint32_t batch_size,
+    uint32_t num_dense_features, uint32_t num_categorical_features,
+    bool sparse_labels);
 
 };  // namespace thirdai::dataset

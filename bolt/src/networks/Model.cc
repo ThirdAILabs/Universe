@@ -10,12 +10,13 @@
 
 namespace thirdai::bolt {
 
-template class Model<dataset::BoltInputBatch>;
+template class Model<bolt::BoltBatch>;
 template class Model<dataset::ClickThroughBatch>;
 
 template <typename BATCH_T>
 MetricData Model<BATCH_T>::train(
     dataset::InMemoryDataset<BATCH_T>& train_data,
+    const dataset::BoltDataset& train_labels,
     // Clang tidy is disabled for this line because it wants to pass by
     // reference, but shared_ptrs should not be passed by reference
     const LossFunction& loss_fn,  // NOLINT
@@ -48,18 +49,21 @@ MetricData Model<BATCH_T>::train(
         shuffleRandomNeurons();
       }
 
-      BATCH_T& inputs = train_data[batch];
+      BATCH_T& batch_inputs = train_data[batch];
 
-#pragma omp parallel for default(none) shared(inputs, outputs, loss_fn, metrics)
-      for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
-        forward(i, inputs, outputs[i], /* train=*/true);
+      const BoltBatch& batch_labels = train_labels[batch];
 
-        loss_fn.lossGradients(outputs[i], inputs.labels(i),
-                              inputs.getBatchSize());
+#pragma omp parallel for default(none) \
+    shared(batch_inputs, batch_labels, outputs, loss_fn, metrics)
+      for (uint32_t i = 0; i < batch_inputs.getBatchSize(); i++) {
+        forward(i, batch_inputs, outputs[i], &batch_labels[i]);
 
-        backpropagate(i, inputs, outputs[i]);
+        loss_fn.lossGradients(outputs[i], batch_labels[i],
+                              batch_inputs.getBatchSize());
 
-        metrics.processSample(outputs[i], inputs.labels(i));
+        backpropagate(i, batch_inputs, outputs[i]);
+
+        metrics.processSample(outputs[i], batch_labels[i]);
       }
 
       updateParameters(learning_rate, ++_batch_iter);
@@ -99,10 +103,12 @@ MetricData Model<BATCH_T>::train(
 template <typename BATCH_T>
 InferenceMetricData Model<BATCH_T>::predict(
     const dataset::InMemoryDataset<BATCH_T>& test_data,
+    const std::optional<dataset::BoltDataset>& labels,
     uint32_t* output_active_neurons, float* output_activations,
     const std::vector<std::string>& metric_names, bool verbose,
     uint32_t batch_limit) {
   assert(output_activations != nullptr || output_active_neurons == nullptr);
+  bool compute_metrics = labels.has_value();
 
   uint32_t batch_size = test_data[0].getBatchSize();
 
@@ -128,12 +134,16 @@ InferenceMetricData Model<BATCH_T>::predict(
     const BATCH_T& inputs = test_data[batch];
 
 #pragma omp parallel for default(none)                                 \
-    shared(inputs, outputs, output_active_neurons, output_activations, \
-           metrics, batch, batch_size)
+    shared(inputs, labels, outputs, output_active_neurons, output_activations, \
+           metrics, batch, batch_size, compute_metrics)
     for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
-      forward(i, inputs, outputs[i], /* train=*/false);
+      // We set labels to nullptr so that they are not used in sampling during
+      // inference.
+      forward(i, inputs, outputs[i], /*labels=*/nullptr);
 
-      metrics.processSample(outputs[i], inputs.labels(i));
+      if (compute_metrics) {
+        metrics.processSample(outputs[i], (*labels)[batch][i]);
+      }
 
       if (output_activations != nullptr) {
         assert(outputs[i].len == getInferenceOutputDim());

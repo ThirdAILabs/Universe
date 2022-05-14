@@ -264,6 +264,8 @@ class BoltBatch {
     return _vectors[i];
   }
 
+  uint32_t getBatchSize() const { return _vectors.size(); }
+
   BoltBatch(const BoltBatch& other) = delete;
 
   BoltBatch(BoltBatch&& other) : _vectors(std::move(other._vectors)) {}

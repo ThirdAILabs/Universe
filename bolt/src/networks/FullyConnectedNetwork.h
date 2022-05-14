@@ -20,7 +20,7 @@ namespace thirdai::bolt {
 
 class DLRM;
 
-class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
+class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   friend class DLRM;
 
  public:
@@ -28,13 +28,12 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
 
   void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
 
-  void forward(uint32_t batch_index, const dataset::BoltInputBatch& inputs,
-               BoltVector& output, bool train) final {
-    forward(batch_index, inputs[batch_index], output,
-            train ? &inputs.labels(batch_index) : nullptr);
+  void forward(uint32_t batch_index, const bolt::BoltBatch& inputs,
+               BoltVector& output, const BoltVector* labels) final {
+    forward(batch_index, inputs[batch_index], output, labels);
   }
 
-  void backpropagate(uint32_t batch_index, dataset::BoltInputBatch& inputs,
+  void backpropagate(uint32_t batch_index, bolt::BoltBatch& inputs,
                      BoltVector& output) final {
     backpropagate<true>(batch_index, inputs[batch_index], output);
   }

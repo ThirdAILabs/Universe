@@ -5,9 +5,11 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
 #include <dataset/src/Dataset.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <algorithm>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -27,6 +29,8 @@ class Model {
   MetricData train(
       // Train dataset
       dataset::InMemoryDataset<BATCH_T>& train_data,
+      // Train labels
+      const dataset::BoltDataset& train_labels,
       // Loss function to use
       const LossFunction& loss_fn,
       // Learning rate for training
@@ -51,6 +55,8 @@ class Model {
   InferenceMetricData predict(
       // Test dataset
       const dataset::InMemoryDataset<BATCH_T>& test_data,
+      // Test labels
+      const std::optional<dataset::BoltDataset>& labels,
       // Array to store output active neurons in. This should be null if it is
       // not desired for the output values to be returned or if the output is
       // dense.
@@ -67,7 +73,7 @@ class Model {
 
   // Computes forward path through the network.
   virtual void forward(uint32_t batch_index, const BATCH_T& input,
-                       BoltVector& output, bool train) = 0;
+                       BoltVector& output, const BoltVector* labels) = 0;
 
   // Backpropagates gradients through the network
   virtual void backpropagate(uint32_t batch_index, BATCH_T& input,
