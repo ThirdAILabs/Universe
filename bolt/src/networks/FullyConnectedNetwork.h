@@ -8,7 +8,6 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SequentialLayer.h>
 #include <dataset/src/Dataset.h>
-#include <dataset/src/batch_types/BoltInputBatch.h>
 #include <cmath>
 #include <iostream>
 #include <limits>

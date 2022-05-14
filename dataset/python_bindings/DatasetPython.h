@@ -2,7 +2,6 @@
 
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/Dataset.h>
-#include <dataset/src/batch_types/BoltInputBatch.h>
 #include <dataset/src/batch_types/DenseBatch.h>
 #include <dataset/src/batch_types/SparseBatch.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>

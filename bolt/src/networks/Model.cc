@@ -1,7 +1,6 @@
 #include "Model.h"
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/utils/ProgressBar.h>
-#include <dataset/src/batch_types/BoltInputBatch.h>
 #include <dataset/src/batch_types/ClickThroughBatch.h>
 #include <algorithm>
 #include <cctype>

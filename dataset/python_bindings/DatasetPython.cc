@@ -1,6 +1,5 @@
 #include "DatasetPython.h"
 #include <bolt/src/layers/BoltVector.h>
-#include <dataset/src/batch_types/BoltInputBatch.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
