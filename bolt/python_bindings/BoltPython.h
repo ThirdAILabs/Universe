@@ -46,7 +46,8 @@ class PyNetwork final : public FullyConnectedNetwork {
       : FullyConnectedNetwork(std::move(configs), input_dim) {}
 
   MetricData train(
-      dataset::InMemoryDataset<dataset::BoltInputBatch>& train_data,
+      dataset::InMemoryDataset<bolt::BoltBatch>& train_data,
+      dataset::InMemoryDataset<bolt::BoltBatch>& train_labels,
       // Clang tidy is disabled for this line because it wants to pass by
       // reference, but shared_ptrs should not be passed by reference
       const LossFunction& loss_fn,  // NOLINT
@@ -55,9 +56,9 @@ class PyNetwork final : public FullyConnectedNetwork {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
-    return FullyConnectedNetwork::train(train_data, loss_fn, learning_rate,
-                                        epochs, rehash, rebuild, metric_names,
-                                        verbose);
+    return FullyConnectedNetwork::train(train_data, train_labels, loss_fn,
+                                        learning_rate, epochs, rehash, rebuild,
+                                        metric_names, verbose);
   }
 
   // Does not return py::array_t because this is consistent with the original
