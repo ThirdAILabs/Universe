@@ -1,1 +1,1 @@
-add_library(bolt_datasets BoltDatasets.cc)
+add_library(bolt_datasets_lib BoltDatasets.cc)

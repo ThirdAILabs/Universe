@@ -17,9 +17,9 @@ DatasetWithLabels loadBoltSvmDataset(const std::string& filename,
   std::ifstream file(filename);
 
   SvmParser<bolt::BoltVector, bolt::BoltVector> parser(
-      BoltVector::makeSparseVector,
-      [](const std::vector<uint32_t>& labels) -> BoltVector {
-        return BoltVector::makeSparseVector(
+      bolt::BoltVector::makeSparseVector,
+      [](const std::vector<uint32_t>& labels) -> bolt::BoltVector {
+        return bolt::BoltVector::makeSparseVector(
             labels, std::vector<float>(labels.size(), 1.0 / labels.size()));
       });
 
@@ -58,9 +58,9 @@ DatasetWithLabels loadBoltCsvDataset(const std::string& filename,
   std::ifstream file(filename);
 
   CsvParser<bolt::BoltVector, bolt::BoltVector> parser(
-      BoltVector::makeDenseVector,
-      [](uint32_t label) -> BoltVector {
-        return BoltVector::makeSparseVector({label}, {1.0});
+      bolt::BoltVector::makeDenseVector,
+      [](uint32_t label) -> bolt::BoltVector {
+        return bolt::BoltVector::makeSparseVector({label}, {1.0});
       },
       delimiter);
 

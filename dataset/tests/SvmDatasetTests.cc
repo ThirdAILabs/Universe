@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <dataset/src/Dataset.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <algorithm>
 #include <cstddef>
 #include <cstdio>
@@ -182,23 +183,15 @@ TEST_F(SvmDatasetTestFixture, StreamedDatasetTest) {
 }
 
 TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
-  InMemoryDataset<BoltInputBatch> dataset(_filename, _batch_size,
-                                          BoltSvmBatchFactory{});
+  auto dataset = loadBoltSvmDataset(_filename, _batch_size);
 
+  // Check data vectors are correct.
   uint32_t vec_count = 0;
-  for (const auto& batch : dataset) {
+  for (const auto& batch : dataset.data) {
     ASSERT_TRUE(batch.getBatchSize() == _batch_size ||
                 batch.getBatchSize() == _num_vectors % _batch_size);
 
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      ASSERT_EQ(batch.labels(v).len, _vectors.at(vec_count).labels.size());
-      for (uint32_t i = 0; i < batch.labels(v).len; i++) {
-        ASSERT_EQ(batch.labels(v).active_neurons[i],
-                  _vectors.at(vec_count).labels.at(i));
-        ASSERT_FLOAT_EQ(batch.labels(v).activations[i],
-                        1.0 / _vectors.at(vec_count).labels.size());
-      }
-
       ASSERT_EQ(batch[v].len, _vectors[vec_count].values.size());
       for (uint32_t i = 0; i < batch[v].len; i++) {
         ASSERT_EQ(batch[v].active_neurons[i],
@@ -211,6 +204,26 @@ TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
     }
   }
   ASSERT_EQ(vec_count, _num_vectors);
+
+  // Check labels are correct.
+  uint32_t label_count = 0;
+  for (const auto& batch : dataset.labels) {
+    ASSERT_TRUE(batch.getBatchSize() == _batch_size ||
+                batch.getBatchSize() == _num_vectors % _batch_size);
+
+    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+      ASSERT_EQ(batch[v].len, _vectors.at(label_count).labels.size());
+      for (uint32_t i = 0; i < batch[v].len; i++) {
+        ASSERT_EQ(batch[v].active_neurons[i],
+                  _vectors.at(label_count).labels.at(i));
+        ASSERT_FLOAT_EQ(batch[v].activations[i],
+                        1.0 / _vectors.at(label_count).labels.size());
+      }
+
+      label_count++;
+    }
+  }
+  ASSERT_EQ(label_count, _num_vectors);
 }
 
 }  // namespace thirdai::dataset
