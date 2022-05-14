@@ -21,12 +21,6 @@ int main() {  // NOLINT exceptions
   auto test_data = dataset::loadBoltCsvDataset(
       "/Users/david/Documents/python_/test_mnist2x2.txt", batch_size,
       /* delimiter = */ ' ');
-  std::optional<dataset::BoltDataset> test_labels_opt =
-      std::move(test_data.labels);
-
-  std::unique_ptr<dataset::Factory<dataset::BoltInputBatch>> factory;
-  factory =
-      std::make_unique<dataset::BoltCsvBatchFactory>(/* delimiter = */ ' ');
 
   std::cout << "Finished reading train and test data" << std::endl;
 
@@ -65,7 +59,7 @@ int main() {  // NOLINT exceptions
   for (uint32_t e = 0; e < epochs; e++) {
     network.train(train_data.data, train_data.labels, loss_fn, learning_rate, 1,
                   rehash, rebuild, metrics);
-    network.predict(test_data.data, test_labels_opt, nullptr, nullptr, metrics,
+    network.predict(test_data.data, test_data.labels, nullptr, nullptr, metrics,
                     max_test_batches);
   }
 

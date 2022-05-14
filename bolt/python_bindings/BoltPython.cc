@@ -194,8 +194,9 @@ void createBoltSubmodule(py::module_& module) {
            " * input_dim: Int (positive) - Dimension of input vectors in the "
            "dataset.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
-           py::arg("loss_fn"), py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("rehash") = 0, py::arg("rebuild") = 0,
+           py::arg("train_labels"), py::arg("loss_fn"),
+           py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
+           py::arg("rebuild") = 0,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            "Trains the network on the given training data.\n"
@@ -360,6 +361,7 @@ void createBoltSubmodule(py::module_& module) {
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
       .def("predict", &PyNetwork::predict, py::arg("test_data"),
+           py::arg("test_labels"),
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -515,7 +517,8 @@ void createBoltSubmodule(py::module_& module) {
            "layers in DLRM's top MLP.\n"
            " * input_dim: Int (positive) - Dimension of input vectors in the "
            "dataset.")
-      .def("train", &PyDLRM::train, py::arg("train_data"), py::arg("loss_fn"),
+      .def("train", &PyDLRM::train, py::arg("train_data"),
+           py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
            py::arg("rebuild") = 0,
            py::arg("metrics") = std::vector<std::string>(),
@@ -554,6 +557,7 @@ void createBoltSubmodule(py::module_& module) {
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
       .def("predict", &PyDLRM::predict, py::arg("test_data"),
+           py::arg("test_labels"),
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),

@@ -55,6 +55,8 @@ class InMemoryDataset {
 
   const BATCH_T& at(uint32_t i) const { return _batches.at(i); }
 
+  BATCH_T& at(uint32_t i) { return _batches.at(i); }
+
   auto begin() const { return _batches.begin(); }
 
   auto end() const { return _batches.end(); }

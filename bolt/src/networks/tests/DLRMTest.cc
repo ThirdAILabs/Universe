@@ -12,10 +12,10 @@
 
 namespace thirdai::bolt::tests {
 
+static const uint32_t n_classes = 100, n_batches = 100, batch_size = 100;
+
 class DLRMTestFixture : public testing::Test {
  public:
-  static const uint32_t n_classes = 100, n_batches = 100, batch_size = 100;
-
   static dataset::ClickThroughDatasetWithLabels genDataset(
       bool noisy_dense, bool noisy_categorical) {
     std::mt19937 gen(892734);
@@ -68,11 +68,12 @@ class DLRMTestFixture : public testing::Test {
 //   DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes);
 
 //   auto dataset = genDataset(false, false);
-// std::optional<dataset::BoltDataset> labels_opt = std::move(dataset.labels);
 
-//   dlrm.train(dataset.data, *labels_opt, CategoricalCrossEntropyLoss(), 0.001,
-//   6); auto test_metrics = dlrm.predict(dataset.data, labels_opt, nullptr,
-//   {"categorical_accuracy"});
+//   dlrm.train(dataset.data, dataset.labels, CategoricalCrossEntropyLoss(),
+//   0.001,
+//              6);
+//   auto test_metrics = dlrm.predict(dataset.data, dataset.labels, nullptr,
+//                                    nullptr, {"categorical_accuracy"});
 
 //   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 // }
@@ -93,12 +94,11 @@ TEST_F(DLRMTestFixture, NoisyCategoricalFeatures) {
   DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes);
 
   auto dataset = genDataset(false, true);
-  std::optional<dataset::BoltDataset> labels_opt = std::move(dataset.labels);
 
-  dlrm.train(dataset.data, *labels_opt, CategoricalCrossEntropyLoss(), 0.001,
+  dlrm.train(dataset.data, dataset.labels, CategoricalCrossEntropyLoss(), 0.001,
              32);
   auto test_metrics = dlrm.predict(
-      dataset.data, labels_opt, /* output_active_neurons= */ nullptr,
+      dataset.data, dataset.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr, {"categorical_accuracy"});
 
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.9);
@@ -120,12 +120,11 @@ TEST_F(DLRMTestFixture, NoisyDenseFeatures) {
   DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes);
 
   auto dataset = genDataset(true, false);
-  std::optional<dataset::BoltDataset> labels_opt = std::move(dataset.labels);
 
-  dlrm.train(dataset.data, *labels_opt, CategoricalCrossEntropyLoss(), 0.001,
+  dlrm.train(dataset.data, dataset.labels, CategoricalCrossEntropyLoss(), 0.001,
              3);
   auto test_metrics = dlrm.predict(
-      dataset.data, labels_opt, /* output_active_neurons= */ nullptr,
+      dataset.data, dataset.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr, {"categorical_accuracy"});
 
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
@@ -147,12 +146,11 @@ TEST_F(DLRMTestFixture, NoisyDenseAndCategoricalFeatures) {
   DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes);
 
   auto dataset = genDataset(true, true);
-  std::optional<dataset::BoltDataset> labels_opt = std::move(dataset.labels);
 
-  dlrm.train(dataset.data, *labels_opt, CategoricalCrossEntropyLoss(), 0.001,
+  dlrm.train(dataset.data, dataset.labels, CategoricalCrossEntropyLoss(), 0.001,
              5);
   auto test_metrics = dlrm.predict(
-      dataset.data, labels_opt, /* output_active_neurons= */ nullptr,
+      dataset.data, dataset.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr, {"categorical_accuracy"});
 
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.1);

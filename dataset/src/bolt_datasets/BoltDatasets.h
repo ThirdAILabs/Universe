@@ -6,14 +6,16 @@
 namespace thirdai::dataset {
 
 using BoltDataset = InMemoryDataset<bolt::BoltBatch>;
+using BoltDatasetPtr = std::shared_ptr<BoltDataset>;
 
 class DatasetWithLabels {
  public:
-  BoltDataset data;
-  BoltDataset labels;
+  BoltDatasetPtr data;
+  BoltDatasetPtr labels;
 
   explicit DatasetWithLabels(BoltDataset&& _data, BoltDataset&& _labels)
-      : data(std::move(_data)), labels(std::move(_labels)) {}
+      : data(std::make_shared<BoltDataset>(std::move(_data))),
+        labels(std::make_shared<BoltDataset>(std::move(_labels))) {}
 };
 
 DatasetWithLabels loadBoltSvmDataset(const std::string& filename,
@@ -24,12 +26,14 @@ DatasetWithLabels loadBoltCsvDataset(const std::string& filename,
 
 class ClickThroughDatasetWithLabels {
  public:
-  InMemoryDataset<ClickThroughBatch> data;
-  BoltDataset labels;
+  std::shared_ptr<InMemoryDataset<ClickThroughBatch>> data;
+  BoltDatasetPtr labels;
 
   explicit ClickThroughDatasetWithLabels(
       InMemoryDataset<ClickThroughBatch>&& _data, BoltDataset&& _labels)
-      : data(std::move(_data)), labels(std::move(_labels)) {}
+      : data(std::make_shared<InMemoryDataset<ClickThroughBatch>>(
+            std::move(_data))),
+        labels(std::make_shared<BoltDataset>(std::move(_labels))) {}
 };
 
 ClickThroughDatasetWithLabels loadClickThroughDataset(

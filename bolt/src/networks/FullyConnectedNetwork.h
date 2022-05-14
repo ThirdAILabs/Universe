@@ -111,8 +111,8 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Model<dataset::BoltInputBatch>>(this),
-            _input_dim, _layers, _num_layers, _sparse_inference_enabled);
+    archive(cereal::base_class<Model<bolt::BoltBatch>>(this), _input_dim,
+            _layers, _num_layers, _sparse_inference_enabled);
   }
 
  protected:

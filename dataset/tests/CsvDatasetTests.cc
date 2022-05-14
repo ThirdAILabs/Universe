@@ -234,7 +234,7 @@ TEST_F(CsvDatasetTestFixture, BoltCsvDatasetTest) {
 
     // Check data vectors are correct.
     uint32_t vec_count = 0;
-    for (const auto& batch : dataset.data) {
+    for (const auto& batch : *dataset.data) {
       ASSERT_TRUE(batch.getBatchSize() == batch_size ||
                   batch.getBatchSize() == num_vectors % batch_size);
 
@@ -253,7 +253,7 @@ TEST_F(CsvDatasetTestFixture, BoltCsvDatasetTest) {
 
     // Check labels are correct.
     uint32_t label_count = 0;
-    for (const auto& batch : dataset.labels) {
+    for (const auto& batch : *dataset.labels) {
       ASSERT_TRUE(batch.getBatchSize() == batch_size ||
                   batch.getBatchSize() == num_vectors % batch_size);
 

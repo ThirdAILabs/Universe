@@ -10,10 +10,10 @@
 
 namespace thirdai::bolt::tests {
 
+static const uint32_t n_classes = 100, n_batches = 100, batch_size = 100;
+
 class FullyConnectedClassificationNetworkTestFixture : public testing::Test {
  public:
-  static const uint32_t n_classes = 100, n_batches = 100, batch_size = 100;
-
   static dataset::DatasetWithLabels genDataset(bool add_noise) {
     std::mt19937 gen(892734);
     std::uniform_int_distribution<uint32_t> label_dist(0, n_classes - 1);
@@ -52,12 +52,11 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
                                 n_classes);
 
   auto data = genDataset(false);
-  std::optional<dataset::BoltDataset> labels_opt = std::move(data.labels);
 
-  network.train(data.data, *labels_opt, CategoricalCrossEntropyLoss(), 0.001,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001,
                 5);
   auto test_metrics = network.predict(
-      data.data, labels_opt, /* output_active_neurons= */ nullptr,
+      data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr, {"categorical_accuracy"});
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.98);
 }
@@ -69,12 +68,11 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
                                 n_classes);
 
   auto data = genDataset(true);
-  std::optional<dataset::BoltDataset> labels_opt = std::move(data.labels);
 
-  network.train(data.data, *labels_opt, CategoricalCrossEntropyLoss(), 0.001,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001,
                 5);
   auto test_metrics = network.predict(
-      data.data, labels_opt, /* output_active_neurons= */ nullptr,
+      data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr, {"categorical_accuracy"});
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
 }
@@ -88,12 +86,11 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
                                 n_classes);
 
   auto data = genDataset(false);
-  std::optional<dataset::BoltDataset> labels_opt = std::move(data.labels);
 
-  network.train(data.data, *labels_opt, CategoricalCrossEntropyLoss(), 0.001,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001,
                 2);
   auto test_metrics = network.predict(
-      data.data, labels_opt, /* output_active_neurons= */ nullptr,
+      data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr, {"categorical_accuracy"});
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
@@ -107,12 +104,11 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
                                 n_classes);
 
   auto data = genDataset(true);
-  std::optional<dataset::BoltDataset> labels_opt = std::move(data.labels);
 
-  network.train(data.data, *labels_opt, CategoricalCrossEntropyLoss(), 0.001,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001,
                 2);
   auto test_metrics = network.predict(
-      data.data, labels_opt, /* output_active_neurons= */ nullptr,
+      data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr, {"categorical_accuracy"});
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
 }

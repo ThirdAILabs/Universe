@@ -71,32 +71,31 @@ InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
         y_offsets,
     uint32_t batch_size, uint64_t starting_id);
 
-InMemoryDataset<BoltInputBatch> denseBoltDatasetFromNumpy(
+BoltDatasetPtr denseBoltDatasetFromNumpy(
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
         examples,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        labels,
     uint32_t batch_size);
 
-InMemoryDataset<BoltInputBatch> sparseBoltDatasetFromNumpy(
+BoltDatasetPtr sparseBoltDatasetFromNumpy(
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        x_idxs,
-    const py::array_t<float, py::array::c_style | py::array::forcecast>& x_vals,
+        indices,
+    const py::array_t<float, py::array::c_style | py::array::forcecast>& values,
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        x_offsets,
+        offsets,
+    uint32_t batch_size);
+
+BoltDatasetPtr categoricalLabelsFromNumpy(
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        y_idxs,
-    const py::array_t<float, py::array::c_style | py::array::forcecast>& y_vals,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        y_offsets,
+        labels,
     uint32_t batch_size);
 
 /*
  * This function takes a single sentence, and parses it into an sparse
  * vector of features. Right now it only supports the following parsing:
  * unigram tokenizer + murmurhash tokens into indices.
- * This function returns a tuple of python arrays, where the first array is the
- * indices of the features in the dataset, and the second array is the values.
+ * This function returns a tuple of python arrays, where the first array is
+ * the indices of the features in the dataset, and the second array is the
+ * values.
  */
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
 parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,

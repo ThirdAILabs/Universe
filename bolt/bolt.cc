@@ -274,9 +274,6 @@ void trainFCN(toml::table& config) {
   auto [test_data, test_labels] =
       loadDataset(test_filename, batch_size, csv_delimiter);
 
-  std::optional<thirdai::dataset::BoltDataset> test_labels_wrapped =
-      std::move(test_labels);
-
   for (uint32_t e = 0; e < epochs; e++) {
     network.train(train_data, train_labels, *loss_fn, learning_rate, 1, rehash,
                   rebuild, train_metrics);
@@ -284,7 +281,7 @@ void trainFCN(toml::table& config) {
       network.enableSparseInference();
     }
     network.predict(
-        test_data, test_labels_wrapped, /* output_active_neurons= */ nullptr,
+        test_data, test_labels, /* output_active_neurons= */ nullptr,
         /* output_activations= */ nullptr, test_metrics, max_test_batches);
   }
 }
@@ -337,13 +334,10 @@ void trainDLRM(toml::table& config) {
       test_filename, batch_size, dense_features, categorical_features,
       top_mlp.back()->getDim() > 1);
 
-  std::optional<thirdai::dataset::BoltDataset> test_labels_wrapped =
-      std::move(test_labels);
-
   for (uint32_t e = 0; e < epochs; e++) {
     dlrm.train(train_data, train_labels, *loss_fn, learning_rate, 1, rehash,
                rebuild, train_metrics);
-    dlrm.predict(test_data, test_labels_wrapped,
+    dlrm.predict(test_data, test_labels,
                  /* output_active_neurons= */ nullptr,
                  /* output_activations= */ nullptr, test_metrics);
   }

@@ -159,14 +159,14 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
                                 getNumCategoricalFeatures(), sparse_labels);
 
     uint32_t vec_count = 0;
-    for (const auto& batch : dataset.data) {
+    for (const auto& batch : *dataset.data) {
       verifyDataBatch(batch, vec_count);
       vec_count += batch.getBatchSize();
     }
     ASSERT_EQ(vec_count, _num_vectors);
 
     uint32_t label_count = 0;
-    for (const auto& batch : dataset.labels) {
+    for (const auto& batch : *dataset.labels) {
       verifyLabelBatch(batch, label_count, sparse_labels);
       label_count += batch.getBatchSize();
     }
