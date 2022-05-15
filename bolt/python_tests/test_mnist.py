@@ -71,9 +71,12 @@ def build_sparse_hidden_layer_network(dim, sparsity):
     return network
 
 
-def train_network(network, train_data, epochs, learning_rate=LEARNING_RATE):
+def train_network(
+    network, train_data, train_labels, epochs, learning_rate=LEARNING_RATE
+):
     times = network.train(
         train_data,
+        train_labels,
         bolt.CategoricalCrossEntropyLoss(),
         learning_rate,
         epochs,
@@ -86,9 +89,9 @@ def train_network(network, train_data, epochs, learning_rate=LEARNING_RATE):
 
 
 def load_mnist():
-    train_data = dataset.load_bolt_svm_dataset("mnist", 250)
-    test_data = dataset.load_bolt_svm_dataset("mnist.t", 250)
-    return train_data, test_data
+    train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
+    test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
+    return train_x, train_y, test_x, test_y
 
 
 ACCURACY_THRESHOLD = 0.94
@@ -100,12 +103,12 @@ SPARSE_INFERENCE_SPARSE_OUTPUT_ACCURACY_THRESHOLD = 0.35
 def test_mnist_sparse_output_layer():
     network = build_sparse_output_layer_network()
 
-    train, test = load_mnist()
+    train_x, train_y, test_x, test_y = load_mnist()
 
-    train_network(network, train_data=train, epochs=10)
+    train_network(network, train_x, train_y, epochs=10)
 
     acc, activations = network.predict(
-        test, metrics=["categorical_accuracy"], verbose=False
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
     assert acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
@@ -125,12 +128,12 @@ def test_mnist_sparse_output_layer():
 def test_mnist_sparse_hidden_layer():
     network = build_sparse_hidden_layer_network(20000, 0.01)
 
-    train, test = load_mnist()
+    train_x, train_y, test_x, test_y = load_mnist()
 
-    train_network(network, train_data=train, epochs=10)
+    train_network(network, train_x, train_y, epochs=10)
 
     acc, activations = network.predict(
-        test, metrics=["categorical_accuracy"], verbose=False
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
     assert acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
@@ -150,22 +153,22 @@ def test_mnist_sparse_hidden_layer():
 def test_mnist_sparse_inference():
     network = build_sparse_hidden_layer_network(20000, 0.01)
 
-    train, test = load_mnist()
+    train_x, train_y, test_x, test_y = load_mnist()
 
-    train_network(network, train_data=train, epochs=9)
+    train_network(network, train_x, train_y, epochs=9)
 
     dense_predict, _ = network.predict(
-        test, metrics=["categorical_accuracy"], verbose=False
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
     assert dense_predict["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
     network.enable_sparse_inference()
 
-    train_network(network, train_data=train, epochs=1)
+    train_network(network, train_x, train_y, epochs=1)
 
     sparse_predict, _ = network.predict(
-        test, metrics=["categorical_accuracy"], verbose=False
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
     assert sparse_predict["categorical_accuracy"] >= SPARSE_INFERENCE_ACCURACY_THRESHOLD
@@ -186,22 +189,22 @@ def test_mnist_sparse_inference():
 def test_sparse_inference_with_sparse_output():
     network = build_sparse_output_layer_network()
 
-    train, test = load_mnist()
+    train_x, train_y, test_x, test_y = load_mnist()
 
-    train_network(network, train_data=train, epochs=10)
+    train_network(network, train_x, train_y, epochs=10)
 
     dense_predict, _ = network.predict(
-        test, metrics=["categorical_accuracy"], verbose=False
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
     assert dense_predict["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
     network.enable_sparse_inference()
 
-    train_network(network, train_data=train, epochs=1)
+    train_network(network, train_x, train_y, epochs=1)
 
     sparse_predict, active_neurons, activations = network.predict(
-        test, metrics=["categorical_accuracy"], verbose=False
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
     assert (
@@ -225,12 +228,12 @@ def test_sparse_inference_with_sparse_output():
 def test_load_save_fc_network():
     network = build_sparse_hidden_layer_network(1000, 0.2)
 
-    train_data, test_data = load_mnist()
+    train_x, train_y, test_x, test_y = load_mnist()
 
-    train_network(network, train_data=train_data, epochs=2)
+    train_network(network, train_x, train_y, epochs=2)
 
     original_acc, _ = network.predict(
-        test_data, metrics=["categorical_accuracy"], verbose=False
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
     save_loc = "./bolt_model_save"
@@ -244,16 +247,16 @@ def test_load_save_fc_network():
     new_network = bolt.Network.load(save_loc)
 
     new_acc, _ = new_network.predict(
-        test_data, metrics=["categorical_accuracy"], verbose=False
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
     assert new_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
 
     # Continue to train loaded network
-    train_network(new_network, train_data=train_data, epochs=2)
+    train_network(new_network, train_x, train_y, epochs=2)
 
     another_acc, _ = new_network.predict(
-        test_data, metrics=["categorical_accuracy"], verbose=False
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
     assert another_acc["categorical_accuracy"] >= new_acc["categorical_accuracy"]
@@ -265,12 +268,12 @@ def test_load_save_fc_network():
 def test_get_set_weights():
     network = build_sparse_output_layer_network()
 
-    train_data, test_data = load_mnist()
+    train_x, train_y, test_x, test_y = load_mnist()
 
-    train_network(network, train_data=train_data, epochs=10)
+    train_network(network, train_x, train_y, epochs=10)
 
     original_acc, _ = network.predict(
-        test_data, metrics=["categorical_accuracy"], verbose=False
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
     assert original_acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
@@ -284,7 +287,7 @@ def test_get_set_weights():
     untrained_network.set_biases(1, network.get_biases(1))
 
     new_acc, _ = untrained_network.predict(
-        test_data, metrics=["categorical_accuracy"], verbose=False
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
     assert new_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
