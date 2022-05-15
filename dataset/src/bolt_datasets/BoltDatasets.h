@@ -41,4 +41,4 @@ ClickThroughDatasetWithLabels loadClickThroughDataset(
     uint32_t num_dense_features, uint32_t num_categorical_features,
     bool sparse_labels);
 
-};  // namespace thirdai::dataset
+}  // namespace thirdai::dataset
