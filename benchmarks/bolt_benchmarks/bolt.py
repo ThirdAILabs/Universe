@@ -122,19 +122,30 @@ def find_full_filepath(filename: str) -> str:
 
 def load_dataset(
     config: Dict[str, Any]
-) -> Optional[Tuple[dataset.BoltDataset, dataset.BoltDataset]]:
+) -> Optional[
+    Tuple[
+        dataset.BoltDataset,
+        dataset.BoltDataset,
+        dataset.BoltDataset,
+        dataset.BoltDataset,
+    ]
+]:
     train_filename = find_full_filepath(config["dataset"]["train_data"])
     test_filename = find_full_filepath(config["dataset"]["test_data"])
     batch_size = config["params"]["batch_size"]
     if config["dataset"]["format"].lower() == "svm":
-        train = dataset.load_bolt_svm_dataset(train_filename, batch_size)
-        test = dataset.load_bolt_svm_dataset(test_filename, batch_size)
-        return train, test
+        train_x, train_y = dataset.load_bolt_svm_dataset(train_filename, batch_size)
+        test_x, test_y = dataset.load_bolt_svm_dataset(test_filename, batch_size)
+        return train_x, train_y, test_x, test_y
     elif config["dataset"]["format"].lower() == "csv":
         delimiter = config["dataset"].get("delimeter", ",")
-        train = dataset.load_bolt_csv_dataset(train_filename, batch_size, delimiter)
-        test = dataset.load_bolt_csv_dataset(test_filename, batch_size, delimiter)
-        return train, test
+        train_x, train_y = dataset.load_bolt_csv_dataset(
+            train_filename, batch_size, delimiter
+        )
+        test_x, test_y = dataset.load_bolt_csv_dataset(
+            test_filename, batch_size, delimiter
+        )
+        return train_x, train_y, test_x, test_y
     else:
         print("Invalid dataset format specified")
         return None
@@ -187,7 +198,7 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
     if data is None:
         raise ValueError("Unable to load a dataset. Please check the config")
 
-    train, test = data
+    train_x, train_y, test_x, test_y = data
 
     if config["params"]["loss_fn"].lower() == "categoricalcrossentropyloss":
         loss = bolt.CategoricalCrossEntropyLoss()
@@ -202,7 +213,7 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
 
     for e in range(epochs):
         metrics = network.train(
-            train, loss, learning_rate, 1, rehash, rebuild, train_metrics
+            train_x, train_y, loss, learning_rate, 1, rehash, rebuild, train_metrics
         )
         if mlflow_enabled:
             log_training_metrics(metrics)
@@ -211,16 +222,18 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
             network.enable_sparse_inference()
 
         if max_test_batches is None:
-            metrics, _ = network.predict(test, test_metrics)
+            metrics, _ = network.predict(test_x, test_y, test_metrics)
             if mlflow_enabled:
                 mlflow.log_metrics(metrics)
         else:
-            metrics, _ = network.predict(test, test_metrics, True, max_test_batches)
+            metrics, _ = network.predict(
+                test_x, test_y, test_metrics, True, max_test_batches
+            )
             if mlflow_enabled:
                 mlflow.log_metrics(metrics)
     if not max_test_batches is None:
         # If we limited the number of test batches during training we run on the whole test set at the end.
-        metrics, _ = network.predict(test, test_metrics)
+        metrics, _ = network.predict(test_x, test_y, test_metrics)
         if mlflow_enabled:
             mlflow.log_metrics(metrics)
 
