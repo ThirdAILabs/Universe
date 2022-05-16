@@ -42,11 +42,8 @@ void createDatasetSubmodule(py::module_& module) {
 
   // The no lint below is because clang tidy doesn't like the anonymous object
   // instatiation and is worried it will be lonely.
-  py::class_<  // NOLINT
-      thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>,
-      std::shared_ptr<thirdai::dataset::InMemoryDataset<
-          thirdai::dataset::ClickThroughBatch>>>(dataset_submodule,
-                                                 "ClickThroughDataset");
+  py::class_<ClickThroughDataset, ClickThroughDatasetPtr>(  // NOLINT
+      dataset_submodule, "ClickThroughDataset");
 
   dataset_submodule.def(
       "load_click_through_dataset", &loadClickThroughDatasetWrapper,

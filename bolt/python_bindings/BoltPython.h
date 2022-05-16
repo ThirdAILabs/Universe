@@ -283,7 +283,7 @@ class PyNetwork final : public FullyConnectedNetwork {
 
   py::tuple predictImpl(
       const dataset::BoltDatasetPtr& test_data,
-      const std::optional<dataset::BoltDatasetPtr>& test_labels,
+      const dataset::BoltDatasetPtr& test_labels,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
     // Redirect to python output.
@@ -329,8 +329,7 @@ class PyDLRM final : public DLRM {
              std::move(top_mlp_configs), input_dim) {}
 
   py::tuple predict(
-      const std::shared_ptr<
-          dataset::InMemoryDataset<dataset::ClickThroughBatch>>& test_data,
+      const dataset::ClickThroughDatasetPtr& test_data,
       const dataset::BoltDatasetPtr& test_labels,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {

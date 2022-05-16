@@ -102,12 +102,11 @@ MetricData Model<BATCH_T>::train(
 template <typename BATCH_T>
 InferenceMetricData Model<BATCH_T>::predict(
     const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
-    const std::optional<dataset::BoltDatasetPtr>& labels,
-    uint32_t* output_active_neurons, float* output_activations,
-    const std::vector<std::string>& metric_names, bool verbose,
-    uint32_t batch_limit) {
+    const dataset::BoltDatasetPtr& labels, uint32_t* output_active_neurons,
+    float* output_activations, const std::vector<std::string>& metric_names,
+    bool verbose, uint32_t batch_limit) {
   assert(output_activations != nullptr || output_active_neurons == nullptr);
-  bool compute_metrics = labels.has_value();
+  bool compute_metrics = labels != nullptr;
 
   uint32_t batch_size = test_data->at(0).getBatchSize();
 
@@ -141,7 +140,7 @@ InferenceMetricData Model<BATCH_T>::predict(
       forward(i, inputs, outputs[i], /*labels=*/nullptr);
 
       if (compute_metrics) {
-        metrics.processSample(outputs[i], (**labels)[batch][i]);
+        metrics.processSample(outputs[i], (*labels)[batch][i]);
       }
 
       if (output_activations != nullptr) {

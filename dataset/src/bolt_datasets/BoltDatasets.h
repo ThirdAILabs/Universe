@@ -24,9 +24,12 @@ DatasetWithLabels loadBoltSvmDataset(const std::string& filename,
 DatasetWithLabels loadBoltCsvDataset(const std::string& filename,
                                      uint32_t batch_size, char delimiter);
 
+using ClickThroughDataset = InMemoryDataset<ClickThroughBatch>;
+using ClickThroughDatasetPtr = std::shared_ptr<ClickThroughDataset>;
+
 class ClickThroughDatasetWithLabels {
  public:
-  std::shared_ptr<InMemoryDataset<ClickThroughBatch>> data;
+  ClickThroughDatasetPtr data;
   BoltDatasetPtr labels;
 
   explicit ClickThroughDatasetWithLabels(
