@@ -28,7 +28,7 @@ class Model {
    */
   MetricData train(
       // Train dataset
-      std::shared_ptr<dataset::InMemoryDataset<BATCH_T>> train_data,
+      std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
       // Train labels
       const dataset::BoltDatasetPtr& train_labels,
       // Loss function to use
@@ -54,9 +54,9 @@ class Model {
    */
   InferenceMetricData predict(
       // Test dataset
-      std::shared_ptr<dataset::InMemoryDataset<BATCH_T>> test_data,
+      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
       // Test labels
-      std::optional<dataset::BoltDatasetPtr> labels,
+      const std::optional<dataset::BoltDatasetPtr>& labels,
       // Array to store output active neurons in. This should be null if it is
       // not desired for the output values to be returned or if the output is
       // dense.

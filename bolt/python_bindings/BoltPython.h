@@ -47,7 +47,7 @@ class PyNetwork final : public FullyConnectedNetwork {
       : FullyConnectedNetwork(std::move(configs), input_dim) {}
 
   MetricData train(
-      const dataset::BoltDatasetPtr& train_data,
+      dataset::BoltDatasetPtr& train_data,
       const dataset::BoltDatasetPtr& train_labels,
       // Clang tidy is disabled for this line because it wants to pass by
       // reference, but shared_ptrs should not be passed by reference
@@ -121,37 +121,10 @@ class PyNetwork final : public FullyConnectedNetwork {
 
   py::tuple predict(
       const dataset::BoltDatasetPtr& test_data,
-      const std::optional<dataset::BoltDatasetPtr>& test_labels,
+      const dataset::BoltDatasetPtr& test_labels,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
-    // Redirect to python output.
-    py::scoped_ostream_redirect stream(
-        std::cout, py::module_::import("sys").attr("stdout"));
-
-    uint32_t num_samples = test_data->len();
-
-    bool output_sparse = getInferenceOutputDim() < getOutputDim();
-
-    // Declare pointers to memory for activations and active neurons, if the
-    // allocation succeeds this will be assigned valid addresses by the
-    // allocateActivations function. Otherwise the nullptr will indicate that
-    // activations are not being computed.
-    uint32_t* active_neurons = nullptr;
-    float* activations = nullptr;
-
-    bool alloc_success =
-        allocateActivations(num_samples, getInferenceOutputDim(),
-                            &active_neurons, &activations, output_sparse);
-
-    auto metric_data = FullyConnectedNetwork::predict(
-        test_data, test_labels, active_neurons, activations, metrics, verbose,
-        batch_limit);
-
-    py::dict py_metric_data = py::cast(metric_data);
-
-    return constructNumpyArrays(std::move(py_metric_data), num_samples,
-                                getInferenceOutputDim(), active_neurons,
-                                activations, output_sparse, alloc_success);
+    return predictImpl(test_data, test_labels, metrics, verbose, batch_limit);
   }
 
   py::tuple predictWithDenseNumpyArray(
@@ -171,7 +144,8 @@ class PyNetwork final : public FullyConnectedNetwork {
     auto batched_labels = thirdai::dataset::python::categoricalLabelsFromNumpy(
         labels, batch_size);
 
-    return predict(batched_data, batched_labels, metrics, verbose, batch_limit);
+    return predictImpl(batched_data, batched_labels, metrics, verbose,
+                       batch_limit);
   }
 
   py::tuple predictWithSparseNumpyArray(
@@ -199,7 +173,8 @@ class PyNetwork final : public FullyConnectedNetwork {
     auto batched_labels = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
         y_idxs, y_vals, y_offsets, batch_size);
 
-    return predict(batched_data, batched_labels, metrics, verbose, batch_limit);
+    return predictImpl(batched_data, batched_labels, metrics, verbose,
+                       batch_limit);
   }
 
   void save(const std::string& filename) {

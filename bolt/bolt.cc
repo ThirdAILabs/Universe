@@ -196,10 +196,14 @@ std::string findFullFilepath(const std::string& filename) {
 }
 
 auto loadDataset(const std::string& filename, uint32_t batch_size,
-                 std::optional<char> csv_delimeter) {
-  if (csv_delimeter.has_value()) {
+                 std::optional<char> csv_delimiter) {
+  // If the csv delimiter is specified then we know that it is a csv dataset,
+  // otherwise we use the svm dataset format.
+  // The function that calls this helper function already performs error
+  // checking to ensure that the dataset format is either csv or svm.
+  if (csv_delimiter.has_value()) {
     return thirdai::dataset::loadBoltCsvDataset(filename, batch_size,
-                                                *csv_delimeter);
+                                                *csv_delimiter);
   }
   return thirdai::dataset::loadBoltSvmDataset(filename, batch_size);
 }

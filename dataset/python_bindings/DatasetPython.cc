@@ -17,14 +17,6 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__str__", &BoltVector::toString)
       .def("__repr__", &BoltVector::toString);
 
-  // py::class_<BoltInputBatch>(dataset_submodule, "BoltInputBatch")
-  //     .def(py::init<std::vector<BoltVector>&&, std::vector<BoltVector>&&>(),
-  //          py::arg("vectors"), py::arg("labels"))
-  //     .def("to_string", &BoltInputBatch::toString)
-  //     .def("__str__", &BoltInputBatch::toString)
-  //     .def("__repr__", &BoltInputBatch::toString)
-  //     .def("size", &BoltInputBatch::getBatchSize);
-
   // The no lint below is because clang tidy doesn't like the anonymous object
   // instatiation and is worried it will be lonely.
   py::class_<InMemoryDataset<SparseBatch>>(dataset_submodule,  // NOLINT
