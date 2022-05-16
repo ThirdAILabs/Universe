@@ -1,5 +1,11 @@
 name: Check Python and C++ Formatting
 
+# Kills old jobs from the same pr if we push a new commit
+# See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
+concurrency: 
+  group: ${{ github.head_ref }}
+  cancel-in-progress: true
+
 # Controls when the workflow will run
 on:
   # Triggers the workflow on push or pull request events but only for the main branch

@@ -1,5 +1,11 @@
 name: Upload to Test Pypi
 
+# Kills old jobs from the same pr if we push a new commit
+# See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
+concurrency: 
+  group: ${{ github.head_ref }}
+  cancel-in-progress: true
+
 # Run on pushes and releases. The actual upload will only happen on a 
 # release.
 # Note this action does not ever upload to the main Pypi repo. For now, do that
@@ -30,39 +36,52 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
 
-  #     - name: Build wheels
-  #       uses: pypa/cibuildwheel@v2.5.0
-  #       env:
-  #         # TODO(josh): Get cross compiling working to build more types of wheels
-  #         CIBW_BUILD: "*macosx_x86_64 *manylinux_x86_64"
-  #         CIBW_BEFORE_ALL_MACOS: ln -s /usr/local/bin/g++-11 /usr/local/bin/g++
+      - name: Build and test wheels
+        uses: pypa/cibuildwheel@v2.5.0
+        env:
+          
+          # TODO(josh): Get cross compiling working to build more types of wheels
+          CIBW_BUILD: "*macosx_x86_64 *manylinux_x86_64 *win*"
+          CIBW_BEFORE_ALL_MACOS: ln -s /usr/local/bin/g++-11 /usr/local/bin/g++
+          # Need to install ninja to build dependencies
+          CIBW_BEFORE_ALL_WINDOWS: >
+            cd .. &&
+            wget https://github.com/ninja-build/ninja/releases/download/v1.11.0/ninja-win.zip &&
+            unzip ninja-win.zip &&
+            export PATH=$PATH:$(pwd) &&
+            cd -
+
+          CIBW_BEFORE_TEST: export THIRDAI_LICENSE_PATH={package}/docker/product/slim/license.serialized 
+          CIBW_TEST_REQUIRES: datasets mmh3 numpy
+          CIBW_TEST_COMMAND: pytest {package} --ignore-glob=../deps -s -m unit
 
 
-  #     - name: Upload wheels
-  #       uses: actions/upload-artifact@v2
-  #       with:
-  #         path: ./wheelhouse/*.whl
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v2
+        with:
+          path: ./wheelhouse/*.whl
 
 
-  # upload_all:
-  #   name: Upload to test pypi
-  #   needs: [build_wheels]
-  #   runs-on: ubuntu-latest
-  #   if: github.event_name == 'release' && github.event.action == 'published'
+  upload_all:
+    name: Upload to test pypi
+    needs: [build_wheels]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published'
 
-  #   steps:
-  #   - uses: actions/setup-python@v2
+    steps:
+    - uses: actions/setup-python@v2
 
-  #   - uses: actions/download-artifact@v2
-  #     with:
-  #       name: artifact
-  #       path: dist
+    - uses: actions/download-artifact@v2
+      with:
+        name: artifact
+        path: dist
 
-  #   - uses: pypa/gh-action-pypi-publish@v1.5.0
-  #     with:
-  #       user: __token__
-  #       password: ${{ secrets.TEST_PYPI_TOKEN }}
-  #       repository_url: https://test.pypi.org/legacy/
+    - uses: pypa/gh-action-pypi-publish@v1.5.0
+      with:
+        user: __token__
+        password: ${{ secrets.TEST_PYPI_TOKEN }}
+        repository_url: https://test.pypi.org/legacy/

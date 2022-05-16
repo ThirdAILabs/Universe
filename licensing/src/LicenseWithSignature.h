@@ -14,7 +14,10 @@
 #include <exception>
 #include <fstream>
 #include <optional>
+#include <filesystem>
+#if defined __linux__ || defined __APPLE__
 #include <pwd.h>
+#endif
 #include <unistd.h>
 #include <utility>
 
@@ -121,31 +124,48 @@ class LicenseWithSignature {
   }
 
   /**
-   * Checks for a license file named license.serialized in a bunch of places,
-   * including the current direcotry and the home direcotry.
+   * Checks for a license file in
+   * 1. env(THIRDAI_LICENSE_PATH)
+   * 2. ~/license.serialized
+   * 3. {cwd}/license.serialized
+   * Uses the first file found.
    * If no license is found, we throw an error.
    * If a license is found we verify it with the passed in public key,
    * then check whether it has expired. If either check fails we throw an error.
    * Otherwise we just return.
    */
   static void findVerifyAndCheckLicense() {
-    std::vector<std::string> license_file_name_options = {
-        "license.serialized", "/home/thirdai/work/license.serialized",
-        "/licenses/license.serialized"};
+    std::vector<std::string> license_file_name_options;
+
+    auto optional_license_environment_path =
+        get_license_path_from_environment();
+    if (!optional_license_environment_path->empty()) {
+      license_file_name_options.push_back(
+          optional_license_environment_path.value());
+    }
+
     auto optional_home_dir = get_home_directory();
     if (!optional_home_dir->empty()) {
       license_file_name_options.push_back(optional_home_dir.value() +
                                           "/license.serialized");
     }
 
-    std::optional<LicenseWithSignature> license;
+    auto optional_current_dir = get_current_directory();
+    if (!optional_current_dir->empty()) {
+      license_file_name_options.push_back(optional_current_dir.value() +
+                                          "/license.serialized");
+    }
+
+    std::optional<std::pair<LicenseWithSignature, std::string>>
+        license_with_file;
     for (const std::string& license_file_name : license_file_name_options) {
       if (can_access_file(license_file_name)) {
-        license = deserializeFromFile(license_file_name);
+        license_with_file = {deserializeFromFile(license_file_name),
+                             license_file_name};
         break;
       }
     }
-    if (!license.has_value()) {
+    if (!license_with_file.has_value()) {
       throw thirdai::exceptions::LicenseCheckException(
           "no license file found. Go to https://thirdai.com/try-bolt to get a "
           "license.");
@@ -156,17 +176,18 @@ class LicenseWithSignature {
                               new CryptoPP::Base64Decoder);
     public_key.BERDecode(ss);
 
-    if (!license->verify(public_key)) {
+    if (!license_with_file->first.verify(public_key)) {
       throw thirdai::exceptions::LicenseCheckException(
-          "license verification failure. Go to https://thirdai.com/try-bolt to "
-          "get a "
-          "valid license.");
+          "license verification failure using license file " +
+          license_with_file->second +
+          ". Go to https://thirdai.com/try-bolt to get a valid license.");
     }
 
-    if (license->get_license().isExpired()) {
+    if (license_with_file->first.get_license().isExpired()) {
       throw thirdai::exceptions::LicenseCheckException(
-          "license expired. Go to https://thirdai.com/try-bolt to renew your "
-          "license.");
+          "license file " + license_with_file->second +
+          "expired. Go to "
+          "https://thirdai.com/try-bolt to renew your license.");
     }
   }
 
@@ -188,7 +209,27 @@ class LicenseWithSignature {
     return infile.good();
   }
 
+  static std::optional<std::string> get_license_path_from_environment() {
+    const char* license_env_path = std::getenv("THIRDAI_LICENSE_PATH");
+    if (license_env_path == NULL) {
+      return {};
+    }
+    // This copies the char* into a string object, so no we are not deleting
+    // the memory of the environment variable (which is good!)
+    return license_env_path;
+  }
+
+  static std::optional<std::string> get_current_directory() {
+    auto path = std::filesystem::current_path();
+    if (path.empty()) {
+      return {};
+    }
+
+    return path.u8string();
+  }
+
   static std::optional<std::string> get_home_directory() {
+#if defined __linux__ || defined __APPLE__
     struct passwd* pw = getpwuid(getuid());
     if (pw == NULL) {
       return std::nullopt;
@@ -198,6 +239,24 @@ class LicenseWithSignature {
       return std::nullopt;
     }
     return std::string(dir);
+#elif _WIN32
+    return get_home_directory_windows();
+#endif
+  }
+
+  static std::optional<std::string> get_home_directory_windows() {
+    char* dir = std::getenv("USERPROFILE");
+    if (dir == NULL) {
+      char* home_drive = std::getenv("HOMEDRIVE");
+      char* home_path = std::getenv("HOMEPATH");
+      if (home_drive == NULL || home_path == NULL) {
+        return std::nullopt;
+      }
+      // This copies the char* into a string object, so no we are not deleting
+      // the memory of the environment variable (which is good!)
+      return std::string(home_drive) + std::string(home_path);
+    }
+    return dir;
   }
 
   License _license;
