@@ -7,6 +7,8 @@ name: Upload to Test Pypi
 # https://www.notion.so/Deploy-our-package-to-pypi-60d3c539e4fd4250897af043a329d08f
 # for more details.
 on: 
+  pull_request:
+    branches: [main]
   push: 
     branches: [main]
   release:
@@ -20,7 +22,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-10.15]
+        os: [windows-2019]
 
     steps:
       - uses: actions/checkout@v2
@@ -28,36 +30,39 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v2.5.0
-        env:
-          # TODO(josh): Get cross compiling working to build more types of wheels
-          CIBW_BUILD: "*macosx_x86_64 *manylinux_x86_64"
-          CIBW_BEFORE_ALL_MACOS: ln -s /usr/local/bin/g++-11 /usr/local/bin/g++
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
+  #     - name: Build wheels
+  #       uses: pypa/cibuildwheel@v2.5.0
+  #       env:
+  #         # TODO(josh): Get cross compiling working to build more types of wheels
+  #         CIBW_BUILD: "*macosx_x86_64 *manylinux_x86_64"
+  #         CIBW_BEFORE_ALL_MACOS: ln -s /usr/local/bin/g++-11 /usr/local/bin/g++
 
 
-      - name: Upload wheels
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./wheelhouse/*.whl
+  #     - name: Upload wheels
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         path: ./wheelhouse/*.whl
 
 
-  upload_all:
-    name: Upload to test pypi
-    needs: [build_wheels]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
+  # upload_all:
+  #   name: Upload to test pypi
+  #   needs: [build_wheels]
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'release' && github.event.action == 'published'
 
-    steps:
-    - uses: actions/setup-python@v2
+  #   steps:
+  #   - uses: actions/setup-python@v2
 
-    - uses: actions/download-artifact@v2
-      with:
-        name: artifact
-        path: dist
+  #   - uses: actions/download-artifact@v2
+  #     with:
+  #       name: artifact
+  #       path: dist
 
-    - uses: pypa/gh-action-pypi-publish@v1.5.0
-      with:
-        user: __token__
-        password: ${{ secrets.TEST_PYPI_TOKEN }}
-        repository_url: https://test.pypi.org/legacy/
+  #   - uses: pypa/gh-action-pypi-publish@v1.5.0
+  #     with:
+  #       user: __token__
+  #       password: ${{ secrets.TEST_PYPI_TOKEN }}
+  #       repository_url: https://test.pypi.org/legacy/
