@@ -46,15 +46,10 @@ jobs:
           # TODO(josh): Get cross compiling working to build more types of wheels
           CIBW_BUILD: "*macosx_x86_64 *manylinux_x86_64 *win_amd64"
           CIBW_BEFORE_ALL_MACOS: ln -s /usr/local/bin/g++-11 /usr/local/bin/g++
-          # Need to install ninja to build dependencies
-          # CIBW_BEFORE_ALL_WINDOWS: >
-          #   cd .. &&
-          #   wget https://github.com/ninja-build/ninja/releases/download/v1.11.0/ninja-win.zip &&
-          #   unzip ninja-win.zip &&
-          #   export PATH=$PATH:$(pwd) &&
-          #   cd -
 
-          CIBW_BEFORE_TEST: export THIRDAI_LICENSE_PATH={package}/docker/product/slim/license.serialized 
+          CIBW_BEFORE_TEST_WINDOWS:  set THIRDAI_LICENSE_PATH={package}/docker/product/slim/license.serialized 
+          CIBW_BEFORE_TEST_MACOS: export THIRDAI_LICENSE_PATH={package}/docker/product/slim/license.serialized 
+          CIBW_BEFORE_TEST_LINUS: export THIRDAI_LICENSE_PATH={package}/docker/product/slim/license.serialized
           CIBW_TEST_REQUIRES: datasets mmh3 numpy
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob=../deps -s -m unit
 
