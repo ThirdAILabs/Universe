@@ -28,7 +28,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019]
+        os: [ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v2
@@ -52,7 +52,7 @@ jobs:
           CIBW_BEFORE_TEST_LINUS: export THIRDAI_LICENSE_PATH={package}/docker/product/slim/license.serialized
           CIBW_TEST_REQUIRES: datasets mmh3 numpy pytest
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -s -m unit
-
+          CIBW_BUILD_VERBOSITY: 3
 
 
       - name: Upload wheels
