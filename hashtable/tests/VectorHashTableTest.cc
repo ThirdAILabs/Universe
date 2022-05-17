@@ -3,8 +3,8 @@
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <cassert>
-#include <vector>
 #include <numeric>
+#include <vector>
 
 using thirdai::hashtable::VectorHashTable;
 

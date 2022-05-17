@@ -11,11 +11,11 @@
 #include <unordered_set>
 #include <utility>
 
-// Couldn't get M_PI working with MSVC, but this should be more than enough decimal places
+// Couldn't get M_PI working with MSVC, but this should be more than enough
+// decimal places
 #ifndef M_PI
-    #define M_PI 3.14159265358979323846
+#define M_PI 3.14159265358979323846
 #endif
-
 
 namespace thirdai::hashing {
 

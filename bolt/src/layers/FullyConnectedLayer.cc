@@ -3,9 +3,9 @@
 #include <cassert>
 #include <cmath>
 #include <exception>
+#include <numeric>
 #include <random>
 #include <unordered_map>
-#include <numeric>
 
 namespace thirdai::bolt {
 
@@ -336,8 +336,10 @@ inline void FullyConnectedLayer::updateSparseSparseWeightParameters(
   // 2. Having a bloom filter where we cheaply hash the active pairs to a bloom
   //    filter bit, and if it is already set in the bloom filter skip it,
   //    otherwise set the bit and do the gradient update.
-  for (uint32_t pair_id = 0; pair_id < _active_pairs.size(); pair_id++) {
+  for (uint32_t pair_id = 0; pair_id < _active_pairs.size();  // NOLINT
+       pair_id++) {
     // MSVC doesn't like if we iterate over objects, only integers
+    // (but clang-tidy wants the range based for loop, so we need NOLINT above)
     const auto& active_pair = _active_pairs[pair_id];
     for (uint64_t prev_neuron : active_pair->first) {
       for (uint64_t cur_neuron : active_pair->second) {

@@ -49,16 +49,16 @@ class SampledHashTable final : public HashTable<LABEL_T> {
 
   uint32_t atomic_fetch_and_add(uint32_t table, uint32_t row) {
     uint32_t counter;
-    // We need this, because of course MSVC doesn't have support for OpenMP 3
-    #ifdef _MSC_VER
-      // This might be slighlty slower than atomic, but probably not too bad
-      // TODO(any): Change to "atomic capture" if MSVC ever adds it
-      #pragma omp critical
-      counter = _counters[(CounterIdx(table, row))]++;
-    #else
-      #pragma omp atomic capture
-      counter = _counters[(CounterIdx(table, row))]++;
-    #endif
+// We need this, because of course MSVC doesn't have support for OpenMP 3
+#ifdef _MSC_VER
+// This might be slighlty slower than atomic, but probably not too bad
+// TODO(any): Change to "atomic capture" if MSVC ever adds it
+#pragma omp critical
+    counter = _counters[(CounterIdx(table, row))]++;
+#else
+#pragma omp atomic capture
+    counter = _counters[(CounterIdx(table, row))]++;
+#endif
     return counter;
   }
 

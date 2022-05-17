@@ -51,7 +51,7 @@ jobs:
           CIBW_BEFORE_TEST_MACOS: export THIRDAI_LICENSE_PATH={package}/docker/product/slim/license.serialized 
           CIBW_BEFORE_TEST_LINUS: export THIRDAI_LICENSE_PATH={package}/docker/product/slim/license.serialized
           CIBW_TEST_REQUIRES: datasets mmh3 numpy pytest
-          CIBW_TEST_COMMAND: pytest {package} --ignore-glob=../deps -s -m unit
+          CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -s -m unit
 
 
 

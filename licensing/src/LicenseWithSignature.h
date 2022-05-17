@@ -12,9 +12,9 @@
 #include <exceptions/src/Exceptions.h>
 #include <sys/types.h>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <optional>
-#include <filesystem>
 #if defined __linux__ || defined __APPLE__
 #include <pwd.h>
 #endif
