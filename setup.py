@@ -53,6 +53,9 @@ class CMakeBuild(build_ext):
         ]
         build_args = []
 
+        # CMake lets you override the generator - we need to check this.
+        cmake_generator = os.environ.get("CMAKE_GENERATOR", "")
+
         if self.compiler.compiler_type != "msvc":
             # Using Ninja-build since it a) is available as a wheel and b)
             # multithreads automatically. MSVC would require all variables be
