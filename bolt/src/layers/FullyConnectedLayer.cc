@@ -177,11 +177,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
 
   if (_act_func == ActivationFunction::Sigmoid) {
     for (uint64_t n = 0; n < len_out; n++) {
-      output.activations[n] = std::exp(output.activations[n] - max_act);
-    }
-    for (uint64_t n = 0; n < len_out; n++) {
-      output.activations[n] /= (std::exp(-max_act)+output.activations[n]);
-      assert(!std::isnan(output.activations[n]));
+      output.activations[n] = 1/(1+std::exp(-output.activations[n]));
     }
   }
 }
