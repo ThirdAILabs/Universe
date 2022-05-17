@@ -92,12 +92,12 @@ class CMakeBuild(build_ext):
             if not single_config and not contains_arch:
                 cmake_args += ["-A", PLAT_TO_CMAKE[self.plat_name]]
 
-            # Multi-config generators have a different way to specify configs
-            if not single_config:
-                cmake_args += [
-                    f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{cfg.upper()}={extdir}"
-                ]
-                build_args += ["--config", cfg]
+            # # Multi-config generators have a different way to specify configs
+            # if not single_config:
+            #     cmake_args += [
+            #         f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{build_mode.upper()}={extdir}"
+            #     ]
+            #     build_args += ["--config", build_mode]
 
         build_args += [f"-j{num_jobs}"]
         # cmake_args += [f'"-DFEATURE_FLAGS={feature_flags}"']
