@@ -75,7 +75,8 @@ class BoltSvmBatchFactory : public Factory<BoltInputBatch> {
                 [](const std::vector<uint32_t>& labels) -> BoltVector {
                   return BoltVector::makeSparseVector(
                       labels,
-                      std::vector<float>(labels.size(), 1.0 / labels.size()));
+                      // std::vector<float>(labels.size(), 1.0 / labels.size()));
+					  std::vector<float>(labels.size(), 1.0));
                 }) {}
 
   BoltInputBatch parse(std::ifstream& file, uint32_t target_batch_size,
