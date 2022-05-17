@@ -27,12 +27,12 @@ When the `bolt.py` script is invoked with a config file it will construct the ne
 ## Config File Format
 The config file is organized into a few main sections. 
 
-* `job` - this field simply specifies the name which is used as the name of the experiment in mlflow. This is not the same as the run name command line argument which helps delineate the different runs of the same experiment. Ex:
+* `job` - this field simply specifies the name which is used as the name of the experiment in mlflow. This is not the same as the run name command line argument which helps delineate the different runs of the same experiment. Example:
 ```toml
 job = "Amazon670k Product Recommendation"
 
 ```
-* `[dataset]` - this section specifies information about the dataset, including the path, input dimension to the network, and the format if the dataset is svm or csv. Ex:
+* `[dataset]` - this section specifies information about the dataset, including the path, input dimension to the network, and the format if the dataset is svm or csv. Example:
 ```toml
 [dataset]
 train_data = "amazon-670k/train_shuffled_noHeader.txt"
@@ -41,7 +41,7 @@ format = "svm"
 input_dim = 135909
 max_test_batches = 20
 ```
-* `[params]` - this section provides information about various parameters for training such as the loss function, number of epochs, metrics, learning rate, batch size, etc. Ex:
+* `[params]` - this section provides information about various parameters for training such as the loss function, number of epochs, metrics, learning rate, batch size, etc. Example:
 ```toml
 [params]
 loss_fn = "CategoricalCrossEntropyLoss"
@@ -54,7 +54,7 @@ rehash = 6400
 rebuild = 128000
 ```
 * __Network Architecture__ - the way the architecture is specified in the config file depends on if it is a fully connected or DLRM model.  
-  * __Fully Connected Model__ - for a fully connnected model architecture the layers are specified by the `[[layers]]` sections which give the dimension, activation function, sparsity, and any other sampling paramters (or indicate that it should be autotuned). Ex:
+  * __Fully Connected Model__ - for a fully connnected model architecture the layers are specified by the `[[layers]]` sections which give the dimension, activation function, sparsity, and any other sampling paramters (or indicate that it should be autotuned). Example:
   ```toml
   [[layers]]
   dim = 256
@@ -77,7 +77,7 @@ rebuild = 128000
   reservoir_size = 128
   range_pow = 15
   ```
-  * __DLRM__ - for a DLRM model there are several sections for the architecture. The `[embedding_layer]` section gives the architecture of the embedding layer, its size, number of lookups, etc. The remaining information is in the sections `[[bottom_mlp_layers]]` and `[[top_mlp_layers]]` which have the same format of the `[[layers]]` section for a fully connected model and indicate the architecture of the two fully connected networks that are used in the DLRM model. Ex:
+  * __DLRM__ - for a DLRM model there are several sections for the architecture. The `[embedding_layer]` section gives the architecture of the embedding layer, its size, number of lookups, etc. The remaining information is in the sections `[[bottom_mlp_layers]]` and `[[top_mlp_layers]]` which have the same format of the `[[layers]]` section for a fully connected model and indicate the architecture of the two fully connected networks that are used in the DLRM model. Example:
   ```toml
   [embedding_layer]
   num_embedding_lookups = 8
@@ -85,10 +85,10 @@ rebuild = 128000
   log_embedding_block_size = 10
 
   [[bottom_mlp_layers]]
-  ...
+  . . .
 
   [[top_mlp_layers]]
-  ...
+  . . .
   ```
 
 ## Authentication on S3 Bucket for Uploading Artifacts
