@@ -85,10 +85,10 @@ rebuild = 128000
   log_embedding_block_size = 10
 
   [[bottom_mlp_layers]]
-  . . .
+  # ...
 
   [[top_mlp_layers]]
-  . . .
+  # ...
   ```
 
 ## Authentication on S3 Bucket for Uploading Artifacts
