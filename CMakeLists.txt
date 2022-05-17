@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.4...3.18)
 
-# set(CMAKE_CXX_COMPILER "g++")
-# set(CMAKE_C_COMPILER "gcc")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  set(CMAKE_CXX_COMPILER "g++")
+  set(CMAKE_C_COMPILER "gcc")
+endif()
 
 # When I set LD_PRELOAD to be able use ASan with python tests, for some reason 
 # CMake can't find Python unless we set it to an empty string.

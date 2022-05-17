@@ -3,7 +3,6 @@ import os
 import re
 import subprocess
 import sys
-import multiprocessing
 
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
@@ -15,20 +14,6 @@ PLAT_TO_CMAKE = {
     "win-arm32": "ARM",
     "win-arm64": "ARM64",
 }
-
-# Default is release build with full parallelism
-if "THIRDAI_NUM_JOBS" in os.environ:
-    num_jobs = os.environ["THIRDAI_NUM_JOBS"]
-else:
-    num_jobs = multiprocessing.cpu_count() * 2
-if "THIRDAI_BUILD_MODE" in os.environ:
-    build_mode = os.environ["THIRDAI_BUILD_MODE"]
-else:
-    build_mode = "Release"
-if "THIRDAI_FEATURE_FLAGS" in os.environ:
-    feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
-# else:
-#     feature_flags = "THIRDAI_BUILD_LICENSE;THIRDAI_CHECK_LICENSE"
 
 
 # A CMakeExtension needs a sourcedir instead of a file list.
@@ -42,9 +27,7 @@ class CMakeExtension(Extension):
 
 class CMakeBuild(build_ext):
     def build_extension(self, ext):
-        global build_mode
-        # global feature_flags
-        global num_jobs
+        self.parallel = 24
 
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
 
@@ -52,17 +35,32 @@ class CMakeBuild(build_ext):
         if not extdir.endswith(os.path.sep):
             extdir += os.path.sep
 
-        build_dir = "build/"
+        debug = int(os.environ.get("DEBUG", 0)) if self.debug is None else self.debug
+        cfg = "Debug" if debug else "Release"
 
+        # CMake lets you override the generator - we need to check this.
+        # Can be set with Conda-Build, for example.
+        cmake_generator = os.environ.get("CMAKE_GENERATOR", "")
+
+        # Set Python_EXECUTABLE instead if you use PYBIND11_FINDPYTHON
+        # EXAMPLE_VERSION_INFO shows you how to pass a value into the C++ code
+        # from Python.
         cmake_args = [
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}".format(extdir),
             "-DPYTHON_EXECUTABLE={}".format(sys.executable),
-            "-DCMAKE_BUILD_TYPE={}".format(build_mode),
+            # not used on MSVC, but no harm
+            "-DCMAKE_BUILD_TYPE={}".format(cfg),
         ]
         build_args = []
+        # Adding CMake arguments set as environment variable
+        # (needed e.g. to build for ARM OSx on conda-forge)
+        if "CMAKE_ARGS" in os.environ:
+            cmake_args += [item for item in os.environ["CMAKE_ARGS"].split(" ") if item]
 
-        # CMake lets you override the generator - we need to check this.
-        cmake_generator = os.environ.get("CMAKE_GENERATOR", "")
+        # In this example, we pass in the version to C++. You might not need to.
+        cmake_args += [
+            "-DEXAMPLE_VERSION_INFO={}".format(self.distribution.get_version())
+        ]
 
         if self.compiler.compiler_type != "msvc":
             # Using Ninja-build since it a) is available as a wheel and b)
@@ -92,23 +90,37 @@ class CMakeBuild(build_ext):
             if not single_config and not contains_arch:
                 cmake_args += ["-A", PLAT_TO_CMAKE[self.plat_name]]
 
-            # # Multi-config generators have a different way to specify configs
-            # if not single_config:
-            #     cmake_args += [
-            #         f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{build_mode.upper()}={extdir}"
-            #     ]
-            #     build_args += ["--config", build_mode]
+            # Multi-config generators have a different way to specify configs
+            if not single_config:
+                cmake_args += [
+                    "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}".format(cfg.upper(), extdir)
+                ]
+                build_args += ["--config", cfg]
 
-        build_args += [f"-j{num_jobs}"]
-        # cmake_args += [f'"-DFEATURE_FLAGS={feature_flags}"']
+        if sys.platform.startswith("darwin"):
+            # Cross-compile support for macOS - respect ARCHFLAGS if set
+            archs = re.findall(r"-arch (\S+)", os.environ.get("ARCHFLAGS", ""))
+            if archs:
+                cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
 
-        if not os.path.exists(build_dir):
-            os.makedirs(build_dir)
+        # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
+        # across all generators.
+        if "CMAKE_BUILD_PARALLEL_LEVEL" not in os.environ:
+            # self.parallel is a Python 3 only way to set parallel jobs by hand
+            # using -j in the build_ext call, not supported by pip or PyPA-build.
+            if hasattr(self, "parallel") and self.parallel:
+                # CMake 3.12+ only.
+                build_args += ["-j{}".format(self.parallel)]
 
-        cmake_call = f"cmake {ext.sourcedir} {' '.join(cmake_args)}"
-        subprocess.check_call(cmake_call, cwd=build_dir, shell=True)
-        subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=build_dir)
+        if not os.path.exists(self.build_temp):
+            os.makedirs(self.build_temp)
 
+        subprocess.check_call(
+            ["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp
+        )
+        subprocess.check_call(
+            ["cmake", "--build", "."] + build_args, cwd=self.build_temp
+        )
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
