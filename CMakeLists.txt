@@ -18,9 +18,7 @@ if (MSVC)
   if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     message( FATAL_ERROR "For now, we only support building in release mode using MSVC" )
   endif()
-  add_compile_options(
-    /O2
-  )
+  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /openmp")
 else()
   add_compile_options(
     -fopenmp
