@@ -1,5 +1,7 @@
 # Bolt Benchmarks Guide
 
+## Usage
+
 The Bolt benchmarks can be run with the `bolt.py` script in this directory. This script can be used as follows:
 
 ```python
@@ -16,10 +18,13 @@ optional arguments:
   --run_name RUN_NAME  The name of the run to use in mlflow, if mlflow is not disabled this is required.
 ```
 
+## Config File
+
 The config file is a toml file that contains information about the dataset, model architecture, and other training parameters. This can specify both fully connected networks and DLRM models. An example script for a fully connected network is `configs/mnist_sh.txt` and an example DLRM scrip tis `configs/criteo_dlrm.txt`. 
 
 When the `bolt.py` script is invoked with a config file it will construct the network and perform the specified training. It will run the test dataset after each epoch, if the test dataset is large then the `max_test_batches` parameter can be specified in the config file that will limit how many test batches will run after each epoch. Note that even with this option it will run on the whole test dataset at the end of training. 
 
+## Config File Format
 The config file is organized into a few main sections. 
 
 * job - this field simply specifies the name which is used as the name of the experiment in mlflow. This is not the same as the run name command line argument which helps delineate the different runs of the same experiment. 
