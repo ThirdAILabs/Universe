@@ -18,7 +18,7 @@ optional arguments:
   --run_name RUN_NAME  The name of the run to use in mlflow, if mlflow is not disabled this is required.
 ```
 
-## Config File
+## Config File Usage
 
 The config file is a toml file that contains information about the dataset, model architecture, and other training parameters. These files are located in `benchmarks/bolt_benchmarks/configs` and are saved with the .txt extension so that they can be uploaded as artifacts to mlflow. These config files can specify both fully connected networks and DLRM models. An example script for a fully connected network is `configs/mnist_sh.txt` and an example DLRM scrip tis `configs/criteo_dlrm.txt`. 
 
