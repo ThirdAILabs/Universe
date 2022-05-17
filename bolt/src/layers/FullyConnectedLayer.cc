@@ -5,6 +5,7 @@
 #include <exception>
 #include <random>
 #include <unordered_map>
+#include <numeric>
 
 namespace thirdai::bolt {
 

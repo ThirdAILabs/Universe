@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cassert>
 #include <vector>
+#include <numeric>
 
 using thirdai::hashtable::VectorHashTable;
 
