@@ -14,49 +14,58 @@ message("====================================")
 message("\tBUILD MODE: ${CMAKE_BUILD_TYPE}")
 message("====================================")
 
-add_compile_options(
-  -fopenmp
-  -fPIC
-  -Wall
-  -Wextra
-  -Werror
-  -Wno-unused-function
-  -pedantic 
-  
-  $<$<CONFIG:Debug>:-Og>
-  $<$<CONFIG:Debug>:-g>
-  $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
+if (MSVC)
+  if (${CMAKE_BUILD_TYPE} != "Release")
+    message( FATAL_ERROR "For now, we only support building in release mode using MSVC" )
+  endif()
+  add_compile_options(
+    /O2
+  )
+else()
+  add_compile_options(
+    -fopenmp
+    -fPIC
+    -Wall
+    -Wextra
+    -Werror
+    -Wno-unused-function
+    -pedantic 
+    
+    $<$<CONFIG:Debug>:-Og>
+    $<$<CONFIG:Debug>:-g>
+    $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
 
-  $<$<CONFIG:DebugWithAsan>:-Og>
-  $<$<CONFIG:DebugWithAsan>:-g>
-  $<$<CONFIG:DebugWithAsan>:-fno-omit-frame-pointer>
+    $<$<CONFIG:DebugWithAsan>:-Og>
+    $<$<CONFIG:DebugWithAsan>:-g>
+    $<$<CONFIG:DebugWithAsan>:-fno-omit-frame-pointer>
 
-  $<$<CONFIG:Release>:-DNDEBUG>
-  $<$<CONFIG:Release>:-Ofast>
-  $<$<CONFIG:Release>:-fno-finite-math-only>
-  $<$<CONFIG:Release>:-funroll-loops>
-  $<$<CONFIG:Release>:-ftree-vectorize>
+    $<$<CONFIG:Release>:-DNDEBUG>
+    $<$<CONFIG:Release>:-Ofast>
+    $<$<CONFIG:Release>:-fno-finite-math-only>
+    $<$<CONFIG:Release>:-funroll-loops>
+    $<$<CONFIG:Release>:-ftree-vectorize>
 
-  $<$<CONFIG:RelWithDebInfo>:-DNDEBUG>
-  $<$<CONFIG:RelWithDebInfo>:-Ofast>
-  $<$<CONFIG:RelWithDebInfo>:-fno-finite-math-only>
-  $<$<CONFIG:RelWithDebInfo>:-funroll-loops>
-  $<$<CONFIG:RelWithDebInfo>:-ftree-vectorize>
-  $<$<CONFIG:RelWithDebInfo>:-g>
-  $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
+    $<$<CONFIG:RelWithDebInfo>:-DNDEBUG>
+    $<$<CONFIG:RelWithDebInfo>:-Ofast>
+    $<$<CONFIG:RelWithDebInfo>:-fno-finite-math-only>
+    $<$<CONFIG:RelWithDebInfo>:-funroll-loops>
+    $<$<CONFIG:RelWithDebInfo>:-ftree-vectorize>
+    $<$<CONFIG:RelWithDebInfo>:-g>
+    $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
 
-  $<$<CONFIG:RelWithAsan>:-DNDEBUG>
-  $<$<CONFIG:RelWithAsan>:-Ofast>
-  $<$<CONFIG:RelWithAsan>:-fno-finite-math-only>
-  $<$<CONFIG:RelWithAsan>:-funroll-loops>
-  $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
-  $<$<CONFIG:RelWithAsan>:-g>
-  $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
-)
+    $<$<CONFIG:RelWithAsan>:-DNDEBUG>
+    $<$<CONFIG:RelWithAsan>:-Ofast>
+    $<$<CONFIG:RelWithAsan>:-fno-finite-math-only>
+    $<$<CONFIG:RelWithAsan>:-funroll-loops>
+    $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
+    $<$<CONFIG:RelWithAsan>:-g>
+    $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
+  )
 
-add_link_options(
-  -fopenmp
-)
+  add_link_options(
+    -fopenmp
+  )
+endif()
 
 # Add feature flags passed in from python
 add_compile_definitions(${FEATURE_FLAGS})
@@ -76,19 +85,6 @@ if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
   add_link_options(
     $<$<CONFIG:RelWithAsan>:-fsanitize=address>
     $<$<CONFIG:DebugWithAsan>:-fsanitize=address>
-  )
-endif()
-
-# It seems this gives us a small improvement on our blade server. Ideally we
-# could run with march=native, which gives us performance improvements, but
-# that would mean it wasn't portable to different cpus in a Docker container.
-# TODO(any): Investigate whether we should do something similar for arm, and
-# whether we can compile with march=native even with Docker.
-if(${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
-  add_compile_options(
-    $<$<CONFIG:Release>:-march=x86-64>
-    $<$<CONFIG:RelWithDebInfo>:-march=x86-64>
-    $<$<CONFIG:RelWithAsan>:-march=x86-64>
   )
 endif()
 
