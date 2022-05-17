@@ -15,6 +15,19 @@ PLAT_TO_CMAKE = {
     "win-arm64": "ARM64",
 }
 
+# Default is release build with full parallelism
+if "THIRDAI_NUM_JOBS" in os.environ:
+    num_jobs = os.environ["THIRDAI_NUM_JOBS"]
+else:
+    num_jobs = multiprocessing.cpu_count() * 2
+if "THIRDAI_BUILD_MODE" in os.environ:
+    build_mode = os.environ["THIRDAI_BUILD_MODE"]
+else:
+    build_mode = "Release"
+if "THIRDAI_FEATURE_FLAGS" in os.environ:
+    feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
+else:
+    feature_flags = "THIRDAI_BUILD_LICENSE;THIRDAI_CHECK_LICENSE"
 
 # A CMakeExtension needs a sourcedir instead of a file list.
 # The name must be the _single_ output extension from the CMake build.
@@ -27,16 +40,16 @@ class CMakeExtension(Extension):
 
 class CMakeBuild(build_ext):
     def build_extension(self, ext):
-        self.parallel = 24
+
+        global build_mode
+        global feature_flags
+        global num_jobs
 
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
 
         # required for auto-detection & inclusion of auxiliary "native" libs
         if not extdir.endswith(os.path.sep):
             extdir += os.path.sep
-
-        debug = int(os.environ.get("DEBUG", 0)) if self.debug is None else self.debug
-        cfg = "Debug" if debug else "Release"
 
         # CMake lets you override the generator - we need to check this.
         # Can be set with Conda-Build, for example.
@@ -49,7 +62,7 @@ class CMakeBuild(build_ext):
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}".format(extdir),
             "-DPYTHON_EXECUTABLE={}".format(sys.executable),
             # not used on MSVC, but no harm
-            "-DCMAKE_BUILD_TYPE={}".format(cfg),
+            "-DCMAKE_BUILD_TYPE={}".format(build_mode),
         ]
         build_args = []
         # Adding CMake arguments set as environment variable
@@ -93,9 +106,11 @@ class CMakeBuild(build_ext):
             # Multi-config generators have a different way to specify configs
             if not single_config:
                 cmake_args += [
-                    "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}".format(cfg.upper(), extdir)
+                    "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}".format(
+                        build_mode.upper(), extdir
+                    )
                 ]
-                build_args += ["--config", cfg]
+                build_args += ["--config", build_mode]
 
         if sys.platform.startswith("darwin"):
             # Cross-compile support for macOS - respect ARCHFLAGS if set
@@ -103,14 +118,7 @@ class CMakeBuild(build_ext):
             if archs:
                 cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
 
-        # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
-        # across all generators.
-        if "CMAKE_BUILD_PARALLEL_LEVEL" not in os.environ:
-            # self.parallel is a Python 3 only way to set parallel jobs by hand
-            # using -j in the build_ext call, not supported by pip or PyPA-build.
-            if hasattr(self, "parallel") and self.parallel:
-                # CMake 3.12+ only.
-                build_args += ["-j{}".format(self.parallel)]
+        build_args += ["-j{}".format(num_jobs)]
 
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
@@ -121,6 +129,7 @@ class CMakeBuild(build_ext):
         subprocess.check_call(
             ["cmake", "--build", "."] + build_args, cwd=self.build_temp
         )
+
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
