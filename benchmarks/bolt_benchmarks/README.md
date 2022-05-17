@@ -4,7 +4,7 @@
 
 The Bolt benchmarks can be run with the `bolt.py` script in this directory. This script can be used as follows:
 
-```python
+```shell
 usage: bolt.py [-h] [--disable_mlflow] [--run_name RUN_NAME] config_file
 
 Runs creates and trains a bolt network on the specified config.
