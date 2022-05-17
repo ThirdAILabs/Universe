@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 
 set(CMAKE_CXX_COMPILER "g++")
 set(CMAKE_C_COMPILER "gcc")
@@ -18,7 +18,7 @@ if (MSVC)
   if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     message( FATAL_ERROR "For now, we only support building in release mode using MSVC" )
   endif()
-  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /openmp /w")
+  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /openmp:llvm /w")
 else()
   add_compile_options(
     -fopenmp
