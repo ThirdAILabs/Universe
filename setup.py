@@ -3,6 +3,7 @@ import os
 import re
 import subprocess
 import sys
+import multiprocessing
 
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
