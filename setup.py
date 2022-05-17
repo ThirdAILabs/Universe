@@ -35,7 +35,7 @@ class CMakeExtension(Extension):
 class CMakeBuild(build_ext):
     def build_extension(self, ext):
         global build_mode
-        global feature_flags
+        # global feature_flags
         global num_jobs
 
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
@@ -54,7 +54,7 @@ class CMakeBuild(build_ext):
         build_args = []
 
         build_args += [f"-j{num_jobs}"]
-        cmake_args += [f'"-DFEATURE_FLAGS={feature_flags}"']
+        # cmake_args += [f'"-DFEATURE_FLAGS={feature_flags}"']
 
         if not os.path.exists(build_dir):
             os.makedirs(build_dir)
