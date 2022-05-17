@@ -8,6 +8,14 @@ import multiprocessing
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 
+# Convert distutils Windows platform specifiers to CMake -A arguments
+PLAT_TO_CMAKE = {
+    "win32": "Win32",
+    "win-amd64": "x64",
+    "win-arm32": "ARM",
+    "win-arm64": "ARM64",
+}
+
 # Default is release build with full parallelism
 if "THIRDAI_NUM_JOBS" in os.environ:
     num_jobs = os.environ["THIRDAI_NUM_JOBS"]
