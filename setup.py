@@ -121,14 +121,15 @@ class CMakeBuild(build_ext):
 
         build_args += ["-j{}".format(num_jobs)]
 
-        if not os.path.exists(self.build_temp):
-            os.makedirs(self.build_temp)
+        build_dir = "build/"
+        if not os.path.exists(build_dir):
+            os.makedirs(build_dir)
 
         subprocess.check_call(
-            ["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp
+            ["cmake", ext.sourcedir] + cmake_args, cwd=build_dir
         )
         subprocess.check_call(
-            ["cmake", "--build", "."] + build_args, cwd=self.build_temp
+            ["cmake", "--build", "."] + build_args, cwd=build_dir
         )
 
 
