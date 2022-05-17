@@ -15,7 +15,7 @@ message("\tBUILD MODE: ${CMAKE_BUILD_TYPE}")
 message("====================================")
 
 if (MSVC)
-  if (${CMAKE_BUILD_TYPE} != "Release")
+  if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     message( FATAL_ERROR "For now, we only support building in release mode using MSVC" )
   endif()
   add_compile_options(
