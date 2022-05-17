@@ -84,7 +84,7 @@ class BinaryCrossEntropyLoss final : public LossFunction {
  private:
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const override {
-    return activation*(label - activation) / batch_size;
+    return (label - activation) / batch_size;
   }
 };
 
