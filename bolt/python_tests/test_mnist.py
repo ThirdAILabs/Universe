@@ -1,6 +1,10 @@
+# Do a global marker for all tests in this file
+import pytest
+
+pytestmark = [pytest.mark.release, pytest.mark.integration]
+
 import os
 from thirdai import bolt, dataset
-import pytest
 import numpy as np
 
 LEARNING_RATE = 0.0001
@@ -37,12 +41,6 @@ def build_sparse_output_layer_network():
             dim=10,
             load_factor=0.4,
             activation_function=bolt.ActivationFunctions.Softmax,
-            sampling_config=bolt.SamplingConfig(
-                hashes_per_table=1,
-                num_tables=32,
-                range_pow=3,
-                reservoir_size=10,
-            ),
         ),
     ]
     network = bolt.Network(layers=layers, input_dim=784)
@@ -56,12 +54,6 @@ def build_sparse_hidden_layer_network(dim, sparsity):
             dim=dim,
             load_factor=sparsity,
             activation_function=bolt.ActivationFunctions.ReLU,
-            sampling_config=bolt.SamplingConfig(
-                hashes_per_table=3,
-                num_tables=64,
-                range_pow=9,
-                reservoir_size=32,
-            ),
         ),
         bolt.FullyConnected(
             dim=10, activation_function=bolt.ActivationFunctions.Softmax
@@ -96,7 +88,6 @@ SPARSE_INFERENCE_ACCURACY_THRESHOLD = 0.9
 SPARSE_INFERENCE_SPARSE_OUTPUT_ACCURACY_THRESHOLD = 0.35
 
 
-@pytest.mark.integration
 def test_mnist_sparse_output_layer():
     network = build_sparse_output_layer_network()
 
@@ -121,7 +112,6 @@ def test_mnist_sparse_output_layer():
     assert acc_computed == acc["categorical_accuracy"]
 
 
-@pytest.mark.integration
 def test_mnist_sparse_hidden_layer():
     network = build_sparse_hidden_layer_network(20000, 0.01)
 
@@ -146,7 +136,6 @@ def test_mnist_sparse_hidden_layer():
     assert acc_computed == acc["categorical_accuracy"]
 
 
-@pytest.mark.integration
 def test_mnist_sparse_inference():
     network = build_sparse_hidden_layer_network(20000, 0.01)
 
@@ -182,7 +171,6 @@ def test_mnist_sparse_inference():
 # is too small for good sampling.
 # However this test makes sure we have a non random level of accuarcy, and also
 # tests that the sparse activations returned are corretct.
-@pytest.mark.integration
 def test_sparse_inference_with_sparse_output():
     network = build_sparse_output_layer_network()
 
@@ -221,7 +209,6 @@ def test_sparse_inference_with_sparse_output():
     assert sparse_predict["categorical_accuracy"] == acc_computed
 
 
-@pytest.mark.integration
 def test_load_save_fc_network():
     network = build_sparse_hidden_layer_network(1000, 0.2)
 
@@ -261,7 +248,6 @@ def test_load_save_fc_network():
     os.remove(save_loc)
 
 
-@pytest.mark.integration
 def test_get_set_weights():
     network = build_sparse_output_layer_network()
 

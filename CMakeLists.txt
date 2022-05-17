@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.4...3.18)
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if (NOT MSVC)
   set(CMAKE_CXX_COMPILER "g++")
   set(CMAKE_C_COMPILER "gcc")
+  message("Not using MSVC (we should not be on Windows then), forcing GCC and G++")
 endif()
 
 # When I set LD_PRELOAD to be able use ASan with python tests, for some reason 
