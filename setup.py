@@ -19,8 +19,8 @@ else:
     build_mode = "Release"
 if "THIRDAI_FEATURE_FLAGS" in os.environ:
     feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
-else:
-    feature_flags = "THIRDAI_BUILD_LICENSE;THIRDAI_CHECK_LICENSE"
+# else:
+#     feature_flags = "THIRDAI_BUILD_LICENSE;THIRDAI_CHECK_LICENSE"
 
 
 # A CMakeExtension needs a sourcedir instead of a file list.
