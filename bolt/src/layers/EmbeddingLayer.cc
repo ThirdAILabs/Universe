@@ -133,7 +133,9 @@ void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
 
 #pragma omp parallel for default(none) shared( \
     disjoint_ranges, B1, B2, B1_bias_corrected, B2_bias_corrected, eps, lr)
-  for (const auto& pair : disjoint_ranges) {
+  for (uint32_t pair_id = 0; pair_id < disjoint_ranges.size(); pair_id++) {
+    // MSVC doesn't like if we iterate over objects, only integers
+    const auto& pair = disjoint_ranges[pair_id];
     for (uint64_t n = pair.first; n < pair.second; n++) {
       float grad = _gradients[n];
       assert(!std::isnan(grad));

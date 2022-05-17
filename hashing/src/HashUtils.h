@@ -96,7 +96,7 @@ class HashUtils {
     }
   }
 
-  static constexpr uint32_t log_2_floor(uint32_t input) {
+  static uint32_t log_2_floor(uint32_t input) {
     // If none of these this won't return anything so it won't compile.
     #ifdef __GNUC__
       return 31 - __builtin_clz(input);
