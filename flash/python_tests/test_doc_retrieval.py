@@ -1,4 +1,8 @@
+# Do a global unit and release test marker for all tests in this file
 import pytest
+
+pytestmark = [pytest.mark.unit, pytest.mark.release]
+
 import thirdai
 from doc_retrieval_helpers import get_build_and_run_functions_random
 from doc_retrieval_helpers import get_build_and_run_functions_restful

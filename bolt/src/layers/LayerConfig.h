@@ -114,8 +114,10 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
 
     // Finally, we want to set reservoir_size to be somewhat larger than
     // the number of expected elements per bucket. Here, we choose as a
-    // heuristic 8 times the number of expected elements per bucket.
-    uint32_t expected_num_elements_per_bucket = dim / (1 << range_pow);
+    // heuristic 4 times the number of expected elements per bucket. We take
+    // a max with 1 to ensure that the reservoir size isn't 0.
+    uint32_t expected_num_elements_per_bucket =
+        std::max<uint32_t>(dim / (1 << range_pow), 1);
     uint32_t reservoir_size = 4 * expected_num_elements_per_bucket;
 
     sampling_config = SamplingConfig(/* hashes_per_table = */ hashes_per_table,

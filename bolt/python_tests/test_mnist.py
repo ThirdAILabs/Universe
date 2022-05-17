@@ -1,7 +1,7 @@
-# Do a global marker for all tests in this file
+# Do a global integration test marker for all tests in this file
 import pytest
 
-pytestmark = [pytest.mark.release, pytest.mark.integration]
+pytestmark = [pytest.mark.integration]
 
 import os
 from thirdai import bolt, dataset

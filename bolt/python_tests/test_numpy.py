@@ -1,12 +1,18 @@
-import numpy as np
+# Do a global unit and release test marker for all tests in this file
 import pytest
+
+pytestmark = [pytest.mark.unit, pytest.mark.release]
+
+import numpy as np
 from thirdai import bolt
 
 
-def train_simple_bolt_model(examples, labels):
+def train_simple_bolt_model(examples, labels, load_factor=1, n_classes=10):
     layers = [
         bolt.FullyConnected(
-            dim=10, load_factor=1, activation_function=bolt.ActivationFunctions.Softmax
+            dim=n_classes,
+            load_factor=load_factor,
+            activation_function=bolt.ActivationFunctions.Softmax,
         )
     ]
     network = bolt.Network(layers=layers, input_dim=10)
