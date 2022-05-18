@@ -49,9 +49,10 @@ void createSearchSubmodule(py::module_& module) {
       "The DocRetrieval module allows you to build, query, save, and load a "
       "semantic document search index.")
       .def(py::init<const std::vector<std::vector<float>>&, uint32_t, uint32_t,
-                    uint32_t>(),
+                    uint32_t, const std::optional<std::string>&>(),
            py::arg("centroids"), py::arg("hashes_per_table"),
            py::arg("num_tables"), py::arg("dense_input_dimension"),
+           py::arg("license_path") = std::nullopt,
            "Constructs a new DocRetrieval index. Centroids should be a "
            "two-dimensional array of floats, where each row is of length "
            "dense_input_dimension (the dimension of the document embeddings). "

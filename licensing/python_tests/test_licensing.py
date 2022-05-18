@@ -5,9 +5,22 @@ import pytest
 pytestmark = [pytest.mark.release]
 
 
-def this_should_require_a_license():
+def this_should_require_a_license_search(license_path):
 
-    from thirdai import bolt, search
+    from thirdai import search
+
+    search.DocRetrieval(
+        centroids=[[0.0]],
+        hashes_per_table=1,
+        num_tables=1,
+        dense_input_dimension=1,
+        license_path=str(license_path),
+    )
+
+
+def this_should_require_a_license_bolt(license_path):
+
+    from thirdai import bolt
 
     bolt.Network(
         layers=[
@@ -16,12 +29,17 @@ def this_should_require_a_license():
             )
         ],
         input_dim=10,
+        license_path=str(license_path),
     )
 
     from thirdai import search
 
     search.DocRetrieval(
-        centroids=[[0.0]], hashes_per_table=1, num_tables=1, dense_input_dimension=1
+        centroids=[[0.0]],
+        hashes_per_table=1,
+        num_tables=1,
+        dense_input_dimension=1,
+        license_path=str(license_path),
     )
 
 
@@ -35,32 +53,19 @@ invalid_license_path = dir_path / "invalid_license.serialized"
 
 
 def test_with_valid_license():
-    import os
-    os.environ["THIRDAI_LICENSE_PATH"] = str(valid_license_path)
-    print(os.environ["THIRDAI_LICENSE_PATH"])
-    this_should_require_a_license()
-
-
-def test_with_no_license():
-    # This will fail if there is a license.serialized file in your home or current directory
-    import os
-    os.environ["THIRDAI_LICENSE_PATH"] = str(nonexisting_license_path)
-    print(os.environ["THIRDAI_LICENSE_PATH"])
-    with pytest.raises(Exception, match=r".*could not find any license file.*"):
-        this_should_require_a_license()
+    this_should_require_a_license_search(valid_license_path)
+    this_should_require_a_license_bolt(valid_license_path)
 
 
 def test_with_expired_license():
-    import os
-    os.environ["THIRDAI_LICENSE_PATH"] = str(expired_license_path)
-    print(os.environ["THIRDAI_LICENSE_PATH"])
     with pytest.raises(Exception, match=r".*license file is expired.*"):
-        this_should_require_a_license()
+        this_should_require_a_license_search(expired_license_path)
+    with pytest.raises(Exception, match=r".*license file is expired.*"):
+        this_should_require_a_license_bolt(expired_license_path)
 
 
 def test_with_invalid_license():
-    import os
-    os.environ["THIRDAI_LICENSE_PATH"] = str(invalid_license_path)
-    print(os.environ["THIRDAI_LICENSE_PATH"])
     with pytest.raises(Exception, match=r".*license verification failure.*"):
-        this_should_require_a_license()
+        this_should_require_a_license_search(invalid_license_path)
+    with pytest.raises(Exception, match=r".*license verification failure.*"):
+        this_should_require_a_license_bolt(invalid_license_path)

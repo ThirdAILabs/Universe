@@ -7,20 +7,20 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstdlib>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
-#include <cstdlib>
 
 namespace thirdai::bolt {
 
-FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
-                                             uint32_t input_dim)
+FullyConnectedNetwork::FullyConnectedNetwork(
+    SequentialConfigList configs, uint32_t input_dim,
+    const std::optional<std::string>& license_path)
     : _input_dim(input_dim),
       _num_layers(configs.size()),
       _sparse_inference_enabled(false) {
-  std::cout << "ENV " << std::getenv("THIRDAI_LICENSE_PATH") << std::endl;
-  thirdai::licensing::LicenseWrapper::checkLicense();
+  thirdai::licensing::LicenseWrapper::checkLicense(license_path);
 
   auto start = std::chrono::high_resolution_clock::now();
 

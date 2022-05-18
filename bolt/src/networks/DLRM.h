@@ -15,7 +15,8 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
  public:
   DLRM(EmbeddingLayerConfig embedding_config,
        SequentialConfigList bottom_mlp_configs,
-       SequentialConfigList top_mlp_configs, uint32_t dense_feature_dim);
+       SequentialConfigList top_mlp_configs, uint32_t dense_feature_dim,
+       const std::optional<std::string>& license_path);
 
   uint32_t getOutputDim() const final { return _top_mlp.getOutputDim(); }
 

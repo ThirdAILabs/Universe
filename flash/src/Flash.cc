@@ -18,7 +18,7 @@ Flash<LABEL_T>::Flash(const hashing::HashFunction& function)
       _range(_function.range()),
       _hashtable(
           new hashtable::VectorHashTable<LABEL_T, false>(_num_tables, _range)) {
-  thirdai::licensing::LicenseWrapper::checkLicense();
+  thirdai::licensing::LicenseWrapper::checkLicense({});
 }
 
 template <typename LABEL_T>

@@ -3,6 +3,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace thirdai::bolt::python {
 
@@ -186,8 +187,9 @@ void createBoltSubmodule(py::module_& module) {
                         "Fully connected neural network.")
       .def(py::init<std::vector<
                         std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
-                    uint64_t>(),
+                    uint64_t, const std::optional<std::string>&>(),
            py::arg("layers"), py::arg("input_dim"),
+           py::arg("license_path") = std::nullopt,
            "Constructs a neural network.\n"
            "Arguments:\n"
            " * layers: List of SequentialLayerConfig - Configurations for the "
@@ -502,9 +504,10 @@ void createBoltSubmodule(py::module_& module) {
                         std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
                     std::vector<
                         std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
-                    uint32_t>(),
+                    uint32_t, const std::optional<std::string>&>(),
            py::arg("embedding_layer"), py::arg("bottom_mlp"),
            py::arg("top_mlp"), py::arg("input_dim"),
+           py::arg("license_path") = std::nullopt,
            "Constructs a DLRM.\n"
            "Arguments:\n"
            " * embedding_layer: EmbeddingLayerConfig - Configuration of the "

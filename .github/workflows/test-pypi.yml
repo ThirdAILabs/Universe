@@ -28,16 +28,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019]
+        os: [windows-2019, ubuntu-20.04, macos-10.15]
 
     steps:
       - uses: actions/checkout@v2
         with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
 
       # Build CryptoPP static lib on windows first
       - uses: ilammy/msvc-dev-cmd@v1
@@ -53,6 +50,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.5.0
         env:
           
+          # Set this so that any tests that need the license work
           THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
          
           # TODO(josh): Get cross compiling working to build more types of wheels

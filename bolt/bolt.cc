@@ -237,7 +237,8 @@ void trainFCN(toml::table& config) {
     sparse_inference_epoch = getIntValue(param_table, "sparse_inference_epoch");
   }
 
-  bolt::FullyConnectedNetwork network(layers, input_dim);
+  bolt::FullyConnectedNetwork network(layers, input_dim,
+                                      /* license_path = */ {});
 
   std::unique_ptr<dataset::Factory<dataset::BoltInputBatch>> train_fac;
   std::unique_ptr<dataset::Factory<dataset::BoltInputBatch>> test_fac;
@@ -338,7 +339,8 @@ void trainDLRM(toml::table& config) {
   auto loss_fn =
       thirdai::bolt::getLossFunction(getStrValue(param_table, "loss_fn"));
 
-  bolt::DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, dense_features);
+  bolt::DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, dense_features,
+                  /* license_path = */ {});
 
   auto train_data = loadClickThroughDataset(
       train_filename, batch_size, dense_features, categorical_features,

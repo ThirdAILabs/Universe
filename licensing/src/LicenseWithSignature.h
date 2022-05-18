@@ -124,7 +124,8 @@ class LicenseWithSignature {
   }
 
   /**
-   * Checks for a license file in
+   * Checks for a license file in the following order
+   * 0. The passed in license path
    * 1. env(THIRDAI_LICENSE_PATH)
    * 2. ~/license.serialized
    * 3. {cwd}/license.serialized
@@ -134,8 +135,13 @@ class LicenseWithSignature {
    * then check whether it has expired. If either check fails we throw an error.
    * Otherwise we just return.
    */
-  static void findVerifyAndCheckLicense() {
+  static void findVerifyAndCheckLicense(
+      const std::optional<std::string>& license_path) {
     std::vector<std::string> license_file_name_options;
+
+    if (license_path) {
+      license_file_name_options.push_back(license_path.value());
+    }
 
     auto optional_license_environment_path =
         get_license_path_from_environment();
@@ -179,7 +185,8 @@ class LicenseWithSignature {
         license_files_tried += license_file_name + ", ";
       }
       throw thirdai::exceptions::LicenseCheckException(
-          "could not find any license file (tried " + license_files_tried + "). "
+          "could not find any license file (tried " + license_files_tried +
+          "). "
           "Go to https://thirdai.com/try-bolt to get a license.");
     }
 

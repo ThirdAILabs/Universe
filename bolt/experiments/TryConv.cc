@@ -46,7 +46,7 @@ int main() {  // NOLINT exceptions
       10, bolt::ActivationFunction::Softmax));
 
   bolt::FullyConnectedNetwork network(
-      layers, kernel_size.first * kernel_size.second * num_patches);
+      layers, kernel_size.first * kernel_size.second * num_patches, {});
 
   auto loss_fn = thirdai::bolt::CategoricalCrossEntropyLoss();
   std::vector<std::string> metrics = {"categorical_accuracy"};
