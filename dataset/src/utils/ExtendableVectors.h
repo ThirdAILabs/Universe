@@ -125,7 +125,7 @@ struct DenseExtendableVector : public ExtendableVector {
 
     _latest_extension_dim = dim;
     _n_dense_added = 0;
-    _values.resize(_values.size() + dim);
+    _values.reserve(_values.size() + dim);
   }
 
   std::vector<std::pair<uint32_t, float>> entries() final {

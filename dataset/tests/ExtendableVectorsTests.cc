@@ -194,7 +194,7 @@ TEST_F(SparseExtendableVectorTest, AddDenseAndSparseInOneExtensionThrows) {
     vec.addExtensionSparseFeature(/* index = */ 1, /* value = */ 1.0);
     expectThrow(
         [&]() { vec.addExtensionDenseFeature(/* value = */ 1.0); },
-        "[SparseExtendableVector::addExtensionSparseFeature] A block cannot "
+        "[SparseExtendableVector::addExtensionDenseFeature] A block cannot "
         "add both dense and sparse features.");
   }
 
@@ -315,7 +315,7 @@ TEST_F(DenseExtendableVectorTest, ProducesBoltVectorWithCorrectFeatures) {
   DenseExtendableVector vec;
 
   // Make and extend with segments
-  auto segments = makeRandomDenseVectorSegments(10);
+  auto segments = makeRandomDenseVectorSegments(1);
   for (const auto& seg : segments) {
     extendVector(vec, seg.dim);
     for (const auto& val : seg.values) {
