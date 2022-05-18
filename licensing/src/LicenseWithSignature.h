@@ -166,6 +166,7 @@ class LicenseWithSignature {
         license_with_file;
     for (const std::string& license_file_name : license_file_name_options) {
       if (can_access_file(license_file_name)) {
+        std::cout << "Using " << license_file_name << std::endl;
         license_with_file = {deserializeFromFile(license_file_name),
                              license_file_name};
         break;
