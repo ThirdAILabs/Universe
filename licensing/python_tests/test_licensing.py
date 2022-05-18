@@ -25,7 +25,6 @@ def this_should_require_a_license():
     )
 
 
-import os
 from pathlib import Path
 
 dir_path = Path(__file__).resolve().parent
@@ -36,24 +35,32 @@ invalid_license_path = dir_path / "invalid_license.serialized"
 
 
 def test_with_valid_license():
+    import os
     os.environ["THIRDAI_LICENSE_PATH"] = str(valid_license_path)
+    print(os.environ["THIRDAI_LICENSE_PATH"])
     this_should_require_a_license()
 
 
 def test_with_no_license():
     # This will fail if there is a license.serialized file in your home or current directory
+    import os
     os.environ["THIRDAI_LICENSE_PATH"] = str(nonexisting_license_path)
+    print(os.environ["THIRDAI_LICENSE_PATH"])
     with pytest.raises(Exception, match=r".*could not find any license file.*"):
         this_should_require_a_license()
 
 
 def test_with_expired_license():
+    import os
     os.environ["THIRDAI_LICENSE_PATH"] = str(expired_license_path)
+    print(os.environ["THIRDAI_LICENSE_PATH"])
     with pytest.raises(Exception, match=r".*license file is expired.*"):
         this_should_require_a_license()
 
 
 def test_with_invalid_license():
+    import os
     os.environ["THIRDAI_LICENSE_PATH"] = str(invalid_license_path)
+    print(os.environ["THIRDAI_LICENSE_PATH"])
     with pytest.raises(Exception, match=r".*license verification failure.*"):
         this_should_require_a_license()

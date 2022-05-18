@@ -10,6 +10,7 @@
 #include <iostream>
 #include <limits>
 #include <stdexcept>
+#include <cstdlib>
 
 namespace thirdai::bolt {
 
@@ -18,6 +19,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
     : _input_dim(input_dim),
       _num_layers(configs.size()),
       _sparse_inference_enabled(false) {
+  std::cout << "ENV " << std::getenv("THIRDAI_LICENSE_PATH") << std::endl;
   thirdai::licensing::LicenseWrapper::checkLicense();
 
   auto start = std::chrono::high_resolution_clock::now();
