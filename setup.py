@@ -28,7 +28,7 @@ else:
 if "THIRDAI_FEATURE_FLAGS" in os.environ:
     feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
 else:
-    feature_flags = "THIRDAI_BUILD_LICENSE;THIRDAI_CHECK_LICENSE"
+    feature_flags = "THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE"
 
 # A CMakeExtension needs a sourcedir instead of a file list.
 # The name must be the _single_ output extension from the CMake build.
@@ -113,7 +113,7 @@ class CMakeBuild(build_ext):
                 cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
 
         build_args += ["-j{}".format(num_jobs)]
-        cmake_args += [f'-DFEATURE_FLAGS={feature_flags}']
+        cmake_args += [f"-DFEATURE_FLAGS={feature_flags}"]
 
         build_dir = "build/"
         if not os.path.exists(build_dir):

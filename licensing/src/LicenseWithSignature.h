@@ -139,19 +139,19 @@ class LicenseWithSignature {
 
     auto optional_license_environment_path =
         get_license_path_from_environment();
-    if (!optional_license_environment_path->empty()) {
+    if (optional_license_environment_path) {
       license_file_name_options.push_back(
           optional_license_environment_path.value());
     }
 
     auto optional_home_dir = get_home_directory();
-    if (!optional_home_dir->empty()) {
+    if (optional_home_dir) {
       license_file_name_options.push_back(optional_home_dir.value() +
                                           "/license.serialized");
     }
 
     auto optional_current_dir = get_current_directory();
-    if (!optional_current_dir->empty()) {
+    if (optional_current_dir) {
       license_file_name_options.push_back(optional_current_dir.value() +
                                           "/license.serialized");
     }
@@ -165,7 +165,8 @@ class LicenseWithSignature {
         break;
       }
     }
-    if (!license_with_file.has_value()) {
+
+    if (!license_with_file) {
       throw thirdai::exceptions::LicenseCheckException(
           "no license file found. Go to https://thirdai.com/try-bolt to get a "
           "license.");

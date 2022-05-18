@@ -21,6 +21,8 @@ message("====================================")
 message("\tBUILD MODE: ${CMAKE_BUILD_TYPE}")
 message("====================================")
 message("\tBuilding with feature flags: ${FEATURE_FLAGS}")
+separate_arguments(FEATURE_FLAGS)
+message("\tFeature flags seperated into CMake List: ${FEATURE_FLAGS}")
 message("====================================")
 
 

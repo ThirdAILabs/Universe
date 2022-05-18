@@ -76,7 +76,7 @@ def main():
 
     # Create feature flag list for cmake
     # https://stackoverflow.com/questions/33242956/cmake-passing-lists-on-command-line
-    joined_feature_flags = ";".join(args.feature_flags)
+    joined_feature_flags = " ".join(args.feature_flags)
 
     # Change dir to top level, set environment variables, and run pip install
     os.environ["THIRDAI_BUILD_MODE"] = args.build_mode
