@@ -16,6 +16,9 @@ set(CMAKE_CXX_STANDARD 17)
 message("====================================")
 message("\tBUILD MODE: ${CMAKE_BUILD_TYPE}")
 message("====================================")
+message("\tBuilding with feature flags: ${FEATURE_FLAGS}")
+message("====================================")
+
 
 if (MSVC)
   if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")

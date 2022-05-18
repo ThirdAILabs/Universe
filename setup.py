@@ -120,6 +120,7 @@ class CMakeBuild(build_ext):
                 cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
 
         build_args += ["-j{}".format(num_jobs)]
+        cmake_args += [f'-DFEATURE_FLAGS={feature_flags}']
 
         build_dir = "build/"
         if not os.path.exists(build_dir):
