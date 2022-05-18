@@ -4,6 +4,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/python_bindings/DatasetPython.h>
@@ -14,6 +15,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
+#include <exception>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -25,6 +27,9 @@
 namespace py = pybind11;
 
 namespace thirdai::bolt::python {
+
+template <typename T>
+using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
 void createBoltSubmodule(py::module_& module);
 
@@ -45,6 +50,18 @@ class PyNetwork final : public FullyConnectedNetwork {
  public:
   PyNetwork(SequentialConfigList configs, uint64_t input_dim)
       : FullyConnectedNetwork(std::move(configs), input_dim) {}
+
+  void example(const py::object& data) {  // NOLINT
+    try {
+      auto data_in = data.cast<NumpyArray<uint32_t>>();
+      std::cout << "Cast succeeded" << std::endl;
+      for (uint32_t i = 0; i < data_in.shape(0); i++) {
+        std::cout << data_in.at(i) << std::endl;
+      }
+    } catch (std::exception& e) {
+      std::cout << "Exception: " << e.what() << std::endl;
+    }
+  }
 
   MetricData train(
       dataset::BoltDatasetPtr& train_data,
@@ -113,10 +130,9 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     auto batched_labels = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
         y_idxs, y_vals, y_offsets, batch_size);
-    // Prent clang tidy because it wants to pass the smart pointer by reference
+
     return train(batched_data, batched_labels, loss_fn, learning_rate, epochs,
-                 rehash,  // NOLINT
-                 rebuild, metrics, verbose);
+                 rehash, rebuild, metrics, verbose);
   }
 
   py::tuple predict(
