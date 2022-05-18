@@ -39,6 +39,16 @@ jobs:
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
 
+      # Build CryptoPP static lib on windows first
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: matrix.os == 'windows-2019'
+      - name: Build CryptoPP static lib
+        run: |
+          cd deps/cryptopp
+          nmake /f cryptest.nmake
+        if: matrix.os == 'windows-2019'
+
+
       - name: Build and test wheels
         uses: pypa/cibuildwheel@v2.5.0
         env:
