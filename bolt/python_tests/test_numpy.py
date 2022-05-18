@@ -1,4 +1,4 @@
-# Do a global integration test marker for all tests in this file
+# Add unit and release test marker for all tests in this file
 import pytest
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]

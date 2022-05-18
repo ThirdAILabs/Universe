@@ -1,4 +1,4 @@
-# Do a global integration test marker for all tests in this file
+# Add an integration test marker for all tests in this file
 import pytest
 
 pytestmark = [pytest.mark.integration]

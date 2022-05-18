@@ -186,8 +186,8 @@ class LicenseWithSignature {
 
     if (license_with_file->first.get_license().isExpired()) {
       throw thirdai::exceptions::LicenseCheckException(
-          "license file " + license_with_file->second +
-          "expired. Go to "
+          "the following license file is expired: " +
+          license_with_file->second +
           "https://thirdai.com/try-bolt to renew your license.");
     }
   }
