@@ -54,7 +54,8 @@ class ExtendableVectorTest : public testing::Test {
   /**
    * Helper function to make random sparse vector segments.
    */
-  static std::vector<VectorSegment> makeRandomSparseVectorSegments(uint32_t n_segments) {
+  static std::vector<VectorSegment> makeRandomSparseVectorSegments(
+      uint32_t n_segments) {
     std::vector<VectorSegment> segments(n_segments);
 
     for (auto& seg : segments) {
@@ -69,19 +70,20 @@ class ExtendableVectorTest : public testing::Test {
         seg.values.push_back(static_cast<float>(random() % 100) / 10.0);
       }
     }
-    
+
     return segments;
   }
 
   /**
    * Helper function to make random dense vector segments.
    */
-  static std::vector<VectorSegment> makeRandomDenseVectorSegments(uint32_t n_segments) {
+  static std::vector<VectorSegment> makeRandomDenseVectorSegments(
+      uint32_t n_segments) {
     std::vector<VectorSegment> segments(n_segments);
 
     for (auto& seg : segments) {
       uint32_t dim = random() % 100;
-      
+
       seg.dim = dim;
       seg.dense = true;
       for (uint32_t elem = 0; elem < dim; elem++) {
@@ -89,15 +91,16 @@ class ExtendableVectorTest : public testing::Test {
         seg.values.push_back(static_cast<float>(random() % 100) / 10.0);
       }
     }
-    
+
     return segments;
   }
-  
+
   /**
-   * Given a vector of segments, concatenate them and return a mapping from 
+   * Given a vector of segments, concatenate them and return a mapping from
    * indices to values of this concatenation.
    */
-  static std::unordered_map<uint32_t, float> getExpectedIdxVals(std::vector<VectorSegment>& segments) {
+  static std::unordered_map<uint32_t, float> getExpectedIdxVals(
+      std::vector<VectorSegment>& segments) {
     std::unordered_map<uint32_t, float> expected_idx_vals;
     uint32_t seg_start_idx = 0;
     for (const auto& seg : segments) {
@@ -120,9 +123,10 @@ class ExtendableVectorTest : public testing::Test {
    * expected to have, ensure that the extendable vector has the correct
    * elements.
    */
-  static void checkExtendableVectorHasSegments(ExtendableVector& vec, std::vector<VectorSegment>& segments) {
+  static void checkExtendableVectorHasSegments(
+      ExtendableVector& vec, std::vector<VectorSegment>& segments) {
     auto expected_idx_vals = getExpectedIdxVals(segments);
-    
+
     // Create mapping of actual idxs and vals.
     std::unordered_map<uint32_t, float> actual_idx_vals;
     for (const auto& [idx, val] : vec.entries()) {
@@ -146,9 +150,10 @@ class ExtendableVectorTest : public testing::Test {
    * expected to have, ensure that the extendable vector has the correct
    * elements.
    */
-  static void checkBoltVectorHasSegments(bolt::BoltVector& vec, std::vector<VectorSegment>& segments) {
+  static void checkBoltVectorHasSegments(bolt::BoltVector& vec,
+                                         std::vector<VectorSegment>& segments) {
     auto expected_idx_vals = getExpectedIdxVals(segments);
-    
+
     // Create mapping of actual idxs and vals.
     std::unordered_map<uint32_t, float> actual_idx_vals;
     if (vec.isDense()) {
@@ -160,7 +165,7 @@ class ExtendableVectorTest : public testing::Test {
         actual_idx_vals[vec.active_neurons[i]] += vec.activations[i];
       }
     }
-    
+
     // Check all values in actual_idx_vals are as expected.
     for (const auto& [idx, val] : expected_idx_vals) {
       ASSERT_EQ(val, actual_idx_vals[idx]);
@@ -172,7 +177,6 @@ class ExtendableVectorTest : public testing::Test {
       ASSERT_EQ(val, expected_idx_vals[idx]);
     }
   }
-
 };
 
 class SparseExtendableVectorTest : public ExtendableVectorTest {};
@@ -189,9 +193,9 @@ TEST_F(SparseExtendableVectorTest, AddDenseAndSparseInOneExtensionThrows) {
     extendVector(vec, /* dim = */ 10);
     vec.addExtensionSparseFeature(/* index = */ 1, /* value = */ 1.0);
     expectThrow(
-      [&]() { vec.addExtensionDenseFeature(/* value = */ 1.0); },
-      "[SparseExtendableVector::addExtensionSparseFeature] A block cannot "
-      "add both dense and sparse features.");
+        [&]() { vec.addExtensionDenseFeature(/* value = */ 1.0); },
+        "[SparseExtendableVector::addExtensionSparseFeature] A block cannot "
+        "add both dense and sparse features.");
   }
 
   // Add dense then sparse
@@ -200,11 +204,11 @@ TEST_F(SparseExtendableVectorTest, AddDenseAndSparseInOneExtensionThrows) {
     extendVector(vec, /* dim = */ 10);
     vec.addExtensionDenseFeature(/* value = */ 1.0);
     expectThrow(
-      [&]() {
-        vec.addExtensionSparseFeature(/* index = */ 1, /* value = */ 1.0);
-      },
-      "[SparseExtendableVector::addExtensionSparseFeature] A block cannot "
-      "add both dense and sparse features.");
+        [&]() {
+          vec.addExtensionSparseFeature(/* index = */ 1, /* value = */ 1.0);
+        },
+        "[SparseExtendableVector::addExtensionSparseFeature] A block cannot "
+        "add both dense and sparse features.");
   }
 }
 
@@ -215,11 +219,11 @@ TEST_F(SparseExtendableVectorTest, AddSparseIndexTooHighThrows) {
   SparseExtendableVector vec;
   extendVector(vec, /* dim = */ 10);
   expectThrow(
-    [&]() {
-      vec.addExtensionSparseFeature(/* index = */ 10, /* value = */ 1.0);
-    },
-    "[SparseExtendableVector::addExtensionSparseFeature] Setting value "
-    "at index = 10 of extension vector with dim = 10");
+      [&]() {
+        vec.addExtensionSparseFeature(/* index = */ 10, /* value = */ 1.0);
+      },
+      "[SparseExtendableVector::addExtensionSparseFeature] Setting value "
+      "at index = 10 of extension vector with dim = 10");
 }
 
 /**
@@ -227,7 +231,7 @@ TEST_F(SparseExtendableVectorTest, AddSparseIndexTooHighThrows) {
  */
 TEST_F(SparseExtendableVectorTest, ProducesBoltVectorWithCorrectFeatures) {
   SparseExtendableVector vec;
-  
+
   // Extend with both sparse and dense features
   auto sparse_segments = makeRandomSparseVectorSegments(3);
   auto dense_segments = makeRandomDenseVectorSegments(5);
@@ -235,9 +239,12 @@ TEST_F(SparseExtendableVectorTest, ProducesBoltVectorWithCorrectFeatures) {
 
   // Put together
   std::vector<VectorSegment> all_segments;
-  all_segments.insert(all_segments.end(), sparse_segments.begin(), sparse_segments.end());
-  all_segments.insert(all_segments.end(), dense_segments.begin(), dense_segments.end());
-  all_segments.insert(all_segments.end(), more_sparse_segments.begin(), more_sparse_segments.end());
+  all_segments.insert(all_segments.end(), sparse_segments.begin(),
+                      sparse_segments.end());
+  all_segments.insert(all_segments.end(), dense_segments.begin(),
+                      dense_segments.end());
+  all_segments.insert(all_segments.end(), more_sparse_segments.begin(),
+                      more_sparse_segments.end());
 
   // Extend the vector with each segment.
   for (const auto& seg : all_segments) {
@@ -254,9 +261,9 @@ TEST_F(SparseExtendableVectorTest, ProducesBoltVectorWithCorrectFeatures) {
   }
 
   // Check.
-  checkExtendableVectorHasSegments(vec, all_segments); 
+  checkExtendableVectorHasSegments(vec, all_segments);
   auto bolt_vec = vec.toBoltVector();
-  checkBoltVectorHasSegments(bolt_vec, all_segments); 
+  checkBoltVectorHasSegments(bolt_vec, all_segments);
 }
 
 /**
@@ -267,42 +274,38 @@ TEST_F(DenseExtendableVectorTest, AddSparseThrows) {
   DenseExtendableVector vec;
   extendVector(vec, /* dim = */ 10);
   expectThrow(
-    [&]() { vec.addExtensionSparseFeature(/* index = */ 1, /* value = */ 1.0); },
-    "[DenseExtendableVector::addExtensionSparseFeature] "
-    "DenseExtendableVector does not accept sparse features.");
+      [&]() {
+        vec.addExtensionSparseFeature(/* index = */ 1, /* value = */ 1.0);
+      },
+      "[DenseExtendableVector::addExtensionSparseFeature] "
+      "DenseExtendableVector does not accept sparse features.");
 }
 
 /**
- * Ensures a dense extension does not accept more values than the 
+ * Ensures a dense extension does not accept more values than the
  * specified dimension.
  */
 TEST_F(DenseExtendableVectorTest, AddTooManyValuesThrows) {
   DenseExtendableVector vec;
   extendVector(vec, /* dim = */ 1);
   vec.addExtensionDenseFeature(/* value = */ 1.0);
-  expectThrow(
-    [&]() {
-      vec.addExtensionDenseFeature(/* value = */ 1.0);
-    },
-    "[DenseExtendableVector::addExtensionDenseFeature] Adding "
-    "2-th dense feature to extension vector with dim = 1");
+  expectThrow([&]() { vec.addExtensionDenseFeature(/* value = */ 1.0); },
+              "[DenseExtendableVector::addExtensionDenseFeature] Adding "
+              "2-th dense feature to extension vector with dim = 1");
 }
 
 /**
- * Ensures the number of dense features in each extension 
+ * Ensures the number of dense features in each extension
  * is no less than the specified dimenion.
  */
 TEST_F(DenseExtendableVectorTest, PrematureExtensionThrows) {
   DenseExtendableVector vec;
   extendVector(vec, /* dim = */ 10);
   vec.addExtensionDenseFeature(/* value = */ 1.0);
-  expectThrow(
-    [&]() {
-      extendVector(vec, /* dim = */ 10);
-    },
-    "[DenseExtendableVector::extendByDim] Extending vector before "
-    "completing previous extension. Previous extension expected to "
-    "have dim = 10 but only 1 dense features were added.");
+  expectThrow([&]() { extendVector(vec, /* dim = */ 10); },
+              "[DenseExtendableVector::extendByDim] Extending vector before "
+              "completing previous extension. Previous extension expected to "
+              "have dim = 10 but only 1 dense features were added.");
 }
 
 /**
@@ -310,7 +313,7 @@ TEST_F(DenseExtendableVectorTest, PrematureExtensionThrows) {
  */
 TEST_F(DenseExtendableVectorTest, ProducesBoltVectorWithCorrectFeatures) {
   DenseExtendableVector vec;
-  
+
   // Make and extend with segments
   auto segments = makeRandomDenseVectorSegments(10);
   for (const auto& seg : segments) {
@@ -323,7 +326,7 @@ TEST_F(DenseExtendableVectorTest, ProducesBoltVectorWithCorrectFeatures) {
   // Check.
   checkExtendableVectorHasSegments(vec, segments);
   auto bolt_vec = vec.toBoltVector();
-  checkBoltVectorHasSegments(bolt_vec, segments);  
+  checkBoltVectorHasSegments(bolt_vec, segments);
 }
 
 }  // namespace thirdai::dataset

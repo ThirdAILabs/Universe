@@ -41,7 +41,7 @@ struct ExtendableVector {
    * Only used for testing as this can be very expensive
    * in dense vectors. Thus, we made it protected
    * so it is only accessible to derived classes,
-   * the Block abstract class, and the 
+   * the Block abstract class, and the
    * ExtendableVectorTest class.
    */
   virtual std::vector<std::pair<uint32_t, float>> entries() = 0;
