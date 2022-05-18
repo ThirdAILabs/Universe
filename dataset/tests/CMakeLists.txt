@@ -46,6 +46,17 @@ target_link_libraries(
   gtest_main
 )
 
+add_executable(
+  extendable_vectors_test
+  ExtendableVectorsTests.cc
+)
+
+target_link_libraries(
+  extendable_vectors_test
+  PRIVATE
+  gtest_main
+)
+
 # add_executable(
 #   global_frequency_test
 #   GlobalFreqTest.cc
