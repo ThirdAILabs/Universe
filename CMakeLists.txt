@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.4...3.18)
 
-if (NOT MSVC)
+if (NOT WIN32)
   set(CMAKE_CXX_COMPILER "g++")
   set(CMAKE_C_COMPILER "gcc")
   message("Not using MSVC (we should not be on Windows then), forcing GCC and G++")
@@ -117,6 +117,7 @@ list (FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
 SET (LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
 if (${LICENSE_BUILD_FLAG_FOUND})
 
+  message("Building cryptopp...")
   # Install CRYPTOPP and set the static lib to be the static library file. This is pretty
   # ugly (the build happens at configure time, not build time) but honestly
   # okay (I spent way too long getting anything at all to work). Plus, it's 
@@ -124,10 +125,12 @@ if (${LICENSE_BUILD_FLAG_FOUND})
   # For now use default 32 jobs to build.
   if (MSVC)
     set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/cryptlib.lib)
+    message("Running nmake in ${CMAKE_SOURCE_DIR}/deps/cryptopp")
     execute_process(COMMAND nmake /f cryptest.nmake 
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/deps/cryptopp)
   else()
     set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/libcryptopp.a)
+    message("Running make in ${CMAKE_SOURCE_DIR}/deps/cryptopp")
     execute_process(COMMAND make static CXX=g++ -j32 -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
   endif()
 endif()
