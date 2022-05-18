@@ -21,9 +21,10 @@ dim = 20000
 activation = 'ReLU'
 sparsity = 0.01
 hashes_per_table = 3
-num_tables = 64
-reservoir_size = 32
-range_pow = 9
+use_default_sampling = true
+# num_tables = 64
+# reservoir_size = 32
+# range_pow = 9
 
 [[layers]]
 dim = 10

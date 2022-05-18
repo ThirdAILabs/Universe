@@ -9,6 +9,7 @@ namespace thirdai::bolt::python {
 void createBoltSubmodule(py::module_& module) {
   auto bolt_submodule = module.def_submodule("bolt");
 
+#if THIRDAI_EXPOSE_ALL
   py::class_<thirdai::bolt::SamplingConfig>(
       bolt_submodule, "SamplingConfig",
       "SamplingConfig represents a layer's sampling hyperparameters.")
@@ -18,6 +19,7 @@ void createBoltSubmodule(py::module_& module) {
            "Builds a SamplingConfig object. range_pow must always be 3 * "
            "hashes_per_table.")
       .def(py::init<>(), "Builds a default SamplingConfig object.");
+#endif
 
   py::enum_<ActivationFunction>(
       bolt_submodule, "ActivationFunctions",
@@ -39,8 +41,8 @@ void createBoltSubmodule(py::module_& module) {
                      "the corresponding enum.");
 
   // TODO(Geordie, Nicholas): put loss functions in its own submodule
-  py::class_<LossFunction>(bolt_submodule, "LossFunction",
-                           "Base class for all loss functions");  // NOLINT
+  py::class_<LossFunction>(bolt_submodule, "LossFunction",  // NOLINT
+                           "Base class for all loss functions");
 
   py::class_<CategoricalCrossEntropyLoss, LossFunction>(
       bolt_submodule, "CategoricalCrossEntropyLoss",
@@ -63,7 +65,7 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");
 
-  py::class_<thirdai::bolt::SequentialLayerConfig,
+  py::class_<thirdai::bolt::SequentialLayerConfig,  // NOLINT
              std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>(
       bolt_submodule, "Sequential");
 
@@ -71,6 +73,7 @@ void createBoltSubmodule(py::module_& module) {
              std::shared_ptr<thirdai::bolt::FullyConnectedLayerConfig>,
              thirdai::bolt::SequentialLayerConfig>(
       bolt_submodule, "FullyConnected", "Defines a fully-connected layer.\n")
+#if THIRDAI_EXPOSE_ALL
       .def(
           py::init<uint64_t, float, ActivationFunction,
                    thirdai::bolt::SamplingConfig>(),
@@ -88,6 +91,7 @@ void createBoltSubmodule(py::module_& module) {
           "activation "
           "functions: ReLU, Softmax, and Linear.\n"
           " * sampling_config: SamplingConfig - Sampling configuration.")
+#endif
       .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
            py::arg("activation_function"),
            "Constructs a FullyConnectedLayerConfig object.\n"
@@ -104,9 +108,15 @@ void createBoltSubmodule(py::module_& module) {
            " * dim: Int (positive) - The dimension of the layer.\n"
            " * activation_function: ActivationFunctions enum, e.g. ReLU, "
            "Softmax, Linear. "
+           " * load_factor: Float - The fraction of neurons to use during "
+           "sparse training "
+           "and sparse inference. For example, load_factor=0.05 means the "
+           "layer uses 5% of "
+           "its neurons when processing an individual sample.\n"
            "Also accepts `getActivationFunction(function_name), e.g. "
            "`getActivationFunction('ReLU')`");
 
+#if THIRDAI_EXPOSE_ALL
   py::class_<thirdai::bolt::ConvLayerConfig,
              std::shared_ptr<thirdai::bolt::ConvLayerConfig>,
              thirdai::bolt::SequentialLayerConfig>(
@@ -168,6 +178,7 @@ void createBoltSubmodule(py::module_& module) {
            " * log_embedding_block_size: Int (positive) - log (base 2) of the "
            "size of the "
            "embedding table.");
+#endif
 
   py::class_<PyNetwork>(bolt_submodule, "Network",
                         "Fully connected neural network.")
@@ -563,6 +574,55 @@ void createBoltSubmodule(py::module_& module) {
            "their values "
            "and (1) output vectors (predictions) from the network in the form "
            "of a 2D Numpy matrix of floats.");
+}
+
+bool allocateActivations(uint32_t num_samples, uint32_t inference_dim,
+                         uint32_t** active_neurons, float** activations,
+                         bool output_sparse) {
+  try {
+    if (output_sparse) {
+      *active_neurons = new uint32_t[num_samples * inference_dim];
+    }
+    *activations = new float[num_samples * inference_dim];
+    return true;
+  } catch (std::bad_alloc& e) {
+    std::cout << "Out of memory error: cannot allocate " << num_samples << " x "
+              << inference_dim << " array for activations" << std::endl;
+    return false;
+  }
+}
+
+py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
+                               uint32_t inference_dim, uint32_t* active_neurons,
+                               float* activations, bool output_sparse,
+                               bool alloc_success) {
+  if (!alloc_success) {
+    return py::make_tuple(py_metric_data, py::none());
+  }
+
+  // Deallocates the memory for the array since we are allocating it ourselves.
+  py::capsule free_when_done_activations(
+      activations, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+  py::array_t<float, py::array::c_style | py::array::forcecast>
+      activations_array({num_samples, inference_dim},
+                        {inference_dim * sizeof(float), sizeof(float)},
+                        activations, free_when_done_activations);
+
+  if (!output_sparse) {
+    return py::make_tuple(py_metric_data, activations_array);
+  }
+
+  // Deallocates the memory for the array since we are allocating it ourselves.
+  py::capsule free_when_done_active_neurons(
+      active_neurons, [](void* ptr) { delete static_cast<uint32_t*>(ptr); });
+
+  py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
+      active_neurons_array({num_samples, inference_dim},
+                           {inference_dim * sizeof(uint32_t), sizeof(uint32_t)},
+                           active_neurons, free_when_done_active_neurons);
+  return py::make_tuple(py_metric_data, active_neurons_array,
+                        activations_array);
 }
 
 }  // namespace thirdai::bolt::python

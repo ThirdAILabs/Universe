@@ -77,7 +77,11 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
                                             useDenseComputations(force_dense));
   }
 
-  uint32_t outputDim() const final { return _layers.back()->getDim(); }
+  uint32_t getOutputDim() const final { return _layers.back()->getDim(); }
+
+  uint32_t getInferenceOutputDim() const final {
+    return _layers.back()->getInferenceOutputDim();
+  }
 
   void enableSparseInference() {
     _sparse_inference_enabled = true;

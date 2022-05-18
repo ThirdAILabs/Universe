@@ -47,6 +47,13 @@ be mounted as a folder in the root of the container. Note that there may be
 some issues with existing cache information if you have last build on your local
 machine, and you may need to run a clean build or delete your build folder.
 
+## Feature Flags
+See https://www.notion.so/Feature-Flags-dbff0b88985242b8a07cc58a9261a1e2 for
+information about creating and using feature flags, and 
+https://www.notion.so/Feature-Flag-List-e006f6be1abe4d46bde97cf63c97a0f5
+for a current list of feature flags and what they do. Please update the list
+whenever you add a new feature flag.
+
 ## Debugging your Pybound C++ code from python
 1. Simply build the code in RelWithDebInfo or Debug mode, and
 run your python code with perf or gdb. To run with gdb, run `gdb python3` and then

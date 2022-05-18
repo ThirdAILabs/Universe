@@ -37,8 +37,9 @@ FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
       // if ConvConfig
     } else if (auto conv_config =
                    std::static_pointer_cast<ConvLayerConfig>(configs[i])) {
-      if (i == _num_layers - 1)
+      if (i == _num_layers - 1) {
         throw std::invalid_argument("ConvLayer not supported as final layer.");
+      }
       uint64_t prev_channels;
       uint64_t prev_sparse_channels;
       if (i == 0) {
@@ -60,7 +61,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
           std::dynamic_pointer_cast<ConvLayerConfig>(configs[i + 1]);
       std::pair<uint32_t, uint32_t> next_kernel_size =
           next_conv_config ? next_conv_config->kernel_size
-                           : std::make_pair<uint32_t, uint32_t>(1, 1);
+                           : std::pair<uint32_t, uint32_t>(1, 1);
 
       _layers.push_back(
           std::make_shared<ConvLayer>(*conv_config, prev_dim, prev_channels,

@@ -21,13 +21,15 @@ ConvLayer::ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
       _prev_num_filters(prev_num_filters),
       _prev_num_sparse_filters(prev_num_sparse_filters),
       _kernel_size(config.kernel_size.first * config.kernel_size.second) {
-  if (_act_func != ActivationFunction::ReLU)
+  if (_act_func != ActivationFunction::ReLU) {
     throw std::invalid_argument(
         "Conv layers currently support only ReLU Activation.");
+  }
 
-  if (config.kernel_size.first != config.kernel_size.second)
+  if (config.kernel_size.first != config.kernel_size.second) {
     throw std::invalid_argument(
         "Conv layers currently support only square kernels.");
+  }
 
   _patch_dim = _kernel_size * _prev_num_filters;
   _sparse_patch_dim = _kernel_size * _prev_num_sparse_filters;
