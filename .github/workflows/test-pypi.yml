@@ -53,7 +53,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.5.0
         env:
           
-          THIRDAI_LICENSE_PATH: ${GITHUB_WORKSPACE}/docker/product/slim/license.serialized 
+          THIRDAI_LICENSE_PATH: ${GITHUB_WORKSPACE}\docker\product\slim\license.serialized 
          
           # TODO(josh): Get cross compiling working to build more types of wheels
           CIBW_BUILD: "*macosx_x86_64 *manylinux_x86_64 cp*win_amd64"

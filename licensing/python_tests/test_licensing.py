@@ -41,8 +41,9 @@ def test_with_valid_license():
 
 
 def test_with_no_license():
+    # This will fail if there is a license.serialized file in your home or current directory
     os.environ["THIRDAI_LICENSE_PATH"] = str(nonexisting_license_path)
-    with pytest.raises(Exception, match=r".*no license file found.*"):
+    with pytest.raises(Exception, match=r".*could not find any license file.*"):
         this_should_require_a_license()
 
 

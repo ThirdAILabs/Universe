@@ -156,6 +156,12 @@ class LicenseWithSignature {
                                           "/license.serialized");
     }
 
+    if (license_file_name_options.empty()) {
+      throw thirdai::exceptions::LicenseCheckException(
+          "no license file found. Go to https://thirdai.com/try-bolt to get a "
+          "license.");
+    }
+
     std::optional<std::pair<LicenseWithSignature, std::string>>
         license_with_file;
     for (const std::string& license_file_name : license_file_name_options) {
@@ -167,9 +173,13 @@ class LicenseWithSignature {
     }
 
     if (!license_with_file) {
+      std::string license_files_tried;
+      for (const std::string& license_file_name : license_file_name_options) {
+        license_files_tried += license_file_name + ", ";
+      }
       throw thirdai::exceptions::LicenseCheckException(
-          "no license file found. Go to https://thirdai.com/try-bolt to get a "
-          "license.");
+          "could not find any license file (tried " + license_files_tried + "). "
+          "Go to https://thirdai.com/try-bolt to get a license.");
     }
 
     CryptoPP::RSA::PublicKey public_key;
