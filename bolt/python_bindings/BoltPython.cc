@@ -193,10 +193,10 @@ void createBoltSubmodule(py::module_& module) {
            "layers in the neural network.\n"
            " * input_dim: Int (positive) - Dimension of input vectors in the "
            "dataset.")
-      .def("example", &PyNetwork::example, py::arg("data"))
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
-           py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
+           py::arg("learning_rate"), py::arg("epochs"),
+           py::arg("batch_size") = 0, py::arg("rehash") = 0,
            py::arg("rebuild") = 0,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
@@ -234,136 +234,8 @@ void createBoltSubmodule(py::module_& module) {
 
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
-      .def("train", &PyNetwork::trainWithDenseNumpyArray,
-           py::arg("train_examples"), py::arg("train_labels"),
-           py::arg("batch_size"), py::arg("loss_fn"), py::arg("learning_rate"),
-           py::arg("epochs"), py::arg("rehash") = 0, py::arg("rebuild") = 0,
-           py::arg("metrics") = std::vector<std::string>(),
-           py::arg("verbose") = true,
-           "Trains the network on the given training data. This particular "
-           "overload supports dense input "
-           "vectors and categorical labels.\n"
-           "Arguments:\n\n"
-           " * train_examples: 2D Numpy matrix of floats - Training examples "
-           "(input vectors).\n"
-           " * train_labels: 1D Numpy array of integers - Categorical labels "
-           "for training examples.\n"
-           " * batch_size: Int (positive) - Size of training data batches.\n"
-           " * loss_fn: LossFunction - The loss function to minimize.\n"
-           " * learning_rate: Float (positive) - Learning rate.\n"
-           " * epochs: Int (positive) - Number of training epochs over the "
-           "training data.\n"
-           " * rehash: Int (positive) - Optional. Number of training samples "
-           "before "
-           "rehashing neurons. "
-           "If not provided, BOLT will autotune this parameter.\n\n"
-           "\t\tBOLT's sparse training works by applying smart hash functions "
-           "to "
-           "all neurons in the "
-           "network, and they have to be rehashed periodically. This parameter "
-           "sets the frequency "
-           "of rehashing.\n"
-           " * rebuild: Int (positive) - Optional. Number of training samples "
-           "before "
-           "rebuilding hash tables "
-           "and generating new smart hash functions. If not provided, BOLT "
-           "will autotune this parameter.\n"
-           " * metrics: List of str - Optional. The metrics to keep track of "
-           "during training. "
-           "See the section on metrics.\n"
-           " * verbose: Boolean - Optional. If set to False, only displays "
-           "progress bar. "
-           "If set to True, prints additional information such as metrics and "
-           "epoch times. "
-           "Set to True by default.\n\n"
-
-           "Returns a mapping from metric names to an array their values for "
-           "every epoch.")
-      .def("train", &PyNetwork::trainWithSparseNumpyArray, py::arg("x_idxs"),
-           py::arg("x_vals"), py::arg("x_offsets"), py::arg("y_idxs"),
-           py::arg("y_vals"), py::arg("y_offsets"), py::arg("batch_size"),
-           py::arg("loss_fn"), py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("rehash") = 0, py::arg("rebuild") = 0,
-           py::arg("metrics") = std::vector<std::string>(),
-           py::arg("verbose") = true,
-           "Trains the network on the given training data. This particular "
-           "overload supports sparse input "
-           "vectors and sparse label vectors.\n\n"
-
-           "Suppose we have N sparse vectors of floats. We represent this "
-           "using three arrays:\n"
-           " * Indices: 1D Numpy array of integers - Indices of nonzero "
-           "elements in each vector, concatenated. "
-           "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
-           "0.0, 4.0}, the corresponding "
-           "'indices' array is [1, 3, 3]\n"
-           " * Values: 1D Numpy array of floats - The values of nonzero "
-           "elements in each vector, concatenated. "
-           "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
-           "0.0, 4.0}, the corresponding "
-           "'values' array is [1.5, 9.0, 4.0]\n"
-           " * Offsets: 1D Numpy array of integers - The i-th element of this "
-           "array is the i - 1-th element of the array plus the number of "
-           "nonzero "
-           "elements in the i - 1-th vector. The first element is 0. "
-           "Effectively, this array maps each vector to the corresponding "
-           "entries in 'indices' and 'values'. "
-           "Specifically, offsets[i] is the starting position of vector i in "
-           "the 'indices' and 'values' arrays, "
-           "while offsets[i] is the stopping position (exclusive). "
-           "This means that indices[offsets[i], offsets[i + 1]] contain the "
-           "indices of nonzero elements of "
-           "vector i, and values[offsets[i], offsets[i + 1]] contain the "
-           "values of nonzero elements of vector i. "
-           "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
-           "0.0, 4.0}, the corresponding "
-           "'offsets' array is [0, 2, 3]\n\n"
-
-           "Arguments:\n"
-           " * x_idxs: 1D Numpy array of integers - Indices array for training "
-           "examples (input vectors).\n"
-           " * x_vals: 1D Numpy array of floats - Values array of training "
-           "examples (input vectors).\n"
-           " * x_offsets: 1D Numpy array of integers - Offsets array for "
-           "training examples (input vectors).\n"
-           " * y_idxs: 1D Numpy array of integers - Indices array for training "
-           "labels (ground truth vectors).\n"
-           " * y_vals: 1D Numpy array of floats - Values array of training "
-           "labels (ground truth vectors).\n"
-           " * y_offsets: 1D Numpy array of integers - Offsets array for "
-           "training labels (ground truth vectors).\n"
-           " * loss_fn: LossFunction - The loss function to minimize.\n"
-           " * learning_rate: Float (positive) - Learning rate.\n"
-           " * epochs: Int (positive) - Number of training epochs over the "
-           "training data.\n"
-           " * rehash: Int (positive) - Optional. Number of training samples "
-           "before "
-           "rehashing neurons. "
-           "If not provided, BOLT will autotune this parameter.\n\n"
-           "\t\tBOLT's sparse training works by applying smart hash functions "
-           "to "
-           "all neurons in the "
-           "network, and they have to be rehashed periodically. This parameter "
-           "sets the frequency "
-           "of rehashing.\n"
-           " * rebuild: Int (positive) - Optional. Number of training samples "
-           "before "
-           "rebuilding hash tables "
-           "and generating new smart hash functions. If not provided, BOLT "
-           "will autotune this parameter.\n"
-           " * metrics: List of str - Optional. The metrics to keep track of "
-           "during training. "
-           "See the section on metrics.\n"
-           " * verbose: Boolean - Optional. If set to False, only displays "
-           "progress bar. "
-           "If set to True, prints additional information such as metrics and "
-           "epoch times. "
-           "Set to True by default.\n\n"
-
-           "Returns a mapping from metric names to an array their values for "
-           "every epoch.")
       .def("predict", &PyNetwork::predict, py::arg("test_data"),
-           py::arg("test_labels"),
+           py::arg("test_labels"), py::arg("batch_size") = 0,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -381,98 +253,6 @@ void createBoltSubmodule(py::module_& module) {
            "inference times. "
            "Set to True by default.\n\n"
 
-           "Returns a tuple consisting of (0) a mapping from metric names to "
-           "their values "
-           "and (1) output vectors (predictions) from the network in the form "
-           "of a 2D Numpy matrix of floats.")
-      .def(
-          "predict", &PyNetwork::predictWithDenseNumpyArray,
-          py::arg("test_examples"), py::arg("test_labels"),
-          py::arg("batch_size"),
-          py::arg("metrics") = std::vector<std::string>(),
-          py::arg("verbose") = true,
-          py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
-          "Predicts the output given the input vectors and evaluates the "
-          "predictions based on the given metrics.\n"
-          "Arguments:\n"
-          " * test_examples: 2D Numpy matrix of floats - Test examples (input "
-          "vectors).\n"
-          " * test_labels: 1D Numpy array of integers - Categorical labels for "
-          "test examples.\n"
-          " * batch_size: Int (positive) - Size of training data batches.\n"
-          " * metrics: List of str - Optional. The metrics to keep track of "
-          "during training. "
-          "See the section on metrics.\n"
-          " * verbose: Boolean - Optional. If set to False, only displays "
-          "progress bar. "
-          "If set to True, prints additional information such as metrics and "
-          "inference times. "
-          "Set to True by default.\n\n"
-
-          "Returns a tuple consisting of (0) a mapping from metric names to "
-          "their values "
-          "and (1) output vectors (predictions) from the network in the form "
-          "of a 2D Numpy matrix of floats.")
-      .def("predict", &PyNetwork::predictWithSparseNumpyArray,
-           py::arg("x_idxs"), py::arg("x_vals"), py::arg("x_offsets"),
-           py::arg("y_idxs"), py::arg("y_vals"), py::arg("y_offsets"),
-           py::arg("batch_size"),
-           py::arg("metrics") = std::vector<std::string>(),
-           py::arg("verbose") = true,
-           py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
-           "Predicts the output given the input vectors and evaluates the "
-           "predictions based on the given metrics.\n\n"
-
-           "Suppose we have N sparse vectors of floats. We represent this "
-           "using three arrays:\n"
-           " * Indices: 1D Numpy array of integers - Indices of nonzero "
-           "elements in each vector, concatenated. "
-           "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
-           "0.0, 4.0}, the corresponding "
-           "'indices' array is [1, 3, 3]\n"
-           " * Values: 1D Numpy array of floats - The values of nonzero "
-           "elements in each vector, concatenated. "
-           "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
-           "0.0, 4.0}, the corresponding "
-           "'values' array is [1.5, 9.0, 4.0]\n"
-           " * Offsets: 1D Numpy array of integers - The i-th element of this "
-           "array is the i - 1-th element of the array plus the number of "
-           "nonzero "
-           "elements in the i - 1-th vector. The first element is 0. "
-           "Effectively, this array maps each vector to the corresponding "
-           "entries in 'indices' and 'values'. "
-           "Specifically, offsets[i] is the starting position of vector i in "
-           "the 'indices' and 'values' arrays, "
-           "while offsets[i] is the stopping position (exclusive). "
-           "This means that indices[offsets[i], offsets[i + 1]] contain the "
-           "indices of nonzero elements of "
-           "vector i, and values[offsets[i], offsets[i + 1]] contain the "
-           "values of nonzero elements of vector i. "
-           "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
-           "0.0, 4.0}, the corresponding "
-           "'offsets' array is [0, 2, 3]\n\n"
-
-           "Arguments:\n"
-           " * x_idxs: 1D Numpy array of integers - Indices array for testing "
-           "examples (input vectors).\n"
-           " * x_vals: 1D Numpy array of floats - Values array of testing "
-           "examples (input vectors).\n"
-           " * x_offsets: 1D Numpy array of integers - Offsets array for "
-           "testing examples (input vectors).\n"
-           " * y_idxs: 1D Numpy array of integers - Indices array for testing "
-           "labels (ground truth vectors).\n"
-           " * y_vals: 1D Numpy array of floats - Values array of testing "
-           "labels (ground truth vectors).\n"
-           " * y_offsets: 1D Numpy array of integers - Offsets array for "
-           "testing labels (ground truth vectors).\n"
-           " * batch_size: Int (positive) - Size of training data batches.\n"
-           " * metrics: List of str - Optional. The metrics to keep track of "
-           "during training. See the section on metrics.\n"
-           " * verbose: Boolean - Optional. If set to False, only displays "
-           "progress bar. "
-           "If set to True, prints additional information such as metrics and "
-           "inference times. "
-           "Set to True by default.\n\n"
            "Returns a tuple consisting of (0) a mapping from metric names to "
            "their values "
            "and (1) output vectors (predictions) from the network in the form "

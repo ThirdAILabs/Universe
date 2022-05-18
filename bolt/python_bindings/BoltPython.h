@@ -19,6 +19,8 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -30,6 +32,9 @@ namespace thirdai::bolt::python {
 
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
+
+template <typename T>
+using NumpyArrayPtr = std::unique_ptr<NumpyArray<T>>;
 
 void createBoltSubmodule(py::module_& module);
 
@@ -46,151 +51,110 @@ py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
                                float* activations, bool output_sparse,
                                bool alloc_success);
 
+static bool isBoltDataset(const py::object& obj) {
+  return py::str(obj.get_type())
+      .equal(py::str("<class 'thirdai._thirdai.dataset.BoltDataset'>"));
+}
+
+static bool isTuple(const py::object& obj) {
+  return py::str(obj.get_type()).equal(py::str("<class 'tuple'>"));
+}
+
+static bool isNumpyArray(const py::object& obj) {
+  return py::str(obj.get_type()).equal(py::str("<class 'numpy.ndarray'>"));
+}
+
+struct BoltDatasetWithNumpyContext {
+  dataset::BoltDatasetPtr dataset;
+  std::optional<NumpyArray<uint32_t>> indices;
+  std::optional<NumpyArray<float>> values;
+  std::optional<NumpyArray<uint32_t>> offsets;
+};
+
 class PyNetwork final : public FullyConnectedNetwork {
  public:
   PyNetwork(SequentialConfigList configs, uint64_t input_dim)
       : FullyConnectedNetwork(std::move(configs), input_dim) {}
 
-  void example(const py::object& data) {  // NOLINT
-    try {
-      auto data_in = data.cast<NumpyArray<uint32_t>>();
-      std::cout << "Cast succeeded" << std::endl;
-      for (uint32_t i = 0; i < data_in.shape(0); i++) {
-        std::cout << data_in.at(i) << std::endl;
-      }
-    } catch (std::exception& e) {
-      std::cout << "Exception: " << e.what() << std::endl;
-    }
-  }
-
-  MetricData train(
-      dataset::BoltDatasetPtr& train_data,
-      const dataset::BoltDatasetPtr& train_labels,
-      // Clang tidy is disabled for this line because it wants to pass by
-      // reference, but shared_ptrs should not be passed by reference
-      const LossFunction& loss_fn,  // NOLINT
-      float learning_rate, uint32_t epochs, uint32_t rehash, uint32_t rebuild,
-      const std::vector<std::string>& metric_names, bool verbose) {
+  MetricData train(const py::object& data, const py::object& labels,
+                   const LossFunction& loss_fn, float learning_rate,
+                   uint32_t epochs, uint32_t batch_size = 0,
+                   uint32_t rehash = 0, uint32_t rebuild = 0,
+                   const std::vector<std::string>& metric_names = {},
+                   bool verbose = false) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
-    return FullyConnectedNetwork::train(train_data, train_labels, loss_fn,
-                                        learning_rate, epochs, rehash, rebuild,
-                                        metric_names, verbose);
-  }
+    auto train_data = convertPyObjectToBoltDataset(data, batch_size, false);
 
-  // Does not return py::array_t because this is consistent with the original
-  // train method.
-  MetricData trainWithDenseNumpyArray(
-      const py::array_t<float, py::array::c_style | py::array::forcecast>&
-          examples,
-      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-          labels,
-      uint32_t batch_size, const LossFunction& loss_fn, float learning_rate,
-      uint32_t epochs, uint32_t rehash, uint32_t rebuild,
-      const std::vector<std::string>& metrics, bool verbose) {
-    // Redirect to python output.
-    py::scoped_ostream_redirect stream(
-        std::cout, py::module_::import("sys").attr("stdout"));
-    auto batched_data =
-        dataset::python::denseBoltDatasetFromNumpy(examples, batch_size);
+    auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
 
-    auto batched_labels =
-        dataset::python::categoricalLabelsFromNumpy(labels, batch_size);
+    // const uint32_t* x =
+    //     data.cast<py::tuple>()[0].cast<NumpyArray<uint32_t>>().data();
+    // std::cout << "ARRAY POINTER: " << x << std::endl;
+    // std::cout << "ARRAY:" << std::endl;
+    // for (uint32_t i = 0;
+    //      i < train_data.dataset->len() * train_data.dataset->at(0)[0].len;
+    //      i++) {
+    //   std::cout << x[i] << " ";
+    // }
 
-    // Prent clang tidy because it wants to pass the smart pointer by
-    // reference
-    return train(batched_data, batched_labels, loss_fn, learning_rate, epochs,
-                 rehash,  // NOLINT
-                 rebuild, metrics, verbose);
-  }
+    // std::cout << std::endl;
+    // std::cout << "INDICES:" << std::endl;
+    // std::cout << "INDICES POINTER: "
+    //           << train_data.dataset->at(0)[0].active_neurons << std::endl;
+    // for (uint32_t i = 0;
+    //      i < train_data.dataset->len() * train_data.dataset->at(0)[0].len;
+    //      i++) {
+    //   std::cout << train_data.dataset->at(0)[0].active_neurons[i] << " ";
+    // }
+    // std::cout << std::endl;
 
-  MetricData trainWithSparseNumpyArray(
-      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-          x_idxs,
-      const py::array_t<float, py::array::c_style | py::array::forcecast>&
-          x_vals,
-      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-          x_offsets,
-      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-          y_idxs,
-      const py::array_t<float, py::array::c_style | py::array::forcecast>&
-          y_vals,
-      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-          y_offsets,
-      uint32_t batch_size, const LossFunction& loss_fn, float learning_rate,
-      uint32_t epochs, uint32_t rehash, uint32_t rebuild,
-      const std::vector<std::string>& metrics, bool verbose) {
-    // Redirect to python output.
-    py::scoped_ostream_redirect stream(
-        std::cout, py::module_::import("sys").attr("stdout"));
-
-    auto batched_data = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
-        x_idxs, x_vals, x_offsets, batch_size);
-
-    auto batched_labels = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
-        y_idxs, y_vals, y_offsets, batch_size);
-
-    return train(batched_data, batched_labels, loss_fn, learning_rate, epochs,
-                 rehash, rebuild, metrics, verbose);
+    return FullyConnectedNetwork::train(
+        train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
+        epochs, rehash, rebuild, metric_names, verbose);
   }
 
   py::tuple predict(
-      const dataset::BoltDatasetPtr& test_data,
-      const dataset::BoltDatasetPtr& test_labels,
+      const py::object& data, const py::object& labels, uint32_t batch_size = 0,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
-    return predictImpl(test_data, test_labels, metrics, verbose, batch_limit);
-  }
-
-  py::tuple predictWithDenseNumpyArray(
-      const py::array_t<float, py::array::c_style | py::array::forcecast>&
-          examples,
-      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-          labels,
-      uint32_t batch_size, const std::vector<std::string>& metrics,
-      bool verbose, uint32_t batch_limit) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
 
-    auto batched_data = thirdai::dataset::python::denseBoltDatasetFromNumpy(
-        examples, batch_size);
+    auto test_data = convertPyObjectToBoltDataset(data, batch_size, false);
 
-    auto batched_labels = thirdai::dataset::python::categoricalLabelsFromNumpy(
-        labels, batch_size);
+    BoltDatasetWithNumpyContext test_labels = {nullptr, std::nullopt,
+                                               std::nullopt, std::nullopt};
+    if (!labels.is_none()) {
+      test_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
+    }
 
-    return predictImpl(batched_data, batched_labels, metrics, verbose,
-                       batch_limit);
-  }
+    uint32_t num_samples = test_data.dataset->len();
 
-  py::tuple predictWithSparseNumpyArray(
-      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-          x_idxs,
-      const py::array_t<float, py::array::c_style | py::array::forcecast>&
-          x_vals,
-      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-          x_offsets,
-      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-          y_idxs,
-      const py::array_t<float, py::array::c_style | py::array::forcecast>&
-          y_vals,
-      const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-          y_offsets,
-      uint32_t batch_size, const std::vector<std::string>& metrics,
-      bool verbose, uint32_t batch_limit) {
-    // Redirect to python output.
-    py::scoped_ostream_redirect stream(
-        std::cout, py::module_::import("sys").attr("stdout"));
+    bool output_sparse = getInferenceOutputDim() < getOutputDim();
 
-    auto batched_data = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
-        x_idxs, x_vals, x_offsets, batch_size);
+    // Declare pointers to memory for activations and active neurons, if the
+    // allocation succeeds this will be assigned valid addresses by the
+    // allocateActivations function. Otherwise the nullptr will indicate that
+    // activations are not being computed.
+    uint32_t* active_neurons = nullptr;
+    float* activations = nullptr;
 
-    auto batched_labels = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
-        y_idxs, y_vals, y_offsets, batch_size);
+    bool alloc_success =
+        allocateActivations(num_samples, getInferenceOutputDim(),
+                            &active_neurons, &activations, output_sparse);
 
-    return predictImpl(batched_data, batched_labels, metrics, verbose,
-                       batch_limit);
+    auto metric_data = FullyConnectedNetwork::predict(
+        test_data.dataset, test_labels.dataset, active_neurons, activations, metrics, verbose,
+        batch_limit);
+
+    py::dict py_metric_data = py::cast(metric_data);
+
+    return constructNumpyArrays(std::move(py_metric_data), num_samples,
+                                getInferenceOutputDim(), active_neurons,
+                                activations, output_sparse, alloc_success);
   }
 
   void save(const std::string& filename) {
@@ -297,39 +261,82 @@ class PyNetwork final : public FullyConnectedNetwork {
     archive(cereal::base_class<FullyConnectedNetwork>(this));
   }
 
-  py::tuple predictImpl(
-      const dataset::BoltDatasetPtr& test_data,
-      const dataset::BoltDatasetPtr& test_labels,
-      const std::vector<std::string>& metrics = {}, bool verbose = true,
-      uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
-    // Redirect to python output.
-    py::scoped_ostream_redirect stream(
-        std::cout, py::module_::import("sys").attr("stdout"));
+  static BoltDatasetWithNumpyContext convertTupleToBoltDataset(
+      const py::object& obj, uint32_t batch_size) {
+    if (batch_size == 0) {
+      throw std::invalid_argument("No batch size provided.");
+    }
+    py::tuple tup = obj.cast<py::tuple>();
+    if (tup.size() != 3) {
+      throw std::invalid_argument(
+          "Expected tuple of 3 numpy arrays (indices, values, offsets), "
+          "received "
+          "tuple of length: " +
+          std::to_string(tup.size()));
+    }
 
-    uint32_t num_samples = test_data->len();
+    if (!isNumpyArray(tup[0]) || !isNumpyArray(tup[1]) ||
+        !isNumpyArray(tup[2])) {
+      throw std::invalid_argument(
+          "Expected tuple of 3 numpy arrays (indices, values, offsets), "
+          "received non numpy array.");
+    }
 
-    bool output_sparse = getInferenceOutputDim() < getOutputDim();
+    NumpyArray<uint32_t> indices = tup[0].cast<NumpyArray<uint32_t>>();
+    NumpyArray<float> values = tup[1].cast<NumpyArray<float>>();
+    NumpyArray<uint32_t> offsets = tup[2].cast<NumpyArray<uint32_t>>();
 
-    // Declare pointers to memory for activations and active neurons, if the
-    // allocation succeeds this will be assigned valid addresses by the
-    // allocateActivations function. Otherwise the nullptr will indicate that
-    // activations are not being computed.
-    uint32_t* active_neurons = nullptr;
-    float* activations = nullptr;
+    auto data = dataset::python::sparseBoltDatasetFromNumpy(
+        indices, values, offsets, batch_size);
 
-    bool alloc_success =
-        allocateActivations(num_samples, getInferenceOutputDim(),
-                            &active_neurons, &activations, output_sparse);
+    return BoltDatasetWithNumpyContext{data, indices, values, offsets};
+  }
 
-    auto metric_data = FullyConnectedNetwork::predict(
-        test_data, test_labels, active_neurons, activations, metrics, verbose,
-        batch_limit);
+  BoltDatasetWithNumpyContext convertNumpyArrayToBoltDataset(
+      const py::object& obj, uint32_t batch_size, bool is_labels) {
+    if (batch_size == 0) {
+      throw std::invalid_argument("No batch size provided.");
+    }
 
-    py::dict py_metric_data = py::cast(metric_data);
+    NumpyArray<float> data = obj.cast<NumpyArray<float>>();
+    if (is_labels && data.ndim() == 1) {
+      auto array = data.cast<NumpyArray<uint32_t>>();
+      auto dataset =
+          dataset::python::categoricalLabelsFromNumpy(array, batch_size);
+      return BoltDatasetWithNumpyContext{dataset, array, std::nullopt,
+                                         std::nullopt};
+    }
 
-    return constructNumpyArrays(std::move(py_metric_data), num_samples,
-                                getInferenceOutputDim(), active_neurons,
-                                activations, output_sparse, alloc_success);
+    uint32_t input_dim = data.ndim() == 1 ? 1 : data.shape(1);
+    if (input_dim != getInputDim()) {
+      throw std::invalid_argument("Cannot pass array with input dimension " +
+                                  std::to_string(input_dim) +
+                                  " to network with input dim " +
+                                  std::to_string(getInputDim()));
+    }
+
+    auto dataset = dataset::python::denseBoltDatasetFromNumpy(data, batch_size);
+    return {dataset, std::nullopt, data, std::nullopt};
+  }
+
+  BoltDatasetWithNumpyContext convertPyObjectToBoltDataset(
+      const py::object& obj, uint32_t batch_size, bool is_labels) {
+    if (isBoltDataset(obj)) {
+      return {obj.cast<dataset::BoltDatasetPtr>(), std::nullopt, std::nullopt,
+              std::nullopt};
+    }
+    if (isNumpyArray(obj)) {
+      return convertNumpyArrayToBoltDataset(obj, batch_size, is_labels);
+    }
+    if (isTuple(obj)) {
+      return convertTupleToBoltDataset(obj, batch_size);
+    }
+
+    throw std::invalid_argument(
+        "Expected object of type BoltDataset, tuple, or numpy array (or None "
+        "for "
+        "test labels), received " +
+        py::str(obj.get_type()).cast<std::string>());
   }
 
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/

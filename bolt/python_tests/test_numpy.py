@@ -16,7 +16,7 @@ def train_simple_bolt_model(examples, labels):
     epochs = 5
 
     network.train(
-        train_examples=examples,
+        train_data=examples,
         train_labels=labels,
         batch_size=batch_size,
         loss_fn=bolt.CategoricalCrossEntropyLoss(),
@@ -48,12 +48,8 @@ def train_sparse_bolt_model(
     epochs = 5
     ##
     network.train(
-        x_idxs=x_idxs,
-        x_vals=x_vals,
-        x_offsets=x_offsets,
-        y_idxs=y_idxs,
-        y_vals=y_vals,
-        y_offsets=y_offsets,
+        train_data=(x_idxs, x_vals, x_offsets),
+        train_labels=(y_idxs, y_vals, y_offsets),
         batch_size=batch_size,
         loss_fn=bolt.CategoricalCrossEntropyLoss(),
         learning_rate=learning_rate,
@@ -61,14 +57,10 @@ def train_sparse_bolt_model(
         verbose=False,
     )
     acc, _ = network.predict(
-        x_idxs,
-        x_vals,
-        x_offsets,
-        y_idxs,
-        y_vals,
-        y_offsets,
-        batch_size,
-        ["categorical_accuracy"],
+        test_data=(x_idxs, x_vals, x_offsets),
+        test_labels=(y_idxs, y_vals, y_offsets),
+        batch_size=batch_size,
+        metrics=["categorical_accuracy"],
         verbose=False,
     )
     ##
@@ -110,6 +102,10 @@ def test_mock_sparse_data():
     y_idxs %= n_classes
     y_vals = np.ones(2 * n_samples) + 0.1 * np.random.rand(2 * n_samples)
     y_offsets = 2 * np.arange(n_samples + 1)
+
+    print(x_idxs)
+    print(y_idxs)
+
     acc = train_sparse_bolt_model(
         x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, inp_dim, n_classes
     )

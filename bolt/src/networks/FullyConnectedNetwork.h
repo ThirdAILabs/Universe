@@ -81,6 +81,8 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     return _layers.back()->getInferenceOutputDim();
   }
 
+  uint32_t getInputDim() const { return _layers.front()->getInputDim(); }
+
   void enableSparseInference() {
     _sparse_inference_enabled = true;
     _layers.back()->forceSparseForInference();
