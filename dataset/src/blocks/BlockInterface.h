@@ -31,9 +31,20 @@ struct ExtendableVector {
    * Must be called exactly once per sample per block,
    * so to prevent erroneous use, we are making this a
    * protected method so it is only accessible to
-   * derived classes and the Block abstract class.
+   * derived classes, the Block abstract class, and
+   * the ExtendableVectorTest class.
    */
   virtual void extendByDim(uint32_t dim) = 0;
+
+  /**
+   * Returns all of the vector's idx-value pairs.
+   * Only used for testing as this can be very expensive
+   * in dense vectors. Thus, we made it protected
+   * so it is only accessible to derived classes,
+   * the Block abstract class, and the 
+   * ExtendableVectorTest class.
+   */
+  virtual std::vector<std::pair<uint32_t, float>> entries() = 0;
 
  public:
   /**
