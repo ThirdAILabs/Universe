@@ -4,6 +4,10 @@ if (NOT WIN32)
   set(CMAKE_CXX_COMPILER "g++")
   set(CMAKE_C_COMPILER "gcc")
   message("Not using MSVC (we should not be on Windows then), forcing GCC and G++")
+else()
+  # Set this to use static linking by default, see
+  # https://cmake.org/cmake/help/latest/prop_tgt/MSVC_RUNTIME_LIBRARY.html
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
 # When I set LD_PRELOAD to be able use ASan with python tests, for some reason 
