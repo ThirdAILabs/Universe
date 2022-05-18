@@ -5,10 +5,6 @@ __all__ = []
 __all__.extend(dir(thirdai._thirdai.dataset))
 
 
-import csv
-import re
-
-
 def tokenize_to_svm(
     input_file, output_dim=100_000, output_file="preprocessed_data.svm"
 ):
@@ -31,6 +27,9 @@ def tokenize_to_svm(
     neg,I hate slow deep learning models.\n
     ```\n
     """
+    import csv
+    import re
+
     if input_file.find(".csv") == -1:
         raise ValueError("Only .csv files are supported")
 
