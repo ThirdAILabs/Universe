@@ -50,7 +50,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.5.0
         env:
           
-          # Set this so that any tests that need the license work
+          # Mac and windows will use this path, since they do not run in docker
           THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
          
           # TODO(josh): Get cross compiling working to build more types of wheels
@@ -58,6 +58,8 @@ jobs:
           CIBW_BUILD_VERBOSITY: 3
           CIBW_BEFORE_ALL_MACOS: ln -s /usr/local/bin/g++-11 /usr/local/bin/g++
 
+          # On linux we copy a valid license to the home directory within the docker
+          CIBW_BEFORE_TEST_LINUX: cp docker/product/slim/license.serialized ~/license.serialized
           CIBW_TEST_REQUIRES: datasets mmh3 numpy pytest
           CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
 
