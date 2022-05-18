@@ -117,16 +117,18 @@ list (FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
 SET (LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
 if (${LICENSE_BUILD_FLAG_FOUND})
 
-  # Install CRYPTOPP and set the static lib to be libcryptopp.a. This is pretty
+  # Install CRYPTOPP and set the static lib to be the static library file. This is pretty
   # ugly (the build happens at configure time, not build time) but honestly
   # okay (I spent way too long getting anything at all to work). Plus, it's 
   # gated by a feature flag anyways.
   # For now use default 32 jobs to build.
-  set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/libcryptopp.a)
   if (MSVC)
-    execute_process(COMMAND make static CXX=g++ -j32 -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
+    set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/cryptlib.lib)
+    execute_process(COMMAND nmake /f cryptest.nmake 
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/deps/cryptopp)
   else()
-    execute_process(COMMAND make static -j32 -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
+    set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/libcryptopp.a)
+    execute_process(COMMAND make static CXX=g++ -j32 -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
   endif()
 endif()
 
