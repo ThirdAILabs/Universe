@@ -5,37 +5,53 @@ __all__ = []
 __all__.extend(dir(thirdai._thirdai.dataset))
 
 
-from thirdai import bolt, dataset
-import numpy as np
 import csv
-import mmh3
 import re
 
-def tokenize_to_svm(filename, output_dim, target_location=None, train=True, seed=42):
-    if filename.find(".csv") == -1:
+
+def tokenize_to_svm(
+    input_file, output_dim=100_000, output_file="preprocessed_data.svm"
+):
+    """Utility function that converts text datasets into vector representations, saves them in SVM format.\n\n
+    Arguments:\n
+     * input_file: String - Path to a text dataset. More on this below.\n
+     * output_dim: Int (positive, optional) - The dimension of the vector representations
+     produced by this function. Defaults to 100,000.\n
+     * output_file: String - Path to a file where we save the vector representations.
+     Defaults to ./preprocessed_data.svm\n\n
+
+    **Text dataset format**\n
+    The text dataset must be a CSV file where each row follows this format:\n\n
+
+    \<pos or neg\>,\<text\> \n\n
+
+    For example, we can have a training corpus called example_train.csv that contains the following:\n
+    ```\n
+    pos,Had a great time at the webinar.\n
+    neg,I hate slow deep learning models.\n
+    ```\n
+    """
+    if input_file.find(".csv") == -1:
         raise ValueError("Only .csv files are supported")
 
-    post = "_train" if train else "_test"
-    if target_location is None:
-        target_location = "preprocessed_data"
-    target_location = target_location + post + ".svm"
+    with open(output_file, "w") as fw:
+        csvreader = csv.reader(open(input_file, "r"))
 
-    fw = open(target_location, "w")
-    csvreader = csv.reader(open(filename, "r"))
+        for line in csvreader:
+            label = 1 if line[0] == "pos" else 0
+            fw.write(str(label) + " ")
 
-    for line in csvreader:
-        label = 1 if line[0] == "pos" else 0
-        fw.write(str(label) + " ")
+            sentence = re.sub(r"[^\w\s]", "", line[1])
+            sentence = sentence.lower()
+            ### BOLT TOKENIZER START
+            tup = thirdai._thirdai.dataset.bolt_tokenizer(
+                sentence, seed=341, dimension=output_dim
+            )
+            for idx, val in zip(tup[0], tup[1]):
+                fw.write(str(idx) + ":" + str(val) + " ")
+            ### BOLT TOKENIZER END
 
-        sentence = re.sub(r"[^\w\s]", "", line[1])
-        sentence = sentence.lower()
-        ### BOLT TOKENIZER START
-        tup = thirdai._thirdai.dataset.bolt_tokenizer(sentence, seed=seed, dimension=output_dim)
-        for idx, val in zip(tup[0], tup[1]):
-            fw.write(str(idx) + ":" + str(val) + " ")
-        ### BOLT TOKENIZER END
+            fw.write("\n")
 
-        fw.write("\n")
-    fw.close()
 
-    return target_location
+__all__.append(tokenize_to_svm)
