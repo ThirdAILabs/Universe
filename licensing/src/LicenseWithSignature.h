@@ -17,8 +17,8 @@
 #include <optional>
 #if defined __linux__ || defined __APPLE__
 #include <pwd.h>
-#endif
 #include <unistd.h>
+#endif
 #include <utility>
 
 namespace thirdai::licensing {

@@ -123,8 +123,11 @@ if (${LICENSE_BUILD_FLAG_FOUND})
   # gated by a feature flag anyways.
   # For now use default 32 jobs to build.
   set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/libcryptopp.a)
-  execute_process(COMMAND make static CXX=g++ -j32 -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
-
+  if (MSVC)
+    execute_process(COMMAND make static CXX=g++ -j32 -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
+  else()
+    execute_process(COMMAND make static -j32 -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
+  endif()
 endif()
 
 
