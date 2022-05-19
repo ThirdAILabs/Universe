@@ -82,27 +82,6 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
 
-    // const uint32_t* x =
-    //     data.cast<py::tuple>()[0].cast<NumpyArray<uint32_t>>().data();
-    // std::cout << "ARRAY POINTER: " << x << std::endl;
-    // std::cout << "ARRAY:" << std::endl;
-    // for (uint32_t i = 0;
-    //      i < train_data.dataset->len() * train_data.dataset->at(0)[0].len;
-    //      i++) {
-    //   std::cout << x[i] << " ";
-    // }
-
-    // std::cout << std::endl;
-    // std::cout << "INDICES:" << std::endl;
-    // std::cout << "INDICES POINTER: "
-    //           << train_data.dataset->at(0)[0].active_neurons << std::endl;
-    // for (uint32_t i = 0;
-    //      i < train_data.dataset->len() * train_data.dataset->at(0)[0].len;
-    //      i++) {
-    //   std::cout << train_data.dataset->at(0)[0].active_neurons[i] << " ";
-    // }
-    // std::cout << std::endl;
-
     return FullyConnectedNetwork::train(train_data, train_labels, loss_fn,
                                         learning_rate, epochs, rehash, rebuild,
                                         metric_names, verbose);
