@@ -3,6 +3,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace thirdai::bolt::python {
 
@@ -10,6 +11,8 @@ void createBoltSubmodule(py::module_& module) {
   auto bolt_submodule = module.def_submodule("bolt");
 
 #if THIRDAI_EXPOSE_ALL
+#pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
+
   py::class_<thirdai::bolt::SamplingConfig>(
       bolt_submodule, "SamplingConfig",
       "SamplingConfig represents a layer's sampling hyperparameters.")
