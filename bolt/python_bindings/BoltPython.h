@@ -147,8 +147,8 @@ class PyNetwork final : public FullyConnectedNetwork {
                             &active_neurons, &activations, output_sparse);
 
     auto metric_data = FullyConnectedNetwork::predict(
-        test_data.dataset, test_labels.dataset, active_neurons, activations, metrics, verbose,
-        batch_limit);
+        test_data.dataset, test_labels.dataset, active_neurons, activations,
+        metrics, verbose, batch_limit);
 
     py::dict py_metric_data = py::cast(metric_data);
 
