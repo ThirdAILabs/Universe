@@ -28,11 +28,11 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
         py::arg("max_num_threads"));
 #endif
 
-  // #if THIRDAI_CHECK_LICENSE
+  #if THIRDAI_CHECK_LICENSE
   m.def("set_thirdai_license_path",
         &thirdai::licensing::LicenseWrapper::setLicensePath,
         py::arg("license_path"));
-  // #endif
+  #endif
 
   // Per pybind11 docs breaking up the construction of bindings in this way
   // could speed up build times. See below for more info:
