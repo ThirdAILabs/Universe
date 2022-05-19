@@ -54,7 +54,11 @@ jobs:
           THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
          
           # TODO(josh): Get cross compiling working to build more types of wheels
-          CIBW_BUILD: "*macosx_x86_64 *manylinux_x86_64 cp*win_amd64"
+          # Online compile cpython wheels (pytorch does this too), no big 
+          # advantage to JIT compilation of python since most of our processing
+          # happens in C++ (it can actually make it slower!). Also, on some
+          # platforms numpy isn't available so our tests don't work.
+          CIBW_BUILD: "cp*macosx_x86_64 cp*manylinux_x86_64 cp*win_amd64"
           CIBW_BUILD_VERBOSITY: 3
           CIBW_BEFORE_ALL_MACOS: ln -s /usr/local/bin/g++-11 /usr/local/bin/g++
 
