@@ -117,8 +117,6 @@ void SampledHashTable<LABEL_T>::queryAndInsertForInference(
         uint32_t row_id = hashes[table];
         assert(row_id < _range);
 
-        // This is the gcc primitive for atomic operations
-        // https://gcc.gnu.org/onlinedocs/gcc-4.8.2/gcc/_005f_005fatomic-Builtins.html
         uint32_t counter = atomic_fetch_and_add(table, row_id);
 
         if (counter < _reservoir_size) {
