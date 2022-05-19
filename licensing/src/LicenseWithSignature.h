@@ -23,18 +23,6 @@
 
 namespace thirdai::licensing {
 
-const std::string PUBLIC_KEY_BASE_64 =
-    "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAsIv9g8w+"
-    "DLlepzpE02luu6lV2DY7g5N0cnqhbaoArE5UOEiKK2EFPCeQTp8+TkYk64/"
-    "ieMab4CoIU3ZmVp5GUyKkWsLJhDUE3dXJrLhIDTg7HFr6qwrFDosRWI26grq+"
-    "CFPsiVLTjlJCd+7sv1EtR5TPhympKAKRbUI1pffnK8QTJ8F5Bfg/"
-    "1tLHk3lpUp4vF90se0TWgmXe7CW6GtWeXqiwsfzK9IzkgLbX4DQJnyIRPS9MLoQr/"
-    "nSws7jMPDtUIuSjUIOQojxIhxTO5iL+"
-    "mfiV2h7nRLMtJM6lLKmrDK09sE4geE8zJytCcP1l15s7gZy7g7i1mwrpfiulmfNVvDj0LoKYD2"
-    "nx1mj+gCgnUasqLWILNUXgV19eGGLd23+"
-    "hc7NzF10KFVXIcLebrG7o6WfFY5NSYu2pDzialgpCXmiysyIKj/HXY1hpbi0/dMII/"
-    "lVN2QhDb5zTVIjzBr+kMuJ9dNNl9Sn4eso+dMNjQrQ2F9WvcgS1ZQ4Ju/5qOZrRAgMBAAE=";
-
 class LicenseWithSignature {
  public:
   // This is public because it is a top level serialization target, only
@@ -74,7 +62,7 @@ class LicenseWithSignature {
 
   // Returns true if the content of the license can be verified with the public
   // key and false otherwise
-  bool verify(const CryptoPP::RSA::PublicKey& public_key) {
+  bool verify(const CryptoPP::RSA::PublicKey& public_key) const {
     // See https://cryptopp.com/wiki/RSA_Cryptography for more details
 
     std::string license_state_to_sign = _license.toString();
@@ -137,6 +125,52 @@ class LicenseWithSignature {
    */
   static void findVerifyAndCheckLicense(
       const std::optional<std::string>& license_path) {
+    std::vector<std::string> license_file_name_options =
+        get_license_name_options(license_path);
+
+    std::pair<LicenseWithSignature, std::string> license_with_file =
+        get_license_from_options(license_file_name_options);
+
+    verify_and_check_license(license_with_file);
+  }
+
+  const License& get_license() const { return _license; }
+
+  // For now this is just used for testing
+  void set_license(License new_license) { _license = std::move(new_license); }
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_signature, _license);
+  }
+
+  static inline const std::string PUBLIC_KEY_BASE_64 =
+      "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAsIv9g8w+"
+      "DLlepzpE02luu6lV2DY7g5N0cnqhbaoArE5UOEiKK2EFPCeQTp8+TkYk64/"
+      "ieMab4CoIU3ZmVp5GUyKkWsLJhDUE3dXJrLhIDTg7HFr6qwrFDosRWI26grq+"
+      "CFPsiVLTjlJCd+7sv1EtR5TPhympKAKRbUI1pffnK8QTJ8F5Bfg/"
+      "1tLHk3lpUp4vF90se0TWgmXe7CW6GtWeXqiwsfzK9IzkgLbX4DQJnyIRPS9MLoQr/"
+      "nSws7jMPDtUIuSjUIOQojxIhxTO5iL+"
+      "mfiV2h7nRLMtJM6lLKmrDK09sE4geE8zJytCcP1l15s7gZy7g7i1mwrpfiulmfNVvDj0LoKY"
+      "D2"
+      "nx1mj+gCgnUasqLWILNUXgV19eGGLd23+"
+      "hc7NzF10KFVXIcLebrG7o6WfFY5NSYu2pDzialgpCXmiysyIKj/HXY1hpbi0/dMII/"
+      "lVN2QhDb5zTVIjzBr+kMuJ9dNNl9Sn4eso+dMNjQrQ2F9WvcgS1ZQ4Ju/5qOZrRAgMBAAE=";
+
+  /*
+   * Returns a vector of possible license file names. Tries to add each of the
+   * following license file paths in the following order:
+   * 0. The passed in license path
+   * 1. env(THIRDAI_LICENSE_PATH)
+   * 2. ~/license.serialized
+   * 3. {cwd}/license.serialized
+   * If one of the methods fails does not add that path.
+   */
+  static std::vector<std::string> get_license_name_options(
+      const std::optional<std::string>& license_path) {
     std::vector<std::string> license_file_name_options;
 
     if (license_path) {
@@ -162,17 +196,19 @@ class LicenseWithSignature {
                                           "/license.serialized");
     }
 
-    if (license_file_name_options.empty()) {
-      throw thirdai::exceptions::LicenseCheckException(
-          "no license file found. Go to https://thirdai.com/try-bolt to get a "
-          "license.");
-    }
+    return license_file_name_options;
+  }
 
+  // Finds the first license file in the list of license file options,
+  // deserializes it, and returns it along with the file name. If no license
+  // file can be opened, we throw an error. If the deserialization fails, Cereal
+  // will throw an error.
+  static std::pair<LicenseWithSignature, std::string> get_license_from_options(
+      const std::vector<std::string>& license_file_name_options) {
     std::optional<std::pair<LicenseWithSignature, std::string>>
         license_with_file;
     for (const std::string& license_file_name : license_file_name_options) {
       if (can_access_file(license_file_name)) {
-        std::cout << "Using " << license_file_name << std::endl;
         license_with_file = {deserializeFromFile(license_file_name),
                              license_file_name};
         break;
@@ -185,42 +221,36 @@ class LicenseWithSignature {
         license_files_tried += license_file_name + ", ";
       }
       throw thirdai::exceptions::LicenseCheckException(
-          "could not find any license file (tried " + license_files_tried +
-          "). "
-          "Go to https://thirdai.com/try-bolt to get a license.");
+          "could not find any license file (tried the following locations: " +
+          license_files_tried +
+          "). Go to https://thirdai.com/try-bolt to get a license.");
     }
 
+    return license_with_file.value();
+  }
+
+  // Verifies the license with the stored public key. If the verification fails,
+  // throws an error. If the verication is succesfull but the license has
+  // expired, throws an error.
+  static void verify_and_check_license(
+      const std::pair<LicenseWithSignature, std::string>& license_with_file) {
     CryptoPP::RSA::PublicKey public_key;
     CryptoPP::StringSource ss(PUBLIC_KEY_BASE_64, true,
                               new CryptoPP::Base64Decoder);
     public_key.BERDecode(ss);
 
-    if (!license_with_file->first.verify(public_key)) {
+    if (!license_with_file.first.verify(public_key)) {
       throw thirdai::exceptions::LicenseCheckException(
           "license verification failure using license file " +
-          license_with_file->second +
+          license_with_file.second +
           ". Go to https://thirdai.com/try-bolt to get a valid license.");
     }
 
-    if (license_with_file->first.get_license().isExpired()) {
+    if (license_with_file.first.get_license().isExpired()) {
       throw thirdai::exceptions::LicenseCheckException(
-          "the following license file is expired: " +
-          license_with_file->second +
+          "the following license file is expired: " + license_with_file.second +
           "https://thirdai.com/try-bolt to renew your license.");
     }
-  }
-
-  const License& get_license() { return _license; }
-
-  // For now this is just used for testing
-  void set_license(License new_license) { _license = std::move(new_license); }
-
- private:
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_signature, _license);
   }
 
   static bool can_access_file(const std::string& fileName) {
