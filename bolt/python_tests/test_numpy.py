@@ -95,7 +95,7 @@ def test_read_easy_mock_data():
     examples = examples + noise
 
     acc = train_simple_bolt_model(examples, labels)
-    assert acc > 0.99
+    assert acc > 0.9
 
 
 @pytest.mark.unit
@@ -138,7 +138,7 @@ def test_easy_sparse_layer():
     acc = train_simple_bolt_model(
         examples, labels, load_factor=0.1, n_classes=n_classes
     )
-    assert acc > 0.99
+    assert acc > 0.9
 
 
 @pytest.mark.unit
