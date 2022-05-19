@@ -14,13 +14,12 @@
 
 namespace thirdai::bolt {
 
-FullyConnectedNetwork::FullyConnectedNetwork(
-    SequentialConfigList configs, uint32_t input_dim,
-    const std::optional<std::string>& license_path)
+FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
+                                             uint32_t input_dim)
     : _input_dim(input_dim),
       _num_layers(configs.size()),
       _sparse_inference_enabled(false) {
-  thirdai::licensing::LicenseWrapper::checkLicense(license_path);
+  thirdai::licensing::LicenseWrapper::checkLicense();
 
   auto start = std::chrono::high_resolution_clock::now();
 

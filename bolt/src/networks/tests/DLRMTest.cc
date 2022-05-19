@@ -83,8 +83,7 @@ TEST_F(DLRMTestFixture, NoisyCategoricalFeatures) {
       std::make_shared<FullyConnectedLayerConfig>(n_classes,
                                                   ActivationFunction::Softmax)};
 
-  DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes,
-            /* license_path = */ {});
+  DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes);
 
   auto dataset = genDataset(false, true);
 
@@ -109,8 +108,7 @@ TEST_F(DLRMTestFixture, NoisyDenseFeatures) {
       std::make_shared<FullyConnectedLayerConfig>(n_classes,
                                                   ActivationFunction::Softmax)};
 
-  DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes,
-            /* license_path = */ {});
+  DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes);
 
   auto dataset = genDataset(true, false);
 
@@ -135,8 +133,7 @@ TEST_F(DLRMTestFixture, NoisyDenseAndCategoricalFeatures) {
       std::make_shared<FullyConnectedLayerConfig>(n_classes,
                                                   ActivationFunction::Softmax)};
 
-  DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes,
-            /* license_path = */ {});
+  DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, n_classes);
 
   auto dataset = genDataset(true, true);
 

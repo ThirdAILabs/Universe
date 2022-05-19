@@ -24,8 +24,7 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
   friend class DLRM;
 
  public:
-  FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim,
-                        const std::optional<std::string>& license_path);
+  FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim);
 
   void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
 
@@ -120,7 +119,7 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
  protected:
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   FullyConnectedNetwork() {
-    thirdai::licensing::LicenseWrapper::checkLicense({});
+    thirdai::licensing::LicenseWrapper::checkLicense();
   };
 };
 

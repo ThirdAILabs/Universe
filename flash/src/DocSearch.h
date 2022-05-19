@@ -36,15 +36,14 @@ namespace thirdai::search {
 class DocSearch {
  public:
   DocSearch(uint32_t hashes_per_table, uint32_t num_tables, uint32_t dense_dim,
-            const std::vector<std::vector<float>>& centroids_input,
-            const std::optional<std::string>& license_path)
+            const std::vector<std::vector<float>>& centroids_input)
       : _dense_dim(dense_dim),
         _nprobe_query(2),
         _largest_internal_id(0),
         _num_centroids(centroids_input.size()),
         _centroids(dense_dim, centroids_input.size()),
         _centroid_id_to_internal_id(centroids_input.size()) {
-    thirdai::licensing::LicenseWrapper::checkLicense(license_path);
+    thirdai::licensing::LicenseWrapper::checkLicense();
 
     if (dense_dim == 0 || num_tables == 0 || hashes_per_table == 0) {
       throw std::invalid_argument(
@@ -211,7 +210,7 @@ class DocSearch {
   // This needs to be protected since it's a top level serialization target
   // called by a child class, but DO NOT call it unless you are creating a
   // temporary object to serialize into.
-  DocSearch() { thirdai::licensing::LicenseWrapper::checkLicense({}); };
+  DocSearch() { thirdai::licensing::LicenseWrapper::checkLicense(); };
 
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/

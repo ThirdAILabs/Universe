@@ -25,10 +25,8 @@ class PyDocSearch final : public DocSearch {
  public:
   PyDocSearch(const std::vector<std::vector<float>>& centroids,
               uint32_t hashes_per_table, uint32_t num_tables,
-              uint32_t dense_dim,
-              const std::optional<std::string>& license_path)
-      : DocSearch(hashes_per_table, num_tables, dense_dim, centroids,
-                  license_path) {}
+              uint32_t dense_dim)
+      : DocSearch(hashes_per_table, num_tables, dense_dim, centroids) {}
 
   bool addDocument(
       const std::string& doc_id, const std::string& doc_text,

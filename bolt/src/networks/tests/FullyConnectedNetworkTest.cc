@@ -47,7 +47,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
        TrainSimpleDatasetSingleLayerNetwork) {
   FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
                                     n_classes, ActivationFunction::Softmax)},
-                                n_classes, /* license_path = */ {});
+                                n_classes);
 
   auto data = genDataset(false);
 
@@ -62,7 +62,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
        TrainNoisyDatasetSingleLayerNetwork) {
   FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
                                     n_classes, ActivationFunction::Softmax)},
-                                n_classes, /* license_path = */ {});
+                                n_classes);
 
   auto data = genDataset(true);
 
@@ -79,7 +79,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
                                      10000, 0.1, ActivationFunction::ReLU),
                                  std::make_shared<FullyConnectedLayerConfig>(
                                      n_classes, ActivationFunction::Softmax)},
-                                n_classes, /* license_path = */ {});
+                                n_classes);
 
   auto data = genDataset(false);
 
@@ -96,7 +96,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
                                      10000, 0.1, ActivationFunction::ReLU),
                                  std::make_shared<FullyConnectedLayerConfig>(
                                      n_classes, ActivationFunction::Softmax)},
-                                n_classes, /* license_path = */ {});
+                                n_classes);
 
   auto data = genDataset(true);
 

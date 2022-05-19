@@ -42,9 +42,8 @@ py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
 
 class PyNetwork final : public FullyConnectedNetwork {
  public:
-  PyNetwork(SequentialConfigList configs, uint64_t input_dim,
-            const std::optional<std::string>& license_path)
-      : FullyConnectedNetwork(std::move(configs), input_dim, license_path) {}
+  PyNetwork(SequentialConfigList configs, uint64_t input_dim)
+      : FullyConnectedNetwork(std::move(configs), input_dim) {}
 
   MetricData train(
       dataset::InMemoryDataset<dataset::BoltInputBatch>& train_data,
@@ -295,10 +294,9 @@ class PyDLRM final : public DLRM {
  public:
   PyDLRM(bolt::EmbeddingLayerConfig embedding_config,
          SequentialConfigList bottom_mlp_configs,
-         SequentialConfigList top_mlp_configs, uint32_t input_dim,
-         const std::optional<std::string>& license_path)
+         SequentialConfigList top_mlp_configs, uint32_t input_dim)
       : DLRM(embedding_config, std::move(bottom_mlp_configs),
-             std::move(top_mlp_configs), input_dim, license_path) {}
+             std::move(top_mlp_configs), input_dim) {}
 
   py::tuple predict(
       const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,

@@ -10,6 +10,9 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+// Licensing wrapper
+#include <wrappers/src/LicenseWrapper.h>
+
 #ifndef __clang__
 #include <omp.h>
 #endif
@@ -24,6 +27,12 @@ PYBIND11_MODULE(_thirdai, m) {  // NOLINT
   m.def("set_global_num_threads", &omp_set_num_threads,
         py::arg("max_num_threads"));
 #endif
+
+  // #if THIRDAI_CHECK_LICENSE
+  m.def("set_thirdai_license_path",
+        &thirdai::licensing::LicenseWrapper::setLicensePath,
+        py::arg("license_path"));
+  // #endif
 
   // Per pybind11 docs breaking up the construction of bindings in this way
   // could speed up build times. See below for more info:

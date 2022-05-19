@@ -10,19 +10,16 @@ namespace thirdai::bolt {
 
 DLRM::DLRM(EmbeddingLayerConfig embedding_config,
            SequentialConfigList bottom_mlp_configs,
-           SequentialConfigList top_mlp_configs, uint32_t dense_feature_dim,
-           const std::optional<std::string>& license_path)
+           SequentialConfigList top_mlp_configs, uint32_t dense_feature_dim)
     : _embedding_layer(embedding_config),
-      _bottom_mlp(bottom_mlp_configs, dense_feature_dim, license_path),
-      _top_mlp(top_mlp_configs,
-               (embedding_config.lookup_size *
-                embedding_config.num_embedding_lookups) +
-                   bottom_mlp_configs.back()->getDim(),
-               license_path),
+      _bottom_mlp(bottom_mlp_configs, dense_feature_dim),
+      _top_mlp(top_mlp_configs, (embedding_config.lookup_size *
+                                 embedding_config.num_embedding_lookups) +
+                                    bottom_mlp_configs.back()->getDim()),
 
       _iter(0),
       _epoch_count(0) {
-  thirdai::licensing::LicenseWrapper::checkLicense(license_path);
+  thirdai::licensing::LicenseWrapper::checkLicense();
 
   if (bottom_mlp_configs.back()->getSparsity() != 1.0) {
     throw std::invalid_argument("Dense feature layer must have sparsity 1.0");
