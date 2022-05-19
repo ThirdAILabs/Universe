@@ -103,11 +103,14 @@ def test_mock_sparse_data():
     y_vals = np.ones(2 * n_samples) + 0.1 * np.random.rand(2 * n_samples)
     y_offsets = 2 * np.arange(n_samples + 1)
 
-    print(x_idxs)
-    print(y_idxs)
-
     acc = train_sparse_bolt_model(
-        x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, inp_dim, n_classes
+        x_idxs.astype(np.uint32), 
+        x_vals.astype(np.float32), 
+        x_offsets.astype(np.uint32), 
+        y_idxs.astype(np.uint32), 
+        y_vals.astype(np.float32), 
+        y_offsets.astype(np.uint32), 
+        inp_dim, n_classes
     )
     assert acc > 0.9
 

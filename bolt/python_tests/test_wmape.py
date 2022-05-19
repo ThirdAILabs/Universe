@@ -33,14 +33,14 @@ def train_bolt_with_wmape(
             loss_fn=bolt.WeightedMeanAbsolutePercentageError(),
             learning_rate=learning_rate,
             epochs=1,
-            verbose=True,
+            verbose=False,
         )
         metrics, _ = network.predict(
             (x_idxs, x_vals, x_offsets),
             (y_idxs, y_vals, y_offsets),
             batch_size,
             ["weighted_mean_absolute_percentage_error"],
-            verbose=True,
+            verbose=False,
         )
 
     return metrics["weighted_mean_absolute_percentage_error"]
@@ -57,12 +57,12 @@ def test_wmape_dense_simple():
     examples += np.random.randn(n_samples * input_dim)
 
     err = train_bolt_with_wmape(
-        x_idxs=np.concatenate([np.arange(10) for _ in range(10000)]),
+        x_idxs=np.concatenate([np.arange(10) for _ in range(10000)]).astype(np.uint32),
         x_vals=examples,
-        x_offsets=np.arange(0, n_samples * input_dim + 1, input_dim),
-        y_idxs=np.zeros(shape=(n_samples,)),
+        x_offsets=np.arange(0, n_samples * input_dim + 1, input_dim).astype(np.uint32),
+        y_idxs=np.zeros(shape=(n_samples,)).astype(np.uint32),
         y_vals=labels,
-        y_offsets=np.arange(0, n_samples + 1, 1),
+        y_offsets=np.arange(0, n_samples + 1, 1).astype(np.uint32),
     )
 
     assert err < 0.1
@@ -78,12 +78,12 @@ def test_wmape_one_hot_simple():
     y_vals = labels.astype(np.float32) + 0.1 * np.random.randn(n_samples)
 
     err = train_bolt_with_wmape(
-        x_idxs=labels,
+        x_idxs=labels.astype(np.uint32),
         x_vals=np.ones(shape=(n_samples,)).astype(np.float32),
-        x_offsets=np.arange(0, n_samples + 1, 1),
-        y_idxs=np.zeros(shape=(n_samples,)),
+        x_offsets=np.arange(0, n_samples + 1, 1).astype(np.uint32),
+        y_idxs=np.zeros(shape=(n_samples,)).astype(np.uint32),
         y_vals=y_vals,
-        y_offsets=np.arange(0, n_samples + 1, 1),
+        y_offsets=np.arange(0, n_samples + 1, 1).astype(np.uint32),
     )
     print(err)
     assert err < 0.1

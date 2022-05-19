@@ -64,13 +64,6 @@ static bool isNumpyArray(const py::object& obj) {
   return py::str(obj.get_type()).equal(py::str("<class 'numpy.ndarray'>"));
 }
 
-struct BoltDatasetWithNumpyContext {
-  dataset::BoltDatasetPtr dataset;
-  std::optional<NumpyArray<uint32_t>> indices;
-  std::optional<NumpyArray<float>> values;
-  std::optional<NumpyArray<uint32_t>> offsets;
-};
-
 class PyNetwork final : public FullyConnectedNetwork {
  public:
   PyNetwork(SequentialConfigList configs, uint64_t input_dim)
@@ -110,9 +103,9 @@ class PyNetwork final : public FullyConnectedNetwork {
     // }
     // std::cout << std::endl;
 
-    return FullyConnectedNetwork::train(
-        train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
-        epochs, rehash, rebuild, metric_names, verbose);
+    return FullyConnectedNetwork::train(train_data, train_labels, loss_fn,
+                                        learning_rate, epochs, rehash, rebuild,
+                                        metric_names, verbose);
   }
 
   py::tuple predict(
@@ -123,15 +116,15 @@ class PyNetwork final : public FullyConnectedNetwork {
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
 
-    auto test_data = convertPyObjectToBoltDataset(data, batch_size, false);
+    dataset::BoltDatasetPtr test_data =
+        convertPyObjectToBoltDataset(data, batch_size, false);
 
-    BoltDatasetWithNumpyContext test_labels = {nullptr, std::nullopt,
-                                               std::nullopt, std::nullopt};
+    dataset::BoltDatasetPtr test_labels = nullptr;
     if (!labels.is_none()) {
       test_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
     }
 
-    uint32_t num_samples = test_data.dataset->len();
+    uint32_t num_samples = test_data->len();
 
     bool output_sparse = getInferenceOutputDim() < getOutputDim();
 
@@ -147,8 +140,8 @@ class PyNetwork final : public FullyConnectedNetwork {
                             &active_neurons, &activations, output_sparse);
 
     auto metric_data = FullyConnectedNetwork::predict(
-        test_data.dataset, test_labels.dataset, active_neurons, activations,
-        metrics, verbose, batch_limit);
+        test_data, test_labels, active_neurons, activations, metrics, verbose,
+        batch_limit);
 
     py::dict py_metric_data = py::cast(metric_data);
 
@@ -261,7 +254,7 @@ class PyNetwork final : public FullyConnectedNetwork {
     archive(cereal::base_class<FullyConnectedNetwork>(this));
   }
 
-  static BoltDatasetWithNumpyContext convertTupleToBoltDataset(
+  static dataset::BoltDatasetPtr convertTupleToBoltDataset(
       const py::object& obj, uint32_t batch_size) {
     if (batch_size == 0) {
       throw std::invalid_argument("No batch size provided.");
@@ -286,14 +279,13 @@ class PyNetwork final : public FullyConnectedNetwork {
     NumpyArray<float> values = tup[1].cast<NumpyArray<float>>();
     NumpyArray<uint32_t> offsets = tup[2].cast<NumpyArray<uint32_t>>();
 
-    auto data = dataset::python::sparseBoltDatasetFromNumpy(
-        indices, values, offsets, batch_size);
-
-    return BoltDatasetWithNumpyContext{data, indices, values, offsets};
+    return dataset::python::sparseBoltDatasetFromNumpy(indices, values, offsets,
+                                                       batch_size);
   }
 
-  BoltDatasetWithNumpyContext convertNumpyArrayToBoltDataset(
-      const py::object& obj, uint32_t batch_size, bool is_labels) {
+  dataset::BoltDatasetPtr convertNumpyArrayToBoltDataset(const py::object& obj,
+                                                         uint32_t batch_size,
+                                                         bool is_labels) {
     if (batch_size == 0) {
       throw std::invalid_argument("No batch size provided.");
     }
@@ -301,10 +293,7 @@ class PyNetwork final : public FullyConnectedNetwork {
     NumpyArray<float> data = obj.cast<NumpyArray<float>>();
     if (is_labels && data.ndim() == 1) {
       auto array = data.cast<NumpyArray<uint32_t>>();
-      auto dataset =
-          dataset::python::categoricalLabelsFromNumpy(array, batch_size);
-      return BoltDatasetWithNumpyContext{dataset, array, std::nullopt,
-                                         std::nullopt};
+      return dataset::python::categoricalLabelsFromNumpy(array, batch_size);
     }
 
     uint32_t input_dim = data.ndim() == 1 ? 1 : data.shape(1);
@@ -315,15 +304,14 @@ class PyNetwork final : public FullyConnectedNetwork {
                                   std::to_string(getInputDim()));
     }
 
-    auto dataset = dataset::python::denseBoltDatasetFromNumpy(data, batch_size);
-    return {dataset, std::nullopt, data, std::nullopt};
+    return dataset::python::denseBoltDatasetFromNumpy(data, batch_size);
   }
 
-  BoltDatasetWithNumpyContext convertPyObjectToBoltDataset(
-      const py::object& obj, uint32_t batch_size, bool is_labels) {
+  dataset::BoltDatasetPtr convertPyObjectToBoltDataset(const py::object& obj,
+                                                       uint32_t batch_size,
+                                                       bool is_labels) {
     if (isBoltDataset(obj)) {
-      return {obj.cast<dataset::BoltDatasetPtr>(), std::nullopt, std::nullopt,
-              std::nullopt};
+      return obj.cast<dataset::BoltDatasetPtr>();
     }
     if (isNumpyArray(obj)) {
       return convertNumpyArrayToBoltDataset(obj, batch_size, is_labels);
