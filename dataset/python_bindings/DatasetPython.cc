@@ -3,7 +3,9 @@
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
+#include <atomic>
 #include <chrono>
+#include <type_traits>
 
 namespace thirdai::dataset::python {
 
@@ -428,18 +430,43 @@ InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
   return InMemoryDataset(std::move(batches), num_examples);
 }
 
-BoltDatasetPtr sparseBoltDatasetFromNumpy(
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        indices,
-    const py::array_t<float, py::array::c_style | py::array::forcecast>& values,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        offsets,
-    uint32_t batch_size) {
+template BoltDatasetPtr sparseBoltDatasetFromNumpy<>(
+    const NumpyArray<int32_t>& indices, const NumpyArray<float>& values,
+    const NumpyArray<int32_t>& offsets, uint32_t batch_size);
+
+template BoltDatasetPtr sparseBoltDatasetFromNumpy<>(
+    const NumpyArray<int32_t>& indices, const NumpyArray<float>& values,
+    const NumpyArray<uint32_t>& offsets, uint32_t batch_size);
+
+template BoltDatasetPtr sparseBoltDatasetFromNumpy<>(
+    const NumpyArray<uint32_t>& indices, const NumpyArray<float>& values,
+    const NumpyArray<int32_t>& offsets, uint32_t batch_size);
+
+template BoltDatasetPtr sparseBoltDatasetFromNumpy<>(
+    const NumpyArray<uint32_t>& indices, const NumpyArray<float>& values,
+    const NumpyArray<uint32_t>& offsets, uint32_t batch_size);
+
+template <typename INDEX_T, typename OFFSET_T>
+BoltDatasetPtr sparseBoltDatasetFromNumpy(const NumpyArray<INDEX_T>& indices,
+                                          const NumpyArray<float>& values,
+                                          const NumpyArray<OFFSET_T>& offsets,
+                                          uint32_t batch_size) {
+  static_assert(std::is_same<INDEX_T, uint32_t>::value ||
+                    std::is_same_v<INDEX_T, int32_t>,
+                "Indices must be int32_t or uin32_t");
+  static_assert(std::is_same<OFFSET_T, uint32_t>::value ||
+                    std::is_same_v<OFFSET_T, int32_t>,
+                "Offsets must be int32_t or uin32_t");
+
   uint64_t num_examples = static_cast<uint64_t>(offsets.shape(0) - 1);
 
-  uint32_t* indices_raw_data = const_cast<uint32_t*>(indices.data());
+  // Indices and offsets must be >= 0 so we can cast them both to an uint32_t*
+  // for dataset construction.
+  uint32_t* indices_raw_data =
+      const_cast<uint32_t*>(reinterpret_cast<const uint32_t*>(indices.data()));
   float* values_raw_data = const_cast<float*>(values.data());
-  uint32_t* offsets_raw_data = const_cast<uint32_t*>(offsets.data());
+  uint32_t* offsets_raw_data =
+      const_cast<uint32_t*>(reinterpret_cast<const uint32_t*>(offsets.data()));
 
   // Build batches
 
@@ -467,10 +494,19 @@ BoltDatasetPtr sparseBoltDatasetFromNumpy(
   return std::make_shared<BoltDataset>(std::move(batches), num_examples);
 }
 
-BoltDatasetPtr categoricalLabelsFromNumpy(
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        labels,
-    uint32_t batch_size) {
+template BoltDatasetPtr categoricalLabelsFromNumpy<>(
+    const NumpyArray<int32_t>& labels, uint32_t batch_size);
+
+template BoltDatasetPtr categoricalLabelsFromNumpy<>(
+    const NumpyArray<uint32_t>& labels, uint32_t batch_size);
+
+template <typename LABEL_T>
+BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<LABEL_T>& labels,
+                                          uint32_t batch_size) {
+  static_assert(std::is_same<LABEL_T, uint32_t>::value ||
+                    std::is_same_v<LABEL_T, int32_t>,
+                "Labels must be int32_t or uin32_t");
+
   const py::buffer_info labels_buf = labels.request();
 
   if (labels_buf.shape.size() != 1) {
@@ -479,6 +515,8 @@ BoltDatasetPtr categoricalLabelsFromNumpy(
   uint64_t num_labels = labels_buf.shape.at(0);
   uint64_t num_batches = (num_labels + batch_size - 1) / batch_size;
 
+  // Since categorical labels must be >= 0 we can cast the pointer
+  // to a uint32_t* for dataset construction.
   const uint32_t* labels_raw_data =
       static_cast<const uint32_t*>(labels_buf.ptr);
 

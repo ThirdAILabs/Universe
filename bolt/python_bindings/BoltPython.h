@@ -30,11 +30,7 @@ namespace py = pybind11;
 
 namespace thirdai::bolt::python {
 
-template <typename T>
-using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
-
-template <typename T>
-using NumpyArrayPtr = std::unique_ptr<NumpyArray<T>>;
+using thirdai::dataset::python::NumpyArray;
 
 void createBoltSubmodule(py::module_& module);
 
@@ -62,6 +58,18 @@ static bool isTuple(const py::object& obj) {
 
 static bool isNumpyArray(const py::object& obj) {
   return py::str(obj.get_type()).equal(py::str("<class 'numpy.ndarray'>"));
+}
+
+static bool checkNumpyArrayDtypeUint32(const py::object& obj) {
+  return py::str(obj.attr("dtype")).equal(py::str("uint32"));
+}
+
+static bool checkNumpyArrayDtypeInt32(const py::object& obj) {
+  return py::str(obj.attr("dtype")).equal(py::str("int32"));
+}
+
+static bool checkNumpyArrayDtypeFloat32(const py::object& obj) {
+  return py::str(obj.attr("dtype")).equal(py::str("float32"));
 }
 
 class PyNetwork final : public FullyConnectedNetwork {
@@ -254,12 +262,45 @@ class PyNetwork final : public FullyConnectedNetwork {
           "received non numpy array.");
     }
 
-    NumpyArray<uint32_t> indices = tup[0].cast<NumpyArray<uint32_t>>();
-    NumpyArray<float> values = tup[1].cast<NumpyArray<float>>();
-    NumpyArray<uint32_t> offsets = tup[2].cast<NumpyArray<uint32_t>>();
+    if (!checkNumpyArrayDtypeFloat32(tup[1])) {
+      throw std::invalid_argument(
+          "Expected values to be numpy array with dtype=float32");
+    }
 
-    return dataset::python::sparseBoltDatasetFromNumpy(indices, values, offsets,
-                                                       batch_size);
+    NumpyArray<float> values = tup[1].cast<NumpyArray<float>>();
+
+    if (checkNumpyArrayDtypeInt32(tup[0])) {
+      if (checkNumpyArrayDtypeInt32(tup[2])) {
+        NumpyArray<int32_t> indices = tup[0].cast<NumpyArray<int32_t>>();
+        NumpyArray<int32_t> offsets = tup[2].cast<NumpyArray<int32_t>>();
+        return dataset::python::sparseBoltDatasetFromNumpy<int32_t, int32_t>(
+            indices, values, offsets, batch_size);
+      }
+      if (checkNumpyArrayDtypeUint32(tup[2])) {
+        NumpyArray<int32_t> indices = tup[0].cast<NumpyArray<int32_t>>();
+        NumpyArray<uint32_t> offsets = tup[2].cast<NumpyArray<uint32_t>>();
+        return dataset::python::sparseBoltDatasetFromNumpy<int32_t, uint32_t>(
+            indices, values, offsets, batch_size);
+      }
+    }
+    if (checkNumpyArrayDtypeUint32(tup[0])) {
+      if (checkNumpyArrayDtypeInt32(tup[2])) {
+        NumpyArray<uint32_t> indices = tup[0].cast<NumpyArray<uint32_t>>();
+        NumpyArray<int32_t> offsets = tup[2].cast<NumpyArray<int32_t>>();
+        return dataset::python::sparseBoltDatasetFromNumpy<uint32_t, int32_t>(
+            indices, values, offsets, batch_size);
+      }
+      if (checkNumpyArrayDtypeUint32(tup[2])) {
+        NumpyArray<uint32_t> indices = tup[0].cast<NumpyArray<uint32_t>>();
+        NumpyArray<uint32_t> offsets = tup[2].cast<NumpyArray<uint32_t>>();
+        return dataset::python::sparseBoltDatasetFromNumpy<uint32_t, uint32_t>(
+            indices, values, offsets, batch_size);
+      }
+    }
+
+    throw std::invalid_argument(
+        "Expected indices and offsets to numpy arrays with dtype as int32 or "
+        "uint32");
   }
 
   dataset::BoltDatasetPtr convertNumpyArrayToBoltDataset(const py::object& obj,
@@ -269,12 +310,32 @@ class PyNetwork final : public FullyConnectedNetwork {
       throw std::invalid_argument("No batch size provided.");
     }
 
-    NumpyArray<float> data = obj.cast<NumpyArray<float>>();
-    if (is_labels && data.ndim() == 1) {
-      auto array = data.cast<NumpyArray<uint32_t>>();
-      return dataset::python::categoricalLabelsFromNumpy(array, batch_size);
+    if (is_labels && checkNumpyArrayDtypeInt32(obj)) {
+      auto array = obj.cast<NumpyArray<int32_t>>();
+      if (array.ndim() != 1) {
+        throw std::invalid_argument(
+            "Expected categorical labels array be 1D array.");
+      }
+      return dataset::python::categoricalLabelsFromNumpy<int32_t>(array,
+                                                                  batch_size);
+    }
+    if (is_labels && checkNumpyArrayDtypeUint32(obj)) {
+      auto array = obj.cast<NumpyArray<uint32_t>>();
+      if (array.ndim() != 1) {
+        throw std::invalid_argument(
+            "Expected categorical labels array be 1D array.");
+      }
+      return dataset::python::categoricalLabelsFromNumpy<uint32_t>(array,
+                                                                   batch_size);
     }
 
+    if (!checkNumpyArrayDtypeFloat32(obj)) {
+      throw std::invalid_argument(
+          "Expected either 2D numpy array of float32 or 1D numpy array of "
+          "uint32 or int32 for categorical labels.");
+    }
+
+    NumpyArray<float> data = obj.cast<NumpyArray<float>>();
     uint32_t input_dim = data.ndim() == 1 ? 1 : data.shape(1);
     if (input_dim != getInputDim()) {
       throw std::invalid_argument("Cannot pass array with input dimension " +

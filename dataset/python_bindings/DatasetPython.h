@@ -15,6 +15,9 @@ namespace py = pybind11;
 
 namespace thirdai::dataset::python {
 
+template <typename T>
+using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
+
 void createDatasetSubmodule(py::module_& module);
 
 InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
@@ -75,18 +78,21 @@ BoltDatasetPtr denseBoltDatasetFromNumpy(
         examples,
     uint32_t batch_size);
 
-BoltDatasetPtr sparseBoltDatasetFromNumpy(
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        indices,
-    const py::array_t<float, py::array::c_style | py::array::forcecast>& values,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        offsets,
-    uint32_t batch_size);
+// We use the template here so that we can pass in either an array of int32_t or
+// uint32_t without a copy. Once we have the pointer we can cast it back to a
+// uin32_t* because indices and offsets must be >= 0 anyway.
+template <typename INDEX_T, typename OFFSET_T>
+BoltDatasetPtr sparseBoltDatasetFromNumpy(const NumpyArray<INDEX_T>& indices,
+                                          const NumpyArray<float>& values,
+                                          const NumpyArray<OFFSET_T>& offsets,
+                                          uint32_t batch_size);
 
-BoltDatasetPtr categoricalLabelsFromNumpy(
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        labels,
-    uint32_t batch_size);
+// We use the template here so that we can pass in either an array of int32_t or
+// uint32_t without a copy. Once we have the pointer we can cast it back to a
+// uin32_t* because labels must be >= 0 anyway.
+template <typename LABEL_T>
+BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<LABEL_T>& labels,
+                                          uint32_t batch_size);
 
 /*
  * This function takes a single sentence, and parses it into an sparse

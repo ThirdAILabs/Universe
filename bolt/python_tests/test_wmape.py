@@ -78,12 +78,12 @@ def test_wmape_one_hot_simple():
     y_vals = labels.astype(np.float32) + 0.1 * np.random.randn(n_samples)
 
     err = train_bolt_with_wmape(
-        x_idxs=labels.astype(np.uint32),
+        x_idxs=labels.astype(np.int32),
         x_vals=np.ones(shape=(n_samples,)).astype(np.float32),
         x_offsets=np.arange(0, n_samples + 1, 1).astype(np.uint32),
         y_idxs=np.zeros(shape=(n_samples,)).astype(np.uint32),
-        y_vals=y_vals,
-        y_offsets=np.arange(0, n_samples + 1, 1).astype(np.uint32),
+        y_vals=y_vals.astype(np.float32),
+        y_offsets=np.arange(0, n_samples + 1, 1).astype(np.int32),
     )
     print(err)
     assert err < 0.1

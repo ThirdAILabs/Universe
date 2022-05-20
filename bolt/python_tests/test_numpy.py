@@ -80,7 +80,7 @@ def test_read_easy_mock_data():
     noise = np.random.normal(0, 0.1, examples.shape)
     examples = examples + noise
 
-    acc = train_simple_bolt_model(examples, labels)
+    acc = train_simple_bolt_model(examples.astype(np.float32), labels.astype(np.int32))
     assert acc > 0.99
 
 
@@ -104,12 +104,12 @@ def test_mock_sparse_data():
     y_offsets = 2 * np.arange(n_samples + 1)
 
     acc = train_sparse_bolt_model(
-        x_idxs.astype(np.uint32), 
+        x_idxs.astype(np.int32), 
         x_vals.astype(np.float32), 
         x_offsets.astype(np.uint32), 
         y_idxs.astype(np.uint32), 
         y_vals.astype(np.float32), 
-        y_offsets.astype(np.uint32), 
+        y_offsets.astype(np.int32), 
         inp_dim, n_classes
     )
     assert acc > 0.9
