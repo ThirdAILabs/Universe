@@ -2,7 +2,7 @@
 #include <iostream>
 #include <vector>
 
-namespace thirdai::utils{
+namespace thirdai::utils {
 
 template <typename KEY_T>
 class BloomFilter{
@@ -20,9 +20,7 @@ class BloomFilter{
 
     BloomFilter(const BloomFilter& other) = delete;
 
-    BloomFilter& operater=(const BloomFilter& other) = delete;
-
-    ~BloomFilter();
+    BloomFilter& operator=(const BloomFilter& other) = delete;
 
     void insert(KEY_T key);
 
@@ -30,7 +28,16 @@ class BloomFilter{
 
     void clear();
 
+    // TODO: Figure out the best way to do this
+    // BloomFilter<KEY_T> intersection(BloomFilter other);
+
+    // BloomFilter<KEY_T> union(BloomFilter other);
+
     uint64_t size();
+
+    uint64_t capacity();
+
+    ~BloomFilter();
 };
 
 }   // namespace thirdai::utils
