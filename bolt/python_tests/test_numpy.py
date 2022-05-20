@@ -87,7 +87,7 @@ def test_read_easy_mock_data():
     examples = possible_one_hot_encodings[labels]
     noise = np.random.normal(0, 0.1, examples.shape)
     examples = examples + noise
-    acc = train_simple_bolt_model(examples, labels.astype(np.int32))
+    acc = train_simple_bolt_model(examples, labels)
     assert acc > 0.99
 
 
@@ -125,5 +125,5 @@ def test_read_noise():
     labels = np.random.choice(n_classes, size=n_samples)
     examples = np.random.normal(0, 1, (n_samples, n_classes))
 
-    acc = train_simple_bolt_model(examples, labels.astype(np.int32))
+    acc = train_simple_bolt_model(examples, labels)
     assert acc < 0.2

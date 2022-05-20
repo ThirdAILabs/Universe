@@ -16,6 +16,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
+#include <algorithm>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -100,16 +101,21 @@ static bool isNumpyArray(const py::object& obj) {
   return py::str(obj.get_type()).equal(py::str("<class 'numpy.ndarray'>"));
 }
 
-static bool checkNumpyArrayDtypeUint32(const py::object& obj) {
-  return py::str(obj.attr("dtype")).equal(py::str("uint32"));
+static bool checkNumpyDtype(const py::object& obj, const std::string& type) {
+  return py::str(obj.attr("dtype")).equal(py::str(type));
 }
 
-static bool checkNumpyArrayDtypeInt32(const py::object& obj) {
-  return py::str(obj.attr("dtype")).equal(py::str("int32"));
+static bool checkNumpyDtypeUint32(const py::object& obj) {
+  return checkNumpyDtype(obj, "uint32");
 }
 
-static bool checkNumpyArrayDtypeFloat32(const py::object& obj) {
-  return py::str(obj.attr("dtype")).equal(py::str("float32"));
+static bool checkNumpyDtypeFloat32(const py::object& obj) {
+  return checkNumpyDtype(obj, "float32");
+}
+
+static bool checkNumpyDtypeAnyInt(const py::object& obj) {
+  return checkNumpyDtype(obj, "int32") || checkNumpyDtype(obj, "uint32") ||
+         checkNumpyDtype(obj, "int64") || checkNumpyDtype(obj, "uint64");
 }
 
 class PyNetwork final : public FullyConnectedNetwork {
@@ -301,7 +307,15 @@ class PyNetwork final : public FullyConnectedNetwork {
           "received non numpy array.");
     }
 
-    // TODO(nicholas): print warning on copy
+    if (!checkNumpyDtypeUint32(tup[0])) {
+      // TODO(nicholas): print warning on copy
+    }
+    if (!checkNumpyDtypeFloat32(tup[1])) {
+      // TODO(nicholas): print warning on copy
+    }
+    if (!checkNumpyDtypeUint32(tup[2])) {
+      // TODO(nicholas): print warning on copy
+    }
 
     NumpyArray<uint32_t> indices = tup[0].cast<NumpyArray<uint32_t>>();
     NumpyArray<float> values = tup[1].cast<NumpyArray<float>>();
@@ -317,13 +331,17 @@ class PyNetwork final : public FullyConnectedNetwork {
       throw std::invalid_argument("No batch size provided.");
     }
 
-    if (is_labels &&
-        (checkNumpyArrayDtypeInt32(obj) || checkNumpyArrayDtypeUint32(obj))) {
+    if (is_labels && checkNumpyDtypeAnyInt(obj)) {
+      if (!checkNumpyDtypeUint32(obj)) {
+        // TODO(nicholas): print warning on copy
+      }
       auto labels = obj.cast<NumpyArray<uint32_t>>();
       return BoltDatasetNumpyContext(labels, batch_size);
     }
 
-    // TODO(nicholas): print warning on copy
+    if (!checkNumpyDtypeFloat32(obj)) {
+      // TODO(nicholas): print warning on copy
+    }
 
     NumpyArray<float> data = obj.cast<NumpyArray<float>>();
     uint32_t input_dim = data.ndim() == 1 ? 1 : data.shape(1);
