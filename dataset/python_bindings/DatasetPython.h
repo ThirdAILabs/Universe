@@ -78,20 +78,12 @@ BoltDatasetPtr denseBoltDatasetFromNumpy(
         examples,
     uint32_t batch_size);
 
-// We use the template here so that we can pass in either an array of int32_t or
-// uint32_t without a copy. Once we have the pointer we can cast it back to a
-// uin32_t* because indices and offsets must be >= 0 anyway.
-template <typename INDEX_T, typename OFFSET_T>
-BoltDatasetPtr sparseBoltDatasetFromNumpy(const NumpyArray<INDEX_T>& indices,
+BoltDatasetPtr sparseBoltDatasetFromNumpy(const NumpyArray<uint32_t>& indices,
                                           const NumpyArray<float>& values,
-                                          const NumpyArray<OFFSET_T>& offsets,
+                                          const NumpyArray<uint32_t>& offsets,
                                           uint32_t batch_size);
 
-// We use the template here so that we can pass in either an array of int32_t or
-// uint32_t without a copy. Once we have the pointer we can cast it back to a
-// uin32_t* because labels must be >= 0 anyway.
-template <typename LABEL_T>
-BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<LABEL_T>& labels,
+BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
                                           uint32_t batch_size);
 
 /*

@@ -48,8 +48,12 @@ def train_sparse_bolt_model(
     epochs = 5
     ##
     network.train(
-        train_data=(x_idxs, x_vals, x_offsets),
-        train_labels=(y_idxs, y_vals, y_offsets),
+        (x_idxs,
+         x_vals,
+         x_offsets),
+        (y_idxs,
+         y_vals,
+         y_offsets),
         batch_size=batch_size,
         loss_fn=bolt.CategoricalCrossEntropyLoss(),
         learning_rate=learning_rate,
@@ -57,10 +61,14 @@ def train_sparse_bolt_model(
         verbose=False,
     )
     acc, _ = network.predict(
-        test_data=(x_idxs, x_vals, x_offsets),
-        test_labels=(y_idxs, y_vals, y_offsets),
-        batch_size=batch_size,
-        metrics=["categorical_accuracy"],
+        (x_idxs,
+         x_vals,
+         x_offsets),
+        (y_idxs,
+         y_vals,
+         y_offsets),
+        batch_size,
+        ["categorical_accuracy"],
         verbose=False,
     )
     ##
@@ -79,8 +87,7 @@ def test_read_easy_mock_data():
     examples = possible_one_hot_encodings[labels]
     noise = np.random.normal(0, 0.1, examples.shape)
     examples = examples + noise
-
-    acc = train_simple_bolt_model(examples.astype(np.float32), labels.astype(np.int32))
+    acc = train_simple_bolt_model(examples, labels.astype(np.int32))
     assert acc > 0.99
 
 
@@ -102,15 +109,8 @@ def test_mock_sparse_data():
     y_idxs %= n_classes
     y_vals = np.ones(2 * n_samples) + 0.1 * np.random.rand(2 * n_samples)
     y_offsets = 2 * np.arange(n_samples + 1)
-
     acc = train_sparse_bolt_model(
-        x_idxs.astype(np.int32), 
-        x_vals.astype(np.float32), 
-        x_offsets.astype(np.uint32), 
-        y_idxs.astype(np.uint32), 
-        y_vals.astype(np.float32), 
-        y_offsets.astype(np.int32), 
-        inp_dim, n_classes
+        x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, inp_dim, n_classes
     )
     assert acc > 0.9
 
@@ -125,5 +125,5 @@ def test_read_noise():
     labels = np.random.choice(n_classes, size=n_samples)
     examples = np.random.normal(0, 1, (n_samples, n_classes))
 
-    acc = train_simple_bolt_model(examples, labels)
+    acc = train_simple_bolt_model(examples, labels.astype(np.int32))
     assert acc < 0.2
