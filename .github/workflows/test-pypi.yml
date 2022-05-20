@@ -1,5 +1,11 @@
 name: Upload to Test Pypi
 
+# Kills old jobs from the same pr if we push a new commit
+# See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
+concurrency: 
+  group: testpypi-${{ github.head_ref }}
+  cancel-in-progress: true
+
 # Run on pushes and releases. The actual upload will only happen on a 
 # release.
 # Note this action does not ever upload to the main Pypi repo. For now, do that
@@ -7,6 +13,8 @@ name: Upload to Test Pypi
 # https://www.notion.so/Deploy-our-package-to-pypi-60d3c539e4fd4250897af043a329d08f
 # for more details.
 on: 
+  pull_request:
+    branches: [main]
   push: 
     branches: [main]
   release:
@@ -20,7 +28,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-10.15]
+        os: [windows-2019, ubuntu-20.04, macos-10.15]
 
     steps:
       - uses: actions/checkout@v2
@@ -28,12 +36,36 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
-      - name: Build wheels
+      # Build CryptoPP static lib on windows first
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: matrix.os == 'windows-2019'
+      - name: Build CryptoPP static lib
+        run: |
+          cd deps/cryptopp
+          nmake /f cryptest.nmake
+        if: matrix.os == 'windows-2019'
+
+
+      - name: Build and test wheels
         uses: pypa/cibuildwheel@v2.5.0
         env:
+          
+          # Mac and windows will use this path, since they do not run in docker
+          THIRDAI_LICENSE_PATH: ${{ github.workspace }}/docker/product/slim/license.serialized 
+         
           # TODO(josh): Get cross compiling working to build more types of wheels
-          CIBW_BUILD: "*macosx_x86_64 *manylinux_x86_64"
+          # Online compile cpython wheels (pytorch does this too), no big 
+          # advantage to JIT compilation of python since most of our processing
+          # happens in C++ (it can actually make it slower!). Also, on some
+          # platforms numpy isn't available so our tests don't work.
+          CIBW_BUILD: "cp*macosx_x86_64 cp*manylinux_x86_64 cp*win_amd64"
+          CIBW_BUILD_VERBOSITY: 3
           CIBW_BEFORE_ALL_MACOS: ln -s /usr/local/bin/g++-11 /usr/local/bin/g++
+
+          # On linux we copy a valid license to the home directory within the docker
+          CIBW_BEFORE_TEST_LINUX: cp docker/product/slim/license.serialized ~/license.serialized
+          CIBW_TEST_REQUIRES: datasets mmh3 numpy pytest
+          CIBW_TEST_COMMAND: pytest {package} --ignore-glob={package}/deps -m release
 
 
       - name: Upload wheels

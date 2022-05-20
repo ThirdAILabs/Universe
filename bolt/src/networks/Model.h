@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wrappers/src/LicenseWrapper.h>
 #include <cereal/types/vector.hpp>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -18,7 +19,9 @@ namespace thirdai::bolt {
 template <typename BATCH_T>
 class Model {
  public:
-  Model() : _epoch_count(0), _batch_iter(0) {}
+  Model() : _epoch_count(0), _batch_iter(0) {
+    thirdai::licensing::LicenseWrapper::checkLicense();
+  }
   /**
    * This function takes in a dataset and training parameters and trains the
    * network for the specified number of epochs with the given parameters. Note

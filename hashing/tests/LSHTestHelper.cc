@@ -1,5 +1,6 @@
 #include "LSHTestHelper.h"
 #include <gtest/gtest.h>
+#include <numeric>
 
 namespace thirdai::hashing {
 
