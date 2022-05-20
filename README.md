@@ -57,7 +57,10 @@ whenever you add a new feature flag.
 ## Debugging your Pybound C++ code from python
 1. Simply build the code in RelWithDebInfo or Debug mode, and
 run your python code with perf or gdb. To run with gdb, run `gdb python3` and then
-`your_py_script.py` (and feel free to set breakpoints in C++ code). 
+`run your_py_script.py` (and feel free to set breakpoints in C++ code). You can
+also debug with lldb on mac, you will just additionally need to type `continue`
+after running `run your_py_script.py`.
+
 2. You can also now run performance profile your python code. To run with
 perf, simply run normal perf commands attached to your python process. 
 2. Debugging Pybound code with ASan isn't supported anymore, if you really need
