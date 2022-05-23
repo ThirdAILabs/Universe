@@ -54,15 +54,16 @@ MetricData Model<BATCH_T>::train(
 
 #pragma omp parallel for default(none) \
     shared(batch_inputs, batch_labels, outputs, loss_fn, metrics)
-      for (uint32_t i = 0; i < batch_inputs.getBatchSize(); i++) {
-        forward(i, batch_inputs, outputs[i], &batch_labels[i]);
+      for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize();
+           vec_id++) {
+        forward(vec_id, batch_inputs, outputs[vec_id], &batch_labels[vec_id]);
 
-        loss_fn.lossGradients(outputs[i], batch_labels[i],
+        loss_fn.lossGradients(outputs[vec_id], batch_labels[vec_id],
                               batch_inputs.getBatchSize());
 
-        backpropagate(i, batch_inputs, outputs[i]);
+        backpropagate(vec_id, batch_inputs, outputs[vec_id]);
 
-        metrics.processSample(outputs[i], batch_labels[i]);
+        metrics.processSample(outputs[vec_id], batch_labels[vec_id]);
       }
 
       updateParameters(learning_rate, ++_batch_iter);
@@ -134,28 +135,28 @@ InferenceMetricData Model<BATCH_T>::predict(
 #pragma omp parallel for default(none)                                         \
     shared(inputs, labels, outputs, output_active_neurons, output_activations, \
            metrics, batch, batch_size, compute_metrics)
-    for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
+    for (uint32_t vec_id = 0; vec_id < inputs.getBatchSize(); vec_id++) {
       // We set labels to nullptr so that they are not used in sampling during
       // inference.
-      forward(i, inputs, outputs[i], /*labels=*/nullptr);
+      forward(vec_id, inputs, outputs[vec_id], /*labels=*/nullptr);
 
       if (compute_metrics) {
-        metrics.processSample(outputs[i], (*labels)[batch][i]);
+        metrics.processSample(outputs[vec_id], (*labels)[batch][vec_id]);
       }
 
       if (output_activations != nullptr) {
-        assert(outputs[i].len == getInferenceOutputDim());
+        assert(outputs[vec_id].len == getInferenceOutputDim());
 
-        const float* start = outputs[i].activations;
-        std::copy(start, start + outputs[i].len,
+        const float* start = outputs[vec_id].activations;
+        std::copy(start, start + outputs[vec_id].len,
                   output_activations +
-                      (batch * batch_size + i) * getInferenceOutputDim());
-        if (!outputs[i].isDense()) {
+                      (batch * batch_size + vec_id) * getInferenceOutputDim());
+        if (!outputs[vec_id].isDense()) {
           assert(output_active_neurons != nullptr);
-          const uint32_t* start = outputs[i].active_neurons;
-          std::copy(start, start + outputs[i].len,
-                    output_active_neurons +
-                        (batch * batch_size + i) * getInferenceOutputDim());
+          const uint32_t* start = outputs[vec_id].active_neurons;
+          std::copy(start, start + outputs[vec_id].len,
+                    output_active_neurons + (batch * batch_size + vec_id) *
+                                                getInferenceOutputDim());
         }
       }
     }

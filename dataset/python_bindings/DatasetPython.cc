@@ -19,13 +19,13 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__str__", &BoltVector::toString)
       .def("__repr__", &BoltVector::toString);
 
-  // The no lint below is because clang tidy doesn't like the anonymous object
-  // instatiation and is worried it will be lonely.
+  // The no lint below is because clang tidy doesn't like instantiating an
+  // object without a name and never using it.
   py::class_<InMemoryDataset<SparseBatch>>(dataset_submodule,  // NOLINT
                                            "InMemorySparseDataset");
 
-  // The no lint below is because clang tidy doesn't like the anonymous object
-  // instatiation and is worried it will be lonely.
+  // The no lint below is because clang tidy doesn't like instantiating an
+  // object without a name and never using it.
   py::class_<InMemoryDataset<DenseBatch>>(dataset_submodule,  // NOLINT
                                           "InMemoryDenseDataset");
 
@@ -42,8 +42,8 @@ void createDatasetSubmodule(py::module_& module) {
   dataset_submodule.def("make_dense_vector", &BoltVector::makeDenseVector,
                         py::arg("values"));
 
-  // The no lint below is because clang tidy doesn't like the anonymous object
-  // instatiation and is worried it will be lonely.
+  // The no lint below is because clang tidy doesn't like instantiating an
+  // object without a name and never using it.
   py::class_<ClickThroughDataset, ClickThroughDatasetPtr>(  // NOLINT
       dataset_submodule, "ClickThroughDataset");
 
@@ -74,13 +74,12 @@ void createDatasetSubmodule(py::module_& module) {
       "belongs to category 1), False if the labels are numerical (i.e. a label "
       "of 1 means the sample corresponds "
       "with the value of 1 on the real number line).\n"
-      "Each line of the input file should follow this format:\n"
-      "```\n"
-      ""
-      "```");
+      "Each line of the input file should follow this format:\n\n"
+      "Returns a tuple containing a ClickthroughDataset to store the data "
+      "itself, and a BoltDataset storing the labels.");
 
-  // The no lint below is because clang tidy doesn't like the anonymous object
-  // instatiation and is worried it will be lonely.
+  // The no lint below is because clang tidy doesn't like instantiating an
+  // object without a name and never using it.
   py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule,  // NOLINT
                                           "BoltDataset");
 
@@ -100,7 +99,9 @@ void createDatasetSubmodule(py::module_& module) {
       "of these index-value pairs.\n\n"
       "Arguments:\n"
       " * filename: String - Path to input file.\n"
-      " * batch_size: Int (positive) - Size of each batch in the dataset.");
+      " * batch_size: Int (positive) - Size of each batch in the dataset.\n\n"
+      "Returns a tuple containing a BoltDataset to store the data itself, and "
+      "a BoltDataset storing the labels.");
 
   dataset_submodule.def(
       "load_bolt_csv_dataset", &loadBoltCsvDatasetWrapper, py::arg("filename"),
@@ -113,7 +114,9 @@ void createDatasetSubmodule(py::module_& module) {
       " * filename: String - Path to input file.\n"
       " * batch_size: Int (positive) - Size of each batch in the dataset.\n"
       " * delimiter: Char - Delimiter that separates the numbers in each CSV "
-      "line. Defaults to ','");
+      "line. Defaults to ','\n\n"
+      "Returns a tuple containing a BoltDataset to store the data itself, and "
+      "a BoltDataset storing the labels.");
 
   dataset_submodule.def(
       "bolt_tokenizer", &parseSentenceToSparseArray, py::arg("sentence"),
@@ -328,8 +331,8 @@ BoltDatasetPtr denseBoltDatasetFromNumpy(
   const py::buffer_info examples_buf = examples.request();
   if (examples_buf.shape.size() > 2) {
     throw std::invalid_argument(
-        "For now, Numpy dense data must be 1D or 2D (each row is a dense data "
-        "vector).");
+        "For now, Numpy dense data must be 2D (each row is a dense data "
+        "vector) or 1D (each element is treated as a row).");
   }
 
   uint64_t num_examples = static_cast<uint64_t>(examples_buf.shape.at(0));

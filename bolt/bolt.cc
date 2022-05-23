@@ -12,6 +12,7 @@
 #include <vector>
 
 namespace bolt = thirdai::bolt;
+namespace dataset = thirdai::dataset;
 
 uint32_t getIntValue(toml::table const* table, const std::string& key,
                      bool use_default = false, uint32_t default_value = 0) {
@@ -195,19 +196,6 @@ std::string findFullFilepath(const std::string& filename) {
   }
 }
 
-auto loadDataset(const std::string& filename, uint32_t batch_size,
-                 std::optional<char> csv_delimiter) {
-  // If the csv delimiter is specified then we know that it is a csv dataset,
-  // otherwise we use the svm dataset format.
-  // The function that calls this helper function already performs error
-  // checking to ensure that the dataset format is either csv or svm.
-  if (csv_delimiter.has_value()) {
-    return thirdai::dataset::loadBoltCsvDataset(filename, batch_size,
-                                                *csv_delimiter);
-  }
-  return thirdai::dataset::loadBoltSvmDataset(filename, batch_size);
-}
-
 void trainFCN(toml::table& config) {
   auto layers = createFullyConnectedLayerConfigs(config["layers"]);
 
@@ -253,10 +241,12 @@ void trainFCN(toml::table& config) {
 
   bolt::FullyConnectedNetwork network(layers, input_dim);
 
-  std::optional<char> csv_delimiter;
+  dataset::DatasetWithLabels train;
+  dataset::DatasetWithLabels test;
 
   if (dataset_format == "svm") {
-    csv_delimiter = std::nullopt;
+    train = dataset::loadBoltSvmDataset(train_filename, batch_size);
+    test = dataset::loadBoltSvmDataset(test_filename, batch_size);
   } else if (dataset_format == "csv") {
     std::string delimiter = getStrValue(dataset_table, "delimter", true, ",");
     if (delimiter.size() != 1) {
@@ -265,18 +255,19 @@ void trainFCN(toml::table& config) {
                 << std::endl;
       exit(1);
     }
-    csv_delimiter = delimiter[0];
+    char csv_delimiter = delimiter[0];
+    train =
+        dataset::loadBoltCsvDataset(train_filename, batch_size, csv_delimiter);
+    test =
+        dataset::loadBoltCsvDataset(test_filename, batch_size, csv_delimiter);
   } else {
     std::cerr << "Invalid dataset format '" << dataset_format
               << "'. Use 'svm' or 'csv'" << std::endl;
     exit(1);
   }
 
-  auto [train_data, train_labels] =
-      loadDataset(train_filename, batch_size, csv_delimiter);
-
-  auto [test_data, test_labels] =
-      loadDataset(test_filename, batch_size, csv_delimiter);
+  auto [train_data, train_labels] = train;
+  auto [test_data, test_labels] = test;
 
   for (uint32_t e = 0; e < epochs; e++) {
     network.train(train_data, train_labels, *loss_fn, learning_rate, 1, rehash,
@@ -330,11 +321,11 @@ void trainDLRM(toml::table& config) {
 
   bolt::DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, dense_features);
 
-  auto [train_data, train_labels] = thirdai::dataset::loadClickThroughDataset(
+  auto [train_data, train_labels] = dataset::loadClickThroughDataset(
       train_filename, batch_size, dense_features, categorical_features,
       top_mlp.back()->getDim() > 1);
 
-  auto [test_data, test_labels] = thirdai::dataset::loadClickThroughDataset(
+  auto [test_data, test_labels] = dataset::loadClickThroughDataset(
       test_filename, batch_size, dense_features, categorical_features,
       top_mlp.back()->getDim() > 1);
 
