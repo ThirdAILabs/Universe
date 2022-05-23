@@ -439,8 +439,6 @@ BoltDatasetPtr sparseBoltDatasetFromNumpy(const NumpyArray<uint32_t>& indices,
                                           uint32_t batch_size) {
   uint64_t num_examples = static_cast<uint64_t>(offsets.shape(0) - 1);
 
-  // Indices and offsets must be >= 0 so we can cast them both to an uint32_t*
-  // for dataset construction.
   uint32_t* indices_raw_data = const_cast<uint32_t*>(indices.data());
   float* values_raw_data = const_cast<float*>(values.data());
   uint32_t* offsets_raw_data = const_cast<uint32_t*>(offsets.data());
@@ -481,8 +479,6 @@ BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
   uint64_t num_labels = labels_buf.shape.at(0);
   uint64_t num_batches = (num_labels + batch_size - 1) / batch_size;
 
-  // Since categorical labels must be >= 0 we can cast the pointer
-  // to a uint32_t* for dataset construction.
   const uint32_t* labels_raw_data =
       static_cast<const uint32_t*>(labels_buf.ptr);
 

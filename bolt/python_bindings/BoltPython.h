@@ -88,32 +88,37 @@ py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
                                float* activations, bool output_sparse,
                                bool alloc_success);
 
-static bool isBoltDataset(const py::object& obj) {
+static inline bool isBoltDataset(const py::object& obj) {
   return py::str(obj.get_type())
       .equal(py::str("<class 'thirdai._thirdai.dataset.BoltDataset'>"));
 }
 
-static bool isTuple(const py::object& obj) {
+static inline bool isTuple(const py::object& obj) {
   return py::str(obj.get_type()).equal(py::str("<class 'tuple'>"));
 }
 
-static bool isNumpyArray(const py::object& obj) {
+static inline bool isNumpyArray(const py::object& obj) {
   return py::str(obj.get_type()).equal(py::str("<class 'numpy.ndarray'>"));
 }
 
-static bool checkNumpyDtype(const py::object& obj, const std::string& type) {
-  return py::str(obj.attr("dtype")).equal(py::str(type));
+static inline py::str getDtype(const py::object& obj) {
+  return py::str(obj.attr("dtype"));
 }
 
-static bool checkNumpyDtypeUint32(const py::object& obj) {
+static inline bool checkNumpyDtype(const py::object& obj,
+                                   const std::string& type) {
+  return getDtype(obj).equal(py::str(type));
+}
+
+static inline bool checkNumpyDtypeUint32(const py::object& obj) {
   return checkNumpyDtype(obj, "uint32");
 }
 
-static bool checkNumpyDtypeFloat32(const py::object& obj) {
+static inline bool checkNumpyDtypeFloat32(const py::object& obj) {
   return checkNumpyDtype(obj, "float32");
 }
 
-static bool checkNumpyDtypeAnyInt(const py::object& obj) {
+static inline bool checkNumpyDtypeAnyInt(const py::object& obj) {
   return checkNumpyDtype(obj, "int32") || checkNumpyDtype(obj, "uint32") ||
          checkNumpyDtype(obj, "int64") || checkNumpyDtype(obj, "uint64");
 }
@@ -286,6 +291,17 @@ class PyNetwork final : public FullyConnectedNetwork {
     archive(cereal::base_class<FullyConnectedNetwork>(this));
   }
 
+  static void printCopyWarning(const std::string& array_name,
+                               const py::str& dtype_recv,
+                               const std::string& dtype_expected) {
+    std::cout << "Warning: " << array_name << " array has dtype=" << dtype_recv
+              << " but " << dtype_expected
+              << " was expected. This will result in a copy of "
+                 "the array in order to ensure type safety. Try specifying "
+                 "the dtype of the array or use .astype(...)."
+              << std::endl;
+  }
+
   static BoltDatasetNumpyContext convertTupleToBoltDataset(
       const py::object& obj, uint32_t batch_size) {
     if (batch_size == 0) {
@@ -308,13 +324,13 @@ class PyNetwork final : public FullyConnectedNetwork {
     }
 
     if (!checkNumpyDtypeUint32(tup[0])) {
-      // TODO(nicholas): print warning on copy
+      printCopyWarning("indices", getDtype(tup[0]), "uint32");
     }
     if (!checkNumpyDtypeFloat32(tup[1])) {
-      // TODO(nicholas): print warning on copy
+      printCopyWarning("values", getDtype(tup[1]), "float32");
     }
     if (!checkNumpyDtypeUint32(tup[2])) {
-      // TODO(nicholas): print warning on copy
+      printCopyWarning("offsets", getDtype(tup[2]), "uint32");
     }
 
     NumpyArray<uint32_t> indices = tup[0].cast<NumpyArray<uint32_t>>();
@@ -333,14 +349,14 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     if (is_labels && checkNumpyDtypeAnyInt(obj)) {
       if (!checkNumpyDtypeUint32(obj)) {
-        // TODO(nicholas): print warning on copy
+        printCopyWarning("labels", getDtype(obj), "uint32");
       }
       auto labels = obj.cast<NumpyArray<uint32_t>>();
       return BoltDatasetNumpyContext(labels, batch_size);
     }
 
     if (!checkNumpyDtypeFloat32(obj)) {
-      // TODO(nicholas): print warning on copy
+      printCopyWarning("data", getDtype(obj), "float32");
     }
 
     NumpyArray<float> data = obj.cast<NumpyArray<float>>();

@@ -17,8 +17,7 @@ def train_bolt_with_wmape(
             load_factor=0.1,
             activation_function=bolt.ActivationFunctions.ReLU,
         ),
-        bolt.FullyConnected(
-            dim=1, activation_function=bolt.ActivationFunctions.Linear),
+        bolt.FullyConnected(dim=1, activation_function=bolt.ActivationFunctions.Linear),
     ]
 
     network = bolt.Network(layers=layers, input_dim=10)
@@ -28,12 +27,8 @@ def train_bolt_with_wmape(
     epochs = 10
     for i in range(epochs):
         network.train(
-            train_data=(x_idxs,
-                        x_vals,
-                        x_offsets),
-            train_labels=(y_idxs,
-                          y_vals,
-                          y_offsets),
+            train_data=(x_idxs, x_vals, x_offsets),
+            train_labels=(y_idxs, y_vals, y_offsets),
             batch_size=batch_size,
             loss_fn=bolt.WeightedMeanAbsolutePercentageError(),
             learning_rate=learning_rate,
@@ -41,12 +36,8 @@ def train_bolt_with_wmape(
             verbose=False,
         )
         metrics, _ = network.predict(
-            test_data=(x_idxs,
-                       x_vals,
-                       x_offsets),
-            test_labels=(y_idxs,
-                         y_vals,
-                         y_offsets),
+            test_data=(x_idxs, x_vals, x_offsets),
+            test_labels=(y_idxs, y_vals, y_offsets),
             batch_size=batch_size,
             metrics=["weighted_mean_absolute_percentage_error"],
             verbose=False,
@@ -61,8 +52,7 @@ def test_wmape_dense_simple():
     input_dim = 10
     max_out = 100
 
-    labels = np.random.random_integers(
-        max_out, size=(n_samples,)).astype(np.float32)
+    labels = np.random.random_integers(max_out, size=(n_samples,)).astype(np.float32)
     examples = np.repeat(labels, input_dim, axis=0)
     examples += np.random.randn(n_samples * input_dim)
 
