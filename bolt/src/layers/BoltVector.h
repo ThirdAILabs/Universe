@@ -268,14 +268,11 @@ class BoltBatch {
 
   BoltBatch(const BoltBatch& other) = delete;
 
-  BoltBatch(BoltBatch&& other) : _vectors(std::move(other._vectors)) {}
+  BoltBatch(BoltBatch&& other) = default;
 
   BoltBatch& operator=(const BoltBatch& other) = delete;
 
-  BoltBatch& operator=(BoltBatch&& other) {
-    _vectors = std::move(other._vectors);
-    return *this;
-  }
+  BoltBatch& operator=(BoltBatch&& other) = default;
 
   friend std::ostream& operator<<(std::ostream& out, const BoltBatch& state) {
     std::cout << "-------------------------------------------------------------"
