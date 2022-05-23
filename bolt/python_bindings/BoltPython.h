@@ -29,7 +29,7 @@ namespace thirdai::bolt::python {
 void createBoltSubmodule(py::module_& module);
 
 // Returns true on success and false on allocation failure.
-bool allocateActivations(uint32_t num_samples, uint32_t inference_dim,
+bool allocateActivations(uint64_t num_samples, uint64_t inference_dim,
                          uint32_t** active_neurons, float** activations,
                          bool output_sparse);
 
