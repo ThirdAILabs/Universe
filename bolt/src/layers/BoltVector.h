@@ -240,52 +240,46 @@ struct BoltVector {
 
 class BoltBatch {
  private:
-  std::vector<BoltVector> _vector_states;
-  uint32_t _batch_size;
+  std::vector<BoltVector> _vectors;
 
  public:
-  BoltBatch() : _batch_size(0) {}
+  BoltBatch() {}
 
-  BoltBatch(const uint32_t dim, const uint32_t batch_size, bool is_dense)
-      : _batch_size(batch_size) {
-    for (uint32_t i = 0; i < _batch_size; i++) {
-      _vector_states.push_back(BoltVector(dim, is_dense));
+  BoltBatch(const uint32_t dim, const uint32_t batch_size, bool is_dense) {
+    for (uint32_t i = 0; i < batch_size; i++) {
+      _vectors.push_back(BoltVector(dim, is_dense));
     }
   }
 
+  explicit BoltBatch(std::vector<BoltVector>&& vectors)
+      : _vectors(std::move(vectors)) {}
+
   BoltVector& operator[](size_t i) {
-    assert(i < _batch_size);
-    return _vector_states[i];
+    assert(i < _vectors.size());
+    return _vectors[i];
   }
 
   const BoltVector& operator[](size_t i) const {
-    assert(i < _batch_size);
-    return _vector_states[i];
+    assert(i < _vectors.size());
+    return _vectors[i];
   }
+
+  uint32_t getBatchSize() const { return _vectors.size(); }
 
   BoltBatch(const BoltBatch& other) = delete;
 
-  BoltBatch(BoltBatch&& other)
-      : _vector_states(std::move(other._vector_states)),
-        _batch_size(other._batch_size) {
-    other._batch_size = 0;
-  }
+  BoltBatch(BoltBatch&& other) = default;
 
   BoltBatch& operator=(const BoltBatch& other) = delete;
 
-  BoltBatch& operator=(BoltBatch&& other) {
-    _vector_states = std::move(other._vector_states);
-    _batch_size = other._batch_size;
-    other._batch_size = 0;
-    return *this;
-  }
+  BoltBatch& operator=(BoltBatch&& other) = default;
 
   friend std::ostream& operator<<(std::ostream& out, const BoltBatch& state) {
     std::cout << "-------------------------------------------------------------"
               << std::endl;
-    for (uint32_t i = 0; i < state._batch_size; i++) {
+    for (uint32_t i = 0; i < state._vectors.size(); i++) {
       std::cout << "Vector: " << i << ":\n"
-                << state._vector_states.at(i) << std::endl;
+                << state._vectors.at(i) << std::endl;
     }
     std::cout << "-------------------------------------------------------------"
               << std::endl;

@@ -2,24 +2,25 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Dataset.h>
-#include <dataset/src/batch_types/BoltInputBatch.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <algorithm>
+#include <optional>
 #include <random>
 #include <vector>
 
 namespace thirdai::bolt::tests {
 
+static const uint32_t n_classes = 100, n_batches = 100, batch_size = 100;
+
 class FullyConnectedClassificationNetworkTestFixture : public testing::Test {
  public:
-  static const uint32_t n_classes = 100, n_batches = 100, batch_size = 100;
-
-  static dataset::InMemoryDataset<dataset::BoltInputBatch> genDataset(
-      bool add_noise) {
+  static dataset::DatasetWithLabels genDataset(bool add_noise) {
     std::mt19937 gen(892734);
     std::uniform_int_distribution<uint32_t> label_dist(0, n_classes - 1);
     std::normal_distribution<float> data_dist(0, add_noise ? 1.0 : 0.1);
 
-    std::vector<dataset::BoltInputBatch> batches;
+    std::vector<bolt::BoltBatch> data_batches;
+    std::vector<bolt::BoltBatch> label_batches;
     for (uint32_t b = 0; b < n_batches; b++) {
       std::vector<bolt::BoltVector> labels;
       std::vector<bolt::BoltVector> vectors;
@@ -34,12 +35,13 @@ class FullyConnectedClassificationNetworkTestFixture : public testing::Test {
         vectors.push_back(std::move(v));
         labels.push_back(BoltVector::makeSparseVector({label}, {1.0}));
       }
-      batches.push_back(
-          dataset::BoltInputBatch(std::move(vectors), std::move(labels)));
+      data_batches.push_back(bolt::BoltBatch(std::move(vectors)));
+      label_batches.push_back(bolt::BoltBatch(std::move(labels)));
     }
 
-    return dataset::InMemoryDataset<dataset::BoltInputBatch>(
-        std::move(batches), n_batches * batch_size);
+    return dataset::DatasetWithLabels(
+        dataset::BoltDataset(std::move(data_batches), n_batches * batch_size),
+        dataset::BoltDataset(std::move(label_batches), n_batches * batch_size));
   }
 };
 
@@ -51,9 +53,10 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(false);
 
-  network.train(data, CategoricalCrossEntropyLoss(), 0.001, 5);
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001,
+                5);
   auto test_metrics = network.predict(
-      data, /* output_active_neurons= */ nullptr,
+      data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr, {"categorical_accuracy"});
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.98);
 }
@@ -66,9 +69,10 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(true);
 
-  network.train(data, CategoricalCrossEntropyLoss(), 0.001, 5);
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001,
+                5);
   auto test_metrics = network.predict(
-      data, /* output_active_neurons= */ nullptr,
+      data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr, {"categorical_accuracy"});
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
 }
@@ -83,9 +87,10 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(false);
 
-  network.train(data, CategoricalCrossEntropyLoss(), 0.001, 2);
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001,
+                2);
   auto test_metrics = network.predict(
-      data, /* output_active_neurons= */ nullptr,
+      data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr, {"categorical_accuracy"});
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
@@ -100,9 +105,10 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(true);
 
-  network.train(data, CategoricalCrossEntropyLoss(), 0.001, 2);
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001,
+                2);
   auto test_metrics = network.predict(
-      data, /* output_active_neurons= */ nullptr,
+      data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr, {"categorical_accuracy"});
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
 }
