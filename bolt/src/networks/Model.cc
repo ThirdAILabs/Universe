@@ -139,9 +139,8 @@ InferenceMetricData Model<BATCH_T>::predict(
         assert(outputs[i].len == getInferenceOutputDim());
 
         const float* start = outputs[i].activations;
-        std::copy(start, start + outputs[i].len,
-                  output_activations +
-                      (batch * batch_size + i) * getInferenceOutputDim());
+        uint32_t offset = (batch * batch_size + i) * getInferenceOutputDim();
+        std::copy(start, start + outputs[i].len, output_activations + offset);
         if (!outputs[i].isDense()) {
           assert(output_active_neurons != nullptr);
           const uint32_t* start = outputs[i].active_neurons;
