@@ -4,6 +4,7 @@
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <limits>
 
 namespace thirdai::bolt::python {
 
@@ -579,18 +580,31 @@ void createBoltSubmodule(py::module_& module) {
            "of a 2D Numpy matrix of floats.");
 }
 
-bool allocateActivations(uint32_t num_samples, uint32_t inference_dim,
+void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
+  std::cout << "Out of memory error: cannot allocate (" << num_samples << " x "
+            << inference_dim
+            << ") array for activations. Predict will return None for "
+               "activations. Please breakup your test set if you would like "
+               "to have activations returned."
+            << std::endl;
+}
+
+bool allocateActivations(uint64_t num_samples, uint64_t inference_dim,
                          uint32_t** active_neurons, float** activations,
                          bool output_sparse) {
+  uint64_t total_size = num_samples * inference_dim;
+  if (total_size > std::numeric_limits<uint32_t>::max()) {
+    printMemoryWarning(num_samples, inference_dim);
+    return false;
+  }
   try {
     if (output_sparse) {
-      *active_neurons = new uint32_t[num_samples * inference_dim];
+      *active_neurons = new uint32_t[total_size];
     }
-    *activations = new float[num_samples * inference_dim];
+    *activations = new float[total_size];
     return true;
   } catch (std::bad_alloc& e) {
-    std::cout << "Out of memory error: cannot allocate " << num_samples << " x "
-              << inference_dim << " array for activations" << std::endl;
+    printMemoryWarning(num_samples, inference_dim);
     return false;
   }
 }
