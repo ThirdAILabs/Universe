@@ -127,9 +127,10 @@ InferenceMetricData Model<BATCH_T>::predict(
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
     const BATCH_T& inputs = test_data[batch];
 
-#pragma omp parallel for default(none)                                 \
-    shared(inputs, outputs, output_active_neurons, output_activations, \
-           metrics, batch, batch_size)
+    /*
+    #pragma omp parallel for default(none)                                 \
+        shared(inputs, outputs, output_active_neurons, output_activations, \
+               metrics, batch, batch_size) */
     for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
       forward(i, inputs, outputs[i], /* train=*/false);
 
@@ -139,9 +140,11 @@ InferenceMetricData Model<BATCH_T>::predict(
         assert(outputs[i].len == getInferenceOutputDim());
 
         const float* start = outputs[i].activations;
-        std::copy(start, start + outputs[i].len,
-                  output_activations +
-                      (batch * batch_size + i) * getInferenceOutputDim());
+        uint32_t offset = (batch * batch_size + i) * getInferenceOutputDim();
+        std::cout << "Offset: " << offset
+                  << "ptr: " << (output_activations + offset)
+                  << "len: " << outputs[i].len << std::endl;
+        std::copy(start, start + outputs[i].len, output_activations + offset);
         if (!outputs[i].isDense()) {
           assert(output_active_neurons != nullptr);
           const uint32_t* start = outputs[i].active_neurons;
