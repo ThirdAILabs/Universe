@@ -3,6 +3,7 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <chrono>
 
 namespace thirdai::dataset {
 
@@ -28,7 +29,9 @@ struct BatchProcessor {
    * This method can optionally produce a shuffled dataset.
    */
   dataset::InMemoryDataset<dataset::BoltInputBatch> exportInMemoryDataset(
-      bool shuffle = false, uint32_t shuffle_seed = 0);
+      bool shuffle = false,
+      uint32_t shuffle_seed =
+          std::chrono::system_clock::now().time_since_epoch().count());
 
  private:
   /**

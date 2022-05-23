@@ -1,13 +1,10 @@
 #include "BatchProcessor.h"
 #include <dataset/src/utils/ExtendableVectors.h>
-#include <pybind11/pybind11.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <limits>
 #include <memory>
 #include <random>
-
-namespace py = pybind11;
 
 namespace thirdai::dataset {
 
@@ -30,9 +27,10 @@ BatchProcessor::BatchProcessor(
 
 void BatchProcessor::processBatch(
     std::vector<std::vector<std::string>>& batch) {
-  // Release Python interpreter GIL so we can process batches while the
-  // next input rows are processed in python.
-  py::gil_scoped_release release;
+  // TODO(Geordie): Make a python version of this class with a method
+  // that releases GIL so we can process batches while the
+  // next input rows are processed in python. Cannot
+  // Cannot do it here because it wouldn't compile.
 
   // Preallocate space for new vectors. This prevents data races and
   // preserves the order of vectors when processing them in parallel.
