@@ -27,11 +27,6 @@ BatchProcessor::BatchProcessor(
 
 void BatchProcessor::processBatch(
     std::vector<std::vector<std::string>>& batch) {
-  // TODO(Geordie): Make a python version of this class with a method
-  // that releases GIL so we can process batches while the
-  // next input rows are processed in python. Cannot
-  // Cannot do it here because it wouldn't compile.
-
   // Preallocate space for new vectors. This prevents data races and
   // preserves the order of vectors when processing them in parallel.
   bool has_target = !_target_blocks.empty();

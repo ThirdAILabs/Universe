@@ -5,7 +5,9 @@
 #include <dataset/src/batch_types/BoltInputBatch.h>
 #include <dataset/src/batch_types/DenseBatch.h>
 #include <dataset/src/batch_types/SparseBatch.h>
+#include <dataset/src/core/BatchProcessor.h>
 #include <pybind11/cast.h>
+#include <pybind11/gil.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -99,5 +101,25 @@ InMemoryDataset<BoltInputBatch> sparseBoltDatasetFromNumpy(
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
 parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
                            uint32_t dimension);
+
+class PyBatchProcessor : public BatchProcessor {
+ public:
+
+  PyBatchProcessor(
+    std::vector<std::shared_ptr<Block>>& input_blocks,
+    std::vector<std::shared_ptr<Block>>& target_blocks,
+    uint32_t output_batch_size): BatchProcessor(input_blocks, target_blocks, output_batch_size) {}
+
+  /**
+   * Just like the original processBatch method but GIL is released
+   * so we can process batches while the next input rows are 
+   * processed in python.
+   */
+  void processBatchPython(
+    std::vector<std::vector<std::string>>& batch) {
+    py::gil_scoped_release release;
+    processBatch(batch);
+  }
+};
 
 }  // namespace thirdai::dataset::python

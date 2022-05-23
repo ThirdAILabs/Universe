@@ -2,7 +2,6 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/batch_types/BoltInputBatch.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/core/BatchProcessor.h>
 #include <chrono>
 
 namespace thirdai::dataset::python {
@@ -37,7 +36,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &Block::isDense,
            "True if the block produces dense features, False otherwise.");
 
-  py::class_<BatchProcessor>(
+  py::class_<PyBatchProcessor>(
       internal_dataset_submodule, "BatchProcessor",
       "Encodes input samples – each represented by a sequence of strings – "
       "as input and target BoltVectors according to the given blocks. "
@@ -57,14 +56,14 @@ void createDatasetSubmodule(py::module_& module) {
           " * output_batch_size: Int (positive) - Size of batches in the "
           "produced "
           "dataset.")
-      .def("process_batch", &BatchProcessor::processBatch, py::arg("row_batch"),
+      .def("process_batch", &PyBatchProcessor::processBatchPython, py::arg("row_batch"),
            "Consumes a batch of input samples and encodes them as vectors.\n\n"
            "Arguments:\n"
            " * row_batch: List of lists of strings - We expect to read tabular "
            "data "
            "where each row is a sample, and each sample has many columns. "
            "row_batch represents a batch of such samples.")
-      .def("export_in_memory_dataset", &BatchProcessor::exportInMemoryDataset,
+      .def("export_in_memory_dataset", &PyBatchProcessor::exportInMemoryDataset,
            py::arg("shuffle") = false, py::arg("shuffle_seed") = 0,
            "Produces an InMemoryDataset of BoltInputBatches containing the "
            "vectors processed so far. This method can optionally produce a "
