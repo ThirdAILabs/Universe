@@ -6,6 +6,16 @@
 
 namespace thirdai::dataset {
 
+/*
+ This parser expects data in the following format per line:
+
+ 1. Label (integer)
+ 2. Dense features (floats) number of dense features is a paramter.
+ 3. Categorical features (integers) number of categorical features is a paramter
+
+ Everything is tab separated, and if a dense or categorical feature is missing
+ there should be 2 consecutive tabs.
+*/
 class ClickThroughParser {
  public:
   explicit ClickThroughParser(uint32_t num_dense_features,

@@ -13,6 +13,8 @@ class DatasetWithLabels {
   BoltDatasetPtr data;
   BoltDatasetPtr labels;
 
+  DatasetWithLabels(): data(nullptr), labels(nullptr) {}
+
   explicit DatasetWithLabels(BoltDataset&& _data, BoltDataset&& _labels)
       : data(std::make_shared<BoltDataset>(std::move(_data))),
         labels(std::make_shared<BoltDataset>(std::move(_labels))) {}
