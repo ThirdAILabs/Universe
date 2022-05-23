@@ -592,6 +592,10 @@ void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
 bool allocateActivations(uint64_t num_samples, uint64_t inference_dim,
                          uint32_t** active_neurons, float** activations,
                          bool output_sparse) {
+  // We use a uint64_t here in case there is overflow when we multiply the two
+  // quantities. If it's larger than a uint32_t then we skip allocating since
+  // this would be a 16Gb array, and could potentially mess up indexing in other
+  // parts of the code.
   uint64_t total_size = num_samples * inference_dim;
   if (total_size > std::numeric_limits<uint32_t>::max()) {
     printMemoryWarning(num_samples, inference_dim);
