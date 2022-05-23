@@ -583,7 +583,7 @@ void createBoltSubmodule(py::module_& module) {
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
   std::cout << "Memory Error: Cannot allocate (" << num_samples << " x "
             << inference_dim
-            << ") array for activations.\nPredict will return None for "
+            << ") array for activations. Predict will return None for "
                "activations. Please breakup your test set into smaller pieces "
                "if you would like to have activations returned."
             << std::endl;
