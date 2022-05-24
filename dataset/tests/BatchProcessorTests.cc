@@ -198,7 +198,7 @@ void assertSameVectorsSameOrder(std::vector<bolt::BoltVector> bolt_vecs_1,
 
 /**
  * Helper function that checks whether a batch processor produces a dataset
- * with the correct bolt vectors, given whether the inputs and targets 
+ * with the correct bolt vectors, given whether the inputs and targets
  * are dense or sparse.
  *
  * If has_labels is false, label_dense is ignored.
@@ -206,7 +206,7 @@ void assertSameVectorsSameOrder(std::vector<bolt::BoltVector> bolt_vecs_1,
  * ignored.
  */
 void checkCorrectUnshuffledDatasetImpl(
-    bool has_labels, bool input_dense, bool label_dense = false, 
+    bool has_labels, bool input_dense, bool label_dense = false,
     bool mixed_dense_input_and_label = false) {
   // Generate mock data
   size_t n_cols = 3;
@@ -227,7 +227,8 @@ void checkCorrectUnshuffledDatasetImpl(
       makeNMockBlocks(n_cols, input_dense, mixed_dense_input_and_label);
   std::vector<std::shared_ptr<Block>> target_blocks;
   if (has_labels) {
-    target_blocks = makeNMockBlocks(n_cols, label_dense, mixed_dense_input_and_label);
+    target_blocks =
+        makeNMockBlocks(n_cols, label_dense, mixed_dense_input_and_label);
   }
 
   BatchProcessor processor(input_blocks, target_blocks, output_batch_size);
@@ -249,10 +250,10 @@ void checkCorrectUnshuffledDatasetImpl(
   if (has_labels) {
     if (label_dense & !mixed_dense_input_and_label) {
       assertSameVectorsSameOrder(dense_bolt_vecs_1, dense_bolt_vecs_2,
-                                *target_dataset_ptr);
+                                 *target_dataset_ptr);
     } else {
       assertSameVectorsSameOrder(sparse_bolt_vecs_1, sparse_bolt_vecs_2,
-                                *target_dataset_ptr);
+                                 *target_dataset_ptr);
     }
   } else {
     ASSERT_EQ(target_dataset_ptr, nullptr);
