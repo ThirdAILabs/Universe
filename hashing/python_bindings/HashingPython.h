@@ -1,5 +1,6 @@
 #pragma once
 
+#include <hashing/src/BloomFilter.h>
 #include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/FastSRP.h>
 #include <pybind11/cast.h>

@@ -7,6 +7,16 @@ void createHashingSubmodule(py::module_& module) {
 
   // TODO(josh): Add proper sparse data type
 
+  py::class_<BloomFilter>(hashing_submodule, "BloomFilter")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
+           py::arg("table_range_pow"), py::arg("input_dim"))
+      .def("add", &BloomFilter::add,
+           "Adds a vector of uint64s to the bloom filter. Must be of length "
+           "input_dim.")
+      .def("is_present", &BloomFilter::is_present,
+           "Checks whether a vector was added to the filter. Has a non zero "
+           "false positive rate and a zero false negative rate.");
+
   py::class_<HashFunction>(
       hashing_submodule, "HashFunction",
       "Represents an abstract hash function that maps input DenseVectors and "
