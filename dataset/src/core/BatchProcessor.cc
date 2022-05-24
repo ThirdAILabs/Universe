@@ -45,7 +45,8 @@ void BatchProcessor::processBatch(
     _target_vectors.resize(_target_vectors.size() + batch.size());
   }
 
-#pragma omp parallel for default(none) shared(batch, initial_num_elems, has_target)
+#pragma omp parallel for default(none) \
+    shared(batch, initial_num_elems, has_target)
   for (size_t i = 0; i < batch.size(); ++i) {
     _input_vectors[initial_num_elems + i] =
         makeVector(batch[i], _input_blocks, _input_blocks_dense);
@@ -59,7 +60,8 @@ void BatchProcessor::processBatch(
   }
 }
 
-std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(bool shuffle, uint32_t shuffle_seed) {
+std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
+    bool shuffle, uint32_t shuffle_seed) {
   // We currently assert that we always have targets even if the target
   // vectors are empty because BOLT expects it.
   // TODO(Geordie, Nicholas): How do we represent a dataset without labels?
@@ -76,8 +78,9 @@ std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
   std::vector<bolt::BoltBatch> target_batches(has_target ? n_batches : 0);
 
   // For each batch
-#pragma omp parallel for default(none) \
-    shared(n_exported, n_batches, input_batches, target_batches, positions, has_target)
+#pragma omp parallel for default(none)                                      \
+    shared(n_exported, n_batches, input_batches, target_batches, positions, \
+           has_target)
   for (size_t batch_idx = 0; batch_idx < n_batches; ++batch_idx) {
     uint32_t batch_start_idx = batch_idx * _batch_size;
 
@@ -108,12 +111,10 @@ std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
   _input_vectors = std::vector<bolt::BoltVector>();
   _target_vectors = std::vector<bolt::BoltVector>();
 
-  return {
-    std::make_shared<BoltDataset>(std::move(input_batches), n_exported),
-    target_batches.empty()
-      ? nullptr 
-      : std::make_shared<BoltDataset>(std::move(target_batches), n_exported)
-  };
+  return {std::make_shared<BoltDataset>(std::move(input_batches), n_exported),
+          target_batches.empty() ? nullptr
+                                 : std::make_shared<BoltDataset>(
+                                       std::move(target_batches), n_exported)};
 }
 
 std::vector<uint32_t> BatchProcessor::makeFinalPositions(

@@ -160,10 +160,9 @@ std::vector<std::shared_ptr<Block>> makeNMockBlocks(uint32_t n_blocks,
  * If check_labels = true, check the labels of the dataset. Otherwise, check the
  * inputs.
  */
-void assertSameVectorsSameOrder(
-    std::vector<bolt::BoltVector> bolt_vecs_1,
-    std::vector<bolt::BoltVector> bolt_vecs_2,
-    BoltDataset& dataset) {
+void assertSameVectorsSameOrder(std::vector<bolt::BoltVector> bolt_vecs_1,
+                                std::vector<bolt::BoltVector> bolt_vecs_2,
+                                BoltDataset& dataset) {
   uint32_t batch_size = dataset.at(0).getBatchSize();
   for (size_t batch_i = 0; batch_i < dataset.numBatches(); batch_i++) {
     for (size_t vec_i = 0; vec_i < dataset.at(batch_i).getBatchSize();
@@ -232,19 +231,24 @@ void checkCorrectUnshuffledDatasetImpl(
   processor.processBatch(str_matrix_1);
   processor.processBatch(str_matrix_2);
 
-  auto [input_dataset_ptr, target_dataset_ptr] = processor.exportInMemoryDataset();
+  auto [input_dataset_ptr, target_dataset_ptr] =
+      processor.exportInMemoryDataset();
 
   // Assertions
   if (input_dense & !mixed_dense_input_and_label) {
-    assertSameVectorsSameOrder(dense_bolt_vecs_1, dense_bolt_vecs_2, *input_dataset_ptr);
+    assertSameVectorsSameOrder(dense_bolt_vecs_1, dense_bolt_vecs_2,
+                               *input_dataset_ptr);
   } else {
-    assertSameVectorsSameOrder(sparse_bolt_vecs_1, sparse_bolt_vecs_2, *input_dataset_ptr);
+    assertSameVectorsSameOrder(sparse_bolt_vecs_1, sparse_bolt_vecs_2,
+                               *input_dataset_ptr);
   }
 
   if (label_dense & !mixed_dense_input_and_label) {
-    assertSameVectorsSameOrder(dense_bolt_vecs_1, dense_bolt_vecs_2, *target_dataset_ptr);
+    assertSameVectorsSameOrder(dense_bolt_vecs_1, dense_bolt_vecs_2,
+                               *target_dataset_ptr);
   } else {
-    assertSameVectorsSameOrder(sparse_bolt_vecs_1, sparse_bolt_vecs_2, *target_dataset_ptr);
+    assertSameVectorsSameOrder(sparse_bolt_vecs_1, sparse_bolt_vecs_2,
+                               *target_dataset_ptr);
   }
 }
 
@@ -322,7 +326,8 @@ void checkDatasetOrderEquality(const BoltDataset& input_dataset_1,
                                const BoltDataset& input_dataset_2,
                                bool assert_equal) {
   uint32_t n_seen = 0;
-  for (uint32_t batch_i = 0; batch_i < input_dataset_1.numBatches(); batch_i++) {
+  for (uint32_t batch_i = 0; batch_i < input_dataset_1.numBatches();
+       batch_i++) {
     for (uint32_t vec_i = 0; vec_i < input_dataset_2.at(batch_i).getBatchSize();
          vec_i++) {
       if (input_dataset_1.at(batch_i)[vec_i].activations[0] !=
@@ -374,7 +379,8 @@ TEST(BatchProcessorTest, ProducesCorrectShuffledDataset) {
   // Must call processBatch again because batch processor is emptied
   // after exporting.
   bp.processBatch(mock_data_str);
-  auto [input_shuf_ptr, target_shuf_ptr] = bp.exportInMemoryDataset(/* shuffle = */ true);
+  auto [input_shuf_ptr, target_shuf_ptr] =
+      bp.exportInMemoryDataset(/* shuffle = */ true);
   checkIsPermutation(*input_shuf_ptr, *target_shuf_ptr, mock_data_seq);
   checkDatasetOrderEquality(*input_shuf_ptr, *input_unshuf_ptr,
                             /* assert_equal = */ false);
@@ -385,8 +391,10 @@ TEST(BatchProcessorTest, ProducesCorrectShuffledDataset) {
   // Must call processBatch again because batch processor is emptied
   // after exporting.
   bp.processBatch(mock_data_str);
-  auto [input_shuf_again_ptr, target_shuf_again_ptr] = bp.exportInMemoryDataset(/* shuffle = */ true);
-  checkIsPermutation(*input_shuf_again_ptr, *target_shuf_again_ptr, mock_data_seq);
+  auto [input_shuf_again_ptr, target_shuf_again_ptr] =
+      bp.exportInMemoryDataset(/* shuffle = */ true);
+  checkIsPermutation(*input_shuf_again_ptr, *target_shuf_again_ptr,
+                     mock_data_seq);
   checkDatasetOrderEquality(*input_shuf_again_ptr, *input_unshuf_ptr,
                             /* assert_equal = */ false);
   checkDatasetOrderEquality(*input_shuf_again_ptr, *input_shuf_ptr,
@@ -397,16 +405,18 @@ TEST(BatchProcessorTest, ProducesCorrectShuffledDataset) {
   // ds_unshuffled, and check that the orderings are consistent when
   // seeded with the same number.
   bp.processBatch(mock_data_str);
-  auto [input_shuf_seeded_1_ptr, target_shuf_seeded_1_ptr] = 
+  auto [input_shuf_seeded_1_ptr, target_shuf_seeded_1_ptr] =
       bp.exportInMemoryDataset(/* shuffle = */ true, /* shuffle_seed = */ 0);
-  checkIsPermutation(*input_shuf_seeded_1_ptr, *target_shuf_seeded_1_ptr, mock_data_seq);
+  checkIsPermutation(*input_shuf_seeded_1_ptr, *target_shuf_seeded_1_ptr,
+                     mock_data_seq);
   checkDatasetOrderEquality(*input_shuf_seeded_1_ptr, *input_unshuf_ptr,
                             /* assert_equal = */ false);
 
   bp.processBatch(mock_data_str);
-  auto [input_shuf_seeded_2_ptr, target_shuf_seeded_2_ptr] = 
+  auto [input_shuf_seeded_2_ptr, target_shuf_seeded_2_ptr] =
       bp.exportInMemoryDataset(/* shuffle = */ true, /* shuffle_seed = */ 0);
-  checkIsPermutation(*input_shuf_seeded_2_ptr, *target_shuf_seeded_2_ptr, mock_data_seq);
+  checkIsPermutation(*input_shuf_seeded_2_ptr, *target_shuf_seeded_2_ptr,
+                     mock_data_seq);
   checkDatasetOrderEquality(*input_shuf_seeded_2_ptr, *input_unshuf_ptr,
                             /* assert_equal = */ false);
 
