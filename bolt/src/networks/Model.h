@@ -19,7 +19,7 @@ namespace thirdai::bolt {
 template <typename BATCH_T>
 class Model {
  public:
-  Model() : _epoch_count(0), _batch_iter(0) {
+  Model() : _batch_iter(0), _epoch_count(0) {
     thirdai::licensing::LicenseWrapper::checkLicense();
   }
   /**

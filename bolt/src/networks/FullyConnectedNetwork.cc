@@ -119,6 +119,44 @@ void FullyConnectedNetwork::trainOnStreamingDataset(
   }
 }
 
+std::vector<uint32_t> FullyConnectedNetwork::testOnStreamingDataset(
+    dataset::StreamingDataset& dataset) {
+  uint32_t batch_size = dataset.getMaxBatchSize();
+  initializeNetworkState(batch_size, true);
+
+  BoltBatch outputs = getOutputs(batch_size, true);
+
+  std::vector<uint32_t> predictions;
+
+  while (auto batch = dataset.nextBatch()) {
+    const BoltBatch& inputs = batch->first;
+    std::vector<uint32_t> batch_predictions(inputs.getBatchSize());
+
+#pragma omp parallel for default(none) \
+    shared(inputs, outputs, batch_predictions)
+    for (uint32_t vec_id = 0; vec_id < inputs.getBatchSize(); vec_id++) {
+      // We set labels to nullptr so that they are not used in sampling during
+      // inference.
+      forward(vec_id, inputs, outputs[vec_id], /*labels=*/nullptr);
+
+      uint32_t pred = 0;
+      float max_act = 0.0;
+      for (uint32_t i = 0; i < outputs[vec_id].len; i++) {
+        if (outputs[vec_id].activations[i] > max_act) {
+          pred = outputs[vec_id].active_neurons[i];
+          max_act = outputs[vec_id].activations[i];
+        }
+      }
+      batch_predictions[vec_id] = pred;
+    }
+
+    predictions.insert(predictions.end(), batch_predictions.begin(),
+                       batch_predictions.end());
+  }
+
+  return predictions;
+}
+
 void FullyConnectedNetwork::forward(uint32_t batch_index,
                                     const BoltVector& input, BoltVector& output,
                                     const BoltVector* labels) {

@@ -21,7 +21,7 @@
 namespace thirdai::bolt {
 
 // Autotuning helper functions
-static uint32_t getHiddenLayerSize(std::string model_size, uint64_t output_dim,
+static uint32_t getHiddenLayerSize(std::string model_size, uint64_t n_classes,
                                    uint64_t input_dim);
 
 static float getHiddenLayerSparsity(uint64_t layer_size);
@@ -31,26 +31,26 @@ static std::optional<uint64_t> getSystemRam();
 static uint32_t getNumCpus();
 
 TextClassifier::TextClassifier(const std::string& model_size,
-                               uint32_t output_dim, uint32_t input_dim) {
+                               uint32_t n_classes, uint32_t input_dim) {
   uint32_t hidden_layer_size =
-      getHiddenLayerSize(model_size, output_dim, input_dim);
+      getHiddenLayerSize(model_size, n_classes, input_dim);
 
   float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_size);
 
   SequentialConfigList configs = {
       std::make_shared<FullyConnectedLayerConfig>(
           hidden_layer_size, hidden_layer_sparsity, ActivationFunction::ReLU),
-      std::make_shared<FullyConnectedLayerConfig>(output_dim,
+      std::make_shared<FullyConnectedLayerConfig>(n_classes,
                                                   ActivationFunction::Softmax)};
 
   _model =
       std::make_unique<FullyConnectedNetwork>(std::move(configs), input_dim);
 }
 
-uint32_t getHiddenLayerSize(std::string model_size, uint64_t output_dim,
+uint32_t getHiddenLayerSize(std::string model_size, uint64_t n_classes,
                             uint64_t input_dim) {
   /*
-    Estimated num parameters = (input_dim + output_dim) * hidden_dim
+    Estimated num parameters = (input_dim + n_classes) * hidden_dim
 
     Estimated memory = (Estimated num parameters) * 16
 
@@ -62,7 +62,7 @@ uint32_t getHiddenLayerSize(std::string model_size, uint64_t output_dim,
   */
   // TODO(nicholas): what if getSystemRam() fails?
   uint64_t max_hidden_layer_size =
-      getSystemRam().value() / (input_dim + output_dim);
+      getSystemRam().value() / (input_dim + n_classes);
 
   for (char& c : model_size) {
     c = std::tolower(c);
