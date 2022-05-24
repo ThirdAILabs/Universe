@@ -17,7 +17,6 @@ class Checkpoint(ColBERT):
 
     def __init__(self, name):
         super().__init__(name)
-        assert self.training is False
 
         self.query_tokenizer = QueryTokenizer(self.colbert_config)
         self.doc_tokenizer = DocTokenizer(self.colbert_config)

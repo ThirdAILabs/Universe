@@ -29,7 +29,12 @@ class SequentialLayer {
 
   virtual void shuffleRandNeurons() = 0;
 
+  // Returns the dimenion of the layer.
   virtual uint32_t getDim() const = 0;
+
+  // Returns the current output dimension for inference (different if sparse
+  // inference).
+  virtual uint32_t getInferenceOutputDim() const = 0;
 
   virtual float* getWeights() = 0;
 

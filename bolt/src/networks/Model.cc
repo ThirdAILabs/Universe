@@ -1,7 +1,6 @@
 #include "Model.h"
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/utils/ProgressBar.h>
-#include <dataset/src/batch_types/BoltInputBatch.h>
 #include <dataset/src/batch_types/ClickThroughBatch.h>
 #include <algorithm>
 #include <cctype>
@@ -10,22 +9,23 @@
 
 namespace thirdai::bolt {
 
-template class Model<dataset::BoltInputBatch>;
+template class Model<bolt::BoltBatch>;
 template class Model<dataset::ClickThroughBatch>;
 
 template <typename BATCH_T>
 MetricData Model<BATCH_T>::train(
-    dataset::InMemoryDataset<BATCH_T>& train_data,
+    std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
+    const dataset::BoltDatasetPtr& train_labels,
     // Clang tidy is disabled for this line because it wants to pass by
     // reference, but shared_ptrs should not be passed by reference
     const LossFunction& loss_fn,  // NOLINT
     float learning_rate, uint32_t epochs, uint32_t rehash, uint32_t rebuild,
     const std::vector<std::string>& metric_names, bool verbose) {
-  uint32_t batch_size = train_data[0].getBatchSize();
+  uint32_t batch_size = train_data->at(0).getBatchSize();
   uint32_t rebuild_batch =
-      getRebuildBatch(rebuild, batch_size, train_data.len());
-  uint32_t rehash_batch = getRehashBatch(rehash, batch_size, train_data.len());
-  uint64_t num_train_batches = train_data.numBatches();
+      getRebuildBatch(rebuild, batch_size, train_data->len());
+  uint32_t rehash_batch = getRehashBatch(rehash, batch_size, train_data->len());
+  uint64_t num_train_batches = train_data->numBatches();
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
@@ -48,18 +48,22 @@ MetricData Model<BATCH_T>::train(
         shuffleRandomNeurons();
       }
 
-      BATCH_T& inputs = train_data[batch];
+      BATCH_T& batch_inputs = train_data->at(batch);
 
-#pragma omp parallel for default(none) shared(inputs, outputs, loss_fn, metrics)
-      for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
-        forward(i, inputs, outputs[i], /* train=*/true);
+      const BoltBatch& batch_labels = train_labels->at(batch);
 
-        loss_fn.lossGradients(outputs[i], inputs.labels(i),
-                              inputs.getBatchSize());
+#pragma omp parallel for default(none) \
+    shared(batch_inputs, batch_labels, outputs, loss_fn, metrics)
+      for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize();
+           vec_id++) {
+        forward(vec_id, batch_inputs, outputs[vec_id], &batch_labels[vec_id]);
 
-        backpropagate(i, inputs, outputs[i]);
+        loss_fn.lossGradients(outputs[vec_id], batch_labels[vec_id],
+                              batch_inputs.getBatchSize());
 
-        metrics.processSample(outputs[i], inputs.labels(i));
+        backpropagate(vec_id, batch_inputs, outputs[vec_id]);
+
+        metrics.processSample(outputs[vec_id], batch_labels[vec_id]);
       }
 
       updateParameters(learning_rate, ++_batch_iter);
@@ -98,12 +102,16 @@ MetricData Model<BATCH_T>::train(
 
 template <typename BATCH_T>
 InferenceMetricData Model<BATCH_T>::predict(
-    const dataset::InMemoryDataset<BATCH_T>& test_data,
+    const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
+    const dataset::BoltDatasetPtr& labels, uint32_t* output_active_neurons,
     float* output_activations, const std::vector<std::string>& metric_names,
     bool verbose, uint32_t batch_limit) {
-  uint32_t batch_size = test_data[0].getBatchSize();
+  assert(output_activations != nullptr || output_active_neurons == nullptr);
+  bool compute_metrics = labels != nullptr;
 
-  uint64_t num_test_batches = std::min(test_data.numBatches(), batch_limit);
+  uint32_t batch_size = test_data->at(0).getBatchSize();
+
+  uint64_t num_test_batches = std::min(test_data->numBatches(), batch_limit);
 
   MetricAggregator metrics(metric_names, verbose);
 
@@ -122,19 +130,35 @@ InferenceMetricData Model<BATCH_T>::predict(
 
   auto test_start = std::chrono::high_resolution_clock::now();
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
-    const BATCH_T& inputs = test_data[batch];
+    const BATCH_T& inputs = test_data->at(batch);
 
-#pragma omp parallel for default(none) \
-    shared(inputs, outputs, output_activations, metrics, batch, batch_size)
-    for (uint32_t i = 0; i < inputs.getBatchSize(); i++) {
-      forward(i, inputs, outputs[i], /* train=*/false);
+#pragma omp parallel for default(none)                                         \
+    shared(inputs, labels, outputs, output_active_neurons, output_activations, \
+           metrics, batch, batch_size, compute_metrics)
+    for (uint32_t vec_id = 0; vec_id < inputs.getBatchSize(); vec_id++) {
+      // We set labels to nullptr so that they are not used in sampling during
+      // inference.
+      forward(vec_id, inputs, outputs[vec_id], /*labels=*/nullptr);
 
-      metrics.processSample(outputs[i], inputs.labels(i));
+      if (compute_metrics) {
+        metrics.processSample(outputs[vec_id], (*labels)[batch][vec_id]);
+      }
 
-      if (output_activations != nullptr && outputs[i].isDense()) {
-        const float* start = outputs[i].activations;
-        std::copy(start, start + outputs[i].len,
-                  output_activations + (batch * batch_size + i) * outputDim());
+      if (output_activations != nullptr) {
+        assert(outputs[vec_id].len == getInferenceOutputDim());
+
+        const float* start = outputs[vec_id].activations;
+        uint32_t offset =
+            (batch * batch_size + vec_id) * getInferenceOutputDim();
+        std::copy(start, start + outputs[vec_id].len,
+                  output_activations + offset);
+        if (!outputs[vec_id].isDense()) {
+          assert(output_active_neurons != nullptr);
+          const uint32_t* start = outputs[vec_id].active_neurons;
+          std::copy(start, start + outputs[vec_id].len,
+                    output_active_neurons + (batch * batch_size + vec_id) *
+                                                getInferenceOutputDim());
+        }
       }
     }
 

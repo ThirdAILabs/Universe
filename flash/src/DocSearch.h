@@ -193,7 +193,7 @@ class DocSearch {
         rankDocuments(embeddings, top_k_internal_ids);
 
     std::vector<std::pair<std::string, std::string>> result;
-    for (uint32_t i = 0; i < std::min(num_to_rerank, top_k); i++) {
+    for (uint32_t i = 0; i < std::min<uint32_t>(reranked.size(), top_k); i++) {
       uint32_t id = reranked.at(i);
       std::string doc_id = _internal_id_to_doc_id.at(id);
       result.emplace_back(doc_id, _doc_id_to_doc_text.at(doc_id));
