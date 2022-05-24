@@ -25,14 +25,13 @@ def test_bf():
     for epsilon in [0.1, 0.01, 0.001, 0.0001]:
         start = time()
         # See https://en.wikipedia.org/wiki/Bloom_filter for theory about where
-        # the bits_per_element and bit_per_table come from
+        # the bits_per_element and num_hashes values come from
         bits_per_element = 1.44 * math.log2(1 / epsilon)
-        num_tables = -math.log2(epsilon)
-        bits_per_table = bits_per_element * num_elements / num_tables
+        num_hashes = -math.log2(epsilon)
 
         bf = BloomFilter(
-            num_tables=int(num_tables + 1),
-            table_range_pow=int(math.log2(bits_per_table) + 1),
+            num_hashes=int(num_hashes + 1),
+            requested_total_num_bits=int(bits_per_element * num_elements),
             input_dim=input_dim,
         )
 
@@ -48,6 +47,7 @@ def test_bf():
         error_rate /= num_elements
 
         assert error_rate < epsilon
+        print(error_rate, epsilon)
         times.append(time() - start)
 
     return times

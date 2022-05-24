@@ -8,8 +8,8 @@ void createHashingSubmodule(py::module_& module) {
   // TODO(josh): Add proper sparse data type
 
   py::class_<BloomFilter>(hashing_submodule, "BloomFilter")
-      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
-           py::arg("table_range_pow"), py::arg("input_dim"))
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_hashes"),
+           py::arg("requested_total_num_bits"), py::arg("input_dim"))
       .def("add", &BloomFilter::add,
            "Adds a vector of uint64s to the bloom filter. Must be of length "
            "input_dim.")
