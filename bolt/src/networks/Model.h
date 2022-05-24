@@ -110,19 +110,18 @@ class Model {
 
   virtual ~Model() = default;
 
- private:
+ protected:
   uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,
                           uint32_t data_len);
 
   uint32_t getRebuildBatch(uint32_t rebuild, uint32_t batch_size,
                            uint32_t data_len);
 
-  uint32_t _epoch_count;
-
- protected:
   uint32_t _batch_iter;
 
  private:
+  uint32_t _epoch_count;
+
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>

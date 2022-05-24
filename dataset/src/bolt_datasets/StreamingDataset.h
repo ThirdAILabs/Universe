@@ -11,6 +11,10 @@ namespace thirdai::dataset {
 
 class StreamingDataset {
  public:
+  StreamingDataset(std::shared_ptr<DataLoader>& data_loader,
+                   std::shared_ptr<BatchProcessor>& batch_processor)
+      : _data_loader(data_loader), _batch_processor(batch_processor) {}
+
   std::optional<BoltDataLabelPair> nextBatch() {
     auto rows = _data_loader->nextBatch();
     if (!rows) {
@@ -37,9 +41,11 @@ class StreamingDataset {
                              BoltDataset(std::move(labels), len));
   }
 
+  uint32_t getMaxBatchSize() const { return _data_loader->getMaxBatchSize(); }
+
  private:
-  std::unique_ptr<DataLoader> _data_loader;
-  std::unique_ptr<BatchProcessor> _batch_processor;
+  std::shared_ptr<DataLoader> _data_loader;
+  std::shared_ptr<BatchProcessor> _batch_processor;
 };
 
 }  // namespace thirdai::dataset

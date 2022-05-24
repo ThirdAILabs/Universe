@@ -1,4 +1,5 @@
 #include "FullyConnectedNetwork.h"
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/ConvLayer.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -74,6 +75,48 @@ FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
       << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
       << " seconds" << std::endl;
   std::cout << "==============================" << std::endl;
+}
+
+void FullyConnectedNetwork::trainOnStreamingDataset(
+    dataset::StreamingDataset& dataset, const LossFunction& loss_fn,
+    float learning_rate) {
+  uint32_t batch_size = dataset.getMaxBatchSize();
+  initializeNetworkState(batch_size, false);
+
+  // TODO(nicholas): set these to something
+  uint32_t rehash_batch = 0, rebuild_batch = 0;
+
+  BoltBatch outputs = getOutputs(batch_size, false);
+
+  while (auto batch = dataset.nextBatch()) {
+    if (_batch_iter % 1000 == 999) {
+      shuffleRandomNeurons();
+    }
+
+    bolt::BoltBatch& batch_inputs = batch->first;
+
+    const BoltBatch& batch_labels = batch->second;
+
+#pragma omp parallel for default(none) \
+    shared(batch_inputs, batch_labels, outputs, loss_fn)
+    for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
+      forward(vec_id, batch_inputs, outputs[vec_id], &batch_labels[vec_id]);
+
+      loss_fn.lossGradients(outputs[vec_id], batch_labels[vec_id],
+                            batch_inputs.getBatchSize());
+
+      backpropagate(vec_id, batch_inputs, outputs[vec_id]);
+    }
+
+    updateParameters(learning_rate, ++_batch_iter);
+
+    if (_batch_iter % rebuild_batch == (rebuild_batch - 1)) {
+      reBuildHashFunctions();
+      buildHashTables();
+    } else if (_batch_iter % rehash_batch == (rehash_batch - 1)) {
+      buildHashTables();
+    }
+  }
 }
 
 void FullyConnectedNetwork::forward(uint32_t batch_index,
