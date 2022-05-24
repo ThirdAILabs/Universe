@@ -33,7 +33,7 @@ def train_simple_bolt_model(examples, labels, load_factor=1, n_classes=10):
         examples, labels, batch_size, ["categorical_accuracy"], verbose=False
     )
 
-    # Check that predict functions correctly and returns activations when 
+    # Check that predict functions correctly and returns activations when
     # no labels are specified.
     _, activations = network.predict(
         examples, None, batch_size, ["categorical_accuracy"], verbose=False
