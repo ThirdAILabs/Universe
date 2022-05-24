@@ -12,7 +12,7 @@ namespace thirdai::dataset {
  * Declare here so we can make it a friend of
  * ExtendableVector.
  */
-struct Block;
+class Block;
 class ExtendableVectorTest;
 
 /**
@@ -21,7 +21,8 @@ class ExtendableVectorTest;
  * new vector and can be converted into a BoltVector.
  *
  */
-struct ExtendableVector {
+class ExtendableVector {
+ public:
   friend Block;
   friend ExtendableVectorTest;
 
@@ -70,7 +71,8 @@ struct ExtendableVector {
  * A block accepts an input sample in the form of a sequence of strings
  * then encodes this sequence as a vector.
  */
-struct Block {
+class Block {
+ public:
   /**
    * Encodes a sequence of strings as a vector and concatenates the given
    * vector with this encoding.
@@ -89,12 +91,12 @@ struct Block {
   /**
    * Returns the dimension of the vector encoding.
    */
-  virtual uint32_t featureDim() = 0;
+  virtual uint32_t featureDim() const = 0;
 
   /**
    * True if the block produces dense features, False otherwise.
    */
-  virtual bool isDense() = 0;
+  virtual bool isDense() const = 0;
 
  protected:
   /**

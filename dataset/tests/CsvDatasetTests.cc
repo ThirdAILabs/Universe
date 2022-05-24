@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <dataset/src/Dataset.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <algorithm>
 #include <cstddef>
 #include <cstdio>
@@ -227,20 +228,15 @@ TEST_F(CsvDatasetTestFixture, BoltCsvDatasetTest) {
   for (const char& delimiter : {',', '\t', ' '}) {
     generateTestFile(delimiter);
 
-    InMemoryDataset<BoltInputBatch> dataset(filename, batch_size,
-                                            BoltCsvBatchFactory(delimiter));
+    auto dataset = loadBoltCsvDataset(filename, batch_size, delimiter);
 
+    // Check data vectors are correct.
     uint32_t vec_count = 0;
-    for (const auto& batch : dataset) {
+    for (const auto& batch : *dataset.data) {
       ASSERT_TRUE(batch.getBatchSize() == batch_size ||
                   batch.getBatchSize() == num_vectors % batch_size);
 
       for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-        ASSERT_EQ(batch.labels(v).len, 1);
-        ASSERT_EQ(batch.labels(v).active_neurons[0],
-                  _vectors.at(vec_count).label);
-        ASSERT_EQ(batch.labels(v).activations[0], 1.0);
-
         ASSERT_EQ(batch[v].len, _vectors[vec_count].values.size());
         ASSERT_EQ(batch[v].active_neurons, nullptr);
         for (uint32_t i = 0; i < batch[v].len; i++) {
@@ -252,6 +248,22 @@ TEST_F(CsvDatasetTestFixture, BoltCsvDatasetTest) {
       }
     }
     ASSERT_EQ(vec_count, num_vectors);
+
+    // Check labels are correct.
+    uint32_t label_count = 0;
+    for (const auto& batch : *dataset.labels) {
+      ASSERT_TRUE(batch.getBatchSize() == batch_size ||
+                  batch.getBatchSize() == num_vectors % batch_size);
+
+      for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+        ASSERT_EQ(batch[v].len, 1);
+        ASSERT_EQ(batch[v].active_neurons[0], _vectors.at(label_count).label);
+        ASSERT_EQ(batch[v].activations[0], 1.0);
+
+        label_count++;
+      }
+    }
+    ASSERT_EQ(label_count, num_vectors);
 
     deleteTestFile();
   }

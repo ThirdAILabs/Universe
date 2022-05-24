@@ -14,9 +14,11 @@ thirdai.egg-info
 # Ignore .serialized files
 *.serialized 
 # Don't ignore the single license.serialized file in docker/product/slim
+# or the serialized files in licensing/python_tests
 # TODO(josh): Change this to a more permanent solution (it's going to fail 
 # in 90 days).
 !docker/product/slim/license.serialized
+!licensing/python_tests/*.serialized
 
 # Ignore zipped files
 *.bz2

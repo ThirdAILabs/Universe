@@ -20,10 +20,7 @@ class DocTokenizer:
         self.cls_token, self.cls_token_id = self.tok.cls_token, self.tok.cls_token_id
         self.sep_token, self.sep_token_id = self.tok.sep_token, self.tok.sep_token_id
 
-        assert self.D_marker_token_id == 2
-
     def tokenize(self, batch_text, add_special_tokens=False):
-        assert type(batch_text) in [list, tuple], type(batch_text)
 
         tokens = [self.tok.tokenize(x, add_special_tokens=False) for x in batch_text]
 
@@ -36,7 +33,6 @@ class DocTokenizer:
         return tokens
 
     def encode(self, batch_text, add_special_tokens=False):
-        assert type(batch_text) in [list, tuple], type(batch_text)
 
         ids = self.tok(batch_text, add_special_tokens=False)["input_ids"]
 
@@ -51,7 +47,6 @@ class DocTokenizer:
         return ids
 
     def tensorize(self, batch_text):
-        assert type(batch_text) in [list, tuple], type(batch_text)
 
         # add placehold for the [D] marker
         batch_text = [". " + x for x in batch_text]

@@ -3,11 +3,16 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <limits>
 
 namespace thirdai::bolt::python {
 
 void createBoltSubmodule(py::module_& module) {
   auto bolt_submodule = module.def_submodule("bolt");
+
+#if THIRDAI_EXPOSE_ALL
+#pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
 
   py::class_<thirdai::bolt::SamplingConfig>(
       bolt_submodule, "SamplingConfig",
@@ -18,6 +23,7 @@ void createBoltSubmodule(py::module_& module) {
            "Builds a SamplingConfig object. range_pow must always be 3 * "
            "hashes_per_table.")
       .def(py::init<>(), "Builds a default SamplingConfig object.");
+#endif
 
   py::enum_<ActivationFunction>(
       bolt_submodule, "ActivationFunctions",
@@ -39,8 +45,8 @@ void createBoltSubmodule(py::module_& module) {
                      "the corresponding enum.");
 
   // TODO(Geordie, Nicholas): put loss functions in its own submodule
-  py::class_<LossFunction>(bolt_submodule, "LossFunction",
-                           "Base class for all loss functions");  // NOLINT
+  py::class_<LossFunction>(bolt_submodule, "LossFunction",  // NOLINT
+                           "Base class for all loss functions");
 
   py::class_<CategoricalCrossEntropyLoss, LossFunction>(
       bolt_submodule, "CategoricalCrossEntropyLoss",
@@ -63,7 +69,7 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<>(),
            "Constructs a WeightedMeanAbsolutePercentageError object.");
 
-  py::class_<thirdai::bolt::SequentialLayerConfig,
+  py::class_<thirdai::bolt::SequentialLayerConfig,  // NOLINT
              std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>(
       bolt_submodule, "Sequential");
 
@@ -71,6 +77,7 @@ void createBoltSubmodule(py::module_& module) {
              std::shared_ptr<thirdai::bolt::FullyConnectedLayerConfig>,
              thirdai::bolt::SequentialLayerConfig>(
       bolt_submodule, "FullyConnected", "Defines a fully-connected layer.\n")
+#if THIRDAI_EXPOSE_ALL
       .def(
           py::init<uint64_t, float, ActivationFunction,
                    thirdai::bolt::SamplingConfig>(),
@@ -88,6 +95,7 @@ void createBoltSubmodule(py::module_& module) {
           "activation "
           "functions: ReLU, Softmax, and Linear.\n"
           " * sampling_config: SamplingConfig - Sampling configuration.")
+#endif
       .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
            py::arg("activation_function"),
            "Constructs a FullyConnectedLayerConfig object.\n"
@@ -104,9 +112,15 @@ void createBoltSubmodule(py::module_& module) {
            " * dim: Int (positive) - The dimension of the layer.\n"
            " * activation_function: ActivationFunctions enum, e.g. ReLU, "
            "Softmax, Linear. "
+           " * load_factor: Float - The fraction of neurons to use during "
+           "sparse training "
+           "and sparse inference. For example, load_factor=0.05 means the "
+           "layer uses 5% of "
+           "its neurons when processing an individual sample.\n"
            "Also accepts `getActivationFunction(function_name), e.g. "
            "`getActivationFunction('ReLU')`");
 
+#if THIRDAI_EXPOSE_ALL
   py::class_<thirdai::bolt::ConvLayerConfig,
              std::shared_ptr<thirdai::bolt::ConvLayerConfig>,
              thirdai::bolt::SequentialLayerConfig>(
@@ -168,6 +182,7 @@ void createBoltSubmodule(py::module_& module) {
            " * log_embedding_block_size: Int (positive) - log (base 2) of the "
            "size of the "
            "embedding table.");
+#endif
 
   py::class_<PyNetwork>(bolt_submodule, "Network",
                         "Fully connected neural network.")
@@ -183,13 +198,15 @@ void createBoltSubmodule(py::module_& module) {
            " * input_dim: Int (positive) - Dimension of input vectors in the "
            "dataset.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
-           py::arg("loss_fn"), py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("rehash") = 0, py::arg("rebuild") = 0,
+           py::arg("train_labels"), py::arg("loss_fn"),
+           py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
+           py::arg("rebuild") = 0,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            "Trains the network on the given training data.\n"
            "Arguments:\n"
            " * train_data: BoltDataset - Training data.\n"
+           " * train_labels: BoltDataset - Training labels.\n"
            " * loss_fn: LossFunction - The loss function to minimize.\n"
            " * learning_rate: Float (positive) - Learning rate.\n"
            " * epochs: Int (positive) - Number of training epochs over the "
@@ -349,6 +366,7 @@ void createBoltSubmodule(py::module_& module) {
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
       .def("predict", &PyNetwork::predict, py::arg("test_data"),
+           py::arg("test_labels"),
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -356,6 +374,7 @@ void createBoltSubmodule(py::module_& module) {
            "predictions based on the given metrics.\n"
            "Arguments:\n"
            " * test_data: BoltDataset - Test data.\n"
+           " * test_labels: BoltDataset - Test labels.\n"
            " * metrics: List of str - Optional. The metrics to keep track of "
            "during training. "
            "See the section on metrics.\n"
@@ -397,64 +416,70 @@ void createBoltSubmodule(py::module_& module) {
           "their values "
           "and (1) output vectors (predictions) from the network in the form "
           "of a 2D Numpy matrix of floats.")
-      .def(
-          "predict", &PyNetwork::predictWithSparseNumpyArray, py::arg("x_idxs"),
-          py::arg("x_vals"), py::arg("x_offsets"), py::arg("y_idxs"),
-          py::arg("y_vals"), py::arg("y_offsets"), py::arg("batch_size"),
-          py::arg("metrics") = std::vector<std::string>(),
-          py::arg("verbose") = true,
-          py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
-          "Predicts the output given the input vectors and evaluates the "
-          "predictions based on the given metrics.\n\n"
+      .def("predict", &PyNetwork::predictWithSparseNumpyArray,
+           py::arg("x_idxs"), py::arg("x_vals"), py::arg("x_offsets"),
+           py::arg("y_idxs"), py::arg("y_vals"), py::arg("y_offsets"),
+           py::arg("batch_size"),
+           py::arg("metrics") = std::vector<std::string>(),
+           py::arg("verbose") = true,
+           py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
+           "Predicts the output given the input vectors and evaluates the "
+           "predictions based on the given metrics.\n\n"
 
-          "Suppose we have N sparse vectors of floats. We represent this "
-          "using three arrays:\n"
-          " * Indices: 1D Numpy array of integers - Indices of nonzero "
-          "elements in each vector, concatenated. "
-          "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
-          "0.0, 4.0}, the corresponding "
-          "'indices' array is [1, 3, 3]\n"
-          " * Values: 1D Numpy array of floats - The values of nonzero "
-          "elements in each vector, concatenated. "
-          "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
-          "0.0, 4.0}, the corresponding "
-          "'values' array is [1.5, 9.0, 4.0]\n"
-          " * Offsets: 1D Numpy array of integers - The i-th element of this "
-          "array is the i - 1-th element of the array plus the number of "
-          "nonzero "
-          "elements in the i - 1-th vector. The first element is 0. "
-          "Effectively, this array maps each vector to the corresponding "
-          "entries in 'indices' and 'values'. "
-          "Specifically, offsets[i] is the starting position of vector i in "
-          "the 'indices' and 'values' arrays, "
-          "while offsets[i] is the stopping position (exclusive). "
-          "This means that indices[offsets[i], offsets[i + 1]] contain the "
-          "indices of nonzero elements of "
-          "vector i, and values[offsets[i], offsets[i + 1]] contain the "
-          "values of nonzero elements of vector i. "
-          "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
-          "0.0, 4.0}, the corresponding "
-          "'offsets' array is [0, 2, 3]\n\n"
+           "Suppose we have N sparse vectors of floats. We represent this "
+           "using three arrays:\n"
+           " * Indices: 1D Numpy array of integers - Indices of nonzero "
+           "elements in each vector, concatenated. "
+           "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
+           "0.0, 4.0}, the corresponding "
+           "'indices' array is [1, 3, 3]\n"
+           " * Values: 1D Numpy array of floats - The values of nonzero "
+           "elements in each vector, concatenated. "
+           "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
+           "0.0, 4.0}, the corresponding "
+           "'values' array is [1.5, 9.0, 4.0]\n"
+           " * Offsets: 1D Numpy array of integers - The i-th element of this "
+           "array is the i - 1-th element of the array plus the number of "
+           "nonzero "
+           "elements in the i - 1-th vector. The first element is 0. "
+           "Effectively, this array maps each vector to the corresponding "
+           "entries in 'indices' and 'values'. "
+           "Specifically, offsets[i] is the starting position of vector i in "
+           "the 'indices' and 'values' arrays, "
+           "while offsets[i] is the stopping position (exclusive). "
+           "This means that indices[offsets[i], offsets[i + 1]] contain the "
+           "indices of nonzero elements of "
+           "vector i, and values[offsets[i], offsets[i + 1]] contain the "
+           "values of nonzero elements of vector i. "
+           "For example, given the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, "
+           "0.0, 4.0}, the corresponding "
+           "'offsets' array is [0, 2, 3]\n\n"
 
-          "Arguments:\n"
-          " * test_examples: 2D Numpy matrix of floats - Test examples (input "
-          "vectors).\n"
-          " * test_labels: 1D Numpy array of integers - Categorical labels for "
-          "test examples.\n"
-          " * batch_size: Int (positive) - Size of training data batches.\n"
-          " * metrics: List of str - Optional. The metrics to keep track of "
-          "during training. "
-          "See the section on metrics.\n"
-          " * verbose: Boolean - Optional. If set to False, only displays "
-          "progress bar. "
-          "If set to True, prints additional information such as metrics and "
-          "inference times. "
-          "Set to True by default.\n\n"
-
-          "Returns a tuple consisting of (0) a mapping from metric names to "
-          "their values "
-          "and (1) output vectors (predictions) from the network in the form "
-          "of a 2D Numpy matrix of floats.")
+           "Arguments:\n"
+           " * x_idxs: 1D Numpy array of integers - Indices array for testing "
+           "examples (input vectors).\n"
+           " * x_vals: 1D Numpy array of floats - Values array of testing "
+           "examples (input vectors).\n"
+           " * x_offsets: 1D Numpy array of integers - Offsets array for "
+           "testing examples (input vectors).\n"
+           " * y_idxs: 1D Numpy array of integers - Indices array for testing "
+           "labels (ground truth vectors).\n"
+           " * y_vals: 1D Numpy array of floats - Values array of testing "
+           "labels (ground truth vectors).\n"
+           " * y_offsets: 1D Numpy array of integers - Offsets array for "
+           "testing labels (ground truth vectors).\n"
+           " * batch_size: Int (positive) - Size of training data batches.\n"
+           " * metrics: List of str - Optional. The metrics to keep track of "
+           "during training. See the section on metrics.\n"
+           " * verbose: Boolean - Optional. If set to False, only displays "
+           "progress bar. "
+           "If set to True, prints additional information such as metrics and "
+           "inference times. "
+           "Set to True by default.\n\n"
+           "Returns a tuple consisting of (0) a mapping from metric names to "
+           "their values "
+           "and (1) output vectors (predictions) from the network in the form "
+           "of a 2D Numpy matrix of floats.")
       .def("enable_sparse_inference", &PyNetwork::enableSparseInference,
            "Enables sparse inference. Freezes smart hash tables. Do not call "
            "this method early on "
@@ -504,7 +529,8 @@ void createBoltSubmodule(py::module_& module) {
            "layers in DLRM's top MLP.\n"
            " * input_dim: Int (positive) - Dimension of input vectors in the "
            "dataset.")
-      .def("train", &PyDLRM::train, py::arg("train_data"), py::arg("loss_fn"),
+      .def("train", &PyDLRM::train, py::arg("train_data"),
+           py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
            py::arg("rebuild") = 0,
            py::arg("metrics") = std::vector<std::string>(),
@@ -512,6 +538,7 @@ void createBoltSubmodule(py::module_& module) {
            "Trains the network on the given training data.\n"
            "Arguments:\n"
            " * train_data: ClickThroughDataset - Training data.\n"
+           " * train_labels: BoltDataset - Training labels.\n"
            " * loss_fn: LossFunction - The loss function to minimize.\n"
            " * learning_rate: Float (positive) - Learning rate.\n"
            " * epochs: Int (positive) - Number of training epochs over the "
@@ -543,6 +570,7 @@ void createBoltSubmodule(py::module_& module) {
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
       .def("predict", &PyDLRM::predict, py::arg("test_data"),
+           py::arg("test_labels"),
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -550,6 +578,7 @@ void createBoltSubmodule(py::module_& module) {
            "predictions based on the given metrics.\n"
            "Arguments:\n"
            " * test_data: ClickThroughDataset - Test data.\n"
+           " * test_labels: BoltDataset - Testing labels.\n"
            " * metrics: List of str - Optional. The metrics to keep track of "
            "during training. "
            "See the section on metrics.\n"
@@ -563,6 +592,72 @@ void createBoltSubmodule(py::module_& module) {
            "their values "
            "and (1) output vectors (predictions) from the network in the form "
            "of a 2D Numpy matrix of floats.");
+}
+
+void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
+  std::cout << "Memory Error: Cannot allocate (" << num_samples << " x "
+            << inference_dim
+            << ") array for activations. Predict will return None for "
+               "activations. Please breakup your test set into smaller pieces "
+               "if you would like to have activations returned."
+            << std::endl;
+}
+
+bool allocateActivations(uint64_t num_samples, uint64_t inference_dim,
+                         uint32_t** active_neurons, float** activations,
+                         bool output_sparse) {
+  // We use a uint64_t here in case there is overflow when we multiply the two
+  // quantities. If it's larger than a uint32_t then we skip allocating since
+  // this would be a 16Gb array, and could potentially mess up indexing in other
+  // parts of the code.
+  uint64_t total_size = num_samples * inference_dim;
+  if (total_size > std::numeric_limits<uint32_t>::max()) {
+    printMemoryWarning(num_samples, inference_dim);
+    return false;
+  }
+  try {
+    if (output_sparse) {
+      *active_neurons = new uint32_t[total_size];
+    }
+    *activations = new float[total_size];
+    return true;
+  } catch (std::bad_alloc& e) {
+    printMemoryWarning(num_samples, inference_dim);
+    return false;
+  }
+}
+
+py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
+                               uint32_t inference_dim, uint32_t* active_neurons,
+                               float* activations, bool output_sparse,
+                               bool alloc_success) {
+  if (!alloc_success) {
+    return py::make_tuple(py_metric_data, py::none());
+  }
+
+  // Deallocates the memory for the array since we are allocating it ourselves.
+  py::capsule free_when_done_activations(
+      activations, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+  py::array_t<float, py::array::c_style | py::array::forcecast>
+      activations_array({num_samples, inference_dim},
+                        {inference_dim * sizeof(float), sizeof(float)},
+                        activations, free_when_done_activations);
+
+  if (!output_sparse) {
+    return py::make_tuple(py_metric_data, activations_array);
+  }
+
+  // Deallocates the memory for the array since we are allocating it ourselves.
+  py::capsule free_when_done_active_neurons(
+      active_neurons, [](void* ptr) { delete static_cast<uint32_t*>(ptr); });
+
+  py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
+      active_neurons_array({num_samples, inference_dim},
+                           {inference_dim * sizeof(uint32_t), sizeof(uint32_t)},
+                           active_neurons, free_when_done_active_neurons);
+  return py::make_tuple(py_metric_data, active_neurons_array,
+                        activations_array);
 }
 
 }  // namespace thirdai::bolt::python

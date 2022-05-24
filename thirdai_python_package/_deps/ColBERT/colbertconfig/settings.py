@@ -32,7 +32,7 @@ class RunSettings:
 
     @property
     def gpus_(self):
-        value = self.gpus
+        value = 0
 
         if isinstance(value, int):
             value = list(range(value))
@@ -42,10 +42,6 @@ class RunSettings:
 
         value = list(map(int, value))
         value = sorted(list(set(value)))
-
-        assert all(
-            device_idx in range(0, self.total_visible_gpus) for device_idx in value
-        ), value
 
         return value
 
@@ -70,10 +66,7 @@ class RunSettings:
                 except:
                     pass
 
-            assert script_path.endswith(".py")
             script_name = script_path.replace("/", ".").strip(".")[:-3]
-
-            assert len(script_name) > 0, (script_name, script_path, cwd)
 
             return script_name
 

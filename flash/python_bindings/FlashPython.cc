@@ -6,6 +6,7 @@ namespace thirdai::search::python {
 
 void createSearchSubmodule(py::module_& module) {
   auto search_submodule = module.def_submodule("search");
+#if THIRDAI_EXPOSE_ALL
   py::class_<PyFlash>(
       search_submodule, "MagSearch",
       "MagSearch is an index for performing near neighbor search. To use it, "
@@ -38,6 +39,7 @@ void createSearchSubmodule(py::module_& module) {
            "Performs a batch query that returns the "
            "approximate top_k neighbors as a row for each of the passed in "
            "queries.");
+#endif
 
   // TODO(josh): Right now this only has support for dense input and documents
   // with a max of 256 embeddings, and can not be parallilized

@@ -33,7 +33,7 @@ class DocSearchModel:
         return self.checkpoint.queryFromText([query])[0]
 
     def encodeDocs(self, docs):
-        return self.checkpoint.docFromText(docs)[0]
+        return self.checkpoint.docFromText(docs)
 
     def getCentroids(self):
         return self.centroids
