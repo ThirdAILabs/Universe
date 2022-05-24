@@ -198,14 +198,15 @@ void assertSameVectorsSameOrder(std::vector<bolt::BoltVector> bolt_vecs_1,
 
 /**
  * Helper function that checks whether a batch processor produces a dataset
- * with the correct bolt vectors, given whether the inputs and targets are
- * dense or sparse.
+ * with the correct bolt vectors, given whether the inputs and targets 
+ * are dense or sparse.
  *
+ * If has_labels is false, label_dense is ignored.
  * If mixed_dense_input_and_label is true, input_dense and label_dense are
  * ignored.
  */
 void checkCorrectUnshuffledDatasetImpl(
-    bool input_dense, bool label_dense,
+    bool has_labels, bool input_dense, bool label_dense = false, 
     bool mixed_dense_input_and_label = false) {
   // Generate mock data
   size_t n_cols = 3;
@@ -224,8 +225,10 @@ void checkCorrectUnshuffledDatasetImpl(
   // Initialize batch processor and process batches
   auto input_blocks =
       makeNMockBlocks(n_cols, input_dense, mixed_dense_input_and_label);
-  auto target_blocks =
-      makeNMockBlocks(n_cols, label_dense, mixed_dense_input_and_label);
+  std::vector<std::shared_ptr<Block>> target_blocks;
+  if (has_labels) {
+    target_blocks = makeNMockBlocks(n_cols, label_dense, mixed_dense_input_and_label);
+  }
 
   BatchProcessor processor(input_blocks, target_blocks, output_batch_size);
   processor.processBatch(str_matrix_1);
@@ -243,12 +246,16 @@ void checkCorrectUnshuffledDatasetImpl(
                                *input_dataset_ptr);
   }
 
-  if (label_dense & !mixed_dense_input_and_label) {
-    assertSameVectorsSameOrder(dense_bolt_vecs_1, dense_bolt_vecs_2,
-                               *target_dataset_ptr);
+  if (has_labels) {
+    if (label_dense & !mixed_dense_input_and_label) {
+      assertSameVectorsSameOrder(dense_bolt_vecs_1, dense_bolt_vecs_2,
+                                *target_dataset_ptr);
+    } else {
+      assertSameVectorsSameOrder(sparse_bolt_vecs_1, sparse_bolt_vecs_2,
+                                *target_dataset_ptr);
+    }
   } else {
-    assertSameVectorsSameOrder(sparse_bolt_vecs_1, sparse_bolt_vecs_2,
-                               *target_dataset_ptr);
+    ASSERT_EQ(target_dataset_ptr, nullptr);
   }
 }
 
@@ -256,33 +263,45 @@ void checkCorrectUnshuffledDatasetImpl(
  * Checks that the batch processor produces a dataset with the correct
  * bolt vectors, in the correct order.
  *
- * We check 5 cases:
+ * We check 7 cases:
  *  - sparse input, sparse label
  *  - sparse input, dense label
  *  - dense input, sparse label
  *  - dense input, dense label
  *  - mixed sparse and dense input and label
+ *  - sparse input, no label
+ *  - dense input, no label
  *
  * No shuffling.
  * We don't check the no label case yet because we haven't finalized
  * designing what a batch without labels looks like.
- * TODO(Geordie): Add a no label case once that is finalized.
  */
 TEST(BatchProcessorTest, ProducesCorrectUnshuffledDataset) {
   // Sparse input, sparse label
-  checkCorrectUnshuffledDatasetImpl(/* input_dense = */ false,
+  checkCorrectUnshuffledDatasetImpl(/* has_labels = */ true,
+                                    /* input_dense = */ false,
                                     /* label_dense = */ false);
   // Sparse input, dense label
-  checkCorrectUnshuffledDatasetImpl(/* input_dense = */ false,
+  checkCorrectUnshuffledDatasetImpl(/* has_labels = */ true,
+                                    /* input_dense = */ false,
                                     /* label_dense = */ true);
   // Dense input, sparse label
-  checkCorrectUnshuffledDatasetImpl(/* input_dense = */ true,
+  checkCorrectUnshuffledDatasetImpl(/* has_labels = */ true,
+                                    /* input_dense = */ true,
                                     /* label_dense = */ false);
   // Dense input, dense label
-  checkCorrectUnshuffledDatasetImpl(/* input_dense = */ true,
+  checkCorrectUnshuffledDatasetImpl(/* has_labels = */ true,
+                                    /* input_dense = */ true,
                                     /* label_dense = */ true);
+  // Sparse input, no label
+  checkCorrectUnshuffledDatasetImpl(/* has_labels = */ false,
+                                    /* input_dense = */ false);
+  // Dense input, no label
+  checkCorrectUnshuffledDatasetImpl(/* has_labels = */ false,
+                                    /* input_dense = */ true);
   // Mixed dense and sparse input and label
-  checkCorrectUnshuffledDatasetImpl(/* input_dense = */ true,
+  checkCorrectUnshuffledDatasetImpl(/* has_labels = */ true,
+                                    /* input_dense = */ true,
                                     /* label_dense = */ true,
                                     /* mixed_dense_input_and_label = */ true);
 }
