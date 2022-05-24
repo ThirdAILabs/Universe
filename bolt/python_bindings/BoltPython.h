@@ -9,7 +9,10 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+<<<<<<< HEAD
 #include <pybind11/buffer_info.h>
+=======
+>>>>>>> 3d4fc582d9a655ba49fcf285ec2b0ef2b792274c
 #include <pybind11/cast.h>
 #include <pybind11/iostream.h>
 #include <pybind11/numpy.h>
@@ -76,7 +79,7 @@ class BoltDatasetNumpyContext {
 void createBoltSubmodule(py::module_& module);
 
 // Returns true on success and false on allocation failure.
-bool allocateActivations(uint32_t num_samples, uint32_t inference_dim,
+bool allocateActivations(uint64_t num_samples, uint64_t inference_dim,
                          uint32_t** active_neurons, float** activations,
                          bool output_sparse);
 

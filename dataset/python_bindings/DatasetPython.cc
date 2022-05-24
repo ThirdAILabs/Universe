@@ -3,7 +3,6 @@
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
-#include <atomic>
 #include <chrono>
 #include <type_traits>
 
