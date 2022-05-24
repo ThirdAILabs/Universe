@@ -1,4 +1,5 @@
 import os
+from typing import Tuple
 
 from ..interfaces import Source, Parser
 from .schema import Schema
@@ -158,7 +159,7 @@ class Loader:
         """Returns the dimension of target vectors."""
         return self._schema._target_dim
 
-    def processInMemory(self) -> dataset.BoltDataset:
+    def processInMemory(self) -> Tuple[dataset.BoltDataset, dataset.BoltDataset]:
         """Produces an in-memory dataset of input and target vectors as specified by
         the schema. The input vectors in the dataset are dense only if all
         input feature blocks return dense features. Input vectors are sparse otherwise.
