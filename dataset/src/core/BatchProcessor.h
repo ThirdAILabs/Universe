@@ -35,21 +35,6 @@ struct BatchProcessor {
 
  private:
   /**
-   * Produces an InMemoryDataset of BoltBatches containing the vectors
-   * processed so far. Vectors are positioned according to the given
-   * positions mapping.
-   *
-   * positions[i] = the original position of the vector that will be
-   *                in position i in the exported dataset.
-   *
-   * We use a template argument to avoid checking the condition in
-   * every iteration of an internal loop.
-   */
-  template <bool HAS_TARGET>
-  dataset::InMemoryDataset<dataset::BoltInputBatch> makeDatasetWithPositions(
-      uint32_t n_exported, std::vector<uint32_t>& positions);
-
-  /**
    * Produces a mapping from the final position of a vector in
    * the exported dataset to its original position based on the
    * shuffle and shuffle_seed arguments.
@@ -57,14 +42,6 @@ struct BatchProcessor {
   static std::vector<uint32_t> makeFinalPositions(uint32_t n_exported,
                                                   bool shuffle,
                                                   uint32_t shuffle_seed);
-
-  /**
-   * Helper function for making a batch of vectors in parallel.
-   * We use a template argument so we don't check for the has_target
-   * condition in each iteration.
-   */
-  template <bool HAS_TARGET>
-  void makeVectorsForBatch(std::vector<std::vector<std::string>>& batch);
 
   /**
    * Encodes a sample as a BoltVector according to the given blocks.
@@ -78,8 +55,8 @@ struct BatchProcessor {
   bool _target_blocks_dense;
   std::vector<bolt::BoltVector> _input_vectors;
   std::vector<bolt::BoltVector> _target_vectors;
-  std::vector<std::shared_ptr<Block>> _input_blocks;
-  std::vector<std::shared_ptr<Block>> _target_blocks;
+  std::vector<std::shared_ptr<Block>>& _input_blocks;
+  std::vector<std::shared_ptr<Block>>& _target_blocks;
 };
 
 }  // namespace thirdai::dataset
