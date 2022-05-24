@@ -11,6 +11,7 @@ target_link_libraries(
   svm_dataset_test
   PRIVATE
   gtest_main
+  bolt_datasets_lib
 )
 
 add_executable(
@@ -22,6 +23,7 @@ target_link_libraries(
   csv_dataset_test
   PRIVATE
   gtest_main
+  bolt_datasets_lib
 )
 
 add_executable(
@@ -33,6 +35,7 @@ target_link_libraries(
   click_through_dataset_test
   PRIVATE
   gtest_main
+  bolt_datasets_lib
 )
 
 add_executable(

@@ -3,9 +3,11 @@
 #include <bolt/src/utils/ConfigReader.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/Factory.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <chrono>
 #include <filesystem>
 #include <iostream>
+#include <optional>
 #include <toml.h>
 #include <vector>
 
@@ -239,12 +241,12 @@ void trainFCN(toml::table& config) {
 
   bolt::FullyConnectedNetwork network(layers, input_dim);
 
-  std::unique_ptr<dataset::Factory<dataset::BoltInputBatch>> train_fac;
-  std::unique_ptr<dataset::Factory<dataset::BoltInputBatch>> test_fac;
+  dataset::DatasetWithLabels train;
+  dataset::DatasetWithLabels test;
 
   if (dataset_format == "svm") {
-    train_fac = std::make_unique<dataset::BoltSvmBatchFactory>();
-    test_fac = std::make_unique<dataset::BoltSvmBatchFactory>();
+    train = dataset::loadBoltSvmDataset(train_filename, batch_size);
+    test = dataset::loadBoltSvmDataset(test_filename, batch_size);
   } else if (dataset_format == "csv") {
     std::string delimiter = getStrValue(dataset_table, "delimter", true, ",");
     if (delimiter.size() != 1) {
@@ -253,51 +255,30 @@ void trainFCN(toml::table& config) {
                 << std::endl;
       exit(1);
     }
-
-    train_fac = std::make_unique<dataset::BoltCsvBatchFactory>(delimiter[0]);
-    test_fac = std::make_unique<dataset::BoltCsvBatchFactory>(delimiter[0]);
+    char csv_delimiter = delimiter[0];
+    train =
+        dataset::loadBoltCsvDataset(train_filename, batch_size, csv_delimiter);
+    test =
+        dataset::loadBoltCsvDataset(test_filename, batch_size, csv_delimiter);
   } else {
     std::cerr << "Invalid dataset format '" << dataset_format
               << "'. Use 'svm' or 'csv'" << std::endl;
     exit(1);
   }
 
-  dataset::InMemoryDataset<dataset::BoltInputBatch> train_data(
-      train_filename, batch_size, std::move(*train_fac));
-
-  dataset::InMemoryDataset<dataset::BoltInputBatch> test_data(
-      test_filename, batch_size, std::move(*test_fac));
+  auto [train_data, train_labels] = train;
+  auto [test_data, test_labels] = test;
 
   for (uint32_t e = 0; e < epochs; e++) {
-    network.train(train_data, *loss_fn, learning_rate, 1, rehash, rebuild,
-                  train_metrics);
+    network.train(train_data, train_labels, *loss_fn, learning_rate, 1, rehash,
+                  rebuild, train_metrics);
     if (use_sparse_inference && e == sparse_inference_epoch) {
       network.enableSparseInference();
     }
-    network.predict(test_data, /* output_active_neurons= */ nullptr,
-                    /* output_activations= */ nullptr, test_metrics,
-                    max_test_batches);
+    network.predict(
+        test_data, test_labels, /* output_active_neurons= */ nullptr,
+        /* output_activations= */ nullptr, test_metrics, max_test_batches);
   }
-}
-
-using ClickThroughDataset =
-    thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>;
-
-ClickThroughDataset loadClickThroughDataset(const std::string& filename,
-                                            uint32_t batch_size,
-                                            uint32_t num_dense_features,
-                                            uint32_t num_categorical_features,
-                                            bool sparse_labels) {
-  auto start = std::chrono::high_resolution_clock::now();
-  thirdai::dataset::ClickThroughBatchFactory factory(
-      num_dense_features, num_categorical_features, sparse_labels);
-  ClickThroughDataset data(filename, batch_size, std::move(factory));
-  auto end = std::chrono::high_resolution_clock::now();
-  std::cout
-      << "Read " << data.len() << " vectors in "
-      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds" << std::endl;
-  return data;
 }
 
 void trainDLRM(toml::table& config) {
@@ -340,17 +321,19 @@ void trainDLRM(toml::table& config) {
 
   bolt::DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, dense_features);
 
-  auto train_data = loadClickThroughDataset(
+  auto [train_data, train_labels] = dataset::loadClickThroughDataset(
       train_filename, batch_size, dense_features, categorical_features,
       top_mlp.back()->getDim() > 1);
-  auto test_data = loadClickThroughDataset(test_filename, batch_size,
-                                           dense_features, categorical_features,
-                                           top_mlp.back()->getDim() > 1);
+
+  auto [test_data, test_labels] = dataset::loadClickThroughDataset(
+      test_filename, batch_size, dense_features, categorical_features,
+      top_mlp.back()->getDim() > 1);
 
   for (uint32_t e = 0; e < epochs; e++) {
-    dlrm.train(train_data, *loss_fn, learning_rate, 1, rehash, rebuild,
-               train_metrics);
-    dlrm.predict(test_data, /* output_active_neurons= */ nullptr,
+    dlrm.train(train_data, train_labels, *loss_fn, learning_rate, 1, rehash,
+               rebuild, train_metrics);
+    dlrm.predict(test_data, test_labels,
+                 /* output_active_neurons= */ nullptr,
                  /* output_activations= */ nullptr, test_metrics);
   }
 }
