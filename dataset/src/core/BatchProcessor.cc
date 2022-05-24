@@ -1,4 +1,6 @@
 #include "BatchProcessor.h"
+#include <bolt/src/layers/BoltVector.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/utils/ExtendableVectors.h>
 #include <sys/types.h>
 #include <algorithm>
@@ -57,8 +59,7 @@ void BatchProcessor::processBatch(
   }
 }
 
-dataset::InMemoryDataset<dataset::BoltInputBatch>
-BatchProcessor::exportInMemoryDataset(bool shuffle, uint32_t shuffle_seed) {
+std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(bool shuffle, uint32_t shuffle_seed) {
   // We currently assert that we always have targets even if the target
   // vectors are empty because BOLT expects it.
   // TODO(Geordie, Nicholas): How do we represent a dataset without labels?
@@ -70,11 +71,13 @@ BatchProcessor::exportInMemoryDataset(bool shuffle, uint32_t shuffle_seed) {
   auto positions = makeFinalPositions(n_exported, shuffle, shuffle_seed);
   bool has_target = !_target_blocks.empty();
   size_t n_batches = (n_exported + _batch_size - 1) / _batch_size;
-  std::vector<dataset::BoltInputBatch> batches(n_batches);
+
+  std::vector<bolt::BoltBatch> input_batches(n_batches);
+  std::vector<bolt::BoltBatch> target_batches(has_target ? n_batches : 0);
 
   // For each batch
 #pragma omp parallel for default(none) \
-    shared(n_exported, n_batches, batches, positions, has_target)
+    shared(n_exported, n_batches, input_batches, target_batches, positions, has_target)
   for (size_t batch_idx = 0; batch_idx < n_batches; ++batch_idx) {
     uint32_t batch_start_idx = batch_idx * _batch_size;
 
@@ -94,14 +97,23 @@ BatchProcessor::exportInMemoryDataset(bool shuffle, uint32_t shuffle_seed) {
             std::move(_target_vectors[positions[batch_start_idx + vec_idx]]);
       }
     }
-    batches[batch_idx] = {std::move(batch_inputs), std::move(batch_targets)};
+
+    input_batches[batch_idx] = bolt::BoltBatch(std::move(batch_inputs));
+    if (has_target) {
+      target_batches[batch_idx] = bolt::BoltBatch(std::move(batch_targets));
+    }
   }
 
   // Replenish after moves.
   _input_vectors = std::vector<bolt::BoltVector>();
   _target_vectors = std::vector<bolt::BoltVector>();
 
-  return {std::move(batches), n_exported};
+  return {
+    std::make_shared<BoltDataset>(std::move(input_batches), n_exported),
+    target_batches.empty()
+      ? nullptr 
+      : std::make_shared<BoltDataset>(std::move(target_batches), n_exported)
+  };
 }
 
 std::vector<uint32_t> BatchProcessor::makeFinalPositions(

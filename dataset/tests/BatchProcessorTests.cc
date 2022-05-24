@@ -1,8 +1,8 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Dataset.h>
-#include <dataset/src/batch_types/BoltInputBatch.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/core/BatchProcessor.h>
 #include <sys/types.h>
 #include <cstddef>
@@ -25,9 +25,9 @@ class MockBlock : public Block {
   explicit MockBlock(uint32_t column, bool dense)
       : _column(column), _dense(dense) {}
 
-  uint32_t featureDim() override { return 1; };
+  uint32_t featureDim() const override { return 1; };
 
-  bool isDense() override { return _dense; };
+  bool isDense() const override { return _dense; };
 
  protected:
   void buildExtension(const std::vector<std::string>& input_row,
@@ -163,14 +163,12 @@ std::vector<std::shared_ptr<Block>> makeNMockBlocks(uint32_t n_blocks,
 void assertSameVectorsSameOrder(
     std::vector<bolt::BoltVector> bolt_vecs_1,
     std::vector<bolt::BoltVector> bolt_vecs_2,
-    InMemoryDataset<BoltInputBatch>& dataset_batches, bool check_labels) {
-  uint32_t batch_size = dataset_batches.at(0).getBatchSize();
-  for (size_t batch_i = 0; batch_i < dataset_batches.numBatches(); batch_i++) {
-    for (size_t vec_i = 0; vec_i < dataset_batches[batch_i].getBatchSize();
+    BoltDataset& dataset) {
+  uint32_t batch_size = dataset.at(0).getBatchSize();
+  for (size_t batch_i = 0; batch_i < dataset.numBatches(); batch_i++) {
+    for (size_t vec_i = 0; vec_i < dataset.at(batch_i).getBatchSize();
          vec_i++) {
-      const auto& dataset_vec = check_labels
-                                    ? dataset_batches[batch_i].labels(vec_i)
-                                    : dataset_batches[batch_i][vec_i];
+      const auto& dataset_vec = dataset.at(batch_i)[vec_i];
 
       size_t idx = batch_i * batch_size + vec_i;
       const bolt::BoltVector& vec = idx < bolt_vecs_1.size()
@@ -234,23 +232,19 @@ void checkCorrectUnshuffledDatasetImpl(
   processor.processBatch(str_matrix_1);
   processor.processBatch(str_matrix_2);
 
-  auto dataset = processor.exportInMemoryDataset();
+  auto [input_dataset_ptr, target_dataset_ptr] = processor.exportInMemoryDataset();
 
   // Assertions
   if (input_dense & !mixed_dense_input_and_label) {
-    assertSameVectorsSameOrder(dense_bolt_vecs_1, dense_bolt_vecs_2, dataset,
-                               /* check_labels = */ false);
+    assertSameVectorsSameOrder(dense_bolt_vecs_1, dense_bolt_vecs_2, *input_dataset_ptr);
   } else {
-    assertSameVectorsSameOrder(sparse_bolt_vecs_1, sparse_bolt_vecs_2, dataset,
-                               /* check_labels = */ false);
+    assertSameVectorsSameOrder(sparse_bolt_vecs_1, sparse_bolt_vecs_2, *input_dataset_ptr);
   }
 
   if (label_dense & !mixed_dense_input_and_label) {
-    assertSameVectorsSameOrder(dense_bolt_vecs_1, dense_bolt_vecs_2, dataset,
-                               /* check_labels = */ true);
+    assertSameVectorsSameOrder(dense_bolt_vecs_1, dense_bolt_vecs_2, *target_dataset_ptr);
   } else {
-    assertSameVectorsSameOrder(sparse_bolt_vecs_1, sparse_bolt_vecs_2, dataset,
-                               /* check_labels = */ true);
+    assertSameVectorsSameOrder(sparse_bolt_vecs_1, sparse_bolt_vecs_2, *target_dataset_ptr);
   }
 }
 
@@ -294,7 +288,8 @@ TEST(BatchProcessorTest, ProducesCorrectUnshuffledDataset) {
  * bolt vectors are a permutation of the given vector of floats.
  * Assumes label is always equal to value at 0th position of input.
  */
-void checkIsPermutation(const InMemoryDataset<BoltInputBatch>& dataset,
+void checkIsPermutation(const BoltDataset& input_dataset,
+                        const BoltDataset& target_dataset,
                         const std::vector<float>& values) {
   // Check that the permutation is valid by checking two things:
   // 1. value at position 1 of label and input are the equal.
@@ -304,12 +299,12 @@ void checkIsPermutation(const InMemoryDataset<BoltInputBatch>& dataset,
     value_counts[val]++;
   }
 
-  for (uint32_t batch_i = 0; batch_i < dataset.numBatches(); batch_i++) {
-    for (uint32_t vec_i = 0; vec_i < dataset.at(batch_i).getBatchSize();
+  for (uint32_t batch_i = 0; batch_i < input_dataset.numBatches(); batch_i++) {
+    for (uint32_t vec_i = 0; vec_i < input_dataset.at(batch_i).getBatchSize();
          vec_i++) {
-      ASSERT_EQ(dataset.at(batch_i)[vec_i].activations[0],
-                dataset.at(batch_i).labels(vec_i).activations[0]);
-      value_counts[dataset.at(batch_i)[vec_i].activations[0]] -= 1;
+      ASSERT_EQ(input_dataset.at(batch_i)[vec_i].activations[0],
+                target_dataset.at(batch_i)[vec_i].activations[0]);
+      value_counts[input_dataset.at(batch_i)[vec_i].activations[0]] -= 1;
     }
   }
 
@@ -323,24 +318,24 @@ void checkIsPermutation(const InMemoryDataset<BoltInputBatch>& dataset,
  * If assert_equal is true, asserts that the orderings are equal.
  * Otherwise, asserts that orderings are different.
  */
-void checkDatasetOrderEquality(const InMemoryDataset<BoltInputBatch>& dataset_1,
-                               const InMemoryDataset<BoltInputBatch>& dataset_2,
+void checkDatasetOrderEquality(const BoltDataset& input_dataset_1,
+                               const BoltDataset& input_dataset_2,
                                bool assert_equal) {
   uint32_t n_seen = 0;
-  for (uint32_t batch_i = 0; batch_i < dataset_1.numBatches(); batch_i++) {
-    for (uint32_t vec_i = 0; vec_i < dataset_1.at(batch_i).getBatchSize();
+  for (uint32_t batch_i = 0; batch_i < input_dataset_1.numBatches(); batch_i++) {
+    for (uint32_t vec_i = 0; vec_i < input_dataset_2.at(batch_i).getBatchSize();
          vec_i++) {
-      if (dataset_1.at(batch_i)[vec_i].activations[0] !=
-          dataset_2.at(batch_i)[vec_i].activations[0]) {
+      if (input_dataset_1.at(batch_i)[vec_i].activations[0] !=
+          input_dataset_2.at(batch_i)[vec_i].activations[0]) {
         break;
       }
       n_seen++;
     }
   }
   if (assert_equal) {
-    ASSERT_EQ(n_seen, dataset_1.len());
+    ASSERT_EQ(n_seen, input_dataset_1.len());
   } else {
-    ASSERT_LT(n_seen, dataset_1.len());
+    ASSERT_LT(n_seen, input_dataset_1.len());
   }
 }
 
@@ -371,7 +366,7 @@ TEST(BatchProcessorTest, ProducesCorrectShuffledDataset) {
 
   // Export unshuffled dataset.
   bp.processBatch(mock_data_str);
-  auto ds_unshuffled = bp.exportInMemoryDataset();
+  auto [input_unshuf_ptr, target_unshuf_ptr] = bp.exportInMemoryDataset();
 
   // Export shuffled dataset without seed.
   // Check validity of permutation and that the order is different than
@@ -379,9 +374,9 @@ TEST(BatchProcessorTest, ProducesCorrectShuffledDataset) {
   // Must call processBatch again because batch processor is emptied
   // after exporting.
   bp.processBatch(mock_data_str);
-  auto ds_shuffled = bp.exportInMemoryDataset(/* shuffle = */ true);
-  checkIsPermutation(ds_shuffled, mock_data_seq);
-  checkDatasetOrderEquality(ds_shuffled, ds_unshuffled,
+  auto [input_shuf_ptr, target_shuf_ptr] = bp.exportInMemoryDataset(/* shuffle = */ true);
+  checkIsPermutation(*input_shuf_ptr, *target_shuf_ptr, mock_data_seq);
+  checkDatasetOrderEquality(*input_shuf_ptr, *input_unshuf_ptr,
                             /* assert_equal = */ false);
 
   // Export shuffled dataset without seed again.
@@ -390,11 +385,11 @@ TEST(BatchProcessorTest, ProducesCorrectShuffledDataset) {
   // Must call processBatch again because batch processor is emptied
   // after exporting.
   bp.processBatch(mock_data_str);
-  auto ds_shuffled_again = bp.exportInMemoryDataset(/* shuffle = */ true);
-  checkIsPermutation(ds_shuffled, mock_data_seq);
-  checkDatasetOrderEquality(ds_shuffled_again, ds_unshuffled,
+  auto [input_shuf_again_ptr, target_shuf_again_ptr] = bp.exportInMemoryDataset(/* shuffle = */ true);
+  checkIsPermutation(*input_shuf_again_ptr, *target_shuf_again_ptr, mock_data_seq);
+  checkDatasetOrderEquality(*input_shuf_again_ptr, *input_unshuf_ptr,
                             /* assert_equal = */ false);
-  checkDatasetOrderEquality(ds_shuffled_again, ds_shuffled,
+  checkDatasetOrderEquality(*input_shuf_again_ptr, *input_shuf_ptr,
                             /* assert_equal = */ false);
 
   // Separately export shuffled dataset with the same seed.
@@ -402,20 +397,20 @@ TEST(BatchProcessorTest, ProducesCorrectShuffledDataset) {
   // ds_unshuffled, and check that the orderings are consistent when
   // seeded with the same number.
   bp.processBatch(mock_data_str);
-  auto ds_shuffled_seeded_1 =
+  auto [input_shuf_seeded_1_ptr, target_shuf_seeded_1_ptr] = 
       bp.exportInMemoryDataset(/* shuffle = */ true, /* shuffle_seed = */ 0);
-  checkIsPermutation(ds_shuffled_seeded_1, mock_data_seq);
-  checkDatasetOrderEquality(ds_shuffled_seeded_1, ds_shuffled,
+  checkIsPermutation(*input_shuf_seeded_1_ptr, *target_shuf_seeded_1_ptr, mock_data_seq);
+  checkDatasetOrderEquality(*input_shuf_seeded_1_ptr, *input_unshuf_ptr,
                             /* assert_equal = */ false);
 
   bp.processBatch(mock_data_str);
-  auto ds_shuffled_seeded_2 =
+  auto [input_shuf_seeded_2_ptr, target_shuf_seeded_2_ptr] = 
       bp.exportInMemoryDataset(/* shuffle = */ true, /* shuffle_seed = */ 0);
-  checkIsPermutation(ds_shuffled_seeded_2, mock_data_seq);
-  checkDatasetOrderEquality(ds_shuffled_seeded_2, ds_shuffled,
+  checkIsPermutation(*input_shuf_seeded_2_ptr, *target_shuf_seeded_2_ptr, mock_data_seq);
+  checkDatasetOrderEquality(*input_shuf_seeded_2_ptr, *input_unshuf_ptr,
                             /* assert_equal = */ false);
 
-  checkDatasetOrderEquality(ds_shuffled_seeded_1, ds_shuffled_seeded_2,
+  checkDatasetOrderEquality(*input_shuf_seeded_1_ptr, *input_shuf_seeded_2_ptr,
                             /* assert_equal = */ true);
 }
 

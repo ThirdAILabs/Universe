@@ -91,12 +91,12 @@ class Block {
   /**
    * Returns the dimension of the vector encoding.
    */
-  virtual uint32_t featureDim() = 0;
+  virtual uint32_t featureDim() const = 0;
 
   /**
    * True if the block produces dense features, False otherwise.
    */
-  virtual bool isDense() = 0;
+  virtual bool isDense() const = 0;
 
  protected:
   /**
