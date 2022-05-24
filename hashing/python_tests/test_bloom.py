@@ -10,7 +10,7 @@ def get_good_i(i, length):
 
 # Get an example that was not added to the bloom filter
 def get_bad_i(i, length):
-    return [i + j for j in range(length)]
+    return [i * j + (j == i % length) for j in range(length)]
 
 
 def test_bf():
