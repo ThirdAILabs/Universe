@@ -9,10 +9,7 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
-<<<<<<< HEAD
 #include <pybind11/buffer_info.h>
-=======
->>>>>>> 3d4fc582d9a655ba49fcf285ec2b0ef2b792274c
 #include <pybind11/cast.h>
 #include <pybind11/iostream.h>
 #include <pybind11/numpy.h>
