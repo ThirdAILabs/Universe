@@ -13,11 +13,14 @@ namespace thirdai::dataset {
 
 class TextClassificationProcessor final : public UnaryBatchProcessor {
  public:
+  explicit TextClassificationProcessor(uint32_t output_range)
+      : _output_range(output_range) {}
+
   std::string getClassName(uint32_t class_id) const {
     return _class_id_to_class.at(class_id);
   }
 
-  static bolt::BoltVector computePairGramHashes(std::string_view sentence) {
+  bolt::BoltVector computePairGramHashes(std::string_view sentence) const {
     std::vector<uint32_t> hashes_seen;
     std::unordered_map<uint32_t, uint32_t> pairgram_hashes;
     bool prev_is_space = true;
@@ -32,6 +35,7 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
         uint32_t hash =
             hashing::MurmurHash(sentence.data() + start_of_word_offset, len,
                                 /* seed = */ 3829);
+        hash = hash % _output_range;
         for (const uint32_t prev_hash : hashes_seen) {
           pairgram_hashes[hashing::HashUtils::combineHashes(prev_hash, hash)]++;
         }
@@ -84,6 +88,7 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
  private:
   std::unordered_map<std::string, uint32_t> _class_to_class_id;
   std::vector<std::string> _class_id_to_class;
+  uint32_t _output_range;
 };
 
 }  // namespace thirdai::dataset

@@ -2,6 +2,7 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <cctype>
+#include <fstream>
 #include <memory>
 #include <stdexcept>
 #include <thread>
@@ -42,13 +43,15 @@ TextClassifier::TextClassifier(const std::string& model_size,
 
   _model =
       std::make_unique<FullyConnectedNetwork>(std::move(configs), input_dim);
+
+  _batch_processor =
+      std::make_shared<dataset::TextClassificationProcessor>(input_dim);
 }
 
 void TextClassifier::train(const std::string& filename, uint32_t epochs,
                            float learning_rate) {
   std::shared_ptr<dataset::DataLoader> data_loader =
       std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
-  _batch_processor = std::make_shared<dataset::TextClassificationProcessor>();
 
   dataset::StreamingDataset dataset(data_loader, _batch_processor);
 
@@ -81,14 +84,18 @@ void TextClassifier::trainOnStreamingDataset(dataset::StreamingDataset& dataset,
   }
 }
 
-void TextClassifier::predict(const std::string& filename,
-                             const std::string& output_filename) {
+void TextClassifier::predict(
+    const std::string& filename,
+    const std::optional<std::string>& output_filename) {
   std::shared_ptr<dataset::DataLoader> data_loader =
       std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
 
   dataset::StreamingDataset dataset(data_loader, _batch_processor);
 
-  std::ofstream output_file(output_filename);
+  std::optional<std::ofstream> output_file;
+  if (output_filename) {
+    output_file = std::ofstream(*output_filename);
+  }
 
   MetricAggregator metrics({"categorical_accuracy"});
 
@@ -113,13 +120,17 @@ void TextClassifier::predict(const std::string& filename,
           pred = outputs[batch_id].active_neurons[i];
         }
       }
-      output_file << _batch_processor->getClassName(pred);
+      if (output_file) {
+        (*output_file) << _batch_processor->getClassName(pred);
+      }
     }
   }
 
   metrics.logAndReset();
 
-  output_file.close();
+  if (output_file) {
+    output_file->close();
+  }
 }
 
 uint32_t getHiddenLayerSize(std::string model_size, uint64_t n_classes,
@@ -158,6 +169,12 @@ uint32_t getHiddenLayerSize(std::string model_size, uint64_t n_classes,
 
   // Update model size based off of number of cpus.
   uint32_t ncpus = getNumCpus();
+
+  /*
+   (0,6) CPUs is a smaller laptop so the layer size is decreased.
+   [6, 12) CPUs is a large laptop or a small server so the size is unchanged.
+   [12, ...) CPUs is a large server so we increase the layer size.
+  */
 
   if (ncpus < 6) {
     // Likely a smaller laptop - decrease layer size.

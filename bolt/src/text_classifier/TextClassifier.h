@@ -20,7 +20,8 @@ class TextClassifier {
   void train(const std::string& filename, uint32_t epochs = 1,
              float learning_rate = 0.001);
 
-  void predict(const std::string& filename, const std::string& output_filename);
+  void predict(const std::string& filename,
+               const std::optional<std::string>& output_filename);
 
  private:
   void trainOnStreamingDataset(dataset::StreamingDataset& dataset,
