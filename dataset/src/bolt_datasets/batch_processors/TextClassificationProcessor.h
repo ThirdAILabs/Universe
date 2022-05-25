@@ -19,23 +19,16 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
       : _output_range(output_range) {}
 
   void processHeader(const std::string& header) final {
-    auto split_index = header.find(',');
-    if (split_index == std::string::npos) {
-      throw std::invalid_argument("");
-    }
-    std::string_view lhs = std::string_view(header.data(), split_index);
-    std::string_view rhs = std::string_view(header.data() + split_index + 1,
-                                            header.size() - split_index - 1);
-
-    lhs = trim(lhs);
-    rhs = trim(rhs);
+    auto [lhs, rhs] = split(header);
 
     if (lhs == "text" && rhs == "category") {
       _label_on_right = true;
     } else if (lhs == "category" && rhs == "text") {
       _label_on_right = false;
     } else {
-      throw std::invalid_argument("");
+      throw std::invalid_argument("Invalid column names '" + std::string(lhs) +
+                                  "' and '" + std::string(rhs) +
+                                  "'. Expected 'category' and 'text'.");
     }
   }
 
@@ -58,9 +51,11 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
         uint32_t hash =
             hashing::MurmurHash(sentence.data() + start_of_word_offset, len,
                                 /* seed = */ 3829);
-        hash = hash % _output_range;
         for (const uint32_t prev_hash : hashes_seen) {
-          pairgram_hashes[hashing::HashUtils::combineHashes(prev_hash, hash)]++;
+          uint32_t combined_hash =
+              hashing::HashUtils::combineHashes(prev_hash, hash);
+          combined_hash = combined_hash % _output_range;
+          pairgram_hashes[combined_hash]++;
         }
         hashes_seen.push_back(hash);
 
@@ -88,11 +83,11 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
     if (_label_on_right) {
       bolt::BoltVector label_vec = getLabel(rhs);
       bolt::BoltVector data_vec = computePairGramHashes(lhs);
-      return std::make_pair(std::move(label_vec), std::move(data_vec));
+      return std::make_pair(std::move(data_vec), std::move(label_vec));
     }
     bolt::BoltVector label_vec = getLabel(lhs);
     bolt::BoltVector data_vec = computePairGramHashes(rhs);
-    return std::make_pair(std::move(label_vec), std::move(data_vec));
+    return std::make_pair(std::move(data_vec), std::move(label_vec));
   }
 
  private:
@@ -114,16 +109,16 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
     return label_vec;
   }
 
-  static constexpr bool isQuote(char c) { return c == '\"' || c == '\''; }
+  static bool isQuote(char c) { return c == '"' || c == '\''; }
 
-  static constexpr std::string_view trim(std::string_view& str) {
+  static std::string_view trim(std::string_view& str) {
     uint32_t start_offset = 0;
-    while (std::isspace(str[start_offset] || isQuote(str[start_offset]))) {
+    while (std::isspace(str[start_offset]) || isQuote(str[start_offset])) {
       start_offset++;
     }
 
     uint32_t end_offset = str.size();
-    while (std::isspace(str[end_offset - 1]) || isQuote(str[start_offset])) {
+    while (std::isspace(str[end_offset - 1]) || isQuote(str[end_offset - 1])) {
       end_offset--;
     }
 
@@ -131,11 +126,12 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
                             end_offset - start_offset);
   }
 
-  static constexpr std::pair<std::string_view, std::string_view> split(
+  static std::pair<std::string_view, std::string_view> split(
       const std::string& line) {
     auto split_index = line.find(',');
     if (split_index == std::string::npos) {
-      throw std::invalid_argument("");
+      throw std::invalid_argument("No comment in line '" + line +
+                                  "' of csv file");
     }
     std::string_view lhs = std::string_view(line.data(), split_index);
     std::string_view rhs = std::string_view(line.data() + split_index + 1,

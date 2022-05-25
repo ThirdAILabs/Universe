@@ -34,12 +34,12 @@ class UnaryBatchProcessor : public BatchProcessor {
     _data_vecs = std::vector<bolt::BoltVector>(rows.size());
     _label_vecs = std::vector<bolt::BoltVector>(rows.size());
 
-#pragma omp parallel for default(none) shared(rows)
+    // #pragma omp parallel for default(none) shared(rows)
     for (uint32_t row_id = 0; row_id < rows.size(); row_id++) {
-      auto [data, label] = processRow(rows[row_id]);
+      auto p = processRow(rows[row_id]);
 
-      _data_vecs[row_id] = std::move(data);
-      _label_vecs[row_id] = std::move(label);
+      _data_vecs[row_id] = std::move(p.first);
+      _label_vecs[row_id] = std::move(p.second);
     }
 
     // TODO(nicholas): does moving vector set it to empty?

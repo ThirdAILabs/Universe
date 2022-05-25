@@ -117,7 +117,11 @@ void TextClassifier::predict(
       for (uint32_t i = 0; i < outputs[batch_id].len; i++) {
         if (outputs[batch_id].activations[i] > max_act) {
           max_act = outputs[batch_id].activations[i];
-          pred = outputs[batch_id].active_neurons[i];
+          if (outputs[batch_id].isDense()) {
+            pred = i;
+          } else {
+            pred = outputs[batch_id].active_neurons[i];
+          }
         }
       }
       if (output_file) {
