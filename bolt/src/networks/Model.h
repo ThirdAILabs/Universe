@@ -74,6 +74,18 @@ class Model {
       // Limit the number of batches used in the dataset
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
+  void processTrainingBatch(BATCH_T& batch_inputs, BoltBatch& outputs,
+                            const BoltBatch& batch_labels,
+                            const LossFunction& loss_fn, float learning_rate,
+                            uint32_t rehash_batch, uint32_t rebuild_batch,
+                            MetricAggregator& metrics);
+
+  void processTestBatch(const BATCH_T& batch_inputs, BoltBatch& outputs,
+                        const BoltBatch* batch_labels,
+                        uint32_t* output_active_neurons,
+                        float* output_activations, MetricAggregator& metrics,
+                        bool compute_metrics);
+
   // Computes forward path through the network.
   virtual void forward(uint32_t batch_index, const BATCH_T& input,
                        BoltVector& output, const BoltVector* labels) = 0;
