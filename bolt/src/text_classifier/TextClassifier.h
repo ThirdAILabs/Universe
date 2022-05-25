@@ -34,14 +34,15 @@ class TextClassifier {
     }
   }
 
-  void test(const std::string& filename, const std::string& output_filename) {
+  void predict(const std::string& filename,
+               const std::string& output_filename) {
     std::shared_ptr<dataset::DataLoader> data_loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
     _batch_processor->setAsTestData();
 
     dataset::StreamingDataset dataset(data_loader, _batch_processor);
 
-    auto predictions = _model->testOnStreamingDataset(dataset);
+    auto predictions = _model->predictOnStreamingDataset(dataset);
 
     std::ofstream output_file(output_filename);
 

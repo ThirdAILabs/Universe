@@ -119,7 +119,7 @@ void FullyConnectedNetwork::trainOnStreamingDataset(
   }
 }
 
-std::vector<uint32_t> FullyConnectedNetwork::testOnStreamingDataset(
+std::vector<uint32_t> FullyConnectedNetwork::predictOnStreamingDataset(
     dataset::StreamingDataset& dataset) {
   uint32_t batch_size = dataset.getMaxBatchSize();
   initializeNetworkState(batch_size, true);

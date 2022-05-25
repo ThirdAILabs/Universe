@@ -1,6 +1,7 @@
 #include "BoltPython.h"
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/text_classifier/TextClassifier.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -592,6 +593,16 @@ void createBoltSubmodule(py::module_& module) {
            "their values "
            "and (1) output vectors (predictions) from the network in the form "
            "of a 2D Numpy matrix of floats.");
+
+  // TODO(nicholas): add documentation
+  py::class_<TextClassifier>(bolt_submodule, "TextClassifier")
+      .def(py::init<const std::string&, uint32_t, uint32_t>(),
+           py::arg("model_size"), py::arg("n_classes"),
+           py::arg("input_dim") = 100000)
+      .def("train", &TextClassifier::train, py::arg("train_file"),
+           py::arg("epochs") = 1)
+      .def("predict", &TextClassifier::predict, py::arg("test_file"),
+           py::arg("output_file"));
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {

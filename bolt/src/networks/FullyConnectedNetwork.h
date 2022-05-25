@@ -29,7 +29,7 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
                                const LossFunction& loss_fn,
                                float learning_rate);
 
-  std::vector<uint32_t> testOnStreamingDataset(
+  std::vector<uint32_t> predictOnStreamingDataset(
       dataset::StreamingDataset& dataset);
 
   void initializeNetworkState(uint32_t batch_size, bool force_dense) final;

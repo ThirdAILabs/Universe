@@ -4,4 +4,5 @@ target_link_libraries(
   PRIVATE
   bolt_network_lib
   bolt_datasets_lib
+  hash_function_lib
 )
