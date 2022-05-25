@@ -1,5 +1,4 @@
 #include "FullyConnectedNetwork.h"
-#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/ConvLayer.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
