@@ -12,10 +12,10 @@ namespace thirdai::dataset {
 
 class TextClassificationProcessor final : public UnaryBatchProcessor {
  public:
-  explicit TextClassificationProcessor(bool is_test_data)
-      : _is_test_data(is_test_data) {}
+  explicit TextClassificationProcessor(bool has_label)
+      : _has_label(has_label) {}
 
-  void setAsTestData() { _is_test_data = true; }
+  void markHasLabel() { _has_label = true; }
 
   std::string getClassName(uint32_t class_id) const {
     return _class_id_to_class.at(class_id);
@@ -25,16 +25,19 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
   std::pair<bolt::BoltVector, bolt::BoltVector> processRow(
       const std::string& row) final {
     // Find the label
-    uint32_t end_of_label = row.find(',');
-    // TODO(nicholas): Trim this?
-    std::string label_str = row.substr(0, end_of_label);
-    uint32_t label;
-    if (_class_to_class_id.count(label_str)) {
-      label = _class_to_class_id[label_str];
-    } else {
-      label = _class_id_to_class.size();
-      _class_to_class_id[label_str] = label;
-      _class_id_to_class.push_back(std::move(label_str));
+    uint32_t label = 0;
+    uint32_t end_of_label = 0;
+    if (_has_label) {
+      end_of_label = row.find(',');
+      // TODO(nicholas): Trim this?
+      std::string label_str = row.substr(0, end_of_label);
+      if (_class_to_class_id.count(label_str)) {
+        label = _class_to_class_id[label_str];
+      } else {
+        label = _class_id_to_class.size();
+        _class_to_class_id[label_str] = label;
+        _class_id_to_class.push_back(std::move(label_str));
+      }
     }
 
     bolt::BoltVector label_vec(1, false, false);
@@ -79,7 +82,7 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
  private:
   std::unordered_map<std::string, uint32_t> _class_to_class_id;
   std::vector<std::string> _class_id_to_class;
-  bool _is_test_data;
+  bool _has_label;
 };
 
 }  // namespace thirdai::dataset

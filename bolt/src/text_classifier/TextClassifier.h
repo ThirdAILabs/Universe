@@ -38,7 +38,9 @@ class TextClassifier {
                const std::string& output_filename) {
     std::shared_ptr<dataset::DataLoader> data_loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
-    _batch_processor->setAsTestData();
+    // TODO(nicholas): is the correct format of the test file? How do want
+    // handle labels or lack thereof?
+    _batch_processor->markHasLabel();
 
     dataset::StreamingDataset dataset(data_loader, _batch_processor);
 
