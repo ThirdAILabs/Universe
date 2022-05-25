@@ -6,15 +6,25 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/Dataset.h>
 #include <optional>
+#include <stdexcept>
 
 namespace thirdai::dataset {
 
 class StreamingDataset {
  public:
   StreamingDataset(std::shared_ptr<DataLoader> data_loader,
-                   std::shared_ptr<BatchProcessor> batch_processor)
+                   std::shared_ptr<BatchProcessor> batch_processor,
+                   bool has_header = true)
       : _data_loader(std::move(data_loader)),
-        _batch_processor(std::move(batch_processor)) {}
+        _batch_processor(std::move(batch_processor)) {
+    if (has_header) {
+      auto header = _data_loader->getHeader();
+      if (!header) {
+        throw std::invalid_argument("");
+      }
+      _batch_processor->processHeader(*header);
+    }
+  }
 
   std::optional<BoltDataLabelPair> nextBatch() {
     auto rows = _data_loader->nextBatch();

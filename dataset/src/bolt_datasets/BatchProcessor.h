@@ -18,6 +18,8 @@ class BatchProcessor {
   virtual std::optional<BoltDataLabelPair> createBatch(
       const std::vector<std::string>& rows) = 0;
 
+  virtual void processHeader(const std::string& header) = 0;
+
   virtual ~BatchProcessor() = default;
 
  protected:

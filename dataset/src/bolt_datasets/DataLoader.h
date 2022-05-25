@@ -14,6 +14,8 @@ class DataLoader {
 
   virtual std::optional<std::vector<std::string>> nextBatch() = 0;
 
+  virtual std::optional<std::string> getHeader() = 0;
+
   uint32_t getMaxBatchSize() const { return _target_batch_size; }
 
   virtual ~DataLoader() = default;
@@ -38,6 +40,14 @@ class SimpleFileDataLoader final : public DataLoader {
       lines.push_back(std::move(line));
     }
     return std::make_optional(std::move(lines));
+  }
+
+  std::optional<std::string> getHeader() final {
+    std::string line;
+    if (std::getline(_file, line)) {
+      return line;
+    }
+    return std::nullopt;
   }
 
  private:

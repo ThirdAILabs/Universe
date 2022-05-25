@@ -4,6 +4,8 @@
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/bolt_datasets/BatchProcessor.h>
+#include <cctype>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -15,6 +17,27 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
  public:
   explicit TextClassificationProcessor(uint32_t output_range)
       : _output_range(output_range) {}
+
+  void processHeader(const std::string& header) final {
+    auto split_index = header.find(',');
+    if (split_index == std::string::npos) {
+      throw std::invalid_argument("");
+    }
+    std::string_view lhs = std::string_view(header.data(), split_index);
+    std::string_view rhs = std::string_view(header.data() + split_index + 1,
+                                            header.size() - split_index - 1);
+
+    lhs = trim(lhs);
+    rhs = trim(rhs);
+
+    if (lhs == "text" && rhs == "category") {
+      _label_on_right = true;
+    } else if (lhs == "category" && rhs == "text") {
+      _label_on_right = false;
+    } else {
+      throw std::invalid_argument("");
+    }
+  }
 
   std::string getClassName(uint32_t class_id) const {
     return _class_id_to_class.at(class_id);
@@ -59,36 +82,76 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
  protected:
   std::pair<bolt::BoltVector, bolt::BoltVector> processRow(
       const std::string& row) final {
-    // Find the label
+    // Split the row
+    auto [lhs, rhs] = split(row);
+
+    if (_label_on_right) {
+      bolt::BoltVector label_vec = getLabel(rhs);
+      bolt::BoltVector data_vec = computePairGramHashes(lhs);
+      return std::make_pair(std::move(label_vec), std::move(data_vec));
+    }
+    bolt::BoltVector label_vec = getLabel(lhs);
+    bolt::BoltVector data_vec = computePairGramHashes(rhs);
+    return std::make_pair(std::move(label_vec), std::move(data_vec));
+  }
+
+ private:
+  bolt::BoltVector getLabel(std::string_view category_str_view) {
+    std::string category_str(category_str_view);
     uint32_t label;
-    uint32_t end_of_label = row.find(',');
-    // TODO(nicholas): Trim this?
-    std::string label_str = row.substr(0, end_of_label);
-    if (_class_to_class_id.count(label_str)) {
-      label = _class_to_class_id[label_str];
+    if (_class_to_class_id.count(category_str)) {
+      label = _class_to_class_id[category_str];
     } else {
       label = _class_id_to_class.size();
-      _class_to_class_id[label_str] = label;
-      _class_id_to_class.push_back(std::move(label_str));
+      _class_to_class_id[category_str] = label;
+      _class_id_to_class.push_back(std::move(category_str));
     }
 
     bolt::BoltVector label_vec(1, false, false);
     label_vec.active_neurons[0] = label;
     label_vec.activations[0] = 1.0;
 
-    std::string_view str(row.data() + end_of_label + 1,
-                         row.size() - end_of_label + 1);
-
-    // Compute pair gram hashes
-    bolt::BoltVector data_vec = computePairGramHashes(str);
-
-    return std::make_pair(std::move(label_vec), std::move(data_vec));
+    return label_vec;
   }
 
- private:
+  static constexpr bool isQuote(char c) { return c == '\"' || c == '\''; }
+
+  static constexpr std::string_view trim(std::string_view& str) {
+    uint32_t start_offset = 0;
+    while (std::isspace(str[start_offset] || isQuote(str[start_offset]))) {
+      start_offset++;
+    }
+
+    uint32_t end_offset = str.size();
+    while (std::isspace(str[end_offset - 1]) || isQuote(str[start_offset])) {
+      end_offset--;
+    }
+
+    return std::string_view(str.data() + start_offset,
+                            end_offset - start_offset);
+  }
+
+  static constexpr std::pair<std::string_view, std::string_view> split(
+      const std::string& line) {
+    auto split_index = line.find(',');
+    if (split_index == std::string::npos) {
+      throw std::invalid_argument("");
+    }
+    std::string_view lhs = std::string_view(line.data(), split_index);
+    std::string_view rhs = std::string_view(line.data() + split_index + 1,
+                                            line.size() - split_index - 1);
+
+    lhs = trim(lhs);
+    rhs = trim(rhs);
+
+    return {lhs, rhs};
+  }
+
   std::unordered_map<std::string, uint32_t> _class_to_class_id;
   std::vector<std::string> _class_id_to_class;
   uint32_t _output_range;
+
+  bool _label_on_right;
 };
 
 }  // namespace thirdai::dataset
