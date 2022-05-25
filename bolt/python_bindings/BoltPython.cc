@@ -600,7 +600,7 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("model_size"), py::arg("n_classes"),
            py::arg("input_dim") = 100000)
       .def("train", &TextClassifier::train, py::arg("train_file"),
-           py::arg("epochs") = 1)
+           py::arg("epochs") = 1, py::arg("learning_rate") = 0.001)
       .def("predict", &TextClassifier::predict, py::arg("test_file"),
            py::arg("output_file"));
 }
