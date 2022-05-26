@@ -40,6 +40,7 @@ IMAGE_WIDTH = 224
 IMAGE_HEIGHT = 224
 NUM_CHANNELS = 3
 
+
 def _define_network():
     layers = [
         bolt.Conv(
@@ -83,7 +84,9 @@ def _define_network():
         ),
     ]
 
-    network = bolt.Network(layers=layers, input_dim=IMAGE_WIDTH * IMAGE_HEIGHT * NUM_CHANNELS)
+    network = bolt.Network(
+        layers=layers, input_dim=IMAGE_WIDTH * IMAGE_HEIGHT * NUM_CHANNELS
+    )
     return network
 
 
@@ -97,14 +100,14 @@ def get_data_generators():
     train_generator = train_datagen.flow_from_directory(
         "/Users/david/Documents/data/birdsTrain",
         target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
-        batch_size=47332, # number of train samples
+        batch_size=47332,  # number of train samples
         class_mode="sparse",
     )
 
     test_generator = test_datagen.flow_from_directory(
         "/Users/david/Documents/data/birdsTest",
         target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
-        batch_size=1625, # number of test samples
+        batch_size=1625,  # number of test samples
         class_mode="sparse",
     )
 
