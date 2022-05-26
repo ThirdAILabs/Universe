@@ -34,6 +34,9 @@ void createBoltSubmodule(py::module_& module) {
              "introduces non-linearity to the neural network.")
       .value("Linear", ActivationFunction::Linear,
              "Returns the outputs of a layer as-is.")
+      .value("Linear", ActivationFunction::Tanh,
+             "Hyperbolic tangent activation function; "
+             "maps the outputs of a layer to the range [-1, 1].")
       .value("Softmax", ActivationFunction::Softmax,
              "Softmax activation function; converts logits to classification "
              "probabilities. Currently, this activation function can only be "
@@ -91,9 +94,9 @@ void createBoltSubmodule(py::module_& module) {
           "and sparse inference. For example, load_factor=0.05 means the "
           "layer uses 5% of "
           "its neurons when processing an individual sample.\n"
-          " * activation_function: ActivationFunctions enum - We support three "
+          " * activation_function: ActivationFunctions enum - We support four "
           "activation "
-          "functions: ReLU, Softmax, and Linear.\n"
+          "functions: ReLU, Softmax, Tanh, and Linear.\n"
           " * sampling_config: SamplingConfig - Sampling configuration.")
 #endif
       .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
@@ -141,9 +144,9 @@ void createBoltSubmodule(py::module_& module) {
           "sparse training and sparse inference. For example, "
           "load_factor=0.05 means the layer uses 5% of the filters "
           "when processing each patch.\n"
-          " * activation_function: ActivationFunctions enum - We support three "
+          " * activation_function: ActivationFunctions enum - We support four "
           "activation "
-          "functions: ReLU, Softmax, and Linear.\n"
+          "functions: ReLU, Softmax, Tanh, and Linear.\n"
           " * sampling_config: SamplingConfig - Sampling configuration.\n"
           " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
           " * num_patches: Int - Number of patches.")
