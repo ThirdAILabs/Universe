@@ -142,9 +142,14 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
                             end_offset - start_offset);
   }
 
-  static std::pair<std::string_view, std::string_view> split(
-      const std::string& line) {
-    auto split_index = line.find(',');
+  std::pair<std::string_view, std::string_view> split(
+      const std::string& line) const {
+    std::string::size_type split_index;
+    if (_label_on_right) {
+      split_index = line.find_last_of(',');
+    } else {
+      split_index = line.find(',');
+    }
     if (split_index == std::string::npos) {
       throw std::invalid_argument("No comment in line '" + line +
                                   "' of csv file");

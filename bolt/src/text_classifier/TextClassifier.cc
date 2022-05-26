@@ -46,6 +46,8 @@ TextClassifier::TextClassifier(const std::string& model_size,
 
   _batch_processor =
       std::make_shared<dataset::TextClassificationProcessor>(input_dim);
+
+  _model->enableSparseInference();
 }
 
 void TextClassifier::train(const std::string& filename, uint32_t epochs,
