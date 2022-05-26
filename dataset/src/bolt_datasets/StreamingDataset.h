@@ -20,7 +20,7 @@ class StreamingDataset {
     if (has_header) {
       auto header = _data_loader->getHeader();
       if (!header) {
-        throw std::invalid_argument("");
+        throw std::invalid_argument("Cannot read empty file.");
       }
       _batch_processor->processHeader(*header);
     }
