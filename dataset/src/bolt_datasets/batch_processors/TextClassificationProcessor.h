@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/layers/BoltVector.h>
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
@@ -155,6 +159,17 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
     return {lhs, rhs};
   }
 
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<UnaryBatchProcessor>(this), _class_to_class_id,
+            _class_id_to_class, _output_range, _label_on_right);
+  }
+
+  // Private constructor for cereal.
+  TextClassificationProcessor() {}
+
   std::unordered_map<std::string, uint32_t> _class_to_class_id;
   std::vector<std::string> _class_id_to_class;
   uint32_t _output_range;
@@ -163,3 +178,5 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
 };
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::TextClassificationProcessor);

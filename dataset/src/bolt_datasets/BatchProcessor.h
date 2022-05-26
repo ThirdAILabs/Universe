@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/layers/BoltVector.h>
 #include <optional>
 #include <utility>
@@ -23,16 +24,26 @@ class BatchProcessor {
   virtual ~BatchProcessor() = default;
 
  protected:
-  std::vector<bolt::BoltVector> _data_vecs;
-  std::vector<bolt::BoltVector> _label_vecs;
+  // Default constructor for cereal.
+  BatchProcessor() {}
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 class UnaryBatchProcessor : public BatchProcessor {
  public:
   std::optional<BoltDataLabelPair> createBatch(
       const std::vector<std::string>& rows) final {
-    _data_vecs = std::vector<bolt::BoltVector>(rows.size());
-    _label_vecs = std::vector<bolt::BoltVector>(rows.size());
+    std::vector<bolt::BoltVector> _data_vecs =
+        std::vector<bolt::BoltVector>(rows.size());
+    std::vector<bolt::BoltVector> _label_vecs =
+        std::vector<bolt::BoltVector>(rows.size());
 
     // #pragma omp parallel for default(none) shared(rows)
     for (uint32_t row_id = 0; row_id < rows.size(); row_id++) {
@@ -50,6 +61,17 @@ class UnaryBatchProcessor : public BatchProcessor {
  protected:
   virtual std::pair<bolt::BoltVector, bolt::BoltVector> processRow(
       const std::string& row) = 0;
+
+  // Default constructor for cereal.
+  UnaryBatchProcessor() {}
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<BatchProcessor>(this));
+  }
 };
 
 class NarayBatchProcesor : public BatchProcessor {
@@ -97,9 +119,14 @@ class NarayBatchProcesor : public BatchProcessor {
   virtual void processRow(const std::string& row) = 0;
 
  private:
+  std::vector<bolt::BoltVector> _data_vecs;
+  std::vector<bolt::BoltVector> _label_vecs;
 #ifndef __clang__
   omp_lock_t _lock;
 #endif
 };
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::BatchProcessor);
+CEREAL_REGISTER_TYPE(thirdai::dataset::UnaryBatchProcessor);

@@ -602,7 +602,12 @@ void createBoltSubmodule(py::module_& module) {
       .def("train", &TextClassifier::train, py::arg("train_file"),
            py::arg("epochs") = 1, py::arg("learning_rate") = 0.001)
       .def("predict", &TextClassifier::predict, py::arg("test_file"),
-           py::arg("output_file") = std::nullopt);
+           py::arg("output_file") = std::nullopt)
+      .def("save", &TextClassifier::save, py::arg("filename"),
+           "Saves the network to a file. The file path must not require any "
+           "folders to be created")
+      .def_static("load", &TextClassifier::load, py::arg("filename"),
+                  "Loads and builds a saved network from file.");
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
