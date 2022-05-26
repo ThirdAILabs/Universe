@@ -62,6 +62,18 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
         prev_is_space = true;
       }
     }
+    if (!prev_is_space) {
+      uint32_t len = sentence.size() - start_of_word_offset;
+      uint32_t hash =
+          hashing::MurmurHash(sentence.data() + start_of_word_offset, len,
+                              /* seed = */ 3829);
+      for (const uint32_t prev_hash : hashes_seen) {
+        uint32_t combined_hash =
+            hashing::HashUtils::combineHashes(prev_hash, hash);
+        combined_hash = combined_hash % _output_range;
+        pairgram_hashes[combined_hash]++;
+      }
+    }
 
     bolt::BoltVector data_vec(pairgram_hashes.size(), false, false);
     uint32_t index = 0;

@@ -125,7 +125,7 @@ void TextClassifier::predict(
         }
       }
       if (output_file) {
-        (*output_file) << _batch_processor->getClassName(pred);
+        (*output_file) << _batch_processor->getClassName(pred) << std::endl;
       }
     }
   }
