@@ -7,8 +7,11 @@ namespace thirdai::utils {
 template <typename KEY_T>
 class BloomFilter{
     private:
-        uint64_t _capacity, _fp_rate, _R, _K, count;
-        std::vector<uint32_t> _seed_array;
+    float _fp_rate;
+    uint64_t _capacity, _R, _K, _count, _input_dim;
+    std::vector<uint32_t> _seed_array;
+    // implementation defined, vector<bool> can store bits instead of <bool> type elements
+    std::vector<bool> _bit_array;
 
     public:
     /*
@@ -16,17 +19,23 @@ class BloomFilter{
         while maintaining no more than *fp_rate* chance of false
         positives
     */
-    BloomFilter(uint64_t capacity, uint64_t fp_rate);
+    BloomFilter(uint64_t capacity, float fp_rate, uint64_t input_dim=1);
 
     BloomFilter(const BloomFilter& other) = delete;
 
     BloomFilter& operator=(const BloomFilter& other) = delete;
 
-    void insert(KEY_T key);
+    std::vector<uint64_t> make_hashes(KEY_T key);
 
-    bool contains(KEY_T query);
+    /*
+        This bloom filter currently supports storage of type std::string. 
+        TODO(Henry): Add storage of type std::vector<int>
+    */
+    void add(KEY_T key);
 
-    void clear();
+    // bool contains(KEY_T query);
+
+    // void clear();
 
     // TODO: Figure out the best way to do this
     // BloomFilter<KEY_T> intersection(BloomFilter other);
@@ -37,7 +46,7 @@ class BloomFilter{
 
     uint64_t capacity();
 
-    ~BloomFilter();
+    ~BloomFilter() = default;
 };
 
 }   // namespace thirdai::utils

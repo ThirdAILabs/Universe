@@ -1,3 +1,4 @@
 enable_testing()
 
-add_library(utils STATIC BloomFilter.cc)
+add_subdirectory(src)
+add_subdirectory(tests)
