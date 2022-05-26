@@ -58,7 +58,7 @@ int main() {  // NOLINT exceptions
   for (uint32_t e = 0; e < epochs; e++) {
     network.train(train_data, loss_fn, learning_rate, 1, rehash, rebuild,
                   metrics);
-    network.predict(test_data, nullptr, metrics, max_test_batches);
+    network.predict(test_data, nullptr, nullptr, metrics, max_test_batches);
   }
 
   return 0;

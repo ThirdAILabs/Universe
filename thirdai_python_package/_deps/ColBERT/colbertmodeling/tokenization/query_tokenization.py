@@ -1,7 +1,7 @@
 import torch
 
-from colbertmodeling.hf_colbert import HF_ColBERT
-from colbertconfig import ColBERTConfig
+from thirdai._deps.ColBERT.colbertmodeling.hf_colbert import HF_ColBERT
+from thirdai._deps.ColBERT.colbertconfig import ColBERTConfig
 
 
 class QueryTokenizer:
@@ -25,11 +25,9 @@ class QueryTokenizer:
             self.tok.mask_token_id,
         )
 
-        assert self.Q_marker_token_id == 1 and self.mask_token_id == 103
         self.used = False
 
     def tokenize(self, batch_text, add_special_tokens=False):
-        assert type(batch_text) in [list, tuple], type(batch_text)
 
         tokens = [self.tok.tokenize(x, add_special_tokens=False) for x in batch_text]
 
@@ -48,7 +46,6 @@ class QueryTokenizer:
         return tokens
 
     def encode(self, batch_text, add_special_tokens=False):
-        assert type(batch_text) in [list, tuple], type(batch_text)
 
         ids = self.tok(batch_text, add_special_tokens=False)["input_ids"]
 
@@ -69,7 +66,6 @@ class QueryTokenizer:
         return ids
 
     def tensorize(self, batch_text, context=None):
-        assert type(batch_text) in [list, tuple], type(batch_text)
 
         # add placehold for the [Q] marker
         batch_text = [". " + x for x in batch_text]
@@ -89,7 +85,6 @@ class QueryTokenizer:
         ids[ids == 0] = self.mask_token_id
 
         if context is not None:
-            assert len(context) == len(batch_text), (len(context), len(batch_text))
 
             obj_2 = self.tok(
                 context,
@@ -109,6 +104,5 @@ class QueryTokenizer:
 
         if self.config.attend_to_mask_tokens:
             mask[ids == self.mask_token_id] = 1
-            assert mask.sum().item() == mask.size(0) * mask.size(1), mask
 
         return ids, mask

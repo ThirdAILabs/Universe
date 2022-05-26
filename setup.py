@@ -3,8 +3,9 @@ import os
 import re
 import subprocess
 import sys
+import multiprocessing
 
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 
 # Convert distutils Windows platform specifiers to CMake -A arguments
@@ -15,6 +16,19 @@ PLAT_TO_CMAKE = {
     "win-arm64": "ARM64",
 }
 
+# Default is release build with full parallelism
+if "THIRDAI_NUM_JOBS" in os.environ:
+    num_jobs = os.environ["THIRDAI_NUM_JOBS"]
+else:
+    num_jobs = multiprocessing.cpu_count() * 2
+if "THIRDAI_BUILD_MODE" in os.environ:
+    build_mode = os.environ["THIRDAI_BUILD_MODE"]
+else:
+    build_mode = "Release"
+if "THIRDAI_FEATURE_FLAGS" in os.environ:
+    feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
+else:
+    feature_flags = "THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE"
 
 # A CMakeExtension needs a sourcedir instead of a file list.
 # The name must be the _single_ output extension from the CMake build.
@@ -27,38 +41,33 @@ class CMakeExtension(Extension):
 
 class CMakeBuild(build_ext):
     def build_extension(self, ext):
+
+        global build_mode
+        global feature_flags
+        global num_jobs
+
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
 
         # required for auto-detection & inclusion of auxiliary "native" libs
         if not extdir.endswith(os.path.sep):
             extdir += os.path.sep
 
-        debug = int(os.environ.get("DEBUG", 0)) if self.debug is None else self.debug
-        cfg = "Debug" if debug else "Release"
-
         # CMake lets you override the generator - we need to check this.
         # Can be set with Conda-Build, for example.
         cmake_generator = os.environ.get("CMAKE_GENERATOR", "")
 
         # Set Python_EXECUTABLE instead if you use PYBIND11_FINDPYTHON
-        # EXAMPLE_VERSION_INFO shows you how to pass a value into the C++ code
-        # from Python.
         cmake_args = [
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}".format(extdir),
             "-DPYTHON_EXECUTABLE={}".format(sys.executable),
             # not used on MSVC, but no harm
-            "-DCMAKE_BUILD_TYPE={}".format(cfg),
+            "-DCMAKE_BUILD_TYPE={}".format(build_mode),
         ]
         build_args = []
         # Adding CMake arguments set as environment variable
         # (needed e.g. to build for ARM OSx on conda-forge)
         if "CMAKE_ARGS" in os.environ:
             cmake_args += [item for item in os.environ["CMAKE_ARGS"].split(" ") if item]
-
-        # In this example, we pass in the version to C++. You might not need to.
-        cmake_args += [
-            "-DEXAMPLE_VERSION_INFO={}".format(self.distribution.get_version())
-        ]
 
         if self.compiler.compiler_type != "msvc":
             # Using Ninja-build since it a) is available as a wheel and b)
@@ -91,9 +100,11 @@ class CMakeBuild(build_ext):
             # Multi-config generators have a different way to specify configs
             if not single_config:
                 cmake_args += [
-                    "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}".format(cfg.upper(), extdir)
+                    "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}".format(
+                        build_mode.upper(), extdir
+                    )
                 ]
-                build_args += ["--config", cfg]
+                build_args += ["--config", build_mode]
 
         if sys.platform.startswith("darwin"):
             # Cross-compile support for macOS - respect ARCHFLAGS if set
@@ -101,37 +112,39 @@ class CMakeBuild(build_ext):
             if archs:
                 cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
 
-        # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
-        # across all generators.
-        if "CMAKE_BUILD_PARALLEL_LEVEL" not in os.environ:
-            # self.parallel is a Python 3 only way to set parallel jobs by hand
-            # using -j in the build_ext call, not supported by pip or PyPA-build.
-            if hasattr(self, "parallel") and self.parallel:
-                # CMake 3.12+ only.
-                build_args += ["-j{}".format(self.parallel)]
+        build_args += ["-j{}".format(num_jobs)]
+        cmake_args += [f"-DFEATURE_FLAGS={feature_flags}"]
 
-        if not os.path.exists(self.build_temp):
-            os.makedirs(self.build_temp)
+        build_dir = "build/"
+        if not os.path.exists(build_dir):
+            os.makedirs(build_dir)
 
-        subprocess.check_call(
-            ["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp
-        )
-        subprocess.check_call(
-            ["cmake", "--build", "."] + build_args, cwd=self.build_temp
-        )
+        subprocess.check_call(["cmake", ext.sourcedir] + cmake_args, cwd=build_dir)
+        subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=build_dir)
 
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="thirdai",
-    version="0.0.1",
-    author="Nicholas Meisburger",
-    author_email="nicholas@thirdai.com",
+    version="0.1.3",
+    author="ThirdAI",
+    author_email="contact@thirdai.com",
     description="A faster cpu machine learning library",
-    long_description="",
-    ext_modules=[CMakeExtension("thirdai")],
-    cmdclass={"build_ext": CMakeBuild},
+    long_description="""
+      A faster cpu machine learning library that uses sparsity and hashing to 
+      accelerate inference and training. See https://thirdai.com for more 
+      details.
+    """,
+    license_files=("LICENSE.txt",),
+    ext_modules=[CMakeExtension("thirdai._thirdai")],
+    cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
-    extras_require={"test": ["pytest"]},
+    extras_require={
+        "test": ["pytest"],
+    },
+    packages=["thirdai"]
+    + ["thirdai." + p for p in find_packages(where="thirdai_python_package")],
+    license="proprietary",
+    package_dir={"thirdai": "thirdai_python_package"},
 )

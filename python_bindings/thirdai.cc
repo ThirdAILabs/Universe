@@ -10,6 +10,9 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+// Licensing wrapper
+#include <wrappers/src/LicenseWrapper.h>
+
 #ifndef __clang__
 #include <omp.h>
 #endif
@@ -18,11 +21,20 @@
 // methods
 // TODO(any): Add docstrings to methods
 // TODO(any): Can we remove redudancy in the bindings?
-PYBIND11_MODULE(thirdai, m) {  // NOLINT
+PYBIND11_MODULE(_thirdai, m) {  // NOLINT
 
 #ifndef __clang__
   m.def("set_global_num_threads", &omp_set_num_threads,
-        py::arg("max_num_threads"));
+        py::arg("max_num_threads"),
+        "Set the maximum number of threads to use to any future calls to the "
+        "thirdai library.");
+#endif
+
+#if THIRDAI_CHECK_LICENSE
+  m.def("set_thirdai_license_path",
+        &thirdai::licensing::LicenseWrapper::setLicensePath,
+        py::arg("license_path"),
+        "Set a license filepath for any future calls to the thirdai library.");
 #endif
 
   // Per pybind11 docs breaking up the construction of bindings in this way

@@ -1,6 +1,5 @@
-from colbertconfig import ColBERTConfig
-from colbertutils.utils import print_message, flatten
-from colbertmodeling.base_colbert import BaseColBERT
+from thirdai._deps.ColBERT.colbertconfig import ColBERTConfig
+from thirdai._deps.ColBERT.colbertmodeling.base_colbert import BaseColBERT
 
 import torch
 import string
@@ -13,7 +12,6 @@ class ColBERT(BaseColBERT):
 
     def __init__(self, name="bert-base-uncased"):
         super().__init__(name)
-        self.use_gpu = self.colbert_config.total_visible_gpus > 0
 
         if self.colbert_config.mask_punctuation:
             self.skiplist = {
@@ -42,7 +40,6 @@ class ColBERT(BaseColBERT):
         return torch.nn.functional.normalize(Q, p=2, dim=2)
 
     def doc(self, input_ids, attention_mask, keep_dims=True):
-        assert keep_dims in [True, False, "return_mask"]
 
         input_ids, attention_mask = input_ids.to(self.device), attention_mask.to(
             self.device
@@ -60,8 +57,6 @@ class ColBERT(BaseColBERT):
         D = D * mask
 
         D = torch.nn.functional.normalize(D, p=2, dim=2)
-        if self.use_gpu:
-            D = D.half()
 
         if keep_dims is False:
             D, mask = D.cpu(), mask.bool().cpu().squeeze(-1)

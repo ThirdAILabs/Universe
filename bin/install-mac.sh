@@ -26,9 +26,6 @@ brew install cmake
 git config --global core.eol lf 
 git config --global core.autocrlf input
 
-# Append Universe build directory to PYTHONPATH on interactive shell startup
-echo "export PYTHONPATH=~/Universe/build:$PYTHONPATH" >> $HOME/.bash_profile 
-
 # Install necessary python packages
 # Note if using an m1 mac you may need to download conda and use it to install 
 # toml and mlflow.
