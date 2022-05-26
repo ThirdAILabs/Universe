@@ -32,7 +32,7 @@ static ActivationFunction getActivationFunction(
 constexpr float actFuncDerivative(float x, ActivationFunction act_func) {
   switch (act_func) {
     case ActivationFunction::Tanh:
-      return (1 - pow(tanh(x), 2));
+      return (1 - x * x);
     case ActivationFunction::ReLU:
       return x > 0 ? 1.0 : 0.0;
     case ActivationFunction::Softmax:

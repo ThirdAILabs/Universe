@@ -96,6 +96,24 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 }
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
+       TrainSimpleDatasetMultiLayerNetworkTanh) {
+  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
+                                     10000, 0.1, ActivationFunction::Tanh),
+                                 std::make_shared<FullyConnectedLayerConfig>(
+                                     n_classes, ActivationFunction::Softmax)},
+                                n_classes);
+
+  auto data = genDataset(false);
+
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001,
+                2);
+  auto test_metrics = network.predict(
+      data.data, data.labels, /* output_active_neurons= */ nullptr,
+      /* output_activations= */ nullptr, {"categorical_accuracy"});
+  ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
+}
+
+TEST_F(FullyConnectedClassificationNetworkTestFixture,
        TrainNoisyDatasetMultiLayerNetwork) {
   FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
                                      10000, 0.1, ActivationFunction::ReLU),
