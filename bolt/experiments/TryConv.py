@@ -20,7 +20,7 @@ import argparse
 
 # 1. Run this on BLADE so it has access to /share/data/birds/
 # 2. Run this script within the developer docker container and pip install scikit-image for
-#    help with processing images to patches
+#    help with processing images to patches. (its also in the docker if needed)
 # 3. Make sure that the patch size of the first ConvLayer matches the patch size
 #    that you preprocess the images with in the transform_to_flat_patches() function.
 # 4. Make sure that any kernel size perfectly tessellates the input. For example, if our input is
@@ -36,8 +36,11 @@ import argparse
 # preprocessing. There are currently plans for implementing general purpose convolutions in BOLT which
 # would solve many of these drawbacks.
 
+IMAGE_WIDTH = 224
+IMAGE_HEIGHT = 224
+NUM_CHANNELS = 3
 
-def _define_network(args):
+def _define_network():
     layers = [
         bolt.Conv(
             num_filters=200,
@@ -67,20 +70,20 @@ def _define_network(args):
         #     kernel_size=(2, 2),
         #     num_patches=49,
         # ),
-        bolt.FullyConnected(
-            dim=1000,
-            load_factor=0.05,
-            activation_function=bolt.ActivationFunctions.ReLU,
-            sampling_config=bolt.SamplingConfig(
-                hashes_per_table=3, num_tables=64, range_pow=9, reservoir_size=5
-            ),
-        ),
+        # bolt.FullyConnected(
+        #     dim=20000,
+        #     load_factor=0.05,
+        #     activation_function=bolt.ActivationFunctions.ReLU,
+        #     sampling_config=bolt.SamplingConfig(
+        #         hashes_per_table=3, num_tables=64, range_pow=9, reservoir_size=5
+        #     ),
+        # ),
         bolt.FullyConnected(
             dim=325, activation_function=bolt.ActivationFunctions.Softmax
         ),
     ]
 
-    network = bolt.Network(layers=layers, input_dim=224 * 224 * 3)
+    network = bolt.Network(layers=layers, input_dim=IMAGE_WIDTH * IMAGE_HEIGHT * NUM_CHANNELS)
     return network
 
 
@@ -92,16 +95,16 @@ def get_data_generators():
     test_datagen = ImageDataGenerator(rescale=1.0 / 255)
 
     train_generator = train_datagen.flow_from_directory(
-        "/data/birds/train/",
-        target_size=(224, 224),
-        batch_size=47332,
+        "/Users/david/Documents/data/birdsTrain",
+        target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
+        batch_size=47332, # number of train samples
         class_mode="sparse",
     )
 
     test_generator = test_datagen.flow_from_directory(
-        "/data/birds/test/",
-        target_size=(224, 224),
-        batch_size=1625,
+        "/Users/david/Documents/data/birdsTest",
+        target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
+        batch_size=1625, # number of test samples
         class_mode="sparse",
     )
 
@@ -110,10 +113,13 @@ def get_data_generators():
 
 def transform_to_flat_patches(data, patch_size):
     new_data = []
+    patch_width, patch_height = patch_size
     for image in data:
-        view = view_as_blocks(image, patch_size + tuple([3]))
+        view = view_as_blocks(image, (patch_width, patch_height, NUM_CHANNELS))
+        # this line below just flattens each image in the samples
+        # view as blocks returns a weirdly shaped array. view.shape[0] is the number of samples, view.shape[1] is 1
         flat_view = view.reshape(
-            view.shape[0] * view.shape[1] * patch_size[0] * patch_size[1] * 3
+            view.shape[0] * view.shape[1] * patch_width * patch_height * NUM_CHANNELS
         )
         new_data.append(flat_view)
 
@@ -121,7 +127,7 @@ def transform_to_flat_patches(data, patch_size):
 
 
 def train_conv_birds_325(args, mlflow_logger):
-    network = _define_network(None)
+    network = _define_network()
 
     train_generator, test_generator = get_data_generators()
 
