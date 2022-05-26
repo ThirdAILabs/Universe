@@ -65,7 +65,10 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
     auto in_memory_dataset = dataset.loadInMemory();
 
     _model->train(in_memory_dataset.data, in_memory_dataset.labels, loss,
-                  learning_rate, epochs);
+                  learning_rate, 1);
+    _model->enableSparseInference();
+    _model->train(in_memory_dataset.data, in_memory_dataset.labels, loss,
+                  learning_rate, epochs - 1);
   }
 }
 

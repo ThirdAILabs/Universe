@@ -87,8 +87,8 @@ class NarayBatchProcesor : public BatchProcessor {
     _data_vecs = {};
     _label_vecs = {};
 #pragma omp parallel for default(none) shared(rows)
-    for (const auto& row : rows) {
-      processRow(row);
+    for (uint32_t i = 0; i < rows.size(); i++) {  // NOLINT
+      processRow(rows[i]);
     }
 
     // TODO(nicholas): does moving vector set it to empty?
