@@ -147,11 +147,19 @@ InferenceMetricData Model<BATCH_T>::predict(
     const BoltBatch* batch_labels =
         compute_metrics ? &(*labels)[batch] : nullptr;
 
-    processTestBatch(
-        inputs, outputs, batch_labels,
-        output_active_neurons + (batch * batch_size) * getInferenceOutputDim(),
-        output_activations + (batch * batch_size) * getInferenceOutputDim(),
-        metrics, compute_metrics);
+    uint32_t* batch_active_neurons =
+        output_active_neurons == nullptr
+            ? nullptr
+            : output_active_neurons +
+                  batch * batch_size * getInferenceOutputDim();
+
+    float* batch_activations =
+        output_activations == nullptr
+            ? nullptr
+            : output_activations + batch * batch_size * getInferenceOutputDim();
+
+    processTestBatch(inputs, outputs, batch_labels, batch_active_neurons,
+                     batch_activations, metrics, compute_metrics);
 
     bar.increment();
   }
@@ -206,7 +214,7 @@ inline void Model<BATCH_T>::processTestBatch(const BATCH_T& batch_inputs,
         assert(output_active_neurons != nullptr);
         const uint32_t* start = outputs[vec_id].active_neurons;
         std::copy(start, start + outputs[vec_id].len,
-                  output_active_neurons + vec_id * getInferenceOutputDim());
+                  output_active_neurons + offset);
       }
     }
   }
