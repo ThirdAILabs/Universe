@@ -55,13 +55,13 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
         uint32_t hash =
             hashing::MurmurHash(sentence.data() + start_of_word_offset, len,
                                 /* seed = */ 3829);
+        hashes_seen.push_back(hash);
         for (const uint32_t prev_hash : hashes_seen) {
           uint32_t combined_hash =
               hashing::HashUtils::combineHashes(prev_hash, hash);
           combined_hash = combined_hash % _output_range;
           pairgram_hashes[combined_hash]++;
         }
-        hashes_seen.push_back(hash);
 
         prev_is_space = true;
       }
@@ -71,6 +71,7 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
       uint32_t hash =
           hashing::MurmurHash(sentence.data() + start_of_word_offset, len,
                               /* seed = */ 3829);
+      hashes_seen.push_back(hash);
       for (const uint32_t prev_hash : hashes_seen) {
         uint32_t combined_hash =
             hashing::HashUtils::combineHashes(prev_hash, hash);
@@ -184,4 +185,4 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::TextClassificationProcessor);
+CEREAL_REGISTER_TYPE(thirdai::dataset::TextClassificationProcessor)

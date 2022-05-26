@@ -128,5 +128,5 @@ class NarayBatchProcesor : public BatchProcessor {
 
 }  // namespace thirdai::dataset
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::BatchProcessor);
-CEREAL_REGISTER_TYPE(thirdai::dataset::UnaryBatchProcessor);
+CEREAL_REGISTER_TYPE(thirdai::dataset::BatchProcessor)
+CEREAL_REGISTER_TYPE(thirdai::dataset::UnaryBatchProcessor)
