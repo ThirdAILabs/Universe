@@ -599,8 +599,8 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("n_classes"),
            "Constructs a TextClassifier with autotuning.\n"
            "Arguments:\n"
-           " * model_size: string - Either 'small', 'medium', or 'large', an "
-           "indicator of how big the model should be.\n"
+           " * model_size: string - Either 'small', 'medium', 'large', or a "
+           "size in Gb for the model, for example '6Gb' or '6 Gb'.\n"
            " * n_classes: int - How many classes or categories are in the "
            "labels of the dataset.\n")
       .def("train", &TextClassifier::train, py::arg("train_file"),
