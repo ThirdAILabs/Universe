@@ -280,7 +280,7 @@ TEST(BatchProcessorTest, ProducesCorrectUnshuffledDataset) {
 /**
  * Helper function that checks that the given vector of one-dimensional
  * bolt vectors are a permutation of the given vector of floats.
- * Assumes label is always equal to value at 0th position of input.
+ * Assumes each vector in the dataset is 1-dimensional.
  */
 void checkIsPermutation(const BoltDataset& input_dataset,
                         const BoltDataset& target_dataset,
@@ -311,6 +311,7 @@ void checkIsPermutation(const BoltDataset& input_dataset,
  * Helper function to check the equality of dataset orderings.
  * If assert_equal is true, asserts that the orderings are equal.
  * Otherwise, asserts that orderings are different.
+ * Assumes each vector in the dataset is 1-dimensional.
  */
 void checkDatasetOrderEquality(const BoltDataset& input_dataset_1,
                                const BoltDataset& input_dataset_2,
