@@ -189,19 +189,19 @@ uint64_t getMemoryBudget(const std::string& model_size) {
   // For small models we use either 1Gb of 1/16th of the total RAM, whichever is
   // smaller.
   if (std::regex_search(model_size, small_re)) {
-    return std::min(system_ram / 16, ONE_GB);
+    return std::min<uint64_t>(system_ram / 16, ONE_GB);
   }
 
   // For medium models we use either 2Gb of 1/8th of the total RAM, whichever is
   // smaller.
   if (std::regex_search(model_size, medium_re)) {
-    return std::min(system_ram / 8, 2 * ONE_GB);
+    return std::min<uint64_t>(system_ram / 8, 2 * ONE_GB);
   }
 
   // For large models we use either 4Gb of 1/4th of the total RAM, whichever is
   // smaller.
   if (std::regex_search(model_size, large_re)) {
-    return std::min(system_ram / 4, 4 * ONE_GB);
+    return std::min<uint64_t>(system_ram / 4, 4 * ONE_GB);
   }
 
   if (std::regex_search(model_size, gig_re)) {
@@ -214,7 +214,7 @@ uint64_t getMemoryBudget(const std::string& model_size) {
                 << std::endl;
     }
 
-    return std::min(requested_size, system_ram);
+    return std::min<uint64_t>(requested_size, system_ram);
   }
 
   throw std::invalid_argument(
