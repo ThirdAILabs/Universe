@@ -53,7 +53,6 @@ class UnaryBatchProcessor : public BatchProcessor {
       _label_vecs[row_id] = std::move(p.second);
     }
 
-    // TODO(nicholas): does moving vector set it to empty?
     return std::make_pair(bolt::BoltBatch(std::move(_data_vecs)),
                           bolt::BoltBatch(std::move(_label_vecs)));
   }

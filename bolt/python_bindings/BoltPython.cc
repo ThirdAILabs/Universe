@@ -594,20 +594,43 @@ void createBoltSubmodule(py::module_& module) {
            "and (1) output vectors (predictions) from the network in the form "
            "of a 2D Numpy matrix of floats.");
 
-  // TODO(nicholas): add documentation
   py::class_<TextClassifier>(bolt_submodule, "TextClassifier")
       .def(py::init<const std::string&, uint32_t, uint32_t>(),
            py::arg("model_size"), py::arg("n_classes"),
-           py::arg("input_dim") = 100000)
+           "Constructs a TextClassifier with autotuning.\n"
+           "Arguments:\n"
+           " * model_size: string - Either 'small', 'medium', or 'large', an "
+           "indicator of how big the model should be.\n"
+           " * n_classes: int - How many classes or categories are in the "
+           "labels of the dataset.\n")
       .def("train", &TextClassifier::train, py::arg("train_file"),
-           py::arg("epochs") = 1, py::arg("learning_rate") = 0.001)
+           py::arg("epochs"), py::arg("learning_rate"),
+           "Trains the classifier on the given dataset.\n"
+           "Arguments:\n"
+           " * train_file: string - The path the training dataset to use.\n"
+           " * epochs: Int - How many epochs to train for.\n"
+           " * learning_rate: Float - The learning rate to use for training.\n")
       .def("predict", &TextClassifier::predict, py::arg("test_file"),
-           py::arg("output_file") = std::nullopt)
+           py::arg("output_file") = std::nullopt,
+           "Runs the classifier on the specified test dataset and optionally "
+           "logs the prediction to a file.\n"
+           "Arguments:\n"
+           " * test_file: string - The path the test dataset to use.\n"
+           " * output_file: string - Optional argument, if this is specified "
+           "then the classifier will output the name of the class/category of "
+           "each prediction this file with one prediction result on each "
+           "line.\n")
       .def("save", &TextClassifier::save, py::arg("filename"),
-           "Saves the network to a file. The file path must not require any "
-           "folders to be created")
-      .def_static("load", &TextClassifier::load, py::arg("filename"),
-                  "Loads and builds a saved network from file.");
+           "Saves the classifier to a file. The file path must not require any "
+           "folders to be created\n"
+           "Arguments:\n"
+           " * filename: string - The path to the save location of the "
+           "classifier.\n")
+      .def_static(
+          "load", &TextClassifier::load, py::arg("filename"),
+          "Loads and builds a saved classifier from file.\n"
+          "Arguments:\n"
+          " * filename: string - The location of the saved classifier.\n");
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {

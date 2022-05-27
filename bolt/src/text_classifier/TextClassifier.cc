@@ -29,7 +29,8 @@ static std::optional<uint64_t> getSystemRam();
 static uint32_t getNumCpus();
 
 TextClassifier::TextClassifier(const std::string& model_size,
-                               uint32_t n_classes, uint32_t input_dim) {
+                               uint32_t n_classes) {
+  uint32_t input_dim = 100000;
   uint32_t hidden_layer_size =
       getHiddenLayerSize(model_size, n_classes, input_dim);
 

@@ -15,11 +15,9 @@ namespace thirdai::bolt {
 
 class TextClassifier {
  public:
-  TextClassifier(const std::string& model_size, uint32_t n_classes,
-                 uint32_t input_dim = 100000);
+  TextClassifier(const std::string& model_size, uint32_t n_classes);
 
-  void train(const std::string& filename, uint32_t epochs = 1,
-             float learning_rate = 0.001);
+  void train(const std::string& filename, uint32_t epochs, float learning_rate);
 
   void predict(const std::string& filename,
                const std::optional<std::string>& output_filename);
