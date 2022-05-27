@@ -14,13 +14,13 @@ int main() {  // NOLINT exceptions
   std::cout << "Starting Convolution Tests" << std::endl;
 
   uint64_t batch_size = 1024;
-  auto train_data = dataset::loadBoltCsvDataset(
-      "/Users/david/Documents/python_/train_mnist2x2.txt", batch_size,
-      /* delimiter = */ ' ');
+  auto train_data =
+      dataset::loadBoltCsvDataset("/share/david/train_mnist2x2.txt", batch_size,
+                                  /* delimiter = */ ' ');
 
-  auto test_data = dataset::loadBoltCsvDataset(
-      "/Users/david/Documents/python_/test_mnist2x2.txt", batch_size,
-      /* delimiter = */ ' ');
+  auto test_data =
+      dataset::loadBoltCsvDataset("/share/david/test_mnist2x2.txt", batch_size,
+                                  /* delimiter = */ ' ');
 
   std::cout << "Finished reading train and test data" << std::endl;
 
