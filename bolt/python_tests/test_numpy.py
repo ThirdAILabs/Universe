@@ -36,6 +36,46 @@ def train_simple_bolt_model(examples, labels, load_factor=1, n_classes=10):
 
     return acc["categorical_accuracy"]
 
+def train_simple_bolt_model_trainable(examples, labels, load_factor=1, n_classes=10):
+    layers = [
+        bolt.FullyConnected(
+            dim=100,
+            load_factor=load_factor,
+            activation_function=bolt.ActivationFunctions.ReLU,
+        ),
+        bolt.FullyConnected(
+            dim=n_classes,
+            load_factor=load_factor,
+            activation_function=bolt.ActivationFunctions.Softmax,
+        )
+    ]
+    network = bolt.Network(layers=layers, input_dim=n_classes)
+
+    batch_size = 64
+    learning_rate = 0.001
+    epochs = 50
+    # print("weights before training")
+    before_training_weigths=network.get_weights(0)
+    network.setTrainable(layer_index=0,trainable=False)
+    network.train(
+        train_examples=examples,
+        train_labels=labels,
+        batch_size=batch_size,
+        loss_fn=bolt.CategoricalCrossEntropyLoss(),
+        learning_rate=learning_rate,
+        epochs=epochs,
+        verbose=False,
+    )
+    # print("difference of the weights in the non-trainable layer before and after training")
+    after_training_weigths=network.get_weights(0)
+    # print(after_training_weigths-before_training_weigths)
+    
+
+    acc, _ = network.predict(
+        examples, labels, batch_size, ["categorical_accuracy"], verbose=False
+    )
+
+    return acc["categorical_accuracy"],np.linalg.norm(after_training_weigths-before_training_weigths)
 
 def train_sparse_bolt_model(
     x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, inp_dim, n_classes
@@ -97,6 +137,22 @@ def test_read_easy_mock_data():
     acc = train_simple_bolt_model(examples, labels)
     assert acc > 0.8
 
+@pytest.mark.unit
+def test_read_easy_mock_data_trainable():
+    """
+    Generates easy mock dataset as a numpy array and asserts that BOLT performs well.
+    """
+    n_classes = 10
+    n_samples = 1000
+    possible_one_hot_encodings = np.eye(n_classes)
+    labels = np.random.choice(n_classes, size=n_samples)
+    examples = possible_one_hot_encodings[labels]
+    noise = np.random.normal(0, 0.1, examples.shape)
+    examples = examples + noise
+
+    acc,norm = train_simple_bolt_model_trainable(examples, labels)
+    assert acc > 0.8
+    assert norm<0.001
 
 @pytest.mark.unit
 def test_mock_sparse_data():

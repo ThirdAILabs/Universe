@@ -8,6 +8,7 @@
 #include "SequentialLayer.h"
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
+#include <_types/_uint32_t.h>
 #include <cstdint>
 
 namespace thirdai::bolt {
@@ -74,6 +75,8 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   float* getBiases() final;
 
+  void setTrainable(bool trainable) final;
+
   void setWeights(const float* new_weights) final;
 
   void setBiases(const float* new_biases) final;
@@ -83,6 +86,7 @@ class FullyConnectedLayer final : public SequentialLayer {
  private:
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
+  bool _trainable;
   ActivationFunction _act_func;
 
   std::vector<float> _weights;
@@ -170,3 +174,5 @@ class FullyConnectedLayer final : public SequentialLayer {
 CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedLayer)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(thirdai::bolt::SequentialLayer,
                                      thirdai::bolt::FullyConnectedLayer)
+
+//might have to change the serialize function?

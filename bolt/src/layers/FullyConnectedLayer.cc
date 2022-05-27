@@ -15,6 +15,10 @@ FullyConnectedLayer::FullyConnectedLayer(
       _prev_dim(prev_dim),
       _sparse_dim(config.sparsity * config.dim),
       _sparsity(config.sparsity),
+
+      //adding trainable parameter in the config file? by default the layers are trainable
+      _trainable(true),
+
       _act_func(config.act_func),
       _weights(config.dim * prev_dim),
       _w_gradient(config.dim * prev_dim, 0),
@@ -44,7 +48,14 @@ FullyConnectedLayer::FullyConnectedLayer(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow);
 
+    //if the layer in non-trainable, we generate the hash tables only once and then let them be
+    //build hashtables only generats a hash-table if trainable is true
+
+    bool temp_store_trainable=_trainable;
+    _trainable=true;
     buildHashTables();
+    _trainable=temp_store_trainable;
+
 
     _rand_neurons = std::vector<uint32_t>(_dim);
 
@@ -304,6 +315,14 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 
+
+  //if the layer is non-trainable, skip updating the parameters
+  if(!_trainable){
+    cleanupWithinBatchVars();
+    return;
+  }
+
+  //continue if trainable layer
   if (!_prev_is_dense && !_this_is_dense) {
     updateSparseSparseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
                                        B2_bias_corrected);
@@ -458,6 +477,13 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
 }
 
 void FullyConnectedLayer::buildHashTables() {
+
+  //if layer is non-trainable, then generate hash table only once. 
+  //if the call is made while initializing the layer, generate. otherwise do not 
+  if(!_trainable){
+    return;
+  }
+
   if (_sparsity >= 1.0 || _force_sparse_for_inference) {
     return;
   }
@@ -476,6 +502,11 @@ void FullyConnectedLayer::buildHashTables() {
 }
 
 void FullyConnectedLayer::reBuildHashFunction() {
+
+  
+  if(!_trainable){
+    return;
+  }
   if (_sparsity >= 1.0 || _force_sparse_for_inference) {
     return;
   }
@@ -496,6 +527,10 @@ float* FullyConnectedLayer::getWeights() {
   std::copy(_weights.begin(), _weights.end(), weights_copy);
 
   return weights_copy;
+}
+
+void FullyConnectedLayer::setTrainable(bool trainable){
+  _trainable=trainable;
 }
 
 float* FullyConnectedLayer::getBiases() {

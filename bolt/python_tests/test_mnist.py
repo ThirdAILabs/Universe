@@ -45,7 +45,20 @@ def build_sparse_output_layer_network():
     ]
     network = bolt.Network(layers=layers, input_dim=784)
     return network
-
+# adds a non-trainable layer to the network
+def build_sparse_output_layer_network_trainable():
+    layers = [
+        bolt.FullyConnected(dim=256, activation_function=bolt.ActivationFunctions.ReLU),
+        bolt.FullyConnected(dim=256, activation_function=bolt.ActivationFunctions.ReLU),
+        bolt.FullyConnected(
+            dim=10,
+            load_factor=0.2,
+            activation_function=bolt.ActivationFunctions.Softmax,
+        ),
+    ]
+    network = bolt.Network(layers=layers, input_dim=784)
+    network.setTrainable(layer_index=1,trainable=False)
+    return network
 
 # Constructs a bolt network for mnist with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
 def build_sparse_hidden_layer_network(dim, sparsity):
@@ -89,6 +102,31 @@ def load_mnist():
 ACCURACY_THRESHOLD = 0.94
 SPARSE_INFERENCE_ACCURACY_THRESHOLD = 0.9
 SPARSE_INFERENCE_SPARSE_OUTPUT_ACCURACY_THRESHOLD = 0.35
+
+def test_mnist_sparse_output_layer_trainable():
+    network = build_sparse_output_layer_network_trainable()
+
+    train_x, train_y, test_x, test_y = load_mnist()
+    # layer 1 is the non-trainable layer
+    before_training_weigths=network.get_weights(1)
+    train_network(network, train_x, train_y, epochs=20)
+
+    acc, activations = network.predict(
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
+    )
+    after_training_weigths=network.get_weights(1)
+    assert acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
+    # checking that matrix has not changed
+    assert np.linalg.norm(after_training_weigths-before_training_weigths)<0.001
+    # This last check is just to make sure that the accuracy computed in c++ matches
+    # what we can compute here using the returned activations. This verifies that the
+    # returned activations match and that the metrics are computed correctly.
+    predictions = np.argmax(activations, axis=1)
+
+    labels = load_mnist_labels()
+    acc_computed = np.mean(predictions == labels)
+
+    assert acc_computed == acc["categorical_accuracy"]
 
 
 def test_mnist_sparse_output_layer():
