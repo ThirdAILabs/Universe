@@ -35,27 +35,41 @@ namespace thirdai::bolt::python {
 using thirdai::dataset::python::NumpyArray;
 
 class BoltDatasetNumpyContext {
+  /*
+   * The purpose of this class is to make sure that a BoltDataset constructed
+   * from a numpy array is memory safe by ensuring that the numpy arrays it is
+   * constructed from cannot go out of scope while the dataset is in scope. This
+   * problem arrises because if the numpy arrays passed in are not uint32 or
+   * float32 then when we cast to that array type a copy will occur. This
+   * resulting copy of the array will be a local copy, and thus when the method
+   * constructing the dataset returns, the copy will go out of scope and the
+   * dataset will be invalidated. This solves that issue.
+   */
  public:
   dataset::BoltDatasetPtr dataset;
 
   explicit BoltDatasetNumpyContext()
-      : dataset(nullptr), arr1(std::nullopt), arr2(std::nullopt) {}
+      : dataset(nullptr),
+        dataset_context_1(std::nullopt),
+        dataset_context_2(std::nullopt) {}
 
   explicit BoltDatasetNumpyContext(dataset::BoltDatasetPtr&& _dataset)
-      : dataset(_dataset), arr1(std::nullopt), arr2(std::nullopt) {}
+      : dataset(_dataset),
+        dataset_context_1(std::nullopt),
+        dataset_context_2(std::nullopt) {}
 
   explicit BoltDatasetNumpyContext(NumpyArray<float>& examples,
                                    uint32_t batch_size)
-      : arr2(std::nullopt) {
+      : dataset_context_2(std::nullopt) {
     dataset = dataset::python::denseBoltDatasetFromNumpy(examples, batch_size);
-    arr1 = examples.request();
+    dataset_context_1 = examples.request();
   }
 
   explicit BoltDatasetNumpyContext(NumpyArray<uint32_t>& labels,
                                    uint32_t batch_size)
-      : arr2(std::nullopt) {
+      : dataset_context_2(std::nullopt) {
     dataset = dataset::python::categoricalLabelsFromNumpy(labels, batch_size);
-    arr1 = labels.request();
+    dataset_context_1 = labels.request();
   }
 
   explicit BoltDatasetNumpyContext(NumpyArray<uint32_t>& indices,
@@ -64,13 +78,13 @@ class BoltDatasetNumpyContext {
                                    uint32_t batch_size) {
     dataset = dataset::python::sparseBoltDatasetFromNumpy(indices, values,
                                                           offsets, batch_size);
-    arr1 = indices.request();
-    arr2 = values.request();
+    dataset_context_1 = indices.request();
+    dataset_context_2 = values.request();
   }
 
  private:
-  std::optional<py::buffer_info> arr1;
-  std::optional<py::buffer_info> arr2;
+  std::optional<py::buffer_info> dataset_context_1;
+  std::optional<py::buffer_info> dataset_context_2;
 };
 
 void createBoltSubmodule(py::module_& module);
