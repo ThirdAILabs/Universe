@@ -27,7 +27,7 @@ void createDatasetSubmodule(py::module_& module) {
   // object without a name and never using it.
   py::class_<InMemoryDataset<SparseBatch>>(dataset_submodule,  // NOLINT
                                            "InMemorySparseDataset");
-  
+
   // The no lint below is because clang tidy doesn't like instantiating an
   // object without a name and never using it.
   py::class_<InMemoryDataset<DenseBatch>>(dataset_submodule,  // NOLINT
@@ -46,10 +46,8 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<MockBlock, Block, std::shared_ptr<MockBlock>>(
       internal_dataset_submodule, "MockBlock",
       "Mock implementation of block abstract class for testing purposes.")
-      .def(
-          py::init<uint32_t, bool>(),
-          py::arg("column"), py::arg("dense"),
-          "Constructor")
+      .def(py::init<uint32_t, bool>(), py::arg("column"), py::arg("dense"),
+           "Constructor")
       .def("feature_dim", &MockBlock::featureDim,
            "Returns the dimension of the vector encoding.")
       .def("is_dense", &MockBlock::isDense,
@@ -65,7 +63,8 @@ void createDatasetSubmodule(py::module_& module) {
           py::init<std::vector<std::shared_ptr<Block>>&,
                    std::vector<std::shared_ptr<Block>>&, uint32_t>(),
           py::arg("input_blocks"), py::arg("target_blocks"),
-          py::arg("output_batch_size"), py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
+          py::arg("output_batch_size"), py::keep_alive<1, 2>(),
+          py::keep_alive<1, 3>(),
           "Constructor\n\n"
           "Arguments:\n"
           " * input_blocks: List of Blocks - Blocks that encode input samples "
@@ -75,7 +74,8 @@ void createDatasetSubmodule(py::module_& module) {
           " * output_batch_size: Int (positive) - Size of batches in the "
           "produced "
           "dataset.")
-      .def("process_batch", &PyBatchProcessor::processBatchPython, py::arg("row_batch"),
+      .def("process_batch", &PyBatchProcessor::processBatchPython,
+           py::arg("row_batch"),
            "Consumes a batch of input samples and encodes them as vectors.\n\n"
            "Arguments:\n"
            " * row_batch: List of lists of strings - We expect to read tabular "
@@ -195,11 +195,13 @@ void createDatasetSubmodule(py::module_& module) {
       " * dimensions: Int (positive) - (Optional) The dimension of each token "
       "embedding. "
       "Defaults to 100,000.");
-  
-  internal_dataset_submodule.def("dense_bolt_dataset_matches_dense_matrix", &denseBoltDatasetMatchesDenseMatrix,
-  py::arg("dataset"), py::arg("matrix"),
-  "Checks whether the given bolt dataset and dense 2d matrix "
-  "have the same values. For testing purposes only.");
+
+  internal_dataset_submodule.def(
+      "dense_bolt_dataset_matches_dense_matrix",
+      &denseBoltDatasetMatchesDenseMatrix, py::arg("dataset"),
+      py::arg("matrix"),
+      "Checks whether the given bolt dataset and dense 2d matrix "
+      "have the same values. For testing purposes only.");
 }
 
 InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
@@ -617,7 +619,8 @@ parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
   return std::make_tuple(result, result_2);
 }
 
-bool denseBoltDatasetMatchesDenseMatrix(BoltDataset& dataset, std::vector<std::vector<float>>& matrix) {
+bool denseBoltDatasetMatchesDenseMatrix(
+    BoltDataset& dataset, std::vector<std::vector<float>>& matrix) {
   uint32_t batch_size = dataset.at(0).getBatchSize();
   bool match = true;
 

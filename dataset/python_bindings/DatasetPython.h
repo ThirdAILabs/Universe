@@ -4,8 +4,8 @@
 #include <dataset/src/Dataset.h>
 #include <dataset/src/batch_types/DenseBatch.h>
 #include <dataset/src/batch_types/SparseBatch.h>
-#include <dataset/src/core/BatchProcessor.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/core/BatchProcessor.h>
 #include <pybind11/cast.h>
 #include <pybind11/gil.h>
 #include <pybind11/numpy.h>
@@ -102,27 +102,26 @@ std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
 parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
                            uint32_t dimension);
 
-/** 
+/**
  * Checks whether the given bolt dataset and dense 2d matrix
  * have the same values. For testing purposes only.
  */
-bool denseBoltDatasetMatchesDenseMatrix(BoltDataset& dataset, std::vector<std::vector<float>>& matrix);
+bool denseBoltDatasetMatchesDenseMatrix(
+    BoltDataset& dataset, std::vector<std::vector<float>>& matrix);
 
 class PyBatchProcessor : public BatchProcessor {
  public:
-
-  PyBatchProcessor(
-    std::vector<std::shared_ptr<Block>>& input_blocks,
-    std::vector<std::shared_ptr<Block>>& target_blocks,
-    uint32_t output_batch_size): BatchProcessor(input_blocks, target_blocks, output_batch_size) {}
+  PyBatchProcessor(std::vector<std::shared_ptr<Block>>& input_blocks,
+                   std::vector<std::shared_ptr<Block>>& target_blocks,
+                   uint32_t output_batch_size)
+      : BatchProcessor(input_blocks, target_blocks, output_batch_size) {}
 
   /**
    * Just like the original processBatch method but GIL is released
-   * so we can process batches while the next input rows are 
+   * so we can process batches while the next input rows are
    * processed in python.
    */
-  void processBatchPython(
-    std::vector<std::vector<std::string>>& batch) {
+  void processBatchPython(std::vector<std::vector<std::string>>& batch) {
     py::gil_scoped_release release;
     processBatch(batch);
   }

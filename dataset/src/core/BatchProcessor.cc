@@ -25,12 +25,12 @@ BatchProcessor::BatchProcessor(
                                          return block->isDense();
                                        })),
       /**
-       * Here we copy input_blocks and target_blocks because when we 
-       * accept a vector representation of a Python List created by 
-       * PyBind11, the vector does not persist beyond this function 
+       * Here we copy input_blocks and target_blocks because when we
+       * accept a vector representation of a Python List created by
+       * PyBind11, the vector does not persist beyond this function
        * call, which results in segfaults later down the line.
        * It is therefore safest to just copy these vectors.
-       * Furthermore, these vectors are cheap to copy since they contain a 
+       * Furthermore, these vectors are cheap to copy since they contain a
        * small number of elements and each element is a pointer.
        */
       _input_blocks(input_blocks),
