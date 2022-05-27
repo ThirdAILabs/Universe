@@ -22,13 +22,6 @@ class Loader:
 
     The source and schema can be set using the set_source() and
     set_schema() methods respectively.
-
-    Usage notes:
-    - The default batch size is 1.
-    - If the shuffle() method is called, the whole dataset is loaded into memory.
-      Otherwise, rows is streamed from the file in batches.
-    - Calling process() before setting source, parser and schema
-
     """
 
     def __init__(
@@ -61,8 +54,6 @@ class Loader:
         self.set_batch_size(batch_size)
         self._shuffle_rows = shuffle
         self._shuffle_seed = shuffle_seed
-        self._last_random_state = None
-        self._loaded_entire_dataset_in_memory = False
 
     def set_source(self, source: Source):
         """Defines the location of the dataset.
@@ -130,6 +121,16 @@ class Loader:
             raw_batch.append(next_row)
             counter += 1
 
+            # This class is meant to be a parallel streaming data loader.
+            # We are slowly transitioning to a C++ implementation and a
+            # producer-consumer pattern. However, due to the limitations
+            # of the current hybrid implementation, the best we can do
+            # now is to read lines from file and process it in batches.
+            # A large batch size is good for parallelism but a smaller
+            # batch size will minimize memory consumption and latency.
+            # Based on empirical observations, 8192 seems to be the
+            # sweet spot.
+            # TODO: Make this load in true parallel and streaming fashion.
             if counter == 8192:
                 processor.process_batch(raw_batch)
                 raw_batch = []
