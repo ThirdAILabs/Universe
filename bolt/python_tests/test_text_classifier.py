@@ -69,7 +69,7 @@ def test_text_classifier_clinc_dataset():
     (n_classes, test_labels) = download_clinc_dataset()
     classifier = bolt.TextClassifier(model_size="small", n_classes=n_classes)
 
-    classifier.train(train_file=TRAIN_FILE, epochs=5)
+    classifier.train(train_file=TRAIN_FILE, epochs=5, learning_rate=0.01)
 
     classifier.predict(test_file=TEST_FILE, output_file=PREDICTION_FILE)
 
