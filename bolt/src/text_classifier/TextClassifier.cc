@@ -1,10 +1,13 @@
 #include "TextClassifier.h"
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
-#include <cctype>
+#include <algorithm>
 #include <fstream>
 #include <memory>
+#include <optional>
+#include <regex>
 #include <stdexcept>
+#include <string>
 #include <thread>
 
 #if defined __linux
@@ -22,11 +25,11 @@
 namespace thirdai::bolt {
 
 // Autotuning helper functions
-static uint32_t getHiddenLayerSize(std::string model_size, uint64_t n_classes,
-                                   uint64_t input_dim);
+static uint32_t getHiddenLayerSize(const std::string& model_size,
+                                   uint64_t n_classes, uint64_t input_dim);
 static float getHiddenLayerSparsity(uint64_t layer_size);
 static std::optional<uint64_t> getSystemRam();
-static uint32_t getNumCpus();
+static uint64_t getMemoryBudget(const std::string& model_size);
 
 TextClassifier::TextClassifier(const std::string& model_size,
                                uint32_t n_classes) {
@@ -143,7 +146,7 @@ void TextClassifier::predict(
   }
 }
 
-uint32_t getHiddenLayerSize(std::string model_size, uint64_t n_classes,
+uint32_t getHiddenLayerSize(const std::string& model_size, uint64_t n_classes,
                             uint64_t input_dim) {
   /*
     Estimated num parameters = (input_dim + n_classes) * hidden_dim
@@ -157,50 +160,66 @@ uint32_t getHiddenLayerSize(std::string model_size, uint64_t n_classes,
     amount of ram.
   */
   // TODO(nicholas): what if getSystemRam() fails?
-  uint64_t max_hidden_layer_size =
-      getSystemRam().value() / (input_dim + n_classes);
+  uint64_t memory_budget = getMemoryBudget(model_size);
 
-  for (char& c : model_size) {
-    c = std::tolower(c);
-  }
-
-  // Choose fraction of memory to use based off of specified model size
-  uint64_t hidden_layer_size;
-  if (model_size == "small") {
-    hidden_layer_size = max_hidden_layer_size / 32;
-  } else if (model_size == "medium") {
-    hidden_layer_size = max_hidden_layer_size / 16;
-  } else if (model_size == "large") {
-    hidden_layer_size = max_hidden_layer_size / 8;
-  } else {
-    throw std::invalid_argument("Invalid model size paramter '" + model_size +
-                                "'. Please use 'small', 'medium', or 'large'.");
-  }
-
-  // Update model size based off of number of cpus.
-  uint32_t ncpus = getNumCpus();
-
-  /*
-   (0,6) CPUs is a smaller laptop so the layer size is decreased.
-   [6, 12) CPUs is a large laptop or a small server so the size is unchanged.
-   [12, ...) CPUs is a large server so we increase the layer size.
-  */
-
-  if (ncpus < 6) {
-    // Likely a smaller laptop - decrease layer size.
-    hidden_layer_size /= 2;
-  } else if (ncpus >= 12) {
-    // Larger server - increase layer size
-    hidden_layer_size *= 2;
-  }
-
-  if (hidden_layer_size > 100000) {
-    std::cout << "Warning: text classifier autotune returned oversized layer: "
-              << hidden_layer_size << std::endl;
-    hidden_layer_size = 100000;
-  }
+  uint64_t hidden_layer_size = memory_budget / (16 * (input_dim + n_classes));
 
   return hidden_layer_size;
+}
+
+static constexpr uint64_t ONE_GB = 1 << 30;
+
+uint64_t getMemoryBudget(const std::string& model_size) {
+  std::regex small_re("[Ss]mall");
+  std::regex medium_re("[Mm]edium");
+  std::regex large_re("[Ll]arge");
+  std::regex gig_re("[1-9]\\d* ?Gb");
+
+  std::optional<uint64_t> system_ram_opt = getSystemRam();
+
+  if (!system_ram_opt) {
+    std::cout << "WARNING: Unable to determine total RAM on your machine. "
+                 "Using default of 8Gb."
+              << std::endl;
+  }
+
+  // If unable to find system RAM assume max ram is 8Gb
+  uint64_t system_ram = getSystemRam().value_or(8 * ONE_GB);
+
+  // For small models we use either 1Gb of 1/16th of the total RAM, whichever is
+  // smaller.
+  if (std::regex_search(model_size, small_re)) {
+    return std::min(system_ram / 16, ONE_GB);
+  }
+
+  // For medium models we use either 2Gb of 1/8th of the total RAM, whichever is
+  // smaller.
+  if (std::regex_search(model_size, medium_re)) {
+    return std::min(system_ram / 8, 2 * ONE_GB);
+  }
+
+  // For large models we use either 4Gb of 1/4th of the total RAM, whichever is
+  // smaller.
+  if (std::regex_search(model_size, large_re)) {
+    return std::min(system_ram / 4, 4 * ONE_GB);
+  }
+
+  if (std::regex_search(model_size, gig_re)) {
+    uint64_t requested_size = std::stoull(model_size) * ONE_GB;
+
+    if (requested_size > (system_ram / 2)) {
+      std::cout << "WARNING: You have requested " << model_size
+                << " for your text classifier. This is over 1/2 of the total "
+                   "RAM on your machine."
+                << std::endl;
+    }
+
+    return std::min(requested_size, system_ram);
+  }
+
+  throw std::invalid_argument(
+      "'model_size' parameter must be either 'small', 'medium', 'large', or a "
+      "gigabyte size of the model, i.e. 5Gb");
 }
 
 float getHiddenLayerSparsity(uint64_t layer_size) {
@@ -218,8 +237,6 @@ float getHiddenLayerSparsity(uint64_t layer_size) {
   }
   return 0.005;
 }
-
-uint32_t getNumCpus() { return std::thread::hardware_concurrency(); }
 
 std::optional<uint64_t> getSystemRam() {
 #if defined __linux__

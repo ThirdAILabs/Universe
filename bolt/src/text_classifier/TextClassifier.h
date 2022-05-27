@@ -8,7 +8,6 @@
 #include <dataset/src/bolt_datasets/DataLoader.h>
 #include <dataset/src/bolt_datasets/StreamingDataset.h>
 #include <dataset/src/bolt_datasets/batch_processors/TextClassificationProcessor.h>
-#include <fstream>
 #include <memory>
 
 namespace thirdai::bolt {
