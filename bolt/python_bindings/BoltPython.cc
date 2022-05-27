@@ -595,8 +595,8 @@ void createBoltSubmodule(py::module_& module) {
            "of a 2D Numpy matrix of floats.");
 
   py::class_<TextClassifier>(bolt_submodule, "TextClassifier")
-      .def(py::init<const std::string&, uint32_t, uint32_t>(),
-           py::arg("model_size"), py::arg("n_classes"),
+      .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
+           py::arg("n_classes"),
            "Constructs a TextClassifier with autotuning.\n"
            "Arguments:\n"
            " * model_size: string - Either 'small', 'medium', or 'large', an "
