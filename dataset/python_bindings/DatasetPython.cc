@@ -2,6 +2,7 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
 #include <chrono>
@@ -42,6 +43,18 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &Block::isDense,
            "True if the block produces dense features, False otherwise.");
 
+  py::class_<MockBlock, Block, std::shared_ptr<MockBlock>>(
+      internal_dataset_submodule, "MockBlock",
+      "Mock implementation of block abstract class for testing purposes.")
+      .def(
+          py::init<uint32_t, bool>(),
+          py::arg("column"), py::arg("dense"),
+          "Constructor")
+      .def("feature_dim", &MockBlock::featureDim,
+           "Returns the dimension of the vector encoding.")
+      .def("is_dense", &MockBlock::isDense,
+           "True if the block produces dense features, False otherwise.");
+
   py::class_<PyBatchProcessor>(
       internal_dataset_submodule, "BatchProcessor",
       "Encodes input samples – each represented by a sequence of strings – "
@@ -52,7 +65,7 @@ void createDatasetSubmodule(py::module_& module) {
           py::init<std::vector<std::shared_ptr<Block>>&,
                    std::vector<std::shared_ptr<Block>>&, uint32_t>(),
           py::arg("input_blocks"), py::arg("target_blocks"),
-          py::arg("output_batch_size"),
+          py::arg("output_batch_size"), py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
           "Constructor\n\n"
           "Arguments:\n"
           " * input_blocks: List of Blocks - Blocks that encode input samples "
@@ -80,10 +93,6 @@ void createDatasetSubmodule(py::module_& module) {
            " * shuffle_seed: Int (Optional) - The seed for the RNG for "
            "shuffling the "
            "dataset.");
-
-  py::class_<InMemoryDataset<SparseBatch>> _imsd_(dataset_submodule,
-                                                  "InMemorySparseDataset");
-  (void)_imsd_;  // To get rid of clang tidy error
 
   dataset_submodule.def("load_svm_dataset", &loadSVMDataset,
                         py::arg("filename"), py::arg("batch_size"));
@@ -186,6 +195,11 @@ void createDatasetSubmodule(py::module_& module) {
       " * dimensions: Int (positive) - (Optional) The dimension of each token "
       "embedding. "
       "Defaults to 100,000.");
+  
+  internal_dataset_submodule.def("dense_bolt_dataset_matches_dense_matrix", &denseBoltDatasetMatchesDenseMatrix,
+  py::arg("dataset"), py::arg("matrix"),
+  "Checks whether the given bolt dataset and dense 2d matrix "
+  "have the same values. For testing purposes only.");
 }
 
 InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
@@ -601,6 +615,24 @@ parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
   }
 
   return std::make_tuple(result, result_2);
+}
+
+bool denseBoltDatasetMatchesDenseMatrix(BoltDataset& dataset, std::vector<std::vector<float>>& matrix) {
+  uint32_t batch_size = dataset.at(0).getBatchSize();
+  bool match = true;
+
+  for (uint32_t batch_idx = 0; batch_idx < dataset.numBatches(); batch_idx++) {
+    auto& batch = dataset.at(batch_idx);
+    for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
+      auto& vec = batch[vec_idx];
+      uint32_t row = batch_idx * batch_size + vec_idx;
+      for (uint32_t col = 0; col < vec.len; col++) {
+        match = match && (matrix[row][col] == vec.activations[col]);
+      }
+    }
+  }
+
+  return match;
 }
 
 }  // namespace thirdai::dataset::python

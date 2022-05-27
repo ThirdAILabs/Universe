@@ -33,7 +33,7 @@ struct BatchProcessor {
       bool shuffle = false,
       uint32_t shuffle_seed =
           std::chrono::system_clock::now().time_since_epoch().count());
-
+  
  private:
   /**
    * Produces a mapping from the final position of a vector in
@@ -56,8 +56,17 @@ struct BatchProcessor {
   bool _target_blocks_dense;
   std::vector<bolt::BoltVector> _input_vectors;
   std::vector<bolt::BoltVector> _target_vectors;
-  std::vector<std::shared_ptr<Block>>& _input_blocks;
-  std::vector<std::shared_ptr<Block>>& _target_blocks;
+  /**
+   * because using references will cause errors when given Python
+   * lists through PyBind11. This is because while the PyBind11 creates
+   * an std::vector representation of a Python list when passing it to 
+   * a C++ function, the vector does not persist beyond the function 
+   * call, so future references to the vector will cause a segfault.
+   * Furthermore, these vectors are cheap to copy since they contain a 
+   * small number of elements and each element is a pointer.
+   */
+  std::vector<std::shared_ptr<Block>> _input_blocks;
+  std::vector<std::shared_ptr<Block>> _target_blocks;
 };
 
 }  // namespace thirdai::dataset

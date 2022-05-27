@@ -1,3 +1,4 @@
+#include "MockBlock.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Dataset.h>
@@ -14,39 +15,6 @@
 #include <vector>
 
 namespace thirdai::dataset {
-
-/**
- * A mock block that parses a floating point number
- * in the specified column and produces a one-dimensional
- * vector with the number as its value.
- */
-class MockBlock : public Block {
- public:
-  explicit MockBlock(uint32_t column, bool dense)
-      : _column(column), _dense(dense) {}
-
-  uint32_t featureDim() const override { return 1; };
-
-  bool isDense() const override { return _dense; };
-
- protected:
-  void buildExtension(const std::vector<std::string>& input_row,
-                      ExtendableVector& vec) override {
-    const std::string& col_str = input_row.at(_column);
-    char* end;
-    float val = std::strtof(col_str.c_str(), &end);
-
-    if (_dense) {
-      vec.addExtensionDenseFeature(val);
-    } else {
-      vec.addExtensionSparseFeature(0, val);
-    }
-  };
-
- private:
-  uint32_t _column;
-  bool _dense;
-};
 
 /**
  * Helper function to generate random matrix of floating point
@@ -213,6 +181,8 @@ void checkCorrectUnshuffledDatasetImpl(
 
   auto dense_matrix_1 = makeRandomDenseMatrix(/* n_rows = */ 500, n_cols);
   auto str_matrix_1 = makeStringMatrix(dense_matrix_1);
+  std::cout << "ROWS " << str_matrix_1.size();
+  std::cout << "COLS " << str_matrix_1.front().size();
   auto dense_bolt_vecs_1 = makeDenseBoltVectors(dense_matrix_1);
   auto sparse_bolt_vecs_1 = makeSparseBoltVectors(dense_matrix_1);
 
