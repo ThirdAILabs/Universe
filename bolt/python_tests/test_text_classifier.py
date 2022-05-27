@@ -67,7 +67,7 @@ def compute_accuracy(test_labels, pred_file):
 @pytest.mark.release
 def test_text_classifier_clinc_dataset():
     (n_classes, test_labels) = download_clinc_dataset()
-    classifier = bolt.TextClassifier(model_size="small", n_classes=n_classes)
+    classifier = bolt.TextClassifier(model_size="1Gb", n_classes=n_classes)
 
     classifier.train(train_file=TRAIN_FILE, epochs=5, learning_rate=0.01)
 
