@@ -204,7 +204,7 @@ void createDatasetSubmodule(py::module_& module) {
       py::arg("matrix"),
       "Checks whether the given bolt dataset and dense 2d matrix "
       "have the same values. For testing purposes only.");
-  
+
   internal_dataset_submodule.def(
       "dense_bolt_dataset_is_permutation_of_dense_matrix",
       &denseBoltDatasetIsPermutationOfDenseMatrix, py::arg("dataset"),
@@ -213,11 +213,10 @@ void createDatasetSubmodule(py::module_& module) {
       "the rows of the given dense 2d matrix. Assumes that each row of "
       "the matrix is 1-dimensional; only has one element. For testing "
       "purposes only.");
-  
+
   internal_dataset_submodule.def(
-      "dense_bolt_datasets_are_equal",
-      &denseBoltDatasetsAreEqual, py::arg("dataset1"),
-      py::arg("dataset2"),
+      "dense_bolt_datasets_are_equal", &denseBoltDatasetsAreEqual,
+      py::arg("dataset1"), py::arg("dataset2"),
       "Checks whether the given bolt datasets have the same values. "
       "For testing purposes only.");
 }
@@ -658,42 +657,39 @@ bool denseBoltDatasetMatchesDenseMatrix(
 
 bool denseBoltDatasetIsPermutationOfDenseMatrix(
     BoltDataset& dataset, std::vector<std::vector<float>>& matrix) {
-    
-    // If one is a permutation of the other, they must have the same
-    // number of rows / vectors.
-    bool is_permutation = dataset.len() == matrix.size();
+  // If one is a permutation of the other, they must have the same
+  // number of rows / vectors.
+  bool is_permutation = dataset.len() == matrix.size();
 
-    // Keep track of values in the matrix
-    std::unordered_map<float, uint32_t> expected_values;
-    for (const auto& row : matrix) {
-      assert(row.size == 1);
-      // Assume each row is 1-dimensional.
-      expected_values[row.at(0)]++;
+  // Keep track of values in the matrix
+  std::unordered_map<float, uint32_t> expected_values;
+  for (const auto& row : matrix) {
+    assert(row.size == 1);
+    // Assume each row is 1-dimensional.
+    expected_values[row.at(0)]++;
+  }
+
+  // Since each row only has one element, and we made sure that
+  // the bolt dataset and the matrix have the same number of
+  // vectors / rows, we now only need to make sure that
+  // the bolt dataset contains the right number of occurrences
+  // of each value in the matrix.
+  std::unordered_map<float, uint32_t> actual_values;
+  for (uint32_t batch_idx = 0; batch_idx < dataset.numBatches(); batch_idx++) {
+    auto& batch = dataset[batch_idx];
+    for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
+      actual_values[batch[vec_idx].activations[0]]++;
     }
+  }
 
-    // Since each row only has one element, and we made sure that
-    // the bolt dataset and the matrix have the same number of 
-    // vectors / rows, we now only need to make sure that 
-    // the bolt dataset contains the right number of occurrences
-    // of each value in the matrix.
-    std::unordered_map<float, uint32_t> actual_values;
-    for (uint32_t batch_idx = 0; batch_idx < dataset.numBatches(); batch_idx++) {
-      auto& batch = dataset[batch_idx];
-      for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-        actual_values[batch[vec_idx].activations[0]]++;
-      }
-    }
+  for (const auto& [val, count] : actual_values) {
+    is_permutation = is_permutation && (count == expected_values[val]);
+  }
 
-    for (const auto& [val, count] : actual_values) {
-      is_permutation = is_permutation && (count == expected_values[val]);
-    }
-
-    return is_permutation;
+  return is_permutation;
 }
 
-bool denseBoltDatasetsAreEqual(
-    BoltDataset& dataset1, BoltDataset& dataset2) {
-  
+bool denseBoltDatasetsAreEqual(BoltDataset& dataset1, BoltDataset& dataset2) {
   bool equal = true;
 
   for (uint32_t batch_idx = 0; batch_idx < dataset1.numBatches(); batch_idx++) {
@@ -703,13 +699,13 @@ bool denseBoltDatasetsAreEqual(
       auto& vec1 = batch1[vec_idx];
       auto& vec2 = batch2[vec_idx];
       for (uint32_t elem_idx = 0; elem_idx < vec1.len; elem_idx++) {
-        equal = equal && vec1.activations[elem_idx] == vec2.activations[elem_idx];
+        equal =
+            equal && vec1.activations[elem_idx] == vec2.activations[elem_idx];
       }
     }
   }
 
   return equal;
 }
-
 
 }  // namespace thirdai::dataset::python

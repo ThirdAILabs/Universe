@@ -31,8 +31,7 @@ struct BatchProcessor {
    * This method can optionally produce a shuffled dataset.
    */
   std::pair<BoltDatasetPtr, BoltDatasetPtr> exportInMemoryDataset(
-      bool shuffle = false,
-      uint32_t shuffle_seed = std::rand());
+      bool shuffle = false, uint32_t shuffle_seed = std::rand());
 
  private:
   /**

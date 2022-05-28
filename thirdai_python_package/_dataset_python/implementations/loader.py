@@ -7,6 +7,7 @@ from thirdai._thirdai import dataset
 from thirdai._thirdai import dataset_internal
 import random
 
+
 class Loader:
     """A dataset loader and preprocessor.
     This object loads data from a specified source and encodes it as
@@ -30,7 +31,7 @@ class Loader:
         schema: Schema = None,
         batch_size: int = 256,
         shuffle: bool = False,
-        shuffle_seed: int = random.randint(0, 0xFFFFFFFF)
+        shuffle_seed: int = random.randint(0, 0xFFFFFFFF),
     ):
         """Constructor.
 
@@ -97,7 +98,7 @@ class Loader:
         """Samples will be shuffled before being batched."""
         self._shuffle_rows = True
         # We use a ternary here instead of setting default seed to random.randint()
-        # because for some reason that causes the fault value to be the same every 
+        # because for some reason that causes the fault value to be the same every
         # time this function is invoked, instead of getting a new and different
         # random number each time.
         self._shuffle_seed = seed if seed is not None else random.randint(0, 0xFFFFFFFF)
