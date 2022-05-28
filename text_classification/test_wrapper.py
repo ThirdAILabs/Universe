@@ -113,8 +113,8 @@ def train_yelp(args):
         ),
     ]
 
-    train_data = dataset.load_bolt_svm_dataset(train_file_path, 1024)
-    test_data = dataset.load_bolt_svm_dataset(test_file_path, 256)
+    train_x, train_y = dataset.load_bolt_svm_dataset(train_file_path, 1024)
+    test_x, test_y = dataset.load_bolt_svm_dataset(test_file_path, 256)
 
     network = bolt.Network(layers=layers, input_dim=100000)
     epoch_times = []
@@ -122,7 +122,8 @@ def train_yelp(args):
 
     for _ in range(args.epochs):
         times = network.train(
-            train_data,
+            train_x,
+            train_y,
             bolt.CategoricalCrossEntropyLoss(),
             args.lr,
             1,
@@ -131,7 +132,7 @@ def train_yelp(args):
         )
         epoch_times.append(times["epoch_times"][0])
         acc, _ = network.predict(
-            test_data, metrics=["categorical_accuracy"], verbose=False
+            test_x, test_y, metrics=["categorical_accuracy"], verbose=False
         )
         epoch_accuracies.append(acc["categorical_accuracy"])
 
@@ -198,8 +199,8 @@ def test_preprocess():
     location = preprocess_data("mock.csv", is_train=False)
 
     sentiment_analysis_network = bolt.Network.load(filename=model_path)
-    test_data = dataset.load_bolt_svm_dataset(location, 256)
+    test_data, test_labels = dataset.load_bolt_svm_dataset(location, 256)
     acc, _ = sentiment_analysis_network.predict(
-        test_data, metrics=["categorical_accuracy"], verbose=False
+        test_data, test_labels, metrics=["categorical_accuracy"], verbose=False
     )
     assert acc["categorical_accuracy"] > 0.5

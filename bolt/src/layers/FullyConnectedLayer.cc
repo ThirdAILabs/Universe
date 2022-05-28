@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cmath>
 #include <exception>
+#include <numeric>
 #include <random>
 #include <unordered_map>
 
@@ -92,7 +93,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   _prev_is_dense = PREV_DENSE;
   _this_is_dense = DENSE;
 
-  if (!DENSE and !PREV_DENSE) {
+  if (!DENSE && !PREV_DENSE) {
     std::unique_ptr<ActiveNeuronsPair> active_pairs =
         std::make_unique<ActiveNeuronsPair>(std::vector<uint64_t>(),
                                             std::vector<uint64_t>());
@@ -335,9 +336,13 @@ inline void FullyConnectedLayer::updateSparseSparseWeightParameters(
   // 2. Having a bloom filter where we cheaply hash the active pairs to a bloom
   //    filter bit, and if it is already set in the bloom filter skip it,
   //    otherwise set the bit and do the gradient update.
-  for (auto& _active_pair : _active_pairs) {
-    for (uint64_t prev_neuron : _active_pair->first) {
-      for (uint64_t cur_neuron : _active_pair->second) {
+  for (uint32_t pair_id = 0; pair_id < _active_pairs.size();  // NOLINT
+       pair_id++) {
+    // MSVC doesn't like if we iterate over objects, only integers
+    // (but clang-tidy wants the range based for loop, so we need NOLINT above)
+    const auto& active_pair = _active_pairs[pair_id];
+    for (uint64_t prev_neuron : active_pair->first) {
+      for (uint64_t cur_neuron : active_pair->second) {
         updateSingleWeightParameters(prev_neuron, cur_neuron, lr, B1, B2, eps,
                                      B1_bias_corrected, B2_bias_corrected);
       }
@@ -410,13 +415,13 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
     _b_velocity[cur_neuron] =
         B2 * _b_velocity[cur_neuron] + (1 - B2) * grad * grad;
 
-    assert(!std::isnan(_b_momentum[n]));
-    assert(!std::isnan(_b_velocity[n]));
+    assert(!std::isnan(_b_momentum[cur_neuron]));
+    assert(!std::isnan(_b_velocity[cur_neuron]));
 
     _biases[cur_neuron] +=
         lr * (_b_momentum[cur_neuron] / B1_bias_corrected) /
         (std::sqrt(_b_velocity[cur_neuron] / B2_bias_corrected) + eps);
-    assert(!std::isnan(_biases[n]));
+    assert(!std::isnan(_biases[cur_neuron]));
 
     _b_gradient[cur_neuron] = 0;
     _is_active[cur_neuron] = false;

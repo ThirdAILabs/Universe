@@ -1,11 +1,11 @@
 import os
+from typing import Tuple
 
 from ..interfaces import Source, Parser
 from .schema import Schema
 from thirdai._thirdai import dataset
 from thirdai._thirdai import dataset_internal
 import random
-import time
 import threading
 
 
@@ -23,13 +23,6 @@ class Loader:
 
     The source and schema can be set using the set_source() and
     set_schema() methods respectively.
-
-    Usage notes:
-    - The default batch size is 1.
-    - If the shuffle() method is called, the whole dataset is loaded into memory.
-      Otherwise, rows is streamed from the file in batches.
-    - Calling process() before setting source, parser and schema
-
     """
 
     def __init__(
@@ -39,7 +32,7 @@ class Loader:
         schema: Schema = None,
         batch_size: int = 256,
         shuffle: bool = False,
-        shuffle_seed: int = 0,
+        shuffle_seed: int = random.randint(0, 0xFFFFFFFF),
     ):
         """Constructor.
 
@@ -62,8 +55,6 @@ class Loader:
         self.set_batch_size(batch_size)
         self._shuffle_rows = shuffle
         self._shuffle_seed = shuffle_seed
-        self._last_random_state = None
-        self._loaded_entire_dataset_in_memory = False
 
     def set_source(self, source: Source):
         """Defines the location of the dataset.
@@ -104,10 +95,14 @@ class Loader:
         self._batch_size = size
         return self  ### Returns self so we can chain the set() method calls.
 
-    def shuffle(self, seed: int = 0):
+    def shuffle(self, seed: int = None):
         """Samples will be shuffled before being batched."""
         self._shuffle_rows = True
-        self._shuffle_seed = seed
+        # We use a ternary here instead of setting default seed to random.randint()
+        # because for some reason that causes the fault value to be the same every
+        # time this function is invoked, instead of getting a new and different
+        # random number each time.
+        self._shuffle_seed = seed if seed is not None else random.randint(0, 0xFFFFFFFF)
         return self  ### Returns self so we can chain the set() method calls.
 
     def input_dim(self):
@@ -140,6 +135,14 @@ class Loader:
     def __load_all_and_process(self):
         """Helper function to load the whole dataset, processes each sample, and
         generates batches of vector embeddings.
+        We want to read lines from file in the main thread and 
+        process a batch of lines in parallel in other threads.
+        Visually, data will be processed like this:
+
+        read batch 0 | read batch 1    | read batch 2    | ...
+                     | process batch 0 | process batch 1 | process batch 2 | ...
+        time ------------------------------------------------------>
+        
         """
 
         # Initialization
@@ -151,12 +154,15 @@ class Loader:
             self._batch_size,
         )
 
-        # Read first batch of rows into memory.
-        # ~65,000 seems to be a good number based on empirical testing.
+        # Here, we read the first batch. 
+        # A large batch size is good for parallelism but a smaller
+        # batch size will minimize memory consumption and initial latency.
+        # Based on empirical observations, ~65,000 seems to give the best
+        # speed.
         old_batch = []
         self.__read(row_generator, 65536, old_batch)
 
-        # Define worker function for processing / featurizing thread.
+        # Define worker function for feature processing thread.
         def worker(batch):
             processor.process_batch(batch)
 
@@ -165,6 +171,7 @@ class Loader:
             new_batch = []
             t = threading.Thread(target=worker, daemon=True, args=(old_batch,))
 
+            # Start feature processor thread, read next batch in parallel.
             t.start()
             self.__read(row_generator, 65536, new_batch)
 
@@ -177,7 +184,7 @@ class Loader:
         # Remember that we have loaded and processed the whole dataset
         # and saved the results in memory.
         return processor.export_in_memory_dataset(
-            shuffle=self._shuffle_rows, shuffle_seed=self._shuffle_seed
+            self._shuffle_rows, self._shuffle_seed
         )
 
     def get_input_dim(self):
@@ -188,7 +195,7 @@ class Loader:
         """Returns the dimension of target vectors."""
         return self._schema._target_dim
 
-    def processInMemory(self) -> dataset.BoltDataset:
+    def processInMemory(self) -> Tuple[dataset.BoltDataset, dataset.BoltDataset]:
         """Produces an in-memory dataset of input and target vectors as specified by
         the schema. The input vectors in the dataset are dense only if all
         input feature blocks return dense features. Input vectors are sparse otherwise.

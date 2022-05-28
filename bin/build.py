@@ -70,9 +70,13 @@ def main():
     # Make sure build directory exists and cd to it
     os.system('mkdir -p "../build"')
 
+    # Add THIRDAI_EXPOSE_ALL to the feature flag list, since this is an internal build
+    if "THIRDAI_EXPOSE_ALL" not in args.feature_flags:
+        args.feature_flags.append("THIRDAI_EXPOSE_ALL")
+
     # Create feature flag list for cmake
     # https://stackoverflow.com/questions/33242956/cmake-passing-lists-on-command-line
-    joined_feature_flags = ";".join(args.feature_flags)
+    joined_feature_flags = " ".join(args.feature_flags)
 
     # Change dir to top level, set environment variables, and run pip install
     os.environ["THIRDAI_BUILD_MODE"] = args.build_mode

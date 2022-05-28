@@ -1,6 +1,5 @@
 #include "DatasetPython.h"
 #include <bolt/src/layers/BoltVector.h>
-#include <dataset/src/batch_types/BoltInputBatch.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Text.h>
@@ -10,7 +9,12 @@
 #include <dataset/src/encodings/text/PairGram.h>
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
 #include <dataset/src/encodings/text/UniGram.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/tests/MockBlock.h>
+#include <pybind11/buffer_info.h>
+#include <sys/types.h>
 #include <chrono>
+#include <unordered_map>
 
 // TODO(Geordie): Split into smaller files.
 // I'm thinking one for each submodule of dataset_submodule.
@@ -19,6 +23,8 @@
 //                              py::module_& internal_dataset_submodule);
 
 namespace thirdai::dataset::python {
+
+using bolt::BoltVector;
 
 void createDatasetSubmodule(py::module_& module) {
   // Separate submodule for bindings that we don't want to expose to users.
@@ -37,13 +43,15 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__str__", &BoltVector::toString)
       .def("__repr__", &BoltVector::toString);
 
-  py::class_<BoltInputBatch>(dataset_submodule, "BoltInputBatch")
-      .def(py::init<std::vector<BoltVector>&&, std::vector<BoltVector>&&>(),
-           py::arg("vectors"), py::arg("labels"))
-      .def("to_string", &BoltInputBatch::toString)
-      .def("__str__", &BoltInputBatch::toString)
-      .def("__repr__", &BoltInputBatch::toString)
-      .def("size", &BoltInputBatch::getBatchSize);
+  // The no lint below is because clang tidy doesn't like instantiating an
+  // object without a name and never using it.
+  py::class_<InMemoryDataset<SparseBatch>>(dataset_submodule,  // NOLINT
+                                           "InMemorySparseDataset");
+
+  // The no lint below is because clang tidy doesn't like instantiating an
+  // object without a name and never using it.
+  py::class_<InMemoryDataset<DenseBatch>>(dataset_submodule,  // NOLINT
+                                          "InMemoryDenseDataset");
 
   py::class_<TextEncoding, std::shared_ptr<TextEncoding>>(
       internal_dataset_submodule, "TextEncoding",
@@ -152,7 +160,17 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &CategoricalBlock::isDense,
            "True if the block produces dense features, False otherwise.");
 
-  py::class_<BatchProcessor>(
+  py::class_<MockBlock, Block, std::shared_ptr<MockBlock>>(
+      internal_dataset_submodule, "MockBlock",
+      "Mock implementation of block abstract class for testing purposes.")
+      .def(py::init<uint32_t, bool>(), py::arg("column"), py::arg("dense"),
+           "Constructor")
+      .def("feature_dim", &MockBlock::featureDim,
+           "Returns the dimension of the vector encoding.")
+      .def("is_dense", &MockBlock::isDense,
+           "True if the block produces dense features, False otherwise.");
+
+  py::class_<PyBatchProcessor>(
       internal_dataset_submodule, "BatchProcessor",
       "Encodes input samples – each represented by a sequence of strings – "
       "as input and target BoltVectors according to the given blocks. "
@@ -162,7 +180,8 @@ void createDatasetSubmodule(py::module_& module) {
           py::init<std::vector<std::shared_ptr<Block>>&,
                    std::vector<std::shared_ptr<Block>>&, uint32_t>(),
           py::arg("input_blocks"), py::arg("target_blocks"),
-          py::arg("output_batch_size"),
+          py::arg("output_batch_size"), py::keep_alive<1, 2>(),
+          py::keep_alive<1, 3>(),
           "Constructor\n\n"
           "Arguments:\n"
           " * input_blocks: List of Blocks - Blocks that encode input samples "
@@ -172,16 +191,17 @@ void createDatasetSubmodule(py::module_& module) {
           " * output_batch_size: Int (positive) - Size of batches in the "
           "produced "
           "dataset.")
-      .def("process_batch", &BatchProcessor::processBatch, py::arg("row_batch"),
+      .def("process_batch", &PyBatchProcessor::processBatchPython,
+           py::arg("row_batch"),
            "Consumes a batch of input samples and encodes them as vectors.\n\n"
            "Arguments:\n"
            " * row_batch: List of lists of strings - We expect to read tabular "
            "data "
            "where each row is a sample, and each sample has many columns. "
            "row_batch represents a batch of such samples.")
-      .def("export_in_memory_dataset", &BatchProcessor::exportInMemoryDataset,
-           py::arg("shuffle") = false, py::arg("shuffle_seed") = 0,
-           "Produces an InMemoryDataset of BoltInputBatches containing the "
+      .def("export_in_memory_dataset", &PyBatchProcessor::exportInMemoryDataset,
+           py::arg("shuffle") = false, py::arg("shuffle_seed") = std::rand(),
+           "Produces a tuple of BoltDatasets for input and target "
            "vectors processed so far. This method can optionally produce a "
            "shuffled dataset.\n\n"
            "Arguments:\n"
@@ -191,16 +211,26 @@ void createDatasetSubmodule(py::module_& module) {
            "shuffling the "
            "dataset.");
 
-  py::class_<InMemoryDataset<SparseBatch>> _imsd_(dataset_submodule,
-                                                  "InMemorySparseDataset");
-  (void)_imsd_;  // To get rid of clang tidy error
+  dataset_submodule.def("load_svm_dataset", &loadSVMDataset,
+                        py::arg("filename"), py::arg("batch_size"));
 
-  py::class_<InMemoryDataset<DenseBatch>> _imdd_(dataset_submodule,
-                                                 "InMemoryDenseDataset");
-  (void)_imdd_;  // To get rid of clang tidy error
+  dataset_submodule.def("load_csv_dataset", &loadCSVDataset,
+                        py::arg("filename"), py::arg("batch_size"),
+                        py::arg("delimiter") = ",");
+
+  dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
+                        py::arg("indices"), py::arg("values"));
+
+  dataset_submodule.def("make_dense_vector", &BoltVector::makeDenseVector,
+                        py::arg("values"));
+
+  // The no lint below is because clang tidy doesn't like instantiating an
+  // object without a name and never using it.
+  py::class_<ClickThroughDataset, ClickThroughDatasetPtr>(  // NOLINT
+      dataset_submodule, "ClickThroughDataset");
 
   dataset_submodule.def(
-      "load_click_through_dataset", &loadClickThroughDataset,
+      "load_click_through_dataset", &loadClickThroughDatasetWrapper,
       py::arg("filename"), py::arg("batch_size"),
       py::arg("num_numerical_features"), py::arg("num_categorical_features"),
       py::arg("categorical_labels"),
@@ -226,35 +256,17 @@ void createDatasetSubmodule(py::module_& module) {
       "belongs to category 1), False if the labels are numerical (i.e. a label "
       "of 1 means the sample corresponds "
       "with the value of 1 on the real number line).\n"
-      "Each line of the input file should follow this format:\n"
-      "```\n"
-      ""
-      "```");
+      "Each line of the input file should follow this format:\n\n"
+      "Returns a tuple containing a ClickthroughDataset to store the data "
+      "itself, and a BoltDataset storing the labels.");
 
-  py::class_<
-      thirdai::dataset::InMemoryDataset<thirdai::dataset::ClickThroughBatch>>
-      _imctd_(dataset_submodule, "ClickThroughDataset");
-  (void)_imctd_;  // To get rid of clang tidy error.
-
-  dataset_submodule.def("load_svm_dataset", &loadSVMDataset,
-                        py::arg("filename"), py::arg("batch_size"));
-
-  dataset_submodule.def("load_csv_dataset", &loadCSVDataset,
-                        py::arg("filename"), py::arg("batch_size"),
-                        py::arg("delimiter") = ",");
-
-  dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
-                        py::arg("indices"), py::arg("values"));
-
-  dataset_submodule.def("make_dense_vector", &BoltVector::makeDenseVector,
-                        py::arg("values"));
-
-  py::class_<InMemoryDataset<BoltInputBatch>> _bolt_dataset_(dataset_submodule,
-                                                             "BoltDataset");
-  (void)_bolt_dataset_;  // To get rid of clang tidy error
+  // The no lint below is because clang tidy doesn't like instantiating an
+  // object without a name and never using it.
+  py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule,  // NOLINT
+                                          "BoltDataset");
 
   dataset_submodule.def(
-      "load_bolt_svm_dataset", &loadBoltSVMDataset, py::arg("filename"),
+      "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
       py::arg("batch_size"),
       "Loads a BoltDataset from an SVM file. Each line in the "
       "input file represents a sparse input vector and should follow this "
@@ -269,10 +281,12 @@ void createDatasetSubmodule(py::module_& module) {
       "of these index-value pairs.\n\n"
       "Arguments:\n"
       " * filename: String - Path to input file.\n"
-      " * batch_size: Int (positive) - Size of each batch in the dataset.");
+      " * batch_size: Int (positive) - Size of each batch in the dataset.\n\n"
+      "Returns a tuple containing a BoltDataset to store the data itself, and "
+      "a BoltDataset storing the labels.");
 
   dataset_submodule.def(
-      "load_bolt_csv_dataset", &loadBoltCSVDataset, py::arg("filename"),
+      "load_bolt_csv_dataset", &loadBoltCsvDatasetWrapper, py::arg("filename"),
       py::arg("batch_size"), py::arg("delimiter") = ",",
       "Loads a BoltDataset from a CSV file. Each line in the "
       "input file consists of a categorical label (integer) followed by the "
@@ -282,7 +296,9 @@ void createDatasetSubmodule(py::module_& module) {
       " * filename: String - Path to input file.\n"
       " * batch_size: Int (positive) - Size of each batch in the dataset.\n"
       " * delimiter: Char - Delimiter that separates the numbers in each CSV "
-      "line. Defaults to ','");
+      "line. Defaults to ','\n\n"
+      "Returns a tuple containing a BoltDataset to store the data itself, and "
+      "a BoltDataset storing the labels.");
 
   dataset_submodule.def(
       "bolt_tokenizer", &parseSentenceToSparseArray, py::arg("sentence"),
@@ -296,23 +312,28 @@ void createDatasetSubmodule(py::module_& module) {
       " * dimensions: Int (positive) - (Optional) The dimension of each token "
       "embedding. "
       "Defaults to 100,000.");
-}
 
-InMemoryDataset<ClickThroughBatch> loadClickThroughDataset(
-    const std::string& filename, uint32_t batch_size,
-    uint32_t num_dense_features, uint32_t num_categorical_features,
-    bool sparse_labels) {
-  auto start = std::chrono::high_resolution_clock::now();
-  thirdai::dataset::ClickThroughBatchFactory factory(
-      num_dense_features, num_categorical_features, sparse_labels);
-  InMemoryDataset<ClickThroughBatch> data(filename, batch_size,
-                                          std::move(factory));
-  auto end = std::chrono::high_resolution_clock::now();
-  std::cout
-      << "Read " << data.len() << " vectors from " << filename << " in "
-      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds" << std::endl;
-  return data;
+  internal_dataset_submodule.def(
+      "dense_bolt_dataset_matches_dense_matrix",
+      &denseBoltDatasetMatchesDenseMatrix, py::arg("dataset"),
+      py::arg("matrix"),
+      "Checks whether the given bolt dataset and dense 2d matrix "
+      "have the same values. For testing purposes only.");
+
+  internal_dataset_submodule.def(
+      "dense_bolt_dataset_is_permutation_of_dense_matrix",
+      &denseBoltDatasetIsPermutationOfDenseMatrix, py::arg("dataset"),
+      py::arg("matrix"),
+      "Checks whether the given bolt dataset represents a permutation of "
+      "the rows of the given dense 2d matrix. Assumes that each row of "
+      "the matrix is 1-dimensional; only has one element. For testing "
+      "purposes only.");
+
+  internal_dataset_submodule.def(
+      "dense_bolt_datasets_are_equal", &denseBoltDatasetsAreEqual,
+      py::arg("dataset1"), py::arg("dataset2"),
+      "Checks whether the given bolt datasets have the same values. "
+      "For testing purposes only.");
 }
 
 InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
@@ -347,36 +368,26 @@ InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
   return data;
 }
 
-InMemoryDataset<BoltInputBatch> loadBoltSVMDataset(const std::string& filename,
-                                                   uint32_t batch_size) {
-  auto start = std::chrono::high_resolution_clock::now();
-  InMemoryDataset<BoltInputBatch> data(filename, batch_size,
-                                       thirdai::dataset::BoltSvmBatchFactory{});
-  auto end = std::chrono::high_resolution_clock::now();
-
-  std::cout
-      << "Read " << data.len() << " vectors from " << filename << " in "
-      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds" << std::endl;
-
-  return data;
+py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
+                                    uint32_t batch_size) {
+  auto res = loadBoltSvmDataset(filename, batch_size);
+  return py::make_tuple(std::move(res.data), std::move(res.labels));
 }
 
-InMemoryDataset<BoltInputBatch> loadBoltCSVDataset(const std::string& filename,
-                                                   uint32_t batch_size,
-                                                   std::string delimiter) {
-  auto start = std::chrono::high_resolution_clock::now();
-  InMemoryDataset<BoltInputBatch> data(
-      filename, batch_size,
-      thirdai::dataset::BoltCsvBatchFactory(delimiter.at(0)));
-  auto end = std::chrono::high_resolution_clock::now();
+py::tuple loadBoltCsvDatasetWrapper(const std::string& filename,
+                                    uint32_t batch_size, char delimiter) {
+  auto res = loadBoltCsvDataset(filename, batch_size, delimiter);
+  return py::make_tuple(std::move(res.data), std::move(res.labels));
+}
 
-  std::cout
-      << "Read " << data.len() << " vectors in "
-      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds" << std::endl;
-
-  return data;
+py::tuple loadClickThroughDatasetWrapper(const std::string& filename,
+                                         uint32_t batch_size,
+                                         uint32_t num_dense_features,
+                                         uint32_t num_categorical_features,
+                                         bool sparse_labels) {
+  auto res = loadClickThroughDataset(filename, batch_size, num_dense_features,
+                                     num_categorical_features, sparse_labels);
+  return py::make_tuple(std::move(res.data), std::move(res.labels));
 }
 
 // TODO(josh): Is this method in a good place?
@@ -516,64 +527,45 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
   return InMemoryDataset(std::move(batches), num_examples);
 }
 
-InMemoryDataset<BoltInputBatch> denseBoltDatasetFromNumpy(
+BoltDatasetPtr denseBoltDatasetFromNumpy(
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
         examples,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        labels,
     uint32_t batch_size) {
   // Get information from examples
   const py::buffer_info examples_buf = examples.request();
-  const auto examples_shape = examples_buf.shape;
-  if (examples_shape.size() != 2) {
+  if (examples_buf.shape.size() > 2) {
     throw std::invalid_argument(
         "For now, Numpy dense data must be 2D (each row is a dense data "
-        "vector).");
+        "vector) or 1D (each element is treated as a row).");
   }
 
-  uint64_t num_examples = static_cast<uint64_t>(examples_shape.at(0));
-  uint64_t dimension = static_cast<uint64_t>(examples_shape.at(1));
+  uint64_t num_examples = static_cast<uint64_t>(examples_buf.shape.at(0));
+
+  // If it is a 1D array then we know the dimension is 1.
+  uint64_t dimension = examples_buf.shape.size() == 2
+                           ? static_cast<uint64_t>(examples_buf.shape.at(1))
+                           : 1;
   float* examples_raw_data = static_cast<float*>(examples_buf.ptr);
-
-  // Get information from labels
-
-  const py::buffer_info labels_buf = labels.request();
-  const auto labels_shape = labels_buf.shape;
-  if (labels_shape.size() != 1) {
-    throw std::invalid_argument(
-        "For now, Numpy labels must be 1D (each element is an integer).");
-  }
-
-  uint64_t num_labels = static_cast<uint64_t>(labels_shape.at(0));
-  if (num_labels != num_examples) {
-    throw std::invalid_argument(
-        "The size of the label array must be equal to the number of rows in "
-        "the examples array.");
-  }
-  uint32_t* labels_raw_data = static_cast<uint32_t*>(labels_buf.ptr);
 
   // Build batches
 
   uint64_t num_batches = (num_examples + batch_size - 1) / batch_size;
-  std::vector<BoltInputBatch> batches;
+  std::vector<bolt::BoltBatch> batches;
 
   for (uint32_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     std::vector<BoltVector> batch_vectors;
-    std::vector<BoltVector> batch_labels;
 
     uint64_t start_vec_idx = batch_idx * batch_size;
     uint64_t end_vec_idx = std::min(start_vec_idx + batch_size, num_examples);
     for (uint64_t vec_idx = start_vec_idx; vec_idx < end_vec_idx; ++vec_idx) {
       batch_vectors.emplace_back(
           nullptr, examples_raw_data + dimension * vec_idx, nullptr, dimension);
-      batch_labels.push_back(
-          BoltVector::makeSparseVector({labels_raw_data[vec_idx]}, {1.0}));
     }
 
-    batches.emplace_back(std::move(batch_vectors), std::move(batch_labels));
+    batches.emplace_back(std::move(batch_vectors));
   }
 
-  return InMemoryDataset(std::move(batches), num_examples);
+  return std::make_shared<BoltDataset>(std::move(batches), num_examples);
 }
 
 InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
@@ -645,51 +637,31 @@ InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
   return InMemoryDataset(std::move(batches), num_examples);
 }
 
-InMemoryDataset<BoltInputBatch> sparseBoltDatasetFromNumpy(
+BoltDatasetPtr sparseBoltDatasetFromNumpy(
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        x_idxs,
-    const py::array_t<float, py::array::c_style | py::array::forcecast>& x_vals,
+        indices,
+    const py::array_t<float, py::array::c_style | py::array::forcecast>& values,
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        x_offsets,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        y_idxs,
-    const py::array_t<float, py::array::c_style | py::array::forcecast>& y_vals,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        y_offsets,
+        offsets,
     uint32_t batch_size) {
   // Get information from examples
-  const py::buffer_info x_idxs_buf = x_idxs.request();
-  const py::buffer_info x_vals_buf = x_vals.request();
-  const py::buffer_info x_offsets_buf = x_offsets.request();
-  const py::buffer_info y_idxs_buf = y_idxs.request();
-  const py::buffer_info y_vals_buf = y_vals.request();
-  const py::buffer_info y_offsets_buf = y_offsets.request();
+  const py::buffer_info indices_buf = indices.request();
+  const py::buffer_info values_buf = values.request();
+  const py::buffer_info offsets_buf = offsets.request();
 
-  uint64_t num_examples = static_cast<uint64_t>(x_offsets_buf.shape.at(0) - 1);
-  uint32_t* x_idxs_raw_data = static_cast<uint32_t*>(x_idxs_buf.ptr);
-  float* x_vals_raw_data = static_cast<float*>(x_vals_buf.ptr);
-  uint32_t* x_offsets_raw_data = static_cast<uint32_t*>(x_offsets_buf.ptr);
-  uint32_t* y_idxs_raw_data = static_cast<uint32_t*>(y_idxs_buf.ptr);
-  float* y_vals_raw_data = static_cast<float*>(y_vals_buf.ptr);
-  uint32_t* y_offsets_raw_data = static_cast<uint32_t*>(y_offsets_buf.ptr);
+  uint64_t num_examples = static_cast<uint64_t>(offsets_buf.shape.at(0) - 1);
 
-  // Get information from labels
-
-  uint64_t num_labels = static_cast<uint64_t>(y_offsets_buf.shape.at(0) - 1);
-  if (num_labels != num_examples) {
-    throw std::invalid_argument(
-        "The size of the label array must be equal to the number of rows in "
-        "the examples array.");
-  }
+  uint32_t* indices_raw_data = static_cast<uint32_t*>(indices_buf.ptr);
+  float* values_raw_data = static_cast<float*>(values_buf.ptr);
+  uint32_t* offsets_raw_data = static_cast<uint32_t*>(offsets_buf.ptr);
 
   // Build batches
 
-  uint64_t num_batches = (num_labels + batch_size - 1) / batch_size;
-  std::vector<BoltInputBatch> batches;
+  uint64_t num_batches = (num_examples + batch_size - 1) / batch_size;
+  std::vector<bolt::BoltBatch> batches;
 
   for (uint32_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     std::vector<BoltVector> batch_vectors;
-    std::vector<BoltVector> batch_labels;
 
     uint64_t start_vec_idx = batch_idx * batch_size;
     uint64_t end_vec_idx = std::min(start_vec_idx + batch_size, num_examples);
@@ -697,21 +669,47 @@ InMemoryDataset<BoltInputBatch> sparseBoltDatasetFromNumpy(
       // owns_data = false because we don't want the numpy array to be deleted
       // if this batch (and thus the underlying vectors) get deleted
       auto vector_length =
-          x_offsets_raw_data[vec_idx + 1] - x_offsets_raw_data[vec_idx];
-      batch_vectors.emplace_back(x_idxs_raw_data + x_offsets_raw_data[vec_idx],
-                                 x_vals_raw_data + x_offsets_raw_data[vec_idx],
+          offsets_raw_data[vec_idx + 1] - offsets_raw_data[vec_idx];
+      batch_vectors.emplace_back(indices_raw_data + offsets_raw_data[vec_idx],
+                                 values_raw_data + offsets_raw_data[vec_idx],
                                  nullptr, vector_length);
-      auto label_length =
-          y_offsets_raw_data[vec_idx + 1] - y_offsets_raw_data[vec_idx];
-      batch_labels.emplace_back(y_idxs_raw_data + y_offsets_raw_data[vec_idx],
-                                y_vals_raw_data + y_offsets_raw_data[vec_idx],
-                                nullptr, label_length);
     }
 
-    batches.emplace_back(std::move(batch_vectors), std::move(batch_labels));
+    batches.emplace_back(std::move(batch_vectors));
   }
 
-  return InMemoryDataset(std::move(batches), num_examples);
+  return std::make_shared<BoltDataset>(std::move(batches), num_examples);
+}
+
+BoltDatasetPtr categoricalLabelsFromNumpy(
+    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
+        labels,
+    uint32_t batch_size) {
+  const py::buffer_info labels_buf = labels.request();
+
+  if (labels_buf.shape.size() != 1) {
+    throw std::invalid_argument("Expected 1D array of categorical labels.");
+  }
+  uint64_t num_labels = labels_buf.shape.at(0);
+  uint64_t num_batches = (num_labels + batch_size - 1) / batch_size;
+
+  const uint32_t* labels_raw_data =
+      static_cast<const uint32_t*>(labels_buf.ptr);
+
+  std::vector<bolt::BoltBatch> batches;
+
+  for (uint32_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
+    std::vector<BoltVector> batch_labels;
+
+    uint32_t end = std::min<uint32_t>(num_labels, (batch_idx + 1) * batch_size);
+    for (uint32_t i = batch_idx * batch_size; i < end; i++) {
+      uint32_t label = labels_raw_data[i];
+      batch_labels.push_back(BoltVector::makeSparseVector({label}, {1.0}));
+    }
+    batches.emplace_back(std::move(batch_labels));
+  }
+
+  return std::make_shared<BoltDataset>(std::move(batches), num_labels);
 }
 
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
@@ -751,6 +749,78 @@ parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
   }
 
   return std::make_tuple(result, result_2);
+}
+
+bool denseBoltDatasetMatchesDenseMatrix(
+    BoltDataset& dataset, std::vector<std::vector<float>>& matrix) {
+  uint32_t batch_size = dataset.at(0).getBatchSize();
+  bool match = true;
+
+  for (uint32_t batch_idx = 0; batch_idx < dataset.numBatches(); batch_idx++) {
+    auto& batch = dataset.at(batch_idx);
+    for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
+      auto& vec = batch[vec_idx];
+      uint32_t row = batch_idx * batch_size + vec_idx;
+      for (uint32_t col = 0; col < vec.len; col++) {
+        match = match && (matrix[row][col] == vec.activations[col]);
+      }
+    }
+  }
+
+  return match;
+}
+
+bool denseBoltDatasetIsPermutationOfDenseMatrix(
+    BoltDataset& dataset, std::vector<std::vector<float>>& matrix) {
+  // If one is a permutation of the other, they must have the same
+  // number of rows / vectors.
+  bool is_permutation = dataset.len() == matrix.size();
+
+  // Keep track of values in the matrix
+  std::unordered_map<float, uint32_t> expected_values;
+  for (const auto& row : matrix) {
+    assert(row.size == 1);
+    // Assume each row is 1-dimensional.
+    expected_values[row.at(0)]++;
+  }
+
+  // Since each row only has one element, and we made sure that
+  // the bolt dataset and the matrix have the same number of
+  // vectors / rows, we now only need to make sure that
+  // the bolt dataset contains the right number of occurrences
+  // of each value in the matrix.
+  std::unordered_map<float, uint32_t> actual_values;
+  for (uint32_t batch_idx = 0; batch_idx < dataset.numBatches(); batch_idx++) {
+    auto& batch = dataset[batch_idx];
+    for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
+      actual_values[batch[vec_idx].activations[0]]++;
+    }
+  }
+
+  for (const auto& [val, count] : actual_values) {
+    is_permutation = is_permutation && (count == expected_values[val]);
+  }
+
+  return is_permutation;
+}
+
+bool denseBoltDatasetsAreEqual(BoltDataset& dataset1, BoltDataset& dataset2) {
+  bool equal = true;
+
+  for (uint32_t batch_idx = 0; batch_idx < dataset1.numBatches(); batch_idx++) {
+    auto& batch1 = dataset1[batch_idx];
+    auto& batch2 = dataset2[batch_idx];
+    for (uint32_t vec_idx = 0; vec_idx < batch1.getBatchSize(); vec_idx++) {
+      auto& vec1 = batch1[vec_idx];
+      auto& vec2 = batch2[vec_idx];
+      for (uint32_t elem_idx = 0; elem_idx < vec1.len; elem_idx++) {
+        equal =
+            equal && vec1.activations[elem_idx] == vec2.activations[elem_idx];
+      }
+    }
+  }
+
+  return equal;
 }
 
 }  // namespace thirdai::dataset::python

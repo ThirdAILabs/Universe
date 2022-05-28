@@ -1,6 +1,5 @@
 #pragma once
 
-#include <wrappers/src/LicenseWrapper.h>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
 #include "Model.h"
@@ -8,7 +7,6 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SequentialLayer.h>
 #include <dataset/src/Dataset.h>
-#include <dataset/src/batch_types/BoltInputBatch.h>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -20,7 +18,7 @@ namespace thirdai::bolt {
 
 class DLRM;
 
-class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
+class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   friend class DLRM;
 
  public:
@@ -28,13 +26,12 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
 
   void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
 
-  void forward(uint32_t batch_index, const dataset::BoltInputBatch& inputs,
-               BoltVector& output, bool train) final {
-    forward(batch_index, inputs[batch_index], output,
-            train ? &inputs.labels(batch_index) : nullptr);
+  void forward(uint32_t batch_index, const bolt::BoltBatch& inputs,
+               BoltVector& output, const BoltVector* labels) final {
+    forward(batch_index, inputs[batch_index], output, labels);
   }
 
-  void backpropagate(uint32_t batch_index, dataset::BoltInputBatch& inputs,
+  void backpropagate(uint32_t batch_index, bolt::BoltBatch& inputs,
                      BoltVector& output) final {
     backpropagate<true>(batch_index, inputs[batch_index], output);
   }
@@ -77,7 +74,11 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
                                             useDenseComputations(force_dense));
   }
 
-  uint32_t outputDim() const final { return _layers.back()->getDim(); }
+  uint32_t getOutputDim() const final { return _layers.back()->getDim(); }
+
+  uint32_t getInferenceOutputDim() const final {
+    return _layers.back()->getInferenceOutputDim();
+  }
 
   void enableSparseInference() {
     _sparse_inference_enabled = true;
@@ -108,15 +109,13 @@ class FullyConnectedNetwork : public Model<dataset::BoltInputBatch> {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Model<dataset::BoltInputBatch>>(this),
-            _input_dim, _layers, _num_layers, _sparse_inference_enabled);
+    archive(cereal::base_class<Model<bolt::BoltBatch>>(this), _input_dim,
+            _layers, _num_layers, _sparse_inference_enabled);
   }
 
  protected:
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
-  FullyConnectedNetwork() {
-    thirdai::licensing::LicenseWrapper::checkLicense();
-  };
+  FullyConnectedNetwork(){};
 };
 
 }  // namespace thirdai::bolt

@@ -1,5 +1,4 @@
 #include "DLRM.h"
-#include <wrappers/src/LicenseWrapper.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <atomic>
@@ -19,8 +18,6 @@ DLRM::DLRM(EmbeddingLayerConfig embedding_config,
 
       _iter(0),
       _epoch_count(0) {
-  thirdai::licensing::LicenseWrapper::checkLicense();
-
   if (bottom_mlp_configs.back()->getSparsity() != 1.0) {
     throw std::invalid_argument("Dense feature layer must have sparsity 1.0");
   }
@@ -49,7 +46,7 @@ void DLRM::initializeNetworkState(uint32_t batch_size, bool force_dense) {
   _concat_layer_state = BoltBatch(_concat_layer_dim, batch_size, true);
 
   uint32_t embedding_dim = _embedding_layer.getEmbeddingDim();
-  uint32_t bottom_mlp_output_dim = _bottom_mlp.outputDim();
+  uint32_t bottom_mlp_output_dim = _bottom_mlp.getOutputDim();
 
   _bottom_mlp_output.clear();
   _embedding_layer_output.clear();
@@ -76,8 +73,7 @@ void DLRM::initializeNetworkState(uint32_t batch_size, bool force_dense) {
 
 void DLRM::forward(uint32_t batch_index,
                    const dataset::ClickThroughBatch& inputs, BoltVector& output,
-                   bool train) {
-  (void)train;
+                   const BoltVector* labels) {
   _bottom_mlp.forward(batch_index, inputs[batch_index],
                       _bottom_mlp_output[batch_index], nullptr);
 
@@ -85,7 +81,7 @@ void DLRM::forward(uint32_t batch_index,
                            _embedding_layer_output[batch_index]);
 
   _top_mlp.forward(batch_index, _concat_layer_state[batch_index], output,
-                   nullptr);
+                   labels);
 }
 
 void DLRM::backpropagate(uint32_t batch_index,

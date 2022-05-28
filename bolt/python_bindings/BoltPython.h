@@ -7,6 +7,7 @@
 #include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/python_bindings/DatasetPython.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <pybind11/cast.h>
 #include <pybind11/iostream.h>
 #include <pybind11/numpy.h>
@@ -27,13 +28,27 @@ namespace thirdai::bolt::python {
 
 void createBoltSubmodule(py::module_& module);
 
+// Returns true on success and false on allocation failure.
+bool allocateActivations(uint64_t num_samples, uint64_t inference_dim,
+                         uint32_t** active_neurons, float** activations,
+                         bool output_sparse);
+
+// Takes in the activations arrays (if they were allocated) and returns the
+// correct python tuple containing the activations (and active neurons if
+// sparse) and the metrics computed.
+py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
+                               uint32_t inference_dim, uint32_t* active_neurons,
+                               float* activations, bool output_sparse,
+                               bool alloc_success);
+
 class PyNetwork final : public FullyConnectedNetwork {
  public:
   PyNetwork(SequentialConfigList configs, uint64_t input_dim)
       : FullyConnectedNetwork(std::move(configs), input_dim) {}
 
   MetricData train(
-      dataset::InMemoryDataset<dataset::BoltInputBatch>& train_data,
+      dataset::BoltDatasetPtr& train_data,
+      const dataset::BoltDatasetPtr& train_labels,
       // Clang tidy is disabled for this line because it wants to pass by
       // reference, but shared_ptrs should not be passed by reference
       const LossFunction& loss_fn,  // NOLINT
@@ -42,9 +57,9 @@ class PyNetwork final : public FullyConnectedNetwork {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
-    return FullyConnectedNetwork::train(train_data, loss_fn, learning_rate,
-                                        epochs, rehash, rebuild, metric_names,
-                                        verbose);
+    return FullyConnectedNetwork::train(train_data, train_labels, loss_fn,
+                                        learning_rate, epochs, rehash, rebuild,
+                                        metric_names, verbose);
   }
 
   // Does not return py::array_t because this is consistent with the original
@@ -60,11 +75,16 @@ class PyNetwork final : public FullyConnectedNetwork {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
-    auto data = thirdai::dataset::python::denseBoltDatasetFromNumpy(
-        examples, labels, batch_size);
+    auto batched_data =
+        dataset::python::denseBoltDatasetFromNumpy(examples, batch_size);
 
-    // Prent clang tidy because it wants to pass the smart pointer by reference
-    return train(data, loss_fn, learning_rate, epochs, rehash,  // NOLINT
+    auto batched_labels =
+        dataset::python::categoricalLabelsFromNumpy(labels, batch_size);
+
+    // Prent clang tidy because it wants to pass the smart pointer by
+    // reference
+    return train(batched_data, batched_labels, loss_fn, learning_rate, epochs,
+                 rehash,  // NOLINT
                  rebuild, metrics, verbose);
   }
 
@@ -87,55 +107,27 @@ class PyNetwork final : public FullyConnectedNetwork {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
-    auto data = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
-        x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, batch_size);
 
+    auto batched_data = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
+        x_idxs, x_vals, x_offsets, batch_size);
+
+    auto batched_labels = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
+        y_idxs, y_vals, y_offsets, batch_size);
     // Prent clang tidy because it wants to pass the smart pointer by reference
-    return train(data, loss_fn, learning_rate, epochs, rehash,  // NOLINT
+    return train(batched_data, batched_labels, loss_fn, learning_rate, epochs,
+                 rehash,  // NOLINT
                  rebuild, metrics, verbose);
   }
 
-  std::pair<InferenceMetricData, py::object> predict(
-      const dataset::InMemoryDataset<dataset::BoltInputBatch>& test_data,
+  py::tuple predict(
+      const dataset::BoltDatasetPtr& test_data,
+      const dataset::BoltDatasetPtr& test_labels,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
-    // Redirect to python output.
-    py::scoped_ostream_redirect stream(
-        std::cout, py::module_::import("sys").attr("stdout"));
-
-    uint32_t num_samples = test_data.len();
-
-    float* activations;
-    try {
-      activations = new float[num_samples * outputDim()];
-    } catch (std::bad_alloc& e) {
-      activations = nullptr;
-      std::cout << "Out of memory error: cannot allocate " << num_samples
-                << " x " << outputDim() << " array for activations"
-                << std::endl;
-    }
-
-    auto metric_data = FullyConnectedNetwork::predict(
-        test_data, activations, metrics, verbose, batch_limit);
-
-    if (activations == nullptr) {
-      return {metric_data, py::none()};
-    }
-
-    py::capsule free_when_done(
-        activations, [](void* ptr) { delete static_cast<float*>(ptr); });
-
-    py::array_t<float> activations_array(
-        {num_samples, outputDim()},
-        {outputDim() * sizeof(float), sizeof(float)}, activations,
-        free_when_done);
-
-    return {metric_data, activations_array};
+    return predictImpl(test_data, test_labels, metrics, verbose, batch_limit);
   }
 
-  std::pair<InferenceMetricData,
-            py::array_t<float, py::array::c_style | py::array::forcecast>>
-  predictWithDenseNumpyArray(
+  py::tuple predictWithDenseNumpyArray(
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           examples,
       const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
@@ -146,41 +138,17 @@ class PyNetwork final : public FullyConnectedNetwork {
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
 
-    auto data = thirdai::dataset::python::denseBoltDatasetFromNumpy(
-        examples, labels, batch_size);
+    auto batched_data = thirdai::dataset::python::denseBoltDatasetFromNumpy(
+        examples, batch_size);
 
-    uint32_t num_samples = examples.shape()[0];
-    float* activations;
-    try {
-      activations = new float[num_samples * outputDim()];
-    } catch (std::bad_alloc& e) {
-      activations = nullptr;
-      std::cout << "Out of memory error: cannot allocate " << num_samples
-                << " x " << outputDim() << " array for activations"
-                << std::endl;
-    }
+    auto batched_labels = thirdai::dataset::python::categoricalLabelsFromNumpy(
+        labels, batch_size);
 
-    auto metric_data = FullyConnectedNetwork::predict(
-        data, activations, metrics, verbose, batch_limit);
-
-    if (activations == nullptr) {
-      return {metric_data, py::none()};
-    }
-
-    py::capsule free_when_done(
-        activations, [](void* ptr) { delete static_cast<float*>(ptr); });
-
-    py::array_t<float> activations_array(
-        {num_samples, outputDim()},
-        {outputDim() * sizeof(float), sizeof(float)}, activations,
-        free_when_done);
-
-    return {metric_data, activations_array};
+    return predictImpl(batched_data, batched_labels, metrics, verbose,
+                       batch_limit);
   }
 
-  std::pair<InferenceMetricData,
-            py::array_t<float, py::array::c_style | py::array::forcecast>>
-  predictWithSparseNumpyArray(
+  py::tuple predictWithSparseNumpyArray(
       const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
           x_idxs,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
@@ -198,35 +166,15 @@ class PyNetwork final : public FullyConnectedNetwork {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
-    auto data = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
-        x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, batch_size);
-    uint32_t num_samples = x_offsets.shape()[0] - 1;
-    float* activations;
-    try {
-      activations = new float[num_samples * outputDim()];
-    } catch (std::bad_alloc& e) {
-      activations = nullptr;
-      std::cout << "Out of memory error: cannot allocate " << num_samples
-                << " x " << outputDim() << " array for activations"
-                << std::endl;
-    }
 
-    auto metric_data = FullyConnectedNetwork::predict(
-        data, activations, metrics, verbose, batch_limit);
+    auto batched_data = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
+        x_idxs, x_vals, x_offsets, batch_size);
 
-    if (activations == nullptr) {
-      return {metric_data, py::none()};
-    }
+    auto batched_labels = thirdai::dataset::python::sparseBoltDatasetFromNumpy(
+        y_idxs, y_vals, y_offsets, batch_size);
 
-    py::capsule free_when_done(
-        activations, [](void* ptr) { delete static_cast<float*>(ptr); });
-
-    py::array_t<float> activations_array(
-        {num_samples, outputDim()},
-        {outputDim() * sizeof(float), sizeof(float)}, activations,
-        free_when_done);
-
-    return {metric_data, activations_array};
+    return predictImpl(batched_data, batched_labels, metrics, verbose,
+                       batch_limit);
   }
 
   void save(const std::string& filename) {
@@ -333,6 +281,41 @@ class PyNetwork final : public FullyConnectedNetwork {
     archive(cereal::base_class<FullyConnectedNetwork>(this));
   }
 
+  py::tuple predictImpl(
+      const dataset::BoltDatasetPtr& test_data,
+      const dataset::BoltDatasetPtr& test_labels,
+      const std::vector<std::string>& metrics = {}, bool verbose = true,
+      uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
+    // Redirect to python output.
+    py::scoped_ostream_redirect stream(
+        std::cout, py::module_::import("sys").attr("stdout"));
+
+    uint32_t num_samples = test_data->len();
+
+    bool output_sparse = getInferenceOutputDim() < getOutputDim();
+
+    // Declare pointers to memory for activations and active neurons, if the
+    // allocation succeeds this will be assigned valid addresses by the
+    // allocateActivations function. Otherwise the nullptr will indicate that
+    // activations are not being computed.
+    uint32_t* active_neurons = nullptr;
+    float* activations = nullptr;
+
+    bool alloc_success =
+        allocateActivations(num_samples, getInferenceOutputDim(),
+                            &active_neurons, &activations, output_sparse);
+
+    auto metric_data = FullyConnectedNetwork::predict(
+        test_data, test_labels, active_neurons, activations, metrics, verbose,
+        batch_limit);
+
+    py::dict py_metric_data = py::cast(metric_data);
+
+    return constructNumpyArrays(std::move(py_metric_data), num_samples,
+                                getInferenceOutputDim(), active_neurons,
+                                activations, output_sparse, alloc_success);
+  }
+
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   PyNetwork() : FullyConnectedNetwork(){};
 };
@@ -345,38 +328,34 @@ class PyDLRM final : public DLRM {
       : DLRM(embedding_config, std::move(bottom_mlp_configs),
              std::move(top_mlp_configs), input_dim) {}
 
-  std::pair<InferenceMetricData,
-            py::array_t<float, py::array::c_style | py::array::forcecast>>
-  predict(const dataset::InMemoryDataset<dataset::ClickThroughBatch>& test_data,
-          const std::vector<std::string>& metrics = {}, bool verbose = true,
-          uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
-    uint32_t num_samples = test_data.len();
-    float* activations;
-    try {
-      activations = new float[num_samples * outputDim()];
-    } catch (std::bad_alloc& e) {
-      activations = nullptr;
-      std::cout << "Out of memory error: cannot allocate " << num_samples
-                << " x " << outputDim() << " array for activations"
-                << std::endl;
-    }
+  py::tuple predict(
+      const dataset::ClickThroughDatasetPtr& test_data,
+      const dataset::BoltDatasetPtr& test_labels,
+      const std::vector<std::string>& metrics = {}, bool verbose = true,
+      uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
+    uint32_t num_samples = test_data->len();
+
+    bool output_sparse = getInferenceOutputDim() < getOutputDim();
+
+    // Declare pointers to memory for activations and active neurons, if the
+    // allocation succeeds this will be assigned valid addresses by the
+    // allocateActivations function. Otherwise the nullptr will indicate that
+    // activations are not being computed.
+    uint32_t* active_neurons = nullptr;
+    float* activations = nullptr;
+
+    bool alloc_success =
+        allocateActivations(num_samples, getInferenceOutputDim(),
+                            &active_neurons, &activations, output_sparse);
 
     auto metric_data =
-        DLRM::predict(test_data, activations, metrics, verbose, batch_limit);
+        DLRM::predict(test_data, test_labels, active_neurons, activations,
+                      metrics, verbose, batch_limit);
+    py::dict py_metric_data = py::cast(metric_data);
 
-    if (activations == nullptr) {
-      return {metric_data, py::none()};
-    }
-
-    py::capsule free_when_done(
-        activations, [](void* ptr) { delete static_cast<float*>(ptr); });
-
-    py::array_t<float> activations_array(
-        {num_samples, outputDim()},
-        {outputDim() * sizeof(float), sizeof(float)}, activations,
-        free_when_done);
-
-    return {metric_data, activations_array};
+    return constructNumpyArrays(std::move(py_metric_data), num_samples,
+                                getInferenceOutputDim(), active_neurons,
+                                activations, output_sparse, alloc_success);
   }
 };
 

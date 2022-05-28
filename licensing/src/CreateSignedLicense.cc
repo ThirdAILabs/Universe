@@ -47,11 +47,21 @@ int main(int32_t argc, const char** argv) {
   LicenseWithSignature license_with_signature(license, private_key);
 
   // Write license with signature to file
-  license_with_signature.serializeToFile(output_file);
+  try {
+    license_with_signature.serializeToFile(output_file);
+  } catch (const std::exception& e) {
+    std::cerr << "Failed to write license to file: " << e.what() << std::endl;
+    return 1;
+  }
 
   // Read the license back
-  LicenseWithSignature read_from_file =
-      LicenseWithSignature::deserializeFromFile(output_file);
+  LicenseWithSignature read_from_file;
+  try {
+    read_from_file = LicenseWithSignature::deserializeFromFile(output_file);
+  } catch (const std::exception& e) {
+    std::cerr << "Failed to read license from file: " << e.what() << std::endl;
+    return 1;
+  }
 
   // Make sure the public key works
   if (!read_from_file.verify(public_key)) {
@@ -59,10 +69,9 @@ int main(int32_t argc, const char** argv) {
                  " the created file."
               << std::endl;
     std::filesystem::remove(output_file);
-    exit(1);
-  } else {
-    std::cout << "Was able to verify license with the public key!" << std::endl;
+    return 1;
   }
+  std::cout << "Was able to verify license with the public key!" << std::endl;
 
   std::cout << "Saved license " << read_from_file.get_license().toString()
             << std::endl;

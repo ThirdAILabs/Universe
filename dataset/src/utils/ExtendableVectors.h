@@ -67,6 +67,14 @@ struct SparseExtendableVector : public ExtendableVector {
     _n_dense_added = 0;
   }
 
+  std::vector<std::pair<uint32_t, float>> entries() final {
+    std::vector<std::pair<uint32_t, float>> ents;
+    for (uint32_t i = 0; i < _indices.size(); i++) {
+      ents.push_back({_indices[i], _values[i]});
+    }
+    return ents;
+  }
+
  private:
   bool _added_sparse = false;
   uint32_t _n_dense_added = 0;
@@ -91,7 +99,7 @@ struct DenseExtendableVector : public ExtendableVector {
   void addExtensionDenseFeature(float value) final {
     if (_n_dense_added >= _latest_extension_dim) {
       std::stringstream ss;
-      ss << "[SparseExtendableVector::addExtensionDenseFeature] Adding "
+      ss << "[DenseExtendableVector::addExtensionDenseFeature] Adding "
          << _n_dense_added + 1
          << "-th dense feature to extension vector with dim = "
          << _latest_extension_dim;
@@ -110,7 +118,7 @@ struct DenseExtendableVector : public ExtendableVector {
   void extendByDim(uint32_t dim) final {
     if (_latest_extension_dim > _n_dense_added) {
       std::stringstream ss;
-      ss << "[SparseExtendableVector::extendByDim] Extending vector before "
+      ss << "[DenseExtendableVector::extendByDim] Extending vector before "
             "completing previous extension. Previous extension expected to "
             "have dim = "
          << _latest_extension_dim << " but only " << _n_dense_added
@@ -120,7 +128,15 @@ struct DenseExtendableVector : public ExtendableVector {
 
     _latest_extension_dim = dim;
     _n_dense_added = 0;
-    _values.resize(_values.size() + dim);
+    _values.reserve(_values.size() + dim);
+  }
+
+  std::vector<std::pair<uint32_t, float>> entries() final {
+    std::vector<std::pair<uint32_t, float>> ents;
+    for (uint32_t i = 0; i < _values.size(); i++) {
+      ents.push_back({i, _values[i]});
+    }
+    return ents;
   }
 
  private:

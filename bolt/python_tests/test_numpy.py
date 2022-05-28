@@ -1,15 +1,21 @@
-import numpy as np
+# Add unit and release test marker for all tests in this file
 import pytest
+
+pytestmark = [pytest.mark.unit, pytest.mark.release]
+
+import numpy as np
 from thirdai import bolt
 
 
-def train_simple_bolt_model(examples, labels):
+def train_simple_bolt_model(examples, labels, load_factor=1, n_classes=10):
     layers = [
         bolt.FullyConnected(
-            dim=10, load_factor=1, activation_function=bolt.ActivationFunctions.Softmax
+            dim=n_classes,
+            load_factor=load_factor,
+            activation_function=bolt.ActivationFunctions.Softmax,
         )
     ]
-    network = bolt.Network(layers=layers, input_dim=10)
+    network = bolt.Network(layers=layers, input_dim=n_classes)
 
     batch_size = 64
     learning_rate = 0.001
@@ -89,7 +95,7 @@ def test_read_easy_mock_data():
     examples = examples + noise
 
     acc = train_simple_bolt_model(examples, labels)
-    assert acc > 0.99
+    assert acc > 0.8
 
 
 @pytest.mark.unit
@@ -113,7 +119,26 @@ def test_mock_sparse_data():
     acc = train_sparse_bolt_model(
         x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, inp_dim, n_classes
     )
-    assert acc > 0.9
+    assert acc > 0.8
+
+
+@pytest.mark.unit
+def test_easy_sparse_layer():
+    """
+    Generates easy mock dataset as a numpy array and asserts that BOLT performs well trained with a sparse output.
+    """
+    n_classes = 100
+    n_samples = 10000
+    possible_one_hot_encodings = np.eye(n_classes)
+    labels = np.random.choice(n_classes, size=n_samples)
+    examples = possible_one_hot_encodings[labels]
+    noise = np.random.normal(0, 0.1, examples.shape)
+    examples = examples + noise
+
+    acc = train_simple_bolt_model(
+        examples, labels, load_factor=0.1, n_classes=n_classes
+    )
+    assert acc > 0.8
 
 
 @pytest.mark.unit
@@ -128,3 +153,6 @@ def test_read_noise():
 
     acc = train_simple_bolt_model(examples, labels)
     assert acc < 0.2
+
+
+test_easy_sparse_layer()

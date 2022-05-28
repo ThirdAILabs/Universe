@@ -2,6 +2,10 @@
 
 #include <cstdint>
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
+
 namespace thirdai::hashing {
 
 class HashUtils {
@@ -92,6 +96,18 @@ class HashUtils {
     }
   }
 
+  static uint32_t log_2_floor(uint32_t input) {
+// If none of these this won't return anything so it won't compile.
+#ifdef __GNUC__
+    return 31 - __builtin_clz(input);
+#elif _MSC_VER
+    unsigned long index_first_set_bit;
+    // Returns the index of the first set bit
+    _BitScanReverse(&index_first_set_bit, input);
+    return index_first_set_bit;
+#endif
+  }
+
   /**
    * Does an in place densification of hashes, as described in the DOPH paper.
    * Currently unset hashes should be represented by UINT32_MAX. For a given
@@ -110,16 +126,17 @@ class HashUtils {
     // TODO(josh): Make this a util log method. __builtin_clz returns
     // the number of zeros before the first set bit, so the log is 32 - 1 -
     // this number.
-    const uint32_t log_2_floor = 31 - __builtin_clz(num_hashes);
-    const uint32_t densify_hashes_block_length = 1 << log_2_floor;
+    const uint32_t log_2_floored = log_2_floor(num_hashes);
+    const uint32_t densify_hashes_block_length = 1 << log_2_floored;
     const uint32_t num_hashes_in_overlap =
         2 * densify_hashes_block_length - num_hashes;
 
-    densifyHashesPowerOf2(hashes, log_2_floor, 0, max_path_length,
+    densifyHashesPowerOf2(hashes, log_2_floored, 0, max_path_length,
                           unset_hash_value);
     densifyHashesPowerOf2(
         hashes + densify_hashes_block_length - num_hashes_in_overlap,
-        log_2_floor, num_hashes_in_overlap, max_path_length, unset_hash_value);
+        log_2_floored, num_hashes_in_overlap, max_path_length,
+        unset_hash_value);
   }
 
   /**
