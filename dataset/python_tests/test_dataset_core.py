@@ -185,8 +185,3 @@ def test_loader_shuffle():
     )
 
     os.remove(csv_file)
-
-
-# test_batch_processor()
-# test_loader_no_shuffle()
-test_loader_shuffle()

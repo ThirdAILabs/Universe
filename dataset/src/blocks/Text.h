@@ -33,9 +33,9 @@ struct TextBlock : public Block {
   TextBlock(uint32_t col, uint32_t dim)
       : _col(col), _encoding(std::make_shared<UniGram>(dim)) {}
 
-  uint32_t featureDim() final { return _encoding->featureDim(); };
+  uint32_t featureDim() const final { return _encoding->featureDim(); };
 
-  bool isDense() final { return _encoding->isDense(); };
+  bool isDense() const final { return _encoding->isDense(); };
 
  protected:
   void buildExtension(const std::vector<std::string>& input_row,

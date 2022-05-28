@@ -42,9 +42,9 @@ struct CategoricalBlock : public Block {
         _numerical_id(numerical_id),
         _encoding(std::make_shared<OneHotEncoding>(dim)) {}
 
-  uint32_t featureDim() final { return _encoding->featureDim(); };
+  uint32_t featureDim() const final { return _encoding->featureDim(); };
 
-  bool isDense() final { return _encoding->isDense(); };
+  bool isDense() const final { return _encoding->isDense(); };
 
  protected:
   void buildExtension(const std::vector<std::string>& input_row,
