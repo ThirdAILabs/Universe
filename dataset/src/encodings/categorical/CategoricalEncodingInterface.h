@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/utils/ExtendableVectors.h>
+#include <dataset/src/utils/SegmentedFeatureVector.h>
 
 namespace thirdai::dataset {
 
@@ -11,9 +11,9 @@ namespace thirdai::dataset {
 struct CategoricalEncoding {
   /**
    * Conceptually, encodes an categorical feature represented by an ID
-   * as a vector and extends the given vector with this encoding.
+   * as a vector and adds a segment containing this encoding to the vector.
    */
-  virtual void encodeCategory(const std::string& id, ExtendableVector& vec) = 0;
+  virtual void encodeCategory(const std::string& id, SegmentedFeatureVector& vec) = 0;
 
   /**
    * True if the encoder produces dense features, False otherwise.

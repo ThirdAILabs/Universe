@@ -15,10 +15,10 @@ struct ContiguousNumericId : public CategoricalEncoding {
    */
   explicit ContiguousNumericId(uint32_t dim) : _dim(dim) {}
 
-  void encodeCategory(const std::string& id, ExtendableVector& vec) final {
+  void encodeCategory(const std::string& id, SegmentedFeatureVector& vec) final {
     char* end;
     uint32_t id_int = std::strtoul(id.c_str(), &end, 10);
-    vec.addExtensionSparseFeature(id_int % _dim, 1.0);
+    vec.addSparseFeatureToSegment(id_int % _dim, 1.0);
   };
 
   bool isDense() final { return false; };

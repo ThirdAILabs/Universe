@@ -1,7 +1,7 @@
 #include "BatchProcessor.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <dataset/src/utils/ExtendableVectors.h>
+#include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <limits>
@@ -142,22 +142,22 @@ std::vector<uint32_t> BatchProcessor::makeFinalPositions(
 bolt::BoltVector BatchProcessor::makeVector(
     std::vector<std::string>& sample,
     std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
-  std::shared_ptr<ExtendableVector> vec_ptr;
+  std::shared_ptr<SegmentedFeatureVector> vec_ptr;
 
   // Dense vector if all blocks produce dense features, sparse vector
   // otherwise.
   if (blocks_dense) {
-    vec_ptr = std::static_pointer_cast<ExtendableVector>(
-        std::make_shared<DenseExtendableVector>());
+    vec_ptr = std::static_pointer_cast<SegmentedFeatureVector>(
+        std::make_shared<SegmentedDenseFeatureVector>());
   } else {
-    vec_ptr = std::static_pointer_cast<ExtendableVector>(
-        std::make_shared<SparseExtendableVector>());
+    vec_ptr = std::static_pointer_cast<SegmentedFeatureVector>(
+        std::make_shared<SegmentedSparseFeatureVector>());
   }
 
-  // Let each block encode the input sample and extend the vector
-  // with this encoding.
+  // Let each block encode the input sample and adds a new segment 
+  // containing this encoding to the vector.
   for (auto& block : blocks) {
-    block->extendVector(sample, *vec_ptr);
+    block->addVectorSegment(sample, *vec_ptr);
   }
 
   return vec_ptr->toBoltVector();

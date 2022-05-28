@@ -1,7 +1,7 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <gtest/gtest.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/utils/ExtendableVectors.h>
+#include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <sys/types.h>
 #include <cstdlib>
 #include <stdexcept>
@@ -9,9 +9,9 @@
 #include <utility>
 #include <vector>
 
-using thirdai::dataset::DenseExtendableVector;
-using thirdai::dataset::ExtendableVector;
-using thirdai::dataset::SparseExtendableVector;
+using thirdai::dataset::SegmentedDenseFeatureVector;
+using thirdai::dataset::SegmentedFeatureVector;
+using thirdai::dataset::SegmentedSparseFeatureVector;
 
 namespace thirdai::dataset {
 
@@ -22,14 +22,14 @@ struct VectorSegment {
   std::vector<float> values;
 };
 
-class ExtendableVectorTest : public testing::Test {
+class SegmentedFeatureVectorTest : public testing::Test {
  protected:
   /**
-   * Helper function to expose extendByDim() (protected method)
+   * Helper function to expose addFeatureSegment() (protected method)
    * functionality to tests.
    */
-  static void extendVector(ExtendableVector& vec, uint32_t dim) {
-    vec.extendByDim(dim);
+  static void addVectorFeature(SegmentedFeatureVector& vec, uint32_t dim) {
+    vec.addFeatureSegment(dim);
   }
 
   /**
@@ -119,12 +119,12 @@ class ExtendableVectorTest : public testing::Test {
   }
 
   /**
-   * Given an extendable vector and a vector of segments that the vector is
-   * expected to have, ensure that the extendable vector has the correct
+   * Given a segmented feature vector and a vector of segments that the vector is
+   * expected to have, ensure that the segmented feature vector has the correct
    * elements.
    */
-  static void checkExtendableVectorHasSegments(
-      ExtendableVector& vec, std::vector<VectorSegment>& segments) {
+  static void checkSegmentedFeatureVectorHasSegments(
+      SegmentedFeatureVector& vec, std::vector<VectorSegment>& segments) {
     auto expected_idx_vals = getExpectedIdxVals(segments);
 
     // Create mapping of actual idxs and vals.
@@ -147,8 +147,8 @@ class ExtendableVectorTest : public testing::Test {
 
   /**
    * Given a bolt vector and a vector of segments that the vector is
-   * expected to have, ensure that the extendable vector has the correct
-   * elements.
+   * expected to have, ensure that the segmented feature vector has the
+   * correctelements.
    */
   static void checkBoltVectorHasSegments(bolt::BoltVector& vec,
                                          std::vector<VectorSegment>& segments) {
@@ -179,35 +179,35 @@ class ExtendableVectorTest : public testing::Test {
   }
 };
 
-class SparseExtendableVectorTest : public ExtendableVectorTest {};
-class DenseExtendableVectorTest : public ExtendableVectorTest {};
+class SegmentedSparseFeatureVectorTest : public SegmentedFeatureVectorTest {};
+class SegmentedDenseFeatureVectorTest : public SegmentedFeatureVectorTest {};
 
 /**
- * Ensures that any one extension can only have either sparse features
+ * Ensures that any one segment can only have either sparse features
  * or dense features and not both.
  */
-TEST_F(SparseExtendableVectorTest, AddDenseAndSparseInOneExtensionThrows) {
+TEST_F(SegmentedSparseFeatureVectorTest, AddDenseAndSparseInOneSegmentThrows) {
   // Add sparse then dense
   {
-    SparseExtendableVector vec;
-    extendVector(vec, /* dim = */ 10);
-    vec.addExtensionSparseFeature(/* index = */ 1, /* value = */ 1.0);
+    SegmentedSparseFeatureVector vec;
+    addVectorFeature(vec, /* dim = */ 10);
+    vec.addSparseFeatureToSegment(/* index = */ 1, /* value = */ 1.0);
     expectThrow(
-        [&]() { vec.addExtensionDenseFeature(/* value = */ 1.0); },
-        "[SparseExtendableVector::addExtensionDenseFeature] A block cannot "
+        [&]() { vec.addDenseFeatureToSegment(/* value = */ 1.0); },
+        "[SegmentedSparseFeatureVector::addDenseFeatureToSegment] A block cannot "
         "add both dense and sparse features.");
   }
 
   // Add dense then sparse
   {
-    SparseExtendableVector vec;
-    extendVector(vec, /* dim = */ 10);
-    vec.addExtensionDenseFeature(/* value = */ 1.0);
+    SegmentedSparseFeatureVector vec;
+    addVectorFeature(vec, /* dim = */ 10);
+    vec.addDenseFeatureToSegment(/* value = */ 1.0);
     expectThrow(
         [&]() {
-          vec.addExtensionSparseFeature(/* index = */ 1, /* value = */ 1.0);
+          vec.addSparseFeatureToSegment(/* index = */ 1, /* value = */ 1.0);
         },
-        "[SparseExtendableVector::addExtensionSparseFeature] A block cannot "
+        "[SegmentedSparseFeatureVector::addSparseFeatureToSegment] A block cannot "
         "add both dense and sparse features.");
   }
 }
@@ -215,24 +215,24 @@ TEST_F(SparseExtendableVectorTest, AddDenseAndSparseInOneExtensionThrows) {
 /**
  * Ensures that sparse features must be within the specified dimension.
  */
-TEST_F(SparseExtendableVectorTest, AddSparseIndexTooHighThrows) {
-  SparseExtendableVector vec;
-  extendVector(vec, /* dim = */ 10);
+TEST_F(SegmentedSparseFeatureVectorTest, AddSparseIndexTooHighThrows) {
+  SegmentedSparseFeatureVector vec;
+  addVectorFeature(vec, /* dim = */ 10);
   expectThrow(
       [&]() {
-        vec.addExtensionSparseFeature(/* index = */ 10, /* value = */ 1.0);
+        vec.addSparseFeatureToSegment(/* index = */ 10, /* value = */ 1.0);
       },
-      "[SparseExtendableVector::addExtensionSparseFeature] Setting value "
-      "at index = 10 of extension vector with dim = 10");
+      "[SegmentedSparseFeatureVector::addSparseFeatureToSegment] Setting value "
+      "at index = 10 of vector segment with dim = 10");
 }
 
 /**
- * Ensures that the vector is extended appropriately.
+ * Ensures that segments are appropriately added to a vector.
  */
-TEST_F(SparseExtendableVectorTest, ProducesBoltVectorWithCorrectFeatures) {
-  SparseExtendableVector vec;
+TEST_F(SegmentedSparseFeatureVectorTest, ProducesBoltVectorWithCorrectFeatures) {
+  SegmentedSparseFeatureVector vec;
 
-  // Extend with both sparse and dense features
+  // Add both sparse and dense segments
   auto sparse_segments = makeRandomSparseVectorSegments(3);
   auto dense_segments = makeRandomDenseVectorSegments(5);
   auto more_sparse_segments = makeRandomSparseVectorSegments(2);
@@ -246,85 +246,85 @@ TEST_F(SparseExtendableVectorTest, ProducesBoltVectorWithCorrectFeatures) {
   all_segments.insert(all_segments.end(), more_sparse_segments.begin(),
                       more_sparse_segments.end());
 
-  // Extend the vector with each segment.
+  // Add each segment to the vector.
   for (const auto& seg : all_segments) {
-    extendVector(vec, seg.dim);
+    addVectorFeature(vec, seg.dim);
     if (seg.dense) {
       for (const auto& val : seg.values) {
-        vec.addExtensionDenseFeature(val);
+        vec.addDenseFeatureToSegment(val);
       }
     } else {
       for (uint32_t i = 0; i < seg.indices.size(); i++) {
-        vec.addExtensionSparseFeature(seg.indices[i], seg.values[i]);
+        vec.addSparseFeatureToSegment(seg.indices[i], seg.values[i]);
       }
     }
   }
 
   // Check.
-  checkExtendableVectorHasSegments(vec, all_segments);
+  checkSegmentedFeatureVectorHasSegments(vec, all_segments);
   auto bolt_vec = vec.toBoltVector();
   checkBoltVectorHasSegments(bolt_vec, all_segments);
 }
 
 /**
- * Ensures that any one extension can only have either sparse features
+ * Ensures that any one segment can only have either sparse features
  * or dense features and not both.
  */
-TEST_F(DenseExtendableVectorTest, AddSparseThrows) {
-  DenseExtendableVector vec;
-  extendVector(vec, /* dim = */ 10);
+TEST_F(SegmentedDenseFeatureVectorTest, AddSparseThrows) {
+  SegmentedDenseFeatureVector vec;
+  addVectorFeature(vec, /* dim = */ 10);
   expectThrow(
       [&]() {
-        vec.addExtensionSparseFeature(/* index = */ 1, /* value = */ 1.0);
+        vec.addSparseFeatureToSegment(/* index = */ 1, /* value = */ 1.0);
       },
-      "[DenseExtendableVector::addExtensionSparseFeature] "
-      "DenseExtendableVector does not accept sparse features.");
+      "[SegmentedDenseFeatureVector::addSparseFeatureToSegment] "
+      "SegmentedDenseFeatureVector does not accept sparse features.");
 }
 
 /**
- * Ensures a dense extension does not accept more values than the
+ * Ensures a dense segment does not accept more values than the
  * specified dimension.
  */
-TEST_F(DenseExtendableVectorTest, AddTooManyValuesThrows) {
-  DenseExtendableVector vec;
-  extendVector(vec, /* dim = */ 1);
-  vec.addExtensionDenseFeature(/* value = */ 1.0);
-  expectThrow([&]() { vec.addExtensionDenseFeature(/* value = */ 1.0); },
-              "[DenseExtendableVector::addExtensionDenseFeature] Adding "
-              "2-th dense feature to extension vector with dim = 1");
+TEST_F(SegmentedDenseFeatureVectorTest, AddTooManyValuesThrows) {
+  SegmentedDenseFeatureVector vec;
+  addVectorFeature(vec, /* dim = */ 1);
+  vec.addDenseFeatureToSegment(/* value = */ 1.0);
+  expectThrow([&]() { vec.addDenseFeatureToSegment(/* value = */ 1.0); },
+              "[SegmentedDenseFeatureVector::addDenseFeatureToSegment] Adding "
+              "2-th dense feature to vector segment with dim = 1");
 }
 
 /**
- * Ensures the number of dense features in each extension
+ * Ensures the number of dense features in each segment
  * is no less than the specified dimenion.
  */
-TEST_F(DenseExtendableVectorTest, PrematureExtensionThrows) {
-  DenseExtendableVector vec;
-  extendVector(vec, /* dim = */ 10);
-  vec.addExtensionDenseFeature(/* value = */ 1.0);
-  expectThrow([&]() { extendVector(vec, /* dim = */ 10); },
-              "[DenseExtendableVector::extendByDim] Extending vector before "
-              "completing previous extension. Previous extension expected to "
+TEST_F(SegmentedDenseFeatureVectorTest, PrematurelyAddingNewSegmentThrows) {
+  SegmentedDenseFeatureVector vec;
+  addVectorFeature(vec, /* dim = */ 10);
+  vec.addDenseFeatureToSegment(/* value = */ 1.0);
+  expectThrow([&]() { addVectorFeature(vec, /* dim = */ 10); },
+              "[SegmentedDenseFeatureVector::addFeatureSegment] Adding vector segment before "
+              "completing previous segment. Previous segment expected to "
               "have dim = 10 but only 1 dense features were added.");
 }
 
 /**
- * Ensures that the vector is extended appropriately.
+ * Ensures that the segments are appropriately added to vector.
  */
-TEST_F(DenseExtendableVectorTest, ProducesBoltVectorWithCorrectFeatures) {
-  DenseExtendableVector vec;
+TEST_F(SegmentedDenseFeatureVectorTest, ProducesBoltVectorWithCorrectFeatures) {
+  SegmentedDenseFeatureVector vec;
 
-  // Make and extend with segments
+  // Make and add segments
   auto segments = makeRandomDenseVectorSegments(1);
   for (const auto& seg : segments) {
-    extendVector(vec, seg.dim);
+    addVectorFeature(vec, seg.dim);
     for (const auto& val : seg.values) {
-      vec.addExtensionDenseFeature(val);
+      vec.addDenseFeatureToSegment(val);
     }
   }
 
   // Check.
-  checkExtendableVectorHasSegments(vec, segments);
+  checkSegmentedFeatureVectorHasSegments(vec, segments);
   auto bolt_vec = vec.toBoltVector();
   checkBoltVectorHasSegments(bolt_vec, segments);
 }

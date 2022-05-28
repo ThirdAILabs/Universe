@@ -38,8 +38,8 @@ struct TextBlock : public Block {
   bool isDense() const final { return _encoding->isDense(); };
 
  protected:
-  void buildExtension(const std::vector<std::string>& input_row,
-                      ExtendableVector& vec) final {
+  void buildSegment(const std::vector<std::string>& input_row,
+                      SegmentedFeatureVector& vec) final {
     _encoding->encodeText(input_row.at(_col), vec);
   }
 

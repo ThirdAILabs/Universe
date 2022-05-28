@@ -4,63 +4,72 @@
 #include <cstdint>
 #include <vector>
 
-// #include <dataset/src/utils/ExtendableVectors.h>
-
 namespace thirdai::dataset {
 
 /**
  * Declare here so we can make it a friend of
- * ExtendableVector.
+ * SegmentedFeatureVector.
  */
 class Block;
-class ExtendableVectorTest;
+class SegmentedFeatureVectorTest;
 class CategoricalBlockTest;
 
 /**
- * Extendable vector abstract class.
- * A vector representation that can be extended with a
- * new vector and can be converted into a BoltVector.
+ * Segmented feature vector abstract class.
+ * A vector representation that can be extended with
+ * feature segments and can be converted into a BoltVector.
  *
+ * This is used when we want to compose features from various
+ * feature blocks. Suppose we want an input vector that encodes
+ * both text features and categorical features from raw data.
+ * This data structure helps us create a vector that has one 
+ * block containing features extracted from raw text features,
+ * and another segment containing features extracted from raw
+ * categorical features.
  */
-class ExtendableVector {
+class SegmentedFeatureVector {
  public:
   friend Block;
   friend CategoricalBlockTest;
-  friend ExtendableVectorTest;
+  friend SegmentedFeatureVectorTest;
 
  protected:
   /**
-   * Extends the current vector by the given dimension.
-   * Must be called exactly once per sample per block,
-   * so to prevent erroneous use, we are making this a
-   * protected method so it is only accessible to
-   * derived classes, the Block abstract class, and
-   * the ExtendableVectorTest class.
+   * Adds a segment with the given dimension to the 
+   * current vector.
+   *
+   * This method is used by feature blocks to add 
+   * feature segments to a vector. Internally, this 
+   * method notifies the vector data structure to do
+   * any relevant bookkeeping.
+   * 
+   * This method must be called exactly once per 
+   * sample per block, so to prevent erroneous use, 
+   * we restrict access by making it a protected
+   * method.
    */
-  virtual void extendByDim(uint32_t dim) = 0;
+  virtual void addFeatureSegment(uint32_t dim) = 0;
 
   /**
    * Returns all of the vector's idx-value pairs.
    * Only used for testing as this can be very expensive
-   * in dense vectors. Thus, we made it protected
-   * so it is only accessible to derived classes,
-   * the Block abstract class, and the
-   * ExtendableVectorTest class.
+   * in dense vectors, so we restrict access by making 
+   * it a protected method.
    */
   virtual std::vector<std::pair<uint32_t, float>> entries() = 0;
 
  public:
   /**
-   * Increments the feature of the extension vector at the given index
-   * by the given value.
+   * Increments the feature at the given index of the current vector segment
+   * by a value.
    */
-  virtual void addExtensionSparseFeature(uint32_t index, float value) = 0;
+  virtual void addSparseFeatureToSegment(uint32_t index, float value) = 0;
 
   /**
-   * Sets the next element of the dense extension vector to
+   * Sets the next element of the dense vector segment to
    * the given value.
    */
-  virtual void addExtensionDenseFeature(float value) = 0;
+  virtual void addDenseFeatureToSegment(float value) = 0;
 
   /**
    * Converts this vector to a BoltVector.
@@ -84,10 +93,10 @@ class Block {
    * vec: the vector to be concatenated with the vector
    *   encoding of input_row.
    */
-  void extendVector(const std::vector<std::string>& input_row,
-                    ExtendableVector& vec) {
-    vec.extendByDim(featureDim());
-    buildExtension(input_row, vec);
+  void addVectorSegment(const std::vector<std::string>& input_row,
+                    SegmentedFeatureVector& vec) {
+    vec.addFeatureSegment(featureDim());
+    buildSegment(input_row, vec);
   }
 
   /**
@@ -103,10 +112,10 @@ class Block {
  protected:
   /**
    * Derived class-specific implementation of how input rows get
-   * encoded (and what ends up in the extension vector).
+   * encoded (and what ends up in the vector segment).
    */
-  virtual void buildExtension(const std::vector<std::string>& input_row,
-                              ExtendableVector& vec) = 0;
+  virtual void buildSegment(const std::vector<std::string>& input_row,
+                              SegmentedFeatureVector& vec) = 0;
 };
 
 }  // namespace thirdai::dataset

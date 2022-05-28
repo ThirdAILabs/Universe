@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/utils/ExtendableVectors.h>
+#include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <sys/types.h>
 #include <cstdlib>
 #include <map>
@@ -51,21 +51,21 @@ class CategoricalBlockTest : public testing::Test {
   }
 
   /**
-   * Helper function to access extendVector() method of CategoricalBlock,
+   * Helper function to access addVectorSegment() method of CategoricalBlock,
    * which is private.
    */
-  static void extendVectorWithBlock(CategoricalBlock& block,
+  static void addVectorSegmentWithBlock(CategoricalBlock& block,
                                     const std::vector<std::string>& input_row,
-                                    SparseExtendableVector& vec) {
-    block.extendVector(input_row, vec);
+                                    SegmentedSparseFeatureVector& vec) {
+    block.addVectorSegment(input_row, vec);
   }
 
   /**
-   * Helper function to access entries() method of ExtendableVector,
+   * Helper function to access entries() method of SegmentedFeatureVector,
    * which is private.
    */
   static std::vector<std::pair<uint32_t, float>> vectorEntries(
-      ExtendableVector& vec) {
+      SegmentedFeatureVector& vec) {
     return vec.entries();
   }
 };
@@ -80,7 +80,7 @@ class CategoricalBlockTest : public testing::Test {
  * we write is mostly going to be the same as ContiguousNumericId.
  */
 TEST_F(CategoricalBlockTest, PrducesCorrectVectorsDifferentColumns) {
-  std::vector<SparseExtendableVector> vecs;
+  std::vector<SegmentedSparseFeatureVector> vecs;
   std::vector<uint32_t> dims{100, 1000, 55};
   std::vector<CategoricalBlock> blocks{
       {0, dims[0]}, {1, dims[1]}, {2, dims[2]}};
@@ -90,9 +90,9 @@ TEST_F(CategoricalBlockTest, PrducesCorrectVectorsDifferentColumns) {
 
   // Encode the input matrix
   for (const auto& row : input_matrix) {
-    SparseExtendableVector vec;
+    SegmentedSparseFeatureVector vec;
     for (auto& block : blocks) {
-      extendVectorWithBlock(block, row, vec);
+      addVectorSegmentWithBlock(block, row, vec);
     }
     vecs.push_back(std::move(vec));
   }

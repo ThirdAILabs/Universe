@@ -21,7 +21,7 @@ struct PairGram : public TextEncoding {
    */
   explicit PairGram(uint32_t dim = 100000) : _dim(dim) {}
 
-  void encodeText(const std::string& text, ExtendableVector& vec) final {
+  void encodeText(const std::string& text, SegmentedFeatureVector& vec) final {
     // TODO(Geordie): Do we need to make lower case?
     std::string lower_case_text = text;
     for (auto& c : lower_case_text) {
