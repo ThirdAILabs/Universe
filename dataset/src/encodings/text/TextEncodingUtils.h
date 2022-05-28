@@ -6,7 +6,8 @@
 
 namespace thirdai::dataset {
 
-struct TextEncodingUtils {
+class TextEncodingUtils {
+ public:
   /**
    * Deduplicates indices by summing values and adds features to the given
    * vector. All indices expected to correspond to the same value.

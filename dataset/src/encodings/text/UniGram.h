@@ -15,7 +15,8 @@ namespace thirdai::dataset {
 /**
  * Encodes a sentence as a weighted set of words.
  */
-struct UniGram : public TextEncoding {
+class UniGram : public TextEncoding {
+ public:
   /**
    * Constructor. Accepts the desired dimension of the encoding.
    */

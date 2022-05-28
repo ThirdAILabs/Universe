@@ -38,6 +38,7 @@ class SegmentedFeatureVectorTest : public testing::Test {
   template <typename OPERATION_T>
   static void expectThrow(OPERATION_T this_shall_throw,
                           const std::string& expected_error_msg) {
+    // NOLINTBEGIN: Linter does not like EXPECT_THROW
     EXPECT_THROW(
         {
           try {
@@ -49,6 +50,7 @@ class SegmentedFeatureVectorTest : public testing::Test {
           }
         },
         std::invalid_argument);
+    // NOLINTEND
   }
 
   /**

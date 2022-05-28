@@ -8,7 +8,8 @@ namespace thirdai::dataset {
 /**
  * Interface for categorical feature encoders.
  */
-struct CategoricalEncoding {
+class CategoricalEncoding {
+ public:
   /**
    * Conceptually, encodes an categorical feature represented by an ID
    * as a vector and adds a segment containing this encoding to the vector.

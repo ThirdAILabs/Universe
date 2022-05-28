@@ -9,7 +9,8 @@ namespace thirdai::dataset {
  * Treats the categorical identifiers as contiguous numeric IDs.
  * i.e. index of nonzero = ID % dim.
  */
-struct ContiguousNumericId : public CategoricalEncoding {
+class ContiguousNumericId : public CategoricalEncoding {
+ public:
   /**
    * Constructor. Accepts the desired dimension of the encoding.
    */

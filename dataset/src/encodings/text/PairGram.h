@@ -15,7 +15,8 @@ namespace thirdai::dataset {
 /**
  * Encodes a sentence as a weighted set of ordered pairs of words.
  */
-struct PairGram : public TextEncoding {
+class PairGram : public TextEncoding {
+ public:
   /**
    * Constructor. Accepts the desired dimension of the encoding.
    */

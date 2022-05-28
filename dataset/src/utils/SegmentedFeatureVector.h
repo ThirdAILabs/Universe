@@ -8,7 +8,8 @@ namespace thirdai::dataset {
 /**
  * A concrete implementation of SegmentedSparseFeatureVector for sparse vectors.
  */
-struct SegmentedSparseFeatureVector : public SegmentedFeatureVector {
+class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
+ public:
   void addSparseFeatureToSegment(uint32_t index, float value) final {
     if (_n_dense_added > 0) {
       throw std::invalid_argument(
@@ -87,7 +88,8 @@ struct SegmentedSparseFeatureVector : public SegmentedFeatureVector {
 /**
  * A concrete implementation of SegmentedFeatureVector for dense vectors.
  */
-struct SegmentedDenseFeatureVector : public SegmentedFeatureVector {
+class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
+ public:
   void addSparseFeatureToSegment(uint32_t index, float value) final {
     (void)index;
     (void)value;

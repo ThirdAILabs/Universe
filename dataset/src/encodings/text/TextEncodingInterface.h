@@ -7,7 +7,8 @@ namespace thirdai::dataset {
 /**
  * Interface for text encoders.
  */
-struct TextEncoding {
+class TextEncoding {
+ public:
   /**
    * Conceptually, encodes a string as a vector and extends
    * the given vector with this encoding.
