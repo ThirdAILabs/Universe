@@ -8,7 +8,8 @@ namespace thirdai::dataset {
 /**
  * A concrete implementation of ExtendableVector for sparse vectors.
  */
-struct SparseExtendableVector : public ExtendableVector {
+class SparseExtendableVector : public ExtendableVector {
+ public:
   void addExtensionSparseFeature(uint32_t index, float value) final {
     if (_n_dense_added > 0) {
       throw std::invalid_argument(
@@ -84,7 +85,8 @@ struct SparseExtendableVector : public ExtendableVector {
 /**
  * A concrete implementation of ExtendableVector for dense vectors.
  */
-struct DenseExtendableVector : public ExtendableVector {
+class DenseExtendableVector : public ExtendableVector {
+ public:
   void addExtensionSparseFeature(uint32_t index, float value) final {
     (void)index;
     (void)value;
