@@ -12,7 +12,8 @@ namespace thirdai::dataset {
  * A block that encodes categorical features (e.g. a numerical ID or an
  * identification string).
  */
-struct CategoricalBlock : public Block {
+class CategoricalBlock : public Block {
+ public:
   // Declaration included from BlockInterface.h
   friend CategoricalBlockTest;
 

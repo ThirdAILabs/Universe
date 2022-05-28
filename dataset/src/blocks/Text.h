@@ -10,7 +10,8 @@ namespace thirdai::dataset {
 /**
  * A block that encodes text (e.g. sentences / paragraphs).
  */
-struct TextBlock : public Block {
+class TextBlock : public Block {
+ public:
   /**
    * Constructor.
    *
