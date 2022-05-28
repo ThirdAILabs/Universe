@@ -607,7 +607,7 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("epochs"), py::arg("learning_rate"),
            "Trains the classifier on the given dataset.\n"
            "Arguments:\n"
-           " * train_file: string - The path the training dataset to use.\n"
+           " * train_file: string - The path to the training dataset to use.\n"
            " * epochs: Int - How many epochs to train for.\n"
            " * learning_rate: Float - The learning rate to use for training.\n")
       .def("predict", &TextClassifier::predict, py::arg("test_file"),
@@ -615,7 +615,7 @@ void createBoltSubmodule(py::module_& module) {
            "Runs the classifier on the specified test dataset and optionally "
            "logs the prediction to a file.\n"
            "Arguments:\n"
-           " * test_file: string - The path the test dataset to use.\n"
+           " * test_file: string - The path to the test dataset to use.\n"
            " * output_file: string - Optional argument, if this is specified "
            "then the classifier will output the name of the class/category of "
            "each prediction this file with one prediction result on each "

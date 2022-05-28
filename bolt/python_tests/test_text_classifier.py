@@ -24,9 +24,7 @@ def write_dataset_to_csv(dataset, filename, return_labels=False):
 
     with open(filename, "w") as file:
         file.write('"text","category"\n')
-        lines = [
-            '"{}","{}"\n'.format(sentence, label_name) for sentence, label_name in data
-        ]
+        lines = [f'"{sentence}","{label_name}"\n' for sentence, label_name in data]
         file.writelines(lines)
 
     if return_labels:
