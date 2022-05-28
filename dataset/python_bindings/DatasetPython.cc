@@ -12,6 +12,12 @@
 #include <dataset/src/encodings/text/UniGram.h>
 #include <chrono>
 
+// TODO(Geordie): Split into smaller files.
+// I'm thinking one for each submodule of dataset_submodule.
+// E.g. in DatasetBlockPython.cc we would have a function with this signature:
+// void createBlockSubsubmodule(py::module_& dataset_submodule, 
+//                              py::module_& internal_dataset_submodule);
+
 namespace thirdai::dataset::python {
 
 void createDatasetSubmodule(py::module_& module) {
