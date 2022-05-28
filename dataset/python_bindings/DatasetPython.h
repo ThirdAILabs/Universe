@@ -109,6 +109,22 @@ parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
 bool denseBoltDatasetMatchesDenseMatrix(
     BoltDataset& dataset, std::vector<std::vector<float>>& matrix);
 
+/**
+ * Checks whether the given bolt dataset represents a permutation of
+ * the rows of the given dense 2d matrix. Assumes that each row of 
+ * the matrix is 1-dimensional; only has one element.
+ * For testing purposes only.
+ */
+bool denseBoltDatasetIsPermutationOfDenseMatrix(
+    BoltDataset& dataset, std::vector<std::vector<float>>& matrix);
+
+/**
+ * Checks whether the given bolt datasets have the same values.
+ * For testing purposes only.
+ */
+bool denseBoltDatasetsAreEqual(
+    BoltDataset& dataset1, BoltDataset& dataset2);
+
 class PyBatchProcessor : public BatchProcessor {
  public:
   PyBatchProcessor(std::vector<std::shared_ptr<Block>>& input_blocks,

@@ -4,7 +4,8 @@
 #include <dataset/src/Dataset.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <chrono>
+#include <cstdlib>
+#include <random>
 
 namespace thirdai::dataset {
 
@@ -31,8 +32,7 @@ struct BatchProcessor {
    */
   std::pair<BoltDatasetPtr, BoltDatasetPtr> exportInMemoryDataset(
       bool shuffle = false,
-      uint32_t shuffle_seed =
-          std::chrono::system_clock::now().time_since_epoch().count());
+      uint32_t shuffle_seed = std::rand());
 
  private:
   /**
