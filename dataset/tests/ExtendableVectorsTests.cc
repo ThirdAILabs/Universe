@@ -38,17 +38,13 @@ class ExtendableVectorTest : public testing::Test {
   template <typename OPERATION_T>
   static void expectThrow(OPERATION_T this_shall_throw,
                           const std::string& expected_error_msg) {
-    EXPECT_THROW(
-        {
-          try {
-            this_shall_throw();
-          } catch (const std::invalid_argument& e) {
-            // and this tests that it has the correct message
-            EXPECT_STREQ(expected_error_msg.c_str(), e.what());
-            throw;
-          }
-        },
-        std::invalid_argument);
+    // Wanted to do EXPECT_THROW but linter did not like it.
+    try {
+      this_shall_throw();
+    } catch (const std::invalid_argument& e) {
+      // and this tests that it has the correct message
+      EXPECT_STREQ(expected_error_msg.c_str(), e.what());
+    }
   }
 
   /**
