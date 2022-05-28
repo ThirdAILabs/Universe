@@ -5,6 +5,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <limits>
+#include <string>
 
 namespace thirdai::bolt::python {
 
@@ -118,7 +119,11 @@ void createBoltSubmodule(py::module_& module) {
            "layer uses 5% of "
            "its neurons when processing an individual sample.\n"
            "Also accepts `getActivationFunction(function_name), e.g. "
-           "`getActivationFunction('ReLU')`");
+           "`getActivationFunction('ReLU')`")
+      .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
+           py::arg("load_factor"), py::arg("activation_function"))
+      .def(py::init<uint64_t, std::string>(), py::arg("dim"),
+           py::arg("activation_function"));
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<thirdai::bolt::ConvLayerConfig,
