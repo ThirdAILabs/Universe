@@ -13,7 +13,7 @@ struct CategoricalEncoding {
    * Conceptually, encodes an categorical feature represented by an ID
    * as a vector and extends the given vector with this encoding.
    */
-  virtual void encodeCategory(uint32_t id, ExtendableVector& vec) = 0;
+  virtual void encodeCategory(const std::string& id, ExtendableVector& vec) = 0;
 
   /**
    * True if the encoder produces dense features, False otherwise.

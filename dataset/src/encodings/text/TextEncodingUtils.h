@@ -11,8 +11,8 @@ struct TextEncodingUtils {
    * Deduplicates indices by summing values and adds features to the given
    * vector. All indices expected to correspond to the same value.
    */
-  inline static void sumRepeatedIndices(std::vector<uint32_t>& indices, float value,
-                                 ExtendableVector& vec) {
+  inline static void sumRepeatedIndices(std::vector<uint32_t>& indices,
+                                        float value, ExtendableVector& vec) {
     // Put equivalent indices next to each other.
     std::sort(indices.begin(), indices.end());
 
@@ -49,7 +49,7 @@ struct TextEncodingUtils {
    */
   template <typename WORD_PROCESSOR_T>
   inline static void forEachWord(std::string& sentence,
-                          WORD_PROCESSOR_T word_processor) {
+                                 WORD_PROCESSOR_T word_processor) {
     static_assert(
         std::is_convertible<WORD_PROCESSOR_T,
                             std::function<void(char*, size_t)>>::value);

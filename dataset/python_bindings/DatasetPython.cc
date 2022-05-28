@@ -3,13 +3,13 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Text.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/core/BatchProcessor.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
-#include <dataset/src/encodings/categorical/OneHotEncoding.h>
+#include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <dataset/src/encodings/text/PairGram.h>
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
 #include <dataset/src/encodings/text/UniGram.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
 #include <sys/types.h>
@@ -19,7 +19,7 @@
 // TODO(Geordie): Split into smaller files.
 // I'm thinking one for each submodule of dataset_submodule.
 // E.g. in DatasetBlockPython.cc we would have a function with this signature:
-// void createBlockSubsubmodule(py::module_& dataset_submodule, 
+// void createBlockSubsubmodule(py::module_& dataset_submodule,
 //                              py::module_& internal_dataset_submodule);
 
 namespace thirdai::dataset::python {
@@ -89,14 +89,16 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &CategoricalEncoding::isDense,
            "The dimension of the encoding.");
 
-  py::class_<OneHotEncoding, CategoricalEncoding,
-             std::shared_ptr<OneHotEncoding>>(categorical_encoding_submodule,
-                                              "OneHot")
+  py::class_<ContiguousNumericId, CategoricalEncoding,
+             std::shared_ptr<ContiguousNumericId>>(
+      categorical_encoding_submodule, "ContiguousNumericId",
+      "Treats the categorical identifiers as contiguous numeric IDs. "
+      "i.e. index of nonzero = ID % dim.")
       .def(py::init<uint32_t>(), py::arg("dim"),
            "Constructor. Accepts the desired dimension of the encoding.")
-      .def("feature_dim", &OneHotEncoding::featureDim,
+      .def("feature_dim", &ContiguousNumericId::featureDim,
            "Returns False since this is a sparse encoding.")
-      .def("is_dense", &OneHotEncoding::isDense,
+      .def("is_dense", &ContiguousNumericId::isDense,
            "The dimension of the encoding.");
 
   py::class_<Block, std::shared_ptr<Block>>(
@@ -134,27 +136,20 @@ void createDatasetSubmodule(py::module_& module) {
       block_submodule, "Categorical",
       "A block that encodes categorical features (e.g. a numerical ID or an "
       "identification string).")
-      .def(py::init<uint32_t, std::shared_ptr<CategoricalEncoding>&, bool>(),
-           py::arg("col"), py::arg("encoding"), py::arg("numerical_id") = true,
+      .def(py::init<uint32_t, std::shared_ptr<CategoricalEncoding>&>(),
+           py::arg("col"), py::arg("encoding"),
            "Constructor.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
            "the categorical feature to be encoded.\n"
            " * encoding: CategoricalEncoding - Categorical feature encoding "
-           "model.\n"
-           " * numerical_id: Bool - Whether the categorical feature is "
-           "numerical. "
-           "Defaults to true.")
-      .def(py::init<uint32_t, uint32_t, bool>(), py::arg("col"), py::arg("dim"),
-           py::arg("numerical_id") = true,
+           "model")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("col"), py::arg("dim"),
            "Constructor with default encoder.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
            "the categorical feature to be encoded.\n"
-           " * dim: Int - Dimension of the encoding\n"
-           " * numerical_id: Bool - Whether the categorical feature is "
-           "numerical. "
-           "Defaults to true.")
+           " * dim: Int - Dimension of the encoding")
       .def("feature_dim", &CategoricalBlock::featureDim,
            "Returns the dimension of the vector encoding.")
       .def("is_dense", &CategoricalBlock::isDense,
@@ -779,7 +774,7 @@ bool denseBoltDatasetIsPermutationOfDenseMatrix(
   // Keep track of values in the matrix
   std::unordered_map<float, uint32_t> expected_values;
   for (const auto& row : matrix) {
-    assert(row.size == 1);
+    assert(row.size() == 1);
     // Assume each row is 1-dimensional.
     expected_values[row.at(0)]++;
   }

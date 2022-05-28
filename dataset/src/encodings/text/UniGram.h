@@ -34,7 +34,7 @@ struct UniGram : public TextEncoding {
           uni_grams.push_back(hash);
         });
 
-    // Deduplication adds an overhead of around 10% but helps to reduce 
+    // Deduplication adds an overhead of around 10% but helps to reduce
     // number of entries in the sparse vector, which can in turn make BOLT
     // run faster.
     TextEncodingUtils::sumRepeatedIndices(uni_grams, 1.0, vec);

@@ -61,6 +61,17 @@ target_link_libraries(
 )
 
 add_executable(
+  categorical_block_test
+  CategoricalBlockTests.cc
+)
+
+target_link_libraries(
+  categorical_block_test
+  PRIVATE
+  gtest_main
+)
+
+add_executable(
   batch_processor_test
   BatchProcessorTests.cc
 )
@@ -90,5 +101,6 @@ gtest_discover_tests(click_through_dataset_test)
 gtest_discover_tests(vector_test)
 gtest_discover_tests(csv_dataset_test)
 gtest_discover_tests(extendable_vectors_test)
+gtest_discover_tests(categorical_block_test)
 gtest_discover_tests(batch_processor_test)
 # gtest_discover_tests(global_frequency_test)

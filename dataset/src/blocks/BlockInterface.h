@@ -14,6 +14,7 @@ namespace thirdai::dataset {
  */
 class Block;
 class ExtendableVectorTest;
+class CategoricalBlockTest;
 
 /**
  * Extendable vector abstract class.
@@ -24,6 +25,7 @@ class ExtendableVectorTest;
 class ExtendableVector {
  public:
   friend Block;
+  friend CategoricalBlockTest;
   friend ExtendableVectorTest;
 
  protected:
