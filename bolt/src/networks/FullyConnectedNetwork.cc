@@ -34,7 +34,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
           *fully_connected_config, prev_dim));
       // if ConvConfig
     } else if (auto conv_config =
-                   std::static_pointer_cast<ConvLayerConfig>(configs[i])) {
+                   std::dynamic_pointer_cast<ConvLayerConfig>(configs[i])) {
       if (i == _num_layers - 1) {
         throw std::invalid_argument("ConvLayer not supported as final layer.");
       }
