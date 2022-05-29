@@ -159,6 +159,12 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
     std::string_view rhs = std::string_view(line.data() + split_index + 1,
                                             line.size() - split_index - 1);
 
+    if (lhs == "" || rhs == "") {
+      throw std::invalid_argument(
+          "Line '" + line +
+          "' is improperly formatted. Expected <label>,<text> or "
+          "<text>,<label>. Either the label or the text is the empty string.");
+    }
     lhs = trim(lhs);
     rhs = trim(rhs);
 
