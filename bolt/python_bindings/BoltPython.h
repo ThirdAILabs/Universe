@@ -159,30 +159,26 @@ class PyNetwork final : public FullyConnectedNetwork {
     // Changes Done by pratik to incorporate CTRL+C fucntionality during
     // training
 
-    #if THIRDAI_ON_WINDOWS
-    
+#if THIRDAI_ON_WINDOWS
 
-      return FullyConnectedNetwork::train(
+    return FullyConnectedNetwork::train(
         train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
         epochs, rehash, rebuild, metric_names, verbose);
-    
 
-    #else
-    
-      auto handler = [](int code) {
-        throw std::runtime_error("SIGNAL " + std::to_string(code));
-      };
-      std::signal(SIGINT, handler);
+#else
 
-      MetricData mD = FullyConnectedNetwork::train(
-          train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
-          epochs, rehash, rebuild, metric_names, verbose);
+    auto handler = [](int code) {
+      throw std::runtime_error("SIGNAL " + std::to_string(code));
+    };
+    std::signal(SIGINT, handler);
 
-      return mD;
-    
-    #endif
+    MetricData mD = FullyConnectedNetwork::train(
+        train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
+        epochs, rehash, rebuild, metric_names, verbose);
 
+    return mD;
 
+#endif
   }
 
   py::tuple predict(
