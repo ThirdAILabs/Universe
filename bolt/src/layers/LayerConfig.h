@@ -45,7 +45,8 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
   SamplingConfig sampling_config;
 
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
-                            const std::string& _act_func, SamplingConfig _config)
+                            const std::string& _act_func,
+                            SamplingConfig _config)
       : dim(_dim),
         sparsity(_sparsity),
         act_func(getActivationFunction(_act_func)),
