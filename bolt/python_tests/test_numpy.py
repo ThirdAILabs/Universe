@@ -36,6 +36,7 @@ def train_simple_bolt_model(examples, labels, load_factor=1, n_classes=10):
 
     return acc["categorical_accuracy"]
 
+
 def train_simple_bolt_model_trainable(examples, labels, load_factor=1, n_classes=10):
     layers = [
         bolt.FullyConnected(
@@ -47,7 +48,7 @@ def train_simple_bolt_model_trainable(examples, labels, load_factor=1, n_classes
             dim=n_classes,
             load_factor=load_factor,
             activation_function=bolt.ActivationFunctions.Softmax,
-        )
+        ),
     ]
     network = bolt.Network(layers=layers, input_dim=n_classes)
 
@@ -55,8 +56,8 @@ def train_simple_bolt_model_trainable(examples, labels, load_factor=1, n_classes
     learning_rate = 0.001
     epochs = 50
     # print("weights before training")
-    before_training_weigths=network.get_weights(0)
-    network.setTrainable(layer_index=0,trainable=False)
+    before_training_weigths = network.get_weights(0)
+    network.setTrainable(layer_index=0, trainable=False)
     network.train(
         train_examples=examples,
         train_labels=labels,
@@ -67,15 +68,17 @@ def train_simple_bolt_model_trainable(examples, labels, load_factor=1, n_classes
         verbose=False,
     )
     # print("difference of the weights in the non-trainable layer before and after training")
-    after_training_weigths=network.get_weights(0)
+    after_training_weigths = network.get_weights(0)
     # print(after_training_weigths-before_training_weigths)
-    
 
     acc, _ = network.predict(
         examples, labels, batch_size, ["categorical_accuracy"], verbose=False
     )
 
-    return acc["categorical_accuracy"],np.linalg.norm(after_training_weigths-before_training_weigths)
+    return acc["categorical_accuracy"], np.linalg.norm(
+        after_training_weigths - before_training_weigths
+    )
+
 
 def train_sparse_bolt_model(
     x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, inp_dim, n_classes
@@ -137,6 +140,7 @@ def test_read_easy_mock_data():
     acc = train_simple_bolt_model(examples, labels)
     assert acc > 0.8
 
+
 @pytest.mark.unit
 def test_read_easy_mock_data_trainable():
     """
@@ -150,9 +154,10 @@ def test_read_easy_mock_data_trainable():
     noise = np.random.normal(0, 0.1, examples.shape)
     examples = examples + noise
 
-    acc,norm = train_simple_bolt_model_trainable(examples, labels)
+    acc, norm = train_simple_bolt_model_trainable(examples, labels)
     assert acc > 0.8
-    assert norm<0.001
+    assert norm < 0.001
+
 
 @pytest.mark.unit
 def test_mock_sparse_data():
