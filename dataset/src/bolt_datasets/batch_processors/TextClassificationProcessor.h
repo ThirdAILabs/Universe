@@ -130,12 +130,14 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
 
   static std::string_view trim(std::string_view& str) {
     uint32_t start_offset = 0;
-    while (start_offset < (str.size() - 1) && (std::isspace(str[start_offset]) || isQuote(str[start_offset]))) {
+    while (start_offset < (str.size() - 1) &&
+           (std::isspace(str[start_offset]) || isQuote(str[start_offset]))) {
       start_offset++;
     }
 
     uint32_t end_offset = str.size();
-    while (end_offset > 0 && (std::isspace(str[end_offset - 1]) || isQuote(str[end_offset - 1]))) {
+    while (end_offset > 0 && (std::isspace(str[end_offset - 1]) ||
+                              isQuote(str[end_offset - 1]))) {
       end_offset--;
     }
 
@@ -159,7 +161,7 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
     std::string_view rhs = std::string_view(line.data() + split_index + 1,
                                             line.size() - split_index - 1);
 
-    if (lhs == "" || rhs == "") {
+    if (lhs.empty() || rhs.empty()) {
       throw std::invalid_argument(
           "Line '" + line +
           "' is improperly formatted. Expected <label>,<text> or "
@@ -167,6 +169,14 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
     }
     lhs = trim(lhs);
     rhs = trim(rhs);
+
+    if (lhs.empty() || rhs.empty()) {
+      throw std::invalid_argument(
+          "Line '" + line +
+          "' is improperly formatted. Expected <label>,<text> or "
+          "<text>,<label>. Either the label or the text is the empty string "
+          "after removing quotes.");
+    }
 
     return {lhs, rhs};
   }
