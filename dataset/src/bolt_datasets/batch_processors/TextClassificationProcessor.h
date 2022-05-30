@@ -130,12 +130,12 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
 
   static std::string_view trim(std::string_view& str) {
     uint32_t start_offset = 0;
-    while (std::isspace(str[start_offset]) || isQuote(str[start_offset])) {
+    while (start_offset < (str.size() - 1) && (std::isspace(str[start_offset]) || isQuote(str[start_offset]))) {
       start_offset++;
     }
 
     uint32_t end_offset = str.size();
-    while (std::isspace(str[end_offset - 1]) || isQuote(str[end_offset - 1])) {
+    while (end_offset > 0 && (std::isspace(str[end_offset - 1]) || isQuote(str[end_offset - 1]))) {
       end_offset--;
     }
 
