@@ -17,6 +17,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <algorithm>
+#include <csignal>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -27,7 +28,6 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
-#include <csignal>
 
 namespace py = pybind11;
 
