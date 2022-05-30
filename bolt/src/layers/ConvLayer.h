@@ -48,6 +48,8 @@ class ConvLayer final : public SequentialLayer {
 
   uint32_t getDim() const final { return _dim; }
 
+  uint32_t getInputDim() const final { return _prev_dim; }
+
   uint32_t getInferenceOutputDim() const final {
     if (_force_sparse_for_inference) {
       return _sparse_dim;

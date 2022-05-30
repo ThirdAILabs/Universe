@@ -32,6 +32,9 @@ class SequentialLayer {
   // Returns the dimenion of the layer.
   virtual uint32_t getDim() const = 0;
 
+  // Returns the input dimension of the layer
+  virtual uint32_t getInputDim() const = 0;
+
   // Returns the current output dimension for inference (different if sparse
   // inference).
   virtual uint32_t getInferenceOutputDim() const = 0;
