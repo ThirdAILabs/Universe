@@ -15,6 +15,9 @@ namespace py = pybind11;
 
 namespace thirdai::dataset::python {
 
+template <typename T>
+using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
+
 void createDatasetSubmodule(py::module_& module);
 
 InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
@@ -75,18 +78,13 @@ BoltDatasetPtr denseBoltDatasetFromNumpy(
         examples,
     uint32_t batch_size);
 
-BoltDatasetPtr sparseBoltDatasetFromNumpy(
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        indices,
-    const py::array_t<float, py::array::c_style | py::array::forcecast>& values,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        offsets,
-    uint32_t batch_size);
+BoltDatasetPtr sparseBoltDatasetFromNumpy(const NumpyArray<uint32_t>& indices,
+                                          const NumpyArray<float>& values,
+                                          const NumpyArray<uint32_t>& offsets,
+                                          uint32_t batch_size);
 
-BoltDatasetPtr categoricalLabelsFromNumpy(
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        labels,
-    uint32_t batch_size);
+BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
+                                          uint32_t batch_size);
 
 /*
  * This function takes a single sentence, and parses it into an sparse

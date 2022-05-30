@@ -4,6 +4,7 @@
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
 #include <chrono>
+#include <type_traits>
 
 namespace thirdai::dataset::python {
 
@@ -431,23 +432,15 @@ InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
   return InMemoryDataset(std::move(batches), num_examples);
 }
 
-BoltDatasetPtr sparseBoltDatasetFromNumpy(
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        indices,
-    const py::array_t<float, py::array::c_style | py::array::forcecast>& values,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        offsets,
-    uint32_t batch_size) {
-  // Get information from examples
-  const py::buffer_info indices_buf = indices.request();
-  const py::buffer_info values_buf = values.request();
-  const py::buffer_info offsets_buf = offsets.request();
+BoltDatasetPtr sparseBoltDatasetFromNumpy(const NumpyArray<uint32_t>& indices,
+                                          const NumpyArray<float>& values,
+                                          const NumpyArray<uint32_t>& offsets,
+                                          uint32_t batch_size) {
+  uint64_t num_examples = static_cast<uint64_t>(offsets.shape(0) - 1);
 
-  uint64_t num_examples = static_cast<uint64_t>(offsets_buf.shape.at(0) - 1);
-
-  uint32_t* indices_raw_data = static_cast<uint32_t*>(indices_buf.ptr);
-  float* values_raw_data = static_cast<float*>(values_buf.ptr);
-  uint32_t* offsets_raw_data = static_cast<uint32_t*>(offsets_buf.ptr);
+  uint32_t* indices_raw_data = const_cast<uint32_t*>(indices.data());
+  float* values_raw_data = const_cast<float*>(values.data());
+  uint32_t* offsets_raw_data = const_cast<uint32_t*>(offsets.data());
 
   // Build batches
 
@@ -475,10 +468,8 @@ BoltDatasetPtr sparseBoltDatasetFromNumpy(
   return std::make_shared<BoltDataset>(std::move(batches), num_examples);
 }
 
-BoltDatasetPtr categoricalLabelsFromNumpy(
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        labels,
-    uint32_t batch_size) {
+BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
+                                          uint32_t batch_size) {
   const py::buffer_info labels_buf = labels.request();
 
   if (labels_buf.shape.size() != 1) {

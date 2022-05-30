@@ -1,10 +1,9 @@
 # Add unit and release test marker for all tests in this file
+from thirdai import bolt
+import numpy as np
 import pytest
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
-
-import numpy as np
-from thirdai import bolt
 
 
 def train_simple_bolt_model(examples, labels, load_factor=1, n_classes=10):
@@ -22,7 +21,7 @@ def train_simple_bolt_model(examples, labels, load_factor=1, n_classes=10):
     epochs = 5
 
     network.train(
-        train_examples=examples,
+        train_data=examples,
         train_labels=labels,
         batch_size=batch_size,
         loss_fn=bolt.CategoricalCrossEntropyLoss(),
@@ -33,6 +32,16 @@ def train_simple_bolt_model(examples, labels, load_factor=1, n_classes=10):
     acc, _ = network.predict(
         examples, labels, batch_size, ["categorical_accuracy"], verbose=False
     )
+
+    # Check that predict functions correctly and returns activations when
+    # no labels are specified.
+    _, activations = network.predict(
+        examples, None, batch_size, ["categorical_accuracy"], verbose=False
+    )
+    preds = np.argmax(activations, axis=1)
+    acc_computed = np.mean(preds == labels)
+
+    assert acc_computed == acc["categorical_accuracy"]
 
     return acc["categorical_accuracy"]
 
@@ -54,12 +63,8 @@ def train_sparse_bolt_model(
     epochs = 5
     ##
     network.train(
-        x_idxs=x_idxs,
-        x_vals=x_vals,
-        x_offsets=x_offsets,
-        y_idxs=y_idxs,
-        y_vals=y_vals,
-        y_offsets=y_offsets,
+        train_data=(x_idxs, x_vals, x_offsets),
+        train_labels=(y_idxs, y_vals, y_offsets),
         batch_size=batch_size,
         loss_fn=bolt.CategoricalCrossEntropyLoss(),
         learning_rate=learning_rate,
@@ -67,14 +72,10 @@ def train_sparse_bolt_model(
         verbose=False,
     )
     acc, _ = network.predict(
-        x_idxs,
-        x_vals,
-        x_offsets,
-        y_idxs,
-        y_vals,
-        y_offsets,
-        batch_size,
-        ["categorical_accuracy"],
+        test_data=(x_idxs, x_vals, x_offsets),
+        test_labels=(y_idxs, y_vals, y_offsets),
+        batch_size=batch_size,
+        metrics=["categorical_accuracy"],
         verbose=False,
     )
     ##
@@ -93,7 +94,6 @@ def test_read_easy_mock_data():
     examples = possible_one_hot_encodings[labels]
     noise = np.random.normal(0, 0.1, examples.shape)
     examples = examples + noise
-
     acc = train_simple_bolt_model(examples, labels)
     assert acc > 0.8
 
