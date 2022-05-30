@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-from distutils.command.build import build
 import multiprocessing
 import os
 import re
