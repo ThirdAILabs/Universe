@@ -380,6 +380,10 @@ void ConvLayer::setTrainable(bool trainable){
   }
   std::cout<<"Implement a method to make layers non-trainable";
 }
+bool ConvLayer::getTrainable(){
+  std::cout<<"write a method for returning whether layer is trainable or not, returning true by default";
+  return true;
+}
 void ConvLayer::setWeights(const float* new_weights) {
   std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
 }

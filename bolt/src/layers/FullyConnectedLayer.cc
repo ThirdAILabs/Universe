@@ -50,7 +50,7 @@ FullyConnectedLayer::FullyConnectedLayer(
 
     //if the layer in non-trainable, we generate the hash tables only once and then let them be
     //build hashtables only generats a hash-table if trainable is true
-
+    
     bool temp_store_trainable=_trainable;
     _trainable=true;
     buildHashTables();
@@ -532,6 +532,9 @@ float* FullyConnectedLayer::getWeights() {
 void FullyConnectedLayer::setTrainable(bool trainable){
   _trainable=trainable;
 }
+bool FullyConnectedLayer::getTrainable(){
+  return _trainable;
+}
 
 float* FullyConnectedLayer::getBiases() {
   float* biases_copy = new float[_dim];
@@ -540,8 +543,15 @@ float* FullyConnectedLayer::getBiases() {
   return biases_copy;
 }
 
+//when setting weights, should we rebuild the hash tables for layers? 
 void FullyConnectedLayer::setWeights(const float* new_weights) {
   std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
+
+  //if setting weights for a non-trainable layer, generate hash tables only once. 
+  bool temp_store_trainable=_trainable;
+  _trainable=true;
+  buildHashTables();
+  _trainable=temp_store_trainable;
 }
 
 void FullyConnectedLayer::setBiases(const float* new_biases) {
