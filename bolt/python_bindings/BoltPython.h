@@ -17,7 +17,6 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <algorithm>
-#include <csignal>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -160,12 +159,12 @@ class PyNetwork final : public FullyConnectedNetwork {
     // training
 
     py::gil_scoped_release release;
-    auto handler = [](int code) {
-      throw std::runtime_error("SIGNAL " + std::to_string(code));
-    };
-    std::signal(SIGINT, handler);
-    std::signal(SIGTERM, handler);
-    std::signal(SIGKILL, handler);
+    // auto handler = [](int code) {
+    //   throw std::runtime_error("SIGNAL " + std::to_string(code));
+    // };
+    // std::signal(SIGINT, handler);
+    // std::signal(SIGTERM, handler);
+    // std::signal(SIGKILL, handler);
 
     MetricData mD = FullyConnectedNetwork::train(
         train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
