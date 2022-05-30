@@ -113,7 +113,7 @@ def test_mnist_sparse_output_layer_trainable():
     train_x, train_y, test_x, test_y = load_mnist()
     # layer 1 is the non-trainable layer
     before_training_weigths = network.get_weights(1)
-    train_network(network, train_x, train_y, epochs=20)
+    train_network(network, train_x, train_y, epochs=30)
 
     acc, activations = network.predict(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False

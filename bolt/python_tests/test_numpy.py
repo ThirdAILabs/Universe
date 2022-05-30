@@ -63,7 +63,7 @@ def train_simple_bolt_model_trainable(examples, labels, load_factor=1, n_classes
 
     batch_size = 64
     learning_rate = 0.001
-    epochs = 50
+    epochs = 100
     # print("weights before training")
     before_training_weigths = network.get_weights(0)
     network.setTrainable(layer_index=0, trainable=False)
