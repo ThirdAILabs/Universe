@@ -342,11 +342,20 @@ void createBoltSubmodule(py::module_& module) {
            "in the training routine. It is recommended to call this method "
            "right before the last training "
            "epoch.")
-      .def("save", &PyNetwork::save, py::arg("filename"),
+      .def("checkpoint", &PyNetwork::save, py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
            "folders to be created")
+           
+      .def("save", &PyNetwork::saveShallow, py::arg("filename"),
+           "Saves the network to a file. The file path must not require any "
+           "folders to be created")
+
       .def_static("load", &PyNetwork::load, py::arg("filename"),
                   "Loads and builds a saved network from file.")
+
+      .def_static("resume", &PyNetwork::load, py::arg("filename"),
+                  "Loads the model from a checkpoint")
+
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "
            "matrix.")

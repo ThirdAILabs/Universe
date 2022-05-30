@@ -201,6 +201,41 @@ class PyNetwork final : public FullyConnectedNetwork {
                                 activations, output_sparse, alloc_success);
   }
 
+  // assumption is that when nullptr is when an empty vector is saved, the load function will automatically adjust
+  //load and resume should do the same thing when loading the same archive 
+
+  void saveShallow(const std::string& filename){
+    std::cout<<"saveShallow called"<<std::endl;
+    std::vector<float*> weight_gradient, weight_momentum, weight_velocity;
+    std::vector<float*> bias_gradient, bias_momentum, bias_velocity;
+    for(uint32_t i=0;i<_num_layers;i++){
+      weight_gradient.push_back(_layers[i]->getWeightGradients());
+      bias_gradient.push_back((_layers[i]->getBiasGradients()));
+      weight_momentum.push_back(_layers[i]->getWeightMomentum());
+      bias_momentum.push_back((_layers[i]->getBiasMomentum()));
+      weight_velocity.push_back(_layers[i]->getWeightVelocity());
+      bias_velocity.push_back((_layers[i]->getBiasVelocity()));
+
+      _layers[i]->setWeightGradients(nullptr);
+      _layers[i]->setBiasGradients(nullptr);
+      _layers[i]->setWeightMomentum(nullptr);
+      _layers[i]->setBiasMomentum(nullptr);
+      _layers[i]->setWeightVelocity(nullptr);
+      _layers[i]->setBiasVelocity(nullptr);
+      
+    }
+    save(filename);
+
+    for(uint32_t i=0;i<_num_layers;i++){
+      _layers[i]->setWeightGradients(weight_gradient[i]);
+      _layers[i]->setBiasGradients(bias_gradient[i]);
+      _layers[i]->setWeightMomentum(weight_momentum[i]);
+      _layers[i]->setBiasMomentum(bias_momentum[i]);
+      _layers[i]->setWeightVelocity(weight_velocity[i]);
+      _layers[i]->setBiasVelocity(bias_velocity[i]);
+    }
+    
+  }
   void save(const std::string& filename) {
     std::ofstream filestream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);

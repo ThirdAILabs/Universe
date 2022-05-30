@@ -383,6 +383,21 @@ void ConvLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
+float* ConvLayer::getWeightGradients() {std::cout<<"implement method";return nullptr;}
+float* ConvLayer::getBiasGradients() {std::cout<<"implement method";return nullptr;}
+float* ConvLayer::getWeightMomentum() {std::cout<<"implement method";return nullptr;}
+float* ConvLayer::getBiasMomentum() {std::cout<<"implement method";return nullptr;}
+float* ConvLayer::getWeightVelocity() {std::cout<<"implement method";return nullptr;}
+float* ConvLayer::getBiasVelocity() {std::cout<<"implement method";return nullptr;}
+  
+void ConvLayer::setWeightGradients(const float* new_weight_gradients){if(new_weight_gradients){std::cout<<"implement method";}}
+void ConvLayer::setBiasGradients(const float* new_bias_gradients){if(new_bias_gradients){std::cout<<"implement method";}}
+void ConvLayer::setWeightMomentum(const float* new_weight_momentum){if(new_weight_momentum){std::cout<<"implement method";}}
+void ConvLayer::setBiasMomentum(const float* new_bias_momentum){if(new_bias_momentum){std::cout<<"implement method";}}
+void ConvLayer::setWeightVelocity(const float* new_weight_velocity){if(new_weight_velocity){std::cout<<"implement method";}}
+void ConvLayer::setBiasVelocity(const float* new_bias_velocity){if(new_bias_velocity){std::cout<<"implement method";}}
+
+
 // this function is only called from constructor
 void ConvLayer::buildPatchMaps(std::pair<uint32_t, uint32_t> next_kernel_size) {
   /** TODO(David): btw this will be factored out soon into an N-tower model and

@@ -2,6 +2,7 @@
 from thirdai import bolt
 import numpy as np
 import pytest
+import os
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -46,6 +47,51 @@ def train_simple_bolt_model(examples, labels, load_factor=1, n_classes=10):
     return acc["categorical_accuracy"]
 
 
+def train_simple_bolt_model_save_load(examples, labels, load_factor=1, n_classes=10):
+
+    layers = [
+        bolt.FullyConnected(
+            dim=n_classes,
+            load_factor=load_factor,
+            activation_function=bolt.ActivationFunctions.Softmax,
+        )
+    ]
+    network = bolt.Network(layers=layers, input_dim=n_classes)
+
+    batch_size = 64
+    learning_rate = 0.001
+    epochs = 5
+
+    network.train(
+        train_data=examples,
+        train_labels=labels,
+        batch_size=batch_size,
+        loss_fn=bolt.CategoricalCrossEntropyLoss(),
+        learning_rate=learning_rate,
+        epochs=epochs,
+        verbose=False,
+    )
+    acc, _ = network.predict(
+        examples, labels, batch_size, ["categorical_accuracy"], verbose=False
+    )
+    save_loc = "./bolt_model_save"
+    path=os.getcwd()
+    print(path)
+    if os.path.exists(save_loc):
+        os.remove(save_loc)
+
+    # Save network and load as a new network
+    network.save(save_loc)
+    print("model-saved")
+    new_network = bolt.Network.load(save_loc)
+    print("new model loaded")
+    acc_new, _ =  new_network.predict(
+        examples, labels, batch_size, ["categorical_accuracy"], verbose=False
+    )
+    ##
+    print(acc["categorical_accuracy"],acc_new["categorical_accuracy"])
+    return acc["categorical_accuracy"],acc_new["categorical_accuracy"]
+
 def train_sparse_bolt_model(
     x_idxs, x_vals, x_offsets, y_idxs, y_vals, y_offsets, inp_dim, n_classes
 ):
@@ -78,6 +124,7 @@ def train_sparse_bolt_model(
         metrics=["categorical_accuracy"],
         verbose=False,
     )
+    
     ##
     return acc["categorical_accuracy"]
 
@@ -94,9 +141,23 @@ def test_read_easy_mock_data():
     examples = possible_one_hot_encodings[labels]
     noise = np.random.normal(0, 0.1, examples.shape)
     examples = examples + noise
-    acc = train_simple_bolt_model(examples, labels)
-    assert acc > 0.8
+    acc1= train_simple_bolt_model(examples, labels)
+    assert acc1
 
+@pytest.mark.unit
+def test_read_easy_mock_data_load_save():
+    """
+    Generates easy mock dataset as a numpy array and asserts that BOLT performs well.
+    """
+    n_classes = 10
+    n_samples = 1000
+    possible_one_hot_encodings = np.eye(n_classes)
+    labels = np.random.choice(n_classes, size=n_samples)
+    examples = possible_one_hot_encodings[labels]
+    noise = np.random.normal(0, 0.1, examples.shape)
+    examples = examples + noise
+    acc1,acc2 = train_simple_bolt_model_save_load(examples, labels)
+    assert acc1==acc2
 
 @pytest.mark.unit
 def test_mock_sparse_data():
@@ -155,4 +216,5 @@ def test_read_noise():
     assert acc < 0.2
 
 
-test_easy_sparse_layer()
+# test_easy_sparse_layer()
+test_read_easy_mock_data_load_save()

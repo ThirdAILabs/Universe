@@ -216,7 +216,7 @@ def test_load_save_fc_network():
     network = build_sparse_hidden_layer_network(1000, 0.2)
 
     train_x, train_y, test_x, test_y = load_mnist()
-
+    print("this is ok")
     train_network(network, train_x, train_y, epochs=2)
 
     original_acc, _ = network.predict(
@@ -277,3 +277,6 @@ def test_get_set_weights():
     )
 
     assert new_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
+
+
+test_load_save_fc_network()
