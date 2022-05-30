@@ -215,25 +215,34 @@ class PyNetwork final : public FullyConnectedNetwork {
       bias_momentum.push_back((_layers[i]->getBiasMomentum()));
       weight_velocity.push_back(_layers[i]->getWeightVelocity());
       bias_velocity.push_back((_layers[i]->getBiasVelocity()));
-
+      std::cout<<i<<" vector made"<<std::endl;
       _layers[i]->setWeightGradients(nullptr);
       _layers[i]->setBiasGradients(nullptr);
       _layers[i]->setWeightMomentum(nullptr);
       _layers[i]->setBiasMomentum(nullptr);
       _layers[i]->setWeightVelocity(nullptr);
       _layers[i]->setBiasVelocity(nullptr);
+      std::cout<<i<<" weights set"<<std::endl;
       
     }
     save(filename);
-
+    std::cout<<"file saved"<<std::endl;
     for(uint32_t i=0;i<_num_layers;i++){
+      std::cout<<i<<" vector made"<<std::endl;
       _layers[i]->setWeightGradients(weight_gradient[i]);
+      std::cout<<i<<" vector made"<<std::endl;
       _layers[i]->setBiasGradients(bias_gradient[i]);
+      std::cout<<i<<" vector made"<<std::endl;
       _layers[i]->setWeightMomentum(weight_momentum[i]);
+      std::cout<<i<<" vector made"<<std::endl;
       _layers[i]->setBiasMomentum(bias_momentum[i]);
+      std::cout<<i<<" vector made"<<std::endl;
       _layers[i]->setWeightVelocity(weight_velocity[i]);
+      std::cout<<i<<" vector made"<<std::endl;
       _layers[i]->setBiasVelocity(bias_velocity[i]);
+      std::cout<<i<<" vector made"<<std::endl;
     }
+    std::cout<<"done"<<std::endl;
     
   }
   void save(const std::string& filename) {
@@ -243,10 +252,13 @@ class PyNetwork final : public FullyConnectedNetwork {
   }
 
   static std::unique_ptr<PyNetwork> load(const std::string& filename) {
+    std::cout<<"load called"<<std::endl;
     std::ifstream filestream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
     std::unique_ptr<PyNetwork> deserialize_into(new PyNetwork());
+    std::cout<<"load called"<<std::endl;
     iarchive(*deserialize_into);
+    std::cout<<"load called"<<std::endl;
     return deserialize_into;
   }
 
