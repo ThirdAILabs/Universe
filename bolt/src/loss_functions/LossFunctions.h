@@ -60,6 +60,8 @@ class LossFunction {
 
   virtual float elementLossGradient(float label, float activation,
                                     uint32_t batch_size) const = 0;
+  virtual float elementLossMetric(float label, float activation,
+                                    uint32_t batch_size) const = 0;
 };
 
 class CategoricalCrossEntropyLoss final : public LossFunction {
@@ -71,6 +73,10 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
 
  private:
   float elementLossGradient(float label, float activation,
+                            uint32_t batch_size) const override {
+    return (label - activation) / batch_size;
+  }
+  float elementLossMetric(float label, float activation,
                             uint32_t batch_size) const override {
     return (label - activation) / batch_size;
   }
