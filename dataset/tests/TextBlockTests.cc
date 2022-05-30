@@ -86,7 +86,7 @@ TEST_F(TextBlockTest, TestTextBlockWithUniAndPairGram) {
   // following:
   //    unigram of first word in the row
   //    pairgram of first and second words in the row
-  for (int row = 0; row < matrix.size(); row++) {
+  for (uint32_t row = 0; row < matrix.size(); row++) {
     std::string first_word = matrix[row][0];
     std::string second_word = matrix[row][0];
 
@@ -107,7 +107,7 @@ TEST_F(TextBlockTest, TestTextBlockWithUniAndPairGram) {
 
     // verify unigram existence
     bool found_unigram = false;
-    for (int i = 0; i < dim_for_encodings; i++) {
+    for (uint32_t i = 0; i < dim_for_encodings; i++) {
       if (entries[i].first == unigram_index && entries[i].second != 0) {
         found_unigram = true;
       }
@@ -116,8 +116,8 @@ TEST_F(TextBlockTest, TestTextBlockWithUniAndPairGram) {
 
     // verify pairgram existence
     bool found_pairgram = false;
-    for (int i = 0; i < dim_for_encodings; i++) {
-      if (entries[i].first == unigram_index && entries[i].second != 0) {
+    for (uint32_t i = 0; i < dim_for_encodings; i++) {
+      if (entries[i].first == pairgram_index && entries[i].second != 0) {
         found_pairgram = true;
       }
     }
