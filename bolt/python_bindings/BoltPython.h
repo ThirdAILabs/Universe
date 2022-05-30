@@ -163,9 +163,9 @@ class PyNetwork final : public FullyConnectedNetwork {
     auto handler = [](int code) {
       throw std::runtime_error("SIGNAL " + std::to_string(code));
     };
-    signal(SIGINT, handler);
-    signal(SIGTERM, handler);
-    signal(SIGKILL, handler);
+    std::signal(SIGINT, handler);
+    std::signal(SIGTERM, handler);
+    std::signal(SIGKILL, handler);
 
     MetricData mD = FullyConnectedNetwork::train(
         train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
