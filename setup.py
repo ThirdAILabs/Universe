@@ -27,10 +27,11 @@ else:
     build_mode = "Release"
 if "THIRDAI_FEATURE_FLAGS" in os.environ:
     feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
-    feature_flags += " THIRDAI_ON_WINDOWS"
 else:
     feature_flags = "THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE"
 
+if sys.platform.startswith('win'): 
+    feature_flags += " THIRDAI_ON_WINDOWS"
 # A CMakeExtension needs a sourcedir instead of a file list.
 # The name must be the _single_ output extension from the CMake build.
 # If you need multiple extensions, see scikit-build.
