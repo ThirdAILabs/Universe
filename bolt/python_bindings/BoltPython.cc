@@ -1,6 +1,7 @@
 #include "BoltPython.h"
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/text_classifier/TextClassifier.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -448,6 +449,44 @@ void createBoltSubmodule(py::module_& module) {
            "their values "
            "and (1) output vectors (predictions) from the network in the form "
            "of a 2D Numpy matrix of floats.");
+
+  py::class_<TextClassifier>(bolt_submodule, "TextClassifier")
+      .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
+           py::arg("n_classes"),
+           "Constructs a TextClassifier with autotuning.\n"
+           "Arguments:\n"
+           " * model_size: string - Either 'small', 'medium', 'large', or a "
+           "size in Gb for the model, for example '6Gb' or '6 Gb'.\n"
+           " * n_classes: int - How many classes or categories are in the "
+           "labels of the dataset.\n")
+      .def("train", &TextClassifier::train, py::arg("train_file"),
+           py::arg("epochs"), py::arg("learning_rate"),
+           "Trains the classifier on the given dataset.\n"
+           "Arguments:\n"
+           " * train_file: string - The path to the training dataset to use.\n"
+           " * epochs: Int - How many epochs to train for.\n"
+           " * learning_rate: Float - The learning rate to use for training.\n")
+      .def("predict", &TextClassifier::predict, py::arg("test_file"),
+           py::arg("output_file") = std::nullopt,
+           "Runs the classifier on the specified test dataset and optionally "
+           "logs the prediction to a file.\n"
+           "Arguments:\n"
+           " * test_file: string - The path to the test dataset to use.\n"
+           " * output_file: string - Optional argument, if this is specified "
+           "then the classifier will output the name of the class/category of "
+           "each prediction this file with one prediction result on each "
+           "line.\n")
+      .def("save", &TextClassifier::save, py::arg("filename"),
+           "Saves the classifier to a file. The file path must not require any "
+           "folders to be created\n"
+           "Arguments:\n"
+           " * filename: string - The path to the save location of the "
+           "classifier.\n")
+      .def_static(
+          "load", &TextClassifier::load, py::arg("filename"),
+          "Loads and builds a saved classifier from file.\n"
+          "Arguments:\n"
+          " * filename: string - The location of the saved classifier.\n");
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
