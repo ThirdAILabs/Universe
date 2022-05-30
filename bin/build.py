@@ -43,7 +43,7 @@ def main():
         "--target",
         default="package",
         type=str,
-        help="Specify a target to build, can either be one of the cmake targets or 'package', which will just run pip3 install ...",
+        help="Specify a target to build (from available cmake targets). If no target is specified it defaults to 'package' which will simply build and install the library with pip.",
     )
     parser.add_argument(
         "-j",
@@ -51,12 +51,6 @@ def main():
         default="-1",  # we check for -1 below, and if so set # jobs equal to 2 * total # threads
         type=int,
         help="Number of parallel jobs to run make with. Default is 2 * total # threads on the machine.",
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        help="Print the commands that make is running.",
     )
     parser.add_argument(
         "-f",
