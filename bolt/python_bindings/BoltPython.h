@@ -17,6 +17,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <algorithm>
+#include <csignal>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -158,21 +159,30 @@ class PyNetwork final : public FullyConnectedNetwork {
     // Changes Done by pratik to incorporate CTRL+C fucntionality during
     // training
 
-    // py::gil_scoped_release release;
-    // auto handler = [](int code) {
-    //   throw std::runtime_error("SIGNAL " + std::to_string(code));
-    // };
-    // std::signal(SIGINT, handler);
-    // std::signal(SIGTERM, handler);
-    // std::signal(SIGKILL, handler);
+    #if THIRDAI_ON_WINDOWS
+    
 
-    MetricData mD = FullyConnectedNetwork::train(
+      return FullyConnectedNetwork::train(
         train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
         epochs, rehash, rebuild, metric_names, verbose);
+    
 
-    // py::gil_scoped_acquire acquire;
+    #else
+    
+      auto handler = [](int code) {
+        throw std::runtime_error("SIGNAL " + std::to_string(code));
+      };
+      std::signal(SIGINT, handler);
 
-    return mD;
+      MetricData mD = FullyConnectedNetwork::train(
+          train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
+          epochs, rehash, rebuild, metric_names, verbose);
+
+      return mD;
+    
+    #endif
+
+
   }
 
   py::tuple predict(

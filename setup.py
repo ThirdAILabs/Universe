@@ -27,6 +27,7 @@ else:
     build_mode = "Release"
 if "THIRDAI_FEATURE_FLAGS" in os.environ:
     feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
+    feature_flags += " THIRDAI_ON_WINDOWS"
 else:
     feature_flags = "THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE"
 
