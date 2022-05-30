@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+from distutils.command.build import build
 import multiprocessing
 import os
 import re
@@ -39,6 +40,13 @@ def main():
         help='The releast mode to build with (see CMakeLists.txt for the specific compiler flags for each mode). Default is "Release".',
     )
     parser.add_argument(
+        "-t",
+        "--target",
+        default="package",
+        type=str,
+        help="Specify a target to build, can either be one of the cmake targets or 'package', which will just run pip3 install ...",
+    )
+    parser.add_argument(
         "-j",
         "--jobs",
         default="-1",  # we check for -1 below, and if so set # jobs equal to 2 * total # threads
@@ -60,11 +68,6 @@ def main():
         type=parse_feature_flag,
         help="Whitespace seperated preprocessor flags to pass to the compiler to turn on and off features.",
     )
-    parser.add_argument(
-        "--save_build_files",
-        action="store_true",
-        help="Prevent pip from removing build files after compilation."
-    )
     args = parser.parse_args()
 
     # See https://stackoverflow.com/questions/414714/compiling-with-g-using-multiple-cores
@@ -83,16 +86,22 @@ def main():
     # https://stackoverflow.com/questions/33242956/cmake-passing-lists-on-command-line
     joined_feature_flags = " ".join(args.feature_flags)
 
-    # Change dir to top level, set environment variables, and run pip install
-    os.environ["THIRDAI_BUILD_MODE"] = args.build_mode
-    os.environ["THIRDAI_FEATURE_FLAGS"] = joined_feature_flags
-    os.environ["THIRDAI_NUM_JOBS"] = str(args.jobs)
-
+    # Change directory to top level.
     os.chdir("..")
-    if args.save_build_files:
-        os.system("pip3 install --no-clean . --verbose --force")
-    else:
+
+    if args.target == "package":
+        # Set environment variables, and run pip install
+        os.environ["THIRDAI_BUILD_MODE"] = args.build_mode
+        os.environ["THIRDAI_FEATURE_FLAGS"] = joined_feature_flags
+        os.environ["THIRDAI_NUM_JOBS"] = str(args.jobs)
+
         os.system("pip3 install . --verbose --force")
+    else:
+        cmake_command = f"cmake -B build -S . -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE={args.build_mode} -DFEATURE_FLAGS={joined_feature_flags}"
+        build_command = f"cmake --build build --target {args.target} -j {args.jobs}"
+
+        os.system(cmake_command)
+        os.system(build_command)
 
 
 if __name__ == "__main__":
