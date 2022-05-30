@@ -155,9 +155,24 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
 
-    return FullyConnectedNetwork::train(
+    // Changes Done by pratik to incorporate CTRL+C fucntionality during
+    // training
+
+    py::gil_scoped_release release;
+    auto handler = [](int code) {
+      throw std::runtime_error("SIGNAL " + std::to_string(code));
+    };
+    signal(SIGINT, handler);
+    signal(SIGTERM, handler);
+    signal(SIGKILL, handler);
+
+    MetricData mD = FullyConnectedNetwork::train(
         train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
         epochs, rehash, rebuild, metric_names, verbose);
+
+    py::gil_scoped_acquire acquire;
+
+    return mD;
   }
 
   py::tuple predict(
