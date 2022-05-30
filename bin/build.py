@@ -60,6 +60,11 @@ def main():
         type=parse_feature_flag,
         help="Whitespace seperated preprocessor flags to pass to the compiler to turn on and off features.",
     )
+    parser.add_argument(
+        "--save_build_files",
+        action="store_true",
+        help="Prevent pip from removing build files after compilation."
+    )
     args = parser.parse_args()
 
     # See https://stackoverflow.com/questions/414714/compiling-with-g-using-multiple-cores
@@ -84,7 +89,10 @@ def main():
     os.environ["THIRDAI_NUM_JOBS"] = str(args.jobs)
 
     os.chdir("..")
-    os.system("pip3 install . --verbose --force")
+    if args.save_build_files:
+        os.system("pip3 install --no-clean . --verbose --force")
+    else:
+        os.system("pip3 install . --verbose --force")
 
 
 if __name__ == "__main__":
