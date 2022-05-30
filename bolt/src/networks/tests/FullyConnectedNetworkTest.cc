@@ -53,11 +53,13 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(false);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001,
-                5);
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 5,
+                /* rehash = */ 0, /* rebuild =*/0, /* metric_names = */ {},
+                /* verbose = */ false);
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
-      /* output_activations= */ nullptr, {"categorical_accuracy"});
+      /* output_activations= */ nullptr, {"categorical_accuracy"},
+      /* verbose = */ false);
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.98);
 }
 
@@ -69,11 +71,13 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(true);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001,
-                5);
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 5,
+                /* rehash = */ 0, /* rebuild =*/0, /* metric_names = */ {},
+                /* verbose = */ false);
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
-      /* output_activations= */ nullptr, {"categorical_accuracy"});
+      /* output_activations= */ nullptr, {"categorical_accuracy"},
+      /* verbose = */ false);
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
 }
 
@@ -87,11 +91,13 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(false);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001,
-                2);
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 2,
+                /* rehash = */ 0, /* rebuild =*/0, /* metric_names = */ {},
+                /* verbose = */ false);
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
-      /* output_activations= */ nullptr, {"categorical_accuracy"});
+      /* output_activations= */ nullptr, {"categorical_accuracy"},
+      /* verbose = */ false);
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
 
@@ -105,11 +111,13 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(true);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001,
-                2);
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 2,
+                /* rehash = */ 0, /* rebuild =*/0, /* metric_names = */ {},
+                /* verbose = */ false);
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
-      /* output_activations= */ nullptr, {"categorical_accuracy"});
+      /* output_activations= */ nullptr, {"categorical_accuracy"},
+      /* verbose = */ false);
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
 }
 

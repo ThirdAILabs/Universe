@@ -96,10 +96,12 @@ TEST_F(DLRMTestFixture, NoisyCategoricalFeatures) {
   auto dataset = genDataset(false, true);
 
   dlrm.train(dataset.data, dataset.labels, CategoricalCrossEntropyLoss(), 0.001,
-             32);
+             32, /* rehash = */ 0, /* rebuild =*/0, /* metric_names = */ {},
+             /* verbose = */ false);
   auto test_metrics = dlrm.predict(
       dataset.data, dataset.labels, /* output_active_neurons= */ nullptr,
-      /* output_activations= */ nullptr, {"categorical_accuracy"});
+      /* output_activations= */ nullptr, {"categorical_accuracy"},
+      /* verbose = */ false);
 
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.9);
 }
@@ -122,10 +124,12 @@ TEST_F(DLRMTestFixture, NoisyDenseFeatures) {
   auto dataset = genDataset(true, false);
 
   dlrm.train(dataset.data, dataset.labels, CategoricalCrossEntropyLoss(), 0.001,
-             3);
+             3, /* rehash = */ 0, /* rebuild =*/0, /* metric_names = */ {},
+             /* verbose = */ false);
   auto test_metrics = dlrm.predict(
       dataset.data, dataset.labels, /* output_active_neurons= */ nullptr,
-      /* output_activations= */ nullptr, {"categorical_accuracy"});
+      /* output_activations= */ nullptr, {"categorical_accuracy"},
+      /* verbose = */ false);
 
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
@@ -148,10 +152,12 @@ TEST_F(DLRMTestFixture, NoisyDenseAndCategoricalFeatures) {
   auto dataset = genDataset(true, true);
 
   dlrm.train(dataset.data, dataset.labels, CategoricalCrossEntropyLoss(), 0.001,
-             5);
+             5, /* rehash = */ 0, /* rebuild =*/0, /* metric_names = */ {},
+             /* verbose = */ false);
   auto test_metrics = dlrm.predict(
       dataset.data, dataset.labels, /* output_active_neurons= */ nullptr,
-      /* output_activations= */ nullptr, {"categorical_accuracy"});
+      /* output_activations= */ nullptr, {"categorical_accuracy"},
+      /* verbose = */ false);
 
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.1);
 }
