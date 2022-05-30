@@ -59,7 +59,7 @@ def train_simple_bolt_model_trainable(examples, labels, load_factor=1, n_classes
     before_training_weigths = network.get_weights(0)
     network.setTrainable(layer_index=0, trainable=False)
     network.train(
-        train_examples=examples,
+        train_data=examples,
         train_labels=labels,
         batch_size=batch_size,
         loss_fn=bolt.CategoricalCrossEntropyLoss(),
