@@ -8,7 +8,6 @@
 #include "SequentialLayer.h"
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
-#include <_types/_uint32_t.h>
 #include <cstdint>
 
 namespace thirdai::bolt {
