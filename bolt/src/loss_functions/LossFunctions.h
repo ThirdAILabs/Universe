@@ -28,6 +28,8 @@ class LossFunction {
     }
   }
 
+    
+
   virtual ~LossFunction() = default;
 
  private:
