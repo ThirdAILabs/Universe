@@ -491,12 +491,14 @@ void createBoltSubmodule(py::module_& module) {
            "folders to be created")
       .def_static("load", &PyNetwork::load, py::arg("filename"),
                   "Loads and builds a saved network from file.")
-      
+
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "
            "matrix.")
-      .def("setTrainable", &PyNetwork::setTrainable, py::arg("layer_index"), py::arg("trainable"),
-           "Sets the layer with the given layer_index as non-trainable if trainable is false. Trainable by default")
+      .def("setTrainable", &PyNetwork::setTrainable, py::arg("layer_index"),
+           py::arg("trainable"),
+           "Sets the layer with the given layer_index as non-trainable if "
+           "trainable is false. Trainable by default")
       .def("set_weights", &PyNetwork::setWeights, py::arg("layer_index"),
            py::arg("new_weights"),
            "Sets the weight matrix at the given layer index to the given 2D "

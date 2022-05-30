@@ -175,4 +175,4 @@ CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedLayer)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(thirdai::bolt::SequentialLayer,
                                      thirdai::bolt::FullyConnectedLayer)
 
-//might have to change the serialize function?
+// might have to change the serialize function?
