@@ -47,8 +47,8 @@ def build_sparse_output_layer_network():
     return network
 
 
-# adds a non-trainable layer to the network
-def build_sparse_output_layer_network_trainable():
+# Builds a three-layer sparse neural network with a non-trainable layer 2nd layer
+def build_sparse_network_non_trainable_hidden_layer():
     layers = [
         bolt.FullyConnected(dim=256, activation_function=bolt.ActivationFunctions.ReLU),
         bolt.FullyConnected(dim=256, activation_function=bolt.ActivationFunctions.ReLU),
@@ -91,7 +91,7 @@ def train_network(
         rehash=3000,
         rebuild=10000,
         metrics=[],
-        verbose=False,
+        verbose=True,
     )
     return times
 
@@ -107,8 +107,10 @@ SPARSE_INFERENCE_ACCURACY_THRESHOLD = 0.9
 SPARSE_INFERENCE_SPARSE_OUTPUT_ACCURACY_THRESHOLD = 0.35
 
 
-def test_mnist_sparse_output_layer_trainable():
-    network = build_sparse_output_layer_network_trainable()
+# tests that the weights of the non-trainable do not change after training
+# and the accuracy is satisfactory
+def test_mnist_sparse_non_trainable_hidden_layer():
+    network = build_sparse_network_non_trainable_hidden_layer()
 
     train_x, train_y, test_x, test_y = load_mnist()
     # layer 1 is the non-trainable layer
@@ -120,8 +122,8 @@ def test_mnist_sparse_output_layer_trainable():
     )
     after_training_weigths = network.get_weights(1)
     assert acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
-    # checking that matrix has not changed
-    assert np.linalg.norm(after_training_weigths - before_training_weigths) < 0.001
+    # checking that non-trainable layer weight matrix has not changed
+    assert np.linalg.norm(after_training_weigths - before_training_weigths) ==0.0
     # This last check is just to make sure that the accuracy computed in c++ matches
     # what we can compute here using the returned activations. This verifies that the
     # returned activations match and that the metrics are computed correctly.

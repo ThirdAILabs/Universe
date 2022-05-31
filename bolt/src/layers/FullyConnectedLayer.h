@@ -87,7 +87,7 @@ class FullyConnectedLayer final : public SequentialLayer {
  private:
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
-  bool _trainable;
+  bool _trainable, _force_build;
   ActivationFunction _act_func;
 
   std::vector<float> _weights;
@@ -175,5 +175,3 @@ class FullyConnectedLayer final : public SequentialLayer {
 CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedLayer)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(thirdai::bolt::SequentialLayer,
                                      thirdai::bolt::FullyConnectedLayer)
-
-// might have to change the serialize function?

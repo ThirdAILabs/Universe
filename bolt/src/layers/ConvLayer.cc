@@ -376,13 +376,13 @@ float* ConvLayer::getBiases() {
 }
 
 void ConvLayer::setTrainable(bool trainable) {
-  if (trainable) {
-  }
-  std::cout << "Implement a method to make layers non-trainable";
+  (void)trainable;
+  std::cout << "WARNING: setTrainable is not implemented for ConvLayer; this "
+               "layer stays trainable by default";
 }
 bool ConvLayer::getTrainable() {
-  std::cout << "write a method for returning whether layer is trainable or "
-               "not, returning true by default";
+  std::cout << "WARNING: getTrainable is not implemented for ConvLayer; "
+               "getTrainable always returns true";
   return true;
 }
 void ConvLayer::setWeights(const float* new_weights) {

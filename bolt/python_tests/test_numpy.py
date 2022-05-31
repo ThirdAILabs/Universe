@@ -46,7 +46,9 @@ def train_simple_bolt_model(examples, labels, load_factor=1, n_classes=10):
     return acc["categorical_accuracy"]
 
 
-def train_simple_bolt_model_trainable(examples, labels, load_factor=1, n_classes=10):
+def train_simple_bolt_model_non_trainable_hidden_layer(
+    examples, labels, load_factor=1, n_classes=10
+):
     layers = [
         bolt.FullyConnected(
             dim=100,
@@ -142,9 +144,10 @@ def test_read_easy_mock_data():
 
 
 @pytest.mark.unit
-def test_read_easy_mock_data_trainable():
+def test_mock_data_non_trainable_hidden_layer():
     """
     Generates easy mock dataset as a numpy array and asserts that BOLT performs well.
+    also asserts that the weights of the non-trainable layer have not changed
     """
     n_classes = 10
     n_samples = 1000
@@ -154,9 +157,9 @@ def test_read_easy_mock_data_trainable():
     noise = np.random.normal(0, 0.1, examples.shape)
     examples = examples + noise
 
-    acc, norm = train_simple_bolt_model_trainable(examples, labels)
+    acc, norm = train_simple_bolt_model_non_trainable_hidden_layer(examples, labels)
     assert acc > 0.8
-    assert norm < 0.001
+    assert norm ==0.0
 
 
 @pytest.mark.unit
@@ -216,4 +219,4 @@ def test_read_noise():
     assert acc < 0.2
 
 
-test_easy_sparse_layer()
+# test_easy_sparse_layer()

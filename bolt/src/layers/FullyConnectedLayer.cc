@@ -16,9 +16,13 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sparse_dim(config.sparsity * config.dim),
       _sparsity(config.sparsity),
 
-      // adding trainable parameter in the config file? by default the layers
-      // are trainable
+      // trainable parameter not present in config file
+      // TODO(Shubh) : should we add a trainable parameter to the config file?
       _trainable(true),
+
+      // During layer initialization or while setting weights, we need to force
+      // build hashtables
+      _force_build(true),
 
       _act_func(config.act_func),
       _weights(config.dim * prev_dim),
@@ -49,14 +53,12 @@ FullyConnectedLayer::FullyConnectedLayer(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow);
 
-    // if the layer in non-trainable, we generate the hash tables only once and
-    // then let them be build hashtables only generats a hash-table if trainable
-    // is true
+    // if the layer is non-trainable, we generate the hash tables only once and
+    // then let them be
+    //  build hashtables only generats a hash-table if trainable is true
 
-    bool temp_store_trainable = _trainable;
-    _trainable = true;
     buildHashTables();
-    _trainable = temp_store_trainable;
+    _force_build = false;
 
     _rand_neurons = std::vector<uint32_t>(_dim);
 
@@ -477,10 +479,9 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
 }
 
 void FullyConnectedLayer::buildHashTables() {
-  // if layer is non-trainable, then generate hash table only once.
-  // if the call is made while initializing the layer, generate. otherwise do
-  // not
-  if (!_trainable) {
+  // force_build hashtables while initializing or setting weights.
+  // during training if _trainable=false, do not rebuild
+  if (!_trainable && !_force_build) {
     return;
   }
 
@@ -502,7 +503,7 @@ void FullyConnectedLayer::buildHashTables() {
 }
 
 void FullyConnectedLayer::reBuildHashFunction() {
-  if (!_trainable) {
+  if (!_trainable && !_force_build) {
     return;
   }
   if (_sparsity >= 1.0 || _force_sparse_for_inference) {
@@ -539,16 +540,13 @@ float* FullyConnectedLayer::getBiases() {
   return biases_copy;
 }
 
-// when setting weights, should we rebuild the hash tables for layers?
 void FullyConnectedLayer::setWeights(const float* new_weights) {
   std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
 
-  // if setting weights for a non-trainable layer, generate hash tables only
-  // once.
-  bool temp_store_trainable = _trainable;
-  _trainable = true;
+  // if setting weights for a non-trainable layer, force_build the hash tables
+  _force_build = true;
   buildHashTables();
-  _trainable = temp_store_trainable;
+  _force_build = false;
 }
 
 void FullyConnectedLayer::setBiases(const float* new_biases) {
