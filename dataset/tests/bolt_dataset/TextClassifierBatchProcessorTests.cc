@@ -2,6 +2,7 @@
 #include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
 #include <dataset/src/bolt_datasets/StreamingDataset.h>
+#include <dataset/src/bolt_datasets/batch_processors/PairgramHasher.h>
 #include <dataset/src/bolt_datasets/batch_processors/TextClassificationProcessor.h>
 #include <unordered_map>
 
@@ -48,9 +49,7 @@ TEST(TextClassifierBatchProcessor, TestComputePairgrams) {
   std::vector<std::string> words = {"the", "red", "dog", "ran",
                                     "up",  "the", "hill"};
 
-  TextClassificationProcessor processor(RANGE);
-
-  bolt::BoltVector vector = processor.computePairGramHashes(sentence);
+  bolt::BoltVector vector = PairgramHasher::computePairgrams(sentence, RANGE);
 
   checkPairgramVector(vector, words);
 }
