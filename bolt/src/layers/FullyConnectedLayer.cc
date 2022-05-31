@@ -156,7 +156,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
         output.activations[n] = act;
         break;
       case ActivationFunction::Tanh:
-        output.activations[n] = tanh(act);
+        output.activations[n] = static_cast<float>(std::tanh(act));
         break;
     }
   }

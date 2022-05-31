@@ -32,6 +32,8 @@ static ActivationFunction getActivationFunction(
 constexpr float actFuncDerivative(float x, ActivationFunction act_func) {
   switch (act_func) {
     case ActivationFunction::Tanh:
+      // Derivative of tanh(x) is 1 - tanh^2(x), but in this case x = tanh(x),
+      // so derivative is simply: 1 - x^2.
       return (1 - x * x);
     case ActivationFunction::ReLU:
       return x > 0 ? 1.0 : 0.0;
