@@ -230,18 +230,18 @@ def test_load_save_fc_network():
 
     # Save network and load as a new network
     network.save(save_loc)
-
+    print("network saved")
     new_network = bolt.Network.load(save_loc)
-
+    print("network_loaded")
     new_acc, _ = new_network.predict(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
-
+    print("accuracy found")
     assert new_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
-
+    print(new_acc["categorical_accuracy"],original_acc["categorical_accuracy"])
     # Continue to train loaded network
     train_network(new_network, train_x, train_y, epochs=2)
-
+    print("network_trained")
     another_acc, _ = new_network.predict(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )

@@ -7,6 +7,7 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <_types/_uint32_t.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <pybind11/buffer_info.h>
@@ -250,8 +251,7 @@ class PyNetwork final : public FullyConnectedNetwork {
     cereal::BinaryOutputArchive oarchive(filestream);
     oarchive(*this);
   }
-
-  static std::unique_ptr<PyNetwork> load(const std::string& filename) {
+  static std::unique_ptr<PyNetwork> resume(const std::string& filename) {
     std::cout<<"load called"<<std::endl;
     std::ifstream filestream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
@@ -259,6 +259,42 @@ class PyNetwork final : public FullyConnectedNetwork {
     std::cout<<"load called"<<std::endl;
     iarchive(*deserialize_into);
     std::cout<<"load called"<<std::endl;
+    return deserialize_into;
+  }
+  static std::unique_ptr<PyNetwork> load(const std::string& filename) {
+    // std::cout<<"load called"<<std::endl;
+    std::ifstream filestream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<PyNetwork> deserialize_into(new PyNetwork());
+    // std::cout<<"load called"<<std::endl;
+    iarchive(*deserialize_into);
+    // std::cout<<"load called"<<std::endl;
+    std::cout<<deserialize_into->_num_layers<<std::endl;
+    for(uint32_t i=0;i<deserialize_into->_num_layers;i++){
+      int dim= deserialize_into->_layers[i]->getDim();
+      int prev_dim= deserialize_into->_layers[i]->getInputDim();
+      float *w_set=new float[dim*prev_dim];
+      float *b_set=new float[dim];
+      std::cout<<"arrays made"<<std::endl;
+      for(int j=0;j<dim*prev_dim;j++){
+        w_set[j]=0;
+      }
+      for(int j=0;j<dim;j++){
+        b_set[j]=0;
+      }
+      std::cout<<"set to 0"<<std::endl;
+      deserialize_into->_layers[i]->setBiasGradients(b_set);
+      std::cout<<"bias grad set"<<std::endl;
+      deserialize_into->_layers[i]->setBiasMomentum(b_set);
+      deserialize_into->_layers[i]->setBiasVelocity(b_set);
+      std::cout<<"bias ok"<<std::endl;
+      deserialize_into->_layers[i]->setWeightGradients(b_set);
+      deserialize_into->_layers[i]->setWeightMomentum(b_set);
+      deserialize_into->_layers[i]->setWeightVelocity(b_set);
+      delete [] w_set;
+      delete [] b_set;
+    }
+    std::cout<<"load completed"<<std::endl;
     return deserialize_into;
   }
 
