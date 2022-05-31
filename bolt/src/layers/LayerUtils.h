@@ -38,12 +38,13 @@ constexpr float actFuncDerivative(float x, ActivationFunction act_func) {
       // Derivative of tanh(x) is 1 - tanh^2(x), but in this case x = tanh(x),
       // so derivative is simply: 1 - x^2.
       return (1 - x * x);
+    case ActivationFunction::Sigmoid:
+      // Derivative of sig(x) is sig(x) * (1 - sig(x)), but in this case x =
+      // sig(x), so derivative is simply: x * (1 - x).
+      return (x * (1 - x));
     case ActivationFunction::ReLU:
       return x > 0 ? 1.0 : 0.0;
     case ActivationFunction::Softmax:
-      // return 1.0; // Commented out because Clang tidy doesn't like
-      // consecutive identical branches
-	  case ActivationFunction::Sigmoid:
       // return 1.0; // Commented out because Clang tidy doesn't like
       // consecutive identical branches
     case ActivationFunction::Linear:

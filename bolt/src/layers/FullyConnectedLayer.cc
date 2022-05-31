@@ -153,10 +153,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
         }
         break;
       case ActivationFunction::Sigmoid:
-        output.activations[n] = act;
-        if (max_act < act) {
-          max_act = act;
-        }
+        output.activations[n] = 1 / (1 + std::exp(-act));     
         break;
       case ActivationFunction::Linear:
         output.activations[n] = act;
