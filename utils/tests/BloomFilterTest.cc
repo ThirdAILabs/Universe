@@ -1,6 +1,6 @@
-#include <utils/src/BloomFilter.h>
 #include <gtest/gtest.h>
+#include <utils/src/BloomFilter.h>
 
 TEST(BloomFilterTest, bitarrayfunction) {
-    thirdai::utils::BloomFilter<uint32_t> bloom(100, 0.01);
+  thirdai::utils::BloomFilter<uint32_t> bloom(100, 0.01);
 }
