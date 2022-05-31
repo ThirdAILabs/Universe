@@ -8,6 +8,14 @@ import multiprocessing
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 
+# Convert distutils Windows platform specifiers to CMake -A arguments
+PLAT_TO_CMAKE = {
+    "win32": "Win32",
+    "win-amd64": "x64",
+    "win-arm32": "ARM",
+    "win-arm64": "ARM64",
+}
+
 # Default is release build with full parallelism
 if "THIRDAI_NUM_JOBS" in os.environ:
     num_jobs = os.environ["THIRDAI_NUM_JOBS"]
@@ -20,8 +28,7 @@ else:
 if "THIRDAI_FEATURE_FLAGS" in os.environ:
     feature_flags = os.environ["THIRDAI_FEATURE_FLAGS"]
 else:
-    feature_flags = "THIRDAI_BUILD_LICENSE;THIRDAI_CHECK_LICENSE"
-
+    feature_flags = "THIRDAI_BUILD_LICENSE THIRDAI_CHECK_LICENSE"
 
 # A CMakeExtension needs a sourcedir instead of a file list.
 # The name must be the _single_ output extension from the CMake build.
@@ -34,6 +41,7 @@ class CMakeExtension(Extension):
 
 class CMakeBuild(build_ext):
     def build_extension(self, ext):
+
         global build_mode
         global feature_flags
         global num_jobs
@@ -44,23 +52,74 @@ class CMakeBuild(build_ext):
         if not extdir.endswith(os.path.sep):
             extdir += os.path.sep
 
-        build_dir = "build/"
+        # CMake lets you override the generator - we need to check this.
+        # Can be set with Conda-Build, for example.
+        cmake_generator = os.environ.get("CMAKE_GENERATOR", "")
 
+        # Set Python_EXECUTABLE instead if you use PYBIND11_FINDPYTHON
         cmake_args = [
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}".format(extdir),
             "-DPYTHON_EXECUTABLE={}".format(sys.executable),
+            # not used on MSVC, but no harm
             "-DCMAKE_BUILD_TYPE={}".format(build_mode),
         ]
         build_args = []
+        # Adding CMake arguments set as environment variable
+        # (needed e.g. to build for ARM OSx on conda-forge)
+        if "CMAKE_ARGS" in os.environ:
+            cmake_args += [item for item in os.environ["CMAKE_ARGS"].split(" ") if item]
 
-        build_args += [f"-j{num_jobs}"]
-        cmake_args += [f'"-DFEATURE_FLAGS={feature_flags}"']
+        if self.compiler.compiler_type != "msvc":
+            # Using Ninja-build since it a) is available as a wheel and b)
+            # multithreads automatically. MSVC would require all variables be
+            # exported for Ninja to pick it up, which is a little tricky to do.
+            # Users can override the generator with CMAKE_GENERATOR in CMake
+            # 3.15+.
+            if not cmake_generator:
+                try:
+                    import ninja  # noqa: F401
 
+                    cmake_args += ["-GNinja"]
+                except ImportError:
+                    pass
+
+        else:
+
+            # Single config generators are handled "normally"
+            single_config = any(x in cmake_generator for x in {"NMake", "Ninja"})
+
+            # CMake allows an arch-in-generator style for backward compatibility
+            contains_arch = any(x in cmake_generator for x in {"ARM", "Win64"})
+
+            # Specify the arch if using MSVC generator, but only if it doesn't
+            # contain a backward-compatibility arch spec already in the
+            # generator name.
+            if not single_config and not contains_arch:
+                cmake_args += ["-A", PLAT_TO_CMAKE[self.plat_name]]
+
+            # Multi-config generators have a different way to specify configs
+            if not single_config:
+                cmake_args += [
+                    "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}".format(
+                        build_mode.upper(), extdir
+                    )
+                ]
+                build_args += ["--config", build_mode]
+
+        if sys.platform.startswith("darwin"):
+            # Cross-compile support for macOS - respect ARCHFLAGS if set
+            archs = re.findall(r"-arch (\S+)", os.environ.get("ARCHFLAGS", ""))
+            if archs:
+                cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
+
+        build_args += ["-j{}".format(num_jobs)]
+        cmake_args += [f"-DFEATURE_FLAGS={feature_flags}"]
+
+        build_dir = "build/"
         if not os.path.exists(build_dir):
             os.makedirs(build_dir)
 
-        cmake_call = f"cmake {ext.sourcedir} {' '.join(cmake_args)}"
-        subprocess.check_call(cmake_call, cwd=build_dir, shell=True)
+        subprocess.check_call(["cmake", ext.sourcedir] + cmake_args, cwd=build_dir)
         subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=build_dir)
 
 
@@ -68,7 +127,7 @@ class CMakeBuild(build_ext):
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="thirdai",
-    version="0.1.0",
+    version="0.1.5",
     author="ThirdAI",
     author_email="contact@thirdai.com",
     description="A faster cpu machine learning library",
@@ -77,15 +136,15 @@ setup(
       accelerate inference and training. See https://thirdai.com for more 
       details.
     """,
+    license_files=("LICENSE.txt",),
     ext_modules=[CMakeExtension("thirdai._thirdai")],
     cmdclass=dict(build_ext=CMakeBuild),
-    install_requires=["numpy", "tqdm"],
     zip_safe=False,
     extras_require={
         "test": ["pytest"],
     },
     packages=["thirdai"]
     + ["thirdai." + p for p in find_packages(where="thirdai_python_package")],
-    licence="proprietary",
+    license="proprietary",
     package_dir={"thirdai": "thirdai_python_package"},
 )

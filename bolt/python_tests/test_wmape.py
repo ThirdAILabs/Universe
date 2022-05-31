@@ -27,28 +27,20 @@ def train_bolt_with_wmape(
     epochs = 10
     for i in range(epochs):
         network.train(
-            x_idxs=x_idxs,
-            x_vals=x_vals,
-            x_offsets=x_offsets,
-            y_idxs=y_idxs,
-            y_vals=y_vals,
-            y_offsets=y_offsets,
+            train_data=(x_idxs, x_vals, x_offsets),
+            train_labels=(y_idxs, y_vals, y_offsets),
             batch_size=batch_size,
             loss_fn=bolt.WeightedMeanAbsolutePercentageError(),
             learning_rate=learning_rate,
             epochs=1,
-            verbose=True,
+            verbose=False,
         )
         metrics, _ = network.predict(
-            x_idxs,
-            x_vals,
-            x_offsets,
-            y_idxs,
-            y_vals,
-            y_offsets,
-            batch_size,
-            ["weighted_mean_absolute_percentage_error"],
-            verbose=True,
+            test_data=(x_idxs, x_vals, x_offsets),
+            test_labels=(y_idxs, y_vals, y_offsets),
+            batch_size=batch_size,
+            metrics=["weighted_mean_absolute_percentage_error"],
+            verbose=False,
         )
 
     return metrics["weighted_mean_absolute_percentage_error"]
@@ -95,7 +87,3 @@ def test_wmape_one_hot_simple():
     )
     print(err)
     assert err < 0.1
-
-
-test_wmape_dense_simple()
-test_wmape_one_hot_simple()

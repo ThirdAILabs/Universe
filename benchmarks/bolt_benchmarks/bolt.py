@@ -68,17 +68,30 @@ def create_fully_connected_layer_configs(
 ) -> List[bolt.FullyConnected]:
     layers = []
     for config in configs:
-        layer = bolt.FullyConnected(
-            dim=config.get("dim"),
-            load_factor=config.get("sparsity", 1.0),
-            activation_function=bolt.getActivationFunction(config.get("activation")),
-            sampling_config=bolt.SamplingConfig(
-                hashes_per_table=config.get("hashes_per_table", 0),
-                num_tables=config.get("num_tables", 0),
-                range_pow=config.get("range_pow", 0),
-                reservoir_size=config.get("reservoir_size", 128),
-            ),
-        )
+
+        if config.get("use_default_sampling", False):
+            layer = bolt.FullyConnected(
+                dim=config.get("dim"),
+                load_factor=config.get("sparsity", 1.0),
+                activation_function=bolt.getActivationFunction(
+                    config.get("activation")
+                ),
+            )
+        else:
+            layer = bolt.FullyConnected(
+                dim=config.get("dim"),
+                load_factor=config.get("sparsity", 1.0),
+                activation_function=bolt.getActivationFunction(
+                    config.get("activation")
+                ),
+                sampling_config=bolt.SamplingConfig(
+                    hashes_per_table=config.get("hashes_per_table", 0),
+                    num_tables=config.get("num_tables", 0),
+                    range_pow=config.get("range_pow", 0),
+                    reservoir_size=config.get("reservoir_size", 128),
+                ),
+            )
+
         layers.append(layer)
     return layers
 
@@ -109,19 +122,30 @@ def find_full_filepath(filename: str) -> str:
 
 def load_dataset(
     config: Dict[str, Any]
-) -> Optional[Tuple[dataset.BoltDataset, dataset.BoltDataset]]:
+) -> Optional[
+    Tuple[
+        dataset.BoltDataset,  # train_x
+        dataset.BoltDataset,  # train_y
+        dataset.BoltDataset,  # test_x
+        dataset.BoltDataset,  # test_y
+    ]
+]:
     train_filename = find_full_filepath(config["dataset"]["train_data"])
     test_filename = find_full_filepath(config["dataset"]["test_data"])
     batch_size = config["params"]["batch_size"]
     if config["dataset"]["format"].lower() == "svm":
-        train = dataset.load_bolt_svm_dataset(train_filename, batch_size)
-        test = dataset.load_bolt_svm_dataset(test_filename, batch_size)
-        return train, test
+        train_x, train_y = dataset.load_bolt_svm_dataset(train_filename, batch_size)
+        test_x, test_y = dataset.load_bolt_svm_dataset(test_filename, batch_size)
+        return train_x, train_y, test_x, test_y
     elif config["dataset"]["format"].lower() == "csv":
         delimiter = config["dataset"].get("delimeter", ",")
-        train = dataset.load_bolt_csv_dataset(train_filename, batch_size, delimiter)
-        test = dataset.load_bolt_csv_dataset(test_filename, batch_size, delimiter)
-        return train, test
+        train_x, train_y = dataset.load_bolt_csv_dataset(
+            train_filename, batch_size, delimiter
+        )
+        test_x, test_y = dataset.load_bolt_csv_dataset(
+            test_filename, batch_size, delimiter
+        )
+        return train_x, train_y, test_x, test_y
     else:
         print("Invalid dataset format specified")
         return None
@@ -129,19 +153,24 @@ def load_dataset(
 
 def load_click_through_dataset(
     config: Dict[str, Any], sparse_labels: bool
-) -> Tuple[dataset.ClickThroughDataset, dataset.ClickThroughDataset]:
+) -> Tuple[
+    dataset.ClickThroughDataset,  # train_x
+    dataset.BoltDataset,  # train_y
+    dataset.ClickThroughDataset,  # test_x
+    dataset.BoltDataset,  # test_y
+]:
     train_filename = find_full_filepath(config["dataset"]["train_data"])
     test_filename = find_full_filepath(config["dataset"]["test_data"])
     batch_size = config["params"]["batch_size"]
     dense_features = config["dataset"]["dense_features"]
     categorical_features = config["dataset"]["categorical_features"]
-    train = dataset.load_click_through_dataset(
+    train_x, train_y = dataset.load_click_through_dataset(
         train_filename, batch_size, dense_features, categorical_features, sparse_labels
     )
-    test = dataset.load_click_through_dataset(
+    test_x, test_y = dataset.load_click_through_dataset(
         test_filename, batch_size, dense_features, categorical_features, sparse_labels
     )
-    return train, test
+    return train_x, train_y, test_x, test_y
 
 
 def get_labels(dataset: str):
@@ -174,7 +203,7 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
     if data is None:
         raise ValueError("Unable to load a dataset. Please check the config")
 
-    train, test = data
+    train_x, train_y, test_x, test_y = data
 
     if config["params"]["loss_fn"].lower() == "categoricalcrossentropyloss":
         loss = bolt.CategoricalCrossEntropyLoss()
@@ -189,7 +218,7 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
 
     for e in range(epochs):
         metrics = network.train(
-            train, loss, learning_rate, 1, rehash, rebuild, train_metrics
+            train_x, train_y, loss, learning_rate, 1, rehash, rebuild, train_metrics
         )
         if mlflow_enabled:
             log_training_metrics(metrics)
@@ -198,16 +227,18 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
             network.enable_sparse_inference()
 
         if max_test_batches is None:
-            metrics, _ = network.predict(test, test_metrics)
+            metrics, _ = network.predict(test_x, test_y, test_metrics)
             if mlflow_enabled:
                 mlflow.log_metrics(metrics)
         else:
-            metrics, _ = network.predict(test, test_metrics, True, max_test_batches)
+            metrics, _ = network.predict(
+                test_x, test_y, test_metrics, True, max_test_batches
+            )
             if mlflow_enabled:
                 mlflow.log_metrics(metrics)
     if not max_test_batches is None:
         # If we limited the number of test batches during training we run on the whole test set at the end.
-        metrics, _ = network.predict(test, test_metrics)
+        metrics, _ = network.predict(test_x, test_y, test_metrics)
         if mlflow_enabled:
             mlflow.log_metrics(metrics)
 
@@ -242,17 +273,19 @@ def train_dlrm(config: Dict[str, Any], mlflow_enabled: bool):
     )
 
     use_sparse_labels = config["top_mlp_layers"][-1]["dim"] > 1
-    train, test = load_click_through_dataset(config, use_sparse_labels)
+    train_x, train_y, test_x, test_y = load_click_through_dataset(
+        config, use_sparse_labels
+    )
     labels = get_labels(config["dataset"]["test_data"])
 
     for _ in range(epochs):
         metrics = dlrm.train(
-            train, loss, learning_rate, 1, rehash, rebuild, train_metrics
+            train_x, train_y, loss, learning_rate, 1, rehash, rebuild, train_metrics
         )
         if mlflow_enabled:
             log_training_metrics(metrics)
 
-        metrics, scores = dlrm.predict(test, test_metrics)
+        metrics, scores = dlrm.predict(test_x, test_y, test_metrics)
         if mlflow_enabled:
             mlflow.log_metrics(metrics)
 

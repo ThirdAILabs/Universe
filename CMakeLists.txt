@@ -1,7 +1,14 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.4...3.18)
 
-set(CMAKE_CXX_COMPILER "g++")
-set(CMAKE_C_COMPILER "gcc")
+if (NOT WIN32)
+  set(CMAKE_CXX_COMPILER "g++")
+  set(CMAKE_C_COMPILER "gcc")
+  message("Not using MSVC (we should not be on Windows then), forcing GCC and G++")
+else()
+  # Set this to use static linking by default, see
+  # https://cmake.org/cmake/help/latest/prop_tgt/MSVC_RUNTIME_LIBRARY.html
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
 
 # When I set LD_PRELOAD to be able use ASan with python tests, for some reason 
 # CMake can't find Python unless we set it to an empty string.
@@ -13,50 +20,62 @@ set(CMAKE_CXX_STANDARD 17)
 message("====================================")
 message("\tBUILD MODE: ${CMAKE_BUILD_TYPE}")
 message("====================================")
+message("\tBuilding with feature flags: ${FEATURE_FLAGS}")
+separate_arguments(FEATURE_FLAGS)
+message("\tFeature flags seperated into CMake List: ${FEATURE_FLAGS}")
+message("====================================")
 
-add_compile_options(
-  -fopenmp
-  -fPIC
-  -Wall
-  -Wextra
-  -Werror
-  -Wno-unused-function
-  -pedantic 
-  
-  $<$<CONFIG:Debug>:-Og>
-  $<$<CONFIG:Debug>:-g>
-  $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
 
-  $<$<CONFIG:DebugWithAsan>:-Og>
-  $<$<CONFIG:DebugWithAsan>:-g>
-  $<$<CONFIG:DebugWithAsan>:-fno-omit-frame-pointer>
+if (MSVC)
+  if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+    message( FATAL_ERROR "For now, we only support building in release mode using MSVC" )
+  endif()
+  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /openmp:llvm /w")
+else()
+  add_compile_options(
+    -fopenmp
+    -fPIC
+    -Wall
+    -Wextra
+    -Werror
+    -Wno-unused-function
+    -pedantic 
+    
+    $<$<CONFIG:Debug>:-Og>
+    $<$<CONFIG:Debug>:-g>
+    $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
 
-  $<$<CONFIG:Release>:-DNDEBUG>
-  $<$<CONFIG:Release>:-Ofast>
-  $<$<CONFIG:Release>:-fno-finite-math-only>
-  $<$<CONFIG:Release>:-funroll-loops>
-  $<$<CONFIG:Release>:-ftree-vectorize>
+    $<$<CONFIG:DebugWithAsan>:-Og>
+    $<$<CONFIG:DebugWithAsan>:-g>
+    $<$<CONFIG:DebugWithAsan>:-fno-omit-frame-pointer>
 
-  $<$<CONFIG:RelWithDebInfo>:-DNDEBUG>
-  $<$<CONFIG:RelWithDebInfo>:-Ofast>
-  $<$<CONFIG:RelWithDebInfo>:-fno-finite-math-only>
-  $<$<CONFIG:RelWithDebInfo>:-funroll-loops>
-  $<$<CONFIG:RelWithDebInfo>:-ftree-vectorize>
-  $<$<CONFIG:RelWithDebInfo>:-g>
-  $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
+    $<$<CONFIG:Release>:-DNDEBUG>
+    $<$<CONFIG:Release>:-Ofast>
+    $<$<CONFIG:Release>:-fno-finite-math-only>
+    $<$<CONFIG:Release>:-funroll-loops>
+    $<$<CONFIG:Release>:-ftree-vectorize>
 
-  $<$<CONFIG:RelWithAsan>:-DNDEBUG>
-  $<$<CONFIG:RelWithAsan>:-Ofast>
-  $<$<CONFIG:RelWithAsan>:-fno-finite-math-only>
-  $<$<CONFIG:RelWithAsan>:-funroll-loops>
-  $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
-  $<$<CONFIG:RelWithAsan>:-g>
-  $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
-)
+    $<$<CONFIG:RelWithDebInfo>:-DNDEBUG>
+    $<$<CONFIG:RelWithDebInfo>:-Ofast>
+    $<$<CONFIG:RelWithDebInfo>:-fno-finite-math-only>
+    $<$<CONFIG:RelWithDebInfo>:-funroll-loops>
+    $<$<CONFIG:RelWithDebInfo>:-ftree-vectorize>
+    $<$<CONFIG:RelWithDebInfo>:-g>
+    $<$<CONFIG:RelWithDebInfo>:-fno-omit-frame-pointer>
 
-add_link_options(
-  -fopenmp
-)
+    $<$<CONFIG:RelWithAsan>:-DNDEBUG>
+    $<$<CONFIG:RelWithAsan>:-Ofast>
+    $<$<CONFIG:RelWithAsan>:-fno-finite-math-only>
+    $<$<CONFIG:RelWithAsan>:-funroll-loops>
+    $<$<CONFIG:RelWithAsan>:-ftree-vectorize>
+    $<$<CONFIG:RelWithAsan>:-g>
+    $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
+  )
+
+  add_link_options(
+    -fopenmp
+  )
+endif()
 
 # Add feature flags passed in from python
 add_compile_definitions(${FEATURE_FLAGS})
@@ -76,19 +95,6 @@ if(NOT ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
   add_link_options(
     $<$<CONFIG:RelWithAsan>:-fsanitize=address>
     $<$<CONFIG:DebugWithAsan>:-fsanitize=address>
-  )
-endif()
-
-# It seems this gives us a small improvement on our blade server. Ideally we
-# could run with march=native, which gives us performance improvements, but
-# that would mean it wasn't portable to different cpus in a Docker container.
-# TODO(any): Investigate whether we should do something similar for arm, and
-# whether we can compile with march=native even with Docker.
-if(${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
-  add_compile_options(
-    $<$<CONFIG:Release>:-march=x86-64>
-    $<$<CONFIG:RelWithDebInfo>:-march=x86-64>
-    $<$<CONFIG:RelWithAsan>:-march=x86-64>
   )
 endif()
 
@@ -117,14 +123,20 @@ list (FIND FEATURE_FLAGS "THIRDAI_BUILD_LICENSE" _index)
 SET (LICENSE_BUILD_FLAG_FOUND ${_index} GREATER -1)
 if (${LICENSE_BUILD_FLAG_FOUND})
 
-  # Install CRYPTOPP and set the static lib to be libcryptopp.a. This is pretty
+  message("Building cryptopp...")
+  # Install CRYPTOPP and set the static lib to be the static library file. This is pretty
   # ugly (the build happens at configure time, not build time) but honestly
   # okay (I spent way too long getting anything at all to work). Plus, it's 
   # gated by a feature flag anyways.
   # For now use default 32 jobs to build.
-  set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/libcryptopp.a)
-  execute_process(COMMAND make static CXX=g++ -j32 -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
-
+  if (MSVC)
+    set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/cryptlib.lib)
+    message("${CRYPTOPP_LIB} must already exist or there will be errors (you can build with nmake, see https://www.cryptopp.com/wiki/Nmake_(Command_Line) )")
+  else()
+    set(CRYPTOPP_LIB ${CMAKE_SOURCE_DIR}/deps/cryptopp/libcryptopp.a)
+    message("Running make in ${CMAKE_SOURCE_DIR}/deps/cryptopp")
+    execute_process(COMMAND make static CXX=g++ -j32 -C ${CMAKE_SOURCE_DIR}/deps/cryptopp)
+  endif()
 endif()
 
 
@@ -158,6 +170,7 @@ file(
   bolt/src/layers/*.cc 
   bolt/src/networks/*.cc 
   bolt/src/utils/*.cc 
+  bolt/src/text_classifier/*.cc
 )
 
 file(
@@ -180,6 +193,11 @@ file (
   wrappers/src/*.cc
 )
 
+file (
+  GLOB DATASET_SOURCES
+  dataset/src/bolt_datasets/*.cc
+)
+
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and
 # Debug builds, but not our ASan builds. This means that for now we can't run
 # ASan from python, but honestly this is more trouble than it's worth so for
@@ -196,6 +214,7 @@ pybind11_add_module(_thirdai
   ${FLASH_SOURCES} 
   ${HASHING_SOURCES}
   ${HASHTABLE_SOURCES}
+  ${DATASET_SOURCES}
   ${WRAPPER_SOURCES}
 )
 
