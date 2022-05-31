@@ -241,11 +241,11 @@ class PyNetwork final : public FullyConnectedNetwork {
       _layers[i]->setBiasVelocity(bias_velocity[i]);
     }
 
-    //for some debugging. will remove
-    // for (uint32_t i = 0; i < _num_layers; i++) {
-    //   int dim = _layers[i]->getDim();
-    //   int prev_dim = _layers[i]->getInputDim();
-    //   float* check = _layers[i]->getWeightMomentum();
+    // for some debugging. will remove
+    //  for (uint32_t i = 0; i < _num_layers; i++) {
+    //    int dim = _layers[i]->getDim();
+    //    int prev_dim = _layers[i]->getInputDim();
+    //    float* check = _layers[i]->getWeightMomentum();
 
     //   for (int j = 0; j < dim * prev_dim; j++) {
     //     if (check[j] != weight_momentum[i][j]) {
