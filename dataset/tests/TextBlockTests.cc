@@ -1,3 +1,4 @@
+#include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Text.h>
@@ -37,6 +38,20 @@ class TextBlockTest : public testing::Test {
     return str;
   }
 
+  static std::vector<SparseExtendableVector> makeExtendableVecs(
+      std::vector<std::vector<std::string>>& matrix,
+      std::vector<TextBlock> blocks) {
+    std::vector<SparseExtendableVector> vecs;
+    for (const auto& row : matrix) {
+      SparseExtendableVector vec;
+      for (auto& block : blocks) {
+        extendVectorWithBlock(block, row, vec);
+      }
+      vecs.push_back(std::move(vec));
+    }
+    return vecs;
+  }
+
   /**
    * Helper function to access extendVector() method of TextBlock,
    * which is private.
@@ -67,19 +82,12 @@ TEST_F(TextBlockTest, TestTextBlockWithUniAndPairGram) {
   std::vector<std::vector<std::string>> matrix =
       generate_random_string_matrix(num_rows, num_words_per_row);
 
-  uint32_t dim_for_encodings = 100000;
+  uint32_t dim_for_encodings = 1000;
   std::vector<TextBlock> blocks;
   blocks.emplace_back(0, std::make_shared<UniGram>(dim_for_encodings));
   blocks.emplace_back(1, std::make_shared<PairGram>(dim_for_encodings));
 
-  std::vector<SparseExtendableVector> vecs;
-  for (const auto& row : matrix) {
-    SparseExtendableVector vec;
-    for (auto& block : blocks) {
-      extendVectorWithBlock(block, row, vec);
-    }
-    vecs.push_back(std::move(vec));
-  }
+  std::vector<SparseExtendableVector> vecs = makeExtendableVecs(matrix, blocks);
 
   ASSERT_EQ(matrix.size(), vecs.size());
   // for each row in the original string matrix, verify existence of the
@@ -117,6 +125,7 @@ TEST_F(TextBlockTest, TestTextBlockWithUniAndPairGram) {
     // verify pairgram existence
     bool found_pairgram = false;
     for (uint32_t i = 0; i < dim_for_encodings; i++) {
+      std::cout << entries[i].first << " " << pairgram_index << std::endl;
       if (entries[i].first == pairgram_index && entries[i].second != 0) {
         found_pairgram = true;
       }

@@ -14,8 +14,8 @@
 #include <pybind11/buffer_info.h>
 #include <sys/types.h>
 #include <chrono>
-#include <unordered_map>
 #include <type_traits>
+#include <unordered_map>
 
 // TODO(Geordie): Split into smaller files.
 // I'm thinking one for each submodule of dataset_submodule.
@@ -115,7 +115,7 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<TextBlock, Block, std::shared_ptr<TextBlock>>(
       block_submodule, "Text",
       "A block that encodes text (e.g. sentences / paragraphs).")
-      .def(py::init<uint32_t, std::shared_ptr<TextEncoding>&>(), py::arg("col"),
+      .def(py::init<uint32_t, std::shared_ptr<TextEncoding>>(), py::arg("col"),
            py::arg("encoding"),
            "Constructor.\n\n"
            "Arguments:\n"
@@ -137,7 +137,7 @@ void createDatasetSubmodule(py::module_& module) {
       block_submodule, "Categorical",
       "A block that encodes categorical features (e.g. a numerical ID or an "
       "identification string).")
-      .def(py::init<uint32_t, std::shared_ptr<CategoricalEncoding>&>(),
+      .def(py::init<uint32_t, std::shared_ptr<CategoricalEncoding>>(),
            py::arg("col"), py::arg("encoding"),
            "Constructor.\n\n"
            "Arguments:\n"

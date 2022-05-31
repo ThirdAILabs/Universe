@@ -80,6 +80,7 @@ target_link_libraries(
   text_block_test
   PRIVATE
   gtest_main
+  hash_function_lib
 )
 
 add_executable(
