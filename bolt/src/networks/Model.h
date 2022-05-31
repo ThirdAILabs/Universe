@@ -1,13 +1,16 @@
 #pragma once
 
+#include <wrappers/src/LicenseWrapper.h>
 #include <cereal/types/vector.hpp>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
 #include <dataset/src/Dataset.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <algorithm>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -16,7 +19,9 @@ namespace thirdai::bolt {
 template <typename BATCH_T>
 class Model {
  public:
-  Model() : _epoch_count(0), _batch_iter(0) {}
+  Model() : _batch_iter(0), _epoch_count(0) {
+    thirdai::licensing::LicenseWrapper::checkLicense();
+  }
   /**
    * This function takes in a dataset and training parameters and trains the
    * network for the specified number of epochs with the given parameters. Note
@@ -26,7 +31,9 @@ class Model {
    */
   MetricData train(
       // Train dataset
-      dataset::InMemoryDataset<BATCH_T>& train_data,
+      std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
+      // Train labels
+      const dataset::BoltDatasetPtr& train_labels,
       // Loss function to use
       const LossFunction& loss_fn,
       // Learning rate for training
@@ -50,7 +57,9 @@ class Model {
    */
   InferenceMetricData predict(
       // Test dataset
-      const dataset::InMemoryDataset<BATCH_T>& test_data,
+      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
+      // Test labels
+      const dataset::BoltDatasetPtr& labels,
       // Array to store output active neurons in. This should be null if it is
       // not desired for the output values to be returned or if the output is
       // dense.
@@ -65,9 +74,21 @@ class Model {
       // Limit the number of batches used in the dataset
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
+  void processTrainingBatch(BATCH_T& batch_inputs, BoltBatch& outputs,
+                            const BoltBatch& batch_labels,
+                            const LossFunction& loss_fn, float learning_rate,
+                            uint32_t rehash_batch, uint32_t rebuild_batch,
+                            MetricAggregator& metrics);
+
+  void processTestBatch(const BATCH_T& batch_inputs, BoltBatch& outputs,
+                        const BoltBatch* batch_labels,
+                        uint32_t* output_active_neurons,
+                        float* output_activations, MetricAggregator& metrics,
+                        bool compute_metrics);
+
   // Computes forward path through the network.
   virtual void forward(uint32_t batch_index, const BATCH_T& input,
-                       BoltVector& output, bool train) = 0;
+                       BoltVector& output, const BoltVector* labels) = 0;
 
   // Backpropagates gradients through the network
   virtual void backpropagate(uint32_t batch_index, BATCH_T& input,
@@ -101,19 +122,18 @@ class Model {
 
   virtual ~Model() = default;
 
- private:
+ protected:
   uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,
                           uint32_t data_len);
 
   uint32_t getRebuildBatch(uint32_t rebuild, uint32_t batch_size,
                            uint32_t data_len);
 
-  uint32_t _epoch_count;
-
- protected:
   uint32_t _batch_iter;
 
  private:
+  uint32_t _epoch_count;
+
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>

@@ -1,5 +1,6 @@
 #include "ConvLayer.h"
 #include "FullyConnectedLayer.h"
+#include <numeric>
 #include <random>
 
 namespace thirdai::bolt {

@@ -1,8 +1,10 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/src/Dataset.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <chrono>
 #include <iostream>
+#include <optional>
 #include <vector>
 
 namespace bolt = thirdai::bolt;
@@ -11,17 +13,14 @@ namespace dataset = thirdai::dataset;
 int main() {  // NOLINT exceptions
   std::cout << "Starting Convolution Tests" << std::endl;
 
-  std::unique_ptr<dataset::Factory<dataset::BoltInputBatch>> factory;
-  factory =
-      std::make_unique<dataset::BoltCsvBatchFactory>(/* delimiter = */ ' ');
-
   uint64_t batch_size = 1024;
-  dataset::InMemoryDataset<dataset::BoltInputBatch> train_data(
-      "/Users/david/Documents/python_/train_mnist2x2.txt", batch_size,
-      std::move(*factory));
-  dataset::InMemoryDataset<dataset::BoltInputBatch> test_data(
-      "/Users/david/Documents/python_/test_mnist2x2.txt", batch_size,
-      std::move(*factory));
+  auto train_data =
+      dataset::loadBoltCsvDataset("/share/david/train_mnist2x2.txt", batch_size,
+                                  /* delimiter = */ ' ');
+
+  auto test_data =
+      dataset::loadBoltCsvDataset("/share/david/test_mnist2x2.txt", batch_size,
+                                  /* delimiter = */ ' ');
 
   std::cout << "Finished reading train and test data" << std::endl;
 
@@ -58,9 +57,10 @@ int main() {  // NOLINT exceptions
   uint32_t max_test_batches = std::numeric_limits<uint32_t>::max();
 
   for (uint32_t e = 0; e < epochs; e++) {
-    network.train(train_data, loss_fn, learning_rate, 1, rehash, rebuild,
-                  metrics);
-    network.predict(test_data, nullptr, nullptr, metrics, max_test_batches);
+    network.train(train_data.data, train_data.labels, loss_fn, learning_rate, 1,
+                  rehash, rebuild, metrics);
+    network.predict(test_data.data, test_data.labels, nullptr, nullptr, metrics,
+                    max_test_batches);
   }
 
   return 0;

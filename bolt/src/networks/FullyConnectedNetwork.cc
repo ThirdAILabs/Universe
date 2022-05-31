@@ -1,5 +1,4 @@
 #include "FullyConnectedNetwork.h"
-#include <wrappers/src/LicenseWrapper.h>
 #include <bolt/src/layers/ConvLayer.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -7,6 +6,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstdlib>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
@@ -18,8 +18,6 @@ FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
     : _input_dim(input_dim),
       _num_layers(configs.size()),
       _sparse_inference_enabled(false) {
-  thirdai::licensing::LicenseWrapper::checkLicense();
-
   auto start = std::chrono::high_resolution_clock::now();
 
   std::cout << "====== Building Fully Connected Network ======" << std::endl;
@@ -36,7 +34,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
           *fully_connected_config, prev_dim));
       // if ConvConfig
     } else if (auto conv_config =
-                   std::static_pointer_cast<ConvLayerConfig>(configs[i])) {
+                   std::dynamic_pointer_cast<ConvLayerConfig>(configs[i])) {
       if (i == _num_layers - 1) {
         throw std::invalid_argument("ConvLayer not supported as final layer.");
       }

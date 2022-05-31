@@ -52,10 +52,7 @@ inline void SampledHashTable<LABEL_T>::insertIntoTables(
     uint32_t row_index = hashes[table];
     assert(row_index < _range);
 
-    // This is the gcc primitive for atomic operations
-    // https://gcc.gnu.org/onlinedocs/gcc-4.8.2/gcc/_005f_005fatomic-Builtins.html
-    uint32_t counter = __atomic_fetch_add(
-        &_counters[CounterIdx(table, row_index)], 1, __ATOMIC_SEQ_CST);
+    uint32_t counter = atomic_fetch_and_add(table, row_index);
 
     if (counter < _reservoir_size) {
       _data[DataIdx(table, row_index, counter)] = label;
@@ -116,20 +113,17 @@ void SampledHashTable<LABEL_T>::queryAndInsertForInference(
   // relevant bucket in the tables probed.)
   for (auto x : store) {
     if (temp_store.find(x) == temp_store.end()) {
-      for (uint32_t i = 0; i < _num_tables; i++) {
-        uint32_t row_id = hashes[i];
+      for (uint32_t table = 0; table < _num_tables; table++) {
+        uint32_t row_id = hashes[table];
         assert(row_id < _range);
 
-        // This is the gcc primitive for atomic operations
-        // https://gcc.gnu.org/onlinedocs/gcc-4.8.2/gcc/_005f_005fatomic-Builtins.html
-        uint64_t ctr = __atomic_fetch_add(&_counters[CounterIdx(i, row_id)], 1,
-                                          __ATOMIC_SEQ_CST);
+        uint32_t counter = atomic_fetch_and_add(table, row_id);
 
-        if (ctr < _reservoir_size) {
-          _data[DataIdx(i, row_id, ctr)] = x;
+        if (counter < _reservoir_size) {
+          _data[DataIdx(table, row_id, counter)] = x;
         } else {
           uint64_t rand_num = _gen_rand[x * 13 % _max_rand] % _reservoir_size;
-          _data[DataIdx(i, row_id, rand_num)] = x;
+          _data[DataIdx(table, row_id, rand_num)] = x;
         }
       }
     }

@@ -45,7 +45,8 @@ RUN pip3 install --upgrade \
     boto3 \
     awscli \
     sklearn \
-    pandas
+    pandas \
+    scikit-image
 
 # The exit 0 means these commands will still continue even if the install fails. 
 # This is because these downloads might not work on arm64

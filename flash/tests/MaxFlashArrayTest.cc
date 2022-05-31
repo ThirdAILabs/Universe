@@ -4,6 +4,7 @@
 #include <dataset/src/Vectors.h>
 #include <flash/src/MaxFlashArray.h>
 #include <memory>
+#include <numeric>
 #include <random>
 
 using thirdai::dataset::DenseBatch;
