@@ -152,7 +152,7 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
       case ActivationFunction::Softmax:
         out << ", act_func=Softmax";
         break;
-	  case ActivationFunction::Sigmoid:
+      case ActivationFunction::Sigmoid:
         out << ", act_func=Sigmoid";
         break;
       case ActivationFunction::Linear:
@@ -231,7 +231,7 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
       case ActivationFunction::Softmax:
         out << ", act_func=Softmax";
         break;
-	  case ActivationFunction::Sigmoid:
+      case ActivationFunction::Sigmoid:
         out << ", act_func=Sigmoid";
         break;
       case ActivationFunction::Linear:

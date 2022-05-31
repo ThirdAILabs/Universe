@@ -76,8 +76,7 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
 
 class BinaryCrossEntropyLoss final : public LossFunction {
  public:
-  static std::shared_ptr<BinaryCrossEntropyLoss>
-  makeBinaryCrossEntropyLoss() {
+  static std::shared_ptr<BinaryCrossEntropyLoss> makeBinaryCrossEntropyLoss() {
     return std::make_shared<BinaryCrossEntropyLoss>();
   }
 
@@ -145,7 +144,7 @@ static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
   throw std::invalid_argument(
       "'" + name +
       "' is not a valid loss function. Use 'CategoricalCrossEntropyLoss', "
-	  "'BinaryCrossEntropyLoss', "
+      "'BinaryCrossEntropyLoss', "
       "'MeanSquaredError'/'MSE', or "
       "'WeightedMeanAbsolutePercentageError'/'WMAPE'");
 }

@@ -58,9 +58,10 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<CategoricalCrossEntropyLoss, LossFunction>(
       bolt_submodule, "CategoricalCrossEntropyLoss",
-      "A loss function for multi-class (one label per sample) classification tasks.")
+      "A loss function for multi-class (one label per sample) classification "
+      "tasks.")
       .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
-  
+
   py::class_<BinaryCrossEntropyLoss, LossFunction>(
       bolt_submodule, "BinaryCrossEntropyLoss",
       "A loss function for multi-label classification tasks.")
