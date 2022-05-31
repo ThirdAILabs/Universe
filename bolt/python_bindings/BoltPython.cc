@@ -22,7 +22,12 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("range_pow"), py::arg("reservoir_size"),
            "Builds a SamplingConfig object. range_pow must always be 3 * "
            "hashes_per_table.")
-      .def(py::init<>(), "Builds a default SamplingConfig object.");
+      .def(py::init<>(), "Builds a default SamplingConfig object.")
+      //edited
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, std::string>(),
+           py::arg("hashes_per_table"), py::arg("num_tables"),
+           py::arg("range_pow"), py::arg("reservoir_size"), py::arg("hash_type"));
+      //edited
 #endif
 
   py::enum_<ActivationFunction>(
