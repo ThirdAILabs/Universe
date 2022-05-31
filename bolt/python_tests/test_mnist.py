@@ -123,7 +123,7 @@ def test_mnist_sparse_non_trainable_hidden_layer():
     after_training_weigths = network.get_weights(1)
     assert acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
     # checking that non-trainable layer weight matrix has not changed
-    assert np.linalg.norm(after_training_weigths - before_training_weigths) ==0.0
+    assert np.linalg.norm(after_training_weigths - before_training_weigths) == 0.0
     # This last check is just to make sure that the accuracy computed in c++ matches
     # what we can compute here using the returned activations. This verifies that the
     # returned activations match and that the metrics are computed correctly.

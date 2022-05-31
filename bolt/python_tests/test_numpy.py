@@ -159,7 +159,7 @@ def test_mock_data_non_trainable_hidden_layer():
 
     acc, norm = train_simple_bolt_model_non_trainable_hidden_layer(examples, labels)
     assert acc > 0.8
-    assert norm ==0.0
+    assert norm == 0.0
 
 
 @pytest.mark.unit
