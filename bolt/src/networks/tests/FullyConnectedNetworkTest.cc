@@ -106,13 +106,18 @@ static void testSimpleDatasetMultiLayerNetworkActivation(
 }
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
-       TrainSimpleDatasetMultiLayerNetwork) {
+       TrainSimpleDatasetMultiLayerNetworkReLU) {
   testSimpleDatasetMultiLayerNetworkActivation(ActivationFunction::ReLU);
 }
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
        TrainSimpleDatasetMultiLayerNetworkTanh) {
   testSimpleDatasetMultiLayerNetworkActivation(ActivationFunction::Tanh);
+}
+
+TEST_F(FullyConnectedClassificationNetworkTestFixture,
+       TrainSimpleDatasetMultiLayerNetworkSigmoid) {
+  testSimpleDatasetMultiLayerNetworkActivation(ActivationFunction::Sigmoid);
 }
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
