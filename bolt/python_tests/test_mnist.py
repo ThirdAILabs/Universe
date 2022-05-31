@@ -279,4 +279,4 @@ def test_get_set_weights():
     assert new_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
 
 
-test_load_save_fc_network()
+# test_load_save_fc_network()

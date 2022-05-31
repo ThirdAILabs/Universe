@@ -18,6 +18,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <algorithm>
+#include <cstring>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -206,7 +207,6 @@ class PyNetwork final : public FullyConnectedNetwork {
   //load and resume should do the same thing when loading the same archive 
 
   void saveShallow(const std::string& filename){
-    std::cout<<"saveShallow called"<<std::endl;
     std::vector<float*> weight_gradient, weight_momentum, weight_velocity;
     std::vector<float*> bias_gradient, bias_momentum, bias_velocity;
     for(uint32_t i=0;i<_num_layers;i++){
@@ -216,35 +216,23 @@ class PyNetwork final : public FullyConnectedNetwork {
       bias_momentum.push_back((_layers[i]->getBiasMomentum()));
       weight_velocity.push_back(_layers[i]->getWeightVelocity());
       bias_velocity.push_back((_layers[i]->getBiasVelocity()));
-      std::cout<<i<<" vector made"<<std::endl;
       _layers[i]->setWeightGradients(nullptr);
       _layers[i]->setBiasGradients(nullptr);
       _layers[i]->setWeightMomentum(nullptr);
       _layers[i]->setBiasMomentum(nullptr);
       _layers[i]->setWeightVelocity(nullptr);
       _layers[i]->setBiasVelocity(nullptr);
-      std::cout<<i<<" weights set"<<std::endl;
       
     }
     save(filename);
-    std::cout<<"file saved"<<std::endl;
     for(uint32_t i=0;i<_num_layers;i++){
-      std::cout<<i<<" vector made"<<std::endl;
       _layers[i]->setWeightGradients(weight_gradient[i]);
-      std::cout<<i<<" vector made"<<std::endl;
       _layers[i]->setBiasGradients(bias_gradient[i]);
-      std::cout<<i<<" vector made"<<std::endl;
       _layers[i]->setWeightMomentum(weight_momentum[i]);
-      std::cout<<i<<" vector made"<<std::endl;
       _layers[i]->setBiasMomentum(bias_momentum[i]);
-      std::cout<<i<<" vector made"<<std::endl;
       _layers[i]->setWeightVelocity(weight_velocity[i]);
-      std::cout<<i<<" vector made"<<std::endl;
       _layers[i]->setBiasVelocity(bias_velocity[i]);
-      std::cout<<i<<" vector made"<<std::endl;
     }
-    std::cout<<"done"<<std::endl;
-    
   }
   void save(const std::string& filename) {
     std::ofstream filestream(filename, std::ios::binary);
@@ -252,45 +240,37 @@ class PyNetwork final : public FullyConnectedNetwork {
     oarchive(*this);
   }
   static std::unique_ptr<PyNetwork> resume(const std::string& filename) {
-    std::cout<<"load called"<<std::endl;
     std::ifstream filestream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
     std::unique_ptr<PyNetwork> deserialize_into(new PyNetwork());
-    std::cout<<"load called"<<std::endl;
     iarchive(*deserialize_into);
-    std::cout<<"load called"<<std::endl;
     return deserialize_into;
   }
   static std::unique_ptr<PyNetwork> load(const std::string& filename) {
-    // std::cout<<"load called"<<std::endl;
     std::ifstream filestream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
     std::unique_ptr<PyNetwork> deserialize_into(new PyNetwork());
-    // std::cout<<"load called"<<std::endl;
+
     iarchive(*deserialize_into);
-    // std::cout<<"load called"<<std::endl;
-    std::cout<<deserialize_into->_num_layers<<std::endl;
+
     for(uint32_t i=0;i<deserialize_into->_num_layers;i++){
+
       int dim= deserialize_into->_layers[i]->getDim();
       int prev_dim= deserialize_into->_layers[i]->getInputDim();
+
       float *w_set=new float[dim*prev_dim];
       float *b_set=new float[dim];
-      std::cout<<"arrays made"<<std::endl;
-      for(int j=0;j<dim*prev_dim;j++){
-        w_set[j]=0;
-      }
-      for(int j=0;j<dim;j++){
-        b_set[j]=0;
-      }
-      std::cout<<"set to 0"<<std::endl;
+
+      std::fill_n(w_set,dim*prev_dim,0);
+      std::fill_n(b_set,dim,0);
+
       deserialize_into->_layers[i]->setBiasGradients(b_set);
-      std::cout<<"bias grad set"<<std::endl;
       deserialize_into->_layers[i]->setBiasMomentum(b_set);
       deserialize_into->_layers[i]->setBiasVelocity(b_set);
-      std::cout<<"bias ok"<<std::endl;
       deserialize_into->_layers[i]->setWeightGradients(b_set);
       deserialize_into->_layers[i]->setWeightMomentum(b_set);
       deserialize_into->_layers[i]->setWeightVelocity(b_set);
+
       delete [] w_set;
       delete [] b_set;
     }
