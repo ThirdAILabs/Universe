@@ -8,7 +8,7 @@ template class BloomFilter<std::string>;
 
 template <typename KEY_T>
 BloomFilter<KEY_T>::BloomFilter(uint64_t capacity, float fp_rate,
-                                uint64_t input_dim = 1)
+                                uint64_t input_dim)
     : _fp_rate(fp_rate), _capacity(capacity), _count(0), _input_dim(input_dim) {
   // R = log_(0.618)(fp) * N
   _R = (uint64_t)ceil(std::log(_fp_rate) / std::log(0.618) * _capacity);
@@ -27,20 +27,32 @@ BloomFilter<KEY_T>::BloomFilter(uint64_t capacity, float fp_rate,
 }
 
 template <typename KEY_T>
-void BloomFilter<KEY_T>::add(KEY_T key) {
+void BloomFilter<KEY_T>::add(const KEY_T& key, bool skip_check) {
   if (_count > _capacity) {
     throw std::logic_error("Bloom Filter is at capacity");
+  }
+  std::vector<uint64_t> hashes = make_hashes(key);
+  bool is_in = true;
+  for (uint64_t i = 0; i < _K; i++) {
+    if (!skip_check && is_in && _bit_array.at(hashes.at(i)) == 0) {
+      is_in = false;
+    }
+    _bit_array.at(hashes.at(i)) = 1;
+  }
+
+  if (skip_check || !is_in) {
+    _count++;
   }
 }
 
 template <typename KEY_T>
-std::vector<uint64_t> BloomFilter<KEY_T>::make_hashes(KEY_T key) {
+std::vector<uint64_t> BloomFilter<KEY_T>::make_hashes(const KEY_T& key) {
   // TODO(henry): Add checking key data type
   const char* cstr = static_cast<std::string>(key).c_str();
   std::vector<uint64_t> hashes;
   for (uint64_t i = 0; i < _K; i++) {
-    hashes.push_back(thirdai::utils::MurmurHash64A(cstr, strlen(cstr),
-                                                   _seed_array.at(i)));
+    hashes.push_back(thirdai::hashing::MurmurHash(cstr, strlen(cstr),
+                                                   _seed_array.at(i)) % _R);
   }
   return hashes;
 }

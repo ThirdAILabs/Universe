@@ -10,6 +10,7 @@ target_link_libraries(
     PRIVATE
     gtest_main
     utils_lib
+    hash_function_lib
 )
 
 include(GoogleTest)

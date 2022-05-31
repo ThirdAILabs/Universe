@@ -1,6 +1,8 @@
 #include <hashing/src/MurmurHash.h>
 #include <iostream>
 #include <vector>
+#include <cstring>
+ 
 
 namespace thirdai::utils {
 
@@ -26,15 +28,15 @@ class BloomFilter {
 
   BloomFilter& operator=(const BloomFilter& other) = delete;
 
-  std::vector<uint64_t> make_hashes(KEY_T key);
+  std::vector<uint64_t> make_hashes(const KEY_T& key);
 
   /*
       This bloom filter currently supports storage of type std::string.
       TODO(Henry): Add storage of type std::vector<int>
   */
-  void add(KEY_T key);
+  void add(const KEY_T& key, bool skip_check = false);
 
-  // bool contains(KEY_T query);
+  // bool contains(const KEY_T& query);
 
   // void clear();
 
