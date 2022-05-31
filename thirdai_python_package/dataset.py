@@ -10,7 +10,7 @@ __all__.extend(dir(thirdai._dataset_python.implementations))
 
 def load_text_classification_dataset(
     file: str,
-    delim: str = "\t",
+    delim: str = ",",
     labeled: bool = True,
     label_dim: int = 2,
     batch_size: int = 1024,
