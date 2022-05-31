@@ -121,9 +121,26 @@ void createBoltSubmodule(py::module_& module) {
            "Also accepts `getActivationFunction(function_name), e.g. "
            "`getActivationFunction('ReLU')`")
       .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
-           py::arg("load_factor"), py::arg("activation_function"))
+           py::arg("load_factor"), py::arg("activation_function"),
+           "Constructs a FullyConnectedLayerConfig object.\n"
+           "Arguments:\n"
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * activation_function: string, input to be given as string"
+           "no restriction on upper case or lower case."
+           "Eg. relu or Relu ,Softmax or softMax, Linear or lineaR. "
+           " * load_factor: Float - The fraction of neurons to use during "
+           "sparse training "
+           "and sparse inference. For example, load_factor=0.05 means the "
+           "layer uses 5% of "
+           "its neurons when processing an individual sample.\n")
       .def(py::init<uint64_t, std::string>(), py::arg("dim"),
-           py::arg("activation_function"));
+           py::arg("activation_function"),
+           "Constructs a FullyConnectedLayerConfig object.\n"
+           "Arguments:\n"
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * activation_function: string, input to be given as string"
+           "no restriction on upper case or lower case."
+           "Eg. relu or Relu ,Softmax or softMax, Linear or lineaR.");
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<thirdai::bolt::ConvLayerConfig,
