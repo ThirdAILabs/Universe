@@ -16,6 +16,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
+#include <sys/signal.h>
 #include <algorithm>
 #include <csignal>
 #include <exception>
@@ -156,29 +157,30 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
 
-    // Changes Done by pratik to incorporate CTRL+C fucntionality during
-    // training
 
-#if THIRDAI_ON_WINDOWS
+#if defined __linux__ || defined __APPLE__
 
-    return FullyConnectedNetwork::train(
-        train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
-        epochs, rehash, rebuild, metric_names, verbose);
-
-#else
 
     auto handler = [](int code) {
       throw std::runtime_error("SIGNAL " + std::to_string(code));
     };
     std::signal(SIGINT, handler);
 
-    MetricData mD = FullyConnectedNetwork::train(
+    MetricData metrics = FullyConnectedNetwork::train(
         train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
         epochs, rehash, rebuild, metric_names, verbose);
 
-    return mD;
+    std::signal(SIGINT, SIG_DFL);
+    return metrics;
+
+#else
+    
+    return FullyConnectedNetwork::train(
+        train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
+        epochs, rehash, rebuild, metric_names, verbose);
 
 #endif
+
   }
 
   py::tuple predict(
