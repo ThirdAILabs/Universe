@@ -51,11 +51,13 @@ class TextClassificationProcessor final : public UnaryBoltBatchProcessor {
 
     if (_label_on_right) {
       bolt::BoltVector label_vec = getLabel(rhs);
-      bolt::BoltVector data_vec = PairgramHasher::computePairgrams(lhs, _output_range);
+      bolt::BoltVector data_vec =
+          PairgramHasher::computePairgrams(lhs, _output_range);
       return std::make_pair(std::move(data_vec), std::move(label_vec));
     }
     bolt::BoltVector label_vec = getLabel(lhs);
-    bolt::BoltVector data_vec = PairgramHasher::computePairgrams(lhs, _output_range);
+    bolt::BoltVector data_vec =
+        PairgramHasher::computePairgrams(lhs, _output_range);
     return std::make_pair(std::move(data_vec), std::move(label_vec));
   }
 
