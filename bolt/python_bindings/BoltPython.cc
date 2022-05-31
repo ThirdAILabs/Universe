@@ -34,7 +34,7 @@ void createBoltSubmodule(py::module_& module) {
              "introduces non-linearity to the neural network.")
       .value("Linear", ActivationFunction::Linear,
              "Returns the outputs of a layer as-is.")
-      .value("Linear", ActivationFunction::Tanh,
+      .value("Tanh", ActivationFunction::Tanh,
              "Hyperbolic tangent activation function; "
              "maps the outputs of a layer to the range [-1, 1].")
       .value("Softmax", ActivationFunction::Softmax,
