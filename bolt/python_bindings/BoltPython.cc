@@ -35,6 +35,9 @@ void createBoltSubmodule(py::module_& module) {
              "introduces non-linearity to the neural network.")
       .value("Linear", ActivationFunction::Linear,
              "Returns the outputs of a layer as-is.")
+      .value("Tanh", ActivationFunction::Tanh,
+             "Hyperbolic tangent activation function; "
+             "maps the outputs of a layer to the range [-1, 1].")
       .value("Softmax", ActivationFunction::Softmax,
              "Softmax activation function; converts logits to classification "
              "probabilities. Currently, this activation function can only be "
@@ -79,23 +82,22 @@ void createBoltSubmodule(py::module_& module) {
              thirdai::bolt::SequentialLayerConfig>(
       bolt_submodule, "FullyConnected", "Defines a fully-connected layer.\n")
 #if THIRDAI_EXPOSE_ALL
-      .def(
-          py::init<uint64_t, float, ActivationFunction,
-                   thirdai::bolt::SamplingConfig>(),
-          py::arg("dim"), py::arg("load_factor"),
-          py::arg("activation_function"), py::arg("sampling_config"),
-          "Constructs the FullyConnectedLayerConfig object.\n"
-          "Arguments:\n"
-          " * dim: Int - The dimension of the layer.\n"
-          " * load_factor: Float - The fraction of neurons to use during "
-          "sparse training "
-          "and sparse inference. For example, load_factor=0.05 means the "
-          "layer uses 5% of "
-          "its neurons when processing an individual sample.\n"
-          " * activation_function: ActivationFunctions enum - We support three "
-          "activation "
-          "functions: ReLU, Softmax, and Linear.\n"
-          " * sampling_config: SamplingConfig - Sampling configuration.")
+      .def(py::init<uint64_t, float, ActivationFunction,
+                    thirdai::bolt::SamplingConfig>(),
+           py::arg("dim"), py::arg("load_factor"),
+           py::arg("activation_function"), py::arg("sampling_config"),
+           "Constructs the FullyConnectedLayerConfig object.\n"
+           "Arguments:\n"
+           " * dim: Int - The dimension of the layer.\n"
+           " * load_factor: Float - The fraction of neurons to use during "
+           "sparse training "
+           "and sparse inference. For example, load_factor=0.05 means the "
+           "layer uses 5% of "
+           "its neurons when processing an individual sample.\n"
+           " * activation_function: ActivationFunctions enum - We support four "
+           "activation "
+           "functions: ReLU, Softmax, Tanh, and Linear.\n"
+           " * sampling_config: SamplingConfig - Sampling configuration.")
 #endif
       .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
            py::arg("activation_function"),
@@ -128,26 +130,25 @@ void createBoltSubmodule(py::module_& module) {
       bolt_submodule, "Conv",
       "Defines a 2D convolutional layer that convolves over "
       "non-overlapping patches.")
-      .def(
-          py::init<uint64_t, float, ActivationFunction,
-                   thirdai::bolt::SamplingConfig, std::pair<uint32_t, uint32_t>,
-                   uint32_t>(),
-          py::arg("num_filters"), py::arg("load_factor"),
-          py::arg("activation_function"), py::arg("sampling_config"),
-          py::arg("kernel_size"), py::arg("num_patches"),
-          "Constructs the ConvLayerConfig object.\n"
-          "Arguments:\n"
-          " * num_filters: Int - Number of convolutional filters.\n"
-          " * load_factor: Float - The fraction of filters to use during "
-          "sparse training and sparse inference. For example, "
-          "load_factor=0.05 means the layer uses 5% of the filters "
-          "when processing each patch.\n"
-          " * activation_function: ActivationFunctions enum - We support three "
-          "activation "
-          "functions: ReLU, Softmax, and Linear.\n"
-          " * sampling_config: SamplingConfig - Sampling configuration.\n"
-          " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
-          " * num_patches: Int - Number of patches.")
+      .def(py::init<uint64_t, float, ActivationFunction,
+                    thirdai::bolt::SamplingConfig,
+                    std::pair<uint32_t, uint32_t>, uint32_t>(),
+           py::arg("num_filters"), py::arg("load_factor"),
+           py::arg("activation_function"), py::arg("sampling_config"),
+           py::arg("kernel_size"), py::arg("num_patches"),
+           "Constructs the ConvLayerConfig object.\n"
+           "Arguments:\n"
+           " * num_filters: Int - Number of convolutional filters.\n"
+           " * load_factor: Float - The fraction of filters to use during "
+           "sparse training and sparse inference. For example, "
+           "load_factor=0.05 means the layer uses 5% of the filters "
+           "when processing each patch.\n"
+           " * activation_function: ActivationFunctions enum - We support four "
+           "activation "
+           "functions: ReLU, Softmax, Tanh, and Linear.\n"
+           " * sampling_config: SamplingConfig - Sampling configuration.\n"
+           " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
+           " * num_patches: Int - Number of patches.")
       .def(py::init<uint64_t, float, ActivationFunction,
                     std::pair<uint32_t, uint32_t>, uint32_t>(),
            py::arg("num_filters"), py::arg("load_factor"),

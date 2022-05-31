@@ -1,4 +1,5 @@
 #include <bolt/src/layers/LayerConfig.h>
+#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Dataset.h>
@@ -83,15 +84,15 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
 }
 
-TEST_F(FullyConnectedClassificationNetworkTestFixture,
-       TrainSimpleDatasetMultiLayerNetwork) {
-  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
-                                     10000, 0.1, ActivationFunction::ReLU),
-                                 std::make_shared<FullyConnectedLayerConfig>(
-                                     n_classes, ActivationFunction::Softmax)},
-                                n_classes);
+static void testSimpleDatasetMultiLayerNetworkActivation(
+    ActivationFunction act) {
+  FullyConnectedNetwork network(
+      {std::make_shared<FullyConnectedLayerConfig>(10000, 0.1, act),
+       std::make_shared<FullyConnectedLayerConfig>(
+           n_classes, ActivationFunction::Softmax)},
+      n_classes);
 
-  auto data = genDataset(false);
+  auto data = FullyConnectedClassificationNetworkTestFixture::genDataset(false);
 
   network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 2,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
@@ -102,6 +103,16 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
+}
+
+TEST_F(FullyConnectedClassificationNetworkTestFixture,
+       TrainSimpleDatasetMultiLayerNetwork) {
+  testSimpleDatasetMultiLayerNetworkActivation(ActivationFunction::ReLU);
+}
+
+TEST_F(FullyConnectedClassificationNetworkTestFixture,
+       TrainSimpleDatasetMultiLayerNetworkTanh) {
+  testSimpleDatasetMultiLayerNetworkActivation(ActivationFunction::Tanh);
 }
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
