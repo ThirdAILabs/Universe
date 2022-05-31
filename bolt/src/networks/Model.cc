@@ -1,5 +1,6 @@
 #include "Model.h"
 #include <bolt/src/metrics/Metric.h>
+#include <bolt/src/metrics/MetricHelpers.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <dataset/src/batch_types/ClickThroughBatch.h>
 #include <algorithm>
@@ -33,11 +34,12 @@ MetricData Model<BATCH_T>::train(
   BoltBatch outputs = getOutputs(batch_size, false);
 
   std::vector<double> time_per_epoch;
-  std::atomic<float> loss = 0;
 
   MetricAggregator metrics(metric_names, verbose);
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
+    std::atomic<float> loss_function_metric = 0;
+
     if (verbose) {
       std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
     }
@@ -54,15 +56,18 @@ MetricData Model<BATCH_T>::train(
       const BoltBatch& batch_labels = train_labels->at(batch);
 
 #pragma omp parallel for default(none) \
-    shared(batch_inputs, batch_labels, outputs, loss_fn, metrics, loss)
+    shared(batch_inputs, batch_labels, outputs, loss_fn, metrics, loss_function_metric)
       for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize();
            vec_id++) {
         forward(vec_id, batch_inputs, outputs[vec_id], &batch_labels[vec_id]);
 
         loss_fn.lossGradients(outputs[vec_id], batch_labels[vec_id],
                               batch_inputs.getBatchSize());
-        loss_fn.computeLossMetric(outputs[vec_id], batch_labels[vec_id],
-                              batch_inputs.getBatchSize(), loss);
+        float local_loss_function_metric = loss_fn.computeLossMetric(outputs[vec_id], batch_labels[vec_id],
+                              batch_inputs.getBatchSize());
+        
+        MetricUtilities::incrementAtomicFloat(loss_function_metric, local_loss_function_metric);
+        
         backpropagate(vec_id, batch_inputs, outputs[vec_id]);
 
         metrics.processSample(outputs[vec_id], batch_labels[vec_id]);
@@ -92,7 +97,7 @@ MetricData Model<BATCH_T>::train(
                 << epoch_time << " seconds" << std::endl;
     }
     _epoch_count++;
-    std::cout << "Loss: " << loss << std::endl;
+    std::cout << "Loss: " << loss_function_metric << std::endl;
     metrics.logAndReset();
   }
 

@@ -4,6 +4,7 @@
 #include <_types/_uint32_t.h>
 #include <algorithm>
 #include <atomic>
+#include <cmath>
 #include <memory>
 #include <stdexcept>
 
@@ -16,6 +17,7 @@ class LossFunction {
 
   void lossGradients(BoltVector& output, const BoltVector& labels,
                      uint32_t batch_size) const {
+    
     if (output.isDense()) {
       if (labels.isDense()) {
         computeLossGradientsImpl<true, true>(output, labels, batch_size);
@@ -31,13 +33,36 @@ class LossFunction {
     }
   }
 
-  void computeLossMetric(BoltVector& output, const BoltVector& labels, 
-                          uint32_t batch_size, std::atomic<float> &loss) const {
-    assert(output.len == labels.len);
-    for(uint32_t i=0; i < output.len; i++){
-        float val = elementLossMetric(labels.activations[i],output.activations[i],batch_size);
-        computeLossMetricImpl(val, loss);
+  float computeLossMetric(BoltVector& output, const BoltVector& labels, 
+                          uint32_t batch_size) const {
+    assert(batch_size != 0);
+    float local_loss_metric = 0;
+    uint32_t labels_active_neuron_id = 0;
+    uint32_t output_active_neuron_id = 0;
+    // Assuming the neuron_id(indices) are in increasing order.
+    while(labels_active_neuron_id<labels.len && output_active_neuron_id<output.len){
+      if(labels.activations[labels_active_neuron_id]<output.activations[output_active_neuron_id]){
+        local_loss_metric += elementLossMetric(labels.activations[labels_active_neuron_id], 0 , batch_size);
+        labels_active_neuron_id++;
+      }else if(labels.activations[labels_active_neuron_id]<output.activations[output_active_neuron_id]){
+        local_loss_metric += elementLossMetric(0, output.activations[output_active_neuron_id] , batch_size);
+        output_active_neuron_id++;
+      }else{
+        local_loss_metric += elementLossMetric(labels.activations[labels_active_neuron_id], output.activations[output_active_neuron_id] , batch_size);;
+        labels_active_neuron_id++;
+        output_active_neuron_id++;
+      }
     }
+    while(labels_active_neuron_id<labels.len){
+        local_loss_metric += elementLossMetric(labels.activations[labels_active_neuron_id], 0 , batch_size);
+        labels_active_neuron_id++;
+    }
+    while(output_active_neuron_id<output.len){
+        local_loss_metric += elementLossMetric(0, output.activations[output_active_neuron_id] , batch_size);
+        output_active_neuron_id++;
+    }
+
+    return local_loss_metric;
   }
 
 
@@ -71,10 +96,6 @@ class LossFunction {
           elementLossGradient(label_val, output.activations[i], batch_size);
     }
   }
-  void computeLossMetricImpl(float val, std::atomic<float> &loss) const{
-      loss = loss + val;
-  }
-
   
 
   virtual float elementLossGradient(float label, float activation,
@@ -98,7 +119,8 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
   }
   float elementLossMetric(float label, float activation,
                             uint32_t batch_size) const override {
-    return ((label - activation) * (label - activation)) / batch_size;
+      assert(label > 0);
+      return ((-1) * activation * log (label))/ batch_size;
   }
 };
 
@@ -141,6 +163,7 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
   }
   float elementLossMetric(float label, float activation,
                             uint32_t batch_size) const override {
+    throw std::invalid_argument("Loss Metric is not supported for Weighted Mean Absolute Percentage Error Loss.");
     return ((label - activation) * (label - activation)) / batch_size;
   }
 };
