@@ -10,10 +10,11 @@
 
 namespace thirdai::dataset {
 
+template <typename BATCH_T>
 class StreamingDataset {
  public:
   StreamingDataset(std::shared_ptr<DataLoader> data_loader,
-                   std::shared_ptr<BatchProcessor> batch_processor,
+                   std::shared_ptr<BatchProcessor<BATCH_T>> batch_processor,
                    bool has_header = true)
       : _data_loader(std::move(data_loader)),
         _batch_processor(std::move(batch_processor)) {
@@ -26,7 +27,7 @@ class StreamingDataset {
     }
   }
 
-  std::optional<BoltDataLabelPair> nextBatch() {
+  std::optional<BoltDataLabelPair<BATCH_T>> nextBatch() {
     auto rows = _data_loader->nextBatch();
     if (!rows) {
       return std::nullopt;
@@ -56,7 +57,7 @@ class StreamingDataset {
 
  private:
   std::shared_ptr<DataLoader> _data_loader;
-  std::shared_ptr<BatchProcessor> _batch_processor;
+  std::shared_ptr<BatchProcessor<BATCH_T>> _batch_processor;
 };
 
 }  // namespace thirdai::dataset

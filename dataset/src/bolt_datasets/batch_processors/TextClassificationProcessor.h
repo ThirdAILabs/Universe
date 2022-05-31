@@ -17,7 +17,7 @@
 
 namespace thirdai::dataset {
 
-class TextClassificationProcessor final : public UnaryBatchProcessor {
+class TextClassificationProcessor final : public UnaryBoltBatchProcessor {
  public:
   explicit TextClassificationProcessor(uint32_t output_range)
       : _output_range(output_range) {}
@@ -185,7 +185,7 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<UnaryBatchProcessor>(this), _class_to_class_id,
+    archive(cereal::base_class<UnaryBoltBatchProcessor>(this), _class_to_class_id,
             _class_id_to_class, _output_range, _label_on_right);
   }
 
