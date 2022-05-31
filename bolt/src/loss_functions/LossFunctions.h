@@ -1,7 +1,9 @@
 #pragma once
 
 #include <bolt/src/layers/BoltVector.h>
+#include <_types/_uint32_t.h>
 #include <algorithm>
+#include <atomic>
 #include <memory>
 #include <stdexcept>
 
@@ -9,7 +11,8 @@ namespace thirdai::bolt {
 
 class LossFunction {
  public:
-  LossFunction() {}
+  LossFunction() {
+  }
 
   void lossGradients(BoltVector& output, const BoltVector& labels,
                      uint32_t batch_size) const {
@@ -28,11 +31,22 @@ class LossFunction {
     }
   }
 
+  void computeLossMetric(BoltVector& output, const BoltVector& labels, 
+                          uint32_t batch_size, std::atomic<float> &loss) const {
+    assert(output.len == labels.len);
+    for(uint32_t i=0; i < output.len; i++){
+        float val = elementLossMetric(labels.activations[i],output.activations[i],batch_size);
+        computeLossMetricImpl(val, loss);
+    }
+  }
+
+
     
 
   virtual ~LossFunction() = default;
 
  private:
+
   template <bool OUTPUT_DENSE, bool LABEL_DENSE>
   void computeLossGradientsImpl(BoltVector& output, const BoltVector& labels,
                                 uint32_t batch_size) const {
@@ -57,11 +71,17 @@ class LossFunction {
           elementLossGradient(label_val, output.activations[i], batch_size);
     }
   }
+  void computeLossMetricImpl(float val, std::atomic<float> &loss) const{
+      loss = loss + val;
+  }
+
+  
 
   virtual float elementLossGradient(float label, float activation,
                                     uint32_t batch_size) const = 0;
   virtual float elementLossMetric(float label, float activation,
                                     uint32_t batch_size) const = 0;
+
 };
 
 class CategoricalCrossEntropyLoss final : public LossFunction {
@@ -78,7 +98,7 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
   }
   float elementLossMetric(float label, float activation,
                             uint32_t batch_size) const override {
-    return (label - activation) / batch_size;
+    return ((label - activation) * (label - activation)) / batch_size;
   }
 };
 
@@ -92,6 +112,10 @@ class MeanSquaredError final : public LossFunction {
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const override {
     return 2 * (label - activation) / batch_size;
+  }
+  float elementLossMetric(float label, float activation,
+                            uint32_t batch_size) const override {
+    return ((label - activation) * (label - activation)) / batch_size;
   }
 };
 
@@ -114,6 +138,10 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
                             uint32_t batch_size) const override {
     auto direction = activation > label ? -1.0 : 1.0;
     return direction / batch_size;
+  }
+  float elementLossMetric(float label, float activation,
+                            uint32_t batch_size) const override {
+    return ((label - activation) * (label - activation)) / batch_size;
   }
 };
 

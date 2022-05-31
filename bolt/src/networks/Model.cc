@@ -33,6 +33,7 @@ MetricData Model<BATCH_T>::train(
   BoltBatch outputs = getOutputs(batch_size, false);
 
   std::vector<double> time_per_epoch;
+  std::atomic<float> loss = 0;
 
   MetricAggregator metrics(metric_names, verbose);
 
@@ -53,14 +54,15 @@ MetricData Model<BATCH_T>::train(
       const BoltBatch& batch_labels = train_labels->at(batch);
 
 #pragma omp parallel for default(none) \
-    shared(batch_inputs, batch_labels, outputs, loss_fn, metrics)
+    shared(batch_inputs, batch_labels, outputs, loss_fn, metrics, loss)
       for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize();
            vec_id++) {
         forward(vec_id, batch_inputs, outputs[vec_id], &batch_labels[vec_id]);
 
         loss_fn.lossGradients(outputs[vec_id], batch_labels[vec_id],
                               batch_inputs.getBatchSize());
-
+        loss_fn.computeLossMetric(outputs[vec_id], batch_labels[vec_id],
+                              batch_inputs.getBatchSize(), loss);
         backpropagate(vec_id, batch_inputs, outputs[vec_id]);
 
         metrics.processSample(outputs[vec_id], batch_labels[vec_id]);
@@ -90,7 +92,7 @@ MetricData Model<BATCH_T>::train(
                 << epoch_time << " seconds" << std::endl;
     }
     _epoch_count++;
-
+    std::cout << "Loss: " << loss << std::endl;
     metrics.logAndReset();
   }
 
