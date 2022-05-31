@@ -176,11 +176,11 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
     }
   }
 
-  if (_act_func == ActivationFunction::Sigmoid) {
-    for (uint64_t n = 0; n < len_out; n++) {
-      output.activations[n] = 1 / (1 + std::exp(-output.activations[n]));
-    }
-  }
+  // if (_act_func == ActivationFunction::Sigmoid) {
+  //   for (uint64_t n = 0; n < len_out; n++) {
+  //     output.activations[n] = 1 / (1 + std::exp(-output.activations[n]));
+  //   }
+  // }
 }
 
 void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
