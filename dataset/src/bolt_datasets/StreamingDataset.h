@@ -14,11 +14,10 @@ template <typename BATCH_T>
 class StreamingDataset {
  public:
   StreamingDataset(std::shared_ptr<DataLoader> data_loader,
-                   std::shared_ptr<BatchProcessor<BATCH_T>> batch_processor,
-                   bool has_header = true)
+                   std::shared_ptr<BatchProcessor<BATCH_T>> batch_processor)
       : _data_loader(std::move(data_loader)),
         _batch_processor(std::move(batch_processor)) {
-    if (has_header) {
+    if (_batch_processor->expectsHeader()) {
       auto header = _data_loader->getHeader();
       if (!header) {
         throw std::invalid_argument("Cannot read empty file.");
