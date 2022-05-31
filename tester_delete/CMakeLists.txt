@@ -1,1 +1,0 @@
-add_executable(cereal_test cereal_test.cpp)

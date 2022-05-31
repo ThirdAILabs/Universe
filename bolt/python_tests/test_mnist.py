@@ -212,11 +212,53 @@ def test_sparse_inference_with_sparse_output():
     assert sparse_predict["categorical_accuracy"] == acc_computed
 
 
+# checkpoints and resumes the model. checks whether the loaded model has same accuracy
+# resumed model after training should give a higher accuracy
+def test_checkpoint_resume_fc_network():
+    network = build_sparse_hidden_layer_network(1000, 0.2)
+
+    train_x, train_y, test_x, test_y = load_mnist()
+
+    train_network(network, train_x, train_y, epochs=2)
+
+    original_acc, _ = network.predict(
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
+    )
+
+    save_loc = "./bolt_model_save"
+
+    if os.path.exists(save_loc):
+        os.remove(save_loc)
+
+    # Save network and load as a new network
+    network.checkpoint(save_loc)
+
+    new_network = bolt.Network.resume(save_loc)
+
+    new_acc, _ = new_network.predict(
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
+    )
+    print("accuracy found")
+    assert new_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
+    print(new_acc["categorical_accuracy"], original_acc["categorical_accuracy"])
+    # Continue to train loaded network
+    train_network(new_network, train_x, train_y, epochs=2)
+    print("network_trained")
+    another_acc, _ = new_network.predict(
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
+    )
+
+    assert another_acc["categorical_accuracy"] >= new_acc["categorical_accuracy"]
+
+    os.remove(save_loc)
+
+
+# saves and loads the model
+# checks whether the loaded model has the same accuracy as the saved one
 def test_load_save_fc_network():
     network = build_sparse_hidden_layer_network(1000, 0.2)
 
     train_x, train_y, test_x, test_y = load_mnist()
-    print("this is ok")
     train_network(network, train_x, train_y, epochs=2)
 
     original_acc, _ = network.predict(
@@ -231,22 +273,26 @@ def test_load_save_fc_network():
     # Save network and load as a new network
     network.save(save_loc)
     print("network saved")
+    acc_saved, _ = network.predict(
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
+    )
     new_network = bolt.Network.load(save_loc)
     print("network_loaded")
     new_acc, _ = new_network.predict(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
-    print("accuracy found")
     assert new_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
-    print(new_acc["categorical_accuracy"],original_acc["categorical_accuracy"])
+    assert acc_saved["categorical_accuracy"] == original_acc["categorical_accuracy"]
+
+    print(new_acc["categorical_accuracy"], original_acc["categorical_accuracy"])
     # Continue to train loaded network
-    train_network(new_network, train_x, train_y, epochs=2)
+    train_network(new_network, train_x, train_y, epochs=4)
     print("network_trained")
     another_acc, _ = new_network.predict(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert another_acc["categorical_accuracy"] >= new_acc["categorical_accuracy"]
+    assert another_acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
     os.remove(save_loc)
 

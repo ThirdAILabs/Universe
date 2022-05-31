@@ -351,10 +351,12 @@ void createBoltSubmodule(py::module_& module) {
            "folders to be created")
 
       .def_static("load", &PyNetwork::load, py::arg("filename"),
-                  "Loads and builds a saved network from file along with the weights. Sets optimizer state to 0 after load")
+                  "Loads and builds a saved network from file along with the "
+                  "weights. Sets optimizer state to 0 after load")
 
-      .def_static("resume", &PyNetwork::resume, py::arg("filename"),
-                  "Loads the model from a checkpoint that has the optimizer state")
+      .def_static(
+          "resume", &PyNetwork::resume, py::arg("filename"),
+          "Loads the model from a checkpoint that has the optimizer state")
 
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "

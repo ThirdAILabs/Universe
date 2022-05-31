@@ -65,20 +65,21 @@ class ConvLayer final : public SequentialLayer {
 
   void setBiases(const float* new_biases) final;
 
-  // have to implement these functions 
+  // have to implement these functions
   float* getWeightGradients() final;
   float* getBiasGradients() final;
   float* getWeightMomentum() final;
   float* getBiasMomentum() final;
   float* getWeightVelocity() final;
   float* getBiasVelocity() final;
-  
+
   void setWeightGradients(const float* new_weight_gradients) final;
   void setBiasGradients(const float* new_bias_gradients) final;
   void setWeightMomentum(const float* new_weight_momentum) final;
   void setBiasMomentum(const float* new_bias_momentum) final;
   void setWeightVelocity(const float* new_weight_velocity) final;
   void setBiasVelocity(const float* new_bias_velocity) final;
+
  private:
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output);

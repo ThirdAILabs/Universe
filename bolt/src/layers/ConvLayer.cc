@@ -383,20 +383,56 @@ void ConvLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
-float* ConvLayer::getWeightGradients() {std::cout<<"implement method";return nullptr;}
-float* ConvLayer::getBiasGradients() {std::cout<<"implement method";return nullptr;}
-float* ConvLayer::getWeightMomentum() {std::cout<<"implement method";return nullptr;}
-float* ConvLayer::getBiasMomentum() {std::cout<<"implement method";return nullptr;}
-float* ConvLayer::getWeightVelocity() {std::cout<<"implement method";return nullptr;}
-float* ConvLayer::getBiasVelocity() {std::cout<<"implement method";return nullptr;}
-  
-void ConvLayer::setWeightGradients(const float* new_weight_gradients){if(new_weight_gradients){std::cout<<"implement method";}}
-void ConvLayer::setBiasGradients(const float* new_bias_gradients){if(new_bias_gradients){std::cout<<"implement method";}}
-void ConvLayer::setWeightMomentum(const float* new_weight_momentum){if(new_weight_momentum){std::cout<<"implement method";}}
-void ConvLayer::setBiasMomentum(const float* new_bias_momentum){if(new_bias_momentum){std::cout<<"implement method";}}
-void ConvLayer::setWeightVelocity(const float* new_weight_velocity){if(new_weight_velocity){std::cout<<"implement method";}}
-void ConvLayer::setBiasVelocity(const float* new_bias_velocity){if(new_bias_velocity){std::cout<<"implement method";}}
+// TODO(): Implement these functions
+float* ConvLayer::getWeightGradients() {
+  std::cout << "WARNING: getWeightGradients is not implemented for ConvLayer";
+  return nullptr;
+}
+float* ConvLayer::getBiasGradients() {
+  std::cout << "WARNING: getBiasGradients is not implemented for ConvLayer";
+  return nullptr;
+}
+float* ConvLayer::getWeightMomentum() {
+  std::cout << "WARNING: getWeightMomentum is not implemented for ConvLayer";
+  return nullptr;
+}
+float* ConvLayer::getBiasMomentum() {
+  std::cout << "WARNING: getBiasMomentum is not implemented for ConvLayer";
+  return nullptr;
+}
+float* ConvLayer::getWeightVelocity() {
+  std::cout << "WARNING: getWeightVelocity is not implemented for ConvLayer;";
+  return nullptr;
+}
+float* ConvLayer::getBiasVelocity() {
+  std::cout << "WARNING: getBiasVelocity is not implemented for ConvLayer";
+  return nullptr;
+}
 
+void ConvLayer::setWeightGradients(const float* new_weight_gradients) {
+  (void)new_weight_gradients;
+  std::cout << "WARNING: setWeightGradients is not implemented for ConvLayer";
+}
+void ConvLayer::setBiasGradients(const float* new_bias_gradients) {
+  (void)new_bias_gradients;
+  std::cout << "WARNING: setBiasGradients is not implemented for ConvLayer";
+}
+void ConvLayer::setWeightMomentum(const float* new_weight_momentum) {
+  (void)new_weight_momentum;
+  std::cout << "WARNING: setWeightMomentum is not implemented for ConvLayer";
+}
+void ConvLayer::setBiasMomentum(const float* new_bias_momentum) {
+  (void)new_bias_momentum;
+  std::cout << "WARNING: setBiasMomentum is not implemented for ConvLayer";
+}
+void ConvLayer::setWeightVelocity(const float* new_weight_velocity) {
+  (void)new_weight_velocity;
+  std::cout << "WARNING: setWeightVelocity is not implemented for ConvLayer";
+}
+void ConvLayer::setBiasVelocity(const float* new_bias_velocity) {
+  (void)new_bias_velocity;
+  std::cout << "WARNING: setBiasVelocity is not implemented for ConvLayer";
+}
 
 // this function is only called from constructor
 void ConvLayer::buildPatchMaps(std::pair<uint32_t, uint32_t> next_kernel_size) {

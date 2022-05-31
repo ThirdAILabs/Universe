@@ -9,7 +9,6 @@
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <_types/_uint32_t.h>
-
 #include <cstdint>
 
 namespace thirdai::bolt {
@@ -88,7 +87,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   float* getBiasMomentum() final;
   float* getWeightVelocity() final;
   float* getBiasVelocity() final;
-  
+
   void setWeightGradients(const float* new_weight_gradients) final;
   void setBiasGradients(const float* new_bias_gradients) final;
   void setWeightMomentum(const float* new_weight_momentum) final;
@@ -106,7 +105,6 @@ class FullyConnectedLayer final : public SequentialLayer {
   std::vector<float> _w_gradient;
   std::vector<float> _w_momentum;
   std::vector<float> _w_velocity;
-
 
   std::vector<float> _biases;
   std::vector<float> _b_gradient;

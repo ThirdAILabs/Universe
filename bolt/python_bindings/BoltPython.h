@@ -203,29 +203,36 @@ class PyNetwork final : public FullyConnectedNetwork {
                                 activations, output_sparse, alloc_success);
   }
 
-  // assumption is that when nullptr is when an empty vector is saved, the load function will automatically adjust
-  //load and resume should do the same thing when loading the same archive 
-
-  void saveShallow(const std::string& filename){
+  // assumption is that when nullptr is when an empty vector is saved, the load
+  // function will automatically adjust
+  // load and resume should do the same thing when loading the same archive
+  void static print_float(const float* array, int dim) {
+    for (int i = 0; i < dim; i++) {
+      std::cout << array[i] << " ";
+    }
+    std::cout << std::endl;
+  }
+  void saveShallow(const std::string& filename) {
     std::vector<float*> weight_gradient, weight_momentum, weight_velocity;
     std::vector<float*> bias_gradient, bias_momentum, bias_velocity;
-    for(uint32_t i=0;i<_num_layers;i++){
+    for (uint32_t i = 0; i < _num_layers; i++) {
       weight_gradient.push_back(_layers[i]->getWeightGradients());
       bias_gradient.push_back((_layers[i]->getBiasGradients()));
       weight_momentum.push_back(_layers[i]->getWeightMomentum());
       bias_momentum.push_back((_layers[i]->getBiasMomentum()));
       weight_velocity.push_back(_layers[i]->getWeightVelocity());
       bias_velocity.push_back((_layers[i]->getBiasVelocity()));
+
       _layers[i]->setWeightGradients(nullptr);
       _layers[i]->setBiasGradients(nullptr);
       _layers[i]->setWeightMomentum(nullptr);
       _layers[i]->setBiasMomentum(nullptr);
       _layers[i]->setWeightVelocity(nullptr);
       _layers[i]->setBiasVelocity(nullptr);
-      
     }
     save(filename);
-    for(uint32_t i=0;i<_num_layers;i++){
+
+    for (uint32_t i = 0; i < _num_layers; i++) {
       _layers[i]->setWeightGradients(weight_gradient[i]);
       _layers[i]->setBiasGradients(bias_gradient[i]);
       _layers[i]->setWeightMomentum(weight_momentum[i]);
@@ -233,12 +240,38 @@ class PyNetwork final : public FullyConnectedNetwork {
       _layers[i]->setWeightVelocity(weight_velocity[i]);
       _layers[i]->setBiasVelocity(bias_velocity[i]);
     }
+
+    //for some debugging. will remove
+    // for (uint32_t i = 0; i < _num_layers; i++) {
+    //   int dim = _layers[i]->getDim();
+    //   int prev_dim = _layers[i]->getInputDim();
+    //   float* check = _layers[i]->getWeightMomentum();
+
+    //   for (int j = 0; j < dim * prev_dim; j++) {
+    //     if (check[j] != weight_momentum[i][j]) {
+    //       std::cout << "this is wrong" << std::endl;
+    //       return;
+    //     }
+    //   }
+
+    //   float* check1 = _layers[i]->getWeightVelocity();
+
+    //   for (int j = 0; j < dim * prev_dim; j++) {
+    //     if (check1[j] != weight_velocity[i][j]) {
+    //       std::cout << "this is wrong" << std::endl;
+    //       return;
+    //     }
+    //   }
+    // }
   }
+
+  // this is full_save method
   void save(const std::string& filename) {
     std::ofstream filestream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
     oarchive(*this);
   }
+
   static std::unique_ptr<PyNetwork> resume(const std::string& filename) {
     std::ifstream filestream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
@@ -246,6 +279,7 @@ class PyNetwork final : public FullyConnectedNetwork {
     iarchive(*deserialize_into);
     return deserialize_into;
   }
+
   static std::unique_ptr<PyNetwork> load(const std::string& filename) {
     std::ifstream filestream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
@@ -253,28 +287,28 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     iarchive(*deserialize_into);
 
-    for(uint32_t i=0;i<deserialize_into->_num_layers;i++){
+    // values for gradients, momentum, velocity are null in save file
+    // reinitializing the gradient, momentum, velocity vectors for the layer
+    for (uint32_t i = 0; i < deserialize_into->_num_layers; i++) {
+      int dim = deserialize_into->_layers[i]->getDim();
+      int prev_dim = deserialize_into->_layers[i]->getInputDim();
 
-      int dim= deserialize_into->_layers[i]->getDim();
-      int prev_dim= deserialize_into->_layers[i]->getInputDim();
+      float* w_set = new float[dim * prev_dim];
+      float* b_set = new float[dim];
 
-      float *w_set=new float[dim*prev_dim];
-      float *b_set=new float[dim];
-
-      std::fill_n(w_set,dim*prev_dim,0);
-      std::fill_n(b_set,dim,0);
+      std::fill_n(w_set, dim * prev_dim, 0);
+      std::fill_n(b_set, dim, 0);
 
       deserialize_into->_layers[i]->setBiasGradients(b_set);
       deserialize_into->_layers[i]->setBiasMomentum(b_set);
       deserialize_into->_layers[i]->setBiasVelocity(b_set);
-      deserialize_into->_layers[i]->setWeightGradients(b_set);
-      deserialize_into->_layers[i]->setWeightMomentum(b_set);
-      deserialize_into->_layers[i]->setWeightVelocity(b_set);
+      deserialize_into->_layers[i]->setWeightGradients(w_set);
+      deserialize_into->_layers[i]->setWeightMomentum(w_set);
+      deserialize_into->_layers[i]->setWeightVelocity(w_set);
 
-      delete [] w_set;
-      delete [] b_set;
+      delete[] w_set;
+      delete[] b_set;
     }
-    std::cout<<"load completed"<<std::endl;
     return deserialize_into;
   }
 
