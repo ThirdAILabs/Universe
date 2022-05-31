@@ -179,6 +179,7 @@ class FullyConnectedLayer final : public SequentialLayer {
             _is_active, _hasher, _hash_table, _rand_neurons,
             _force_sparse_for_inference);
   }
+  
 };
 
 }  // namespace thirdai::bolt
