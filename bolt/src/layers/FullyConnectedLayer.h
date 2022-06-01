@@ -80,15 +80,29 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void setBiases(const float* new_biases) final;
 
-  void setShallowSave(bool set)final{
-    _shallow_save=set;
+  float* getWeightGradients() final;
+  float* getBiasGradients() final;
+  float* getWeightMomentum() final;
+  float* getBiasMomentum() final;
+  float* getWeightVelocity() final;
+  float* getBiasVelocity() final;
+  
+  void setWeightGradients(const float* new_weight_gradients) final;
+  void setBiasGradients(const float* new_bias_gradients) final;
+  void setWeightMomentum(const float* new_weight_momentum) final;
+  void setBiasMomentum(const float* new_bias_momentum) final;
+  void setWeightVelocity(const float* new_weight_velocity) final;
+  void setBiasVelocity(const float* new_bias_velocity) final;
+
+  void isShallowSave(bool set)final{
+    _is_shallow=set;
   }
   ~FullyConnectedLayer() = default;
 
  private:
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
-  bool _shallow_save;
+  bool _is_shallow;
   ActivationFunction _act_func;
 
   std::vector<float> _weights;
