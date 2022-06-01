@@ -58,6 +58,17 @@ std::vector<uint64_t> BloomFilter<KEY_T>::make_hashes(const KEY_T& key) {
 }
 
 template <typename KEY_T>
+bool BloomFilter<KEY_T>::contains(const KEY_T& query) {
+  std::vector<uint64_t> hashes = make_hashes(query);
+  for (uint64_t i = 0; i < _K; i++) {
+    if (_bit_array.at(hashes.at(i)) == 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename KEY_T>
 uint64_t BloomFilter<KEY_T>::size() {
   return _count;
 }

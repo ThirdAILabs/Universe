@@ -36,7 +36,7 @@ class BloomFilter {
   */
   void add(const KEY_T& key, bool skip_check = false);
 
-  // bool contains(const KEY_T& query);
+  bool contains(const KEY_T& query);
 
   // void clear();
 
