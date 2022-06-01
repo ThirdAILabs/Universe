@@ -39,6 +39,7 @@ class LossFunction {
     float local_loss_metric = 0;
     uint32_t labels_active_neuron_id = 0;
     uint32_t output_active_neuron_id = 0;
+    
     // Assuming the neuron_id(indices) are in increasing order.
     while(labels_active_neuron_id<labels.len && output_active_neuron_id<output.len){
       if(labels.activations[labels_active_neuron_id]<output.activations[output_active_neuron_id]){
@@ -119,8 +120,10 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
   }
   float elementLossMetric(float label, float activation,
                             uint32_t batch_size) const override {
-      assert(label > 0);
-      return ((-1) * activation * log (label))/ batch_size;
+      if(activation != 0){
+        return (label * log(activation)) / batch_size;
+      }
+      return 0;
   }
 };
 
