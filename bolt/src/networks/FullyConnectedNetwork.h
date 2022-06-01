@@ -7,7 +7,6 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SequentialLayer.h>
 #include <dataset/src/Dataset.h>
-#include <sys/_types/_u_int32_t.h>
 #include <cmath>
 #include <iostream>
 #include <limits>
