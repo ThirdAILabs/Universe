@@ -63,10 +63,10 @@ MetricData Model<BATCH_T>::train(
 
         loss_fn.lossGradients(outputs[vec_id], batch_labels[vec_id],
                               batch_inputs.getBatchSize());
-        float local_loss_function_metric = loss_fn.computeLossMetric(outputs[vec_id], batch_labels[vec_id],
-                              batch_inputs.getBatchSize());
+        // float local_loss_function_metric = loss_fn.computeLossMetric(outputs[vec_id], batch_labels[vec_id],
+        //                       batch_inputs.getBatchSize());
         
-        MetricUtilities::incrementAtomicFloat(loss_function_metric, local_loss_function_metric);
+        // MetricUtilities::incrementAtomicFloat(loss_function_metric, local_loss_function_metric);
         
         backpropagate(vec_id, batch_inputs, outputs[vec_id]);
 
