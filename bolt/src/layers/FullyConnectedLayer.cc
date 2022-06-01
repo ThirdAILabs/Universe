@@ -514,114 +514,112 @@ void FullyConnectedLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
-float* FullyConnectedLayer::getWeightGradients(){
-  float* weight_gradient_copy=new float[_dim * _prev_dim];
-  assert(_dim*_prev_dim==_w_gradient.size());
-  std::copy(_w_gradient.begin(),_w_gradient.end(),weight_gradient_copy);
+float* FullyConnectedLayer::getWeightGradients() {
+  float* weight_gradient_copy = new float[_dim * _prev_dim];
+  assert(_dim * _prev_dim == _w_gradient.size());
+  std::copy(_w_gradient.begin(), _w_gradient.end(), weight_gradient_copy);
   return weight_gradient_copy;
 }
-float* FullyConnectedLayer::getBiasGradients(){
-  float* bias_gradient_copy=new float[_dim];
-  assert(_dim==_b_gradient.size());
-  std::copy(_b_gradient.begin(),_b_gradient.end(),bias_gradient_copy);
+float* FullyConnectedLayer::getBiasGradients() {
+  float* bias_gradient_copy = new float[_dim];
+  assert(_dim == _b_gradient.size());
+  std::copy(_b_gradient.begin(), _b_gradient.end(), bias_gradient_copy);
   return bias_gradient_copy;
 }
-float* FullyConnectedLayer::getWeightMomentum(){
-  float* weight_momentum_copy=new float[_dim * _prev_dim];
-  assert(_dim*_prev_dim==_w_momentum.size());
-  std::copy(_w_momentum.begin(),_w_momentum.end(),weight_momentum_copy);
+float* FullyConnectedLayer::getWeightMomentum() {
+  float* weight_momentum_copy = new float[_dim * _prev_dim];
+  assert(_dim * _prev_dim == _w_momentum.size());
+  std::copy(_w_momentum.begin(), _w_momentum.end(), weight_momentum_copy);
   return weight_momentum_copy;
 }
-float* FullyConnectedLayer::getBiasMomentum(){
-  float* bias_momentum_copy=new float[_dim];
-  assert(_dim==_b_momentum.size());
-  std::copy(_b_momentum.begin(),_b_momentum.end(),bias_momentum_copy);
+float* FullyConnectedLayer::getBiasMomentum() {
+  float* bias_momentum_copy = new float[_dim];
+  assert(_dim == _b_momentum.size());
+  std::copy(_b_momentum.begin(), _b_momentum.end(), bias_momentum_copy);
   return bias_momentum_copy;
 }
-float* FullyConnectedLayer::getWeightVelocity(){
-  float* weight_velocity_copy=new float[_dim * _prev_dim];
-  assert(_dim*_prev_dim==_w_velocity.size());
-  std::copy(_w_velocity.begin(),_w_velocity.end(),weight_velocity_copy);
+float* FullyConnectedLayer::getWeightVelocity() {
+  float* weight_velocity_copy = new float[_dim * _prev_dim];
+  assert(_dim * _prev_dim == _w_velocity.size());
+  std::copy(_w_velocity.begin(), _w_velocity.end(), weight_velocity_copy);
   return weight_velocity_copy;
 }
-float* FullyConnectedLayer::getBiasVelocity(){
-  float* bias_velocity_copy=new float[_dim];
-  assert(_dim==_b_velocity.size());
-  std::copy(_b_velocity.begin(),_b_velocity.end(),bias_velocity_copy);
+float* FullyConnectedLayer::getBiasVelocity() {
+  float* bias_velocity_copy = new float[_dim];
+  assert(_dim == _b_velocity.size());
+  std::copy(_b_velocity.begin(), _b_velocity.end(), bias_velocity_copy);
   return bias_velocity_copy;
 }
-  
-void FullyConnectedLayer::setWeightGradients(const float* new_weight_gradients){
-  if(new_weight_gradients==nullptr){
+
+void FullyConnectedLayer::setWeightGradients(
+    const float* new_weight_gradients) {
+  if (new_weight_gradients == nullptr) {
     _w_gradient.clear();
     return;
   }
-  if(_w_gradient.empty()){
-    _w_gradient.assign(_dim*_prev_dim,0);
-    return;
+  if (_w_gradient.empty()) {
+    _w_gradient.assign(_dim * _prev_dim, 0);
   }
-  assert(_w_gradient.size()==_dim*_prev_dim);
-  std::copy(new_weight_gradients, new_weight_gradients+_dim * _prev_dim,_w_gradient.begin());
+  assert(_w_gradient.size() == _dim * _prev_dim);
+  std::copy(new_weight_gradients, new_weight_gradients + _dim * _prev_dim,
+            _w_gradient.begin());
 }
-void FullyConnectedLayer::setBiasGradients(const float* new_bias_gradients){
-  if(new_bias_gradients==nullptr){
+void FullyConnectedLayer::setBiasGradients(const float* new_bias_gradients) {
+  if (new_bias_gradients == nullptr) {
     _b_gradient.clear();
     return;
   }
-  if(_b_gradient.empty()){
-    _b_gradient.assign(_dim,0);
-    return;
+  if (_b_gradient.empty()) {
+    _b_gradient.assign(_dim, 0);
   }
-  assert(_b_gradient.size()==_dim);
-  std::copy(new_bias_gradients,new_bias_gradients+_dim,_b_gradient.begin());
+  assert(_b_gradient.size() == _dim);
+  std::copy(new_bias_gradients, new_bias_gradients + _dim, _b_gradient.begin());
 }
-void FullyConnectedLayer::setWeightMomentum(const float* new_weight_momentum){
-  if(new_weight_momentum==nullptr){
+void FullyConnectedLayer::setWeightMomentum(const float* new_weight_momentum) {
+  if (new_weight_momentum == nullptr) {
     _w_momentum.clear();
     return;
   }
-  if(_w_momentum.empty()){
-    _w_momentum.assign(_dim*_prev_dim,0);
-    return;
+  if (_w_momentum.empty()) {
+    _w_momentum.assign(_dim * _prev_dim, 0);
   }
-  assert(_w_momentum.size()==_dim*_prev_dim);
-  std::copy(new_weight_momentum, new_weight_momentum+_dim * _prev_dim,_w_momentum.begin());
+  assert(_w_momentum.size() == _dim * _prev_dim);
+  std::copy(new_weight_momentum, new_weight_momentum + _dim * _prev_dim,
+            _w_momentum.begin());
 }
-void FullyConnectedLayer::setBiasMomentum(const float* new_bias_momentum){
-  if(new_bias_momentum==nullptr){
+void FullyConnectedLayer::setBiasMomentum(const float* new_bias_momentum) {
+  if (new_bias_momentum == nullptr) {
     _b_momentum.clear();
     return;
   }
-  if(_b_momentum.empty()){
-    _b_momentum.assign(_dim,0);
-    return;
+  if (_b_momentum.empty()) {
+    _b_momentum.assign(_dim, 0);
   }
-  assert(_b_momentum.size()==_dim);
-  std::copy(new_bias_momentum,new_bias_momentum+_dim,_b_momentum.begin());
+  assert(_b_momentum.size() == _dim);
+  std::copy(new_bias_momentum, new_bias_momentum + _dim, _b_momentum.begin());
 }
-void FullyConnectedLayer::setWeightVelocity(const float* new_weight_velocity){
-  if(new_weight_velocity==nullptr){
+void FullyConnectedLayer::setWeightVelocity(const float* new_weight_velocity) {
+  if (new_weight_velocity == nullptr) {
     _w_velocity.clear();
     return;
   }
-  if(_w_velocity.empty()){
-    _w_velocity.assign(_dim*_prev_dim,0);
-    return;
+  if (_w_velocity.empty()) {
+    _w_velocity.assign(_dim * _prev_dim, 0);
   }
-  assert(_w_velocity.size()==_dim*_prev_dim);
-  std::copy(new_weight_velocity,new_weight_velocity+ _dim*_prev_dim, _w_velocity.begin());
-} 
-void FullyConnectedLayer::setBiasVelocity(const float* new_bias_velocity){
-  if(new_bias_velocity==nullptr){
+  assert(_w_velocity.size() == _dim * _prev_dim);
+  std::copy(new_weight_velocity, new_weight_velocity + _dim * _prev_dim,
+            _w_velocity.begin());
+}
+void FullyConnectedLayer::setBiasVelocity(const float* new_bias_velocity) {
+  if (new_bias_velocity == nullptr) {
     _b_velocity.clear();
     return;
   }
-  if(_b_velocity.empty()){
-    _b_velocity.assign(_dim,0);
-    return;
+  if (_b_velocity.empty()) {
+    _b_velocity.assign(_dim, 0);
   }
-  assert(_b_velocity.size()==_dim);
-  std::copy(new_bias_velocity,new_bias_velocity+_dim,_b_velocity.begin());
+  assert(_b_velocity.size() == _dim);
+  std::copy(new_bias_velocity, new_bias_velocity + _dim, _b_velocity.begin());
 }
 
 }  // namespace thirdai::bolt

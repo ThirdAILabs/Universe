@@ -345,15 +345,16 @@ void createBoltSubmodule(py::module_& module) {
            "epoch.")
       .def("save", &PyNetwork::save, py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
-           "folders to be created")
+           "folders to be created. Saves only essential paramters, not the optimizer state")
       .def_static("load", &PyNetwork::load, py::arg("filename"),
                   "Loads and builds a saved network from file.")
 
       .def("checkpoint", &PyNetwork::checkpoint, py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
-           "folders to be created")
+           "folders to be created. Saves all the paramters including optimizer")
+
       .def_static("resume", &PyNetwork::resume, py::arg("filename"),
-                  "Loads and builds a saved network from file.")
+                  "Resumes the checkpointed network from a file.")
 
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "

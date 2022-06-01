@@ -155,7 +155,6 @@ class PyNetwork final : public FullyConnectedNetwork {
     auto train_data = convertPyObjectToBoltDataset(data, batch_size, false);
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
-
     return FullyConnectedNetwork::train(
         train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
         epochs, rehash, rebuild, metric_names, verbose);
@@ -204,19 +203,35 @@ class PyNetwork final : public FullyConnectedNetwork {
   void save(const std::string& filename) {
     std::ofstream filestream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
-    for(uint32_t i=0;i<this->_num_layers;i++){
-      this->_layers[i]->setShallowSave(true);
+
+    //if model is shallow, we can normally save
+    //if not shallow, first make model shallow, then set the parameter back to not_shallow
+    if(!this->isShallow()){
+      this->setShallow(true);
+      oarchive(*this);
+      this->setShallow(false);
     }
-    oarchive(*this);
+    else{
+      this->setShallow(true);
+      oarchive(*this);
+    }
   }
 
   void checkpoint(const std::string& filename) {
     std::ofstream filestream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
-    for(uint32_t i=0;i<this->_num_layers;i++){
-      this->_layers[i]->setShallowSave(false);
+
+    //if the model is not shallow, save it normally
+    //else set to non shallow, then set back to shallow after saving
+    if(this->isShallow()){
+      this->setShallow(false);
+      oarchive(*this);
+      this->setShallow(true);
     }
-    oarchive(*this);
+    else{
+      this->setShallow(false);
+      oarchive(*this);
+    }
   }
 
   static std::unique_ptr<PyNetwork> load(const std::string& filename) {
@@ -224,6 +239,10 @@ class PyNetwork final : public FullyConnectedNetwork {
     cereal::BinaryInputArchive iarchive(filestream);
     std::unique_ptr<PyNetwork> deserialize_into(new PyNetwork());
     iarchive(*deserialize_into);
+    bool is_shallow = deserialize_into->isShallow();
+    if(!is_shallow){
+      std::cout<<"Warning: Loading model from checkpoint; optimizer initialized "<<std::endl;
+    }
     return deserialize_into;
   }
 
@@ -232,6 +251,11 @@ class PyNetwork final : public FullyConnectedNetwork {
     cereal::BinaryInputArchive iarchive(filestream);
     std::unique_ptr<PyNetwork> deserialize_into(new PyNetwork());
     iarchive(*deserialize_into);
+    bool is_shallow = deserialize_into->isShallow();
+    if (is_shallow) {
+      std::cout << "Warning: Load from a checkpoint file to resume;";
+      std::cout << " Optimizer state set to default (0)" << std::endl;
+    }
     return deserialize_into;
   }
 

@@ -36,6 +36,12 @@ MetricData Model<BATCH_T>::train(
 
   MetricAggregator metrics(metric_names, verbose);
 
+  // if network is loaded without optimizer state, initialize_optimizer
+  bool is_shallow = isShallow();
+  if (is_shallow) {
+    initialize_optimizer();
+  }
+
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
     if (verbose) {
       std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;

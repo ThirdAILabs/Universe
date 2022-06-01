@@ -211,7 +211,11 @@ def test_sparse_inference_with_sparse_output():
 
     assert sparse_predict["categorical_accuracy"] == acc_computed
 
-
+# saves and checkpoints the network
+# loads the saved network, loads checkpointed, resumes checkpointed, resumes saved
+# all the 4 combinations should give the same accuracy and should be trainable
+# also checks that the saved model has lesser size than checkpointed model
+# checks a few save loads checkpoint orders
 def test_load_save_fc_network():
     network = build_sparse_hidden_layer_network(1000, 0.2)
 
@@ -224,41 +228,90 @@ def test_load_save_fc_network():
     )
 
     save_loc = "./bolt_model_save"
-    checkpoint_loc="./bolt_model_checkpoint"
+    checkpoint_loc = "./bolt_model_checkpoint"
     if os.path.exists(save_loc):
         os.remove(save_loc)
     if os.path.exists(checkpoint_loc):
         os.remove(checkpoint_loc)
+
     # Save network and load as a new network
     network.save(save_loc)
     network.checkpoint(checkpoint_loc)
 
-    new_network = bolt.Network.load(save_loc)
-    new_resume=bolt.Network.resume(checkpoint_loc)
+    # loading 4 diff combinations (save,checkpoint)*(load,resume)
+    load_network = bolt.Network.load(save_loc)
+    resume_network = bolt.Network.resume(checkpoint_loc)
 
-    new_acc, _ = new_network.predict(
+    wrong_load_network=bolt.Network.load(checkpoint_loc)
+    wrong_resume_network=bolt.Network.resume(save_loc)
+
+    wrong_load_loc="./wrong_load_checkpoint"
+    wrong_resume_loc="./wrong_resume_save"
+
+    if os.path.exists(wrong_load_loc):
+        os.remove(wrong_load_loc)
+    if os.path.exists(wrong_resume_loc):
+        os.remove(wrong_resume_loc)
+
+    
+    wrong_load_network.checkpoint(wrong_load_loc)
+    wrong_resume_network.checkpoint(wrong_resume_loc)
+    wrong_resume_network.checkpoint(wrong_resume_loc)
+    # print("File size for saved: ",os.path.getsize(save_loc)," bytes")
+    # print("File size for checkpoint: ",os.path.getsize(checkpoint_loc)," bytes")
+
+    # print("File size for saved: ",os.path.getsize(wrong_load_loc)," bytes")
+    # print("File size for checkpoint: ",os.path.getsize(wrong_resume_loc)," bytes")
+    
+    assert os.path.getsize(save_loc)< os.path.getsize(checkpoint_loc)
+
+    load_acc, _ = load_network.predict(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
-    new_acc_resume,_=new_resume.predict(
+    resume_acc, _ = resume_network.predict(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
+    wrong_load_acc, _ = wrong_load_network.predict(
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
+    )
+    wrong_resume_acc, _ = wrong_resume_network.predict(
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
+    )
+    assert load_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
+    assert (
+        resume_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
+    )
+    assert wrong_resume_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
+    assert wrong_load_acc["categorical_accuracy"]==original_acc["categorical_accuracy"]
 
-    assert new_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
-    assert new_acc_resume["categorical_accuracy"] == original_acc["categorical_accuracy"]
-    print(new_acc_resume["categorical_accuracy"] , original_acc["categorical_accuracy"])
+    print(original_acc["categorical_accuracy"])
+    
     # Continue to train loaded network
-    train_network(new_resume,train_x,train_y,epochs=2)
-    print("resumed network trains")
-    train_network(new_network, train_x, train_y, epochs=2)
-    print("saved model also trains")
 
-    another_acc, _ = new_network.predict(
+    train_network(load_network, train_x, train_y, epochs=5)
+    print("saved model trains")
+
+    train_network(resume_network, train_x, train_y, epochs=2)
+    print("resumed network also trains")
+    
+    train_network(wrong_resume_network,train_x,train_y,epochs=2)
+    print("wrongly loaded network also trains")
+
+    train_network(wrong_resume_network,train_x,train_y,epochs=2)
+    print("wrongly resumed network also trains")
+
+    another_acc, _ = load_network.predict(
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
+    )
+    another_acc_resume, _ = resume_network.predict(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert another_acc["categorical_accuracy"] >= new_acc["categorical_accuracy"]
+    assert another_acc["categorical_accuracy"] >= load_acc["categorical_accuracy"]
+    assert another_acc_resume["categorical_accuracy"] >= resume_acc["categorical_accuracy"]
 
-    # os.remove(save_loc)
+    os.remove(save_loc)
+    os.remove(checkpoint_loc)
 
 
 def test_get_set_weights():

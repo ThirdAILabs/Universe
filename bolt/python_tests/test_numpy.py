@@ -156,3 +156,6 @@ def test_read_noise():
 
 
 test_easy_sparse_layer()
+test_read_noise()
+test_mock_sparse_data()
+test_read_easy_mock_data()

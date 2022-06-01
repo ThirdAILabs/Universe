@@ -65,17 +65,24 @@ class ConvLayer final : public SequentialLayer {
 
   void setBiases(const float* new_biases) final;
 
-  void setShallowSave(bool set) final{
-    (void) set;
-    std::cout<<"Warning: setShallowSave not implemented for ConvLayer"<<std::endl;
+  void setShallow(bool set) final {
+    (void)set;
+    std::cout << "Warning: setShallow not implemented for ConvLayer"
+              << std::endl;
   }
+  bool isShallow() final {
+    std::cout << "Warning: isShallow not implemented for ConvLayer; Return false"
+              << std::endl;
+    return false;
+  }
+
   float* getWeightGradients() final;
   float* getBiasGradients() final;
   float* getWeightMomentum() final;
   float* getBiasMomentum() final;
   float* getWeightVelocity() final;
   float* getBiasVelocity() final;
-  
+
   void setWeightGradients(const float* new_weight_gradients) final;
   void setBiasGradients(const float* new_bias_gradients) final;
   void setWeightMomentum(const float* new_weight_momentum) final;

@@ -86,7 +86,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   float* getBiasMomentum() final;
   float* getWeightVelocity() final;
   float* getBiasVelocity() final;
-  
+
   void setWeightGradients(const float* new_weight_gradients) final;
   void setBiasGradients(const float* new_bias_gradients) final;
   void setWeightMomentum(const float* new_weight_momentum) final;
@@ -94,9 +94,8 @@ class FullyConnectedLayer final : public SequentialLayer {
   void setWeightVelocity(const float* new_weight_velocity) final;
   void setBiasVelocity(const float* new_bias_velocity) final;
 
-  void isShallowSave(bool set)final{
-    _is_shallow=set;
-  }
+  bool isShallow() final { return _is_shallow; }
+  void setShallow(bool set) final { _is_shallow = set; }
   ~FullyConnectedLayer() = default;
 
  private:
@@ -184,30 +183,33 @@ class FullyConnectedLayer final : public SequentialLayer {
   //           _force_sparse_for_inference);
   // }
   template <class Archive>
-  void save(Archive& archive) const{
-    archive(_shallow_save);
-    if(_shallow_save){
-      
-      archive(_dim,_prev_dim,_sparse_dim,_sparsity,_act_func,_weights,_biases,_sampling_config,_prev_is_active,_is_active,
-      _hasher,_hash_table,_rand_neurons,_force_sparse_for_inference);
-    }
-    else{
-      archive(_dim,_prev_dim,_sparse_dim,_sparsity,_act_func,_weights,_biases,_sampling_config,_prev_is_active,_is_active,
-      _hasher,_hash_table,_rand_neurons,_force_sparse_for_inference,_w_gradient,_w_momentum,_w_velocity,_b_gradient,_b_momentum,
-      _b_velocity);
+  void save(Archive& archive) const {
+    archive(_is_shallow);
+    if (_is_shallow) {
+      archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+              _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
+              _hash_table, _rand_neurons, _force_sparse_for_inference);
+    } else {
+      archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+              _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
+              _hash_table, _rand_neurons, _force_sparse_for_inference,
+              _w_gradient, _w_momentum, _w_velocity, _b_gradient, _b_momentum,
+              _b_velocity);
     }
   }
-  template<class Archive>
-  void load(Archive& archive){
-    archive(_shallow_save);
-    if(_shallow_save){
-      archive(_dim,_prev_dim,_sparse_dim,_sparsity,_act_func,_weights,_biases,_sampling_config,_prev_is_active,_is_active,
-      _hasher,_hash_table,_rand_neurons,_force_sparse_for_inference);
-    }
-    else{
-      archive(_dim,_prev_dim,_sparse_dim,_sparsity,_act_func,_weights,_biases,_sampling_config,_prev_is_active,_is_active,
-      _hasher,_hash_table,_rand_neurons,_force_sparse_for_inference,_w_gradient,_w_momentum,_w_velocity,_b_gradient,_b_momentum,
-      _b_velocity);
+  template <class Archive>
+  void load(Archive& archive) {
+    archive(_is_shallow);
+    if (_is_shallow) {
+      archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+              _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
+              _hash_table, _rand_neurons, _force_sparse_for_inference);
+    } else {
+      archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+              _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
+              _hash_table, _rand_neurons, _force_sparse_for_inference,
+              _w_gradient, _w_momentum, _w_velocity, _b_gradient, _b_momentum,
+              _b_velocity);
     }
   }
 };

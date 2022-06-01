@@ -7,6 +7,7 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SequentialLayer.h>
 #include <dataset/src/Dataset.h>
+#include <sys/_types/_u_int32_t.h>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -79,7 +80,43 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   uint32_t getInferenceOutputDim() const final {
     return _layers.back()->getInferenceOutputDim();
   }
+  bool isShallow() final {
+    // if any layer is shallow, return true
+    bool shallow = false;
+    for (uint32_t i = 0; i < _num_layers; i++) {
+      shallow = shallow || _layers[i]->isShallow();
+    }
+    _is_shallow = shallow;
+    return shallow;
+  }
+  void setShallow(bool set) final {
+    for (uint32_t i = 0; i < _num_layers; i++) {
+      _layers[i]->setShallow(set);
+    }
+    _is_shallow = set;
+  }
+  void initialize_optimizer() final {
+    for (uint32_t i = 0; i < _num_layers; i++) {
+      int dim = _layers[i]->getDim();
+      int prev_dim = _layers[i]->getInputDim();
 
+      float* w_set = new float[dim * prev_dim];
+      float* b_set = new float[dim];
+
+      std::fill_n(w_set, dim * prev_dim, 0);
+      std::fill_n(b_set, dim, 0);
+
+      _layers[i]->setBiasGradients(b_set);
+      _layers[i]->setBiasMomentum(b_set);
+      _layers[i]->setBiasVelocity(b_set);
+      _layers[i]->setWeightGradients(w_set);
+      _layers[i]->setWeightMomentum(w_set);
+      _layers[i]->setWeightVelocity(w_set);
+
+      delete[] w_set;
+      delete[] b_set;
+    }
+  }
   uint32_t getInputDim() const { return _layers.front()->getInputDim(); }
 
   void enableSparseInference() {
@@ -105,12 +142,14 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   std::vector<BoltBatch> _states;
   uint32_t _num_layers;
   bool _sparse_inference_enabled;
+  bool _is_shallow;
 
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
+    archive(_is_shallow);
     archive(cereal::base_class<Model<bolt::BoltBatch>>(this), _input_dim,
             _layers, _num_layers, _sparse_inference_enabled);
   }

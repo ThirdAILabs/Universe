@@ -122,6 +122,15 @@ class Model {
 
   virtual ~Model() = default;
 
+  // setShallow should set the layers to shallow so that
+  // the optimizer state is not saved
+  virtual void setShallow(bool set) = 0;
+
+  // isShallow returns whether model is loaded from a shallow state
+  // initialize gradients during training, not inference
+  virtual bool isShallow() = 0;
+  virtual void initialize_optimizer() = 0;
+
  protected:
   uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,
                           uint32_t data_len);
