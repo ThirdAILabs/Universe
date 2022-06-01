@@ -1,6 +1,6 @@
-from typing import Iterator, List, Tuple
+from typing import List
 from thirdai._thirdai.dataset_internal import Block
-
+from typing_extensions import Self
 
 class Schema:
     """Identifies the raw features to be processed in each sample and how to
@@ -40,7 +40,9 @@ class Schema:
       The target vector encodes sales volume in 1 dimension.
     """
 
-    def __init__(self, input_blocks: List[Block] = [], target_blocks: List[Block] = []):
+    def __init__(
+        self, input_blocks: List[Block] = [], target_blocks: List[Block] = []
+    ) -> None:
         """Constructor.
 
         Arguments:
@@ -64,7 +66,7 @@ class Schema:
         for block in target_blocks:
             self.add_target_block(block)
 
-    def add_input_block(self, block: Block) -> None:
+    def add_input_block(self, block: Block) -> Self:
         """Adds a feature to the processed input vectors.
         This method facilitates a builder pattern invocation.
         """
@@ -72,7 +74,7 @@ class Schema:
         self._input_dim += block.feature_dim()
         return self  # Return self so we can chain method calls
 
-    def add_target_block(self, block: Block) -> None:
+    def add_target_block(self, block: Block) -> Self:
         """Adds a feature to the processed target vectors.
         This method facilitates a builder pattern invocation.
         """

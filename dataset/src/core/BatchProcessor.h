@@ -16,8 +16,8 @@ namespace thirdai::dataset {
  */
 class BatchProcessor {
  public:
-  BatchProcessor(std::vector<std::shared_ptr<Block>>& input_blocks,
-                 std::vector<std::shared_ptr<Block>>& target_blocks,
+  BatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
+                 std::vector<std::shared_ptr<Block>> target_blocks,
                  uint32_t output_batch_size);
 
   /**
@@ -55,8 +55,9 @@ class BatchProcessor {
   bool _input_blocks_dense;
   bool _target_blocks_dense;
   std::vector<bolt::BoltVector> _input_vectors;
-  std::vector<bolt::BoltVector> _target_vectors;
+  std::optional<std::vector<bolt::BoltVector>> _target_vectors;
   /**
+   * We save a copy of these vectors instead of just references
    * because using references will cause errors when given Python
    * lists through PyBind11. This is because while the PyBind11 creates
    * an std::vector representation of a Python list when passing it to
