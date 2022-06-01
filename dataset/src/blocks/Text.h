@@ -20,8 +20,8 @@ class TextBlock : public Block {
    *     the text to be encoded.
    *   encoding: TextEncoding - the text encoding model.
    */
-  TextBlock(uint32_t col, std::shared_ptr<TextEncoding>& encoding)
-      : _col(col), _encoding(encoding) {}
+  TextBlock(uint32_t col, std::shared_ptr<TextEncoding> encoding)
+      : _col(col), _encoding(std::move(encoding)) {}
 
   /**
    * Constructor with default encoder.

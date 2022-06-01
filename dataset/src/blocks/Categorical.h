@@ -25,8 +25,8 @@ class CategoricalBlock : public Block {
    *     the categorical feature to be encoded.
    *   encoding: CategoricalEncoding - the categorical feature encoding model.
    */
-  CategoricalBlock(uint32_t col, std::shared_ptr<CategoricalEncoding>& encoding)
-      : _col(col), _encoding(encoding) {}
+  CategoricalBlock(uint32_t col, std::shared_ptr<CategoricalEncoding> encoding)
+      : _col(col), _encoding(std::move(encoding)) {}
 
   /**
    * Constructor with default encoder.

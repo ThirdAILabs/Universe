@@ -4,6 +4,7 @@
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <sys/types.h>
 #include <cstdlib>
+#include <random>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
@@ -56,15 +57,15 @@ class SegmentedFeatureVectorTest : public testing::Test {
     std::vector<VectorSegment> segments(n_segments);
 
     for (auto& seg : segments) {
-      uint32_t dim = random() % 100000;
-      uint32_t n_nonzeros = random() % 100;
+      uint32_t dim = std::rand() % 100000;
+      uint32_t n_nonzeros = std::rand() % 100;
 
       seg.dim = dim;
       seg.dense = false;
       for (uint32_t nonzero = 0; nonzero < n_nonzeros; nonzero++) {
-        seg.indices.push_back(random() % dim);
+        seg.indices.push_back(std::rand() % dim);
         // Value is a number between 0.0 and 10.0
-        seg.values.push_back(static_cast<float>(random() % 100) / 10.0);
+        seg.values.push_back(static_cast<float>(std::rand() % 100) / 10.0);
       }
     }
 
@@ -79,13 +80,13 @@ class SegmentedFeatureVectorTest : public testing::Test {
     std::vector<VectorSegment> segments(n_segments);
 
     for (auto& seg : segments) {
-      uint32_t dim = random() % 100;
+      uint32_t dim = std::rand() % 100;
 
       seg.dim = dim;
       seg.dense = true;
       for (uint32_t elem = 0; elem < dim; elem++) {
         // Value is a number between 0.0 and 10.0
-        seg.values.push_back(static_cast<float>(random() % 100) / 10.0);
+        seg.values.push_back(static_cast<float>(std::rand() % 100) / 10.0);
       }
     }
 

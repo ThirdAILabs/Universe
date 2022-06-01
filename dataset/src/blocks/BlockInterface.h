@@ -13,6 +13,7 @@ namespace thirdai::dataset {
 class Block;
 class SegmentedFeatureVectorTest;
 class CategoricalBlockTest;
+class TextBlockTest;
 
 /**
  * Segmented feature vector abstract class.
@@ -31,6 +32,7 @@ class SegmentedFeatureVector {
  public:
   friend Block;
   friend CategoricalBlockTest;
+  friend TextBlockTest;
   friend SegmentedFeatureVectorTest;
 
  protected:
@@ -113,6 +115,9 @@ class Block {
   /**
    * Derived class-specific implementation of how input rows get
    * encoded (and what ends up in the vector segment).
+   *
+   * WARNING: This function may be called in many threads simultaneously,
+   * so it should be thread-safe or robust to data races.
    */
   virtual void buildSegment(const std::vector<std::string>& input_row,
                               SegmentedFeatureVector& vec) = 0;
