@@ -84,7 +84,7 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
-      py::arg("batch_size"),
+      py::arg("batch_size"), py::arg("labels_sum_to_one") = true,
       "Loads a BoltDataset from an SVM file. Each line in the "
       "input file represents a sparse input vector and should follow this "
       "format:\n"
@@ -98,7 +98,11 @@ void createDatasetSubmodule(py::module_& module) {
       "of these index-value pairs.\n\n"
       "Arguments:\n"
       " * filename: String - Path to input file.\n"
-      " * batch_size: Int (positive) - Size of each batch in the dataset.\n\n"
+      " * batch_size: Int (positive) - Size of each batch in the dataset.\n"
+      " * labels_sum_to_one: Bool (default is true) - When this flag is true "
+      "the loader will ensure that the sum of the values of the labels is 1.0 "
+      "for multiclass labels. This is required if the network is using softmax "
+      "with the CategoricalCrossEntropy loss function.\n\n"
       "Returns a tuple containing a BoltDataset to store the data itself, and "
       "a BoltDataset storing the labels.");
 
@@ -164,8 +168,9 @@ InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
 }
 
 py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
-                                    uint32_t batch_size) {
-  auto res = loadBoltSvmDataset(filename, batch_size);
+                                    uint32_t batch_size,
+                                    bool labels_sum_to_one) {
+  auto res = loadBoltSvmDataset(filename, batch_size, labels_sum_to_one);
   return py::make_tuple(std::move(res.data), std::move(res.labels));
 }
 
