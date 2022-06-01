@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <memory>
+#include <numeric>
 #include <random>
 #include <string>
 #include <unordered_map>
