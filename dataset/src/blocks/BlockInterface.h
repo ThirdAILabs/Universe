@@ -102,6 +102,9 @@ class Block {
   /**
    * Derived class-specific implementation of how input rows get
    * encoded (and what ends up in the extension vector).
+   *
+   * WARNING: This function may be called in many threads simultaneously,
+   * so it should be thread-safe or robust to data races.
    */
   virtual void buildExtension(const std::vector<std::string>& input_row,
                               ExtendableVector& vec) = 0;
