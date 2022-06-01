@@ -7,6 +7,7 @@
 #include <bolt/src/metrics/Metric.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/bolt_datasets/StreamingDataset.h>
 #include <algorithm>
 #include <limits>
 #include <memory>
@@ -48,6 +49,28 @@ class Model {
       bool verbose = true);
 
   /**
+   * This function takes in a streaming dataset and training parameters and
+   * trains the network on the streaming dataset. Note that it can be called
+   * multiple times to train a network. Returns a map that gives access to the
+   * training time and any metrics that were computed during training.
+   */
+  MetricData trainOnStream(
+      // Train dataset
+      std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& train_data,
+      // Loss function to use
+      const LossFunction& loss_fn,
+      // Learning rate for training
+      float learning_rate,
+      // After how many batches to rebuild hash tables
+      uint32_t rehash_batch = 20,
+      // After how many batches to recreate hash functions
+      uint32_t rebuild_batch = 100,
+      // Metrics to compute during training
+      const std::vector<std::string>& metric_names = {},
+      // Restrict printouts
+      bool verbose = true);
+
+  /**
    * This function takes in a test dataset and uses it to evaluate the model. It
    * returns the final accuracy. The batch_limit parameter limits the number of
    * test batches used, this is intended for intermediate accuracy checks during
@@ -73,6 +96,25 @@ class Model {
       bool verbose = true,
       // Limit the number of batches used in the dataset
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
+
+  /**
+   * This function takes in a streaming dataset and uses it to evaluate the
+   * model. Metrics can be passed in to be computed for the test set, and will
+   * be returned by the function. Additionally a callback can optionally be
+   * provided that will be called on the output of the model for each batch.
+   */
+  InferenceMetricData predictOnStream(
+      // Test dataset
+      const std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& test_data,
+      // Metrics to compute
+      const std::vector<std::string>& metric_names = {},
+      // We cannot reallistically store activations for a streaming dataset, so
+      // instead we provide the ability to have a callback which is called after
+      // every batch.
+      std::optional<std::function<void(const bolt::BoltBatch&, uint32_t)>>
+          batch_callback = std::nullopt,
+      // Restrict printouts
+      bool verbose = true);
 
   void processTrainingBatch(BATCH_T& batch_inputs, BoltBatch& outputs,
                             const BoltBatch& batch_labels,

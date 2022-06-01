@@ -44,10 +44,6 @@ MetricData Model<BATCH_T>::train(
     auto train_start = std::chrono::high_resolution_clock::now();
 
     for (uint32_t batch = 0; batch < num_train_batches; batch++) {
-      if (_batch_iter % 1000 == 999) {
-        shuffleRandomNeurons();
-      }
-
       BATCH_T& batch_inputs = train_data->at(batch);
 
       const BoltBatch& batch_labels = train_labels->at(batch);
@@ -76,6 +72,48 @@ MetricData Model<BATCH_T>::train(
 
   auto metric_data = metrics.getOutput();
   metric_data["epoch_times"] = std::move(time_per_epoch);
+
+  return metric_data;
+}
+
+template <typename BATCH_T>
+MetricData Model<BATCH_T>::trainOnStream(
+    std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& train_data,
+    const LossFunction& loss_fn, float learning_rate, uint32_t rehash_batch,
+    uint32_t rebuild_batch, const std::vector<std::string>& metric_names,
+    bool verbose) {
+  MetricAggregator metrics(metric_names, verbose);
+
+  uint32_t batch_size = train_data->getMaxBatchSize();
+  initializeNetworkState(batch_size, false);
+  BoltBatch outputs = getOutputs(batch_size, false);
+
+  if (verbose) {
+    std::cout << std::endl
+              << "Processing training streaming dataset..." << std::endl;
+  }
+
+  auto train_start = std::chrono::high_resolution_clock::now();
+
+  while (auto batch = train_data->nextBatch()) {
+    processTrainingBatch(batch->first, outputs, batch->second, loss_fn,
+                         learning_rate, rehash_batch, rebuild_batch, metrics);
+  }
+
+  auto train_end = std::chrono::high_resolution_clock::now();
+
+  int64_t train_time =
+      std::chrono::duration_cast<std::chrono::seconds>(train_end - train_start)
+          .count();
+
+  if (verbose) {
+    std::cout << "Processed streaming dataset in " << train_time << " seconds."
+              << std::endl;
+  }
+
+  metrics.logAndReset();
+  auto metric_data = metrics.getOutput();
+  metric_data["epoch_times"] = {static_cast<double>(train_time)};
 
   return metric_data;
 }
@@ -181,6 +219,53 @@ InferenceMetricData Model<BATCH_T>::predict(
   metric_vals["test_time"] = test_time;
 
   return metric_vals;
+}
+
+template <typename BATCH_T>
+InferenceMetricData Model<BATCH_T>::predictOnStream(
+    const std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& test_data,
+    const std::vector<std::string>& metric_names,
+    std::optional<std::function<void(const bolt::BoltBatch&, uint32_t)>>
+        batch_callback,
+    bool verbose) {
+  MetricAggregator metrics(metric_names, verbose);
+
+  uint32_t batch_size = test_data->getMaxBatchSize();
+  initializeNetworkState(batch_size, false);
+  BoltBatch outputs = getOutputs(batch_size, false);
+
+  if (verbose) {
+    std::cout << std::endl
+              << "Processing test streaming dataset..." << std::endl;
+  }
+
+  auto test_start = std::chrono::high_resolution_clock::now();
+
+  while (auto batch = test_data->nextBatch()) {
+    processTestBatch(batch->first, outputs, &batch->second, nullptr, nullptr,
+                     metrics, /* compute_metrics= */ true);
+
+    if (batch_callback) {
+      (*batch_callback)(outputs, batch->first.getBatchSize());
+    }
+  }
+
+  auto test_end = std::chrono::high_resolution_clock::now();
+
+  int64_t test_time =
+      std::chrono::duration_cast<std::chrono::seconds>(test_end - test_start)
+          .count();
+
+  if (verbose) {
+    std::cout << "Processed streaming dataset in " << test_time << " seconds."
+              << std::endl;
+  }
+
+  metrics.logAndReset();
+  auto metric_data = metrics.getOutputFromInference();
+  metric_data["epoch_times"] = static_cast<double>(test_time);
+
+  return metric_data;
 }
 
 template <typename BATCH_T>

@@ -153,6 +153,3 @@ def test_read_noise():
 
     acc = train_simple_bolt_model(examples, labels)
     assert acc < 0.2
-
-
-test_easy_sparse_layer()

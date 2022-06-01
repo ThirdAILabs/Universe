@@ -60,14 +60,15 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
   std::shared_ptr<dataset::DataLoader> data_loader =
       std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
 
-  dataset::StreamingDataset<BoltBatch> dataset(data_loader, _batch_processor);
+  auto dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
+      data_loader, _batch_processor);
 
   CategoricalCrossEntropyLoss loss;
 
   if (epochs == 1) {
-    trainOnStreamingDataset(dataset, loss, learning_rate);
+    _model->trainOnStream(dataset, loss, learning_rate);
   } else {
-    auto in_memory_dataset = dataset.loadInMemory();
+    auto in_memory_dataset = dataset->loadInMemory();
 
     _model->train(in_memory_dataset.data, in_memory_dataset.labels, loss,
                   learning_rate, 1);
@@ -77,51 +78,25 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
   }
 }
 
-void TextClassifier::trainOnStreamingDataset(
-    dataset::StreamingDataset<BoltBatch>& dataset, const LossFunction& loss,
-    float learning_rate) {
-  _model->initializeNetworkState(dataset.getMaxBatchSize(), false);
-
-  BoltBatch outputs = _model->getOutputs(dataset.getMaxBatchSize(), false);
-
-  MetricAggregator metrics({});
-
-  uint32_t rehash_batch = 0, rebuild_batch = 0;
-  while (auto batch = dataset.nextBatch()) {
-    _model->processTrainingBatch(batch->first, outputs, batch->second, loss,
-                                 learning_rate, rehash_batch, rebuild_batch,
-                                 metrics);
-  }
-}
-
 void TextClassifier::predict(
     const std::string& filename,
     const std::optional<std::string>& output_filename) {
   std::shared_ptr<dataset::DataLoader> data_loader =
       std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
 
-  dataset::StreamingDataset<BoltBatch> dataset(data_loader, _batch_processor);
+  auto dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
+      data_loader, _batch_processor);
 
   std::optional<std::ofstream> output_file;
   if (output_filename) {
     output_file = std::ofstream(*output_filename);
   }
 
-  MetricAggregator metrics({"categorical_accuracy"});
-
-  _model->initializeNetworkState(dataset.getMaxBatchSize(),
-                                 /* force_dense= */ false);
-  BoltBatch outputs =
-      _model->getOutputs(dataset.getMaxBatchSize(), /* force_dense= */ false);
-
-  while (auto batch = dataset.nextBatch()) {
-    _model->processTestBatch(batch->first, outputs, &batch->second,
-                             /* output_active_neurons= */ nullptr,
-                             /* output_activations = */ nullptr, metrics,
-                             /* compute_metrics= */ true);
-
-    for (uint32_t batch_id = 0; batch_id < batch->first.getBatchSize();
-         batch_id++) {
+  auto callback = [&](const BoltBatch& outputs, uint32_t batch_size) {
+    if (!output_file) {
+      return;
+    }
+    for (uint32_t batch_id = 0; batch_id < batch_size; batch_id++) {
       float max_act = 0.0;
       uint32_t pred = 0;
       for (uint32_t i = 0; i < outputs[batch_id].len; i++) {
@@ -134,13 +109,12 @@ void TextClassifier::predict(
           }
         }
       }
-      if (output_file) {
-        (*output_file) << _batch_processor->getClassName(pred) << std::endl;
-      }
-    }
-  }
 
-  metrics.logAndReset();
+      (*output_file) << _batch_processor->getClassName(pred) << std::endl;
+    }
+  };
+
+  _model->predictOnStream(dataset, {"categorical_accuracy"}, callback);
 
   if (output_file) {
     output_file->close();
@@ -187,20 +161,20 @@ uint64_t getMemoryBudget(const std::string& model_size) {
   // If unable to find system RAM assume max ram is 8Gb
   uint64_t system_ram = getSystemRam().value_or(8 * ONE_GB);
 
-  // For small models we use either 1Gb of 1/16th of the total RAM, whichever is
-  // smaller.
+  // For small models we use either 1Gb of 1/16th of the total RAM, whichever
+  // is smaller.
   if (std::regex_search(model_size, small_re)) {
     return std::min<uint64_t>(system_ram / 16, ONE_GB);
   }
 
-  // For medium models we use either 2Gb of 1/8th of the total RAM, whichever is
-  // smaller.
+  // For medium models we use either 2Gb of 1/8th of the total RAM, whichever
+  // is smaller.
   if (std::regex_search(model_size, medium_re)) {
     return std::min<uint64_t>(system_ram / 8, 2 * ONE_GB);
   }
 
-  // For large models we use either 4Gb of 1/4th of the total RAM, whichever is
-  // smaller.
+  // For large models we use either 4Gb of 1/4th of the total RAM, whichever
+  // is smaller.
   if (std::regex_search(model_size, large_re)) {
     return std::min<uint64_t>(system_ram / 4, 4 * ONE_GB);
   }
@@ -219,7 +193,8 @@ uint64_t getMemoryBudget(const std::string& model_size) {
   }
 
   throw std::invalid_argument(
-      "'model_size' parameter must be either 'small', 'medium', 'large', or a "
+      "'model_size' parameter must be either 'small', 'medium', 'large', or "
+      "a "
       "gigabyte size of the model, i.e. 5Gb");
 }
 
