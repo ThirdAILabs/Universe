@@ -348,6 +348,13 @@ void createBoltSubmodule(py::module_& module) {
            "folders to be created")
       .def_static("load", &PyNetwork::load, py::arg("filename"),
                   "Loads and builds a saved network from file.")
+
+      .def("checkpoint", &PyNetwork::checkpoint, py::arg("filename"),
+           "Saves the network to a file. The file path must not require any "
+           "folders to be created")
+      .def_static("resume", &PyNetwork::resume, py::arg("filename"),
+                  "Loads and builds a saved network from file.")
+
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "
            "matrix.")

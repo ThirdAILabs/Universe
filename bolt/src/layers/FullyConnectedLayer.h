@@ -80,11 +80,15 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void setBiases(const float* new_biases) final;
 
+  void setShallowSave(bool set)final{
+    _shallow_save=set;
+  }
   ~FullyConnectedLayer() = default;
 
  private:
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
+  bool _shallow_save;
   ActivationFunction _act_func;
 
   std::vector<float> _weights;
@@ -157,13 +161,40 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
+  // template <class Archive>
+  // void serialize(Archive& archive) {
+  //   archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+  //           _w_gradient, _w_momentum, _w_velocity, _biases, _b_gradient,
+  //           _b_momentum, _b_velocity, _sampling_config, _prev_is_active,
+  //           _is_active, _hasher, _hash_table, _rand_neurons,
+  //           _force_sparse_for_inference);
+  // }
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _w_gradient, _w_momentum, _w_velocity, _biases, _b_gradient,
-            _b_momentum, _b_velocity, _sampling_config, _prev_is_active,
-            _is_active, _hasher, _hash_table, _rand_neurons,
-            _force_sparse_for_inference);
+  void save(Archive& archive) const{
+    archive(_shallow_save);
+    if(_shallow_save){
+      
+      archive(_dim,_prev_dim,_sparse_dim,_sparsity,_act_func,_weights,_biases,_sampling_config,_prev_is_active,_is_active,
+      _hasher,_hash_table,_rand_neurons,_force_sparse_for_inference);
+    }
+    else{
+      archive(_dim,_prev_dim,_sparse_dim,_sparsity,_act_func,_weights,_biases,_sampling_config,_prev_is_active,_is_active,
+      _hasher,_hash_table,_rand_neurons,_force_sparse_for_inference,_w_gradient,_w_momentum,_w_velocity,_b_gradient,_b_momentum,
+      _b_velocity);
+    }
+  }
+  template<class Archive>
+  void load(Archive& archive){
+    archive(_shallow_save);
+    if(_shallow_save){
+      archive(_dim,_prev_dim,_sparse_dim,_sparsity,_act_func,_weights,_biases,_sampling_config,_prev_is_active,_is_active,
+      _hasher,_hash_table,_rand_neurons,_force_sparse_for_inference);
+    }
+    else{
+      archive(_dim,_prev_dim,_sparse_dim,_sparsity,_act_func,_weights,_biases,_sampling_config,_prev_is_active,_is_active,
+      _hasher,_hash_table,_rand_neurons,_force_sparse_for_inference,_w_gradient,_w_momentum,_w_velocity,_b_gradient,_b_momentum,
+      _b_velocity);
+    }
   }
 };
 

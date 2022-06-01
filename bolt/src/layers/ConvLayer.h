@@ -65,6 +65,10 @@ class ConvLayer final : public SequentialLayer {
 
   void setBiases(const float* new_biases) final;
 
+  void setShallowSave(bool set) final{
+    (void) set;
+    std::cout<<"Warning: setShallowSave not implemented for ConvLayer"<<std::endl;
+  }
  private:
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output);
@@ -88,6 +92,7 @@ class ConvLayer final : public SequentialLayer {
 
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
+  bool _shallow_save;
   ActivationFunction _act_func;
 
   std::vector<float> _weights;

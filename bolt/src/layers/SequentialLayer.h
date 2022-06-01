@@ -46,7 +46,7 @@ class SequentialLayer {
   virtual void setWeights(const float* new_weights) = 0;
 
   virtual void setBiases(const float* new_biases) = 0;
-
+  virtual void setShallowSave(bool set)=0;
   virtual ~SequentialLayer() = default;
 };
 }  // namespace thirdai::bolt

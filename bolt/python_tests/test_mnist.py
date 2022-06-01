@@ -224,23 +224,33 @@ def test_load_save_fc_network():
     )
 
     save_loc = "./bolt_model_save"
-
+    checkpoint_loc="./bolt_model_checkpoint"
     if os.path.exists(save_loc):
         os.remove(save_loc)
-
+    if os.path.exists(checkpoint_loc):
+        os.remove(checkpoint_loc)
     # Save network and load as a new network
     network.save(save_loc)
+    network.checkpoint(checkpoint_loc)
 
     new_network = bolt.Network.load(save_loc)
+    new_resume=bolt.Network.resume(checkpoint_loc)
 
     new_acc, _ = new_network.predict(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
+    new_acc_resume,_=new_resume.predict(
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
+    )
 
     assert new_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
-
+    assert new_acc_resume["categorical_accuracy"] == original_acc["categorical_accuracy"]
+    print(new_acc_resume["categorical_accuracy"] , original_acc["categorical_accuracy"])
     # Continue to train loaded network
+    train_network(new_resume,train_x,train_y,epochs=2)
+    print("resumed network trains")
     train_network(new_network, train_x, train_y, epochs=2)
+    print("saved model also trains")
 
     another_acc, _ = new_network.predict(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
@@ -248,7 +258,7 @@ def test_load_save_fc_network():
 
     assert another_acc["categorical_accuracy"] >= new_acc["categorical_accuracy"]
 
-    os.remove(save_loc)
+    # os.remove(save_loc)
 
 
 def test_get_set_weights():
