@@ -63,8 +63,8 @@ void createDatasetSubmodule(py::module_& module) {
       "It processes these sequences in batches.\n\n"
       "This is not consumer-facing.")
       .def(
-          py::init<std::vector<std::shared_ptr<Block>>&,
-                   std::vector<std::shared_ptr<Block>>&, uint32_t>(),
+          py::init<std::vector<std::shared_ptr<Block>>,
+                   std::vector<std::shared_ptr<Block>>, uint32_t>(),
           py::arg("input_blocks"), py::arg("target_blocks"),
           py::arg("output_batch_size"), py::keep_alive<1, 2>(),
           py::keep_alive<1, 3>(),
@@ -630,32 +630,34 @@ parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
 bool denseBoltDatasetMatchesDenseMatrix(
     BoltDataset& dataset, std::vector<std::vector<float>>& matrix) {
   uint32_t batch_size = dataset.at(0).getBatchSize();
-  bool match = true;
-
   for (uint32_t batch_idx = 0; batch_idx < dataset.numBatches(); batch_idx++) {
     auto& batch = dataset.at(batch_idx);
     for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
       auto& vec = batch[vec_idx];
       uint32_t row = batch_idx * batch_size + vec_idx;
       for (uint32_t col = 0; col < vec.len; col++) {
-        match = match && (matrix[row][col] == vec.activations[col]);
+        if (matrix[row][col] != vec.activations[col]) {
+          return false;
+        }
       }
     }
   }
 
-  return match;
+  return true;
 }
 
 bool denseBoltDatasetIsPermutationOfDenseMatrix(
     BoltDataset& dataset, std::vector<std::vector<float>>& matrix) {
   // If one is a permutation of the other, they must have the same
   // number of rows / vectors.
-  bool is_permutation = dataset.len() == matrix.size();
+  if (dataset.len() != matrix.size()) {
+    return false;
+  }
 
   // Keep track of values in the matrix
   std::unordered_map<float, uint32_t> expected_values;
   for (const auto& row : matrix) {
-    assert(row.size == 1);
+    assert(row.size() == 1);
     // Assume each row is 1-dimensional.
     expected_values[row.at(0)]++;
   }
@@ -674,15 +676,15 @@ bool denseBoltDatasetIsPermutationOfDenseMatrix(
   }
 
   for (const auto& [val, count] : actual_values) {
-    is_permutation = is_permutation && (count == expected_values[val]);
+    if (count != expected_values[val]) {
+      return false;
+    }
   }
 
-  return is_permutation;
+  return true;
 }
 
 bool denseBoltDatasetsAreEqual(BoltDataset& dataset1, BoltDataset& dataset2) {
-  bool equal = true;
-
   for (uint32_t batch_idx = 0; batch_idx < dataset1.numBatches(); batch_idx++) {
     auto& batch1 = dataset1[batch_idx];
     auto& batch2 = dataset2[batch_idx];
@@ -690,13 +692,14 @@ bool denseBoltDatasetsAreEqual(BoltDataset& dataset1, BoltDataset& dataset2) {
       auto& vec1 = batch1[vec_idx];
       auto& vec2 = batch2[vec_idx];
       for (uint32_t elem_idx = 0; elem_idx < vec1.len; elem_idx++) {
-        equal =
-            equal && vec1.activations[elem_idx] == vec2.activations[elem_idx];
+        if (vec1.activations[elem_idx] != vec2.activations[elem_idx]) {
+          return false;
+        }
       }
     }
   }
 
-  return equal;
+  return true;
 }
 
 }  // namespace thirdai::dataset::python

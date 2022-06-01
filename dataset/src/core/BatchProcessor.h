@@ -16,8 +16,8 @@ namespace thirdai::dataset {
  */
 class BatchProcessor {
  public:
-  BatchProcessor(std::vector<std::shared_ptr<Block>>& input_blocks,
-                 std::vector<std::shared_ptr<Block>>& target_blocks,
+  BatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
+                 std::vector<std::shared_ptr<Block>> target_blocks,
                  uint32_t output_batch_size);
 
   /**

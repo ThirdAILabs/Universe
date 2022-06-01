@@ -171,8 +171,6 @@ void checkCorrectUnshuffledDatasetImpl(
 
   auto dense_matrix_1 = makeRandomDenseMatrix(/* n_rows = */ 500, n_cols);
   auto str_matrix_1 = makeStringMatrix(dense_matrix_1);
-  std::cout << "ROWS " << str_matrix_1.size();
-  std::cout << "COLS " << str_matrix_1.front().size();
   auto dense_bolt_vecs_1 = makeDenseBoltVectors(dense_matrix_1);
   auto sparse_bolt_vecs_1 = makeSparseBoltVectors(dense_matrix_1);
 

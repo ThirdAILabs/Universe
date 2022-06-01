@@ -13,8 +13,8 @@
 namespace thirdai::dataset {
 
 BatchProcessor::BatchProcessor(
-    std::vector<std::shared_ptr<Block>>& input_blocks,
-    std::vector<std::shared_ptr<Block>>& target_blocks,
+    std::vector<std::shared_ptr<Block>> input_blocks,
+    std::vector<std::shared_ptr<Block>> target_blocks,
     uint32_t output_batch_size)
     : _batch_size(output_batch_size),
       _input_blocks_dense(std::all_of(input_blocks.begin(), input_blocks.end(),
@@ -35,8 +35,8 @@ BatchProcessor::BatchProcessor(
        * Furthermore, these vectors are cheap to copy since they contain a
        * small number of elements and each element is a pointer.
        */
-      _input_blocks(input_blocks),
-      _target_blocks(target_blocks) {
+      _input_blocks(std::move(input_blocks)),
+      _target_blocks(std::move(target_blocks)) {
   if (_target_vectors) {
     _target_vectors = std::vector<bolt::BoltVector>();
   }

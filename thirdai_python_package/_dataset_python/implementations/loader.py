@@ -121,8 +121,7 @@ class Loader:
         # Stream rows (samples) and process each one according to the schema.
         counter = 0
         raw_batch = []
-        next_row = next(row_generator)
-        while next_row is not None:
+        for next_row in row_generator:
             raw_batch.append(next_row)
             counter += 1
 
@@ -140,8 +139,6 @@ class Loader:
                 processor.process_batch(raw_batch)
                 raw_batch = []
                 counter = 0
-
-            next_row = next(row_generator)
 
         if len(raw_batch) > 0:
             processor.process_batch(raw_batch)
