@@ -1,4 +1,6 @@
 import os
+from typing import Tuple
+from typing_extensions import Self
 
 from ..interfaces import Source, Parser
 from .schema import Schema
@@ -32,7 +34,7 @@ class Loader:
         batch_size: int = 256,
         shuffle: bool = False,
         shuffle_seed: int = 0,
-    ):
+    ) -> None:
         """Constructor.
 
         Arguments:
@@ -55,7 +57,7 @@ class Loader:
         self._shuffle_rows = shuffle
         self._shuffle_seed = shuffle_seed
 
-    def set_source(self, source: Source):
+    def set_source(self, source: Source) -> Self:
         """Defines the location of the dataset.
 
         Arguments:
@@ -65,7 +67,7 @@ class Loader:
         self._source = source
         return self  ### Returns self so we can chain the set() method calls.
 
-    def set_parser(self, parser: Parser):
+    def set_parser(self, parser: Parser) -> Self:
         """Defines how the dataset can be parsed.
 
         Arguments:
@@ -75,7 +77,7 @@ class Loader:
         self._parser = parser
         return self  ### Returns self so we can chain the set() method calls.
 
-    def set_schema(self, schema: Schema):
+    def set_schema(self, schema: Schema) -> Self:
         """Defines the how each sample in the dataset is processed.
 
         Arguments:
@@ -85,7 +87,7 @@ class Loader:
         self._schema = schema
         return self  ### Returns self so we can chain the set() method calls.
 
-    def set_batch_size(self, size: int):
+    def set_batch_size(self, size: int) -> Self:
         """Sets the batch size.
 
         Arguments:
@@ -94,13 +96,13 @@ class Loader:
         self._batch_size = size
         return self  ### Returns self so we can chain the set() method calls.
 
-    def shuffle(self, seed: int = 0):
+    def shuffle(self, seed: int = 0) -> Self:
         """Samples will be shuffled before being batched."""
         self._shuffle_rows = True
         self._shuffle_seed = seed
         return self  ### Returns self so we can chain the set() method calls.
 
-    def __load_all_and_process(self):
+    def __load_all_and_process(self) -> Tuple[dataset.BoltDataset, dataset.BoltDataset]:
         """Helper function to load the whole dataset, processes each sample, and
         generates batches of vector embeddings.
         """
@@ -151,15 +153,15 @@ class Loader:
             shuffle=self._shuffle_rows, shuffle_seed=self._shuffle_seed
         )
 
-    def get_input_dim(self):
+    def get_input_dim(self) -> int:
         """Returns the dimension of input vectors."""
         return self._schema._input_dim
 
-    def get_target_dim(self):
+    def get_target_dim(self) -> int:
         """Returns the dimension of target vectors."""
         return self._schema._target_dim
 
-    def processInMemory(self) -> dataset.BoltDataset:
+    def processInMemory(self) -> Tuple[dataset.BoltDataset, dataset.BoltDataset]:
         """Produces an in-memory dataset of input and target vectors as specified by
         the schema. The input vectors in the dataset are dense only if all
         input feature blocks return dense features. Input vectors are sparse otherwise.

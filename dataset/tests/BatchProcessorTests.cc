@@ -56,9 +56,8 @@ std::vector<std::vector<float>> makeRandomDenseMatrix(size_t n_rows,
                                                       size_t n_cols) {
   // Not the most efficient representation of a matrix but
   // makes the test more readable.
-  std::vector<std::vector<float>> matrix(n_rows);
+  std::vector<std::vector<float>> matrix(n_rows, std::vector<float>(n_cols));
   for (auto& row : matrix) {
-    row.resize(n_cols);
     for (auto& elem : row) {
       elem = static_cast<float>(std::rand() & 8) / 256;
     }
@@ -75,12 +74,9 @@ std::vector<std::vector<std::string>> makeStringMatrix(
     std::vector<std::vector<float>>& matrix) {
   std::vector<std::vector<std::string>> string_matrix;
   for (const auto& row : matrix) {
-    std::vector<std::string> string_row;
-    // The reserve below is an unnecessary optimization given that this is just
-    // a test but linter gets angry otherwise
-    string_row.reserve(row.size());
-    for (const auto& elem : row) {
-      string_row.push_back(std::to_string(elem));
+    std::vector<std::string> string_row(row.size());
+    for (size_t i = 0; i < row.size(); i++) {
+      string_row[i] = std::to_string(row[i]);
     }
     string_matrix.push_back(std::move(string_row));
   }
@@ -93,12 +89,9 @@ std::vector<std::vector<std::string>> makeStringMatrix(
  */
 std::vector<bolt::BoltVector> makeDenseBoltVectors(
     std::vector<std::vector<float>>& matrix) {
-  std::vector<bolt::BoltVector> vectors;
-  // The reserve below is an unnecessary optimization given that this is just a
-  // test but linter gets angry otherwise
-  vectors.reserve(matrix.size());
-  for (const auto& row : matrix) {
-    vectors.push_back(bolt::BoltVector::makeDenseVector(row));
+  std::vector<bolt::BoltVector> vectors(matrix.size());
+  for (size_t i = 0; i < matrix.size(); i++) {
+    vectors[i] = bolt::BoltVector::makeDenseVector(matrix[i]);
   }
   return vectors;
 }
@@ -111,9 +104,7 @@ std::vector<bolt::BoltVector> makeSparseBoltVectors(
     std::vector<std::vector<float>>& matrix) {
   // Make indices for sparse vector (same for every row)
   std::vector<uint32_t> indices(matrix.front().size());
-  for (uint32_t i = 0; i < indices.size(); i++) {
-    indices[i] = i;
-  }
+  std::iota(indices.begin(), indices.end(), 0);
 
   // Make the bolt vectors.
   std::vector<bolt::BoltVector> vectors;
@@ -140,7 +131,7 @@ std::vector<std::shared_ptr<Block>> makeNMockBlocks(uint32_t n_blocks,
   if (!mixed_dense) {
     for (uint32_t i = 0; i < n_blocks; i++) {
       auto mock_block_ptr = std::make_shared<MockBlock>(i, dense);
-      blocks.push_back(std::static_pointer_cast<Block>(mock_block_ptr));
+      blocks.push_back(mock_block_ptr);
     }
     return blocks;
   }
@@ -148,7 +139,7 @@ std::vector<std::shared_ptr<Block>> makeNMockBlocks(uint32_t n_blocks,
   // Mixed dense case
   for (uint32_t i = 0; i < n_blocks; i++) {
     auto mock_block_ptr = std::make_shared<MockBlock>(i, i == 1);
-    blocks.push_back(std::static_pointer_cast<Block>(mock_block_ptr));
+    blocks.push_back(mock_block_ptr);
   }
   return blocks;
 }
@@ -178,11 +169,10 @@ void assertSameVectorsSameOrder(std::vector<bolt::BoltVector> bolt_vecs_1,
       ASSERT_EQ(dataset_vec.len, vec.len);
 
       // Assert same dense-ness
-      ASSERT_EQ(dataset_vec.active_neurons == nullptr,
-                vec.active_neurons == nullptr);
+      ASSERT_EQ(dataset_vec.isDense(), vec.isDense());
 
       // Assert same active neurons if sparse
-      if (vec.active_neurons != nullptr) {
+      if (!vec.isDense()) {
         for (uint32_t i = 0; i < vec.len; i++) {
           ASSERT_EQ(dataset_vec.active_neurons[i], vec.active_neurons[i]);
         }
@@ -377,8 +367,7 @@ TEST(BatchProcessorTest, ProducesCorrectShuffledDataset) {
   std::vector<std::vector<std::string>> mock_data_str;
   mock_data_str.reserve(n_rows);
   for (const auto& elem : mock_data_seq) {
-    std::vector<std::string> row;
-    row.push_back(std::to_string(elem));
+    std::vector<std::string> row{std::to_string(elem)};
     mock_data_str.push_back(std::move(row));
   }
 

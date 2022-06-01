@@ -56,7 +56,7 @@ class BatchProcessor {
   bool _input_blocks_dense;
   bool _target_blocks_dense;
   std::vector<bolt::BoltVector> _input_vectors;
-  std::vector<bolt::BoltVector> _target_vectors;
+  std::optional<std::vector<bolt::BoltVector>> _target_vectors;
   std::vector<std::shared_ptr<Block>>& _input_blocks;
   std::vector<std::shared_ptr<Block>>& _target_blocks;
 };

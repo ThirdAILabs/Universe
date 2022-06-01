@@ -1,3 +1,4 @@
+from typing_extensions import Self
 from ..blocks.block_interface import Block
 from typing import Iterator, List, Tuple
 
@@ -30,7 +31,7 @@ class __BlockList__:
         # blocks produces sparse features.
         self._is_dense = all([block.is_dense() for block in self.blocks])
 
-    def add_block(self, block: Block) -> None:
+    def add_block(self, block: Block) -> Self:
         """A method to add blocks to this block list.
         This method facilitates a builder pattern invocation.
         """
@@ -38,6 +39,7 @@ class __BlockList__:
         self.offsets.append(next_offset)
         self.blocks.append(block)
         self._is_dense = self._is_dense and block.is_dense()
+        return self
 
     def __len__(self) -> int:
         """Returns number of blocks."""
@@ -89,7 +91,9 @@ class Schema:
       The target vector encodes sales volume in 1 dimension.
     """
 
-    def __init__(self, input_blocks: List[Block] = [], target_blocks: List[Block] = []):
+    def __init__(
+        self, input_blocks: List[Block] = [], target_blocks: List[Block] = []
+    ) -> None:
         """Constructor.
 
         Arguments:
@@ -106,14 +110,14 @@ class Schema:
         self.input_blocks = __BlockList__(input_blocks)
         self.target_blocks = __BlockList__(target_blocks)
 
-    def add_input_block(self, block: Block) -> None:
+    def add_input_block(self, block: Block) -> Self:
         """A method to add features to the processed input vectors.
         This method facilitates a builder pattern invocation.
         """
         self.input_blocks.add_block(block)
         return self  # Return self so we can chain method calls
 
-    def add_target_block(self, block: Block) -> None:
+    def add_target_block(self, block: Block) -> Self:
         """A method to add features to the processed target vectors.
         This method facilitates a builder pattern invocation.
         """
