@@ -33,38 +33,20 @@ class LossFunction {
     }
   }
 
-  float computeLossMetric(BoltVector& output, const BoltVector& labels, 
-                          uint32_t batch_size) const {
-    assert(batch_size != 0);
-    float local_loss_metric = 0;
-    uint32_t labels_active_neuron_id = 0;
-    uint32_t output_active_neuron_id = 0;
-    
-    // Assuming the neuron_id(indices) are in increasing order.
-    while(labels_active_neuron_id<labels.len && output_active_neuron_id<output.len){
-      if(labels.activations[labels_active_neuron_id]<output.activations[output_active_neuron_id]){
-        local_loss_metric += elementLossMetric(labels.activations[labels_active_neuron_id], 0 , batch_size);
-        labels_active_neuron_id++;
-      }else if(labels.activations[labels_active_neuron_id]<output.activations[output_active_neuron_id]){
-        local_loss_metric += elementLossMetric(0, output.activations[output_active_neuron_id] , batch_size);
-        output_active_neuron_id++;
-      }else{
-        local_loss_metric += elementLossMetric(labels.activations[labels_active_neuron_id], output.activations[output_active_neuron_id] , batch_size);;
-        labels_active_neuron_id++;
-        output_active_neuron_id++;
+  float computeLossMetric(BoltVector& output, const BoltVector& labels,
+                        uint32_t batch_size) const {
+      if (output.isDense()) {
+      if (labels.isDense()) {
+        return computeLossMetricImpl<true, true>(output, labels, batch_size);
+        } 
+          return computeLossMetricImpl<true, false>(output, labels, batch_size);
+      } 
+      if (labels.isDense()) {
+        return computeLossMetricImpl<false, true>(output, labels, batch_size);
       }
-    }
-    while(labels_active_neuron_id<labels.len){
-        local_loss_metric += elementLossMetric(labels.activations[labels_active_neuron_id], 0 , batch_size);
-        labels_active_neuron_id++;
-    }
-    while(output_active_neuron_id<output.len){
-        local_loss_metric += elementLossMetric(0, output.activations[output_active_neuron_id] , batch_size);
-        output_active_neuron_id++;
+      return  computeLossMetricImpl<false, false>(output, labels, batch_size);
     }
 
-    return local_loss_metric;
-  }
 
 
     
@@ -97,6 +79,43 @@ class LossFunction {
           elementLossGradient(label_val, output.activations[i], batch_size);
     }
   }
+
+  template<bool OUTPUT_DENSE, bool LABEL_DENSE>
+  float computeLossMetricImpl(BoltVector& output, const BoltVector& labels, 
+                          uint32_t batch_size) const {
+    float local_loss_metric = 0;
+    uint32_t labels_active_neuron_id = 0;
+    uint32_t output_active_neuron_id = 0;
+    
+    
+    // Assuming the neuron_id(indices) are in increasing order.
+    // Handle the sparse and dense part differently
+    while(labels_active_neuron_id<labels.len && output_active_neuron_id<output.len){
+      
+        if(labels.active_neurons[labels_active_neuron_id]<output.active_neurons[output_active_neuron_id]){
+          local_loss_metric += elementLossMetric(labels.activations[labels_active_neuron_id], 0 , batch_size);
+          labels_active_neuron_id++;
+        }else if(labels.active_neurons[labels_active_neuron_id]<output.active_neurons[output_active_neuron_id]){
+          local_loss_metric += elementLossMetric(0, output.activations[output_active_neuron_id] , batch_size);
+          output_active_neuron_id++;
+        }else{
+          local_loss_metric += elementLossMetric(labels.activations[labels_active_neuron_id], output.activations[output_active_neuron_id] , batch_size);;
+          labels_active_neuron_id++;
+          output_active_neuron_id++;
+        }
+    }
+    while(labels_active_neuron_id<labels.len){
+        local_loss_metric += elementLossMetric(labels.activations[labels_active_neuron_id], 0 , batch_size);
+        labels_active_neuron_id++;
+    }
+    while(output_active_neuron_id<output.len){
+        local_loss_metric += elementLossMetric(0, output.activations[output_active_neuron_id] , batch_size);
+        output_active_neuron_id++;
+    }
+
+    return local_loss_metric;
+  }
+
   
 
   virtual float elementLossGradient(float label, float activation,
