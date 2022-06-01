@@ -21,15 +21,15 @@ using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 void createDatasetSubmodule(py::module_& module);
 
 InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
-                                            uint32_t batch_size,
-                                            bool labels_sum_to_one = true);
+                                            uint32_t batch_size);
 
 InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
                                            uint32_t batch_size,
                                            std::string delimiter);
 
 py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
-                                    uint32_t batch_size);
+                                    uint32_t batch_size,
+                                    bool labels_sum_to_one = true);
 
 py::tuple loadBoltCsvDatasetWrapper(const std::string& filename,
                                     uint32_t batch_size, char delimiter);
