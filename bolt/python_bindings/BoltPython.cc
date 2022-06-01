@@ -345,7 +345,8 @@ void createBoltSubmodule(py::module_& module) {
            "epoch.")
       .def("save", &PyNetwork::save, py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
-           "folders to be created. Saves only essential paramters, not the optimizer state")
+           "folders to be created. Saves only essential paramters, not the "
+           "optimizer state")
       .def_static("load", &PyNetwork::load, py::arg("filename"),
                   "Loads and builds a saved network from file.")
 

@@ -204,14 +204,14 @@ class PyNetwork final : public FullyConnectedNetwork {
     std::ofstream filestream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
 
-    //if model is shallow, we can normally save
-    //if not shallow, first make model shallow, then set the parameter back to not_shallow
-    if(!this->isShallow()){
+    // if model is shallow, we can normally save
+    // if not shallow, first make model shallow, then set the parameter back to
+    // not_shallow
+    if (!this->isShallow()) {
       this->setShallow(true);
       oarchive(*this);
       this->setShallow(false);
-    }
-    else{
+    } else {
       this->setShallow(true);
       oarchive(*this);
     }
@@ -221,14 +221,13 @@ class PyNetwork final : public FullyConnectedNetwork {
     std::ofstream filestream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
 
-    //if the model is not shallow, save it normally
-    //else set to non shallow, then set back to shallow after saving
-    if(this->isShallow()){
+    // if the model is not shallow, save it normally
+    // else set to non shallow, then set back to shallow after saving
+    if (this->isShallow()) {
       this->setShallow(false);
       oarchive(*this);
       this->setShallow(true);
-    }
-    else{
+    } else {
       this->setShallow(false);
       oarchive(*this);
     }
@@ -240,8 +239,10 @@ class PyNetwork final : public FullyConnectedNetwork {
     std::unique_ptr<PyNetwork> deserialize_into(new PyNetwork());
     iarchive(*deserialize_into);
     bool is_shallow = deserialize_into->isShallow();
-    if(!is_shallow){
-      std::cout<<"Warning: Loading model from checkpoint; optimizer initialized "<<std::endl;
+    if (!is_shallow) {
+      std::cout
+          << "Warning: Loading model from checkpoint; optimizer initialized "
+          << std::endl;
     }
     return deserialize_into;
   }

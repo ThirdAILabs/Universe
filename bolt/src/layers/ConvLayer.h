@@ -71,8 +71,9 @@ class ConvLayer final : public SequentialLayer {
               << std::endl;
   }
   bool isShallow() final {
-    std::cout << "Warning: isShallow not implemented for ConvLayer; Return false"
-              << std::endl;
+    std::cout
+        << "Warning: isShallow not implemented for ConvLayer; Return false"
+        << std::endl;
     return false;
   }
 

@@ -62,9 +62,9 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
   // isShallow returns whether model is loaded from a shallow state
   // initialize gradients during training, not inference
   bool isShallow() final {
-    std::cout
-        << "Warning: isShallow not implemented for DLRM, returning false by default"
-        << std::endl;
+    std::cout << "Warning: isShallow not implemented for DLRM, returning false "
+                 "by default"
+              << std::endl;
     return false;
   }
   void initialize_optimizer() final {
