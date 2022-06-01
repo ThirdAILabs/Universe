@@ -152,8 +152,14 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
           max_act = act;
         }
         break;
+      case ActivationFunction::Sigmoid:
+        output.activations[n] = 1 / (1 + std::exp(-act));
+        break;
       case ActivationFunction::Linear:
         output.activations[n] = act;
+        break;
+      case ActivationFunction::Tanh:
+        output.activations[n] = static_cast<float>(std::tanh(act));
         break;
     }
   }
@@ -266,7 +272,10 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                               input.len, hashes.data());
   }
 
-  if (_force_sparse_for_inference && _act_func == ActivationFunction::Softmax) {
+  if ((_force_sparse_for_inference &&
+       _act_func == ActivationFunction::Softmax) ||
+      (_force_sparse_for_inference &&
+       _act_func == ActivationFunction::Sigmoid)) {
     _hash_table->queryAndInsertForInference(hashes.data(), active_set,
                                             _sparse_dim);
   } else {

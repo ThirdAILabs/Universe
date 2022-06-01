@@ -5,7 +5,7 @@
 
 namespace thirdai::bolt {
 
-enum class ActivationFunction { ReLU, Softmax, Linear };
+enum class ActivationFunction { ReLU, Softmax, Linear, Tanh, Sigmoid };
 
 static ActivationFunction getActivationFunction(
     const std::string& act_func_name) {
@@ -19,8 +19,14 @@ static ActivationFunction getActivationFunction(
   if (lower_name == "softmax") {
     return ActivationFunction::Softmax;
   }
+  if (lower_name == "sigmoid") {
+    return ActivationFunction::Sigmoid;
+  }
   if (lower_name == "linear") {
     return ActivationFunction::Linear;
+  }
+  if (lower_name == "tanh") {
+    return ActivationFunction::Tanh;
   }
   throw std::invalid_argument("'" + act_func_name +
                               "' is not a valid activation function");
@@ -28,6 +34,14 @@ static ActivationFunction getActivationFunction(
 
 constexpr float actFuncDerivative(float x, ActivationFunction act_func) {
   switch (act_func) {
+    case ActivationFunction::Tanh:
+      // Derivative of tanh(x) is 1 - tanh^2(x), but in this case x = tanh(x),
+      // so derivative is simply: 1 - x^2.
+      return (1 - x * x);
+    case ActivationFunction::Sigmoid:
+      // Derivative of sig(x) is sig(x) * (1 - sig(x)), but in this case x =
+      // sig(x), so derivative is simply: x * (1 - x).
+      return (x * (1 - x));
     case ActivationFunction::ReLU:
       return x > 0 ? 1.0 : 0.0;
     case ActivationFunction::Softmax:

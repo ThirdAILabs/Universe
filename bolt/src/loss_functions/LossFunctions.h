@@ -74,6 +74,19 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
   }
 };
 
+class BinaryCrossEntropyLoss final : public LossFunction {
+ public:
+  static std::shared_ptr<BinaryCrossEntropyLoss> makeBinaryCrossEntropyLoss() {
+    return std::make_shared<BinaryCrossEntropyLoss>();
+  }
+
+ private:
+  float elementLossGradient(float label, float activation,
+                            uint32_t batch_size) const override {
+    return (label - activation) / batch_size;
+  }
+};
+
 class MeanSquaredError final : public LossFunction {
  public:
   static std::shared_ptr<MeanSquaredError> makeMeanSquaredError() {
@@ -117,6 +130,9 @@ static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
   if (lower_name == "categoricalcrossentropyloss") {
     return CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss();
   }
+  if (lower_name == "binarycrossentropyloss") {
+    return BinaryCrossEntropyLoss::makeBinaryCrossEntropyLoss();
+  }
   if (lower_name == "meansquarederror" || lower_name == "mse") {
     return MeanSquaredError::makeMeanSquaredError();
   }
@@ -128,6 +144,7 @@ static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
   throw std::invalid_argument(
       "'" + name +
       "' is not a valid loss function. Use 'CategoricalCrossEntropyLoss', "
+      "'BinaryCrossEntropyLoss', "
       "'MeanSquaredError'/'MSE', or "
       "'WeightedMeanAbsolutePercentageError'/'WMAPE'");
 }

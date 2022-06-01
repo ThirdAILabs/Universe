@@ -152,8 +152,14 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
       case ActivationFunction::Softmax:
         out << ", act_func=Softmax";
         break;
+      case ActivationFunction::Sigmoid:
+        out << ", act_func=Sigmoid";
+        break;
       case ActivationFunction::Linear:
         out << ", act_func=Linear";
+        break;
+      case ActivationFunction::Tanh:
+        out << ", act_func=Tanh";
         break;
     }
     if (sparsity < 1.0) {
@@ -225,8 +231,14 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
       case ActivationFunction::Softmax:
         out << ", act_func=Softmax";
         break;
+      case ActivationFunction::Sigmoid:
+        out << ", act_func=Sigmoid";
+        break;
       case ActivationFunction::Linear:
         out << ", act_func=Linear";
+        break;
+      case ActivationFunction::Tanh:
+        out << ", act_func=Tanh";
         break;
     }
     out << ", kernel_size: (" << kernel_size.first << ", " << kernel_size.second
