@@ -37,7 +37,7 @@ BatchProcessor::BatchProcessor(
        */
       _input_blocks(std::move(input_blocks)),
       _target_blocks(std::move(target_blocks)) {
-  if (_target_vectors) {
+  if (!_target_blocks.empty()) {
     _target_vectors = std::vector<bolt::BoltVector>();
   }
 }
@@ -113,7 +113,9 @@ std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
 
   // Replenish after moves.
   _input_vectors = std::vector<bolt::BoltVector>();
-  _target_vectors = std::vector<bolt::BoltVector>();
+  if (_target_vectors.has_value()) {
+    _target_vectors = std::vector<bolt::BoltVector>();
+  }
 
   return {std::make_shared<BoltDataset>(std::move(input_batches), n_exported),
           target_batches.has_value()
