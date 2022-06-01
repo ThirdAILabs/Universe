@@ -7,7 +7,6 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <_types/_uint32_t.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <pybind11/buffer_info.h>
