@@ -91,7 +91,7 @@ def train_network(
         rehash=3000,
         rebuild=10000,
         metrics=[],
-        verbose=True,
+        verbose=False,
     )
     return times
 

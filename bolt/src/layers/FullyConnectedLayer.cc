@@ -20,10 +20,6 @@ FullyConnectedLayer::FullyConnectedLayer(
       // TODO(Shubh) : should we add a trainable parameter to the config file?
       _trainable(true),
 
-      // During layer initialization or while setting weights, we need to force
-      // build hashtables
-      _force_build(true),
-
       _act_func(config.act_func),
       _weights(config.dim * prev_dim),
       _w_gradient(config.dim * prev_dim, 0),
@@ -57,8 +53,7 @@ FullyConnectedLayer::FullyConnectedLayer(
     // then let them be
     //  build hashtables only generats a hash-table if trainable is true
 
-    buildHashTables();
-    _force_build = false;
+    buildHashTablesImpl(true);
 
     _rand_neurons = std::vector<uint32_t>(_dim);
 
@@ -478,13 +473,10 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
   _w_gradient[indx] = 0;
 }
 
-void FullyConnectedLayer::buildHashTables() {
-  // force_build hashtables while initializing or setting weights.
-  // during training if _trainable=false, do not rebuild
-  if (!_trainable && !_force_build) {
+void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
+  if (!_trainable && !force_build) {
     return;
   }
-
   if (_sparsity >= 1.0 || _force_sparse_for_inference) {
     return;
   }
@@ -502,11 +494,10 @@ void FullyConnectedLayer::buildHashTables() {
   _hash_table->insertSequential(_dim, 0, hashes.data());
 }
 
+void FullyConnectedLayer::buildHashTables() { buildHashTablesImpl(false); }
+
 void FullyConnectedLayer::reBuildHashFunction() {
-  if (!_trainable && !_force_build) {
-    return;
-  }
-  if (_sparsity >= 1.0 || _force_sparse_for_inference) {
+  if (!_trainable || _sparsity >= 1.0 || _force_sparse_for_inference) {
     return;
   }
   _hasher = std::make_unique<hashing::DWTAHashFunction>(
@@ -545,9 +536,7 @@ void FullyConnectedLayer::setWeights(const float* new_weights) {
   std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
 
   // if setting weights for a non-trainable layer, force_build the hash tables
-  _force_build = true;
-  buildHashTables();
-  _force_build = false;
+  buildHashTablesImpl(true);
 }
 
 void FullyConnectedLayer::setBiases(const float* new_biases) {
