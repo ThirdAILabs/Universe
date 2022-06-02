@@ -14,6 +14,7 @@
 #include <pybind11/buffer_info.h>
 #include <sys/types.h>
 #include <chrono>
+#include <limits>
 #include <unordered_map>
 #include <type_traits>
 
@@ -75,7 +76,8 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<UniGram, TextEncoding, std::shared_ptr<UniGram>>(
       text_encoding_submodule, "UniGram",
       "Encodes a sentence as a weighted set of words.")
-      .def(py::init<uint32_t>(), py::arg("dim") = 100000,
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("dim") = 100000, 
+           py::arg("start_pos") = 0, py::arg("end_pos") = std::numeric_limits<uint32_t>::max(),
            "Constructor. Accepts the desired dimension of the encoding.")
       .def("is_dense", &UniGram::isDense,
            "Returns False since this is a sparse encoding.")
