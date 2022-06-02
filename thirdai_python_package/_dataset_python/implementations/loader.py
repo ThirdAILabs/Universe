@@ -34,6 +34,7 @@ class Loader:
         batch_size: int = 256,
         shuffle: bool = False,
         shuffle_seed: int = random.randint(0, 0xFFFFFFFF),
+        est_num_elems: int = 0,
     ) -> None:
         """Constructor.
 
@@ -56,6 +57,7 @@ class Loader:
         self.set_batch_size(batch_size)
         self._shuffle_rows = shuffle
         self._shuffle_seed = shuffle_seed
+        self._est_num_elems = est_num_elems
 
     def set_source(self, source: Source) -> Self:
         """Defines the location of the dataset.
@@ -149,6 +151,8 @@ class Loader:
             self._schema._input_blocks,
             self._schema._target_blocks,
             self._batch_size,
+            self._est_num_elems,
+
         )
 
         # Here, we read the first batch. 

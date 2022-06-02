@@ -14,6 +14,8 @@
 #include <pybind11/buffer_info.h>
 #include <sys/types.h>
 #include <chrono>
+#include <limits>
+#include <unordered_map>
 #include <type_traits>
 #include <unordered_map>
 #include <type_traits>
@@ -76,7 +78,8 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<UniGram, TextEncoding, std::shared_ptr<UniGram>>(
       text_encoding_submodule, "UniGram",
       "Encodes a sentence as a weighted set of words.")
-      .def(py::init<uint32_t>(), py::arg("dim") = 100000,
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("dim") = 100000, 
+           py::arg("start_pos") = 0, py::arg("end_pos") = std::numeric_limits<uint32_t>::max(),
            "Constructor. Accepts the desired dimension of the encoding.")
       .def("is_dense", &UniGram::isDense,
            "Returns False since this is a sparse encoding.")
@@ -175,9 +178,9 @@ void createDatasetSubmodule(py::module_& module) {
       "This is not consumer-facing.")
       .def(
           py::init<std::vector<std::shared_ptr<Block>>,
-                   std::vector<std::shared_ptr<Block>>, uint32_t>(),
+                   std::vector<std::shared_ptr<Block>>, uint32_t, size_t>(),
           py::arg("input_blocks"), py::arg("target_blocks"),
-          py::arg("output_batch_size"), py::keep_alive<1, 2>(),
+          py::arg("output_batch_size"), py::arg("est_num_elems"), py::keep_alive<1, 2>(),
           py::keep_alive<1, 3>(),
           "Constructor\n\n"
           "Arguments:\n"
