@@ -6,14 +6,15 @@ from subprocess import DEVNULL
 import pytest
 import sys
 
+
 def test_ctrl_c_functionality():
     # started a subprocesss to run a file to which SIGINT needed to be sent
-    if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
+    if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
         proc = subprocess.Popen(
             ["python3", "../bolt/python_tests/ctrl_c_executable.py"],
             shell=False,
-            stdout = DEVNULL,
-            stderr = DEVNULL
+            stdout=DEVNULL,
+            stderr=DEVNULL,
         )
 
         # making sure the program reaches the train function
@@ -32,5 +33,3 @@ def test_ctrl_c_functionality():
             assert False, f"CTRL+C Functionality not working correctly"
         else:
             assert True
-
-
