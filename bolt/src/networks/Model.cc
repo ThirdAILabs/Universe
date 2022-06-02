@@ -2,7 +2,6 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/metrics/MetricHelpers.h>
 #include <bolt/src/utils/ProgressBar.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/batch_types/ClickThroughBatch.h>
 #include <algorithm>
 #include <cctype>
