@@ -40,7 +40,7 @@ def build_sparse_output_layer_network():
         bolt.FullyConnected(
             dim=10,
             load_factor=0.4,
-            activation_function="SoftMaX",
+            activation_function="Softmax",
         ),
     ]
     network = bolt.Network(layers=layers, input_dim=784)
