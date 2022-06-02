@@ -17,9 +17,11 @@
 namespace thirdai::bolt {
 
 class DLRM;
+class TextEmbeddingModel;
 
 class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   friend class DLRM;
+  friend class TextEmbeddingModel;
 
  public:
   FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim);
