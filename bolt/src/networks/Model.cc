@@ -98,7 +98,9 @@ MetricData Model<BATCH_T>::train(
     _epoch_count++;
     loss_function_metric  = loss_function_metric / (batch_size * num_train_batches);
     // std::cout << num_train_batches << " " << batch_size << std::endl;
-    std::cout << "Loss: " << loss_function_metric << std::endl;
+    if(verbose){
+      std::cout << "Loss: " << loss_function_metric << std::endl;
+    }
     metrics.logAndReset();
   }
 
