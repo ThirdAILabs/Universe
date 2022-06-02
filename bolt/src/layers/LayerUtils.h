@@ -32,25 +32,26 @@ static ActivationFunction getActivationFunction(
                               "' is not a valid activation function");
 }
 
-constexpr float actFuncDerivative(float x, ActivationFunction act_func) {
+constexpr float actFuncDerivative(float activation,
+                                  ActivationFunction act_func) {
   switch (act_func) {
     case ActivationFunction::Tanh:
-      // Derivative of tanh(x) is 1 - tanh^2(x), but in this case x = tanh(x),
-      // so derivative is simply: 1 - x^2.
-      return (1 - x * x);
+      // Derivative of tanh(x) is 1 - tanh^2(x), but in this case
+      // activation =  tanh(x), so derivative is simply: 1 - (activation)^2.
+      return (1 - activation * activation);
     case ActivationFunction::Sigmoid:
-      // Derivative of sig(x) is sig(x) * (1 - sig(x)), but in this case x =
-      // sig(x), so derivative is simply: x * (1 - x).
-      return (x * (1 - x));
+      // Derivative of sig(x) is sig(x) * (1 - sig(x)), but in this case
+      // activation = sig(x), so derivative is simply:
+      // activation * (1 - activation).
+      return (activation * (1 - activation));
     case ActivationFunction::ReLU:
-      return x > 0 ? 1.0 : 0.0;
+      return activation > 0 ? 1.0 : 0.0;
     case ActivationFunction::Softmax:
-      // return 1.0; // Commented out because Clang tidy doesn't like
-      // consecutive identical branches
+      // The derivative of softmax is computed as part of the
+      // CategoricalCrossEntropy function since they are used together, and this
+      // simplifies the computations.
     case ActivationFunction::Linear:
       return 1.0;
-      // default:
-      //   return 0.0;
   }
   // This is impossible to reach, but the compiler gave a warning saying it
   // reached the end of a non void function without it.
