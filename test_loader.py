@@ -13,18 +13,16 @@ parser = parsers.CsvIterable(delimiter=",")
 label = blocks.Categorical(col=0, dim=931)
 
 # Unigrams for first 4 words
-unigram_segments = [
-    blocks.Text(
-        col=1, 
-        encoding=text_encodings.UniGram(dim=50_000, start_pos=i, end_pos=i+1))
-    for i in range(4)
-]
+unigram_0 = blocks.Text(1, text_encodings.UniGram(dim=50_000, start_pos=0, end_pos=1))
+unigram_1 = blocks.Text(1, text_encodings.UniGram(dim=50_000, start_pos=1, end_pos=2))
+unigram_2 = blocks.Text(1, text_encodings.UniGram(dim=50_000, start_pos=2, end_pos=3))
+unigram_3 = blocks.Text(1, text_encodings.UniGram(dim=50_000, start_pos=3, end_pos=4))
 # Pairgrams for all words
-pairgrams = blocks.Text(col=1, encoding=text_encodings.PairGram(dim=500_000))
+pairgrams = blocks.Text(1, text_encodings.PairGram(dim=500_000))
 
-schema = Schema(input_blocks=[*unigram_segments, pairgrams], target_blocks=[label])
+schema = Schema(input_blocks=[unigram_0, unigram_1, unigram_2, unigram_3, pairgrams], target_blocks=[label])
 
 # Assemble
-loader = Loader(source, parser, schema, batch_size=2048, est_num_elems=32840248)
+loader = Loader(source, parser, schema, batch_size=2048)
 
 loader.processInMemory()
