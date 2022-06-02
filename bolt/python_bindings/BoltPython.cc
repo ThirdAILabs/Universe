@@ -343,10 +343,13 @@ void createBoltSubmodule(py::module_& module) {
            "in the training routine. It is recommended to call this method "
            "right before the last training "
            "epoch.")
-      .def("save", &PyNetwork::save, py::arg("filename"),
+
+      .def("save_for_inference", &PyNetwork::saveForInference,
+           py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
            "folders to be created. Saves only essential paramters, not the "
            "optimizer state")
+
       .def_static("load", &PyNetwork::load, py::arg("filename"),
                   "Loads and builds a saved network from file.")
 
@@ -354,8 +357,12 @@ void createBoltSubmodule(py::module_& module) {
            "Saves the network to a file. The file path must not require any "
            "folders to be created. Saves all the paramters including optimizer")
 
-      .def_static("resume", &PyNetwork::resume, py::arg("filename"),
-                  "Resumes the checkpointed network from a file.")
+      .def("end_training", &PyNetwork::endTraining,
+           "deletes the optimizer state. Used for inferencing")
+
+      .def("resume_training", &PyNetwork::resumeTraining,
+           "If the optimizer state is not set, start from 0. Do nothing "
+           "otherwise. Used for training")
 
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "

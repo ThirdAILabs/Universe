@@ -126,10 +126,15 @@ class Model {
   // the optimizer state is not saved
   virtual void setShallow(bool set) = 0;
 
+  virtual void setShallowSave(bool set) = 0;
+
   // isShallow returns whether model is loaded from a shallow state
   // initialize gradients during training, not inference
   virtual bool isShallow() = 0;
-  virtual void initialize_optimizer() = 0;
+
+  virtual void initializeOptimizer() = 0;
+
+  virtual void removeOptimizer() = 0;
 
  protected:
   uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,

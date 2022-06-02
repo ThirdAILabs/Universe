@@ -7,6 +7,7 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/batch_types/ClickThroughBatch.h>
+#include <stdexcept>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -52,26 +53,39 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
     _bottom_mlp.buildHashTables();
     _top_mlp.buildHashTables();
   }
+
   // setShallow should set the layers to shallow so that
   // the optimizer state is not saved
   void setShallow(bool set) final {
     (void)set;
-    std::cout << "Warning: SetShallow not implemented for DLRM" << std::endl;
+    // throw std::logic_error("Warning: setShallow not implemented for DLRM;");
+  }
+
+  void setShallowSave(bool set) final {
+    (void)set;
+    // throw std::logic_error("Warning: setShallowSave not implemented for
+    // DLRM;");
   }
 
   // isShallow returns whether model is loaded from a shallow state
   // initialize gradients during training, not inference
   bool isShallow() final {
-    std::cout << "Warning: isShallow not implemented for DLRM, returning false "
-                 "by default"
-              << std::endl;
+    // throw std::logic_error("Warning: isShallow not implemented for DLRM;");
     return false;
   }
-  void initialize_optimizer() final {
-    std::cout << "Warning: initialize_optimizer not implemented for DLRM; No "
-                 "method for re-initalizing optimizer after loading"
-              << std::endl;
+
+  void initializeOptimizer() final {
+    // throw std::logic_error("Warning: initializeOptimizer not implemented for
+    // DLRM;");
+    (void)true;
   }
+
+  void removeOptimizer() final {
+    (void)true;
+    // throw std::logic_error("Warning: removeOptimizer not implemented for
+    // DLRM;");
+  }
+
   BoltBatch getOutputs(uint32_t batch_size, bool force_dense) final {
     return _top_mlp.getOutputs(batch_size, force_dense);
   }

@@ -79,6 +79,7 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   uint32_t getInferenceOutputDim() const final {
     return _layers.back()->getInferenceOutputDim();
   }
+
   bool isShallow() final {
     // if any layer is shallow, return true
     bool shallow = false;
@@ -88,34 +89,35 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     _is_shallow = shallow;
     return shallow;
   }
+
   void setShallow(bool set) final {
     for (uint32_t i = 0; i < _num_layers; i++) {
       _layers[i]->setShallow(set);
     }
     _is_shallow = set;
   }
-  void initialize_optimizer() final {
+
+  void setShallowSave(bool set) final {
     for (uint32_t i = 0; i < _num_layers; i++) {
-      int dim = _layers[i]->getDim();
-      int prev_dim = _layers[i]->getInputDim();
-
-      float* w_set = new float[dim * prev_dim];
-      float* b_set = new float[dim];
-
-      std::fill_n(w_set, dim * prev_dim, 0);
-      std::fill_n(b_set, dim, 0);
-
-      _layers[i]->setBiasGradients(b_set);
-      _layers[i]->setBiasMomentum(b_set);
-      _layers[i]->setBiasVelocity(b_set);
-      _layers[i]->setWeightGradients(w_set);
-      _layers[i]->setWeightMomentum(w_set);
-      _layers[i]->setWeightVelocity(w_set);
-
-      delete[] w_set;
-      delete[] b_set;
+      _layers[i]->setShallowSave(set);
     }
+    _save_shallow = set;
   }
+
+  void initializeOptimizer() final {
+    for (uint32_t i = 0; i < _num_layers; i++) {
+      _layers[i]->initOptimizer();
+    }
+    assert(this.is_shallow() == false);
+  }
+
+  void removeOptimizer() final {
+    for (uint32_t i = 0; i < _num_layers; i++) {
+      _layers[i]->remOptimizer();
+    }
+    assert(this.is_shallow() == true);
+  }
+
   uint32_t getInputDim() const { return _layers.front()->getInputDim(); }
 
   void enableSparseInference() {
@@ -141,7 +143,7 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   std::vector<BoltBatch> _states;
   uint32_t _num_layers;
   bool _sparse_inference_enabled;
-  bool _is_shallow;
+  bool _is_shallow, _save_shallow;
 
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/

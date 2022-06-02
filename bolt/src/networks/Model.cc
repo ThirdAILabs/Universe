@@ -39,7 +39,7 @@ MetricData Model<BATCH_T>::train(
   // if network is loaded without optimizer state, initialize_optimizer
   bool is_shallow = isShallow();
   if (is_shallow) {
-    initialize_optimizer();
+    initializeOptimizer();
   }
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {

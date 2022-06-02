@@ -65,31 +65,33 @@ class ConvLayer final : public SequentialLayer {
 
   void setBiases(const float* new_biases) final;
 
+  void setShallowSave(bool set) final {
+    (void)set;
+    // throw std::logic_error("Warning: setShallowSave not implemented for
+    // DLRM;");
+  }
+
   void setShallow(bool set) final {
     (void)set;
-    std::cout << "Warning: setShallow not implemented for ConvLayer"
-              << std::endl;
+    // throw std::logic_error("Warning: setShallow not implemented for DLRM;");
   }
+
   bool isShallow() final {
-    std::cout
-        << "Warning: isShallow not implemented for ConvLayer; Return false"
-        << std::endl;
+    // throw std::logic_error("Warning: isShallow not implemented for DLRM;");
     return false;
   }
 
-  float* getWeightGradients() final;
-  float* getBiasGradients() final;
-  float* getWeightMomentum() final;
-  float* getBiasMomentum() final;
-  float* getWeightVelocity() final;
-  float* getBiasVelocity() final;
+  void initOptimizer() final {
+    (void)true;
+    // throw std::logic_error("Warning: initOptimizer not implemented for
+    // DLRM;");
+  }
 
-  void setWeightGradients(const float* new_weight_gradients) final;
-  void setBiasGradients(const float* new_bias_gradients) final;
-  void setWeightMomentum(const float* new_weight_momentum) final;
-  void setBiasMomentum(const float* new_bias_momentum) final;
-  void setWeightVelocity(const float* new_weight_velocity) final;
-  void setBiasVelocity(const float* new_bias_velocity) final;
+  void remOptimizer() final {
+    (void)true;
+    // throw std::logic_error("Warning: remOptimizer not implemented for
+    // DLRM;");
+  }
 
  private:
   template <bool DENSE, bool PREV_DENSE>

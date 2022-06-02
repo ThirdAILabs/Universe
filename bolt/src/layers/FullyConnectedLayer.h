@@ -80,28 +80,22 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void setBiases(const float* new_biases) final;
 
-  float* getWeightGradients() final;
-  float* getBiasGradients() final;
-  float* getWeightMomentum() final;
-  float* getBiasMomentum() final;
-  float* getWeightVelocity() final;
-  float* getBiasVelocity() final;
+  void initOptimizer() final;
 
-  void setWeightGradients(const float* new_weight_gradients) final;
-  void setBiasGradients(const float* new_bias_gradients) final;
-  void setWeightMomentum(const float* new_weight_momentum) final;
-  void setBiasMomentum(const float* new_bias_momentum) final;
-  void setWeightVelocity(const float* new_weight_velocity) final;
-  void setBiasVelocity(const float* new_bias_velocity) final;
+  void remOptimizer() final;
 
   bool isShallow() final { return _is_shallow; }
+
   void setShallow(bool set) final { _is_shallow = set; }
+
+  void setShallowSave(bool set) final { _save_shallow = set; }
+
   ~FullyConnectedLayer() = default;
 
  private:
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
-  bool _is_shallow;
+  bool _is_shallow, _save_shallow;
   ActivationFunction _act_func;
 
   std::vector<float> _weights;
@@ -174,22 +168,16 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
-  // template <class Archive>
-  // void serialize(Archive& archive) {
-  //   archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-  //           _w_gradient, _w_momentum, _w_velocity, _biases, _b_gradient,
-  //           _b_momentum, _b_velocity, _sampling_config, _prev_is_active,
-  //           _is_active, _hasher, _hash_table, _rand_neurons,
-  //           _force_sparse_for_inference);
-  // }
+
   template <class Archive>
   void save(Archive& archive) const {
-    archive(_is_shallow);
-    if (_is_shallow) {
+    if (_is_shallow || _save_shallow) {
+      archive(true);
       archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
               _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
               _hash_table, _rand_neurons, _force_sparse_for_inference);
     } else {
+      archive(false);
       archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
               _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
               _hash_table, _rand_neurons, _force_sparse_for_inference,
