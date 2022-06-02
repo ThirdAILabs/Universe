@@ -177,7 +177,7 @@ class PyNetwork final : public FullyConnectedNetwork {
     std::signal(SIGINT, SIG_DFL);
     return metrics;
 
-#else
+#elif _WIN32
     /**
      * For windows, signal might not work, Loo at this
      * https://stackoverflow.com/questions/54362699/windows-console-signal-handling-for-subprocess-c
