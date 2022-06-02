@@ -5,15 +5,14 @@ import os
 from subprocess import DEVNULL
 import pytest
 
+pytestmark = [pytest.mark.unit]
 
 @pytest.mark.unit
 def test_ctrl_c_functionality():
     # started a subprocesss to run a file to which SIGINT needed to be sent
     proc = subprocess.Popen(
         ["python3", "../bolt/python_tests/ctrl_c_executable.py"],
-        shell=False,
-        stdout=DEVNULL,
-        stderr=DEVNULL,
+        shell=False
     )
 
     # making sure the program reaches the train function
@@ -36,4 +35,3 @@ def test_ctrl_c_functionality():
         assert True
 
 
-test_ctrl_c_functionality()
