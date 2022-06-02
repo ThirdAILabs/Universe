@@ -26,8 +26,8 @@ struct SequentialLayerConfig {
           "sparsity must be between 0 exclusive and 1 inclusive.");
     }
     if (0.2 < sparsity && sparsity < 1.0) {
-      std::cout << "WARNING: Using large load_factor value " << sparsity
-                << " in Layer, consider decreasing load_factor" << std::endl;
+      std::cout << "WARNING: Using large sparsity value " << sparsity
+                << " in Layer, consider decreasing sparsity" << std::endl;
     }
   }
 
@@ -144,7 +144,7 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
   }
 
   void print(std::ostream& out) const final {
-    out << "FullyConnected: dim=" << dim << ", load_factor=" << sparsity;
+    out << "FullyConnected: dim=" << dim << ", sparsity=" << sparsity;
     switch (act_func) {
       case ActivationFunction::ReLU:
         out << ", act_func=ReLU";
@@ -219,7 +219,7 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
 
  private:
   void print(std::ostream& out) const final {
-    out << "Conv: num_filters=" << num_filters << ", load_factor=" << sparsity
+    out << "Conv: num_filters=" << num_filters << ", sparsity=" << sparsity
         << ", num_patches=" << num_patches;
     switch (act_func) {
       case ActivationFunction::ReLU:
