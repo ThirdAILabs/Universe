@@ -7,10 +7,7 @@
 
 from thirdai import bolt
 import numpy as np
-import pytest
 
-
-pytestmark = [pytest.mark.unit]
 
 def get_random_dataset_as_numpy(no_of_training_examples):
     dimension_of_input = 5
@@ -31,8 +28,7 @@ def get_random_dataset_as_numpy(no_of_training_examples):
     return train_data, train_labels
 
 
-@pytest.mark.unit
-def train_using_random_numpy():
+def test_loss_metric_computation():
 
     train_data, train_labels = get_random_dataset_as_numpy(100000) 
     layers = [
@@ -52,7 +48,6 @@ def train_using_random_numpy():
         layers=layers, 
         input_dim=5)
     for i in range(30):
-        # print('Done First Training!!')
         network.train(
             train_data=train_data,
             train_labels = train_labels,
@@ -86,4 +81,5 @@ def train_using_random_numpy():
                     loss_per_example += (activations[i][j])**2
             total_loss += loss_per_example
         total_loss /= len(activations)
-        print('Total Loss: ', total_loss)
+
+        

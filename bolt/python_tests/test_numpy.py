@@ -1,9 +1,6 @@
 # Add unit and release test marker for all tests in this file
 from thirdai import bolt
 import numpy as np
-import pytest
-
-pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
 def train_simple_bolt_model(examples, labels, load_factor=1, n_classes=10):
