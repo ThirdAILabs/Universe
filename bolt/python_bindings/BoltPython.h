@@ -16,7 +16,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
-#include <sys/signal.h>
 #include <algorithm>
 #include <csignal>
 #include <exception>
@@ -177,7 +176,7 @@ class PyNetwork final : public FullyConnectedNetwork {
     std::signal(SIGINT, SIG_DFL);
     return metrics;
 
-#elif _WIN32
+#else
     /**
      * For windows, signal might not work, Loo at this
      * https://stackoverflow.com/questions/54362699/windows-console-signal-handling-for-subprocess-c
