@@ -135,9 +135,7 @@ def test_easy_sparse_layer():
     noise = np.random.normal(0, 0.1, examples.shape)
     examples = examples + noise
 
-    acc = train_simple_bolt_model(
-        examples, labels, sparsity=0.1, n_classes=n_classes
-    )
+    acc = train_simple_bolt_model(examples, labels, sparsity=0.1, n_classes=n_classes)
     assert acc > 0.8
 
 
