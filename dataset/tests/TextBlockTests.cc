@@ -4,7 +4,7 @@
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/encodings/text/PairGram.h>
 #include <dataset/src/encodings/text/UniGram.h>
-#include <dataset/src/utils/ExtendableVectors.h>
+#include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <random>
 #include <string>
 #include <vector>
@@ -20,9 +20,9 @@ class TextBlockTest : public testing::Test {
     for (uint32_t y = 0; y < n_rows; y++) {
       std::vector<std::string> row;
       for (uint32_t x = 0; x < n_cols; x++) {
-        std::string sentence = "";
+        std::string sentence;
         for (uint32_t word = 0; word < words_per_row; word++) {
-          sentence = sentence + random_string_of_len(word_length) + " ";
+          sentence += random_string_of_len(word_length) + " ";
         }
         row.push_back(sentence);
       }
@@ -39,16 +39,18 @@ class TextBlockTest : public testing::Test {
         0, alphabet.size() - 1);
 
     std::string str;
-    while (str.size() < length) str += alphabet[distribution(rng)];
+    while (str.size() < length) {
+      str += alphabet[distribution(rng)];
+    }
     return str;
   }
 
-  static std::vector<SparseExtendableVector> makeExtendableVecs(
+  static std::vector<SegmentedSparseFeatureVector> makeSegmentedVecs(
       std::vector<std::vector<std::string>>& matrix,
-      std::vector<TextBlock> blocks) {
-    std::vector<SparseExtendableVector> vecs;
+      std::vector<TextBlock>& blocks) {
+    std::vector<SegmentedSparseFeatureVector> vecs;
     for (const auto& row : matrix) {
-      SparseExtendableVector vec;
+      SegmentedSparseFeatureVector vec;
       for (auto& block : blocks) {
         extendVectorWithBlock(block, row, vec);
       }
@@ -63,8 +65,8 @@ class TextBlockTest : public testing::Test {
    */
   static void extendVectorWithBlock(TextBlock& block,
                                     const std::vector<std::string>& input_row,
-                                    SparseExtendableVector& vec) {
-    block.extendVector(input_row, vec);
+                                    SegmentedSparseFeatureVector& vec) {
+    block.addVectorSegment(input_row, vec);
   }
 
   /**
@@ -72,18 +74,18 @@ class TextBlockTest : public testing::Test {
    * which is private.
    */
   static std::vector<std::pair<uint32_t, float>> vectorEntries(
-      ExtendableVector& vec) {
+      SegmentedFeatureVector& vec) {
     return vec.entries();
   }
 
-  static uint32_t getUnigramIndex(std::string word, uint32_t dim) {
+  static uint32_t getUnigramIndex(std::string& word, uint32_t dim) {
     return hashing::MurmurHash(word.c_str(), word.length(),
                                /* seed = */ 341) %
            dim;
   }
 
-  static uint32_t getPairgramIndex(std::string first_word,
-                                   std::string second_word, uint32_t dim,
+  static uint32_t getPairgramIndex(std::string& first_word,
+                                   std::string& second_word, uint32_t dim,
                                    uint32_t offset) {
     uint32_t first_word_hash =
         hashing::MurmurHash(first_word.c_str(), first_word.length(),
@@ -115,17 +117,22 @@ TEST_F(TextBlockTest, TestTextBlockWithUniAndPairGram) {
   blocks.emplace_back(0, std::make_shared<UniGram>(dim_for_encodings));
   blocks.emplace_back(1, std::make_shared<PairGram>(dim_for_encodings));
 
-  std::vector<SparseExtendableVector> vecs = makeExtendableVecs(matrix, blocks);
+  std::vector<SegmentedSparseFeatureVector> vecs = makeSegmentedVecs(matrix, blocks);
 
   ASSERT_EQ(matrix.size(), vecs.size());
   for (uint32_t row = 0; row < matrix.size(); row++) {
+    
+    auto first_word_first_col = matrix[row][0].substr(0, word_length);
+    auto first_word_second_col = matrix[row][1].substr(0, word_length);
+    auto second_word_second_col = matrix[row][1].substr(word_length + 1,
+                              word_length);
+
     uint32_t unigram_index = getUnigramIndex(
-        matrix[row][0].substr(0, word_length),  // first word first column
+        first_word_first_col,
         dim_for_encodings);
     uint32_t pairgram_index = getPairgramIndex(
-        matrix[row][1].substr(0, word_length),  // first word second column
-        matrix[row][1].substr(word_length + 1,
-                              word_length),  // second word second column
+        first_word_second_col,
+        second_word_second_col,
         dim_for_encodings, dim_for_encodings);
 
     auto entries = vectorEntries(vecs[row]);
@@ -143,8 +150,6 @@ TEST_F(TextBlockTest, TestTextBlockWithUniAndPairGram) {
     ASSERT_TRUE(found_unigram);
     ASSERT_TRUE(found_pairgram);
   }
-
-  return;
 }
 
 }  // namespace thirdai::dataset
