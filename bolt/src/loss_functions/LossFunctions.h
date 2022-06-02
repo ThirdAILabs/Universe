@@ -33,18 +33,17 @@ class LossFunction {
     }
   }
 
-  float computeLossMetric(BoltVector& output, const BoltVector& labels,
-                        uint32_t batch_size) const {
+  float computeLossMetric(BoltVector& output, const BoltVector& labels) const {
       if (output.isDense()) {
       if (labels.isDense()) {
-        return computeLossMetricImpl<true, true>(output, labels, batch_size);
+        return computeLossMetricImpl<true, true>(output, labels);
         } 
-          return computeLossMetricImpl<true, false>(output, labels, batch_size);
+          return computeLossMetricImpl<true, false>(output, labels);
       } 
       if (labels.isDense()) {
-        return computeLossMetricImpl<false, true>(output, labels, batch_size);
+        return computeLossMetricImpl<false, true>(output, labels);
       }
-      return  computeLossMetricImpl<false, false>(output, labels, batch_size);
+      return  computeLossMetricImpl<false, false>(output, labels);
     }
 
 
@@ -81,38 +80,34 @@ class LossFunction {
   }
 
   template<bool OUTPUT_DENSE, bool LABEL_DENSE>
-  float computeLossMetricImpl(BoltVector& output, const BoltVector& labels, 
-                          uint32_t batch_size) const {
-    float local_loss_metric = 0;
-    uint32_t labels_active_neuron_id = 0;
-    uint32_t output_active_neuron_id = 0;
-    
-    
-    // Assuming the neuron_id(indices) are in increasing order.
-    // Handle the sparse and dense part differently
-    while(labels_active_neuron_id<labels.len && output_active_neuron_id<output.len){
-      
-        if(labels.active_neurons[labels_active_neuron_id]<output.active_neurons[output_active_neuron_id]){
-          local_loss_metric += elementLossMetric(labels.activations[labels_active_neuron_id], 0 , batch_size);
-          labels_active_neuron_id++;
-        }else if(labels.active_neurons[labels_active_neuron_id]<output.active_neurons[output_active_neuron_id]){
-          local_loss_metric += elementLossMetric(0, output.activations[output_active_neuron_id] , batch_size);
-          output_active_neuron_id++;
-        }else{
-          local_loss_metric += elementLossMetric(labels.activations[labels_active_neuron_id], output.activations[output_active_neuron_id] , batch_size);;
-          labels_active_neuron_id++;
-          output_active_neuron_id++;
-        }
-    }
-    while(labels_active_neuron_id<labels.len){
-        local_loss_metric += elementLossMetric(labels.activations[labels_active_neuron_id], 0 , batch_size);
-        labels_active_neuron_id++;
-    }
-    while(output_active_neuron_id<output.len){
-        local_loss_metric += elementLossMetric(0, output.activations[output_active_neuron_id] , batch_size);
-        output_active_neuron_id++;
-    }
+  float computeLossMetricImpl(BoltVector& output, const BoltVector& labels) const {
+    float local_loss_metric_repeated = 0;
+    float local_loss_metric_unique = 0;
 
+    for(uint32_t i=0; i<output.len; i++){
+
+      uint32_t active_neuron = OUTPUT_DENSE ? i : output.active_neurons[i];
+      float label_val =
+          labels.findActiveNeuron<LABEL_DENSE>(active_neuron).activation;
+      if(label_val == 0){
+        local_loss_metric_unique += elementLossMetric(label_val, output.activations[i]  );
+      }else{
+        local_loss_metric_repeated += elementLossMetric(label_val, output.activations[i] );
+      }
+    } 
+
+    for(uint32_t i=0; i<labels.len; i++){
+
+      uint32_t active_neuron = LABEL_DENSE ? i : labels.active_neurons[i];
+      float output_val =
+          output.findActiveNeuron<OUTPUT_DENSE>(active_neuron).activation;
+      if(output_val == 0){
+        local_loss_metric_unique += elementLossMetric(labels.activations[i] , output_val  );
+      }else{
+        local_loss_metric_repeated += elementLossMetric(labels.activations[i] , output_val );
+      }
+    } 
+    float local_loss_metric = local_loss_metric_unique + local_loss_metric_repeated/2;
     return local_loss_metric;
   }
 
@@ -120,8 +115,7 @@ class LossFunction {
 
   virtual float elementLossGradient(float label, float activation,
                                     uint32_t batch_size) const = 0;
-  virtual float elementLossMetric(float label, float activation,
-                                    uint32_t batch_size) const = 0;
+  virtual float elementLossMetric(float label, float activation) const = 0;
 
 };
 
@@ -137,10 +131,9 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
                             uint32_t batch_size) const override {
     return (label - activation) / batch_size;
   }
-  float elementLossMetric(float label, float activation,
-                            uint32_t batch_size) const override {
+  float elementLossMetric(float label, float activation) const override {
       if(activation != 0){
-        return (label * log(activation)) / batch_size;
+        return - (label * log(activation));
       }
       return 0;
   }
@@ -157,9 +150,8 @@ class MeanSquaredError final : public LossFunction {
                             uint32_t batch_size) const override {
     return 2 * (label - activation) / batch_size;
   }
-  float elementLossMetric(float label, float activation,
-                            uint32_t batch_size) const override {
-    return ((label - activation) * (label - activation)) / batch_size;
+  float elementLossMetric(float label, float activation) const override {
+    return ((label - activation) * (label - activation));
   }
 };
 
@@ -183,10 +175,9 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
     auto direction = activation > label ? -1.0 : 1.0;
     return direction / batch_size;
   }
-  float elementLossMetric(float label, float activation,
-                            uint32_t batch_size) const override {
+  float elementLossMetric(float label, float activation) const override {
     throw std::invalid_argument("Loss Metric is not supported for Weighted Mean Absolute Percentage Error Loss.");
-    return ((label - activation) * (label - activation)) / batch_size;
+    return ((label - activation) * (label - activation));
   }
 };
 

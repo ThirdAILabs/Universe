@@ -2,6 +2,7 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/metrics/MetricHelpers.h>
 #include <bolt/src/utils/ProgressBar.h>
+#include <_types/_uint32_t.h>
 #include <dataset/src/batch_types/ClickThroughBatch.h>
 #include <algorithm>
 #include <cctype>
@@ -63,13 +64,11 @@ MetricData Model<BATCH_T>::train(
 
         loss_fn.lossGradients(outputs[vec_id], batch_labels[vec_id],
                               batch_inputs.getBatchSize());
-        // float local_loss_function_metric = loss_fn.computeLossMetric(outputs[vec_id], batch_labels[vec_id],
-        //                       batch_inputs.getBatchSize());
-        
-        // MetricUtilities::incrementAtomicFloat(loss_function_metric, local_loss_function_metric);
         
         backpropagate(vec_id, batch_inputs, outputs[vec_id]);
-
+        float local_loss_function_metric = loss_fn.computeLossMetric(outputs[vec_id], batch_labels[vec_id]);
+        
+        MetricUtilities::incrementAtomicFloat(loss_function_metric, local_loss_function_metric);
         metrics.processSample(outputs[vec_id], batch_labels[vec_id]);
       }
 
@@ -97,6 +96,8 @@ MetricData Model<BATCH_T>::train(
                 << epoch_time << " seconds" << std::endl;
     }
     _epoch_count++;
+    loss_function_metric  = loss_function_metric / (batch_size * num_train_batches);
+    // std::cout << num_train_batches << " " << batch_size << std::endl;
     std::cout << "Loss: " << loss_function_metric << std::endl;
     metrics.logAndReset();
   }
