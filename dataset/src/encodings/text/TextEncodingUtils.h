@@ -2,6 +2,7 @@
 
 #include <dataset/src/blocks/BlockInterface.h>
 #include <functional>
+#include <limits>
 #include <type_traits>
 
 namespace thirdai::dataset {
@@ -14,6 +15,10 @@ class TextEncodingUtils {
    */
   inline static void sumRepeatedIndices(std::vector<uint32_t>& indices,
                                         float value, SegmentedFeatureVector& vec) {
+    if (indices.empty()) {
+      return;
+    }
+
     // Put equivalent indices next to each other.
     std::sort(indices.begin(), indices.end());
 
@@ -50,19 +55,28 @@ class TextEncodingUtils {
    */
   template <typename WORD_PROCESSOR_T>
   inline static void forEachWord(std::string& sentence,
-                                 WORD_PROCESSOR_T word_processor) {
+                                 WORD_PROCESSOR_T word_processor,
+                                 uint32_t start_pos=0,
+                                 uint32_t end_pos=std::numeric_limits<uint32_t>::max()) {
     static_assert(
         std::is_convertible<WORD_PROCESSOR_T,
                             std::function<void(char*, size_t)>>::value);
 
     const auto* start_ptr = sentence.c_str();
     bool last_ptr_was_space = false;
+    uint32_t n_seen = 0;
     for (const auto& c : sentence) {
+      if (n_seen >= end_pos) {
+        break;
+      }
       // Just saw a word boundary
       if (isspace(c) && !last_ptr_was_space) {
         last_ptr_was_space = true;
         size_t len = std::distance(start_ptr, &c);
-        word_processor(start_ptr, len);
+        if (n_seen >= start_pos) {
+          word_processor(start_ptr, len);
+        }
+        n_seen++;
       }
 
       // Encountered a new word
