@@ -89,6 +89,7 @@ def create_fully_connected_layer_configs(
                     num_tables=config.get("num_tables", 0),
                     range_pow=config.get("range_pow", 0),
                     reservoir_size=config.get("reservoir_size", 128),
+                    hash_type=config.get("hash_type","DWTA"),
                 ),
             )
 
