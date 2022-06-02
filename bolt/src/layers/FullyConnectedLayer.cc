@@ -272,10 +272,25 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                               input.len, hashes.data());
   }
 
-  if ((_force_sparse_for_inference &&
-       _act_func == ActivationFunction::Softmax) ||
-      (_force_sparse_for_inference &&
+  if (_force_sparse_for_inference && labels != nullptr &&
+      (_act_func == ActivationFunction::Softmax ||
        _act_func == ActivationFunction::Sigmoid)) {
+    /**
+     * QueryBySet just returns a set of the elements in the given buckets of the
+     * hash table.
+     *
+     * QueryAndInsertForInference returns the set of elements in the given
+     * buckets but will also insert the labels (during training only) for the
+     * vector into the buckets the vector maps to if they are not already
+     * present in the buckets. The intuition is that during sparse inference
+     * this will help force the hash tables to map vectors towards buckets that
+     * contain their correct labels. This is specific to the output layer.
+     *
+     * We call QueryAndInsertForInference if the following conditions are met:
+     *   1. We have sparse inference enabled.
+     *   2. Labels are not null (meaning we're in the output layer).
+     *   3. Activation = Softmax or Sigmoid, meaning it's a classification task.
+     */
     _hash_table->queryAndInsertForInference(hashes.data(), active_set,
                                             _sparse_dim);
   } else {

@@ -130,7 +130,7 @@ static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
   if (lower_name == "categoricalcrossentropyloss") {
     return CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss();
   }
-  if (lower_name == "binarycrossentropyloss") {
+  if (lower_name == "binarycrossentropyloss" || lower_name == "bce") {
     return BinaryCrossEntropyLoss::makeBinaryCrossEntropyLoss();
   }
   if (lower_name == "meansquarederror" || lower_name == "mse") {

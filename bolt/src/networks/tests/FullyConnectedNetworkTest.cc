@@ -54,7 +54,8 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(false);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 5,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                /* learning_rate= */ 0.001, /* epochs= */ 5,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
   auto test_metrics = network.predict(
@@ -73,7 +74,8 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(true);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 5,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                /* learning_rate= */ 0.001, /* epochs= */ 5,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
   auto test_metrics = network.predict(
@@ -94,7 +96,8 @@ static void testSimpleDatasetMultiLayerNetworkActivation(
 
   auto data = FullyConnectedClassificationNetworkTestFixture::genDataset(false);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 2,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                /* learning_rate */ 0.001, /* epochs */ 2,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
   auto test_metrics = network.predict(
@@ -125,7 +128,8 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = FullyConnectedClassificationNetworkTestFixture::genDataset(false);
 
-  network.train(data.data, data.labels, BinaryCrossEntropyLoss(), 0.001, 2,
+  network.train(data.data, data.labels, BinaryCrossEntropyLoss(),
+                /* learning_rate= */ 0.001, /* epochs= */ 2,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ true);
   auto test_metrics = network.predict(
@@ -148,7 +152,8 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(true);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 2,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                /* learning_rate= */ 0.001, /* epochs= */ 2,
                 /* rehash= */ 0, /* rebuild=*/0, /* metric_names= */ {},
                 /* verbose= */ false);
   auto test_metrics = network.predict(
