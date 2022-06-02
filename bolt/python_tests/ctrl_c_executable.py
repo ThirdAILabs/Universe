@@ -1,6 +1,8 @@
 from thirdai import bolt
 import numpy as np
 
+
+
 def get_random_dataset_as_numpy():
     no_of_training_examples = 100000
     dimension_of_input = 5
