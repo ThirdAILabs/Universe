@@ -28,14 +28,13 @@ MetricData Model<BATCH_T>::train(
       getRebuildBatch(rebuild, batch_size, train_data->len());
   uint32_t rehash_batch = getRehashBatch(rehash, batch_size, train_data->len());
   uint64_t num_train_batches = train_data->numBatches();
-
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
   initializeNetworkState(batch_size, false);
   BoltBatch outputs = getOutputs(batch_size, false);
 
   std::vector<double> time_per_epoch;
-
+  std::vector<double> loss_per_epoch;
   MetricAggregator metrics(metric_names, verbose);
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
@@ -56,19 +55,22 @@ MetricData Model<BATCH_T>::train(
 
       const BoltBatch& batch_labels = train_labels->at(batch);
 
-#pragma omp parallel for default(none) \
-    shared(batch_inputs, batch_labels, outputs, loss_fn, metrics, loss_function_metric)
+#pragma omp parallel for default(none)                            \
+    shared(batch_inputs, batch_labels, outputs, loss_fn, metrics, \
+           loss_function_metric)
       for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize();
            vec_id++) {
         forward(vec_id, batch_inputs, outputs[vec_id], &batch_labels[vec_id]);
 
         loss_fn.lossGradients(outputs[vec_id], batch_labels[vec_id],
                               batch_inputs.getBatchSize());
-        
+
         backpropagate(vec_id, batch_inputs, outputs[vec_id]);
-        float local_loss_function_metric = loss_fn.computeLossMetric(outputs[vec_id], batch_labels[vec_id]);
-        
-        MetricUtilities::incrementAtomicFloat(loss_function_metric, local_loss_function_metric);
+        float local_loss_function_metric =
+            loss_fn.computeLossMetric(outputs[vec_id], batch_labels[vec_id]);
+
+        MetricUtilities::incrementAtomicFloat(loss_function_metric,
+                                              local_loss_function_metric);
         metrics.processSample(outputs[vec_id], batch_labels[vec_id]);
       }
 
@@ -90,22 +92,24 @@ MetricData Model<BATCH_T>::train(
                              .count();
 
     time_per_epoch.push_back(static_cast<double>(epoch_time));
+    loss_function_metric =
+        loss_function_metric / (batch_size * num_train_batches);
+    loss_per_epoch.push_back(static_cast<double>(loss_function_metric));
     if (verbose) {
       std::cout << std::endl
                 << "Processed " << num_train_batches << " training batches in "
                 << epoch_time << " seconds" << std::endl;
-    }
-    _epoch_count++;
-    loss_function_metric  = loss_function_metric / (batch_size * num_train_batches);
-    // std::cout << num_train_batches << " " << batch_size << std::endl;
-    if(verbose){
+
       std::cout << "Loss: " << loss_function_metric << std::endl;
     }
+    _epoch_count++;
+
     metrics.logAndReset();
   }
 
   auto metric_data = metrics.getOutput();
   metric_data["epoch_times"] = std::move(time_per_epoch);
+  metric_data["loss_metric"] = std::move(loss_per_epoch);
 
   return metric_data;
 }

@@ -12,12 +12,10 @@ namespace thirdai::bolt {
 
 class LossFunction {
  public:
-  LossFunction() {
-  }
+  LossFunction() {}
 
   void lossGradients(BoltVector& output, const BoltVector& labels,
                      uint32_t batch_size) const {
-    
     if (output.isDense()) {
       if (labels.isDense()) {
         computeLossGradientsImpl<true, true>(output, labels, batch_size);
@@ -34,26 +32,21 @@ class LossFunction {
   }
 
   float computeLossMetric(BoltVector& output, const BoltVector& labels) const {
-      if (output.isDense()) {
+    if (output.isDense()) {
       if (labels.isDense()) {
         return computeLossMetricImpl<true, true>(output, labels);
-        } 
-          return computeLossMetricImpl<true, false>(output, labels);
-      } 
-      if (labels.isDense()) {
-        return computeLossMetricImpl<false, true>(output, labels);
       }
-      return  computeLossMetricImpl<false, false>(output, labels);
+      return computeLossMetricImpl<true, false>(output, labels);
     }
-
-
-
-    
+    if (labels.isDense()) {
+      return computeLossMetricImpl<false, true>(output, labels);
+    }
+    return computeLossMetricImpl<false, false>(output, labels);
+  }
 
   virtual ~LossFunction() = default;
 
  private:
-
   template <bool OUTPUT_DENSE, bool LABEL_DENSE>
   void computeLossGradientsImpl(BoltVector& output, const BoltVector& labels,
                                 uint32_t batch_size) const {
@@ -79,44 +72,45 @@ class LossFunction {
     }
   }
 
-  template<bool OUTPUT_DENSE, bool LABEL_DENSE>
-  float computeLossMetricImpl(BoltVector& output, const BoltVector& labels) const {
+  template <bool OUTPUT_DENSE, bool LABEL_DENSE>
+  float computeLossMetricImpl(BoltVector& output,
+                              const BoltVector& labels) const {
     float local_loss_metric_repeated = 0;
     float local_loss_metric_unique = 0;
 
-    for(uint32_t i=0; i<output.len; i++){
-
+    for (uint32_t i = 0; i < output.len; i++) {
       uint32_t active_neuron = OUTPUT_DENSE ? i : output.active_neurons[i];
       float label_val =
           labels.findActiveNeuron<LABEL_DENSE>(active_neuron).activation;
-      if(label_val == 0){
-        local_loss_metric_unique += elementLossMetric(label_val, output.activations[i]  );
-      }else{
-        local_loss_metric_repeated += elementLossMetric(label_val, output.activations[i] );
+      if (label_val == 0) {
+        local_loss_metric_unique +=
+            elementLossMetric(label_val, output.activations[i]);
+      } else {
+        local_loss_metric_repeated +=
+            elementLossMetric(label_val, output.activations[i]);
       }
-    } 
+    }
 
-    for(uint32_t i=0; i<labels.len; i++){
-
+    for (uint32_t i = 0; i < labels.len; i++) {
       uint32_t active_neuron = LABEL_DENSE ? i : labels.active_neurons[i];
       float output_val =
           output.findActiveNeuron<OUTPUT_DENSE>(active_neuron).activation;
-      if(output_val == 0){
-        local_loss_metric_unique += elementLossMetric(labels.activations[i] , output_val  );
-      }else{
-        local_loss_metric_repeated += elementLossMetric(labels.activations[i] , output_val );
+      if (output_val == 0) {
+        local_loss_metric_unique +=
+            elementLossMetric(labels.activations[i], output_val);
+      } else {
+        local_loss_metric_repeated +=
+            elementLossMetric(labels.activations[i], output_val);
       }
-    } 
-    float local_loss_metric = local_loss_metric_unique + local_loss_metric_repeated/2;
+    }
+    float local_loss_metric =
+        local_loss_metric_unique + local_loss_metric_repeated / 2;
     return local_loss_metric;
   }
-
-  
 
   virtual float elementLossGradient(float label, float activation,
                                     uint32_t batch_size) const = 0;
   virtual float elementLossMetric(float label, float activation) const = 0;
-
 };
 
 class CategoricalCrossEntropyLoss final : public LossFunction {
@@ -132,10 +126,7 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
     return (label - activation) / batch_size;
   }
   float elementLossMetric(float label, float activation) const override {
-      if(activation != 0){
-        return - (label * log(activation));
-      }
-      return 0;
+    return -(label * log(activation));
   }
 };
 
@@ -176,7 +167,9 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
     return direction / batch_size;
   }
   float elementLossMetric(float label, float activation) const override {
-    throw std::invalid_argument("Loss Metric is not supported for Weighted Mean Absolute Percentage Error Loss.");
+    throw std::invalid_argument(
+        "Loss Metric is not supported for Weighted Mean Absolute Percentage "
+        "Error Loss.");
     return ((label - activation) * (label - activation));
   }
 };

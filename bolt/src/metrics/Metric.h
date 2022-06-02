@@ -1,8 +1,8 @@
 #pragma once
 
 #include <bolt/src/layers/BoltVector.h>
-#include <bolt/src/metrics/MetricHelpers.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/metrics/MetricHelpers.h>
 #include <_types/_uint64_t.h>
 #include <algorithm>
 #include <atomic>
