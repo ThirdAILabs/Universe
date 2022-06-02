@@ -17,10 +17,11 @@ class SvmParser {
   SvmParser(VectorBuilder vb, LabelBuilder lb)
       : _vector_builder(vb), _label_builder(lb) {}
 
-  void parseBatch(uint32_t target_batch_size, std::ifstream& file,
+  uint32_t parseBatch(uint32_t target_batch_size, std::ifstream& file,
                   std::vector<VECTOR_T>& vectors_out,
                   std::vector<LABEL_T>& labels_out) {
     uint32_t curr_batch_size = 0;
+    uint32_t max_index = 0;
     std::string line;
     while (curr_batch_size < target_batch_size && std::getline(file, line)) {
       const char* start = line.c_str();
@@ -48,6 +49,7 @@ class SvmParser {
         float value = std::strtof(start, &end);
         indices.push_back(index);
         values.push_back(value);
+        max_index = std::max(max_index, index);
         start = end;
 
         while ((*start == ' ' || *start == '\t') && start < line_end) {
@@ -59,6 +61,7 @@ class SvmParser {
 
       curr_batch_size++;
     }
+    return max_index;
   }
 
  private:

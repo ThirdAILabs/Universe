@@ -24,6 +24,7 @@ DatasetWithLabels loadBoltSvmDataset(const std::string& filename,
       });
 
   uint32_t len = 0;
+  uint32_t max_index = 0;
 
   std::vector<bolt::BoltBatch> data_batches;
   std::vector<bolt::BoltBatch> label_batches;
@@ -31,7 +32,8 @@ DatasetWithLabels loadBoltSvmDataset(const std::string& filename,
     std::vector<bolt::BoltVector> data_vecs;
     std::vector<bolt::BoltVector> label_vecs;
 
-    parser.parseBatch(batch_size, file, data_vecs, label_vecs);
+    uint32_t batch_max_index = parser.parseBatch(batch_size, file, data_vecs, label_vecs);
+    max_index = std::max(max_index, batch_max_index);
 
     len += data_vecs.size();
 
@@ -45,7 +47,7 @@ DatasetWithLabels loadBoltSvmDataset(const std::string& filename,
       << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
       << " seconds" << std::endl;
 
-  return DatasetWithLabels(BoltDataset(std::move(data_batches), len),
+  return DatasetWithLabels(BoltDataset(std::move(data_batches), len, max_index),
                            BoltDataset(std::move(label_batches), len));
 }
 

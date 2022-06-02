@@ -446,6 +446,7 @@ BoltDatasetPtr sparseBoltDatasetFromNumpy(const NumpyArray<uint32_t>& indices,
 
   uint64_t num_batches = (num_examples + batch_size - 1) / batch_size;
   std::vector<bolt::BoltBatch> batches;
+  uint32_t max_index = 0;
 
   for (uint32_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     std::vector<BoltVector> batch_vectors;
@@ -457,15 +458,18 @@ BoltDatasetPtr sparseBoltDatasetFromNumpy(const NumpyArray<uint32_t>& indices,
       // if this batch (and thus the underlying vectors) get deleted
       auto vector_length =
           offsets_raw_data[vec_idx + 1] - offsets_raw_data[vec_idx];
+      
       batch_vectors.emplace_back(indices_raw_data + offsets_raw_data[vec_idx],
                                  values_raw_data + offsets_raw_data[vec_idx],
                                  nullptr, vector_length);
+      //TODO(henry): make sure this works
+      max_index = std::max(max_index, *(indices_raw_data + offsets_raw_data[vec_idx]));
     }
 
     batches.emplace_back(std::move(batch_vectors));
   }
 
-  return std::make_shared<BoltDataset>(std::move(batches), num_examples);
+  return std::make_shared<BoltDataset>(std::move(batches), num_examples, max_index);
 }
 
 BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,

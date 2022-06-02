@@ -120,6 +120,11 @@ class Model {
   // sparse inference is enabled).
   virtual uint32_t getInferenceOutputDim() const = 0;
 
+  // Verify that the maximum index of any sparse vector in the dataset is
+  // smaller than the dimension of the input layer. Only FullyConnected network
+  // requires this check.
+  virtual void verifyInputDim(uint32_t max_index) = 0; 
+
   virtual ~Model() = default;
 
  protected:
