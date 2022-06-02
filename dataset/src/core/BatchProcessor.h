@@ -18,7 +18,8 @@ class BatchProcessor {
  public:
   BatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
                  std::vector<std::shared_ptr<Block>> target_blocks,
-                 uint32_t output_batch_size);
+                 uint32_t output_batch_size,
+                 size_t est_num_elems=0);
 
   /**
    * Consumes a batch of input samples and encodes them

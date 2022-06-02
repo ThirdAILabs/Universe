@@ -174,9 +174,9 @@ void createDatasetSubmodule(py::module_& module) {
       "This is not consumer-facing.")
       .def(
           py::init<std::vector<std::shared_ptr<Block>>,
-                   std::vector<std::shared_ptr<Block>>, uint32_t>(),
+                   std::vector<std::shared_ptr<Block>>, uint32_t, size_t>(),
           py::arg("input_blocks"), py::arg("target_blocks"),
-          py::arg("output_batch_size"), py::keep_alive<1, 2>(),
+          py::arg("output_batch_size"), py::arg("est_num_elems"), py::keep_alive<1, 2>(),
           py::keep_alive<1, 3>(),
           "Constructor\n\n"
           "Arguments:\n"
