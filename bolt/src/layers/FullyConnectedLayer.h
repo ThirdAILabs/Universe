@@ -23,9 +23,9 @@ class FullyConnectedLayer final : public SequentialLayer {
   FullyConnectedLayer() {}
 
   FullyConnectedLayer(const FullyConnectedLayer&) = delete;
-  FullyConnectedLayer(FullyConnectedLayer&&) = delete;
+  FullyConnectedLayer(FullyConnectedLayer&&) = default;
   FullyConnectedLayer& operator=(const FullyConnectedLayer&) = delete;
-  FullyConnectedLayer& operator=(FullyConnectedLayer&&) = delete;
+  FullyConnectedLayer& operator=(FullyConnectedLayer&&) = default;
 
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
                       uint64_t prev_dim);
