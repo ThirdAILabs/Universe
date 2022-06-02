@@ -20,7 +20,13 @@ class UniGram : public TextEncoding {
   /**
    * Constructor. Accepts the desired dimension of the encoding.
    */
-  explicit UniGram(uint32_t dim = 100000) : _dim(dim) {}
+  // explicit UniGram(uint32_t dim = 100000) 
+  //                  : _dim(dim), _start_pos(0), _end_pos(std::numeric_limits<uint32_t>::max()) {}
+
+  explicit UniGram(uint32_t dim = 100000, 
+                   uint32_t start_pos=0,
+                   uint32_t end_pos=std::numeric_limits<uint32_t>::max()) 
+                   : _dim(dim), _start_pos(start_pos), _end_pos(end_pos) {}
 
   void encodeText(const std::string& text, ExtendableVector& vec) final {
     // TODO(Geordie): Do we need to make lower case?
@@ -33,7 +39,7 @@ class UniGram : public TextEncoding {
           uint32_t hash =
               hashing::MurmurHash(start_ptr, len, /* seed = */ 341) % _dim;
           uni_grams.push_back(hash);
-        });
+        }, _start_pos, _end_pos);
 
     // Deduplication adds an overhead of around 10% but helps to reduce
     // number of entries in the sparse vector, which can in turn make BOLT
@@ -47,6 +53,8 @@ class UniGram : public TextEncoding {
 
  private:
   uint32_t _dim;
+  uint32_t _start_pos;
+  uint32_t _end_pos;
 };
 
 }  // namespace thirdai::dataset
