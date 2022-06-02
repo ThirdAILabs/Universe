@@ -1,0 +1,5 @@
+*.txt
+*.npy
+*.tsv
+triplet_network
+sentence_embedding_model
