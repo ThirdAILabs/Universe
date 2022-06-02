@@ -1,5 +1,6 @@
 import os
 from typing import Tuple
+from typing_extensions import Self
 
 from ..interfaces import Source, Parser
 from .schema import Schema
@@ -33,7 +34,8 @@ class Loader:
         batch_size: int = 256,
         shuffle: bool = False,
         shuffle_seed: int = random.randint(0, 0xFFFFFFFF),
-    ):
+        est_num_elems: int = 0,
+    ) -> None:
         """Constructor.
 
         Arguments:
@@ -55,8 +57,9 @@ class Loader:
         self.set_batch_size(batch_size)
         self._shuffle_rows = shuffle
         self._shuffle_seed = shuffle_seed
+        self._est_num_elems = est_num_elems
 
-    def set_source(self, source: Source):
+    def set_source(self, source: Source) -> Self:
         """Defines the location of the dataset.
 
         Arguments:
@@ -66,7 +69,7 @@ class Loader:
         self._source = source
         return self  ### Returns self so we can chain the set() method calls.
 
-    def set_parser(self, parser: Parser):
+    def set_parser(self, parser: Parser) -> Self:
         """Defines how the dataset can be parsed.
 
         Arguments:
@@ -76,7 +79,7 @@ class Loader:
         self._parser = parser
         return self  ### Returns self so we can chain the set() method calls.
 
-    def set_schema(self, schema: Schema):
+    def set_schema(self, schema: Schema) -> Self:
         """Defines the how each sample in the dataset is processed.
 
         Arguments:
@@ -86,7 +89,7 @@ class Loader:
         self._schema = schema
         return self  ### Returns self so we can chain the set() method calls.
 
-    def set_batch_size(self, size: int):
+    def set_batch_size(self, size: int) -> Self:
         """Sets the batch size.
 
         Arguments:
@@ -95,7 +98,7 @@ class Loader:
         self._batch_size = size
         return self  ### Returns self so we can chain the set() method calls.
 
-    def shuffle(self, seed: int = None):
+    def shuffle(self, seed: int = None) -> Self:
         """Samples will be shuffled before being batched."""
         self._shuffle_rows = True
         # We use a ternary here instead of setting default seed to random.randint()
@@ -122,17 +125,13 @@ class Loader:
         the source and into the destination batch.
         """
         counter = 0
-        next_row = next(row_generator)
-        while next_row is not None and counter < max_rows - 1:
+        for next_row in row_generator:
             destination.append(next_row)
             counter += 1
-            next_row = next(row_generator)
+            if counter == max_rows:
+                break
 
-        # Don't leave out last row.
-        if next_row is not None:
-            destination.append(next_row)
-
-    def __load_all_and_process(self):
+    def __load_all_and_process(self) -> Tuple[dataset.BoltDataset, dataset.BoltDataset]:
         """Helper function to load the whole dataset, processes each sample, and
         generates batches of vector embeddings.
         We want to read lines from file in the main thread and 
@@ -152,6 +151,8 @@ class Loader:
             self._schema._input_blocks,
             self._schema._target_blocks,
             self._batch_size,
+            self._est_num_elems,
+
         )
 
         # Here, we read the first batch. 
@@ -187,11 +188,11 @@ class Loader:
             self._shuffle_rows, self._shuffle_seed
         )
 
-    def get_input_dim(self):
+    def get_input_dim(self) -> int:
         """Returns the dimension of input vectors."""
         return self._schema._input_dim
 
-    def get_target_dim(self):
+    def get_target_dim(self) -> int:
         """Returns the dimension of target vectors."""
         return self._schema._target_dim
 

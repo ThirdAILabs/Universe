@@ -1,3 +1,4 @@
+#include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Text.h>
@@ -13,13 +14,17 @@ namespace thirdai::dataset {
 class TextBlockTest : public testing::Test {
  public:
   static std::vector<std::vector<std::string>> generate_random_string_matrix(
-      uint32_t n_rows, uint32_t n_cols) {
-    uint32_t max_str_len = 8;
+      uint32_t n_rows, uint32_t n_cols, uint32_t word_length) {
+    uint32_t words_per_row = 5;
     std::vector<std::vector<std::string>> matrix;
     for (uint32_t y = 0; y < n_rows; y++) {
       std::vector<std::string> row;
       for (uint32_t x = 0; x < n_cols; x++) {
-        row.push_back(random_string_of_len(std::rand() % max_str_len));
+        std::string sentence = "";
+        for (uint32_t word = 0; word < words_per_row; word++) {
+          sentence = sentence + random_string_of_len(word_length) + " ";
+        }
+        row.push_back(sentence);
       }
       matrix.push_back(row);
     }
@@ -28,13 +33,28 @@ class TextBlockTest : public testing::Test {
 
   static std::string random_string_of_len(std::size_t length) {
     const std::string alphabet = "abcdefghijklmnopqrstuvwxyz";
-    std::default_random_engine rng(std::time(nullptr));
+    std::random_device r;
+    std::default_random_engine rng{r()};
     std::uniform_int_distribution<std::size_t> distribution(
         0, alphabet.size() - 1);
 
     std::string str;
     while (str.size() < length) str += alphabet[distribution(rng)];
     return str;
+  }
+
+  static std::vector<SparseExtendableVector> makeExtendableVecs(
+      std::vector<std::vector<std::string>>& matrix,
+      std::vector<TextBlock> blocks) {
+    std::vector<SparseExtendableVector> vecs;
+    for (const auto& row : matrix) {
+      SparseExtendableVector vec;
+      for (auto& block : blocks) {
+        extendVectorWithBlock(block, row, vec);
+      }
+      vecs.push_back(std::move(vec));
+    }
+    return vecs;
   }
 
   /**
@@ -55,6 +75,28 @@ class TextBlockTest : public testing::Test {
       ExtendableVector& vec) {
     return vec.entries();
   }
+
+  static uint32_t getUnigramIndex(std::string word, uint32_t dim) {
+    return hashing::MurmurHash(word.c_str(), word.length(),
+                               /* seed = */ 341) %
+           dim;
+  }
+
+  static uint32_t getPairgramIndex(std::string first_word,
+                                   std::string second_word, uint32_t dim,
+                                   uint32_t offset) {
+    uint32_t first_word_hash =
+        hashing::MurmurHash(first_word.c_str(), first_word.length(),
+                            /* seed = */ 341);
+    uint32_t second_word_hash =
+        hashing::MurmurHash(second_word.c_str(), second_word.length(),
+                            /* seed = */ 341);
+
+    return (hashing::HashUtils::combineHashes(first_word_hash,
+                                              second_word_hash) %
+            dim) +
+           offset;
+  }
 };
 
 /**
@@ -63,64 +105,42 @@ class TextBlockTest : public testing::Test {
  */
 TEST_F(TextBlockTest, TestTextBlockWithUniAndPairGram) {
   uint32_t num_rows = 100;
-  uint32_t num_words_per_row = 5;
+  uint32_t num_columns = 2;
+  uint32_t word_length = 8;
   std::vector<std::vector<std::string>> matrix =
-      generate_random_string_matrix(num_rows, num_words_per_row);
+      generate_random_string_matrix(num_rows, num_columns, word_length);
 
-  uint32_t dim_for_encodings = 100000;
+  uint32_t dim_for_encodings = 50;
   std::vector<TextBlock> blocks;
   blocks.emplace_back(0, std::make_shared<UniGram>(dim_for_encodings));
   blocks.emplace_back(1, std::make_shared<PairGram>(dim_for_encodings));
 
-  std::vector<SparseExtendableVector> vecs;
-  for (const auto& row : matrix) {
-    SparseExtendableVector vec;
-    for (auto& block : blocks) {
-      extendVectorWithBlock(block, row, vec);
-    }
-    vecs.push_back(std::move(vec));
-  }
+  std::vector<SparseExtendableVector> vecs = makeExtendableVecs(matrix, blocks);
 
   ASSERT_EQ(matrix.size(), vecs.size());
-  // for each row in the original string matrix, verify existence of the
-  // following:
-  //    unigram of first word in the row
-  //    pairgram of first and second words in the row
   for (uint32_t row = 0; row < matrix.size(); row++) {
-    std::string first_word = matrix[row][0];
-    std::string second_word = matrix[row][0];
-
-    uint32_t first_word_hash =
-        hashing::MurmurHash(first_word.c_str(), first_word.length(),
-                            /* seed = */ 341);
-    uint32_t second_word_hash =
-        hashing::MurmurHash(second_word.c_str(), second_word.length(),
-                            /* seed = */ 341);
-
-    uint32_t unigram_index = first_word_hash % dim_for_encodings;
-    uint32_t pairgram_index =
-        (hashing::HashUtils::combineHashes(first_word_hash, second_word_hash) %
-         dim_for_encodings) +
-        dim_for_encodings;  // plus offset since pairgrams are second col
+    uint32_t unigram_index = getUnigramIndex(
+        matrix[row][0].substr(0, word_length),  // first word first column
+        dim_for_encodings);
+    uint32_t pairgram_index = getPairgramIndex(
+        matrix[row][1].substr(0, word_length),  // first word second column
+        matrix[row][1].substr(word_length + 1,
+                              word_length),  // second word second column
+        dim_for_encodings, dim_for_encodings);
 
     auto entries = vectorEntries(vecs[row]);
 
-    // verify unigram existence
+    // verify unigram and pairgram existence
     bool found_unigram = false;
-    for (uint32_t i = 0; i < dim_for_encodings; i++) {
-      if (entries[i].first == unigram_index && entries[i].second != 0) {
-        found_unigram = true;
-      }
-    }
-    ASSERT_TRUE(found_unigram);
-
-    // verify pairgram existence
     bool found_pairgram = false;
-    for (uint32_t i = 0; i < dim_for_encodings; i++) {
-      if (entries[i].first == pairgram_index && entries[i].second != 0) {
+    for (auto entry : entries) {
+      if (entry.first == unigram_index && entry.second != 0) {
+        found_unigram = true;
+      } else if (entry.first == pairgram_index && entry.second != 0) {
         found_pairgram = true;
       }
     }
+    ASSERT_TRUE(found_unigram);
     ASSERT_TRUE(found_pairgram);
   }
 

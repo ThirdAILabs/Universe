@@ -15,6 +15,7 @@ def load_text_classification_dataset(
     label_dim: int = 2,
     batch_size: int = 1024,
     encoding_dim: int = 100_000,
+    est_num_elems: int = 0,
 ):
 
     # Define source
@@ -32,7 +33,7 @@ def load_text_classification_dataset(
         schema = Schema(input_blocks=[text_block])
 
     # Assemble
-    loader = Loader(source, parser, schema, batch_size)
+    loader = Loader(source, parser, schema, batch_size, est_num_elems=est_num_elems)
 
     return loader.processInMemory(), loader.input_dim()
 
