@@ -8,6 +8,7 @@ import pytest
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
+
 @pytest.mark.unit
 def test_ctrl_c_functionality():
     # started a subprocesss to run a file to which SIGINT needed to be sent
