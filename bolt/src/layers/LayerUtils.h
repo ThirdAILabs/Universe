@@ -3,6 +3,12 @@
 #include <cereal/types/vector.hpp>
 #include <hashing/src/DWTA.h>
 #include <cctype>
+#include <utility>
+//edited
+#include <hashing/src/DensifiedMinHash.h>
+#include <hashing/src/FastSRP.h>
+#include <hashing/src/SRP.h>
+//edited
 
 namespace thirdai::bolt {
 
@@ -44,7 +50,18 @@ constexpr float actFuncDerivative(float x, ActivationFunction act_func) {
   return 0.0;
 }
 //edited
-enum class hashing_function {DensifiedMinHash, DWTAHashFunction, FastSRP, MurmurHash, SparseRandomProjection, UniversalHash};
+
+static uint32_t clip(uint32_t input, uint32_t low, uint32_t high) {
+    if (input < low) {
+      return low;
+    }
+    if (input > high) {
+      return high;
+    }
+    return input;
+  }
+
+enum class hashing_function {Densified_MinHash, DWTA, Fast_SRP, SRP };
 
 static hashing_function get_hash_function(const std::string& hash_type) {
   std::string lower_name;
@@ -52,25 +69,19 @@ static hashing_function get_hash_function(const std::string& hash_type) {
     lower_name.push_back(std::tolower(c));
   }
   if (lower_name == "densifiedminhash") {
-    return hashing_function::DensifiedMinHash;
+    return hashing_function::Densified_MinHash;
   }
   if (lower_name == "dwta") {
-    return hashing_function::DWTAHashFunction;
+    return hashing_function::DWTA;
   }
   if (lower_name == "fastsrp") {
-    return hashing_function::FastSRP;
-  }
-  if (lower_name == "murmurhash") {
-    return hashing_function::MurmurHash;
+    return hashing_function::Fast_SRP;
   }
   if (lower_name == "srp") {
-    return hashing_function::SparseRandomProjection;
-  }
-  if (lower_name == "universalhash") {
-    return hashing_function::UniversalHash;
+    return hashing_function::SRP;
   }
   throw std::invalid_argument("'" + hash_type +
-                              "' is not a valid hashing function");
+                              "' is not a valid function");
 }
 //edited
 struct SamplingConfig {
@@ -78,16 +89,14 @@ struct SamplingConfig {
   std::string hash_type;//edited
 
   SamplingConfig()
-      : hashes_per_table(0), num_tables(0), range_pow(0), reservoir_size(0), hash_type("DWTA") {}//edited
+      : SamplingConfig("DWTA") {}//edited
 
   SamplingConfig(uint32_t hashes_per_table, uint32_t num_tables,
                  uint32_t range_pow, uint32_t reservoir_size)
-      : hashes_per_table(hashes_per_table),
-        num_tables(num_tables),
-        range_pow(range_pow),
-        reservoir_size(reservoir_size),
-        hash_type("DWTA") {}//edited
+      : SamplingConfig(hashes_per_table,num_tables,range_pow,reservoir_size,"DWTA") {}//edited
   //edited
+  explicit SamplingConfig(std::string  hash_type_)
+      : hashes_per_table(0), num_tables(0), range_pow(0), reservoir_size(0), hash_type(std::move(hash_type_)) {}
   SamplingConfig(uint32_t hashes_per_table, uint32_t num_tables,
                  uint32_t range_pow, uint32_t reservoir_size, std::string hash_type_)
       : hashes_per_table(hashes_per_table),
@@ -103,7 +112,7 @@ struct SamplingConfig {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(hashes_per_table, num_tables, range_pow, reservoir_size);
+    archive(hashes_per_table, num_tables, range_pow, reservoir_size, hash_type);//edited
   }
 };
 

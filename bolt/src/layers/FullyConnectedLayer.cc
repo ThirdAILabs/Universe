@@ -36,9 +36,13 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
-    _hasher = std::make_unique<hashing::DWTAHashFunction>(
-        _prev_dim, _sampling_config.hashes_per_table,
-        _sampling_config.num_tables, _sampling_config.range_pow);
+    //edited
+    assign_hash_function(_sampling_config.hash_type,_prev_dim,_sampling_config.hashes_per_table,
+                        _sampling_config.num_tables,_sampling_config.range_pow);
+    //edited
+    // _hasher = std::make_unique<hashing::DWTAHashFunction>(
+    //     _prev_dim, _sampling_config.hashes_per_table,
+    //     _sampling_config.num_tables, _sampling_config.range_pow);
 
     _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
@@ -479,9 +483,13 @@ void FullyConnectedLayer::reBuildHashFunction() {
   if (_sparsity >= 1.0 || _force_sparse_for_inference) {
     return;
   }
-  _hasher = std::make_unique<hashing::DWTAHashFunction>(
-      _prev_dim, _sampling_config.hashes_per_table, _sampling_config.num_tables,
-      _sampling_config.range_pow);
+  //edited
+  assign_hash_function(_sampling_config.hash_type,_prev_dim,_sampling_config.hashes_per_table,
+                        _sampling_config.num_tables,_sampling_config.range_pow);
+  // _hasher = std::make_unique<hashing::DWTAHashFunction>(
+  //     _prev_dim, _sampling_config.hashes_per_table, _sampling_config.num_tables,
+  //     _sampling_config.range_pow);
+  //edited
 }
 
 void FullyConnectedLayer::shuffleRandNeurons() {

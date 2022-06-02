@@ -9,6 +9,7 @@
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <cstdint>
+#include <memory>
 
 namespace thirdai::bolt {
 
@@ -98,13 +99,34 @@ class FullyConnectedLayer final : public SequentialLayer {
   std::vector<float> _b_velocity;
 
   SamplingConfig _sampling_config;
-  std::unique_ptr<hashing::DWTAHashFunction> _hasher;
+  std::unique_ptr<hashing::HashFunction> _hasher;//edited
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
   std::vector<uint32_t> _rand_neurons;
 
   using ActiveNeuronsPair =
       std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
-
+  //edited
+  void assign_hash_function(const std::string& hash_t,uint64_t dim,uint64_t hashes_p_t,uint64_t num_t,uint64_t range_p) {
+    if(hash_t == "DWTA") {
+      _hasher = std::make_unique<hashing::DWTAHashFunction>(dim,hashes_p_t,num_t,range_p);
+      return;
+    }
+    if(hash_t == "DensifiedMinHash") {
+      _hasher = std::make_unique<hashing::DensifiedMinHash>(hashes_p_t,num_t,range_p);
+      return;
+    }
+    if(hash_t == "SRP") {
+      _hasher = std::make_unique<hashing::SparseRandomProjection>(dim,hashes_p_t,num_t);
+      return;
+    }
+    if(hash_t == "FastSRP") {
+      _hasher = std::make_unique<hashing::FastSRP>(dim,hashes_p_t,num_t);
+      return;
+    }
+    throw std::invalid_argument("'" + hash_t +
+                              "' is not a valid LSH function");
+  }
+  //edited
   bool _prev_is_dense;
   bool _this_is_dense;
   // This is only used if _prev_is_dense == false and _this_is_dense == false
