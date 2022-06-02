@@ -11,7 +11,9 @@ def test_ctrl_c_functionality():
     if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
         proc = subprocess.Popen(
             ["python3", "../bolt/python_tests/ctrl_c_executable.py"],
-            shell=False
+            shell=False,
+            stdout = DEVNULL,
+            stderr = DEVNULL
         )
 
         # making sure the program reaches the train function
