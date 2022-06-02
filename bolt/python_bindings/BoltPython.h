@@ -160,6 +160,12 @@ class PyNetwork final : public FullyConnectedNetwork {
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
 
 
+/**
+  * The following changes are done to incorporate the CTRL+C
+  * functionality to the library, we are doing that here by 
+  * adding a signal to handle the event independently, after
+  * the metrics is calculated SIG_DFL is sent back
+*/
 #if defined __linux__ || defined __APPLE__
 
 
@@ -176,7 +182,11 @@ class PyNetwork final : public FullyConnectedNetwork {
     return metrics;
 
 #else
-    
+  /**
+  * For windows, signal might not work, Loo at this
+  * https://stackoverflow.com/questions/54362699/windows-console-signal-handling-for-subprocess-c
+  */
+
     return FullyConnectedNetwork::train(
         train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
         epochs, rehash, rebuild, metric_names, verbose);

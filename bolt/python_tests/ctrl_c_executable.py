@@ -1,10 +1,17 @@
+# This .py file is for testing of working of ctrl+C event.
+# This file is started as a subprocess by test_ctrl_c_event.py
+# to run the unit test required to test ctrl+c event
+
+
 from thirdai import bolt
 import numpy as np
 
 
+import signal, sys, time
 
-def get_random_dataset_as_numpy():
-    no_of_training_examples = 100000
+
+
+def get_random_dataset_as_numpy(no_of_training_examples):
     dimension_of_input = 5
 
     train_data = []
@@ -12,8 +19,8 @@ def get_random_dataset_as_numpy():
     for i in range(no_of_training_examples):
         datapoints = []
         for j in range(dimension_of_input):
-            datapoints.append(np.random.randint(1,high=10000))
-        train_labels.append(np.random.randint(1,high=5))
+            datapoints.append(np.random.randint(1,high=100))
+        train_labels.append(np.random.randint(0,high=4))
         train_data.append(datapoints)
 
     train_data = np.array(train_data)
@@ -25,7 +32,7 @@ def get_random_dataset_as_numpy():
 
 def train_using_random_numpy():
 
-    train_data, train_labels = get_random_dataset_as_numpy() 
+    train_data, train_labels = get_random_dataset_as_numpy(100000) 
     layers = [
         
         bolt.FullyConnected(
@@ -42,16 +49,15 @@ def train_using_random_numpy():
     network = bolt.Network(
         layers=layers, 
         input_dim=5)
-
-    # print('Done First Training!!')
     network.train(
         train_data=train_data,
         train_labels = train_labels,
         batch_size=10,
-        loss_fn=bolt.CategoricalCrossEntropyLoss(), 
+        loss_fn=bolt.MeanSquaredError(), 
         learning_rate=0.0001, 
         epochs=20, 
         verbose=True)
+
 
 if  __name__ == "__main__":
     train_using_random_numpy()
