@@ -52,28 +52,8 @@ MetricData Model<BATCH_T>::train(
 
       const BoltBatch& batch_labels = train_labels->at(batch);
 
-#pragma omp parallel for default(none) \
-    shared(batch_inputs, batch_labels, outputs, loss_fn, metrics)
-      for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize();
-           vec_id++) {
-        forward(vec_id, batch_inputs, outputs[vec_id], &batch_labels[vec_id]);
-
-        loss_fn.lossGradients(outputs[vec_id], batch_labels[vec_id],
-                              batch_inputs.getBatchSize());
-
-        backpropagate(vec_id, batch_inputs, outputs[vec_id]);
-
-        metrics.processSample(outputs[vec_id], batch_labels[vec_id]);
-      }
-
-      updateParameters(learning_rate, ++_batch_iter);
-
-      if (_batch_iter % rebuild_batch == (rebuild_batch - 1)) {
-        reBuildHashFunctions();
-        buildHashTables();
-      } else if (_batch_iter % rehash_batch == (rehash_batch - 1)) {
-        buildHashTables();
-      }
+      processTrainingBatch(batch_inputs, outputs, batch_labels, loss_fn,
+                           learning_rate, rehash_batch, rebuild_batch, metrics);
 
       bar.increment();
     }
@@ -98,6 +78,38 @@ MetricData Model<BATCH_T>::train(
   metric_data["epoch_times"] = std::move(time_per_epoch);
 
   return metric_data;
+}
+
+template <typename BATCH_T>
+inline void Model<BATCH_T>::processTrainingBatch(
+    BATCH_T& batch_inputs, BoltBatch& outputs, const BoltBatch& batch_labels,
+    const LossFunction& loss_fn, float learning_rate, uint32_t rehash_batch,
+    uint32_t rebuild_batch, MetricAggregator& metrics) {
+  if (_batch_iter % 1000 == 999) {
+    shuffleRandomNeurons();
+  }
+
+#pragma omp parallel for default(none) \
+    shared(batch_inputs, batch_labels, outputs, loss_fn, metrics)
+  for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
+    forward(vec_id, batch_inputs, outputs[vec_id], &batch_labels[vec_id]);
+
+    loss_fn.lossGradients(outputs[vec_id], batch_labels[vec_id],
+                          batch_inputs.getBatchSize());
+
+    backpropagate(vec_id, batch_inputs, outputs[vec_id]);
+
+    metrics.processSample(outputs[vec_id], batch_labels[vec_id]);
+  }
+
+  updateParameters(learning_rate, ++_batch_iter);
+
+  if (_batch_iter % rebuild_batch == (rebuild_batch - 1)) {
+    reBuildHashFunctions();
+    buildHashTables();
+  } else if (_batch_iter % rehash_batch == (rehash_batch - 1)) {
+    buildHashTables();
+  }
 }
 
 template <typename BATCH_T>
@@ -132,35 +144,22 @@ InferenceMetricData Model<BATCH_T>::predict(
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
     const BATCH_T& inputs = test_data->at(batch);
 
-#pragma omp parallel for default(none)                                         \
-    shared(inputs, labels, outputs, output_active_neurons, output_activations, \
-           metrics, batch, batch_size, compute_metrics)
-    for (uint32_t vec_id = 0; vec_id < inputs.getBatchSize(); vec_id++) {
-      // We set labels to nullptr so that they are not used in sampling during
-      // inference.
-      forward(vec_id, inputs, outputs[vec_id], /*labels=*/nullptr);
+    const BoltBatch* batch_labels =
+        compute_metrics ? &(*labels)[batch] : nullptr;
 
-      if (compute_metrics) {
-        metrics.processSample(outputs[vec_id], (*labels)[batch][vec_id]);
-      }
+    uint32_t* batch_active_neurons =
+        output_active_neurons == nullptr
+            ? nullptr
+            : output_active_neurons +
+                  batch * batch_size * getInferenceOutputDim();
 
-      if (output_activations != nullptr) {
-        assert(outputs[vec_id].len == getInferenceOutputDim());
+    float* batch_activations =
+        output_activations == nullptr
+            ? nullptr
+            : output_activations + batch * batch_size * getInferenceOutputDim();
 
-        const float* start = outputs[vec_id].activations;
-        uint32_t offset =
-            (batch * batch_size + vec_id) * getInferenceOutputDim();
-        std::copy(start, start + outputs[vec_id].len,
-                  output_activations + offset);
-        if (!outputs[vec_id].isDense()) {
-          assert(output_active_neurons != nullptr);
-          const uint32_t* start = outputs[vec_id].active_neurons;
-          std::copy(start, start + outputs[vec_id].len,
-                    output_active_neurons + (batch * batch_size + vec_id) *
-                                                getInferenceOutputDim());
-        }
-      }
-    }
+    processTestBatch(inputs, outputs, batch_labels, batch_active_neurons,
+                     batch_activations, metrics, compute_metrics);
 
     bar.increment();
   }
@@ -182,6 +181,43 @@ InferenceMetricData Model<BATCH_T>::predict(
   metric_vals["test_time"] = test_time;
 
   return metric_vals;
+}
+
+template <typename BATCH_T>
+inline void Model<BATCH_T>::processTestBatch(const BATCH_T& batch_inputs,
+                                             BoltBatch& outputs,
+                                             const BoltBatch* batch_labels,
+                                             uint32_t* output_active_neurons,
+                                             float* output_activations,
+                                             MetricAggregator& metrics,
+                                             bool compute_metrics) {
+#pragma omp parallel for default(none)                                 \
+    shared(batch_inputs, batch_labels, outputs, output_active_neurons, \
+           output_activations, metrics, compute_metrics)
+  for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
+    // We set labels to nullptr so that they are not used in sampling during
+    // inference.
+    forward(vec_id, batch_inputs, outputs[vec_id], /*labels=*/nullptr);
+
+    if (compute_metrics) {
+      metrics.processSample(outputs[vec_id], (*batch_labels)[vec_id]);
+    }
+
+    if (output_activations != nullptr) {
+      assert(outputs[vec_id].len == getInferenceOutputDim());
+
+      const float* start = outputs[vec_id].activations;
+      uint32_t offset = vec_id * getInferenceOutputDim();
+      std::copy(start, start + outputs[vec_id].len,
+                output_activations + offset);
+      if (!outputs[vec_id].isDense()) {
+        assert(output_active_neurons != nullptr);
+        const uint32_t* start = outputs[vec_id].active_neurons;
+        std::copy(start, start + outputs[vec_id].len,
+                  output_active_neurons + offset);
+      }
+    }
+  }
 }
 
 static constexpr uint32_t RehashAutoTuneThreshold = 100000;

@@ -155,6 +155,9 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
       case ActivationFunction::Linear:
         out << ", act_func=Linear";
         break;
+      case ActivationFunction::Tanh:
+        out << ", act_func=Tanh";
+        break;
     }
     if (sparsity < 1.0) {
       out << ", sampling: {";
@@ -227,6 +230,9 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
         break;
       case ActivationFunction::Linear:
         out << ", act_func=Linear";
+        break;
+      case ActivationFunction::Tanh:
+        out << ", act_func=Tanh";
         break;
     }
     out << ", kernel_size: (" << kernel_size.first << ", " << kernel_size.second

@@ -170,6 +170,7 @@ file(
   bolt/src/layers/*.cc 
   bolt/src/networks/*.cc 
   bolt/src/utils/*.cc 
+  bolt/src/text_classifier/*.cc
 )
 
 file(
