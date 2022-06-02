@@ -3,20 +3,10 @@ from tensorflow.keras.layers import Embedding, Dense, Lambda, Input, BatchNormal
 import tensorflow.keras.backend as K
 import tensorflow as tf
 import numpy as np
-from tqdm import tqdm
 
 queries = np.load("tokenized_queries.npy")
 positives = np.load("tokenized_positives.npy")
 negatives = np.load("tokenized_negatives.npy")
-
-padded_positives = tf.keras.preprocessing.sequence.pad_sequences(
-    positives, padding="post"
-)
-padded_negatives = tf.keras.preprocessing.sequence.pad_sequences(
-    negatives, padding="post"
-)
-padded_queries = tf.keras.preprocessing.sequence.pad_sequences(queries, padding="post")
-
 
 embedding_dim = 128
 vocab_size = 30522
@@ -64,30 +54,25 @@ def get_triplet_model():
     )
 
 
-alpha = 0.2
+alpha = 0.5
 
 
-# def triplet_loss(y_true, y_pred):
-#     query_embedding, positive_embedding, negative_embedding = (
-#         y_pred[:, :embedding_dim],
-#         y_pred[:, embedding_dim : 2 * embedding_dim],
-#         y_pred[:, 2 * embedding_dim :],
-#     )
-#     query_embedding = tf.math.l2_normalize(query_embedding)
-#     positive_embedding = tf.math.l2_normalize(positive_embedding)
-#     negative_embedding = tf.math.l2_normalize(negative_embedding)
-#     positive_dist = 1 - tf.matmul(query_embedding, tf.transpose(positive_embedding))
-#     negative_dist = 1 - tf.matmul(query_embedding, tf.transpose(negative_embedding))
-#     return tf.maximum(positive_dist - negative_dist + alpha, 0)
 def triplet_loss(y_true, y_pred):
-    anchor, positive, negative = (
+    query_embedding, positive_embedding, negative_embedding = (
         y_pred[:, :embedding_dim],
         y_pred[:, embedding_dim : 2 * embedding_dim],
         y_pred[:, 2 * embedding_dim :],
     )
-    positive_dist = tf.reduce_mean(tf.square(anchor - positive), axis=1)
-    negative_dist = tf.reduce_mean(tf.square(anchor - negative), axis=1)
-    return tf.maximum(positive_dist - negative_dist + alpha, 0.0)
+    query_embedding = tf.math.l2_normalize(query_embedding, axis=1)
+    positive_embedding = tf.math.l2_normalize(positive_embedding, axis=1)
+    negative_embedding = tf.math.l2_normalize(negative_embedding, axis=1)
+    positive_dist = 1 - tf.keras.backend.batch_dot(
+        query_embedding, positive_embedding, axes=1
+    )
+    negative_dist = 1 - tf.keras.backend.batch_dot(
+        query_embedding, negative_embedding, axes=1
+    )
+    return tf.maximum(positive_dist - negative_dist + alpha, 0)
 
 
 def get_compiled_triplet_model():
@@ -99,11 +84,11 @@ def get_compiled_triplet_model():
 triplet_network = get_compiled_triplet_model()
 
 triplet_network.fit(
-    [padded_queries, padded_positives, padded_negatives],
-    np.zeros((len(queries),)),
+    [queries, positives, negatives],
+    np.zeros((len(queries),)),  # All zeros because we don't use the labels for the loss
     validation_split=0.2,
     batch_size=batch_size,
-    epochs=10,
+    epochs=5,
 )
 
 sentence_embedding_model.save("sentence_embedding_model")
