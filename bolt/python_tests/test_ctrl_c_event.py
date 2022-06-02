@@ -3,7 +3,6 @@ import subprocess
 import time
 import os
 from subprocess import DEVNULL
-import pytest
 import sys
 
 
