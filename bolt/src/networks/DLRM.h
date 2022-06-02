@@ -58,7 +58,7 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
   }
 
   void verifyInputDim(uint32_t max_index) final {
-    (void) max_index;  // unused
+    (void)max_index;  // unused
     return;
   }
 

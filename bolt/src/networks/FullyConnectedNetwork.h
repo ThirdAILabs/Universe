@@ -89,7 +89,11 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
 
   void verifyInputDim(uint32_t max_index) {
     if (max_index >= getInputDim()) {
-      throw std::runtime_error("Input dimension of the network is smaller than the input dimension of the dataset");
+      std::string err_msg =
+          "Input dimension: " + std::to_string(getInputDim()) +
+          " is smaller than the max index in dataset: " +
+          std::to_string(max_index);
+      throw std::runtime_error(err_msg);
     }
     return;
   }

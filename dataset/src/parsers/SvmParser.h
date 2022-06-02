@@ -18,8 +18,8 @@ class SvmParser {
       : _vector_builder(vb), _label_builder(lb) {}
 
   uint32_t parseBatch(uint32_t target_batch_size, std::ifstream& file,
-                  std::vector<VECTOR_T>& vectors_out,
-                  std::vector<LABEL_T>& labels_out) {
+                      std::vector<VECTOR_T>& vectors_out,
+                      std::vector<LABEL_T>& labels_out) {
     uint32_t curr_batch_size = 0;
     uint32_t max_index = 0;
     std::string line;

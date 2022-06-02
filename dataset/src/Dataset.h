@@ -45,7 +45,8 @@ class InMemoryDataset {
   // of elements in the dataset. We move into _batches to make sure that once
   // the batches are moved into the constructor they get moved into the field in
   // the class. Otherwise c++ will copy this.
-  InMemoryDataset(std::vector<BATCH_T>&& batches, uint64_t len, uint32_t max_index = 0)
+  InMemoryDataset(std::vector<BATCH_T>&& batches, uint64_t len,
+                  uint32_t max_index = 0)
       : _batches(std::move(batches)), _len(len), _max_index(max_index) {}
 
   const BATCH_T& operator[](uint32_t i) const { return _batches[i]; }
