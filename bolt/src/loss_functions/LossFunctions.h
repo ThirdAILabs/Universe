@@ -1,7 +1,6 @@
 #pragma once
 
 #include <bolt/src/layers/BoltVector.h>
-#include <_types/_uint32_t.h>
 #include <algorithm>
 #include <atomic>
 #include <cmath>
