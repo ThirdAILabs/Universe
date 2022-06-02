@@ -531,6 +531,7 @@ float* FullyConnectedLayer::getWeights() {
 void FullyConnectedLayer::setTrainable(bool trainable) {
   _trainable = trainable;
 }
+
 bool FullyConnectedLayer::getTrainable() { return _trainable; }
 
 float* FullyConnectedLayer::getBiases() {

@@ -77,7 +77,9 @@ class FullyConnectedLayer final : public SequentialLayer {
   float* getBiases() final;
 
   void setTrainable(bool trainable) final;
+
   bool getTrainable() final;
+
   void setWeights(const float* new_weights) final;
 
   void setBiases(const float* new_biases) final;
