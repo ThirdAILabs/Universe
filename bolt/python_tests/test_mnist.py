@@ -33,7 +33,7 @@ def load_mnist_labels():
     return np.array(labels)
 
 
-# Constructs a bolt network for mnist with a sparse output layer with activation function given as string.
+# Constructs a bolt network for mnist with a sparse output layer.
 def build_sparse_output_layer_network():
     layers = [
         bolt.FullyConnected(dim=256, activation_function="reLU"),
