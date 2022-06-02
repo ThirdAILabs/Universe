@@ -164,8 +164,7 @@ class PyNetwork final : public FullyConnectedNetwork {
 
 
     auto handler = [](int code) {
-      std::cout << "Runtime Error "<< code << std::endl;
-      throw py::error_already_set();
+      throw std::runtime_error("SIGNAL " + std::to_string(code));
     };
     std::signal(SIGINT, handler);
 
