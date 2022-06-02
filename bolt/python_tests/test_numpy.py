@@ -6,11 +6,11 @@ import pytest
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
-def train_simple_bolt_model(examples, labels, load_factor=1, n_classes=10):
+def train_simple_bolt_model(examples, labels, sparsity=1, n_classes=10):
     layers = [
         bolt.FullyConnected(
             dim=n_classes,
-            load_factor=load_factor,
+            sparsity=sparsity,
             activation_function=bolt.ActivationFunctions.Softmax,
         )
     ]
@@ -52,7 +52,7 @@ def train_sparse_bolt_model(
     layers = [
         bolt.FullyConnected(
             dim=n_classes,
-            load_factor=1,
+            sparsity=1,
             activation_function=bolt.getActivationFunction("ReLU"),
         )
     ]
@@ -135,9 +135,7 @@ def test_easy_sparse_layer():
     noise = np.random.normal(0, 0.1, examples.shape)
     examples = examples + noise
 
-    acc = train_simple_bolt_model(
-        examples, labels, load_factor=0.1, n_classes=n_classes
-    )
+    acc = train_simple_bolt_model(examples, labels, sparsity=0.1, n_classes=n_classes)
     assert acc > 0.8
 
 

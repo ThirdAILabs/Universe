@@ -97,7 +97,7 @@ def train_yelp(args):
     layers = [
         bolt.FullyConnected(
             dim=2000,
-            load_factor=args.sparsity,
+            sparsity=args.sparsity,
             activation_function=bolt.ActivationFunctions.ReLU,
             sampling_config=bolt.SamplingConfig(
                 hashes_per_table=args.hashes_per_table,
@@ -108,7 +108,7 @@ def train_yelp(args):
         ),
         bolt.FullyConnected(
             dim=2,
-            load_factor=1.0,
+            sparsity=1.0,
             activation_function=bolt.ActivationFunctions.Softmax,
         ),
     ]
