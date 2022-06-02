@@ -108,14 +108,14 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     for (uint32_t i = 0; i < _num_layers; i++) {
       _layers[i]->initOptimizer();
     }
-    assert(this.is_shallow() == false);
+    assert(this.isShallow() == false);
   }
 
   void removeOptimizer() final {
     for (uint32_t i = 0; i < _num_layers; i++) {
       _layers[i]->remOptimizer();
     }
-    assert(this.is_shallow() == true);
+    assert(this.isShallow() == true);
   }
 
   uint32_t getInputDim() const { return _layers.front()->getInputDim(); }
