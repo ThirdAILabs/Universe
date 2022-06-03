@@ -52,12 +52,12 @@ def train_simple_bolt_model_non_trainable_hidden_layer(
     layers = [
         bolt.FullyConnected(
             dim=100,
-            load_factor=load_factor,
+            sparsity=load_factor,
             activation_function=bolt.ActivationFunctions.ReLU,
         ),
         bolt.FullyConnected(
             dim=n_classes,
-            load_factor=load_factor,
+            sparsity=load_factor,
             activation_function=bolt.ActivationFunctions.Softmax,
         ),
     ]
