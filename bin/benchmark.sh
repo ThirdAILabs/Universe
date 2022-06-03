@@ -3,9 +3,9 @@
 # This script runs our benchmarks and logs the results to our MlFlow server.
 
 BASEDIR=$(dirname "$0")
-BENCHMARKING_FOLDER=$BASEDIR/../benchmarking
+BENCHMARKING_FOLDER=$BASEDIR/../benchmarks
 
-# --------------- Mag Search ---------------
+#  --------------- Mag Search ---------------
 if [ "$RUN_MAGSEARCH" != "n" ]
 then
   # Image net embedding search
@@ -17,16 +17,13 @@ then
 fi
 
 # --------------- Bolt ---------------
-if [ "$RUN_BOLT" != "n" ]
-then
   # Amazon 670k extreme classification
-  AMAZON_FOLDER=$BENCHMARKING_FOLDER/bolt/amazon670k
-  mkdir -p $AMAZON_FOLDER
-  python3 $BASEDIR/../bolt/benchmarks/amazon670k.py \
-    > $AMAZON_FOLDER/stdout 2> $AMAZON_FOLDER/stderr
-fi
+  # AMAZON_FOLDER=$BENCHMARKING_FOLDER/bolt/amazon670k
+  # mkdir -p $AMAZON_FOLDER
+ python3 $BASEDIR/../benchmarks/bolt_benchmarks/bolt.py $BENCHMARKING_FOLDER/bolt_benchmarks/configs/amzn670k.txt --disable_mlflow
 
-DATE=$(date '+%Y-%m-%d')
-LOG_DIR=$BASEDIR/../../logs/$DATE
-mkdir -p $LOG_DIR
-cp -a $BENCHMARKING_FOLDER/* $LOG_DIR
+python3 $BASEDIR/../benchmarks/bolt_benchmarks/bolt.py $BENCHMARKING_FOLDER/bolt_benchmarks/configs/amazon_polarity.txt --disable_mlflow
+#DATE=$(date '+%Y-%m-%d')
+#LOG_DIR=$BASEDIR/../../logs/$DATE
+#mkdir -p $LOG_DIR
+#cp -a $BENCHMARKING_FOLDER/* $LOG_DIR
