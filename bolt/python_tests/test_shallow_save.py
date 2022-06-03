@@ -269,8 +269,8 @@ def test_checkpoint_shallow():
     assert test_runtime_error
 
 
-test_checkpoint_shallow()
-test_accuracy_gain_save_shallow()
-test_same_accuracy_save_shallow()
-test_trim_then_train()
-test_save_shallow_size()
+# test_checkpoint_shallow()
+# test_accuracy_gain_save_shallow()
+# test_same_accuracy_save_shallow()
+# test_trim_then_train()
+# test_save_shallow_size()

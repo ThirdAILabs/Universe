@@ -378,6 +378,11 @@ void createBoltSubmodule(py::module_& module) {
            "folders to be created. Saves all the paramters including "
            "optimizer(if not shallow). "
            "Checkpointing shallow network always saves a shallow network")
+      .def("save", &PyNetwork::checkpoint, py::arg("filename"),
+           "Saves the network to a file. The file path must not require any "
+           "folders to be created. Saves all the paramters including "
+           "optimizer(if not shallow). "
+           "Checkpointing shallow network always saves a shallow network")
       .def("trim_for_inference", &PyNetwork::trimForInference,
            "Removes all parameters that are not essential for inference, "
            "shrinking the model")

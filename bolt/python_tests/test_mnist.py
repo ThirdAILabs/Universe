@@ -36,11 +36,11 @@ def load_mnist_labels():
 # Constructs a bolt network for mnist with a sparse output layer.
 def build_sparse_output_layer_network():
     layers = [
-        bolt.FullyConnected(dim=256, activation_function="ReLU"),
+        bolt.FullyConnected(dim=256, activation_function=bolt.ActivationFunctions.ReLU),
         bolt.FullyConnected(
             dim=10,
             sparsity=0.4,
-            activation_function="Softmax",
+            activation_function=bolt.ActivationFunctions.Softmax,
         ),
     ]
     network = bolt.Network(layers=layers, input_dim=784)
