@@ -66,9 +66,10 @@ def train_simple_bolt_model_non_trainable_hidden_layer(
     batch_size = 64
     learning_rate = 0.001
     epochs = 100
-    # print("weights before training")
+
     before_training_weigths = network.get_weights(0)
     network.setTrainable(layer_index=0, trainable=False)
+
     network.train(
         train_data=examples,
         train_labels=labels,
@@ -78,9 +79,7 @@ def train_simple_bolt_model_non_trainable_hidden_layer(
         epochs=epochs,
         verbose=False,
     )
-    # print("difference of the weights in the non-trainable layer before and after training")
     after_training_weigths = network.get_weights(0)
-    # print(after_training_weigths-before_training_weigths)
 
     acc, _ = network.predict(
         examples, labels, batch_size, ["categorical_accuracy"], verbose=False

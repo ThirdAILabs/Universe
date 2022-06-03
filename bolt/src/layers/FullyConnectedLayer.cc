@@ -49,10 +49,9 @@ FullyConnectedLayer::FullyConnectedLayer(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow);
 
-    // if the layer is non-trainable, we generate the hash tables only once and
-    // then let them be
-    //  build hashtables only generats a hash-table if trainable is true
-
+    /* Initializing hence, we need to force build the hash tables
+     *Hence, force_build is true here in buildHashTablesImpl(force_build)
+     */
     buildHashTablesImpl(true);
 
     _rand_neurons = std::vector<uint32_t>(_dim);
@@ -474,10 +473,11 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
 }
 
 void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
-  if (!_trainable && !force_build) {
-    return;
-  }
-  if (_sparsity >= 1.0 || _force_sparse_for_inference) {
+  // if (!_trainable && !force_build) {
+  //   return;
+  // }
+  if ((!_trainable && !force_build) || _sparsity >= 1.0 ||
+      _force_sparse_for_inference) {
     return;
   }
   uint64_t num_tables = _hash_table->numTables();
@@ -494,6 +494,9 @@ void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
   _hash_table->insertSequential(_dim, 0, hashes.data());
 }
 
+/* setting force_build to false. force_build true only when setting weights or
+ * initializing
+ */
 void FullyConnectedLayer::buildHashTables() { buildHashTablesImpl(false); }
 
 void FullyConnectedLayer::reBuildHashFunction() {
@@ -535,7 +538,9 @@ float* FullyConnectedLayer::getBiases() {
 void FullyConnectedLayer::setWeights(const float* new_weights) {
   std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
 
-  // if setting weights for a non-trainable layer, force_build the hash tables
+  /* Setting weights => we need to force build the hash tables
+   * Hence, force_build is true here in buildHashTablesImpl(force_build)
+   */
   buildHashTablesImpl(true);
 }
 
