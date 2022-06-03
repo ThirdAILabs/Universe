@@ -272,7 +272,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                               input.len, hashes.data());
   }
 
-  if (_force_sparse_for_inference && labels != nullptr &&
+  if (_force_sparse_for_inference &&
       (_act_func == ActivationFunction::Softmax ||
        _act_func == ActivationFunction::Sigmoid)) {
     /**
@@ -288,8 +288,9 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
      *
      * We call QueryAndInsertForInference if the following conditions are met:
      *   1. We have sparse inference enabled.
-     *   2. Labels are not null (meaning we're in the output layer).
-     *   3. Activation = Softmax or Sigmoid, meaning it's a classification task.
+     *   2. Activation = Softmax or Sigmoid, meaning it's a classification task,
+     *      and that the given layer is the last layer, as this is the only
+     *      place where we use these activation functions.
      */
     _hash_table->queryAndInsertForInference(hashes.data(), active_set,
                                             _sparse_dim);
