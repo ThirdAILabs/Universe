@@ -308,6 +308,11 @@ void createDatasetSubmodule(py::module_& module) {
   
   // The no lint below is because clang tidy doesn't like instantiating an
   // object without a name and never using it.
+  py::class_<bolt::BoltBatch>(dataset_submodule,  // NOLINT
+                                       "BoltBatch");
+
+  // The no lint below is because clang tidy doesn't like instantiating an
+  // object without a name and never using it.
   py::class_<OptionalInputTargetBatch>(dataset_submodule,  // NOLINT
                                        "BoltInputTargetPair");
 
