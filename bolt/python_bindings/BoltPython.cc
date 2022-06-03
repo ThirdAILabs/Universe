@@ -353,7 +353,8 @@ void createBoltSubmodule(py::module_& module) {
            "matrix.")
       .def("setTrainable", &PyNetwork::setTrainable, py::arg("layer_index"),
            py::arg("trainable"),
-           "Sets whether the layer with the given layer_index is trainable. Layers are always trainable by default. "
+           "Sets whether the layer with the given layer_index is trainable. "
+           "Layers are always trainable by default. "
            "trainable is false. Trainable by default")
       .def("set_weights", &PyNetwork::setWeights, py::arg("layer_index"),
            py::arg("new_weights"),
