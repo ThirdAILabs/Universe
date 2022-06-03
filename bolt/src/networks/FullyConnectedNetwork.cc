@@ -17,9 +17,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
                                              uint32_t input_dim)
     : _input_dim(input_dim),
       _num_layers(configs.size()),
-      _sparse_inference_enabled(false),
-      _is_shallow(false),
-      _save_shallow(false) {
+      _sparse_inference_enabled(false) {
   auto start = std::chrono::high_resolution_clock::now();
 
   std::cout << "====== Building Fully Connected Network ======" << std::endl;

@@ -54,36 +54,19 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
     _top_mlp.buildHashTables();
   }
 
-  // setShallow should set the layers to shallow so that
-  // the optimizer state is not saved
   void setShallow(bool set) final {
     (void)set;
-    // throw std::logic_error("Warning: setShallow not implemented for DLRM;");
+    throw std::logic_error("Warning: setShallow not implemented for DLRM;");
   }
 
   void setShallowSave(bool set) final {
     (void)set;
-    // throw std::logic_error("Warning: setShallowSave not implemented for
-    // DLRM;");
+    throw std::logic_error("Warning: setShallowSave not implemented for DLRM;");
   }
 
-  // isShallow returns whether model is loaded from a shallow state
-  // initialize gradients during training, not inference
-  bool isShallow() final {
+  bool anyLayerShallow() final {
     // throw std::logic_error("Warning: isShallow not implemented for DLRM;");
     return false;
-  }
-
-  void initializeOptimizer() final {
-    // throw std::logic_error("Warning: initializeOptimizer not implemented for
-    // DLRM;");
-    (void)true;
-  }
-
-  void removeOptimizer() final {
-    (void)true;
-    // throw std::logic_error("Warning: removeOptimizer not implemented for
-    // DLRM;");
   }
 
   BoltBatch getOutputs(uint32_t batch_size, bool force_dense) final {

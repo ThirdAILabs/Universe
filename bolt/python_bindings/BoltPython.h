@@ -154,6 +154,7 @@ class PyNetwork final : public FullyConnectedNetwork {
     auto train_data = convertPyObjectToBoltDataset(data, batch_size, false);
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
+
     return FullyConnectedNetwork::train(
         train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
         epochs, rehash, rebuild, metric_names, verbose);
@@ -201,22 +202,42 @@ class PyNetwork final : public FullyConnectedNetwork {
   }
 
   void saveForInference(const std::string& filename) {
-    this->save(filename, true);
+    this->saveShallowly(filename, true);
   }
 
-  void save(const std::string& filename, bool set) {
+  void saveShallowly(const std::string& filename, bool set) {
     std::ofstream filestream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
-
     this->setShallowSave(set);
     oarchive(*this);
   }
 
-  void checkpoint(const std::string& filename) { this->save(filename, false); }
+  void checkpoint(const std::string& filename) {
+    if (this->anyLayerShallow()) {
+      throw std::logic_error("Trying to checkpoint a model with no optimizer");
+    }
+    this->saveShallowly(filename, false);
+  }
 
-  void endTraining() { this->removeOptimizer(); }
+  /* Removes the optimizer state for the network by setting layers to shallow
+   */
+  void trimForInference() { this->setShallow(true); }
 
-  void resumeTraining() { this->initializeOptimizer(); }
+  /*
+   *If any of the layer is shallow, that is without an optimzier, reinitiliaze
+   *optimizer. Note that if any layer is shallow, initialize optimizer for all
+   *layers
+   */
+  void resumeTraining() {
+    if (this->anyLayerShallow()) {
+      this->setShallow(false);
+    }
+  }
+
+  /*If any layer in the model is shallow i.e, has uninitialized optimizer,
+   * return false
+   */
+  py::bool_ isReadyForTraining() { return py::bool_(!this->anyLayerShallow()); }
 
   static std::unique_ptr<PyNetwork> load(const std::string& filename) {
     std::ifstream filestream(filename, std::ios::binary);

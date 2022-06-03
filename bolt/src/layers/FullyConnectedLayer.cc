@@ -16,7 +16,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sparse_dim(config.sparsity * config.dim),
       _sparsity(config.sparsity),
       _is_shallow(false),
-      _save_shallow(false),
+      _shallow_save(false),
       _act_func(config.act_func),
       _weights(config.dim * prev_dim),
       _w_gradient(config.dim * prev_dim, 0),
@@ -515,6 +515,19 @@ void FullyConnectedLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
+void FullyConnectedLayer::setShallow(bool is_shallow) {
+  _is_shallow = is_shallow;
+  if (_is_shallow) {
+    this->removeOptimizer();
+  } else {
+    this->initOptimizer();
+  }
+}
+
+void FullyConnectedLayer::setShallowSave(bool is_shallow_save) {
+  _shallow_save = is_shallow_save;
+}
+
 void FullyConnectedLayer::initOptimizer() {
   _w_gradient.assign(_dim * _prev_dim, 0);
   _w_momentum.assign(_dim * _prev_dim, 0);
@@ -523,11 +536,9 @@ void FullyConnectedLayer::initOptimizer() {
   _b_gradient.assign(_dim, 0);
   _b_momentum.assign(_dim, 0);
   _b_velocity.assign(_dim, 0);
-
-  _is_shallow = false;
 }
 
-void FullyConnectedLayer::remOptimizer() {
+void FullyConnectedLayer::removeOptimizer() {
   _w_gradient.clear();
   _w_momentum.clear();
   _w_velocity.clear();
@@ -535,8 +546,6 @@ void FullyConnectedLayer::remOptimizer() {
   _b_gradient.clear();
   _b_momentum.clear();
   _b_velocity.clear();
-
-  _is_shallow = true;
 }
 
 }  // namespace thirdai::bolt

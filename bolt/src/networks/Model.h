@@ -122,19 +122,23 @@ class Model {
 
   virtual ~Model() = default;
 
-  // setShallow should set the layers to shallow so that
-  // the optimizer state is not saved
-  virtual void setShallow(bool set) = 0;
+  /* shallow layer: Layer without optimizer state
+   * setShallow sets the layer to shallow or non-shallow, ie, it can remove or
+   * initialize the optimizer respectively
+   * Only called for trimming the model or for resuming training
+   */
+  virtual void setShallow(bool is_shallow) = 0;
 
-  virtual void setShallowSave(bool set) = 0;
+  /* setShallowSave sets whether layer should be saved shallowly, ie, whether
+   * layers should be saved with or without the optimizer state
+   * Called only while saving the model
+   */
+  virtual void setShallowSave(bool is_shallow_save) = 0;
 
-  // isShallow returns whether model is loaded from a shallow state
-  // initialize gradients during training, not inference
-  virtual bool isShallow() = 0;
-
-  virtual void initializeOptimizer() = 0;
-
-  virtual void removeOptimizer() = 0;
+  /* anyLayerShallow checks whether there is any layer with uninitialized
+   * optimizer state. Model class should not train a shallow layer
+   */
+  virtual bool anyLayerShallow() = 0;
 
  protected:
   uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,

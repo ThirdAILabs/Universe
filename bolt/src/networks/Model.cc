@@ -6,6 +6,7 @@
 #include <cctype>
 #include <chrono>
 #include <iostream>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -37,9 +38,10 @@ MetricData Model<BATCH_T>::train(
   MetricAggregator metrics(metric_names, verbose);
 
   // if network is loaded without optimizer state, initialize_optimizer
-  bool is_shallow = isShallow();
-  if (is_shallow) {
-    initializeOptimizer();
+  bool any_layer_shallow = anyLayerShallow();
+  if (any_layer_shallow) {
+    throw std::logic_error(
+        "Call enable training before training to initialize Optimizer state");
   }
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {

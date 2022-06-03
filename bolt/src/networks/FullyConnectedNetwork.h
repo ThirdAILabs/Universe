@@ -80,42 +80,24 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     return _layers.back()->getInferenceOutputDim();
   }
 
-  bool isShallow() final {
-    // if any layer is shallow, return true
+  bool anyLayerShallow() final {
     bool shallow = false;
     for (uint32_t i = 0; i < _num_layers; i++) {
-      shallow = shallow || _layers[i]->isShallow();
+      shallow |= _layers[i]->isShallow();
     }
-    _is_shallow = shallow;
     return shallow;
   }
 
-  void setShallow(bool set) final {
+  void setShallow(bool is_shallow) final {
     for (uint32_t i = 0; i < _num_layers; i++) {
-      _layers[i]->setShallow(set);
+      _layers[i]->setShallow(is_shallow);
     }
-    _is_shallow = set;
   }
 
-  void setShallowSave(bool set) final {
+  void setShallowSave(bool is_shallow_save) final {
     for (uint32_t i = 0; i < _num_layers; i++) {
-      _layers[i]->setShallowSave(set);
+      _layers[i]->setShallowSave(is_shallow_save);
     }
-    _save_shallow = set;
-  }
-
-  void initializeOptimizer() final {
-    for (uint32_t i = 0; i < _num_layers; i++) {
-      _layers[i]->initOptimizer();
-    }
-    assert(this->isShallow() == false);
-  }
-
-  void removeOptimizer() final {
-    for (uint32_t i = 0; i < _num_layers; i++) {
-      _layers[i]->remOptimizer();
-    }
-    assert(this->isShallow() == true);
   }
 
   uint32_t getInputDim() const { return _layers.front()->getInputDim(); }
@@ -143,14 +125,12 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   std::vector<BoltBatch> _states;
   uint32_t _num_layers;
   bool _sparse_inference_enabled;
-  bool _is_shallow, _save_shallow;
 
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_is_shallow);
     archive(cereal::base_class<Model<bolt::BoltBatch>>(this), _input_dim,
             _layers, _num_layers, _sparse_inference_enabled);
   }

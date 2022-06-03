@@ -7,6 +7,7 @@
 #include "SequentialLayer.h"
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
+#include <exceptions/src/Exceptions.h>
 
 namespace thirdai::bolt {
 class ConvLayer final : public SequentialLayer {
@@ -67,30 +68,20 @@ class ConvLayer final : public SequentialLayer {
 
   void setShallowSave(bool set) final {
     (void)set;
-    // throw std::logic_error("Warning: setShallowSave not implemented for
-    // DLRM;");
+    throw thirdai::exceptions::NotImplemented(
+        "Error: setShallowSave not implemented for DLRM;");
   }
 
   void setShallow(bool set) final {
     (void)set;
-    // throw std::logic_error("Warning: setShallow not implemented for DLRM;");
+    throw thirdai::exceptions::NotImplemented(
+        "Error: setShallow not implemented for DLRM;");
   }
 
   bool isShallow() final {
-    // throw std::logic_error("Warning: isShallow not implemented for DLRM;");
+    throw thirdai::exceptions::NotImplemented(
+        "Error: isShallow not implemented for DLRM;");
     return false;
-  }
-
-  void initOptimizer() final {
-    (void)true;
-    // throw std::logic_error("Warning: initOptimizer not implemented for
-    // DLRM;");
-  }
-
-  void remOptimizer() final {
-    (void)true;
-    // throw std::logic_error("Warning: remOptimizer not implemented for
-    // DLRM;");
   }
 
  private:
@@ -116,7 +107,6 @@ class ConvLayer final : public SequentialLayer {
 
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
-  bool _shallow_save;
   ActivationFunction _act_func;
 
   std::vector<float> _weights;

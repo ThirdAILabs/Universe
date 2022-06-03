@@ -155,4 +155,4 @@ def test_read_noise():
     assert acc < 0.2
 
 
-test_easy_sparse_layer()
+# test_easy_sparse_layer()
