@@ -13,12 +13,12 @@ def parse_args():
 
     
 def main():
-    today = str(date.today())
+    cur_date = str(date.today())
     args = parse_args()
 
     for config in args.configs:
         p = Path(config)
-        run_name = "benchmark_" + p.stem + "_" + today
+        run_name = f"benchmark_{p.stem}_{cur_date}"
         os.system(f"python3 ../benchmarks/bolt_benchmarks/bolt.py {config} --run_name {run_name}")
 
 
