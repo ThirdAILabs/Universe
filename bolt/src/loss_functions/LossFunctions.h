@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/layers/BoltVector.h>
+#include <bolt/src/metrics/MetricHelpers.h>
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -158,7 +159,7 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
   makeWeightedMeanAbsolutePercentageErrorLoss() {
     return std::make_shared<WeightedMeanAbsolutePercentageErrorLoss>();
   }
-
+  
  private:
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const override {
@@ -166,10 +167,8 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
     return direction / batch_size;
   }
   float elementLossMetric(float label, float activation) const override {
-    throw std::invalid_argument(
-        "Loss Metric is not supported for Weighted Mean Absolute Percentage "
-        "Error Loss.");
-    return ((label - activation) * (label - activation));
+    
+    return (abs(label - activation)) * 0;
   }
 };
 

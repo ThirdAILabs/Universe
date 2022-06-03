@@ -65,11 +65,15 @@ MetricData Model<BATCH_T>::train(
                               batch_inputs.getBatchSize());
 
         backpropagate(vec_id, batch_inputs, outputs[vec_id]);
+
         float local_loss_function_metric =
             loss_fn.computeLossMetric(outputs[vec_id], batch_labels[vec_id]);
 
         MetricUtilities::incrementAtomicFloat(loss_function_metric,
                                               local_loss_function_metric);
+
+
+        
         metrics.processSample(outputs[vec_id], batch_labels[vec_id]);
       }
 
@@ -100,8 +104,11 @@ MetricData Model<BATCH_T>::train(
       std::cout << std::endl
                 << "Processed " << num_train_batches << " training batches in "
                 << epoch_time << " seconds" << std::endl;
-
-      std::cout << "Loss: " << loss_function_metric << std::endl;
+        // Loss function will return 0 in case of WeightedMeanAbsolutePercentageError
+        // This is a check to make sure Training Loss is not printed in case of WeightedMeanAbsolutePercentageError
+        if(loss_function_metric!=0){
+          std::cout << "Training Loss: " << loss_function_metric << std::endl;
+        }
     }
     _epoch_count++;
 
