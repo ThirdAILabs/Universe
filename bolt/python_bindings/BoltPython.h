@@ -156,29 +156,37 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
 
-/**
- * The following changes are done to incorporate the CTRL+C
- * functionality to the library, we are doing that here by
- * adding a signal to handle the event independently, after
- * the metrics is calculated SIG_DFL is sent back
- */
+  /**Overriding the SIG_INT exception handler to throw a runtime_error will cause
+    * any CTRL+C from the user to interrupt the execution of any long running 
+    * code. 
+    */
 #if defined __linux__ || defined __APPLE__
 
     auto handler = [](int code) {
-      throw std::runtime_error("SIGNAL " + std::to_string(code));
+      std::cout << "KeyboardInterrupt, Code: " << code << std::endl;
+      std::cout << "Gracefully shutting down the program!" << std::endl;
+      exit(0);
     };
-    std::signal(SIGINT, handler);
+
+    /**
+    * signal() function returns the current signal handler.
+    */
+    typedef void (*sighandler_t)(int);  /* for convenience */
+    sighandler_t old_signal_handler; 
+    old_signal_handler = std::signal(SIGINT, handler);
 
     MetricData metrics = FullyConnectedNetwork::train(
         train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
         epochs, rehash, rebuild, metric_names, verbose);
 
-    std::signal(SIGINT, SIG_DFL);
+
+    std::signal(SIGINT, old_signal_handler);
     return metrics;
 
 #else
     /**
-     * For windows, signal might not work, Loo at this
+     * For windows signal() function from csignal doesnot works for raising CTRL+C interrupts
+     * Look into below link for further information.
      * https://stackoverflow.com/questions/54362699/windows-console-signal-handling-for-subprocess-c
      */
 

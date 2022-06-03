@@ -44,6 +44,7 @@ def train_using_random_numpy():
     ]
 
     network = bolt.Network(layers=layers, input_dim=5)
+    print("Marker to check train function about to start")
     network.train(
         train_data=train_data,
         train_labels=train_labels,
