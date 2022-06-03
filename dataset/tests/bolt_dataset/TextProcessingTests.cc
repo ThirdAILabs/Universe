@@ -95,14 +95,9 @@ TEST(PairgramHasher, TestComputePairgrams) {
   checkPairgramVector(vector, words);
 }
 
-void testCreateBatchArbitraryLabels(const std::vector<std::string>& rows,
-                                    const std::string& header) {
-  std::vector<std::vector<std::string>> words = {
-      {"tasty", "red", "fruit"},
-      {"green", "fruit", "in", "the", "fall"},
-      {"make", "delicious", "pies"},
-      {"grow", "on", "trees"}};
-
+void testCreateBatchArbitraryLabels(
+    const std::vector<std::string>& rows, const std::string& header,
+    std::vector<std::vector<std::string>> words) {
   TextClassificationProcessor processor(RANGE);
 
   processor.processHeader(header);
@@ -135,7 +130,13 @@ TEST(TextClassifierBatchProcessor, TestCreateBatchLabelsLeft) {
 
   std::string header = R"("category","text")";
 
-  testCreateBatchArbitraryLabels(rows, header);
+  std::vector<std::vector<std::string>> words = {
+      {"tasty", "red", "fruit"},
+      {"green", "fruit", "in", "the", "fall"},
+      {"make", "delicious", "pies"},
+      {"grow", "on", "trees"}};
+
+  testCreateBatchArbitraryLabels(rows, header, words);
 }
 
 TEST(TextClassifierBatchProcessor, TestCreateBatchLabelsRight) {
@@ -145,7 +146,13 @@ TEST(TextClassifierBatchProcessor, TestCreateBatchLabelsRight) {
 
   std::string header = R"("text","category")";
 
-  testCreateBatchArbitraryLabels(rows, header);
+  std::vector<std::vector<std::string>> words = {
+      {"tasty", "red", "fruit"},
+      {"green", "fruit", "in", "the", "fall"},
+      {"make", "delicious", "pies"},
+      {"grow", "on", "trees"}};
+
+  testCreateBatchArbitraryLabels(rows, header, words);
 }
 
 TEST(MaskedSentenceBatchProcessor, TestCreateBatch) {
