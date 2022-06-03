@@ -159,7 +159,7 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
   makeWeightedMeanAbsolutePercentageErrorLoss() {
     return std::make_shared<WeightedMeanAbsolutePercentageErrorLoss>();
   }
-  
+
  private:
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const override {
@@ -167,7 +167,6 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
     return direction / batch_size;
   }
   float elementLossMetric(float label, float activation) const override {
-    
     return (abs(label - activation)) * 0;
   }
 };
