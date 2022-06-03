@@ -45,7 +45,7 @@ def _define_network():
     layers = [
         bolt.Conv(
             num_filters=200,
-            load_factor=1,
+            sparsity=1,
             activation_function=bolt.ActivationFunctions.ReLU,
             sampling_config=bolt.SamplingConfig(),
             kernel_size=(4, 4),
@@ -53,7 +53,7 @@ def _define_network():
         ),
         # bolt.Conv(
         #     num_filters=400,
-        #     load_factor=0.1,
+        #     sparsity=0.1,
         #     activation_function=bolt.ActivationFunctions.ReLU,
         #     sampling_config=bolt.SamplingConfig(
         #         hashes_per_table=3, num_tables=64, range_pow=9, reservoir_size=5
@@ -63,7 +63,7 @@ def _define_network():
         # ),
         # bolt.Conv(
         #     num_filters=800,
-        #     load_factor=0.05,
+        #     sparsity=0.05,
         #     activation_function=bolt.ActivationFunctions.ReLU,
         #     sampling_config=bolt.SamplingConfig(
         #         hashes_per_table=3, num_tables=64, range_pow=9, reservoir_size=5
@@ -73,7 +73,7 @@ def _define_network():
         # ),
         # bolt.FullyConnected(
         #     dim=20000,
-        #     load_factor=0.05,
+        #     sparsity=0.05,
         #     activation_function=bolt.ActivationFunctions.ReLU,
         #     sampling_config=bolt.SamplingConfig(
         #         hashes_per_table=3, num_tables=64, range_pow=9, reservoir_size=5
