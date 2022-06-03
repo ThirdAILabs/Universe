@@ -116,8 +116,8 @@ void createBoltSubmodule(py::module_& module) {
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: ActivationFunctions enum, e.g. ReLU, "
-           "Softmax, Sigmoid, Linear. "
+           " * activation_function: ActivationFunctions enum - We support five "
+           "activation functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            "Also accepts `getActivationFunction(function_name), e.g. "
            "`getActivationFunction('ReLU')`")
       .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
@@ -125,8 +125,8 @@ void createBoltSubmodule(py::module_& module) {
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: ActivationFunctions enum, e.g. ReLU, "
-           "Softmax, Sigmoid, Linear, Tanh. "
+           " * activation_function: ActivationFunctions enum - We support five "
+           "activation functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sparsity: Float - The fraction of neurons to use during "
            "sparse training "
            "and sparse inference. For example, sparsity=0.05 means the "
@@ -139,9 +139,9 @@ void createBoltSubmodule(py::module_& module) {
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: string, input to be given as string"
-           "no restriction on upper case or lower case."
-           "Eg. relu or Relu ,Softmax or softMax, Linear or lineaR. "
+           " * activation_function: String specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * load_factor: Float - The fraction of neurons to use during "
            "sparse training "
            "and sparse inference. For example, load_factor=0.05 means the "
@@ -152,8 +152,9 @@ void createBoltSubmodule(py::module_& module) {
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: string, input to be given as string"
-           "no restriction on upper case or lower case."
+           " * activation_function: String specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            "Eg. relu or Relu ,Softmax or softMax, Linear or lineaR.");
 
 #if THIRDAI_EXPOSE_ALL
