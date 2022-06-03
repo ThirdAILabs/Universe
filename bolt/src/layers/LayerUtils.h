@@ -39,17 +39,16 @@ constexpr float actFuncDerivative(float activation,
       // Derivative of tanh(x) is 1 - tanh^2(x), but in this case
       // activation =  tanh(x), so derivative is simply: 1 - (activation)^2.
       return (1 - activation * activation);
-    case ActivationFunction::Sigmoid:
-      // Derivative of sig(x) is sig(x) * (1 - sig(x)), but in this case
-      // activation = sig(x), so derivative is simply:
-      // activation * (1 - activation).
-      return (activation * (1 - activation));
     case ActivationFunction::ReLU:
       return activation > 0 ? 1.0 : 0.0;
+    case ActivationFunction::Sigmoid:
+    // The derivative of sigmoid is computed as part of the BinaryCrossEntropy
+    // loss function since they are used together and this simplifies the
+    // computations.
     case ActivationFunction::Softmax:
       // The derivative of softmax is computed as part of the
-      // CategoricalCrossEntropy function since they are used together, and this
-      // simplifies the computations.
+      // CategoricalCrossEntropy loss function since they are used together, and
+      // this simplifies the computations.
     case ActivationFunction::Linear:
       return 1.0;
   }

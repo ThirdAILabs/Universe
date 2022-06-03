@@ -83,6 +83,31 @@ class BinaryCrossEntropyLoss final : public LossFunction {
  private:
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const override {
+    /* Derivation
+
+    Note: we are assuming that BCE is used along with a signmoid activation in
+    the final layer.
+
+    Notation:
+     * y - the true label for the neuron in question, y is 0 or 1.
+     * a - the activation of the neuron.
+     * z - the net inputs of the neuron before applying the activation function.
+     * sig - the sigmoid function. Note that d/dx sig(x) = sig(x)(1-sig(x))
+
+    BCE(a,y) = - y log(a) - (1-y) log(1-a)
+             = - y log(sig(z)) - (1-y) log(1-sig(z))
+
+    d/dz BCE(a,y)
+      = - y [1/sig(x)] sig(x)(1-sig(x)) + (1-y) [1/(1-sig(x))] sig(x)(1-sig(x))
+      = - y (1-sig(x)) + (1-y) sig(x)
+      = - y + y sig(x) + sig(x) - y sig(x)
+      = sig(x) - y
+
+    We are computing y - sig(x) because we want the negative gradient to
+    minimize the loss function. We divide by batch size because we average the
+    loss over the batch.
+
+    */
     return (label - activation) / batch_size;
   }
 };

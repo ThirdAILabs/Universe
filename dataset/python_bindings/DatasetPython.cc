@@ -84,7 +84,7 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
-      py::arg("batch_size"), py::arg("labels_sum_to_one") = true,
+      py::arg("batch_size"), py::arg("using_softmax") = true,
       "Loads a BoltDataset from an SVM file. Each line in the "
       "input file represents a sparse input vector and should follow this "
       "format:\n"
@@ -99,10 +99,12 @@ void createDatasetSubmodule(py::module_& module) {
       "Arguments:\n"
       " * filename: String - Path to input file.\n"
       " * batch_size: Int (positive) - Size of each batch in the dataset.\n"
-      " * labels_sum_to_one: Bool (default is true) - When this flag is true "
-      "the loader will ensure that the sum of the values of the labels is 1.0 "
-      "for multiclass labels. This is required if the network is using softmax "
-      "with the CategoricalCrossEntropy loss function.\n\n"
+      " * softmax_for_multiclass: Bool (default is true) - Multi-label samples "
+      "must be processed slightly differently if softmax is being used in the "
+      "output layer instead of sigmoid. When this flag is true the loader will "
+      "process samples with multiple labels assuming that softmax and "
+      "CategoricalCrossEntropy are being used for multi-label datasets. If the "
+      "dataset is single label, then this argument has no effect.\n\n"
       "Returns a tuple containing a BoltDataset to store the data itself, and "
       "a BoltDataset storing the labels.");
 
@@ -169,8 +171,8 @@ InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
 
 py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
                                     uint32_t batch_size,
-                                    bool labels_sum_to_one) {
-  auto res = loadBoltSvmDataset(filename, batch_size, labels_sum_to_one);
+                                    bool softmax_for_multiclass) {
+  auto res = loadBoltSvmDataset(filename, batch_size, softmax_for_multiclass);
   return py::make_tuple(std::move(res.data), std::move(res.labels));
 }
 
