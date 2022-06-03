@@ -5,18 +5,25 @@
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/core/BatchProcessor.h>
+#include <dataset/src/core/InputTargetBuffer.h>
+#include <dataset/src/core/StreamingDataset.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <dataset/src/encodings/text/PairGram.h>
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
 #include <dataset/src/encodings/text/UniGram.h>
-#include <dataset/tests/MockBlock.h>
+// #include <dataset/tests/MockBlock.h>
+#include <dataset/src/loaders/LoaderInterface.h>
+#include <dataset/src/loaders/CsvLoader.h>
 #include <pybind11/buffer_info.h>
+#include <pybind11/cast.h>
+#include <pybind11/pybind11.h>
 #include <sys/types.h>
 #include <chrono>
 #include <limits>
 #include <unordered_map>
 #include <type_traits>
+#include <memory>
 #include <unordered_map>
 #include <type_traits>
 
@@ -36,6 +43,7 @@ void createDatasetSubmodule(py::module_& module) {
 
   // Everything in this submodule is exposed to users.
   auto dataset_submodule = module.def_submodule("dataset");
+  auto loader_submodule = dataset_submodule.def_submodule("loaders");
   auto block_submodule = dataset_submodule.def_submodule("blocks");
   auto text_encoding_submodule =
       dataset_submodule.def_submodule("text_encodings");
@@ -126,7 +134,7 @@ void createDatasetSubmodule(py::module_& module) {
            " * col: Int - Column number of the input row containing "
            "the text to be encoded.\n"
            " * encoding: TextEncoding - Text encoding model.")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("col"), py::arg("dim"),
+      .def(py::init<uint32_t, uint32_t>(), py::arg("col"), py::arg("dim")=100000,
            "Constructor with default encoder.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
@@ -160,56 +168,89 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &CategoricalBlock::isDense,
            "True if the block produces dense features, False otherwise.");
 
-  py::class_<MockBlock, Block, std::shared_ptr<MockBlock>>(
-      internal_dataset_submodule, "MockBlock",
-      "Mock implementation of block abstract class for testing purposes.")
-      .def(py::init<uint32_t, bool>(), py::arg("column"), py::arg("dense"),
-           "Constructor")
-      .def("feature_dim", &MockBlock::featureDim,
-           "Returns the dimension of the vector encoding.")
-      .def("is_dense", &MockBlock::isDense,
-           "True if the block produces dense features, False otherwise.");
+  // The no lint below is because clang tidy doesn't like instantiating an
+  // object without a name and never using it.
+  py::class_<Loader, std::shared_ptr<Loader>>( // NOLINT
+      internal_dataset_submodule, "Loader", 
+      "Loader abstract class.\n\n"
+      "A loader loads raw data from disk.");
 
-  py::class_<PyBatchProcessor>(
-      internal_dataset_submodule, "BatchProcessor",
-      "Encodes input samples – each represented by a sequence of strings – "
-      "as input and target BoltVectors according to the given blocks. "
-      "It processes these sequences in batches.\n\n"
-      "This is not consumer-facing.")
-      .def(
-          py::init<std::vector<std::shared_ptr<Block>>,
-                   std::vector<std::shared_ptr<Block>>, uint32_t, size_t>(),
-          py::arg("input_blocks"), py::arg("target_blocks"),
-          py::arg("output_batch_size"), py::arg("est_num_elems"), py::keep_alive<1, 2>(),
-          py::keep_alive<1, 3>(),
-          "Constructor\n\n"
-          "Arguments:\n"
-          " * input_blocks: List of Blocks - Blocks that encode input samples "
-          "as input vectors.\n"
-          " * target_blocks: List of Blocks - Blocks that encode input samples "
-          "as target vectors.\n"
-          " * output_batch_size: Int (positive) - Size of batches in the "
-          "produced "
-          "dataset.")
-      .def("process_batch", &PyBatchProcessor::processBatchPython,
-           py::arg("row_batch"),
-           "Consumes a batch of input samples and encodes them as vectors.\n\n"
+  py::class_<CsvLoader, Loader, std::shared_ptr<CsvLoader>>(
+      loader_submodule, "CSV",
+      "Loads data from a CSV file.")
+      .def(py::init<const std::string&, char, bool>(), 
+           py::arg("filename"), py::arg("delimiter")=',', 
+           py::arg("has_header")=false,
+           "Constructor.\n\n"
            "Arguments:\n"
-           " * row_batch: List of lists of strings - We expect to read tabular "
-           "data "
-           "where each row is a sample, and each sample has many columns. "
-           "row_batch represents a batch of such samples.")
-      .def("export_in_memory_dataset", &PyBatchProcessor::exportInMemoryDataset,
-           py::arg("shuffle") = false, py::arg("shuffle_seed") = std::rand(),
-           "Produces a tuple of BoltDatasets for input and target "
-           "vectors processed so far. This method can optionally produce a "
-           "shuffled dataset.\n\n"
-           "Arguments:\n"
-           " * shuffle: Boolean (Optional) - The dataset will be shuffled if "
-           "True.\n"
-           " * shuffle_seed: Int (Optional) - The seed for the RNG for "
-           "shuffling the "
-           "dataset.");
+           " * filename: String - Path to CSV file.\n"
+           " * delimiter: Char - CSV delimiter. Defaults to ','\n"
+           " * has_header: bool - True if the CSV file has a "
+           "header, False otherwise. Defaults to False.");
+  
+  py::class_<StreamingDataset>(dataset_submodule, "StreamingDataset",
+      "A generic streaming dataset for BOLT.")
+      .def(py::init<std::shared_ptr<thirdai::dataset::Loader>, 
+                    std::vector<std::shared_ptr<Block>>,
+                    std::vector<std::shared_ptr<Block>>,
+                    size_t, size_t, bool, uint32_t>(), 
+           py::arg("loader"), py::arg("input_blocks"), 
+           py::arg("target_blocks"), py::arg("batch_size"),
+           py::arg("est_num_samples")=0, py::arg("shuffle")=false, 
+           py::arg("shuffle_buffer_size")=0)
+      .def("next_batch", &StreamingDataset::nextBatch)
+      .def("load_in_memory", &StreamingDataset::loadInMemory);
+
+  // py::class_<MockBlock, Block, std::shared_ptr<MockBlock>>(
+  //     internal_dataset_submodule, "MockBlock",
+  //     "Mock implementation of block abstract class for testing purposes.")
+  //     .def(py::init<uint32_t, bool>(), py::arg("column"), py::arg("dense"),
+  //          "Constructor")
+  //     .def("feature_dim", &MockBlock::featureDim,
+  //          "Returns the dimension of the vector encoding.")
+  //     .def("is_dense", &MockBlock::isDense,
+  //          "True if the block produces dense features, False otherwise.");
+
+  // py::class_<PyBatchProcessor>(
+  //     internal_dataset_submodule, "BatchProcessor",
+  //     "Encodes input samples – each represented by a sequence of strings – "
+  //     "as input and target BoltVectors according to the given blocks. "
+  //     "It processes these sequences in batches.\n\n"
+  //     "This is not consumer-facing.")
+  //     .def(
+  //         py::init<std::vector<std::shared_ptr<Block>>,
+  //                  std::vector<std::shared_ptr<Block>>, uint32_t, size_t>(),
+  //         py::arg("input_blocks"), py::arg("target_blocks"),
+  //         py::arg("output_batch_size"), py::arg("est_num_elems"), py::keep_alive<1, 2>(),
+  //         py::keep_alive<1, 3>(),
+  //         "Constructor\n\n"
+  //         "Arguments:\n"
+  //         " * input_blocks: List of Blocks - Blocks that encode input samples "
+  //         "as input vectors.\n"
+  //         " * target_blocks: List of Blocks - Blocks that encode input samples "
+  //         "as target vectors.\n"
+  //         " * output_batch_size: Int (positive) - Size of batches in the "
+  //         "produced "
+  //         "dataset.")
+  //     .def("process_batch", &PyBatchProcessor::processBatchPython,
+  //          py::arg("row_batch"),
+  //          "Consumes a batch of input samples and encodes them as vectors.\n\n"
+  //          "Arguments:\n"
+  //          " * row_batch: List of lists of strings - We expect to read tabular "
+  //          "data "
+  //          "where each row is a sample, and each sample has many columns. "
+  //          "row_batch represents a batch of such samples.")
+  //     .def("export_in_memory_dataset", &PyBatchProcessor::exportInMemoryDataset,
+  //          py::arg("shuffle") = false, py::arg("shuffle_seed") = std::rand(),
+  //          "Produces a tuple of BoltDatasets for input and target "
+  //          "vectors processed so far. This method can optionally produce a "
+  //          "shuffled dataset.\n\n"
+  //          "Arguments:\n"
+  //          " * shuffle: Boolean (Optional) - The dataset will be shuffled if "
+  //          "True.\n"
+  //          " * shuffle_seed: Int (Optional) - The seed for the RNG for "
+  //          "shuffling the "
+  //          "dataset.");
 
   dataset_submodule.def("load_svm_dataset", &loadSVMDataset,
                         py::arg("filename"), py::arg("batch_size"));
@@ -264,6 +305,11 @@ void createDatasetSubmodule(py::module_& module) {
   // object without a name and never using it.
   py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule,  // NOLINT
                                           "BoltDataset");
+  
+  // The no lint below is because clang tidy doesn't like instantiating an
+  // object without a name and never using it.
+  py::class_<OptionalInputTargetBatch>(dataset_submodule,  // NOLINT
+                                       "BoltInputTargetPair");
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),

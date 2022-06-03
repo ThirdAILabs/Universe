@@ -39,7 +39,7 @@ class TextBlock : public Block {
   bool isDense() const final { return _encoding->isDense(); };
 
  protected:
-  void buildSegment(const std::vector<std::string>& input_row,
+  void buildSegment(const std::vector<std::string_view>& input_row,
                       SegmentedFeatureVector& vec) final {
     _encoding->encodeText(input_row.at(_col), vec);
   }

@@ -1,4 +1,4 @@
 enable_testing()
 
-add_library(dataset_core_lib BatchProcessor.cc)
+add_library(dataset_core_lib BatchProcessor.cc StreamingDataset.cc InputTargetBuffer.cc)
 target_link_libraries(dataset_core_lib PRIVATE bolt_datasets_lib)

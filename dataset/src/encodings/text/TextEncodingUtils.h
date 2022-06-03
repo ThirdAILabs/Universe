@@ -97,8 +97,8 @@ class TextEncodingUtils {
   /**
    * Creates a copy of the original string where all characters are lowercase.
    */
-  inline static std::string makeLowerCase(const std::string& original) {
-    std::string lower_case_text = original;
+  inline static std::string makeLowerCase(const std::string_view& original) {
+    std::string lower_case_text(original);
     for (auto& c : lower_case_text) {
       c = std::tolower(c);
     }

@@ -13,7 +13,7 @@ class TextEncoding {
    * Conceptually, encodes a string as a vector and extends
    * the given vector with this encoding.
    */
-  virtual void encodeText(const std::string& text, SegmentedFeatureVector& vec) = 0;
+  virtual void encodeText(std::string_view text, SegmentedFeatureVector& vec) = 0;
 
   /**
    * True if the encoder produces dense features, False otherwise.

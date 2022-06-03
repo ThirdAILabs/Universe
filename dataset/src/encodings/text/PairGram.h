@@ -22,13 +22,10 @@ class PairGram : public TextEncoding {
    */
   explicit PairGram(uint32_t dim = 100000) : _dim(dim) {}
 
-  void encodeText(const std::string& text, SegmentedFeatureVector& vec) final {
+  void encodeText(std::string_view text, SegmentedFeatureVector& vec) final {
     // TODO(Geordie): Do we need to make lower case?
-    std::string lower_case_text = text;
-    for (auto& c : lower_case_text) {
-      c = std::tolower(c);
-    }
-
+    std::string lower_case_text = TextEncodingUtils::makeLowerCase(text);
+    
     std::vector<uint32_t> seen_unigram_hashes;
     std::vector<uint32_t> pair_grams;
 

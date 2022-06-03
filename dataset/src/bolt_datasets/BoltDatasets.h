@@ -18,6 +18,10 @@ class DatasetWithLabels {
   explicit DatasetWithLabels(BoltDataset&& _data, BoltDataset&& _labels)
       : data(std::make_shared<BoltDataset>(std::move(_data))),
         labels(std::make_shared<BoltDataset>(std::move(_labels))) {}
+  
+  explicit DatasetWithLabels(BoltDataset&& _data)
+      : data(std::make_shared<BoltDataset>(std::move(_data))),
+        labels(nullptr) {}
 };
 
 DatasetWithLabels loadBoltSvmDataset(const std::string& filename,

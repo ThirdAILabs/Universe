@@ -20,18 +20,15 @@ class UniGram : public TextEncoding {
   /**
    * Constructor. Accepts the desired dimension of the encoding.
    */
-  // explicit UniGram(uint32_t dim = 100000) 
-  //                  : _dim(dim), _start_pos(0), _end_pos(std::numeric_limits<uint32_t>::max()) {}
-
+  
   explicit UniGram(uint32_t dim = 100000, 
                    uint32_t start_pos=0,
                    uint32_t end_pos=std::numeric_limits<uint32_t>::max()) 
                    : _dim(dim), _start_pos(start_pos), _end_pos(end_pos) {}
 
-  void encodeText(const std::string& text, SegmentedFeatureVector& vec) final {
-    // TODO(Geordie): Do we need to make lower case?
+  void encodeText(std::string_view text, SegmentedFeatureVector& vec) final {
     std::string lower_case_text = TextEncodingUtils::makeLowerCase(text);
-
+    
     std::vector<uint32_t> uni_grams;
 
     TextEncodingUtils::forEachWord(
@@ -40,7 +37,7 @@ class UniGram : public TextEncoding {
               hashing::MurmurHash(start_ptr, len, /* seed = */ 341) % _dim;
           uni_grams.push_back(hash);
         }, _start_pos, _end_pos);
-
+    
     // Deduplication adds an overhead of around 10% but helps to reduce
     // number of entries in the sparse vector, which can in turn make BOLT
     // run faster.
