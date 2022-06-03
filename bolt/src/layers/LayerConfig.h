@@ -227,7 +227,7 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
       : num_filters(_num_filters),
         sparsity(_sparsity),
         act_func(_act_func),
-        sampling_config(_config),
+        sampling_config(std::move(_config)),
         kernel_size(std::move(_kernel_size)),
         num_patches(_num_patches) {
     checkSparsity(sparsity);
