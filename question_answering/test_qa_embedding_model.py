@@ -5,15 +5,18 @@ import tensorflow as tf
 from tensorflow import keras
 import numpy as np
 from tqdm import tqdm
+from embedding_model import get_compiled_triplet_model
+
+triplet_network, sentence_embedding_model = get_compiled_triplet_model()
+triplet_network.load_weights(filepath=".mdl_wts.hdf5")
 
 result_file_name = "temp_ranking.txt"
 
 tokenized_queries = np.load("tokenized_queries_test.npy")
 tokenized_documents = np.load("tokenized_documents_test.npy")
-model = keras.models.load_model("sentence_embedding_model", compile=False)
 
-embedded_queries = model.predict(tokenized_queries)
-embedded_documents = model.predict(tokenized_documents)
+embedded_queries = sentence_embedding_model.predict(tokenized_queries)
+embedded_documents = sentence_embedding_model.predict(tokenized_documents)
 
 embedded_queries = tf.math.l2_normalize(embedded_queries, axis=1)
 embedded_documents = tf.math.l2_normalize(embedded_documents, axis=1)
@@ -23,7 +26,7 @@ for i in tqdm(range(len(embedded_queries))):
     dot = tf.linalg.matmul(
         embedded_queries[i : i + 1], embedded_documents, transpose_b=True
     )
-    top_k = tf.math.top_k(dot, k=100, sorted=True).indices
+    top_k = tf.math.top_k(dot, k=1000, sorted=True).indices
     all_topks.append(top_k)
 
 all_topks = tf.concat(all_topks, 0).numpy()

@@ -53,7 +53,7 @@ if args.type == "train":
         columns_to_tokenize=(0, 1, 2),
         max_sizes=(32, 256, 256),
         batch_size=10**4,
-        max_num_lines=10**7,
+        max_num_lines=10**8,
         output_file_names=(
             "tokenized_queries_train.npy",
             "tokenized_positives_train.npy",
