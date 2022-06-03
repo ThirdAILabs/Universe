@@ -27,8 +27,8 @@ struct SequentialLayerConfig {
           "sparsity must be between 0 exclusive and 1 inclusive.");
     }
     if (0.2 < sparsity && sparsity < 1.0) {
-      std::cout << "WARNING: Using large load_factor value " << sparsity
-                << " in Layer, consider decreasing load_factor" << std::endl;
+      std::cout << "WARNING: Using large sparsity value " << sparsity
+                << " in Layer, consider decreasing sparsity" << std::endl;
     }
   }
 
@@ -80,6 +80,20 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
   float sparsity;
   ActivationFunction act_func;
   SamplingConfig sampling_config;
+
+  FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
+                            const std::string& _act_func,
+                            SamplingConfig _config)
+      : FullyConnectedLayerConfig(_dim, _sparsity,
+                                  getActivationFunction(_act_func), _config) {}
+
+  FullyConnectedLayerConfig(uint64_t _dim, const std::string& _act_func)
+      : FullyConnectedLayerConfig(_dim, getActivationFunction(_act_func)) {}
+
+  FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
+                            const std::string& _act_func)
+      : FullyConnectedLayerConfig(_dim, _sparsity,
+                                  getActivationFunction(_act_func)) {}
 
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
                             ActivationFunction _act_func,
@@ -189,7 +203,7 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
 
  private:
   void print(std::ostream& out) const final {
-    out << "FullyConnected: dim=" << dim << ", load_factor=" << sparsity;
+    out << "FullyConnected: dim=" << dim << ", sparsity=" << sparsity;
     switch (act_func) {
       case ActivationFunction::ReLU:
         out << ", act_func=ReLU";
@@ -199,6 +213,9 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
         break;
       case ActivationFunction::Linear:
         out << ", act_func=Linear";
+        break;
+      case ActivationFunction::Tanh:
+        out << ", act_func=Tanh";
         break;
     }
     if (sparsity < 1.0) {
@@ -262,7 +279,7 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
 
  private:
   void print(std::ostream& out) const final {
-    out << "Conv: num_filters=" << num_filters << ", load_factor=" << sparsity
+    out << "Conv: num_filters=" << num_filters << ", sparsity=" << sparsity
         << ", num_patches=" << num_patches;
     switch (act_func) {
       case ActivationFunction::ReLU:
@@ -273,6 +290,9 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
         break;
       case ActivationFunction::Linear:
         out << ", act_func=Linear";
+        break;
+      case ActivationFunction::Tanh:
+        out << ", act_func=Tanh";
         break;
     }
     out << ", kernel_size: (" << kernel_size.first << ", " << kernel_size.second

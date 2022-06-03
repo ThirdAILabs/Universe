@@ -72,7 +72,7 @@ def create_fully_connected_layer_configs(
         if config.get("use_default_sampling", False):
             layer = bolt.FullyConnected(
                 dim=config.get("dim"),
-                load_factor=config.get("sparsity", 1.0),
+                sparsity=config.get("sparsity", 1.0),
                 activation_function=bolt.getActivationFunction(
                     config.get("activation")
                 ),
@@ -80,7 +80,7 @@ def create_fully_connected_layer_configs(
         else:
             layer = bolt.FullyConnected(
                 dim=config.get("dim"),
-                load_factor=config.get("sparsity", 1.0),
+                sparsity=config.get("sparsity", 1.0),
                 activation_function=bolt.getActivationFunction(
                     config.get("activation")
                 ),
