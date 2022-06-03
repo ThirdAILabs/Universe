@@ -11,7 +11,8 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 @pytest.mark.unit
 def test_ctrl_c_functionality():
-    if sys.platform.startswith('linux') or sys.platform.startswith('darwin')::
+    # windows could not pass the test,hence running only on linux and darwin
+    if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
         # started a subprocesss to run a file to which SIGINT needed to be sent
         proc = subprocess.Popen(
             ["python3", "ctrl_c_executable.py"],

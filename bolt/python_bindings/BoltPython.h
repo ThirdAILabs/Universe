@@ -156,10 +156,10 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
 
-  /**Overriding the SIG_INT exception handler to throw a runtime_error will cause
-    * any CTRL+C from the user to interrupt the execution of any long running 
-    * code. 
-    */
+    /**Overriding the SIG_INT exception handler to throw a runtime_error will
+     * cause any CTRL+C from the user to interrupt the execution of any long
+     * running code.
+     */
 #if defined __linux__ || defined __APPLE__
 
     auto handler = [](int code) {
@@ -169,24 +169,23 @@ class PyNetwork final : public FullyConnectedNetwork {
     };
 
     /**
-    * signal() function returns the current signal handler.
-    */
-    typedef void (*sighandler_t)(int);  /* for convenience */
-    sighandler_t old_signal_handler; 
+     * signal() function returns the current signal handler.
+     */
+    typedef void (*sighandler_t)(int); /* for convenience */
+    sighandler_t old_signal_handler;
     old_signal_handler = std::signal(SIGINT, handler);
 
     MetricData metrics = FullyConnectedNetwork::train(
         train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
         epochs, rehash, rebuild, metric_names, verbose);
 
-
     std::signal(SIGINT, old_signal_handler);
     return metrics;
 
 #else
     /**
-     * For windows signal() function from csignal doesnot works for raising CTRL+C interrupts
-     * Look into below link for further information.
+     * For windows signal() function from csignal doesnot works for raising
+     * CTRL+C interrupts Look into below link for further information.
      * https://stackoverflow.com/questions/54362699/windows-console-signal-handling-for-subprocess-c
      */
 
