@@ -39,17 +39,18 @@ def main():
         help='The releast mode to build with (see CMakeLists.txt for the specific compiler flags for each mode). Default is "Release".',
     )
     parser.add_argument(
+        "-t",
+        "--target",
+        default="package",
+        type=str,
+        help="Specify a target to build (from available cmake targets). If no target is specified it defaults to 'package' which will simply build and install the library with pip.",
+    )
+    parser.add_argument(
         "-j",
         "--jobs",
         default="-1",  # we check for -1 below, and if so set # jobs equal to 2 * total # threads
         type=int,
         help="Number of parallel jobs to run make with. Default is 2 * total # threads on the machine.",
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        help="Print the commands that make is running.",
     )
     parser.add_argument(
         "-f",
@@ -78,13 +79,22 @@ def main():
     # https://stackoverflow.com/questions/33242956/cmake-passing-lists-on-command-line
     joined_feature_flags = " ".join(args.feature_flags)
 
-    # Change dir to top level, set environment variables, and run pip install
-    os.environ["THIRDAI_BUILD_MODE"] = args.build_mode
-    os.environ["THIRDAI_FEATURE_FLAGS"] = joined_feature_flags
-    os.environ["THIRDAI_NUM_JOBS"] = str(args.jobs)
-
+    # Change directory to top level.
     os.chdir("..")
-    os.system("pip3 install . --verbose --force")
+
+    if args.target == "package":
+        # Set environment variables, and run pip install
+        os.environ["THIRDAI_BUILD_MODE"] = args.build_mode
+        os.environ["THIRDAI_FEATURE_FLAGS"] = joined_feature_flags
+        os.environ["THIRDAI_NUM_JOBS"] = str(args.jobs)
+
+        os.system("pip3 install . --verbose --force")
+    else:
+        cmake_command = f"cmake -B build -S . -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE={args.build_mode} -DFEATURE_FLAGS={joined_feature_flags}"
+        build_command = f"cmake --build build --target {args.target} -j {args.jobs}"
+
+        os.system(cmake_command)
+        os.system(build_command)
 
 
 if __name__ == "__main__":

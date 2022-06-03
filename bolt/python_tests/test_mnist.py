@@ -52,7 +52,7 @@ def build_sparse_hidden_layer_network(dim, sparsity):
     layers = [
         bolt.FullyConnected(
             dim=dim,
-            load_factor=sparsity,
+            sparsity=sparsity,
             activation_function=bolt.ActivationFunctions.ReLU,
         ),
         bolt.FullyConnected(
