@@ -84,7 +84,7 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
-      py::arg("batch_size"), py::arg("using_softmax") = true,
+      py::arg("batch_size"), py::arg("softmax_for_multiclass") = true,
       "Loads a BoltDataset from an SVM file. Each line in the "
       "input file represents a sparse input vector and should follow this "
       "format:\n"
