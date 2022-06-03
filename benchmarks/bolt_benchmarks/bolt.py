@@ -89,7 +89,7 @@ def create_fully_connected_layer_configs(
                     num_tables=config.get("num_tables", 0),
                     range_pow=config.get("range_pow", 0),
                     reservoir_size=config.get("reservoir_size", 128),
-                    hash_type=config.get("hash_type","DWTA"),
+                    hash_type=config.get("hash_type", "DWTA"),
                 ),
             )
 
@@ -219,10 +219,14 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
 
     for e in range(epochs):
         metrics = network.train(
-            train_x, train_y, loss, learning_rate, 1, 
-            rehash = rehash,
-            rebuild= rebuild,
-            metrics= train_metrics
+            train_x,
+            train_y,
+            loss,
+            learning_rate,
+            1,
+            rehash=rehash,
+            rebuild=rebuild,
+            metrics=train_metrics,
         )
         if mlflow_enabled:
             log_training_metrics(metrics)
@@ -236,10 +240,11 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
                 mlflow.log_metrics(metrics)
         else:
             metrics, _ = network.predict(
-                test_x, test_y, 
-                metrics=test_metrics, 
-                verbose=True, 
-                batch_limit=max_test_batches
+                test_x,
+                test_y,
+                metrics=test_metrics,
+                verbose=True,
+                batch_limit=max_test_batches,
             )
             if mlflow_enabled:
                 mlflow.log_metrics(metrics)
@@ -287,10 +292,14 @@ def train_dlrm(config: Dict[str, Any], mlflow_enabled: bool):
 
     for _ in range(epochs):
         metrics = dlrm.train(
-            train_x, train_y, loss, learning_rate, 1, 
+            train_x,
+            train_y,
+            loss,
+            learning_rate,
+            1,
             rehash=rehash,
             rebuild=rebuild,
-            metrics=train_metrics
+            metrics=train_metrics,
         )
         if mlflow_enabled:
             log_training_metrics(metrics)
