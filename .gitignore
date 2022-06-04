@@ -39,3 +39,6 @@ wheelhouse
 
 # Shared libraries
 *.so
+
+# Data files
+*.svm

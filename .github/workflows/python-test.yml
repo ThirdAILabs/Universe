@@ -19,7 +19,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  python-tests:
+  python-unit-tests:
     runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
@@ -29,7 +29,14 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
         
-      - name: Run unit and integration tests
-        run: |
-          docker build -t test_image -f docker/develop/Dockerfile .  
-          docker run --privileged --mount type=bind,source=${PWD},target=/src test_image /bin/bash -c "src/bin/build.py ; src/bin/python-test.sh -m unit ; src/bin/python-test.sh -m integration"
+      - name: Build python package
+        run: bin/build.py
+
+      - name: Install necessary python pacakges
+        run: pip3 install numpy pytest toml mmh3 datasets
+
+      - name: Run python unit tests
+        run: src/bin/python-test.sh -m unit
+
+      - name: Run python integration tests
+        run: src/bin/python-test.sh -m unit
