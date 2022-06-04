@@ -1,7 +1,8 @@
 from embedding_model import get_compiled_triplet_model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+import numpy as np
 
-triplet_network, _ = get_compiled_triplet_model()
+triplet_network, _ = get_compiled_triplet_model(learning_rate=0.01)
 
 queries = np.load("tokenized_queries.npy")
 positives = np.load("tokenized_positives.npy")
@@ -15,6 +16,7 @@ reduce_lr_loss = ReduceLROnPlateau(
     monitor="val_loss", factor=0.1, patience=7, verbose=1, epsilon=1e-4, mode="min"
 )
 
+batch_size = 1024
 triplet_network.fit(
     [queries, positives, negatives],
     np.zeros((len(queries),)),  # All zeros because we don't use the labels for the loss
@@ -23,6 +25,3 @@ triplet_network.fit(
     epochs=100,
     callbacks=[earlyStopping, mcp_save, reduce_lr_loss],
 )
-
-# sentence_embedding_model.save("sentence_embedding_model")
-# triplet_network.save("triplet_network")

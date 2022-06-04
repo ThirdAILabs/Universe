@@ -7,7 +7,6 @@ import numpy as np
 alpha = 0.5
 embedding_dim = 128
 vocab_size = 30522
-batch_size = 1024
 
 
 def get_embedding_model():
@@ -71,7 +70,9 @@ def triplet_loss(y_true, y_pred):
     return tf.maximum(positive_dist - negative_dist + alpha, 0)
 
 
-def get_compiled_triplet_model():
+def get_compiled_triplet_model(learning_rate):
     triplet_model, sentence_embedding_model = get_triplet_and_sub_model()
-    triplet_model.compile(loss=triplet_loss, optimizer="adam")
+    triplet_model.compile(
+        loss=triplet_loss, optimizer=keras.optimizers.Adam(learning_rate=learning_rate)
+    )
     return triplet_model, sentence_embedding_model

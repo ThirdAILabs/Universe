@@ -7,7 +7,9 @@ import numpy as np
 from tqdm import tqdm
 from embedding_model import get_compiled_triplet_model
 
-triplet_network, sentence_embedding_model = get_compiled_triplet_model()
+triplet_network, sentence_embedding_model = get_compiled_triplet_model(
+    learning_rate=0.01
+)
 triplet_network.load_weights(filepath=".mdl_wts.hdf5")
 
 result_file_name = "temp_ranking.txt"
