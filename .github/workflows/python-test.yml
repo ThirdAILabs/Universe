@@ -36,7 +36,7 @@ jobs:
         run: pip3 install numpy pytest toml mmh3 datasets
 
       - name: Run python unit tests
-        run: src/bin/python-test.sh -m unit
+        run: bin/python-test.sh -m unit
 
       - name: Run python integration tests
-        run: src/bin/python-test.sh -m unit
+        run: bin/python-test.sh -m unit
