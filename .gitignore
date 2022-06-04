@@ -42,3 +42,4 @@ wheelhouse
 
 # Data files
 *.svm
+*.csv

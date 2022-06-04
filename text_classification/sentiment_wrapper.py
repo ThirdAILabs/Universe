@@ -26,8 +26,8 @@ def predict_sentence_sentiment(network: bolt.Network, text, seed=42):
     y_offsets = np.array([np.uint32(10), np.uint32(10)])
 
     prediction = network.predict(
-        train_data=(x_idxs, x_vals, x_offsets),
-        train_labels=(y_idxs, y_vals, y_offsets),
+        test_data=(x_idxs, x_vals, x_offsets),
+        test_labels=(y_idxs, y_vals, y_offsets),
         batch_size=1,
         metrics=["categorical_accuracy"],
         verbose=False,
