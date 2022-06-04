@@ -4,6 +4,7 @@ from datasets import load_dataset_builder
 from datasets import load_dataset
 import re
 from collections import namedtuple
+import os
 
 # All of these are integration tests because they require you to train and save
 # the yelp model first
@@ -31,8 +32,10 @@ def download_dataset(
     Huggingface website. https://huggingface.co/datasets
     """
     if os.path.isfile(svm_path_1) and os.path.isfile(svm_path_2):
-      print("Reusing existing tokenized files. If this behavior is not intended, please delete the files.")
-      return
+        print(
+            "Reusing existing tokenized files. If this behavior is not intended, please delete the files."
+        )
+        return
 
     dataset_1 = load_dataset(name, extra, split="train")
     dataset_2 = load_dataset(name, extra, split="test")
