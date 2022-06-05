@@ -7,7 +7,7 @@ add_executable(
 )
 
 add_executable(
-  max_flash_array_test
+  maxflash_array_test
   MaxFlashArrayTest.cc
 )
 
@@ -20,12 +20,12 @@ target_link_libraries(
 )
 
 target_link_libraries(
-  max_flash_array_test
+  maxflash_array_test
   PRIVATE
   hash_function_lib
-  flash_lib
+  maxflash_lib
   gtest_main
 )
 
 gtest_discover_tests(flash_test)
-gtest_discover_tests(max_flash_array_test)
+gtest_discover_tests(maxflash_array_test)

@@ -155,7 +155,7 @@ include_directories(".")
 add_subdirectory(bolt)
 add_subdirectory(dataset)
 add_subdirectory(exceptions)
-add_subdirectory(flash)
+add_subdirectory(search)
 add_subdirectory(hashing)
 add_subdirectory(hashtable)
 add_subdirectory(wrappers)
@@ -174,8 +174,8 @@ file(
 )
 
 file(
-  GLOB_RECURSE FLASH_SOURCES 
-  flash/src/*.cc 
+  GLOB_RECURSE SEARCH_SOURCES 
+  search/src/*.cc 
 )
 
 file(
@@ -207,11 +207,11 @@ pybind11_add_module(_thirdai
   python_bindings/thirdai.cc 
   bolt/python_bindings/BoltPython.cc
   dataset/python_bindings/DatasetPython.cc
-  flash/python_bindings/FlashPython.cc
+  search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc
   ${BOLT_SOURCES} 
   ${DLRM_SOURCES}
-  ${FLASH_SOURCES} 
+  ${SEARCH_SOURCES} 
   ${HASHING_SOURCES}
   ${HASHTABLE_SOURCES}
   ${DATASET_SOURCES}
