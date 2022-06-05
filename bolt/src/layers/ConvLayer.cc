@@ -385,7 +385,6 @@ void ConvLayer::setTrainable(bool trainable) {
 bool ConvLayer::getTrainable() {
   throw thirdai::exceptions::NotImplemented(
       "getTrainable not implemented for ConvLayer");
-  return true;
 }
 
 void ConvLayer::setWeights(const float* new_weights) {
