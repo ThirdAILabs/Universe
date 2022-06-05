@@ -7,6 +7,7 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/batch_types/ClickThroughBatch.h>
+#include <exceptions/src/Exceptions.h>
 #include <stdexcept>
 #include <vector>
 
@@ -56,16 +57,19 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
 
   void setShallow(bool set) final {
     (void)set;
-    throw std::logic_error("Warning: setShallow not implemented for DLRM;");
+    throw thirdai::exceptions::NotImplemented(
+        "Warning: setShallow not implemented for DLRM;");
   }
 
   void setShallowSave(bool set) final {
     (void)set;
-    throw std::logic_error("Warning: setShallowSave not implemented for DLRM;");
+    throw thirdai::exceptions::NotImplemented(
+        "Warning: setShallowSave not implemented for DLRM;");
   }
 
   bool anyLayerShallow() final {
-    // throw std::logic_error("Warning: isShallow not implemented for DLRM;");
+    // throw thirdai::exceptions::NotImplemented("Warning: anyLayerShallow not
+    // implemented for DLRM;");
     return false;
   }
 

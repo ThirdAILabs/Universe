@@ -375,20 +375,15 @@ void createBoltSubmodule(py::module_& module) {
                   "Loads and builds a saved network from file.")
       .def("checkpoint", &PyNetwork::checkpoint, py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
-           "folders to be created. Saves all the paramters including "
-           "optimizer(if not shallow). "
-           "Checkpointing shallow network always saves a shallow network")
-      .def("save", &PyNetwork::checkpoint, py::arg("filename"),
-           "Saves the network to a file. The file path must not require any "
-           "folders to be created. Saves all the paramters including "
-           "optimizer(if not shallow). "
+           "folders to be created. Saves all the paramters needed for "
+           "tranining. "
            "Checkpointing shallow network always saves a shallow network")
       .def("trim_for_inference", &PyNetwork::trimForInference,
            "Removes all parameters that are not essential for inference, "
            "shrinking the model")
       .def("resume_training", &PyNetwork::resumeTraining,
-           "If the model previously had its optimizer state removed, this "
-           "reinitialized the optimizer state, allowing training again.")
+           "If the model previously was trimmed for inference, this will "
+           "reinitialize the optimizer state, allowing training again.")
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "
            "matrix.")

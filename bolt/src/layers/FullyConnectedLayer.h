@@ -169,8 +169,11 @@ class FullyConnectedLayer final : public SequentialLayer {
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
 
-  /* Not serializing _shallow_save.
-   * Serializing _is_shallow first to store whether layer is shallow
+  /* Not serializing _shallow_save because it is only used to decide to how to
+   * save the model. If _shallow_save or _is_shallow is true, archive
+   * _is_shallow as true. If both are false, archive _is_shallow as false. While
+   * dearchiving, we only need to know whether or not the layer is shallow,
+   * hence, _shallow_save not archived.
    */
   template <class Archive>
   void save(Archive& archive) const {
