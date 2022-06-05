@@ -1,5 +1,5 @@
 #include <hashing/src/DensifiedMinHash.h>
-#include <flash/src/Flash.h>
+#include <search/src/Flash.h>
 #include <cstdint>
 #include <iostream>
 

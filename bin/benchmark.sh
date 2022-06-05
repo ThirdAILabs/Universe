@@ -11,7 +11,7 @@ then
   # Image net embedding search
   IMAGENET_FOLDER=$BENCHMARKING_FOLDER/magsearch/imagenet
   mkdir -p $IMAGENET_FOLDER
-  python3 $BASEDIR/../flash/benchmarks/image_search.py \
+  python3 $BASEDIR/../search/benchmarks/image_search.py \
     --read_in_entire_dataset \
     > $IMAGENET_FOLDER/stdout 2> $IMAGENET_FOLDER/stderr
 fi

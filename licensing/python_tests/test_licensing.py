@@ -63,3 +63,14 @@ def test_with_invalid_license():
         this_should_require_a_license_search()
     with pytest.raises(Exception, match=r".*license verification failure.*"):
         this_should_require_a_license_bolt()
+
+
+# See e.g. https://stackoverflow.com/questions/34931263/how-to-run-specific-code-after-all-tests-are-executed
+# This sets the license back to a valid value after each tests run
+@pytest.fixture(autouse=True)
+def set_license_back_to_valid():
+    import thirdai
+
+    # The yield means that it will run AFTER each test, not before.
+    yield
+    thirdai.set_thirdai_license_path(str(valid_license_path))

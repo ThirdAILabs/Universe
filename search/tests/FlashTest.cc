@@ -3,7 +3,7 @@
 #include <hashing/tests/DenseVectorUtils.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Dataset.h>
-#include <flash/src/Flash.h>
+#include <search/src/Flash.h>
 #include <algorithm>
 #include <iostream>
 #include <random>
