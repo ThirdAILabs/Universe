@@ -64,7 +64,7 @@ class CategoricalBlockTest : public testing::Test {
    * Helper function to access entries() method of ExtendableVector,
    * which is private.
    */
-  static std::vector<std::pair<uint32_t, float>> vectorEntries(
+  static std::unordered_map<uint32_t, float> vectorEntries(
       ExtendableVector& vec) {
     return vec.entries();
   }
@@ -115,10 +115,7 @@ TEST_F(CategoricalBlockTest, PrducesCorrectVectorsDifferentColumns) {
 
     // Collect actual key val pairs. We need to aggregate it in a map because
     // there may be duplicate entries with the same key.
-    std::unordered_map<uint32_t, float> actual_key_value_pairs;
-    for (const auto& [key, val] : vectorEntries(vecs[line])) {
-      actual_key_value_pairs[key] += val;
-    }
+    auto actual_key_value_pairs = vectorEntries(vecs[line]);
 
     // Check that actual equals expected.
     ASSERT_EQ(actual_key_value_pairs.size(), expected_key_value_pairs.size());

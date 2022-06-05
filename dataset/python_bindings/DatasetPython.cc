@@ -9,13 +9,13 @@
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <dataset/src/encodings/text/PairGram.h>
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
+#include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <dataset/src/encodings/text/UniGram.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
 #include <sys/types.h>
 #include <chrono>
 #include <limits>
-#include <unordered_map>
 #include <type_traits>
 #include <unordered_map>
 
@@ -66,8 +66,13 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<PairGram, TextEncoding, std::shared_ptr<PairGram>>(
       text_encoding_submodule, "PairGram",
-      "Encodes a sentence as a weighted set of ordered pairs of words.")
-      .def(py::init<uint32_t>(), py::arg("dim") = 100000,
+      "Encodes a sentence as a weighted set of ordered pairs of "
+      "whitespace-delimited words. Self-pairs are included. "
+      "Expects a textual string, e.g. A good good model, which is then "
+      "encoded as 'A A': 1, 'A good': 2, 'A model': 1, 'good good': 3, 'good "
+      "model': 2, 'model model': 1.")
+      .def(py::init<uint32_t>(),
+           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor. Accepts the desired dimension of the encoding.")
       .def("is_dense", &PairGram::isDense,
            "Returns False since this is a sparse encoding.")
@@ -76,9 +81,11 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<UniGram, TextEncoding, std::shared_ptr<UniGram>>(
       text_encoding_submodule, "UniGram",
-      "Encodes a sentence as a weighted set of words.")
-      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("dim") = 100000, 
-           py::arg("start_pos") = 0, py::arg("end_pos") = std::numeric_limits<uint32_t>::max(),
+      "Encodes a sentence as a weighted set of whitespace-delimited words. "
+      "Expects a textual string, e.g. A good good model, which is then "
+      "encoded as 'A': 1, 'good': 2, 'model': 1.")
+      .def(py::init<uint32_t>(),
+           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor. Accepts the desired dimension of the encoding.")
       .def("is_dense", &UniGram::isDense,
            "Returns False since this is a sparse encoding.")
@@ -96,8 +103,11 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<ContiguousNumericId, CategoricalEncoding,
              std::shared_ptr<ContiguousNumericId>>(
       categorical_encoding_submodule, "ContiguousNumericId",
-      "Treats the categorical identifiers as contiguous numeric IDs. "
-      "i.e. index of nonzero = ID % dim.")
+      "Expects a number and treats it as an ID in a contiguous set of "
+      "numeric IDs in a given range (0-indexed, excludes end of range). "
+      "If the ID is beyond the given range, it performs a modulo operation. "
+      "To illustrate, if dim = 10, then 0 through 9 map to themselves, "
+      "and any number n >= 10 maps to n % 10.")
       .def(py::init<uint32_t>(), py::arg("dim"),
            "Constructor. Accepts the desired dimension of the encoding.")
       .def("feature_dim", &ContiguousNumericId::featureDim,
@@ -179,8 +189,8 @@ void createDatasetSubmodule(py::module_& module) {
           py::init<std::vector<std::shared_ptr<Block>>,
                    std::vector<std::shared_ptr<Block>>, uint32_t, size_t>(),
           py::arg("input_blocks"), py::arg("target_blocks"),
-          py::arg("output_batch_size"), py::arg("est_num_elems"), py::keep_alive<1, 2>(),
-          py::keep_alive<1, 3>(),
+          py::arg("output_batch_size"), py::arg("est_num_elems"),
+          py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
           "Constructor\n\n"
           "Arguments:\n"
           " * input_blocks: List of Blocks - Blocks that encode input samples "

@@ -17,8 +17,7 @@ namespace thirdai::dataset {
 BatchProcessor::BatchProcessor(
     std::vector<std::shared_ptr<Block>> input_blocks,
     std::vector<std::shared_ptr<Block>> target_blocks,
-    uint32_t output_batch_size,
-    size_t est_num_elems)
+    uint32_t output_batch_size, size_t est_num_elems)
     : _batch_size(output_batch_size),
       _input_blocks_dense(std::all_of(input_blocks.begin(), input_blocks.end(),
                                       [](const std::shared_ptr<Block>& block) {
@@ -52,8 +51,8 @@ void BatchProcessor::processBatch(
   // Preallocate space for new vectors. This prevents data races and
   // preserves the order of vectors when processing them in parallel.
   uint32_t initial_num_elems = _input_vectors.size();
-  
-  // We use multiple emplace_backs instead of a resize() call to make 
+
+  // We use multiple emplace_backs instead of a resize() call to make
   // use of std::vector's exponential growth policy.
   for (uint32_t i = 0; i < batch.size(); i++) {
     _input_vectors.emplace_back();

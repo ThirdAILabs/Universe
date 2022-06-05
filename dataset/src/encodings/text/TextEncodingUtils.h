@@ -2,12 +2,16 @@
 
 #include <dataset/src/blocks/BlockInterface.h>
 #include <functional>
+#include <string_view>
 #include <type_traits>
 
 namespace thirdai::dataset {
 
 class TextEncodingUtils {
  public:
+  static constexpr uint32_t HASH_SEED = 341;
+  static constexpr uint32_t DEFAULT_TEXT_ENCODING_DIM = 100000;
+
   /**
    * Deduplicates indices by summing values and adds features to the given
    * vector. All indices expected to correspond to the same value.
@@ -53,7 +57,7 @@ class TextEncodingUtils {
                                  WORD_PROCESSOR_T word_processor) {
     static_assert(
         std::is_convertible<WORD_PROCESSOR_T,
-                            std::function<void(char*, size_t)>>::value);
+                            std::function<void(std::string_view)>>::value);
 
     const auto* start_ptr = sentence.c_str();
     bool last_ptr_was_space = false;
@@ -62,7 +66,7 @@ class TextEncodingUtils {
       if (isspace(c) && !last_ptr_was_space) {
         last_ptr_was_space = true;
         size_t len = std::distance(start_ptr, &c);
-        word_processor(start_ptr, len);
+        word_processor({start_ptr, len});
       }
 
       // Encountered a new word
@@ -76,7 +80,7 @@ class TextEncodingUtils {
     if (!last_ptr_was_space) {
       size_t cur_pos = std::distance(sentence.c_str(), start_ptr);
       uint32_t len = sentence.size() - cur_pos;
-      word_processor(start_ptr, len);
+      word_processor({start_ptr, len});
     }
   }
 

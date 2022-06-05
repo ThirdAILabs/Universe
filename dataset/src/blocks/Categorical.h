@@ -35,8 +35,6 @@ class CategoricalBlock : public Block {
    *   col: int - the column number of the input row containing
    *     the categorical feature to be encoded.
    *   dim: int - the dimension of the encoding.
-   *   numerical_id: bool - whether the categorical feature is numerical.
-   *     Defaults to true.
    */
   CategoricalBlock(uint32_t col, uint32_t dim)
       : _col(col), _encoding(std::make_shared<ContiguousNumericId>(dim)) {}

@@ -9,6 +9,7 @@
 #include <cctype>
 #include <limits>
 #include <sstream>
+#include <string_view>
 
 namespace thirdai::dataset {
 
@@ -20,22 +21,19 @@ class PairGram : public TextEncoding {
   /**
    * Constructor. Accepts the desired dimension of the encoding.
    */
-  explicit PairGram(uint32_t dim = 100000) : _dim(dim) {}
+  explicit PairGram(uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)
+      : _dim(dim) {}
 
   void encodeText(const std::string& text, ExtendableVector& vec) final {
     // TODO(Geordie): Do we need to make lower case?
-    std::string lower_case_text = text;
-    for (auto& c : lower_case_text) {
-      c = std::tolower(c);
-    }
+    std::string lower_case_text = TextEncodingUtils::makeLowerCase(text);
 
     std::vector<uint32_t> seen_unigram_hashes;
     std::vector<uint32_t> pair_grams;
 
-    TextEncodingUtils::forEachWord(
-        lower_case_text, [&](const char* start_ptr, size_t len) {
-          addPairGrams(seen_unigram_hashes, start_ptr, len, pair_grams);
-        });
+    TextEncodingUtils::forEachWord(lower_case_text, [&](std::string_view word) {
+      addPairGrams(seen_unigram_hashes, word, pair_grams);
+    });
 
     // Deduplication helps to reduce number of entries in the sparse
     // vector but has huge overheads. May want to remove in a future iteration.
@@ -48,11 +46,11 @@ class PairGram : public TextEncoding {
 
  private:
   inline void addPairGrams(std::vector<uint32_t>& prev_unigram_hashes,
-                           const char* start_ptr, size_t len,
+                           std::string_view word,
                            std::vector<uint32_t>& pair_grams) const {
     // Hash the new word
-    uint32_t new_unigram_hash =
-        hashing::MurmurHash(start_ptr, len, /* seed = */ 341);
+    uint32_t new_unigram_hash = hashing::MurmurHash(
+        word.cbegin(), word.size(), TextEncodingUtils::HASH_SEED);
 
     // Add new unigram here because same-word pairgrams also help.
     prev_unigram_hashes.push_back(new_unigram_hash);
