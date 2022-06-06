@@ -6,7 +6,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 import os
 from thirdai import bolt
-import numpy as np
 
 
 # asserts that the size of the save_for_inference model is lower than checkpoint
@@ -115,7 +114,7 @@ def test_accuracy_gain_save_shallow():
 
 # Checks whether an exception is thrown while checkpointing a trimmed model
 def test_checkpoint_shallow():
-    
+
     labels, examples, n_classes = gen_training_data()
     network = gen_network(100)
     train_network(network, examples, labels, 2)
@@ -128,4 +127,3 @@ def test_checkpoint_shallow():
     with pytest.raises(Exception, match=r".*no optimizer.*") as ex_info:
         network.checkpoint(checkpoint_loc)
         os.remove(checkpoint_loc)
-

@@ -55,9 +55,7 @@ def build_sparse_hidden_layer_network(dim, sparsity):
             sparsity=sparsity,
             activation_function="ReLU",
         ),
-        bolt.FullyConnected(
-            dim=10, activation_function="Softmax"
-        ),
+        bolt.FullyConnected(dim=10, activation_function="Softmax"),
     ]
     network = bolt.Network(layers=layers, input_dim=784)
     return network
