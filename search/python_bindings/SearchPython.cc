@@ -1,5 +1,5 @@
-#include "FlashPython.h"
 #include "DocSearchPython.h"
+#include "FlashPython.h"
 #include <pybind11/stl.h>
 
 namespace thirdai::search::python {
