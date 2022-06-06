@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Build a target in Universe")
+    parser = argparse.ArgumentParser(description="Launch a benchmarking run")
     parser.add_argument(
         "-l", "--configs", nargs="+", help="List of config file paths to benchmark"
     )
