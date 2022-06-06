@@ -2,7 +2,7 @@
 #include <hashing/src/FastSRP.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Vectors.h>
-#include <flash/src/MaxFlashArray.h>
+#include <search/src/MaxFlashArray.h>
 #include <memory>
 #include <numeric>
 #include <random>
