@@ -9,15 +9,6 @@ from thirdai import bolt
 import numpy as np
 
 
-# Training a simple bolt model
-def test_train_model():
-    labels, examples, n_classes = gen_training_data()
-    network = gen_network(100)
-
-    train_network(network, examples, labels, 10)
-    assert get_pred_acc(network, examples, labels, 64) > 0.94
-
-
 # asserts that the size of the save_for_inference model is lower than checkpoint
 def test_save_shallow_size():
     network = build_sparse_hidden_layer_network(100, 0.2)
@@ -48,24 +39,13 @@ def test_trim_then_train():
 
     assert network.ready_for_training() == False
 
-    can_be_trained = True
-    try:
+    with pytest.raises(Exception, match=r".*enable.*training.*"):
         train_network(network, examples, labels, 5)
-    except:
-        can_be_trained = False
-
-    assert can_be_trained == False
 
     network.resume_training()
     assert network.ready_for_training() == True
 
-    try:
-        train_network(network, examples, labels, 5)
-        can_be_trained = True
-    except:
-        can_be_trained = False
-
-    assert can_be_trained == True
+    train_network(network, examples, labels, 5)
 
 
 # Asserts that the trimmed model and checkpointed model gives the same accuracy
@@ -133,10 +113,9 @@ def test_accuracy_gain_save_shallow():
     os.remove(checkpoint_loc)
 
 
-# throws an error if trimmed model is checkpointed
+# Checks whether an exception is thrown while checkpointing a trimmed model
 def test_checkpoint_shallow():
-    test_runtime_error = False
-
+    
     labels, examples, n_classes = gen_training_data()
     network = gen_network(100)
     train_network(network, examples, labels, 2)
@@ -146,11 +125,7 @@ def test_checkpoint_shallow():
     if os.path.exists(checkpoint_loc):
         os.remove(checkpoint_loc)
 
-    try:
+    with pytest.raises(Exception, match=r".*no optimizer.*") as ex_info:
         network.checkpoint(checkpoint_loc)
         os.remove(checkpoint_loc)
-    except:
-        test_runtime_error = True
-
-    assert test_runtime_error
 

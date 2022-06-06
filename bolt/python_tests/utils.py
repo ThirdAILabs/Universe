@@ -3,6 +3,7 @@ LEARNING_RATE = 0.0005
 from thirdai import bolt
 import numpy as np
 
+
 # Constructs a bolt network for mnist with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
 def build_sparse_hidden_layer_network(dim, sparsity):
     layers = [
