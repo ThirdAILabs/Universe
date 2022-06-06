@@ -4,14 +4,15 @@
 
 namespace thirdai::dataset {
 
-InputTargetShuffleBuffer::InputTargetShuffleBuffer(size_t batch_size, size_t num_buffer_batches, bool has_target)
-: _first_elem_idx(0),
-  _new_batch_start_idx(0),
-  _size(0),
-  _batch_size(batch_size), 
-  _inputs(num_buffer_batches * batch_size),
-  _targets() {
-
+InputTargetShuffleBuffer::InputTargetShuffleBuffer(size_t batch_size,
+                                                   size_t num_buffer_batches,
+                                                   bool has_target)
+    : _first_elem_idx(0),
+      _new_batch_start_idx(0),
+      _size(0),
+      _batch_size(batch_size),
+      _inputs(num_buffer_batches * batch_size),
+      _targets() {
   if (has_target) {
     _targets = std::vector<bolt::BoltVector>(num_buffer_batches * batch_size);
   }
@@ -36,10 +37,11 @@ OptionalInputTargetBatch InputTargetShuffleBuffer::nextBatch() {
   return {{std::move(input_batch), std::move(target_batch)}};
 }
 
-void InputTargetShuffleBuffer::addBatch(ProcessedBatch &&batch, bool shuffle) {
+void InputTargetShuffleBuffer::addBatch(ProcessedBatch&& batch, bool shuffle) {
   auto cur_batch_size = batch.first.size();
   if (_inputs.size() - _size < cur_batch_size) {
-    throw std::invalid_argument("Not enough space in InputTargetBuffer for a new batch.");
+    throw std::invalid_argument(
+        "Not enough space in InputTargetBuffer for a new batch.");
   }
 
   for (uint32_t i = 0; i < batch.first.size(); i++) {
@@ -47,8 +49,9 @@ void InputTargetShuffleBuffer::addBatch(ProcessedBatch &&batch, bool shuffle) {
   }
   if (batch.second.has_value()) {
     for (uint32_t i = 0; i < batch.second->size(); i++) {
-      _targets.value().at(_new_batch_start_idx + i) = std::move(batch.second->at(i));
-    } 
+      _targets.value().at(_new_batch_start_idx + i) =
+          std::move(batch.second->at(i));
+    }
   }
 
   if (shuffle) {
@@ -70,7 +73,7 @@ void InputTargetShuffleBuffer::shuffle(size_t latest_batch_size) {
     auto swap_vec = std::rand() % new_size;
     // We don't swap if swap_vec is in the current batch
     // because position within a batch doesn't matter.
-    // Additionally, if we swap with another element in 
+    // Additionally, if we swap with another element in
     // the same batch, that second element will not have
     // a chance to be in an earlier batch.
     if (swap_vec < _size) {
@@ -83,7 +86,8 @@ void InputTargetShuffleBuffer::shuffle(size_t latest_batch_size) {
   }
 }
 
-bolt::BoltBatch InputTargetShuffleBuffer::makeBatchFrom(std::vector<bolt::BoltVector>& vector_buf) {
+bolt::BoltBatch InputTargetShuffleBuffer::makeBatchFrom(
+    std::vector<bolt::BoltVector>& vector_buf) {
   auto cur_batch_size = std::min(_batch_size, _size);
   std::vector<bolt::BoltVector> batch_vecs(cur_batch_size);
   auto buf_idx = _first_elem_idx;
@@ -101,4 +105,4 @@ inline uint32_t InputTargetShuffleBuffer::wrap(uint32_t idx) const {
   return idx;
 }
 
-} // namespace thirdai::dataset
+}  // namespace thirdai::dataset
