@@ -27,7 +27,7 @@ MetricData Model<BATCH_T>::train(
   uint32_t rehash_batch = getRehashBatch(rehash, batch_size, train_data->len());
   uint64_t num_train_batches = train_data->numBatches();
 
-  verifyInputDim(train_data->maxIndex());
+  verifyInputDim(train_data->maxDim());
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
   initializeNetworkState(batch_size, false);

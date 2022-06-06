@@ -17,6 +17,7 @@ class SvmParser {
   SvmParser(VectorBuilder vb, LabelBuilder lb)
       : _vector_builder(vb), _label_builder(lb) {}
 
+  // Returns the maximum index of all sparse vectors in the file.
   uint32_t parseBatch(uint32_t target_batch_size, std::ifstream& file,
                       std::vector<VECTOR_T>& vectors_out,
                       std::vector<LABEL_T>& labels_out) {

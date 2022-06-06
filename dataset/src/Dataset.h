@@ -46,8 +46,8 @@ class InMemoryDataset {
   // the batches are moved into the constructor they get moved into the field in
   // the class. Otherwise c++ will copy this.
   InMemoryDataset(std::vector<BATCH_T>&& batches, uint64_t len,
-                  uint32_t max_index = 0)
-      : _batches(std::move(batches)), _len(len), _max_index(max_index) {}
+                  std::optional<uint32_t> max_index = std::nullopt)
+      : _batches(std::move(batches)), _len(len), _max_dim(max_index) {}
 
   const BATCH_T& operator[](uint32_t i) const { return _batches[i]; }
 
@@ -65,7 +65,7 @@ class InMemoryDataset {
 
   uint64_t len() const { return _len; }
 
-  uint32_t maxIndex() const { return _max_index; }
+  uint32_t maxDim() const { return _max_dim.value_or(0); }
 
   static InMemoryDataset<SparseBatch> loadInMemorySvmDataset(
       const std::string& filename, uint32_t batch_size) {
@@ -76,7 +76,7 @@ class InMemoryDataset {
  private:
   std::vector<BATCH_T> _batches;
   uint64_t _len;
-  uint32_t _max_index;
+  std::optional<uint32_t> _max_dim;
 };
 
 template <typename BATCH_T>
