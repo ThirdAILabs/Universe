@@ -20,6 +20,7 @@ class DLRM;
 
 class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   friend class DLRM;
+  friend class TextClassifier;
 
  public:
   FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim);

@@ -21,6 +21,8 @@ class TextClassifier {
   void predict(const std::string& filename,
                const std::optional<std::string>& output_filename);
 
+  float* getHiddenLayerWeights();
+
   void save(const std::string& filename) {
     std::ofstream filestream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);

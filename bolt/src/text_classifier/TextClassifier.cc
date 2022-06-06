@@ -238,6 +238,10 @@ float getHiddenLayerSparsity(uint64_t layer_size) {
   return 0.005;
 }
 
+float* TextClassifier::getHiddenLayerWeights() {
+  return _model->_layers[0]->getWeights();
+}
+
 std::optional<uint64_t> getSystemRam() {
 #if defined __linux__
   // https://stackoverflow.com/questions/349889/how-do-you-determine-the-amount-of-linux-system-ram-in-c
