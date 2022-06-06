@@ -12,11 +12,11 @@ class BloomFilter {
   float _fp_rate;
   uint64_t _capacity, _R, _K, _count, _input_dim;
   std::vector<uint32_t> _seed_array;
-  // implementation defined, vector<bool> can store bits instead of <bool> type
-  // elements
-  std::vector<bool> _bit_array;
 
  public:
+
+  // implementation defined, vector<bool> can store bits
+  std::vector<bool> _bit_array;
   /*
       this BloomFilter must be able to store at least *capacity* elements
       while maintaining no more than *fp_rate* chance of false
@@ -43,11 +43,13 @@ class BloomFilter {
   // TODO: Figure out the best way to do this
   // BloomFilter<KEY_T> intersection(BloomFilter other);
 
-  // BloomFilter<KEY_T> union(BloomFilter other);
+  BloomFilter<KEY_T> make_union(BloomFilter<KEY_T>& other);
 
   uint64_t size();
 
   uint64_t capacity();
+
+  float fp_rate();
 
   ~BloomFilter() = default;
 };

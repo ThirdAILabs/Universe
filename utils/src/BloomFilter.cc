@@ -69,6 +69,18 @@ bool BloomFilter<KEY_T>::contains(const KEY_T& query) {
 }
 
 template <typename KEY_T>
+BloomFilter<KEY_T> BloomFilter<KEY_T>::make_union(BloomFilter<KEY_T>& other) {
+  if other.capacity() != _capacity || other.fp_rate() != _fp_rate) {
+    throw std::logic_error("Cannot union two bloom filters whose capacities & fp_rate do not match");
+  }
+  std::vector<bool> new_bit_array(_R);
+  for (uint64_t i = 0; i < _R; i++) {
+    new_bit_array.at(i) = _bit_array.at(i) || other._bit_array.at(i);
+  }
+  return BloomFilter();
+}
+
+template <typename KEY_T>
 uint64_t BloomFilter<KEY_T>::size() {
   return _count;
 }
@@ -76,6 +88,11 @@ uint64_t BloomFilter<KEY_T>::size() {
 template <typename KEY_T>
 uint64_t BloomFilter<KEY_T>::capacity() {
   return _capacity;
+}
+
+template <typename KEY_T>
+float BloomFilter<KEY_T>::fp_rate() {
+  return _fp_rate;
 }
 
 }  // namespace thirdai::utils
