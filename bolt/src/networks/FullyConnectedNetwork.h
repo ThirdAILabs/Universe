@@ -87,12 +87,12 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     _layers.back()->forceSparseForInference();
   }
 
-  void verifyInputDim(uint32_t max_index) final {
-    if (max_index >= getInputDim()) {
+  void verifyInputDim(uint32_t max_dim) final {
+    if (max_dim >= getInputDim()) {
       std::string err_msg =
           "Input dimension: " + std::to_string(getInputDim()) +
           " is smaller than the max index in dataset: " +
-          std::to_string(max_index);
+          std::to_string(max_dim);
       throw std::runtime_error(err_msg);
     }
   }
