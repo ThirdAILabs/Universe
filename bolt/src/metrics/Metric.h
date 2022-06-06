@@ -18,7 +18,7 @@ class Metric {
  public:
   // Computes and updates the value of the metric given the sample.
   // For instance this may update the accuracy.
-  virtual void processSample(const BoltVector& output,
+  virtual void computeMetric(const BoltVector& output,
                              const BoltVector& labels) = 0;
 
   // Returns the value of the metric and resets it. For instance this would be
@@ -45,7 +45,7 @@ class CategoricalAccuracy final : public Metric {
  public:
   CategoricalAccuracy() : _correct(0), _num_samples(0) {}
 
-  void processSample(const BoltVector& output, const BoltVector& labels) final {
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
     float max_act = std::numeric_limits<float>::min();
     uint32_t max_act_index = std::numeric_limits<uint32_t>::max();
     for (uint32_t i = 0; i < output.len; i++) {
@@ -110,7 +110,7 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   WeightedMeanAbsolutePercentageError()
       : _sum_of_deviations(0.0), _sum_of_truths(0.0) {}
 
-  void processSample(const BoltVector& output, const BoltVector& labels) final {
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
     // Calculate |actual - predicted| and |actual|.
     float sum_of_squared_differences = 0.0;
     float sum_of_squared_label_elems = 0.0;
@@ -180,7 +180,7 @@ class MetricAggregator {
 
   void processSample(const BoltVector& output, const BoltVector& labels) {
     for (auto& m : _metrics) {
-      m->processSample(output, labels);
+      m->computeMetric(output, labels);
     }
   }
 
