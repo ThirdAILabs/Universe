@@ -28,7 +28,8 @@ InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
                                            std::string delimiter);
 
 py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
-                                    uint32_t batch_size);
+                                    uint32_t batch_size,
+                                    bool softmax_for_multiclass = true);
 
 py::tuple loadBoltCsvDatasetWrapper(const std::string& filename,
                                     uint32_t batch_size, char delimiter);
