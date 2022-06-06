@@ -3,7 +3,7 @@
 #include "BatchProcessor.h"
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <dataset/src/core/InputTargetBuffer.h>
+#include <dataset/src/core/InputTargetShuffleBuffer.h>
 #include <dataset/src/loaders/LoaderInterface.h>
 #include <optional>
 
@@ -37,7 +37,7 @@ class StreamingDataset {
   size_t _batch_size;
   size_t _est_num_samples;
   bool _shuffle;
-  InputTargetBuffer _buffer;
+  InputTargetShuffleBuffer _buffer;
   BatchProcessor _processor;
   std::optional<std::vector<std::string>> _next_batch_to_process;
   

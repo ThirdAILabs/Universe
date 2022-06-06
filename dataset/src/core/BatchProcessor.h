@@ -1,15 +1,19 @@
 #pragma once
 
-#include "InputTargetBuffer.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/loaders/LoaderInterface.h>
 #include <cstdlib>
+#include <functional>
+#include <optional>
 #include <random>
 #include <string_view>
 
 namespace thirdai::dataset {
+
+using ProcessedBatch = std::pair<std::vector<bolt::BoltVector>, std::optional<std::vector<bolt::BoltVector>>>;
+using RowParser = std::function<std::vector<std::string_view>(const std::string&)>;
 
 /**
  * Encodes input samples – each represented by a sequence of strings –
@@ -20,13 +24,14 @@ class BatchProcessor {
  public:
   BatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
                  std::vector<std::shared_ptr<Block>> target_blocks,
+                 RowParser row_parser,
                  uint32_t output_batch_size);
 
   /**
    * Consumes a batch of input samples and encodes them
    * as vectors.
    */
-  void processBatch(std::vector<std::string>&& batch, Loader& loader, InputTargetBuffer& buffer, bool shuffle);
+  ProcessedBatch processBatch(const std::vector<std::string>& batch);
 
  private:
   /**
@@ -36,6 +41,7 @@ class BatchProcessor {
       std::vector<std::string_view>& sample,
       std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense);
 
+  RowParser _row_parser;
   uint32_t _batch_size;
   bool _input_blocks_dense;
   bool _target_blocks_dense;

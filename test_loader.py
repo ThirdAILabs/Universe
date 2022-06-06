@@ -41,7 +41,10 @@ def amazon_polarity():
         input_blocks=[blocks.Categorical(col=0, dim=2)], 
         target_blocks=[blocks.Text(1)], 
         batch_size=2048,
-        est_num_samples=3600000)
+        est_num_samples=3600000,
+        # )
+        shuffle=True,
+        shuffle_buffer_size=20480)
 
     start = time.time()
     dataset.load_in_memory()

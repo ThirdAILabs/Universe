@@ -17,8 +17,10 @@ namespace thirdai::dataset {
 BatchProcessor::BatchProcessor(
     std::vector<std::shared_ptr<Block>> input_blocks,
     std::vector<std::shared_ptr<Block>> target_blocks,
+    RowParser row_parser,
     uint32_t output_batch_size)
-    : _batch_size(output_batch_size),
+    : _row_parser(std::move(row_parser)),
+      _batch_size(output_batch_size),
       _input_blocks_dense(std::all_of(input_blocks.begin(), input_blocks.end(),
                                       [](const std::shared_ptr<Block>& block) {
                                         return block->isDense();
@@ -40,24 +42,22 @@ BatchProcessor::BatchProcessor(
       _input_blocks(std::move(input_blocks)),
       _target_blocks(std::move(target_blocks)) {}
 
-void BatchProcessor::processBatch(
-    std::vector<std::string>&& batch, Loader& loader, InputTargetBuffer& buffer, bool shuffle) {
-  buffer.initiateNewBatch();
+ProcessedBatch BatchProcessor::processBatch(const std::vector<std::string>& batch) {
+  std::vector<bolt::BoltVector> batch_inputs(batch.size());
+  std::optional<std::vector<bolt::BoltVector>> batch_targets;
+  if (!_target_blocks.empty()) {
+    batch_targets = std::vector<bolt::BoltVector>(batch.size());
+  };
 
-#pragma omp parallel for default(none) shared(batch, loader, buffer, std::cout)
+#pragma omp parallel for default(none) shared(batch, batch_inputs, batch_targets)
   for (size_t i = 0; i < batch.size(); ++i) {
-    auto row = loader.parse(batch[i]);
-    // std::cout << "phew" << std::endl;
-    buffer.addNewBatchInputVec(i, makeVector(row, _input_blocks, _input_blocks_dense));
-    if (!_target_blocks.empty()) {
-      buffer.addNewBatchTargetVec(i, makeVector(row, _target_blocks, _target_blocks_dense));
+    auto row = _row_parser(batch[i]);
+    batch_inputs.at(i) = makeVector(row, _input_blocks, _input_blocks_dense);
+    if (batch_targets.has_value()) {
+      batch_targets->at(i) = makeVector(row, _target_blocks, _target_blocks_dense);
     }
   }
-
-  // std::cout << "About to finalize" << std::endl;
-  buffer.finalizeNewBatch(shuffle);
-
-  // std::cout << "Done with that too" << std::endl;
+  return { batch_inputs, batch_targets };
 }
 
 bolt::BoltVector BatchProcessor::makeVector(

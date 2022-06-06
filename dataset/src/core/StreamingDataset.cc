@@ -1,6 +1,5 @@
 #include "StreamingDataset.h"
 #include <bolt/src/layers/BoltVector.h>
-#include <dataset/src/core/InputTargetBuffer.h>
 #include <thread>
 
 
@@ -20,7 +19,13 @@ StreamingDataset::StreamingDataset(
     _est_num_samples(est_num_samples),
     _shuffle(shuffle),
     _buffer(batch_size, numBatchesInBuffer(shuffle_buffer_size, batch_size), !target_blocks.empty()),
-    _processor(std::move(input_blocks), std::move(target_blocks), _batch_size) {
+    _processor(
+      std::move(input_blocks), 
+      std::move(target_blocks), 
+      [&](const std::string& row){ 
+        return _loader->parse(row); 
+      }, 
+      _batch_size) {
   
   _loader->initialize(); // where we remove header
   _next_batch_to_process = _loader->nextBatch(_batch_size);
@@ -76,7 +81,9 @@ void StreamingDataset::fetchBatch() {
   std::thread loader_thread([&](){
     _next_batch_to_process = _loader->nextBatch(_batch_size);
   });
-  _processor.processBatch(std::move(cur_batch_to_process), *_loader, _buffer, _shuffle);
+  auto processed_batch = _processor.processBatch(cur_batch_to_process);
+  _buffer.addBatch(std::move(processed_batch), _shuffle);
+  
   loader_thread.join();
 }
 
