@@ -1,15 +1,17 @@
 #pragma once
 
 #include <bolt/src/layers/BoltVector.h>
+#include <bolt/src/metrics/Metric.h>
 #include <algorithm>
+#include <atomic>
 #include <memory>
 #include <stdexcept>
 
 namespace thirdai::bolt {
 
-class LossFunction {
+class LossFunction : public Metric {
  public:
-  LossFunction() {}
+  LossFunction() : _loss(0.0), _num_samples(0) {}
 
   void lossGradients(BoltVector& output, const BoltVector& labels,
                      uint32_t batch_size) const {
@@ -27,6 +29,34 @@ class LossFunction {
       }
     }
   }
+
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+    if (output.isDense()) {
+      if (labels.isDense()) {
+        computeLossImpl<true, true>(output, labels);
+      } else {
+        computeLossImpl<true, false>(output, labels);
+      }
+    } else {
+      if (labels.isDense()) {
+        computeLossImpl<false, true>(output, labels);
+      } else {
+        computeLossImpl<false, false>(output, labels);
+      }
+    }
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double loss = _loss.load(std::memory_order_relaxed) / _num_samples;
+    if (verbose) {
+      std::cout << "Loss: " << loss << std::endl;
+    }
+    _loss = 0.0;
+    _num_samples = 0;
+    return loss;
+  }
+
+  bool forceDenseInference() final { return true; }
 
   virtual ~LossFunction() = default;
 
@@ -58,6 +88,65 @@ class LossFunction {
 
   virtual float elementLossGradient(float label, float activation,
                                     uint32_t batch_size) const = 0;
+
+  template <bool OUTPUT_DENSE, bool LABEL_DENSE>
+  void computeLossImpl(const BoltVector& output, const BoltVector& labels) {
+    if (OUTPUT_DENSE || LABEL_DENSE) {
+      // If either of the the vectors is dense then we have to iterate over the
+      // full dimension. To find this dimension we can take the max of the
+      // dimensions of both vectors since we know that at least one is dense.
+      uint32_t dense_dim = std::max(output.len, labels.len);
+
+      float sample_loss = 0.0;
+      for (uint32_t i = 0; i < dense_dim; i++) {
+        float activation = output.findActiveNeuron<OUTPUT_DENSE>(i).activation;
+        float label_val = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
+
+        sample_loss += elementLoss(label_val, activation);
+      }
+
+      MetricUtilities::incrementAtomicFloat(_loss, sample_loss);
+      _num_samples += 1;
+    } else {
+      // If both vectors are sparse then we need to iterate over the indices of
+      // both vectors to ensure that we compute the loss for every neuron that
+      // occurs as a label or active_neuron. We also need to be careful that we
+      // don't double count neurons that occur as both. To do this when
+      // iterating over the active_neurons for the output we will skip any
+      // neurons with a non-zero label (i.e. the label is in the sparse indices
+      // of the label vector). This will ensure that the loss for this neuron is
+      // only computed once (when iterating over the indices of the labels). We
+      // cannot do this in reverse because a neuron could be in the active
+      // neurons and have a 0.0 activation due to ReLU and so its harder to
+      // check if a given label neuron is also an active neuron, wheras we can
+      // easily check if a given active neuron is a label neuron.
+
+      float sample_loss = 0.0;
+      for (uint32_t i = 0; i < output.len; i++) {
+        float label_val =
+            labels.findActiveNeuron<LABEL_DENSE>(output.active_neurons[i])
+                .activation;
+        if (label_val == 0.0) {
+          sample_loss += elementLoss(label_val, output.activations[i]);
+        }
+      }
+
+      for (uint32_t i = 0; i < labels.len; i++) {
+        float activation =
+            output.findActiveNeuron<OUTPUT_DENSE>(labels.active_neurons[i])
+                .activation;
+        sample_loss += elementLoss(labels.activations[i], activation);
+      }
+
+      MetricUtilities::incrementAtomicFloat(_loss, sample_loss);
+      _num_samples += 1;
+    }
+  }
+
+  virtual float elementLoss(float label, float activation) const = 0;
+
+  std::atomic<float> _loss;
+  std::atomic<uint32_t> _num_samples;
 };
 
 class CategoricalCrossEntropyLoss final : public LossFunction {
@@ -67,10 +156,22 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
     return std::make_shared<CategoricalCrossEntropyLoss>();
   }
 
+  std::string getName() final { return "categorical_cross_entropy_loss"; }
+
  private:
   float elementLossGradient(float label, float activation,
-                            uint32_t batch_size) const override {
+                            uint32_t batch_size) const final {
     return (label - activation) / batch_size;
+  }
+
+  float elementLoss(float label, float activation) const final {
+    /*
+      CrossEntropyLoss is defined as Loss = -∑ y_i log(a_i)
+      where y_i is the ith label and a_i is the ith activation.
+
+      Thus we will each element as label * log(activation).
+    */
+    return -label * log(activation);
   }
 };
 
@@ -79,6 +180,8 @@ class BinaryCrossEntropyLoss final : public LossFunction {
   static std::shared_ptr<BinaryCrossEntropyLoss> makeBinaryCrossEntropyLoss() {
     return std::make_shared<BinaryCrossEntropyLoss>();
   }
+
+  std::string getName() final { return "binary_cross_entropy_loss"; }
 
  private:
   float elementLossGradient(float label, float activation,
@@ -110,6 +213,17 @@ class BinaryCrossEntropyLoss final : public LossFunction {
     */
     return (label - activation) / batch_size;
   }
+
+  float elementLoss(float label, float activation) const final {
+    /*
+      BinaryCrossEntropyLoss is is a special case of CrossEntropyLoss for 2
+      classes. It is defined as Loss = -[y log(a) + (1-y)log(1-a)] where y is
+      the label and a is the activation. Since we are treating each element as
+      its own class we will use this formula for each element.
+    */
+    float log_act = log(activation);
+    return -(label * log_act + (1 - label) * (1 - log_act));
+  }
 };
 
 class MeanSquaredError final : public LossFunction {
@@ -118,10 +232,23 @@ class MeanSquaredError final : public LossFunction {
     return std::make_shared<MeanSquaredError>();
   }
 
+  std::string getName() final { return "mean_squared_error"; }
+
  private:
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const override {
     return 2 * (label - activation) / batch_size;
+  }
+
+  float elementLoss(float label, float activation) const final {
+    /*
+      MeanSquaredError is defined as Error = ∑ (y_i - a_i)^2
+      where y_i is the ith label and a_i is the ith activation.
+
+      Thus we will each element as (y_i - a_i)^2.
+    */
+    float diff = label - activation;
+    return diff * diff;
   }
 };
 
@@ -139,11 +266,25 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
     return std::make_shared<WeightedMeanAbsolutePercentageErrorLoss>();
   }
 
+  std::string getName() final {
+    return "weighted_mean_absolute_percentage_error";
+  }
+
  private:
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const override {
     auto direction = activation > label ? -1.0 : 1.0;
     return direction / batch_size;
+  }
+
+  float elementLoss(float label, float activation) const final {
+    // WMAPE has a special way that the loss metric is computed so we will defer
+    // to using that metric instead of computing it as part of the loss fuction.
+    (void)label;
+    (void)activation;
+    throw std::runtime_error(
+        "Please use specific weighted_mean_absolute_percentage_error metric "
+        "instead of just specifying loss.");
   }
 };
 
