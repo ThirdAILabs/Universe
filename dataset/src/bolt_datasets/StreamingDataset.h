@@ -17,6 +17,10 @@ class StreamingDataset {
                    std::shared_ptr<BatchProcessor<BATCH_T>> batch_processor)
       : _data_loader(std::move(data_loader)),
         _batch_processor(std::move(batch_processor)) {
+    // Different formats of data may or may not contain headers. Thus we
+    // delegate to the particular batch processor to determine if a header is
+    // needed. The first row is interpreted as the header. The batch processor
+    // is responsible for checking that the header is properly formatted.
     if (_batch_processor->expectsHeader()) {
       auto header = _data_loader->getHeader();
       if (!header) {

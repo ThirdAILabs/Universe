@@ -2,11 +2,11 @@
 
 #include <hashing/src/HashFunction.h>
 #include <dataset/python_bindings/DatasetPython.h>
-#include <flash/src/Flash.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <search/src/Flash.h>
 
 namespace py = pybind11;
 

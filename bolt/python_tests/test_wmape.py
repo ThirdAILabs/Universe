@@ -14,7 +14,7 @@ def train_bolt_with_wmape(
     layers = [
         bolt.FullyConnected(
             dim=1000,
-            load_factor=0.1,
+            sparsity=0.1,
             activation_function=bolt.ActivationFunctions.ReLU,
         ),
         bolt.FullyConnected(dim=1, activation_function=bolt.ActivationFunctions.Linear),
