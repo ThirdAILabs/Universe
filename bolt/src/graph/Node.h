@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Graph.h"
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -116,10 +117,7 @@ class FullyConnectedLayerNode final : public Node {
 
 class Concatenation final : public Node {
  public:
-  explicit Concatenation(std::vector<NodePtr> inputs)
-      : _input_nodes(std::move(inputs)),
-        _concatenated_dim(0),
-        _sparse_output(false) {}
+  explicit Concatenation() : _concatenated_dim(0), _sparse_output(false) {}
 
   // This may be a no-op, or we may need to map sparse indices to disjoint
   // ranges.
@@ -136,6 +134,13 @@ class Concatenation final : public Node {
   uint32_t outputDim() const final { return _concatenated_dim; }
 
   bool outputSparse() const final { return _sparse_output; }
+
+  void addPredecessors(std::vector<NodePtr> inputs) {
+    if (!_input_nodes.empty()) {
+      throw std::invalid_argument("");
+    }
+    _input_nodes = std::move(inputs);
+  }
 
   void initializeState(uint32_t batch_size, bool is_inference) final {
     // How do we handle sparsity in concatenation layers?
