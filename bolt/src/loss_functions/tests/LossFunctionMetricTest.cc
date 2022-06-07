@@ -135,6 +135,13 @@ TEST(LossFunctionMetrics, BinaryCrossEntropyLossMetric) {
   loss.computeMetric(dense_output, sparse_labels);
   ASSERT_FLOAT_EQ(loss.getMetricAndReset(false), expected_loss);
 
+  // We have to adjust the loss here because when we switch to sparse outputs we
+  // lose the small values we associated with the non active neurons which
+  // impact the loss slightly. In CategoricalCrossEntropy this wasn't an issue
+  // because the labels associated with these small positive values were 0, so
+  // the contribution to the loss was 0 * log(small value) which was  zero.
+  // But in BinaryCrossEntropy we have 0 * log(small value) + (1-0) *
+  // log(1-small value) which is nonzero.
   expected_loss =
       binaryCrossEntropyLoss({0.15, 0.15, 0.25, 0.25}, {0.0, 0.4, 0.2, 0.4});
   loss.computeMetric(sparse_output, sparse_labels);
