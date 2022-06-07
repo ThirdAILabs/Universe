@@ -21,12 +21,11 @@ rebuild = 128000
 dim = 10000
 activation = 'ReLU'
 sparsity = 0.005
-use_default_sampling = false
-hashes_per_table = 5
-num_tables = 164
-reservoir_size = 4
-range_pow = 15
-hash_type = 'DWTA'
+use_default_sampling = true
+# hashes_per_table = 5
+# num_tables = 164
+# reservoir_size = 4
+# range_pow = 15
 
 [[layers]]
 dim = 2

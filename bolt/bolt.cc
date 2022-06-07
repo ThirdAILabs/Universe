@@ -100,14 +100,15 @@ bolt::SequentialConfigList createFullyConnectedLayerConfigs(
     uint32_t num_tables = getIntValue(table, "num_tables", true, 0);
     uint32_t range_pow = getIntValue(table, "range_pow", true, 0);
     uint32_t reservoir_size = getIntValue(table, "reservoir_size", true, 0);
-    std::string hash_type = getStrValue(table, "hash_type", true, "DWTA");
+    std::string hash_function = getStrValue(table, "hash_function", true, "DWTA");
     std::string activation = getStrValue(table, "activation");
     float sparsity = getFloatValue(table, "sparsity", true, 1.0);
 
     layers.push_back(std::make_shared<bolt::FullyConnectedLayerConfig>(
         dim, sparsity, thirdai::bolt::getActivationFunction(activation),
         bolt::SamplingConfig(hashes_per_table, num_tables, range_pow,
-                             reservoir_size, hash_type)));
+                             reservoir_size,
+                             thirdai::bolt::getHashFunction(hash_function))));
   }
   return layers;
 }

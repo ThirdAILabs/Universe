@@ -89,7 +89,7 @@ def create_fully_connected_layer_configs(
                     num_tables=config.get("num_tables", 0),
                     range_pow=config.get("range_pow", 0),
                     reservoir_size=config.get("reservoir_size", 128),
-                    hash_type=config.get("hash_type", "DWTA"),
+                    hash_function=bolt.getHashingFunction(config.get("hash_function", "DWTA")),
                 ),
             )
 
@@ -218,12 +218,13 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
     test_metrics = config["params"]["test_metrics"]
 
     for e in range(epochs):
+        # Use keyword arguments to skip batch_size parameter.
         metrics = network.train(
-            train_x,
-            train_y,
-            loss,
-            learning_rate,
-            1,
+            train_data=train_x,
+            train_labels=train_y,
+            loss_fn=loss,
+            learning_rate=learning_rate,
+            epochs=1,
             rehash=rehash,
             rebuild=rebuild,
             metrics=train_metrics,
@@ -235,13 +236,15 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
             network.enable_sparse_inference()
 
         if max_test_batches is None:
-            metrics, _ = network.predict(test_x, test_y, metrics=test_metrics)
+            # Use keyword arguments to skip batch_size parameter.
+            metrics, _ = network.predict(test_data=test_x, test_labels=test_y, metrics=test_metrics)
             if mlflow_enabled:
                 mlflow.log_metrics(metrics)
         else:
+            # Use keyword arguments to skip batch_size parameter.
             metrics, _ = network.predict(
-                test_x,
-                test_y,
+                test_data=test_x,
+                test_labels=test_y,
                 metrics=test_metrics,
                 verbose=True,
                 batch_limit=max_test_batches,
@@ -250,7 +253,8 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
                 mlflow.log_metrics(metrics)
     if not max_test_batches is None:
         # If we limited the number of test batches during training we run on the whole test set at the end.
-        metrics, _ = network.predict(test_x, test_y, metrics=test_metrics)
+        # Use keyword arguments to skip batch_size parameter.
+        metrics, _ = network.predict(test_data=test_x, test_labels=test_y, metrics=test_metrics)
         if mlflow_enabled:
             mlflow.log_metrics(metrics)
 
@@ -297,14 +301,14 @@ def train_dlrm(config: Dict[str, Any], mlflow_enabled: bool):
             loss,
             learning_rate,
             1,
-            rehash=rehash,
-            rebuild=rebuild,
-            metrics=train_metrics,
+            rehash,
+            rebuild,
+            train_metrics,
         )
         if mlflow_enabled:
             log_training_metrics(metrics)
 
-        metrics, scores = dlrm.predict(test_x, test_y, metrics=test_metrics)
+        metrics, scores = dlrm.predict(test_x, test_y, test_metrics)
         if mlflow_enabled:
             mlflow.log_metrics(metrics)
 

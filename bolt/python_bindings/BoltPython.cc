@@ -15,7 +15,20 @@ void createBoltSubmodule(py::module_& module) {
 
 #if THIRDAI_EXPOSE_ALL
 #pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
-
+  bolt_submodule.def("getHashFunction", &getHashFunction, py::arg("name"),
+                     "Converts an Hashing function name to "
+                     "the corresponding enum.");
+  py::enum_<HashingFunction>(
+      bolt_submodule, "HashingFunctions",
+      "An enum of all available Hashing functions. To use it, pass it to "
+      "the 'hash_function' parameter of a SamplingConfig object.")
+      .value("DWTA", HashingFunction::DWTA, "DWTA Hash Function")
+      .value("DensifiedMinHash", HashingFunction::DensifiedMinHash,
+             "DensifiedMinHash Function")
+      .value("SRP", HashingFunction::SRP,
+             "Sparse Random Projection Hash Function.")
+      .value("FastSRP", HashingFunction::FastSRP,
+             "Its a FastSRP Hash Function.");
   py::class_<thirdai::bolt::SamplingConfig>(
       bolt_submodule, "SamplingConfig",
       "SamplingConfig represents a layer's sampling hyperparameters.")
@@ -25,18 +38,13 @@ void createBoltSubmodule(py::module_& module) {
            "Builds a SamplingConfig object. range_pow must always be 3 * "
            "hashes_per_table.")
       .def(py::init<>(), "Builds a default SamplingConfig object.")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, std::string>(),
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, HashingFunction>(),
            py::arg("hashes_per_table"), py::arg("num_tables"),
            py::arg("range_pow"), py::arg("reservoir_size"),
-           py::arg("hash_type"),
+           py::arg("hash_function"),
            "Builds a SamplingConfig object with user mentioned type of hash "
-           "function"
-           "mention hash_type as one of densifiedminhash,dwta,srp,fastsrp.")
-      .def(py::init<std::string>(), py::arg("hash_type"),
-           "Builds a SamplingConfig object, with remaining values to default "
-           "values"
-           "with user specified type of hash function"
-           "mention hash_type as one of densifiedminhash,dwta,srp,fastsrp.");
+           "function and other fields of sampling object"
+           "mention hash_function as one of densifiedminhash,dwta,srp,fastsrp.");
 #endif
 
   py::enum_<ActivationFunction>(
