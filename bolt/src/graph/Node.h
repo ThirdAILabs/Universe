@@ -136,10 +136,10 @@ class Concatenation final : public Node {
   bool outputSparse() const final { return _sparse_output; }
 
   void addPredecessors(std::vector<NodePtr> inputs) {
-    if (!_input_nodes.empty()) {
+    if (!_predecessors.empty()) {
       throw std::invalid_argument("");
     }
-    _input_nodes = std::move(inputs);
+    _predecessors = std::move(inputs);
   }
 
   void initializeState(uint32_t batch_size, bool is_inference) final {
@@ -149,14 +149,14 @@ class Concatenation final : public Node {
 
   void addSparseLayers(
       std::vector<std::shared_ptr<FullyConnectedLayer>>& sparse_layers) final {
-    for (auto& node : _input_nodes) {
+    for (auto& node : _predecessors) {
       node->addSparseLayers(sparse_layers);
     }
   }
 
  protected:
   void compile() final {
-    for (auto& node : _input_nodes) {
+    for (auto& node : _predecessors) {
       node->compile(this->_graph);
       _concatenated_dim += node->outputDim();
       _sparse_output = _sparse_output || node->outputSparse();
@@ -166,7 +166,7 @@ class Concatenation final : public Node {
   }
 
  private:
-  std::vector<NodePtr> _input_nodes;
+  std::vector<NodePtr> _predecessors;
   uint32_t _concatenated_dim;
   BoltBatch _outputs;
   bool _sparse_output;
