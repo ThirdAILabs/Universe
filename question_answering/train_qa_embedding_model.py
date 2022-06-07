@@ -5,8 +5,9 @@ import numpy as np
 triplet_network, _ = get_compiled_triplet_model(learning_rate=0.01)
 
 queries = np.load("tokenized_queries.npy")
-positives = np.load("tokenized_positives.npy")
-negatives = np.load("tokenized_negatives.npy")
+passages_1 = np.load("tokenized_passages_1.npy")
+passages_2 = np.load("tokenized_passages_2.npy")
+labels = np.load("labels.npy")
 
 earlyStopping = EarlyStopping(monitor="val_loss", patience=15, verbose=0, mode="min")
 mcp_save = ModelCheckpoint(
@@ -18,8 +19,8 @@ reduce_lr_loss = ReduceLROnPlateau(
 
 batch_size = 1024
 triplet_network.fit(
-    [queries, positives, negatives],
-    np.zeros((len(queries),)),  # All zeros because we don't use the labels for the loss
+    [queries, passages_1, passages_2],
+    labels,
     validation_split=0.2,
     batch_size=batch_size,
     epochs=100,

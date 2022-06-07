@@ -15,23 +15,35 @@ triplet_network.load_weights(filepath=".mdl_wts.hdf5")
 result_file_name = "temp_ranking.txt"
 
 tokenized_queries = np.load("tokenized_queries_test.npy")
-tokenized_documents = np.load("tokenized_documents_test.npy")
-
 embedded_queries = sentence_embedding_model.predict(tokenized_queries)
-embedded_documents = sentence_embedding_model.predict(tokenized_documents)
+embedded_queries = tf.math.l2_normalize(embedded_queries, axis=1).numpy()
 
-embedded_queries = tf.math.l2_normalize(embedded_queries, axis=1)
-embedded_documents = tf.math.l2_normalize(embedded_documents, axis=1)
+tokenized_documents = np.load("tokenized_documents_test.npy")
+all_topks = []
+num_batches = 10
+doc_offsets = [len(tokenized_documents) // num_batches * i for i in range(num_batches)]
+doc_offsets.append(len(tokenized_documents))
+embedded_documents = []
+for batch_start, batch_end in zip(doc_offsets[:-1], doc_offsets[1:]):
+    embedded_documents.append(
+        tf.math.l2_normalize(
+            sentence_embedding_model.predict(
+                tokenized_documents[batch_start:batch_end]
+            ),
+            axis=1,
+        ).numpy()
+    )
+embedded_documents = np.concatenate(embedded_documents)
 
 all_topks = []
 for i in tqdm(range(len(embedded_queries))):
-    dot = tf.linalg.matmul(
-        embedded_queries[i : i + 1], embedded_documents, transpose_b=True
-    )
-    top_k = tf.math.top_k(dot, k=1000, sorted=True).indices
+    dot = np.dot(embedded_queries[i], embedded_documents.T)
+    top_k = tf.math.top_k(dot, k=1000, sorted=True).indices.numpy()
     all_topks.append(top_k)
 
-all_topks = tf.concat(all_topks, 0).numpy()
+all_topks = np.array(all_topks)
+print(all_topks.shape)
+print(all_topks[:3])
 
 from ms_marco_eval import compute_metrics_from_files
 

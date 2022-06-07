@@ -1,11 +1,19 @@
 from tensorflow import keras
-from tensorflow.keras.layers import Embedding, Dense, Lambda, Input, BatchNormalization
+from tensorflow.keras.layers import (
+    Embedding,
+    Dense,
+    Lambda,
+    Input,
+    Dot,
+    BatchNormalization,
+    Concatenate,
+)
 import tensorflow.keras.backend as K
 import tensorflow as tf
 import numpy as np
 
 alpha = 0.5
-embedding_dim = 128
+embedding_dim = 256
 vocab_size = 30522
 
 
@@ -27,52 +35,36 @@ def get_triplet_and_sub_model():
     sentence_embedding_model = get_embedding_model()
 
     # See https://zhangruochi.com/Create-a-Siamese-Network-with-Triplet-Loss-in-Keras/2020/08/11/
-    input_query = tf.keras.layers.Input(shape=(None,))
-    input_positive_passage = tf.keras.layers.Input(shape=(None,))
-    input_negative_passage = tf.keras.layers.Input(shape=(None,))
+    input_query = Input(shape=(None,))
+    input_passage_1 = Input(shape=(None,))
+    input_passage_2 = Input(shape=(None,))
 
     embedding_model_query = sentence_embedding_model(input_query)
-    embedding_model_positive_passage = sentence_embedding_model(input_positive_passage)
-    embedding_model_negative_passage = sentence_embedding_model(input_negative_passage)
+    embedding_model_passage_1 = sentence_embedding_model(input_passage_1)
+    embedding_model_passage_2 = sentence_embedding_model(input_passage_2)
 
-    output = tf.keras.layers.concatenate(
-        [
-            embedding_model_query,
-            embedding_model_positive_passage,
-            embedding_model_negative_passage,
-        ],
-        axis=1,
+    sim_1 = Dot(axes=1, normalize=True)(
+        [embedding_model_query, embedding_model_passage_1]
     )
+    sim_2 = Dot(axes=1, normalize=True)(
+        [embedding_model_query, embedding_model_passage_2]
+    )
+
+    concatenated_sims = Concatenate(axis=1)([sim_1, sim_2])
+
+    output = Dense(1, activation="relu")(concatenated_sims)
 
     return (
-        tf.keras.models.Model(
-            [input_query, input_positive_passage, input_negative_passage], output
-        ),
+        tf.keras.models.Model([input_query, input_passage_1, input_passage_2], output),
         sentence_embedding_model,
     )
-
-
-def triplet_loss(y_true, y_pred):
-    query_embedding, positive_embedding, negative_embedding = (
-        y_pred[:, :embedding_dim],
-        y_pred[:, embedding_dim : 2 * embedding_dim],
-        y_pred[:, 2 * embedding_dim :],
-    )
-    query_embedding = tf.math.l2_normalize(query_embedding, axis=1)
-    positive_embedding = tf.math.l2_normalize(positive_embedding, axis=1)
-    negative_embedding = tf.math.l2_normalize(negative_embedding, axis=1)
-    positive_dist = 1 - tf.keras.backend.batch_dot(
-        query_embedding, positive_embedding, axes=1
-    )
-    negative_dist = 1 - tf.keras.backend.batch_dot(
-        query_embedding, negative_embedding, axes=1
-    )
-    return tf.maximum(positive_dist - negative_dist + alpha, 0)
 
 
 def get_compiled_triplet_model(learning_rate):
     triplet_model, sentence_embedding_model = get_triplet_and_sub_model()
     triplet_model.compile(
-        loss=triplet_loss, optimizer=keras.optimizers.Adam(learning_rate=learning_rate)
+        loss=tf.keras.losses.BinaryCrossentropy(),
+        optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
+        metrics=[tf.keras.metrics.BinaryAccuracy()],
     )
     return triplet_model, sentence_embedding_model
