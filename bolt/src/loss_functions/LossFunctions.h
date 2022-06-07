@@ -69,14 +69,15 @@ class LossFunction : public Metric {
     if (OUTPUT_DENSE && LABEL_DENSE) {
       assert(output.len == labels.len);
     }
-
-    // Loss functions are only used in training.
-    // If the label is sparse, the neurons of the network's final
-    // layer that correspond to the label's nonzero elements are
-    // automatically selected and activated during training.
-    // Thus, we don't have to consider the case where there are
-    // nonzeros in the label that correspond to inactive neurons in
-    // the output layer.
+    /*
+      Loss functions are only used in training.
+      If the label is sparse, the neurons of the network's final
+      layer that correspond to the label's nonzero elements are
+      automatically selected and activated during training.
+      Thus, we don't have to consider the case where there are
+      nonzeros in the label that correspond to inactive neurons in
+      the output layer.
+    */
     for (uint32_t i = 0; i < output.len; i++) {
       uint32_t active_neuron = OUTPUT_DENSE ? i : output.active_neurons[i];
       float label_val =
@@ -111,26 +112,25 @@ class LossFunction : public Metric {
       MetricUtilities::incrementAtomicFloat(_loss, sample_loss);
       _num_samples += 1;
     } else {
-      // Since we cannot have sparse outputs, and dense labels, in this case we
-      // know that both the outputs and labels are sparse. If both vectors are
-      // sparse then we can only iterate over the nonzero indices of the
-      // outputs. This is because we currently support loss metrics during
-      // training, and thus we know that the labels are a subset of the active
-      // neurons. Furthermore this is an important distinction because the
-      // activation of a non-active neuron is defined as 0, which means that
-      // both binary and categorical cross entropy are not well defined since
-      // they involve computing the log of the activation. Thus we can only
-      // compute the loss for neurons that are active because that ensures that
-      // the activation is non-zero.
-
+      /*
+        Since we cannot have sparse outputs, and dense labels, in this case we
+        know that both the outputs and labels are sparse. If both vectors are
+        sparse then we can only iterate over the nonzero indices of the
+        outputs. This is because we currently support loss metrics during
+        training, and thus we know that the labels are a subset of the active
+        neurons. Furthermore this is an important distinction because the
+        activation of a non-active neuron is defined as 0, which means that
+        both binary and categorical cross entropy are not well defined since
+        they involve computing the log of the activation. Thus we can only
+        compute the loss for neurons that are active because that ensures that
+        the activation is non-zero.
+      */
       float sample_loss = 0.0;
       for (uint32_t i = 0; i < output.len; i++) {
         float label_val =
             labels.findActiveNeuron<LABEL_DENSE>(output.active_neurons[i])
                 .activation;
-        if (label_val == 0.0) {
-          sample_loss += elementLoss(label_val, output.activations[i]);
-        }
+        sample_loss += elementLoss(label_val, output.activations[i]);
       }
 
       MetricUtilities::incrementAtomicFloat(_loss, sample_loss);
