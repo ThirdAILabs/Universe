@@ -67,13 +67,13 @@ def build_hash_based_layer_network(hash_function):
 def train_and_predict(network):
     labels, examples = generate_training_data()
 
-    # first time train the network with 5 epochs 
+    # first time train the network with 5 epochs
     train_network(network, examples, labels, 5)
     first_accuracy, _ = network.predict(
         examples, labels, 10, ["categorical_accuracy"], verbose=False
     )
 
-    #second time train the network with 15 epochs
+    # second time train the network with 15 epochs
     train_network(network, examples, labels, 15)
     second_accuracy, _ = network.predict(
         examples, labels, 10, ["categorical_accuracy"], verbose=False
