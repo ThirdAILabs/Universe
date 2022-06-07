@@ -1,5 +1,4 @@
 #include "FullyConnectedLayer.h"
-#include <hashing/src/HashFunction.h>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
