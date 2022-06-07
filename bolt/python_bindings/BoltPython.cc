@@ -16,7 +16,7 @@ void createBoltSubmodule(py::module_& module) {
 #if THIRDAI_EXPOSE_ALL
 #pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
   bolt_submodule.def("getHashFunction", &getHashFunction, py::arg("name"),
-                     "Converts an Hashing function name to "
+                     "Converts a Hashing function name to "
                      "the corresponding enum.");
   py::enum_<HashingFunction>(
       bolt_submodule, "HashingFunctions",
