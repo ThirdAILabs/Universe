@@ -29,7 +29,7 @@ class BoltSearch:
         self,
         dataset,
         fraction_to_use_for_training=0.1,
-        num_epochs=100,
+        num_epochs=10,
         batch_size=2048,
         learning_rate=0.01,
     ):
@@ -60,31 +60,9 @@ class BoltSearch:
                     ["categorical_accuracy"],
                 )
 
-                new_group_sizes = [0 for _ in range(self.num_classes)]
-                new_group_assignments = []
-
-                all_indices = predictions[1]
-                all_values = predictions[2]
-                for indices, values in zip(all_indices, all_values):
-
-                    groups_to_consider = indices[values.argsort()[::-1]][
-                        : self.num_groups_to_consider
-                    ]
-                    group_counts = [
-                        new_group_sizes[group] for group in groups_to_consider
-                    ]
-                    min_group_index = groups_to_consider[np.argmin(group_counts)]
-
-                    new_group_sizes[min_group_index] += 1
-                    new_group_assignments.append(min_group_index)
-
-                current_assignments[i] = np.array(new_group_assignments)
-
-                print(
-                    min(new_group_sizes),
-                    max(new_group_sizes),
-                    np.std(new_group_sizes),
-                    len(train_dataset) / self.num_classes,
+                current_assignments[i] = self._get_new_group_assignments(
+                    predicted_group_ids=predictions[1],
+                    predicted_activations=predictions[2],
                 )
 
     def query(self, batch):
@@ -114,7 +92,20 @@ class BoltSearch:
 
     def _get_random_group_assignments(self, num_items_in_dataset, num_groups):
         return np.random.randint(low=0, high=num_groups, size=(num_items_in_dataset,))
-        # groups = [[] for _ in range(num_groups)]
-        # for i in range(num_items_in_dataset):
-        #     groups[group_assignments[i]].append(i)
-        # return group_assignments, groups
+
+    def _get_new_group_assignments(self, predicted_group_ids, predicted_activations):
+        new_group_sizes = [0 for _ in range(self.num_classes)]
+        new_group_assignments = []
+
+        for group_ids, activations in zip(predicted_group_ids, predicted_activations):
+
+            groups_to_consider = group_ids[activations.argsort()[::-1]][
+                : self.num_groups_to_consider
+            ]
+            group_counts = [new_group_sizes[group] for group in groups_to_consider]
+            selected_group_id = groups_to_consider[np.argmin(group_counts)]
+
+            new_group_sizes[selected_group_id] += 1
+            new_group_assignments.append(selected_group_id)
+
+        return np.array(new_group_assignments)
