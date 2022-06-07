@@ -39,10 +39,10 @@ class LossFunction : public Metric {
       }
     } else {
       if (labels.isDense()) {
-        computeLossImpl<false, true>(output, labels);
-      } else {
-        computeLossImpl<false, false>(output, labels);
+        throw std::invalid_argument(
+            "Having sparse output and dense labels is not supported.");
       }
+      computeLossImpl<false, false>(output, labels);
     }
   }
 
@@ -91,14 +91,17 @@ class LossFunction : public Metric {
 
   template <bool OUTPUT_DENSE, bool LABEL_DENSE>
   void computeLossImpl(const BoltVector& output, const BoltVector& labels) {
-    if (OUTPUT_DENSE || LABEL_DENSE) {
+    // We cannot have sparse output and dense labels. This will cause errors in
+    // sampling and means that there is no valid definition of CrossEntropy loss
+    // since non-active neurons have 0 activation and log(0) is undefined.
+    static_assert(OUTPUT_DENSE || !LABEL_DENSE);
+    if (OUTPUT_DENSE) {
       // If either of the the vectors is dense then we have to iterate over the
       // full dimension. To find this dimension we can take the max of the
       // dimensions of both vectors since we know that at least one is dense.
-      uint32_t dense_dim = std::max(output.len, labels.len);
 
       float sample_loss = 0.0;
-      for (uint32_t i = 0; i < dense_dim; i++) {
+      for (uint32_t i = 0; i < output.len; i++) {
         float activation = output.findActiveNeuron<OUTPUT_DENSE>(i).activation;
         float label_val = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
 
@@ -108,18 +111,17 @@ class LossFunction : public Metric {
       MetricUtilities::incrementAtomicFloat(_loss, sample_loss);
       _num_samples += 1;
     } else {
-      // If both vectors are sparse then we need to iterate over the indices of
-      // both vectors to ensure that we compute the loss for every neuron that
-      // occurs as a label or active_neuron. We also need to be careful that we
-      // don't double count neurons that occur as both. To do this when
-      // iterating over the active_neurons for the output we will skip any
-      // neurons with a non-zero label (i.e. the label is in the sparse indices
-      // of the label vector). This will ensure that the loss for this neuron is
-      // only computed once (when iterating over the indices of the labels). We
-      // cannot do this in reverse because a neuron could be in the active
-      // neurons and have a 0.0 activation due to ReLU and so its harder to
-      // check if a given label neuron is also an active neuron, wheras we can
-      // easily check if a given active neuron is a label neuron.
+      // Since we cannot have sparse outputs, and dense labels, in this case we
+      // know that both the outputs and labels are sparse. If both vectors are
+      // sparse then we can only iterate over the nonzero indices of the
+      // outputs. This is because we currently support loss metrics during
+      // training, and thus we know that the labels are a subset of the active
+      // neurons. Furthermore this is an important distinction because the
+      // activation of a non-active neuron is defined as 0, which means that
+      // both binary and categorical cross entropy are not well defined since
+      // they involve computing the log of the activation. Thus we can only
+      // compute the loss for neurons that are active because that ensures that
+      // the activation is non-zero.
 
       float sample_loss = 0.0;
       for (uint32_t i = 0; i < output.len; i++) {
@@ -129,13 +131,6 @@ class LossFunction : public Metric {
         if (label_val == 0.0) {
           sample_loss += elementLoss(label_val, output.activations[i]);
         }
-      }
-
-      for (uint32_t i = 0; i < labels.len; i++) {
-        float activation =
-            output.findActiveNeuron<OUTPUT_DENSE>(labels.active_neurons[i])
-                .activation;
-        sample_loss += elementLoss(labels.activations[i], activation);
       }
 
       MetricUtilities::incrementAtomicFloat(_loss, sample_loss);
