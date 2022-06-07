@@ -51,7 +51,7 @@ def train_using_random_numpy():
         batch_size=10,
         loss_fn=bolt.MeanSquaredError(),
         learning_rate=0.0001,
-        epochs=10000000, #Making sure the program doesnot terminates
+        epochs=10000000,  # Making sure the program doesnot terminates
         verbose=True,
     )
 
