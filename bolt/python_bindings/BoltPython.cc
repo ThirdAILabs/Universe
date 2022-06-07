@@ -23,8 +23,6 @@ void createBoltSubmodule(py::module_& module) {
       "An enum of all available Hashing functions. To use it, pass it to "
       "the 'hash_function' parameter of a SamplingConfig object.")
       .value("DWTA", HashingFunction::DWTA, "DWTA Hash Function")
-      .value("DensifiedMinHash", HashingFunction::DensifiedMinHash,
-             "DensifiedMinHash Function")
       .value("SRP", HashingFunction::SRP,
              "Sparse Random Projection Hash Function.")
       .value("FastSRP", HashingFunction::FastSRP,
@@ -44,7 +42,7 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("hash_function"),
            "Builds a SamplingConfig object with user mentioned type of hash "
            "function and other fields of sampling object"
-           "mention hash_function as one of Densifiedminhash, DWTA, SRP, "
+           "mention hash_function as one of DWTA, SRP, "
            "Fastsrp.");
 #endif
 

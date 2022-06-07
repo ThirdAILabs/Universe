@@ -44,8 +44,6 @@ inline std::string getHashString(HashingFunction hash_function) {
   switch (hash_function) {
     case HashingFunction::DWTA:
       return "DWTA";
-    case HashingFunction::DensifiedMinHash:
-      return "DensifiedMinHash";
     case HashingFunction::SRP:
       return "SRP";
     case HashingFunction::FastSRP:
@@ -278,7 +276,7 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
           << ", range_pow=" << sampling_config.range_pow
           << ", reservoir_size=" << sampling_config.reservoir_size
           << ", hash_function=" << getHashString(sampling_config.hash_function)
-          << "}";  // edited
+          << "}";
     }
   }
 };

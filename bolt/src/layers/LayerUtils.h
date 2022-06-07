@@ -2,7 +2,6 @@
 
 #include <cereal/types/vector.hpp>
 #include <hashing/src/DWTA.h>
-#include <hashing/src/DensifiedMinHash.h>
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/SRP.h>
 #include <cctype>
@@ -55,15 +54,13 @@ constexpr float actFuncDerivative(float x, ActivationFunction act_func) {
   return 0.0;
 }
 
-enum class HashingFunction { DensifiedMinHash, DWTA, FastSRP, SRP };
+// Didn't add DensifiedMinhash because its not yet implemented for singledense.
+enum class HashingFunction { DWTA, FastSRP, SRP };
 
 static HashingFunction getHashFunction(const std::string& hash_function) {
   std::string lower_name;
   for (char c : hash_function) {
     lower_name.push_back(std::tolower(c));
-  }
-  if (lower_name == "densifiedminhash") {
-    return HashingFunction::DensifiedMinHash;
   }
   if (lower_name == "dwta") {
     return HashingFunction::DWTA;
@@ -77,7 +74,7 @@ static HashingFunction getHashFunction(const std::string& hash_function) {
   throw std::invalid_argument(
       "'" + hash_function +
       "' is not a Supported LSH function. Supported Functions are "
-      "DensifiedMinhash, SRP,Fastsrp,DWTA");
+      "SRP, Fastsrp, DWTA");
 }
 
 struct SamplingConfig {

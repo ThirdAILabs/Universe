@@ -126,10 +126,6 @@ class FullyConnectedLayer final : public SequentialLayer {
         return std::make_unique<hashing::DWTAHashFunction>(
             dim, config.hashes_per_table, config.num_tables, config.range_pow);
 
-      case HashingFunction::DensifiedMinHash:
-        return std::make_unique<hashing::DensifiedMinHash>(
-            config.hashes_per_table, config.num_tables, config.range_pow);
-
       case HashingFunction::FastSRP:
         return std::make_unique<hashing::FastSRP>(dim, config.hashes_per_table,
                                                   config.num_tables);
