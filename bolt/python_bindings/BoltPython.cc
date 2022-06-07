@@ -450,7 +450,7 @@ void createBoltSubmodule(py::module_& module) {
            "and (1) output vectors (predictions) from the network in the form "
            "of a 2D Numpy matrix of floats.");
 
-  py::class_<TextClassifier>(bolt_submodule, "TextClassifier")
+  py::class_<PyTextClassifier>(bolt_submodule, "TextClassifier")
       .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
            py::arg("n_classes"),
            "Constructs a TextClassifier with autotuning.\n"
@@ -459,14 +459,14 @@ void createBoltSubmodule(py::module_& module) {
            "size in Gb for the model, for example '6Gb' or '6 Gb'.\n"
            " * n_classes: int - How many classes or categories are in the "
            "labels of the dataset.\n")
-      .def("train", &TextClassifier::train, py::arg("train_file"),
+      .def("train", &PyTextClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"),
            "Trains the classifier on the given dataset.\n"
            "Arguments:\n"
            " * train_file: string - The path to the training dataset to use.\n"
            " * epochs: Int - How many epochs to train for.\n"
            " * learning_rate: Float - The learning rate to use for training.\n")
-      .def("predict", &TextClassifier::predict, py::arg("test_file"),
+      .def("predict", &PyTextClassifier::predict, py::arg("test_file"),
            py::arg("output_file") = std::nullopt,
            "Runs the classifier on the specified test dataset and optionally "
            "logs the prediction to a file.\n"
@@ -476,14 +476,29 @@ void createBoltSubmodule(py::module_& module) {
            "then the classifier will output the name of the class/category of "
            "each prediction this file with one prediction result on each "
            "line.\n")
-      .def("save", &TextClassifier::save, py::arg("filename"),
+      .def("save", &PyTextClassifier::save, py::arg("filename"),
            "Saves the classifier to a file. The file path must not require any "
            "folders to be created\n"
            "Arguments:\n"
            " * filename: string - The path to the save location of the "
            "classifier.\n")
+      .def("get_hidden_weights", &PyTextClassifier::getHiddenLayerWeights,
+          "Returns the weight matrix of the hidden layer as a 2D Numpy "
+           "matrix.")
+      .def("set_hidden_weights", &PyTextClassifier::setHiddenLayerWeights,
+           py::arg("new_weights"),
+           "Sets the weight matrix of the hidden layer to the given 2D "
+           "Numpy matrix. Throws an error if the dimension of the given weight "
+           "matrix does not match the layer's current weight matrix.")
+      .def("get_hidden_biases", &PyTextClassifier::getHiddenLayerBiases,
+           "Returns the bias vector of the hidden layer as a 1D Numpy "
+           "matrix.")
+      .def("set_hidden_biases", &PyTextClassifier::setHiddenLayerBiases,
+           py::arg("new_biases"),
+           "Sets the bias array at the given layer index to the given 1D Numpy "
+           "array.")
       .def_static(
-          "load", &TextClassifier::load, py::arg("filename"),
+          "load", &PyTextClassifier::load, py::arg("filename"),
           "Loads and builds a saved classifier from file.\n"
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");

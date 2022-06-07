@@ -7,6 +7,7 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <bolt/src/text_classifier/TextClassifier.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <pybind11/buffer_info.h>
@@ -267,14 +268,14 @@ class PyNetwork final : public FullyConnectedNetwork {
     int64_t dim = _layers.at(layer_index)->getDim();
     if (new_biases.ndim() != 1) {
       std::stringstream err;
-      err << "Expected weight matrix to have 1 dimension, received matrix "
+      err << "Expected bias matrix to have 1 dimension, received matrix "
              "with "
           << new_biases.ndim() << " dimensions.";
       throw std::invalid_argument(err.str());
     }
     if (new_biases.shape(0) != dim) {
       std::stringstream err;
-      err << "Expected weight matrix to have dim " << dim
+      err << "Expected bias matrix to have dim " << dim
           << " received matrix with dim " << new_biases.shape(0) << ".";
       throw std::invalid_argument(err.str());
     }
@@ -446,6 +447,83 @@ class PyDLRM final : public DLRM {
                                 getInferenceOutputDim(), active_neurons,
                                 activations, output_sparse, alloc_success);
   }
+};
+
+class PyTextClassifier final : public TextClassifier {
+ public:
+  PyTextClassifier(const std::string& model_size, uint32_t n_classes)
+      : TextClassifier(model_size, n_classes) {}
+
+  py::array_t<float> getHiddenLayerWeights() {
+    float* mem = getHiddenLayer()->getWeights();
+
+    py::capsule free_when_done(
+        mem, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+    size_t dim = getHiddenLayer()->getDim();
+    //TODO(henry): Fine a better way to define input dimension in text classifier and access it here
+    size_t input_dim = 100000;
+
+    return py::array_t<float>({dim, input_dim},
+                            {input_dim * sizeof(float), sizeof(float)}, mem,
+                            free_when_done);
+  }
+
+  void setHiddenLayerWeights(const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          new_weights)  {
+    int64_t dim = getHiddenLayer()->getDim();
+    //TODO(henry): Fine a better way to define input dimension in text classifier and access it here
+    int64_t input_dim = 100000;
+    if (new_weights.ndim() != 2) {
+      std::stringstream err;
+      err << "Expected weight matrix to have 2 dimensions, received matrix "
+             "with "
+          << new_weights.ndim() << " dimensions.";
+      throw std::invalid_argument(err.str());
+    }
+    if (new_weights.shape(0) != dim || new_weights.shape(1) != input_dim) {
+      std::stringstream err;
+      err << "Expected weight matrix to have dim (" << dim << ", " << input_dim
+          << ") received matrix with dim (" << new_weights.shape(0) << ", "
+          << new_weights.shape(1) << ").";
+      throw std::invalid_argument(err.str());
+    }
+
+    getHiddenLayer()->setWeights(new_weights.data());
+  
+  }
+
+  void setHiddenLayerBiases(const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          new_biases) {
+    int64_t dim = getHiddenLayer()->getDim();
+    if (new_biases.ndim() != 1) {
+      std::stringstream err;
+      err << "Expected bias matrix to have 1 dimension, received matrix "
+             "with "
+          << new_biases.ndim() << " dimensions.";
+      throw std::invalid_argument(err.str());
+    }
+    if (new_biases.shape(0) != dim) {
+      std::stringstream err;
+      err << "Expected bias matrix to have dim " << dim
+          << " received matrix with dim " << new_biases.shape(0) << ".";
+      throw std::invalid_argument(err.str());
+    }
+
+    getHiddenLayer()->setBiases(new_biases.data());
+  }
+
+  py::array_t<float> getHiddenLayerBiases() {
+    float* mem = getHiddenLayer()->getBiases();
+
+    py::capsule free_when_done(
+        mem, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+    size_t dim = getHiddenLayer()->getDim();
+
+    return py::array_t<float>({dim}, {sizeof(float)}, mem, free_when_done);
+  }
+
 };
 
 }  // namespace thirdai::bolt::python

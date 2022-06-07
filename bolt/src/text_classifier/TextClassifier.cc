@@ -238,9 +238,21 @@ float getHiddenLayerSparsity(uint64_t layer_size) {
   return 0.005;
 }
 
-float* TextClassifier::getHiddenLayerWeights() {
-  return _model->_layers[0]->getWeights();
-}
+// float* TextClassifier::getHiddenLayerWeights() {
+//   return _model->_layers[0]->getWeights();
+// }
+
+// float* TextClassifier::getHiddenLayerBiases() {
+//   return _model->_layers[0]->getBiases();
+// }
+
+// void TextClassifier::setHiddenLayerWeights(const float* weights) {
+//   _model->_layers[0]->setWeights(weights);
+// }
+
+// void TextClassifier::setHiddenLayerBiases(const float* biases) {
+//   _model->_layers[0]->setBiases(biases);
+// }
 
 std::optional<uint64_t> getSystemRam() {
 #if defined __linux__

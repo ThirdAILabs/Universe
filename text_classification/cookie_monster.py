@@ -15,9 +15,12 @@ class CookieMonster():
         #TODO(Henry): Add wrapper in text classifier to get weights&biases
         weights = self.bolt_classifier.get_weights()
         biases = self.bolt_classifier.get_biases()
+        del(self.bolt_classifier) # delete old model
 
         self.bolt_classifier = bolt.TextClassifier(model_size=self.model_size, n_classes=dimension)
 
         self.bolt_classifier.set_weights(weights)
         self.bolt_classifier.set_biases(biases)
+
+    
     

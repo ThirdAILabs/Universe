@@ -14,6 +14,8 @@ namespace thirdai::bolt {
 
 class TextClassifier {
  public:
+  std::unique_ptr<FullyConnectedNetwork> _model;
+
   TextClassifier(const std::string& model_size, uint32_t n_classes);
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate);
@@ -21,7 +23,17 @@ class TextClassifier {
   void predict(const std::string& filename,
                const std::optional<std::string>& output_filename);
 
-  float* getHiddenLayerWeights();
+  std::shared_ptr<SequentialLayer> getHiddenLayer() {
+    return _model->_layers[0];
+  }
+
+  // float* getHiddenLayerWeights();
+
+  // float* getHiddenLayerBiases();
+
+  // void setHiddenLayerWeights(const float* weights);
+
+  // void setHiddenLayerBiases(const float* biases);
 
   void save(const std::string& filename) {
     std::ofstream filestream(filename, std::ios::binary);
@@ -51,7 +63,7 @@ class TextClassifier {
     archive(_model, _batch_processor);
   }
 
-  std::unique_ptr<FullyConnectedNetwork> _model;
+  
   std::shared_ptr<dataset::TextClassificationProcessor> _batch_processor;
 };
 
