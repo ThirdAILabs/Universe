@@ -100,7 +100,8 @@ bolt::SequentialConfigList createFullyConnectedLayerConfigs(
     uint32_t num_tables = getIntValue(table, "num_tables", true, 0);
     uint32_t range_pow = getIntValue(table, "range_pow", true, 0);
     uint32_t reservoir_size = getIntValue(table, "reservoir_size", true, 0);
-    std::string hash_function = getStrValue(table, "hash_function", true, "DWTA");
+    std::string hash_function =
+        getStrValue(table, "hash_function", true, "DWTA");
     std::string activation = getStrValue(table, "activation");
     float sparsity = getFloatValue(table, "sparsity", true, 1.0);
 

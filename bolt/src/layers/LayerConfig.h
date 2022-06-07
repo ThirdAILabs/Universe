@@ -50,7 +50,7 @@ inline std::string getHashString(HashingFunction hash_function) {
       return "SRP";
     case HashingFunction::FastSRP:
       return "FastSRP";
-    // Not supposed to reach here but compiler complains 
+    // Not supposed to reach here but compiler complains
     default:
       throw std::invalid_argument("Hash function not supported.");
   }
@@ -196,7 +196,8 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
           << ", num_tables=" << sampling_config.num_tables
           << ", range_pow=" << sampling_config.range_pow
           << ", reservoir_size=" << sampling_config.reservoir_size
-          << ", hash_function=" << getHashString(sampling_config.hash_function) << "}";
+          << ", hash_function=" << getHashString(sampling_config.hash_function)
+          << "}";
     }
   }
 };

@@ -89,7 +89,9 @@ def create_fully_connected_layer_configs(
                     num_tables=config.get("num_tables", 0),
                     range_pow=config.get("range_pow", 0),
                     reservoir_size=config.get("reservoir_size", 128),
-                    hash_function=bolt.getHashingFunction(config.get("hash_function", "DWTA")),
+                    hash_function=bolt.getHashingFunction(
+                        config.get("hash_function", "DWTA")
+                    ),
                 ),
             )
 
@@ -237,7 +239,9 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
 
         if max_test_batches is None:
             # Use keyword arguments to skip batch_size parameter.
-            metrics, _ = network.predict(test_data=test_x, test_labels=test_y, metrics=test_metrics)
+            metrics, _ = network.predict(
+                test_data=test_x, test_labels=test_y, metrics=test_metrics
+            )
             if mlflow_enabled:
                 mlflow.log_metrics(metrics)
         else:
@@ -254,7 +258,9 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
     if not max_test_batches is None:
         # If we limited the number of test batches during training we run on the whole test set at the end.
         # Use keyword arguments to skip batch_size parameter.
-        metrics, _ = network.predict(test_data=test_x, test_labels=test_y, metrics=test_metrics)
+        metrics, _ = network.predict(
+            test_data=test_x, test_labels=test_y, metrics=test_metrics
+        )
         if mlflow_enabled:
             mlflow.log_metrics(metrics)
 

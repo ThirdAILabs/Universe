@@ -137,8 +137,8 @@ class FullyConnectedLayer final : public SequentialLayer {
       case HashingFunction::SRP:
         return std::make_unique<hashing::SparseRandomProjection>(
             dim, config.hashes_per_table, config.num_tables);
-      
-      // Not supposed to reach here but compiler complains 
+
+      // Not supposed to reach here but compiler complains
       default:
         throw std::invalid_argument("Hash function not supported.");
     }

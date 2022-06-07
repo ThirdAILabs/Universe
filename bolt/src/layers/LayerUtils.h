@@ -105,7 +105,8 @@ struct SamplingConfig {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(hashes_per_table, num_tables, range_pow, reservoir_size, hash_function);
+    archive(hashes_per_table, num_tables, range_pow, reservoir_size,
+            hash_function);
   }
 };
 
