@@ -361,6 +361,7 @@ void createBoltSubmodule(py::module_& module) {
            "and (1) output vectors (predictions) from the network in the form "
            "of a 2D Numpy matrix of floats.")
       .def("enable_sparse_inference", &PyNetwork::enableSparseInference,
+           py::arg("remember_mistakes") = true,
            "Enables sparse inference. Freezes smart hash tables. Do not call "
            "this method early on "
            "in the training routine. It is recommended to call this method "

@@ -27,7 +27,8 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sampling_config(config.sampling_config),
       _prev_is_active(_prev_dim, false),
       _is_active(config.dim, false),
-      _force_sparse_for_inference(false) {
+      _force_sparse_for_inference(false),
+      _remember_mistakes(false) {
   std::random_device rd;
   std::default_random_engine eng(rd());
   std::normal_distribution<float> dist(0.0, 0.01);
@@ -269,7 +270,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                               input.len, hashes.data());
   }
 
-  if (_force_sparse_for_inference && _act_func == ActivationFunction::Softmax) {
+  if (_remember_mistakes && _act_func == ActivationFunction::Softmax) {
     _hash_table->queryAndInsertForInference(hashes.data(), active_set,
                                             _sparse_dim);
   } else {

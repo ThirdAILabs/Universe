@@ -32,7 +32,9 @@ class ConvLayer final : public SequentialLayer {
     return BoltBatch(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
   }
 
-  void forceSparseForInference() final {
+  void forceSparseForInference(bool remember_mistakes) final {
+    // Currently we don't rememver mistakes in the ConvLayer ever
+    (void)remember_mistakes;
     if (_sparsity < 1.0) {
       _force_sparse_for_inference = true;
     }

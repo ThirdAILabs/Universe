@@ -47,9 +47,10 @@ class FullyConnectedLayer final : public SequentialLayer {
     return BoltBatch(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
   }
 
-  void forceSparseForInference() final {
+  void forceSparseForInference(bool remember_mistakes) final {
     if (_sparsity < 1.0) {
       _force_sparse_for_inference = true;
+      _remember_mistakes = remember_mistakes;
     }
   }
 
@@ -116,7 +117,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   // This is only used if _this_is_dense == false
   std::vector<bool> _is_active;
 
-  bool _force_sparse_for_inference;
+  bool _force_sparse_for_inference, _remember_mistakes;
 
   inline void updateSparseSparseWeightParameters(float lr, float B1, float B2,
                                                  float eps,
@@ -163,7 +164,7 @@ class FullyConnectedLayer final : public SequentialLayer {
             _w_gradient, _w_momentum, _w_velocity, _biases, _b_gradient,
             _b_momentum, _b_velocity, _sampling_config, _prev_is_active,
             _is_active, _hasher, _hash_table, _rand_neurons,
-            _force_sparse_for_inference);
+            _force_sparse_for_inference, _remember_mistakes);
   }
 };
 
