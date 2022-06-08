@@ -13,7 +13,6 @@
 #include <dataset/src/Vectors.h>
 #include <dataset/src/batch_types/DenseBatch.h>
 #include <exceptions/src/Exceptions.h>
-#include <iostream>
 #include <optional>
 #include <queue>
 #include <stdexcept>
@@ -118,7 +117,6 @@ class DocSearch {
     _largest_internal_id = std::max(_largest_internal_id, internal_id);
 
     for (uint32_t centroid_id : centroid_ids) {
-      std::cout << internal_id << " " << centroid_id << std::endl;
       _centroid_id_to_internal_id.at(centroid_id).push_back(internal_id);
     }
 
@@ -324,11 +322,6 @@ class DocSearch {
     // the document with the internal_id at internal_ids_to_rerank[i]
     std::vector<float> document_scores = _document_array->getDocumentScores(
         query_embeddings, internal_ids_to_rerank);
-
-    for (uint32_t i = 0; i < document_scores.size(); i++) {
-      std::cout << internal_ids_to_rerank[i] << " " << document_scores[i]
-                << std::endl;
-    }
 
     // This is a little confusing, these sorted_indices are indices into
     // the document_scores array and represent a ranking of the
