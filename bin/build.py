@@ -90,7 +90,7 @@ def main():
 
         os.system("pip3 install . --verbose --force")
     else:
-        cmake_command = f"cmake -B build -S . -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE={args.build_mode} -DFEATURE_FLAGS={joined_feature_flags}"
+        cmake_command = f"cmake -B build -S . -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE={args.build_mode} -DFEATURE_FLAGS='{joined_feature_flags}'"
         build_command = f"cmake --build build --target {args.target} -j {args.jobs}"
 
         os.system(cmake_command)
