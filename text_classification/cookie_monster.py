@@ -34,11 +34,20 @@ class CookieMonster():
         self.bolt_classifier.set_hidden_biases(biases)
 
     
-    def train():
+    def train(self):
+        file_dir = os.path.dirname(os.path.abspath(__file__))
+        file_name = os.path.join(file_dir, "./config.toml")
+        with open(file_name) as f:
+            parsed_config = toml.load(f)
+        mlflow.set_tracking_uri(parsed_config["tracking"]["uri"])
+
         mlflow.set_experiment("Cookie Monster")
         mlflow.start_run(
-            run_name="test_run",
-            tags={"foo"},
+            run_name="test_run"
         )
-    
+
+        mlflow.log_artifact("weights.npy")
+        print("Logged weights")
+
+        mlflow.end_run()
     

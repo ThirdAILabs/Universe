@@ -10,4 +10,8 @@ def test_new_dimension():
     cookie_model.set_output_dimension(40)
 
 
-test_new_dimension()
+def test_mlflow():
+    cookie_model = CookieMonster(output_dimension=64)
+    cookie_model.train()
+
+test_mlflow()
