@@ -1,7 +1,6 @@
 #pragma once
 
 #include "BlockInterface.h"
-#include <hashing/src/MurmurHash.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <memory>
