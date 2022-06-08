@@ -50,7 +50,7 @@ void BatchProcessor::processBatch(
   uint32_t initial_num_elems = _input_vectors.size();
 
   _input_vectors.resize(_input_vectors.size() + batch.size());
-  if (_target_vectors.has_value()) {
+  if (_target_vectors) {
     _target_vectors->resize(_target_vectors->size() + batch.size());
   }
 
@@ -59,7 +59,7 @@ void BatchProcessor::processBatch(
     _input_vectors[initial_num_elems + i] =
         makeVector(batch[i], _input_blocks, _input_blocks_dense);
 
-    if (_target_vectors.has_value()) {
+    if (_target_vectors) {
       _target_vectors->at(initial_num_elems + i) =
           makeVector(batch[i], _target_blocks, _target_blocks_dense);
     }
@@ -76,7 +76,7 @@ std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
 
   std::vector<bolt::BoltBatch> input_batches(n_batches);
   std::optional<std::vector<bolt::BoltBatch>> target_batches;
-  if (_target_vectors.has_value()) {
+  if (_target_vectors) {
     target_batches = std::vector<bolt::BoltBatch>(n_batches);
   }
 
@@ -90,7 +90,7 @@ std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
     size_t cur_batch_size = std::min(_batch_size, n_exported - batch_start_idx);
     std::vector<bolt::BoltVector> batch_inputs(cur_batch_size);
     std::optional<std::vector<bolt::BoltVector>> batch_targets;
-    if (_target_vectors.has_value()) {
+    if (_target_vectors) {
       batch_targets = std::vector<bolt::BoltVector>(cur_batch_size);
     }
 
@@ -99,14 +99,14 @@ std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
       // Move vectors to prevent copying.
       batch_inputs[vec_idx] =
           std::move(_input_vectors[positions[batch_start_idx + vec_idx]]);
-      if (batch_targets.has_value()) {
+      if (batch_targets) {
         batch_targets->at(vec_idx) = std::move(
             _target_vectors->at(positions[batch_start_idx + vec_idx]));
       }
     }
 
     input_batches[batch_idx] = bolt::BoltBatch(std::move(batch_inputs));
-    if (target_batches.has_value()) {
+    if (target_batches) {
       target_batches->at(batch_idx) =
           bolt::BoltBatch(std::move(batch_targets.value()));
     }
@@ -114,15 +114,14 @@ std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
 
   // Replenish after moves.
   _input_vectors = std::vector<bolt::BoltVector>();
-  if (_target_vectors.has_value()) {
+  if (_target_vectors) {
     _target_vectors = std::vector<bolt::BoltVector>();
   }
 
   return {std::make_shared<BoltDataset>(std::move(input_batches), n_exported),
-          target_batches.has_value()
-              ? std::make_shared<BoltDataset>(std::move(target_batches.value()),
-                                              n_exported)
-              : nullptr};
+          target_batches ? std::make_shared<BoltDataset>(
+                               std::move(target_batches.value()), n_exported)
+                         : nullptr};
 }
 
 std::vector<uint32_t> BatchProcessor::makeFinalPositions(
