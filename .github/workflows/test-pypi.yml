@@ -6,20 +6,16 @@ concurrency:
   group: testpypi-${{ github.head_ref }}
   cancel-in-progress: true
 
-# Run on pushes and releases. The actual upload will only happen on a 
-# release.
+# Run on release and manually. 
 # Note this action does not ever upload to the main Pypi repo. For now, do that
 # by downloading the build artifacts and doing it manually. See 
 # https://www.notion.so/Deploy-our-package-to-pypi-60d3c539e4fd4250897af043a329d08f
 # for more details.
 on: 
-  pull_request:
-    branches: [main]
-  push: 
-    branches: [main]
   release:
     types:
       - published
+  workflow_dispatch:
 
 
 jobs:
