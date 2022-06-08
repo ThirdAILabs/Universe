@@ -15,7 +15,7 @@ Logging to MlFlow is simple. To start logging, simply import mlflow_logger.py to
 This is stored in Universe/logging. If calling from a script somewhere in 
 Universe, current recommended usage is to add Universe/logging to your path
 in the script and then import the relevant logging class or method. 
-For example usage, see bolt/benchmarks/amazon670k.py or flash/benchmarks/image_search.py. 
+For example usage, see bolt/benchmarks/amazon670k.py or search/benchmarks/image_search.py. 
 For Bolt or another machine learning method, your benchmark code will look something like
 ```
 import sys
