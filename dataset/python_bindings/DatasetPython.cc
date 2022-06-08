@@ -74,8 +74,7 @@ void createDatasetSubmodule(py::module_& module) {
           " * target_blocks: List of Blocks - Blocks that encode input samples "
           "as target vectors.\n"
           " * output_batch_size: Int (positive) - Size of batches in the "
-          "produced "
-          "dataset.")
+          "produced dataset.")
       .def("process_batch", &PyBatchProcessor::processBatchPython,
            py::arg("row_batch"),
            "Consumes a batch of input samples and encodes them as vectors.\n\n"
