@@ -4,6 +4,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
+#include "PairgramHasher.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
@@ -17,10 +18,12 @@
 
 namespace thirdai::dataset {
 
-class TextClassificationProcessor final : public UnaryBatchProcessor {
+class TextClassificationProcessor final : public UnaryBoltBatchProcessor {
  public:
   explicit TextClassificationProcessor(uint32_t output_range)
       : _output_range(output_range) {}
+
+  bool expectsHeader() const final { return true; }
 
   void processHeader(const std::string& header) final {
     auto [lhs, rhs] = split(header);
@@ -40,57 +43,6 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
     return _class_id_to_class.at(class_id);
   }
 
-  bolt::BoltVector computePairGramHashes(std::string_view sentence) const {
-    std::vector<uint32_t> hashes_seen;
-    std::unordered_map<uint32_t, uint32_t> pairgram_hashes;
-    bool prev_is_space = true;
-    uint32_t start_of_word_offset;
-    for (uint32_t i = 0; i < sentence.size(); i++) {
-      if (prev_is_space && !std::isspace(sentence[i])) {
-        start_of_word_offset = i;
-        prev_is_space = false;
-      }
-      if (!prev_is_space && std::isspace(sentence[i])) {
-        uint32_t len = i - start_of_word_offset;
-        uint32_t hash =
-            hashing::MurmurHash(sentence.data() + start_of_word_offset, len,
-                                /* seed = */ 3829);
-        hashes_seen.push_back(hash);
-        for (const uint32_t prev_hash : hashes_seen) {
-          uint32_t combined_hash =
-              hashing::HashUtils::combineHashes(prev_hash, hash);
-          combined_hash = combined_hash % _output_range;
-          pairgram_hashes[combined_hash]++;
-        }
-
-        prev_is_space = true;
-      }
-    }
-    if (!prev_is_space) {
-      uint32_t len = sentence.size() - start_of_word_offset;
-      uint32_t hash =
-          hashing::MurmurHash(sentence.data() + start_of_word_offset, len,
-                              /* seed = */ 3829);
-      hashes_seen.push_back(hash);
-      for (const uint32_t prev_hash : hashes_seen) {
-        uint32_t combined_hash =
-            hashing::HashUtils::combineHashes(prev_hash, hash);
-        combined_hash = combined_hash % _output_range;
-        pairgram_hashes[combined_hash]++;
-      }
-    }
-
-    bolt::BoltVector data_vec(pairgram_hashes.size(), false, false);
-    uint32_t index = 0;
-    for (auto& entry : pairgram_hashes) {
-      data_vec.active_neurons[index] = entry.first;
-      data_vec.activations[index] = entry.second;
-      index++;
-    }
-
-    return data_vec;
-  }
-
  protected:
   std::pair<bolt::BoltVector, bolt::BoltVector> processRow(
       const std::string& row) final {
@@ -99,11 +51,13 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
 
     if (_label_on_right) {
       bolt::BoltVector label_vec = getLabel(rhs);
-      bolt::BoltVector data_vec = computePairGramHashes(lhs);
+      bolt::BoltVector data_vec =
+          PairgramHasher::computePairgrams(lhs, _output_range);
       return std::make_pair(std::move(data_vec), std::move(label_vec));
     }
     bolt::BoltVector label_vec = getLabel(lhs);
-    bolt::BoltVector data_vec = computePairGramHashes(rhs);
+    bolt::BoltVector data_vec =
+        PairgramHasher::computePairgrams(rhs, _output_range);
     return std::make_pair(std::move(data_vec), std::move(label_vec));
   }
 
@@ -185,8 +139,9 @@ class TextClassificationProcessor final : public UnaryBatchProcessor {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<UnaryBatchProcessor>(this), _class_to_class_id,
-            _class_id_to_class, _output_range, _label_on_right);
+    archive(cereal::base_class<UnaryBoltBatchProcessor>(this),
+            _class_to_class_id, _class_id_to_class, _output_range,
+            _label_on_right);
   }
 
   // Private constructor for cereal.
