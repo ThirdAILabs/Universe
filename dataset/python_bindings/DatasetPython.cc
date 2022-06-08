@@ -56,7 +56,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &MockBlock::isDense,
            "True if the block produces dense features, False otherwise.");
 
-  py::class_<PyBatchProcessor>(
+  py::class_<PyBlockBatchProcessor>(
       internal_dataset_submodule, "BatchProcessor",
       "Encodes input samples – each represented by a sequence of strings – "
       "as input and target BoltVectors according to the given blocks. "
@@ -75,7 +75,7 @@ void createDatasetSubmodule(py::module_& module) {
           "as target vectors.\n"
           " * output_batch_size: Int (positive) - Size of batches in the "
           "produced dataset.")
-      .def("process_batch", &PyBatchProcessor::processBatchPython,
+      .def("process_batch", &PyBlockBatchProcessor::processBatchPython,
            py::arg("row_batch"),
            "Consumes a batch of input samples and encodes them as vectors.\n\n"
            "Arguments:\n"
@@ -83,7 +83,7 @@ void createDatasetSubmodule(py::module_& module) {
            "data "
            "where each row is a sample, and each sample has many columns. "
            "row_batch represents a batch of such samples.")
-      .def("export_in_memory_dataset", &PyBatchProcessor::exportInMemoryDataset,
+      .def("export_in_memory_dataset", &PyBlockBatchProcessor::exportInMemoryDataset,
            py::arg("shuffle") = false, py::arg("shuffle_seed") = std::rand(),
            "Produces a tuple of BoltDatasets for input and target "
            "vectors processed so far. This method can optionally produce a "

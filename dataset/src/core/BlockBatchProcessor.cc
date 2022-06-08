@@ -1,4 +1,4 @@
-#include "BatchProcessor.h"
+#include "BlockBatchProcessor.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/utils/ExtendableVectors.h>
@@ -13,7 +13,7 @@
 
 namespace thirdai::dataset {
 
-BatchProcessor::BatchProcessor(
+BlockBatchProcessor::BlockBatchProcessor(
     std::vector<std::shared_ptr<Block>> input_blocks,
     std::vector<std::shared_ptr<Block>> target_blocks,
     uint32_t output_batch_size)
@@ -43,7 +43,7 @@ BatchProcessor::BatchProcessor(
   }
 }
 
-void BatchProcessor::processBatch(
+void BlockBatchProcessor::processBatch(
     std::vector<std::vector<std::string>>& batch) {
   // Preallocate space for new vectors. This prevents data races and
   // preserves the order of vectors when processing them in parallel.
@@ -66,7 +66,7 @@ void BatchProcessor::processBatch(
   }
 }
 
-std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
+std::pair<BoltDatasetPtr, BoltDatasetPtr> BlockBatchProcessor::exportInMemoryDataset(
     bool shuffle, uint32_t shuffle_seed) {
   // Produce final positions of vectors in the dataset according to
   // shuffle and shuffle_seed.
@@ -124,7 +124,7 @@ std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
                          : nullptr};
 }
 
-std::vector<uint32_t> BatchProcessor::makeFinalPositions(
+std::vector<uint32_t> BlockBatchProcessor::makeFinalPositions(
     uint32_t n_exported, bool shuffle, uint32_t shuffle_seed) {
   // Create identity mapping.
   std::vector<uint32_t> positions(n_exported);
@@ -140,7 +140,7 @@ std::vector<uint32_t> BatchProcessor::makeFinalPositions(
   return positions;
 }
 
-bolt::BoltVector BatchProcessor::makeVector(
+bolt::BoltVector BlockBatchProcessor::makeVector(
     std::vector<std::string>& sample,
     std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
   std::shared_ptr<ExtendableVector> vec_ptr;

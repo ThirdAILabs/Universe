@@ -5,7 +5,7 @@
 #include <dataset/src/batch_types/DenseBatch.h>
 #include <dataset/src/batch_types/SparseBatch.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <dataset/src/core/BatchProcessor.h>
+#include <dataset/src/core/BlockBatchProcessor.h>
 #include <pybind11/cast.h>
 #include <pybind11/gil.h>
 #include <pybind11/numpy.h>
@@ -123,12 +123,12 @@ bool denseBoltDatasetIsPermutationOfDenseMatrix(
  */
 bool denseBoltDatasetsAreEqual(BoltDataset& dataset1, BoltDataset& dataset2);
 
-class PyBatchProcessor : public BatchProcessor {
+class PyBlockBatchProcessor : public BlockBatchProcessor {
  public:
-  PyBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
+  PyBlockBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
                    std::vector<std::shared_ptr<Block>> target_blocks,
                    uint32_t output_batch_size)
-      : BatchProcessor(std::move(input_blocks), std::move(target_blocks),
+      : BlockBatchProcessor(std::move(input_blocks), std::move(target_blocks),
                        output_batch_size) {}
 
   /**

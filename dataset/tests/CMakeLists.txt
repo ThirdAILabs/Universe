@@ -62,12 +62,12 @@ target_link_libraries(
 )
 
 add_executable(
-  batch_processor_test
-  BatchProcessorTests.cc
+  block_batch_processor_test
+  BlockBatchProcessorTests.cc
 )
 
 target_link_libraries(
-  batch_processor_test
+  block_batch_processor_test
   PRIVATE
   gtest_main
   dataset_core_lib
@@ -91,5 +91,5 @@ gtest_discover_tests(click_through_dataset_test)
 gtest_discover_tests(vector_test)
 gtest_discover_tests(csv_dataset_test)
 gtest_discover_tests(extendable_vectors_test)
-gtest_discover_tests(batch_processor_test)
+gtest_discover_tests(block_batch_processor_test)
 # gtest_discover_tests(global_frequency_test)
