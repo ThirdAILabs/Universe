@@ -1,4 +1,4 @@
-#include "BatchProcessor.h"
+#include "BlockBatchProcessor.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/utils/ExtendableVectors.h>
@@ -13,9 +13,9 @@
 
 namespace thirdai::dataset {
 
-BatchProcessor::BatchProcessor(
-    std::vector<std::shared_ptr<Block>>& input_blocks,
-    std::vector<std::shared_ptr<Block>>& target_blocks,
+BlockBatchProcessor::BlockBatchProcessor(
+    std::vector<std::shared_ptr<Block>> input_blocks,
+    std::vector<std::shared_ptr<Block>> target_blocks,
     uint32_t output_batch_size)
     : _batch_size(output_batch_size),
       _input_blocks_dense(std::all_of(input_blocks.begin(), input_blocks.end(),
@@ -27,20 +27,24 @@ BatchProcessor::BatchProcessor(
                                        [](const std::shared_ptr<Block>& block) {
                                          return block->isDense();
                                        })),
-      _input_blocks(input_blocks),
-      _target_blocks(target_blocks) {
+      /**
+       * Here we copy input_blocks and target_blocks because when we
+       * accept a vector representation of a Python List created by
+       * PyBind11, the vector does not persist beyond this function
+       * call, which results in segfaults later down the line.
+       * It is therefore safest to just copy these vectors.
+       * Furthermore, these vectors are cheap to copy since they contain a
+       * small number of elements and each element is a pointer.
+       */
+      _input_blocks(std::move(input_blocks)),
+      _target_blocks(std::move(target_blocks)) {
   if (!_target_blocks.empty()) {
     _target_vectors = std::vector<bolt::BoltVector>();
   }
 }
 
-void BatchProcessor::processBatch(
+void BlockBatchProcessor::processBatch(
     std::vector<std::vector<std::string>>& batch) {
-  // TODO(Geordie): Make a python version of this class with a method
-  // that releases GIL so we can process batches while the
-  // next input rows are processed in python. Cannot
-  // Cannot do it here because it wouldn't compile.
-
   // Preallocate space for new vectors. This prevents data races and
   // preserves the order of vectors when processing them in parallel.
   uint32_t initial_num_elems = _input_vectors.size();
@@ -62,8 +66,9 @@ void BatchProcessor::processBatch(
   }
 }
 
-std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
-    bool shuffle, uint32_t shuffle_seed) {
+std::pair<BoltDatasetPtr, BoltDatasetPtr>
+BlockBatchProcessor::exportInMemoryDataset(bool shuffle,
+                                           uint32_t shuffle_seed) {
   // Produce final positions of vectors in the dataset according to
   // shuffle and shuffle_seed.
   uint32_t n_exported = _input_vectors.size();
@@ -120,7 +125,7 @@ std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
                          : nullptr};
 }
 
-std::vector<uint32_t> BatchProcessor::makeFinalPositions(
+std::vector<uint32_t> BlockBatchProcessor::makeFinalPositions(
     uint32_t n_exported, bool shuffle, uint32_t shuffle_seed) {
   // Create identity mapping.
   std::vector<uint32_t> positions(n_exported);
@@ -136,7 +141,7 @@ std::vector<uint32_t> BatchProcessor::makeFinalPositions(
   return positions;
 }
 
-bolt::BoltVector BatchProcessor::makeVector(
+bolt::BoltVector BlockBatchProcessor::makeVector(
     std::vector<std::string>& sample,
     std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
   std::shared_ptr<ExtendableVector> vec_ptr;

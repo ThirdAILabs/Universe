@@ -4,7 +4,8 @@
 #include <dataset/src/Dataset.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <chrono>
+#include <cstdlib>
+#include <random>
 
 namespace thirdai::dataset {
 
@@ -13,11 +14,11 @@ namespace thirdai::dataset {
  * as input and target BoltVectors according to the given blocks.
  * It processes these sequences in batches.
  */
-class BatchProcessor {
+class BlockBatchProcessor {
  public:
-  BatchProcessor(std::vector<std::shared_ptr<Block>>& input_blocks,
-                 std::vector<std::shared_ptr<Block>>& target_blocks,
-                 uint32_t output_batch_size);
+  BlockBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
+                      std::vector<std::shared_ptr<Block>> target_blocks,
+                      uint32_t output_batch_size);
 
   /**
    * Consumes a batch of input samples and encodes them
@@ -31,9 +32,7 @@ class BatchProcessor {
    * This method can optionally produce a shuffled dataset.
    */
   std::pair<BoltDatasetPtr, BoltDatasetPtr> exportInMemoryDataset(
-      bool shuffle = false,
-      uint32_t shuffle_seed =
-          std::chrono::system_clock::now().time_since_epoch().count());
+      bool shuffle = false, uint32_t shuffle_seed = std::rand());
 
  private:
   /**
@@ -57,8 +56,18 @@ class BatchProcessor {
   bool _target_blocks_dense;
   std::vector<bolt::BoltVector> _input_vectors;
   std::optional<std::vector<bolt::BoltVector>> _target_vectors;
-  std::vector<std::shared_ptr<Block>>& _input_blocks;
-  std::vector<std::shared_ptr<Block>>& _target_blocks;
+  /**
+   * We save a copy of these vectors instead of just references
+   * because using references will cause errors when given Python
+   * lists through PyBind11. This is because while the PyBind11 creates
+   * an std::vector representation of a Python list when passing it to
+   * a C++ function, the vector does not persist beyond the function
+   * call, so future references to the vector will cause a segfault.
+   * Furthermore, these vectors are cheap to copy since they contain a
+   * small number of elements and each element is a pointer.
+   */
+  std::vector<std::shared_ptr<Block>> _input_blocks;
+  std::vector<std::shared_ptr<Block>> _target_blocks;
 };
 
 }  // namespace thirdai::dataset

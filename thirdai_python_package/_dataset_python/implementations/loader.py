@@ -7,7 +7,6 @@ from .schema import Schema
 from thirdai._thirdai import dataset
 from thirdai._thirdai import dataset_internal
 import random
-import time
 
 
 class Loader:
@@ -33,7 +32,7 @@ class Loader:
         schema: Schema = None,
         batch_size: int = 256,
         shuffle: bool = False,
-        shuffle_seed: int = 0,
+        shuffle_seed: int = random.randint(0, 0xFFFFFFFF),
     ) -> None:
         """Constructor.
 
@@ -96,10 +95,14 @@ class Loader:
         self._batch_size = size
         return self  ### Returns self so we can chain the set() method calls.
 
-    def shuffle(self, seed: int = 0) -> Self:
+    def shuffle(self, seed: int = None) -> Self:
         """Samples will be shuffled before being batched."""
         self._shuffle_rows = True
-        self._shuffle_seed = seed
+        # We use a ternary here instead of setting default seed to random.randint()
+        # because for some reason that causes the fault value to be the same every
+        # time this function is invoked, instead of getting a new and different
+        # random number each time.
+        self._shuffle_seed = seed if seed is not None else random.randint(0, 0xFFFFFFFF)
         return self  ### Returns self so we can chain the set() method calls.
 
     def __load_all_and_process(self) -> Tuple[dataset.BoltDataset, dataset.BoltDataset]:
@@ -118,8 +121,7 @@ class Loader:
         # Stream rows (samples) and process each one according to the schema.
         counter = 0
         raw_batch = []
-        next_row = next(row_generator)
-        while next_row is not None:
+        for next_row in row_generator:
             raw_batch.append(next_row)
             counter += 1
 
@@ -138,8 +140,6 @@ class Loader:
                 raw_batch = []
                 counter = 0
 
-            next_row = next(row_generator)
-
         if len(raw_batch) > 0:
             processor.process_batch(raw_batch)
             raw_batch = []
@@ -150,7 +150,7 @@ class Loader:
         # Remember that we have loaded and processed the whole dataset
         # and saved the results in memory.
         return processor.export_in_memory_dataset(
-            shuffle=self._shuffle_rows, shuffle_seed=self._shuffle_seed
+            self._shuffle_rows, self._shuffle_seed
         )
 
     def get_input_dim(self) -> int:
