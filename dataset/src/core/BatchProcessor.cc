@@ -115,10 +115,9 @@ std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
   }
 
   return {std::make_shared<BoltDataset>(std::move(input_batches), n_exported),
-          target_batches
-              ? std::make_shared<BoltDataset>(std::move(target_batches.value()),
-                                              n_exported)
-              : nullptr};
+          target_batches ? std::make_shared<BoltDataset>(
+                               std::move(target_batches.value()), n_exported)
+                         : nullptr};
 }
 
 std::vector<uint32_t> BatchProcessor::makeFinalPositions(
