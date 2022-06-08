@@ -50,7 +50,7 @@ class TextClassifier {
   }
 
  private:
-  void trainOnStreamingDataset(dataset::StreamingDataset& dataset,
+  void trainOnStreamingDataset(dataset::StreamingDataset<BoltBatch>& dataset,
                                const LossFunction& loss, float learning_rate);
 
   // Private constructor for cereal
