@@ -32,6 +32,9 @@ class PairGram : public TextEncoding {
 
     // Deduplication helps to reduce number of entries in the sparse
     // vector but has huge overheads. May want to remove in a future iteration.
+    // We do this instead of using a map because at this scale, sorting and
+    // deduplicating is still faster than map's O(1) insertions. Additionally,
+    // iterating over a map is slow
     TextEncodingUtils::sumRepeatedIndices(pair_grams, 1.0, vec);
   }
 
