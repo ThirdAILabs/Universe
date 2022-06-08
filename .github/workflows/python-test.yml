@@ -29,7 +29,14 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
         
-      - name: Run unit and integration tests
-        run: |
-          docker build -t test_image -f docker/develop/Dockerfile .  
-          docker run --privileged --mount type=bind,source=${PWD},target=/src test_image /bin/bash -c "src/bin/build.py ; src/bin/python-test.sh -m unit ; src/bin/python-test.sh -m integration"
+      - name: Build python package
+        run: bin/build.py
+
+      - name: Install necessary python pacakges
+        run: pip3 install numpy pytest toml mmh3 datasets torch transformers
+
+      - name: Run python unit tests
+        run: bin/python-test.sh -m unit
+
+      - name: Run python integration tests
+        run: bin/python-test.sh -m integration
