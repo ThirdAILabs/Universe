@@ -5,11 +5,6 @@
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <algorithm>
-#include <cctype>
-#include <limits>
-#include <sstream>
-#include <string_view>
 
 namespace thirdai::dataset {
 
@@ -31,9 +26,10 @@ class PairGram : public TextEncoding {
     std::vector<uint32_t> seen_unigram_hashes;
     std::vector<uint32_t> pair_grams;
 
-    TextEncodingUtils::forEachWord(lower_case_text, [&](std::string_view word) {
-      addPairGrams(seen_unigram_hashes, word, pair_grams);
-    });
+    TextEncodingUtils::forEachWordHash(
+        lower_case_text, [&](uint32_t word_hash) {
+          addPairGrams(seen_unigram_hashes, word_hash, pair_grams);
+        });
 
     // Deduplication helps to reduce number of entries in the sparse
     // vector but has huge overheads. May want to remove in a future iteration.
@@ -46,21 +42,16 @@ class PairGram : public TextEncoding {
 
  private:
   inline void addPairGrams(std::vector<uint32_t>& prev_unigram_hashes,
-                           std::string_view word,
+                           uint32_t word_hash,
                            std::vector<uint32_t>& pair_grams) const {
-    // Hash the new word
-    uint32_t new_unigram_hash = hashing::MurmurHash(
-        word.cbegin(), word.size(), TextEncodingUtils::HASH_SEED);
-
     // Add new unigram here because same-word pairgrams also help.
-    prev_unigram_hashes.push_back(new_unigram_hash);
+    prev_unigram_hashes.push_back(word_hash);
 
     // Create ordered pairgrams by pairing with all previous words (including
     // this one). Combine the hashes of the unigrams that make up the pairgram.
     for (const auto& prev_word_hash : prev_unigram_hashes) {
       uint32_t pair_gram =
-          hashing::HashUtils::combineHashes(prev_word_hash, new_unigram_hash) %
-          _dim;
+          hashing::HashUtils::combineHashes(prev_word_hash, word_hash) % _dim;
       pair_grams.push_back(pair_gram);
     }
   }

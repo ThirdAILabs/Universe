@@ -1,5 +1,6 @@
 #pragma once
 
+#include <hashing/src/MurmurHash.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <functional>
 #include <string_view>
@@ -53,11 +54,10 @@ class TextEncodingUtils {
    * Parses through a sentence and does something to each word.
    */
   template <typename WORD_PROCESSOR_T>
-  inline static void forEachWord(std::string& sentence,
-                                 WORD_PROCESSOR_T word_processor) {
-    static_assert(
-        std::is_convertible<WORD_PROCESSOR_T,
-                            std::function<void(std::string_view)>>::value);
+  inline static void forEachWordHash(std::string& sentence,
+                                     WORD_PROCESSOR_T word_processor) {
+    static_assert(std::is_convertible<WORD_PROCESSOR_T,
+                                      std::function<void(uint32_t)>>::value);
 
     const auto* start_ptr = sentence.c_str();
     bool last_ptr_was_space = false;
@@ -66,7 +66,9 @@ class TextEncodingUtils {
       if (isspace(c) && !last_ptr_was_space) {
         last_ptr_was_space = true;
         size_t len = std::distance(start_ptr, &c);
-        word_processor({start_ptr, len});
+        uint32_t word_hash =
+            hashing::MurmurHash(start_ptr, len, TextEncodingUtils::HASH_SEED);
+        word_processor(word_hash);
       }
 
       // Encountered a new word
@@ -80,7 +82,9 @@ class TextEncodingUtils {
     if (!last_ptr_was_space) {
       size_t cur_pos = std::distance(sentence.c_str(), start_ptr);
       uint32_t len = sentence.size() - cur_pos;
-      word_processor({start_ptr, len});
+      uint32_t word_hash =
+          hashing::MurmurHash(start_ptr, len, TextEncodingUtils::HASH_SEED);
+      word_processor(word_hash);
     }
   }
 
