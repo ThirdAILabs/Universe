@@ -8,19 +8,18 @@ import socket
 import time
 import toml
 import pandas as pd
-import time
 
 from thirdai import bolt
 
 
-def start_mlflow(run_name, dataset):
+def start_mlflow(experiment_name, run_name, dataset):
     file_dir = os.path.dirname(os.path.abspath(__file__))
     file_name = os.path.join(file_dir, "../config.toml")
     with open(file_name) as f:
         parsed_config = toml.load(f)
         mlflow.set_tracking_uri(parsed_config["tracking"]["uri"])
 
-    mlflow.set_experiment("Generic Classifier")
+    mlflow.set_experiment(experiment_name)
     mlflow.start_run(
         run_name=run_name,
         tags={"dataset": dataset},
@@ -71,25 +70,19 @@ def train_classifier(
 ):
     classifier = bolt.TextClassifier(model_size=model_size, n_classes=n_classes)
 
-    train_start = time.perf_counter()
     classifier.train(
         train_file=train_dataset, epochs=epochs, learning_rate=learning_rate
     )
-    training_time = time.perf_counter() - train_start
-    mlflow.log_metric("training_time", training_time)
 
     return classifier
 
 
 def evaluate_classifier(classifier, test_dataset, output_file="predictions.txt"):
-    inference_start = time.perf_counter()
     classifier.predict(
         test_file=test_dataset,
         output_file=output_file,
     )
-    inference_time = time.perf_counter() - inference_start
     accuracy = compute_accuracy(test_dataset, output_file)
-    mlflow.log_metric("inference_time", inference_time)
     mlflow.log_metric("accuracy", accuracy)
 
 
@@ -139,6 +132,7 @@ def build_arg_parser():
         default="predictions.txt",
         help="Path to write out classifier predictions on test dataset",
     )
+    parser.add_argument("--experiment_name", help="Name of experiment for mlflow")
     parser.add_argument(
         "--run_name",
         type=str,
@@ -157,12 +151,20 @@ def main():
         raise ValueError("Error: --run_name is required when using mlflow logging.")
 
     if mlflow_enabled:
-        start_mlflow(args.run_name, args.train_dataset)
+        start_mlflow(args.experiment_name, args.run_name, args.train_dataset)
         log_machine_info()
         mlflow.log_params(vars(args))
 
-    classifier = train_classifier(args.train_dataset, args.n_classes, args.model_size, args.epochs, args.learning_rate)
-    evaluate_classifier(classifier, args.test_dataset, output_file=args.prediction_file_path)
+    classifier = train_classifier(
+        args.train_dataset,
+        args.n_classes,
+        args.model_size,
+        args.epochs,
+        args.learning_rate,
+    )
+    evaluate_classifier(
+        classifier, args.test_dataset, output_file=args.prediction_file_path
+    )
 
 
 if __name__ == "__main__":
