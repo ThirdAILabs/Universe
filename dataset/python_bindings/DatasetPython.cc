@@ -1,14 +1,28 @@
 #include "DatasetPython.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/Text.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
+#include <dataset/src/encodings/categorical/ContiguousNumericId.h>
+#include <dataset/src/encodings/text/PairGram.h>
+#include <dataset/src/encodings/text/TextEncodingInterface.h>
+#include <dataset/src/encodings/text/TextEncodingUtils.h>
+#include <dataset/src/encodings/text/UniGram.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
-#include <pybind11/cast.h>
 #include <sys/types.h>
 #include <chrono>
+#include <limits>
 #include <type_traits>
 #include <unordered_map>
+
+// TODO(Geordie): Split into smaller files.
+// I'm thinking one for each submodule of dataset_submodule.
+// E.g. in DatasetBlockPython.cc we would have a function with this signature:
+// void createBlockSubsubmodule(py::module_& dataset_submodule,
+//                              py::module_& internal_dataset_submodule);
 
 namespace thirdai::dataset::python {
 
@@ -20,6 +34,11 @@ void createDatasetSubmodule(py::module_& module) {
 
   // Everything in this submodule is exposed to users.
   auto dataset_submodule = module.def_submodule("dataset");
+  auto block_submodule = dataset_submodule.def_submodule("blocks");
+  auto text_encoding_submodule =
+      dataset_submodule.def_submodule("text_encodings");
+  auto categorical_encoding_submodule =
+      dataset_submodule.def_submodule("categorical_encodings");
 
   py::class_<BoltVector>(dataset_submodule, "BoltVector")
       .def("to_string", &BoltVector::toString)
@@ -36,6 +55,65 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<InMemoryDataset<DenseBatch>>(dataset_submodule,  // NOLINT
                                           "InMemoryDenseDataset");
 
+  py::class_<TextEncoding, std::shared_ptr<TextEncoding>>(
+      internal_dataset_submodule, "TextEncoding",
+      "Interface for text encoders.")
+      .def("is_dense", &TextEncoding::isDense,
+           "True if the encoder produces dense features, False otherwise.")
+      .def("feature_dim", &TextEncoding::featureDim,
+           "The dimension of the encoding.");
+
+  py::class_<PairGram, TextEncoding, std::shared_ptr<PairGram>>(
+      text_encoding_submodule, "PairGram",
+      "Encodes a sentence as a weighted set of ordered pairs of "
+      "whitespace-delimited words. Self-pairs are included. "
+      "Expects a textual string, e.g. A good good model, which is then "
+      "encoded as 'A A': 1, 'A good': 2, 'A model': 1, 'good good': 3, 'good "
+      "model': 2, 'model model': 1.")
+      .def(py::init<uint32_t>(),
+           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+           "Constructor. Accepts the desired dimension of the encoding.")
+      .def("is_dense", &PairGram::isDense,
+           "Returns False since this is a sparse encoding.")
+      .def("feature_dim", &PairGram::featureDim,
+           "The dimension of the encoding.");
+
+  py::class_<UniGram, TextEncoding, std::shared_ptr<UniGram>>(
+      text_encoding_submodule, "UniGram",
+      "Encodes a sentence as a weighted set of whitespace-delimited words. "
+      "Expects a textual string, e.g. A good good model, which is then "
+      "encoded as 'A': 1, 'good': 2, 'model': 1.")
+      .def(py::init<uint32_t>(),
+           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+           "Constructor. Accepts the desired dimension of the encoding.")
+      .def("is_dense", &UniGram::isDense,
+           "Returns False since this is a sparse encoding.")
+      .def("feature_dim", &UniGram::featureDim,
+           "The dimension of the encoding.");
+
+  py::class_<CategoricalEncoding, std::shared_ptr<CategoricalEncoding>>(
+      internal_dataset_submodule, "CategoricalEncoding",
+      "Interface for categorical feature encoders.")
+      .def("feature_dim", &CategoricalEncoding::featureDim,
+           "True if the encoder produces dense features, False otherwise.")
+      .def("is_dense", &CategoricalEncoding::isDense,
+           "The dimension of the encoding.");
+
+  py::class_<ContiguousNumericId, CategoricalEncoding,
+             std::shared_ptr<ContiguousNumericId>>(
+      categorical_encoding_submodule, "ContiguousNumericId",
+      "Expects a number and treats it as an ID in a contiguous set of "
+      "numeric IDs in a given range (0-indexed, excludes end of range). "
+      "If the ID is beyond the given range, it performs a modulo operation. "
+      "To illustrate, if dim = 10, then 0 through 9 map to themselves, "
+      "and any number n >= 10 maps to n % 10.")
+      .def(py::init<uint32_t>(), py::arg("dim"),
+           "Constructor. Accepts the desired dimension of the encoding.")
+      .def("feature_dim", &ContiguousNumericId::featureDim,
+           "Returns False since this is a sparse encoding.")
+      .def("is_dense", &ContiguousNumericId::isDense,
+           "The dimension of the encoding.");
+
   py::class_<Block, std::shared_ptr<Block>>(
       internal_dataset_submodule, "Block",
       "Block abstract class.\n\n"
@@ -44,6 +122,50 @@ void createDatasetSubmodule(py::module_& module) {
       .def("feature_dim", &Block::featureDim,
            "Returns the dimension of the vector encoding.")
       .def("is_dense", &Block::isDense,
+           "True if the block produces dense features, False otherwise.");
+
+  py::class_<TextBlock, Block, std::shared_ptr<TextBlock>>(
+      block_submodule, "Text",
+      "A block that encodes text (e.g. sentences / paragraphs).")
+      .def(py::init<uint32_t, std::shared_ptr<TextEncoding>>(), py::arg("col"),
+           py::arg("encoding"),
+           "Constructor.\n\n"
+           "Arguments:\n"
+           " * col: Int - Column number of the input row containing "
+           "the text to be encoded.\n"
+           " * encoding: TextEncoding - Text encoding model.")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("col"), py::arg("dim"),
+           "Constructor with default encoder.\n\n"
+           "Arguments:\n"
+           " * col: Int - Column number of the input row containing "
+           "the text to be encoded.\n"
+           " * dim: Int - Dimension of the encoding")
+      .def("feature_dim", &TextBlock::featureDim,
+           "Returns the dimension of the vector encoding.")
+      .def("is_dense", &TextBlock::isDense,
+           "True if the block produces dense features, False otherwise.");
+
+  py::class_<CategoricalBlock, Block, std::shared_ptr<CategoricalBlock>>(
+      block_submodule, "Categorical",
+      "A block that encodes categorical features (e.g. a numerical ID or an "
+      "identification string).")
+      .def(py::init<uint32_t, std::shared_ptr<CategoricalEncoding>>(),
+           py::arg("col"), py::arg("encoding"),
+           "Constructor.\n\n"
+           "Arguments:\n"
+           " * col: Int - Column number of the input row containing "
+           "the categorical feature to be encoded.\n"
+           " * encoding: CategoricalEncoding - Categorical feature encoding "
+           "model")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("col"), py::arg("dim"),
+           "Constructor with default encoder.\n\n"
+           "Arguments:\n"
+           " * col: Int - Column number of the input row containing "
+           "the categorical feature to be encoded.\n"
+           " * dim: Int - Dimension of the encoding")
+      .def("feature_dim", &CategoricalBlock::featureDim,
+           "Returns the dimension of the vector encoding.")
+      .def("is_dense", &CategoricalBlock::isDense,
            "True if the block produces dense features, False otherwise.");
 
   py::class_<MockBlock, Block, std::shared_ptr<MockBlock>>(
@@ -64,9 +186,9 @@ void createDatasetSubmodule(py::module_& module) {
       "This is not consumer-facing.")
       .def(
           py::init<std::vector<std::shared_ptr<Block>>,
-                   std::vector<std::shared_ptr<Block>>, uint32_t>(),
+                   std::vector<std::shared_ptr<Block>>, uint32_t, size_t>(),
           py::arg("input_blocks"), py::arg("target_blocks"),
-          py::arg("output_batch_size"),
+          py::arg("output_batch_size"), py::arg("est_num_elems") = 0,
           "Constructor\n\n"
           "Arguments:\n"
           " * input_blocks: List of Blocks - Blocks that encode input samples "
@@ -74,7 +196,12 @@ void createDatasetSubmodule(py::module_& module) {
           " * target_blocks: List of Blocks - Blocks that encode input samples "
           "as target vectors.\n"
           " * output_batch_size: Int (positive) - Size of batches in the "
-          "produced dataset.")
+          "produced dataset.\n"
+          " * est_num_elems: Int (Optional, positive) - Estimated number of "
+          "samples. This speeds up the loading process by allowing the data "
+          "loader to preallocate memory. If the actual number of samples "
+          "turns out to be greater than the estimate, then the loader will "
+          "automatically allocate more memory as needed.")
       .def("process_batch", &PyBlockBatchProcessor::processBatchPython,
            py::arg("row_batch"),
            "Consumes a batch of input samples and encodes them as vectors.\n\n"

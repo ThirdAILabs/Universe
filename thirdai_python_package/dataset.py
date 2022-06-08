@@ -8,6 +8,39 @@ __all__.extend(dir(thirdai._thirdai.dataset))
 __all__.extend(dir(thirdai._dataset_python.implementations))
 
 
+def load_text_classification_dataset(
+    file: str,
+    delim: str = ",",
+    labeled: bool = True,
+    label_dim: int = 2,
+    batch_size: int = 1024,
+    encoding_dim: int = 100_000,
+    est_num_elems: int = 0,
+):
+
+    # Define source
+    source = sources.LocalFileSystem(file)
+    parser = parsers.CsvIterable(delimiter=delim)
+
+    # Define schema
+    if labeled:
+        label_block = blocks.Categorical(col=0, dim=label_dim)
+        text_block = blocks.Text(col=1, dim=encoding_dim)
+        schema = Schema(input_blocks=[text_block], target_blocks=[label_block])
+    else:
+        # Text in first column if no label.
+        text_block = blocks.Text(col=0, dim=encoding_dim)
+        schema = Schema(input_blocks=[text_block])
+
+    # Assemble
+    loader = Loader(source, parser, schema, batch_size, est_num_elems=est_num_elems)
+
+    return loader.processInMemory(), loader.input_dim()
+
+
+__all__.append(load_text_classification_dataset)
+
+
 def tokenize_to_svm(
     input_file, output_dim=100_000, output_file="preprocessed_data.svm"
 ):

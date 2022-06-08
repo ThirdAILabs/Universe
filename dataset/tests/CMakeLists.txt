@@ -62,6 +62,29 @@ target_link_libraries(
 )
 
 add_executable(
+  categorical_block_test
+  CategoricalBlockTests.cc
+)
+
+target_link_libraries(
+  categorical_block_test
+  PRIVATE
+  gtest_main
+)
+
+add_executable(
+  text_block_test
+  TextBlockTests.cc
+)
+
+target_link_libraries(
+  text_block_test
+  PRIVATE
+  gtest_main
+  hash_function_lib
+)
+
+add_executable(
   block_batch_processor_test
   BlockBatchProcessorTests.cc
 )
@@ -91,5 +114,7 @@ gtest_discover_tests(click_through_dataset_test)
 gtest_discover_tests(vector_test)
 gtest_discover_tests(csv_dataset_test)
 gtest_discover_tests(extendable_vectors_test)
+gtest_discover_tests(categorical_block_test)
+gtest_discover_tests(text_block_test)
 gtest_discover_tests(block_batch_processor_test)
 # gtest_discover_tests(global_frequency_test)

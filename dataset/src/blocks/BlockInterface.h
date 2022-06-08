@@ -2,6 +2,7 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <cstdint>
+#include <unordered_map>
 #include <vector>
 
 // #include <dataset/src/utils/ExtendableVectors.h>
@@ -14,6 +15,8 @@ namespace thirdai::dataset {
  */
 class Block;
 class ExtendableVectorTest;
+class CategoricalBlockTest;
+class TextBlockTest;
 
 /**
  * Extendable vector abstract class.
@@ -24,6 +27,8 @@ class ExtendableVectorTest;
 class ExtendableVector {
  public:
   friend Block;
+  friend CategoricalBlockTest;
+  friend TextBlockTest;
   friend ExtendableVectorTest;
 
  protected:
@@ -38,19 +43,19 @@ class ExtendableVector {
   virtual void extendByDim(uint32_t dim) = 0;
 
   /**
-   * Returns all of the vector's idx-value pairs.
+   * Returns a mapping of all of the vector's idx-value pairs.
    * Only used for testing as this can be very expensive
    * in dense vectors. Thus, we made it protected
    * so it is only accessible to derived classes,
    * the Block abstract class, and the
    * ExtendableVectorTest class.
    */
-  virtual std::vector<std::pair<uint32_t, float>> entries() = 0;
+  virtual std::unordered_map<uint32_t, float> entries() = 0;
 
  public:
   /**
-   * Sets a feature of the extension vector according to the
-   * given index and value.
+   * Increments the feature of the extension vector at the given index
+   * by the given value.
    */
   virtual void addExtensionSparseFeature(uint32_t index, float value) = 0;
 

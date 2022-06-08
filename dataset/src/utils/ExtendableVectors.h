@@ -3,6 +3,7 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <sstream>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace thirdai::dataset {
 /**
@@ -27,6 +28,9 @@ class SparseExtendableVector : public ExtendableVector {
       throw std::invalid_argument(ss.str());
     }
 
+    // We don't check whether we've seen this index before.
+    // This is fine because bolt iterates through all index-value pairs of
+    // sparse input vectors, so duplicates are effectively summed.
     _indices.push_back(concat_index);
     _values.push_back(value);
     _added_sparse = true;
@@ -65,10 +69,10 @@ class SparseExtendableVector : public ExtendableVector {
     _n_dense_added = 0;
   }
 
-  std::vector<std::pair<uint32_t, float>> entries() final {
-    std::vector<std::pair<uint32_t, float>> ents;
+  std::unordered_map<uint32_t, float> entries() final {
+    std::unordered_map<uint32_t, float> ents;
     for (uint32_t i = 0; i < _indices.size(); i++) {
-      ents.push_back({_indices[i], _values[i]});
+      ents[_indices[i]] += _values[i];
     }
     return ents;
   }
@@ -130,10 +134,10 @@ class DenseExtendableVector : public ExtendableVector {
     _values.reserve(_values.size() + dim);
   }
 
-  std::vector<std::pair<uint32_t, float>> entries() final {
-    std::vector<std::pair<uint32_t, float>> ents;
+  std::unordered_map<uint32_t, float> entries() final {
+    std::unordered_map<uint32_t, float> ents;
     for (uint32_t i = 0; i < _values.size(); i++) {
-      ents.push_back({i, _values[i]});
+      ents[i] += _values[i];
     }
     return ents;
   }

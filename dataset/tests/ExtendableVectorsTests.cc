@@ -126,10 +126,7 @@ class ExtendableVectorTest : public testing::Test {
     auto expected_idx_vals = getExpectedIdxVals(segments);
 
     // Create mapping of actual idxs and vals.
-    std::unordered_map<uint32_t, float> actual_idx_vals;
-    for (const auto& [idx, val] : vec.entries()) {
-      actual_idx_vals[idx] += val;
-    }
+    auto actual_idx_vals = vec.entries();
 
     // Check all values in actual_idx_vals are as expected.
     for (const auto& [idx, val] : expected_idx_vals) {

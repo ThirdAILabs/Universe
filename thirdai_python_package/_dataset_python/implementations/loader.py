@@ -7,6 +7,7 @@ from .schema import Schema
 from thirdai._thirdai import dataset
 from thirdai._thirdai import dataset_internal
 import random
+import threading
 
 
 class Loader:
@@ -33,6 +34,7 @@ class Loader:
         batch_size: int = 256,
         shuffle: bool = False,
         shuffle_seed: int = random.randint(0, 0xFFFFFFFF),
+        est_num_elems: int = 0,
     ) -> None:
         """Constructor.
 
@@ -55,6 +57,7 @@ class Loader:
         self.set_batch_size(batch_size)
         self._shuffle_rows = shuffle
         self._shuffle_seed = shuffle_seed
+        self._est_num_elems = est_num_elems
 
     def set_source(self, source: Source) -> Self:
         """Defines the location of the dataset.
@@ -105,48 +108,79 @@ class Loader:
         self._shuffle_seed = seed if seed is not None else random.randint(0, 0xFFFFFFFF)
         return self  ### Returns self so we can chain the set() method calls.
 
+    def input_dim(self):
+        """Returns dimension of input vectors."""
+        if self._schema is not None:
+            return self._schema.input_dim()
+        return 0
+
+    def target_dim(self):
+        """Returns dimension of target vectors."""
+        if self._schema is not None:
+            return self._schema.target_dim()
+        return 0
+
+    def __read(self, row_generator, max_rows, destination):
+        """Helper function to read up to max_rows rows from
+        the source and into the destination batch.
+        """
+        counter = 0
+        for next_row in row_generator:
+            destination.append(next_row)
+            counter += 1
+            if counter == max_rows:
+                break
+
     def __load_all_and_process(self) -> Tuple[dataset.BoltDataset, dataset.BoltDataset]:
         """Helper function to load the whole dataset, processes each sample, and
         generates batches of vector embeddings.
+        We want to read lines from file in the main thread and
+        process a batch of lines in parallel in other threads.
+        Visually, data will be processed like this:
+
+        read batch 0 | read batch 1    | read batch 2    | ...
+                     | process batch 0 | process batch 1 | process batch 2 | ...
+        time ------------------------------------------------------>
+
         """
 
+        # Initialization
         file = self._source.open()
         row_generator = self._parser.rows(file)
-
         processor = dataset_internal.BatchProcessor(
             self._schema._input_blocks,
             self._schema._target_blocks,
             self._batch_size,
+            self._est_num_elems,
         )
-        # Stream rows (samples) and process each one according to the schema.
-        counter = 0
-        raw_batch = []
-        for next_row in row_generator:
-            raw_batch.append(next_row)
-            counter += 1
 
-            # This class is meant to be a parallel streaming data loader.
-            # We are slowly transitioning to a C++ implementation and a
-            # producer-consumer pattern. However, due to the limitations
-            # of the current hybrid implementation, the best we can do
-            # now is to read lines from file and process it in batches.
-            # A large batch size is good for parallelism but a smaller
-            # batch size will minimize memory consumption and latency.
-            # Based on empirical observations, 8192 seems to be the
-            # sweet spot.
-            # TODO: Make this load in true parallel and streaming fashion.
-            if counter == 8192:
-                processor.process_batch(raw_batch)
-                raw_batch = []
-                counter = 0
+        # Here, we read the first batch.
+        # A large batch size is good for parallelism but a smaller
+        # batch size will minimize memory consumption and initial latency.
+        # Based on empirical observations, ~65,000 seems to give the best
+        # speed.
+        old_batch = []
+        self.__read(row_generator, 65536, old_batch)
 
-        if len(raw_batch) > 0:
-            processor.process_batch(raw_batch)
-            raw_batch = []
-            counter = 0
+        # Define worker function for feature processing thread.
+        def worker(batch):
+            processor.process_batch(batch)
+
+        # Read subsequent batches while processing them in parallel.
+        while len(old_batch) > 0:
+            new_batch = []
+            t = threading.Thread(target=worker, daemon=True, args=(old_batch,))
+
+            # Start feature processor thread, read next batch in parallel.
+            t.start()
+            self.__read(row_generator, 65536, new_batch)
+
+            t.join()
+            old_batch = new_batch
 
         # Close the source when we are done with it.
         self._source.close()
+
         # Remember that we have loaded and processed the whole dataset
         # and saved the results in memory.
         return processor.export_in_memory_dataset(

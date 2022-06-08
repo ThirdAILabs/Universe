@@ -127,9 +127,9 @@ class PyBlockBatchProcessor : public BlockBatchProcessor {
  public:
   PyBlockBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
                         std::vector<std::shared_ptr<Block>> target_blocks,
-                        uint32_t output_batch_size)
+                        uint32_t output_batch_size, size_t est_num_elems)
       : BlockBatchProcessor(std::move(input_blocks), std::move(target_blocks),
-                            output_batch_size) {}
+                            output_batch_size, est_num_elems) {}
 
   /**
    * Just like the original processBatch method but GIL is released

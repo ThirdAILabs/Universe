@@ -4,6 +4,7 @@
 #include <dataset/src/utils/ExtendableVectors.h>
 #include <sys/types.h>
 #include <algorithm>
+#include <cstddef>
 #include <limits>
 #include <memory>
 #include <numeric>
@@ -16,7 +17,7 @@ namespace thirdai::dataset {
 BlockBatchProcessor::BlockBatchProcessor(
     std::vector<std::shared_ptr<Block>> input_blocks,
     std::vector<std::shared_ptr<Block>> target_blocks,
-    uint32_t output_batch_size)
+    uint32_t output_batch_size, size_t est_num_elems)
     : _batch_size(output_batch_size),
       _input_blocks_dense(std::all_of(input_blocks.begin(), input_blocks.end(),
                                       [](const std::shared_ptr<Block>& block) {
@@ -38,8 +39,10 @@ BlockBatchProcessor::BlockBatchProcessor(
        */
       _input_blocks(std::move(input_blocks)),
       _target_blocks(std::move(target_blocks)) {
+  _input_vectors.reserve(est_num_elems);
   if (!_target_blocks.empty()) {
     _target_vectors = std::vector<bolt::BoltVector>();
+    _target_vectors->reserve(est_num_elems);
   }
 }
 
@@ -49,9 +52,15 @@ void BlockBatchProcessor::processBatch(
   // preserves the order of vectors when processing them in parallel.
   uint32_t initial_num_elems = _input_vectors.size();
 
-  _input_vectors.resize(_input_vectors.size() + batch.size());
+  // We use multiple emplace_backs instead of a resize() call to make
+  // use of std::vector's exponential growth policy.
+  for (uint32_t i = 0; i < batch.size(); i++) {
+    _input_vectors.emplace_back();
+  }
   if (_target_vectors) {
-    _target_vectors->resize(_target_vectors->size() + batch.size());
+    for (uint32_t i = 0; i < batch.size(); i++) {
+      _target_vectors->emplace_back();
+    }
   }
 
 #pragma omp parallel for default(none) shared(batch, initial_num_elems)
