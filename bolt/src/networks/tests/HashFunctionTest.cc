@@ -15,10 +15,10 @@ static const uint32_t n_classes = 100, n_batches = 100, batch_size = 100;
 
 class HashFunctionTestFixture : public testing::Test {
  public:
-  static dataset::DatasetWithLabels genDataset(bool add_noise) {
+  static dataset::DatasetWithLabels genDataset(bool input_is_noise) {
     std::mt19937 gen(892734);
     std::uniform_int_distribution<uint32_t> label_dist(0, n_classes - 1);
-    std::normal_distribution<float> data_dist(0, add_noise ? 1.0 : 0.1);
+    std::normal_distribution<float> data_dist(0, input_is_noise ? 1.0 : 0.1);
 
     std::vector<bolt::BoltBatch> data_batches;
     std::vector<bolt::BoltBatch> label_batches;
@@ -30,7 +30,7 @@ class HashFunctionTestFixture : public testing::Test {
         bolt::BoltVector v(n_classes, true, false);
         std::generate(v.activations, v.activations + n_classes,
                       [&]() { return data_dist(gen); });
-        if (!add_noise) {
+        if (!input_is_noise) {
           v.activations[label] += 1.0;
         }
         vectors.push_back(std::move(v));
@@ -62,7 +62,7 @@ static void testSimpleDatasetHashFunction(HashingFunction hash_function) {
   network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 2,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
-  auto test_metrics = network.predict(
+  auto first_test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr,
       /* metric_names= */ {"categorical_accuracy"},
@@ -72,15 +72,15 @@ static void testSimpleDatasetHashFunction(HashingFunction hash_function) {
   network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 5,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
-  auto test_metrics1 = network.predict(
+  auto second_test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
 
   // assert that the accuracy improves.
-  ASSERT_GE(test_metrics1["categorical_accuracy"],
-            test_metrics["categorical_accuracy"]);
+  ASSERT_GE(second_test_metrics["categorical_accuracy"],
+            first_test_metrics["categorical_accuracy"]);
 }
 
 // test for DWTA Hash Function

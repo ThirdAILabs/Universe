@@ -54,7 +54,8 @@ constexpr float actFuncDerivative(float x, ActivationFunction act_func) {
   return 0.0;
 }
 
-// Didn't add DensifiedMinhash because its not yet implemented for singledense.
+// Didn't include DensifiedMinhash because its hashSingleDense() method has not
+// been implemented.
 enum class HashingFunction { DWTA, FastSRP, SRP };
 
 static HashingFunction getHashFunction(const std::string& hash_function) {

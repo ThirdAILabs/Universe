@@ -34,10 +34,21 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("hashes_per_table"), py::arg("num_tables"),
            py::arg("range_pow"), py::arg("reservoir_size"),
            py::arg("hash_function") = HashingFunction::DWTA,
-           "Builds a SamplingConfig object with user mentioned type of hash "
-           "function and other fields of sampling object"
-           "Specify hash_function as one of DWTA, SRP, "
-           "Fastsrp.")
+           "Builds a SamplingConfig object. \n\n"
+           "Arguments:\n"
+           " * hashes_per_table: Int - number of hashes to be concatenated in "
+           "each table."
+           " * num_tables: Int - number of hash tables."
+           " * range_pow: Int - hash range as a power of 2. E.g. if hash range "
+           "is 8, range_pow = 3. "
+           " Note that the correct range_pow differs for each hash function. "
+           "For DWTA, range_pow = 3 * hashes_per_table."
+           " For SRP or FastSRP, range_pow = hashes_per_table."
+           " * reservoir_size: Int - maximum number of elements stored in each "
+           "hash bucket."
+           " * hash_function: HashingFunction (Optional) - The hash function "
+           "used for sparse training and inference. One of DWTA, SRP, or "
+           "FastSRP. Defaults to DWTA.")
       .def(py::init<>(), "Builds a default SamplingConfig object.");
 
 #endif
