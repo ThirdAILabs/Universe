@@ -83,7 +83,8 @@ void createDatasetSubmodule(py::module_& module) {
            "data "
            "where each row is a sample, and each sample has many columns. "
            "row_batch represents a batch of such samples.")
-      .def("export_in_memory_dataset", &PyBlockBatchProcessor::exportInMemoryDataset,
+      .def("export_in_memory_dataset",
+           &PyBlockBatchProcessor::exportInMemoryDataset,
            py::arg("shuffle") = false, py::arg("shuffle_seed") = std::rand(),
            "Produces a tuple of BoltDatasets for input and target "
            "vectors processed so far. This method can optionally produce a "

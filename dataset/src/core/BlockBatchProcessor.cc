@@ -66,8 +66,9 @@ void BlockBatchProcessor::processBatch(
   }
 }
 
-std::pair<BoltDatasetPtr, BoltDatasetPtr> BlockBatchProcessor::exportInMemoryDataset(
-    bool shuffle, uint32_t shuffle_seed) {
+std::pair<BoltDatasetPtr, BoltDatasetPtr>
+BlockBatchProcessor::exportInMemoryDataset(bool shuffle,
+                                           uint32_t shuffle_seed) {
   // Produce final positions of vectors in the dataset according to
   // shuffle and shuffle_seed.
   uint32_t n_exported = _input_vectors.size();

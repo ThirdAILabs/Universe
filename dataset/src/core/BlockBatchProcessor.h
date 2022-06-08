@@ -17,8 +17,8 @@ namespace thirdai::dataset {
 class BlockBatchProcessor {
  public:
   BlockBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
-                 std::vector<std::shared_ptr<Block>> target_blocks,
-                 uint32_t output_batch_size);
+                      std::vector<std::shared_ptr<Block>> target_blocks,
+                      uint32_t output_batch_size);
 
   /**
    * Consumes a batch of input samples and encodes them
