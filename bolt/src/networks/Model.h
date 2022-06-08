@@ -4,7 +4,7 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
-#include <bolt/src/metrics/Metric.h>
+#include <bolt/src/metrics/MetricAggregator.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/bolt_datasets/StreamingDataset.h>
@@ -36,7 +36,7 @@ class Model {
       // Train labels
       const dataset::BoltDatasetPtr& train_labels,
       // Loss function to use
-      const LossFunction& loss_fn,
+      std::shared_ptr<LossFunction>& loss_fn,
       // Learning rate for training
       float learning_rate,
       // Number of training epochs
@@ -58,7 +58,7 @@ class Model {
       // Train dataset
       std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& train_data,
       // Loss function to use
-      const LossFunction& loss_fn,
+      std::shared_ptr<LossFunction>& loss_fn,
       // Learning rate for training
       float learning_rate,
       // After how many batches to rebuild hash tables
@@ -118,9 +118,9 @@ class Model {
 
   void processTrainingBatch(BATCH_T& batch_inputs, BoltBatch& outputs,
                             const BoltBatch& batch_labels,
-                            const LossFunction& loss_fn, float learning_rate,
-                            uint32_t rehash_batch, uint32_t rebuild_batch,
-                            MetricAggregator& metrics);
+                            const std::shared_ptr<LossFunction>& loss_fn,
+                            float learning_rate, uint32_t rehash_batch,
+                            uint32_t rebuild_batch, MetricAggregator& metrics);
 
   void processTestBatch(const BATCH_T& batch_inputs, BoltBatch& outputs,
                         const BoltBatch* batch_labels,

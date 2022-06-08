@@ -6,6 +6,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <limits>
+#include <memory>
 #include <string>
 
 namespace thirdai::bolt::python {
@@ -54,29 +55,33 @@ void createBoltSubmodule(py::module_& module) {
                      "the corresponding enum.");
 
   // TODO(Geordie, Nicholas): put loss functions in its own submodule
-  py::class_<LossFunction>(bolt_submodule, "LossFunction",  // NOLINT
-                           "Base class for all loss functions");
+  py::class_<LossFunction, std::shared_ptr<LossFunction>>(  // NOLINT
+      bolt_submodule, "LossFunction", "Base class for all loss functions");
 
-  py::class_<CategoricalCrossEntropyLoss, LossFunction>(
+  py::class_<CategoricalCrossEntropyLoss,
+             std::shared_ptr<CategoricalCrossEntropyLoss>, LossFunction>(
       bolt_submodule, "CategoricalCrossEntropyLoss",
       "A loss function for multi-class (one label per sample) classification "
       "tasks.")
       .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
 
-  py::class_<BinaryCrossEntropyLoss, LossFunction>(
+  py::class_<BinaryCrossEntropyLoss, std::shared_ptr<BinaryCrossEntropyLoss>,
+             LossFunction>(
       bolt_submodule, "BinaryCrossEntropyLoss",
       "A loss function for multi-label (multiple class labels per each sample) "
       "classification tasks.")
       .def(py::init<>(), "Constructs a BinaryCrossEntropyLoss object.");
 
-  py::class_<MeanSquaredError, LossFunction>(
+  py::class_<MeanSquaredError, std::shared_ptr<MeanSquaredError>, LossFunction>(
       bolt_submodule, "MeanSquaredError",
       "A loss function that minimizes mean squared error (MSE) for regression "
       "tasks. "
       "MSE = sum( (actual - prediction)^2 )")
       .def(py::init<>(), "Constructs a MeanSquaredError object.");
 
-  py::class_<WeightedMeanAbsolutePercentageErrorLoss, LossFunction>(
+  py::class_<WeightedMeanAbsolutePercentageErrorLoss,
+             std::shared_ptr<WeightedMeanAbsolutePercentageErrorLoss>,
+             LossFunction>(
       bolt_submodule, "WeightedMeanAbsolutePercentageError",
       "A loss function to minimize weighted mean absolute percentage error "
       "(WMAPE) "

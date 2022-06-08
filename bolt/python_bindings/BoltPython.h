@@ -143,7 +143,7 @@ class PyNetwork final : public FullyConnectedNetwork {
       : FullyConnectedNetwork(std::move(configs), input_dim) {}
 
   MetricData train(const py::object& data, const py::object& labels,
-                   const LossFunction& loss_fn, float learning_rate,
+                   std::shared_ptr<LossFunction>& loss_fn, float learning_rate,
                    uint32_t epochs, uint32_t batch_size = 0,
                    uint32_t rehash = 0, uint32_t rebuild = 0,
                    const std::vector<std::string>& metric_names = {},

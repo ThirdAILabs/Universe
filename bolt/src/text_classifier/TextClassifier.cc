@@ -2,6 +2,7 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
+#include <bolt/src/loss_functions/LossFunctions.h>
 #include <algorithm>
 #include <fstream>
 #include <memory>
@@ -63,7 +64,8 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
   auto dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
       data_loader, _batch_processor);
 
-  CategoricalCrossEntropyLoss loss;
+  std::shared_ptr<LossFunction> loss =
+      std::make_shared<CategoricalCrossEntropyLoss>();
 
   if (epochs == 1) {
     _model->trainOnStream(dataset, loss, learning_rate);

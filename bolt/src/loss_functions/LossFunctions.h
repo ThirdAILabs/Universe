@@ -56,6 +56,8 @@ class LossFunction : public Metric {
     return loss;
   }
 
+  std::string getName() final { return "loss"; }
+
   bool forceDenseInference() final { return true; }
 
   virtual ~LossFunction() = default;
@@ -151,8 +153,6 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
     return std::make_shared<CategoricalCrossEntropyLoss>();
   }
 
-  std::string getName() final { return "categorical_cross_entropy_loss"; }
-
  private:
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const final {
@@ -175,8 +175,6 @@ class BinaryCrossEntropyLoss final : public LossFunction {
   static std::shared_ptr<BinaryCrossEntropyLoss> makeBinaryCrossEntropyLoss() {
     return std::make_shared<BinaryCrossEntropyLoss>();
   }
-
-  std::string getName() final { return "binary_cross_entropy_loss"; }
 
  private:
   float elementLossGradient(float label, float activation,
@@ -227,8 +225,6 @@ class MeanSquaredError final : public LossFunction {
     return std::make_shared<MeanSquaredError>();
   }
 
-  std::string getName() final { return "mean_squared_error"; }
-
  private:
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const override {
@@ -259,10 +255,6 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
   static std::shared_ptr<WeightedMeanAbsolutePercentageErrorLoss>
   makeWeightedMeanAbsolutePercentageErrorLoss() {
     return std::make_shared<WeightedMeanAbsolutePercentageErrorLoss>();
-  }
-
-  std::string getName() final {
-    return "weighted_mean_absolute_percentage_error";
   }
 
  private:

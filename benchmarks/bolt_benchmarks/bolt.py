@@ -218,7 +218,14 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
 
     for e in range(epochs):
         metrics = network.train(
-            train_x, train_y, loss, learning_rate, 1, rehash, rebuild, train_metrics
+            train_x, 
+            train_y, 
+            loss, 
+            learning_rate, 
+            epochs=1, 
+            rehash=rehash, 
+            rebuild=rebuild, 
+            metrics=train_metrics
         )
         if mlflow_enabled:
             log_training_metrics(metrics)
@@ -227,18 +234,18 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
             network.enable_sparse_inference()
 
         if max_test_batches is None:
-            metrics, _ = network.predict(test_x, test_y, test_metrics)
+            metrics, _ = network.predict(test_x, test_y, metrics=test_metrics)
             if mlflow_enabled:
                 mlflow.log_metrics(metrics)
         else:
             metrics, _ = network.predict(
-                test_x, test_y, test_metrics, True, max_test_batches
+                test_x, test_y, metrics=test_metrics, verbose=True, batch_limit=max_test_batches
             )
             if mlflow_enabled:
                 mlflow.log_metrics(metrics)
     if not max_test_batches is None:
         # If we limited the number of test batches during training we run on the whole test set at the end.
-        metrics, _ = network.predict(test_x, test_y, test_metrics)
+        metrics, _ = network.predict(test_x, test_y, metrics=test_metrics)
         if mlflow_enabled:
             mlflow.log_metrics(metrics)
 
