@@ -70,13 +70,11 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
   if (epochs == 1) {
     _model->trainOnStream(dataset, loss, learning_rate);
   } else {
-    auto in_memory_dataset = dataset->loadInMemory();
+    auto [train_data, train_labels] = dataset->loadInMemory();
 
-    _model->train(in_memory_dataset.data, in_memory_dataset.labels, loss,
-                  learning_rate, 1);
+    _model->train(train_data, train_labels, loss, learning_rate, 1);
     _model->enableSparseInference();
-    _model->train(in_memory_dataset.data, in_memory_dataset.labels, loss,
-                  learning_rate, epochs - 1);
+    _model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
   }
 }
 

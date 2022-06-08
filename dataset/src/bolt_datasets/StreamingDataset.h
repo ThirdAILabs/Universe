@@ -40,8 +40,9 @@ class StreamingDataset {
     return batch;
   }
 
-  DatasetWithLabels loadInMemory() {
-    std::vector<bolt::BoltBatch> data;
+  std::pair<std::shared_ptr<InMemoryDataset<BATCH_T>>, BoltDatasetPtr>
+  loadInMemory() {
+    std::vector<BATCH_T> data;
     std::vector<bolt::BoltBatch> labels;
 
     uint64_t len = 0;
@@ -52,8 +53,8 @@ class StreamingDataset {
       labels.push_back(std::move(batch->second));
     }
 
-    return DatasetWithLabels(BoltDataset(std::move(data), len),
-                             BoltDataset(std::move(labels), len));
+    return {std::make_shared<InMemoryDataset<BATCH_T>>(std::move(data), len),
+            std::make_shared<BoltDataset>(std::move(labels), len)};
   }
 
   uint32_t getMaxBatchSize() const { return _data_loader->getMaxBatchSize(); }

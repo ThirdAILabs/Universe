@@ -1,9 +1,15 @@
+#include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <bolt/src/networks/TextEmbeddingModel.h>
 #include <bolt/src/utils/ConfigReader.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/Factory.h>
+#include <dataset/src/bolt_datasets/BatchProcessor.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/bolt_datasets/DataLoader.h>
+#include <dataset/src/bolt_datasets/StreamingDataset.h>
+#include <dataset/src/bolt_datasets/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <chrono>
 #include <filesystem>
 #include <iostream>
@@ -75,6 +81,22 @@ std::string getStrValue(toml::table const* table, const std::string& key,
   return table->get(key)->as_string()->get();
 }
 
+std::shared_ptr<bolt::FullyConnectedLayerConfig> getFcLayerConfig(
+    toml::table* table) {
+  uint32_t dim = getIntValue(table, "dim");
+  uint32_t hashes_per_table = getIntValue(table, "hashes_per_table", true, 0);
+  uint32_t num_tables = getIntValue(table, "num_tables", true, 0);
+  uint32_t range_pow = getIntValue(table, "range_pow", true, 0);
+  uint32_t reservoir_size = getIntValue(table, "reservoir_size", true, 0);
+  std::string activation = getStrValue(table, "activation");
+  float sparsity = getFloatValue(table, "sparsity", true, 1.0);
+
+  return std::make_shared<bolt::FullyConnectedLayerConfig>(
+      dim, sparsity, thirdai::bolt::getActivationFunction(activation),
+      bolt::SamplingConfig(hashes_per_table, num_tables, range_pow,
+                           reservoir_size));
+}
+
 bolt::SequentialConfigList createFullyConnectedLayerConfigs(
     toml::node_view<toml::node> configs) {
   if (!configs.is_array_of_tables()) {
@@ -85,7 +107,7 @@ bolt::SequentialConfigList createFullyConnectedLayerConfigs(
   }
   bolt::SequentialConfigList layers;
 
-  auto* array = configs.as_array();
+  toml::array* array = configs.as_array();
   for (auto& config : *array) {
     if (!config.is_table()) {
       std::cerr
@@ -93,20 +115,8 @@ bolt::SequentialConfigList createFullyConnectedLayerConfigs(
           << std::endl;
       exit(1);
     }
-    auto* table = config.as_table();
-
-    uint32_t dim = getIntValue(table, "dim");
-    uint32_t hashes_per_table = getIntValue(table, "hashes_per_table", true, 0);
-    uint32_t num_tables = getIntValue(table, "num_tables", true, 0);
-    uint32_t range_pow = getIntValue(table, "range_pow", true, 0);
-    uint32_t reservoir_size = getIntValue(table, "reservoir_size", true, 0);
-    std::string activation = getStrValue(table, "activation");
-    float sparsity = getFloatValue(table, "sparsity", true, 1.0);
-
-    layers.push_back(std::make_shared<bolt::FullyConnectedLayerConfig>(
-        dim, sparsity, thirdai::bolt::getActivationFunction(activation),
-        bolt::SamplingConfig(hashes_per_table, num_tables, range_pow,
-                             reservoir_size)));
+    toml::table* table = config.as_table();
+    layers.push_back(getFcLayerConfig(table));
   }
   return layers;
 }
@@ -196,15 +206,28 @@ std::string findFullFilepath(const std::string& filename) {
   }
 }
 
-void trainFCN(toml::table& config) {
-  auto layers = createFullyConnectedLayerConfigs(config["layers"]);
-
+toml::table* getDatasetTable(toml::table& config) {
   if (!config.contains("dataset") || !config["dataset"].is_table()) {
     std::cerr << "Invalid config file format: expected table for dataset info."
               << std::endl;
     exit(1);
   }
-  auto* dataset_table = config["dataset"].as_table();
+  return config["dataset"].as_table();
+}
+
+toml::table* getParamTable(toml::table& config) {
+  if (!config.contains("params") || !config["params"].is_table()) {
+    std::cerr << "Invalid config file format: expected table for parameters."
+              << std::endl;
+    exit(1);
+  }
+  return config["params"].as_table();
+}
+
+void trainFCN(toml::table& config) {
+  auto layers = createFullyConnectedLayerConfigs(config["layers"]);
+
+  auto* dataset_table = getDatasetTable(config);
   uint32_t input_dim = getIntValue(dataset_table, "input_dim");
   std::string train_filename =
       findFullFilepath(getStrValue(dataset_table, "train_data"));
@@ -215,12 +238,7 @@ void trainFCN(toml::table& config) {
       getIntValue(dataset_table, "max_test_batches", true,
                   std::numeric_limits<uint32_t>::max());
 
-  if (!config.contains("params") || !config["params"].is_table()) {
-    std::cerr << "Invalid config file format: expected table for parameters."
-              << std::endl;
-    exit(1);
-  }
-  auto* param_table = config["params"].as_table();
+  auto* param_table = getParamTable(config);
   uint32_t batch_size = getIntValue(param_table, "batch_size");
   float learning_rate = getFloatValue(param_table, "learning_rate");
   uint32_t epochs = getIntValue(param_table, "epochs");
@@ -287,12 +305,7 @@ void trainDLRM(toml::table& config) {
       createFullyConnectedLayerConfigs(config["bottom_mlp_layers"]);
   auto top_mlp = createFullyConnectedLayerConfigs(config["top_mlp_layers"]);
 
-  if (!config.contains("dataset") || !config["dataset"].is_table()) {
-    std::cerr << "Invalid config file format: expected table for dataset info."
-              << std::endl;
-    exit(1);
-  }
-  auto* dataset_table = config["dataset"].as_table();
+  auto* dataset_table = getDatasetTable(config);
   uint32_t dense_features = getIntValue(dataset_table, "dense_features");
   uint32_t categorical_features =
       getIntValue(dataset_table, "categorical_features");
@@ -301,12 +314,7 @@ void trainDLRM(toml::table& config) {
   std::string test_filename =
       findFullFilepath(getStrValue(dataset_table, "test_data"));
 
-  if (!config.contains("params") || !config["params"].is_table()) {
-    std::cerr << "Invalid config file format: expected table for parameters."
-              << std::endl;
-    exit(1);
-  }
-  auto* param_table = config["params"].as_table();
+  auto* param_table = getParamTable(config);
   uint32_t batch_size = getIntValue(param_table, "batch_size");
   float learning_rate = getFloatValue(param_table, "learning_rate");
   uint32_t epochs = getIntValue(param_table, "epochs");
@@ -335,6 +343,80 @@ void trainDLRM(toml::table& config) {
     dlrm.predict(test_data, test_labels,
                  /* output_active_neurons= */ nullptr,
                  /* output_activations= */ nullptr, test_metrics);
+  }
+}
+
+std::shared_ptr<dataset::StreamingDataset<dataset::MaskedSentenceBatch>>
+loadTextData(const std::string& filename, uint32_t batch_size,
+             uint32_t pairgram_range) {
+  std::shared_ptr<dataset::DataLoader> data_loader =
+      std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
+
+  auto dataset =
+      std::make_shared<dataset::StreamingDataset<dataset::MaskedSentenceBatch>>(
+          data_loader, std::make_shared<dataset::MaskedSentenceBatchProcessor>(
+                           pairgram_range));
+
+  return dataset;
+}
+
+void trainMaskedSentenceModel(toml::table& config) {
+  auto sentence_embedding_layers =
+      createFullyConnectedLayerConfigs(config["sentence_embedding_layers"]);
+
+  if (!config.contains("token_embedding_layer") ||
+      !config["token_embedding_layer"].is_table()) {
+    std::cerr
+        << "Invalid config file format: expected table 'token_embedding_layer'."
+        << std::endl;
+    exit(1);
+  }
+  auto token_embedding_layer =
+      getFcLayerConfig(config["token_embedding_layer"].as_table());
+
+  auto classifier_layers =
+      createFullyConnectedLayerConfigs(config["classifier_layers"]);
+
+  auto* dataset_table = getDatasetTable(config);
+  uint32_t input_dim = getIntValue(dataset_table, "input_dim");
+  uint32_t max_tokens = getIntValue(dataset_table, "max_tokens");
+  std::string train_filename =
+      findFullFilepath(getStrValue(dataset_table, "train_data"));
+  std::string test_filename =
+      findFullFilepath(getStrValue(dataset_table, "test_data"));
+
+  auto* param_table = getParamTable(config);
+  uint32_t batch_size = getIntValue(param_table, "batch_size");
+  float learning_rate = getFloatValue(param_table, "learning_rate");
+  uint32_t epochs = getIntValue(param_table, "epochs");
+  uint32_t rehash = getIntValue(param_table, "rehash");
+  uint32_t rebuild = getIntValue(param_table, "rebuild");
+  uint32_t pairgram_range = getIntValue(param_table, "pairgram_range");
+
+  auto train_metrics = getMetrics(param_table, "train_metrics");
+  auto test_metrics = getMetrics(param_table, "test_metrics");
+
+  auto loss_fn =
+      thirdai::bolt::getLossFunction(getStrValue(param_table, "loss_fn"));
+
+  thirdai::bolt::TextEmbeddingModel model(
+      sentence_embedding_layers, token_embedding_layer, classifier_layers,
+      max_tokens, input_dim);
+
+  auto train_stream = loadTextData(train_filename, batch_size, pairgram_range);
+  auto test_stream = loadTextData(test_filename, batch_size, pairgram_range);
+
+  if (epochs > 1) {
+    auto [train_data, train_labels] = train_stream->loadInMemory();
+    auto [test_data, test_labels] = test_stream->loadInMemory();
+
+    for (uint32_t e = 0; e < epochs; e++) {
+      model.train(train_data, train_labels, loss_fn, learning_rate, 1, rehash,
+                  rebuild, train_metrics);
+      model.predict(test_data, test_labels,
+                    /* output_active_neurons= */ nullptr,
+                    /* output_activations= */ nullptr, test_metrics);
+    }
   }
 }
 
