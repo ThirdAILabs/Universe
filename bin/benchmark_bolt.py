@@ -23,7 +23,7 @@ def main():
         p = Path(config)
         run_name = f"benchmark_{p.stem}_{cur_date}"
         os.system(
-            f"python3 ../benchmarks/bolt_benchmarks/bolt.py {config} --run_name {run_name}"
+            f"python3 ../benchmarks/bolt_benchmarks/bolt.py {config} --disable_mlflow --run_name {run_name}"
         )
 
 

@@ -10,7 +10,7 @@ import platform
 import psutil
 import mlflow
 import argparse
-from utils import log_machine_info, start_mlflow
+from utils import log_config_info, log_machine_info, start_mlflow
 
 def log_subconfig(name: str, subconfig: Dict[str, Any]):
     for param, val in subconfig.items():
@@ -332,12 +332,18 @@ def main():
     if mlflow_enabled and not args.run_name:
         parser.print_usage()
         raise ValueError("Error: --run_name is required when using mlflow logging.")
-
-    config = toml.load(sys.argv[1])
+    
+    config_filename = sys.argv[1]
+    config = toml.load(config_filename)
 
     if mlflow_enabled:
-        start_mlflow()
-        initialize_mlfow_logging_for_bolt(args.run_name, sys.argv[1], config)
+        experiment_name = config["job"]
+        dataset = config["dataset"]["train_data"].split("/")[-1]
+        start_mlflow(experiment_name, args.run_name, dataset)
+        # initialize_mlfow_logging_for_bolt(args.run_name, sys.argv[1], config)
+        mlflow.log_artifact(config_filename)
+        log_machine_info()
+        log_config_info(config)
 
     if is_fcn(config):
         train_fcn(config, mlflow_enabled)
