@@ -106,7 +106,7 @@ TEST_F(CategoricalBlockTest, PrducesCorrectVectorsDifferentColumns) {
     for (uint32_t col = 0; col < dims.size(); col++) {
       uint32_t dim = dims[col];
       uint32_t idx = current_start_idx + (int_matrix[line][col] % dim);
-      expected_key_value_pairs[idx]++;
+      expected_key_value_pairs[idx] = 1.0;
       // Since we are composing features, the starting dimension of the next set
       // of categorical features is offset by the dimension of the current
       // categorical features.
