@@ -16,7 +16,7 @@ def generate_text_classification_dataset(filename):
 
 
 @pytest.mark.integration
-def test_text_classification():
+def test_text_classification_data_pipeline():
     file = "test_text_classification.csv"
     generate_text_classification_dataset(file)
     [data, labels], input_dim = load_text_classification_dataset(file)
@@ -24,7 +24,7 @@ def test_text_classification():
     layers = [
         bolt.FullyConnected(
             dim=1000,
-            load_factor=0.1,
+            sparsity=0.1,
             activation_function=bolt.ActivationFunctions.ReLU,
         ),
         bolt.FullyConnected(
