@@ -4,7 +4,7 @@
 #include <dataset/src/Dataset.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <dataset/src/core/BatchProcessor.h>
+#include <dataset/src/core/BlockBatchProcessor.h>
 #include <sys/types.h>
 #include <cstddef>
 #include <cstdlib>
@@ -190,7 +190,7 @@ void checkCorrectUnshuffledDatasetImpl(
         makeNMockBlocks(n_cols, label_dense, mixed_dense_input_and_label);
   }
 
-  BatchProcessor processor(input_blocks, target_blocks, output_batch_size);
+  BlockBatchProcessor processor(input_blocks, target_blocks, output_batch_size);
   processor.processBatch(str_matrix_1);
   processor.processBatch(str_matrix_2);
 
@@ -236,7 +236,7 @@ void checkCorrectUnshuffledDatasetImpl(
  * We don't check the no label case yet because we haven't finalized
  * designing what a batch without labels looks like.
  */
-TEST(BatchProcessorTest, ProducesCorrectUnshuffledDataset) {
+TEST(BlockBatchProcessorTest, ProducesCorrectUnshuffledDataset) {
   // Sparse input, sparse label
   checkCorrectUnshuffledDatasetImpl(/* has_labels = */ true,
                                     /* input_dense = */ false,
@@ -324,7 +324,7 @@ void checkDatasetOrderEquality(const BoltDataset& input_dataset_1,
   }
 }
 
-TEST(BatchProcessorTest, ProducesCorrectShuffledDataset) {
+TEST(BlockBatchProcessorTest, ProducesCorrectShuffledDataset) {
   // Mock dataset is range(0.0, 1000.0);
   uint32_t n_rows = 1000;
   std::vector<float> mock_data_seq(n_rows);
@@ -346,7 +346,7 @@ TEST(BatchProcessorTest, ProducesCorrectShuffledDataset) {
   std::vector<std::shared_ptr<Block>> blocks{
       std::static_pointer_cast<Block>(mock_block_ptr)};
   uint32_t output_batch_size = 256;
-  BatchProcessor bp(blocks, blocks, output_batch_size);
+  BlockBatchProcessor bp(blocks, blocks, output_batch_size);
 
   // Export unshuffled dataset.
   bp.processBatch(mock_data_str);

@@ -4,7 +4,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <dataset/src/core/BatchProcessor.h>
+#include <dataset/src/core/BlockBatchProcessor.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <dataset/src/encodings/text/PairGram.h>
@@ -179,7 +179,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &MockBlock::isDense,
            "True if the block produces dense features, False otherwise.");
 
-  py::class_<PyBatchProcessor>(
+  py::class_<PyBlockBatchProcessor>(
       internal_dataset_submodule, "BatchProcessor",
       "Encodes input samples – each represented by a sequence of strings – "
       "as input and target BoltVectors according to the given blocks. "
@@ -204,7 +204,7 @@ void createDatasetSubmodule(py::module_& module) {
           "preallocate memory. If the actual number of samples turns out to be "
           "greater than the estimate, then the loader will automatically "
           "allocate more memory as needed.")
-      .def("process_batch", &PyBatchProcessor::processBatchPython,
+      .def("process_batch", &PyBlockBatchProcessor::processBatchPython,
            py::arg("row_batch"),
            "Consumes a batch of input samples and encodes them as vectors.\n\n"
            "Arguments:\n"
@@ -212,7 +212,8 @@ void createDatasetSubmodule(py::module_& module) {
            "data "
            "where each row is a sample, and each sample has many columns. "
            "row_batch represents a batch of such samples.")
-      .def("export_in_memory_dataset", &PyBatchProcessor::exportInMemoryDataset,
+      .def("export_in_memory_dataset",
+           &PyBlockBatchProcessor::exportInMemoryDataset,
            py::arg("shuffle") = false, py::arg("shuffle_seed") = std::rand(),
            "Produces a tuple of BoltDatasets for input and target "
            "vectors processed so far. This method can optionally produce a "
@@ -280,7 +281,7 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
-      py::arg("batch_size"),
+      py::arg("batch_size"), py::arg("softmax_for_multiclass") = true,
       "Loads a BoltDataset from an SVM file. Each line in the "
       "input file represents a sparse input vector and should follow this "
       "format:\n"
@@ -294,7 +295,13 @@ void createDatasetSubmodule(py::module_& module) {
       "of these index-value pairs.\n\n"
       "Arguments:\n"
       " * filename: String - Path to input file.\n"
-      " * batch_size: Int (positive) - Size of each batch in the dataset.\n\n"
+      " * batch_size: Int (positive) - Size of each batch in the dataset.\n"
+      " * softmax_for_multiclass: Bool (default is true) - Multi-label samples "
+      "must be processed slightly differently if softmax is being used in the "
+      "output layer instead of sigmoid. When this flag is true the loader will "
+      "process samples with multiple labels assuming that softmax and "
+      "CategoricalCrossEntropy are being used for multi-label datasets. If the "
+      "dataset is single label, then this argument has no effect.\n\n"
       "Returns a tuple containing a BoltDataset to store the data itself, and "
       "a BoltDataset storing the labels.");
 
@@ -382,8 +389,9 @@ InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
 }
 
 py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
-                                    uint32_t batch_size) {
-  auto res = loadBoltSvmDataset(filename, batch_size);
+                                    uint32_t batch_size,
+                                    bool softmax_for_multiclass) {
+  auto res = loadBoltSvmDataset(filename, batch_size, softmax_for_multiclass);
   return py::make_tuple(std::move(res.data), std::move(res.labels));
 }
 

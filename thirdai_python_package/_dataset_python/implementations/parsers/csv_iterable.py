@@ -22,8 +22,7 @@ class CsvIterable(Parser):
           source: iterable of strings - the data source.
         """
         for line in source:
-            # Each line is split at every occurrence of the 
-            # specified delimiter, yielding a list of strings 
+            # Each line is split at every occurrence of the
+            # specified delimiter, yielding a list of strings
             # for each line.
-            yield line.split(self.__delimiter) 
-
+            yield line.split(self.__delimiter)
