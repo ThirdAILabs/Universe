@@ -9,7 +9,6 @@
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <cstdint>
-#include <memory>
 
 namespace thirdai::bolt {
 

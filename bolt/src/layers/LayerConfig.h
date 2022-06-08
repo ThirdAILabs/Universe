@@ -6,7 +6,6 @@
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
-#include <utility>
 
 namespace thirdai::bolt {
 
@@ -40,6 +39,7 @@ struct SequentialLayerConfig {
 
 using SequentialConfigList =
     std::vector<std::shared_ptr<bolt::SequentialLayerConfig>>;
+
 inline std::string getHashString(HashingFunction hash_function) {
   switch (hash_function) {
     case HashingFunction::DWTA:
@@ -53,6 +53,7 @@ inline std::string getHashString(HashingFunction hash_function) {
       throw std::invalid_argument("Hash function not supported.");
   }
 }
+
 struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
   uint64_t dim;
   float sparsity;
@@ -172,6 +173,7 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
     }
     return input;
   }
+
   void print(std::ostream& out) const final {
     out << "FullyConnected: dim=" << dim << ", sparsity=" << sparsity;
     switch (act_func) {
@@ -236,8 +238,7 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
       uint32_t k = rp / 3;
       uint32_t rs = (num_filters * 4) / (1 << rp);
       uint32_t l = sparsity < 0.1 ? 256 : 64;
-      sampling_config =
-          SamplingConfig(k, l, rp, rs, HashingFunction::DWTA);  // edited
+      sampling_config = SamplingConfig(k, l, rp, rs, HashingFunction::DWTA);
     } else {
       sampling_config = SamplingConfig();
     }

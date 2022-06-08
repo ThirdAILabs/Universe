@@ -16,7 +16,15 @@ target_link_libraries(
   gtest_main
 )
 
+add_executable(hash_function_test HashFunctionTest.cc)
+target_link_libraries(
+  hash_function_test
+  PRIVATE
+  bolt_network_lib
+  gtest_main
+)
 
 include(GoogleTest)
 gtest_discover_tests(fully_connected_network_test)
 gtest_discover_tests(dlrm_test)
+gtest_discover_tests(hash_function_test)

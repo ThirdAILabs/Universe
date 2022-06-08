@@ -74,7 +74,7 @@ static HashingFunction getHashFunction(const std::string& hash_function) {
   throw std::invalid_argument(
       "'" + hash_function +
       "' is not a Supported LSH function. Supported Functions are "
-      "SRP, Fastsrp, DWTA");
+      "SRP, FastSRP, DWTA");
 }
 
 struct SamplingConfig {

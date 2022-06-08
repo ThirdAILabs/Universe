@@ -480,7 +480,6 @@ void FullyConnectedLayer::reBuildHashFunction() {
   if (_sparsity >= 1.0 || _force_sparse_for_inference) {
     return;
   }
-
   _hasher = assignHashFunction(_sampling_config, _prev_dim);
 }
 
