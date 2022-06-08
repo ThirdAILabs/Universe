@@ -9,7 +9,8 @@
 namespace thirdai::dataset {
 
 DatasetWithLabels loadBoltSvmDataset(const std::string& filename,
-                                     uint32_t batch_size) {
+                                     uint32_t batch_size,
+                                     bool softmax_for_multiclass) {
   std::cout << "Loading Bolt SVM dataset from '" << filename << "' ..."
             << std::endl;
   auto start = std::chrono::high_resolution_clock::now();
@@ -18,9 +19,11 @@ DatasetWithLabels loadBoltSvmDataset(const std::string& filename,
 
   SvmParser<bolt::BoltVector, bolt::BoltVector> parser(
       bolt::BoltVector::makeSparseVector,
-      [](const std::vector<uint32_t>& labels) -> bolt::BoltVector {
+      [softmax_for_multiclass](
+          const std::vector<uint32_t>& labels) -> bolt::BoltVector {
+        float label_vals = softmax_for_multiclass ? 1.0 / labels.size() : 1.0;
         return bolt::BoltVector::makeSparseVector(
-            labels, std::vector<float>(labels.size(), 1.0 / labels.size()));
+            labels, std::vector<float>(labels.size(), label_vals));
       });
 
   uint32_t len = 0;

@@ -14,12 +14,11 @@ namespace thirdai::dataset {
  * as input and target BoltVectors according to the given blocks.
  * It processes these sequences in batches.
  */
-class BatchProcessor {
+class BlockBatchProcessor {
  public:
-  BatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
-                 std::vector<std::shared_ptr<Block>> target_blocks,
-                 uint32_t output_batch_size,
-                 size_t est_num_elems=0);
+  BlockBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
+                      std::vector<std::shared_ptr<Block>> target_blocks,
+                      uint32_t output_batch_size, size_t est_num_elems = 0);
 
   /**
    * Consumes a batch of input samples and encodes them

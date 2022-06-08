@@ -1,4 +1,4 @@
-#include "BatchProcessor.h"
+#include "BlockBatchProcessor.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
@@ -14,11 +14,10 @@
 
 namespace thirdai::dataset {
 
-BatchProcessor::BatchProcessor(
+BlockBatchProcessor::BlockBatchProcessor(
     std::vector<std::shared_ptr<Block>> input_blocks,
     std::vector<std::shared_ptr<Block>> target_blocks,
-    uint32_t output_batch_size,
-    size_t est_num_elems)
+    uint32_t output_batch_size, size_t est_num_elems)
     : _batch_size(output_batch_size),
       _input_blocks_dense(std::all_of(input_blocks.begin(), input_blocks.end(),
                                       [](const std::shared_ptr<Block>& block) {
@@ -47,18 +46,18 @@ BatchProcessor::BatchProcessor(
   }
 }
 
-void BatchProcessor::processBatch(
+void BlockBatchProcessor::processBatch(
     std::vector<std::vector<std::string>>& batch) {
   // Preallocate space for new vectors. This prevents data races and
   // preserves the order of vectors when processing them in parallel.
   uint32_t initial_num_elems = _input_vectors.size();
-  
-  // We use multiple emplace_backs instead of a resize() call to make 
+
+  // We use multiple emplace_backs instead of a resize() call to make
   // use of std::vector's exponential growth policy.
   for (uint32_t i = 0; i < batch.size(); i++) {
     _input_vectors.emplace_back();
   }
-  if (_target_vectors.has_value()) {
+  if (_target_vectors) {
     for (uint32_t i = 0; i < batch.size(); i++) {
       _target_vectors->emplace_back();
     }
@@ -69,15 +68,16 @@ void BatchProcessor::processBatch(
     _input_vectors[initial_num_elems + i] =
         makeVector(batch[i], _input_blocks, _input_blocks_dense);
 
-    if (_target_vectors.has_value()) {
+    if (_target_vectors) {
       _target_vectors->at(initial_num_elems + i) =
           makeVector(batch[i], _target_blocks, _target_blocks_dense);
     }
   }
 }
 
-std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
-    bool shuffle, uint32_t shuffle_seed) {
+std::pair<BoltDatasetPtr, BoltDatasetPtr>
+BlockBatchProcessor::exportInMemoryDataset(bool shuffle,
+                                           uint32_t shuffle_seed) {
   // Produce final positions of vectors in the dataset according to
   // shuffle and shuffle_seed.
   uint32_t n_exported = _input_vectors.size();
@@ -86,7 +86,7 @@ std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
 
   std::vector<bolt::BoltBatch> input_batches(n_batches);
   std::optional<std::vector<bolt::BoltBatch>> target_batches;
-  if (_target_vectors.has_value()) {
+  if (_target_vectors) {
     target_batches = std::vector<bolt::BoltBatch>(n_batches);
   }
 
@@ -100,7 +100,7 @@ std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
     size_t cur_batch_size = std::min(_batch_size, n_exported - batch_start_idx);
     std::vector<bolt::BoltVector> batch_inputs(cur_batch_size);
     std::optional<std::vector<bolt::BoltVector>> batch_targets;
-    if (_target_vectors.has_value()) {
+    if (_target_vectors) {
       batch_targets = std::vector<bolt::BoltVector>(cur_batch_size);
     }
 
@@ -109,14 +109,14 @@ std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
       // Move vectors to prevent copying.
       batch_inputs[vec_idx] =
           std::move(_input_vectors[positions[batch_start_idx + vec_idx]]);
-      if (batch_targets.has_value()) {
+      if (batch_targets) {
         batch_targets->at(vec_idx) = std::move(
             _target_vectors->at(positions[batch_start_idx + vec_idx]));
       }
     }
 
     input_batches[batch_idx] = bolt::BoltBatch(std::move(batch_inputs));
-    if (target_batches.has_value()) {
+    if (target_batches) {
       target_batches->at(batch_idx) =
           bolt::BoltBatch(std::move(batch_targets.value()));
     }
@@ -124,18 +124,17 @@ std::pair<BoltDatasetPtr, BoltDatasetPtr> BatchProcessor::exportInMemoryDataset(
 
   // Replenish after moves.
   _input_vectors = std::vector<bolt::BoltVector>();
-  if (_target_vectors.has_value()) {
+  if (_target_vectors) {
     _target_vectors = std::vector<bolt::BoltVector>();
   }
 
   return {std::make_shared<BoltDataset>(std::move(input_batches), n_exported),
-          target_batches.has_value()
-              ? std::make_shared<BoltDataset>(std::move(target_batches.value()),
-                                              n_exported)
-              : nullptr};
+          target_batches ? std::make_shared<BoltDataset>(
+                               std::move(target_batches.value()), n_exported)
+                         : nullptr};
 }
 
-std::vector<uint32_t> BatchProcessor::makeFinalPositions(
+std::vector<uint32_t> BlockBatchProcessor::makeFinalPositions(
     uint32_t n_exported, bool shuffle, uint32_t shuffle_seed) {
   // Create identity mapping.
   std::vector<uint32_t> positions(n_exported);
@@ -151,7 +150,7 @@ std::vector<uint32_t> BatchProcessor::makeFinalPositions(
   return positions;
 }
 
-bolt::BoltVector BatchProcessor::makeVector(
+bolt::BoltVector BlockBatchProcessor::makeVector(
     std::vector<std::string>& sample,
     std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
   std::shared_ptr<SegmentedFeatureVector> vec_ptr;

@@ -5,7 +5,7 @@
 #include <dataset/src/batch_types/DenseBatch.h>
 #include <dataset/src/batch_types/SparseBatch.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <dataset/src/core/BatchProcessor.h>
+#include <dataset/src/core/BlockBatchProcessor.h>
 #include <pybind11/cast.h>
 #include <pybind11/gil.h>
 #include <pybind11/numpy.h>
@@ -30,7 +30,8 @@ InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
                                            std::string delimiter);
 
 py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
-                                    uint32_t batch_size);
+                                    uint32_t batch_size,
+                                    bool softmax_for_multiclass = true);
 
 py::tuple loadBoltCsvDatasetWrapper(const std::string& filename,
                                     uint32_t batch_size, char delimiter);
@@ -122,13 +123,13 @@ bool denseBoltDatasetIsPermutationOfDenseMatrix(
  */
 bool denseBoltDatasetsAreEqual(BoltDataset& dataset1, BoltDataset& dataset2);
 
-class PyBatchProcessor : public BatchProcessor {
+class PyBlockBatchProcessor : public BlockBatchProcessor {
  public:
-  PyBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
-                   std::vector<std::shared_ptr<Block>> target_blocks,
-                   uint32_t output_batch_size,
-                   size_t est_num_elems)
-      : BatchProcessor(std::move(input_blocks), std::move(target_blocks), output_batch_size, est_num_elems) {}
+  PyBlockBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
+                        std::vector<std::shared_ptr<Block>> target_blocks,
+                        uint32_t output_batch_size, size_t est_num_elems)
+      : BlockBatchProcessor(std::move(input_blocks), std::move(target_blocks),
+                            output_batch_size, est_num_elems) {}
 
   /**
    * Just like the original processBatch method but GIL is released

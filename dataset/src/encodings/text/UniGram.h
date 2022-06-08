@@ -2,13 +2,8 @@
 
 #include "TextEncodingInterface.h"
 #include "TextEncodingUtils.h"
-#include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <algorithm>
-#include <cctype>
-#include <limits>
-#include <sstream>
 
 namespace thirdai::dataset {
 
@@ -20,7 +15,8 @@ class UniGram : public TextEncoding {
   /**
    * Constructor. Accepts the desired dimension of the encoding.
    */
-  explicit UniGram(uint32_t dim = 100000) : _dim(dim) {}
+  explicit UniGram(uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)
+      : _dim(dim) {}
 
   void encodeText(const std::string& text, SegmentedFeatureVector& vec) final {
     // TODO(Geordie): Do we need to make lower case?
@@ -28,12 +24,9 @@ class UniGram : public TextEncoding {
 
     std::vector<uint32_t> uni_grams;
 
-    TextEncodingUtils::forEachWord(
-        lower_case_text, [&](const char* start_ptr, size_t len) {
-          uint32_t hash =
-              hashing::MurmurHash(start_ptr, len, /* seed = */ 341) % _dim;
-          uni_grams.push_back(hash);
-        });
+    TextEncodingUtils::forEachWordHash(
+        lower_case_text,
+        [&](uint32_t word_hash) { uni_grams.push_back(word_hash % _dim); });
 
     // Deduplication adds an overhead of around 10% but helps to reduce
     // number of entries in the sparse vector, which can in turn make BOLT

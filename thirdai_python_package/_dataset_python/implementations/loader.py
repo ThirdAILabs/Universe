@@ -134,14 +134,14 @@ class Loader:
     def __load_all_and_process(self) -> Tuple[dataset.BoltDataset, dataset.BoltDataset]:
         """Helper function to load the whole dataset, processes each sample, and
         generates batches of vector embeddings.
-        We want to read lines from file in the main thread and 
+        We want to read lines from file in the main thread and
         process a batch of lines in parallel in other threads.
         Visually, data will be processed like this:
 
         read batch 0 | read batch 1    | read batch 2    | ...
                      | process batch 0 | process batch 1 | process batch 2 | ...
         time ------------------------------------------------------>
-        
+
         """
 
         # Initialization
@@ -152,10 +152,9 @@ class Loader:
             self._schema._target_blocks,
             self._batch_size,
             self._est_num_elems,
-
         )
 
-        # Here, we read the first batch. 
+        # Here, we read the first batch.
         # A large batch size is good for parallelism but a smaller
         # batch size will minimize memory consumption and initial latency.
         # Based on empirical observations, ~65,000 seems to give the best

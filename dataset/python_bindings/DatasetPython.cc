@@ -4,18 +4,17 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <dataset/src/core/BatchProcessor.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <dataset/src/encodings/text/PairGram.h>
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
+#include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <dataset/src/encodings/text/UniGram.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
 #include <sys/types.h>
 #include <chrono>
 #include <limits>
-#include <unordered_map>
 #include <type_traits>
 #include <unordered_map>
 #include <type_traits>
@@ -67,8 +66,13 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<PairGram, TextEncoding, std::shared_ptr<PairGram>>(
       text_encoding_submodule, "PairGram",
-      "Encodes a sentence as a weighted set of ordered pairs of words.")
-      .def(py::init<uint32_t>(), py::arg("dim") = 100000,
+      "Encodes a sentence as a weighted set of ordered pairs of "
+      "whitespace-delimited words. Self-pairs are included. "
+      "Expects a textual string, e.g. A good good model, which is then "
+      "encoded as 'A A': 1, 'A good': 2, 'A model': 1, 'good good': 3, 'good "
+      "model': 2, 'model model': 1.")
+      .def(py::init<uint32_t>(),
+           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor. Accepts the desired dimension of the encoding.")
       .def("is_dense", &PairGram::isDense,
            "Returns False since this is a sparse encoding.")
@@ -77,8 +81,11 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<UniGram, TextEncoding, std::shared_ptr<UniGram>>(
       text_encoding_submodule, "UniGram",
-      "Encodes a sentence as a weighted set of words.")
-      .def(py::init<uint32_t>(), py::arg("dim") = 100000, 
+      "Encodes a sentence as a weighted set of whitespace-delimited words. "
+      "Expects a textual string, e.g. A good good model, which is then "
+      "encoded as 'A': 1, 'good': 2, 'model': 1.")
+      .def(py::init<uint32_t>(),
+           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
            "Constructor. Accepts the desired dimension of the encoding.")
       .def("is_dense", &UniGram::isDense,
            "Returns False since this is a sparse encoding.")
@@ -96,8 +103,11 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<ContiguousNumericId, CategoricalEncoding,
              std::shared_ptr<ContiguousNumericId>>(
       categorical_encoding_submodule, "ContiguousNumericId",
-      "Treats the categorical identifiers as contiguous numeric IDs. "
-      "i.e. index of nonzero = ID % dim.")
+      "Expects a number and treats it as an ID in a contiguous set of "
+      "numeric IDs in a given range (0-indexed, excludes end of range). "
+      "If the ID is beyond the given range, it performs a modulo operation. "
+      "To illustrate, if dim = 10, then 0 through 9 map to themselves, "
+      "and any number n >= 10 maps to n % 10.")
       .def(py::init<uint32_t>(), py::arg("dim"),
            "Constructor. Accepts the desired dimension of the encoding.")
       .def("feature_dim", &ContiguousNumericId::featureDim,
@@ -169,7 +179,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &MockBlock::isDense,
            "True if the block produces dense features, False otherwise.");
 
-  py::class_<PyBatchProcessor>(
+  py::class_<PyBlockBatchProcessor>(
       internal_dataset_submodule, "BatchProcessor",
       "Encodes input samples – each represented by a sequence of strings – "
       "as input and target BoltVectors according to the given blocks. "
@@ -179,8 +189,7 @@ void createDatasetSubmodule(py::module_& module) {
           py::init<std::vector<std::shared_ptr<Block>>,
                    std::vector<std::shared_ptr<Block>>, uint32_t, size_t>(),
           py::arg("input_blocks"), py::arg("target_blocks"),
-          py::arg("output_batch_size"), py::arg("est_num_elems"), py::keep_alive<1, 2>(),
-          py::keep_alive<1, 3>(),
+          py::arg("output_batch_size"), py::arg("est_num_elems"),
           "Constructor\n\n"
           "Arguments:\n"
           " * input_blocks: List of Blocks - Blocks that encode input samples "
@@ -188,9 +197,14 @@ void createDatasetSubmodule(py::module_& module) {
           " * target_blocks: List of Blocks - Blocks that encode input samples "
           "as target vectors.\n"
           " * output_batch_size: Int (positive) - Size of batches in the "
-          "produced "
-          "dataset.")
-      .def("process_batch", &PyBatchProcessor::processBatchPython,
+          "produced dataset.\n"
+          " * est_num_elems: Int (positive) - Estimated number of samples. "
+          "This "
+          "speeds up the loading process by allowing the data loader to "
+          "preallocate memory. If the actual number of samples turns out to be "
+          "greater than the estimate, then the loader will automatically "
+          "allocate more memory as needed.")
+      .def("process_batch", &PyBlockBatchProcessor::processBatchPython,
            py::arg("row_batch"),
            "Consumes a batch of input samples and encodes them as vectors.\n\n"
            "Arguments:\n"
@@ -198,7 +212,8 @@ void createDatasetSubmodule(py::module_& module) {
            "data "
            "where each row is a sample, and each sample has many columns. "
            "row_batch represents a batch of such samples.")
-      .def("export_in_memory_dataset", &PyBatchProcessor::exportInMemoryDataset,
+      .def("export_in_memory_dataset",
+           &PyBlockBatchProcessor::exportInMemoryDataset,
            py::arg("shuffle") = false, py::arg("shuffle_seed") = std::rand(),
            "Produces a tuple of BoltDatasets for input and target "
            "vectors processed so far. This method can optionally produce a "
@@ -266,7 +281,7 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
-      py::arg("batch_size"),
+      py::arg("batch_size"), py::arg("softmax_for_multiclass") = true,
       "Loads a BoltDataset from an SVM file. Each line in the "
       "input file represents a sparse input vector and should follow this "
       "format:\n"
@@ -280,7 +295,13 @@ void createDatasetSubmodule(py::module_& module) {
       "of these index-value pairs.\n\n"
       "Arguments:\n"
       " * filename: String - Path to input file.\n"
-      " * batch_size: Int (positive) - Size of each batch in the dataset.\n\n"
+      " * batch_size: Int (positive) - Size of each batch in the dataset.\n"
+      " * softmax_for_multiclass: Bool (default is true) - Multi-label samples "
+      "must be processed slightly differently if softmax is being used in the "
+      "output layer instead of sigmoid. When this flag is true the loader will "
+      "process samples with multiple labels assuming that softmax and "
+      "CategoricalCrossEntropy are being used for multi-label datasets. If the "
+      "dataset is single label, then this argument has no effect.\n\n"
       "Returns a tuple containing a BoltDataset to store the data itself, and "
       "a BoltDataset storing the labels.");
 
@@ -368,8 +389,9 @@ InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
 }
 
 py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
-                                    uint32_t batch_size) {
-  auto res = loadBoltSvmDataset(filename, batch_size);
+                                    uint32_t batch_size,
+                                    bool softmax_for_multiclass) {
+  auto res = loadBoltSvmDataset(filename, batch_size, softmax_for_multiclass);
   return py::make_tuple(std::move(res.data), std::move(res.labels));
 }
 

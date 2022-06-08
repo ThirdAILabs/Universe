@@ -2,6 +2,7 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <cstdint>
+#include <unordered_map>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -53,12 +54,12 @@ class SegmentedFeatureVector {
   virtual void addFeatureSegment(uint32_t dim) = 0;
 
   /**
-   * Returns all of the vector's idx-value pairs.
+   * Returns a mapping of all of the vector's idx-value pairs.
    * Only used for testing as this can be very expensive
    * in dense vectors, so we restrict access by making 
    * it a protected method.
    */
-  virtual std::vector<std::pair<uint32_t, float>> entries() = 0;
+  virtual std::unordered_map<uint32_t, float> entries() = 0;
 
  public:
   /**
