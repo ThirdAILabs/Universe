@@ -7,8 +7,11 @@ class CookieMonster():
         self.bolt_classifier = bolt.TextClassifier(model_size=size, n_classes=output_dimension)
         self.out_dim = output_dimension
     
-    def load_hidden_weights(self, path_to_weights):
+    def download_hidden_weights(self, path_to_weights):
         # download weights from mlflow and load them into bolt
+        pass
+
+    def upload_hidden_weights(self, path_to_weights):
         pass
 
     def set_output_dimension(self, dimension):
