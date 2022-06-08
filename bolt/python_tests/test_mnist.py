@@ -6,6 +6,7 @@ pytestmark = [pytest.mark.integration]
 import os
 from thirdai import bolt, dataset
 import numpy as np
+from utils import train_network, build_sparse_hidden_layer_network
 
 LEARNING_RATE = 0.0001
 
@@ -45,37 +46,6 @@ def build_sparse_output_layer_network():
     ]
     network = bolt.Network(layers=layers, input_dim=784)
     return network
-
-
-# Constructs a bolt network for mnist with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
-def build_sparse_hidden_layer_network(dim, sparsity):
-    layers = [
-        bolt.FullyConnected(
-            dim=dim,
-            sparsity=sparsity,
-            activation_function="ReLU",
-        ),
-        bolt.FullyConnected(dim=10, activation_function="Softmax"),
-    ]
-    network = bolt.Network(layers=layers, input_dim=784)
-    return network
-
-
-def train_network(
-    network, train_data, train_labels, epochs, learning_rate=LEARNING_RATE
-):
-    times = network.train(
-        train_data,
-        train_labels,
-        bolt.CategoricalCrossEntropyLoss(),
-        learning_rate,
-        epochs,
-        rehash=3000,
-        rebuild=10000,
-        metrics=[],
-        verbose=False,
-    )
-    return times
 
 
 def load_mnist():

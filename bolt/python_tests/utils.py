@@ -10,20 +10,16 @@ def build_sparse_hidden_layer_network(dim, sparsity):
         bolt.FullyConnected(
             dim=dim,
             sparsity=sparsity,
-            activation_function=bolt.ActivationFunctions.ReLU,
+            activation_function="ReLU",
         ),
-        bolt.FullyConnected(
-            dim=10, activation_function=bolt.ActivationFunctions.Softmax
-        ),
+        bolt.FullyConnected(dim=10, activation_function="Softmax"),
     ]
     network = bolt.Network(layers=layers, input_dim=784)
     return network
 
 
 # generates easy training data
-def gen_training_data():
-    n_classes = 100
-    n_samples = 10000
+def gen_training_data(n_classes=10, n_samples=1000):
     possible_one_hot_encodings = np.eye(n_classes)
     labels = np.random.choice(n_classes, size=n_samples)
     examples = possible_one_hot_encodings[labels]
@@ -51,7 +47,7 @@ def train_network(
     return times
 
 
-def get_pred_acc(network, examples, labels, batch_size):
+def get_categorical_acc(network, examples, labels, batch_size):
     acc, _ = network.predict(
         examples, labels, batch_size, ["categorical_accuracy"], verbose=False
     )

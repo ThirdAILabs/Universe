@@ -1,6 +1,6 @@
 import pytest
 from utils import build_sparse_hidden_layer_network, train_network
-from utils import gen_network, gen_training_data, get_pred_acc
+from utils import gen_network, gen_training_data, get_categorical_acc
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -31,7 +31,7 @@ def test_save_shallow_size():
 # Asserts that model cannot be trained after trimming for inference and is shallow
 # Asserts that after resume_training, model runs and is not shallow
 def test_trim_then_train():
-    labels, examples, n_classes = gen_training_data()
+    labels, examples, n_classes = gen_training_data(n_classes=100)
     network = gen_network(100)
     train_network(network, examples, labels, 5)
     network.trim_for_inference()
@@ -49,7 +49,7 @@ def test_trim_then_train():
 
 # Asserts that the trimmed model and checkpointed model gives the same accuracy
 def test_same_accuracy_save_shallow():
-    labels, examples, n_classes = gen_training_data()
+    labels, examples, n_classes = gen_training_data(n_classes=100)
     network = gen_network(100)
     train_network(network, examples, labels, 5)
     save_loc = "./bolt_model_save"
@@ -63,9 +63,9 @@ def test_same_accuracy_save_shallow():
     network.save_for_inference(save_loc)
     network.checkpoint(checkpoint_loc)
 
-    original_acc = get_pred_acc(network, examples, labels, 64)
-    trimmed_acc = get_pred_acc(bolt.Network.load(save_loc), examples, labels, 64)
-    checkpoint_acc = get_pred_acc(
+    original_acc = get_categorical_acc(network, examples, labels, 64)
+    trimmed_acc = get_categorical_acc(bolt.Network.load(save_loc), examples, labels, 64)
+    checkpoint_acc = get_categorical_acc(
         bolt.Network.load(checkpoint_loc), examples, labels, 64
     )
 
@@ -78,7 +78,7 @@ def test_same_accuracy_save_shallow():
 
 # Checks that trimmed model after training gains accuracy
 def test_accuracy_gain_save_shallow():
-    labels, examples, n_classes = gen_training_data()
+    labels, examples, n_classes = gen_training_data(n_classes=100)
     network = gen_network(100)
     train_network(network, examples, labels, 2)
     save_loc = "./bolt_model_save"
@@ -101,9 +101,9 @@ def test_accuracy_gain_save_shallow():
     train_network(trimmed_network, examples, labels, 4)
     train_network(checkpointed_network, examples, labels, 4)
 
-    original_acc = get_pred_acc(network, examples, labels, 64)
-    trimmed_acc = get_pred_acc(trimmed_network, examples, labels, 64)
-    checkpoint_acc = get_pred_acc(checkpointed_network, examples, labels, 64)
+    original_acc = get_categorical_acc(network, examples, labels, 64)
+    trimmed_acc = get_categorical_acc(trimmed_network, examples, labels, 64)
+    checkpoint_acc = get_categorical_acc(checkpointed_network, examples, labels, 64)
 
     assert trimmed_acc >= original_acc
     assert checkpoint_acc >= original_acc
@@ -115,7 +115,7 @@ def test_accuracy_gain_save_shallow():
 # Checks whether an exception is thrown while checkpointing a trimmed model
 def test_checkpoint_shallow():
 
-    labels, examples, n_classes = gen_training_data()
+    labels, examples, n_classes = gen_training_data(n_classes=100)
     network = gen_network(100)
     train_network(network, examples, labels, 2)
     network.trim_for_inference()
