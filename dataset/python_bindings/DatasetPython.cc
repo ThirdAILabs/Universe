@@ -188,7 +188,7 @@ void createDatasetSubmodule(py::module_& module) {
           py::init<std::vector<std::shared_ptr<Block>>,
                    std::vector<std::shared_ptr<Block>>, uint32_t, size_t>(),
           py::arg("input_blocks"), py::arg("target_blocks"),
-          py::arg("output_batch_size"), py::arg("est_num_elems"),
+          py::arg("output_batch_size"), py::arg("est_num_elems") = 0,
           "Constructor\n\n"
           "Arguments:\n"
           " * input_blocks: List of Blocks - Blocks that encode input samples "
@@ -197,12 +197,11 @@ void createDatasetSubmodule(py::module_& module) {
           "as target vectors.\n"
           " * output_batch_size: Int (positive) - Size of batches in the "
           "produced dataset.\n"
-          " * est_num_elems: Int (positive) - Estimated number of samples. "
-          "This "
-          "speeds up the loading process by allowing the data loader to "
-          "preallocate memory. If the actual number of samples turns out to be "
-          "greater than the estimate, then the loader will automatically "
-          "allocate more memory as needed.")
+          " * est_num_elems: Int (Optional, positive) - Estimated number of "
+          "samples. This speeds up the loading process by allowing the data "
+          "loader to preallocate memory. If the actual number of samples "
+          "turns out to be greater than the estimate, then the loader will "
+          "automatically allocate more memory as needed.")
       .def("process_batch", &PyBlockBatchProcessor::processBatchPython,
            py::arg("row_batch"),
            "Consumes a batch of input samples and encodes them as vectors.\n\n"
