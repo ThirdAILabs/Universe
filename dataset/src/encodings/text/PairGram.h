@@ -3,7 +3,6 @@
 #include "TextEncodingInterface.h"
 #include "TextEncodingUtils.h"
 #include <hashing/src/HashUtils.h>
-#include <hashing/src/MurmurHash.h>
 #include <dataset/src/blocks/BlockInterface.h>
 
 namespace thirdai::dataset {
