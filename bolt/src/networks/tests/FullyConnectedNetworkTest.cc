@@ -139,10 +139,11 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   std::shared_ptr<LossFunction> loss =
       std::make_shared<CategoricalCrossEntropyLoss>();
-  auto train_metrics = network.train(data.data, data.labels, loss,
-                /* learning_rate= */ 0.001, /* epochs= */ 5,
-                /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {"loss"},
-                /* verbose= */ true);
+  auto train_metrics = network.train(
+      data.data, data.labels, loss,
+      /* learning_rate= */ 0.001, /* epochs= */ 5,
+      /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {"loss"},
+      /* verbose= */ true);
 
   ASSERT_LT(train_metrics.at("loss").back(), train_metrics.at("loss").front());
 
