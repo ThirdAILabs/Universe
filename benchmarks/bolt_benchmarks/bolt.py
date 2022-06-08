@@ -10,27 +10,11 @@ import platform
 import psutil
 import mlflow
 import argparse
-
+from utils import log_machine_info, start_mlflow
 
 def log_subconfig(name: str, subconfig: Dict[str, Any]):
     for param, val in subconfig.items():
         mlflow.log_param(f"{name}_{param}", val)
-
-
-def log_machine_info():
-    machine_info = {
-        "load_before_experiment": os.getloadavg()[2],
-        "platform": platform.platform(),
-        "platform_version": platform.version(),
-        "platform_release": platform.release(),
-        "architecture": platform.machine(),
-        "processor": platform.processor(),
-        "hostname": socket.gethostname(),
-        "ram_gb": round(psutil.virtual_memory().total / (1024.0**3)),
-        "num_cores": psutil.cpu_count(logical=True),
-    }
-
-    mlflow.log_params(machine_info)
 
 
 def initialize_mlfow_logging_for_bolt(
@@ -352,12 +336,7 @@ def main():
     config = toml.load(sys.argv[1])
 
     if mlflow_enabled:
-        file_dir = os.path.dirname(os.path.abspath(__file__))
-        file_name = os.path.join(file_dir, "../config.toml")
-        with open(file_name) as f:
-            parsed_config = toml.load(f)
-        mlflow.set_tracking_uri(parsed_config["tracking"]["uri"])
-
+        start_mlflow()
         initialize_mlfow_logging_for_bolt(args.run_name, sys.argv[1], config)
 
     if is_fcn(config):

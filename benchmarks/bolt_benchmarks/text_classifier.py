@@ -5,48 +5,17 @@ import platform
 import pandas as pd
 import psutil
 import socket
-import time
 import toml
 import pandas as pd
 
 from thirdai import bolt
-
-
-def start_mlflow(experiment_name, run_name, dataset):
-    file_dir = os.path.dirname(os.path.abspath(__file__))
-    file_name = os.path.join(file_dir, "../config.toml")
-    with open(file_name) as f:
-        parsed_config = toml.load(f)
-        mlflow.set_tracking_uri(parsed_config["tracking"]["uri"])
-
-    mlflow.set_experiment(experiment_name)
-    mlflow.start_run(
-        run_name=run_name,
-        tags={"dataset": dataset},
-    )
-
-
-def log_machine_info():
-    machine_info = {
-        "load_before_experiment": os.getloadavg()[2],
-        "platform": platform.platform(),
-        "platform_version": platform.version(),
-        "platform_release": platform.release(),
-        "architecture": platform.machine(),
-        "processor": platform.processor(),
-        "hostname": socket.gethostname(),
-        "ram_gb": round(psutil.virtual_memory().total / (1024.0**3)),
-        "num_cores": psutil.cpu_count(logical=True),
-    }
-
-    mlflow.log_params(machine_info)
-
+from util import log_machine_info, start_mlflow
 
 def compute_accuracy(test_file, pred_file):
     with open(pred_file) as pred:
-        predictions = pred.readlines()
+        predictions = pred.read().splitlines()
 
-    test_csv = pd.read_csv(test_file)
+    test_csv = pd.read_csv(test_file, dtype=str)
     labels = test_csv.category.tolist()
 
     correct = 0
@@ -54,10 +23,10 @@ def compute_accuracy(test_file, pred_file):
 
     if len(predictions) != len(labels):
         raise ValueError(
-            f"The number of predictions ({predictions}) does not match the number of test examples ({labels})"
+            f"The number of predictions ({len(predictions)}) does not match the number of test examples ({len(labels)})"
         )
     for (prediction, answer) in zip(predictions, labels):
-        if prediction[:-1] == answer:
+        if prediction == answer:
             correct += 1
         total += 1
 
@@ -66,7 +35,7 @@ def compute_accuracy(test_file, pred_file):
 
 
 def train_classifier(
-    train_dataset, n_classes, model_size="small", epochs=5, learning_rate=0.01
+    train_dataset, n_classes, model_size, epochs, learning_rate
 ):
     classifier = bolt.TextClassifier(model_size=model_size, n_classes=n_classes)
 
@@ -77,7 +46,7 @@ def train_classifier(
     return classifier
 
 
-def evaluate_classifier(classifier, test_dataset, output_file="predictions.txt"):
+def evaluate_classifier(classifier, test_dataset, output_file):
     classifier.predict(
         test_file=test_dataset,
         output_file=output_file,
@@ -151,7 +120,13 @@ def main():
         raise ValueError("Error: --run_name is required when using mlflow logging.")
 
     if mlflow_enabled:
-        start_mlflow(args.experiment_name, args.run_name, args.train_dataset)
+        start_mlflow()
+
+        mlflow.set_experiment(args.experiment_name)
+        mlflow.start_run(
+                run_name=args.run_name,
+                tags={"dataset": args.train_dataset},
+                )
         log_machine_info()
         mlflow.log_params(vars(args))
 
