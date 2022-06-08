@@ -48,12 +48,13 @@ class HashFunctionTestFixture : public testing::Test {
 
 static void testSimpleDatasetHashFunction(HashingFunction hash_function) {
   // constructs the network with user provided hash function.
-  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
-                                     10000, 0.1, ActivationFunction::ReLU,
-                                     SamplingConfig(5, 64, 15, 4, hash_function)),
-                                 std::make_shared<FullyConnectedLayerConfig>(
-                                     n_classes, ActivationFunction::Softmax)},
-                                n_classes);
+  FullyConnectedNetwork network(
+      {std::make_shared<FullyConnectedLayerConfig>(
+           10000, 0.1, ActivationFunction::ReLU,
+           SamplingConfig(5, 64, 15, 4, hash_function)),
+       std::make_shared<FullyConnectedLayerConfig>(
+           n_classes, ActivationFunction::Softmax)},
+      n_classes);
 
   auto data = HashFunctionTestFixture::genDataset(false);
 
@@ -66,7 +67,7 @@ static void testSimpleDatasetHashFunction(HashingFunction hash_function) {
       /* output_activations= */ nullptr,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
-  
+
   // train the network for 5 epochs
   network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 5,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
@@ -78,7 +79,8 @@ static void testSimpleDatasetHashFunction(HashingFunction hash_function) {
       /* verbose= */ false);
 
   // assert that the accuracy improves.
-  ASSERT_GE(test_metrics1["categorical_accuracy"], test_metrics["categorical_accuracy"]);
+  ASSERT_GE(test_metrics1["categorical_accuracy"],
+            test_metrics["categorical_accuracy"]);
 }
 
 // test for DWTA Hash Function
