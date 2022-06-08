@@ -67,6 +67,8 @@ class Model {
       uint32_t rebuild_batch = 100,
       // Metrics to compute during training
       const std::vector<std::string>& metric_names = {},
+      // Interval at which to log metrics when processing stream,
+      uint32_t metric_log_batch_interval = 0,
       // Restrict printouts
       bool verbose = true);
 

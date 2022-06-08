@@ -81,7 +81,7 @@ MetricData Model<BATCH_T>::trainOnStream(
     std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& train_data,
     const LossFunction& loss_fn, float learning_rate, uint32_t rehash_batch,
     uint32_t rebuild_batch, const std::vector<std::string>& metric_names,
-    bool verbose) {
+    uint32_t metric_log_batch_interval, bool verbose) {
   MetricAggregator metrics(metric_names, verbose);
 
   uint32_t batch_size = train_data->getMaxBatchSize();
@@ -95,9 +95,14 @@ MetricData Model<BATCH_T>::trainOnStream(
 
   auto train_start = std::chrono::high_resolution_clock::now();
 
+  uint32_t batch_count = 0;
   while (auto batch = train_data->nextBatch()) {
     processTrainingBatch(batch->first, outputs, batch->second, loss_fn,
                          learning_rate, rehash_batch, rebuild_batch, metrics);
+    if (++batch_count == metric_log_batch_interval) {
+      metrics.logAndReset();
+      batch_count = 0;
+    }
   }
 
   auto train_end = std::chrono::high_resolution_clock::now();
