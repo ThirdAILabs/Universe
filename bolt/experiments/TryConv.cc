@@ -47,7 +47,8 @@ int main() {  // NOLINT exceptions
   bolt::FullyConnectedNetwork network(
       layers, kernel_size.first * kernel_size.second * num_patches);
 
-  auto loss_fn = thirdai::bolt::CategoricalCrossEntropyLoss();
+  std::shared_ptr<thirdai::bolt::LossFunction> loss_fn =
+      std::make_shared<thirdai::bolt::CategoricalCrossEntropyLoss>();
   std::vector<std::string> metrics = {"categorical_accuracy"};
 
   float learning_rate = 0.001;

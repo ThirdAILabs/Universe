@@ -25,18 +25,14 @@ def predict_sentence_sentiment(network: bolt.Network, text, seed=42):
     y_vals = np.array([np.float32(1)])
     y_offsets = np.array([np.uint32(10), np.uint32(10)])
 
-    temp = network.predict(
-        x_idxs,
-        x_vals,
-        x_offsets,
-        y_idxs,
-        y_vals,
-        y_offsets,
+    prediction = network.predict(
+        test_data=(x_idxs, x_vals, x_offsets),
+        test_labels=(y_idxs, y_vals, y_offsets),
         batch_size=1,
         metrics=["categorical_accuracy"],
         verbose=False,
     )
-    pred = np.argmax(temp[1][0])
+    pred = np.argmax(prediction[1][0])
 
     return 1 if pred > 0 else 0
 

@@ -18,7 +18,7 @@ class Metric {
  public:
   // Computes and updates the value of the metric given the sample.
   // For instance this may update the accuracy.
-  virtual void processSample(const BoltVector& output,
+  virtual void computeMetric(const BoltVector& output,
                              const BoltVector& labels) = 0;
 
   // Returns the value of the metric and resets it. For instance this would be
@@ -45,7 +45,7 @@ class CategoricalAccuracy final : public Metric {
  public:
   CategoricalAccuracy() : _correct(0), _num_samples(0) {}
 
-  void processSample(const BoltVector& output, const BoltVector& labels) final {
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
     float max_act = std::numeric_limits<float>::min();
     uint32_t max_act_index = std::numeric_limits<uint32_t>::max();
     for (uint32_t i = 0; i < output.len; i++) {
@@ -110,7 +110,7 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   WeightedMeanAbsolutePercentageError()
       : _sum_of_deviations(0.0), _sum_of_truths(0.0) {}
 
-  void processSample(const BoltVector& output, const BoltVector& labels) final {
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
     // Calculate |actual - predicted| and |actual|.
     float sum_of_squared_differences = 0.0;
     float sum_of_squared_label_elems = 0.0;
@@ -151,62 +151,6 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
  private:
   std::atomic<float> _sum_of_deviations;
   std::atomic<float> _sum_of_truths;
-};
-
-using MetricData = std::unordered_map<std::string, std::vector<double>>;
-using InferenceMetricData = std::unordered_map<std::string, double>;
-
-// TODO(Geordie): Instead of hard coding the options, use a static map.
-class MetricAggregator {
- public:
-  explicit MetricAggregator(const std::vector<std::string>& metrics,
-                            bool verbose = true)
-      : _verbose(verbose), _allow_force_dense_inference(true) {
-    for (const auto& name : metrics) {
-      if (name == CategoricalAccuracy::name) {
-        _metrics.push_back(std::make_unique<CategoricalAccuracy>());
-      } else if (name == WeightedMeanAbsolutePercentageError::name) {
-        _metrics.push_back(
-            std::make_unique<WeightedMeanAbsolutePercentageError>());
-      } else {
-        throw std::invalid_argument("'" + name + "' is not a valid metric.");
-      }
-      // If at least one metric does not allow forced dense inference, forced
-      // dense inference is not allowed.
-      _allow_force_dense_inference &=
-          _metrics.at(_metrics.size() - 1)->forceDenseInference();
-    }
-  }
-
-  void processSample(const BoltVector& output, const BoltVector& labels) {
-    for (auto& m : _metrics) {
-      m->processSample(output, labels);
-    }
-  }
-
-  void logAndReset() {
-    for (auto& m : _metrics) {
-      _output[m->getName()].push_back(m->getMetricAndReset(_verbose));
-    }
-  }
-
-  MetricData getOutput() { return _output; }
-
-  InferenceMetricData getOutputFromInference() {
-    InferenceMetricData data;
-    for (const auto& metric : _output) {
-      data[metric.first] = metric.second.at(0);
-    }
-    return data;
-  }
-
-  bool forceDenseInference() const { return _allow_force_dense_inference; }
-
- private:
-  std::vector<std::unique_ptr<Metric>> _metrics;
-  MetricData _output;
-  bool _verbose;
-  bool _allow_force_dense_inference;
 };
 
 }  // namespace thirdai::bolt
