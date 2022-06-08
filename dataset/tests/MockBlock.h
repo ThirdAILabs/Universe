@@ -21,7 +21,7 @@ class MockBlock : public Block {
 
  protected:
   void buildSegment(const std::vector<std::string>& input_row,
-                      SegmentedFeatureVector& vec) override {
+                    SegmentedFeatureVector& vec) override {
     const std::string& col_str = input_row.at(_column);
     char* end;
     float val = std::strtof(col_str.c_str(), &end);

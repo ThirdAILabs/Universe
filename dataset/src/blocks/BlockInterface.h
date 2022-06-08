@@ -24,7 +24,7 @@ class TextBlockTest;
  * This is used when we want to compose features from various
  * feature blocks. Suppose we want an input vector that encodes
  * both text features and categorical features from raw data.
- * This data structure helps us create a vector that has one 
+ * This data structure helps us create a vector that has one
  * block containing features extracted from raw text features,
  * and another segment containing features extracted from raw
  * categorical features.
@@ -38,16 +38,16 @@ class SegmentedFeatureVector {
 
  protected:
   /**
-   * Adds a segment with the given dimension to the 
+   * Adds a segment with the given dimension to the
    * current vector.
    *
-   * This method is used by feature blocks to add 
-   * feature segments to a vector. Internally, this 
+   * This method is used by feature blocks to add
+   * feature segments to a vector. Internally, this
    * method notifies the vector data structure to do
    * any relevant bookkeeping.
-   * 
-   * This method must be called exactly once per 
-   * sample per block, so to prevent erroneous use, 
+   *
+   * This method must be called exactly once per
+   * sample per block, so to prevent erroneous use,
    * we restrict access by making it a protected
    * method.
    */
@@ -56,7 +56,7 @@ class SegmentedFeatureVector {
   /**
    * Returns a mapping of all of the vector's idx-value pairs.
    * Only used for testing as this can be very expensive
-   * in dense vectors, so we restrict access by making 
+   * in dense vectors, so we restrict access by making
    * it a protected method.
    */
   virtual std::unordered_map<uint32_t, float> entries() = 0;
@@ -97,7 +97,7 @@ class Block {
    *   encoding of input_row.
    */
   void addVectorSegment(const std::vector<std::string>& input_row,
-                    SegmentedFeatureVector& vec) {
+                        SegmentedFeatureVector& vec) {
     vec.addFeatureSegment(featureDim());
     buildSegment(input_row, vec);
   }
@@ -121,7 +121,7 @@ class Block {
    * so it should be thread-safe or robust to data races.
    */
   virtual void buildSegment(const std::vector<std::string>& input_row,
-                              SegmentedFeatureVector& vec) = 0;
+                            SegmentedFeatureVector& vec) = 0;
 };
 
 }  // namespace thirdai::dataset

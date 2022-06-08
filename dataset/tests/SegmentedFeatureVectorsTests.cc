@@ -117,9 +117,9 @@ class SegmentedFeatureVectorTest : public testing::Test {
   }
 
   /**
-   * Given a segmented feature vector and a vector of segments that the vector is
-   * expected to have, ensure that the segmented feature vector has the correct
-   * elements.
+   * Given a segmented feature vector and a vector of segments that the vector
+   * is expected to have, ensure that the segmented feature vector has the
+   * correct elements.
    */
   static void checkSegmentedFeatureVectorHasSegments(
       SegmentedFeatureVector& vec, std::vector<VectorSegment>& segments) {
@@ -187,10 +187,10 @@ TEST_F(SegmentedSparseFeatureVectorTest, AddDenseAndSparseInOneSegmentThrows) {
     SegmentedSparseFeatureVector vec;
     addVectorFeature(vec, /* dim = */ 10);
     vec.addSparseFeatureToSegment(/* index = */ 1, /* value = */ 1.0);
-    expectThrow(
-        [&]() { vec.addDenseFeatureToSegment(/* value = */ 1.0); },
-        "[SegmentedSparseFeatureVector::addDenseFeatureToSegment] A block cannot "
-        "add both dense and sparse features.");
+    expectThrow([&]() { vec.addDenseFeatureToSegment(/* value = */ 1.0); },
+                "[SegmentedSparseFeatureVector::addDenseFeatureToSegment] A "
+                "block cannot "
+                "add both dense and sparse features.");
   }
 
   // Add dense then sparse
@@ -202,7 +202,8 @@ TEST_F(SegmentedSparseFeatureVectorTest, AddDenseAndSparseInOneSegmentThrows) {
         [&]() {
           vec.addSparseFeatureToSegment(/* index = */ 1, /* value = */ 1.0);
         },
-        "[SegmentedSparseFeatureVector::addSparseFeatureToSegment] A block cannot "
+        "[SegmentedSparseFeatureVector::addSparseFeatureToSegment] A block "
+        "cannot "
         "add both dense and sparse features.");
   }
 }
@@ -224,7 +225,8 @@ TEST_F(SegmentedSparseFeatureVectorTest, AddSparseIndexTooHighThrows) {
 /**
  * Ensures that segments are appropriately added to a vector.
  */
-TEST_F(SegmentedSparseFeatureVectorTest, ProducesBoltVectorWithCorrectFeatures) {
+TEST_F(SegmentedSparseFeatureVectorTest,
+       ProducesBoltVectorWithCorrectFeatures) {
   SegmentedSparseFeatureVector vec;
 
   // Add both sparse and dense segments
@@ -298,7 +300,8 @@ TEST_F(SegmentedDenseFeatureVectorTest, PrematurelyAddingNewSegmentThrows) {
   addVectorFeature(vec, /* dim = */ 10);
   vec.addDenseFeatureToSegment(/* value = */ 1.0);
   expectThrow([&]() { addVectorFeature(vec, /* dim = */ 10); },
-              "[SegmentedDenseFeatureVector::addFeatureSegment] Adding vector segment before "
+              "[SegmentedDenseFeatureVector::addFeatureSegment] Adding vector "
+              "segment before "
               "completing previous segment. Previous segment expected to "
               "have dim = 10 but only 1 dense features were added.");
 }

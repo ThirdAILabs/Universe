@@ -163,7 +163,7 @@ bolt::BoltVector BlockBatchProcessor::makeVector(
     vec_ptr = std::make_shared<SegmentedSparseFeatureVector>();
   }
 
-  // Let each block encode the input sample and adds a new segment 
+  // Let each block encode the input sample and adds a new segment
   // containing this encoding to the vector.
   for (auto& block : blocks) {
     block->addVectorSegment(sample, *vec_ptr);

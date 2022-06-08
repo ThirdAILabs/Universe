@@ -17,7 +17,6 @@
 #include <limits>
 #include <type_traits>
 #include <unordered_map>
-#include <type_traits>
 
 // TODO(Geordie): Split into smaller files.
 // I'm thinking one for each submodule of dataset_submodule.

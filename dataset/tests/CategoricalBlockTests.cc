@@ -54,9 +54,9 @@ class CategoricalBlockTest : public testing::Test {
    * Helper function to access addVectorSegment() method of CategoricalBlock,
    * which is private.
    */
-  static void addVectorSegmentWithBlock(CategoricalBlock& block,
-                                    const std::vector<std::string>& input_row,
-                                    SegmentedSparseFeatureVector& vec) {
+  static void addVectorSegmentWithBlock(
+      CategoricalBlock& block, const std::vector<std::string>& input_row,
+      SegmentedSparseFeatureVector& vec) {
     block.addVectorSegment(input_row, vec);
   }
 

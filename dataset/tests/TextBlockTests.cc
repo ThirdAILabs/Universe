@@ -142,7 +142,8 @@ TEST_F(TextBlockTest, TestTextBlockWithUniAndPairGram) {
   blocks.emplace_back(0, std::make_shared<UniGram>(dim_for_encodings));
   blocks.emplace_back(1, std::make_shared<PairGram>(dim_for_encodings));
 
-  std::vector<SegmentedSparseFeatureVector> vecs = makeSegmentedVecs(sentence_matrix, blocks);
+  std::vector<SegmentedSparseFeatureVector> vecs =
+      makeSegmentedVecs(sentence_matrix, blocks);
 
   ASSERT_EQ(sentence_matrix.size(), vecs.size());
   for (uint32_t row = 0; row < sentence_matrix.size(); row++) {

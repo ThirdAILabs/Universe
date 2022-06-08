@@ -18,7 +18,8 @@ class TextEncodingUtils {
    * vector. All indices expected to correspond to the same value.
    */
   inline static void sumRepeatedIndices(std::vector<uint32_t>& indices,
-                                        float value, SegmentedFeatureVector& vec) {
+                                        float value,
+                                        SegmentedFeatureVector& vec) {
     // Put equivalent indices next to each other.
     std::sort(indices.begin(), indices.end());
 
