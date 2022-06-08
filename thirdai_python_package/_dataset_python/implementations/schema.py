@@ -2,6 +2,7 @@ from typing import List
 from thirdai._thirdai.dataset_internal import Block
 from typing_extensions import Self
 
+
 class Schema:
     """Identifies the raw features to be processed in each sample and how to
     process them.
