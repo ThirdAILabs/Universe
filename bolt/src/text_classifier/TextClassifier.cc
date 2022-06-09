@@ -277,7 +277,8 @@ static bool canLoadDatasetInMemory(const std::string& filename) {
     return total_ram / 2 >= file_size;
   }
 #elif _WIN32
-
+  // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/stat-functions?redirectedfrom=MSDN&view=msvc-170
+  
   struct _stat64 file_stats;
   if (_wstat64(filename.c_str(), &file_stats)) {
     uint64_t file_size = file_stats.st_size;
