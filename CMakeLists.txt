@@ -194,8 +194,8 @@ file (
 )
 
 file (
-  GLOB DATASET_SOURCES
-  dataset/src/bolt_datasets/*.cc
+  GLOB_RECURSE DATASET_SOURCES
+  dataset/src/*.cc
 )
 
 # pybind11_add_module automatically adds debug info to RelWithDebInfo and
@@ -216,6 +216,7 @@ pybind11_add_module(_thirdai
   ${HASHTABLE_SOURCES}
   ${DATASET_SOURCES}
   ${WRAPPER_SOURCES}
+  ${DATASET_SOURCES}
 )
 
 if (${LICENSE_BUILD_FLAG_FOUND})

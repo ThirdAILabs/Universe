@@ -42,6 +42,10 @@ void createBoltSubmodule(py::module_& module) {
       .value("Softmax", ActivationFunction::Softmax,
              "Softmax activation function; converts logits to classification "
              "probabilities. Currently, this activation function can only be "
+             "applied to the final layer in the neural network.")
+      .value("Sigmoid", ActivationFunction::Sigmoid,
+             "Sigmoid activation function; converts logits to indepedent"
+             "probabilities. Currently, this activation function can only be "
              "applied to the final layer in the neural network.");
 
   bolt_submodule.def("getActivationFunction", &getActivationFunction,
@@ -55,8 +59,15 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<CategoricalCrossEntropyLoss, LossFunction>(
       bolt_submodule, "CategoricalCrossEntropyLoss",
-      "A loss function for classification tasks.")
+      "A loss function for multi-class (one label per sample) classification "
+      "tasks.")
       .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
+
+  py::class_<BinaryCrossEntropyLoss, LossFunction>(
+      bolt_submodule, "BinaryCrossEntropyLoss",
+      "A loss function for multi-label (multiple class labels per each sample) "
+      "classification tasks.")
+      .def(py::init<>(), "Constructs a BinaryCrossEntropyLoss object.");
 
   py::class_<MeanSquaredError, LossFunction>(
       bolt_submodule, "MeanSquaredError",
@@ -95,9 +106,9 @@ void createBoltSubmodule(py::module_& module) {
            "and sparse inference. For example, sparsity=0.05 means the "
            "layer uses 5% of "
            "its neurons when processing an individual sample.\n"
-           " * activation_function: ActivationFunctions enum - We support four "
+           " * activation_function: ActivationFunctions enum - We support five "
            "activation "
-           "functions: ReLU, Softmax, Tanh, and Linear.\n"
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sampling_config: SamplingConfig - Sampling configuration.")
 #endif
       .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
@@ -105,8 +116,8 @@ void createBoltSubmodule(py::module_& module) {
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: ActivationFunctions enum, e.g. ReLU, "
-           "Softmax, Linear. "
+           " * activation_function: ActivationFunctions enum - We support five "
+           "activation functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            "Also accepts `getActivationFunction(function_name), e.g. "
            "`getActivationFunction('ReLU')`")
       .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
@@ -114,8 +125,8 @@ void createBoltSubmodule(py::module_& module) {
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: ActivationFunctions enum, e.g. ReLU, "
-           "Softmax, Linear. "
+           " * activation_function: ActivationFunctions enum - We support five "
+           "activation functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sparsity: Float - The fraction of neurons to use during "
            "sparse training "
            "and sparse inference. For example, sparsity=0.05 means the "
@@ -128,9 +139,9 @@ void createBoltSubmodule(py::module_& module) {
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: string, input to be given as string"
-           "no restriction on upper case or lower case."
-           "Eg. relu or Relu ,Softmax or softMax, Linear or lineaR. "
+           " * activation_function: String specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * load_factor: Float - The fraction of neurons to use during "
            "sparse training "
            "and sparse inference. For example, load_factor=0.05 means the "
@@ -141,8 +152,9 @@ void createBoltSubmodule(py::module_& module) {
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: string, input to be given as string"
-           "no restriction on upper case or lower case."
+           " * activation_function: String specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            "Eg. relu or Relu ,Softmax or softMax, Linear or lineaR.");
 
 #if THIRDAI_EXPOSE_ALL
@@ -165,9 +177,9 @@ void createBoltSubmodule(py::module_& module) {
            "sparse training and sparse inference. For example, "
            "sparsity=0.05 means the layer uses 5% of the filters "
            "when processing each patch.\n"
-           " * activation_function: ActivationFunctions enum - We support four "
+           " * activation_function: ActivationFunctions enum - We support five "
            "activation "
-           "functions: ReLU, Softmax, Tanh, and Linear.\n"
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sampling_config: SamplingConfig - Sampling configuration.\n"
            " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
            " * num_patches: Int - Number of patches.")
@@ -186,6 +198,8 @@ void createBoltSubmodule(py::module_& module) {
            "when processing each patch.\n"
            " * activation_function: ActivationFunctions enum, e.g. ReLU, "
            "Softmax, "
+           "Sigmoid, "
+           "Tanh, "
            "Linear. "
            "Also accepts `getActivationFunction(function_name), e.g. "
            "`getActivationFunction('ReLU')`\n"

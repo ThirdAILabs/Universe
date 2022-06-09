@@ -228,8 +228,6 @@ TEST_F(CsvDatasetTestFixture, BoltCsvDatasetTest) {
   for (const char& delimiter : {',', '\t', ' '}) {
     generateTestFile(delimiter);
 
-    // InMemoryDataset<BoltInputBatch> dataset(filename, batch_size,
-    //                                         BoltCsvBatchFactory(delimiter));
     auto dataset = loadBoltCsvDataset(filename, batch_size, delimiter);
 
     // Check data vectors are correct.

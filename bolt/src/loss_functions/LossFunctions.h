@@ -74,6 +74,44 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
   }
 };
 
+class BinaryCrossEntropyLoss final : public LossFunction {
+ public:
+  static std::shared_ptr<BinaryCrossEntropyLoss> makeBinaryCrossEntropyLoss() {
+    return std::make_shared<BinaryCrossEntropyLoss>();
+  }
+
+ private:
+  float elementLossGradient(float label, float activation,
+                            uint32_t batch_size) const override {
+    /* Derivation
+
+    Note: we are assuming that BCE is used along with a signmoid activation in
+    the final layer.
+
+    Notation:
+     * y - the true label for the neuron in question, y is 0 or 1.
+     * a - the activation of the neuron.
+     * z - the net inputs of the neuron before applying the activation function.
+     * sig - the sigmoid function. Note that d/dx sig(x) = sig(x)(1-sig(x))
+
+    BCE(a,y) = - y log(a) - (1-y) log(1-a)
+             = - y log(sig(z)) - (1-y) log(1-sig(z))
+
+    d/dz BCE(a,y)
+      = - y [1/sig(x)] sig(x)(1-sig(x)) + (1-y) [1/(1-sig(x))] sig(x)(1-sig(x))
+      = - y (1-sig(x)) + (1-y) sig(x)
+      = - y + y sig(x) + sig(x) - y sig(x)
+      = sig(x) - y
+
+    We are computing y - sig(x) because we want the negative gradient to
+    minimize the loss function. We divide by batch size because we average the
+    loss over the batch.
+
+    */
+    return (label - activation) / batch_size;
+  }
+};
+
 class MeanSquaredError final : public LossFunction {
  public:
   static std::shared_ptr<MeanSquaredError> makeMeanSquaredError() {
@@ -117,6 +155,9 @@ static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
   if (lower_name == "categoricalcrossentropyloss") {
     return CategoricalCrossEntropyLoss::makeCategoricalCrossEntropyLoss();
   }
+  if (lower_name == "binarycrossentropyloss" || lower_name == "bce") {
+    return BinaryCrossEntropyLoss::makeBinaryCrossEntropyLoss();
+  }
   if (lower_name == "meansquarederror" || lower_name == "mse") {
     return MeanSquaredError::makeMeanSquaredError();
   }
@@ -128,6 +169,7 @@ static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
   throw std::invalid_argument(
       "'" + name +
       "' is not a valid loss function. Use 'CategoricalCrossEntropyLoss', "
+      "'BinaryCrossEntropyLoss', "
       "'MeanSquaredError'/'MSE', or "
       "'WeightedMeanAbsolutePercentageError'/'WMAPE'");
 }
