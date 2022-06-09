@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <optional>
 #include <random>
+#include <sstream>
 #include <vector>
 
 namespace thirdai::bolt::tests {
@@ -162,6 +163,28 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
+}
+
+TEST_F(FullyConnectedClassificationNetworkTestFixture,
+       MultiLayerNetworkToString) {
+  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
+                                     10000, 0.1, ActivationFunction::ReLU),
+                                 std::make_shared<FullyConnectedLayerConfig>(
+                                     n_classes, ActivationFunction::Softmax)},
+                                n_classes);
+
+  std::stringstream summary;
+  network.buildNetworkSummary(summary);
+
+  std::string expected =
+      "========= Bolt Network =========\n"
+      "InputLayer (Layer 0): dim=100\n"
+      "FullyConnectedLayer (Layer 1): dim=10000, sparsity=0.1, act_func=ReLU\n"
+      "FullyConnectedLayer (Layer 2): dim=100, sparsity=1, act_func=Softmax\n"
+      "================================";
+  std::string actual = summary.str();
+
+  ASSERT_EQ(actual.compare(expected), 0);
 }
 
 }  // namespace thirdai::bolt::tests

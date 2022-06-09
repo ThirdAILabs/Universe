@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BoltVector.h"
+#include <iostream>
 
 namespace thirdai::bolt {
 class SequentialLayer {
@@ -46,6 +47,10 @@ class SequentialLayer {
   virtual void setWeights(const float* new_weights) = 0;
 
   virtual void setBiases(const float* new_biases) = 0;
+
+  virtual void buildLayerSummary(std::stringstream& summary) {
+    summary << "dim=" << getDim() << "\n";
+  }
 
   virtual ~SequentialLayer() = default;
 };

@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 
 namespace thirdai::bolt {
@@ -20,11 +21,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
       _sparse_inference_enabled(false) {
   auto start = std::chrono::high_resolution_clock::now();
 
-  std::cout << "====== Building Fully Connected Network ======" << std::endl;
-
   for (uint32_t i = 0; i < _num_layers; i++) {
-    std::cout << *configs[i] << std::endl;
-
     uint64_t prev_dim = i == 0 ? input_dim : configs[i - 1]->getDim();
 
     // if FullyConnectedConfig
@@ -73,7 +70,8 @@ FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
       << "Initialized Network in "
       << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
       << " seconds" << std::endl;
-  std::cout << "==============================" << std::endl;
+
+  this->summary();
 }
 
 void FullyConnectedNetwork::forward(uint32_t batch_index,

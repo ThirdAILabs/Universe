@@ -538,4 +538,25 @@ void FullyConnectedLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
+void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary) {
+  summary << "dim=" << _dim << ", sparsity=" << _sparsity << ", act_func=";
+  switch (_act_func) {
+    case ActivationFunction::ReLU:
+      summary << "ReLU\n";
+      return;
+    case ActivationFunction::Softmax:
+      summary << "Softmax\n";
+      return;
+    case ActivationFunction::Sigmoid:
+      summary << "Sigmoid\n";
+      return;
+    case ActivationFunction::Linear:
+      summary << "Linear\n";
+      return;
+    case ActivationFunction::Tanh:
+      summary << "Tanh\n";
+      return;
+  }
+}
+
 }  // namespace thirdai::bolt
