@@ -121,15 +121,15 @@ class FullyConnectedLayer final : public SequentialLayer {
   static std::unique_ptr<hashing::HashFunction> assignHashFunction(
       const SamplingConfig& config, uint64_t dim) {
     switch (config.hash_function) {
-      case HashingFunction::DWTA:
+      case HashFunctionEnum::DWTA:
         return std::make_unique<hashing::DWTAHashFunction>(
             dim, config.hashes_per_table, config.num_tables, config.range_pow);
 
-      case HashingFunction::FastSRP:
+      case HashFunctionEnum::FastSRP:
         return std::make_unique<hashing::FastSRP>(dim, config.hashes_per_table,
                                                   config.num_tables);
 
-      case HashingFunction::SRP:
+      case HashFunctionEnum::SRP:
         return std::make_unique<hashing::SparseRandomProjection>(
             dim, config.hashes_per_table, config.num_tables);
 

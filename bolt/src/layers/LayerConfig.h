@@ -40,13 +40,13 @@ struct SequentialLayerConfig {
 using SequentialConfigList =
     std::vector<std::shared_ptr<bolt::SequentialLayerConfig>>;
 
-inline std::string getHashString(HashingFunction hash_function) {
+inline std::string getHashString(HashFunctionEnum hash_function) {
   switch (hash_function) {
-    case HashingFunction::DWTA:
+    case HashFunctionEnum::DWTA:
       return "DWTA";
-    case HashingFunction::SRP:
+    case HashFunctionEnum::SRP:
       return "SRP";
-    case HashingFunction::FastSRP:
+    case HashFunctionEnum::FastSRP:
       return "FastSRP";
     // Not supposed to reach here but compiler complains
     default:
@@ -154,7 +154,7 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
                                      /* num_tables = */ num_tables,
                                      /* range_pow = */ range_pow,
                                      /* reservoir_size = */ reservoir_size,
-                                     /* hash_function*/ HashingFunction::DWTA);
+                                     /* hash_function*/ HashFunctionEnum::DWTA);
   }
 
   uint64_t getDim() const final { return dim; }
@@ -238,7 +238,7 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
       uint32_t k = rp / 3;
       uint32_t rs = (num_filters * 4) / (1 << rp);
       uint32_t l = sparsity < 0.1 ? 256 : 64;
-      sampling_config = SamplingConfig(k, l, rp, rs, HashingFunction::DWTA);
+      sampling_config = SamplingConfig(k, l, rp, rs, HashFunctionEnum::DWTA);
     } else {
       sampling_config = SamplingConfig();
     }

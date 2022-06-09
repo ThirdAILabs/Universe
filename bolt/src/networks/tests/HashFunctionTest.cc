@@ -13,7 +13,7 @@ namespace thirdai::bolt::tests {
 
 static const uint32_t n_classes = 100, n_batches = 100, batch_size = 100;
 
-class HashFunctionTestFixture : public testing::Test {
+class BoltHashFunctionTestFixture : public testing::Test {
  public:
   static dataset::DatasetWithLabels genDataset(bool input_is_noise) {
     std::mt19937 gen(892734);
@@ -46,7 +46,7 @@ class HashFunctionTestFixture : public testing::Test {
   }
 };
 
-static void testSimpleDatasetHashFunction(HashingFunction hash_function) {
+static void testSimpleDatasetHashFunction(HashFunctionEnum hash_function) {
   // constructs the network with user provided hash function.
   FullyConnectedNetwork network(
       {std::make_shared<FullyConnectedLayerConfig>(
@@ -56,7 +56,7 @@ static void testSimpleDatasetHashFunction(HashingFunction hash_function) {
            n_classes, ActivationFunction::Softmax)},
       n_classes);
 
-  auto data = HashFunctionTestFixture::genDataset(false);
+  auto data = BoltHashFunctionTestFixture::genDataset(false);
 
   // train the network for two epochs
   network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 2,
@@ -84,18 +84,18 @@ static void testSimpleDatasetHashFunction(HashingFunction hash_function) {
 }
 
 // test for DWTA Hash Function
-TEST_F(HashFunctionTestFixture, TrainSimpleDatasetDWTA) {
-  testSimpleDatasetHashFunction(HashingFunction::DWTA);
+TEST_F(BoltHashFunctionTestFixture, TrainSimpleDatasetDWTA) {
+  testSimpleDatasetHashFunction(HashFunctionEnum::DWTA);
 }
 
 // test for SRP Hash Function
-TEST_F(HashFunctionTestFixture, TrainSimpleDatasetSRP) {
-  testSimpleDatasetHashFunction(HashingFunction::SRP);
+TEST_F(BoltHashFunctionTestFixture, TrainSimpleDatasetSRP) {
+  testSimpleDatasetHashFunction(HashFunctionEnum::SRP);
 }
 
 // test for FastSRP Hash Function
-TEST_F(HashFunctionTestFixture, TrainSimpleDatasetFastSRP) {
-  testSimpleDatasetHashFunction(HashingFunction::FastSRP);
+TEST_F(BoltHashFunctionTestFixture, TrainSimpleDatasetFastSRP) {
+  testSimpleDatasetHashFunction(HashFunctionEnum::FastSRP);
 }
 
 }  // namespace thirdai::bolt::tests

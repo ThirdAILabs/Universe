@@ -56,21 +56,21 @@ constexpr float actFuncDerivative(float x, ActivationFunction act_func) {
 
 // Didn't include DensifiedMinhash because its hashSingleDense() method has not
 // been implemented.
-enum class HashingFunction { DWTA, FastSRP, SRP };
+enum class HashFunctionEnum { DWTA, FastSRP, SRP };
 
-static HashingFunction getHashFunction(const std::string& hash_function) {
+static HashFunctionEnum getHashFunction(const std::string& hash_function) {
   std::string lower_name;
   for (char c : hash_function) {
     lower_name.push_back(std::tolower(c));
   }
   if (lower_name == "dwta") {
-    return HashingFunction::DWTA;
+    return HashFunctionEnum::DWTA;
   }
   if (lower_name == "fastsrp") {
-    return HashingFunction::FastSRP;
+    return HashFunctionEnum::FastSRP;
   }
   if (lower_name == "srp") {
-    return HashingFunction::SRP;
+    return HashFunctionEnum::SRP;
   }
   throw std::invalid_argument(
       "'" + hash_function +
@@ -80,18 +80,18 @@ static HashingFunction getHashFunction(const std::string& hash_function) {
 
 struct SamplingConfig {
   uint32_t hashes_per_table, num_tables, range_pow, reservoir_size;
-  HashingFunction hash_function;
+  HashFunctionEnum hash_function;
 
   SamplingConfig()
       : hashes_per_table(0),
         num_tables(0),
         range_pow(0),
         reservoir_size(0),
-        hash_function(HashingFunction::DWTA) {}
+        hash_function(HashFunctionEnum::DWTA) {}
 
   SamplingConfig(uint32_t hashes_per_table, uint32_t num_tables,
                  uint32_t range_pow, uint32_t reservoir_size,
-                 HashingFunction hash_function = HashingFunction::DWTA)
+                 HashFunctionEnum hash_function = HashFunctionEnum::DWTA)
       : hashes_per_table(hashes_per_table),
         num_tables(num_tables),
         range_pow(range_pow),

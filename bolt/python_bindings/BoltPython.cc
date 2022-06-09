@@ -18,22 +18,22 @@ void createBoltSubmodule(py::module_& module) {
   bolt_submodule.def("getHashFunction", &getHashFunction, py::arg("name"),
                      "Converts a Hashing function name to "
                      "the corresponding enum.");
-  py::enum_<HashingFunction>(
-      bolt_submodule, "HashingFunctions",
+  py::enum_<HashFunctionEnum>(
+      bolt_submodule, "HashFunctionEnums",
       "An enum of all available Hashing functions. To use it, pass it to "
       "the 'hash_function' parameter of a SamplingConfig object.")
-      .value("DWTA", HashingFunction::DWTA, "DWTA Hash Function")
-      .value("SRP", HashingFunction::SRP,
+      .value("DWTA", HashFunctionEnum::DWTA, "DWTA Hash Function")
+      .value("SRP", HashFunctionEnum::SRP,
              "Sparse Random Projection Hash Function.")
-      .value("FastSRP", HashingFunction::FastSRP,
+      .value("FastSRP", HashFunctionEnum::FastSRP,
              "Its a FastSRP Hash Function.");
   py::class_<thirdai::bolt::SamplingConfig>(
       bolt_submodule, "SamplingConfig",
       "SamplingConfig represents a layer's sampling hyperparameters.")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, HashingFunction>(),
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, HashFunctionEnum>(),
            py::arg("hashes_per_table"), py::arg("num_tables"),
            py::arg("range_pow"), py::arg("reservoir_size"),
-           py::arg("hash_function") = HashingFunction::DWTA,
+           py::arg("hash_function") = HashFunctionEnum::DWTA,
            "Builds a SamplingConfig object. \n\n"
            "Arguments:\n"
            " * hashes_per_table: Int - number of hashes to be concatenated in "
@@ -46,7 +46,7 @@ void createBoltSubmodule(py::module_& module) {
            " For SRP or FastSRP, range_pow = hashes_per_table."
            " * reservoir_size: Int - maximum number of elements stored in each "
            "hash bucket."
-           " * hash_function: HashingFunction (Optional) - The hash function "
+           " * hash_function: HashFunctionEnum (Optional) - The hash function "
            "used for sparse training and inference. One of DWTA, SRP, or "
            "FastSRP. Defaults to DWTA.")
       .def(py::init<>(), "Builds a default SamplingConfig object.");
