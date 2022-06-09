@@ -81,12 +81,12 @@ MetricData Model<BATCH_T>::trainOnStream(
     std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& train_data,
     std::shared_ptr<LossFunction>& loss_fn, float learning_rate,
     uint32_t rehash_batch, uint32_t rebuild_batch,
-    const std::vector<std::string>& metric_names, bool verbose) {
+    const std::vector<std::string>& metric_names,uint32_t metric_log_batch_interval, bool verbose) {
   MetricAggregator metrics(metric_names, loss_fn, verbose);
 
   uint32_t batch_size = train_data->getMaxBatchSize();
-  initializeNetworkState(batch_size, false);
-  BoltBatch outputs = getOutputs(batch_size, false);
+  initializeNetworkState(batch_size, /* force_dense=*/false);
+  BoltBatch outputs = getOutputs(batch_size, /* force_dense=*/false);
 
   if (verbose) {
     std::cout << std::endl
@@ -95,9 +95,19 @@ MetricData Model<BATCH_T>::trainOnStream(
 
   auto train_start = std::chrono::high_resolution_clock::now();
 
+  uint32_t batch_count = 0;
   while (auto batch = train_data->nextBatch()) {
-    processTrainingBatch(batch->first, outputs, batch->second, loss_fn,
-                         learning_rate, rehash_batch, rebuild_batch, metrics);
+    processTrainingBatch(
+        /* batch_inputs=*/batch->first, /* outputs= */ outputs,
+        /* batch_labels= */ batch->second, /* loss_fn= */ loss_fn,
+        /* learning_rate= */ learning_rate, /* rehash_batch */ rehash_batch,
+        /* rebuild_batch= */ rebuild_batch, /* metrics= */ metrics);
+
+    batch_count++;
+    if (batch_count == metric_log_batch_interval) {
+      metrics.logAndReset();
+      batch_count = 0;
+    }
   }
 
   auto train_end = std::chrono::high_resolution_clock::now();
@@ -231,8 +241,8 @@ InferenceMetricData Model<BATCH_T>::predictOnStream(
   MetricAggregator metrics(metric_names, /* loss_fn= */ nullptr, verbose);
 
   uint32_t batch_size = test_data->getMaxBatchSize();
-  initializeNetworkState(batch_size, false);
-  BoltBatch outputs = getOutputs(batch_size, false);
+  initializeNetworkState(batch_size, metrics.forceDenseInference());
+  BoltBatch outputs = getOutputs(batch_size, metrics.forceDenseInference());
 
   if (verbose) {
     std::cout << std::endl
@@ -242,11 +252,13 @@ InferenceMetricData Model<BATCH_T>::predictOnStream(
   auto test_start = std::chrono::high_resolution_clock::now();
 
   while (auto batch = test_data->nextBatch()) {
-    processTestBatch(batch->first, outputs, &batch->second, nullptr, nullptr,
-                     metrics, /* compute_metrics= */ true);
+    processTestBatch(batch->first, outputs, &batch->second,
+                     /* output_active_neurons=*/nullptr,
+                     /* output_activations=*/nullptr, metrics,
+                     /* compute_metrics= */ true);
 
     if (batch_callback) {
-      (*batch_callback)(outputs, batch->first.getBatchSize());
+      batch_callback.value()(outputs, batch->first.getBatchSize());
     }
   }
 

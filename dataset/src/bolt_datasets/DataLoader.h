@@ -16,6 +16,8 @@ class DataLoader {
 
   virtual std::optional<std::string> getHeader() = 0;
 
+  virtual std::string resourceName() const = 0;
+
   uint32_t getMaxBatchSize() const { return _target_batch_size; }
 
   virtual ~DataLoader() = default;
@@ -27,7 +29,7 @@ class DataLoader {
 class SimpleFileDataLoader final : public DataLoader {
  public:
   SimpleFileDataLoader(const std::string& filename, uint32_t target_batch_size)
-      : DataLoader(target_batch_size), _file(filename) {}
+      : DataLoader(target_batch_size), _file(filename), _filename(filename) {}
 
   std::optional<std::vector<std::string>> nextBatch() final {
     if (_file.eof()) {
@@ -50,8 +52,11 @@ class SimpleFileDataLoader final : public DataLoader {
     return std::nullopt;
   }
 
+  std::string resourceName() const final { return _filename; }
+
  private:
   std::ifstream _file;
+  std::string _filename;
 };
 
 }  // namespace thirdai::dataset
