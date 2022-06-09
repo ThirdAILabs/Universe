@@ -2,6 +2,8 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <algorithm>
 #include <fstream>
 #include <memory>
@@ -14,10 +16,6 @@
 #if defined __linux
 #include <sys/sysinfo.h>
 #endif
-
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #if defined __APPLE__
 #include <sys/sysctl.h>
@@ -103,6 +101,11 @@ void TextClassifier::predict(
   std::optional<std::ofstream> output_file;
   if (output_filename) {
     output_file = std::ofstream(*output_filename);
+    if (!output_file->good() || output_file->bad() || output_file->fail() ||
+        !output_file->is_open()) {
+      throw std::runtime_error("Unable to open output file '" +
+                               *output_filename + "'");
+    }
   }
 
   auto print_predictions_callback = [&](const BoltBatch& outputs,
@@ -128,6 +131,13 @@ void TextClassifier::predict(
     }
   };
 
+  /*
+    We are using predict with the stream directly because we only need a single
+    pass through the dataset, so this is more memory efficient, and we don't
+    have to worry about storing the activations in memory to compute the
+    predictions, and can instead compute the predictions using the
+    back_callback.
+  */
   _model->predictOnStream(dataset, {"categorical_accuracy"},
                           print_predictions_callback);
 
@@ -258,6 +268,7 @@ static std::optional<uint64_t> getSystemRam() {
 static bool canLoadDatasetInMemory(const std::string& filename) {
   auto total_ram = getSystemRam().value();
 
+#if defined(__APPLE__) || defined(__linux__)
   // TODO(Nicholas): separate file size method for windows
   struct stat file_stats;
 
@@ -265,6 +276,15 @@ static bool canLoadDatasetInMemory(const std::string& filename) {
     uint64_t file_size = file_stats.st_size;
     return total_ram / 2 >= file_size;
   }
+#elif _WIN32
+
+  struct _stat64 file_stats;
+  if (_wstat64(filename.c_str(), &file_stats)) {
+    uint64_t file_size = file_stats.st_size;
+    return total_ram / 2 >= file_size;
+  }
+
+#endif
 
   throw std::runtime_error("Unable to get filesize of '" + filename + "'");
 }

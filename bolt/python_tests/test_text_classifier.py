@@ -77,21 +77,3 @@ def test_text_classifier_clinc_dataset():
     assert acc > 0.7
 
     remove_files()
-
-
-@pytest.mark.integration
-@pytest.mark.release
-def test_text_classifier_clinc_dataset_streaming():
-    (n_classes, test_labels) = download_clinc_dataset()
-    classifier = bolt.TextClassifier(model_size="1Gb", n_classes=n_classes)
-
-    classifier.train(train_file=TRAIN_FILE, epochs=1, learning_rate=0.01)
-
-    classifier.predict(test_file=TEST_FILE, output_file=PREDICTION_FILE)
-
-    acc = compute_accuracy(test_labels, PREDICTION_FILE)
-
-    print("Computed Accuracy: ", acc)
-    assert acc > 0.6
-
-    remove_files()
