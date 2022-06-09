@@ -13,7 +13,7 @@ def test_glove():
         estimated_dataset_size=10**6, num_classifiers=2, input_dim=100
     )
     search_index.index(
-        train_data=glove_data[:50000], all_data=glove_data, batch_size=2048
+        train_data=glove_data[:10000], all_data=glove_data, batch_size=2048
     )
 
     # results = search_index.query(glove_queries, top_k=100)

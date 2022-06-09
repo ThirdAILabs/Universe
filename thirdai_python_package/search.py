@@ -3,4 +3,3 @@ from thirdai._thirdai.search import *
 
 __all__ = []
 __all__.extend(dir(thirdai._thirdai.search))
-# __all__.extend(dir(thirdai._boltsearch))

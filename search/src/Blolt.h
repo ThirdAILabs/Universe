@@ -49,7 +49,7 @@ class Blolt {
             /* train_labels = */
             labelsToBoltDataset(current_assignments, train_data),
             /* loss_fn = */ bolt::CategoricalCrossEntropyLoss(),
-            /* learning_rate = */ learning_rate, /* epochs = */ 5,
+            /* learning_rate = */ learning_rate, /* epochs = */ 10,
             /* rehash = */ UINT32_MAX, /* rebuild = */ UINT32_MAX,
             /* metric_names = */ metrics, /* verbose = */ true);
         if (epoch == num_epochs - 1) {
@@ -126,8 +126,8 @@ class Blolt {
 
   static bolt::FullyConnectedNetwork createBloltClassifierDenseInput(
       uint64_t input_dim, uint64_t num_classes,
-      float last_layer_sparsity = 0.025, uint64_t hidden_layer_dim = 10000,
-      float hidden_layer_sparsity = 0.01) {
+      float last_layer_sparsity = 0.025, uint64_t hidden_layer_dim = 1000,
+      float hidden_layer_sparsity = 0.1) {
     bolt::SequentialConfigList layers;
     layers.push_back(std::make_shared<bolt::FullyConnectedLayerConfig>(
         hidden_layer_dim, hidden_layer_sparsity,
