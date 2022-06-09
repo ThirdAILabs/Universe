@@ -39,7 +39,9 @@ class Node {
   // be allocated after the batch size is known.
   virtual void initializeState(uint32_t batch_size, bool is_inference) = 0;
 
-  // Add any sparse layers in the node to a list of sparse layers.
+  // Add any sparse layers in the node to a list of sparse layers. A list of all
+  // the sparse layers in the network use useful when rebuilding hash tables or
+  // hash functions and when enabling sparse inference.
   virtual void addSparseLayers(
       std::vector<std::shared_ptr<FullyConnectedLayer>>& sparse_layers) = 0;
 
