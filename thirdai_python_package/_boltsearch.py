@@ -66,14 +66,14 @@ class BoltSearch:
                 current_assignments[classifier_id] = self._get_new_group_assignments(
                     predicted_group_ids=predictions[1],
                     predicted_activations=predictions[2],
-                    num_groups_to_consider=self.num_groups_to_consider
+                    num_groups_to_consider=self.num_groups_to_consider,
                 )
 
             all_predictions = classifier.predict(dataset, None, 2048)
             all_assignments = self._get_new_group_assignments(
                 predicted_group_ids=all_predictions[1],
                 predicted_activations=all_predictions[2],
-                num_groups_to_consider=1
+                num_groups_to_consider=1,
             )
             print(all_assignments)
             print(all_predictions)
@@ -150,14 +150,16 @@ class BoltSearch:
     def _get_random_group_assignments(self, num_items_in_dataset, num_groups):
         return np.random.randint(low=0, high=num_groups, size=(num_items_in_dataset,))
 
-    def _get_new_group_assignments(self, predicted_group_ids, predicted_activations, num_groups_to_consider):
+    def _get_new_group_assignments(
+        self, predicted_group_ids, predicted_activations, num_groups_to_consider
+    ):
         new_group_sizes = [0 for _ in range(self.num_classes)]
         new_group_assignments = []
 
         for group_ids, activations in zip(predicted_group_ids, predicted_activations):
 
             groups_to_consider = group_ids[activations.argsort()[::-1]][
-                : num_groups_to_consider
+                :num_groups_to_consider
             ]
             group_counts = [new_group_sizes[group] for group in groups_to_consider]
             selected_group_id = groups_to_consider[np.argmin(group_counts)]

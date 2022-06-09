@@ -234,7 +234,7 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
       // this conditional
       uint32_t prev_act_neuron = PREV_DENSE ? i : input.active_neurons[i];
       assert(prev_act_neuron < _prev_dim);
-      _w_gradient[act_neuron * _prev_dim + prev_act_neuron] +=
+      _w_gradient.at(act_neuron * _prev_dim + prev_act_neuron) +=
           output.gradients[n] * input.activations[i];
       if (!FIRST_LAYER) {
         input.gradients[i] +=
@@ -446,7 +446,7 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
     uint64_t prev_neuron, uint64_t cur_neuron, float lr, float B1, float B2,
     float eps, float B1_bias_corrected, float B2_bias_corrected) {
   auto indx = cur_neuron * _prev_dim + prev_neuron;
-  float grad = _w_gradient[indx];
+  float grad = _w_gradient.at(indx);
   assert(!std::isnan(grad));
 
   _w_momentum[indx] = B1 * _w_momentum[indx] + (1 - B1) * grad;
@@ -458,7 +458,7 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
                     (std::sqrt(_w_velocity[indx] / B2_bias_corrected) + eps);
   assert(!std::isnan(_weights[indx]));
 
-  _w_gradient[indx] = 0;
+  _w_gradient.at(indx) = 0;
 }
 
 void FullyConnectedLayer::buildHashTables() {

@@ -10,12 +10,11 @@ def test_glove():
     # Get 70% accuracy with num_groups_to_consider=5, basically groups all exactly the same size
     # num_groups_to_consider=3 sucks, and kinda so does 4. 6 gives good groups, but not as high accuracy.
     search_index = BoltSearch(
-        estimated_dataset_size=10**6,
-        num_classifiers=2,
-        input_dim=100,
-        num_groups_to_consider=5,
+        estimated_dataset_size=10**6, num_classifiers=2, input_dim=100
     )
-    search_index.index(glove_data, num_epochs=2, fraction_to_use_for_training=0.25)
+    search_index.index(
+        train_data=glove_data[:10000], rest_of_data=glove_data[10000:], batch_size=2048
+    )
 
     results = search_index.query(glove_queries, top_k=100)
 
@@ -24,3 +23,6 @@ def test_glove():
         if gt[0] in found:
             recalled_in_100 += 1
     print(recalled_in_100)
+
+
+test_glove()
