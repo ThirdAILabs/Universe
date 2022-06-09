@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <memory>
 #include <random>
 
 namespace thirdai::search {
@@ -36,22 +37,22 @@ class Blolt {
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& rest_of_data,
       uint32_t num_epochs = 10, float learning_rate = 0.01) {
-    (void)rest_of_data;
     (void)_num_alternative_groups_to_consider;
     _groups.clear();
-    // _total_num_points = <fill in>;
+    _total_num_points = train_data->len() + rest_of_data->len();
     std::mt19937 rng(_seed);
 
     for (auto& classifier : _classifiers) {
       std::vector<uint64_t> current_assignments =
           getRandomGroupAssignments(_total_num_points, _num_classes, rng);
       for (uint32_t epoch = 0; epoch < num_epochs; epoch++) {
-        classifier.train(/* train_data = */ train_data,
-                         /* train_labels = */ current_assignments,
-                         /* loss_fn = */ bolt::CategoricalCrossEntropyLoss(),
-                         /* learning_rate = */ learning_rate, /* epochs = */ 1,
-                         /* rehash = */ 1, /* rebuild = */ UINT32_MAX,
-                         /* metric_names = */ {}, /* verbose = */ false);
+        classifier.train(
+            /* train_data = */ train_data,
+            /* train_labels = */ labelsToBoltbatch(current_assignments),
+            /* loss_fn = */ bolt::CategoricalCrossEntropyLoss(),
+            /* learning_rate = */ learning_rate, /* epochs = */ 1,
+            /* rehash = */ 1, /* rebuild = */ UINT32_MAX,
+            /* metric_names = */ {}, /* verbose = */ false);
         // classifier.predict()
 
         // current_assignments[classifier_id] =
@@ -198,6 +199,20 @@ class Blolt {
       }
     }
     return result;
+  }
+
+  static dataset::BoltDatasetPtr labelsToBoltbatch(
+      const std::vector<uint64_t>& labels) {
+    bolt::BoltBatch result(/* dim = */ 1, /* batch_size = */ labels.size(),
+                           /* is_dense = */ false);
+    for (uint64_t i = 0; i < labels.size(); i++) {
+      result[i].active_neurons[0] = labels[i];
+      result[i].activations[0] = 1.0;
+    }
+    std::vector<bolt::BoltBatch> batches;
+    batches.push_back(std::move(result));
+    return std::make_shared<dataset::BoltDataset>(std::move(batches),
+                                                  labels.size());
   }
 };
 }  // namespace thirdai::search

@@ -31,7 +31,7 @@ class Model {
    */
   MetricData train(
       // Train dataset
-      std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
+      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
       // Train labels
       const dataset::BoltDatasetPtr& train_labels,
       // Loss function to use

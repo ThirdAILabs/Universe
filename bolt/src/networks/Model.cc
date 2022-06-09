@@ -14,7 +14,7 @@ template class Model<dataset::ClickThroughBatch>;
 
 template <typename BATCH_T>
 MetricData Model<BATCH_T>::train(
-    std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
+    const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
     const dataset::BoltDatasetPtr& train_labels,
     // Clang tidy is disabled for this line because it wants to pass by
     // reference, but shared_ptrs should not be passed by reference
