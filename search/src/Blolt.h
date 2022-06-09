@@ -32,11 +32,11 @@ class Blolt {
   template <typename BATCH_T>
   void index(
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
-      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& rest_of_data,
-      uint32_t num_epochs = 10, float learning_rate = 0.01,
+      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& entire_dataset,
+      uint32_t num_epochs = 5, float learning_rate = 0.01,
       uint32_t num_alternative_groups_to_consider = 5) {
     _groups.clear();
-    _total_num_points = train_data->len() + rest_of_data->len();
+    _total_num_points = entire_dataset->len();
     std::mt19937 rng(_seed);
 
     for (auto& classifier : _classifiers) {
@@ -49,9 +49,12 @@ class Blolt {
             /* train_labels = */
             labelsToBoltDataset(current_assignments, train_data),
             /* loss_fn = */ bolt::CategoricalCrossEntropyLoss(),
-            /* learning_rate = */ learning_rate, /* epochs = */ 1,
-            /* rehash = */ 1, /* rebuild = */ UINT32_MAX,
+            /* learning_rate = */ learning_rate, /* epochs = */ 5,
+            /* rehash = */ UINT32_MAX, /* rebuild = */ UINT32_MAX,
             /* metric_names = */ metrics, /* verbose = */ true);
+        if (epoch == num_epochs - 1) {
+          break;
+        }
         std::vector<uint64_t> new_group_assignments;
         std::vector<uint64_t> new_group_sizes(_num_classes, 0);
         for (uint32_t batch_id = 0; batch_id < train_data->numBatches();
@@ -65,18 +68,15 @@ class Blolt {
         current_assignments = new_group_assignments;
       }
 
-      // all_predictions = classifier.predict(dataset, None, 2048)
-      // all_assignments = self._get_new_group_assignments(
-      //     predicted_group_ids=all_predictions[1],
-      //     predicted_activations=all_predictions[2],
-      //     num_groups_to_consider=1
-      // )
-      // group_memberships = [[] for _ in range(self.num_classes)]
-      // group_lens = [0 for _ in range(self.num_classes)]
-      // for vec_id, group_id in enumerate(all_assignments):
-      //     group_memberships[group_id].append(vec_id)
-      //     group_lens[group_id] += 1
-      // self.groups += group_memberships
+      std::vector<uint64_t> new_group_assignments;
+      std::vector<uint64_t> new_group_sizes(_num_classes, 0);
+      for (uint32_t batch_id = 0; batch_id < entire_dataset->numBatches();
+           batch_id++) {
+        auto prediction = classifier.predict(entire_dataset->at(batch_id));
+        updateGroupAssigmentsForBatch(new_group_assignments, new_group_sizes,
+                                      prediction, 1);
+      }
+      printGroupSizeProperties(new_group_sizes);
     }
   }
   std::vector<std::vector<uint64_t>> query(const bolt::BoltBatch& batch,
@@ -134,7 +134,7 @@ class Blolt {
         thirdai::bolt::ActivationFunction::ReLU));
     layers.push_back(std::make_shared<bolt::FullyConnectedLayerConfig>(
         num_classes, last_layer_sparsity,
-        thirdai::bolt::ActivationFunction::ReLU));
+        thirdai::bolt::ActivationFunction::Softmax));
     return bolt::FullyConnectedNetwork(layers, input_dim);
   }
 
@@ -142,9 +142,12 @@ class Blolt {
       uint64_t num_items_in_dataset, uint64_t num_groups, std::mt19937 gen) {
     std::uniform_int_distribution<uint64_t> distr(0, num_groups - 1);
     std::vector<uint64_t> random_group_assignments(num_items_in_dataset);
+    std::vector<uint64_t> group_sizes(num_groups, 0);
     for (uint64_t i = 0; i < num_items_in_dataset; i++) {
       random_group_assignments[i] = distr(gen);
+      group_sizes[random_group_assignments[i]]++;
     }
+    printGroupSizeProperties(group_sizes);
     return random_group_assignments;
   }
 
@@ -227,10 +230,14 @@ class Blolt {
       const std::vector<uint64_t>& group_sizes) {
     uint64_t sum =
         std::accumulate(std::begin(group_sizes), std::end(group_sizes), 0UL);
-    float mean = sum / static_cast<float>(group_sizes.size());
+    double mean = sum / static_cast<float>(group_sizes.size());
     uint64_t min = *std::min_element(group_sizes.begin(), group_sizes.end());
     uint64_t max = *std::max_element(group_sizes.begin(), group_sizes.end());
-    std::cout << "MEAN: " << mean << ", MIN: " << min << ", MAX: " << max
+    double accum = 0.0;
+    std::for_each(std::begin(group_sizes), std::end(group_sizes),
+                  [&](const double d) { accum += (d - mean) * (d - mean); });
+    double stdev = sqrt(accum / (group_sizes.size() - 1));
+    std::cout << "STDDEV: " << stdev << ", MIN: " << min << ", MAX: " << max
               << std::endl;
   }
 };

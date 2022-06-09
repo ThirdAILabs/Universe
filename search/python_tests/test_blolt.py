@@ -13,16 +13,16 @@ def test_glove():
         estimated_dataset_size=10**6, num_classifiers=2, input_dim=100
     )
     search_index.index(
-        train_data=glove_data[:10000], rest_of_data=glove_data[10000:], batch_size=2048
+        train_data=glove_data[:50000], all_data=glove_data, batch_size=2048
     )
 
-    results = search_index.query(glove_queries, top_k=100)
+    # results = search_index.query(glove_queries, top_k=100)
 
-    recalled_in_100 = 0
-    for found, gt in zip(results, glove_neighbors):
-        if gt[0] in found:
-            recalled_in_100 += 1
-    print(recalled_in_100)
+    # recalled_in_100 = 0
+    # for found, gt in zip(results, glove_neighbors):
+    #     if gt[0] in found:
+    #         recalled_in_100 += 1
+    # print(recalled_in_100)
 
 
 test_glove()

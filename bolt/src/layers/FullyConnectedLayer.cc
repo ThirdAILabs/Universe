@@ -31,7 +31,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _remember_mistakes(false) {
   std::random_device rd;
   std::default_random_engine eng(rd());
-  std::normal_distribution<float> dist(0.0, 0.01);
+  std::normal_distribution<float> dist(0, 1);
 
   std::generate(_weights.begin(), _weights.end(), [&]() { return dist(eng); });
   std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });

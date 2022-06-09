@@ -89,17 +89,17 @@ inline void Model<BATCH_T>::processTrainingBatch(
     shuffleRandomNeurons();
   }
 
-#pragma omp parallel for default(none) \
-    shared(batch_inputs, batch_labels, outputs, loss_fn, metrics)
+  // #pragma omp parallel for default(none)
+  //     shared(batch_inputs, batch_labels, outputs, loss_fn, metrics)
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
     forward(vec_id, batch_inputs, outputs[vec_id], &batch_labels[vec_id]);
+
+    metrics.processSample(outputs[vec_id], batch_labels[vec_id]);
 
     loss_fn.lossGradients(outputs[vec_id], batch_labels[vec_id],
                           batch_inputs.getBatchSize());
 
     backpropagate(vec_id, batch_inputs, outputs[vec_id]);
-
-    metrics.processSample(outputs[vec_id], batch_labels[vec_id]);
   }
 
   updateParameters(learning_rate, ++_batch_iter);
