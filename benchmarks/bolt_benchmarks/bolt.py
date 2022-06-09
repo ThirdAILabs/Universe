@@ -147,7 +147,6 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
 
     learning_rate = config["params"]["learning_rate"]
     epochs = config["params"]["epochs"]
-    batch_size = config["params"]["batch_size"]
     max_test_batches = config["dataset"].get("max_test_batches", None)
     rehash = config["params"]["rehash"]
     rebuild = config["params"]["rebuild"]
@@ -192,7 +191,9 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
             network.enable_sparse_inference()
 
         if max_test_batches is None:
-            metrics, _ = network.predict(test_x, test_y, batch_size, test_metrics)
+            metrics, _ = network.predict(
+                test_data=test_x, test_labels=test_y, metrics=test_metrics
+            )
             if mlflow_enabled:
                 mlflow.log_metrics(metrics)
         else:
