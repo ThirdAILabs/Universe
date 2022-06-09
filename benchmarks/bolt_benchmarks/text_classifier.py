@@ -9,7 +9,7 @@ import toml
 import pandas as pd
 
 from thirdai import bolt
-from util import log_machine_info, start_mlflow
+from utils import log_machine_info, start_mlflow
 
 
 def compute_accuracy(test_file, pred_file):
