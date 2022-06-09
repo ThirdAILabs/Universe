@@ -197,13 +197,19 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
                 mlflow.log_metrics(metrics)
         else:
             metrics, _ = network.predict(
-                test_data=test_x, test_labels=test_y, metrics=test_metrics, verbose=True, batch_limit=max_test_batches
+                test_data=test_x,
+                test_labels=test_y,
+                metrics=test_metrics,
+                verbose=True,
+                batch_limit=max_test_batches,
             )
             if mlflow_enabled:
                 mlflow.log_metrics(metrics)
     if not max_test_batches is None:
         # If we limited the number of test batches during training we run on the whole test set at the end.
-        metrics, _ = network.predict(test_data=test_x, test_labels=test_y, metrics=test_metrics)
+        metrics, _ = network.predict(
+            test_data=test_x, test_labels=test_y, metrics=test_metrics
+        )
         if mlflow_enabled:
             mlflow.log_metrics(metrics)
 
