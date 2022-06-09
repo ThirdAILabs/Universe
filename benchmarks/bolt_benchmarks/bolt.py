@@ -12,33 +12,6 @@ import mlflow
 import argparse
 from utils import log_config_info, log_machine_info, start_mlflow
 
-def log_subconfig(name: str, subconfig: Dict[str, Any]):
-    for param, val in subconfig.items():
-        mlflow.log_param(f"{name}_{param}", val)
-
-
-def initialize_mlfow_logging_for_bolt(
-    run_name: str, config_filename: str, config: Dict[str, Any]
-):
-    mlflow.set_experiment(config["job"])
-
-    dataset = config["dataset"]["train_data"].split("/")[-1]
-    mlflow.start_run(
-        run_name=run_name,
-        tags={"dataset": dataset},
-    )
-
-    mlflow.log_artifact(config_filename)
-
-    log_machine_info()
-
-    for name, subconfig in config.items():
-        if isinstance(subconfig, dict):
-            log_subconfig(name, subconfig)
-        if isinstance(subconfig, list):
-            for i, subconfig_i in enumerate(subconfig):
-                log_subconfig(f"{name}_{i}", subconfig_i)
-
 
 def log_training_metrics(metrics: Dict[str, List[float]]):
     # In this benchmarking script, train is only called with one epoch
@@ -174,6 +147,7 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
 
     learning_rate = config["params"]["learning_rate"]
     epochs = config["params"]["epochs"]
+    batch_size = config["params"]["batch_size"]
     max_test_batches = config["dataset"].get("max_test_batches", None)
     rehash = config["params"]["rehash"]
     rebuild = config["params"]["rebuild"]
@@ -202,7 +176,15 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
 
     for e in range(epochs):
         metrics = network.train(
-            train_x, train_y, loss, learning_rate, 1, rehash, rebuild, train_metrics
+            train_x,
+            train_y,
+            loss,
+            learning_rate,
+            1,
+            batch_size,
+            rehash,
+            rebuild,
+            train_metrics,
         )
         if mlflow_enabled:
             log_training_metrics(metrics)
@@ -211,18 +193,18 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
             network.enable_sparse_inference()
 
         if max_test_batches is None:
-            metrics, _ = network.predict(test_x, test_y, test_metrics)
+            metrics, _ = network.predict(test_x, test_y, batch_size, test_metrics)
             if mlflow_enabled:
                 mlflow.log_metrics(metrics)
         else:
             metrics, _ = network.predict(
-                test_x, test_y, test_metrics, True, max_test_batches
+                test_x, test_y, batch_size, test_metrics, True, max_test_batches
             )
             if mlflow_enabled:
                 mlflow.log_metrics(metrics)
     if not max_test_batches is None:
         # If we limited the number of test batches during training we run on the whole test set at the end.
-        metrics, _ = network.predict(test_x, test_y, test_metrics)
+        metrics, _ = network.predict(test_x, test_y, batch_size, test_metrics)
         if mlflow_enabled:
             mlflow.log_metrics(metrics)
 
@@ -332,7 +314,7 @@ def main():
     if mlflow_enabled and not args.run_name:
         parser.print_usage()
         raise ValueError("Error: --run_name is required when using mlflow logging.")
-    
+
     config_filename = sys.argv[1]
     config = toml.load(config_filename)
 
@@ -340,7 +322,6 @@ def main():
         experiment_name = config["job"]
         dataset = config["dataset"]["train_data"].split("/")[-1]
         start_mlflow(experiment_name, args.run_name, dataset)
-        # initialize_mlfow_logging_for_bolt(args.run_name, sys.argv[1], config)
         mlflow.log_artifact(config_filename)
         log_machine_info()
         log_config_info(config)

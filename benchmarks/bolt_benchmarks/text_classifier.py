@@ -11,6 +11,7 @@ import pandas as pd
 from thirdai import bolt
 from util import log_machine_info, start_mlflow
 
+
 def compute_accuracy(test_file, pred_file):
     with open(pred_file) as pred:
         predictions = pred.read().splitlines()
@@ -34,9 +35,7 @@ def compute_accuracy(test_file, pred_file):
     return correct / total
 
 
-def train_classifier(
-    train_dataset, n_classes, model_size, epochs, learning_rate
-):
+def train_classifier(train_dataset, n_classes, model_size, epochs, learning_rate):
     classifier = bolt.TextClassifier(model_size=model_size, n_classes=n_classes)
 
     classifier.train(
@@ -120,13 +119,7 @@ def main():
         raise ValueError("Error: --run_name is required when using mlflow logging.")
 
     if mlflow_enabled:
-        start_mlflow()
-
-        mlflow.set_experiment(args.experiment_name)
-        mlflow.start_run(
-                run_name=args.run_name,
-                tags={"dataset": args.train_dataset},
-                )
+        start_mlflow(args.experiment_name, args.run_name, args.train_dataset)
         log_machine_info()
         mlflow.log_params(vars(args))
 
