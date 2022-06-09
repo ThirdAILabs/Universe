@@ -223,6 +223,9 @@ def test_load_save_fc_network():
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
+    # Accuracy is around 95-96%
+    assert original_acc["categorical_accuracy"] >= 0.9
+
     save_loc = "./bolt_model_save"
 
     if os.path.exists(save_loc):
@@ -246,7 +249,8 @@ def test_load_save_fc_network():
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert another_acc["categorical_accuracy"] >= new_acc["categorical_accuracy"]
+    # Accuracy is around 95-96%
+    assert another_acc["categorical_accuracy"] >= 0.9
 
     os.remove(save_loc)
 
