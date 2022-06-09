@@ -1,3 +1,4 @@
+#include "BloltPython.h"
 #include "DocSearchPython.h"
 #include "FlashPython.h"
 #include <pybind11/stl.h>
@@ -102,6 +103,17 @@ void createSearchSubmodule(py::module_& module) {
       .def_static("deserialize_from_file", &PyDocSearch::deserialize_from_file,
                   py::arg("input_path"),
                   "Deserialize the DocRetrieval index from a file.");
+
+#if THIRDAI_EXPOSE_ALL
+  py::class_<PyBlolt>(search_submodule, "BoltSearch")
+      .def(py::init<uint64_t, uint8_t, uint64_t>(),
+           py::arg("estimated_dataset_size"), py::arg("num_classifiers"),
+           py::arg("input_dim"))
+      .def("index", &PyBlolt::index, py::arg("train_data"),
+           py::arg("rest_of_data"), py::arg("batch_size"))
+      .def("query", &PyBlolt::query, py::arg("query_batch_python"),
+           py::arg("top_k"));
+#endif
 }
 
 }  // namespace thirdai::search::python

@@ -75,6 +75,8 @@ class BoltSearch:
                 predicted_activations=all_predictions[2],
                 num_groups_to_consider=1
             )
+            print(all_assignments)
+            print(all_predictions)
             group_memberships = [[] for _ in range(self.num_classes)]
             group_lens = [0 for _ in range(self.num_classes)]
             for vec_id, group_id in enumerate(all_assignments):
@@ -114,6 +116,7 @@ class BoltSearch:
         result = []
         point_counts = np.zeros(shape=(self.num_points,))
         for group_id in group_ids:
+            print(group_id, self.groups[group_id])
             for point_id in self.groups[group_id]:
                 point_counts[point_id] += 1
                 if point_counts[point_id] == threshold:

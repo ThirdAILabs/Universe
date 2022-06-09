@@ -137,6 +137,105 @@ static inline bool checkNumpyDtypeAnyInt(const py::object& obj) {
          checkNumpyDtype(obj, "int64") || checkNumpyDtype(obj, "uint64");
 }
 
+static inline void printCopyWarning(const std::string& array_name,
+                                    const py::str& dtype_recv,
+                                    const std::string& dtype_expected) {
+  std::cout << "Warning: " << array_name << " array has dtype=" << dtype_recv
+            << " but " << dtype_expected
+            << " was expected. This will result in a copy of "
+               "the array in order to ensure type safety. Try specifying "
+               "the dtype of the array or use .astype(...)."
+            << std::endl;
+}
+
+static inline BoltDatasetNumpyContext convertTupleToBoltDataset(
+    const py::object& obj, uint32_t batch_size) {
+  if (batch_size == 0) {
+    throw std::invalid_argument("No batch size provided.");
+  }
+  py::tuple tup = obj.cast<py::tuple>();
+  if (tup.size() != 3) {
+    throw std::invalid_argument(
+        "Expected tuple of 3 numpy arrays (indices, values, offsets), "
+        "received "
+        "tuple of length: " +
+        std::to_string(tup.size()));
+  }
+
+  if (!isNumpyArray(tup[0]) || !isNumpyArray(tup[1]) || !isNumpyArray(tup[2])) {
+    throw std::invalid_argument(
+        "Expected tuple of 3 numpy arrays (indices, values, offsets), "
+        "received non numpy array.");
+  }
+
+  if (!checkNumpyDtypeUint32(tup[0])) {
+    printCopyWarning("indices", getDtype(tup[0]), "uint32");
+  }
+  if (!checkNumpyDtypeFloat32(tup[1])) {
+    printCopyWarning("values", getDtype(tup[1]), "float32");
+  }
+  if (!checkNumpyDtypeUint32(tup[2])) {
+    printCopyWarning("offsets", getDtype(tup[2]), "uint32");
+  }
+
+  NumpyArray<uint32_t> indices = tup[0].cast<NumpyArray<uint32_t>>();
+  NumpyArray<float> values = tup[1].cast<NumpyArray<float>>();
+  NumpyArray<uint32_t> offsets = tup[2].cast<NumpyArray<uint32_t>>();
+
+  return BoltDatasetNumpyContext(indices, values, offsets, batch_size);
+}
+
+static inline BoltDatasetNumpyContext convertNumpyArrayToBoltDataset(
+    const py::object& obj, uint32_t batch_size, bool is_labels,
+    uint32_t network_input_dim) {
+  if (batch_size == 0) {
+    throw std::invalid_argument("No batch size provided.");
+  }
+
+  if (is_labels && checkNumpyDtypeAnyInt(obj)) {
+    if (!checkNumpyDtypeUint32(obj)) {
+      printCopyWarning("labels", getDtype(obj), "uint32");
+    }
+    auto labels = obj.cast<NumpyArray<uint32_t>>();
+    return BoltDatasetNumpyContext(labels, batch_size);
+  }
+
+  if (!checkNumpyDtypeFloat32(obj)) {
+    printCopyWarning("data", getDtype(obj), "float32");
+  }
+
+  NumpyArray<float> data = obj.cast<NumpyArray<float>>();
+  uint32_t input_dim = data.ndim() == 1 ? 1 : data.shape(1);
+  if (input_dim != network_input_dim) {
+    throw std::invalid_argument(
+        "Cannot pass array with input dimension " + std::to_string(input_dim) +
+        " to network with input dim " + std::to_string(network_input_dim));
+  }
+
+  return BoltDatasetNumpyContext(data, batch_size);
+}
+
+static inline BoltDatasetNumpyContext convertPyObjectToBoltDataset(
+    const py::object& obj, uint32_t batch_size, bool is_labels,
+    uint32_t network_input_dim) {
+  if (isBoltDataset(obj)) {
+    return BoltDatasetNumpyContext(obj.cast<dataset::BoltDatasetPtr>());
+  }
+  if (isNumpyArray(obj)) {
+    return convertNumpyArrayToBoltDataset(obj, batch_size, is_labels,
+                                          network_input_dim);
+  }
+  if (isTuple(obj)) {
+    return convertTupleToBoltDataset(obj, batch_size);
+  }
+
+  throw std::invalid_argument(
+      "Expected object of type BoltDataset, tuple, or numpy array (or None "
+      "for "
+      "test labels), received " +
+      py::str(obj.get_type()).cast<std::string>());
+}
+
 class PyNetwork final : public FullyConnectedNetwork {
  public:
   PyNetwork(SequentialConfigList configs, uint64_t input_dim)
@@ -151,9 +250,11 @@ class PyNetwork final : public FullyConnectedNetwork {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
-    auto train_data = convertPyObjectToBoltDataset(data, batch_size, false);
+    auto train_data =
+        convertPyObjectToBoltDataset(data, batch_size, false, getInputDim());
 
-    auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
+    auto train_labels =
+        convertPyObjectToBoltDataset(labels, batch_size, true, getInputDim());
 
     return FullyConnectedNetwork::train(
         train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
@@ -168,11 +269,13 @@ class PyNetwork final : public FullyConnectedNetwork {
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
 
-    auto test_data = convertPyObjectToBoltDataset(data, batch_size, false);
+    auto test_data =
+        convertPyObjectToBoltDataset(data, batch_size, false, getInputDim());
 
     BoltDatasetNumpyContext test_labels;
     if (!labels.is_none()) {
-      test_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
+      test_labels =
+          convertPyObjectToBoltDataset(labels, batch_size, true, getInputDim());
     }
 
     uint32_t num_samples = test_data.dataset->len();
@@ -303,106 +406,6 @@ class PyNetwork final : public FullyConnectedNetwork {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<FullyConnectedNetwork>(this));
-  }
-
-  static void printCopyWarning(const std::string& array_name,
-                               const py::str& dtype_recv,
-                               const std::string& dtype_expected) {
-    std::cout << "Warning: " << array_name << " array has dtype=" << dtype_recv
-              << " but " << dtype_expected
-              << " was expected. This will result in a copy of "
-                 "the array in order to ensure type safety. Try specifying "
-                 "the dtype of the array or use .astype(...)."
-              << std::endl;
-  }
-
-  static BoltDatasetNumpyContext convertTupleToBoltDataset(
-      const py::object& obj, uint32_t batch_size) {
-    if (batch_size == 0) {
-      throw std::invalid_argument("No batch size provided.");
-    }
-    py::tuple tup = obj.cast<py::tuple>();
-    if (tup.size() != 3) {
-      throw std::invalid_argument(
-          "Expected tuple of 3 numpy arrays (indices, values, offsets), "
-          "received "
-          "tuple of length: " +
-          std::to_string(tup.size()));
-    }
-
-    if (!isNumpyArray(tup[0]) || !isNumpyArray(tup[1]) ||
-        !isNumpyArray(tup[2])) {
-      throw std::invalid_argument(
-          "Expected tuple of 3 numpy arrays (indices, values, offsets), "
-          "received non numpy array.");
-    }
-
-    if (!checkNumpyDtypeUint32(tup[0])) {
-      printCopyWarning("indices", getDtype(tup[0]), "uint32");
-    }
-    if (!checkNumpyDtypeFloat32(tup[1])) {
-      printCopyWarning("values", getDtype(tup[1]), "float32");
-    }
-    if (!checkNumpyDtypeUint32(tup[2])) {
-      printCopyWarning("offsets", getDtype(tup[2]), "uint32");
-    }
-
-    NumpyArray<uint32_t> indices = tup[0].cast<NumpyArray<uint32_t>>();
-    NumpyArray<float> values = tup[1].cast<NumpyArray<float>>();
-    NumpyArray<uint32_t> offsets = tup[2].cast<NumpyArray<uint32_t>>();
-
-    return BoltDatasetNumpyContext(indices, values, offsets, batch_size);
-  }
-
-  BoltDatasetNumpyContext convertNumpyArrayToBoltDataset(const py::object& obj,
-                                                         uint32_t batch_size,
-                                                         bool is_labels) {
-    if (batch_size == 0) {
-      throw std::invalid_argument("No batch size provided.");
-    }
-
-    if (is_labels && checkNumpyDtypeAnyInt(obj)) {
-      if (!checkNumpyDtypeUint32(obj)) {
-        printCopyWarning("labels", getDtype(obj), "uint32");
-      }
-      auto labels = obj.cast<NumpyArray<uint32_t>>();
-      return BoltDatasetNumpyContext(labels, batch_size);
-    }
-
-    if (!checkNumpyDtypeFloat32(obj)) {
-      printCopyWarning("data", getDtype(obj), "float32");
-    }
-
-    NumpyArray<float> data = obj.cast<NumpyArray<float>>();
-    uint32_t input_dim = data.ndim() == 1 ? 1 : data.shape(1);
-    if (input_dim != getInputDim()) {
-      throw std::invalid_argument("Cannot pass array with input dimension " +
-                                  std::to_string(input_dim) +
-                                  " to network with input dim " +
-                                  std::to_string(getInputDim()));
-    }
-
-    return BoltDatasetNumpyContext(data, batch_size);
-  }
-
-  BoltDatasetNumpyContext convertPyObjectToBoltDataset(const py::object& obj,
-                                                       uint32_t batch_size,
-                                                       bool is_labels) {
-    if (isBoltDataset(obj)) {
-      return BoltDatasetNumpyContext(obj.cast<dataset::BoltDatasetPtr>());
-    }
-    if (isNumpyArray(obj)) {
-      return convertNumpyArrayToBoltDataset(obj, batch_size, is_labels);
-    }
-    if (isTuple(obj)) {
-      return convertTupleToBoltDataset(obj, batch_size);
-    }
-
-    throw std::invalid_argument(
-        "Expected object of type BoltDataset, tuple, or numpy array (or None "
-        "for "
-        "test labels), received " +
-        py::str(obj.get_type()).cast<std::string>());
   }
 
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/

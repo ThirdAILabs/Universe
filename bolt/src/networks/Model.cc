@@ -113,6 +113,25 @@ inline void Model<BATCH_T>::processTrainingBatch(
 }
 
 template <typename BATCH_T>
+BoltBatch Model<BATCH_T>::predict(const BATCH_T& test_data) {
+  initializeNetworkState(/* batch_size = */ test_data.getBatchSize(),
+                         /* force_dense = */ false);
+  BoltBatch outputs = getOutputs(/* batch_size = */ test_data.getBatchSize(),
+                                 /* force_dense = */ false);
+  MetricAggregator no_metrics(/* metrics = */ std::vector<std::string>(),
+                              /* verbose = */ false);
+  processTestBatch(
+      /* batch_inputs = */ test_data,
+      /* outputs = */ outputs,
+      /* batch_labels = */ NULL,
+      /* output_active_neurons = */ nullptr,
+      /* output_activations = */ nullptr,
+      /* metrics = */ no_metrics,
+      /* compute_metrics = */ false);
+  return outputs;
+}
+
+template <typename BATCH_T>
 InferenceMetricData Model<BATCH_T>::predict(
     const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
     const dataset::BoltDatasetPtr& labels, uint32_t* output_active_neurons,
@@ -138,6 +157,12 @@ InferenceMetricData Model<BATCH_T>::predict(
   // Don't force dense inference if the metric does not allow it.
   // This is not the same as enable_sparse_inference(), which also freezes hash
   // tables.
+  // outputs is only a temporary that gets filled for each batch. We copy
+  // into output_activations and output_active_neurons as we go, inside of
+  // processTestBatch.
+  // TODO(josh): This is a bit hacky, processTestBatch should probably just
+  // fill output and we should fill output_activations and output_active_neurons
+  // here.
   BoltBatch outputs = getOutputs(batch_size, metrics.forceDenseInference());
 
   auto test_start = std::chrono::high_resolution_clock::now();

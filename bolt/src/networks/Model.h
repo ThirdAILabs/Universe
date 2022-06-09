@@ -47,6 +47,8 @@ class Model {
       // Restrict printouts
       bool verbose = true);
 
+  BoltBatch predict(const BATCH_T& test_data);
+
   /**
    * This function takes in a test dataset and uses it to evaluate the model. It
    * returns the final accuracy. The batch_limit parameter limits the number of
