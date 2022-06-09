@@ -218,8 +218,7 @@ uint64_t getMemoryBudget(const std::string& model_size) {
   }
 
   throw std::invalid_argument(
-      "'model_size' parameter must be either 'small', 'medium', 'large', or "
-      "a "
+      "'model_size' parameter must be either 'small', 'medium', 'large', or a "
       "gigabyte size of the model, i.e. 5Gb");
 }
 
@@ -239,7 +238,7 @@ float getHiddenLayerSparsity(uint64_t layer_size) {
   return 0.005;
 }
 
-static std::optional<uint64_t> getSystemRam() {
+std::optional<uint64_t> getSystemRam() {
 #if defined __linux__
   // https://stackoverflow.com/questions/349889/how-do-you-determine-the-amount-of-linux-system-ram-in-c
   struct sysinfo mem_info;
@@ -265,7 +264,7 @@ static std::optional<uint64_t> getSystemRam() {
   return std::nullopt;
 }
 
-static bool canLoadDatasetInMemory(const std::string& filename) {
+bool canLoadDatasetInMemory(const std::string& filename) {
   auto total_ram = getSystemRam().value();
 
 #if defined(__APPLE__) || defined(__linux__)
@@ -278,7 +277,7 @@ static bool canLoadDatasetInMemory(const std::string& filename) {
   }
 #elif _WIN32
   // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/stat-functions?redirectedfrom=MSDN&view=msvc-170
-  
+
   struct _stat64 file_stats;
   if (_wstat64(filename.c_str(), &file_stats)) {
     uint64_t file_size = file_stats.st_size;
