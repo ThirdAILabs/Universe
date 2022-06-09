@@ -1,6 +1,5 @@
 # Add an integration test marker for all tests in this file
 import pytest
-from sqlalchemy import true
 
 pytestmark = [pytest.mark.integration]
 
