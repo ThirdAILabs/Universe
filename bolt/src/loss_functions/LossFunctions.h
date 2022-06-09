@@ -164,7 +164,7 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
       CrossEntropyLoss is defined as Loss = -∑ y_i log(a_i)
       where y_i is the ith label and a_i is the ith activation.
 
-      Thus we will each element as label * log(activation).
+      Thus we will compute each element loss as: label * log(activation).
     */
     return -label * log(activation);
   }
@@ -236,7 +236,7 @@ class MeanSquaredError final : public LossFunction {
       MeanSquaredError is defined as Error = ∑ (y_i - a_i)^2
       where y_i is the ith label and a_i is the ith activation.
 
-      Thus we will each element as (y_i - a_i)^2.
+      Thus we will compute each element loss as: (y_i - a_i)^2.
     */
     float diff = label - activation;
     return diff * diff;

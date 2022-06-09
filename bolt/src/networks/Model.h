@@ -67,6 +67,8 @@ class Model {
       uint32_t rebuild_batch = 100,
       // Metrics to compute during training
       const std::vector<std::string>& metric_names = {},
+      // Interval at which to log metrics when processing stream,
+      uint32_t metric_log_batch_interval = 0,
       // Restrict printouts
       bool verbose = true);
 
@@ -108,9 +110,9 @@ class Model {
       const std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& test_data,
       // Metrics to compute
       const std::vector<std::string>& metric_names = {},
-      // We cannot reallistically store activations for a streaming dataset, so
-      // instead we provide the ability to have a callback which is called after
-      // every batch.
+      // We choose not to store final layer activations for a streaming dataset
+      // as streaming datasets, so instead we provide the ability to have a
+      // callback which is called with the output activations after every batch.
       std::optional<std::function<void(const bolt::BoltBatch&, uint32_t)>>
           batch_callback = std::nullopt,
       // Restrict printouts

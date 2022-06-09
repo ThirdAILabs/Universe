@@ -3,6 +3,8 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <algorithm>
 #include <fstream>
 #include <memory>
@@ -32,6 +34,7 @@ static uint32_t getHiddenLayerSize(const std::string& model_size,
 static float getHiddenLayerSparsity(uint64_t layer_size);
 static std::optional<uint64_t> getSystemRam();
 static uint64_t getMemoryBudget(const std::string& model_size);
+static bool canLoadDatasetInMemory(const std::string& filename);
 
 TextClassifier::TextClassifier(const std::string& model_size,
                                uint32_t n_classes) {
@@ -67,8 +70,18 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
   std::shared_ptr<LossFunction> loss =
       std::make_shared<CategoricalCrossEntropyLoss>();
 
-  if (epochs == 1) {
-    _model->trainOnStream(dataset, loss, learning_rate);
+  if (!canLoadDatasetInMemory(filename)) {
+    for (uint32_t e = 0; e < epochs; e++) {
+      // Train on streaming dataset
+      _model->trainOnStream(dataset, loss, learning_rate);
+
+      // Create new stream for next epoch with new data loader.
+      data_loader =
+          std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
+      dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
+          data_loader, _batch_processor);
+    }
+
   } else {
     auto [train_data, train_labels] = dataset->loadInMemory();
 
@@ -90,9 +103,15 @@ void TextClassifier::predict(
   std::optional<std::ofstream> output_file;
   if (output_filename) {
     output_file = std::ofstream(*output_filename);
+    if (!output_file->good() || output_file->bad() || output_file->fail() ||
+        !output_file->is_open()) {
+      throw std::runtime_error("Unable to open output file '" +
+                               *output_filename + "'");
+    }
   }
 
-  auto callback = [&](const BoltBatch& outputs, uint32_t batch_size) {
+  auto print_predictions_callback = [&](const BoltBatch& outputs,
+                                        uint32_t batch_size) {
     if (!output_file) {
       return;
     }
@@ -114,7 +133,15 @@ void TextClassifier::predict(
     }
   };
 
-  _model->predictOnStream(dataset, {"categorical_accuracy"}, callback);
+  /*
+    We are using predict with the stream directly because we only need a single
+    pass through the dataset, so this is more memory efficient, and we don't
+    have to worry about storing the activations in memory to compute the
+    predictions, and can instead compute the predictions using the
+    back_callback.
+  */
+  _model->predictOnStream(dataset, {"categorical_accuracy"},
+                          print_predictions_callback);
 
   if (output_file) {
     output_file->close();
@@ -161,20 +188,20 @@ uint64_t getMemoryBudget(const std::string& model_size) {
   // If unable to find system RAM assume max ram is 8Gb
   uint64_t system_ram = getSystemRam().value_or(8 * ONE_GB);
 
-  // For small models we use either 1Gb of 1/16th of the total RAM, whichever
-  // is smaller.
+  // For small models we use either 1Gb of 1/16th of the total RAM, whichever is
+  // smaller.
   if (std::regex_search(model_size, small_re)) {
     return std::min<uint64_t>(system_ram / 16, ONE_GB);
   }
 
-  // For medium models we use either 2Gb of 1/8th of the total RAM, whichever
-  // is smaller.
+  // For medium models we use either 2Gb of 1/8th of the total RAM, whichever is
+  // smaller.
   if (std::regex_search(model_size, medium_re)) {
     return std::min<uint64_t>(system_ram / 8, 2 * ONE_GB);
   }
 
-  // For large models we use either 4Gb of 1/4th of the total RAM, whichever
-  // is smaller.
+  // For large models we use either 4Gb of 1/4th of the total RAM, whichever is
+  // smaller.
   if (std::regex_search(model_size, large_re)) {
     return std::min<uint64_t>(system_ram / 4, 4 * ONE_GB);
   }
@@ -193,8 +220,7 @@ uint64_t getMemoryBudget(const std::string& model_size) {
   }
 
   throw std::invalid_argument(
-      "'model_size' parameter must be either 'small', 'medium', 'large', or "
-      "a "
+      "'model_size' parameter must be either 'small', 'medium', 'large', or a "
       "gigabyte size of the model, i.e. 5Gb");
 }
 
@@ -238,6 +264,31 @@ std::optional<uint64_t> getSystemRam() {
   return status.ullTotalPhys;
 #endif
   return std::nullopt;
+}
+
+bool canLoadDatasetInMemory(const std::string& filename) {
+  auto total_ram = getSystemRam().value();
+
+#if defined(__APPLE__) || defined(__linux__)
+  // TODO(Nicholas): separate file size method for windows
+  struct stat file_stats;
+
+  if (stat(filename.c_str(), &file_stats)) {
+    uint64_t file_size = file_stats.st_size;
+    return total_ram / 2 >= file_size;
+  }
+#elif _WIN32
+  // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/stat-functions?redirectedfrom=MSDN&view=msvc-170
+
+  struct _stat64 file_stats;
+  if (_wstat64(filename.c_str(), &file_stats)) {
+    uint64_t file_size = file_stats.st_size;
+    return total_ram / 2 >= file_size;
+  }
+
+#endif
+
+  throw std::runtime_error("Unable to get filesize of '" + filename + "'");
 }
 
 }  // namespace thirdai::bolt
