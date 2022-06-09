@@ -39,6 +39,7 @@ class LossFunction : public Metric {
       }
     } else {
       if (labels.isDense()) {
+        // See comment in computeLossImpl for why this cannot be supported.
         throw std::invalid_argument(
             "Having sparse output and dense labels is not supported.");
       }
@@ -95,13 +96,13 @@ class LossFunction : public Metric {
   template <bool OUTPUT_DENSE, bool LABEL_DENSE>
   void computeLossImpl(const BoltVector& output, const BoltVector& labels) {
     // We cannot have sparse output and dense labels. This will cause errors in
-    // sampling and means that there is no valid definition of CrossEntropy loss
-    // since non-active neurons have 0 activation and log(0) is undefined.
+    // sampling and means that there is no valid definition of any sort of
+    // CrossEntropy loss since non-active neurons have 0 activation and log(0)
+    // is undefined.
     static_assert(OUTPUT_DENSE || !LABEL_DENSE);
     if (OUTPUT_DENSE) {
-      // If either of the the vectors is dense then we have to iterate over the
-      // full dimension. To find this dimension we can take the max of the
-      // dimensions of both vectors since we know that at least one is dense.
+      // If the output is dense then we have to iterate over the
+      // full dimension.
 
       float sample_loss = 0.0;
       for (uint32_t i = 0; i < output.len; i++) {

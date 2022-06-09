@@ -46,8 +46,8 @@ class CategoricalAccuracy final : public Metric {
   CategoricalAccuracy() : _correct(0), _num_samples(0) {}
 
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
-    float max_act = std::numeric_limits<float>::min();
-    uint32_t max_act_index = std::numeric_limits<uint32_t>::max();
+    float max_act = -std::numeric_limits<float>::max();
+    std::optional<uint32_t> max_act_index = std::nullopt;
     for (uint32_t i = 0; i < output.len; i++) {
       if (output.activations[i] > max_act) {
         max_act = output.activations[i];
@@ -55,9 +55,16 @@ class CategoricalAccuracy final : public Metric {
       }
     }
 
+    if (!max_act_index) {
+      throw std::runtime_error(
+          "Unable to find a output activation larger than the minimum "
+          "representable float. This is likely do to a Nan or incorrect "
+          "activation function in the final layer.");
+    }
+
     // The nueron with the largest activation is the prediction
-    uint32_t pred =
-        output.isDense() ? max_act_index : output.active_neurons[max_act_index];
+    uint32_t pred = output.isDense() ? *max_act_index
+                                     : output.active_neurons[*max_act_index];
 
     if (labels.isDense()) {
       // If labels are dense we check if the predection has a non-zero label.
