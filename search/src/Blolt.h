@@ -43,6 +43,7 @@ class Blolt {
       std::vector<uint64_t> current_assignments =
           getRandomGroupAssignments(_total_num_points, _num_classes, rng);
       for (uint32_t epoch = 0; epoch < num_epochs; epoch++) {
+        std::vector<std::string> metrics = {"categorical_accuracy"};
         classifier.train(
             /* train_data = */ train_data,
             /* train_labels = */
@@ -50,7 +51,7 @@ class Blolt {
             /* loss_fn = */ bolt::CategoricalCrossEntropyLoss(),
             /* learning_rate = */ learning_rate, /* epochs = */ 1,
             /* rehash = */ 1, /* rebuild = */ UINT32_MAX,
-            /* metric_names = */ {}, /* verbose = */ true);
+            /* metric_names = */ metrics, /* verbose = */ true);
         std::vector<uint64_t> new_group_assignments;
         std::vector<uint64_t> new_group_sizes(_num_classes, 0);
         for (uint32_t batch_id = 0; batch_id < train_data->numBatches();
@@ -60,6 +61,7 @@ class Blolt {
                                         prediction,
                                         num_alternative_groups_to_consider);
         }
+        printGroupSizeProperties(new_group_sizes);
         current_assignments = new_group_assignments;
       }
 
@@ -162,15 +164,18 @@ class Blolt {
       std::sort(sorted_groups.begin(), sorted_groups.end(), std::greater<>());
 
       uint64_t chosen_group = 0;
-      float chosen_group_activation = 0;
+      uint32_t chosen_group_size = UINT32_MAX;
       for (uint64_t i = 0;
            i < std::min<uint64_t>(num_groups_to_consider, sorted_groups.size());
            i++) {
-        if (sorted_groups[i].first > chosen_group_activation) {
-          chosen_group = sorted_groups[i].second;
-          chosen_group_activation = sorted_groups[i].first;
+        uint32_t current_group = sorted_groups.at(i).second;
+        uint32_t current_group_size = sizes_so_far.at(current_group);
+        if (current_group_size < chosen_group_size) {
+          chosen_group = current_group;
+          chosen_group_size = current_group_size;
         }
       }
+      assert(chosen_group_size != UINT32_MAX);
 
       sizes_so_far.at(chosen_group)++;
       assignments_so_far.push_back(chosen_group);
@@ -216,6 +221,17 @@ class Blolt {
 
     return std::make_shared<dataset::BoltDataset>(std::move(batches),
                                                   labels.size());
+  }
+
+  static void printGroupSizeProperties(
+      const std::vector<uint64_t>& group_sizes) {
+    uint64_t sum =
+        std::accumulate(std::begin(group_sizes), std::end(group_sizes), 0UL);
+    float mean = sum / static_cast<float>(group_sizes.size());
+    uint64_t min = *std::min_element(group_sizes.begin(), group_sizes.end());
+    uint64_t max = *std::max_element(group_sizes.begin(), group_sizes.end());
+    std::cout << "MEAN: " << mean << ", MIN: " << min << ", MAX: " << max
+              << std::endl;
   }
 };
 }  // namespace thirdai::search

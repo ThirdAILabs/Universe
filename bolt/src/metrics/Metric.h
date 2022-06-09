@@ -46,7 +46,7 @@ class CategoricalAccuracy final : public Metric {
   CategoricalAccuracy() : _correct(0), _num_samples(0) {}
 
   void processSample(const BoltVector& output, const BoltVector& labels) final {
-    float max_act = std::numeric_limits<float>::min();
+    float max_act = -std::numeric_limits<float>::max();
     uint32_t max_act_index = std::numeric_limits<uint32_t>::max();
     for (uint32_t i = 0; i < output.len; i++) {
       if (output.activations[i] > max_act) {
@@ -54,6 +54,7 @@ class CategoricalAccuracy final : public Metric {
         max_act_index = i;
       }
     }
+    assert(max_act_index != std::numeric_limits<uint32_t>::max());
 
     // The nueron with the largest activation is the prediction
     uint32_t pred =
