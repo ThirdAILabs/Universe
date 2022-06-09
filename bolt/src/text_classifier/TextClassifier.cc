@@ -15,6 +15,10 @@
 #include <sys/sysinfo.h>
 #endif
 
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #if defined __APPLE__
 #include <sys/sysctl.h>
 #endif
@@ -31,6 +35,7 @@ static uint32_t getHiddenLayerSize(const std::string& model_size,
 static float getHiddenLayerSparsity(uint64_t layer_size);
 static std::optional<uint64_t> getSystemRam();
 static uint64_t getMemoryBudget(const std::string& model_size);
+static bool canLoadDatasetInMemory(const std::string& filename);
 
 TextClassifier::TextClassifier(const std::string& model_size,
                                uint32_t n_classes) {
@@ -65,16 +70,24 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
 
   CategoricalCrossEntropyLoss loss;
 
-  if (epochs == 1) {
-    _model->trainOnStream(dataset, loss, learning_rate);
-  } else {
-    auto in_memory_dataset = dataset->loadInMemory();
+  if (!canLoadDatasetInMemory(filename)) {
+    for (uint32_t e = 0; e < epochs; e++) {
+      // Train on streaming dataset
+      _model->trainOnStream(dataset, loss, learning_rate);
 
-    _model->train(in_memory_dataset.data, in_memory_dataset.labels, loss,
-                  learning_rate, 1);
+      // Create new stream for next epoch with new data loader.
+      data_loader =
+          std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
+      dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
+          data_loader, _batch_processor);
+    }
+
+  } else {
+    auto [train_data, train_labels] = dataset->loadInMemory();
+
+    _model->train(train_data, train_labels, loss, learning_rate, 1);
     _model->enableSparseInference();
-    _model->train(in_memory_dataset.data, in_memory_dataset.labels, loss,
-                  learning_rate, epochs - 1);
+    _model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
   }
 }
 
@@ -92,7 +105,8 @@ void TextClassifier::predict(
     output_file = std::ofstream(*output_filename);
   }
 
-  auto callback = [&](const BoltBatch& outputs, uint32_t batch_size) {
+  auto print_predictions_callback = [&](const BoltBatch& outputs,
+                                        uint32_t batch_size) {
     if (!output_file) {
       return;
     }
@@ -114,7 +128,8 @@ void TextClassifier::predict(
     }
   };
 
-  _model->predictOnStream(dataset, {"categorical_accuracy"}, callback);
+  _model->predictOnStream(dataset, {"categorical_accuracy"},
+                          print_predictions_callback);
 
   if (output_file) {
     output_file->close();
@@ -161,20 +176,20 @@ uint64_t getMemoryBudget(const std::string& model_size) {
   // If unable to find system RAM assume max ram is 8Gb
   uint64_t system_ram = getSystemRam().value_or(8 * ONE_GB);
 
-  // For small models we use either 1Gb of 1/16th of the total RAM, whichever
-  // is smaller.
+  // For small models we use either 1Gb of 1/16th of the total RAM, whichever is
+  // smaller.
   if (std::regex_search(model_size, small_re)) {
     return std::min<uint64_t>(system_ram / 16, ONE_GB);
   }
 
-  // For medium models we use either 2Gb of 1/8th of the total RAM, whichever
-  // is smaller.
+  // For medium models we use either 2Gb of 1/8th of the total RAM, whichever is
+  // smaller.
   if (std::regex_search(model_size, medium_re)) {
     return std::min<uint64_t>(system_ram / 8, 2 * ONE_GB);
   }
 
-  // For large models we use either 4Gb of 1/4th of the total RAM, whichever
-  // is smaller.
+  // For large models we use either 4Gb of 1/4th of the total RAM, whichever is
+  // smaller.
   if (std::regex_search(model_size, large_re)) {
     return std::min<uint64_t>(system_ram / 4, 4 * ONE_GB);
   }
@@ -214,7 +229,7 @@ float getHiddenLayerSparsity(uint64_t layer_size) {
   return 0.005;
 }
 
-std::optional<uint64_t> getSystemRam() {
+static std::optional<uint64_t> getSystemRam() {
 #if defined __linux__
   // https://stackoverflow.com/questions/349889/how-do-you-determine-the-amount-of-linux-system-ram-in-c
   struct sysinfo mem_info;
@@ -238,6 +253,20 @@ std::optional<uint64_t> getSystemRam() {
   return status.ullTotalPhys;
 #endif
   return std::nullopt;
+}
+
+static bool canLoadDatasetInMemory(const std::string& filename) {
+  auto total_ram = getSystemRam().value();
+
+  // TODO(Nicholas): separate file size method for windows
+  struct stat file_stats;
+
+  if (stat(filename.c_str(), &file_stats)) {
+    uint64_t file_size = file_stats.st_size;
+    return total_ram / 2 >= file_size;
+  }
+
+  throw std::runtime_error("Unable to get filesize of '" + filename + "'");
 }
 
 }  // namespace thirdai::bolt
