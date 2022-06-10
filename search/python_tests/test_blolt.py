@@ -7,8 +7,8 @@ def test_glove():
     glove_queries = np.load("glove_queries.npy")
     glove_neighbors = np.load("glove_neighbors.npy")
 
-    # # Get 70% accuracy with num_groups_to_consider=5, basically groups all exactly the same size
-    # # num_groups_to_consider=3 sucks, and kinda so does 4. 6 gives good groups, but not as high accuracy.
+    # # # Get 70% accuracy with num_groups_to_consider=5, basically groups all exactly the same size
+    # # # num_groups_to_consider=3 sucks, and kinda so does 4. 6 gives good groups, but not as high accuracy.
     # search_index = BoltSearch(
     #     estimated_dataset_size=10**6, num_classifiers=2, input_dim=100
     # )
@@ -20,15 +20,13 @@ def test_glove():
 
     search_index = BoltSearch.deserialize_from_file("temp.serialized")
 
-    results = search_index.query(glove_data[0:100], top_k=100)
+    results = search_index.query(glove_data[:100], top_k=100)
+    for i, r in enumerate(results):
+        assert i in r
 
-    for r in results:
-      print(r)
-    # print(results)
-
-    # recalled_in_100 = 0
-    # for found, gt in zip(results, glove_neighbors):
-    #     if gt[0] in found:
-    #         recalled_in_100 += 1
-    # print(recalled_in_100)
-
+    results = search_index.query(glove_neighbors, top_k=100)
+    recalled_in_100 = 0
+    for found, gt in zip(results, glove_neighbors):
+        if gt[0] in found:
+            recalled_in_100 += 1
+    print(recalled_in_100, flush=True)

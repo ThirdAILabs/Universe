@@ -49,8 +49,8 @@ class VectorHashTable final : public HashTable<LABEL_T> {
   void insertSequential(uint64_t n, LABEL_T start,
                         uint32_t const* hashes) override;
 
-  void queryBySet(uint32_t const* hashes,
-                  std::unordered_set<LABEL_T>& store) const override;
+  void queryBySet(uint32_t const* hashes, std::unordered_set<LABEL_T>& store,
+                  uint32_t cutoff = UINT32_MAX) const override;
 
   void queryByCount(uint32_t const* hashes,
                     std::vector<uint32_t>& counts) const override;

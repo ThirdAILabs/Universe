@@ -62,11 +62,15 @@ inline void VectorHashTable<LABEL_T, USE_RESERVOIR>::insertIntoTable(
 
 template <typename LABEL_T, bool USE_RESERVOIR>
 void VectorHashTable<LABEL_T, USE_RESERVOIR>::queryBySet(
-    uint32_t const* hashes, std::unordered_set<LABEL_T>& store) const {
+    uint32_t const* hashes, std::unordered_set<LABEL_T>& store,
+    uint32_t cutoff) const {
   for (uint32_t table = 0; table < _num_tables; table++) {
     uint32_t hash = hashes[table];
     for (LABEL_T label : _buckets[getBucketIndex(table, hash)]) {
       store.insert(label);
+      if (store.size() == cutoff) {
+        return;
+      }
     }
   }
 }

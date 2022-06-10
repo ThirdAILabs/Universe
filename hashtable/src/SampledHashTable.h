@@ -95,8 +95,8 @@ class SampledHashTable final : public HashTable<LABEL_T> {
    * Queries the table and returns a set that is the union of the reservoirs
    * specified by the hashes.
    */
-  void queryBySet(uint32_t const* hashes,
-                  std::unordered_set<LABEL_T>& store) const override;
+  void queryBySet(uint32_t const* hashes, std::unordered_set<LABEL_T>& store,
+                  uint32_t cutoff = UINT32_MAX) const override;
 
   /**
    *

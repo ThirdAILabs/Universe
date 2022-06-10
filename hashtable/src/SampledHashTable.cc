@@ -66,8 +66,9 @@ inline void SampledHashTable<LABEL_T>::insertIntoTables(
 }
 
 template <typename LABEL_T>
-void SampledHashTable<LABEL_T>::queryBySet(
-    const uint32_t* hashes, std::unordered_set<LABEL_T>& store) const {
+void SampledHashTable<LABEL_T>::queryBySet(const uint32_t* hashes,
+                                           std::unordered_set<LABEL_T>& store,
+                                           uint32_t cutoff) const {
   for (uint64_t table = 0; table < _num_tables; table++) {
     uint32_t row_index = hashes[table];
     assert(row_index < _range);
@@ -77,6 +78,9 @@ void SampledHashTable<LABEL_T>::queryBySet(
     for (uint64_t i = 0; i < std::min<uint64_t>(counter, _reservoir_size);
          i++) {
       store.insert(_data[DataIdx(table, row_index, i)]);
+      if (store.size() == cutoff) {
+        return;
+      }
     }
   }
 }

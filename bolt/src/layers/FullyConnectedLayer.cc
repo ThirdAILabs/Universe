@@ -295,11 +295,11 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     _hash_table->queryAndInsertForInference(hashes.data(), active_set,
                                             _sparse_dim);
   } else {
-    _hash_table->queryBySet(hashes.data(), active_set);
+    _hash_table->queryBySet(hashes.data(), active_set, _sparse_dim);
   }
 
   if (active_set.size() < _sparse_dim) {
-    uint32_t rand_offset = rand() % _dim;
+    uint32_t rand_offset = (hashes[0] * 77867 + hashes[1] * 20101) % _dim;
     while (active_set.size() < _sparse_dim) {
       active_set.insert(_rand_neurons[rand_offset++]);
       rand_offset = rand_offset % _dim;

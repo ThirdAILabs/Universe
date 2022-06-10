@@ -109,12 +109,14 @@ class Blolt {
         for (uint64_t i = 0; i < currentBoltVector.len; i++) {
           group_activation_pairs.emplace_back(
               currentBoltVector.activations[i],
-              currentBoltVector.active_neurons[i]);
+              classifier_id * _num_classes +
+                  currentBoltVector.active_neurons[i]);
         }
       }
       std::sort(group_activation_pairs.begin(), group_activation_pairs.end(),
                 std::greater<>());
-      std::vector<uint64_t> sorted_group_ids(group_activation_pairs.size());
+      std::vector<uint64_t> sorted_group_ids;
+      sorted_group_ids.reserve(group_activation_pairs.size());
       for (auto& group_activation_pair : group_activation_pairs) {
         sorted_group_ids.push_back(group_activation_pair.second);
       }
