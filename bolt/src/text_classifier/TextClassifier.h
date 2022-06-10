@@ -57,7 +57,6 @@ class TextClassifier {
     archive(_model, _batch_processor);
   }
 
-  
   std::shared_ptr<dataset::TextClassificationProcessor> _batch_processor;
 };
 

@@ -453,8 +453,8 @@ class PyTextClassifier final : public TextClassifier {
  public:
   PyTextClassifier(const std::string& model_size, uint32_t n_classes)
       : TextClassifier(model_size, n_classes) {}
-  
-  PyTextClassifier(SequentialConfigList configs) 
+
+  PyTextClassifier(SequentialConfigList configs)
       : TextClassifier(std::move(configs)) {}
 
   py::array_t<float> getHiddenLayerWeights() {
@@ -464,18 +464,21 @@ class PyTextClassifier final : public TextClassifier {
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
 
     size_t dim = getHiddenLayer()->getDim();
-    //TODO(henry): Fine a better way to define input dimension in text classifier and access it here
+    // TODO(henry): Fine a better way to define input dimension in text
+    // classifier and access it here
     size_t input_dim = 100000;
 
     return py::array_t<float>({dim, input_dim},
-                            {input_dim * sizeof(float), sizeof(float)}, mem,
-                            free_when_done);
+                              {input_dim * sizeof(float), sizeof(float)}, mem,
+                              free_when_done);
   }
 
-  void setHiddenLayerWeights(const py::array_t<float, py::array::c_style | py::array::forcecast>&
-          new_weights)  {
+  void setHiddenLayerWeights(
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
+          new_weights) {
     int64_t dim = getHiddenLayer()->getDim();
-    //TODO(henry): Fine a better way to define input dimension in text classifier and access it here
+    // TODO(henry): Fine a better way to define input dimension in text
+    // classifier and access it here
     int64_t input_dim = 100000;
     if (new_weights.ndim() != 2) {
       std::stringstream err;
@@ -493,10 +496,10 @@ class PyTextClassifier final : public TextClassifier {
     }
 
     getHiddenLayer()->setWeights(new_weights.data());
-  
   }
 
-  void setHiddenLayerBiases(const py::array_t<float, py::array::c_style | py::array::forcecast>&
+  void setHiddenLayerBiases(
+      const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_biases) {
     int64_t dim = getHiddenLayer()->getDim();
     if (new_biases.ndim() != 1) {
@@ -526,7 +529,6 @@ class PyTextClassifier final : public TextClassifier {
 
     return py::array_t<float>({dim}, {sizeof(float)}, mem, free_when_done);
   }
-
 };
 
 }  // namespace thirdai::bolt::python
