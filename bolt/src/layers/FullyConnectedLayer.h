@@ -171,6 +171,13 @@ class FullyConnectedLayer final : public SequentialLayer {
             _force_sparse_for_inference);
   }
 
+  /**
+   * If force_build=true build hash tables, return if false.
+   * For non-trainable layers, buildHashTablesImpl is called with
+   * force_build=false except during initialization and setting weights.
+   * For trainable layers, buildHashTablesImpl is always called with
+   * force_build=true.
+   */
   void buildHashTablesImpl(bool force_build);
 };
 

@@ -498,9 +498,6 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
 }
 
 void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
-  // if (!_trainable && !force_build) {
-  //   return;
-  // }
   if ((!_trainable && !force_build) || _sparsity >= 1.0 ||
       _force_sparse_for_inference) {
     return;
