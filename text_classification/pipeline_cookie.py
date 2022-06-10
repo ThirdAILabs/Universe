@@ -1,8 +1,12 @@
 from cookie_monster import *
 
 # Initialize the model
-layers = [bolt.FullyConnected(dim=2000, sparsity=0.1, activation_function=bolt.ActivationFunctions.ReLU),
-            bolt.FullyConnected(dim=2,  activation_function=bolt.ActivationFunctions.Softmax)]
+layers = [
+    bolt.FullyConnected(
+        dim=2000, sparsity=0.1, activation_function=bolt.ActivationFunctions.ReLU
+    ),
+    bolt.FullyConnected(dim=2, activation_function=bolt.ActivationFunctions.Softmax),
+]
 
 cookie_model = CookieMonster(layers)
 
@@ -14,3 +18,4 @@ cookie_model = CookieMonster(layers)
 cookie_model.train_corpus("/home/henry/cookie_train/", mlflow=True)
 
 # Step Three: Evaluate the model on a set of benchmark datasets.
+# cookie_model.evaluate()

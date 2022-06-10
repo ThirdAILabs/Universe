@@ -496,7 +496,8 @@ void createBoltSubmodule(py::module_& module) {
            "size in Gb for the model, for example '6Gb' or '6 Gb'.\n"
            " * n_classes: int - How many classes or categories are in the "
            "labels of the dataset.\n")
-      .def(py::init<std::vector<std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>>(),
+      .def(py::init<std::vector<
+               std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>>(),
            "Constructs a TextClassifier using configs.\n")
       .def("train", &PyTextClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"),
@@ -522,7 +523,7 @@ void createBoltSubmodule(py::module_& module) {
            " * filename: string - The path to the save location of the "
            "classifier.\n")
       .def("get_hidden_weights", &PyTextClassifier::getHiddenLayerWeights,
-          "Returns the weight matrix of the hidden layer as a 2D Numpy "
+           "Returns the weight matrix of the hidden layer as a 2D Numpy "
            "matrix.")
       .def("set_hidden_weights", &PyTextClassifier::setHiddenLayerWeights,
            py::arg("new_weights"),
