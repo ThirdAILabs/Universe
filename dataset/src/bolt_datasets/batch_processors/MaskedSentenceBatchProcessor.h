@@ -24,6 +24,7 @@ class MaskedSentenceBatchProcessor final
     std::vector<uint32_t> masked_indices(rows.size());
     std::vector<bolt::BoltVector> labels(rows.size());
 
+  #pragma omp parallel for default(none) shared(rows, vectors, masked_indices, labels)
     for (uint32_t i = 0; i < rows.size(); i++) {  // NOLINT
       auto [vec, index, label] = processRow(rows[i]);
       vectors[i] = std::move(vec);
@@ -56,6 +57,7 @@ class MaskedSentenceBatchProcessor final
     // in the sentence and we can simply do a single pass over it and compute
     // the hashes.
     uint32_t word_id;
+  #pragma omp critical
     if (_word_hashes_to_ids.count(masked_word_hash)) {
       word_id = _word_hashes_to_ids.at(masked_word_hash);
     } else {

@@ -5,6 +5,7 @@
 #include "DataLoader.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/Dataset.h>
+#include <chrono>
 #include <optional>
 #include <stdexcept>
 
@@ -47,11 +48,21 @@ class StreamingDataset {
 
     uint64_t len = 0;
 
+    auto start = std::chrono::high_resolution_clock::now();
+
     while (auto batch = nextBatch()) {
       len += batch->first.getBatchSize();
       data.push_back(std::move(batch->first));
       labels.push_back(std::move(batch->second));
     }
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::cout
+        << "Loaded " << len << " vectors from '" + _data_loader->resourceName()
+        << "' in "
+        << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
+        << " seconds" << std::endl;
 
     return {std::make_shared<InMemoryDataset<BATCH_T>>(std::move(data), len),
             std::make_shared<BoltDataset>(std::move(labels), len)};

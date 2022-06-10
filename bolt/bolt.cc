@@ -360,7 +360,7 @@ loadTextData(const std::string& filename, uint32_t batch_size,
   return dataset;
 }
 
-void trainMaskedSentenceModel(toml::table& config) {
+void trainMLM(toml::table& config) {
   auto sentence_embedding_layers =
       createFullyConnectedLayerConfigs(config["sentence_embedding_layers"]);
 
@@ -391,7 +391,6 @@ void trainMaskedSentenceModel(toml::table& config) {
   uint32_t epochs = getIntValue(param_table, "epochs");
   uint32_t rehash = getIntValue(param_table, "rehash");
   uint32_t rebuild = getIntValue(param_table, "rebuild");
-  uint32_t pairgram_range = getIntValue(param_table, "pairgram_range");
 
   auto train_metrics = getMetrics(param_table, "train_metrics");
   auto test_metrics = getMetrics(param_table, "test_metrics");
@@ -403,8 +402,8 @@ void trainMaskedSentenceModel(toml::table& config) {
       sentence_embedding_layers, token_embedding_layer, classifier_layers,
       max_tokens, input_dim);
 
-  auto train_stream = loadTextData(train_filename, batch_size, pairgram_range);
-  auto test_stream = loadTextData(test_filename, batch_size, pairgram_range);
+  auto train_stream = loadTextData(train_filename, batch_size, input_dim);
+  auto test_stream = loadTextData(test_filename, batch_size, input_dim);
 
   if (epochs > 1) {
     auto [train_data, train_labels] = train_stream->loadInMemory();
@@ -420,6 +419,19 @@ void trainMaskedSentenceModel(toml::table& config) {
   }
 }
 
+bool isFCNConfig(const toml::table& table) { return table.contains("layers"); }
+
+bool isDLRMConfig(const toml::table& table) {
+  return table.contains("bottom_mlp_layers") &&
+         table.contains("top_mlp_layers");
+}
+
+bool isMLMCOnfig(const toml::table& table) {
+  return table.contains("sentence_embedding_layers") &&
+         table.contains("token_embedding_layer") &&
+         table.contains("classifier_layers");
+}
+
 int main(int argc, const char** argv) {
   if (argc != 2) {
     std::cerr << "Invalid args, usage: ./bolt <config file>" << std::endl;
@@ -429,11 +441,16 @@ int main(int argc, const char** argv) {
   try {
     toml::table table = toml::parse_file(argv[1]);
 
-    if (table.contains("layers")) {
+    if (isFCNConfig(table)) {
       trainFCN(table);
-    } else if (table.contains("bottom_mlp_layers") &&
-               table.contains("top_mlp_layers")) {
+    } else if (isDLRMConfig(table)) {
       trainDLRM(table);
+    } else if (isMLMCOnfig(table)) {
+      trainMLM(table);
+    } else {
+      std::cerr << "Invalid config file, did not recognize model architecture "
+                   "parameters"
+                << std::endl;
     }
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
