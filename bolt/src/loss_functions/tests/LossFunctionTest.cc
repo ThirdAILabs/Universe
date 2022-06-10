@@ -110,6 +110,22 @@ TEST(LossFunctionTest, CrossEntropySparseLabelSparseOutput) {
   testSparseLabelSparseOutput<CategoricalCrossEntropyLoss>();
 }
 
+TEST(LossFunctionTest, BinaryCrossEntropyDenseLabelDenseOutput) {
+  testDenseLabelDenseOutput<BinaryCrossEntropyLoss>();
+}
+
+TEST(LossFunctionTest, BinaryCrossEntropySparseLabelDenseOutput) {
+  testSparseLabelDenseOutput<BinaryCrossEntropyLoss>();
+}
+
+TEST(LossFunctionTest, BinaryCrossEntropyDenseLabelSparseOutput) {
+  testDenseLabelSparseOutput<BinaryCrossEntropyLoss>();
+}
+
+TEST(LossFunctionTest, BinaryCrossEntropySparseLabelSparseOutput) {
+  testSparseLabelSparseOutput<BinaryCrossEntropyLoss>();
+}
+
 TEST(LossFunctionTest, MeanSquaredErrorDenseLabelDenseOutput) {
   testDenseLabelDenseOutput<MeanSquaredError>();
 }

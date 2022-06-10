@@ -1,0 +1,118 @@
+#pragma once
+
+#include <bolt/src/layers/BoltVector.h>
+#include <cstdint>
+#include <unordered_map>
+#include <vector>
+
+// #include <dataset/src/utils/ExtendableVectors.h>
+
+namespace thirdai::dataset {
+
+/**
+ * Declare here so we can make it a friend of
+ * ExtendableVector.
+ */
+class Block;
+class ExtendableVectorTest;
+class CategoricalBlockTest;
+class TextBlockTest;
+
+/**
+ * Extendable vector abstract class.
+ * A vector representation that can be extended with a
+ * new vector and can be converted into a BoltVector.
+ *
+ */
+class ExtendableVector {
+ public:
+  friend Block;
+  friend CategoricalBlockTest;
+  friend TextBlockTest;
+  friend ExtendableVectorTest;
+
+ protected:
+  /**
+   * Extends the current vector by the given dimension.
+   * Must be called exactly once per sample per block,
+   * so to prevent erroneous use, we are making this a
+   * protected method so it is only accessible to
+   * derived classes, the Block abstract class, and
+   * the ExtendableVectorTest class.
+   */
+  virtual void extendByDim(uint32_t dim) = 0;
+
+  /**
+   * Returns a mapping of all of the vector's idx-value pairs.
+   * Only used for testing as this can be very expensive
+   * in dense vectors. Thus, we made it protected
+   * so it is only accessible to derived classes,
+   * the Block abstract class, and the
+   * ExtendableVectorTest class.
+   */
+  virtual std::unordered_map<uint32_t, float> entries() = 0;
+
+ public:
+  /**
+   * Increments the feature of the extension vector at the given index
+   * by the given value.
+   */
+  virtual void addExtensionSparseFeature(uint32_t index, float value) = 0;
+
+  /**
+   * Sets the next element of the dense extension vector to
+   * the given value.
+   */
+  virtual void addExtensionDenseFeature(float value) = 0;
+
+  /**
+   * Converts this vector to a BoltVector.
+   */
+  virtual bolt::BoltVector toBoltVector() = 0;
+};
+
+/**
+ * Block abstract class.
+ * A block accepts an input sample in the form of a sequence of strings
+ * then encodes this sequence as a vector.
+ */
+class Block {
+ public:
+  /**
+   * Encodes a sequence of strings as a vector and concatenates the given
+   * vector with this encoding.
+   *
+   * Arguments:
+   * input_row: input sample; the sequence of strings to encoded.
+   * vec: the vector to be concatenated with the vector
+   *   encoding of input_row.
+   */
+  void extendVector(const std::vector<std::string>& input_row,
+                    ExtendableVector& vec) {
+    vec.extendByDim(featureDim());
+    buildExtension(input_row, vec);
+  }
+
+  /**
+   * Returns the dimension of the vector encoding.
+   */
+  virtual uint32_t featureDim() const = 0;
+
+  /**
+   * True if the block produces dense features, False otherwise.
+   */
+  virtual bool isDense() const = 0;
+
+ protected:
+  /**
+   * Derived class-specific implementation of how input rows get
+   * encoded (and what ends up in the extension vector).
+   *
+   * WARNING: This function may be called in many threads simultaneously,
+   * so it should be thread-safe or robust to data races.
+   */
+  virtual void buildExtension(const std::vector<std::string>& input_row,
+                              ExtendableVector& vec) = 0;
+};
+
+}  // namespace thirdai::dataset
