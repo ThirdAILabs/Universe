@@ -163,7 +163,8 @@ class PyNetwork final : public FullyConnectedNetwork {
 #if defined __linux__ || defined __APPLE__
 
     auto handler = [](int code) {
-      std::cout << "Caught a keyboard interrupt with code: " << code << std::endl;
+      std::cout << "Caught a keyboard interrupt with code: " << code
+                << std::endl;
       std::cout << "Gracefully shutting down the program!" << std::endl;
       exit(code);
     };

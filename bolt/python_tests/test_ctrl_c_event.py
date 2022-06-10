@@ -20,7 +20,7 @@ def test_ctrl_c_functionality():
             stderr=DEVNULL,
         )
 
-        # making sure the program reaches the train function 
+        # making sure the program reaches the train function
         for output_from_proc in proc.stdout:
             output_from_proc_decode = output_from_proc.decode("utf-8")
             if (
@@ -36,13 +36,12 @@ def test_ctrl_c_functionality():
         # the train function is 10000000
         time.sleep(1)
         proc.send_signal(signal.SIGINT)
-        
+
         # The sleep below is to wait till the SIGINT is received by the subprocess
         # and the subprocess is terminated For making sure the program doesn't
         # terminate before sleep() returns, epoches for the train function is 10000000
         time.sleep(2)
-        
-        
+
         # poll returns the exitcode if the process has terminated and otherwise returns none. We can check
         # if the program terminated correctly with a SIGINT by asserting that the result of a poll is the
         # SIGINT signal code. We also need to kill the process and wait, just in case this test fails,
@@ -50,4 +49,4 @@ def test_ctrl_c_functionality():
         poll = proc.poll()
         proc.kill()
         proc.wait()
-        assert poll!=None, f"CTRL+C Functionality not working correctly"
+        assert poll != None, f"CTRL+C Functionality not working correctly"
