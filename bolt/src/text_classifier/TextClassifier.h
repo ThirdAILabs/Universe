@@ -18,6 +18,8 @@ class TextClassifier {
 
   TextClassifier(const std::string& model_size, uint32_t n_classes);
 
+  TextClassifier(SequentialConfigList configs);
+
   void train(const std::string& filename, uint32_t epochs, float learning_rate);
 
   void predict(const std::string& filename,

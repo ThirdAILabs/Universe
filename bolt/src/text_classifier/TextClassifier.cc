@@ -55,6 +55,17 @@ TextClassifier::TextClassifier(const std::string& model_size,
   _model->enableSparseInference();
 }
 
+TextClassifier::TextClassifier(SequentialConfigList configs) {
+  uint32_t input_dim = 100000;
+  //TODO(henry): add check for config list type
+  _model = std::make_unique<FullyConnectedNetwork>(std::move(configs),
+                                                    input_dim);
+  _batch_processor =
+      std::make_shared<dataset::TextClassificationProcessor>(input_dim);
+
+  _model->enableSparseInference();
+}
+
 void TextClassifier::train(const std::string& filename, uint32_t epochs,
                            float learning_rate) {
   std::shared_ptr<dataset::DataLoader> data_loader =

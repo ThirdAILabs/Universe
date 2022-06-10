@@ -453,6 +453,9 @@ class PyTextClassifier final : public TextClassifier {
  public:
   PyTextClassifier(const std::string& model_size, uint32_t n_classes)
       : TextClassifier(model_size, n_classes) {}
+  
+  PyTextClassifier(SequentialConfigList configs) 
+      : TextClassifier(std::move(configs)) {}
 
   py::array_t<float> getHiddenLayerWeights() {
     float* mem = getHiddenLayer()->getWeights();

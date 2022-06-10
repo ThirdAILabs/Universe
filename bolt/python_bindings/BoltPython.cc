@@ -496,6 +496,8 @@ void createBoltSubmodule(py::module_& module) {
            "size in Gb for the model, for example '6Gb' or '6 Gb'.\n"
            " * n_classes: int - How many classes or categories are in the "
            "labels of the dataset.\n")
+      .def(py::init<std::vector<std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>>(),
+           "Constructs a TextClassifier using configs.\n")
       .def("train", &PyTextClassifier::train, py::arg("train_file"),
            py::arg("epochs"), py::arg("learning_rate"),
            "Trains the classifier on the given dataset.\n"
