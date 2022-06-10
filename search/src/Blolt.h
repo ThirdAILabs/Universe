@@ -1,3 +1,5 @@
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
@@ -35,7 +37,7 @@ class Blolt {
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& entire_dataset,
       uint32_t num_epochs = 5, float learning_rate = 0.01,
       uint32_t num_alternative_groups_to_consider = 5) {
-    _groups.clear();
+    _all_groups.clear();
     _total_num_points = entire_dataset->len();
     std::mt19937 rng(_seed);
 
@@ -77,8 +79,15 @@ class Blolt {
                                       prediction, 1);
       }
       printGroupSizeProperties(new_group_sizes);
+
+      std::vector<std::vector<uint64_t>> groups(_num_classes);
+      for (uint64_t i = 0; i < new_group_assignments.size(); i++) {
+        groups.at(new_group_assignments[i]).push_back(i);
+      }
+      _all_groups.insert(_all_groups.end(), groups.begin(), groups.end());
     }
   }
+
   std::vector<std::vector<uint64_t>> query(const bolt::BoltBatch& batch,
                                            uint32_t top_k,
                                            int16_t threshold_to_return = -1) {
@@ -111,18 +120,32 @@ class Blolt {
       }
       result.push_back(groupTestingInference(sorted_group_ids, top_k,
                                              threshold_to_return,
-                                             _total_num_points, _groups));
+                                             _total_num_points, _all_groups));
     }
     return result;
   }
 
   uint64_t getInputDim() const { return _input_dim; }
 
+ protected:
+  // This needs to be protected since it's a top level serialization target
+  // called by a child class, but DO NOT call it unless you are creating a
+  // temporary object to serialize into.
+  Blolt(){};
+
  private:
   uint64_t _num_classes, _input_dim, _total_num_points, _seed;
   uint8_t _num_classifiers;
   std::vector<bolt::FullyConnectedNetwork> _classifiers;
-  std::vector<std::vector<uint64_t>> _groups;
+  std::vector<std::vector<uint64_t>> _all_groups;
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_num_classes, _input_dim, _total_num_points, _seed,
+            _num_classifiers, _classifiers, _all_groups);
+  }
 
   static bolt::FullyConnectedNetwork createBloltClassifierDenseInput(
       uint64_t input_dim, uint64_t num_classes,

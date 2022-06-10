@@ -273,9 +273,8 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                               input.len, hashes.data());
   }
 
-  if (_remember_mistakes &&
-      (_act_func == ActivationFunction::Softmax ||
-       _act_func == ActivationFunction::Sigmoid)) {
+  if (_remember_mistakes && (_act_func == ActivationFunction::Softmax ||
+                             _act_func == ActivationFunction::Sigmoid)) {
     /**
      * QueryBySet just returns a set of the elements in the given buckets of the
      * hash table.

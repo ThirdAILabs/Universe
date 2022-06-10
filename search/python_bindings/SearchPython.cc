@@ -112,7 +112,13 @@ void createSearchSubmodule(py::module_& module) {
       .def("index", &PyBlolt::index, py::arg("train_data"), py::arg("all_data"),
            py::arg("batch_size"))
       .def("query", &PyBlolt::query, py::arg("query_batch_python"),
-           py::arg("top_k"));
+           py::arg("top_k"))
+      .def("serialize_to_file", &PyBlolt::serialize_to_file,
+           py::arg("output_path"), "Serialize the Blolt index to a file.")
+      .def_static("deserialize_from_file", &PyBlolt::deserialize_from_file,
+                  py::arg("input_path"),
+                  "Deserialize the Blolt index from a file.");
+
 #endif
 }
 

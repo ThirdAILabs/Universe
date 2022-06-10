@@ -87,6 +87,11 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     _layers.back()->forceSparseForInference(remember_mistakes);
   }
 
+  // This needs to be public in order for a vector of FullyConnectedNetworks to
+  // be serialized, but you should NOT call it unless you are creating a
+  // temporary object to serialize into.
+  FullyConnectedNetwork(){};
+
  private:
   void forward(uint32_t batch_index, const BoltVector& input,
                BoltVector& output, const BoltVector* labels);
@@ -114,10 +119,6 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     archive(cereal::base_class<Model<bolt::BoltBatch>>(this), _input_dim,
             _layers, _num_layers, _sparse_inference_enabled);
   }
-
- protected:
-  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
-  FullyConnectedNetwork(){};
 };
 
 }  // namespace thirdai::bolt

@@ -41,6 +41,33 @@ class PyBlolt final : public Blolt {
         /* network_input_dim = */ getInputDim());
     return Blolt::query(dataset_of_single_batch.dataset->at(0), top_k);
   }
+
+  void serialize_to_file(const std::string& path) {
+    std::ofstream filestream(path, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+  }
+
+  static std::unique_ptr<PyBlolt> deserialize_from_file(
+      const std::string& path) {
+    std::ifstream filestream(path, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    std::unique_ptr<PyBlolt> serialize_into(new PyBlolt());
+    iarchive(*serialize_into);
+    return serialize_into;
+  }
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& ar) {
+    // See https://uscilab.github.io/cereal/inheritance.html
+    ar(cereal::base_class<Blolt>(this));
+  }
+  // Private constructor to construct an empty object for Cereal. See
+  // https://uscilab.github.io/cereal/
+  PyBlolt() : Blolt() {}
 };
 
 }  // namespace thirdai::search::python
