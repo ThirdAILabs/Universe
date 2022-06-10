@@ -18,7 +18,8 @@ class PairGram : public TextEncoding {
   explicit PairGram(uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)
       : _dim(dim) {}
 
-  void encodeText(const std::string_view text, SegmentedFeatureVector& vec) final {
+  void encodeText(const std::string_view text,
+                  SegmentedFeatureVector& vec) final {
     // TODO(Geordie): Do we need to make lower case?
     std::string lower_case_text = TextEncodingUtils::makeLowerCase(text);
 

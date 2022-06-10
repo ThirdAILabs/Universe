@@ -25,8 +25,9 @@ class MockBlock : public Block {
                     SegmentedFeatureVector& vec) override {
     auto val_str = input_row.at(_column);
     float val{};
-    std::from_chars(val_str.data(), val_str.data() + val_str.size(), val, std::chars_format::general);
-    
+    std::from_chars(val_str.data(), val_str.data() + val_str.size(), val,
+                    std::chars_format::general);
+
     if (_dense) {
       vec.addDenseFeatureToSegment(val);
     } else {

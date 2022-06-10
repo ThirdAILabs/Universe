@@ -78,7 +78,8 @@ class TextBlockTest : public testing::Test {
                                     SegmentedSparseFeatureVector& vec) {
     std::vector<std::string_view> input_row_view(input_row.size());
     for (uint32_t i = 0; i < input_row.size(); i++) {
-      input_row_view[i] = std::string_view(input_row[i].c_str(), input_row[i].size());
+      input_row_view[i] =
+          std::string_view(input_row[i].c_str(), input_row[i].size());
     }
     block.addVectorSegment(input_row_view, vec);
   }
