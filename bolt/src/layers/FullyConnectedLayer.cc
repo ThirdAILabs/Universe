@@ -122,6 +122,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
     }
   }
 
+  // std::cout << "Starting loop" << std::endl;
   for (uint64_t n = 0; n < len_out; n++) {
     // Because DENSE is known at compile time the compiler can remove this
     // conditional
@@ -136,6 +137,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
       act += _weights[act_neuron * _prev_dim + prev_act_neuron] *
              input.activations[i];
     }
+    // std::cout << act << std::endl;
 
     assert(!std::isnan(act));
 

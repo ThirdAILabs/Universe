@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bolt/python_bindings/BoltPython.h>
+#include <bolt/python_bindings/BoltPythonUtils.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>

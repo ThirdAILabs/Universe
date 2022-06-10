@@ -53,6 +53,8 @@ class LossFunction {
           labels.findActiveNeuron<LABEL_DENSE>(active_neuron).activation;
       output.gradients[i] =
           elementLossGradient(label_val, output.activations[i], batch_size);
+      // std::cout << i << " " << label_val << " " << output.activations[i] << "
+      // " << active_neuron << std::endl;
     }
   }
 

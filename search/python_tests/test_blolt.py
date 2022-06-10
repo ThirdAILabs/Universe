@@ -43,14 +43,19 @@ def test_glove():
 
     search_index = BoltSearch.deserialize_from_file("temp.serialized")
 
-    results = search_index.query(glove_data[:100], top_k=100)
-    for i, r in enumerate(results):
-        assert i in r
+    # print(glove_data[3])
+    # print(glove_data[4])
+    results = search_index.query(glove_data[3:5], top_k=10)
+    print(results)
+    # for i, r in enumerate(results):
+    #     assert i in r
 
-    results = search_index.query(glove_neighbors, top_k=100)
-    recalled_in_100 = 0
-    for i, (found, gt) in enumerate(list(zip(results, glove_neighbors))):
-        if gt[0] in found:
-            recalled_in_100 += 1
-            print(found, gt)
-    print(recalled_in_100, flush=True)
+    # results = search_index.query(glove_neighbors, top_k=100)
+    # recalled_in_100 = 0
+    # for i, (found, gt) in enumerate(list(zip(results, glove_neighbors))):
+    #     if gt[0] in found:
+    #         recalled_in_100 += 1
+    #         print(found, gt)
+    # print(recalled_in_100, flush=True)
+
+test_glove()
