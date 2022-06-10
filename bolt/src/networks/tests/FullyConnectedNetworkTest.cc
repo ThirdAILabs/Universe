@@ -184,7 +184,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
       "================================";
   std::string actual = summary.str();
 
-  ASSERT_EQ(actual.compare(expected), 0);
+  EXPECT_STREQ(actual, expected);
 }
 
 }  // namespace thirdai::bolt::tests
