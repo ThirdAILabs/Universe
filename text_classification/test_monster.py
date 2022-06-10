@@ -49,3 +49,6 @@ def test_download():
         "s3://mlflow-artifacts-199696198976/29/28efe03f75124dac9b234cdba38853ed/artifacts/weights_1000.npy",
         "s3://mlflow-artifacts-199696198976/29/28efe03f75124dac9b234cdba38853ed/artifacts/biases_1000.npy",
     )
+
+
+test_train()

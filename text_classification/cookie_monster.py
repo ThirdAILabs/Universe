@@ -45,12 +45,9 @@ class CookieMonster:
         self.bolt_classifier.set_hidden_weights(weights)
         self.bolt_classifier.set_hidden_biases(biases)
 
-
     def train_corpus(self, path_to_config_directory, mlflow_enabled=True):
         if mlflow_enabled:
-            mlflow.start_run(
-                run_name="train_run"
-            )
+            mlflow.start_run(run_name="train_run")
 
         # TODO(henry): work out a way to feed data into the model
         rootdir = path_to_config_directory
@@ -74,11 +71,14 @@ class CookieMonster:
                     epochs = config["epochs"]
                     learning_rate = config["learning_rate"]
 
-                    self.bolt_classifier.train(train_file=train_file, epochs=epochs, learning_rate=learning_rate)
+                    self.bolt_classifier.train(
+                        train_file=train_file,
+                        epochs=epochs,
+                        learning_rate=learning_rate,
+                    )
                     self.bolt_classifier.predict(test_file=test_file)
-                
-                print('\n')
 
+                print("\n")
 
         # weights = self.bolt_classifier.get_hidden_weights()
         # biases = self.bolt_classifier.get_hidden_biases()
