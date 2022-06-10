@@ -45,8 +45,8 @@ class CookieMonster:
         self.bolt_classifier.set_hidden_weights(weights)
         self.bolt_classifier.set_hidden_biases(biases)
 
-    def train_corpus(self, path_to_config_directory, mlflow=True):
-        if mlflow:
+    def train_corpus(self, path_to_config_directory, mlflow_enabled=True):
+        if mlflow_enabled:
             mlflow.start_run(run_name="train_run")
 
         # TODO(henry): work out a way to feed data into the model
@@ -54,12 +54,13 @@ class CookieMonster:
         for subdir, dirs, files in os.walk(rootdir):
             for file in files:
                 path = os.path.join(subdir, file)
-                if mlflow:
+                if mlflow_enabled:
                     mlflow.log_artifact(path)
 
                 with open(path, "r") as f:
                     config = toml.load(f)
                     train_file = config["train_file"]
+                    test_file = config["test_file"]
                     num_classes = config["num_classes"]
                     # TODO(henry): after we add ability to get output dimension in cookie monster, add a check
                     # here to make sure the output dimension is correct
@@ -75,6 +76,9 @@ class CookieMonster:
                         epochs=epochs,
                         learning_rate=learning_rate,
                     )
+                    self.bolt_classifier.predict(test_file=test_file)
+
+                print("\n")
 
         # weights = self.bolt_classifier.get_hidden_weights()
         # biases = self.bolt_classifier.get_hidden_biases()
@@ -82,7 +86,7 @@ class CookieMonster:
         # np.save("biases_1000.npy", biases)
         # mlflow.log_artifact("weights_1000.npy")
         # mlflow.log_artifact("biases_1000.npy")
-        if mlflow:
+        if mlflow_enabled:
             mlflow.end_run()
 
     def evaluate(self, path_to_config_directory):
