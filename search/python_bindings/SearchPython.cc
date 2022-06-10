@@ -109,8 +109,8 @@ void createSearchSubmodule(py::module_& module) {
       .def(py::init<uint64_t, uint8_t, uint64_t>(),
            py::arg("estimated_dataset_size"), py::arg("num_classifiers"),
            py::arg("input_dim"))
-      .def("index", &PyBlolt::index, py::arg("train_data"), py::arg("all_data"),
-           py::arg("batch_size"))
+      .def("index", &PyBlolt::index, py::arg("train_data"), py::arg("train_gt"),
+           py::arg("all_data"), py::arg("batch_size"))
       .def("query", &PyBlolt::query, py::arg("query_batch_python"),
            py::arg("top_k"))
       .def("serialize_to_file", &PyBlolt::serialize_to_file,

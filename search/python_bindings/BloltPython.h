@@ -19,6 +19,7 @@ class PyBlolt final : public Blolt {
       : Blolt(estimated_dataset_size, num_classifiers, input_dim) {}
 
   void index(const py::object& train_data_python,
+             const std::vector<std::vector<uint64_t>>& near_neighbor_ids,
              const py::object& entire_data_python, uint64_t batch_size) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
@@ -30,7 +31,8 @@ class PyBlolt final : public Blolt {
     auto rest_of_data_bolt = bolt::python::convertPyObjectToBoltDataset(
         entire_data_python, batch_size, /* is_labels = */ false,
         /* network_input_dim = */ getInputDim());
-    Blolt::index(train_data_bolt.dataset, rest_of_data_bolt.dataset);
+    Blolt::index(train_data_bolt.dataset, near_neighbor_ids,
+                 rest_of_data_bolt.dataset);
   }
 
   std::vector<std::vector<uint64_t>> query(const py::object& query_batch_python,

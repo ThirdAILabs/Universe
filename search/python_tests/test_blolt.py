@@ -1,5 +1,25 @@
 import numpy as np
 from thirdai.search import BoltSearch
+from tqdm import tqdm
+import os
+
+
+def get_gt(glove_data, train_data, top_k):
+    filename = f"glove_train_topk_{top_k}_{len(train_data)}_{len(glove_data)}.npy"
+    if os.path.exists(filename):
+        return np.load(filename)
+    all_top_indices = []
+    all_data_normed = glove_data / np.linalg.norm(glove_data, axis=1, keepdims=True)
+    for v in tqdm(list(range(len(train_data)))):
+        training_normed = train_data[v : v + 1] / np.linalg.norm(
+            train_data[v : v + 1], axis=1, keepdims=True
+        )
+        dot = np.matmul(training_normed, all_data_normed.transpose())[0]
+        top_indices = np.argpartition(dot, -top_k)[-top_k:]
+        all_top_indices.append(top_indices.copy())
+    all_top_indices = np.array(all_top_indices)
+    print(all_top_indices.shape)
+    np.save(filename, all_top_indices)
 
 
 def test_glove():
@@ -7,16 +27,19 @@ def test_glove():
     glove_queries = np.load("glove_queries.npy")
     glove_neighbors = np.load("glove_neighbors.npy")
 
-    # # # Get 70% accuracy with num_groups_to_consider=5, basically groups all exactly the same size
-    # # # num_groups_to_consider=3 sucks, and kinda so does 4. 6 gives good groups, but not as high accuracy.
-    # search_index = BoltSearch(
-    #     estimated_dataset_size=10**6, num_classifiers=2, input_dim=100
-    # )
-    # search_index.index(
-    #     train_data=glove_data[:10000], all_data=glove_data, batch_size=2048
-    # )
+    train_data = glove_data[:100000]
+    train_gt = get_gt(glove_data, train_data, top_k=100)
 
-    # search_index.serialize_to_file("temp.serialized")
+    # Get 70% accuracy with num_groups_to_consider=5, basically groups all exactly the same size
+    # num_groups_to_consider=3 sucks, and kinda so does 4. 6 gives good groups, but not as high accuracy.
+    search_index = BoltSearch(
+        estimated_dataset_size=10**6, num_classifiers=2, input_dim=100
+    )
+    search_index.index(
+        train_data=train_data, train_gt=train_gt, all_data=glove_data, batch_size=2048
+    )
+
+    search_index.serialize_to_file("temp.serialized")
 
     search_index = BoltSearch.deserialize_from_file("temp.serialized")
 
@@ -26,7 +49,8 @@ def test_glove():
 
     results = search_index.query(glove_neighbors, top_k=100)
     recalled_in_100 = 0
-    for found, gt in zip(results, glove_neighbors):
+    for i, (found, gt) in enumerate(list(zip(results, glove_neighbors))):
         if gt[0] in found:
             recalled_in_100 += 1
+            print(found, gt)
     print(recalled_in_100, flush=True)
