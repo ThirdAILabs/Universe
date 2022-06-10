@@ -1,0 +1,118 @@
+#pragma once
+
+#include <bolt/src/layers/BoltVector.h>
+#include <dataset/src/bolt_datasets/BatchProcessor.h>
+#include <dataset/src/blocks/BlockInterface.h>
+#include <dataset/src/utils/SegmentedFeatureVector.h>
+
+namespace thirdai::dataset {
+
+class ComposableBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
+ public:
+  ComposableBatchProcessor(
+    std::vector<std::shared_ptr<Block>> input_blocks,
+    std::vector<std::shared_ptr<Block>> target_blocks,
+    char delimiter=',')
+    : _delimiter(delimiter), 
+      _input_blocks(std::move(input_blocks)), 
+      _target_blocks(std::move(target_blocks)) {}
+
+  std::optional<BoltDataLabelPair<bolt::BoltBatch>> createBatch(
+      const std::vector<std::string>& rows) final {
+    
+    std::vector<bolt::BoltVector> batch_inputs(rows.size());
+    std::vector<bolt::BoltVector> batch_targets(rows.size());
+
+#pragma omp parallel for default(none) shared(rows, batch_inputs, batch_targets)
+    for (size_t i = 0; i < rows.size(); ++i) {
+      auto columns = parseCsvRow(rows[i]);
+      batch_inputs[i] =
+        makeVector(columns, _input_blocks, _input_blocks_dense);
+      batch_targets[i] = 
+        makeVector(columns, _target_blocks, _target_blocks_dense);
+    }
+    return std::make_pair(bolt::BoltBatch(std::move(batch_inputs)), 
+                          bolt::BoltBatch(std::move(batch_targets)));
+  }
+
+  bool expectsHeader() const final { return false; }
+
+  void processHeader(const std::string& header) final {
+    (void) header;
+  }
+ 
+ private:
+  // TODO(Geordie): Change to return string_view. Haven't done this yet since 
+  // we'll then have to change
+  std::vector<std::string_view> parseCsvRow(const std::string& row) const {
+    std::vector<std::string_view> parsed;
+    size_t start = 0;
+    size_t end = 0;
+    while (end != std::string::npos) {
+      end = row.find(_delimiter, start);
+      size_t len = end == std::string::npos ? row.size() - start : end - start;
+      parsed.push_back(std::string_view(row.data() + start, len));
+      start = end + 1;
+    }
+    return parsed;
+  }
+
+  /**
+   * Encodes a sample as a BoltVector according to the given blocks.
+   */
+  static bolt::BoltVector makeVector(
+    std::vector<std::string_view>& sample,
+    std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
+    std::shared_ptr<SegmentedFeatureVector> vec_ptr;
+
+    // Dense vector if all blocks produce dense features, sparse vector
+    // otherwise.
+    if (blocks_dense) {
+      vec_ptr = std::make_shared<SegmentedDenseFeatureVector>();
+    } else {
+      vec_ptr = std::make_shared<SegmentedSparseFeatureVector>();
+    }
+
+    // Let each block encode the input sample and adds a new segment
+    // containing this encoding to the vector.
+    for (auto& block : blocks) {
+      block->addVectorSegment(sample, *vec_ptr);
+    }
+
+    return vec_ptr->toBoltVector();
+  }
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<BatchProcessor>(this),
+            _input_blocks_dense, _target_blocks_dense,
+            _input_blocks, _target_blocks);
+  }
+
+  // Private constructor for cereal.
+  ComposableBatchProcessor() {}
+
+  char _delimiter;
+  bool _input_blocks_dense;
+  bool _target_blocks_dense;
+  /**
+   * We save a copy of these vectors instead of just references
+   * because using references will cause errors when given Python
+   * lists through PyBind11. This is because while the PyBind11 creates
+   * an std::vector representation of a Python list when passing it to
+   * a C++ function, the vector does not persist beyond the function
+   * call, so future references to the vector will cause a segfault.
+   * Furthermore, these vectors are cheap to copy since they contain a
+   * small number of elements and each element is a pointer.
+   */
+  std::vector<std::shared_ptr<Block>> _input_blocks;
+  std::vector<std::shared_ptr<Block>> _target_blocks;
+
+};
+  
+} // namespace thirdai::dataset
+
+
+CEREAL_REGISTER_TYPE(thirdai::dataset::ComposableBatchProcessor)
