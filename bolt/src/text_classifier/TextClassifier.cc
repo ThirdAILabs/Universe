@@ -1,4 +1,5 @@
 #include "TextClassifier.h"
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <algorithm>
@@ -59,7 +60,7 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
   std::shared_ptr<dataset::DataLoader> data_loader =
       std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
 
-  dataset::StreamingDataset dataset(data_loader, _batch_processor);
+  dataset::StreamingDataset<BoltBatch> dataset(data_loader, _batch_processor);
 
   CategoricalCrossEntropyLoss loss;
 
@@ -76,9 +77,9 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
   }
 }
 
-void TextClassifier::trainOnStreamingDataset(dataset::StreamingDataset& dataset,
-                                             const LossFunction& loss,
-                                             float learning_rate) {
+void TextClassifier::trainOnStreamingDataset(
+    dataset::StreamingDataset<BoltBatch>& dataset, const LossFunction& loss,
+    float learning_rate) {
   _model->initializeNetworkState(dataset.getMaxBatchSize(), false);
 
   BoltBatch outputs = _model->getOutputs(dataset.getMaxBatchSize(), false);
@@ -99,7 +100,7 @@ void TextClassifier::predict(
   std::shared_ptr<dataset::DataLoader> data_loader =
       std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
 
-  dataset::StreamingDataset dataset(data_loader, _batch_processor);
+  dataset::StreamingDataset<BoltBatch> dataset(data_loader, _batch_processor);
 
   std::optional<std::ofstream> output_file;
   if (output_filename) {
