@@ -16,7 +16,7 @@ def test_train():
     layers = [bolt.FullyConnected(dim=1000, sparsity=0.1, activation_function=bolt.ActivationFunctions.ReLU),
               bolt.FullyConnected(dim=64,  activation_function=bolt.ActivationFunctions.Softmax)]
     cookie_model = CookieMonster(layers)
-    cookie_model.train_corpus("/home/henry/cookie_train/")
+    cookie_model.train_corpus("/home/henry/cookie_train/", False)
 
 
 def test_download():
@@ -25,3 +25,5 @@ def test_download():
     cookie_model = CookieMonster(layers)
     cookie_model.download_hidden_weights("s3://mlflow-artifacts-199696198976/29/28efe03f75124dac9b234cdba38853ed/artifacts/weights_1000.npy",
                                 "s3://mlflow-artifacts-199696198976/29/28efe03f75124dac9b234cdba38853ed/artifacts/biases_1000.npy")
+
+test_train()
