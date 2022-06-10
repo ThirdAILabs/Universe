@@ -29,14 +29,6 @@ class TextClassifier {
     return _model->_layers[0];
   }
 
-  // float* getHiddenLayerWeights();
-
-  // float* getHiddenLayerBiases();
-
-  // void setHiddenLayerWeights(const float* weights);
-
-  // void setHiddenLayerBiases(const float* biases);
-
   void save(const std::string& filename) {
     std::ofstream filestream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);

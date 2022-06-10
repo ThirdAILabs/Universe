@@ -4,7 +4,7 @@ import pytest
 
 def test_new_dimension():
     layers = [bolt.FullyConnected(dim=1000, sparsity=0.1, activation_function=bolt.ActivationFunctions.ReLU),
-              bolt.FullyConnected(dim=2,  activation_function=bolt.ActivationFunctions.Softmax),]
+              bolt.FullyConnected(dim=64,  activation_function=bolt.ActivationFunctions.Softmax)]
     cookie_model = CookieMonster(layers)
     train_file = "/share/data/hwu/train_shuffled.csv"
     cookie_model.bolt_classifier.train(train_file=train_file, epochs=2, learning_rate=0.01)
@@ -13,8 +13,15 @@ def test_new_dimension():
 
 
 def test_train():
-    cookie_model = CookieMonster(output_dimension=64)
+    layers = [bolt.FullyConnected(dim=1000, sparsity=0.1, activation_function=bolt.ActivationFunctions.ReLU),
+              bolt.FullyConnected(dim=64,  activation_function=bolt.ActivationFunctions.Softmax)]
+    cookie_model = CookieMonster(layers)
     cookie_model.train_corpus("/home/henry/cookie_train/")
 
-test_new_dimension()
-# test_train()
+
+def test_download():
+    layers = [bolt.FullyConnected(dim=1000, sparsity=0.1, activation_function=bolt.ActivationFunctions.ReLU),
+              bolt.FullyConnected(dim=64,  activation_function=bolt.ActivationFunctions.Softmax)]
+    cookie_model = CookieMonster(layers)
+    cookie_model.download_hidden_weights("s3://mlflow-artifacts-199696198976/29/28efe03f75124dac9b234cdba38853ed/artifacts/weights_1000.npy",
+                                "s3://mlflow-artifacts-199696198976/29/28efe03f75124dac9b234cdba38853ed/artifacts/biases_1000.npy")

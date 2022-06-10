@@ -21,50 +21,64 @@ class CookieMonster():
         mlflow.set_experiment("Cookie Monster")
         # TODO(henry): would be nice to know the output dimension as a member variable
     
-    def download_hidden_weights(self, path_to_weights):
-        #TODO(henry): download weights from mlflow and load them into cookie monster
-        pass
+    def download_hidden_weights(self, link_to_weights, link_to_biases):
+        local_weight_path = mlflow.artifacts.download_artifacts(link_to_weights)
+        local_bias_path = mlflow.artifacts.download_artifacts(link_to_biases)
+        # print(local_weight_path)
+        self.bolt_classifier.set_hidden_weights(np.load(local_weight_path))
+        self.bolt_classifier.set_hidden_biases(np.load(local_bias_path))
+        print("Loaded weights")
 
     def set_output_dimension(self, dimension):
         weights = self.bolt_classifier.get_hidden_weights()
         biases = self.bolt_classifier.get_hidden_biases()
-        
-        # np.save("weights.npy", weights)
 
         del(self.bolt_classifier) # delete old model
-        new_configs = [self.fcn_configs[0], bolt.FullyConnected(dem=dimension, activation_function="Softmax")]
+        new_configs = [self.fcn_configs[0], bolt.FullyConnected(dim=dimension, activation_function="Softmax")]
         self.fcn_configs = new_configs
-        self.bolt_classifier = bolt.TextClassifier(self.fcn_configs, n_classes=dimension)
+        self.bolt_classifier = bolt.TextClassifier(self.fcn_configs)
 
         self.bolt_classifier.set_hidden_weights(weights)
         self.bolt_classifier.set_hidden_biases(biases)
 
     
-    def train_corpus(self, path_to_config_directory):
-        mlflow.start_run(
-            run_name="train_run"
-        )
+    def train_corpus(self, path_to_config_directory, mlflow=True):
+        if mlflow:
+            mlflow.start_run(
+                run_name="train_run"
+            )
 
         #TODO(henry): work out a way to feed data into the model
         rootdir = path_to_config_directory
         for subdir, dirs, files in os.walk(rootdir):
             for file in files:
                 path = os.path.join(subdir, file)
-                mlflow.log_artifact(path)
+                if mlflow:
+                    mlflow.log_artifact(path)
 
                 with open(path, "r") as f:
                     config = toml.load(f)
                     train_file = config["train_file"]
                     num_classes = config["num_classes"]
-                    if num_classes != self.out_dim:
-                        self.set_output_dimension(num_classes)
+                    #TODO(henry): after we add ability to get output dimension in cookie monster, add a check
+                    # here to make sure the output dimension is correct
+                    # if num_classes != self.output_dim
+                    #     raise ValueError("Output dimension is incorrect")
+
+                    self.set_output_dimension(num_classes)
                     epochs = config["epochs"]
                     learning_rate = config["learning_rate"]
 
                     self.bolt_classifier.train(train_file=train_file, epochs=epochs, learning_rate=learning_rate)
 
-
-        mlflow.end_run()
+        # weights = self.bolt_classifier.get_hidden_weights()
+        # biases = self.bolt_classifier.get_hidden_biases()
+        # np.save("weights_1000.npy", weights)
+        # np.save("biases_1000.npy", biases)
+        # mlflow.log_artifact("weights_1000.npy")
+        # mlflow.log_artifact("biases_1000.npy")
+        if mlflow:
+            mlflow.end_run()
     
     def evaluate(self, path_to_config_directory):
         mlflow.log_artifact("weights.npy")
