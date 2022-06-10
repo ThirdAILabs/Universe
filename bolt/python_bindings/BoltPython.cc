@@ -242,12 +242,13 @@ void createBoltSubmodule(py::module_& module) {
              network.buildNetworkSummary(summary);
              return summary.str();
            })
-      .def("summary", &PyNetwork::summary, py::arg("detailed") = false,
-           "Prints a summary of the network.\n"
-           "Arguments:\n"
-           " * detailed: boolean. Optional. When specified to \"True\", "
-           "summary will additionally print layer config details for each layer "
-           "in the network.")
+      .def(
+          "summary", &PyNetwork::summary, py::arg("detailed") = false,
+          "Prints a summary of the network.\n"
+          "Arguments:\n"
+          " * detailed: boolean. Optional. When specified to \"True\", "
+          "summary will additionally print layer config details for each layer "
+          "in the network.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),

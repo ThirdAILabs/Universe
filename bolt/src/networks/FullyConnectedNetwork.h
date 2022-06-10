@@ -69,7 +69,8 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     }
   }
 
-  void buildNetworkSummary(std::stringstream& summary, bool detailed = false) const {
+  void buildNetworkSummary(std::stringstream& summary,
+                           bool detailed = false) const {
     summary << "========= Bolt Network =========\n";
     summary << "InputLayer (Layer 0): dim=" << _input_dim << "\n";
     uint32_t layerNum = 1;

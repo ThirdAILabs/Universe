@@ -563,8 +563,7 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
     summary << " (hashes_per_table=" << _sampling_config.hashes_per_table
             << ", num_tables=" << _sampling_config.num_tables
             << ", range_pow=" << _sampling_config.range_pow
-            << ", resevoir_size=" << _sampling_config.reservoir_size 
-            << ")";
+            << ", resevoir_size=" << _sampling_config.reservoir_size << ")";
   }
 
   summary << "\n";

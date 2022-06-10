@@ -50,7 +50,7 @@ class SequentialLayer {
 
   virtual void buildLayerSummary(std::stringstream& summary, bool detailed) {
     summary << "dim=" << getDim() << "\n";
-    (void) detailed;
+    (void)detailed;
   }
 
   virtual ~SequentialLayer() = default;
