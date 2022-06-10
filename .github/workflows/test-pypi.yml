@@ -13,13 +13,12 @@ concurrency:
 # https://www.notion.so/Deploy-our-package-to-pypi-60d3c539e4fd4250897af043a329d08f
 # for more details.
 on: 
-  pull_request:
-    branches: [main]
   push: 
     branches: [main]
   release:
     types:
       - published
+  workflow_dispatch:  
 
 
 jobs:

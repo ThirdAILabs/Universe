@@ -1,10 +1,12 @@
 #include "BoltPython.h"
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/text_classifier/TextClassifier.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <limits>
+#include <string>
 
 namespace thirdai::bolt::python {
 
@@ -34,8 +36,15 @@ void createBoltSubmodule(py::module_& module) {
              "introduces non-linearity to the neural network.")
       .value("Linear", ActivationFunction::Linear,
              "Returns the outputs of a layer as-is.")
+      .value("Tanh", ActivationFunction::Tanh,
+             "Hyperbolic tangent activation function; "
+             "maps the outputs of a layer to the range [-1, 1].")
       .value("Softmax", ActivationFunction::Softmax,
              "Softmax activation function; converts logits to classification "
+             "probabilities. Currently, this activation function can only be "
+             "applied to the final layer in the neural network.")
+      .value("Sigmoid", ActivationFunction::Sigmoid,
+             "Sigmoid activation function; converts logits to indepedent"
              "probabilities. Currently, this activation function can only be "
              "applied to the final layer in the neural network.");
 
@@ -50,8 +59,15 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<CategoricalCrossEntropyLoss, LossFunction>(
       bolt_submodule, "CategoricalCrossEntropyLoss",
-      "A loss function for classification tasks.")
+      "A loss function for multi-class (one label per sample) classification "
+      "tasks.")
       .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
+
+  py::class_<BinaryCrossEntropyLoss, LossFunction>(
+      bolt_submodule, "BinaryCrossEntropyLoss",
+      "A loss function for multi-label (multiple class labels per each sample) "
+      "classification tasks.")
+      .def(py::init<>(), "Constructs a BinaryCrossEntropyLoss object.");
 
   py::class_<MeanSquaredError, LossFunction>(
       bolt_submodule, "MeanSquaredError",
@@ -78,47 +94,68 @@ void createBoltSubmodule(py::module_& module) {
              thirdai::bolt::SequentialLayerConfig>(
       bolt_submodule, "FullyConnected", "Defines a fully-connected layer.\n")
 #if THIRDAI_EXPOSE_ALL
-      .def(
-          py::init<uint64_t, float, ActivationFunction,
-                   thirdai::bolt::SamplingConfig>(),
-          py::arg("dim"), py::arg("load_factor"),
-          py::arg("activation_function"), py::arg("sampling_config"),
-          "Constructs the FullyConnectedLayerConfig object.\n"
-          "Arguments:\n"
-          " * dim: Int - The dimension of the layer.\n"
-          " * load_factor: Float - The fraction of neurons to use during "
-          "sparse training "
-          "and sparse inference. For example, load_factor=0.05 means the "
-          "layer uses 5% of "
-          "its neurons when processing an individual sample.\n"
-          " * activation_function: ActivationFunctions enum - We support three "
-          "activation "
-          "functions: ReLU, Softmax, and Linear.\n"
-          " * sampling_config: SamplingConfig - Sampling configuration.")
+      .def(py::init<uint64_t, float, ActivationFunction,
+                    thirdai::bolt::SamplingConfig>(),
+           py::arg("dim"), py::arg("sparsity"), py::arg("activation_function"),
+           py::arg("sampling_config"),
+           "Constructs the FullyConnectedLayerConfig object.\n"
+           "Arguments:\n"
+           " * dim: Int - The dimension of the layer.\n"
+           " * sparsity: Float - The fraction of neurons to use during "
+           "sparse training "
+           "and sparse inference. For example, sparsity=0.05 means the "
+           "layer uses 5% of "
+           "its neurons when processing an individual sample.\n"
+           " * activation_function: ActivationFunctions enum - We support five "
+           "activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
+           " * sampling_config: SamplingConfig - Sampling configuration.")
 #endif
       .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
            py::arg("activation_function"),
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: ActivationFunctions enum, e.g. ReLU, "
-           "Softmax, Linear. "
+           " * activation_function: ActivationFunctions enum - We support five "
+           "activation functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            "Also accepts `getActivationFunction(function_name), e.g. "
            "`getActivationFunction('ReLU')`")
       .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
+           py::arg("sparsity"), py::arg("activation_function"),
+           "Constructs a FullyConnectedLayerConfig object.\n"
+           "Arguments:\n"
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * activation_function: ActivationFunctions enum - We support five "
+           "activation functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
+           " * sparsity: Float - The fraction of neurons to use during "
+           "sparse training "
+           "and sparse inference. For example, sparsity=0.05 means the "
+           "layer uses 5% of "
+           "its neurons when processing an individual sample.\n"
+           "Also accepts `getActivationFunction(function_name), e.g. "
+           "`getActivationFunction('ReLU')`")
+      .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
            py::arg("load_factor"), py::arg("activation_function"),
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: ActivationFunctions enum, e.g. ReLU, "
-           "Softmax, Linear. "
+           " * activation_function: String specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * load_factor: Float - The fraction of neurons to use during "
            "sparse training "
            "and sparse inference. For example, load_factor=0.05 means the "
            "layer uses 5% of "
-           "its neurons when processing an individual sample.\n"
-           "Also accepts `getActivationFunction(function_name), e.g. "
-           "`getActivationFunction('ReLU')`");
+           "its neurons when processing an individual sample.\n")
+      .def(py::init<uint64_t, std::string>(), py::arg("dim"),
+           py::arg("activation_function"),
+           "Constructs a FullyConnectedLayerConfig object.\n"
+           "Arguments:\n"
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * activation_function: String specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
+           "Eg. relu or Relu ,Softmax or softMax, Linear or lineaR.");
 
 #if THIRDAI_EXPOSE_ALL
   py::class_<thirdai::bolt::ConvLayerConfig,
@@ -127,41 +164,42 @@ void createBoltSubmodule(py::module_& module) {
       bolt_submodule, "Conv",
       "Defines a 2D convolutional layer that convolves over "
       "non-overlapping patches.")
-      .def(
-          py::init<uint64_t, float, ActivationFunction,
-                   thirdai::bolt::SamplingConfig, std::pair<uint32_t, uint32_t>,
-                   uint32_t>(),
-          py::arg("num_filters"), py::arg("load_factor"),
-          py::arg("activation_function"), py::arg("sampling_config"),
-          py::arg("kernel_size"), py::arg("num_patches"),
-          "Constructs the ConvLayerConfig object.\n"
-          "Arguments:\n"
-          " * num_filters: Int - Number of convolutional filters.\n"
-          " * load_factor: Float - The fraction of filters to use during "
-          "sparse training and sparse inference. For example, "
-          "load_factor=0.05 means the layer uses 5% of the filters "
-          "when processing each patch.\n"
-          " * activation_function: ActivationFunctions enum - We support three "
-          "activation "
-          "functions: ReLU, Softmax, and Linear.\n"
-          " * sampling_config: SamplingConfig - Sampling configuration.\n"
-          " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
-          " * num_patches: Int - Number of patches.")
+      .def(py::init<uint64_t, float, ActivationFunction,
+                    thirdai::bolt::SamplingConfig,
+                    std::pair<uint32_t, uint32_t>, uint32_t>(),
+           py::arg("num_filters"), py::arg("sparsity"),
+           py::arg("activation_function"), py::arg("sampling_config"),
+           py::arg("kernel_size"), py::arg("num_patches"),
+           "Constructs the ConvLayerConfig object.\n"
+           "Arguments:\n"
+           " * num_filters: Int - Number of convolutional filters.\n"
+           " * sparsity: Float - The fraction of filters to use during "
+           "sparse training and sparse inference. For example, "
+           "sparsity=0.05 means the layer uses 5% of the filters "
+           "when processing each patch.\n"
+           " * activation_function: ActivationFunctions enum - We support five "
+           "activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
+           " * sampling_config: SamplingConfig - Sampling configuration.\n"
+           " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
+           " * num_patches: Int - Number of patches.")
       .def(py::init<uint64_t, float, ActivationFunction,
                     std::pair<uint32_t, uint32_t>, uint32_t>(),
-           py::arg("num_filters"), py::arg("load_factor"),
+           py::arg("num_filters"), py::arg("sparsity"),
            py::arg("activation_function"), py::arg("kernel_size"),
            py::arg("num_patches"),
            "Constructs a ConvLayerConfig object.\n"
            "Arguments:\n"
            " * num_filters: Int (positive) - Number of convolutional filters.\n"
-           " * load_factor: Float (positive) - The fraction of filters to use "
+           " * sparsity: Float (positive) - The fraction of filters to use "
            "during "
            "sparse training and sparse inference. For example, "
-           "load_factor=0.05 means the layer uses 5% of the filters "
+           "sparsity=0.05 means the layer uses 5% of the filters "
            "when processing each patch.\n"
            " * activation_function: ActivationFunctions enum, e.g. ReLU, "
            "Softmax, "
+           "Sigmoid, "
+           "Tanh, "
            "Linear. "
            "Also accepts `getActivationFunction(function_name), e.g. "
            "`getActivationFunction('ReLU')`\n"
@@ -448,6 +486,44 @@ void createBoltSubmodule(py::module_& module) {
            "their values "
            "and (1) output vectors (predictions) from the network in the form "
            "of a 2D Numpy matrix of floats.");
+
+  py::class_<TextClassifier>(bolt_submodule, "TextClassifier")
+      .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
+           py::arg("n_classes"),
+           "Constructs a TextClassifier with autotuning.\n"
+           "Arguments:\n"
+           " * model_size: string - Either 'small', 'medium', 'large', or a "
+           "size in Gb for the model, for example '6Gb' or '6 Gb'.\n"
+           " * n_classes: int - How many classes or categories are in the "
+           "labels of the dataset.\n")
+      .def("train", &TextClassifier::train, py::arg("train_file"),
+           py::arg("epochs"), py::arg("learning_rate"),
+           "Trains the classifier on the given dataset.\n"
+           "Arguments:\n"
+           " * train_file: string - The path to the training dataset to use.\n"
+           " * epochs: Int - How many epochs to train for.\n"
+           " * learning_rate: Float - The learning rate to use for training.\n")
+      .def("predict", &TextClassifier::predict, py::arg("test_file"),
+           py::arg("output_file") = std::nullopt,
+           "Runs the classifier on the specified test dataset and optionally "
+           "logs the prediction to a file.\n"
+           "Arguments:\n"
+           " * test_file: string - The path to the test dataset to use.\n"
+           " * output_file: string - Optional argument, if this is specified "
+           "then the classifier will output the name of the class/category of "
+           "each prediction this file with one prediction result on each "
+           "line.\n")
+      .def("save", &TextClassifier::save, py::arg("filename"),
+           "Saves the classifier to a file. The file path must not require any "
+           "folders to be created\n"
+           "Arguments:\n"
+           " * filename: string - The path to the save location of the "
+           "classifier.\n")
+      .def_static(
+          "load", &TextClassifier::load, py::arg("filename"),
+          "Loads and builds a saved classifier from file.\n"
+          "Arguments:\n"
+          " * filename: string - The location of the saved classifier.\n");
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {

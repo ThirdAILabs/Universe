@@ -36,11 +36,11 @@ def load_mnist_labels():
 # Constructs a bolt network for mnist with a sparse output layer.
 def build_sparse_output_layer_network():
     layers = [
-        bolt.FullyConnected(dim=256, activation_function=bolt.ActivationFunctions.ReLU),
+        bolt.FullyConnected(dim=256, activation_function="ReLU"),
         bolt.FullyConnected(
             dim=10,
             load_factor=0.4,
-            activation_function=bolt.ActivationFunctions.Softmax,
+            activation_function="Softmax",
         ),
     ]
     network = bolt.Network(layers=layers, input_dim=784)
@@ -52,7 +52,7 @@ def build_sparse_hidden_layer_network(dim, sparsity):
     layers = [
         bolt.FullyConnected(
             dim=dim,
-            load_factor=sparsity,
+            sparsity=sparsity,
             activation_function=bolt.ActivationFunctions.ReLU,
         ),
         bolt.FullyConnected(
@@ -223,6 +223,9 @@ def test_load_save_fc_network():
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
+    # Accuracy is around 95-96%
+    assert original_acc["categorical_accuracy"] >= 0.9
+
     save_loc = "./bolt_model_save"
 
     if os.path.exists(save_loc):
@@ -246,7 +249,8 @@ def test_load_save_fc_network():
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert another_acc["categorical_accuracy"] >= new_acc["categorical_accuracy"]
+    # Accuracy is around 95-96%
+    assert another_acc["categorical_accuracy"] >= 0.9
 
     os.remove(save_loc)
 
