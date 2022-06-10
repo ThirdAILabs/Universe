@@ -18,7 +18,8 @@ class TextEncodingUtils {
    * vector. All indices expected to correspond to the same value.
    */
   inline static void sumRepeatedIndices(std::vector<uint32_t>& indices,
-                                        float value, ExtendableVector& vec) {
+                                        float value,
+                                        SegmentedFeatureVector& vec) {
     // Put equivalent indices next to each other.
     std::sort(indices.begin(), indices.end());
 
@@ -35,7 +36,7 @@ class TextEncodingUtils {
       val += value;
 
       if (idx != next_idx) {
-        vec.addExtensionSparseFeature(idx, val);
+        vec.addSparseFeatureToSegment(idx, val);
         val = 0.0;  // Reset val since next idx is different.
       }
     }
@@ -46,7 +47,7 @@ class TextEncodingUtils {
      */
     if (i == indices.size() - 1) {
       val += value;
-      vec.addExtensionSparseFeature(indices.back(), val);
+      vec.addSparseFeatureToSegment(indices.back(), val);
     }
   }
 
