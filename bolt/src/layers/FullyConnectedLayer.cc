@@ -518,21 +518,22 @@ void FullyConnectedLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
-void FullyConnectedLayer::setShallow(bool is_shallow) {
-  /* Initialize optimizer only when layer is currently shallow and is_shallow is
+void FullyConnectedLayer::setShallow(bool shallow) {
+  /**
+   * Initialize optimizer only when layer is currently shallow and shallow is
    * false. Remove optimizer only if the layer is currently non-shallow but
-   * is_shallow is true
+   * shallow is true
    */
-  if (!_is_shallow && is_shallow) {
+  if (!_is_shallow && shallow) {
     this->removeOptimizer();
-  } else if (_is_shallow && !is_shallow) {
+  } else if (_is_shallow && !shallow) {
     this->initOptimizer();
   }
-  _is_shallow = is_shallow;
+  _is_shallow = shallow;
 }
 
-void FullyConnectedLayer::setShallowSave(bool is_shallow_save) {
-  _shallow_save = is_shallow_save;
+void FullyConnectedLayer::setShallowSave(bool shallow) {
+  _shallow_save = shallow;
 }
 
 void FullyConnectedLayer::initOptimizer() {

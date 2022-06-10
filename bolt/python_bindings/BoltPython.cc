@@ -377,11 +377,13 @@ void createBoltSubmodule(py::module_& module) {
            "Saves the network to a file. The file path must not require any "
            "folders to be created. Saves all the paramters needed for "
            "tranining. "
-           "Checkpointing shallow network always saves a shallow network")
+           "This will throw an error if the model has been trimmed for "
+           "inference.")
       .def("trim_for_inference", &PyNetwork::trimForInference,
            "Removes all parameters that are not essential for inference, "
            "shrinking the model")
-      .def("resume_training", &PyNetwork::resumeTraining,
+      .def("reinitialize_optimizer_for_training",
+           &PyNetwork::reinitOptimizerForTraining,
            "If the model previously was trimmed for inference, this will "
            "reinitialize the optimizer state, allowing training again.")
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),

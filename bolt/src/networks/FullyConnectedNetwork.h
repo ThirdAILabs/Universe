@@ -88,15 +88,15 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     return shallow;
   }
 
-  void setShallow(bool is_shallow) final {
+  void setShallow(bool shallow) final {
     for (uint32_t i = 0; i < _num_layers; i++) {
-      _layers[i]->setShallow(is_shallow);
+      _layers[i]->setShallow(shallow);
     }
   }
 
-  void setShallowSave(bool is_shallow_save) final {
+  void setShallowSave(bool shallow) final {
     for (uint32_t i = 0; i < _num_layers; i++) {
-      _layers[i]->setShallowSave(is_shallow_save);
+      _layers[i]->setShallowSave(shallow);
     }
   }
 

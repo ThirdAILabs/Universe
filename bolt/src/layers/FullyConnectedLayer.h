@@ -82,9 +82,9 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   bool isShallow() final { return _is_shallow; }
 
-  void setShallow(bool is_shallow) final;
+  void setShallow(bool shallow) final;
 
-  void setShallowSave(bool is_shallow_save) final;
+  void setShallowSave(bool shallow) final;
 
   ~FullyConnectedLayer() = default;
 
@@ -169,7 +169,8 @@ class FullyConnectedLayer final : public SequentialLayer {
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
 
-  /* Not serializing _shallow_save because it is only used to decide to how to
+  /**
+   * Not serializing _shallow_save because it is only used to decide to how to
    * save the model. If _shallow_save or _is_shallow is true, archive
    * _is_shallow as true. If both are false, archive _is_shallow as false. While
    * dearchiving, we only need to know whether or not the layer is shallow,
@@ -192,7 +193,8 @@ class FullyConnectedLayer final : public SequentialLayer {
     }
   }
 
-  /* Load first whether the layer is shallow
+  /**
+   * Load first whether the layer is shallow
    * Does not load the optimizer state if is_shallow
    * Loads the optimizer state if !is_shallow
    */

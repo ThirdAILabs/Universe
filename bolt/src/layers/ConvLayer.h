@@ -66,14 +66,14 @@ class ConvLayer final : public SequentialLayer {
 
   void setBiases(const float* new_biases) final;
 
-  void setShallowSave(bool set) final {
-    (void)set;
+  void setShallowSave(bool shallow) final {
+    (void)shallow;
     throw thirdai::exceptions::NotImplemented(
         "Error: setShallowSave not implemented for DLRM;");
   }
 
-  void setShallow(bool set) final {
-    (void)set;
+  void setShallow(bool shallow) final {
+    (void)shallow;
     throw thirdai::exceptions::NotImplemented(
         "Error: setShallow not implemented for DLRM;");
   }

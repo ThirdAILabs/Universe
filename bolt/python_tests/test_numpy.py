@@ -89,7 +89,7 @@ def test_read_easy_mock_data():
     """
     Generates easy mock dataset as a numpy array and asserts that BOLT performs well.
     """
-    labels, examples, n_classes = gen_training_data()
+    labels, examples, n_classes = gen_training_data(n_classes=10, n_samples=1000)
     acc = train_simple_bolt_model(examples, labels)
     assert acc > 0.8
 

@@ -201,14 +201,17 @@ class PyNetwork final : public FullyConnectedNetwork {
                                 activations, output_sparse, alloc_success);
   }
 
-  void saveForInference(const std::string& filename) { this->save(filename); }
+  void saveForInference(const std::string& filename) {
+    this->save(filename, /* shallow= */ true);
+  }
 
-  /* Saving a shallow model by default
+  /**
+   * To save without optimizer, shallow=true
    */
-  void save(const std::string& filename, bool save_shallowly = true) {
+  void save(const std::string& filename, bool shallow) {
     std::ofstream filestream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
-    this->setShallowSave(save_shallowly);
+    this->setShallowSave(shallow);
     oarchive(*this);
   }
 
@@ -216,26 +219,25 @@ class PyNetwork final : public FullyConnectedNetwork {
     if (this->anyLayerShallow()) {
       throw std::logic_error("Trying to checkpoint a model with no optimizer");
     }
-    this->save(filename, false);
+    this->save(filename, /* shallow= */ false);
   }
 
-  /* Removes the optimizer state for the network by setting layers to shallow
+  /**
+   * Removes the optimizer state for the network by setting layers to shallow
    */
   void trimForInference() { this->setShallow(true); }
 
-  /*If any of the layer is shallow, that is without an optimzier, reinitiliaze
-   *optimizer for that layer to 0.
+  /**
+   * If any of the layer is shallow, that is without an optimzier, reinitiliaze
+   * optimizer for that layer to 0.
    */
-  void resumeTraining() {
-    if (this->anyLayerShallow()) {
-      this->setShallow(false);
-    }
-  }
+  void reinitOptimizerForTraining() { this->setShallow(false); }
 
-  /*If any layer in the model is shallow i.e, has uninitialized optimizer,
+  /**
+   * If any layer in the model is shallow i.e, has uninitialized optimizer,
    * return false
    */
-  bool isReadyForTraining() { return bool(!this->anyLayerShallow()); }
+  bool isReadyForTraining() { return !this->anyLayerShallow(); }
 
   static std::unique_ptr<PyNetwork> load(const std::string& filename) {
     std::ifstream filestream(filename, std::ios::binary);

@@ -1,20 +1,18 @@
-LEARNING_RATE = 0.0005
-
 from thirdai import bolt
 import numpy as np
 
 
-# Constructs a bolt network for mnist with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
-def build_sparse_hidden_layer_network(dim, sparsity):
+# Constructs a bolt network with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
+def build_sparse_hidden_layer_classifier(input_dim, sparse_dim, output_dim, sparsity):
     layers = [
         bolt.FullyConnected(
-            dim=dim,
+            dim=sparse_dim,
             sparsity=sparsity,
             activation_function="ReLU",
         ),
-        bolt.FullyConnected(dim=10, activation_function="Softmax"),
+        bolt.FullyConnected(dim=output_dim, activation_function="Softmax"),
     ]
-    network = bolt.Network(layers=layers, input_dim=784)
+    network = bolt.Network(layers=layers, input_dim=input_dim)
     return network
 
 
@@ -29,9 +27,7 @@ def gen_training_data(n_classes=10, n_samples=1000):
 
 
 # training the model
-def train_network(
-    network, train_data, train_labels, epochs, learning_rate=LEARNING_RATE
-):
+def train_network(network, train_data, train_labels, epochs, learning_rate=0.0005):
     times = network.train(
         train_data,
         train_labels,
@@ -54,7 +50,7 @@ def get_categorical_acc(network, examples, labels, batch_size):
     return acc["categorical_accuracy"]
 
 
-# Returns a bolt Network
+# Returns a single layer (no hidden layer) bolt network with input_dim = output_dim and 50% sparsity.
 def gen_network(n_classes):
 
     layers = [

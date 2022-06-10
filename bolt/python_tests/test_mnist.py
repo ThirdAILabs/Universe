@@ -6,7 +6,7 @@ pytestmark = [pytest.mark.integration]
 import os
 from thirdai import bolt, dataset
 import numpy as np
-from utils import train_network, build_sparse_hidden_layer_network
+from utils import train_network, build_sparse_hidden_layer_classifier
 
 LEARNING_RATE = 0.0001
 
@@ -84,11 +84,11 @@ def test_mnist_sparse_output_layer():
 
 
 def test_mnist_sparse_hidden_layer():
-    network = build_sparse_hidden_layer_network(20000, 0.01)
+    network = build_sparse_hidden_layer_classifier(784, 20000, 10, 0.01)
 
     train_x, train_y, test_x, test_y = load_mnist()
 
-    train_network(network, train_x, train_y, epochs=10)
+    train_network(network, train_x, train_y, epochs=12)
 
     acc, activations = network.predict(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
@@ -108,7 +108,7 @@ def test_mnist_sparse_hidden_layer():
 
 
 def test_mnist_sparse_inference():
-    network = build_sparse_hidden_layer_network(20000, 0.01)
+    network = build_sparse_hidden_layer_classifier(784, 20000, 10, 0.01)
 
     train_x, train_y, test_x, test_y = load_mnist()
 

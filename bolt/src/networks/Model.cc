@@ -37,11 +37,11 @@ MetricData Model<BATCH_T>::train(
 
   MetricAggregator metrics(metric_names, verbose);
 
-  // if network is loaded without optimizer state, initialize_optimizer
-  bool any_layer_shallow = anyLayerShallow();
-  if (any_layer_shallow) {
+  // if any layer is shallow, call enable training to set the optimizer state
+  // before training
+  if (anyLayerShallow()) {
     throw std::logic_error(
-        "Call enable training before training to initialize Optimizer state");
+        "Call enable training before training to initialize optimizer state");
   }
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {

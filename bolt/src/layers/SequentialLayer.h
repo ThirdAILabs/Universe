@@ -47,22 +47,25 @@ class SequentialLayer {
 
   virtual void setBiases(const float* new_biases) = 0;
 
-  /* Sets whether the layer is currently shallow (shallow
+  /**
+   * Sets whether the layer is currently shallow (shallow
    * means that it has the minimum amount of parameters
    * necessary for inference). This can involve initializing or
    * deleting optimizer state.
    */
-  virtual void setShallow(bool is_shallow) = 0;
+  virtual void setShallow(bool shallow) = 0;
 
-  /* Checks whether the layer is shallow, ie, it's optimizer is initialized or
+  /**
+   * Checks whether the layer is shallow, ie, it's optimizer is initialized or
    * uninitialized.
    */
   virtual bool isShallow() = 0;
 
-  /* Sets the save parameter for a layer indicating whether the layer should be
+  /**
+   * Sets the save parameter for a layer indicating whether the layer should be
    * saved with or without the optimizer state.
    */
-  virtual void setShallowSave(bool is_shallow_save) = 0;
+  virtual void setShallowSave(bool shallow) = 0;
 
   virtual ~SequentialLayer() = default;
 };
