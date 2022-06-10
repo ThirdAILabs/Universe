@@ -7,32 +7,50 @@
 
 namespace thirdai::dataset {
 
-class ComposableBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
+class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
  public:
-  ComposableBatchProcessor(
+  GenericBatchProcessor(
     std::vector<std::shared_ptr<Block>> input_blocks,
-    std::vector<std::shared_ptr<Block>> target_blocks,
+    std::vector<std::shared_ptr<Block>> label_blocks,
     char delimiter=',')
     : _delimiter(delimiter), 
+      _input_blocks_dense(std::all_of(input_blocks.begin(), input_blocks.end(),
+                                      [](const std::shared_ptr<Block>& block) {
+                                        return block->isDense();
+                                      })),
+      _label_blocks_dense(std::all_of(label_blocks.begin(),
+                                      label_blocks.end(),
+                                      [](const std::shared_ptr<Block>& block) {
+                                        return block->isDense();
+                                      })),
+      /**
+       * Here we copy input_blocks and label_blocks because when we
+       * accept a vector representation of a Python List created by
+       * PyBind11, the vector does not persist beyond this function
+       * call, which results in segfaults later down the line.
+       * It is therefore safest to just copy these vectors.
+       * Furthermore, these vectors are cheap to copy since they contain a
+       * small number of elements and each element is a pointer.
+       */
       _input_blocks(std::move(input_blocks)), 
-      _target_blocks(std::move(target_blocks)) {}
+      _label_blocks(std::move(label_blocks)) {}
 
   std::optional<BoltDataLabelPair<bolt::BoltBatch>> createBatch(
       const std::vector<std::string>& rows) final {
     
     std::vector<bolt::BoltVector> batch_inputs(rows.size());
-    std::vector<bolt::BoltVector> batch_targets(rows.size());
+    std::vector<bolt::BoltVector> batch_labels(rows.size());
 
-#pragma omp parallel for default(none) shared(rows, batch_inputs, batch_targets)
+// #pragma omp parallel for default(none) shared(rows, batch_inputs, batch_labels)
     for (size_t i = 0; i < rows.size(); ++i) {
       auto columns = parseCsvRow(rows[i]);
       batch_inputs[i] =
         makeVector(columns, _input_blocks, _input_blocks_dense);
-      batch_targets[i] = 
-        makeVector(columns, _target_blocks, _target_blocks_dense);
+      batch_labels[i] = 
+        makeVector(columns, _label_blocks, _label_blocks_dense);
     }
     return std::make_pair(bolt::BoltBatch(std::move(batch_inputs)), 
-                          bolt::BoltBatch(std::move(batch_targets)));
+                          bolt::BoltBatch(std::move(batch_labels)));
   }
 
   bool expectsHeader() const final { return false; }
@@ -78,7 +96,6 @@ class ComposableBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     for (auto& block : blocks) {
       block->addVectorSegment(sample, *vec_ptr);
     }
-
     return vec_ptr->toBoltVector();
   }
 
@@ -87,16 +104,16 @@ class ComposableBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<BatchProcessor>(this),
-            _input_blocks_dense, _target_blocks_dense,
-            _input_blocks, _target_blocks);
+            _input_blocks_dense, _label_blocks_dense,
+            _input_blocks, _label_blocks);
   }
 
   // Private constructor for cereal.
-  ComposableBatchProcessor() {}
+  GenericBatchProcessor() {}
 
   char _delimiter;
   bool _input_blocks_dense;
-  bool _target_blocks_dense;
+  bool _label_blocks_dense;
   /**
    * We save a copy of these vectors instead of just references
    * because using references will cause errors when given Python
@@ -108,11 +125,11 @@ class ComposableBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
    * small number of elements and each element is a pointer.
    */
   std::vector<std::shared_ptr<Block>> _input_blocks;
-  std::vector<std::shared_ptr<Block>> _target_blocks;
+  std::vector<std::shared_ptr<Block>> _label_blocks;
 
 };
   
 } // namespace thirdai::dataset
 
 
-CEREAL_REGISTER_TYPE(thirdai::dataset::ComposableBatchProcessor)
+CEREAL_REGISTER_TYPE(thirdai::dataset::GenericBatchProcessor)
