@@ -28,7 +28,12 @@ jobs:
         with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-        
       - name: Build python package
+        run: bin/build.py
+
+      - name: Install necessary python pacakges
+        run: pip3 install toml sklearn psutil mlflow 
+      
+      - name: Run the job
         run: python3 bin/benchmark_bolt.py -l benchmarks/bolt_benchmarks/configs/mnist_dense.txt --test_run 
 
