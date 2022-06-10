@@ -14,8 +14,6 @@ namespace thirdai::bolt {
 
 class TextClassifier {
  public:
-  std::unique_ptr<FullyConnectedNetwork> _model;
-
   TextClassifier(const std::string& model_size, uint32_t n_classes);
 
   TextClassifier(SequentialConfigList configs);
@@ -57,6 +55,7 @@ class TextClassifier {
     archive(_model, _batch_processor);
   }
 
+  std::unique_ptr<FullyConnectedNetwork> _model;
   std::shared_ptr<dataset::TextClassificationProcessor> _batch_processor;
 };
 
