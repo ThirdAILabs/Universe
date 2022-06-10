@@ -328,7 +328,8 @@ def main():
         experiment_name = config["job"]
         dataset = config["dataset"]["train_data"].split("/")[-1]
         start_mlflow(experiment_name, args.run_name, dataset)
-        mlflow.log_artifact(config_filename)
+        # TODO(vihan): Get the credential authentication working in github actions
+        # mlflow.log_artifact(config_filename)
         log_machine_info()
         log_config_info(config)
 
