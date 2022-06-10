@@ -20,16 +20,16 @@ class MockBlock : public Block {
   bool isDense() const override { return _dense; };
 
  protected:
-  void buildExtension(const std::vector<std::string>& input_row,
-                      ExtendableVector& vec) override {
+  void buildSegment(const std::vector<std::string>& input_row,
+                    SegmentedFeatureVector& vec) override {
     const std::string& col_str = input_row.at(_column);
     char* end;
     float val = std::strtof(col_str.c_str(), &end);
 
     if (_dense) {
-      vec.addExtensionDenseFeature(val);
+      vec.addDenseFeatureToSegment(val);
     } else {
-      vec.addExtensionSparseFeature(0, val);
+      vec.addSparseFeatureToSegment(0, val);
     }
   };
 

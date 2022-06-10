@@ -5,7 +5,7 @@
 #include <dataset/src/encodings/text/PairGram.h>
 #include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <dataset/src/encodings/text/UniGram.h>
-#include <dataset/src/utils/ExtendableVectors.h>
+#include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <random>
 #include <string>
 #include <unordered_map>
@@ -56,11 +56,11 @@ class TextBlockTest : public testing::Test {
     return str;
   }
 
-  static std::vector<SparseExtendableVector> makeExtendableVecs(
+  static std::vector<SegmentedSparseFeatureVector> makeSegmentedVecs(
       SentenceMatrix& matrix, std::vector<TextBlock> blocks) {
-    std::vector<SparseExtendableVector> vecs;
+    std::vector<SegmentedSparseFeatureVector> vecs;
     for (const auto& row : matrix) {
-      SparseExtendableVector vec;
+      SegmentedSparseFeatureVector vec;
       for (auto& block : blocks) {
         extendVectorWithBlock(block, row, vec);
       }
@@ -75,8 +75,8 @@ class TextBlockTest : public testing::Test {
    */
   static void extendVectorWithBlock(TextBlock& block,
                                     const std::vector<std::string>& input_row,
-                                    SparseExtendableVector& vec) {
-    block.extendVector(input_row, vec);
+                                    SegmentedSparseFeatureVector& vec) {
+    block.addVectorSegment(input_row, vec);
   }
 
   /**
@@ -84,7 +84,7 @@ class TextBlockTest : public testing::Test {
    * which is private.
    */
   static std::unordered_map<uint32_t, float> vectorEntries(
-      ExtendableVector& vec) {
+      SegmentedFeatureVector& vec) {
     return vec.entries();
   }
 
@@ -142,8 +142,8 @@ TEST_F(TextBlockTest, TestTextBlockWithUniAndPairGram) {
   blocks.emplace_back(0, std::make_shared<UniGram>(dim_for_encodings));
   blocks.emplace_back(1, std::make_shared<PairGram>(dim_for_encodings));
 
-  std::vector<SparseExtendableVector> vecs =
-      makeExtendableVecs(sentence_matrix, blocks);
+  std::vector<SegmentedSparseFeatureVector> vecs =
+      makeSegmentedVecs(sentence_matrix, blocks);
 
   ASSERT_EQ(sentence_matrix.size(), vecs.size());
   for (uint32_t row = 0; row < sentence_matrix.size(); row++) {

@@ -7,24 +7,26 @@
 
 namespace thirdai::dataset {
 /**
- * A concrete implementation of ExtendableVector for sparse vectors.
+ * A concrete implementation of SegmentedSparseFeatureVector for sparse vectors.
  */
-class SparseExtendableVector : public ExtendableVector {
+class SegmentedSparseFeatureVector : public SegmentedFeatureVector {
  public:
-  void addExtensionSparseFeature(uint32_t index, float value) final {
+  void addSparseFeatureToSegment(uint32_t index, float value) final {
     if (_n_dense_added > 0) {
       throw std::invalid_argument(
-          "[SparseExtendableVector::addExtensionSparseFeature] A block cannot "
+          "[SegmentedSparseFeatureVector::addSparseFeatureToSegment] A block "
+          "cannot "
           "add both dense and sparse features.");
     }
 
     uint32_t concat_index = _prev_dim + index;
     if (concat_index >= _current_dim) {
       std::stringstream ss;
-      ss << "[SparseExtendableVector::addExtensionSparseFeature] Setting value "
+      ss << "[SegmentedSparseFeatureVector::addSparseFeatureToSegment] Setting "
+            "value "
             "at index = "
          << index
-         << " of extension vector with dim = " << _current_dim - _prev_dim;
+         << " of vector segment with dim = " << _current_dim - _prev_dim;
       throw std::invalid_argument(ss.str());
     }
 
@@ -36,18 +38,19 @@ class SparseExtendableVector : public ExtendableVector {
     _added_sparse = true;
   }
 
-  void addExtensionDenseFeature(float value) final {
+  void addDenseFeatureToSegment(float value) final {
     if (_added_sparse) {
       throw std::invalid_argument(
-          "[SparseExtendableVector::addExtensionDenseFeature] A block cannot "
+          "[SegmentedSparseFeatureVector::addDenseFeatureToSegment] A block "
+          "cannot "
           "add both dense and sparse features.");
     }
 
     if (_n_dense_added >= (_current_dim - _prev_dim)) {
       std::stringstream ss;
-      ss << "[SparseExtendableVector::addExtensionDenseFeature] Adding "
+      ss << "[SegmentedSparseFeatureVector::addDenseFeatureToSegment] Adding "
          << _n_dense_added + 1
-         << "-th dense feature to extension vector with dim = "
+         << "-th dense feature to vector segment with dim = "
          << _current_dim - _prev_dim;
       throw std::invalid_argument(ss.str());
     }
@@ -62,7 +65,7 @@ class SparseExtendableVector : public ExtendableVector {
   }
 
  protected:
-  void extendByDim(uint32_t dim) final {
+  void addFeatureSegment(uint32_t dim) final {
     _prev_dim = _current_dim;
     _current_dim += dim;
     _added_sparse = false;
@@ -87,25 +90,25 @@ class SparseExtendableVector : public ExtendableVector {
 };
 
 /**
- * A concrete implementation of ExtendableVector for dense vectors.
+ * A concrete implementation of SegmentedFeatureVector for dense vectors.
  */
-class DenseExtendableVector : public ExtendableVector {
+class SegmentedDenseFeatureVector : public SegmentedFeatureVector {
  public:
-  void addExtensionSparseFeature(uint32_t index, float value) final {
+  void addSparseFeatureToSegment(uint32_t index, float value) final {
     (void)index;
     (void)value;
     throw std::invalid_argument(
-        "[DenseExtendableVector::addExtensionSparseFeature] "
-        "DenseExtendableVector does not accept sparse features.");
+        "[SegmentedDenseFeatureVector::addSparseFeatureToSegment] "
+        "SegmentedDenseFeatureVector does not accept sparse features.");
   }
 
-  void addExtensionDenseFeature(float value) final {
-    if (_n_dense_added >= _latest_extension_dim) {
+  void addDenseFeatureToSegment(float value) final {
+    if (_n_dense_added >= _latest_segment_dim) {
       std::stringstream ss;
-      ss << "[DenseExtendableVector::addExtensionDenseFeature] Adding "
+      ss << "[SegmentedDenseFeatureVector::addDenseFeatureToSegment] Adding "
          << _n_dense_added + 1
-         << "-th dense feature to extension vector with dim = "
-         << _latest_extension_dim;
+         << "-th dense feature to vector segment with dim = "
+         << _latest_segment_dim;
       throw std::invalid_argument(ss.str());
     }
 
@@ -118,18 +121,19 @@ class DenseExtendableVector : public ExtendableVector {
   };
 
  protected:
-  void extendByDim(uint32_t dim) final {
-    if (_latest_extension_dim > _n_dense_added) {
+  void addFeatureSegment(uint32_t dim) final {
+    if (_latest_segment_dim > _n_dense_added) {
       std::stringstream ss;
-      ss << "[DenseExtendableVector::extendByDim] Extending vector before "
-            "completing previous extension. Previous extension expected to "
+      ss << "[SegmentedDenseFeatureVector::addFeatureSegment] Adding vector "
+            "segment before "
+            "completing previous segment. Previous segment expected to "
             "have dim = "
-         << _latest_extension_dim << " but only " << _n_dense_added
+         << _latest_segment_dim << " but only " << _n_dense_added
          << " dense features were added.";
       throw std::invalid_argument(ss.str());
     }
 
-    _latest_extension_dim = dim;
+    _latest_segment_dim = dim;
     _n_dense_added = 0;
     _values.reserve(_values.size() + dim);
   }
@@ -143,7 +147,7 @@ class DenseExtendableVector : public ExtendableVector {
   }
 
  private:
-  uint32_t _latest_extension_dim = 0;
+  uint32_t _latest_segment_dim = 0;
   uint32_t _n_dense_added = 0;
   std::vector<float> _values;
 };
