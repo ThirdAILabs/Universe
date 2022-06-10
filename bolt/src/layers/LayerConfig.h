@@ -40,20 +40,6 @@ struct SequentialLayerConfig {
 using SequentialConfigList =
     std::vector<std::shared_ptr<bolt::SequentialLayerConfig>>;
 
-inline std::string getHashString(HashFunctionEnum hash_function) {
-  switch (hash_function) {
-    case HashFunctionEnum::DWTA:
-      return "DWTA";
-    case HashFunctionEnum::SRP:
-      return "SRP";
-    case HashFunctionEnum::FastSRP:
-      return "FastSRP";
-    // Not supposed to reach here but compiler complains
-    default:
-      throw std::invalid_argument("Hash function not supported.");
-  }
-}
-
 struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
   uint64_t dim;
   float sparsity;
@@ -154,7 +140,7 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
                                      /* num_tables = */ num_tables,
                                      /* range_pow = */ range_pow,
                                      /* reservoir_size = */ reservoir_size,
-                                     /* hash_function*/ HashFunctionEnum::DWTA);
+                                     /* _hash_function*/ "DWTA");
   }
 
   uint64_t getDim() const final { return dim; }
@@ -196,7 +182,7 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
           << ", num_tables=" << sampling_config.num_tables
           << ", range_pow=" << sampling_config.range_pow
           << ", reservoir_size=" << sampling_config.reservoir_size
-          << ", hash_function=" << getHashString(sampling_config.hash_function)
+          << ", hash_function=" << getHashString(sampling_config._hash_function)
           << "}";
     }
   }
@@ -238,7 +224,7 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
       uint32_t k = rp / 3;
       uint32_t rs = (num_filters * 4) / (1 << rp);
       uint32_t l = sparsity < 0.1 ? 256 : 64;
-      sampling_config = SamplingConfig(k, l, rp, rs, HashFunctionEnum::DWTA);
+      sampling_config = SamplingConfig(k, l, rp, rs, "DWTA");
     } else {
       sampling_config = SamplingConfig();
     }
@@ -276,7 +262,7 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
           << ", num_tables=" << sampling_config.num_tables
           << ", range_pow=" << sampling_config.range_pow
           << ", reservoir_size=" << sampling_config.reservoir_size
-          << ", hash_function=" << getHashString(sampling_config.hash_function)
+          << ", hash_function=" << getHashString(sampling_config._hash_function)
           << "}";
     }
   }

@@ -5,6 +5,7 @@
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/SRP.h>
 #include <cctype>
+#include <string>
 #include <utility>
 
 namespace thirdai::bolt {
@@ -78,25 +79,39 @@ static HashFunctionEnum getHashFunction(const std::string& hash_function) {
       "SRP, FastSRP, DWTA");
 }
 
+inline std::string getHashString(HashFunctionEnum hash_function) {
+  switch (hash_function) {
+    case HashFunctionEnum::DWTA:
+      return "DWTA";
+    case HashFunctionEnum::SRP:
+      return "SRP";
+    case HashFunctionEnum::FastSRP:
+      return "FastSRP";
+    // Not supposed to reach here but compiler complains
+    default:
+      throw std::invalid_argument("Hash function not supported.");
+  }
+}
+
 struct SamplingConfig {
   uint32_t hashes_per_table, num_tables, range_pow, reservoir_size;
-  HashFunctionEnum hash_function;
+  HashFunctionEnum _hash_function;
 
   SamplingConfig()
       : hashes_per_table(0),
         num_tables(0),
         range_pow(0),
         reservoir_size(0),
-        hash_function(HashFunctionEnum::DWTA) {}
+        _hash_function(HashFunctionEnum::DWTA) {}
 
   SamplingConfig(uint32_t hashes_per_table, uint32_t num_tables,
                  uint32_t range_pow, uint32_t reservoir_size,
-                 HashFunctionEnum hash_function = HashFunctionEnum::DWTA)
+                 const std::string& hash_function = "DWTA")
       : hashes_per_table(hashes_per_table),
         num_tables(num_tables),
         range_pow(range_pow),
         reservoir_size(reservoir_size),
-        hash_function(hash_function) {}
+        _hash_function(getHashFunction(hash_function)) {}
 
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
@@ -104,7 +119,7 @@ struct SamplingConfig {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(hashes_per_table, num_tables, range_pow, reservoir_size,
-            hash_function);
+            _hash_function);
   }
 };
 

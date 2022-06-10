@@ -120,7 +120,7 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   static std::unique_ptr<hashing::HashFunction> assignHashFunction(
       const SamplingConfig& config, uint64_t dim) {
-    switch (config.hash_function) {
+    switch (config._hash_function) {
       case HashFunctionEnum::DWTA:
         return std::make_unique<hashing::DWTAHashFunction>(
             dim, config.hashes_per_table, config.num_tables, config.range_pow);

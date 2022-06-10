@@ -108,8 +108,7 @@ bolt::SequentialConfigList createFullyConnectedLayerConfigs(
     layers.push_back(std::make_shared<bolt::FullyConnectedLayerConfig>(
         dim, sparsity, thirdai::bolt::getActivationFunction(activation),
         bolt::SamplingConfig(hashes_per_table, num_tables, range_pow,
-                             reservoir_size,
-                             thirdai::bolt::getHashFunction(hash_function))));
+                             reservoir_size, hash_function)));
   }
   return layers;
 }

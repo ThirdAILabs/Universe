@@ -15,25 +15,13 @@ void createBoltSubmodule(py::module_& module) {
 
 #if THIRDAI_EXPOSE_ALL
 #pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
-  bolt_submodule.def("getHashFunction", &getHashFunction, py::arg("name"),
-                     "Converts a Hashing function name to "
-                     "the corresponding enum.");
-  py::enum_<HashFunctionEnum>(
-      bolt_submodule, "HashFunctionEnums",
-      "An enum of all available Hashing functions. To use it, pass it to "
-      "the 'hash_function' parameter of a SamplingConfig object.")
-      .value("DWTA", HashFunctionEnum::DWTA, "DWTA Hash Function")
-      .value("SRP", HashFunctionEnum::SRP,
-             "Sparse Random Projection Hash Function.")
-      .value("FastSRP", HashFunctionEnum::FastSRP,
-             "Its a FastSRP Hash Function.");
   py::class_<thirdai::bolt::SamplingConfig>(
       bolt_submodule, "SamplingConfig",
       "SamplingConfig represents a layer's sampling hyperparameters.")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, HashFunctionEnum>(),
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, std::string>(),
            py::arg("hashes_per_table"), py::arg("num_tables"),
            py::arg("range_pow"), py::arg("reservoir_size"),
-           py::arg("hash_function") = HashFunctionEnum::DWTA,
+           py::arg("hash_function") = "DWTA",
            "Builds a SamplingConfig object. \n\n"
            "Arguments:\n"
            " * hashes_per_table: Int - number of hashes to be concatenated in "
@@ -46,7 +34,8 @@ void createBoltSubmodule(py::module_& module) {
            " For SRP or FastSRP, range_pow = hashes_per_table."
            " * reservoir_size: Int - maximum number of elements stored in each "
            "hash bucket."
-           " * hash_function: HashFunctionEnum (Optional) - The hash function "
+           " * hash_function: Pass hash function as string (Optional) - The "
+           "hash function "
            "used for sparse training and inference. One of DWTA, SRP, or "
            "FastSRP. Defaults to DWTA.")
       .def(py::init<>(), "Builds a default SamplingConfig object.");

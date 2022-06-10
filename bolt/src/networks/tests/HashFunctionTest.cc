@@ -16,6 +16,7 @@ static const uint32_t n_classes = 100, n_batches = 100, batch_size = 100;
 class BoltHashFunctionTestFixture : public testing::Test {
  public:
   static dataset::DatasetWithLabels genDataset(bool input_is_noise) {
+    // input_is_noise is to specify whether we want input to be noisy or not.
     std::mt19937 gen(892734);
     std::uniform_int_distribution<uint32_t> label_dist(0, n_classes - 1);
     std::normal_distribution<float> data_dist(0, input_is_noise ? 1.0 : 0.1);
@@ -46,17 +47,19 @@ class BoltHashFunctionTestFixture : public testing::Test {
   }
 };
 
-static void testSimpleDatasetHashFunction(HashFunctionEnum hash_function) {
+static void testSimpleDatasetHashFunction(const std::string& hash_function) {
   // constructs the network with user provided hash function.
   FullyConnectedNetwork network(
       {std::make_shared<FullyConnectedLayerConfig>(
-           10000, 0.1, ActivationFunction::ReLU,
-           SamplingConfig(5, 64, 15, 4, hash_function)),
+           /*dim = */ 10000, /*sparsity = */ 0.1,
+           /*act_func = */ ActivationFunction::ReLU,
+           /*sampling_config = */ SamplingConfig(5, 64, 15, 4, hash_function)),
        std::make_shared<FullyConnectedLayerConfig>(
            n_classes, ActivationFunction::Softmax)},
       n_classes);
 
-  auto data = BoltHashFunctionTestFixture::genDataset(false);
+  auto data =
+      BoltHashFunctionTestFixture::genDataset(/*input_is_noise = */ false);
 
   // train the network for two epochs
   network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 2,
@@ -85,17 +88,17 @@ static void testSimpleDatasetHashFunction(HashFunctionEnum hash_function) {
 
 // test for DWTA Hash Function
 TEST_F(BoltHashFunctionTestFixture, TrainSimpleDatasetDWTA) {
-  testSimpleDatasetHashFunction(HashFunctionEnum::DWTA);
+  testSimpleDatasetHashFunction("DWTA");
 }
 
 // test for SRP Hash Function
 TEST_F(BoltHashFunctionTestFixture, TrainSimpleDatasetSRP) {
-  testSimpleDatasetHashFunction(HashFunctionEnum::SRP);
+  testSimpleDatasetHashFunction("SRP");
 }
 
 // test for FastSRP Hash Function
 TEST_F(BoltHashFunctionTestFixture, TrainSimpleDatasetFastSRP) {
-  testSimpleDatasetHashFunction(HashFunctionEnum::FastSRP);
+  testSimpleDatasetHashFunction("FastSRP");
 }
 
 }  // namespace thirdai::bolt::tests
