@@ -150,7 +150,7 @@ InferenceMetricData Model<BATCH_T>::predict(
   // a batch size larger than this so we can just set the batch size here.
   // If sparse inference is not enabled we want the outptus to be dense,
   // otherwise we want whatever the default for the layer is.
-  initializeNetworkState(batch_size, false);
+  initializeNetworkState(batch_size, true);
 
   ProgressBar bar(num_test_batches, verbose);
 
@@ -163,7 +163,7 @@ InferenceMetricData Model<BATCH_T>::predict(
   // TODO(josh): This is a bit hacky, processTestBatch should probably just
   // fill output and we should fill output_activations and output_active_neurons
   // here.
-  BoltBatch outputs = getOutputs(batch_size, false);
+  BoltBatch outputs = getOutputs(batch_size, true);
 
   auto test_start = std::chrono::high_resolution_clock::now();
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {

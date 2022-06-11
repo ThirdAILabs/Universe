@@ -40,13 +40,13 @@ class Blolt {
       const std::vector<std::vector<uint64_t>>& near_neighbor_ids,
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& entire_dataset,
       uint32_t num_epochs_per_iteration = 20, uint32_t num_iterations = 10,
-      float learning_rate = 0.1,
+      float learning_rate = 0.01,
       uint32_t num_alternative_groups_to_consider = 5) {
-    if (near_neighbor_ids.size() != train_data->len()) {
-      throw std::invalid_argument(
-          "The near neighbor vector must be the same length as the input "
-          "dataset.");
-    }
+    // if (near_neighbor_ids.size() != train_data->len()) {
+    //   throw std::invalid_argument(
+    //       "The near neighbor vector must be the same length as the input "
+    //       "dataset.");
+    // }
 
     _all_groups.clear();
     _total_num_points = entire_dataset->len();
@@ -61,24 +61,21 @@ class Blolt {
       for (uint8_t classifier_id = 0; classifier_id < _num_classifiers;
            classifier_id++) {
         auto& classifier = _classifiers.at(classifier_id);
+        auto labels = neighborsToLabels(train_data, assignments.at(classifier_id),
+                                near_neighbor_ids,
+                                /* num_neighbors_per_batch = */ 1);
         for (uint32_t i = 0; i < num_epochs_per_iteration; i++) {
           classifier.train(
               /* train_data = */ train_data,
-              /* train_labels = */
-              neighborsToLabels(train_data, assignments.at(classifier_id),
-                                near_neighbor_ids,
-                                /* num_neighbors_per_batch = */ 10),
-              /* loss_fn = */ bolt::BinaryCrossEntropyLoss(),
+              /* train_labels = */ labels,
+              /* loss_fn = */ bolt::CategoricalCrossEntropyLoss(),
               /* learning_rate = */ learning_rate,
               /* epochs = */ 1,
               /* rehash = */ 6400, /* rebuild = */ 128000,
               /* metric_names = */ {}, /* verbose = */ true);
           classifier.predict(
               /* test_data = */ train_data,
-              /* labels = */
-              neighborsToLabels(train_data, assignments.at(classifier_id),
-                                near_neighbor_ids,
-                                /* num_neighbors_per_batch = */ 10),
+              /* labels = */ labels,
               /* output_active_neurons = */ nullptr,
               /* output_activations = */ nullptr,
               /* metric_names = */ {"categorical_accuracy"},
@@ -240,7 +237,7 @@ class Blolt {
         thirdai::bolt::ActivationFunction::ReLU));
     layers.push_back(std::make_shared<bolt::FullyConnectedLayerConfig>(
         num_classes, last_layer_sparsity,
-        thirdai::bolt::ActivationFunction::Sigmoid));
+        thirdai::bolt::ActivationFunction::Softmax));
     return bolt::FullyConnectedNetwork(layers, input_dim);
   }
 
@@ -339,11 +336,6 @@ class Blolt {
       for (uint64_t i = 0; i < batch_size; i++) {
         for (uint64_t d = 0; d < num_neighbors_per_batch; d++) {
           // TODO(josh): Check for repeats
-          // std::cout << current_index << " " <<
-          // group_assignments[current_index] << " " <<
-          // near_neighbor_ids.at(current_index).at(d) << " " <<
-          // group_assignments.at(near_neighbor_ids.at(current_index).at(d)) <<
-          // std::endl;
           label_batch[i].active_neurons[d] =
               group_assignments.at(near_neighbor_ids.at(current_index).at(d));
           label_batch[i].activations[d] = 1.0;
