@@ -156,8 +156,8 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
 
-    /**Overriding the SIG_INT exception handler to throw a runtime_error will
-     * cause any CTRL+C from the user to interrupt the execution of any long
+    /**Overriding the SIG_INT exception handler to exit the program once
+     * CTRL+C is pressed by the user to interrupt the execution of any long
      * running code.
      */
 #if defined __linux__ || defined __APPLE__
