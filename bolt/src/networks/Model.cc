@@ -115,9 +115,9 @@ inline void Model<BATCH_T>::processTrainingBatch(
 template <typename BATCH_T>
 BoltBatch Model<BATCH_T>::predict(const BATCH_T& test_data) {
   initializeNetworkState(/* batch_size = */ test_data.getBatchSize(),
-                         /* force_dense = */ true);
+                         /* force_dense = */ false);
   BoltBatch outputs = getOutputs(/* batch_size = */ test_data.getBatchSize(),
-                                 /* force_dense = */ true);
+                                 /* force_dense = */ false);
   MetricAggregator no_metrics(/* metrics = */ {},
                               /* verbose = */ false);
   processTestBatch(
@@ -216,9 +216,9 @@ inline void Model<BATCH_T>::processTestBatch(const BATCH_T& batch_inputs,
                                              float* output_activations,
                                              MetricAggregator& metrics,
                                              bool compute_metrics) {
-  // #pragma omp parallel for default(none)
-  //     shared(batch_inputs, batch_labels, outputs, output_active_neurons,
-  //            output_activations, metrics, compute_metrics)
+#pragma omp parallel for default(none)                                 \
+    shared(batch_inputs, batch_labels, outputs, output_active_neurons, \
+           output_activations, metrics, compute_metrics)
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
     // We set labels to nullptr so that they are not used in sampling during
     // inference.

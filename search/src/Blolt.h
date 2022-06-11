@@ -25,7 +25,8 @@ class Blolt {
          classifier_id++) {
       _classifiers.push_back(
           createBloltClassifierDenseInput(/* input_dim = */ _input_dim,
-                                          /* num_classes = */ _num_classes));
+                                          /* num_classes = */ _num_classes,
+                                          /* last_layer_sparsity = */ 0.01));
     }
     // for (auto& classifier : _classifiers) {
     //   classifier.enableSparseInference(/* remember_mistakes = */ false);
@@ -38,9 +39,9 @@ class Blolt {
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
       const std::vector<std::vector<uint64_t>>& near_neighbor_ids,
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& entire_dataset,
-      uint32_t num_epochs = 5, float learning_rate = 0.01,
+      uint32_t num_epochs_per_iteration = 5, uint32_t num_iterations = 10,
+      float learning_rate = 0.1,
       uint32_t num_alternative_groups_to_consider = 5) {
-    (void)learning_rate;
     if (near_neighbor_ids.size() != train_data->len()) {
       throw std::invalid_argument(
           "The near neighbor vector must be the same length as the input "
@@ -51,15 +52,11 @@ class Blolt {
     _total_num_points = entire_dataset->len();
     std::mt19937 rng(_seed);
 
-    std::vector<std::vector<uint64_t>> assignments;
-    for (uint8_t classifier_id = 0; classifier_id < _num_classifiers;
-         classifier_id++) {
-      assignments.push_back(
-          getRandomGroupAssignments(_total_num_points, _num_classes, rng));
-    }
-    buildGroups(assignments);
+    std::vector<std::vector<uint64_t>> assignments =
+        assignGroupsUsingCurrentClassifiers(num_alternative_groups_to_consider,
+                                            entire_dataset);
 
-    for (uint32_t epoch = 0; epoch < num_epochs; epoch++) {
+    for (uint32_t iteration = 0; iteration < num_iterations; iteration++) {
       // Train
       for (uint8_t classifier_id = 0; classifier_id < _num_classifiers;
            classifier_id++) {
@@ -68,35 +65,35 @@ class Blolt {
             /* train_data = */ train_data,
             /* train_labels = */
             neighborsToLabels(train_data, assignments.at(classifier_id),
-                              near_neighbor_ids),
+                              near_neighbor_ids,
+                              /* num_neighbors_per_batch = */ 10),
             /* loss_fn = */ bolt::BinaryCrossEntropyLoss(),
-            /* learning_rate = */ learning_rate, /* epochs = */ 5,
+            /* learning_rate = */ learning_rate,
+            /* epochs = */ num_epochs_per_iteration,
             /* rehash = */ 6400, /* rebuild = */ 128000,
             /* metric_names = */ {}, /* verbose = */ true);
+        classifier.predict(
+            /* test_data = */ train_data,
+            /* labels = */
+            neighborsToLabels(train_data, assignments.at(classifier_id),
+                              near_neighbor_ids,
+                              /* num_neighbors_per_batch = */ 10),
+            /* output_active_neurons = */ nullptr,
+            /* output_activations = */ nullptr,
+            /* metric_names = */ {"categorical_accuracy"},
+            /* verbose = */ true,
+            /* compute_metrics = */ true);
       }
 
       // Print accuracy
-      if (epoch == num_epochs - 1) {
+      if (iteration == num_iterations - 1) {
         break;
       }
-      printAccuracy(train_data, near_neighbor_ids);
+      // printAccuracy(train_data, near_neighbor_ids);
 
       // Reassign groups
-      for (uint8_t classifier_id = 0; classifier_id < _num_classifiers;
-           classifier_id++) {
-        auto& classifier = _classifiers.at(classifier_id);
-        std::vector<uint64_t> new_group_assignments;
-        std::vector<uint64_t> new_group_sizes(_num_classes, 0);
-        for (auto& batch : *entire_dataset) {
-          auto prediction = classifier.predict(batch);
-          updateGroupAssigmentsForBatch(new_group_assignments, new_group_sizes,
-                                        prediction,
-                                        num_alternative_groups_to_consider);
-        }
-        printGroupSizeProperties(new_group_sizes);
-        assignments.at(classifier_id) = new_group_assignments;
-      }
-      buildGroups(assignments);
+      assignments = assignGroupsUsingCurrentClassifiers(
+          num_alternative_groups_to_consider, entire_dataset);
     }
   }
 
@@ -168,6 +165,28 @@ class Blolt {
             _num_classifiers, _classifiers, _all_groups);
   }
 
+  std::vector<std::vector<uint64_t>> assignGroupsUsingCurrentClassifiers(
+      uint32_t num_alternative_groups_to_consider,
+      const dataset::BoltDatasetPtr& entire_dataset) {
+    std::vector<std::vector<uint64_t>> assignments(_num_classifiers);
+    for (uint8_t classifier_id = 0; classifier_id < _num_classifiers;
+         classifier_id++) {
+      auto& classifier = _classifiers.at(classifier_id);
+      std::vector<uint64_t> new_group_assignments;
+      std::vector<uint64_t> new_group_sizes(_num_classes, 0);
+      for (const auto& batch : *entire_dataset) {
+        auto prediction = classifier.predict(batch);
+        updateGroupAssigmentsForBatch(new_group_assignments, new_group_sizes,
+                                      prediction,
+                                      num_alternative_groups_to_consider);
+      }
+      printGroupSizeProperties(new_group_sizes);
+      assignments.at(classifier_id) = new_group_assignments;
+    }
+    buildGroups(assignments);
+    return assignments;
+  }
+
   void buildGroups(const std::vector<std::vector<uint64_t>>& assignments) {
     _all_groups.clear();
     for (const std::vector<uint64_t>& classifier_assignments : assignments) {
@@ -223,17 +242,23 @@ class Blolt {
     return bolt::FullyConnectedNetwork(layers, input_dim);
   }
 
-  static std::vector<uint64_t> getRandomGroupAssignments(
-      uint64_t num_items_in_dataset, uint64_t num_groups, std::mt19937 gen) {
-    std::uniform_int_distribution<uint64_t> distr(0, num_groups - 1);
-    std::vector<uint64_t> random_group_assignments(num_items_in_dataset);
-    std::vector<uint64_t> group_sizes(num_groups, 0);
-    for (uint64_t i = 0; i < num_items_in_dataset; i++) {
-      random_group_assignments[i] = distr(gen);
-      group_sizes[random_group_assignments[i]]++;
+  static std::vector<std::vector<uint64_t>> getRandomGroupAssignments(
+      uint64_t num_items_in_dataset, uint64_t num_groups, std::mt19937 gen,
+      uint8_t num_classifiers) {
+    std::vector<std::vector<uint64_t>> all_group_assignments;
+    for (uint8_t classifier_id = 0; classifier_id < num_classifiers;
+         classifier_id++) {
+      std::uniform_int_distribution<uint64_t> distr(0, num_groups - 1);
+      std::vector<uint64_t> classifier_group_assignments(num_items_in_dataset);
+      std::vector<uint64_t> group_sizes(num_groups, 0);
+      for (uint64_t i = 0; i < num_items_in_dataset; i++) {
+        classifier_group_assignments[i] = distr(gen);
+        group_sizes[classifier_group_assignments[i]]++;
+      }
+      printGroupSizeProperties(group_sizes);
+      all_group_assignments.push_back(classifier_group_assignments);
     }
-    printGroupSizeProperties(group_sizes);
-    return random_group_assignments;
+    return all_group_assignments;
   }
 
   static void updateGroupAssigmentsForBatch(
@@ -298,19 +323,19 @@ class Blolt {
   static dataset::BoltDatasetPtr neighborsToLabels(
       const dataset::BoltDatasetPtr& train,
       const std::vector<uint64_t>& group_assignments,
-      const std::vector<std::vector<uint64_t>>& near_neighbor_ids) {
+      const std::vector<std::vector<uint64_t>>& near_neighbor_ids,
+      const uint32_t num_neighbors_per_batch) {
     std::vector<bolt::BoltBatch> batches;
     uint64_t current_index = 0;
     for (uint32_t batch = 0; batch < train->numBatches(); batch++) {
       uint32_t batch_size = train->at(batch).getBatchSize();
       // TODO(josh): Clean up this dim hack
       bolt::BoltBatch label_batch(
-          /* dim = */ near_neighbor_ids.at(current_index).size(),
+          /* dim = */ num_neighbors_per_batch,
           /* batch_size = */ batch_size,
           /* is_dense = */ false);
       for (uint64_t i = 0; i < batch_size; i++) {
-        for (uint64_t d = 0; d < near_neighbor_ids.at(current_index).size();
-             d++) {
+        for (uint64_t d = 0; d < num_neighbors_per_batch; d++) {
           // TODO(josh): Check for repeats
           label_batch[i].active_neurons[d] =
               group_assignments.at(near_neighbor_ids.at(current_index).at(d));
