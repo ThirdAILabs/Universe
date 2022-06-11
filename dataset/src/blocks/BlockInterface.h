@@ -113,6 +113,12 @@ class Block {
    */
   virtual bool isDense() const = 0;
 
+  /**
+   * Returns the minimum number of columns that the block expects 
+   * to see in each row of the dataset.
+   */
+  virtual uint32_t expectedNumColumns() const = 0;
+
  protected:
   /**
    * Derived class-specific implementation of how input rows get
