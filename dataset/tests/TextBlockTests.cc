@@ -231,4 +231,44 @@ TEST_F(TextBlockTest, TestTextBlockWithUniGramPairGramCharTriGram) {
   }
 }
 
+TEST_F(TextBlockTest, TestEncodingsDeterministic) {
+  uint32_t num_rows = 100;
+  uint32_t num_columns = 3;
+  uint32_t word_length = 8;
+  uint32_t words_per_row = 5;
+  auto [sentence_matrix, word_matrix] = generateRandomStringMatrix(
+      num_rows, num_columns, word_length, words_per_row);
+
+  uint32_t dim_for_encodings = 50;
+  uint32_t k_chars = 3;
+  std::vector<TextBlock> blocks_1;
+  std::vector<TextBlock> blocks_2;
+  // Duplicate each block. They will independently produce features
+  // and we can check that the resulting vectors are equal.
+  blocks_1.emplace_back(0, std::make_shared<UniGram>(dim_for_encodings));
+  blocks_2.emplace_back(0, std::make_shared<UniGram>(dim_for_encodings));
+  blocks_1.emplace_back(1, std::make_shared<PairGram>(dim_for_encodings));
+  blocks_2.emplace_back(1, std::make_shared<PairGram>(dim_for_encodings));
+  blocks_1.emplace_back(
+      2, std::make_shared<CharKGram>(k_chars, dim_for_encodings));
+  blocks_2.emplace_back(
+      2, std::make_shared<CharKGram>(k_chars, dim_for_encodings));
+
+  std::vector<SegmentedSparseFeatureVector> vecs_1 =
+      makeSegmentedVecs(sentence_matrix, blocks_1);
+
+  std::vector<SegmentedSparseFeatureVector> vecs_2 =
+      makeSegmentedVecs(sentence_matrix, blocks_1);
+
+  for (uint32_t i = 0; i < vecs_1.size(); i++) {
+    auto vec_1_entries = vectorEntries(vecs_1[i]);
+    auto vec_2_entries = vectorEntries(vecs_2[i]);
+
+    ASSERT_EQ(vec_1_entries.size(), vec_2_entries.size());
+    for (const auto& [key, val] : vec_1_entries) {
+      ASSERT_EQ(val, vec_2_entries[key]);
+    }
+  }
+}
+
 }  // namespace thirdai::dataset

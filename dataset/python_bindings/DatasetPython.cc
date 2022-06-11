@@ -96,8 +96,10 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<CharKGram, TextEncoding, std::shared_ptr<CharKGram>>(
       text_encoding_submodule, "CharKGram",
       "Encodes a sentence as a weighted set of character trigrams.")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("start_col"), py::arg("dim"),
-           "Constructor. Accepts the starting column and dimension "
+      .def(py::init<uint32_t, uint32_t>(), py::arg("k"),
+           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+           "Constructor. Accepts k (the number of characters in each token) "
+           "and dimension "
            "(size) of the array.")
       .def("is_dense", &CharKGram::isDense,
            "Returns False since this is a sparse encoding.")
