@@ -16,10 +16,11 @@ def get_gt(glove_data, train_data, top_k):
         )
         dot = np.matmul(training_normed, all_data_normed.transpose())[0]
         top_indices = np.argpartition(dot, -top_k)[-top_k:]
+        top_indices = top_indices[np.argsort(dot[top_indices])][::-1]
         all_top_indices.append(top_indices.copy())
     all_top_indices = np.array(all_top_indices)
-    print(all_top_indices.shape)
     np.save(filename, all_top_indices)
+    return all_top_indices
 
 
 def test_glove():

@@ -39,7 +39,7 @@ class Blolt {
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
       const std::vector<std::vector<uint64_t>>& near_neighbor_ids,
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& entire_dataset,
-      uint32_t num_epochs_per_iteration = 5, uint32_t num_iterations = 10,
+      uint32_t num_epochs_per_iteration = 20, uint32_t num_iterations = 10,
       float learning_rate = 0.1,
       uint32_t num_alternative_groups_to_consider = 5) {
     if (near_neighbor_ids.size() != train_data->len()) {
@@ -52,37 +52,39 @@ class Blolt {
     _total_num_points = entire_dataset->len();
     std::mt19937 rng(_seed);
 
-    std::vector<std::vector<uint64_t>> assignments =
-        assignGroupsUsingCurrentClassifiers(num_alternative_groups_to_consider,
-                                            entire_dataset);
+    // (classifier_id, point_id) -> (group_id) in [0, _num_classes)
+    std::vector<std::vector<uint64_t>> assignments = getRandomGroupAssignments(
+        entire_dataset->len(), _num_classes, rng, _num_classifiers);
 
     for (uint32_t iteration = 0; iteration < num_iterations; iteration++) {
       // Train
       for (uint8_t classifier_id = 0; classifier_id < _num_classifiers;
            classifier_id++) {
         auto& classifier = _classifiers.at(classifier_id);
-        classifier.train(
-            /* train_data = */ train_data,
-            /* train_labels = */
-            neighborsToLabels(train_data, assignments.at(classifier_id),
-                              near_neighbor_ids,
-                              /* num_neighbors_per_batch = */ 10),
-            /* loss_fn = */ bolt::BinaryCrossEntropyLoss(),
-            /* learning_rate = */ learning_rate,
-            /* epochs = */ num_epochs_per_iteration,
-            /* rehash = */ 6400, /* rebuild = */ 128000,
-            /* metric_names = */ {}, /* verbose = */ true);
-        classifier.predict(
-            /* test_data = */ train_data,
-            /* labels = */
-            neighborsToLabels(train_data, assignments.at(classifier_id),
-                              near_neighbor_ids,
-                              /* num_neighbors_per_batch = */ 10),
-            /* output_active_neurons = */ nullptr,
-            /* output_activations = */ nullptr,
-            /* metric_names = */ {"categorical_accuracy"},
-            /* verbose = */ true,
-            /* compute_metrics = */ true);
+        for (uint32_t i = 0; i < num_epochs_per_iteration; i++) {
+          classifier.train(
+              /* train_data = */ train_data,
+              /* train_labels = */
+              neighborsToLabels(train_data, assignments.at(classifier_id),
+                                near_neighbor_ids,
+                                /* num_neighbors_per_batch = */ 10),
+              /* loss_fn = */ bolt::BinaryCrossEntropyLoss(),
+              /* learning_rate = */ learning_rate,
+              /* epochs = */ 1,
+              /* rehash = */ 6400, /* rebuild = */ 128000,
+              /* metric_names = */ {}, /* verbose = */ true);
+          classifier.predict(
+              /* test_data = */ train_data,
+              /* labels = */
+              neighborsToLabels(train_data, assignments.at(classifier_id),
+                                near_neighbor_ids,
+                                /* num_neighbors_per_batch = */ 10),
+              /* output_active_neurons = */ nullptr,
+              /* output_activations = */ nullptr,
+              /* metric_names = */ {"categorical_accuracy"},
+              /* verbose = */ true,
+              /* batch_limit = */ 5);
+        }
       }
 
       // Print accuracy
@@ -231,7 +233,7 @@ class Blolt {
 
   static bolt::FullyConnectedNetwork createBloltClassifierDenseInput(
       uint64_t input_dim, uint64_t num_classes, float last_layer_sparsity = 0.1,
-      uint64_t hidden_layer_dim = 100, float hidden_layer_sparsity = 1) {
+      uint64_t hidden_layer_dim = 1024, float hidden_layer_sparsity = 1) {
     bolt::SequentialConfigList layers;
     layers.push_back(std::make_shared<bolt::FullyConnectedLayerConfig>(
         hidden_layer_dim, hidden_layer_sparsity,
@@ -245,20 +247,20 @@ class Blolt {
   static std::vector<std::vector<uint64_t>> getRandomGroupAssignments(
       uint64_t num_items_in_dataset, uint64_t num_groups, std::mt19937 gen,
       uint8_t num_classifiers) {
-    std::vector<std::vector<uint64_t>> all_group_assignments;
+    std::vector<std::vector<uint64_t>> all_assignments;
     for (uint8_t classifier_id = 0; classifier_id < num_classifiers;
          classifier_id++) {
       std::uniform_int_distribution<uint64_t> distr(0, num_groups - 1);
-      std::vector<uint64_t> classifier_group_assignments(num_items_in_dataset);
+      std::vector<uint64_t> single_classifier_assignments(num_items_in_dataset);
       std::vector<uint64_t> group_sizes(num_groups, 0);
       for (uint64_t i = 0; i < num_items_in_dataset; i++) {
-        classifier_group_assignments[i] = distr(gen);
-        group_sizes[classifier_group_assignments[i]]++;
+        single_classifier_assignments[i] = distr(gen);
+        group_sizes[single_classifier_assignments[i]]++;
       }
       printGroupSizeProperties(group_sizes);
-      all_group_assignments.push_back(classifier_group_assignments);
+      all_assignments.push_back(single_classifier_assignments);
     }
-    return all_group_assignments;
+    return all_assignments;
   }
 
   static void updateGroupAssigmentsForBatch(
@@ -337,6 +339,11 @@ class Blolt {
       for (uint64_t i = 0; i < batch_size; i++) {
         for (uint64_t d = 0; d < num_neighbors_per_batch; d++) {
           // TODO(josh): Check for repeats
+          // std::cout << current_index << " " <<
+          // group_assignments[current_index] << " " <<
+          // near_neighbor_ids.at(current_index).at(d) << " " <<
+          // group_assignments.at(near_neighbor_ids.at(current_index).at(d)) <<
+          // std::endl;
           label_batch[i].active_neurons[d] =
               group_assignments.at(near_neighbor_ids.at(current_index).at(d));
           label_batch[i].activations[d] = 1.0;
