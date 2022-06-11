@@ -1,0 +1,38 @@
+job = "wikipedia 1M subset"
+
+[dataset]
+train_data = "wikipedia/sentences_tokenized_shuffled_trimmed_1M.txt"
+test_data  = "wikipedia/sentences_tokenized_shuffled_trimmed_1M.txt.test"
+input_dim = 100000
+max_tokens = 100
+
+[params]
+loss_fn = "CategoricalCrossEntropyLoss"
+train_metrics = ["loss"]
+test_metrics  = ["categorical_accuracy"]
+learning_rate = 0.0001
+epochs = 2
+batch_size = 1024
+rehash = 3000
+rebuild = 10000
+
+
+[[sentence_embedding_layers]]
+dim = 1000
+activation = 'ReLU'
+
+[[sentence_embedding_layers]]
+dim = 10000
+activation = 'ReLU'
+sparsity = 0.01
+use_default_sampling = true
+
+[token_embedding_layer]
+dim = 1000
+activation = 'ReLU'
+
+[[classifier_layers]] 
+dim = 30224
+activation = 'Softmax'
+sparsity = 0.005
+use_default_sampling = true
