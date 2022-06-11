@@ -75,7 +75,7 @@ void forEachInSynthesizedData(size_t n_users, size_t n_days, std::function<void(
   for (uint32_t day = 0; day < n_days; day++) {
     for (uint32_t user = 0; user < n_users; user++) {
       uint32_t timestamp = day * SECONDS_IN_DAY;
-      uint32_t count = 1.0;
+      float count = 1.0 + user * 0.5;
       callback(user, timestamp, count);
     }
   }
@@ -86,19 +86,25 @@ int main(int argc, const char** argv) {
   (void) argv;
   
   DynamicCounts approx(30);
-  std::vector<uint32_t> q_results;
-  q_results.reserve(36500000);
+  // std::vector<float> q_results;
+  // q_results.reserve(36500000);
 
-  forEachInSynthesizedData(/* n_users = */ 10, /* n_days = */ 2, /* callback = */ [&](uint32_t user_id, uint32_t timestamp, float count) {
+  uint32_t i = 0;
+  forEachInSynthesizedData(
+    /* n_users = */ 300000, 
+    /* n_days = */ 30, 
+    /* callback = */ [&](uint32_t user_id, uint32_t timestamp, float count) {
     approx.index(user_id, timestamp, count);
-    q_results.push_back(approx.query(user_id, timestamp - 15 * SECONDS_IN_DAY, 14));
-    std::cout << q_results[q_results.size() - 1] << std::endl;
+    if (i % 100000 == 0) {
+      std::cout << approx.query(user_id, timestamp - 15 * SECONDS_IN_DAY, 14) << std::endl;
+    }
+    i++;
   });
 
   // for (uint32_t i = 0; i < q_results.size(); i++) {
-  //   // if (i % 100 == 0) {
+  //   if (i % 10000 == 0) {
   //     std::cout << q_results[i] << std::endl;
-  //   // }
+  //   }
   // }
 
   return 0;

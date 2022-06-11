@@ -12,8 +12,11 @@
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
 #include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <dataset/src/encodings/text/UniGram.h>
+#include <dataset/src/DynamicCounts.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
+#include <pybind11/cast.h>
+#include <pybind11/pybind11.h>
 #include <sys/types.h>
 #include <chrono>
 #include <limits>
@@ -41,6 +44,11 @@ void createDatasetSubmodule(py::module_& module) {
       dataset_submodule.def_submodule("text_encodings");
   auto categorical_encoding_submodule =
       dataset_submodule.def_submodule("categorical_encodings");
+
+  py::class_<DynamicCounts>(dataset_submodule, "DynamicCounts")
+      .def(py::init<uint32_t>(), py::arg("max_range"))
+      .def("index", &DynamicCounts::index, py::arg("id"), py::arg("timestamp"), py::arg("inc"))
+      .def("query", &DynamicCounts::query, py::arg("id"), py::arg("start_timestamp"), py::arg("range"));
 
   py::class_<BoltVector>(dataset_submodule, "BoltVector")
       .def("to_string", &BoltVector::toString)

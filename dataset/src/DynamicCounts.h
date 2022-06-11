@@ -1,4 +1,5 @@
 #include <hashing/src/HashUtils.h>
+#include <hashing/src/MurmurHash.h>
 #include <bitset>
 #include <iostream>
 #include <limits>
@@ -12,25 +13,20 @@ namespace thirdai::dataset {
 constexpr uint32_t SECONDS_IN_DAY = 60 * 60 * 24;
 
 struct CountMinSketch {
-  CountMinSketch(size_t n_rows, uint32_t range_pow, std::vector<float>& sketch, std::vector<std::pair<uint32_t, uint32_t>>& hash_constants):
+  CountMinSketch(size_t n_rows, uint32_t range_pow, std::vector<float>& sketch, std::vector<uint32_t>& hash_seeds):
     _n_rows(n_rows), 
     _mask(std::numeric_limits<uint32_t>::max() << (32 - range_pow) >> (32 - range_pow)),
     _range(1 << range_pow), 
     _sketch_offset(sketch.size()), 
-    _hash_constants_offset(hash_constants.size()), 
+    _hash_seeds_offset(hash_seeds.size()), 
     _sketch(sketch),
-    _hash_constants(hash_constants) {
+    _hash_seeds(hash_seeds) {
 
       _sketch.resize(_sketch.size() + _n_rows * _range);
-      _hash_constants.resize(_hash_constants.size() + _n_rows);
+      _hash_seeds.resize(_hash_seeds.size() + _n_rows);
       
-      for (size_t i = _hash_constants_offset; i < _hash_constants_offset + _n_rows; ++i) {
-        uint32_t a = std::rand();
-        if (!(a & 1)) {
-          a += 1;
-        }
-        uint32_t b = std::rand() << range_pow >> range_pow;
-        _hash_constants[i] = {a, b};
+      for (size_t i = _hash_seeds_offset; i < _hash_seeds_offset + _n_rows; ++i) {
+        _hash_seeds[i] = i * 314;
       }
     }
 
@@ -43,10 +39,9 @@ struct CountMinSketch {
   float query(uint64_t x) const {
     float min = std::numeric_limits<float>::max();
     for (size_t i = 0; i < _n_rows; ++i) {
-      std::cout << "x " << x << " ith count " << getIthCount(x, i) << std::endl;
-      min = std::min(min, getIthCount(x, i));
+      auto count = getIthCount(x, i);
+      min = std::min(min, count);
     }
-    std::cout << "min " << min << std::endl;
     return min;
   }
   
@@ -56,7 +51,8 @@ struct CountMinSketch {
   }
   
   float getIthCount(uint64_t x, size_t i) const {
-    auto count = _sketch[getIthStart(i) + getIthIdx(x, i)];
+    auto ith_idx = getIthIdx(x, i);
+    auto count = _sketch[getIthStart(i) + ith_idx];
     return count;
   }
 
@@ -65,21 +61,18 @@ struct CountMinSketch {
   }
 
   size_t getIthIdx(uint64_t x, size_t i) const {
-    const auto [a, b] = _hash_constants[_hash_constants_offset + i];
-    auto before_mod = a * x + b;
-    std::bitset<64> bit_before_mod(before_mod);
-    
-    // TODO(Geordie): Why the heck does before_mod always result in the same number...?? 
-    return static_cast<uint32_t>(before_mod && _mask);
+    void* x_ptr = static_cast<void*>(&x);
+    auto hash = hashing::MurmurHash(static_cast<char*>(x_ptr), sizeof(x), _hash_seeds[i]);
+    return hash & _mask;
   }
 
   size_t _n_rows;
   size_t _mask;
   size_t _range;
   size_t _sketch_offset; 
-  size_t _hash_constants_offset; 
+  size_t _hash_seeds_offset; 
   std::vector<float>& _sketch;
-  std::vector<std::pair<uint32_t, uint32_t>>& _hash_constants;
+  std::vector<uint32_t>& _hash_seeds;
 };
 
 class DynamicCounts {
@@ -92,7 +85,7 @@ class DynamicCounts {
     }
     size_t n_buckets_pow = 24; // n_buckets ~ 1,000,000 // TODO(Geordie): this prolly needs to change. For now I just want to know the speedup.
     for (size_t i = 0; i < _n_sketches; i++) {
-      _count_min_sketches.push_back(CountMinSketch(5, n_buckets_pow, _sketch_buffer, _hash_constants_buffer)); // TODO(Geordie): n rows also needs to change.
+      _count_min_sketches.push_back(CountMinSketch(5, n_buckets_pow, _sketch_buffer, _hash_seeds_buffer)); // TODO(Geordie): n rows also needs to change.
       // _interval_n_buckets >>= 1;
     }
   }
@@ -108,7 +101,7 @@ class DynamicCounts {
   float query(uint32_t id, uint32_t start_timestamp, uint32_t range) const {
     uint32_t start_day = timestampToDay(start_timestamp);
     // TODO(Geordie): Revisit
-    uint32_t count = 0;
+    float count = 0;
     auto day = start_day;
     auto end_day = start_day + range;
     while (day != end_day) {
@@ -125,7 +118,6 @@ class DynamicCounts {
         next_interval_starts_on_day = !(day & (((1 << next_cms_idx) - 1)));
       }
       uint32_t cms_idx = next_cms_idx - 1;
-      std::cout << "timestamp " << start_timestamp << " day " << day << " cms_idx " << cms_idx << std::endl;
       count += _count_min_sketches[cms_idx].query(pack(id, day >> cms_idx));
 
       day += (1 << cms_idx);
@@ -135,15 +127,23 @@ class DynamicCounts {
 
  private:
   static uint64_t pack(uint32_t id, uint32_t timestamp) {
-    return hashing::HashUtils::combineHashes(id, timestamp);
+    uint64_t packed = id;
+    packed <<= 32;
+    packed |= timestamp;
+    return packed;
   }
 
   static uint32_t timestampToDay(uint32_t timestamp) { return timestamp / SECONDS_IN_DAY; }
 
   size_t _n_sketches = 0;
   std::vector<float> _sketch_buffer;
-  std::vector<std::pair<uint32_t, uint32_t>> _hash_constants_buffer;
+  std::vector<uint32_t> _hash_seeds_buffer;
   std::vector<CountMinSketch> _count_min_sketches;
 };
 } // namespace thirdai::dataset
 
+// TODO(Geordie): Make this a block, verify with pandas, 
+// then ask Anshu about that technique about getting rid 
+// of old counts
+
+// Can also try normal windows. can't be too bad.
