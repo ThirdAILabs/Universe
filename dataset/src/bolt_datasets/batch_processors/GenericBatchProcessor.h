@@ -11,8 +11,9 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
  public:
   GenericBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
                         std::vector<std::shared_ptr<Block>> label_blocks,
-                        char delimiter = ',')
-      : _delimiter(delimiter),
+                        bool has_header = false, char delimiter = ',')
+      : _expects_header(has_header),
+        _delimiter(delimiter),
         _input_blocks_dense(
             std::all_of(input_blocks.begin(), input_blocks.end(),
                         [](const std::shared_ptr<Block>& block) {
@@ -51,9 +52,13 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
                           bolt::BoltBatch(std::move(batch_labels)));
   }
 
-  bool expectsHeader() const final { return false; }
+  bool expectsHeader() const final { return _expects_header; }
 
   void processHeader(const std::string& header) final { (void)header; }
+
+  uint32_t getInputDim() const { return sumBlockDims(_input_blocks); }
+
+  uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
 
  private:
   // TODO(Geordie): Change to return string_view. Haven't done this yet since
@@ -95,6 +100,15 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     return vec_ptr->toBoltVector();
   }
 
+  static uint32_t sumBlockDims(
+      const std::vector<std::shared_ptr<Block>>& blocks) {
+    uint32_t dim = 0;
+    for (const auto& block : blocks) {
+      dim += block->featureDim();
+    }
+    return dim;
+  }
+
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
@@ -106,7 +120,9 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
   // Private constructor for cereal.
   GenericBatchProcessor() {}
 
+  bool _expects_header;
   char _delimiter;
+
   bool _input_blocks_dense;
   bool _label_blocks_dense;
   /**

@@ -4,8 +4,10 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
+#include <dataset/src/encodings/text/CharKGram.h>
 #include <dataset/src/encodings/text/PairGram.h>
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
 #include <dataset/src/encodings/text/TextEncodingUtils.h>
@@ -89,6 +91,17 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &UniGram::isDense,
            "Returns False since this is a sparse encoding.")
       .def("feature_dim", &UniGram::featureDim,
+           "The dimension of the encoding.");
+
+  py::class_<CharKGram, TextEncoding, std::shared_ptr<CharKGram>>(
+      text_encoding_submodule, "CharKGram",
+      "Encodes a sentence as a weighted set of character trigrams.")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("start_col"), py::arg("dim"),
+           "Constructor. Accepts the starting column and dimension "
+           "(size) of the array.")
+      .def("is_dense", &CharKGram::isDense,
+           "Returns False since this is a sparse encoding.")
+      .def("feature_dim", &CharKGram::featureDim,
            "The dimension of the encoding.");
 
   py::class_<CategoricalEncoding, std::shared_ptr<CategoricalEncoding>>(
@@ -188,7 +201,7 @@ void createDatasetSubmodule(py::module_& module) {
           py::init<std::vector<std::shared_ptr<Block>>,
                    std::vector<std::shared_ptr<Block>>, uint32_t, size_t>(),
           py::arg("input_blocks"), py::arg("target_blocks"),
-          py::arg("output_batch_size"), py::arg("est_num_elems") = 0,
+          py::arg("output_batch_size"), py::arg("est_num_elems"),
           "Constructor\n\n"
           "Arguments:\n"
           " * input_blocks: List of Blocks - Blocks that encode input samples "
@@ -197,11 +210,12 @@ void createDatasetSubmodule(py::module_& module) {
           "as target vectors.\n"
           " * output_batch_size: Int (positive) - Size of batches in the "
           "produced dataset.\n"
-          " * est_num_elems: Int (Optional, positive) - Estimated number of "
-          "samples. This speeds up the loading process by allowing the data "
-          "loader to preallocate memory. If the actual number of samples "
-          "turns out to be greater than the estimate, then the loader will "
-          "automatically allocate more memory as needed.")
+          " * est_num_elems: Int (positive) - Estimated number of samples. "
+          "This "
+          "speeds up the loading process by allowing the data loader to "
+          "preallocate memory. If the actual number of samples turns out to be "
+          "greater than the estimate, then the loader will automatically "
+          "allocate more memory as needed.")
       .def("process_batch", &PyBlockBatchProcessor::processBatchPython,
            py::arg("row_batch"),
            "Consumes a batch of input samples and encodes them as vectors.\n\n"
@@ -222,6 +236,20 @@ void createDatasetSubmodule(py::module_& module) {
            " * shuffle_seed: Int (Optional) - The seed for the RNG for "
            "shuffling the "
            "dataset.");
+
+  py::class_<StreamingGenericDatasetLoader>(dataset_submodule, "DataPipeline")
+      .def(
+          py::init<std::string, std::vector<std::shared_ptr<Block>>,
+                   std::vector<std::shared_ptr<Block>>, uint32_t, bool, char>(),
+          py::arg("filename"), py::arg("input_blocks"), py::arg("label_blocks"),
+          py::arg("batch_size"), py::arg("has_header") = false,
+          py::arg("delimiter") = ',')
+      .def("next_batch", &StreamingGenericDatasetLoader::nextBatch)
+      .def("load_in_memory", &StreamingGenericDatasetLoader::loadInMemory)
+      .def("get_max_batch_size",
+           &StreamingGenericDatasetLoader::getMaxBatchSize)
+      .def("get_input_dim", &StreamingGenericDatasetLoader::getInputDim)
+      .def("get_label_dim", &StreamingGenericDatasetLoader::getLabelDim);
 
   dataset_submodule.def("load_svm_dataset", &loadSVMDataset,
                         py::arg("filename"), py::arg("batch_size"));

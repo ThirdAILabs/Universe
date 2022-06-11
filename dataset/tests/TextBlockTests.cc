@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Text.h>
+#include <dataset/src/encodings/text/CharKGram.h>
 #include <dataset/src/encodings/text/PairGram.h>
 #include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <dataset/src/encodings/text/UniGram.h>
@@ -17,9 +18,9 @@ class TextBlockTest : public testing::Test {
  public:
   using SentenceMatrix = std::vector<std::vector<std::string>>;
   using WordMatrix = std::vector<std::vector<std::vector<std::string>>>;
-  static std::pair<SentenceMatrix, WordMatrix> generate_random_string_matrix(
-      uint32_t n_rows, uint32_t n_cols, uint32_t word_length) {
-    uint32_t words_per_row = 5;
+  static std::pair<SentenceMatrix, WordMatrix> generateRandomStringMatrix(
+      uint32_t n_rows, uint32_t n_cols, uint32_t word_length,
+      uint32_t words_per_row) {
     SentenceMatrix sentence_matrix;
     WordMatrix word_matrix;
     for (uint32_t y = 0; y < n_rows; y++) {
@@ -28,9 +29,12 @@ class TextBlockTest : public testing::Test {
       for (uint32_t x = 0; x < n_cols; x++) {
         std::string sentence;
         std::vector<std::string> words;
-        for (uint32_t word = 0; word < words_per_row; word++) {
+        auto random_word = random_string_of_len(word_length);
+        sentence += random_word;
+        words.push_back(random_word);
+        for (uint32_t word = 1; word < words_per_row; word++) {
           auto random_word = random_string_of_len(word_length);
-          sentence += random_word + " ";
+          sentence += " " + random_word;
           words.push_back(random_word);
         }
         sentence_row.push_back(sentence);
@@ -94,12 +98,13 @@ class TextBlockTest : public testing::Test {
   }
 
   static std::unordered_map<uint32_t, float> getUnigramFeatures(
-      const std::vector<std::string>& words, uint32_t dim) {
+      const std::vector<std::string>& words, uint32_t dim, uint32_t offset) {
     std::unordered_map<uint32_t, float> feats;
     for (const auto& word : words) {
       auto hash = hashing::MurmurHash(word.c_str(), word.length(),
                                       TextEncodingUtils::HASH_SEED) %
-                  dim;
+                      dim +
+                  offset;
       feats[hash]++;
     }
     return feats;
@@ -129,23 +134,52 @@ class TextBlockTest : public testing::Test {
     }
     return feats;
   }
+
+  static std::unordered_map<uint32_t, float> getCharKGramFeatures(
+      const std::string& sentence, uint32_t k, uint32_t dim, uint32_t offset) {
+    std::unordered_map<uint32_t, float> feats;
+    for (uint32_t i = 0; i < sentence.size() - (k - 1); i++) {
+      auto hash =
+          hashing::MurmurHash(&sentence[i], k, TextEncodingUtils::HASH_SEED) %
+              dim +
+          offset;
+      feats[hash]++;
+    }
+
+    return feats;
+  }
+
+  static uint32_t sumMapValues(std::unordered_map<uint32_t, float>& map) {
+    float sum = 0;
+    for (const auto [_, v] : map) {
+      sum += v;
+    }
+    return static_cast<uint32_t>(sum);
+  }
 };
 
 /**
  * Builds a random matrix of strings, constructs UniGram and PairGram
  * representations, and verifies existence of certain UniGrams and PairGrams
  */
-TEST_F(TextBlockTest, TestTextBlockWithUniAndPairGram) {
+TEST_F(TextBlockTest, TestTextBlockWithUniGramPairGramCharTriGram) {
   uint32_t num_rows = 100;
-  uint32_t num_columns = 2;
+  uint32_t num_columns = 3;
   uint32_t word_length = 8;
-  auto [sentence_matrix, word_matrix] =
-      generate_random_string_matrix(num_rows, num_columns, word_length);
+  uint32_t words_per_row = 5;
+  uint32_t expected_chars_per_row =
+      words_per_row * word_length +
+      (words_per_row - 1);  // words_per_row - 1 spaces.
+  auto [sentence_matrix, word_matrix] = generateRandomStringMatrix(
+      num_rows, num_columns, word_length, words_per_row);
 
   uint32_t dim_for_encodings = 50;
+  uint32_t k_chars = 3;
   std::vector<TextBlock> blocks;
   blocks.emplace_back(0, std::make_shared<UniGram>(dim_for_encodings));
   blocks.emplace_back(1, std::make_shared<PairGram>(dim_for_encodings));
+  blocks.emplace_back(2,
+                      std::make_shared<CharKGram>(k_chars, dim_for_encodings));
 
   std::vector<SegmentedSparseFeatureVector> vecs =
       makeSegmentedVecs(sentence_matrix, blocks);
@@ -153,22 +187,45 @@ TEST_F(TextBlockTest, TestTextBlockWithUniAndPairGram) {
   ASSERT_EQ(sentence_matrix.size(), vecs.size());
   for (uint32_t row = 0; row < sentence_matrix.size(); row++) {
     auto expected_unigram_feats = getUnigramFeatures(
-        word_matrix[row][0],
-        dim_for_encodings);  // Unigram features extracted from first column
+        word_matrix[row][0], dim_for_encodings,
+        /* offset = */ 0);  // Unigram features extracted from first column
     auto expected_pairgram_feats = getPairgramFeatures(
         word_matrix[row][1],
         dim_for_encodings,  // Pairgram features extracted from second column
-        dim_for_encodings);
+        /* offset = */ dim_for_encodings);
+    auto expected_char_trigram_feats = getCharKGramFeatures(
+        sentence_matrix[row][2], k_chars,
+        dim_for_encodings,  // Pairgram features extracted from second column
+        /* offset = */ dim_for_encodings * 2);
+
+    // Sanity checks for the test itself
+    ASSERT_EQ(sentence_matrix[row][0].size(), expected_chars_per_row);
+    ASSERT_EQ(word_matrix[row][0].size(), words_per_row);
+    ASSERT_EQ(sumMapValues(expected_unigram_feats), words_per_row);
+
+    ASSERT_EQ(sentence_matrix[row][1].size(), expected_chars_per_row);
+    ASSERT_EQ(word_matrix[row][1].size(), words_per_row);
+    uint32_t expected_n_pairgrams =
+        (words_per_row - 1) * words_per_row / 2 + words_per_row;
+    ASSERT_EQ(sumMapValues(expected_pairgram_feats), expected_n_pairgrams);
+
+    ASSERT_EQ(sentence_matrix[row][2].size(), expected_chars_per_row);
+    ASSERT_EQ(sumMapValues(expected_char_trigram_feats),
+              sentence_matrix[row][2].size() - (k_chars - 1));
 
     // We now check that the vector has both the unigram
     // and pairgram features.
     auto entries = vectorEntries(vecs[row]);
-    ASSERT_EQ(entries.size(),
-              expected_unigram_feats.size() + expected_pairgram_feats.size());
+    ASSERT_EQ(entries.size(), expected_unigram_feats.size() +
+                                  expected_pairgram_feats.size() +
+                                  expected_char_trigram_feats.size());
     for (const auto& [key, val] : expected_unigram_feats) {
       ASSERT_EQ(val, entries[key]);
     }
     for (const auto& [key, val] : expected_pairgram_feats) {
+      ASSERT_EQ(val, entries[key]);
+    }
+    for (const auto& [key, val] : expected_char_trigram_feats) {
       ASSERT_EQ(val, entries[key]);
     }
   }
