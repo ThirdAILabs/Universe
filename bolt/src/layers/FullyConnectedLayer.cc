@@ -31,7 +31,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _remember_mistakes(false) {
   std::random_device rd;
   std::default_random_engine eng(rd());
-  std::normal_distribution<float> dist(0, 1);
+  std::normal_distribution<float> dist(0, 0.01);
 
   std::generate(_weights.begin(), _weights.end(), [&]() { return dist(eng); });
   std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
@@ -301,7 +301,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
   }
 
   if (active_set.size() < _sparse_dim) {
-    uint32_t rand_offset = (hashes[0] * 77867 + hashes[1] * 20101) % _dim;
+    uint32_t rand_offset = rand() % _dim;
     while (active_set.size() < _sparse_dim) {
       active_set.insert(_rand_neurons[rand_offset++]);
       rand_offset = rand_offset % _dim;

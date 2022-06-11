@@ -39,7 +39,7 @@ class Blolt {
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
       const std::vector<std::vector<uint64_t>>& near_neighbor_ids,
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& entire_dataset,
-      uint32_t num_epochs_per_iteration = 20, uint32_t num_iterations = 10,
+      uint32_t num_epochs_per_iteration = 5, uint32_t num_iterations = 10,
       float learning_rate = 0.01,
       uint32_t num_alternative_groups_to_consider = 5) {
     // if (near_neighbor_ids.size() != train_data->len()) {
@@ -63,7 +63,7 @@ class Blolt {
         auto& classifier = _classifiers.at(classifier_id);
         auto labels = neighborsToLabels(train_data, assignments.at(classifier_id),
                                 near_neighbor_ids,
-                                /* num_neighbors_per_batch = */ 1);
+                                /* num_neighbors_per_batch = */ 10);
         for (uint32_t i = 0; i < num_epochs_per_iteration; i++) {
           classifier.train(
               /* train_data = */ train_data,
@@ -80,7 +80,7 @@ class Blolt {
               /* output_activations = */ nullptr,
               /* metric_names = */ {"categorical_accuracy"},
               /* verbose = */ true,
-              /* batch_limit = */ 5);
+              /* batch_limit = */ UINT32_MAX);
         }
       }
 
@@ -88,7 +88,7 @@ class Blolt {
       if (iteration == num_iterations - 1) {
         break;
       }
-      // printAccuracy(train_data, near_neighbor_ids);
+      printAccuracy(train_data, near_neighbor_ids);
 
       // Reassign groups
       assignments = assignGroupsUsingCurrentClassifiers(
@@ -338,7 +338,7 @@ class Blolt {
           // TODO(josh): Check for repeats
           label_batch[i].active_neurons[d] =
               group_assignments.at(near_neighbor_ids.at(current_index).at(d));
-          label_batch[i].activations[d] = 1.0;
+          label_batch[i].activations[d] = 1.0 / num_neighbors_per_batch;
         }
         current_index++;
       }
