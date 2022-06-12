@@ -110,6 +110,8 @@ def run_experiment(input_blocks, label_blocks):
     test_load_end = time.time()
     print("Loaded test data in", test_load_end - test_load_start, "seconds.")
 
+    print("DataPipeline produced a dataset with", train_pipeline.get_input_dim(), "dimensional vectors.")
+
     run_model(
         train_x,
         train_y,
