@@ -20,7 +20,10 @@ class PyBlolt final : public Blolt {
 
   void index(const py::object& train_data_python,
              const std::vector<std::vector<uint64_t>>& near_neighbor_ids,
-             const py::object& entire_data_python, uint64_t batch_size) {
+             const py::object& entire_data_python, uint64_t batch_size,
+             uint32_t num_epochs_per_iteration, uint32_t num_iterations,
+             float learning_rate, uint32_t num_alternative_groups_to_consider,
+             uint32_t num_label_neighbors) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
@@ -32,16 +35,18 @@ class PyBlolt final : public Blolt {
         entire_data_python, batch_size, /* is_labels = */ false,
         /* network_input_dim = */ getInputDim());
     Blolt::index(train_data_bolt.dataset, near_neighbor_ids,
-                 rest_of_data_bolt.dataset);
+                 rest_of_data_bolt.dataset, num_epochs_per_iteration,
+                 num_iterations, learning_rate,
+                 num_alternative_groups_to_consider, num_label_neighbors);
   }
 
-  std::vector<std::vector<uint64_t>> query(const py::object& query_batch_python,
-                                           uint32_t top_k) {
+  std::vector<std::vector<uint64_t>> query(
+      const py::object& query_batch_python) {
     auto dataset_of_single_batch = bolt::python::convertPyObjectToBoltDataset(
         query_batch_python, /* batch_size = */ UINT32_MAX,
         /* is_labels = */ false,
         /* network_input_dim = */ getInputDim());
-    return Blolt::query(dataset_of_single_batch.dataset->at(0), top_k);
+    return Blolt::query(dataset_of_single_batch.dataset->at(0));
   }
 
   void serialize_to_file(const std::string& path) {

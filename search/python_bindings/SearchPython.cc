@@ -110,9 +110,12 @@ void createSearchSubmodule(py::module_& module) {
            py::arg("estimated_dataset_size"), py::arg("num_classifiers"),
            py::arg("input_dim"))
       .def("index", &PyBlolt::index, py::arg("train_data"), py::arg("train_gt"),
-           py::arg("all_data"), py::arg("batch_size"))
-      .def("query", &PyBlolt::query, py::arg("query_batch_python"),
-           py::arg("top_k"))
+           py::arg("all_data"), py::arg("batch_size"),
+           py::arg("num_epochs_per_iteration") = 5,
+           py::arg("num_iterations") = 10, py::arg("learning_rate") = 0.01,
+           py::arg("num_alternative_groups_to_consider") = 5,
+           py::arg("num_label_neighbors") = 10)
+      .def("query", &PyBlolt::query, py::arg("query_batch_python"))
       .def("serialize_to_file", &PyBlolt::serialize_to_file,
            py::arg("output_path"), "Serialize the Blolt index to a file.")
       .def_static("deserialize_from_file", &PyBlolt::deserialize_from_file,
