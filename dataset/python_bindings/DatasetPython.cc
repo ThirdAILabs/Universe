@@ -205,6 +205,9 @@ void createDatasetSubmodule(py::module_& module) {
                       py::arg("n_rows"), py::arg("range_pow"), 
                       py::arg("reduce_range_pow_every_n_sketches") = 2);
 
+  py::class_<Window>(block_submodule, "Window")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("lag"), py::arg("size"));
+
   py::class_<CountHistoryBlock, Block, std::shared_ptr<CountHistoryBlock>>(
       block_submodule, "CountHistory",
       "A block that encodes historical count features (time series).")
