@@ -41,9 +41,17 @@ struct CountMinSketch {
     for (size_t i = 0; i < _n_rows; ++i) {
       auto count = getIthCount(x, i);
       min = std::min(min, count);
+      if (_verbose) {
+        std::cout << "count " << i << " " << count << std::endl;
+      }
+    }
+    if (_verbose) {
+      std::cout << "min " << min << std::endl;
     }
     return min;
   }
+
+  void setVerbose(bool verbosity) { _verbose = verbosity; }
   
  private:
   void updateIthCount(uint64_t x, size_t i, float inc) {
@@ -73,6 +81,7 @@ struct CountMinSketch {
   size_t _hash_seeds_offset; 
   std::vector<float>& _sketch;
   std::vector<uint32_t>& _hash_seeds;
+  bool _verbose = false;
 };
 
 class DynamicCounts {
@@ -83,10 +92,17 @@ class DynamicCounts {
     for (size_t largest_interval = 1; largest_interval <= max_range; largest_interval <<= 1) {
       _n_sketches++;
     }
-    size_t n_buckets_pow = 24; // n_buckets ~ 1,000,000 // TODO(Geordie): this prolly needs to change. For now I just want to know the speedup.
+    size_t n_buckets_pow = 26; // 
     for (size_t i = 0; i < _n_sketches; i++) {
       _count_min_sketches.push_back(CountMinSketch(5, n_buckets_pow, _sketch_buffer, _hash_seeds_buffer)); // TODO(Geordie): n rows also needs to change.
       // _interval_n_buckets >>= 1;
+    }
+  }
+
+  void setVerbose(bool verbosity) {
+    _verbose = verbosity;
+    for (auto& cms : _count_min_sketches) {
+      cms.setVerbose(verbosity);
     }
   }
 
@@ -118,6 +134,9 @@ class DynamicCounts {
         next_interval_starts_on_day = !(day & (((1 << next_cms_idx) - 1)));
       }
       uint32_t cms_idx = next_cms_idx - 1;
+      if (_verbose) {
+        std::cout << "day " << day - start_day << " interval size " << (1 << cms_idx) << " days" << std::endl;
+      }
       count += _count_min_sketches[cms_idx].query(pack(id, day >> cms_idx));
 
       day += (1 << cms_idx);
@@ -135,6 +154,7 @@ class DynamicCounts {
 
   static uint32_t timestampToDay(uint32_t timestamp) { return timestamp / SECONDS_IN_DAY; }
 
+  bool _verbose = false;
   size_t _n_sketches = 0;
   std::vector<float> _sketch_buffer;
   std::vector<uint32_t> _hash_seeds_buffer;
