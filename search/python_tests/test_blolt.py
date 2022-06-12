@@ -67,7 +67,7 @@ def test_glove():
         estimated_dataset_size=10**6, num_classifiers=2, input_dim=100
     )
     search_index.index(
-        train_data=train_data[:1000], train_gt=train_gt, all_data=glove_data, batch_size=2048
+        train_data=train_data, train_gt=train_gt, all_data=glove_data, batch_size=2048
     )
 
     search_index.serialize_to_file("temp.serialized")

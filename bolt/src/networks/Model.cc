@@ -113,11 +113,11 @@ inline void Model<BATCH_T>::processTrainingBatch(
 }
 
 template <typename BATCH_T>
-BoltBatch Model<BATCH_T>::predict(const BATCH_T& test_data) {
+BoltBatch Model<BATCH_T>::predict(const BATCH_T& test_data, bool dense) {
   initializeNetworkState(/* batch_size = */ test_data.getBatchSize(),
-                         /* force_dense = */ false);
+                         /* force_dense = */ dense);
   BoltBatch outputs = getOutputs(/* batch_size = */ test_data.getBatchSize(),
-                                 /* force_dense = */ false);
+                                 /* force_dense = */ dense);
   MetricAggregator no_metrics(/* metrics = */ {},
                               /* verbose = */ false);
   processTestBatch(

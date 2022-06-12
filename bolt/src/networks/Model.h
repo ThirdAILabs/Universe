@@ -47,7 +47,7 @@ class Model {
       // Restrict printouts
       bool verbose = true);
 
-  BoltBatch predict(const BATCH_T& test_data);
+  BoltBatch predict(const BATCH_T& test_data, bool dense);
 
   /**
    * This function takes in a test dataset and uses it to evaluate the model. It
