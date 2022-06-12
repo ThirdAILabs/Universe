@@ -1,3 +1,5 @@
+#pragma once
+
 #include "BlockInterface.h"
 #include <dataset/src/utils/TimeUtils.h>
 
