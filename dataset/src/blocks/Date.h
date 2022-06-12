@@ -39,7 +39,7 @@ class DateBlock : public Block {
     offset += month_of_year_dim;
 
     // Week of month
-    vec.addSparseFeatureToSegment(offset + time.tm_mday / 7, 1.0);
+    vec.addSparseFeatureToSegment(offset + (time.tm_mday - 1) / 7, 1.0);
     offset += week_of_month_dim;
 
     // Week of year
