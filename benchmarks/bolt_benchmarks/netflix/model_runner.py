@@ -102,11 +102,13 @@ def run_experiment(input_blocks, label_blocks):
     train_load_start = time.time()
     train_x, train_y = train_pipeline.load_in_memory()
     train_load_end = time.time()
+    print("Loaded train data in", train_load_end - train_load_start, "seconds.")
 
     print("Loading test data...")
     test_load_start = time.time()
     test_x, test_y = test_pipeline.load_in_memory()
     test_load_end = time.time()
+    print("Loaded test data in", test_load_end - test_load_start, "seconds.")
 
     run_model(
         train_x,
