@@ -51,7 +51,7 @@ input_blocks.append(movie_watch_rolling_feats)
 loader = schema.DataLoader(
     input_block_configs=input_blocks,
     label_block_configs=label_blocks,
-    batch_size=4096
+    batch_size=2048
 )
 
 start = time.time()
@@ -60,7 +60,7 @@ end = time.time()
 
 start = time.time()
 print("Started exporting train data at", start)
-train_data = loader.export_dataset(max_export=98074929, shuffle=False)
+train_data = loader.export_dataset(max_export=98074929, shuffle=True)
 end = time.time()
 print("Finished exporting train data at", end)
 print("That took", end - start, "seconds.")

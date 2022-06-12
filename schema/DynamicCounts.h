@@ -64,11 +64,15 @@ struct CountMinSketch {
   
  private:
   void updateIthCount(uint64_t x, size_t i, float inc) {
-    _sketch[_sketch_offset + i * _range + getIthIdx(x, i)] += inc;
+    _sketch[getIthStart(i) + getIthIdx(x, i)] += inc;
   }
   
   float getIthCount(uint64_t x, size_t i) const {
-    return _sketch[_sketch_offset + i * _range + getIthIdx(x, i)];
+    return _sketch[getIthStart(i) + getIthIdx(x, i)];
+  }
+
+  size_t getIthStart(size_t i) const {
+    return _sketch_offset + i * _range;
   }
 
   size_t getIthIdx(uint64_t x, size_t i) const {
@@ -94,9 +98,9 @@ class DynamicCounts {
     for (size_t largest_interval = 1; largest_interval <= max_range; largest_interval <<= 1) {
       _n_sketches++;
     }
-    size_t n_buckets_pow = 20; // n_buckets ~ 1,000,000 // TODO(Geordie): this prolly needs to change. For now I just want to know the speedup.
+    size_t n_buckets_pow = 24; // n_buckets ~ 1,000,000 // TODO(Geordie): this prolly needs to change. For now I just want to know the speedup.
     for (size_t i = 0; i < _n_sketches; i++) {
-      _count_min_sketches.push_back(CountMinSketch(15, n_buckets_pow, _sketch_buffer, _hash_constants_buffer)); // TODO(Geordie): n rows also needs to change.
+      _count_min_sketches.push_back(CountMinSketch(5, n_buckets_pow, _sketch_buffer, _hash_constants_buffer)); // TODO(Geordie): n rows also needs to change.
       // _interval_n_buckets >>= 1;
     }
   }

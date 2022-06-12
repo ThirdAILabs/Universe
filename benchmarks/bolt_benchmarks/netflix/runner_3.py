@@ -24,34 +24,10 @@ input_blocks.append(movie_title_word_feats)
 release_year_feats = schema.OneHotEncoding(col=5, out_dim=100)
 input_blocks.append(release_year_feats)
 
-# target_col=-1 because there is no target column; 
-# we just consider each record to be one watching session.
-user_watch_rolling_feats = schema.DynamicCounts(
-    id_col=1, 
-    timestamp_col=0, 
-    target_col=-1, 
-    window_configs=
-        [schema.Window(lag=31 + i, size=1) for i in range(31)]
-        + [schema.Window(lag=31 * i, size=7) for i in range(1, 13)]
-        + [schema.Window(lag=365 * i, size=7) for i in range(1, 5)], 
-    timestamp_fmt="%Y-%m-%d") 
-input_blocks.append(user_watch_rolling_feats)
-
-movie_watch_rolling_feats = schema.DynamicCounts(
-    id_col=2, 
-    timestamp_col=0, 
-    target_col=-1, 
-    window_configs=
-        [schema.Window(lag=31 + i, size=1) for i in range(31)]
-        + [schema.Window(lag=31 * i, size=7) for i in range(1, 13)]
-        + [schema.Window(lag=365 * i, size=7) for i in range(1, 5)], 
-    timestamp_fmt="%Y-%m-%d") 
-input_blocks.append(movie_watch_rolling_feats)
-
 loader = schema.DataLoader(
     input_block_configs=input_blocks,
     label_block_configs=label_blocks,
-    batch_size=4096
+    batch_size=2048
 )
 
 start = time.time()
@@ -60,7 +36,7 @@ end = time.time()
 
 start = time.time()
 print("Started exporting train data at", start)
-train_data = loader.export_dataset(max_export=98074929, shuffle=False)
+train_data = loader.export_dataset(max_export=98074929, shuffle=True)
 end = time.time()
 print("Finished exporting train data at", end)
 print("That took", end - start, "seconds.")
@@ -82,7 +58,7 @@ layers = [
 ]
 network = bolt.Network(layers=layers, input_dim=loader.input_dim())
 
-for _ in range(10):
+for _ in range(20):
     network.train(
         train_data,
         bolt.MeanSquaredError(),

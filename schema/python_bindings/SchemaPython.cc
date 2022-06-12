@@ -1,7 +1,6 @@
 #include "SchemaPython.h"
 #include <pybind11/cast.h>
 #include <schema/DynamicCounts.h>
-#include <schema/DynamicCountsOld.h>
 #include <schema/FeatureHashing.h>
 #include <schema/Number.h>
 #include <schema/DateFeatures.h>
@@ -21,10 +20,6 @@ void createSchemaSubmodule(py::module_& module) {
               std::shared_ptr<DynamicCountsBlock::DynamicCountsBlockConfig>, 
               ABlockConfig> _dynamic_counts_block_config_(schema_submodule, "DynamicCountsBlockConfig",
         "An builder for DynamicCountsBlock.");
-    py::class_<DynamicCountsOldBlock::DynamicCountsOldBlockConfig, 
-              std::shared_ptr<DynamicCountsOldBlock::DynamicCountsOldBlockConfig>, 
-              ABlockConfig> _dynamic_counts_old_block_config_(schema_submodule, "DynamicCountsOldBlockConfig",
-        "An builder for DynamicCountsOldBlock.");
     py::class_<FeatureHashingBlock::FeatureHashingBlockConfig, 
               std::shared_ptr<FeatureHashingBlock::FeatureHashingBlockConfig>, 
               ABlockConfig> _feature_hashing_block_config_(schema_submodule, "FeatureHashingBlockConfig",
@@ -76,11 +71,6 @@ void createSchemaSubmodule(py::module_& module) {
                           py::arg("target_col"), py::arg("window_configs"),
                           py::arg("timestamp_fmt"));
     
-    schema_submodule.def("DynamicCountsOld", &DynamicCountsOldBlock::Config,
-                          py::arg("id_col"), py::arg("timestamp_col"),
-                          py::arg("target_col"), py::arg("window_configs"),
-                          py::arg("timestamp_fmt"));
-                          
     schema_submodule.def("FeatureHashing", &FeatureHashingBlock::Config,
                           py::arg("col"), py::arg("n_hashes"),
                           py::arg("out_dim"));
