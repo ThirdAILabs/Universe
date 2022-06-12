@@ -1,8 +1,11 @@
 #include "DatasetPython.h"
 #include <bolt/src/layers/BoltVector.h>
+#include <dataset/src/encodings/count_history/DynamicCounts.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Text.h>
+#include <dataset/src/blocks/CountHistory.h>
+#include <dataset/src/blocks/Date.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
@@ -12,7 +15,6 @@
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
 #include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <dataset/src/encodings/text/UniGram.h>
-#include <dataset/src/DynamicCounts.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
@@ -46,9 +48,13 @@ void createDatasetSubmodule(py::module_& module) {
       dataset_submodule.def_submodule("categorical_encodings");
 
   py::class_<DynamicCounts>(dataset_submodule, "DynamicCounts")
-      .def(py::init<uint32_t>(), py::arg("max_range"))
-      .def("index", &DynamicCounts::index, py::arg("id"), py::arg("timestamp"), py::arg("inc"))
-      .def("query", &DynamicCounts::query, py::arg("id"), py::arg("start_timestamp"), py::arg("range"));
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+           py::arg("max_range"), py::arg("lifetime_in_days"), py::arg("n_rows"),
+           py::arg("range_pow"))
+      .def("index", &DynamicCounts::index, py::arg("id"), py::arg("timestamp"),
+           py::arg("inc"))
+      .def("query", &DynamicCounts::query, py::arg("id"),
+           py::arg("start_timestamp"), py::arg("range"));
 
   py::class_<BoltVector>(dataset_submodule, "BoltVector")
       .def("to_string", &BoltVector::toString)
@@ -190,6 +196,34 @@ void createDatasetSubmodule(py::module_& module) {
            "Returns the dimension of the vector encoding.")
       .def("is_dense", &CategoricalBlock::isDense,
            "True if the block produces dense features, False otherwise.");
+
+  py::class_<DynamicCountsConfig>(block_submodule, "DynamicCountsConfig")
+      .def(py::init<uint32_t, uint32_t,
+                      uint32_t, uint32_t, 
+                      uint32_t>(), py::arg("max_range"), py::arg("lifetime_in_days"),
+                      py::arg("n_rows"), py::arg("range_pow"), 
+                      py::arg("reduce_range_pow_every_n_sketches") = 2);
+
+  py::class_<CountHistoryBlock, Block, std::shared_ptr<CountHistoryBlock>>(
+      block_submodule, "CountHistory",
+      "A block that encodes historical count features (time series).")
+      .def(py::init<bool, uint32_t, uint32_t, uint32_t, std::vector<Window>, DynamicCountsConfig&>(),
+           py::arg("has_count_col"), py::arg("id_col"), py::arg("timestamp_col"), py::arg("count_col"), py::arg("windows"), py::arg("index_config"))
+      .def("feature_dim", &CountHistoryBlock::featureDim,
+           "Returns the dimension of the vector encoding; the number of count windows.")
+      .def("is_dense", &CountHistoryBlock::isDense,
+           "False since we return sparse features.");
+
+  py::class_<DateBlock, Block, std::shared_ptr<DateBlock>>(
+      block_submodule, "Date",
+      "A block that encodes date features.")
+      .def(py::init<uint32_t>(), py::arg("col"))
+      .def("feature_dim", &DateBlock::featureDim,
+           "The sum of the dimensions of date features; "
+           "7 (days in a week) + 12 (months in a year) + "
+           "5 (weeks in a month) + 53 (weeks in a year).")
+      .def("is_dense", &DateBlock::isDense,
+           "False since we return sparse features.");
 
   py::class_<MockBlock, Block, std::shared_ptr<MockBlock>>(
       internal_dataset_submodule, "MockBlock",
