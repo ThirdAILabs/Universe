@@ -53,8 +53,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     std::vector<bolt::BoltVector> batch_inputs(rows.size());
     std::vector<bolt::BoltVector> batch_labels(rows.size());
 
-#pragma omp parallel for default(none) shared(rows, batch_inputs,
-    batch_labels)
+#pragma omp parallel for default(none) shared(rows, batch_inputs, batch_labels)
     for (size_t i = 0; i < rows.size(); ++i) {
       auto columns = parseCsvRow(rows[i]);
       batch_inputs[i] = makeVector(columns, _input_blocks, _input_blocks_dense);
