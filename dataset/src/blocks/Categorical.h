@@ -42,6 +42,8 @@ class CategoricalBlock : public Block {
 
   bool isDense() const final { return _encoding->isDense(); };
 
+  uint32_t expectedNumColumns() const final { return _col + 1; };
+
  protected:
   void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) final {
