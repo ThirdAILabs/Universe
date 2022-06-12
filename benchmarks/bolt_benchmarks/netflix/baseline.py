@@ -13,8 +13,8 @@ input_blocks = [
 ]
 
 label_blocks = [
-    blocks.Categorical(col=5, dim=100) # rating column
+    blocks.Continuous(col=3) # rating column
 ]
 
-run_experiment(label_blocks, label_blocks)
+run_experiment(input_blocks, label_blocks)
 
