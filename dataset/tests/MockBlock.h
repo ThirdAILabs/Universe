@@ -2,6 +2,7 @@
 
 #include <dataset/src/blocks/BlockInterface.h>
 #include <charconv>
+#include <cstdlib>
 #include <string_view>
 
 namespace thirdai::dataset {
@@ -26,8 +27,8 @@ class MockBlock : public Block {
   void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) override {
     auto val_str = input_row.at(_column);
-    float val{};
-    std::from_chars(val_str.data(), val_str.data() + val_str.size(), val);
+    char* end;
+    float val = std::strtof(val_str.data(), &end);
 
     if (_dense) {
       vec.addDenseFeatureToSegment(val);

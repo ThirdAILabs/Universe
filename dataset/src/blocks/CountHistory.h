@@ -4,6 +4,7 @@
 #include <dataset/src/encodings/count_history/DynamicCounts.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <charconv>
+#include <cstdlib>
 #include <ctime>
 
 namespace thirdai::dataset {
@@ -52,7 +53,8 @@ class CountHistoryBlock : public Block {
     float count = 1.0;
     if (_has_count_col) {
       auto count_str = input_row[_count_col];
-      std::from_chars(count_str.data(), count_str.data() + count_str.size(), count);
+      char* end;
+      count = std::strtof(count_str.data(), &end);
     }
     
     _index.index(id, timestamp, count);
