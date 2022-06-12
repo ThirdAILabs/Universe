@@ -6,6 +6,7 @@
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/CountHistory.h>
 #include <dataset/src/blocks/Date.h>
+#include <dataset/src/blocks/Continuous.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
@@ -224,6 +225,15 @@ void createDatasetSubmodule(py::module_& module) {
            "5 (weeks in a month) + 53 (weeks in a year).")
       .def("is_dense", &DateBlock::isDense,
            "False since we return sparse features.");
+  
+  py::class_<ContinuousBlock, Block, std::shared_ptr<ContinuousBlock>>(
+      block_submodule, "Continuous",
+      "A block that encodes a continuous value as a 1-dimensional dense vector segment.")
+      .def(py::init<uint32_t>(), py::arg("col"))
+      .def("feature_dim", &ContinuousBlock::featureDim,
+           "1.")
+      .def("is_dense", &ContinuousBlock::isDense,
+           "True since we return dense features.");
 
   py::class_<MockBlock, Block, std::shared_ptr<MockBlock>>(
       internal_dataset_submodule, "MockBlock",
