@@ -93,27 +93,22 @@ struct CountMinSketch {
 };
 
 struct TimeBoundCountMinSketch {
-  TimeBoundCountMinSketch(uint32_t lifetime_in_days, size_t n_rows,
+  TimeBoundCountMinSketch(size_t n_rows,
                           uint32_t range_pow, std::vector<float>& sketch,
                           std::vector<uint32_t>& hash_seeds,
                           bool should_swap = true)
       : swap(should_swap),
-        lifetime(lifetime_in_days * SECONDS_IN_DAY),
-        primary_start_timestamp(0),
         primary(std::make_unique<CountMinSketch>(n_rows, range_pow, sketch,
                                                  hash_seeds)),
         secondary(std::make_unique<CountMinSketch>(n_rows, range_pow, sketch,
                                                    hash_seeds)) {}
 
-  void index(uint32_t timestamp, uint64_t x, float inc) {
-#pragma omp critical
-    {
-      if (swap && (timestamp - primary_start_timestamp >= lifetime)) {
-        primary_start_timestamp = timestamp;
-        secondary->clear();
-        swapSketches();
-      }
-    }
+  void handleNewLifetime() {
+    secondary->clear();
+    swapSketches();
+  }
+  
+  void index(uint64_t x, float inc) const {
     primary->index(x, inc);
   }
 
@@ -133,24 +128,20 @@ struct TimeBoundCountMinSketch {
   }
 
   bool swap;
-  uint32_t lifetime;
-  uint32_t primary_start_timestamp;
   std::unique_ptr<CountMinSketch> primary;
   std::unique_ptr<CountMinSketch> secondary;
 };
 
 struct DynamicCountsConfig {
 
-  DynamicCountsConfig(uint32_t max_range, uint32_t lifetime_in_days,
+  DynamicCountsConfig(uint32_t max_range, 
                       uint32_t n_rows, uint32_t range_pow, 
                       uint32_t reduce_range_pow_every_n_sketches = 2)
                       : _max_range(max_range), 
-                        _lifetime_in_days(lifetime_in_days), 
                         _n_rows(n_rows), _range_pow(range_pow), 
                         _reduce_range_pow_every_n_sketches(reduce_range_pow_every_n_sketches) {}
 
   uint32_t _max_range;
-  uint32_t _lifetime_in_days;
   uint32_t _n_rows;
   uint32_t _range_pow;
   uint32_t _reduce_range_pow_every_n_sketches;
@@ -162,7 +153,7 @@ class DynamicCounts {
   // need for separate class, right?
   // TODO(Geordie) should timestamp be uint64_t?
  public:
-  DynamicCounts(uint32_t max_range, uint32_t lifetime_in_days,
+  DynamicCounts(uint32_t max_range, 
                          uint32_t n_rows, uint32_t range_pow, bool swap = true,
                          uint32_t reduce_range_pow_every_n_sketches = 2) {
     for (size_t largest_interval = 1; largest_interval <= max_range;
@@ -171,7 +162,7 @@ class DynamicCounts {
     }
     for (size_t i = 0; i < _n_sketches; i++) {
       _count_min_sketches.push_back(TimeBoundCountMinSketch(
-          lifetime_in_days, n_rows,
+          n_rows,
           range_pow - i / reduce_range_pow_every_n_sketches, _sketch_buffer,
           _hash_seeds_buffer,
           swap));  // TODO(Geordie): n rows also needs to change.
@@ -180,7 +171,7 @@ class DynamicCounts {
   }
 
   explicit DynamicCounts(DynamicCountsConfig& config) : 
-    DynamicCounts(config._max_range, config._lifetime_in_days, config._n_rows, config._range_pow, true, config._reduce_range_pow_every_n_sketches) {}
+    DynamicCounts(config._max_range, config._n_rows, config._range_pow, true, config._reduce_range_pow_every_n_sketches) {}
 
   void setVerbose(bool verbosity) {
     _verbose = verbosity;
@@ -189,11 +180,17 @@ class DynamicCounts {
     }
   }
 
+  void handleNewLifetime() {
+    for (auto& cms : _count_min_sketches) {
+      cms.handleNewLifetime();
+    }
+  }
+
   void index(uint32_t id, uint32_t timestamp, float inc = 1.0) {
     for (size_t i = 0; i < _n_sketches; ++i) {
       auto cms_idx = i;
       auto cms_timestamp = timestampToDay(timestamp) >> i;
-      _count_min_sketches[cms_idx].index(timestamp, pack(id, cms_timestamp),
+      _count_min_sketches[cms_idx].index(pack(id, cms_timestamp),
                                          inc);
     }
   }

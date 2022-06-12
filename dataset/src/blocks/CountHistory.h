@@ -22,8 +22,15 @@ class CountHistoryBlock : public Block {
    * If has_count_col == false, count_col is ignored.
    */
   CountHistoryBlock(bool has_count_col, uint32_t id_col, uint32_t timestamp_col, uint32_t count_col, std::vector<Window> windows, DynamicCountsConfig& index_config)
-      : _has_count_col(has_count_col), _id_col(id_col), _timestamp_col(timestamp_col), _count_col(count_col), _windows(std::move(windows)), _index(index_config) {
+      : _primary_start_timestamp(0), _has_count_col(has_count_col), _id_col(id_col), _timestamp_col(timestamp_col), _count_col(count_col), _windows(std::move(windows)), _index(index_config) {
     
+    uint32_t max_history_days = 0;
+    for (const auto& window : windows) {
+      max_history_days = std::max(max_history_days, window.lag + window.size);
+    }
+    _lifetime = max_history_days * SECONDS_IN_DAY;
+    
+
     uint32_t max_col_idx = 0;
     max_col_idx = std::max(max_col_idx, _id_col);
     max_col_idx = std::max(max_col_idx, _timestamp_col);
@@ -57,6 +64,13 @@ class CountHistoryBlock : public Block {
       count = std::strtof(count_str.data(), &end);
     }
     
+#pragma omp critical
+    {
+      if (timestamp - _primary_start_timestamp > _lifetime) {
+        _primary_start_timestamp = timestamp;
+        _index.handleNewLifetime();
+      }
+    }
     _index.index(id, timestamp, count);
     for (uint32_t i = 0; i < _windows.size(); i++) {
       const auto& [lag, size] = _windows[i];
@@ -66,7 +80,8 @@ class CountHistoryBlock : public Block {
   }
 
  private:
-
+  uint32_t _lifetime;
+  uint32_t _primary_start_timestamp;
   bool _has_count_col;
   uint32_t _id_col;
   uint32_t _timestamp_col;

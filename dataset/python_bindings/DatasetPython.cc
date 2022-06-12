@@ -49,8 +49,8 @@ void createDatasetSubmodule(py::module_& module) {
       dataset_submodule.def_submodule("categorical_encodings");
 
   py::class_<DynamicCounts>(dataset_submodule, "DynamicCounts")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
-           py::arg("max_range"), py::arg("lifetime_in_days"), py::arg("n_rows"),
+      .def(py::init<uint32_t, uint32_t, uint32_t>(),
+           py::arg("max_range"), py::arg("n_rows"),
            py::arg("range_pow"))
       .def("index", &DynamicCounts::index, py::arg("id"), py::arg("timestamp"),
            py::arg("inc"))
@@ -199,9 +199,8 @@ void createDatasetSubmodule(py::module_& module) {
            "True if the block produces dense features, False otherwise.");
 
   py::class_<DynamicCountsConfig>(block_submodule, "DynamicCountsConfig")
-      .def(py::init<uint32_t, uint32_t,
-                      uint32_t, uint32_t, 
-                      uint32_t>(), py::arg("max_range"), py::arg("lifetime_in_days"),
+      .def(py::init<uint32_t, uint32_t, uint32_t, 
+                      uint32_t>(), py::arg("max_range"),
                       py::arg("n_rows"), py::arg("range_pow"), 
                       py::arg("reduce_range_pow_every_n_sketches") = 2);
 
