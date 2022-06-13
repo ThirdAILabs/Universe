@@ -33,7 +33,7 @@ jobs:
         run: bin/docker-build.sh
 
       - name: Run docker
-        run: docker run --privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --rm --mount type=bind,source=${PWD},target=/Universe thirdai/universe_dev_build python3 /Universe/bin/build.py && ls /Universe/bin/ # python3 /Universe/bin/benchmark_bolt.py -l benchmarks/bolt_benchmarks/configs/mnist_dense.txt --test_run
+        run: docker run --privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --rm --mount type=bind,source=${PWD},target=/Universe thirdai/universe_dev_build python3 /Universe/bin/build.py && ls && pwd # python3 /Universe/bin/benchmark_bolt.py -l benchmarks/bolt_benchmarks/configs/mnist_dense.txt --test_run
      
         # - name: Install necessary python pacakges
         # run: pip3 install toml sklearn psutil mlflow typing_extensions boto3 
