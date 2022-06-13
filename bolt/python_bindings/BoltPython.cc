@@ -135,7 +135,7 @@ void createBoltSubmodule(py::module_& module) {
            "Also accepts `getActivationFunction(function_name), e.g. "
            "`getActivationFunction('ReLU')`")
       .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
-           py::arg("load_factor"), py::arg("activation_function"),
+           py::arg("sparsity"), py::arg("activation_function"),
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
@@ -144,7 +144,7 @@ void createBoltSubmodule(py::module_& module) {
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * load_factor: Float - The fraction of neurons to use during "
            "sparse training "
-           "and sparse inference. For example, load_factor=0.05 means the "
+           "and sparse inference. For example, sparsity=0.05 means the "
            "layer uses 5% of "
            "its neurons when processing an individual sample.\n")
       .def(py::init<uint64_t, std::string>(), py::arg("dim"),
@@ -388,6 +388,11 @@ void createBoltSubmodule(py::module_& module) {
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "
            "matrix.")
+      .def("setTrainable", &PyNetwork::setTrainable, py::arg("layer_index"),
+           py::arg("trainable"),
+           "Sets whether the layer with the given layer_index is trainable. "
+           "Layers are always trainable by default. "
+           "trainable is false. Trainable by default")
       .def("set_weights", &PyNetwork::setWeights, py::arg("layer_index"),
            py::arg("new_weights"),
            "Sets the weight matrix at the given layer index to the given 2D "
