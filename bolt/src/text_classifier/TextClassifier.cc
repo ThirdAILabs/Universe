@@ -60,11 +60,7 @@ TextClassifier::TextClassifier(const std::string& model_size,
 
 void TextClassifier::train(const std::string& filename, uint32_t epochs,
                            float learning_rate) {
-  std::shared_ptr<dataset::DataLoader> data_loader =
-      std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
-
-  auto dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
-      data_loader, _batch_processor);
+  auto dataset = loadStreamingDataset(filename);
 
   CategoricalCrossEntropyLoss loss;
 
@@ -74,10 +70,7 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
       _model->trainOnStream(dataset, loss, learning_rate);
 
       // Create new stream for next epoch with new data loader.
-      data_loader =
-          std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
-      dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
-          data_loader, _batch_processor);
+      dataset = loadStreamingDataset(filename);
     }
 
   } else {
@@ -92,11 +85,7 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
 void TextClassifier::predict(
     const std::string& filename,
     const std::optional<std::string>& output_filename) {
-  std::shared_ptr<dataset::DataLoader> data_loader =
-      std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
-
-  auto dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
-      data_loader, _batch_processor);
+  auto dataset = loadStreamingDataset(filename);
 
   std::optional<std::ofstream> output_file;
   if (output_filename) {
