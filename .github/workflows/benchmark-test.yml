@@ -24,7 +24,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   benchmarks:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
       # the rest of the steps
@@ -34,10 +34,10 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
       - name: Build docker
-        run: echo "Hi" # bin/docker-build.sh
+        run: bin/docker-build.sh
 
-        # - name: Run docker
-        # run: echo "Hello world"
+      - name: Run docker
+        run: bin/docker-run.sh
 
         # - name: Install necessary python pacakges
         # run: pip3 install toml sklearn psutil mlflow typing_extensions boto3 
