@@ -347,15 +347,15 @@ void trainDLRM(toml::table& config) {
 }
 
 std::shared_ptr<dataset::StreamingDataset<dataset::MaskedSentenceBatch>>
-loadTextData(const std::string& filename, uint32_t batch_size,
-             uint32_t pairgram_range) {
+loadTextData(
+    const std::string& filename, uint32_t batch_size,
+    std::shared_ptr<dataset::MaskedSentenceBatchProcessor> batch_processor) {
   std::shared_ptr<dataset::DataLoader> data_loader =
       std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
 
   auto dataset =
       std::make_shared<dataset::StreamingDataset<dataset::MaskedSentenceBatch>>(
-          data_loader, std::make_shared<dataset::MaskedSentenceBatchProcessor>(
-                           pairgram_range));
+          data_loader, batch_processor);
 
   return dataset;
 }
@@ -402,8 +402,12 @@ void trainMLM(toml::table& config) {
       sentence_embedding_layers, token_embedding_layer, classifier_layers,
       max_tokens, input_dim);
 
-  auto train_stream = loadTextData(train_filename, batch_size, input_dim);
-  auto test_stream = loadTextData(test_filename, batch_size, input_dim);
+  auto batch_processor =
+      std::make_shared<thirdai::dataset::MaskedSentenceBatchProcessor>(
+          input_dim);
+
+  auto train_stream = loadTextData(train_filename, batch_size, batch_processor);
+  auto test_stream = loadTextData(test_filename, batch_size, batch_processor);
 
   if (epochs > 1) {
     auto [train_data, train_labels] = train_stream->loadInMemory();
