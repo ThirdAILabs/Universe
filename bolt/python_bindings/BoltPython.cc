@@ -6,6 +6,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <limits>
+#include <sstream>
 #include <string>
 
 namespace thirdai::bolt::python {
@@ -235,6 +236,19 @@ void createBoltSubmodule(py::module_& module) {
            "layers in the neural network.\n"
            " * input_dim: Int (positive) - Dimension of input vectors in the "
            "dataset.")
+      .def("__str__",
+           [](const PyNetwork& network) {
+             std::stringstream summary;
+             network.buildNetworkSummary(summary);
+             return summary.str();
+           })
+      .def(
+          "summary", &PyNetwork::printSummary, py::arg("detailed") = false,
+          "Prints a summary of the network.\n"
+          "Arguments:\n"
+          " * detailed: boolean. Optional. When specified to \"True\", "
+          "summary will additionally print layer config details for each layer "
+          "in the network.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),

@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <optional>
 #include <random>
+#include <sstream>
 #include <vector>
 
 namespace thirdai::bolt::tests {
@@ -165,6 +166,32 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
+}
+
+TEST_F(FullyConnectedClassificationNetworkTestFixture,
+       MultiLayerNetworkToString) {
+  FullyConnectedNetwork network(
+      {/* layer1= */ std::make_shared<FullyConnectedLayerConfig>(
+           /* dim= */ 10000, /* sparsity= */ 0.1,
+           /* act_func= */ ActivationFunction::ReLU),
+       /* layer2= */ std::make_shared<FullyConnectedLayerConfig>(
+           /* dim= */ n_classes, /* act_func= */ ActivationFunction::Softmax)},
+      /* input_dim= */ n_classes);
+
+  std::stringstream summary;
+  network.buildNetworkSummary(summary);
+
+  std::string expected =
+      "========= Bolt Network =========\n"
+      "InputLayer (Layer 0): dim=100\n"
+      "FullyConnectedLayer (Layer 1): dim=10000, sparsity=0.1, act_func=ReLU\n"
+      "FullyConnectedLayer (Layer 2): dim=100, sparsity=1, act_func=Softmax\n"
+      "================================";
+  std::string actual = summary.str();
+
+  std::cout << actual << std::endl;
+
+  ASSERT_EQ(expected, actual);
 }
 
 // This doesn't need to do anything, just needs to implement the DataLoader

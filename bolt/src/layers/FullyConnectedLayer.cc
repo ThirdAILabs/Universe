@@ -570,4 +570,38 @@ void FullyConnectedLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
+void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
+                                            bool detailed) {
+  summary << "dim=" << _dim << ", sparsity=" << _sparsity << ", act_func=";
+  switch (_act_func) {
+    case ActivationFunction::ReLU:
+      summary << "ReLU";
+      break;
+    case ActivationFunction::Softmax:
+      summary << "Softmax";
+      break;
+    case ActivationFunction::Sigmoid:
+      summary << "Sigmoid";
+      break;
+    case ActivationFunction::Linear:
+      summary << "Linear";
+      break;
+    case ActivationFunction::Tanh:
+      summary << "Tanh";
+      break;
+  }
+
+  if (!detailed) {
+    summary << "\n";
+    return;
+  }
+
+  summary << " (hashes_per_table=" << _sampling_config.hashes_per_table
+          << ", num_tables=" << _sampling_config.num_tables
+          << ", range_pow=" << _sampling_config.range_pow
+          << ", resevoir_size=" << _sampling_config.reservoir_size << ")";
+
+  summary << "\n";
+}
+
 }  // namespace thirdai::bolt

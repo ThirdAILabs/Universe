@@ -84,6 +84,8 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void setBiases(const float* new_biases) final;
 
+  void buildLayerSummary(std::stringstream& summary, bool detailed) override;
+
   ~FullyConnectedLayer() = default;
 
  private:
