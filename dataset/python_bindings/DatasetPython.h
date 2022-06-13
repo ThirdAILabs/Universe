@@ -5,7 +5,9 @@
 #include <dataset/src/batch_types/DenseBatch.h>
 #include <dataset/src/batch_types/SparseBatch.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/core/BlockBatchProcessor.h>
 #include <pybind11/cast.h>
+#include <pybind11/gil.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
@@ -98,5 +100,46 @@ BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
 parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
                            uint32_t dimension);
+
+/**
+ * Checks whether the given bolt dataset and dense 2d matrix
+ * have the same values. For testing purposes only.
+ */
+bool denseBoltDatasetMatchesDenseMatrix(
+    BoltDataset& dataset, std::vector<std::vector<float>>& matrix);
+
+/**
+ * Checks whether the given bolt dataset represents a permutation of
+ * the rows of the given dense 2d matrix. Assumes that each row of
+ * the matrix is 1-dimensional; only has one element.
+ * For testing purposes only.
+ */
+bool denseBoltDatasetIsPermutationOfDenseMatrix(
+    BoltDataset& dataset, std::vector<std::vector<float>>& matrix);
+
+/**
+ * Checks whether the given bolt datasets have the same values.
+ * For testing purposes only.
+ */
+bool denseBoltDatasetsAreEqual(BoltDataset& dataset1, BoltDataset& dataset2);
+
+class PyBlockBatchProcessor : public BlockBatchProcessor {
+ public:
+  PyBlockBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
+                        std::vector<std::shared_ptr<Block>> target_blocks,
+                        uint32_t output_batch_size, size_t est_num_elems)
+      : BlockBatchProcessor(std::move(input_blocks), std::move(target_blocks),
+                            output_batch_size, est_num_elems) {}
+
+  /**
+   * Just like the original processBatch method but GIL is released
+   * so we can process batches while the next input rows are
+   * processed in python.
+   */
+  void processBatchPython(std::vector<std::vector<std::string>>& batch) {
+    py::gil_scoped_release release;
+    processBatch(batch);
+  }
+};
 
 }  // namespace thirdai::dataset::python

@@ -39,7 +39,7 @@ def build_sparse_output_layer_network():
         bolt.FullyConnected(dim=256, activation_function="ReLU"),
         bolt.FullyConnected(
             dim=10,
-            load_factor=0.4,
+            sparsity=0.4,
             activation_function="Softmax",
         ),
     ]
@@ -53,11 +53,9 @@ def build_sparse_hidden_layer_network(dim, sparsity):
         bolt.FullyConnected(
             dim=dim,
             sparsity=sparsity,
-            activation_function=bolt.ActivationFunctions.ReLU,
+            activation_function="ReLU",
         ),
-        bolt.FullyConnected(
-            dim=10, activation_function=bolt.ActivationFunctions.Softmax
-        ),
+        bolt.FullyConnected(dim=10, activation_function="Softmax"),
     ]
     network = bolt.Network(layers=layers, input_dim=784)
     return network
@@ -223,6 +221,9 @@ def test_load_save_fc_network():
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
+    # Accuracy is around 95-96%
+    assert original_acc["categorical_accuracy"] >= 0.9
+
     save_loc = "./bolt_model_save"
 
     if os.path.exists(save_loc):
@@ -246,7 +247,8 @@ def test_load_save_fc_network():
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert another_acc["categorical_accuracy"] >= new_acc["categorical_accuracy"]
+    # Accuracy is around 95-96%
+    assert another_acc["categorical_accuracy"] >= 0.9
 
     os.remove(save_loc)
 

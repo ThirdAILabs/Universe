@@ -44,7 +44,11 @@ class SequentialLayer {
 
   virtual float* getBiases() = 0;
 
+  virtual void setTrainable(bool trainable) = 0;
+
   virtual void setWeights(const float* new_weights) = 0;
+
+  virtual bool getTrainable() = 0;
 
   virtual void setBiases(const float* new_biases) = 0;
 
