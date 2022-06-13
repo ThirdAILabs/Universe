@@ -34,7 +34,7 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
 
       - name: Build docker
-        run: bin/docker-build.sh
+        run: echo "Hi" # bin/docker-build.sh
 
       - name: Run docker
         run: echo "Hello world"
