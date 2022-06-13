@@ -28,8 +28,8 @@ jobs:
         with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-      
-       - name: Build docker
+
+      - name: Build docker
         run: bin/docker-build.sh
 
       - name: Run docker
