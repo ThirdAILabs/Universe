@@ -452,6 +452,31 @@ class PyDLRM final : public DLRM {
   }
 };
 
+class SentimentClassifier {
+ public:
+  explicit SentimentClassifier(const std::string& model_path) {
+    _model = PyNetwork::load(model_path);
+    _model->initializeNetworkState(1, true);
+    if (_model->getOutputDim() != 2) {
+      throw std::invalid_argument(
+          "Expected model output dim to be 2 for sentiment classifier.");
+    }
+    _output = BoltVector(/* l= */ 2, /* is_dense= */ true,
+                         /* has_gradient= */ false);
+  }
+
+  float predictSentiment(const std::string& sentence) {
+    BoltVector vec =
+        dataset::python::parseSentenceToBoltVector(sentence, 341, 100000);
+    _model->forward(0, vec, _output, nullptr);
+    return _output.activations[1];
+  }
+
+ private:
+  std::unique_ptr<PyNetwork> _model;
+  BoltVector _output;
+};
+
 }  // namespace thirdai::bolt::python
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::python::PyNetwork)

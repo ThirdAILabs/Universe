@@ -213,6 +213,7 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
         )
         if mlflow_enabled:
             mlflow.log_metrics(metrics)
+    network.save("./my_model")
 
 
 def train_dlrm(config: Dict[str, Any], mlflow_enabled: bool):

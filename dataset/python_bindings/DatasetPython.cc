@@ -721,9 +721,8 @@ BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
   return std::make_shared<BoltDataset>(std::move(batches), num_labels);
 }
 
-std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
-parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
-                           uint32_t dimension) {
+std::unordered_map<uint32_t, uint32_t> parseSentenceToUnigrams(
+    const std::string& sentence, uint32_t seed, uint32_t dimension) {
   std::stringstream ss(sentence);
   std::istream_iterator<std::string> begin(ss);
   std::istream_iterator<std::string> end;
@@ -741,6 +740,31 @@ parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
       idx_to_val_map[hash]++;
     }
   }
+
+  return idx_to_val_map;
+}
+
+BoltVector parseSentenceToBoltVector(const std::string& sentence, uint32_t seed,
+                                     uint32_t dimension) {
+  std::unordered_map<uint32_t, uint32_t> idx_to_val_map =
+      parseSentenceToUnigrams(sentence, seed, dimension);
+
+  BoltVector vec(idx_to_val_map.size(), false, false);
+  uint32_t i = 0;
+  for (auto [index, value] : idx_to_val_map) {
+    vec.active_neurons[i] = index;
+    vec.activations[i] = value;
+    i++;
+  }
+
+  return vec;
+}
+
+std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
+parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
+                           uint32_t dimension) {
+  std::unordered_map<uint32_t, uint32_t> idx_to_val_map =
+      parseSentenceToUnigrams(sentence, seed, dimension);
 
   auto result = py::array_t<uint32_t>(idx_to_val_map.size());
   py::buffer_info indx_buf = result.request();
