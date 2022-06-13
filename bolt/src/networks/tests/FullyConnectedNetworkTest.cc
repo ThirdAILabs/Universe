@@ -193,7 +193,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   ASSERT_EQ(expected, actual);
 }
-  
+
 // This doesn't need to do anything, just needs to implement the DataLoader
 // interface so that we can construct a mock streaming dataset. See comment
 // below for more details on how this test works.
