@@ -3,7 +3,10 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Dataset.h>
+#include <dataset/src/bolt_datasets/BatchProcessor.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/bolt_datasets/DataLoader.h>
+#include <dataset/src/bolt_datasets/StreamingDataset.h>
 #include <algorithm>
 #include <optional>
 #include <random>
@@ -162,6 +165,127 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
+}
+
+// This doesn't need to do anything, just needs to implement the DataLoader
+// interface so that we can construct a mock streaming dataset. See comment
+// below for more details on how this test works.
+class DummyDataLoader final : public dataset::DataLoader {
+ public:
+  DummyDataLoader() : DataLoader(batch_size) {}
+
+  std::optional<std::vector<std::string>> nextBatch() final { return {{}}; }
+
+  std::optional<std::string> getHeader() final { return ""; }
+
+  std::string resourceName() const final { return ""; }
+};
+
+/*
+  Mock batch processor that consumes an InMemoryDataset and returns its
+  batches. The idea behind the batch processor is that it will receive raw rows
+  from the dataset and convert them into the given batch type to be processed
+  by bolt. In these tests we are not interested in testing the data
+  loader/batch processer functionality as this is handled seperately, and soley
+  interested in testing that bolt trains correctly on streaming datasets. Thus
+  we create a mock batch processor that instead of processing actual rows and
+  returning batches, just returns already created batches in order from an in
+  memory dataset. Having the functionality to return a batch when nextBatch() is
+  called is sufficient to construct a streaming dataset, in addition to the
+  DummDataLoader defined above.
+*/
+class MockBatchProcessor final : public dataset::BatchProcessor<BoltBatch> {
+ public:
+  MockBatchProcessor(dataset::BoltDatasetPtr data,
+                     dataset::BoltDatasetPtr labels)
+      : _data(std::move(data)), _labels(std::move(labels)), _batch_counter(0) {}
+
+  std::optional<dataset::BoltDataLabelPair<BoltBatch>> createBatch(
+      const std::vector<std::string>& rows) final {
+    (void)rows;
+
+    if (_batch_counter >= _data->numBatches()) {
+      return std::nullopt;
+    }
+
+    std::pair<BoltBatch, BoltBatch> batch_pair = {
+        std::move(_data->at(_batch_counter)),
+        std::move(_labels->at(_batch_counter))};
+    _batch_counter++;
+
+    return batch_pair;
+  }
+
+  bool expectsHeader() const final { return false; }
+
+  void processHeader(const std::string& header) final { (void)header; }
+
+ private:
+  dataset::BoltDatasetPtr _data;
+  dataset::BoltDatasetPtr _labels;
+  uint32_t _batch_counter;
+};
+
+std::shared_ptr<dataset::StreamingDataset<BoltBatch>> getMockStreamingDataset(
+    dataset::DatasetWithLabels&& dataset) {
+  std::shared_ptr<dataset::DataLoader> mock_loader =
+      std::make_shared<DummyDataLoader>();
+
+  std::shared_ptr<dataset::BatchProcessor<BoltBatch>> mock_processor =
+      std::make_shared<MockBatchProcessor>(dataset.data, dataset.labels);
+
+  return std::make_shared<dataset::StreamingDataset<BoltBatch>>(mock_loader,
+                                                                mock_processor);
+}
+
+void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
+                                       uint32_t epochs, float acc_threshold) {
+  for (uint32_t e = 0; e < epochs; e++) {
+    auto in_mem_data =
+        FullyConnectedClassificationNetworkTestFixture::genDataset(false);
+    auto stream_data = getMockStreamingDataset(std::move(in_mem_data));
+
+    network.trainOnStream(stream_data, CategoricalCrossEntropyLoss(),
+                          /* learning_rate= */ 0.001,
+                          /* rehash_batch= */ 10, /* rebuild_batch= */ 50,
+                          /* metric_names= */ {},
+                          /* metric_log_batch_interval=*/0,
+                          /* verbose= */ false);
+  }
+
+  auto in_mem_data =
+      FullyConnectedClassificationNetworkTestFixture::genDataset(false);
+  auto stream_data = getMockStreamingDataset(std::move(in_mem_data));
+
+  auto test_metrics =
+      network.predictOnStream(stream_data,
+                              /* metric_names= */ {"categorical_accuracy"},
+                              /* batch_callback= */ std::nullopt,
+                              /* verbose= */ false);
+  ASSERT_GE(test_metrics["categorical_accuracy"], acc_threshold);
+}
+
+TEST_F(FullyConnectedClassificationNetworkTestFixture,
+       TrainSimpleDatasetSingleLayerNetworkStreamingData) {
+  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
+                                    n_classes, ActivationFunction::Softmax)},
+                                n_classes);
+
+  testFullyConnectedNetworkOnStream(network, /* epochs= */ 5,
+                                    /* acc_threshold= */ 0.98);
+}
+
+TEST_F(FullyConnectedClassificationNetworkTestFixture,
+       TrainSimpleDatasetMultiLayerNetworkStreamingData) {
+  FullyConnectedNetwork network(
+      {std::make_shared<FullyConnectedLayerConfig>(
+           /* dim=*/10000, /* sparsity= */ 0.1, ActivationFunction::ReLU),
+       std::make_shared<FullyConnectedLayerConfig>(
+           n_classes, ActivationFunction::Softmax)},
+      n_classes);
+
+  testFullyConnectedNetworkOnStream(network, /* epochs= */ 2,
+                                    /* acc_threshold= */ 0.99);
 }
 
 }  // namespace thirdai::bolt::tests
