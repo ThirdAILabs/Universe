@@ -37,11 +37,11 @@ jobs:
         run: bin/docker-build.sh
 
       - name: Run docker
-        run: bin/docker-run.sh
+        run: echo "Hello world"
 
         # - name: Install necessary python pacakges
         # run: pip3 install toml sklearn psutil mlflow typing_extensions boto3 
       
       - name: Run the job
-        run: python3 /Universe/bin/benchmark_bolt.py -l benchmarks/bolt_benchmarks/configs/mnist_dense.txt --test_run 
+        run: echo "Hi" # python3 /Universe/bin/benchmark_bolt.py -l benchmarks/bolt_benchmarks/configs/mnist_dense.txt --test_run 
 
