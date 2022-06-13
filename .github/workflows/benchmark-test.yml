@@ -28,12 +28,16 @@ jobs:
         with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-      - name: Build python package
-        run: bin/build.py
+      
+       - name: Build docker
+        run: bin/docker-build.sh
 
-      - name: Install necessary python pacakges
-        run: pip3 install toml sklearn psutil mlflow typing_extensions boto3 
+      - name: Run docker
+        run: bin/docker-run.sh
+
+        # - name: Install necessary python pacakges
+        # run: pip3 install toml sklearn psutil mlflow typing_extensions boto3 
       
       - name: Run the job
-        run: python3 bin/benchmark_bolt.py -l benchmarks/bolt_benchmarks/configs/mnist_dense.txt --test_run 
+        run: python3 /Universe/bin/benchmark_bolt.py -l benchmarks/bolt_benchmarks/configs/mnist_dense.txt --test_run 
 
