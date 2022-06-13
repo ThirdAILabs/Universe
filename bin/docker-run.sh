@@ -9,14 +9,14 @@ DATADIR="/share/data"
 if [ -d "${DATADIR}" ]; then
     docker run \
       --privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
-      --rm \
+      -it --rm \
       --mount type=bind,source=${DATADIR},target=/data \
       --mount type=bind,source=${PWD},target=/Universe thirdai/universe_dev_build \
       bash
 else
     docker run \
       --privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
-      --rm \
+      -it --rm \
       --mount type=bind,source=${PWD},target=/Universe thirdai/universe_dev_build \
       bash
 fi
