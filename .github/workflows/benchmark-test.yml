@@ -1,9 +1,9 @@
 name: Run Python Benchmark Sanity Check
 
-defaults:
-  run:
-    shell: bash -ileo pipefail {0} 
-
+#defaults:
+#  run:
+#    shell: bash -ileo pipefail {0} 
+#
 # Kills old jobs from the same pr if we push a new commit
 # See https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
 concurrency: 
@@ -36,12 +36,12 @@ jobs:
       - name: Build docker
         run: echo "Hi" # bin/docker-build.sh
 
-      - name: Run docker
-        run: echo "Hello world"
+        # - name: Run docker
+        # run: echo "Hello world"
 
         # - name: Install necessary python pacakges
         # run: pip3 install toml sklearn psutil mlflow typing_extensions boto3 
       
-      - name: Run the job
-        run: echo "Hi" # python3 /Universe/bin/benchmark_bolt.py -l benchmarks/bolt_benchmarks/configs/mnist_dense.txt --test_run 
+        # - name: Run the job
+        # run: echo "Hi" # python3 /Universe/bin/benchmark_bolt.py -l benchmarks/bolt_benchmarks/configs/mnist_dense.txt --test_run 
 
