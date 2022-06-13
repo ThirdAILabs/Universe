@@ -243,7 +243,7 @@ void createBoltSubmodule(py::module_& module) {
              return summary.str();
            })
       .def(
-          "summary", &PyNetwork::summary, py::arg("detailed") = false,
+          "summary", &PyNetwork::printSummary, py::arg("detailed") = false,
           "Prints a summary of the network.\n"
           "Arguments:\n"
           " * detailed: boolean. Optional. When specified to \"True\", "

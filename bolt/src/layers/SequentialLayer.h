@@ -49,8 +49,8 @@ class SequentialLayer {
   virtual void setBiases(const float* new_biases) = 0;
 
   virtual void buildLayerSummary(std::stringstream& summary, bool detailed) {
-    summary << "dim=" << getDim() << "\n";
     (void)detailed;
+    summary << "dim=" << getDim() << "\n";
   }
 
   virtual ~SequentialLayer() = default;

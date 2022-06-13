@@ -82,7 +82,7 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     summary << "================================";
   }
 
-  void summary(bool detailed = false) const {
+  void printSummary(bool detailed = false) const {
     std::stringstream summary;
     this->buildNetworkSummary(summary, detailed);
     std::cout << summary.str() << std::endl;

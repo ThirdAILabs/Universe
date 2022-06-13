@@ -167,11 +167,13 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
        MultiLayerNetworkToString) {
-  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
-                                     10000, 0.1, ActivationFunction::ReLU),
-                                 std::make_shared<FullyConnectedLayerConfig>(
-                                     n_classes, ActivationFunction::Softmax)},
-                                n_classes);
+  FullyConnectedNetwork network(
+      {/* layer1= */ std::make_shared<FullyConnectedLayerConfig>(
+           /* dim= */ 10000, /* sparsity= */ 0.1,
+           /* act_func= */ ActivationFunction::ReLU),
+       /* layer2= */ std::make_shared<FullyConnectedLayerConfig>(
+           /* dim= */ n_classes, /* act_func= */ ActivationFunction::Softmax)},
+      /* input_dim= */ n_classes);
 
   std::stringstream summary;
   network.buildNetworkSummary(summary);
@@ -184,7 +186,9 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
       "================================";
   std::string actual = summary.str();
 
-  EXPECT_STREQ(actual, expected);
+  std::cout << actual << std::endl;
+
+  ASSERT_EQ(expected, actual);
 }
 
 }  // namespace thirdai::bolt::tests
