@@ -6,6 +6,7 @@
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
+#include <dataset/src/encodings/text/CharKGram.h>
 #include <dataset/src/encodings/text/PairGram.h>
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
 #include <dataset/src/encodings/text/TextEncodingUtils.h>
@@ -89,6 +90,18 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &UniGram::isDense,
            "Returns False since this is a sparse encoding.")
       .def("feature_dim", &UniGram::featureDim,
+           "The dimension of the encoding.");
+
+  py::class_<CharKGram, TextEncoding, std::shared_ptr<CharKGram>>(
+      text_encoding_submodule, "CharKGram",
+      "Encodes a sentence as a weighted set of character trigrams.")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("k"),
+           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+           "Constructor. Accepts k (the number of characters in each token) "
+           "and dimension of the encoding.")
+      .def("is_dense", &CharKGram::isDense,
+           "Returns False since this is a sparse encoding.")
+      .def("feature_dim", &CharKGram::featureDim,
            "The dimension of the encoding.");
 
   py::class_<CategoricalEncoding, std::shared_ptr<CategoricalEncoding>>(
