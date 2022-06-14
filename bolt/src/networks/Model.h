@@ -111,8 +111,10 @@ class Model {
       // Metrics to compute
       const std::vector<std::string>& metric_names = {},
       // We choose not to store final layer activations for a streaming dataset
-      // as streaming datasets, so instead we provide the ability to have a
-      // callback which is called with the output activations after every batch.
+      // as streaming datasets could be large enough that storing all of the
+      // activation is not possible and the size of the dataset is not known at
+      // the beginning, so instead we provide the ability to have a callback
+      // which is called with the output activations after every batch.
       std::optional<std::function<void(const bolt::BoltBatch&, uint32_t)>>
           batch_callback = std::nullopt,
       // Restrict printouts

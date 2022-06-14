@@ -39,6 +39,16 @@ class TextClassifier {
   void trainOnStreamingDataset(dataset::StreamingDataset<BoltBatch>& dataset,
                                const LossFunction& loss, float learning_rate);
 
+  std::shared_ptr<dataset::StreamingDataset<BoltBatch>> loadStreamingDataset(
+      const std::string& filename, uint32_t batch_size = 256) {
+    std::shared_ptr<dataset::DataLoader> data_loader =
+        std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
+
+    auto dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
+        data_loader, _batch_processor);
+    return dataset;
+  }
+
   // Private constructor for cereal
   TextClassifier() {}
 
