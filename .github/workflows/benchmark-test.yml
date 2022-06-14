@@ -32,14 +32,6 @@ jobs:
       - name: Build docker
         run: bin/docker-build.sh
 
-      - name: Run docker
+      - name: Build Package and Run Benchmark
         run: docker run --privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --rm --mount type=bind,source=/share/data,target=/data --mount type=bind,source=${PWD},target=/Universe thirdai/universe_dev_build /bin/bash -c "python3 /Universe/bin/build.py; python3 /Universe/bin/benchmark_bolt.py -l /Universe/benchmarks/bolt_benchmarks/configs/mnist_dense.txt --test_run"  
         
-        # sudo bash /Universe/bin/run_benchmark.sh
-     
-        # - name: Install necessary python pacakges
-        # run: pip3 install toml sklearn psutil mlflow typing_extensions boto3 
-      
-        # - name: Run the job
-        # run: echo "Hi" # python3 /Universe/bin/benchmark_bolt.py -l benchmarks/bolt_benchmarks/configs/mnist_dense.txt --test_run 
-
