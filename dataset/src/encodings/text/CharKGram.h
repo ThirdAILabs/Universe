@@ -27,6 +27,7 @@ class CharKGram : public TextEncoding {
 
     std::vector<uint32_t> char_tri_grams;
 
+    // TODO(Geordie): Do we need to pad start and end of text by k-1 characters?
     for (uint32_t offset = 0; offset < text.size() - (_k - 1); offset++) {
       uint32_t tri_gram_hash =
           hashing::MurmurHash(&text.at(offset), _k,
