@@ -10,7 +10,7 @@ from thirdai import bolt
 
 # asserts that the size of the save_for_inference model is lower than checkpoint
 def test_save_shallow_size():
-    network = build_sparse_hidden_layer_classifier(784, 20000, 10, 0.01)
+    network = build_sparse_hidden_layer_classifier(input_dim=784,sparse_dim= 20000,output_dim= 10,sparsity= 0.01)
     save_loc = "./bolt_model_save"
     checkpoint_loc = "./bolt_model_checkpoint"
 

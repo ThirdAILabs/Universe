@@ -84,7 +84,7 @@ def test_mnist_sparse_output_layer():
 
 
 def test_mnist_sparse_hidden_layer():
-    network = build_sparse_hidden_layer_classifier(784, 20000, 10, 0.01)
+    network = build_sparse_hidden_layer_classifier( input_dim=784,sparse_dim= 20000,output_dim= 10,sparsity= 0.01)
 
     train_x, train_y, test_x, test_y = load_mnist()
 
@@ -108,7 +108,7 @@ def test_mnist_sparse_hidden_layer():
 
 
 def test_mnist_sparse_inference():
-    network = build_sparse_hidden_layer_classifier(784, 20000, 10, 0.01)
+    network = build_sparse_hidden_layer_classifier(input_dim=784,sparse_dim= 20000,output_dim= 10,sparsity= 0.01)
 
     train_x, train_y, test_x, test_y = load_mnist()
 

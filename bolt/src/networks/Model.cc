@@ -41,7 +41,7 @@ MetricData Model<BATCH_T>::train(
   // before training
   if (anyLayerShallow()) {
     throw std::logic_error(
-        "Call enable training before training to initialize optimizer state");
+        "Call reinitialize_optimizer_for_training before training to initialize optimizer state");
   }
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
