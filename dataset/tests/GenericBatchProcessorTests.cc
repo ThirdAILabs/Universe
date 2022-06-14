@@ -27,7 +27,6 @@ std::vector<std::vector<float>> makeFloatMatrix(uint32_t n_rows,
 
 std::vector<std::string> makeStringMatrix(
     std::vector<std::vector<float>>& float_matrix) {
-  assert(n_cols >= 1);
   std::vector<std::string> matrix(float_matrix.size());
 
   std::random_device rd;
