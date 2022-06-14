@@ -60,8 +60,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     bool found_error = false;
     std::string erroneous_row;
 
-#pragma omp parallel for default(none) \
-    shared(rows, batch_inputs, batch_labels, found_error, erroneous_row)
+// #pragma omp parallel for default(none) shared(rows, batch_inputs, batch_labels, found_error, erroneous_row)
     for (size_t i = 0; i < rows.size(); ++i) {
       auto columns = parseCsvRow(rows[i]);
       if (columns.size() < _expected_num_cols) {
