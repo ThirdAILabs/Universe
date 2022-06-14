@@ -15,6 +15,8 @@ FullyConnectedLayer::FullyConnectedLayer(
       _prev_dim(prev_dim),
       _sparse_dim(config.sparsity * config.dim),
       _sparsity(config.sparsity),
+      _is_shallow(false),
+      _shallow_save(false),
 
       // trainable parameter not present in config file
       // TODO(Shubh) : should we add a trainable parameter to the config file?
@@ -50,7 +52,7 @@ FullyConnectedLayer::FullyConnectedLayer(
         1 << _sampling_config.range_pow);
 
     /* Initializing hence, we need to force build the hash tables
-     *Hence, force_build is true here in buildHashTablesImpl(force_build)
+     * Hence, force_build is true here in buildHashTablesImpl(force_build)
      */
     buildHashTablesImpl(true);
 
@@ -568,6 +570,44 @@ void FullyConnectedLayer::setWeights(const float* new_weights) {
 
 void FullyConnectedLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
+}
+
+void FullyConnectedLayer::setShallow(bool shallow) {
+  /**
+   * Initialize optimizer only when layer is currently shallow and shallow is
+   * false. Remove optimizer only if the layer is currently non-shallow but
+   * shallow is true
+   */
+  if (!_is_shallow && shallow) {
+    this->removeOptimizer();
+  } else if (_is_shallow && !shallow) {
+    this->initOptimizer();
+  }
+  _is_shallow = shallow;
+}
+
+void FullyConnectedLayer::setShallowSave(bool shallow) {
+  _shallow_save = shallow;
+}
+
+void FullyConnectedLayer::initOptimizer() {
+  _w_gradient.assign(_dim * _prev_dim, 0);
+  _w_momentum.assign(_dim * _prev_dim, 0);
+  _w_velocity.assign(_dim * _prev_dim, 0);
+
+  _b_gradient.assign(_dim, 0);
+  _b_momentum.assign(_dim, 0);
+  _b_velocity.assign(_dim, 0);
+}
+
+void FullyConnectedLayer::removeOptimizer() {
+  _w_gradient.clear();
+  _w_momentum.clear();
+  _w_velocity.clear();
+
+  _b_gradient.clear();
+  _b_momentum.clear();
+  _b_velocity.clear();
 }
 
 void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,

@@ -394,11 +394,26 @@ void createBoltSubmodule(py::module_& module) {
            "in the training routine. It is recommended to call this method "
            "right before the last training "
            "epoch.")
-      .def("save", &PyNetwork::save, py::arg("filename"),
+      .def("save_for_inference", &PyNetwork::saveForInference,
+           py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
-           "folders to be created")
+           "folders to be created. Saves only essential parameters for "
+           "inference, e.g. not the optimizer state")
       .def_static("load", &PyNetwork::load, py::arg("filename"),
                   "Loads and builds a saved network from file.")
+      .def("checkpoint", &PyNetwork::checkpoint, py::arg("filename"),
+           "Saves the network to a file. The file path must not require any "
+           "folders to be created. Saves all the paramters needed for "
+           "tranining. "
+           "This will throw an error if the model has been trimmed for "
+           "inference.")
+      .def("trim_for_inference", &PyNetwork::trimForInference,
+           "Removes all parameters that are not essential for inference, "
+           "shrinking the model")
+      .def("reinitialize_optimizer_for_training",
+           &PyNetwork::reinitOptimizerForTraining,
+           "If the model previously was trimmed for inference, this will "
+           "reinitialize the optimizer state, allowing training again.")
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "
            "matrix.")
@@ -412,6 +427,9 @@ void createBoltSubmodule(py::module_& module) {
            "Sets the weight matrix at the given layer index to the given 2D "
            "Numpy matrix. Throws an error if the dimension of the given weight "
            "matrix does not match the layer's current weight matrix.")
+      .def("ready_for_training", &PyNetwork::isReadyForTraining,
+           "Returns False if the optimizer state is not initialized, True "
+           "otherwise. Call resume_training to initialize optimizer")
       .def("get_biases", &PyNetwork::getBiases, py::arg("layer_index"),
            "Returns the bias array at the given layer index as a 1D Numpy "
            "array.")
