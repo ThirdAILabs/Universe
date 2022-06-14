@@ -1,25 +1,34 @@
 import pytest
 import random
 import os
-from thirdai.dataset import load_text_classification_dataset
+from thirdai.dataset import DataPipeline
+from thirdai.dataset import blocks
+from thirdai.dataset import text_encodings
 from thirdai import bolt
 
 
 def generate_text_classification_dataset(filename):
     with open(filename, "w") as f:
-        for i in range(10_000):
-            pos = random.randint(0, 1)
-            if pos:
-                f.write("1,good\n")
+        for i in range(15_000):
+            sentiment = i % 10 / 10
+            if sentiment <= 0.3:
+                f.write("1,good stuff\n")
+            elif sentiment <= 0.6:
+                f.write("0,bad stuff\n")
             else:
-                f.write("0,bad\n")
+                f.write("2,neutral stuff\n")
 
 
-@pytest.mark.integration
-def test_text_classification_data_pipeline():
+def test_text_classification_data_pipeline(text_encoding):
     file = "test_text_classification.csv"
     generate_text_classification_dataset(file)
-    [data, labels], input_dim = load_text_classification_dataset(file)
+    pipeline = DataPipeline(
+        file,
+        batch_size=256,
+        input_blocks=[blocks.Text(1, text_encoding)],
+        label_blocks=[blocks.Categorical(0, 3)],
+    )
+    [data, labels] = pipeline.load_in_memory()
 
     layers = [
         bolt.FullyConnected(
@@ -28,11 +37,11 @@ def test_text_classification_data_pipeline():
             activation_function=bolt.ActivationFunctions.ReLU,
         ),
         bolt.FullyConnected(
-            dim=2, activation_function=bolt.ActivationFunctions.Softmax
+            dim=3, activation_function=bolt.ActivationFunctions.Softmax
         ),
     ]
 
-    network = bolt.Network(layers=layers, input_dim=input_dim)
+    network = bolt.Network(layers=layers, input_dim=pipeline.get_input_dim())
 
     batch_size = 256
     learning_rate = 0.001
@@ -45,15 +54,30 @@ def test_text_classification_data_pipeline():
             loss_fn=bolt.CategoricalCrossEntropyLoss(),
             learning_rate=learning_rate,
             epochs=1,
-            verbose=False,
+            verbose=True,
         )
         metrics, preds = network.predict(
             test_data=data,
             test_labels=labels,
             batch_size=batch_size,
             metrics=["categorical_accuracy"],
-            verbose=False,
+            verbose=True,
         )
     assert metrics["categorical_accuracy"] > 0.9
 
     os.remove(file)
+
+
+@pytest.mark.integration
+def test_text_classification_data_pipeline_with_unigrams():
+    test_text_classification_data_pipeline(text_encodings.UniGram(100_000))
+
+
+@pytest.mark.integration
+def test_text_classification_data_pipeline_with_pairgrams():
+    test_text_classification_data_pipeline(text_encodings.PairGram(100_000))
+
+
+@pytest.mark.integration
+def test_text_classification_data_pipeline_with_chartrigrams():
+    test_text_classification_data_pipeline(text_encodings.CharKGram(3, 100_000))
