@@ -13,7 +13,8 @@ namespace thirdai::dataset {
 class CharKGram : public TextEncoding {
  public:
   /**
-   * Constructor. Accepts the desired dimension of the encoding.
+   * Constructor. Accepts the number of characters in each k-gram and
+   * the desired dimension of the encoding.
    */
   explicit CharKGram(
       uint32_t k, uint32_t dim = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM)
@@ -26,6 +27,7 @@ class CharKGram : public TextEncoding {
 
     std::vector<uint32_t> char_tri_grams;
 
+    // TODO(Geordie): Do we need to pad start and end of text by k-1 characters?
     for (uint32_t offset = 0; offset < text.size() - (_k - 1); offset++) {
       uint32_t tri_gram_hash =
           hashing::MurmurHash(&text.at(offset), _k,
