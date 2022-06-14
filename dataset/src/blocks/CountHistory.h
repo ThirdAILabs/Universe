@@ -3,6 +3,7 @@
 #include "BlockInterface.h"
 #include <dataset/src/encodings/count_history/DynamicCounts.h>
 #include <dataset/src/utils/TimeUtils.h>
+#include <atomic>
 #include <charconv>
 #include <cstdlib>
 #include <ctime>
@@ -25,7 +26,7 @@ class CountHistoryBlock : public Block {
       : _primary_start_timestamp(0), _has_count_col(has_count_col), _id_col(id_col), _timestamp_col(timestamp_col), _count_col(count_col), _windows(std::move(windows)), _index(index_config) {
     
     uint32_t max_history_days = 0;
-    for (const auto& window : windows) {
+    for (const auto& window : _windows) {
       max_history_days = std::max(max_history_days, window.lag + window.size);
     }
     _lifetime = max_history_days * SECONDS_IN_DAY;
