@@ -39,12 +39,13 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
          */
         _input_blocks(std::move(input_blocks)),
         _label_blocks(std::move(label_blocks)) {
-
     for (const auto& block : _input_blocks) {
-      _expected_num_cols = std::max(block->expectedNumColumns(), _expected_num_cols);
+      _expected_num_cols =
+          std::max(block->expectedNumColumns(), _expected_num_cols);
     }
     for (const auto& block : _label_blocks) {
-      _expected_num_cols = std::max(block->expectedNumColumns(), _expected_num_cols);
+      _expected_num_cols =
+          std::max(block->expectedNumColumns(), _expected_num_cols);
     }
   }
 
@@ -87,7 +88,10 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     }
     if (parsed.size() < _expected_num_cols) {
       std::stringstream error_ss;
-      error_ss << "[GenericBatchProcessor::parseCsvRow] Expected " << _expected_num_cols << " columns delimited by '" << _delimiter << "' in each row of the dataset. Found row '" << row << "' with, number of columns = " << parsed.size() << ".";
+      error_ss << "[GenericBatchProcessor::parseCsvRow] Expected "
+               << _expected_num_cols << " columns delimited by '" << _delimiter
+               << "' in each row of the dataset. Found row '" << row
+               << "' with, number of columns = " << parsed.size() << ".";
       throw std::runtime_error(error_ss.str());
     }
     return parsed;
