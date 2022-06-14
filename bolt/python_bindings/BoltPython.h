@@ -461,8 +461,7 @@ class SentimentClassifier {
       throw std::invalid_argument(
           "Expected model output dim to be 2 for sentiment classifier.");
     }
-    _output = BoltVector(/* l= */ 2, /* is_dense= */ true,
-                         /* has_gradient= */ false);
+    _output = BoltVector(/* l= */ 2, /* is_dense= */ true);
   }
 
   float predictSentiment(const std::string& sentence) {
