@@ -76,6 +76,10 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   float* getBiases() final;
 
+  void setTrainable(bool trainable) final;
+
+  bool getTrainable() final;
+
   void setWeights(const float* new_weights) final;
 
   void setBiases(const float* new_biases) final;
@@ -85,6 +89,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   void setShallow(bool shallow) final;
 
   void setShallowSave(bool shallow) final;
+  void buildLayerSummary(std::stringstream& summary, bool detailed) override;
 
   ~FullyConnectedLayer() = default;
 
@@ -92,6 +97,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
   bool _is_shallow, _shallow_save;
+  bool _trainable, _force_build;
   ActivationFunction _act_func;
 
   std::vector<float> _weights;
@@ -213,6 +219,15 @@ class FullyConnectedLayer final : public SequentialLayer {
               _b_velocity);
     }
   }
+
+  /**
+   * If force_build=true build hash tables, return if false.
+   * For non-trainable layers, buildHashTablesImpl is called with
+   * force_build=false except during initialization and setting weights.
+   * For trainable layers, buildHashTablesImpl is always called with
+   * force_build=true.
+   */
+  void buildHashTablesImpl(bool force_build);
 };
 
 }  // namespace thirdai::bolt

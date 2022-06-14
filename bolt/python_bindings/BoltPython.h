@@ -266,6 +266,10 @@ class PyNetwork final : public FullyConnectedNetwork {
                               free_when_done);
   }
 
+  void setTrainable(uint32_t layer_index, bool trainable) {
+    _layers.at(layer_index)->setTrainable(trainable);
+  }
+
   void setWeights(
       uint32_t layer_index,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
