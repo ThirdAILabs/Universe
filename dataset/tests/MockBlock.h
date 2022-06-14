@@ -19,6 +19,8 @@ class MockBlock : public Block {
 
   bool isDense() const override { return _dense; };
 
+  uint32_t expectedNumColumns() const final { return _column + 1; };
+
  protected:
   void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) override {
