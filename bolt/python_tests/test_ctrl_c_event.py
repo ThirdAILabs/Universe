@@ -49,4 +49,4 @@ def test_ctrl_c_functionality():
         poll = proc.poll()
         proc.kill()
         proc.wait()
-        assert poll != None, f"CTRL+C Functionality not working correctly"
+        assert poll == signal.SIGINT, f"CTRL+C Functionality not working correctly"

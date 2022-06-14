@@ -33,7 +33,7 @@ def get_random_dataset_as_numpy(no_of_training_examples):
 
 def train_using_random_numpy():
 
-    train_data, train_labels = get_random_dataset_as_numpy(100000)
+    train_data, train_labels = get_random_dataset_as_numpy(no_of_training_examples=100000)
     layers = [
         bolt.FullyConnected(
             dim=100, load_factor=0.2, activation_function=bolt.ActivationFunctions.ReLU

@@ -160,41 +160,42 @@ class PyNetwork final : public FullyConnectedNetwork {
      * CTRL+C is pressed by the user to interrupt the execution of any long
      * running code.
      */
-#if defined __linux__ || defined __APPLE__
+    #if defined (__linux__) || defined (__APPLE__)
 
-    auto handler = [](int code) {
-      std::cout << "Caught a keyboard interrupt with code: " << code
-                << std::endl;
-      std::cout << "Gracefully shutting down the program!" << std::endl;
-      exit(code);
-    };
+        auto handler = [](int code) {
+          std::cout << "Caught a keyboard interrupt with code: " << code
+                    << std::endl;
+          std::cout << "Gracefully shutting down the program!" << std::endl;
+          exit(code);
+        };
 
-    /**
-     * signal() function returns the current signal handler.
-     */
-    typedef void (*sighandler_t)(int); /* for convenience */
-    sighandler_t old_signal_handler;
-    old_signal_handler = std::signal(SIGINT, handler);
+        /**
+        * signal() function returns the current signal handler.
+        */
+        using sighandler_t = void (*)(int);/* for convenience */
+        sighandler_t old_signal_handler = std::signal(SIGINT, handler);
 
-    MetricData metrics = FullyConnectedNetwork::train(
-        train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
-        epochs, rehash, rebuild, metric_names, verbose);
+    #endif
 
-    std::signal(SIGINT, old_signal_handler);
-    return metrics;
 
-#else
-    /**
+     /**
      * For windows signal() function from csignal doesnot works for raising
      * CTRL+C interrupts Look into below link for further information.
      * https://stackoverflow.com/questions/54362699/windows-console-signal-handling-for-subprocess-c
      */
 
-    return FullyConnectedNetwork::train(
+    MetricData metrics = FullyConnectedNetwork::train(
         train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
         epochs, rehash, rebuild, metric_names, verbose);
 
-#endif
+    #if defined (__linux__) || defined (__APPLE__)
+
+        std::signal(SIGINT, old_signal_handler);
+
+    #endif
+   
+    return metrics;
+
   }
 
   py::tuple predict(
