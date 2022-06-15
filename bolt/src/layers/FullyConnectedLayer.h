@@ -61,15 +61,19 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void shuffleRandNeurons() final;
 
+  bool isSparse() const { return _sparsity < 1.0; }
+
+  uint32_t getSparseDim() const { return _sparse_dim; }
+
   uint32_t getDim() const final { return _dim; }
 
   uint32_t getInputDim() const final { return _prev_dim; }
 
   uint32_t getInferenceOutputDim() const final {
     if (_force_sparse_for_inference) {
-      return _sparse_dim;
+      return getSparseDim();
     }
-    return _dim;
+    return getDim();
   }
 
   float* getWeights() final;

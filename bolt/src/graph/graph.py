@@ -11,7 +11,7 @@ concat = bolt.Concatenate()([fc1, fc2])
 
 output = bolt.FullyConnected(dim=4, activation="softmax")(concat)
 
-model = bolt.Graph(inputs=[input1, input2], output=output)
+model = bolt.Model(inputs=[input1, input2], output=output)
 
 model.compile(loss=bolt.CategoricalCrossEntropy())
 
