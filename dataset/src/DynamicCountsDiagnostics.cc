@@ -85,7 +85,7 @@ void forEachInSynthesizedData(
     }
     timestamp_day++;
     if (day % 20 == 0) {
-      timestamp_day+=5;
+      timestamp_day += 5;
     }
   }
 }
@@ -94,10 +94,10 @@ int main(int argc, const char** argv) {
   (void)argc;
   (void)argv;
 
-// TODO(Geordie): 
-// 1. Package in block.
-// 2. Run on netflix. 
-// 3. See if I can get 2-universal hashing to work and get speedup that way.
+  // TODO(Geordie):
+  // 1. Package in block.
+  // 2. Run on netflix.
+  // 3. See if I can get 2-universal hashing to work and get speedup that way.
 
   DynamicCounts approx(/* max_range = */ 30, /* lifetime_in_days = */ 30,
                        /* n_rows = */ 5, /* range_pow */ 21, true);

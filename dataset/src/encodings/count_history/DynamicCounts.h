@@ -93,8 +93,8 @@ struct CountMinSketch {
 };
 
 struct TimeBoundCountMinSketch {
-  TimeBoundCountMinSketch(size_t n_rows,
-                          uint32_t range_pow, std::vector<float>& sketch,
+  TimeBoundCountMinSketch(size_t n_rows, uint32_t range_pow,
+                          std::vector<float>& sketch,
                           std::vector<uint32_t>& hash_seeds,
                           bool should_swap = true)
       : swap(should_swap),
@@ -107,10 +107,8 @@ struct TimeBoundCountMinSketch {
     secondary->clear();
     swapSketches();
   }
-  
-  void index(uint64_t x, float inc) const {
-    primary->index(x, inc);
-  }
+
+  void index(uint64_t x, float inc) const { primary->index(x, inc); }
 
   float query(uint64_t x) const {
     return primary->query(x) + secondary->query(x);
@@ -133,13 +131,12 @@ struct TimeBoundCountMinSketch {
 };
 
 struct DynamicCountsConfig {
-
-  DynamicCountsConfig(uint32_t max_range, 
-                      uint32_t n_rows, uint32_t range_pow, 
+  DynamicCountsConfig(uint32_t max_range, uint32_t n_rows, uint32_t range_pow,
                       uint32_t reduce_range_pow_every_n_sketches = 2)
-                      : _max_range(max_range), 
-                        _n_rows(n_rows), _range_pow(range_pow), 
-                        _reduce_range_pow_every_n_sketches(reduce_range_pow_every_n_sketches) {}
+      : _max_range(max_range),
+        _n_rows(n_rows),
+        _range_pow(range_pow),
+        _reduce_range_pow_every_n_sketches(reduce_range_pow_every_n_sketches) {}
 
   uint32_t _max_range;
   uint32_t _n_rows;
@@ -153,25 +150,25 @@ class DynamicCounts {
   // need for separate class, right?
   // TODO(Geordie) should timestamp be uint64_t?
  public:
-  DynamicCounts(uint32_t max_range, 
-                         uint32_t n_rows, uint32_t range_pow, bool swap = true,
-                         uint32_t reduce_range_pow_every_n_sketches = 2) {
+  DynamicCounts(uint32_t max_range, uint32_t n_rows, uint32_t range_pow,
+                bool swap = true,
+                uint32_t reduce_range_pow_every_n_sketches = 2) {
     for (size_t largest_interval = 1; largest_interval <= max_range;
          largest_interval <<= 1) {
       _n_sketches++;
     }
     for (size_t i = 0; i < _n_sketches; i++) {
       _count_min_sketches.push_back(TimeBoundCountMinSketch(
-          n_rows,
-          range_pow - i / reduce_range_pow_every_n_sketches, _sketch_buffer,
-          _hash_seeds_buffer,
+          n_rows, range_pow - i / reduce_range_pow_every_n_sketches,
+          _sketch_buffer, _hash_seeds_buffer,
           swap));  // TODO(Geordie): n rows also needs to change.
       // _interval_n_buckets >>= 1;
     }
   }
 
-  explicit DynamicCounts(DynamicCountsConfig& config) : 
-    DynamicCounts(config._max_range, config._n_rows, config._range_pow, true, config._reduce_range_pow_every_n_sketches) {}
+  explicit DynamicCounts(DynamicCountsConfig& config)
+      : DynamicCounts(config._max_range, config._n_rows, config._range_pow,
+                      true, config._reduce_range_pow_every_n_sketches) {}
 
   void setVerbose(bool verbosity) {
     _verbose = verbosity;
@@ -190,15 +187,14 @@ class DynamicCounts {
     for (size_t i = 0; i < _n_sketches; ++i) {
       auto cms_idx = i;
       auto cms_timestamp = timestampToDay(timestamp) >> i;
-      _count_min_sketches[cms_idx].index(pack(id, cms_timestamp),
-                                         inc);
+      _count_min_sketches[cms_idx].index(pack(id, cms_timestamp), inc);
     }
   }
 
   float query(uint32_t id, uint32_t start_timestamp, uint32_t range) const {
-    // TODO(Geordie) Is it ok to just divide by seconds in day? 
+    // TODO(Geordie) Is it ok to just divide by seconds in day?
     // What if there are issues with time zones?
-    uint32_t start_day = timestampToDay(start_timestamp); 
+    uint32_t start_day = timestampToDay(start_timestamp);
     float count = 0;
     auto day = start_day;
     auto end_day = start_day + range;

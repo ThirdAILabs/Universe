@@ -12,8 +12,7 @@ namespace thirdai::dataset {
  */
 class ContinuousBlock : public Block {
  public:
-  explicit ContinuousBlock(uint32_t column)
-      : _column(column) {}
+  explicit ContinuousBlock(uint32_t column) : _column(column) {}
 
   uint32_t featureDim() const override { return 1; };
 

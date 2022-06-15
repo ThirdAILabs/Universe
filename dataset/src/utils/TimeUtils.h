@@ -13,17 +13,17 @@ class TimeUtils {
     std::stringstream time_ss;
     time_ss << time_string;
 
-    if (time_ss >> std::get_time(&time, "%Y-%m-%d"))
-    {
-        return time;
-        
+    if (time_ss >> std::get_time(&time, "%Y-%m-%d")) {
+      return time;
     }
-    
+
     std::stringstream error_ss;
-    error_ss << "[TimeUtils::timeStringToTimeObject] Failed to parse the string '" << time_string << "'. Expected a timestamp string in the 'YYYY-MM-DD' format."; 
+    error_ss
+        << "[TimeUtils::timeStringToTimeObject] Failed to parse the string '"
+        << time_string
+        << "'. Expected a timestamp string in the 'YYYY-MM-DD' format.";
 
     throw std::invalid_argument(error_ss.str());
-    
   }
 };
-} // namespace thirdai::dataset
+}  // namespace thirdai::dataset

@@ -14,23 +14,29 @@ struct Window {
   uint32_t lag;
   uint32_t size;
 };
-  
+
 class CountHistoryBlock : public Block {
-  public:
+ public:
   /**
    * Constructor.
-   * 
+   *
    * If has_count_col == false, count_col is ignored.
    */
-  CountHistoryBlock(bool has_count_col, uint32_t id_col, uint32_t timestamp_col, uint32_t count_col, std::vector<Window> windows, DynamicCountsConfig& index_config)
-      : _primary_start_timestamp(0), _has_count_col(has_count_col), _id_col(id_col), _timestamp_col(timestamp_col), _count_col(count_col), _windows(std::move(windows)), _index(index_config) {
-    
+  CountHistoryBlock(bool has_count_col, uint32_t id_col, uint32_t timestamp_col,
+                    uint32_t count_col, std::vector<Window> windows,
+                    DynamicCountsConfig& index_config)
+      : _primary_start_timestamp(0),
+        _has_count_col(has_count_col),
+        _id_col(id_col),
+        _timestamp_col(timestamp_col),
+        _count_col(count_col),
+        _windows(std::move(windows)),
+        _index(index_config) {
     uint32_t max_history_days = 0;
     for (const auto& window : _windows) {
       max_history_days = std::max(max_history_days, window.lag + window.size);
     }
     _lifetime = max_history_days * SECONDS_IN_DAY;
-    
 
     uint32_t max_col_idx = 0;
     max_col_idx = std::max(max_col_idx, _id_col);
@@ -53,7 +59,7 @@ class CountHistoryBlock : public Block {
     auto id_str = input_row[_id_col];
     uint32_t id{};
     std::from_chars(id_str.data(), id_str.data() + id_str.size(), id);
-  
+
     std::tm time = TimeUtils::timeStringToTimeObject(input_row[_timestamp_col]);
     // TODO(Geordie) should timestamp be uint64_t?
     uint32_t timestamp = std::mktime(&time);
@@ -64,7 +70,7 @@ class CountHistoryBlock : public Block {
       char* end;
       count = std::strtof(count_str.data(), &end);
     }
-    
+
 #pragma omp critical
     {
       if (timestamp - _primary_start_timestamp > _lifetime) {
@@ -75,7 +81,8 @@ class CountHistoryBlock : public Block {
     _index.index(id, timestamp, count);
     for (uint32_t i = 0; i < _windows.size(); i++) {
       const auto& [lag, size] = _windows[i];
-      auto query_result = _index.query(id, timestamp - (lag + size) * SECONDS_IN_DAY, size);
+      auto query_result =
+          _index.query(id, timestamp - (lag + size) * SECONDS_IN_DAY, size);
       vec.addSparseFeatureToSegment(i, query_result);
     }
   }
@@ -92,4 +99,4 @@ class CountHistoryBlock : public Block {
   DynamicCounts _index;
 };
 
-} // namespace thirdai::dataset
+}  // namespace thirdai::dataset
