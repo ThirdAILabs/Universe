@@ -1,3 +1,4 @@
+#include "BoltNetworkTestUtils.h"
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
@@ -11,58 +12,28 @@
 
 namespace thirdai::bolt::tests {
 
-static const uint32_t n_classes = 100, n_batches = 100, batch_size = 100;
-
-class BoltHashFunctionTestFixture : public testing::Test {
- public:
-  static dataset::DatasetWithLabels genDataset(bool input_is_noise) {
-    // input_is_noise is to specify whether we want input to be noisy or not.
-    std::mt19937 gen(892734);
-    std::uniform_int_distribution<uint32_t> label_dist(0, n_classes - 1);
-    std::normal_distribution<float> data_dist(0, input_is_noise ? 1.0 : 0.1);
-
-    std::vector<bolt::BoltBatch> data_batches;
-    std::vector<bolt::BoltBatch> label_batches;
-    for (uint32_t b = 0; b < n_batches; b++) {
-      std::vector<bolt::BoltVector> labels;
-      std::vector<bolt::BoltVector> vectors;
-      for (uint32_t i = 0; i < batch_size; i++) {
-        uint32_t label = label_dist(gen);
-        bolt::BoltVector v(n_classes, true, false);
-        std::generate(v.activations, v.activations + n_classes,
-                      [&]() { return data_dist(gen); });
-        if (!input_is_noise) {
-          v.activations[label] += 1.0;
-        }
-        vectors.push_back(std::move(v));
-        labels.push_back(BoltVector::makeSparseVector({label}, {1.0}));
-      }
-      data_batches.push_back(bolt::BoltBatch(std::move(vectors)));
-      label_batches.push_back(bolt::BoltBatch(std::move(labels)));
-    }
-
-    return dataset::DatasetWithLabels(
-        dataset::BoltDataset(std::move(data_batches), n_batches * batch_size),
-        dataset::BoltDataset(std::move(label_batches), n_batches * batch_size));
-  }
-};
+class BoltHashFunctionTestFixture : public testing::Test {};
 
 static void testSimpleDatasetHashFunction(const std::string& hash_function) {
-  // constructs the network with user provided hash function.
+  // As we train for more epochs the model should learn better using these hash
+  // functions.
   FullyConnectedNetwork network(
       {std::make_shared<FullyConnectedLayerConfig>(
            /*dim = */ 10000, /*sparsity = */ 0.1,
            /*act_func = */ ActivationFunction::ReLU,
-           /*sampling_config = */ SamplingConfig(5, 64, 15, 4, hash_function)),
+           /*sampling_config = */
+           SamplingConfig(/*hashes_per_table = */ 5, /*num_tables = */ 64,
+                          /*range_pow = */ 15, /*reservoir size = */ 4,
+                          /*hash_function = */ hash_function)),
        std::make_shared<FullyConnectedLayerConfig>(
            n_classes, ActivationFunction::Softmax)},
       n_classes);
 
-  auto data =
-      BoltHashFunctionTestFixture::genDataset(/*input_is_noise = */ false);
+  auto data = genDataset(/*add_noise = */ false);
 
   // train the network for two epochs
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 2,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                /*learning_rate = */ 0.001, /*epochs = */ 2,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
   auto first_test_metrics = network.predict(
@@ -72,7 +43,8 @@ static void testSimpleDatasetHashFunction(const std::string& hash_function) {
       /* verbose= */ false);
 
   // train the network for 5 epochs
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 5,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                /*learning_rate = */ 0.001, /*epochs = */ 5,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
   auto second_test_metrics = network.predict(

@@ -16,7 +16,7 @@ target_link_libraries(
   gtest_main
 )
 
-add_executable(bolt_hash_function_test HashFunctionTest.cc)
+add_executable(bolt_hash_function_test BoltHashFunctionTest.cc)
 target_link_libraries(
   bolt_hash_function_test
   PRIVATE
