@@ -55,7 +55,7 @@ void createBoltSubmodule(py::module_& module) {
                      "the corresponding enum.");
 
   // TODO(Geordie, Nicholas): put loss functions in its own submodule
-  py::class_<LossFunction>(bolt_submodule, "LossFunction", // NOLINT
+  py::class_<LossFunction>(bolt_submodule, "LossFunction",  // NOLINT
                            "Base class for all loss functions");
 
   py::class_<CategoricalCrossEntropyLoss, LossFunction>(
