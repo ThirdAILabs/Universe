@@ -111,8 +111,10 @@ class Model {
       // Metrics to compute
       const std::vector<std::string>& metric_names = {},
       // We choose not to store final layer activations for a streaming dataset
-      // as streaming datasets, so instead we provide the ability to have a
-      // callback which is called with the output activations after every batch.
+      // as streaming datasets could be large enough that storing all of the
+      // activation is not possible and the size of the dataset is not known at
+      // the beginning, so instead we provide the ability to have a callback
+      // which is called with the output activations after every batch.
       std::optional<std::function<void(const bolt::BoltBatch&, uint32_t)>>
           batch_callback = std::nullopt,
       // Restrict printouts
@@ -165,6 +167,24 @@ class Model {
   virtual uint32_t getInferenceOutputDim() const = 0;
 
   virtual ~Model() = default;
+
+  /**
+   * shallow layer: Layer without optimizer state
+   * setShallow sets the layer to shallow or non-shallow, ie, it can remove or
+   * initialize the optimizer respectively
+   * Only called for trimming the model or for resuming training.
+   */
+  virtual void setShallow(bool shallow) = 0;
+
+  /**
+   * setShallowSave sets whether layer should be saved shallowly, ie, whether
+   * layers should be saved with or without the optimizer state
+   * Called right before saving the model so that archive method knows whether
+   * or not to store the optimizer state.
+   */
+  virtual void setShallowSave(bool shallow) = 0;
+
+  virtual bool anyLayerShallow() = 0;
 
  protected:
   uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,

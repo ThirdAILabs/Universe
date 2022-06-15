@@ -201,11 +201,43 @@ class PyNetwork final : public FullyConnectedNetwork {
                                 activations, output_sparse, alloc_success);
   }
 
-  void save(const std::string& filename) {
+  void saveForInference(const std::string& filename) {
+    this->save(filename, /* shallow= */ true);
+  }
+
+  /**
+   * To save without optimizer, shallow=true
+   */
+  void save(const std::string& filename, bool shallow) {
     std::ofstream filestream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
+    this->setShallowSave(shallow);
     oarchive(*this);
   }
+
+  void checkpoint(const std::string& filename) {
+    if (this->anyLayerShallow()) {
+      throw std::logic_error("Trying to checkpoint a model with no optimizer");
+    }
+    this->save(filename, /* shallow= */ false);
+  }
+
+  /**
+   * Removes the optimizer state for the network by setting layers to shallow
+   */
+  void trimForInference() { this->setShallow(true); }
+
+  /**
+   * If any of the layer is shallow, that is without an optimzier, reinitiliaze
+   * optimizer for that layer to 0.
+   */
+  void reinitOptimizerForTraining() { this->setShallow(false); }
+
+  /**
+   * If any layer in the model is shallow i.e, has uninitialized optimizer,
+   * return false
+   */
+  bool isReadyForTraining() { return !this->anyLayerShallow(); }
 
   static std::unique_ptr<PyNetwork> load(const std::string& filename) {
     std::ifstream filestream(filename, std::ios::binary);
@@ -232,6 +264,10 @@ class PyNetwork final : public FullyConnectedNetwork {
     return py::array_t<float>({dim, prev_dim},
                               {prev_dim * sizeof(float), sizeof(float)}, mem,
                               free_when_done);
+  }
+
+  void setTrainable(uint32_t layer_index, bool trainable) {
+    _layers.at(layer_index)->setTrainable(trainable);
   }
 
   void setWeights(
