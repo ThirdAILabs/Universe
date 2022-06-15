@@ -58,9 +58,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(false);
 
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
-  network.train(data.data, data.labels, loss,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
                 /* learning_rate= */ 0.001, /* epochs= */ 5,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
@@ -80,9 +78,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(true);
 
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
-  network.train(data.data, data.labels, loss,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
                 /* learning_rate= */ 0.001, /* epochs= */ 5,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
@@ -104,13 +100,12 @@ static void testSimpleDatasetMultiLayerNetworkActivation(
 
   auto data = FullyConnectedClassificationNetworkTestFixture::genDataset(false);
 
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
-  auto train_metrics = network.train(data.data, data.labels, loss,
-                                     /* learning_rate */ 0.001, /* epochs */ 2,
-                                     /* rehash= */ 0, /* rebuild= */ 0,
-                                     /* metric_names= */ {"loss"},
-                                     /* verbose= */ false);
+  auto train_metrics =
+      network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                    /* learning_rate */ 0.001, /* epochs */ 2,
+                    /* rehash= */ 0, /* rebuild= */ 0,
+                    /* metric_names= */ {"loss"},
+                    /* verbose= */ false);
   ASSERT_LT(train_metrics.at("loss").back(), train_metrics.at("loss").front());
 
   auto test_metrics = network.predict(
@@ -141,10 +136,8 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = FullyConnectedClassificationNetworkTestFixture::genDataset(false);
 
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
   auto train_metrics = network.train(
-      data.data, data.labels, loss,
+      data.data, data.labels, CategoricalCrossEntropyLoss(),
       /* learning_rate= */ 0.001, /* epochs= */ 5,
       /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {"loss"},
       /* verbose= */ true);
@@ -169,9 +162,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(true);
 
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
-  network.train(data.data, data.labels, loss,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
                 /* learning_rate= */ 0.001, /* epochs= */ 2,
                 /* rehash= */ 0, /* rebuild=*/0, /* metric_names= */ {},
                 /* verbose= */ false);
@@ -282,15 +273,12 @@ std::shared_ptr<dataset::StreamingDataset<BoltBatch>> getMockStreamingDataset(
 
 void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
                                        uint32_t epochs, float acc_threshold) {
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
-
   for (uint32_t e = 0; e < epochs; e++) {
     auto in_mem_data =
         FullyConnectedClassificationNetworkTestFixture::genDataset(false);
     auto stream_data = getMockStreamingDataset(std::move(in_mem_data));
 
-    network.trainOnStream(stream_data, loss,
+    network.trainOnStream(stream_data, CategoricalCrossEntropyLoss(),
                           /* learning_rate= */ 0.001,
                           /* rehash_batch= */ 10, /* rebuild_batch= */ 50,
                           /* metric_names= */ {},

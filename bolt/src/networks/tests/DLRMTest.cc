@@ -95,10 +95,8 @@ TEST_F(DLRMTestFixture, NoisyCategoricalFeatures) {
 
   auto dataset = genDataset(false, true);
 
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
-
-  dlrm.train(dataset.data, dataset.labels, loss, 0.001, 32, /* rehash= */ 0,
+  dlrm.train(dataset.data, dataset.labels, CategoricalCrossEntropyLoss(), 0.001,
+             32, /* rehash= */ 0,
              /* rebuild= */ 0, /* metric_names= */ {},
              /* verbose= */ false);
   auto test_metrics = dlrm.predict(dataset.data, dataset.labels,
@@ -127,10 +125,8 @@ TEST_F(DLRMTestFixture, NoisyDenseFeatures) {
 
   auto dataset = genDataset(true, false);
 
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
-
-  dlrm.train(dataset.data, dataset.labels, loss, 0.001, 3, /* rehash= */ 0,
+  dlrm.train(dataset.data, dataset.labels, CategoricalCrossEntropyLoss(), 0.001,
+             3, /* rehash= */ 0,
              /* rebuild= */ 0, /* metric_names= */ {},
              /* verbose= */ false);
   auto test_metrics = dlrm.predict(dataset.data, dataset.labels,
@@ -159,10 +155,8 @@ TEST_F(DLRMTestFixture, NoisyDenseAndCategoricalFeatures) {
 
   auto dataset = genDataset(true, true);
 
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
-
-  dlrm.train(dataset.data, dataset.labels, loss, 0.001, 5, /* rehash= */ 0,
+  dlrm.train(dataset.data, dataset.labels, CategoricalCrossEntropyLoss(), 0.001,
+             5, /* rehash= */ 0,
              /* rebuild= */ 0, /* metric_names= */ {},
              /* verbose= */ false);
   auto test_metrics = dlrm.predict(dataset.data, dataset.labels,

@@ -58,7 +58,7 @@ int main() {  // NOLINT exceptions
   uint32_t max_test_batches = std::numeric_limits<uint32_t>::max();
 
   for (uint32_t e = 0; e < epochs; e++) {
-    network.train(train_data.data, train_data.labels, loss_fn, learning_rate, 1,
+    network.train(train_data.data, train_data.labels, *loss_fn, learning_rate, 1,
                   rehash, rebuild, metrics);
     network.predict(test_data.data, test_data.labels, nullptr, nullptr, metrics,
                     max_test_batches);

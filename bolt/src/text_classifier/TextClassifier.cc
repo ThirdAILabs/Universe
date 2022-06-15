@@ -63,8 +63,7 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
                            float learning_rate) {
   auto dataset = loadStreamingDataset(filename);
 
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
+  CategoricalCrossEntropyLoss loss;
 
   if (!canLoadDatasetInMemory(filename)) {
     for (uint32_t e = 0; e < epochs; e++) {

@@ -15,7 +15,6 @@ class MetricAggregator {
   // loss function for why. A nullptr is passed in during testing to indicate
   // that it is not avilable.
   explicit MetricAggregator(const std::vector<std::string>& metrics,
-                            std::shared_ptr<LossFunction> loss_fn,
                             bool verbose = true)
       : _verbose(verbose), _allow_force_dense_inference(true) {
     for (const auto& name : metrics) {
@@ -24,17 +23,6 @@ class MetricAggregator {
       } else if (name == WeightedMeanAbsolutePercentageError::name) {
         _metrics.push_back(
             std::make_shared<WeightedMeanAbsolutePercentageError>());
-      } else if (name == "loss") {
-        if (loss_fn == nullptr) {
-          // Loss function metrics are only supported during training. See
-          // comments in
-          // loss function for why. A nullptr is passed in during testing to
-          // indicate that it is not avilable.
-          std::cout << "Warning: Loss metrics are not supported during testing."
-                    << std::endl;
-        } else {
-          _metrics.push_back(std::move(loss_fn));
-        }
       } else {
         throw std::invalid_argument("'" + name + "' is not a valid metric.");
       }

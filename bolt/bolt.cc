@@ -270,7 +270,7 @@ void trainFCN(toml::table& config) {
   auto [test_data, test_labels] = test;
 
   for (uint32_t e = 0; e < epochs; e++) {
-    network.train(train_data, train_labels, loss_fn, learning_rate, 1, rehash,
+    network.train(train_data, train_labels, *loss_fn, learning_rate, 1, rehash,
                   rebuild, train_metrics);
     if (use_sparse_inference && e == sparse_inference_epoch) {
       network.enableSparseInference();
@@ -330,7 +330,7 @@ void trainDLRM(toml::table& config) {
       top_mlp.back()->getDim() > 1);
 
   for (uint32_t e = 0; e < epochs; e++) {
-    dlrm.train(train_data, train_labels, loss_fn, learning_rate, 1, rehash,
+    dlrm.train(train_data, train_labels, *loss_fn, learning_rate, 1, rehash,
                rebuild, train_metrics);
     dlrm.predict(test_data, test_labels,
                  /* output_active_neurons= */ nullptr,
