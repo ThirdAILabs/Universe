@@ -22,7 +22,8 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(false);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 5,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                /* learning_rate= */ 0.001, /* epochs= */ 5,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
   auto test_metrics = network.predict(
@@ -41,7 +42,8 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(true);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 5,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                /* learning_rate= */ 0.001, /* epochs= */ 5,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
   auto test_metrics = network.predict(
@@ -62,7 +64,8 @@ static void testSimpleDatasetMultiLayerNetworkActivation(
 
   auto data = genDataset(false);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 2,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                /* learning_rate */ 0.001, /* epochs */ 2,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
   auto test_metrics = network.predict(
@@ -84,6 +87,30 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 }
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
+       TrainSimpleDatasetMultiLayerNetworkSigmoid) {
+  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
+                                     10000, 0.1, ActivationFunction::ReLU),
+                                 std::make_shared<FullyConnectedLayerConfig>(
+                                     n_classes, ActivationFunction::Sigmoid)},
+                                n_classes);
+
+  auto data = FullyConnectedClassificationNetworkTestFixture::genDataset(false);
+
+  network.train(data.data, data.labels, BinaryCrossEntropyLoss(),
+                /* learning_rate= */ 0.001, /* epochs= */ 2,
+                /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
+                /* verbose= */ true);
+  auto test_metrics = network.predict(
+      data.data, data.labels, /* output_active_neurons= */ nullptr,
+      /* output_activations= */ nullptr,
+      /* metric_names= */ {"categorical_accuracy"},
+      /* verbose= */ true);
+  // Lower accuracy threshold to 0.6 because Sigmoid/BCE converges slower than
+  // ReLU/Tanh.
+  ASSERT_GE(test_metrics["categorical_accuracy"], 0.6);
+}
+
+TEST_F(FullyConnectedClassificationNetworkTestFixture,
        TrainNoisyDatasetMultiLayerNetwork) {
   FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
                                      10000, 0.1, ActivationFunction::ReLU),
@@ -93,7 +120,8 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(true);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(), 0.001, 2,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                /* learning_rate= */ 0.001, /* epochs= */ 2,
                 /* rehash= */ 0, /* rebuild=*/0, /* metric_names= */ {},
                 /* verbose= */ false);
   auto test_metrics = network.predict(
