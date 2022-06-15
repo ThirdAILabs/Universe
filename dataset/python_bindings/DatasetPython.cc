@@ -2,6 +2,7 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
@@ -181,6 +182,16 @@ void createDatasetSubmodule(py::module_& module) {
            "Returns the dimension of the vector encoding.")
       .def("is_dense", &CategoricalBlock::isDense,
            "True if the block produces dense features, False otherwise.");
+
+  py::class_<DenseArrayBlock, Block, std::shared_ptr<DenseArrayBlock>>(
+      block_submodule, "DenseArray",
+      "Parses a contiguous set of columns as a dense vector segment.")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("start_col"), 
+           py::arg("dim"), "Constructor")
+      .def("feature_dim", &DenseArrayBlock::featureDim,
+           "Returns the dimension of the vector encoding.")
+      .def("is_dense", &DenseArrayBlock::isDense,
+           "Returns true since this is a dense encoding.");
 
   py::class_<MockBlock, Block, std::shared_ptr<MockBlock>>(
       internal_dataset_submodule, "MockBlock",
