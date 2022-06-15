@@ -302,6 +302,11 @@ def build_arg_parser():
         help="Disable mlflow logging for the current run.",
     )
     parser.add_argument(
+        "--disable_upload_artifacts",
+        action="store_true",
+        help="Disable the mlflow artifact file logging for the current run.",
+    )
+    parser.add_argument(
         "--run_name",
         default="",
         type=str,
@@ -329,7 +334,8 @@ def main():
         dataset = config["dataset"]["train_data"].split("/")[-1]
         start_mlflow(experiment_name, args.run_name, dataset)
         # TODO(vihan): Get the credential authentication working in github actions
-        # mlflow.log_artifact(config_filename)
+        if not args.disable_upload_artifacts:
+            mlflow.log_artifact(config_filename)
         log_machine_info()
         log_config_info(config)
 
