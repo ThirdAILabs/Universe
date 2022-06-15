@@ -94,7 +94,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
                                      n_classes, ActivationFunction::Sigmoid)},
                                 n_classes);
 
-  auto data = FullyConnectedClassificationNetworkTestFixture::genDataset(false);
+  auto data = genDataset(false);
 
   network.train(data.data, data.labels, BinaryCrossEntropyLoss(),
                 /* learning_rate= */ 0.001, /* epochs= */ 2,
