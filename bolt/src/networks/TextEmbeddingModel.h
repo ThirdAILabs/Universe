@@ -4,6 +4,7 @@
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/networks/Model.h>
 #include <dataset/src/batch_types/MaskedSentenceBatch.h>
+#include <exceptions/src/Exceptions.h>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -79,6 +80,20 @@ class TextEmbeddingModel final : public Model<dataset::MaskedSentenceBatch> {
   uint32_t getInferenceOutputDim() const final {
     return _classifier.getInferenceOutputDim();
   }
+
+  void setShallow(bool shallow) final {
+    (void)shallow;
+    throw exceptions::NotImplemented(
+        "Error: setShallow not implemented for TextEmbeddingModel;");
+  }
+
+  void setShallowSave(bool shallow) final {
+    (void)shallow;
+    throw exceptions::NotImplemented(
+        "Error: setShallowSave not implemented for TextEmbeddingModel;");
+  }
+
+  bool anyLayerShallow() final { return false; }
 
  private:
   FullyConnectedNetwork _sentence_embedding_model;

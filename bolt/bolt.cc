@@ -414,7 +414,7 @@ void trainMLM(toml::table& config) {
     auto [test_data, test_labels] = test_stream->loadInMemory();
 
     for (uint32_t e = 0; e < epochs; e++) {
-      model.train(train_data, train_labels, loss_fn, learning_rate, 1, rehash,
+      model.train(train_data, train_labels, *loss_fn, learning_rate, 1, rehash,
                   rebuild, train_metrics);
       model.predict(test_data, test_labels,
                     /* output_active_neurons= */ nullptr,
