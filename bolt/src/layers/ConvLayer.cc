@@ -1,5 +1,6 @@
 #include "ConvLayer.h"
 #include "FullyConnectedLayer.h"
+#include <exceptions/src/Exceptions.h>
 #include <numeric>
 #include <random>
 
@@ -373,6 +374,17 @@ float* ConvLayer::getBiases() {
   std::copy(_biases.begin(), _biases.end(), biases_copy);
 
   return biases_copy;
+}
+
+void ConvLayer::setTrainable(bool trainable) {
+  (void)trainable;
+  throw thirdai::exceptions::NotImplemented(
+      "setTrainable not implemented for ConvLayer");
+}
+
+bool ConvLayer::getTrainable() {
+  throw thirdai::exceptions::NotImplemented(
+      "getTrainable not implemented for ConvLayer");
 }
 
 void ConvLayer::setWeights(const float* new_weights) {

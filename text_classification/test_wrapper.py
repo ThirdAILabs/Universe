@@ -148,7 +148,7 @@ def train_yelp(args):
         )
         epoch_accuracies.append(acc["categorical_accuracy"])
 
-    network.save(model_path)
+    network.checkpoint(model_path)
 
     return epoch_accuracies[-1], epoch_accuracies, epoch_times
 
