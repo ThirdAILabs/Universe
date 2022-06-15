@@ -14,10 +14,10 @@ def test_ctrl_c_functionality():
     if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
         # started a subprocesss to run a file to which SIGINT needed to be sent
         proc = subprocess.Popen(
-            ["python3", "ctrl_c_executable.py"],
-            shell=False,
+            ["python3", "../bolt/python_tests/ctrl_c_executable.py"],
             stdout=PIPE,
             stderr=DEVNULL,
+            shell=False,
         )
 
         # making sure the program reaches the train function
