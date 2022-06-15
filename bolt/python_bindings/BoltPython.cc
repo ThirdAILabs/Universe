@@ -6,7 +6,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <limits>
-#include <memory>
 #include <sstream>
 #include <string>
 
@@ -56,8 +55,8 @@ void createBoltSubmodule(py::module_& module) {
                      "the corresponding enum.");
 
   // TODO(Geordie, Nicholas): put loss functions in its own submodule
-  py::class_<LossFunction>(  // NOLINT
-      bolt_submodule, "LossFunction", "Base class for all loss functions");
+  py::class_<LossFunction>(bolt_submodule, "LossFunction", // NOLINT
+                           "Base class for all loss functions");
 
   py::class_<CategoricalCrossEntropyLoss, LossFunction>(
       bolt_submodule, "CategoricalCrossEntropyLoss",
