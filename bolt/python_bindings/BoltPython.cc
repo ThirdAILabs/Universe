@@ -6,6 +6,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <limits>
+#include <sstream>
 #include <string>
 
 namespace thirdai::bolt::python {
@@ -42,6 +43,10 @@ void createBoltSubmodule(py::module_& module) {
       .value("Softmax", ActivationFunction::Softmax,
              "Softmax activation function; converts logits to classification "
              "probabilities. Currently, this activation function can only be "
+             "applied to the final layer in the neural network.")
+      .value("Sigmoid", ActivationFunction::Sigmoid,
+             "Sigmoid activation function; converts logits to indepedent"
+             "probabilities. Currently, this activation function can only be "
              "applied to the final layer in the neural network.");
 
   bolt_submodule.def("getActivationFunction", &getActivationFunction,
@@ -55,8 +60,15 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<CategoricalCrossEntropyLoss, LossFunction>(
       bolt_submodule, "CategoricalCrossEntropyLoss",
-      "A loss function for classification tasks.")
+      "A loss function for multi-class (one label per sample) classification "
+      "tasks.")
       .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
+
+  py::class_<BinaryCrossEntropyLoss, LossFunction>(
+      bolt_submodule, "BinaryCrossEntropyLoss",
+      "A loss function for multi-label (multiple class labels per each sample) "
+      "classification tasks.")
+      .def(py::init<>(), "Constructs a BinaryCrossEntropyLoss object.");
 
   py::class_<MeanSquaredError, LossFunction>(
       bolt_submodule, "MeanSquaredError",
@@ -95,9 +107,9 @@ void createBoltSubmodule(py::module_& module) {
            "and sparse inference. For example, sparsity=0.05 means the "
            "layer uses 5% of "
            "its neurons when processing an individual sample.\n"
-           " * activation_function: ActivationFunctions enum - We support four "
+           " * activation_function: ActivationFunctions enum - We support five "
            "activation "
-           "functions: ReLU, Softmax, Tanh, and Linear.\n"
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sampling_config: SamplingConfig - Sampling configuration.")
 #endif
       .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
@@ -105,8 +117,8 @@ void createBoltSubmodule(py::module_& module) {
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: ActivationFunctions enum, e.g. ReLU, "
-           "Softmax, Linear. "
+           " * activation_function: ActivationFunctions enum - We support five "
+           "activation functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            "Also accepts `getActivationFunction(function_name), e.g. "
            "`getActivationFunction('ReLU')`")
       .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
@@ -114,8 +126,8 @@ void createBoltSubmodule(py::module_& module) {
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: ActivationFunctions enum, e.g. ReLU, "
-           "Softmax, Linear. "
+           " * activation_function: ActivationFunctions enum - We support five "
+           "activation functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sparsity: Float - The fraction of neurons to use during "
            "sparse training "
            "and sparse inference. For example, sparsity=0.05 means the "
@@ -124,16 +136,16 @@ void createBoltSubmodule(py::module_& module) {
            "Also accepts `getActivationFunction(function_name), e.g. "
            "`getActivationFunction('ReLU')`")
       .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
-           py::arg("load_factor"), py::arg("activation_function"),
+           py::arg("sparsity"), py::arg("activation_function"),
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: string, input to be given as string"
-           "no restriction on upper case or lower case."
-           "Eg. relu or Relu ,Softmax or softMax, Linear or lineaR. "
+           " * activation_function: String specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * load_factor: Float - The fraction of neurons to use during "
            "sparse training "
-           "and sparse inference. For example, load_factor=0.05 means the "
+           "and sparse inference. For example, sparsity=0.05 means the "
            "layer uses 5% of "
            "its neurons when processing an individual sample.\n")
       .def(py::init<uint64_t, std::string>(), py::arg("dim"),
@@ -141,8 +153,9 @@ void createBoltSubmodule(py::module_& module) {
            "Constructs a FullyConnectedLayerConfig object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: string, input to be given as string"
-           "no restriction on upper case or lower case."
+           " * activation_function: String specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            "Eg. relu or Relu ,Softmax or softMax, Linear or lineaR.");
 
 #if THIRDAI_EXPOSE_ALL
@@ -165,9 +178,9 @@ void createBoltSubmodule(py::module_& module) {
            "sparse training and sparse inference. For example, "
            "sparsity=0.05 means the layer uses 5% of the filters "
            "when processing each patch.\n"
-           " * activation_function: ActivationFunctions enum - We support four "
+           " * activation_function: ActivationFunctions enum - We support five "
            "activation "
-           "functions: ReLU, Softmax, Tanh, and Linear.\n"
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sampling_config: SamplingConfig - Sampling configuration.\n"
            " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
            " * num_patches: Int - Number of patches.")
@@ -186,6 +199,8 @@ void createBoltSubmodule(py::module_& module) {
            "when processing each patch.\n"
            " * activation_function: ActivationFunctions enum, e.g. ReLU, "
            "Softmax, "
+           "Sigmoid, "
+           "Tanh, "
            "Linear. "
            "Also accepts `getActivationFunction(function_name), e.g. "
            "`getActivationFunction('ReLU')`\n"
@@ -221,6 +236,19 @@ void createBoltSubmodule(py::module_& module) {
            "layers in the neural network.\n"
            " * input_dim: Int (positive) - Dimension of input vectors in the "
            "dataset.")
+      .def("__str__",
+           [](const PyNetwork& network) {
+             std::stringstream summary;
+             network.buildNetworkSummary(summary);
+             return summary.str();
+           })
+      .def(
+          "summary", &PyNetwork::printSummary, py::arg("detailed") = false,
+          "Prints a summary of the network.\n"
+          "Arguments:\n"
+          " * detailed: boolean. Optional. When specified to \"True\", "
+          "summary will additionally print layer config details for each layer "
+          "in the network.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),
@@ -366,19 +394,42 @@ void createBoltSubmodule(py::module_& module) {
            "in the training routine. It is recommended to call this method "
            "right before the last training "
            "epoch.")
-      .def("save", &PyNetwork::save, py::arg("filename"),
+      .def("save_for_inference", &PyNetwork::saveForInference,
+           py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
-           "folders to be created")
+           "folders to be created. Saves only essential parameters for "
+           "inference, e.g. not the optimizer state")
       .def_static("load", &PyNetwork::load, py::arg("filename"),
                   "Loads and builds a saved network from file.")
+      .def("checkpoint", &PyNetwork::checkpoint, py::arg("filename"),
+           "Saves the network to a file. The file path must not require any "
+           "folders to be created. Saves all the paramters needed for "
+           "tranining. "
+           "This will throw an error if the model has been trimmed for "
+           "inference.")
+      .def("trim_for_inference", &PyNetwork::trimForInference,
+           "Removes all parameters that are not essential for inference, "
+           "shrinking the model")
+      .def("reinitialize_optimizer_for_training",
+           &PyNetwork::reinitOptimizerForTraining,
+           "If the model previously was trimmed for inference, this will "
+           "reinitialize the optimizer state, allowing training again.")
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "
            "matrix.")
+      .def("setTrainable", &PyNetwork::setTrainable, py::arg("layer_index"),
+           py::arg("trainable"),
+           "Sets whether the layer with the given layer_index is trainable. "
+           "Layers are always trainable by default. "
+           "trainable is false. Trainable by default")
       .def("set_weights", &PyNetwork::setWeights, py::arg("layer_index"),
            py::arg("new_weights"),
            "Sets the weight matrix at the given layer index to the given 2D "
            "Numpy matrix. Throws an error if the dimension of the given weight "
            "matrix does not match the layer's current weight matrix.")
+      .def("ready_for_training", &PyNetwork::isReadyForTraining,
+           "Returns False if the optimizer state is not initialized, True "
+           "otherwise. Call resume_training to initialize optimizer")
       .def("get_biases", &PyNetwork::getBiases, py::arg("layer_index"),
            "Returns the bias array at the given layer index as a 1D Numpy "
            "array.")

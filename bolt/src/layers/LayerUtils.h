@@ -5,7 +5,7 @@
 
 namespace thirdai::bolt {
 
-enum class ActivationFunction { ReLU, Softmax, Linear, Tanh };
+enum class ActivationFunction { ReLU, Softmax, Linear, Tanh, Sigmoid };
 
 static ActivationFunction getActivationFunction(
     const std::string& act_func_name) {
@@ -19,6 +19,9 @@ static ActivationFunction getActivationFunction(
   if (lower_name == "softmax") {
     return ActivationFunction::Softmax;
   }
+  if (lower_name == "sigmoid") {
+    return ActivationFunction::Sigmoid;
+  }
   if (lower_name == "linear") {
     return ActivationFunction::Linear;
   }
@@ -29,21 +32,25 @@ static ActivationFunction getActivationFunction(
                               "' is not a valid activation function");
 }
 
-constexpr float actFuncDerivative(float x, ActivationFunction act_func) {
+constexpr float actFuncDerivative(float activation,
+                                  ActivationFunction act_func) {
   switch (act_func) {
     case ActivationFunction::Tanh:
-      // Derivative of tanh(x) is 1 - tanh^2(x), but in this case x = tanh(x),
-      // so derivative is simply: 1 - x^2.
-      return (1 - x * x);
+      // Derivative of tanh(x) is 1 - tanh^2(x), but in this case
+      // activation =  tanh(x), so derivative is simply: 1 - (activation)^2.
+      return (1 - activation * activation);
     case ActivationFunction::ReLU:
-      return x > 0 ? 1.0 : 0.0;
+      return activation > 0 ? 1.0 : 0.0;
+    case ActivationFunction::Sigmoid:
+    // The derivative of sigmoid is computed as part of the BinaryCrossEntropy
+    // loss function since they are used together and this simplifies the
+    // computations.
     case ActivationFunction::Softmax:
-      // return 1.0; // Commented out because Clang tidy doesn't like
-      // consecutive identical branches
+      // The derivative of softmax is computed as part of the
+      // CategoricalCrossEntropy loss function since they are used together, and
+      // this simplifies the computations.
     case ActivationFunction::Linear:
       return 1.0;
-      // default:
-      //   return 0.0;
   }
   // This is impossible to reach, but the compiler gave a warning saying it
   // reached the end of a non void function without it.

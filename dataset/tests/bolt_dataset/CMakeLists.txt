@@ -1,12 +1,12 @@
 enable_testing()
 
 add_executable(
-  text_classifier_batch_processor_tests
-  TextClassifierBatchProcessorTests.cc
+  text_processing_tests
+  TextProcessingTests.cc
 )
 
 target_link_libraries(
-  text_classifier_batch_processor_tests
+  text_processing_tests
   PRIVATE
   bolt_datasets_lib
   hash_function_lib
@@ -14,4 +14,4 @@ target_link_libraries(
 )
 
 include(GoogleTest)
-gtest_discover_tests(text_classifier_batch_processor_tests)
+gtest_discover_tests(text_processing_tests)
