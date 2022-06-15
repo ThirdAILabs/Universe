@@ -236,8 +236,7 @@ std::shared_ptr<dataset::StreamingDataset<BoltBatch>> getMockStreamingDataset(
 void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
                                        uint32_t epochs, float acc_threshold) {
   for (uint32_t e = 0; e < epochs; e++) {
-    auto in_mem_data =
-        FullyConnectedClassificationNetworkTestFixture::genDataset(false);
+    auto in_mem_data = genDataset(false);
     auto stream_data = getMockStreamingDataset(std::move(in_mem_data));
 
     network.trainOnStream(stream_data, CategoricalCrossEntropyLoss(),
@@ -248,8 +247,7 @@ void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
                           /* verbose= */ false);
   }
 
-  auto in_mem_data =
-      FullyConnectedClassificationNetworkTestFixture::genDataset(false);
+  auto in_mem_data = genDataset(false);
   auto stream_data = getMockStreamingDataset(std::move(in_mem_data));
 
   auto test_metrics =
