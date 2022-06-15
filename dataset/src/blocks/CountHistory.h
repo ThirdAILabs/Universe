@@ -11,6 +11,9 @@
 namespace thirdai::dataset {
 
 struct Window {
+  Window (uint32_t lag, uint32_t size)
+    : lag(lag), size(size) {}
+ 
   uint32_t lag;
   uint32_t size;
 };
@@ -63,7 +66,7 @@ class CountHistoryBlock : public Block {
     std::tm time = TimeUtils::timeStringToTimeObject(input_row[_timestamp_col]);
     // TODO(Geordie) should timestamp be uint64_t?
     uint32_t timestamp = std::mktime(&time);
-
+    
     float count = 1.0;
     if (_has_count_col) {
       auto count_str = input_row[_count_col];
@@ -81,8 +84,11 @@ class CountHistoryBlock : public Block {
     _index.index(id, timestamp, count);
     for (uint32_t i = 0; i < _windows.size(); i++) {
       const auto& [lag, size] = _windows[i];
+      // Prevent overflow if given a date < 1970.
+      auto look_back = (lag + size - 1) * SECONDS_IN_DAY;
+      auto query_timestamp = timestamp >= look_back ? timestamp - look_back : 0;
       auto query_result =
-          _index.query(id, timestamp - (lag + size) * SECONDS_IN_DAY, size);
+          _index.query(id, query_timestamp, size);
       vec.addSparseFeatureToSegment(i, query_result);
     }
   }

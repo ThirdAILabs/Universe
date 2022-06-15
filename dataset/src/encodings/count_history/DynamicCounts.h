@@ -145,9 +145,6 @@ struct DynamicCountsConfig {
 };
 
 class DynamicCounts {
-  // TODO(Geordie): In this case, the CMS-are not contiguous in memory. Might
-  // want to do it differently. In fact, can completely do CMS in this class. No
-  // need for separate class, right?
   // TODO(Geordie) should timestamp be uint64_t?
  public:
   DynamicCounts(uint32_t max_range, uint32_t n_rows, uint32_t range_pow,
