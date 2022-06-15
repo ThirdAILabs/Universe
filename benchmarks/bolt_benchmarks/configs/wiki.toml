@@ -1,8 +1,8 @@
 job = "wikipedia 1M subset"
 
 [dataset]
-train_data = "wikipedia/sentences_tokenized_shuffled_trimmed_1M.txt"
-test_data  = "wikipedia/sentences_tokenized_shuffled_trimmed_1M.txt.test"
+train_data = "BERT/sentences_tokenized_shuffled_trimmed_10M.txt"
+test_data  = "BERT/sentences_tokenized_shuffled_trimmed_test_100k.txt"
 input_dim = 100000
 max_tokens = 100
 
@@ -11,7 +11,7 @@ loss_fn = "CategoricalCrossEntropyLoss"
 train_metrics = ["loss"]
 test_metrics  = ["categorical_accuracy"]
 learning_rate = 0.0001
-epochs = 2
+epochs = 20
 batch_size = 1024
 rehash = 3000
 rebuild = 10000
