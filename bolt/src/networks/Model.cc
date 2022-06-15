@@ -7,6 +7,7 @@
 #include <cctype>
 #include <chrono>
 #include <iostream>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -20,8 +21,8 @@ MetricData Model<BATCH_T>::train(
     const dataset::BoltDatasetPtr& train_labels,
     // Clang tidy is disabled for this line because it wants to pass by
     // reference, but shared_ptrs should not be passed by reference
-    std::shared_ptr<LossFunction>& loss_fn,  // NOLINT
-    float learning_rate, uint32_t epochs, uint32_t rehash, uint32_t rebuild,
+    const LossFunction& loss_fn, float learning_rate, uint32_t epochs,
+    uint32_t rehash, uint32_t rebuild,
     const std::vector<std::string>& metric_names, bool verbose) {
   uint32_t batch_size = train_data->at(0).getBatchSize();
   uint32_t rebuild_batch =
@@ -36,7 +37,15 @@ MetricData Model<BATCH_T>::train(
 
   std::vector<double> time_per_epoch;
 
-  MetricAggregator metrics(metric_names, loss_fn, verbose);
+  MetricAggregator metrics(metric_names, verbose);
+
+  // if any layer is shallow, call enable training to set the optimizer state
+  // before training
+  if (anyLayerShallow()) {
+    throw std::logic_error(
+        "Call reinitialize_optimizer_for_training before training to "
+        "initialize optimizer state");
+  }
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
     if (verbose) {
@@ -81,10 +90,10 @@ MetricData Model<BATCH_T>::train(
 template <typename BATCH_T>
 MetricData Model<BATCH_T>::trainOnStream(
     std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& train_data,
-    std::shared_ptr<LossFunction>& loss_fn, float learning_rate,
-    uint32_t rehash_batch, uint32_t rebuild_batch,
-    const std::vector<std::string>& metric_names,uint32_t metric_log_batch_interval, bool verbose) {
-  MetricAggregator metrics(metric_names, loss_fn, verbose);
+    const LossFunction& loss_fn, float learning_rate, uint32_t rehash_batch,
+    uint32_t rebuild_batch, const std::vector<std::string>& metric_names,
+    uint32_t metric_log_batch_interval, bool verbose) {
+  MetricAggregator metrics(metric_names, verbose);
 
   uint32_t batch_size = train_data->getMaxBatchSize();
   initializeNetworkState(batch_size, /* force_dense=*/false);
@@ -133,8 +142,8 @@ MetricData Model<BATCH_T>::trainOnStream(
 template <typename BATCH_T>
 inline void Model<BATCH_T>::processTrainingBatch(
     BATCH_T& batch_inputs, BoltBatch& outputs, const BoltBatch& batch_labels,
-    const std::shared_ptr<LossFunction>& loss_fn, float learning_rate,
-    uint32_t rehash_batch, uint32_t rebuild_batch, MetricAggregator& metrics) {
+    const LossFunction& loss_fn, float learning_rate, uint32_t rehash_batch,
+    uint32_t rebuild_batch, MetricAggregator& metrics) {
   if (_batch_iter % 1000 == 999) {
     shuffleRandomNeurons();
   }
@@ -144,8 +153,8 @@ inline void Model<BATCH_T>::processTrainingBatch(
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
     forward(vec_id, batch_inputs, outputs[vec_id], &batch_labels[vec_id]);
 
-    loss_fn->lossGradients(outputs[vec_id], batch_labels[vec_id],
-                           batch_inputs.getBatchSize());
+    loss_fn.lossGradients(outputs[vec_id], batch_labels[vec_id],
+                          batch_inputs.getBatchSize());
 
     backpropagate(vec_id, batch_inputs, outputs[vec_id]);
 
@@ -175,7 +184,7 @@ InferenceMetricData Model<BATCH_T>::predict(
 
   uint64_t num_test_batches = std::min(test_data->numBatches(), batch_limit);
 
-  MetricAggregator metrics(metric_names, /* loss_fn= */ nullptr, verbose);
+  MetricAggregator metrics(metric_names, verbose);
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
@@ -240,7 +249,7 @@ InferenceMetricData Model<BATCH_T>::predictOnStream(
     std::optional<std::function<void(const bolt::BoltBatch&, uint32_t)>>
         batch_callback,
     bool verbose) {
-  MetricAggregator metrics(metric_names, /* loss_fn= */ nullptr, verbose);
+  MetricAggregator metrics(metric_names, verbose);
 
   uint32_t batch_size = test_data->getMaxBatchSize();
   initializeNetworkState(batch_size, metrics.forceDenseInference());

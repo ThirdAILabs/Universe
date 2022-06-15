@@ -76,15 +76,28 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   float* getBiases() final;
 
+  void setTrainable(bool trainable) final;
+
+  bool getTrainable() final;
+
   void setWeights(const float* new_weights) final;
 
   void setBiases(const float* new_biases) final;
+
+  bool isShallow() final { return _is_shallow; }
+
+  void setShallow(bool shallow) final;
+
+  void setShallowSave(bool shallow) final;
+  void buildLayerSummary(std::stringstream& summary, bool detailed) override;
 
   ~FullyConnectedLayer() = default;
 
  private:
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
+  bool _is_shallow, _shallow_save;
+  bool _trainable, _force_build;
   ActivationFunction _act_func;
 
   std::vector<float> _weights;
@@ -117,6 +130,10 @@ class FullyConnectedLayer final : public SequentialLayer {
   std::vector<bool> _is_active;
 
   bool _force_sparse_for_inference;
+
+  void initOptimizer();
+
+  void removeOptimizer();
 
   inline void updateSparseSparseWeightParameters(float lr, float B1, float B2,
                                                  float eps,
@@ -157,14 +174,60 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
+
+  /**
+   * Not serializing _shallow_save because it is only used to decide to how to
+   * save the model. If _shallow_save or _is_shallow is true, archive
+   * _is_shallow as true. If both are false, archive _is_shallow as false. While
+   * dearchiving, we only need to know whether or not the layer is shallow,
+   * hence, _shallow_save not archived.
+   */
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _w_gradient, _w_momentum, _w_velocity, _biases, _b_gradient,
-            _b_momentum, _b_velocity, _sampling_config, _prev_is_active,
-            _is_active, _hasher, _hash_table, _rand_neurons,
-            _force_sparse_for_inference);
+  void save(Archive& archive) const {
+    if (_is_shallow || _shallow_save) {
+      archive(true);
+      archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+              _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
+              _hash_table, _rand_neurons, _force_sparse_for_inference);
+    } else {
+      archive(false);
+      archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+              _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
+              _hash_table, _rand_neurons, _force_sparse_for_inference,
+              _w_gradient, _w_momentum, _w_velocity, _b_gradient, _b_momentum,
+              _b_velocity);
+    }
   }
+
+  /**
+   * Load first whether the layer is shallow
+   * Does not load the optimizer state if is_shallow
+   * Loads the optimizer state if !is_shallow
+   */
+  template <class Archive>
+  void load(Archive& archive) {
+    archive(_is_shallow);
+    if (_is_shallow) {
+      archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+              _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
+              _hash_table, _rand_neurons, _force_sparse_for_inference);
+    } else {
+      archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+              _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
+              _hash_table, _rand_neurons, _force_sparse_for_inference,
+              _w_gradient, _w_momentum, _w_velocity, _b_gradient, _b_momentum,
+              _b_velocity);
+    }
+  }
+
+  /**
+   * If force_build=true build hash tables, return if false.
+   * For non-trainable layers, buildHashTablesImpl is called with
+   * force_build=false except during initialization and setting weights.
+   * For trainable layers, buildHashTablesImpl is always called with
+   * force_build=true.
+   */
+  void buildHashTablesImpl(bool force_build);
 };
 
 }  // namespace thirdai::bolt

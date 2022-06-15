@@ -1,17 +1,15 @@
 #pragma once
 
 #include <bolt/src/layers/BoltVector.h>
-#include <bolt/src/metrics/Metric.h>
 #include <algorithm>
-#include <atomic>
 #include <memory>
 #include <stdexcept>
 
 namespace thirdai::bolt {
 
-class LossFunction : public Metric {
+class LossFunction {
  public:
-  LossFunction() : _loss(0.0), _num_samples(0) {}
+  LossFunction() {}
 
   void lossGradients(BoltVector& output, const BoltVector& labels,
                      uint32_t batch_size) const {
@@ -29,36 +27,6 @@ class LossFunction : public Metric {
       }
     }
   }
-
-  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
-    if (output.isDense()) {
-      if (labels.isDense()) {
-        computeLossImpl<true, true>(output, labels);
-      } else {
-        computeLossImpl<true, false>(output, labels);
-      }
-    } else {
-      if (labels.isDense()) {
-        throw std::invalid_argument(
-            "Having sparse output and dense labels is not supported.");
-      }
-      computeLossImpl<false, false>(output, labels);
-    }
-  }
-
-  double getMetricAndReset(bool verbose) final {
-    double loss = _loss.load(std::memory_order_relaxed) / _num_samples;
-    if (verbose) {
-      std::cout << "Loss: " << loss << std::endl;
-    }
-    _loss = 0.0;
-    _num_samples = 0;
-    return loss;
-  }
-
-  std::string getName() final { return "loss"; }
-
-  bool forceDenseInference() final { return true; }
 
   virtual ~LossFunction() = default;
 
@@ -91,59 +59,6 @@ class LossFunction : public Metric {
 
   virtual float elementLossGradient(float label, float activation,
                                     uint32_t batch_size) const = 0;
-
-  template <bool OUTPUT_DENSE, bool LABEL_DENSE>
-  void computeLossImpl(const BoltVector& output, const BoltVector& labels) {
-    // We cannot have sparse output and dense labels. This will cause errors in
-    // sampling and means that there is no valid definition of CrossEntropy loss
-    // since non-active neurons have 0 activation and log(0) is undefined.
-    static_assert(OUTPUT_DENSE || !LABEL_DENSE);
-    if (OUTPUT_DENSE) {
-      // If either of the the vectors is dense then we have to iterate over the
-      // full dimension. To find this dimension we can take the max of the
-      // dimensions of both vectors since we know that at least one is dense.
-
-      float sample_loss = 0.0;
-      for (uint32_t i = 0; i < output.len; i++) {
-        float activation = output.findActiveNeuron<OUTPUT_DENSE>(i).activation;
-        float label_val = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
-
-        sample_loss += elementLoss(label_val, activation);
-      }
-
-      MetricUtilities::incrementAtomicFloat(_loss, sample_loss);
-      _num_samples += 1;
-    } else {
-      /*
-        Since we cannot have sparse outputs, and dense labels, in this case we
-        know that both the outputs and labels are sparse. If both vectors are
-        sparse then we can only iterate over the nonzero indices of the
-        outputs. This is because we currently support loss metrics during
-        training, and thus we know that the labels are a subset of the active
-        neurons. Furthermore this is an important distinction because the
-        activation of a non-active neuron is defined as 0, which means that
-        both binary and categorical cross entropy are not well defined since
-        they involve computing the log of the activation. Thus we can only
-        compute the loss for neurons that are active because that ensures that
-        the activation is non-zero.
-      */
-      float sample_loss = 0.0;
-      for (uint32_t i = 0; i < output.len; i++) {
-        float label_val =
-            labels.findActiveNeuron<LABEL_DENSE>(output.active_neurons[i])
-                .activation;
-        sample_loss += elementLoss(label_val, output.activations[i]);
-      }
-
-      MetricUtilities::incrementAtomicFloat(_loss, sample_loss);
-      _num_samples += 1;
-    }
-  }
-
-  virtual float elementLoss(float label, float activation) const = 0;
-
-  std::atomic<float> _loss;
-  std::atomic<uint32_t> _num_samples;
 };
 
 class CategoricalCrossEntropyLoss final : public LossFunction {
@@ -157,16 +72,6 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const final {
     return (label - activation) / batch_size;
-  }
-
-  float elementLoss(float label, float activation) const final {
-    /*
-      CrossEntropyLoss is defined as Loss = -∑ y_i log(a_i)
-      where y_i is the ith label and a_i is the ith activation.
-
-      Thus we will compute each element loss as: label * log(activation).
-    */
-    return -label * log(activation);
   }
 };
 
@@ -206,17 +111,6 @@ class BinaryCrossEntropyLoss final : public LossFunction {
     */
     return (label - activation) / batch_size;
   }
-
-  float elementLoss(float label, float activation) const final {
-    /*
-      BinaryCrossEntropyLoss is is a special case of CrossEntropyLoss for 2
-      classes. It is defined as Loss = -[y log(a) + (1-y)log(1-a)] where y is
-      the label and a is the activation. Since we are treating each element as
-      its own class we will use this formula for each element.
-    */
-    float log_act = log(activation);
-    return -(label * log_act + (1 - label) * (1 - log_act));
-  }
 };
 
 class MeanSquaredError final : public LossFunction {
@@ -229,17 +123,6 @@ class MeanSquaredError final : public LossFunction {
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const override {
     return 2 * (label - activation) / batch_size;
-  }
-
-  float elementLoss(float label, float activation) const final {
-    /*
-      MeanSquaredError is defined as Error = ∑ (y_i - a_i)^2
-      where y_i is the ith label and a_i is the ith activation.
-
-      Thus we will compute each element loss as: (y_i - a_i)^2.
-    */
-    float diff = label - activation;
-    return diff * diff;
   }
 };
 
@@ -262,16 +145,6 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
                             uint32_t batch_size) const override {
     auto direction = activation > label ? -1.0 : 1.0;
     return direction / batch_size;
-  }
-
-  float elementLoss(float label, float activation) const final {
-    // WMAPE has a special way that the loss metric is computed so we will defer
-    // to using that metric instead of computing it as part of the loss fuction.
-    (void)label;
-    (void)activation;
-    throw std::runtime_error(
-        "Please use specific weighted_mean_absolute_percentage_error metric "
-        "instead of just specifying loss.");
   }
 };
 

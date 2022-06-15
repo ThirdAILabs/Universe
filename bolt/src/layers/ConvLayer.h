@@ -7,6 +7,7 @@
 #include "SequentialLayer.h"
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
+#include <exceptions/src/Exceptions.h>
 
 namespace thirdai::bolt {
 class ConvLayer final : public SequentialLayer {
@@ -61,9 +62,31 @@ class ConvLayer final : public SequentialLayer {
 
   float* getBiases() final;
 
+  void setTrainable(bool trainable) final;
+
+  bool getTrainable() final;
+
   void setWeights(const float* new_weights) final;
 
   void setBiases(const float* new_biases) final;
+
+  void setShallowSave(bool shallow) final {
+    (void)shallow;
+    throw thirdai::exceptions::NotImplemented(
+        "Error: setShallowSave not implemented for DLRM;");
+  }
+
+  void setShallow(bool shallow) final {
+    (void)shallow;
+    throw thirdai::exceptions::NotImplemented(
+        "Error: setShallow not implemented for DLRM;");
+  }
+
+  bool isShallow() final {
+    throw thirdai::exceptions::NotImplemented(
+        "Error: isShallow not implemented for DLRM;");
+    return false;
+  }
 
  private:
   template <bool DENSE, bool PREV_DENSE>

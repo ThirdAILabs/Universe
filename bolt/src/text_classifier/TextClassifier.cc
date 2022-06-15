@@ -61,14 +61,9 @@ TextClassifier::TextClassifier(const std::string& model_size,
 
 void TextClassifier::train(const std::string& filename, uint32_t epochs,
                            float learning_rate) {
-  std::shared_ptr<dataset::DataLoader> data_loader =
-      std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
+  auto dataset = loadStreamingDataset(filename);
 
-  auto dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
-      data_loader, _batch_processor);
-
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
+  CategoricalCrossEntropyLoss loss;
 
   if (!canLoadDatasetInMemory(filename)) {
     for (uint32_t e = 0; e < epochs; e++) {
@@ -76,10 +71,7 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
       _model->trainOnStream(dataset, loss, learning_rate);
 
       // Create new stream for next epoch with new data loader.
-      data_loader =
-          std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
-      dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
-          data_loader, _batch_processor);
+      dataset = loadStreamingDataset(filename);
     }
 
   } else {
@@ -94,11 +86,7 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
 void TextClassifier::predict(
     const std::string& filename,
     const std::optional<std::string>& output_filename) {
-  std::shared_ptr<dataset::DataLoader> data_loader =
-      std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
-
-  auto dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
-      data_loader, _batch_processor);
+  auto dataset = loadStreamingDataset(filename);
 
   std::optional<std::ofstream> output_file;
   if (output_filename) {
@@ -273,7 +261,7 @@ bool canLoadDatasetInMemory(const std::string& filename) {
   // TODO(Nicholas): separate file size method for windows
   struct stat file_stats;
 
-  if (stat(filename.c_str(), &file_stats)) {
+  if (!stat(filename.c_str(), &file_stats)) {
     uint64_t file_size = file_stats.st_size;
     return total_ram / 2 >= file_size;
   }
@@ -281,7 +269,7 @@ bool canLoadDatasetInMemory(const std::string& filename) {
   // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/stat-functions?redirectedfrom=MSDN&view=msvc-170
 
   struct _stat64 file_stats;
-  if (_wstat64(filename.c_str(), &file_stats)) {
+  if (!_stat64(filename.c_str(), &file_stats)) {
     uint64_t file_size = file_stats.st_size;
     return total_ram / 2 >= file_size;
   }

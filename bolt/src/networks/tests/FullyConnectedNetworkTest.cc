@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <optional>
 #include <random>
+#include <sstream>
 #include <vector>
 
 namespace thirdai::bolt::tests {
@@ -57,9 +58,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(false);
 
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
-  network.train(data.data, data.labels, loss,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
                 /* learning_rate= */ 0.001, /* epochs= */ 5,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
@@ -79,9 +78,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(true);
 
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
-  network.train(data.data, data.labels, loss,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
                 /* learning_rate= */ 0.001, /* epochs= */ 5,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
@@ -103,14 +100,14 @@ static void testSimpleDatasetMultiLayerNetworkActivation(
 
   auto data = FullyConnectedClassificationNetworkTestFixture::genDataset(false);
 
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
-  auto train_metrics = network.train(data.data, data.labels, loss,
-                                     /* learning_rate */ 0.001, /* epochs */ 2,
-                                     /* rehash= */ 0, /* rebuild= */ 0,
-                                     /* metric_names= */ {"loss"},
-                                     /* verbose= */ false);
-  ASSERT_LT(train_metrics.at("loss").back(), train_metrics.at("loss").front());
+  auto train_metrics =
+      network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                    /* learning_rate */ 0.001, /* epochs */ 2,
+                    /* rehash= */ 0, /* rebuild= */ 0,
+                    /* metric_names= */ {"mean_squared_error"},
+                    /* verbose= */ false);
+  ASSERT_LT(train_metrics.at("mean_squared_error").back(),
+            train_metrics.at("mean_squared_error").front());
 
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
@@ -140,15 +137,15 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = FullyConnectedClassificationNetworkTestFixture::genDataset(false);
 
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
-  auto train_metrics = network.train(
-      data.data, data.labels, loss,
-      /* learning_rate= */ 0.001, /* epochs= */ 5,
-      /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {"loss"},
-      /* verbose= */ true);
+  auto train_metrics =
+      network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                    /* learning_rate= */ 0.001, /* epochs= */ 5,
+                    /* rehash= */ 0, /* rebuild= */ 0,
+                    /* metric_names= */ {"mean_squared_error"},
+                    /* verbose= */ true);
 
-  ASSERT_LT(train_metrics.at("loss").back(), train_metrics.at("loss").front());
+  ASSERT_LT(train_metrics.at("mean_squared_error").back(),
+            train_metrics.at("mean_squared_error").front());
 
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
@@ -168,9 +165,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(true);
 
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
-  network.train(data.data, data.labels, loss,
+  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
                 /* learning_rate= */ 0.001, /* epochs= */ 2,
                 /* rehash= */ 0, /* rebuild=*/0, /* metric_names= */ {},
                 /* verbose= */ false);
@@ -182,6 +177,35 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
 }
 
+TEST_F(FullyConnectedClassificationNetworkTestFixture,
+       MultiLayerNetworkToString) {
+  FullyConnectedNetwork network(
+      {/* layer1= */ std::make_shared<FullyConnectedLayerConfig>(
+           /* dim= */ 10000, /* sparsity= */ 0.1,
+           /* act_func= */ ActivationFunction::ReLU),
+       /* layer2= */ std::make_shared<FullyConnectedLayerConfig>(
+           /* dim= */ n_classes, /* act_func= */ ActivationFunction::Softmax)},
+      /* input_dim= */ n_classes);
+
+  std::stringstream summary;
+  network.buildNetworkSummary(summary);
+
+  std::string expected =
+      "========= Bolt Network =========\n"
+      "InputLayer (Layer 0): dim=100\n"
+      "FullyConnectedLayer (Layer 1): dim=10000, sparsity=0.1, act_func=ReLU\n"
+      "FullyConnectedLayer (Layer 2): dim=100, sparsity=1, act_func=Softmax\n"
+      "================================";
+  std::string actual = summary.str();
+
+  std::cout << actual << std::endl;
+
+  ASSERT_EQ(expected, actual);
+}
+
+// This doesn't need to do anything, just needs to implement the DataLoader
+// interface so that we can construct a mock streaming dataset. See comment
+// below for more details on how this test works.
 class DummyDataLoader final : public dataset::DataLoader {
  public:
   DummyDataLoader() : DataLoader(batch_size) {}
@@ -193,8 +217,19 @@ class DummyDataLoader final : public dataset::DataLoader {
   std::string resourceName() const final { return ""; }
 };
 
-// Mock batch processor that consumes an InMemoryDataset and returns its
-// batches.
+/*
+  Mock batch processor that consumes an InMemoryDataset and returns its
+  batches. The idea behind the batch processor is that it will receive raw rows
+  from the dataset and convert them into the given batch type to be processed
+  by bolt. In these tests we are not interested in testing the data
+  loader/batch processer functionality as this is handled seperately, and soley
+  interested in testing that bolt trains correctly on streaming datasets. Thus
+  we create a mock batch processor that instead of processing actual rows and
+  returning batches, just returns already created batches in order from an in
+  memory dataset. Having the functionality to return a batch when nextBatch() is
+  called is sufficient to construct a streaming dataset, in addition to the
+  DummDataLoader defined above.
+*/
 class MockBatchProcessor final : public dataset::BatchProcessor<BoltBatch> {
  public:
   MockBatchProcessor(dataset::BoltDatasetPtr data,
@@ -241,15 +276,12 @@ std::shared_ptr<dataset::StreamingDataset<BoltBatch>> getMockStreamingDataset(
 
 void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
                                        uint32_t epochs, float acc_threshold) {
-  std::shared_ptr<LossFunction> loss =
-      std::make_shared<CategoricalCrossEntropyLoss>();
-
   for (uint32_t e = 0; e < epochs; e++) {
     auto in_mem_data =
         FullyConnectedClassificationNetworkTestFixture::genDataset(false);
     auto stream_data = getMockStreamingDataset(std::move(in_mem_data));
 
-    network.trainOnStream(stream_data, loss,
+    network.trainOnStream(stream_data, CategoricalCrossEntropyLoss(),
                           /* learning_rate= */ 0.001,
                           /* rehash_batch= */ 10, /* rebuild_batch= */ 50,
                           /* metric_names= */ {},
@@ -275,18 +307,21 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
                                     n_classes, ActivationFunction::Softmax)},
                                 n_classes);
 
-  testFullyConnectedNetworkOnStream(network, 5, 0.98);
+  testFullyConnectedNetworkOnStream(network, /* epochs= */ 5,
+                                    /* acc_threshold= */ 0.98);
 }
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
        TrainSimpleDatasetMultiLayerNetworkStreamingData) {
-  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
-                                     10000, 0.1, ActivationFunction::ReLU),
-                                 std::make_shared<FullyConnectedLayerConfig>(
-                                     n_classes, ActivationFunction::Softmax)},
-                                n_classes);
+  FullyConnectedNetwork network(
+      {std::make_shared<FullyConnectedLayerConfig>(
+           /* dim=*/10000, /* sparsity= */ 0.1, ActivationFunction::ReLU),
+       std::make_shared<FullyConnectedLayerConfig>(
+           n_classes, ActivationFunction::Softmax)},
+      n_classes);
 
-  testFullyConnectedNetworkOnStream(network, 2, 0.99);
+  testFullyConnectedNetworkOnStream(network, /* epochs= */ 2,
+                                    /* acc_threshold= */ 0.99);
 }
 
 }  // namespace thirdai::bolt::tests
