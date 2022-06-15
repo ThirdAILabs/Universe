@@ -69,6 +69,25 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     }
   }
 
+  void buildNetworkSummary(std::stringstream& summary,
+                           bool detailed = false) const {
+    summary << "========= Bolt Network =========\n";
+    summary << "InputLayer (Layer 0): dim=" << _input_dim << "\n";
+    uint32_t layerNum = 1;
+    for (const auto& layer : _layers) {
+      summary << "FullyConnectedLayer (Layer " << layerNum << "): ";
+      layer->buildLayerSummary(summary, detailed);
+      ++layerNum;
+    }
+    summary << "================================";
+  }
+
+  void printSummary(bool detailed = false) const {
+    std::stringstream summary;
+    this->buildNetworkSummary(summary, detailed);
+    std::cout << summary.str() << std::endl;
+  }
+
   BoltBatch getOutputs(uint32_t batch_size, bool force_dense) final {
     return _layers.back()->createBatchState(batch_size,
                                             useDenseComputations(force_dense));
@@ -78,6 +97,26 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
 
   uint32_t getInferenceOutputDim() const final {
     return _layers.back()->getInferenceOutputDim();
+  }
+
+  bool anyLayerShallow() final {
+    bool shallow = false;
+    for (uint32_t i = 0; i < _num_layers; i++) {
+      shallow |= _layers[i]->isShallow();
+    }
+    return shallow;
+  }
+
+  void setShallow(bool shallow) final {
+    for (uint32_t i = 0; i < _num_layers; i++) {
+      _layers[i]->setShallow(shallow);
+    }
+  }
+
+  void setShallowSave(bool shallow) final {
+    for (uint32_t i = 0; i < _num_layers; i++) {
+      _layers[i]->setShallowSave(shallow);
+    }
   }
 
   uint32_t getInputDim() const { return _layers.front()->getInputDim(); }

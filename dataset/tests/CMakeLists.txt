@@ -51,12 +51,12 @@ target_link_libraries(
 )
 
 add_executable(
-  extendable_vectors_test
-  ExtendableVectorsTests.cc
+  segmented_feature_vectors_test
+  SegmentedFeatureVectorsTests.cc
 )
 
 target_link_libraries(
-  extendable_vectors_test
+  segmented_feature_vectors_test
   PRIVATE
   gtest_main
 )
@@ -113,7 +113,7 @@ gtest_discover_tests(svm_dataset_test)
 gtest_discover_tests(click_through_dataset_test)
 gtest_discover_tests(vector_test)
 gtest_discover_tests(csv_dataset_test)
-gtest_discover_tests(extendable_vectors_test)
+gtest_discover_tests(segmented_feature_vectors_test)
 gtest_discover_tests(categorical_block_test)
 gtest_discover_tests(text_block_test)
 gtest_discover_tests(block_batch_processor_test)
