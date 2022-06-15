@@ -6,6 +6,7 @@
 #include <dataset/src/batch_types/MaskedSentenceBatch.h>
 #include <dataset/src/bolt_datasets/BatchProcessor.h>
 #include <random>
+#include <unordered_map>
 
 namespace thirdai::dataset {
 
@@ -41,6 +42,10 @@ class MaskedSentenceBatchProcessor final
   bool expectsHeader() const final { return false; }
 
   void processHeader(const std::string& header) final { (void)header; }
+
+  const std::unordered_map<uint32_t, uint32_t>& getWordToIDMap() const {
+    return _word_hashes_to_ids;
+  }
 
  private:
   std::tuple<bolt::BoltVector, uint32_t, bolt::BoltVector> processRow(
