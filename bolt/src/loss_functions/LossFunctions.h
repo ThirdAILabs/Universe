@@ -1,9 +1,7 @@
 #pragma once
 
 #include <bolt/src/layers/BoltVector.h>
-#include <bolt/src/metrics/Metric.h>
 #include <algorithm>
-#include <atomic>
 #include <memory>
 #include <stdexcept>
 
