@@ -104,9 +104,10 @@ static void testSimpleDatasetMultiLayerNetworkActivation(
       network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
                     /* learning_rate */ 0.001, /* epochs */ 2,
                     /* rehash= */ 0, /* rebuild= */ 0,
-                    /* metric_names= */ {"loss"},
+                    /* metric_names= */ {"mean_squared_error"},
                     /* verbose= */ false);
-  ASSERT_LT(train_metrics.at("loss").back(), train_metrics.at("loss").front());
+  ASSERT_LT(train_metrics.at("mean_squared_error").back(),
+            train_metrics.at("mean_squared_error").front());
 
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
@@ -136,13 +137,15 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = FullyConnectedClassificationNetworkTestFixture::genDataset(false);
 
-  auto train_metrics = network.train(
-      data.data, data.labels, CategoricalCrossEntropyLoss(),
-      /* learning_rate= */ 0.001, /* epochs= */ 5,
-      /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {"loss"},
-      /* verbose= */ true);
+  auto train_metrics =
+      network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                    /* learning_rate= */ 0.001, /* epochs= */ 5,
+                    /* rehash= */ 0, /* rebuild= */ 0,
+                    /* metric_names= */ {"mean_squared_error"},
+                    /* verbose= */ true);
 
-  ASSERT_LT(train_metrics.at("loss").back(), train_metrics.at("loss").front());
+  ASSERT_LT(train_metrics.at("mean_squared_error").back(),
+            train_metrics.at("mean_squared_error").front());
 
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,

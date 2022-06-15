@@ -105,6 +105,94 @@ class CategoricalAccuracy final : public Metric {
   std::atomic<uint32_t> _num_samples;
 };
 
+class MeanSquaredErrorMetric final : public Metric {
+ public:
+  MeanSquaredErrorMetric() : _mse(0), _num_samples(0) {}
+
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+    float error;
+    if (output.isDense()) {
+      if (labels.isDense()) {
+        error = computeMSE<true, true>(output, labels);
+      } else {
+        error = computeMSE<true, false>(output, labels);
+      }
+    } else {
+      if (labels.isDense()) {
+        error = computeMSE<false, true>(output, labels);
+
+      } else {
+        error = computeMSE<false, false>(output, labels);
+      }
+    }
+
+    MetricUtilities::incrementAtomicFloat(_mse, error);
+    _num_samples++;
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double error = _mse / _num_samples;
+    if (verbose) {
+      std::cout << "MSE: " << error << std::endl;
+    }
+    _mse = 0;
+    _num_samples = 0;
+    return error;
+  }
+
+  static constexpr const char* name = "mean_squared_error";
+
+  std::string getName() final { return name; }
+
+  bool forceDenseInference() final { return true; }
+
+ private:
+  template <bool DENSE, bool LABEL_DENSE>
+  float computeMSE(const BoltVector& output, const BoltVector& labels) {
+    if (DENSE || LABEL_DENSE) {
+      // If either vector is dense then we need to iterate over the full
+      // dimension from the layer.
+      uint32_t dim = std::max(output.len, labels.len);
+
+      float error = 0.0;
+      for (uint32_t i = 0; i < dim; i++) {
+        float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
+        float act = output.findActiveNeuron<DENSE>(i).activation;
+        float delta = label - act;
+        error += delta * delta;
+      }
+      return error;
+    }
+
+    // If both are sparse then we need to iterate over the nonzeros from both
+    // vectors. To avoid double counting the overlapping neurons we avoid
+    // computing the error while iterating over the output active_neurons, if
+    // the labels also contain the same active_neuron.
+
+    float error = 0.0;
+    for (uint32_t i = 0; i < output.len; i++) {
+      float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
+      if (label > 0.0) {
+        continue;
+      }
+      float act = output.findActiveNeuron<DENSE>(i).activation;
+      float delta = label - act;
+      error += delta * delta;
+    }
+
+    for (uint32_t i = 0; i < labels.len; i++) {
+      float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
+      float act = output.findActiveNeuron<DENSE>(i).activation;
+      float delta = label - act;
+      error += delta * delta;
+    }
+    return error;
+  }
+
+  std::atomic<float> _mse;
+  std::atomic<uint32_t> _num_samples;
+};
+
 /**
  * The weighted mean absolute percentage error is a regression error that
  * measures the absolute deviation of predictions from the true values, weighted
