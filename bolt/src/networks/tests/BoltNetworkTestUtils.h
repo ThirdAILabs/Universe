@@ -1,3 +1,5 @@
+#pragma once
+
 #include <dataset/src/Dataset.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <algorithm>
