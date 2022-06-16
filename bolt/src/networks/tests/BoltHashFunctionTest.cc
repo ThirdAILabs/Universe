@@ -15,7 +15,7 @@ namespace thirdai::bolt::tests {
 class BoltHashFunctionTestFixture : public testing::Test {};
 
 static void testSimpleDatasetHashFunction(const std::string& hash_function) {
-  // As we train for more epochs the model should learn better using these hash
+  // As we train for more epochs, the model should learn better using these hash
   // functions.
   FullyConnectedNetwork network(
       {std::make_shared<FullyConnectedLayerConfig>(
