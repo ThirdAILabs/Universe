@@ -1,0 +1,54 @@
+<body>
+  <style>
+    body {
+      background-color: {{background_color}};
+      font-family: 'Trebuchet MS', sans-serif;
+      justify-content: center;
+    }
+
+    h2 {
+      font-weight: normal;
+    }
+
+    #input-form {
+      text-align: center;
+      width: 60%;
+      padding-top: 100px;
+      margin: auto
+    }
+
+    #sentence-input {
+      font-size: 16pt;
+      width: 80%;
+    }
+
+    #console-output {
+      font-size: 12pt;
+      width: 100%;
+    }
+
+    #submit-button {
+      font-size: 16pt;
+    }
+  </style>
+  <div id="input-form">
+    <form method="POST">
+      <h2>Max Recursive Webcrawl Depth</h2>
+      <select name="depth" style="font-size: 16pt;">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="1000000">Infinity</option>
+      </select>
+      <h2>Base Url To Crawl</h2>
+      <input name="url" id="sentence-input">
+      <input type="submit" style="display: none" />
+    </form>
+    <textarea id="console-output" rows="4" readonly>{{console_output}}</textarea>
+    <br></br>
+    <form method="post" name="submit-button" action="/do-qa">
+      <input type="submit" value="Launch QA!"/>
+    </form>
+  </div>
+</body>
