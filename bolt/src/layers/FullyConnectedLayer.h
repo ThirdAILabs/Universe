@@ -75,26 +75,33 @@ class FullyConnectedLayer final : public SequentialLayer {
     return _dim;
   }
 
-  float* getWeights() final;
+  float* getWeights() const final;
 
-  float* getBiases() final;
+  float* getBiases() const final;
 
   void setTrainable(bool trainable) final;
 
-  bool getTrainable() final;
+  bool getTrainable() const final;
 
   void setWeights(const float* new_weights) final;
 
   void setBiases(const float* new_biases) final;
 
-  bool isShallow() final { return _is_shallow; }
+  bool isShallow() const final { return _is_shallow; }
 
   void setShallow(bool shallow) final;
 
   void setSparsity(float sparsity) final;
 
+  float getSparsity() const final { return _sparsity; }
+
+  const SamplingConfig& getSamplingConfig() const final {
+    return _sampling_config;
+  }
+
   void setShallowSave(bool shallow) final;
-  void buildLayerSummary(std::stringstream& summary, bool detailed) override;
+  void buildLayerSummary(std::stringstream& summary,
+                         bool detailed) const override;
 
   ~FullyConnectedLayer() = default;
 

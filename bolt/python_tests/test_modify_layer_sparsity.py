@@ -1,6 +1,7 @@
 from utils import *
 import pytest
 import time
+import math
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -21,6 +22,7 @@ def predict_train_one_epoch_predict(network, test_data, test_labels):
     return prediction_before, prediction_after
 
 
+@pytest.mark.release
 def test_switch_dense_to_sparse():
     """
     Tests that we can do both training and inference when switching from a
@@ -32,7 +34,7 @@ def test_switch_dense_to_sparse():
     return both the activations and the indices of those activations.
     """
     dataset_dim = 100
-    labels, examples, _ = gen_training_data(n_classes=dataset_dim, n_samples=10000)
+    labels, examples, _ = gen_training_data(n_classes=dataset_dim, n_samples=1000)
     classifier = build_sparse_hidden_layer_classifier(
         input_dim=dataset_dim, sparse_dim=100, output_dim=dataset_dim, sparsity=0.01
     )
@@ -62,5 +64,42 @@ def test_switch_dense_to_sparse():
         assert len(prediction) == 1
 
 
+@pytest.mark.release
 def test_decrease_and_increase_sparsity():
-    pass
+    """
+    Tests changing the sparsity of an already sparse layer changes the
+    reported sparsity of that layer.
+    """
+    classifier = build_sparse_hidden_layer_classifier(
+        input_dim=100, sparse_dim=100, output_dim=100, sparsity=0.01
+    )
+    assert math.isclose(
+        0.01, classifier.get_layer_sparsity(layer_index=0), rel_tol=1e-5
+    )
+
+    classifier.set_layer_sparsity(layer_index=0, sparsity=0.5)
+    assert math.isclose(0.5, classifier.get_layer_sparsity(layer_index=0), rel_tol=1e-5)
+
+    classifier.set_layer_sparsity(layer_index=0, sparsity=0.001)
+    assert math.isclose(
+        0.001, classifier.get_layer_sparsity(layer_index=0), rel_tol=1e-5
+    )
+
+
+# This is not a release test because the sampling config isn't exposed in a
+# release build.
+def test_decrease_and_increase_sparsity_sampling_config():
+    """
+    Tests changing the sparsity of an already sparse layer changes the
+    sampling config parameters. Due to the way we autotune, only the number of
+    tables should change if we change the sparsity.
+    """
+    classifier = gen_single_sparse_layer_network(n_classes=1000, sparsity=0.5)
+    sampling_config = classifier.get_sampling_config(layer_index=0)
+    num_tables_high_sparsity = sampling_config.num_tables
+
+    classifier.set_layer_sparsity(layer_index=0, sparsity=0.1)
+    sampling_config = classifier.get_sampling_config(layer_index=0)
+    num_tables_low_sparsity = sampling_config.num_tables
+
+    assert num_tables_low_sparsity < num_tables_high_sparsity

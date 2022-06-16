@@ -58,13 +58,13 @@ class ConvLayer final : public SequentialLayer {
     return _dim;
   }
 
-  float* getWeights() final;
+  float* getWeights() const final;
 
-  float* getBiases() final;
+  float* getBiases() const final;
 
   void setTrainable(bool trainable) final;
 
-  bool getTrainable() final;
+  bool getTrainable() const final;
 
   void setWeights(const float* new_weights) final;
 
@@ -93,7 +93,13 @@ class ConvLayer final : public SequentialLayer {
         "Cannot currently set the sparsity of a convolutional layer.");
   }
 
-  bool isShallow() final {
+  float getSparsity() const final { return _sparsity; }
+
+  const SamplingConfig& getSamplingConfig() const final {
+    return _sampling_config;
+  }
+
+  bool isShallow() const final {
     throw thirdai::exceptions::NotImplemented(
         "Error: isShallow not implemented for DLRM;");
     return false;

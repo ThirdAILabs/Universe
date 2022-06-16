@@ -551,7 +551,7 @@ void FullyConnectedLayer::shuffleRandNeurons() {
   }
 }
 
-float* FullyConnectedLayer::getWeights() {
+float* FullyConnectedLayer::getWeights() const {
   float* weights_copy = new float[_dim * _prev_dim];
   std::copy(_weights.begin(), _weights.end(), weights_copy);
 
@@ -562,9 +562,9 @@ void FullyConnectedLayer::setTrainable(bool trainable) {
   _trainable = trainable;
 }
 
-bool FullyConnectedLayer::getTrainable() { return _trainable; }
+bool FullyConnectedLayer::getTrainable() const { return _trainable; }
 
-float* FullyConnectedLayer::getBiases() {
+float* FullyConnectedLayer::getBiases() const {
   float* biases_copy = new float[_dim];
   std::copy(_biases.begin(), _biases.end(), biases_copy);
 
@@ -633,7 +633,7 @@ void FullyConnectedLayer::removeOptimizer() {
 }
 
 void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
-                                            bool detailed) {
+                                            bool detailed) const {
   summary << "dim=" << _dim << ", sparsity=" << _sparsity << ", act_func=";
   switch (_act_func) {
     case ActivationFunction::ReLU:

@@ -52,13 +52,15 @@ def get_categorical_acc(network, examples, labels, batch_size=64):
     return acc["categorical_accuracy"]
 
 
-# Returns a single layer (no hidden layer) bolt network with input_dim = output_dim and 50% sparsity.
-def gen_network(n_classes):
+# Returns a single layer (no hidden layer) bolt network with
+# input_dim = output_dim, 50% sparsity by default, and a Softmax activation
+# function.
+def gen_single_sparse_layer_network(n_classes, sparsity=0.5):
 
     layers = [
         bolt.FullyConnected(
             dim=n_classes,
-            sparsity=0.5,
+            sparsity=sparsity,
             activation_function="Softmax",
         ),
     ]

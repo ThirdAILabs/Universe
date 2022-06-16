@@ -128,13 +128,18 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   }
 
   void setLayerSparsity(uint32_t layer_index, float sparsity) {
-    if (layer_index >= _layers.size()) {
-      throw std::invalid_argument(
-          "Layer index of " + std::to_string(layer_index) +
-          " is larger than the maximum layer index of " +
-          std::to_string(layer_index - 1));
-    }
+    checkLayerIndex(layer_index);
     _layers.at(layer_index)->setSparsity(sparsity);
+  }
+
+  float getLayerSparsity(uint32_t layer_index) {
+    checkLayerIndex(layer_index);
+    return _layers.at(layer_index)->getSparsity();
+  }
+
+  const SamplingConfig& getSamplingConfig(uint32_t layer_index) {
+    checkLayerIndex(layer_index);
+    return _layers.at(layer_index)->getSamplingConfig();
   }
 
  private:
@@ -147,6 +152,15 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
 
   bool useDenseComputations(bool force_dense) const {
     return force_dense && !_sparse_inference_enabled;
+  }
+
+  void checkLayerIndex(uint32_t layer_index) {
+    if (layer_index >= _layers.size()) {
+      throw std::invalid_argument(
+          "Layer index of " + std::to_string(layer_index) +
+          " is larger than the maximum layer index of " +
+          std::to_string(layer_index - 1));
+    }
   }
 
  protected:
