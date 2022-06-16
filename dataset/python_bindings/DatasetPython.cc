@@ -1,5 +1,6 @@
 #include "DatasetPython.h"
 #include <bolt/src/layers/BoltVector.h>
+#include <dataset/src/Dataset.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/DenseArray.h>
@@ -312,10 +313,15 @@ void createDatasetSubmodule(py::module_& module) {
       "Returns a tuple containing a ClickthroughDataset to store the data "
       "itself, and a BoltDataset storing the labels.");
 
-  // The no lint below is because clang tidy doesn't like instantiating an
-  // object without a name and never using it.
-  py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule,  // NOLINT
-                                          "BoltDataset");
+  py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule,
+                                          "BoltDataset")
+      .def("get", static_cast<bolt::BoltBatch& (BoltDataset::*)(uint32_t i)>(&BoltDataset::at), py::arg("i"), py::return_value_policy::reference)
+      .def("__getitem__", static_cast<bolt::BoltBatch& (BoltDataset::*)(uint32_t i)>(&BoltDataset::at), py::arg("i"), py::return_value_policy::reference);
+  
+  py::class_<bolt::BoltBatch>(dataset_submodule, "BoltBatch")
+      .def("size", &bolt::BoltBatch::getBatchSize)
+      .def("get", static_cast<BoltVector& (bolt::BoltBatch::*)(size_t i)>(&bolt::BoltBatch::operator[]), py::arg("i"), py::return_value_policy::reference)
+      .def("__getitem__", static_cast<BoltVector& (bolt::BoltBatch::*)(size_t i)>(&bolt::BoltBatch::operator[]), py::arg("i"), py::return_value_policy::reference);
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
