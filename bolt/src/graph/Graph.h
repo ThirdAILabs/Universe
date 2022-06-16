@@ -4,7 +4,7 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
-#include <bolt/src/metrics/Metric.h>
+#include <bolt/src/metrics/MetricAggregator.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <memory>
 #include <stdexcept>

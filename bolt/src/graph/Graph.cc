@@ -1,7 +1,6 @@
 #include "Graph.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/BoltVector.h>
-#include <bolt/src/metrics/Metric.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <queue>
 #include <unordered_set>
