@@ -187,8 +187,8 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<DenseArrayBlock, Block, std::shared_ptr<DenseArrayBlock>>(
       block_submodule, "DenseArray",
       "Parses a contiguous set of columns as a dense vector segment.")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("start_col"), 
-           py::arg("dim"), "Constructor")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("start_col"), py::arg("dim"),
+           "Constructor")
       .def("feature_dim", &DenseArrayBlock::featureDim,
            "Returns the dimension of the vector encoding.")
       .def("is_dense", &DenseArrayBlock::isDense,
@@ -313,15 +313,26 @@ void createDatasetSubmodule(py::module_& module) {
       "Returns a tuple containing a ClickthroughDataset to store the data "
       "itself, and a BoltDataset storing the labels.");
 
-  py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule,
-                                          "BoltDataset")
-      .def("get", static_cast<bolt::BoltBatch& (BoltDataset::*)(uint32_t i)>(&BoltDataset::at), py::arg("i"), py::return_value_policy::reference)
-      .def("__getitem__", static_cast<bolt::BoltBatch& (BoltDataset::*)(uint32_t i)>(&BoltDataset::at), py::arg("i"), py::return_value_policy::reference);
-  
+  py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule, "BoltDataset")
+      .def("get",
+           static_cast<bolt::BoltBatch& (BoltDataset::*)(uint32_t i)>(
+               &BoltDataset::at),
+           py::arg("i"), py::return_value_policy::reference)
+      .def("__getitem__",
+           static_cast<bolt::BoltBatch& (BoltDataset::*)(uint32_t i)>(
+               &BoltDataset::at),
+           py::arg("i"), py::return_value_policy::reference);
+
   py::class_<bolt::BoltBatch>(dataset_submodule, "BoltBatch")
       .def("size", &bolt::BoltBatch::getBatchSize)
-      .def("get", static_cast<BoltVector& (bolt::BoltBatch::*)(size_t i)>(&bolt::BoltBatch::operator[]), py::arg("i"), py::return_value_policy::reference)
-      .def("__getitem__", static_cast<BoltVector& (bolt::BoltBatch::*)(size_t i)>(&bolt::BoltBatch::operator[]), py::arg("i"), py::return_value_policy::reference);
+      .def("get",
+           static_cast<BoltVector& (bolt::BoltBatch::*)(size_t i)>(
+               &bolt::BoltBatch::operator[]),
+           py::arg("i"), py::return_value_policy::reference)
+      .def("__getitem__",
+           static_cast<BoltVector& (bolt::BoltBatch::*)(size_t i)>(
+               &bolt::BoltBatch::operator[]),
+           py::arg("i"), py::return_value_policy::reference);
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),

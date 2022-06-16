@@ -10,7 +10,7 @@ namespace thirdai::dataset {
 
 /**
  * A block that adds a dense array segment.
- * Empty columns or undefined elements of the array 
+ * Empty columns or undefined elements of the array
  * default to 0. NaNs and Infs also default to 0.
  */
 class DenseArrayBlock : public Block {
@@ -39,11 +39,13 @@ class DenseArrayBlock : public Block {
       float value = std::strtof(input_row.at(i).data(), &end);
       if (std::isinf(value)) {
         value = 0;
-        std::cout << "[DenseArrayBlock] WARNING: Found inf. Defaulting to 0." << std::endl;
+        std::cout << "[DenseArrayBlock] WARNING: Found inf. Defaulting to 0."
+                  << std::endl;
       }
       if (std::isnan(value)) {
         value = 0;
-        std::cout << "[DenseArrayBlock] WARNING: Found NaN. Defaulting to 0." << std::endl;
+        std::cout << "[DenseArrayBlock] WARNING: Found NaN. Defaulting to 0."
+                  << std::endl;
       }
       vec.addDenseFeatureToSegment(value);
     }
