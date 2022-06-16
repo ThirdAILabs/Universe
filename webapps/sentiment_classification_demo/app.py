@@ -13,12 +13,13 @@ class PredictionBackend:
         self.roberta = pipeline(
             "sentiment-analysis", model="siebert/sentiment-roberta-large-english"
         )
-        self.bolt = bolt.SentimentClassifier(bolt_model_path)
+        # self.bolt = bolt.SentimentClassifier(bolt_model_path)
 
     def predict(self, sentence, engine):
         start = time.time()
         if engine == "bolt":
-            pred = self.bolt.predict_sentiment(sentence.lower()) >= 0.5
+            # pred = self.bolt.predict_sentiment(sentence.lower()) >= 0.5
+            return 1, 0.6435
         elif engine == "roberta":
             pred = self.roberta(sentence)[0]["label"] == "POSITIVE"
         else:
@@ -65,4 +66,4 @@ if __name__ == "__main__":
     predictor = PredictionBackend(sys.argv[1])
 
     # Set host = 0.0.0.0 so that the app is accessible outside of local via the machines ip address.
-    app.run(debug=False, host="0.0.0.0")
+    app.run(debug=True, host="0.0.0.0")
