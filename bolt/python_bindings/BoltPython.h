@@ -17,6 +17,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <algorithm>
+#include <csignal>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -155,9 +156,45 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
 
-    return FullyConnectedNetwork::train(
+/**Overriding the SIG_INT exception handler to exit the program once
+ * CTRL+C is pressed by the user to interrupt the execution of any long
+ * running code.
+ */
+#if defined(__linux__) || defined(__APPLE__)
+
+    auto handler = [](int code) {
+      std::cout << "Caught a keyboard interrupt with code: " << code
+                << std::endl;
+      std::cout << "Gracefully shutting down the program!" << std::endl;
+      exit(code);
+    };
+
+    /**
+     * signal() function returns the current signal handler.
+     */
+    using sighandler_t = void (*)(int); /* for convenience */
+    sighandler_t old_signal_handler = std::signal(SIGINT, handler);
+
+#endif
+
+    /**
+     * For windows signal() function from csignal doesnot works for raising
+     * CTRL+C interrupts Look into below link for further information.
+     * https://stackoverflow.com/questions/54362699/windows-console-signal-handling-for-subprocess-c
+     */
+
+    MetricData metrics = FullyConnectedNetwork::train(
         train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
         epochs, rehash, rebuild, metric_names, verbose);
+
+#if defined(__linux__) || defined(__APPLE__)
+
+    // Restoring the old signal handler here
+    std::signal(SIGINT, old_signal_handler);
+
+#endif
+
+    return metrics;
   }
 
   py::tuple predict(

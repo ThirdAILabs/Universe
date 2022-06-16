@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dataset/src/blocks/BlockInterface.h>
-#include <string>
+#include <string_view>
 
 namespace thirdai::dataset {
 
@@ -19,12 +19,14 @@ class MockBlock : public Block {
 
   bool isDense() const override { return _dense; };
 
+  uint32_t expectedNumColumns() const final { return _column + 1; };
+
  protected:
-  void buildSegment(const std::vector<std::string>& input_row,
+  void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) override {
-    const std::string& col_str = input_row.at(_column);
+    auto val_str = input_row.at(_column);
     char* end;
-    float val = std::strtof(col_str.c_str(), &end);
+    float val = std::strtof(val_str.data(), &end);
 
     if (_dense) {
       vec.addDenseFeatureToSegment(val);

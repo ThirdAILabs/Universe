@@ -486,9 +486,7 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
 
 inline void FullyConnectedLayer::initSparseDatastructures(
     std::random_device& rd) {
-  _hasher = std::make_unique<hashing::DWTAHashFunction>(
-      _prev_dim, _sampling_config.hashes_per_table, _sampling_config.num_tables,
-      _sampling_config.range_pow);
+  _hasher = assignHashFunction(_sampling_config, _prev_dim);
 
   _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
       _sampling_config.num_tables, _sampling_config.reservoir_size,
@@ -497,7 +495,7 @@ inline void FullyConnectedLayer::initSparseDatastructures(
   /* Initializing hence, we need to force build the hash tables
    * Hence, force_build is true here in buildHashTablesImpl(force_build)
    */
-  buildHashTablesImpl(/* force_build = */ true);
+  buildHashTablesImpl(true);
 
   _rand_neurons = std::vector<uint32_t>(_dim);
 
@@ -539,9 +537,7 @@ void FullyConnectedLayer::reBuildHashFunction() {
   if (!_trainable || _sparsity >= 1.0 || _force_sparse_for_inference) {
     return;
   }
-  _hasher = std::make_unique<hashing::DWTAHashFunction>(
-      _prev_dim, _sampling_config.hashes_per_table, _sampling_config.num_tables,
-      _sampling_config.range_pow);
+  _hasher = assignHashFunction(_sampling_config, _prev_dim);
 }
 
 void FullyConnectedLayer::shuffleRandNeurons() {
@@ -601,6 +597,8 @@ void FullyConnectedLayer::setShallow(bool shallow) {
 void FullyConnectedLayer::setSparsity(float sparsity) {
   deinitSparseDatastructures();
   _sparsity = sparsity;
+  // TODO(josh): Right now this is using the autotuning for DWTA even if this
+  // hash function isn't DWTA. Add autotuning for other hash function types.
   _sampling_config =
       FullyConnectedLayerConfig(_dim, _sparsity, _act_func).sampling_config;
   _sparse_dim = _sparsity * _dim;
@@ -661,7 +659,9 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
   summary << " (hashes_per_table=" << _sampling_config.hashes_per_table
           << ", num_tables=" << _sampling_config.num_tables
           << ", range_pow=" << _sampling_config.range_pow
-          << ", resevoir_size=" << _sampling_config.reservoir_size << ")";
+          << ", resevoir_size=" << _sampling_config.reservoir_size
+          << ", hash_function="
+          << getHashString(_sampling_config._hash_function) << ")";
 
   summary << "\n";
 }
