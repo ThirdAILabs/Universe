@@ -189,6 +189,7 @@ class PyNetwork final : public FullyConnectedNetwork {
 
 #if defined(__linux__) || defined(__APPLE__)
 
+    // Restoring the old signal handler here
     std::signal(SIGINT, old_signal_handler);
 
 #endif
