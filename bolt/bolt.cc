@@ -350,7 +350,7 @@ void trainDLRM(toml::table& config) {
 std::shared_ptr<dataset::StreamingDataset<dataset::MaskedSentenceBatch>>
 loadTextData(
     const std::string& filename, uint32_t batch_size,
-    std::shared_ptr<dataset::MaskedSentenceBatchProcessor> batch_processor) {
+    std::shared_ptr<dataset::MaskedSentenceBatchProcessor>& batch_processor) {
   std::shared_ptr<dataset::DataLoader> data_loader =
       std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
 
