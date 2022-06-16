@@ -3,25 +3,33 @@ from thirdai import bolt
 import time
 from transformers import pipeline
 import torch
+import sys
 
 torch.set_num_threads(1)
 
+
+class PredictionBackend:
+    def __init__(self, bolt_model_path):
+        self.roberta = pipeline(
+            "sentiment-analysis", model="siebert/sentiment-roberta-large-english"
+        )
+        self.bolt = bolt.SentimentClassifier(bolt_model_path)
+
+    def predict(self, sentence, engine):
+        start = time.time()
+        if engine == "bolt":
+            pred = self.bolt.predict_sentiment(sentence.lower()) >= 0.5
+        elif engine == "roberta":
+            pred = self.roberta(sentence)[0]["label"] == "POSITIVE"
+        else:
+            raise ValueError("Unsupported engine type '" +
+                             request.form["engine"] + "'")
+        end = time.time()
+        return pred, (end - start) * 1000
+
+
 app = Flask(__name__)
-
-roberta_sentiment = pipeline(
-    "sentiment-analysis", model="siebert/sentiment-roberta-large-english"
-)
-bolt_sentiment = bolt.SentimentClassifier("../Universe/my_model")
-
-
-def predict_with_bolt(sentence):
-    pred = bolt_sentiment.predict_sentiment(sentence.lower())
-    return pred >= 0.5
-
-
-def predict_with_roberta(sentence):
-    pred = roberta_sentiment(sentence)[0]
-    return pred["label"] == "POSITIVE"
+predictor = None
 
 
 @app.route("/")
@@ -32,16 +40,10 @@ def home():
 @app.route("/", methods=["POST"])
 def predict_sentiment():
     sentence = request.form["sentence"]
-    start = time.time()
-    if request.form["engine"] == "bolt":
-        pred = predict_with_bolt(sentence)
-    elif request.form["engine"] == "roberta":
-        pred = predict_with_roberta(sentence)
-    else:
-        raise ValueError("Unsupported engine type '" + request.form["engine"] + "'")
-    end = time.time()
+    engine = request.form["engine"]
 
-    latency = 1000 * (end - start)
+    pred, latency = predictor.predict(sentence, engine)
+
     if pred:
         return render_template(
             "home.html",
@@ -56,4 +58,11 @@ def predict_sentiment():
 
 
 if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        raise ValueError(
+            "Expected path to bolt model as command line argument.")
+
+    predictor = PredictionBackend(sys.argv[1])
+
+    # Set host = 0.0.0.0 so that the app is accessible outside of local via the machines ip address.
     app.run(debug=False, host="0.0.0.0")
