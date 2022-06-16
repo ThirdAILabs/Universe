@@ -1,3 +1,5 @@
+#pragma once
+
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/tests/MockBlock.h>
 #include <iomanip>
