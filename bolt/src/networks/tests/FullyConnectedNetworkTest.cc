@@ -68,10 +68,15 @@ static void testSimpleDatasetMultiLayerNetworkActivation(
 
   auto data = genDataset(false);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
-                /* learning_rate */ 0.001, /* epochs */ 2,
-                /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
-                /* verbose= */ false);
+  auto train_metrics =
+      network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                    /* learning_rate */ 0.001, /* epochs */ 2,
+                    /* rehash= */ 0, /* rebuild= */ 0,
+                    /* metric_names= */ {"mean_squared_error"},
+                    /* verbose= */ false);
+  ASSERT_LT(train_metrics.at("mean_squared_error").back(),
+            train_metrics.at("mean_squared_error").front());
+
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr,
@@ -100,18 +105,22 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(false);
 
-  network.train(data.data, data.labels, BinaryCrossEntropyLoss(),
-                /* learning_rate= */ 0.001, /* epochs= */ 2,
-                /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
-                /* verbose= */ true);
+  auto train_metrics =
+      network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                    /* learning_rate= */ 0.001, /* epochs= */ 5,
+                    /* rehash= */ 0, /* rebuild= */ 0,
+                    /* metric_names= */ {"mean_squared_error"},
+                    /* verbose= */ true);
+
+  ASSERT_LT(train_metrics.at("mean_squared_error").back(),
+            train_metrics.at("mean_squared_error").front());
+
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ true);
-  // Lower accuracy threshold to 0.6 because Sigmoid/BCE converges slower than
-  // ReLU/Tanh.
-  ASSERT_GE(test_metrics["categorical_accuracy"], 0.6);
+  ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
