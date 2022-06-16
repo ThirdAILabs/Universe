@@ -111,7 +111,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   std::vector<float> _b_velocity;
 
   SamplingConfig _sampling_config;
-  std::unique_ptr<hashing::DWTAHashFunction> _hasher;
+  std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
   std::vector<uint32_t> _rand_neurons;
 
@@ -130,6 +130,27 @@ class FullyConnectedLayer final : public SequentialLayer {
   std::vector<bool> _is_active;
 
   bool _force_sparse_for_inference;
+
+  static std::unique_ptr<hashing::HashFunction> assignHashFunction(
+      const SamplingConfig& config, uint64_t dim) {
+    switch (config._hash_function) {
+      case HashFunctionEnum::DWTA:
+        return std::make_unique<hashing::DWTAHashFunction>(
+            dim, config.hashes_per_table, config.num_tables, config.range_pow);
+
+      case HashFunctionEnum::FastSRP:
+        return std::make_unique<hashing::FastSRP>(dim, config.hashes_per_table,
+                                                  config.num_tables);
+
+      case HashFunctionEnum::SRP:
+        return std::make_unique<hashing::SparseRandomProjection>(
+            dim, config.hashes_per_table, config.num_tables);
+
+      // Not supposed to reach here but compiler complains
+      default:
+        throw std::invalid_argument("Hash function not supported.");
+    }
+  }
 
   void initOptimizer();
 
