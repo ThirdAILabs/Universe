@@ -16,16 +16,31 @@ void createBoltSubmodule(py::module_& module) {
 
 #if THIRDAI_EXPOSE_ALL
 #pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
-
   py::class_<thirdai::bolt::SamplingConfig>(
       bolt_submodule, "SamplingConfig",
       "SamplingConfig represents a layer's sampling hyperparameters.")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, std::string>(),
            py::arg("hashes_per_table"), py::arg("num_tables"),
            py::arg("range_pow"), py::arg("reservoir_size"),
-           "Builds a SamplingConfig object. range_pow must always be 3 * "
-           "hashes_per_table.")
+           py::arg("hash_function") = "DWTA",
+           "Builds a SamplingConfig object. \n\n"
+           "Arguments:\n"
+           " * hashes_per_table: Int - number of hashes to be concatenated in "
+           "each table."
+           " * num_tables: Int - number of hash tables."
+           " * range_pow: Int - hash range as a power of 2. E.g. if hash range "
+           "is 8, range_pow = 3. "
+           " Note that the correct range_pow differs for each hash function. "
+           "For DWTA, range_pow = 3 * hashes_per_table."
+           " For SRP or FastSRP, range_pow = hashes_per_table."
+           " * reservoir_size: Int - maximum number of elements stored in each "
+           "hash bucket."
+           " * hash_function: Pass hash function as string (Optional) - The "
+           "hash function "
+           "used for sparse training and inference. One of DWTA, SRP, or "
+           "FastSRP. Defaults to DWTA.")
       .def(py::init<>(), "Builds a default SamplingConfig object.");
+
 #endif
 
   py::enum_<ActivationFunction>(

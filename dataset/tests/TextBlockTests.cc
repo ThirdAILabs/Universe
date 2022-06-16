@@ -57,7 +57,7 @@ class TextBlockTest : public testing::Test {
   }
 
   static std::vector<SegmentedSparseFeatureVector> makeSegmentedVecs(
-      SentenceMatrix& matrix, std::vector<TextBlock> blocks) {
+      SentenceMatrix& matrix, std::vector<TextBlock>& blocks) {
     std::vector<SegmentedSparseFeatureVector> vecs;
     for (const auto& row : matrix) {
       SegmentedSparseFeatureVector vec;
@@ -76,7 +76,12 @@ class TextBlockTest : public testing::Test {
   static void extendVectorWithBlock(TextBlock& block,
                                     const std::vector<std::string>& input_row,
                                     SegmentedSparseFeatureVector& vec) {
-    block.addVectorSegment(input_row, vec);
+    std::vector<std::string_view> input_row_view(input_row.size());
+    for (uint32_t i = 0; i < input_row.size(); i++) {
+      input_row_view[i] =
+          std::string_view(input_row[i].c_str(), input_row[i].size());
+    }
+    block.addVectorSegment(input_row_view, vec);
   }
 
   /**
