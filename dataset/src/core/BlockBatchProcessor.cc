@@ -166,7 +166,11 @@ bolt::BoltVector BlockBatchProcessor::makeVector(
   // Let each block encode the input sample and adds a new segment
   // containing this encoding to the vector.
   for (auto& block : blocks) {
-    block->addVectorSegment(sample, *vec_ptr);
+    std::vector<std::string_view> sample_view(sample.size());
+    for (uint32_t i = 0; i < sample.size(); i++) {
+      sample_view[i] = std::string_view(sample[i].c_str(), sample[i].size());
+    }
+    block->addVectorSegment(sample_view, *vec_ptr);
   }
 
   return vec_ptr->toBoltVector();
