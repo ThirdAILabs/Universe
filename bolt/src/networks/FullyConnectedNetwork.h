@@ -12,6 +12,7 @@
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -124,6 +125,16 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   void enableSparseInference() {
     _sparse_inference_enabled = true;
     _layers.back()->forceSparseForInference();
+  }
+
+  void setLayerSparsity(uint32_t layer_index, float sparsity) {
+    if (layer_index >= _layers.size()) {
+      throw std::invalid_argument(
+          "Layer index of " + std::to_string(layer_index) +
+          " is larger than the maximum layer index of " +
+          std::to_string(layer_index - 1));
+    }
+    _layers.at(layer_index)->setSparsity(sparsity);
   }
 
  private:

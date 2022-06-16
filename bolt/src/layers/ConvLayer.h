@@ -82,6 +82,17 @@ class ConvLayer final : public SequentialLayer {
         "Error: setShallow not implemented for DLRM;");
   }
 
+  void setSparsity(float sparsity) final {
+    (void)sparsity;
+    // This is currently unimplemented because it would be duplicate code of
+    // FullyConnectedLayer, and instead of duplicating code we should come up
+    // with a better design. Perhaps FullyConnectedLayer and ConvLayer can
+    // subclass SparseLayer.
+    // TODO(josh)
+    throw thirdai::exceptions::NotImplemented(
+        "Cannot currently set the sparsity of a convolutional layer.");
+  }
+
   bool isShallow() final {
     throw thirdai::exceptions::NotImplemented(
         "Error: isShallow not implemented for DLRM;");

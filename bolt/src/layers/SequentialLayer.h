@@ -60,6 +60,8 @@ class SequentialLayer {
    */
   virtual void setShallow(bool shallow) = 0;
 
+  virtual void setSparsity(float sparsity) = 0;
+
   /**
    * Checks whether the layer is shallow, ie, it's optimizer is initialized or
    * uninitialized.

@@ -23,6 +23,8 @@ def gen_training_data(n_classes=10, n_samples=1000):
     examples = possible_one_hot_encodings[labels]
     noise = np.random.normal(0, 0.1, examples.shape)
     examples = examples + noise
+    labels = labels.astype("uint32")
+    examples = examples.astype("float32")
     return labels, examples, n_classes
 
 
@@ -43,7 +45,7 @@ def train_network(network, train_data, train_labels, epochs, learning_rate=0.000
     return times
 
 
-def get_categorical_acc(network, examples, labels, batch_size):
+def get_categorical_acc(network, examples, labels, batch_size=64):
     acc, _ = network.predict(
         examples, labels, batch_size, ["categorical_accuracy"], verbose=False
     )

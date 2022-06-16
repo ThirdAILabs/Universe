@@ -252,8 +252,8 @@ void createBoltSubmodule(py::module_& module) {
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("batch_size") = 0, py::arg("rehash") = 0,
-           py::arg("rebuild") = 0,
+           py::arg("batch_size") = 2048, py::arg("rehash") = 6400,
+           py::arg("rebuild") = 128000,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            "Trains the network on the given training data.\n"
@@ -327,7 +327,7 @@ void createBoltSubmodule(py::module_& module) {
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
       .def("predict", &PyNetwork::predict, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("batch_size") = 0,
+           py::arg("test_labels"), py::arg("batch_size") = 2048,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -436,7 +436,12 @@ void createBoltSubmodule(py::module_& module) {
       .def("set_biases", &PyNetwork::setBiases, py::arg("layer_index"),
            py::arg("new_biases"),
            "Sets the bias array at the given layer index to the given 1D Numpy "
-           "array.");
+           "array.")
+      .def("set_layer_sparsity", &PyNetwork::setLayerSparsity,
+           py::arg("layer_index"), py::arg("sparsity"),
+           "Sets the sparsity of the layer at the given index. The 0th layer "
+           "is the first layer after the input layer. Note that this will "
+           "autotune the sampling config to work for the new sparsity.");
 
   py::class_<PyDLRM>(bolt_submodule, "DLRM",
                      "DLRM network with space-efficient embedding tables.")

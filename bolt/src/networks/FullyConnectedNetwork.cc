@@ -68,7 +68,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
 
   auto end = std::chrono::high_resolution_clock::now();
 
-  this->printSummary();
+  this->getAndPrintSummary();
 
   std::cout
       << "Initialized Network in "
