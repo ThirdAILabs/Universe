@@ -1,0 +1,40 @@
+<body>
+  <style>
+    body {
+      background-color: {{background_color}};
+      font-family: 'Trebuchet MS', sans-serif;
+      justify-content: center;
+    }
+
+    h2 {
+      font-weight: normal;
+    }
+
+    #input-form {
+      text-align: center;
+      width: 60%;
+      padding-top: 100px;
+      margin: auto
+    }
+
+    #sentence-input {
+      font-size: 16pt;
+      width: 80%;
+    }
+  </style>
+  <div id="input-form">
+    <form method="POST">
+      <h2>Inference Engine</h2>
+      <select name="engine" style="font-size: 16pt;">
+        <option value="bolt">Bolt</option>
+        <option value="roberta">Roberta</option>
+      </select>
+      <h2>Input Sentence</h2>
+      <input name="sentence" id="sentence-input">
+      <input type="submit" style="display: none" />
+    </form>
+
+    <h2>Sentiment: {{ prediction }}</h2>
+    <h2>Query Time: {{ latency }} ms</h2>
+  </div>
+</body>
