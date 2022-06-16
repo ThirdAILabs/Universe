@@ -1,19 +1,19 @@
 #pragma once
 
-#include "Graph.h"
+#include <bolt/src/layers/BoltVector.h>
+#include <bolt/src/layers/FullyConnectedLayer.h>
 #include <queue>
 #include <stdexcept>
 
 namespace thirdai::bolt {
 
+class Node;
+
+using NodePtr = std::shared_ptr<Node>;
+
 class Node {
  public:
-  Node() : _graph(nullptr) {}
-
-  void compile(GraphContextPtr graph) {
-    _graph = std::move(graph);
-    compile();
-  }
+  virtual void compile() = 0;
 
   // Computes the forward pass for the node. The node will access its inputs
   // through the getOutput() method on is predecessor(s). The labels are an
@@ -23,6 +23,9 @@ class Node {
 
   // Computes the backwards pass through the node.
   virtual void backpropagate(uint32_t batch_index) = 0;
+
+  // Updates any trainable parameters
+  virtual void updateParameters(float learning_rate, uint32_t batch_cnt) = 0;
 
   // Returns the ith output of the node.
   virtual BoltVector& getOutput(uint32_t batch_index) = 0;
@@ -54,15 +57,9 @@ class Node {
   virtual void addSparseLayers(
       std::vector<std::shared_ptr<FullyConnectedLayer>>& sparse_layers) = 0;
 
+  virtual bool isInputNode() const = 0;
+
   virtual ~Node() = default;
-
- protected:
-  // Compilation for the node.
-  virtual void compile() = 0;
-
-  // Pointer to the graph object itself in case the node needs to access
-  // additional context.
-  GraphContextPtr _graph;
 };
 
 }  // namespace thirdai::bolt

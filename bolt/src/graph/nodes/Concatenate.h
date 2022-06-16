@@ -14,6 +14,20 @@ class Concatenate final : public Node {
         _sparse_concatenated_dim(0),
         _has_sparse_predecessor(false) {}
 
+  void compile() final {
+    for (const auto& node : _predecessors) {
+      if (node->isInputNode()) {
+        throw std::invalid_argument(
+            "Input layer cannot be part of a Concatenate layer");
+      }
+
+      _concatenated_dim += node->outputDim();
+      _sparse_concatenated_dim += node->sparseOutputDim();
+      _has_sparse_predecessor =
+          _has_sparse_predecessor || node->hasSparseOutput();
+    }
+  }
+
   // This may be a no-op, or we may need to map sparse indices to disjoint
   // ranges.
   void forward(uint32_t batch_index, const BoltVector* labels) final {
@@ -27,6 +41,11 @@ class Concatenate final : public Node {
   // This may be  no-op or we may need to map disjoint ranges of sparse indices
   // to the dim of each sub-layer.
   void backpropagate(uint32_t batch_index) final { (void)batch_index; }
+
+  void updateParameters(float learning_rate, uint32_t batch_cnt) final {
+    (void)learning_rate;
+    (void)batch_cnt;
+  }
 
   BoltVector& getOutput(uint32_t batch_index) final {
     return _outputs[batch_index];
@@ -135,21 +154,7 @@ class Concatenate final : public Node {
     }
   }
 
- protected:
-  void compile() final {
-    for (const auto& node : _predecessors) {
-      bool is_input = dynamic_cast<Input*>(node.get()) != nullptr;
-      if (is_input) {
-        throw std::invalid_argument(
-            "Input layer cannot be part of a Concatenate layer");
-      }
-
-      _concatenated_dim += node->outputDim();
-      _sparse_concatenated_dim += node->sparseOutputDim();
-      _has_sparse_predecessor =
-          _has_sparse_predecessor || node->hasSparseOutput();
-    }
-  }
+  bool isInputNode() const final { return false; }
 
  private:
   class SparsePredecesor {

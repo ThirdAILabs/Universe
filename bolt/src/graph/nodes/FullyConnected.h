@@ -9,6 +9,16 @@ class FullyConnectedLayerNode final : public Node {
   explicit FullyConnectedLayerNode(FullyConnectedLayerConfig& config)
       : _layer(nullptr), _config(config), _predecessor(nullptr) {}
 
+  void compile() final {
+    if (_predecessor == nullptr) {
+      throw std::invalid_argument(
+          "FullyConnected layer expected to have exactly one predecessor.");
+    }
+
+    _layer = std::make_shared<FullyConnectedLayer>(_config,
+                                                   _predecessor->outputDim());
+  }
+
   void addPredecessor(NodePtr node) {
     if (_predecessor != nullptr) {
       throw std::invalid_argument(
@@ -26,6 +36,10 @@ class FullyConnectedLayerNode final : public Node {
   void backpropagate(uint32_t batch_index) final {
     _layer->backpropagate(_predecessor->getOutput(batch_index),
                           _outputs[batch_index]);
+  }
+
+  void updateParameters(float learning_rate, uint32_t batch_cnt) final {
+    _layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA1, EPS);
   }
 
   BoltVector& getOutput(uint32_t batch_index) final {
@@ -51,16 +65,7 @@ class FullyConnectedLayerNode final : public Node {
     sparse_layers.push_back(_layer);
   }
 
- protected:
-  void compile() final {
-    if (_predecessor == nullptr) {
-      throw std::invalid_argument(
-          "FullyConnected layer expected to have exactly one predecessor.");
-    }
-
-    _layer = std::make_shared<FullyConnectedLayer>(_config,
-                                                   _predecessor->outputDim());
-  }
+  bool isInputNode() const final { return false; }
 
  private:
   std::shared_ptr<FullyConnectedLayer> _layer;

@@ -26,6 +26,11 @@ class Input final : public Node {
 
   void backpropagate(uint32_t batch_index) final { (void)batch_index; }
 
+  void updateParameters(float learning_rate, uint32_t batch_cnt) final {
+    (void)learning_rate;
+    (void)batch_cnt;
+  }
+
   void setInputs(BoltBatch* inputs) { _input_batch = inputs; }
 
   BoltVector& getOutput(uint32_t batch_index) final {
@@ -55,6 +60,8 @@ class Input final : public Node {
       std::vector<std::shared_ptr<FullyConnectedLayer>>& sparse_layers) final {
     (void)sparse_layers;
   }
+
+  bool isInputNode() const final { return true; }
 
  private:
   BoltBatch* _input_batch;
