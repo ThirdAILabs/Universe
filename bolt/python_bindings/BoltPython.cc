@@ -7,6 +7,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <limits>
+#include <sstream>
 #include <string>
 
 namespace thirdai::bolt::python {
@@ -16,16 +17,31 @@ void createBoltSubmodule(py::module_& module) {
 
 #if THIRDAI_EXPOSE_ALL
 #pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
-
   py::class_<thirdai::bolt::SamplingConfig>(
       bolt_submodule, "SamplingConfig",
       "SamplingConfig represents a layer's sampling hyperparameters.")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, std::string>(),
            py::arg("hashes_per_table"), py::arg("num_tables"),
            py::arg("range_pow"), py::arg("reservoir_size"),
-           "Builds a SamplingConfig object. range_pow must always be 3 * "
-           "hashes_per_table.")
+           py::arg("hash_function") = "DWTA",
+           "Builds a SamplingConfig object. \n\n"
+           "Arguments:\n"
+           " * hashes_per_table: Int - number of hashes to be concatenated in "
+           "each table."
+           " * num_tables: Int - number of hash tables."
+           " * range_pow: Int - hash range as a power of 2. E.g. if hash range "
+           "is 8, range_pow = 3. "
+           " Note that the correct range_pow differs for each hash function. "
+           "For DWTA, range_pow = 3 * hashes_per_table."
+           " For SRP or FastSRP, range_pow = hashes_per_table."
+           " * reservoir_size: Int - maximum number of elements stored in each "
+           "hash bucket."
+           " * hash_function: Pass hash function as string (Optional) - The "
+           "hash function "
+           "used for sparse training and inference. One of DWTA, SRP, or "
+           "FastSRP. Defaults to DWTA.")
       .def(py::init<>(), "Builds a default SamplingConfig object.");
+
 #endif
 
   py::enum_<ActivationFunction>(
@@ -236,6 +252,19 @@ void createBoltSubmodule(py::module_& module) {
            "layers in the neural network.\n"
            " * input_dim: Int (positive) - Dimension of input vectors in the "
            "dataset.")
+      .def("__str__",
+           [](const PyNetwork& network) {
+             std::stringstream summary;
+             network.buildNetworkSummary(summary);
+             return summary.str();
+           })
+      .def(
+          "summary", &PyNetwork::printSummary, py::arg("detailed") = false,
+          "Prints a summary of the network.\n"
+          "Arguments:\n"
+          " * detailed: boolean. Optional. When specified to \"True\", "
+          "summary will additionally print layer config details for each layer "
+          "in the network.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),
@@ -381,11 +410,26 @@ void createBoltSubmodule(py::module_& module) {
            "in the training routine. It is recommended to call this method "
            "right before the last training "
            "epoch.")
-      .def("save", &PyNetwork::save, py::arg("filename"),
+      .def("save_for_inference", &PyNetwork::saveForInference,
+           py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
-           "folders to be created")
+           "folders to be created. Saves only essential parameters for "
+           "inference, e.g. not the optimizer state")
       .def_static("load", &PyNetwork::load, py::arg("filename"),
                   "Loads and builds a saved network from file.")
+      .def("checkpoint", &PyNetwork::checkpoint, py::arg("filename"),
+           "Saves the network to a file. The file path must not require any "
+           "folders to be created. Saves all the paramters needed for "
+           "tranining. "
+           "This will throw an error if the model has been trimmed for "
+           "inference.")
+      .def("trim_for_inference", &PyNetwork::trimForInference,
+           "Removes all parameters that are not essential for inference, "
+           "shrinking the model")
+      .def("reinitialize_optimizer_for_training",
+           &PyNetwork::reinitOptimizerForTraining,
+           "If the model previously was trimmed for inference, this will "
+           "reinitialize the optimizer state, allowing training again.")
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "
            "matrix.")
@@ -399,6 +443,9 @@ void createBoltSubmodule(py::module_& module) {
            "Sets the weight matrix at the given layer index to the given 2D "
            "Numpy matrix. Throws an error if the dimension of the given weight "
            "matrix does not match the layer's current weight matrix.")
+      .def("ready_for_training", &PyNetwork::isReadyForTraining,
+           "Returns False if the optimizer state is not initialized, True "
+           "otherwise. Call resume_training to initialize optimizer")
       .def("get_biases", &PyNetwork::getBiases, py::arg("layer_index"),
            "Returns the bias array at the given layer index as a 1D Numpy "
            "array.")
