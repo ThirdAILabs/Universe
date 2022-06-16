@@ -1,4 +1,4 @@
-#include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/metrics/Metric.h>
 #include <gtest/gtest.h>
 #include <cmath>
 #include <stdexcept>
