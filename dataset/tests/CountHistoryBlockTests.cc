@@ -162,11 +162,23 @@ TEST_F(CountHistoryBlockTests, ManyUsersManyIncrements) {
 
 TEST_F(CountHistoryBlockTests, ErrorDoesNotGrowOverTime) {
   uint32_t n_ids = 500;
-  auto samples = makeTrivialSamples(n_ids, /* n_days = */ 365, /* day_offset = */ 365, /* inc_by_id = */ true);
+  auto samples = makeTrivialSamples(n_ids, /* n_days = */ 365, /* day_offset = */ 365);
   std::vector<Window> windows{Window(/* lag = */ 0, /* size = */ 30)};
   DynamicCountsConfig config(/* max_range = */ 1, /* n_rows = */ 5, /* range_pow = */ 14);
   std::vector<std::shared_ptr<Block>> blocks{std::make_shared<CountHistoryBlock>(/* has_count_col = */ false, /* id_col = */ 0, /* timestamp_col = */ 1, /* count_col = */ 0, windows, config)};
+  auto vecs = makeSparseSegmentedVecs(samples, blocks);
   // Intentionally add too many, and check that error does not increase after first month.
+  
+  float max = 0;
+  for (uint32_t i = 0; i < vecs.size() / 2; i++) {
+    auto entries = vectorEntries(vecs[i]);
+    max = std::max(max, entries[0]);
+  }
+
+  for (uint32_t i = vecs.size() / 2; i < vecs.size(); i++) {
+    auto entries = vectorEntries(vecs[i]);
+    ASSERT_LE(entries[0], max * 1.1);
+  }
 
 }
 
