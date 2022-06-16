@@ -15,6 +15,13 @@ FullyConnectedLayer::FullyConnectedLayer(
       _prev_dim(prev_dim),
       _sparse_dim(config.sparsity * config.dim),
       _sparsity(config.sparsity),
+      _is_shallow(false),
+      _shallow_save(false),
+
+      // trainable parameter not present in config file
+      // TODO(Shubh) : should we add a trainable parameter to the config file?
+      _trainable(true),
+
       _act_func(config.act_func),
       _weights(config.dim * prev_dim),
       _w_gradient(config.dim * prev_dim, 0),
@@ -36,15 +43,16 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
-    _hasher = std::make_unique<hashing::DWTAHashFunction>(
-        _prev_dim, _sampling_config.hashes_per_table,
-        _sampling_config.num_tables, _sampling_config.range_pow);
+    _hasher = assignHashFunction(_sampling_config, _prev_dim);
 
     _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow);
 
-    buildHashTables();
+    /* Initializing hence, we need to force build the hash tables
+     * Hence, force_build is true here in buildHashTablesImpl(force_build)
+     */
+    buildHashTablesImpl(true);
 
     _rand_neurons = std::vector<uint32_t>(_dim);
 
@@ -151,6 +159,9 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
         if (max_act < act) {
           max_act = act;
         }
+        break;
+      case ActivationFunction::Sigmoid:
+        output.activations[n] = 1 / (1 + std::exp(-act));
         break;
       case ActivationFunction::Linear:
         output.activations[n] = act;
@@ -269,7 +280,26 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                               input.len, hashes.data());
   }
 
-  if (_force_sparse_for_inference && _act_func == ActivationFunction::Softmax) {
+  if (_force_sparse_for_inference &&
+      (_act_func == ActivationFunction::Softmax ||
+       _act_func == ActivationFunction::Sigmoid)) {
+    /**
+     * QueryBySet just returns a set of the elements in the given buckets of the
+     * hash table.
+     *
+     * QueryAndInsertForInference returns the set of elements in the given
+     * buckets but will also insert the labels (during training only) for the
+     * vector into the buckets the vector maps to if they are not already
+     * present in the buckets. The intuition is that during sparse inference
+     * this will help force the hash tables to map vectors towards buckets that
+     * contain their correct labels. This is specific to the output layer.
+     *
+     * We call QueryAndInsertForInference if the following conditions are met:
+     *   1. We have sparse inference enabled.
+     *   2. Activation = Softmax or Sigmoid, meaning it's a classification task,
+     *      and that the given layer is the last layer, as this is the only
+     *      place where we use these activation functions.
+     */
     _hash_table->queryAndInsertForInference(hashes.data(), active_set,
                                             _sparse_dim);
   } else {
@@ -307,6 +337,13 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
   float B1_bias_corrected = static_cast<float>(1 - pow(B1, iter));
   float B2_bias_corrected = static_cast<float>(1 - pow(B2, iter));
 
+  // if the layer is non-trainable, skip updating the parameters
+  if (!_trainable) {
+    cleanupWithinBatchVars();
+    return;
+  }
+
+  // continue if trainable layer
   if (!_prev_is_dense && !_this_is_dense) {
     updateSparseSparseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
                                        B2_bias_corrected);
@@ -460,8 +497,9 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
   _w_gradient[indx] = 0;
 }
 
-void FullyConnectedLayer::buildHashTables() {
-  if (_sparsity >= 1.0 || _force_sparse_for_inference) {
+void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
+  if ((!_trainable && !force_build) || _sparsity >= 1.0 ||
+      _force_sparse_for_inference) {
     return;
   }
   uint64_t num_tables = _hash_table->numTables();
@@ -478,13 +516,16 @@ void FullyConnectedLayer::buildHashTables() {
   _hash_table->insertSequential(_dim, 0, hashes.data());
 }
 
+/* setting force_build to false. force_build true only when setting weights or
+ * initializing
+ */
+void FullyConnectedLayer::buildHashTables() { buildHashTablesImpl(false); }
+
 void FullyConnectedLayer::reBuildHashFunction() {
-  if (_sparsity >= 1.0 || _force_sparse_for_inference) {
+  if (!_trainable || _sparsity >= 1.0 || _force_sparse_for_inference) {
     return;
   }
-  _hasher = std::make_unique<hashing::DWTAHashFunction>(
-      _prev_dim, _sampling_config.hashes_per_table, _sampling_config.num_tables,
-      _sampling_config.range_pow);
+  _hasher = assignHashFunction(_sampling_config, _prev_dim);
 }
 
 void FullyConnectedLayer::shuffleRandNeurons() {
@@ -501,6 +542,12 @@ float* FullyConnectedLayer::getWeights() {
   return weights_copy;
 }
 
+void FullyConnectedLayer::setTrainable(bool trainable) {
+  _trainable = trainable;
+}
+
+bool FullyConnectedLayer::getTrainable() { return _trainable; }
+
 float* FullyConnectedLayer::getBiases() {
   float* biases_copy = new float[_dim];
   std::copy(_biases.begin(), _biases.end(), biases_copy);
@@ -510,10 +557,89 @@ float* FullyConnectedLayer::getBiases() {
 
 void FullyConnectedLayer::setWeights(const float* new_weights) {
   std::copy(new_weights, new_weights + _dim * _prev_dim, _weights.begin());
+
+  /* Setting weights => we need to force build the hash tables
+   * Hence, force_build is true here in buildHashTablesImpl(force_build)
+   */
+  buildHashTablesImpl(true);
 }
 
 void FullyConnectedLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
+}
+
+void FullyConnectedLayer::setShallow(bool shallow) {
+  /**
+   * Initialize optimizer only when layer is currently shallow and shallow is
+   * false. Remove optimizer only if the layer is currently non-shallow but
+   * shallow is true
+   */
+  if (!_is_shallow && shallow) {
+    this->removeOptimizer();
+  } else if (_is_shallow && !shallow) {
+    this->initOptimizer();
+  }
+  _is_shallow = shallow;
+}
+
+void FullyConnectedLayer::setShallowSave(bool shallow) {
+  _shallow_save = shallow;
+}
+
+void FullyConnectedLayer::initOptimizer() {
+  _w_gradient.assign(_dim * _prev_dim, 0);
+  _w_momentum.assign(_dim * _prev_dim, 0);
+  _w_velocity.assign(_dim * _prev_dim, 0);
+
+  _b_gradient.assign(_dim, 0);
+  _b_momentum.assign(_dim, 0);
+  _b_velocity.assign(_dim, 0);
+}
+
+void FullyConnectedLayer::removeOptimizer() {
+  _w_gradient.clear();
+  _w_momentum.clear();
+  _w_velocity.clear();
+
+  _b_gradient.clear();
+  _b_momentum.clear();
+  _b_velocity.clear();
+}
+
+void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
+                                            bool detailed) {
+  summary << "dim=" << _dim << ", sparsity=" << _sparsity << ", act_func=";
+  switch (_act_func) {
+    case ActivationFunction::ReLU:
+      summary << "ReLU";
+      break;
+    case ActivationFunction::Softmax:
+      summary << "Softmax";
+      break;
+    case ActivationFunction::Sigmoid:
+      summary << "Sigmoid";
+      break;
+    case ActivationFunction::Linear:
+      summary << "Linear";
+      break;
+    case ActivationFunction::Tanh:
+      summary << "Tanh";
+      break;
+  }
+
+  if (!detailed) {
+    summary << "\n";
+    return;
+  }
+
+  summary << " (hashes_per_table=" << _sampling_config.hashes_per_table
+          << ", num_tables=" << _sampling_config.num_tables
+          << ", range_pow=" << _sampling_config.range_pow
+          << ", resevoir_size=" << _sampling_config.reservoir_size
+          << ", hash_function="
+          << getHashString(_sampling_config._hash_function) << ")";
+
+  summary << "\n";
 }
 
 }  // namespace thirdai::bolt

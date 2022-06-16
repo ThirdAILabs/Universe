@@ -1,6 +1,10 @@
 #include "TextClassifier.h"
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
+#include <bolt/src/loss_functions/LossFunctions.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <algorithm>
 #include <fstream>
 #include <memory>
@@ -30,6 +34,7 @@ static uint32_t getHiddenLayerSize(const std::string& model_size,
 static float getHiddenLayerSparsity(uint64_t layer_size);
 static std::optional<uint64_t> getSystemRam();
 static uint64_t getMemoryBudget(const std::string& model_size);
+static bool canLoadDatasetInMemory(const std::string& filename);
 
 TextClassifier::TextClassifier(const std::string& model_size,
                                uint32_t n_classes) {
@@ -56,71 +61,49 @@ TextClassifier::TextClassifier(const std::string& model_size,
 
 void TextClassifier::train(const std::string& filename, uint32_t epochs,
                            float learning_rate) {
-  std::shared_ptr<dataset::DataLoader> data_loader =
-      std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
-
-  dataset::StreamingDataset dataset(data_loader, _batch_processor);
+  auto dataset = loadStreamingDataset(filename);
 
   CategoricalCrossEntropyLoss loss;
 
-  if (epochs == 1) {
-    trainOnStreamingDataset(dataset, loss, learning_rate);
+  if (!canLoadDatasetInMemory(filename)) {
+    for (uint32_t e = 0; e < epochs; e++) {
+      // Train on streaming dataset
+      _model->trainOnStream(dataset, loss, learning_rate);
+
+      // Create new stream for next epoch with new data loader.
+      dataset = loadStreamingDataset(filename);
+    }
+
   } else {
-    auto in_memory_dataset = dataset.loadInMemory();
+    auto [train_data, train_labels] = dataset->loadInMemory();
 
-    _model->train(in_memory_dataset.data, in_memory_dataset.labels, loss,
-                  learning_rate, 1);
+    _model->train(train_data, train_labels, loss, learning_rate, 1);
     _model->enableSparseInference();
-    _model->train(in_memory_dataset.data, in_memory_dataset.labels, loss,
-                  learning_rate, epochs - 1);
-  }
-}
-
-void TextClassifier::trainOnStreamingDataset(dataset::StreamingDataset& dataset,
-                                             const LossFunction& loss,
-                                             float learning_rate) {
-  _model->initializeNetworkState(dataset.getMaxBatchSize(), false);
-
-  BoltBatch outputs = _model->getOutputs(dataset.getMaxBatchSize(), false);
-
-  MetricAggregator metrics({});
-
-  uint32_t rehash_batch = 0, rebuild_batch = 0;
-  while (auto batch = dataset.nextBatch()) {
-    _model->processTrainingBatch(batch->first, outputs, batch->second, loss,
-                                 learning_rate, rehash_batch, rebuild_batch,
-                                 metrics);
+    _model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
   }
 }
 
 void TextClassifier::predict(
     const std::string& filename,
     const std::optional<std::string>& output_filename) {
-  std::shared_ptr<dataset::DataLoader> data_loader =
-      std::make_shared<dataset::SimpleFileDataLoader>(filename, 256);
-
-  dataset::StreamingDataset dataset(data_loader, _batch_processor);
+  auto dataset = loadStreamingDataset(filename);
 
   std::optional<std::ofstream> output_file;
   if (output_filename) {
     output_file = std::ofstream(*output_filename);
+    if (!output_file->good() || output_file->bad() || output_file->fail() ||
+        !output_file->is_open()) {
+      throw std::runtime_error("Unable to open output file '" +
+                               *output_filename + "'");
+    }
   }
 
-  MetricAggregator metrics({"categorical_accuracy"});
-
-  _model->initializeNetworkState(dataset.getMaxBatchSize(),
-                                 /* force_dense= */ false);
-  BoltBatch outputs =
-      _model->getOutputs(dataset.getMaxBatchSize(), /* force_dense= */ false);
-
-  while (auto batch = dataset.nextBatch()) {
-    _model->processTestBatch(batch->first, outputs, &batch->second,
-                             /* output_active_neurons= */ nullptr,
-                             /* output_activations = */ nullptr, metrics,
-                             /* compute_metrics= */ true);
-
-    for (uint32_t batch_id = 0; batch_id < batch->first.getBatchSize();
-         batch_id++) {
+  auto print_predictions_callback = [&](const BoltBatch& outputs,
+                                        uint32_t batch_size) {
+    if (!output_file) {
+      return;
+    }
+    for (uint32_t batch_id = 0; batch_id < batch_size; batch_id++) {
       float max_act = 0.0;
       uint32_t pred = 0;
       for (uint32_t i = 0; i < outputs[batch_id].len; i++) {
@@ -133,13 +116,20 @@ void TextClassifier::predict(
           }
         }
       }
-      if (output_file) {
-        (*output_file) << _batch_processor->getClassName(pred) << std::endl;
-      }
-    }
-  }
 
-  metrics.logAndReset();
+      (*output_file) << _batch_processor->getClassName(pred) << std::endl;
+    }
+  };
+
+  /*
+    We are using predict with the stream directly because we only need a single
+    pass through the dataset, so this is more memory efficient, and we don't
+    have to worry about storing the activations in memory to compute the
+    predictions, and can instead compute the predictions using the
+    back_callback.
+  */
+  _model->predictOnStream(dataset, {"categorical_accuracy"},
+                          print_predictions_callback);
 
   if (output_file) {
     output_file->close();
@@ -262,6 +252,31 @@ std::optional<uint64_t> getSystemRam() {
   return status.ullTotalPhys;
 #endif
   return std::nullopt;
+}
+
+bool canLoadDatasetInMemory(const std::string& filename) {
+  auto total_ram = getSystemRam().value();
+
+#if defined(__APPLE__) || defined(__linux__)
+  // TODO(Nicholas): separate file size method for windows
+  struct stat file_stats;
+
+  if (!stat(filename.c_str(), &file_stats)) {
+    uint64_t file_size = file_stats.st_size;
+    return total_ram / 2 >= file_size;
+  }
+#elif _WIN32
+  // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/stat-functions?redirectedfrom=MSDN&view=msvc-170
+
+  struct _stat64 file_stats;
+  if (!_stat64(filename.c_str(), &file_stats)) {
+    uint64_t file_size = file_stats.st_size;
+    return total_ram / 2 >= file_size;
+  }
+
+#endif
+
+  throw std::runtime_error("Unable to get filesize of '" + filename + "'");
 }
 
 }  // namespace thirdai::bolt

@@ -10,50 +10,7 @@ import platform
 import psutil
 import mlflow
 import argparse
-
-
-def log_subconfig(name: str, subconfig: Dict[str, Any]):
-    for param, val in subconfig.items():
-        mlflow.log_param(f"{name}_{param}", val)
-
-
-def log_machine_info():
-    machine_info = {
-        "load_before_experiment": os.getloadavg()[2],
-        "platform": platform.platform(),
-        "platform_version": platform.version(),
-        "platform_release": platform.release(),
-        "architecture": platform.machine(),
-        "processor": platform.processor(),
-        "hostname": socket.gethostname(),
-        "ram_gb": round(psutil.virtual_memory().total / (1024.0**3)),
-        "num_cores": psutil.cpu_count(logical=True),
-    }
-
-    mlflow.log_params(machine_info)
-
-
-def initialize_mlfow_logging_for_bolt(
-    run_name: str, config_filename: str, config: Dict[str, Any]
-):
-    mlflow.set_experiment(config["job"])
-
-    dataset = config["dataset"]["train_data"].split("/")[-1]
-    mlflow.start_run(
-        run_name=run_name,
-        tags={"dataset": dataset},
-    )
-
-    mlflow.log_artifact(config_filename)
-
-    log_machine_info()
-
-    for name, subconfig in config.items():
-        if isinstance(subconfig, dict):
-            log_subconfig(name, subconfig)
-        if isinstance(subconfig, list):
-            for i, subconfig_i in enumerate(subconfig):
-                log_subconfig(f"{name}_{i}", subconfig_i)
+from utils import log_config_info, log_machine_info, start_mlflow
 
 
 def log_training_metrics(metrics: Dict[str, List[float]]):
@@ -89,6 +46,7 @@ def create_fully_connected_layer_configs(
                     num_tables=config.get("num_tables", 0),
                     range_pow=config.get("range_pow", 0),
                     reservoir_size=config.get("reservoir_size", 128),
+                    hash_function=config.get("hash_function", "DWTA"),
                 ),
             )
 
@@ -217,8 +175,16 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
     test_metrics = config["params"]["test_metrics"]
 
     for e in range(epochs):
+        # Use keyword arguments to skip batch_size parameter.
         metrics = network.train(
-            train_x, train_y, loss, learning_rate, 1, rehash, rebuild, train_metrics
+            train_data=train_x,
+            train_labels=train_y,
+            loss_fn=loss,
+            learning_rate=learning_rate,
+            epochs=1,
+            rehash=rehash,
+            rebuild=rebuild,
+            metrics=train_metrics,
         )
         if mlflow_enabled:
             log_training_metrics(metrics)
@@ -227,18 +193,29 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
             network.enable_sparse_inference()
 
         if max_test_batches is None:
-            metrics, _ = network.predict(test_x, test_y, test_metrics)
+            # Use keyword arguments to skip batch_size parameter.
+            metrics, _ = network.predict(
+                test_data=test_x, test_labels=test_y, metrics=test_metrics
+            )
             if mlflow_enabled:
                 mlflow.log_metrics(metrics)
         else:
+            # Use keyword arguments to skip batch_size parameter.
             metrics, _ = network.predict(
-                test_x, test_y, test_metrics, True, max_test_batches
+                test_data=test_x,
+                test_labels=test_y,
+                metrics=test_metrics,
+                verbose=True,
+                batch_limit=max_test_batches,
             )
             if mlflow_enabled:
                 mlflow.log_metrics(metrics)
     if not max_test_batches is None:
         # If we limited the number of test batches during training we run on the whole test set at the end.
-        metrics, _ = network.predict(test_x, test_y, test_metrics)
+        # Use keyword arguments to skip batch_size parameter.
+        metrics, _ = network.predict(
+            test_data=test_x, test_labels=test_y, metrics=test_metrics
+        )
         if mlflow_enabled:
             mlflow.log_metrics(metrics)
 
@@ -280,7 +257,14 @@ def train_dlrm(config: Dict[str, Any], mlflow_enabled: bool):
 
     for _ in range(epochs):
         metrics = dlrm.train(
-            train_x, train_y, loss, learning_rate, 1, rehash, rebuild, train_metrics
+            train_x,
+            train_y,
+            loss,
+            learning_rate,
+            1,
+            rehash,
+            rebuild,
+            train_metrics,
         )
         if mlflow_enabled:
             log_training_metrics(metrics)
@@ -330,6 +314,11 @@ def build_arg_parser():
         help="Disable mlflow logging for the current run.",
     )
     parser.add_argument(
+        "--disable_upload_artifacts",
+        action="store_true",
+        help="Disable the mlflow artifact file logging for the current run.",
+    )
+    parser.add_argument(
         "--run_name",
         default="",
         type=str,
@@ -349,16 +338,18 @@ def main():
         parser.print_usage()
         raise ValueError("Error: --run_name is required when using mlflow logging.")
 
-    config = toml.load(sys.argv[1])
+    config_filename = sys.argv[1]
+    config = toml.load(config_filename)
 
     if mlflow_enabled:
-        file_dir = os.path.dirname(os.path.abspath(__file__))
-        file_name = os.path.join(file_dir, "../config.toml")
-        with open(file_name) as f:
-            parsed_config = toml.load(f)
-        mlflow.set_tracking_uri(parsed_config["tracking"]["uri"])
-
-        initialize_mlfow_logging_for_bolt(args.run_name, sys.argv[1], config)
+        experiment_name = config["job"]
+        dataset = config["dataset"]["train_data"].split("/")[-1]
+        start_mlflow(experiment_name, args.run_name, dataset)
+        # TODO(vihan): Get the credential authentication working in github actions
+        if not args.disable_upload_artifacts:
+            mlflow.log_artifact(config_filename)
+        log_machine_info()
+        log_config_info(config)
 
     if is_fcn(config):
         train_fcn(config, mlflow_enabled)

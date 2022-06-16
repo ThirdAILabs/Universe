@@ -2,8 +2,10 @@
 
 #include "LayerUtils.h"
 #include <cmath>
+#include <exception>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -43,6 +45,20 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
   float sparsity;
   ActivationFunction act_func;
   SamplingConfig sampling_config;
+
+  FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
+                            const std::string& _act_func,
+                            SamplingConfig _config)
+      : FullyConnectedLayerConfig(_dim, _sparsity,
+                                  getActivationFunction(_act_func), _config) {}
+
+  FullyConnectedLayerConfig(uint64_t _dim, const std::string& _act_func)
+      : FullyConnectedLayerConfig(_dim, getActivationFunction(_act_func)) {}
+
+  FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
+                            const std::string& _act_func)
+      : FullyConnectedLayerConfig(_dim, _sparsity,
+                                  getActivationFunction(_act_func)) {}
 
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
                             ActivationFunction _act_func,
@@ -123,7 +139,8 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
     sampling_config = SamplingConfig(/* hashes_per_table = */ hashes_per_table,
                                      /* num_tables = */ num_tables,
                                      /* range_pow = */ range_pow,
-                                     /* reservoir_size = */ reservoir_size);
+                                     /* reservoir_size = */ reservoir_size,
+                                     /* _hash_function*/ "DWTA");
   }
 
   uint64_t getDim() const final { return dim; }
@@ -152,6 +169,9 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
       case ActivationFunction::Softmax:
         out << ", act_func=Softmax";
         break;
+      case ActivationFunction::Sigmoid:
+        out << ", act_func=Sigmoid";
+        break;
       case ActivationFunction::Linear:
         out << ", act_func=Linear";
         break;
@@ -164,7 +184,9 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
       out << "hashes_per_table=" << sampling_config.hashes_per_table
           << ", num_tables=" << sampling_config.num_tables
           << ", range_pow=" << sampling_config.range_pow
-          << ", reservoir_size=" << sampling_config.reservoir_size << "}";
+          << ", reservoir_size=" << sampling_config.reservoir_size
+          << ", hash_function=" << getHashString(sampling_config._hash_function)
+          << "}";
     }
   }
 };
@@ -205,7 +227,7 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
       uint32_t k = rp / 3;
       uint32_t rs = (num_filters * 4) / (1 << rp);
       uint32_t l = sparsity < 0.1 ? 256 : 64;
-      sampling_config = SamplingConfig(k, l, rp, rs);
+      sampling_config = SamplingConfig(k, l, rp, rs, "DWTA");
     } else {
       sampling_config = SamplingConfig();
     }
@@ -228,6 +250,9 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
       case ActivationFunction::Softmax:
         out << ", act_func=Softmax";
         break;
+      case ActivationFunction::Sigmoid:
+        out << ", act_func=Sigmoid";
+        break;
       case ActivationFunction::Linear:
         out << ", act_func=Linear";
         break;
@@ -242,7 +267,9 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
       out << "hashes_per_table=" << sampling_config.hashes_per_table
           << ", num_tables=" << sampling_config.num_tables
           << ", range_pow=" << sampling_config.range_pow
-          << ", reservoir_size=" << sampling_config.reservoir_size << "}";
+          << ", reservoir_size=" << sampling_config.reservoir_size
+          << ", hash_function=" << getHashString(sampling_config._hash_function)
+          << "}";
     }
   }
 };

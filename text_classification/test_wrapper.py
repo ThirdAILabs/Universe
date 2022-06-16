@@ -4,6 +4,12 @@ from datasets import load_dataset_builder
 from datasets import load_dataset
 import re
 from collections import namedtuple
+import os
+
+# All of these are integration tests because they require you to train and save
+# the yelp model first
+pytestmark = [pytest.mark.integration]
+
 
 name = "yelp_review_full"
 content = "text"
@@ -11,7 +17,7 @@ label = "label"
 train_file_path = "./" + name + "_train.svm"
 test_file_path = "./" + name + "_test.svm"
 label_dict = {0: 0, 1: 0, 2: 0, 3: -1, 4: 1, 5: 1}
-model_path = "./sentiment_pretrained_yelp_cp"
+model_path = "./sentiment_pretrained_yelp_cp.serialized"
 murmur_dim = 100000
 seed = 42
 
@@ -25,6 +31,12 @@ def download_dataset(
     each dataset. You can find the specifics of each dataset on the
     Huggingface website. https://huggingface.co/datasets
     """
+    if os.path.isfile(svm_path_1) and os.path.isfile(svm_path_2):
+        print(
+            "Reusing existing tokenized files. If this behavior is not intended, please delete the files."
+        )
+        return
+
     dataset_1 = load_dataset(name, extra, split="train")
     dataset_2 = load_dataset(name, extra, split="test")
 
@@ -136,13 +148,22 @@ def train_yelp(args):
         )
         epoch_accuracies.append(acc["categorical_accuracy"])
 
-    network.save(model_path)
+    network.checkpoint(model_path)
 
     return epoch_accuracies[-1], epoch_accuracies, epoch_times
 
 
-@pytest.mark.unit
-def test_train_yelp():
+# See https://docs.pytest.org/en/6.2.x/fixture.html
+# A fixture is something that will get automatically run if a test requires it.
+# Having the scope="module" means that it will not get rerun if required by
+# multiple tests in this file. autouse=True means that all tests in this file
+# require it, so we don't need to explicitly reference it in each test. It is
+# a bit bad practice to have assertions in the train method since this isn't
+# technically a test (we are violating the Arrange Act Assert Cleanup order),
+# but it is fine for now as an assertion failure will just get hit in the
+# calling test.
+@pytest.fixture(scope="module", autouse=True)
+def train_and_save_yelp():
     """
     Benchmark for sentiment prediction on the yelp_review_full dataset
     """
@@ -161,7 +182,6 @@ def test_train_yelp():
     train(args, train_yelp, 0.88)
 
 
-@pytest.mark.unit
 def test_predict_sentence_sentiment():
     """
     Test to make sure that the prediction wrapper correctly identifies the sentiment of simple sentences.
@@ -183,7 +203,6 @@ def test_predict_sentence_sentiment():
     )
 
 
-@pytest.mark.unit
 def test_preprocess():
     """
     Checks that the preprocess function properly parses and featurizes the input file.
