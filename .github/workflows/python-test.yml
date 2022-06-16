@@ -33,7 +33,7 @@ jobs:
         run: bin/build.py
 
       - name: Install necessary python pacakges
-        run: pip3 install numpy pytest toml mmh3 datasets torch transformers scipy
+        run: pip3 install numpy pytest toml mmh3 datasets torch transformers
 
       - name: Run python unit tests
         run: bin/python-test.sh -m unit
