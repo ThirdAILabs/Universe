@@ -1,3 +1,4 @@
+#include "BatchProcessorTestUtils.h"
 #include "MockBlock.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <gtest/gtest.h>
@@ -6,48 +7,27 @@
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/core/BlockBatchProcessor.h>
 #include <sys/types.h>
+#include <algorithm>
 #include <cstddef>
 #include <cstdlib>
-#include <memory>
 #include <numeric>
-#include <random>
+#include <sstream>
 #include <string>
 #include <unordered_map>
-#include <vector>
 
 namespace thirdai::dataset {
-
-/**
- * Helper function to generate random matrix of floating point
- * numbers in the range [0, 1) with the specified number rows and columns.
- */
-std::vector<std::vector<float>> makeRandomDenseMatrix(size_t n_rows,
-                                                      size_t n_cols) {
-  // Not the most efficient representation of a matrix but
-  // makes the test more readable.
-  std::vector<std::vector<float>> matrix(n_rows, std::vector<float>(n_cols));
-  for (auto& row : matrix) {
-    for (auto& elem : row) {
-      elem = static_cast<float>(std::rand() & 8) / 256;
-    }
-  }
-  return matrix;
-}
 
 /**
  * Helper function to convert each element in a dense
  * matrix into the corresponding string. This mimics the
  * parsed CSV string representation.
  */
-std::vector<std::vector<std::string>> makeStringMatrix(
+std::vector<std::vector<std::string>> makeMatrixOfStringNumbers(
     std::vector<std::vector<float>>& matrix) {
   std::vector<std::vector<std::string>> string_matrix;
+  string_matrix.reserve(matrix.size());
   for (const auto& row : matrix) {
-    std::vector<std::string> string_row(row.size());
-    for (size_t i = 0; i < row.size(); i++) {
-      string_row[i] = std::to_string(row[i]);
-    }
-    string_matrix.push_back(std::move(string_row));
+    string_matrix.push_back(BatchProcessorTestUtils::floatVecToStringVec(row));
   }
   return string_matrix;
 }
@@ -84,33 +64,6 @@ std::vector<bolt::BoltVector> makeSparseBoltVectors(
     vectors.push_back(bolt::BoltVector::makeSparseVector(indices, row));
   }
   return vectors;
-}
-
-/**
- * Helper function that generates n mock blocks
- * If dense is true, all blocks are dense. Otherwise, all blocks sparse.
- * If mixed_dense is true, the first block is sparse, the second is dense,
- * and the last is sparse again.
- */
-std::vector<std::shared_ptr<Block>> makeNMockBlocks(uint32_t n_blocks,
-                                                    bool dense,
-                                                    bool mixed_dense = false) {
-  std::vector<std::shared_ptr<Block>> blocks;
-
-  if (!mixed_dense) {
-    for (uint32_t i = 0; i < n_blocks; i++) {
-      auto mock_block_ptr = std::make_shared<MockBlock>(i, dense);
-      blocks.push_back(mock_block_ptr);
-    }
-    return blocks;
-  }
-
-  // Mixed dense case
-  for (uint32_t i = 0; i < n_blocks; i++) {
-    auto mock_block_ptr = std::make_shared<MockBlock>(i, i == 1);
-    blocks.push_back(mock_block_ptr);
-  }
-  return blocks;
 }
 
 /**
@@ -170,24 +123,40 @@ void checkCorrectUnshuffledDatasetImpl(
   // Generate mock data
   size_t n_cols = 3;
 
-  auto dense_matrix_1 = makeRandomDenseMatrix(/* n_rows = */ 500, n_cols);
-  auto str_matrix_1 = makeStringMatrix(dense_matrix_1);
+  auto dense_matrix_1 = BatchProcessorTestUtils::makeRandomDenseMatrix(
+      /* n_rows = */ 500, n_cols);
+  auto str_matrix_1 = makeMatrixOfStringNumbers(dense_matrix_1);
   auto dense_bolt_vecs_1 = makeDenseBoltVectors(dense_matrix_1);
   auto sparse_bolt_vecs_1 = makeSparseBoltVectors(dense_matrix_1);
 
-  auto dense_matrix_2 = makeRandomDenseMatrix(/* n_rows = */ 500, n_cols);
-  auto str_matrix_2 = makeStringMatrix(dense_matrix_2);
+  auto dense_matrix_2 = BatchProcessorTestUtils::makeRandomDenseMatrix(
+      /* n_rows = */ 500, n_cols);
+  auto str_matrix_2 = makeMatrixOfStringNumbers(dense_matrix_2);
   auto dense_bolt_vecs_2 = makeDenseBoltVectors(dense_matrix_2);
   auto sparse_bolt_vecs_2 = makeSparseBoltVectors(dense_matrix_2);
   uint32_t output_batch_size = 256;
 
+  std::vector<bool> input_dense_configs(3);
+  std::vector<bool> target_dense_configs(3);
+  if (mixed_dense_input_and_label) {
+    input_dense_configs[1] = true;
+    target_dense_configs[1] = true;
+  } else {
+    if (input_dense) {
+      std::fill(input_dense_configs.begin(), input_dense_configs.end(), true);
+    }
+    if (label_dense) {
+      std::fill(target_dense_configs.begin(), target_dense_configs.end(), true);
+    }
+  }
+
   // Initialize batch processor and process batches
   auto input_blocks =
-      makeNMockBlocks(n_cols, input_dense, mixed_dense_input_and_label);
+      BatchProcessorTestUtils::makeMockBlocks(input_dense_configs);
   std::vector<std::shared_ptr<Block>> target_blocks;
   if (has_labels) {
     target_blocks =
-        makeNMockBlocks(n_cols, label_dense, mixed_dense_input_and_label);
+        BatchProcessorTestUtils::makeMockBlocks(target_dense_configs);
   }
 
   BlockBatchProcessor processor(input_blocks, target_blocks, output_batch_size);
@@ -236,7 +205,7 @@ void checkCorrectUnshuffledDatasetImpl(
  * We don't check the no label case yet because we haven't finalized
  * designing what a batch without labels looks like.
  */
-TEST(BlockBatchProcessorTest, ProducesCorrectUnshuffledDataset) {
+TEST(BlockBatchProcessorTests, ProducesCorrectUnshuffledDataset) {
   // Sparse input, sparse label
   checkCorrectUnshuffledDatasetImpl(/* has_labels = */ true,
                                     /* input_dense = */ false,
@@ -324,7 +293,7 @@ void checkDatasetOrderEquality(const BoltDataset& input_dataset_1,
   }
 }
 
-TEST(BlockBatchProcessorTest, ProducesCorrectShuffledDataset) {
+TEST(BlockBatchProcessorTests, ProducesCorrectShuffledDataset) {
   // Mock dataset is range(0.0, 1000.0);
   uint32_t n_rows = 1000;
   std::vector<float> mock_data_seq(n_rows);
