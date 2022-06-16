@@ -14,12 +14,18 @@ def crawl_site():
     url = request.form["url"]
     depth = int(request.form["depth"])
     if not url.startswith("http"):
-      url = "https://" + url
+        url = "https://" + url
 
     global parsed
     parsed = ParsedWebsite(url, depth)
 
-    return render_template("home.html", background_color="", console_output="Parsed the following urls: \n" + "\n".join(list(parsed.seen_urls)))
+    return render_template(
+        "home.html",
+        background_color="",
+        console_output="Parsed the following urls: \n"
+        + "\n".join(list(parsed.seen_urls)),
+    )
+
 
 @app.route("/do-qa", methods=["POST"])
 def do_qa():
