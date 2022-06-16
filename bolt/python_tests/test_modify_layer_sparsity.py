@@ -53,10 +53,9 @@ def test_switch_dense_to_sparse():
 
     dense_predictions += predict_train_one_epoch_predict(classifier, examples, labels)
 
-    # All of these predictions were done with sparse inference = true. Setting
-    # the layer sparsity works with sparse inference if the output was sparse
-    # when the layer was set to a sparsity < 1 prediction and dense when it
-    # was set to sparsity = 1.
+    # All of these predictions were done with sparse inference = true. We
+    # expect the output to be sparse when the layer was set to a sparsity < 1
+    # and dense when it was set to sparsity = 1.
     for prediction in sparse_predictions:
         assert len(prediction) == 2
 
@@ -67,7 +66,7 @@ def test_switch_dense_to_sparse():
 @pytest.mark.release
 def test_decrease_and_increase_sparsity():
     """
-    Tests changing the sparsity of an already sparse layer changes the
+    Tests that changing the sparsity of an already sparse layer changes the
     reported sparsity of that layer.
     """
     classifier = build_sparse_hidden_layer_classifier(
@@ -90,7 +89,7 @@ def test_decrease_and_increase_sparsity():
 # release build.
 def test_decrease_and_increase_sparsity_sampling_config():
     """
-    Tests changing the sparsity of an already sparse layer changes the
+    Tests that changing the sparsity of an already sparse layer changes the
     sampling config parameters. Due to the way we autotune, only the number of
     tables should change if we change the sparsity.
     """

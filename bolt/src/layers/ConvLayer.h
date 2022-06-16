@@ -70,10 +70,10 @@ class ConvLayer final : public SequentialLayer {
 
   void setBiases(const float* new_biases) final;
 
-  void setShallowSave(bool shallow) final {
-    (void)shallow;
+  bool isShallow() const final {
     throw thirdai::exceptions::NotImplemented(
-        "Error: setShallowSave not implemented for DLRM;");
+        "Error: isShallow not implemented for DLRM;");
+    return false;
   }
 
   void setShallow(bool shallow) final {
@@ -82,9 +82,17 @@ class ConvLayer final : public SequentialLayer {
         "Error: setShallow not implemented for DLRM;");
   }
 
+  void setShallowSave(bool shallow) final {
+    (void)shallow;
+    throw thirdai::exceptions::NotImplemented(
+        "Error: setShallowSave not implemented for DLRM;");
+  }
+
+  float getSparsity() const final { return _sparsity; }
+
   void setSparsity(float sparsity) final {
     (void)sparsity;
-    // This is currently unimplemented because it would be duplicate code of
+    // This is currently unimplemented because it would duplicate code from
     // FullyConnectedLayer, and instead of duplicating code we should come up
     // with a better design. Perhaps FullyConnectedLayer and ConvLayer can
     // subclass SparseLayer.
@@ -93,16 +101,8 @@ class ConvLayer final : public SequentialLayer {
         "Cannot currently set the sparsity of a convolutional layer.");
   }
 
-  float getSparsity() const final { return _sparsity; }
-
   const SamplingConfig& getSamplingConfig() const final {
     return _sampling_config;
-  }
-
-  bool isShallow() const final {
-    throw thirdai::exceptions::NotImplemented(
-        "Error: isShallow not implemented for DLRM;");
-    return false;
   }
 
  private:

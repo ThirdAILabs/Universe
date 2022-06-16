@@ -91,15 +91,16 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void setShallow(bool shallow) final;
 
-  void setSparsity(float sparsity) final;
+  void setShallowSave(bool shallow) final;
 
   float getSparsity() const final { return _sparsity; }
+
+  void setSparsity(float sparsity) final;
 
   const SamplingConfig& getSamplingConfig() const final {
     return _sampling_config;
   }
 
-  void setShallowSave(bool shallow) final;
   void buildLayerSummary(std::stringstream& summary,
                          bool detailed) const override;
 

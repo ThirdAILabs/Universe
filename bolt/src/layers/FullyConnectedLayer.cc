@@ -594,6 +594,10 @@ void FullyConnectedLayer::setShallow(bool shallow) {
   _is_shallow = shallow;
 }
 
+void FullyConnectedLayer::setShallowSave(bool shallow) {
+  _shallow_save = shallow;
+}
+
 void FullyConnectedLayer::setSparsity(float sparsity) {
   deinitSparseDatastructures();
   _sparsity = sparsity;
@@ -604,10 +608,6 @@ void FullyConnectedLayer::setSparsity(float sparsity) {
   _sparse_dim = _sparsity * _dim;
   std::random_device rd;
   initSparseDatastructures(rd);
-}
-
-void FullyConnectedLayer::setShallowSave(bool shallow) {
-  _shallow_save = shallow;
 }
 
 void FullyConnectedLayer::initOptimizer() {
