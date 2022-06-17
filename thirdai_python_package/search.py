@@ -20,7 +20,7 @@ class EasyQA:
 
         self.embedding_model = DocSearchModel()
         reduced_centroids = self.embedding_model.getCentroids()[
-            : max(len(id_passage_pairs) // 10, 1)
+            : max(len(id_passage_pairs) // 1000, 1)
         ]
         self.index = DocRetrieval(
             dense_input_dimension=128,
