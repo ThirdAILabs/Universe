@@ -19,8 +19,8 @@ MaxFlashArray<LABEL_T>::MaxFlashArray(hashing::HashFunction* function,
           max_doc_size, std::numeric_limits<LABEL_T>::max())),
       _hash_function(function),
       _maxflash_array(),
-      _collision_count_to_sim(function->range()) {
-  for (uint32_t i = 0; i < _hash_function->numTables(); i++) {
+      _collision_count_to_sim(function->range() + 1) {
+  for (uint32_t i = 0; i <= _hash_function->numTables(); i++) {
     _collision_count_to_sim[i] =
         std::exp(std::log(static_cast<float>(i) / function->numTables()) /
                  hashes_per_table);
@@ -82,6 +82,8 @@ std::vector<float> MaxFlashArray<LABEL_T>::getDocumentScores(
       result[i] = _maxflash_array.at(flash_index)
                       ->getScore(hashes, query.getBatchSize(), buffer,
                                  _collision_count_to_sim);
+      // Normalize different size queries, i.e. this is avg max sim
+      result[i] /= query.getBatchSize();
     }
   }
 
