@@ -8,6 +8,7 @@
 #include <ctime>
 #include <memory>
 #include <sstream>
+#include <string>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -38,6 +39,18 @@ class CountHistoryBlockTests : public BlockTest {
       }
     }
     return samples;
+  }
+  static StringMatrix genNearNeighbours(uint32_t n) {
+    StringMatrix near_neighbours;
+    for(uint32_t i=0;i<n;i++) {
+      std::vector<std::string> sample;
+      sample.push_back(std::to_string(i));
+      for (uint32_t j=0;j<6;j++) {
+        sample.push_back(std::to_string((i+1+j)%n));
+      }
+      near_neighbours.push_back(sample);
+    }
+    return near_neighbours;
   }
 };
 
@@ -180,6 +193,25 @@ TEST_F(CountHistoryBlockTests, ErrorDoesNotGrowOverTime) {
     ASSERT_LE(entries[0], max * 1.1);
   }
 
+}
+
+TEST_F(CountHistoryBlockTests, NearNeighbours) {
+  std::vector<Window> windows{Window(/* lag = */ 0, /* size = */ 1)};
+  DynamicCountsConfig config(/* max_range = */ 1, /* n_rows = */ 5, /* range_pow = */ 10);
+  StringMatrix near_neighbours = genNearNeighbours(7);
+  std::vector<std::shared_ptr<Block>> blocks{std::make_shared<CountHistoryBlock>(/* has_count_col = */ false, /* id_col = */ 0, /* timestamp_col = */ 1, /* count_col = */ 0, windows, config,true,near_neighbours)};
+
+  auto samples = makeTrivialSamples(/* n_ids = */ 7, /* n_days = */ 365, /* day_offset = */ 365);
+  auto vecs = makeSparseSegmentedVecs(samples, blocks);
+
+  for (auto& vec : vecs) {
+    auto entries = vectorEntries(vec);
+    ASSERT_EQ(entries.size(), 7);
+    // ASSERT_EQ(entries[0], 1.0);
+    // ASSERT_EQ(entries[1], 1.0);
+    // ASSERT_EQ(entries[2], 1.0);
+    // ASSERT_EQ(entries[3], 1.0);
+  }
 }
 
 
