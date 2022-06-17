@@ -8,7 +8,7 @@ max_tokens = 100
 
 [params]
 loss_fn = "CategoricalCrossEntropyLoss"
-train_metrics = ["loss"]
+train_metrics = ["mean_squared_error"]
 test_metrics  = ["categorical_accuracy"]
 learning_rate = 0.0001
 epochs = 20
