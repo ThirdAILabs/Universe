@@ -1,4 +1,4 @@
-job = "wikipedia 1M subset"
+job = "Wikipedia MLM"
 
 [dataset]
 train_data = "BERT/sentences_tokenized_shuffled_trimmed_10M.txt"
