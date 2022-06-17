@@ -272,8 +272,8 @@ void createBoltSubmodule(py::module_& module) {
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("batch_size") = 2048, py::arg("rehash") = 6400,
-           py::arg("rebuild") = 128000,
+           py::arg("batch_size") = 0, py::arg("rehash") = 0,
+           py::arg("rebuild") = 0,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            "Trains the network on the given training data.\n"

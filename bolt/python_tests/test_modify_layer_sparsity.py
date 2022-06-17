@@ -1,7 +1,6 @@
 from utils import *
 import pytest
 import time
-import math
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -69,20 +68,19 @@ def test_decrease_and_increase_sparsity():
     Tests that changing the sparsity of an already sparse layer changes the
     reported sparsity of that layer.
     """
+    # 0.0625 is 2^-4, so we can assert exact equality without math.isclose
     classifier = build_sparse_hidden_layer_classifier(
-        input_dim=100, sparse_dim=100, output_dim=100, sparsity=0.01
+        input_dim=100, sparse_dim=100, output_dim=100, sparsity=0.0625
     )
-    assert math.isclose(
-        0.01, classifier.get_layer_sparsity(layer_index=0), rel_tol=1e-5
-    )
+    assert classifier.get_layer_sparsity(layer_index=0) == 0.0625
 
+    # 0.5 is 2^-1, so we can assert exact equality without math.isclose
     classifier.set_layer_sparsity(layer_index=0, sparsity=0.5)
-    assert math.isclose(0.5, classifier.get_layer_sparsity(layer_index=0), rel_tol=1e-5)
+    assert classifier.get_layer_sparsity(layer_index=0) == 0.5
 
-    classifier.set_layer_sparsity(layer_index=0, sparsity=0.001)
-    assert math.isclose(
-        0.001, classifier.get_layer_sparsity(layer_index=0), rel_tol=1e-5
-    )
+    # 0.25 is 2^-2, so we can assert exact equality without math.isclose
+    classifier.set_layer_sparsity(layer_index=0, sparsity=0.25)
+    assert classifier.get_layer_sparsity(layer_index=0) == 0.25
 
 
 # This is not a release test because the sampling config isn't exposed in a
