@@ -1,8 +1,15 @@
 <body>
   <style>
     body {
-      background-color: {{background_color}};
-      font-family: 'Trebuchet MS', sans-serif;
+      background-color: {
+          {
+          background_color
+        }
+      }
+
+      ;
+      font-family: 'Trebuchet MS',
+      sans-serif;
       justify-content: center;
     }
 
@@ -45,10 +52,11 @@
       <input name="url" id="sentence-input">
       <input type="submit" style="display: none" />
     </form>
-    <textarea id="console-output" rows="4" readonly>{{console_output}}</textarea>
+    <textarea id="console-output" rows="4" readonly
+      style="visibility:{{ submit_visibility }}">{{console_output}}</textarea>
     <br></br>
-    <form method="post" name="submit-button" action="/do-qa">
-      <input type="submit" value="Launch QA!"/>
+    <form method="get" name="submit-button" action="/do-qa" style="visibility:{{ submit_visibility }}">
+      <input type="submit" value="Launch QA!" />
     </form>
   </div>
 </body>

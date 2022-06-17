@@ -1,6 +1,7 @@
 import urllib.request
 from bs4 import BeautifulSoup
 import re
+from urllib.parse import urljoin, urlparse
 
 remove_bad_chars = re.compile("[^a-zA-Z,!?.0-9 ]")
 
@@ -53,13 +54,17 @@ class ParsedWebsite:
             if link_str.startswith("//"):
                 link_str = "https:" + link_str
 
+            # Starting with a / means it is a relative link, so we turn it
+            # into an absolute one
+            if link_str.startswith("/"):
+                link_str = urljoin(self.base_url, link_str)
+
+            # Strip the query parameters
+            link_str = urljoin(link_str, urlparse(link_str).path)
+
             # Append to list if new link contains original link
             if link_str.startswith(self.base_url):
                 links.append(link_str)
-
-            # Include all href that do not start with website link but with "/"
-            if link_str.startswith("/"):
-                links.append(self.base_url + link_str)
 
         return links
 
@@ -68,9 +73,27 @@ class ParsedWebsite:
         for url, text in self.url_text_pairs:
             sentences = text.split(".")
             for sentence_id in range(0, len(sentences), num_sentences_per_passage):
-                passage = ".".join(
-                    sentences[sentence_id : sentence_id + num_sentences_per_passage]
+                passage = (
+                    ".".join(
+                        sentences[sentence_id : sentence_id + num_sentences_per_passage]
+                    )
+                    + "."
                 )
                 passage_id = f"{len(result)} : {url}"
-                result.append((passage_id, passage))
+                if self._passage_okay(passage):
+                    result.append((passage_id, passage))
         return result
+
+    # Some simple heuristics to make sure the passage is okay
+    def _passage_okay(self, passage):
+        words = passage.split()
+        # Too short
+        if len(words) < 3:
+            return False
+
+        # Too many words capitalized, probably not text
+        num_capitalized = sum([w[0].isupper() for w in words])
+        if num_capitalized * 3 > len(words):
+            return False
+
+        return True
