@@ -94,7 +94,7 @@ std::vector<float> MaxFlashArray<LABEL_T>::getDocumentScores(
                       ->getScore(hashes, query.getBatchSize(), buffer,
                                  _collision_count_to_sim);
       // We normalize different size queries (thereby computing avg sim instead
-      // of max sim) in order to not overweight long queries. This only matter
+      // of max sim) in order to not overweight long queries. This only matters
       // when different queries can have different number of embeddings.
       result[i] /= query.getBatchSize();
     }
