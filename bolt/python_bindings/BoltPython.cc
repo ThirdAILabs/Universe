@@ -561,6 +561,198 @@ void createBoltSubmodule(py::module_& module) {
           "Loads and builds a saved classifier from file.\n"
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
+
+  py::class_<DistributedPyNetwork>(bolt_submodule, "DistributedNetwork",
+                        "Fully connected Distributed neural network.")
+      .def(py::init<std::vector<
+                        std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
+                    uint64_t>(),
+           py::arg("layers"), py::arg("input_dim"),
+           "Constructs a neural network.\n"
+           "Arguments:\n"
+           " * layers: List of SequentialLayerConfig - Configurations for the "
+           "sequence of "
+           "layers in the neural network.\n"
+           " * input_dim: Int (positive) - Dimension of input vectors in the "
+           "dataset.")
+      .def("__str__",
+           [](const DistributedPyNetwork& network) {
+             std::stringstream summary;
+             network.buildNetworkSummary(summary);
+             return summary.str();
+           })
+      .def(
+          "summary", &DistributedPyNetwork::printSummary, py::arg("detailed") = false,
+          "Prints a summary of the network.\n"
+          "Arguments:\n"
+          " * detailed: boolean. Optional. When specified to \"True\", "
+          "summary will additionally print layer config details for each layer "
+          "in the network.")
+      .def("initTrainDistributed", &DistributedPyNetwork::initTrainDistributed, py::arg("train_data"),
+           py::arg("train_labels"), 
+           py::arg("batch_size") = 0, py::arg("rehash") = 0,
+           py::arg("rebuild") = 0, py::arg("verbose") = true,
+           "Initializes the Distributed Training over a node\n"
+           "Arguments:\n"
+           " * train_data: BoltDataset - Training data. This can be one of "
+           "three things. First it can be a BoltDataset as loaded by "
+           "thirdai.dataset.load_bolt_svm_dataset or "
+           "thirdai.dataset.load_bolt_csv_dataset. It can be a dense numpy "
+           "array of float32 where each row in the array is interpreted as a "
+           "vector. Finally it can be a set of sparse vectors represented as "
+           "three numpy arrays (indices, values, offsets) where indices and "
+           "offsets are uint32 and values are float32. In this case indices is "
+           "a 1D array of all the nonzero indices concatenated, values is a 1D "
+           "array of all the nonzero values concatenated, and offsets are the "
+           "start positions in the indices and values array of each vector "
+           "plus one extra element at the end of the array representing the "
+           "total number of nonzeros. This is so that indices[offsets[i], "
+           "offsets[i + 1]] contains the indices of the ith vector and "
+           "values[offsets[i], offsets[i+1] contains the values of the ith "
+           "vector.For example if we have the vectors {0.0, 1.5, 0.0, 9.0} and "
+           "{0.0, 0.0, 0.0, 4.0} then the indices array is {1, 3, 3}, the "
+           "values array is {1.5, 9.0, 4.0} and the offsets array is {0, 2, "
+           "3}.\n"
+           " * train_labels: BoltDataset - Training labels. This can be one of "
+           "three things. First it can be a BoltDataset as loaded by "
+           "thirdai.dataset.load_bolt_svm_dataset or "
+           "thirdai.dataset.load_bolt_csv_dataset. It can be a dense numpy "
+           "array of float32 where each row in the array is interpreted as a "
+           "label vector. Finally it can be a set of sparse vectors (each "
+           "vector is a label vector) represented as three numpy arrays "
+           "(indices, values, offsets) where indices and offsets are uint32 "
+           "and values are float32. In this case indices is a 1D array of all "
+           "the nonzero indices concatenated, values is a 1D array of all the "
+           "nonzero values concatenated, and offsets are the start positions "
+           "in the indices and values array of each vector plus one extra "
+           "element at the end of the array representing the total number of "
+           "nonzeros. This is so that indices[offsets[i], offsets[i + 1]] "
+           "contains the indices of the ith vector and values[offsets[i], "
+           "offsets[i+1] contains the values of the ith vector.For example if "
+           "we have the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, 0.0, 4.0} "
+           "then the indices array is {1, 3, 3}, the values array is {1.5, "
+           "9.0, 4.0} and the offsets array is {0, 2, 3}.\n"
+           " * rehash: Int (positive) - Optional. Number of training samples "
+           "before "
+           "rehashing neurons. "
+           "If not provided, BOLT will autotune this parameter.\n\n"
+           "\t\tBOLT's sparse training works by applying smart hash functions "
+           "to "
+           "all neurons in the "
+           "network, and they have to be rehashed periodically. This parameter "
+           "sets the frequency "
+           "of rehashing.\n"
+           " * rebuild: Int (positive) - Optional. Number of training samples "
+           "before "
+           "rebuilding hash tables and generating new smart hash functions. "
+           "This is typically around 5 times the value of `rehash`."
+           "If not provided, BOLT will autotune this parameter.\n"
+           " * verbose: Boolean - Optional. If set to False, only displays "
+           "progress bar. "
+           "If set to True, prints additional information such as metrics and "
+           "epoch times. "
+           "Set to True by default.\n\n"
+
+           "Returns void")
+      .def("calculateGradientDistributed", &DistributedPyNetwork::calculateGradientDistributed, py::arg("batch"),
+           py::arg("loss_fn"),
+           "calculated the gradient for the network on the given training batch.\n"
+           "Arguments:\n"
+           " * batch: Int (positive) The batch on which gradients are calcualted\n"
+           " * loss_fn: LossFunction - The loss function to minimize.\n"
+           
+           "Returns void")
+      .def("updateParametersDistributed", &DistributedPyNetwork::updateParametersDistributed, py::arg("learning_rate"),
+           "calculated the gradient for the network on the given training batch.\n"
+           "Arguments:\n"
+           " * learning rate: Float (positive) - Learning rate.\n"
+           
+           "Returns void")
+      .def("predictDistributed", &DistributedPyNetwork::predictDistributed, py::arg("test_data"),
+           py::arg("test_labels"), py::arg("batch_size") = 0,
+           py::arg("metrics") = std::vector<std::string>(),
+           py::arg("verbose") = true,
+           py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
+           "Predicts the output given the input vectors and evaluates the "
+           "predictions based on the given metrics.\n"
+           "Arguments:\n"
+           " * test_data: BoltDataset - Test data. This can be one of "
+           "three things. First it can be a BoltDataset as loaded by "
+           "thirdai.dataset.load_bolt_svm_dataset or "
+           "thirdai.dataset.load_bolt_csv_dataset. It can be a dense numpy "
+           "array of float32 where each row in the array is interpreted as a "
+           "vector. Finally it can be a set of sparse vectors represented as "
+           "three numpy arrays (indices, values, offsets) where indices and "
+           "offsets are uint32 and values are float32. In this case indices is "
+           "a 1D array of all the nonzero indices concatenated, values is a 1D "
+           "array of all the nonzero values concatenated, and offsets are the "
+           "start positions in the indices and values array of each vector "
+           "plus one extra element at the end of the array representing the "
+           "total number of nonzeros. This is so that indices[offsets[i], "
+           "offsets[i + 1]] contains the indices of the ith vector and "
+           "values[offsets[i], offsets[i+1] contains the values of the ith "
+           "vector.For example if we have the vectors {0.0, 1.5, 0.0, 9.0} and "
+           "{0.0, 0.0, 0.0, 4.0} then the indices array is {1, 3, 3}, the "
+           "values array is {1.5, 9.0, 4.0} and the offsets array is {0, 2, "
+           "3}.\n"
+           " * test_labels: BoltDataset - Test labels. This can be one of "
+           "four things. First it can be a BoltDataset as loaded by "
+           "thirdai.dataset.load_bolt_svm_dataset or "
+           "thirdai.dataset.load_bolt_csv_dataset. It can be a dense numpy "
+           "array of float32 where each row in the array is interpreted as a "
+           "label vector. Finally it can be a set of sparse vectors (each "
+           "vector is a label vector) represented as three numpy arrays "
+           "(indices, values, offsets) where indices and offsets are uint32 "
+           "and values are float32. In this case indices is a 1D array of all "
+           "the nonzero indices concatenated, values is a 1D array of all the "
+           "nonzero values concatenated, and offsets are the start positions "
+           "in the indices and values array of each vector plus one extra "
+           "element at the end of the array representing the total number of "
+           "nonzeros. This is so that indices[offsets[i], offsets[i + 1]] "
+           "contains the indices of the ith vector and values[offsets[i], "
+           "offsets[i+1] contains the values of the ith vector.For example if "
+           "we have the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, 0.0, 4.0} "
+           "then the indices array is {1, 3, 3}, the values array is {1.5, "
+           "9.0, 4.0} and the offsets array is {0, 2, 3}. Finally, the test "
+           "labels can be passed in as test_labels=None, in which case they "
+           "will be ignored. If labels are not supplied then no metrics will "
+           "be computed but activations will still be returned.\n"
+           " * metrics: List of str - Optional. The metrics to keep track of "
+           "during training. "
+           "See the section on metrics.\n"
+           " * verbose: Boolean - Optional. If set to False, only displays "
+           "progress bar. "
+           "If set to True, prints additional information such as metrics and "
+           "inference times. "
+           "Set to True by default.\n\n"
+
+           "Returns a tuple consisting of (0) a mapping from metric names to "
+           "their values "
+           "and (1) output vectors (predictions) from the network in the form "
+           "of a 2D Numpy matrix of floats.")
+      .def("get_biases", &DistributedPyNetwork::getBiases, py::arg("layer_index"),
+           "Returns the bias array at the given layer index as a 1D Numpy "
+           "array.")
+      .def("set_biases", &DistributedPyNetwork::setBiases, py::arg("layer_index"),
+           py::arg("new_biases"),
+           "Sets the bias array at the given layer index to the given 1D Numpy "
+           "array.")
+     .def("set_biases_gradients", &DistributedPyNetwork::setBiasesGradients, py::arg("layer_index"),
+           py::arg("new_biases_gradients"),
+           "Returns the bias gradient array at the given layer index as the given 1D Numpy "
+           "array.")
+      .def("set_weights_gradients", &DistributedPyNetwork::setWeightGradients, py::arg("layer_index"),
+           py::arg("new_weights_gradients"),
+           "Sets the weights gradient array at the given layer index to the given 1D Numpy "
+           "array.")
+      .def("get_biases_gradients", &DistributedPyNetwork::getBiasesGradients, py::arg("layer_index"),
+           "Returns the bias gradient array at the given layer index as a 1D Numpy "
+           "array.")
+      .def("get_weights_gradients", &DistributedPyNetwork::getWeightsGradients, py::arg("layer_index"),
+           "Returns the weight gradient array at the given layer index as a 1D Numpy "
+           "array.");
+
+
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {

@@ -125,6 +125,9 @@ void FullyConnectedNetwork::backpropagate(uint32_t batch_index,
   }
 }
 
+
+
+
 void FullyConnectedNetwork::initializeNetworkState(uint32_t batch_size,
                                                    bool force_dense) {
   _states.clear();

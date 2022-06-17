@@ -1,4 +1,5 @@
-#include "Model.h"
+#include "DistributedModel.h"
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <dataset/src/batch_types/ClickThroughBatch.h>
@@ -10,167 +11,77 @@
 
 namespace thirdai::bolt {
 
-template class Model<bolt::BoltBatch>;
-template class Model<dataset::ClickThroughBatch>;
+template class DistributedModel<bolt::BoltBatch>;
+template class DistributedModel<dataset::ClickThroughBatch>;
 
-template <typename BATCH_T>
-MetricData Model<BATCH_T>::train(
+
+template<typename BATCH_T>
+void DistributedModel<BATCH_T>::initTrainDistributed(
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
     const dataset::BoltDatasetPtr& train_labels,
     // Clang tidy is disabled for this line because it wants to pass by
     // reference, but shared_ptrs should not be passed by reference
-    const LossFunction& loss_fn, float learning_rate, uint32_t epochs,
-    uint32_t rehash, uint32_t rebuild,
-    const std::vector<std::string>& metric_names, bool verbose) {
-  uint32_t batch_size = train_data->at(0).getBatchSize();
-  uint32_t rebuild_batch =
-      getRebuildBatch(rebuild, batch_size, train_data->len());
-  uint32_t rehash_batch = getRehashBatch(rehash, batch_size, train_data->len());
-  uint64_t num_train_batches = train_data->numBatches();
+    uint32_t rehash, uint32_t rebuild, bool verbose){
+    _train_data = train_data;
+    _train_labels = train_labels;
+    uint32_t batch_size = _train_data->at(0).getBatchSize();
+    _rebuild_batch =
+        getRebuildBatch(rebuild, batch_size, train_data->len());
+    _rehash_batch = getRehashBatch(rehash, batch_size, train_data->len());
 
-  // Because of how the datasets are read we know that all batches will not have
-  // a batch size larger than this so we can just set the batch size here.
-  initializeNetworkState(batch_size, false);
-  BoltBatch outputs = getOutputs(batch_size, false);
+    // Because of how the datasets are read we know that all batches will not have
+    // a batch size larger than this so we can just set the batch size here.
+    initializeNetworkState(batch_size, false);
+    _outputs = getOutputs(batch_size, false);
 
-  std::vector<double> time_per_epoch;
-
-  MetricAggregator metrics(metric_names, verbose);
-
-  // if any layer is shallow, call enable training to set the optimizer state
-  // before training
-  if (anyLayerShallow()) {
-    throw std::logic_error(
-        "Call reinitialize_optimizer_for_training before training to "
-        "initialize optimizer state");
-  }
-
-  for (uint32_t epoch = 0; epoch < epochs; epoch++) {
-    if (verbose) {
-      std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
+    if(verbose){
+      std::cout << "Distributed Network initialization done on this Node" << std::endl;
     }
-    ProgressBar bar(num_train_batches, verbose);
-    auto train_start = std::chrono::high_resolution_clock::now();
-
-    for (uint32_t batch = 0; batch < num_train_batches; batch++) {
-      BATCH_T& batch_inputs = train_data->at(batch);
-
-      const BoltBatch& batch_labels = train_labels->at(batch);
-
-      processTrainingBatch(batch_inputs, outputs, batch_labels, loss_fn,
-                           learning_rate, rehash_batch, rebuild_batch, metrics);
-
-      bar.increment();
-    }
-
-    auto train_end = std::chrono::high_resolution_clock::now();
-    int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
-                             train_end - train_start)
-                             .count();
-
-    time_per_epoch.push_back(static_cast<double>(epoch_time));
-    if (verbose) {
-      std::cout << std::endl
-                << "Processed " << num_train_batches << " training batches in "
-                << epoch_time << " seconds" << std::endl;
-    }
-    _epoch_count++;
-
-    metrics.logAndReset();
-  }
-
-  auto metric_data = metrics.getOutput();
-  metric_data["epoch_times"] = std::move(time_per_epoch);
-
-  return metric_data;
 }
 
-template <typename BATCH_T>
-MetricData Model<BATCH_T>::trainOnStream(
-    std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& train_data,
-    const LossFunction& loss_fn, float learning_rate, uint32_t rehash_batch,
-    uint32_t rebuild_batch, const std::vector<std::string>& metric_names,
-    uint32_t metric_log_batch_interval, bool verbose) {
-  MetricAggregator metrics(metric_names, verbose);
+template<typename BATCH_T>
+void DistributedModel<BATCH_T>::calculateGradientDistributed(
+  uint32_t batch, const LossFunction& loss_fn){
 
-  uint32_t batch_size = train_data->getMaxBatchSize();
-  initializeNetworkState(batch_size, /* force_dense=*/false);
-  BoltBatch outputs = getOutputs(batch_size, /* force_dense=*/false);
+      BATCH_T& batch_inputs = _train_data->at(batch);
 
-  if (verbose) {
-    std::cout << std::endl
-              << "Processing training streaming dataset..." << std::endl;
-  }
+      const BoltBatch& batch_labels = _train_labels->at(batch);
 
-  auto train_start = std::chrono::high_resolution_clock::now();
-
-  uint32_t batch_count = 0;
-  while (auto batch = train_data->nextBatch()) {
-    processTrainingBatch(
-        /* batch_inputs=*/batch->first, /* outputs= */ outputs,
-        /* batch_labels= */ batch->second, /* loss_fn= */ loss_fn,
-        /* learning_rate= */ learning_rate, /* rehash_batch */ rehash_batch,
-        /* rebuild_batch= */ rebuild_batch, /* metrics= */ metrics);
-
-    batch_count++;
-    if (batch_count == metric_log_batch_interval) {
-      metrics.logAndReset();
-      batch_count = 0;
-    }
-  }
-
-  auto train_end = std::chrono::high_resolution_clock::now();
-
-  int64_t train_time =
-      std::chrono::duration_cast<std::chrono::seconds>(train_end - train_start)
-          .count();
-
-  if (verbose) {
-    std::cout << "Processed streaming dataset in " << train_time << " seconds."
-              << std::endl;
-  }
-
-  metrics.logAndReset();
-  auto metric_data = metrics.getOutput();
-  metric_data["epoch_times"] = {static_cast<double>(train_time)};
-
-  return metric_data;
-}
-
-template <typename BATCH_T>
-inline void Model<BATCH_T>::processTrainingBatch(
-    BATCH_T& batch_inputs, BoltBatch& outputs, const BoltBatch& batch_labels,
-    const LossFunction& loss_fn, float learning_rate, uint32_t rehash_batch,
-    uint32_t rebuild_batch, MetricAggregator& metrics) {
-  if (_batch_iter % 1000 == 999) {
+    if (_batch_iter % 1000 == 999) {
     shuffleRandomNeurons();
   }
 
 #pragma omp parallel for default(none) \
-    shared(batch_inputs, batch_labels, outputs, loss_fn, metrics)
+    shared(batch_inputs, batch_labels, _outputs, loss_fn)
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
-    forward(vec_id, batch_inputs, outputs[vec_id], &batch_labels[vec_id]);
+    forward(vec_id, batch_inputs, _outputs[vec_id], &batch_labels[vec_id]);
 
-    loss_fn.lossGradients(outputs[vec_id], batch_labels[vec_id],
+    loss_fn.lossGradients(_outputs[vec_id], batch_labels[vec_id],
                           batch_inputs.getBatchSize());
-
-    backpropagate(vec_id, batch_inputs, outputs[vec_id]);
-
-    metrics.processSample(outputs[vec_id], batch_labels[vec_id]);
+    backpropagate(vec_id, batch_inputs, _outputs[vec_id]);
+    
+    }
   }
+
+
+
+
+template<typename BATCH_T>
+void DistributedModel<BATCH_T>::updateParametersDistributed(
+   float learning_rate){
 
   updateParameters(learning_rate, ++_batch_iter);
-
-  if (_batch_iter % rebuild_batch == (rebuild_batch - 1)) {
+  if (_batch_iter % _rebuild_batch == (_rebuild_batch - 1)) {
     reBuildHashFunctions();
     buildHashTables();
-  } else if (_batch_iter % rehash_batch == (rehash_batch - 1)) {
+  } else if (_batch_iter % _rehash_batch == (_rehash_batch - 1)) {
     buildHashTables();
   }
-}
+
+  }
 
 template <typename BATCH_T>
-InferenceMetricData Model<BATCH_T>::predict(
+InferenceMetricData DistributedModel<BATCH_T>::predictDistributed(
     const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
     const dataset::BoltDatasetPtr& labels, uint32_t* output_active_neurons,
     float* output_activations, const std::vector<std::string>& metric_names,
@@ -215,7 +126,7 @@ InferenceMetricData Model<BATCH_T>::predict(
             ? nullptr
             : output_activations + batch * batch_size * getInferenceOutputDim();
 
-    processTestBatch(inputs, outputs, batch_labels, batch_active_neurons,
+    processTestBatchDistributed(inputs, outputs, batch_labels, batch_active_neurons,
                      batch_activations, metrics, compute_metrics);
 
     bar.increment();
@@ -241,7 +152,7 @@ InferenceMetricData Model<BATCH_T>::predict(
 }
 
 template <typename BATCH_T>
-InferenceMetricData Model<BATCH_T>::predictOnStream(
+InferenceMetricData DistributedModel<BATCH_T>::predictOnStreamDistributed(
     const std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& test_data,
     const std::vector<std::string>& metric_names,
     std::optional<std::function<void(const bolt::BoltBatch&, uint32_t)>>
@@ -261,7 +172,7 @@ InferenceMetricData Model<BATCH_T>::predictOnStream(
   auto test_start = std::chrono::high_resolution_clock::now();
 
   while (auto batch = test_data->nextBatch()) {
-    processTestBatch(batch->first, outputs, &batch->second,
+    processTestBatchDistributed(batch->first, outputs, &batch->second,
                      /* output_active_neurons=*/nullptr,
                      /* output_activations=*/nullptr, metrics,
                      /* compute_metrics= */ true);
@@ -290,7 +201,7 @@ InferenceMetricData Model<BATCH_T>::predictOnStream(
 }
 
 template <typename BATCH_T>
-inline void Model<BATCH_T>::processTestBatch(const BATCH_T& batch_inputs,
+inline void DistributedModel<BATCH_T>::processTestBatchDistributed(const BATCH_T& batch_inputs,
                                              BoltBatch& outputs,
                                              const BoltBatch* batch_labels,
                                              uint32_t* output_active_neurons,
@@ -331,7 +242,7 @@ static constexpr uint32_t RehashAutoTuneFactor1 = 100;
 static constexpr uint32_t RehashAutoTuneFactor2 = 20;
 
 template <typename BATCH_T>
-uint32_t Model<BATCH_T>::getRehashBatch(uint32_t rehash, uint32_t batch_size,
+uint32_t DistributedModel<BATCH_T>::getRehashBatchDistributed(uint32_t rehash, uint32_t batch_size,
                                         uint32_t data_len) {
   if (rehash == 0) {
     if (data_len < RehashAutoTuneThreshold) {
@@ -344,10 +255,17 @@ uint32_t Model<BATCH_T>::getRehashBatch(uint32_t rehash, uint32_t batch_size,
 }
 
 template <typename BATCH_T>
-uint32_t Model<BATCH_T>::getRebuildBatch(uint32_t rebuild, uint32_t batch_size,
+uint32_t DistributedModel<BATCH_T>::getRebuildBatchDistributed(uint32_t rebuild, uint32_t batch_size,
                                          uint32_t data_len) {
   rebuild = rebuild != 0 ? rebuild : (data_len / 4);
   return std::max<uint32_t>(rebuild / batch_size, 1);
 }
+
+
+ // The following functions are added to make Bolt Distributed work.
+ // These functions are going to be extended to python with the help 
+ // of pybindings.
+ 
+
 
 }  // namespace thirdai::bolt

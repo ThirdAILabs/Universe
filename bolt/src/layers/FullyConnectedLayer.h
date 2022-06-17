@@ -39,6 +39,7 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2,
                         float eps) final;
+  
 
   BoltBatch createBatchState(const uint32_t batch_size,
                              bool force_dense) const final {
@@ -83,6 +84,14 @@ class FullyConnectedLayer final : public SequentialLayer {
   void setWeights(const float* new_weights) final;
 
   void setBiases(const float* new_biases) final;
+
+  void setWeightGradients(const float* update_weight_gradient);
+  
+  void setBiasesGradients(const float* update_bias_gradient);
+
+  float* getBiasesGradient();
+  
+  float* getWeightsGradient();
 
   bool isShallow() final { return _is_shallow; }
 

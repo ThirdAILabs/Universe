@@ -5,6 +5,7 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <bolt/src/metrics/Metric.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/bolt_datasets/StreamingDataset.h>
@@ -18,59 +19,14 @@
 namespace thirdai::bolt {
 
 template <typename BATCH_T>
-class Model {
+class DistributedModel {
  public:
-  Model() : _batch_iter(0), _epoch_count(0) {
+ BoltBatch _outputs;
+
+  DistributedModel() : _batch_iter(0), _epoch_count(0) {
     thirdai::licensing::LicenseWrapper::checkLicense();
   }
-  /**
-   * This function takes in a dataset and training parameters and trains the
-   * network for the specified number of epochs with the given parameters. Note
-   * that it can be called multiple times to train a network. Returns a map that
-   * gives access to the times per epoch and any metrics that were computed
-   * during training.
-   */
-  MetricData train(
-      // Train dataset
-      std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
-      // Train labels
-      const dataset::BoltDatasetPtr& train_labels,
-      // Loss function to use
-      const LossFunction& loss_fn,
-      // Learning rate for training
-      float learning_rate,
-      // Number of training epochs
-      uint32_t epochs,
-      // Rehash, rebuild parameters for hash functions/tables
-      uint32_t rehash = 0, uint32_t rebuild = 0,
-      // Metrics to compute during training
-      const std::vector<std::string>& metric_names = {},
-      // Restrict printouts
-      bool verbose = true);
 
-  /**
-   * This function takes in a streaming dataset and training parameters and
-   * trains the network on the streaming dataset. Note that it can be called
-   * multiple times to train a network. Returns a map that gives access to the
-   * training time and any metrics that were computed during training.
-   */
-  MetricData trainOnStream(
-      // Train dataset
-      std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& train_data,
-      // Loss function to use
-      const LossFunction& loss_fn,
-      // Learning rate for training
-      float learning_rate,
-      // After how many batches to rebuild hash tables
-      uint32_t rehash_batch = 20,
-      // After how many batches to recreate hash functions
-      uint32_t rebuild_batch = 100,
-      // Metrics to compute during training
-      const std::vector<std::string>& metric_names = {},
-      // Interval at which to log metrics when processing stream,
-      uint32_t metric_log_batch_interval = 0,
-      // Restrict printouts
-      bool verbose = true);
 
   /**
    * This function takes in a test dataset and uses it to evaluate the model. It
@@ -80,7 +36,7 @@ class Model {
    * the test set, and the function optionally store the activations for the
    * output layer in the output_activations array.
    */
-  InferenceMetricData predict(
+  InferenceMetricData predictDistributed(
       // Test dataset
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
       // Test labels
@@ -99,13 +55,13 @@ class Model {
       // Limit the number of batches used in the dataset
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
-  /**
+    /**
    * This function takes in a streaming dataset and uses it to evaluate the
    * model. Metrics can be passed in to be computed for the test set, and will
    * be returned by the function. Additionally a callback can optionally be
    * provided that will be called on the output of the model for each batch.
    */
-  InferenceMetricData predictOnStream(
+  InferenceMetricData predictOnStreamDistributed(
       // Test dataset
       const std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& test_data,
       // Metrics to compute
@@ -120,17 +76,27 @@ class Model {
       // Restrict printouts
       bool verbose = true);
 
-  void processTrainingBatch(BATCH_T& batch_inputs, BoltBatch& outputs,
-                            const BoltBatch& batch_labels,
-                            const LossFunction& loss_fn, float learning_rate,
-                            uint32_t rehash_batch, uint32_t rebuild_batch,
-                            MetricAggregator& metrics);
 
-  void processTestBatch(const BATCH_T& batch_inputs, BoltBatch& outputs,
+  void processTestBatchDistributed(const BATCH_T& batch_inputs, BoltBatch& outputs,
                         const BoltBatch* batch_labels,
                         uint32_t* output_active_neurons,
                         float* output_activations, MetricAggregator& metrics,
                         bool compute_metrics);
+  //Distributed Functions
+  void initTrainDistributed(
+    std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
+    const dataset::BoltDatasetPtr& train_labels,
+    // Clang tidy is disabled for this line because it wants to pass by
+    // reference, but shared_ptrs should not be passed by reference
+    uint32_t rehash, uint32_t rebuild, bool verbose);
+
+    void calculateGradientDistributed(
+      uint32_t batch,
+    const LossFunction& loss_fn);
+
+    void updateParametersDistributed(
+   float learning_rate);
+
 
   // Computes forward path through the network.
   virtual void forward(uint32_t batch_index, const BATCH_T& input,
@@ -166,7 +132,7 @@ class Model {
   // sparse inference is enabled).
   virtual uint32_t getInferenceOutputDim() const = 0;
 
-  virtual ~Model() = default;
+  virtual ~DistributedModel() = default;
 
   /**
    * shallow layer: Layer without optimizer state
@@ -187,16 +153,20 @@ class Model {
   virtual bool anyLayerShallow() = 0;
 
  protected:
-  uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,
+  uint32_t getRehashBatchDistributed(uint32_t rehash, uint32_t batch_size,
                           uint32_t data_len);
 
-  uint32_t getRebuildBatch(uint32_t rebuild, uint32_t batch_size,
+  uint32_t getRebuildBatchDistributed(uint32_t rebuild, uint32_t batch_size,
                            uint32_t data_len);
 
   uint32_t _batch_iter;
 
  private:
   uint32_t _epoch_count;
+  uint32_t _rebuild_batch;
+  uint32_t _rehash_batch;
+  std::shared_ptr<dataset::InMemoryDataset<BATCH_T>> _train_data;
+  const dataset::BoltDatasetPtr _train_labels;
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
