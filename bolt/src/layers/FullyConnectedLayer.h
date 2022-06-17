@@ -9,6 +9,7 @@
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <cstdint>
+#include <random>
 
 namespace thirdai::bolt {
 
@@ -48,9 +49,11 @@ class FullyConnectedLayer final : public SequentialLayer {
   }
 
   void forceSparseForInference() final {
-    if (_sparsity < 1.0) {
-      _force_sparse_for_inference = true;
-    }
+    // _force_sparse_for_inference can be true even if the layer is dense, this
+    // is important if later on we switch this layer between being sparse and
+    // dense. This is likely confusing, so will be changed when we change
+    // sparse inference.
+    _force_sparse_for_inference = true;
   }
 
   bool isForceSparsity() const final { return _force_sparse_for_inference; }
@@ -72,24 +75,34 @@ class FullyConnectedLayer final : public SequentialLayer {
     return _dim;
   }
 
-  float* getWeights() final;
+  float* getWeights() const final;
 
-  float* getBiases() final;
+  float* getBiases() const final;
 
   void setTrainable(bool trainable) final;
 
-  bool getTrainable() final;
+  bool getTrainable() const final;
 
   void setWeights(const float* new_weights) final;
 
   void setBiases(const float* new_biases) final;
 
-  bool isShallow() final { return _is_shallow; }
+  bool isShallow() const final { return _is_shallow; }
 
   void setShallow(bool shallow) final;
 
   void setShallowSave(bool shallow) final;
-  void buildLayerSummary(std::stringstream& summary, bool detailed) override;
+
+  float getSparsity() const final { return _sparsity; }
+
+  void setSparsity(float sparsity) final;
+
+  const SamplingConfig& getSamplingConfig() const final {
+    return _sampling_config;
+  }
+
+  void buildLayerSummary(std::stringstream& summary,
+                         bool detailed) const override;
 
   ~FullyConnectedLayer() = default;
 
@@ -118,6 +131,9 @@ class FullyConnectedLayer final : public SequentialLayer {
   using ActiveNeuronsPair =
       std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
 
+  // This set of variables are only used within a batch, so we do not use
+  // _this_is_dense to check if the layer is sparse, we instead check if
+  // _sparsity is less than 1.
   bool _prev_is_dense;
   bool _this_is_dense;
   // This is only used if _prev_is_dense == false and _this_is_dense == false
@@ -129,6 +145,9 @@ class FullyConnectedLayer final : public SequentialLayer {
   // This is only used if _this_is_dense == false
   std::vector<bool> _is_active;
 
+  // This variable is unused unless _sparsity < 1, but it is still important
+  // for tracking the state of whether sparse inference is currently active,
+  // (this is important if we make a previously dense layer sparse).
   bool _force_sparse_for_inference;
 
   static std::unique_ptr<hashing::HashFunction> assignHashFunction(
@@ -181,6 +200,8 @@ class FullyConnectedLayer final : public SequentialLayer {
                                    float B1_bias_corrected,
                                    float B2_bias_corrected);
   inline void cleanupWithinBatchVars();
+  inline void initSparseDatastructures(std::random_device& rd);
+  inline void deinitSparseDatastructures();
 
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output,
