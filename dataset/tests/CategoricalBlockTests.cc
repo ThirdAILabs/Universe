@@ -57,7 +57,12 @@ class CategoricalBlockTest : public testing::Test {
   static void addVectorSegmentWithBlock(
       CategoricalBlock& block, const std::vector<std::string>& input_row,
       SegmentedSparseFeatureVector& vec) {
-    block.addVectorSegment(input_row, vec);
+    std::vector<std::string_view> input_row_view(input_row.size());
+    for (uint32_t i = 0; i < input_row.size(); i++) {
+      input_row_view[i] =
+          std::string_view(input_row[i].c_str(), input_row[i].size());
+    }
+    block.addVectorSegment(input_row_view, vec);
   }
 
   /**
@@ -79,7 +84,7 @@ class CategoricalBlockTest : public testing::Test {
  * is about as simple as an encoding model gets and any mock encoding
  * we write is mostly going to be the same as ContiguousNumericId.
  */
-TEST_F(CategoricalBlockTest, PrducesCorrectVectorsDifferentColumns) {
+TEST_F(CategoricalBlockTest, ProducesCorrectVectorsDifferentColumns) {
   std::vector<SegmentedSparseFeatureVector> vecs;
   std::vector<uint32_t> dims{100, 1000, 55};
   std::vector<CategoricalBlock> blocks{
