@@ -1,7 +1,7 @@
 from flask import Flask, request, render_template
 from thirdai import bolt
 import time
-from transformers import pipeline
+# from transformers import pipeline
 import torch
 import sys
 
@@ -10,53 +10,62 @@ torch.set_num_threads(1)
 
 class PredictionBackend:
     def __init__(self, bolt_model_path):
-        self.roberta = pipeline(
-            "sentiment-analysis", model="siebert/sentiment-roberta-large-english"
-        )
+        # self.roberta = pipeline(
+        #     "sentiment-analysis", model="siebert/sentiment-roberta-large-english"
+        # )
         # self.bolt = bolt.SentimentClassifier(bolt_model_path)
+        pass
 
-    def predict(self, sentence, engine):
+    def predict(self, sentence):
         start = time.time()
-        if engine == "bolt":
-            # pred = self.bolt.predict_sentiment(sentence.lower()) >= 0.5
-            return 1, 0.6435
-        elif engine == "roberta":
-            pred = self.roberta(sentence)[0]["label"] == "POSITIVE"
-        else:
-            raise ValueError("Unsupported engine type '" +
-                             request.form["engine"] + "'")
+        # bolt_pred = self.bolt.predict_sentiment(sentence.lower()) >= 0.5
+        bolt_pred = 1
         end = time.time()
-        return pred, (end - start) * 1000
+        bolt_latency = 0.8294
+        start = time.time()
+        # roberta_pred = self.roberta(sentence)[0]["label"] == "POSITIVE"
+        roberta_pred = 0
+        end = time.time()
+        roberta_latency = 248.4942
+        return bolt_pred, bolt_latency, roberta_pred, roberta_latency
 
 
 app = Flask(__name__)
 predictor = None
 
 
+def get_color(pred):
+    if pred:
+        return "rgb(8, 110, 20)"
+    return "rgb(161, 34, 19)"
+
+def get_pred_name(pred):
+    if pred:
+        return "Positive"
+    return "Negative"
+
 @app.route("/")
 def home():
-    return render_template("home.html", prediction="", background_color="", latency="")
+    return render_template(
+        "home.html",
+    )
 
 
 @app.route("/", methods=["POST"])
 def predict_sentiment():
-    sentence = request.form["sentence"]
-    engine = request.form["engine"]
+    sentence = request.form["query"]
+    
+    bolt_pred, bolt_latency, roberta_pred, roberta_latency = predictor.predict(sentence)
 
-    pred, latency = predictor.predict(sentence, engine)
-
-    if pred:
-        return render_template(
-            "home.html",
-            prediction="Positive",
-            background_color="green",
-            latency=latency,
-        )
-    else:
-        return render_template(
-            "home.html", prediction="Negative", background_color="red", latency=latency
-        )
-
+    return render_template(
+        "home.html",
+        bolt_background=get_color(bolt_pred),
+        bolt_prediction=get_pred_name(bolt_pred),
+        bolt_latency=bolt_latency,
+        roberta_background=get_color(roberta_pred),
+        roberta_prediction=get_pred_name(roberta_pred),
+        roberta_latency=roberta_latency
+    )
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -66,4 +75,4 @@ if __name__ == "__main__":
     predictor = PredictionBackend(sys.argv[1])
 
     # Set host = 0.0.0.0 so that the app is accessible outside of local via the machines ip address.
-    app.run(debug=True, host="0.0.0.0")
+    app.run(debug=True, host="0.0.0.0", port=1414)

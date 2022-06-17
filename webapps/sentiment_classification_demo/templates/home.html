@@ -1,40 +1,224 @@
 <body>
   <style>
     body {
-      background-color: {{background_color}};
-      font-family: 'Trebuchet MS', sans-serif;
-      justify-content: center;
+      background-color: rgb(29, 30, 32);/* {{bolt_background}}; */
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     }
 
-    h2 {
-      font-weight: normal;
+    main {
+      max-width: 65%;
+      margin: auto;
+      display: body;
     }
 
-    #input-form {
+    .main h1 {
+      color: rgb(218, 218, 219);
+      font-size: 40px;
+      font-weight: bold;
+      line-height: 1.2;
+    }
+
+    .main h2 {
+      color: rgb(218, 218, 219);
+      font-size: 32px;
+      font-weight: bold;
+      line-height: 1.2;
+    }
+
+    .row {
+      max-width: 65%;
+      margin-left: auto;
+      margin-right: auto;
+      display: flex;
+      flex-direction: row;
+    }
+
+    .left {
+      flex: 50%;
+      border: 2px solid rgb(65, 66, 68);
+      border-radius: 10px;
+      margin-right: 10px;
+    }
+
+    .left .title {
+      margin-top: 27px;
+      margin-bottom: 47px;
+    }
+
+    .left .title span {
+      padding: 6px 14px;
+      font-size: 40px;
+      font-weight: bold;
+      background-color: rgba(34, 78, 135, 0.35);
+      border-radius: 12px;
+      color: rgb(21, 115, 194);
+    }
+
+    .right {
+      flex: 50%;
+      text-align: right;
+      border: 2px solid rgb(65, 66, 68);
+      border-radius: 10px;
+      margin-left: 10px;
+    }
+
+    .right .title h1 {
+      color: rgb(168, 168, 168);
+    }
+
+    .row .title {
       text-align: center;
-      width: 60%;
-      padding-top: 100px;
-      margin: auto
     }
 
-    #sentence-input {
-      font-size: 16pt;
-      width: 80%;
+    .row .title h1 {
+      margin-bottom: 0px;
     }
+
+    .row .subtitle {
+      text-align: center;
+    }
+
+    .row .subtitle h3 {
+      font-size: 18px;
+      font-weight: 400;
+      color: rgb(108, 108, 108);
+      margin: 0;
+    }
+
+    .row .content {
+      text-align: center;
+    }
+
+    .row .content h2 {
+      margin-top: 0;
+    }
+
+    .row .content h3 {
+      font-size: 18px;
+      font-weight: 400;
+      color: rgb(108, 108, 108);
+      margin: 0;
+      margin-top: 25px;
+    }
+
+    .sentiment-box {
+      width: 100px;
+      height: 100px;
+      margin: 40px auto 30px auto;
+      border-radius: 10px;
+    }
+
+    .sentiment-box span {
+      color:rgb(218, 218, 219);
+      font-size: 80px;
+      line-height: 1.08;
+    }
+
+    .content h4 {
+      font-size: 32px;
+      font-weight: bold;
+      line-height: 1.2;
+      margin: 0;
+      margin-bottom: 30px;
+    }
+
+    .right h4 {
+      color: {{ roberta_background }};
+    }
+
+    .left h4 {
+      color: {{ bolt_background }};
+    }
+
+    #searchbox {
+      width: 65%;
+      margin-top: 60px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    #searchbox input {
+      padding: 4px 10px;
+      margin-bottom: 30px;
+      width: 100%;
+      color: rgb(218, 218, 219);
+      font-weight: bold;
+      border: 2px solid rgb(65, 66, 68);
+      border-radius: 10px;
+      background-color: rgb(29, 30, 32);
+    }
+
+    #searchbox input:focus {
+      border-color: rgb(155, 156, 157);
+      outline-width: 0;
+      outline: none;
+    }
+
+    #queryInput {
+      font-size: 24px;
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 20px;
+      width: 99%;
+      text-align: center;
+      line-height: 24px;
+    }
+
+    .footer span {
+      font-size: 12px;
+      color: rgb(168, 168, 168);
+      margin: 20px auto 40px auto;
+      margin-inline-start: 1px;
+      margin-inline-end: 1px;
+    }
+
   </style>
-  <div id="input-form">
-    <form method="POST">
-      <h2>Inference Engine</h2>
-      <select name="engine" style="font-size: 16pt;">
-        <option value="bolt">Bolt</option>
-        <option value="roberta">Roberta</option>
-      </select>
-      <h2>Input Sentence</h2>
-      <input name="sentence" id="sentence-input">
-      <input type="submit" style="display: none" />
-    </form>
+  <main class="main">
 
-    <h2>Sentiment: {{ prediction }}</h2>
-    <h2>Query Time: {{ latency }} ms</h2>
-  </div>
+    <div id="searchbox">
+      <form method="POST">
+        <h1>Query Sentence:</h1>
+        <input name="query" id="queryInput" autofocus="autofocus" autofocus placeholder="Enter ↵" aria-label="search" type="search" autocomplete="off">
+        <input type="submit" style="display: none" />
+      </form>
+    </div>
+
+    <div class="row">
+      <div class="left">
+        <div class="title">
+          <span>BOLT</span> 
+        </div>
+        
+        <div class="content">
+          <h3>Query Latency:</h3>
+          <h2>{{ bolt_latency }} ms</h2>
+          <h3>Sentiment:</h3>
+          <h4>{{ bolt_prediction }}</h4>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="title">
+          <h1>RoBERTa</h1> 
+        </div>
+
+        <div class="subtitle">
+          <h3>(SoTA)</h3>
+        </div>
+
+        <div class="content">
+          <h3>Query Latency:</h3>
+          <h2>{{ roberta_latency }} ms</h2>
+          <h3>Sentiment:</h3>
+          <h4>{{ roberta_prediction }}</h4>
+        </div>
+      </div>
+    </div>  
+  </main>
+
+  <footer class="footer">
+    <span>&copy; 2022 ThirdAI</span>
+  </footer>
 </body>
