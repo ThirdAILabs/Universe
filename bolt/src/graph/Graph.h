@@ -51,7 +51,7 @@ class BoltGraph {
       // Number of training epochs
       uint32_t epochs,
       // Rehash, rebuild parameters for hash functions/tables
-      uint32_t rehash = 0, uint32_t rebuild = 0,
+      uint32_t rehash, uint32_t rebuild,
       // Metrics to compute during training
       const std::vector<std::string>& metric_names = {},
       // Restrict printouts
@@ -62,7 +62,7 @@ class BoltGraph {
       // Test dataset
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
       // Test labels
-      const dataset::BoltDatasetPtr& labels,
+      const dataset::BoltDatasetPtr& test_labels,
       // Metrics to compute
       const std::vector<std::string>& metric_names = {},
       // Restrict printouts
@@ -72,11 +72,13 @@ class BoltGraph {
 
  private:
   template <typename BATCH_T>
-  void processTrainingBatch(BATCH_T& batch_inputs, const BoltBatch& batch_labels,
-                            float learning_rate, MetricAggregator& metrics);
+  void processTrainingBatch(BATCH_T& batch_inputs,
+                            const BoltBatch& batch_labels, float learning_rate,
+                            MetricAggregator& metrics);
 
   template <typename BATCH_T>
-  void processInferenceBatch(BATCH_T& batch_inputs, const BoltBatch* batch_labels,
+  void processInferenceBatch(BATCH_T& batch_inputs,
+                             const BoltBatch* batch_labels,
                              MetricAggregator& metrics, bool compute_metrics);
 
   // Computes the forward pass through the graph.

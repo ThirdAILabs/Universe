@@ -13,9 +13,8 @@ namespace thirdai::bolt {
 // the outputs of a previous layer.
 class Input final : public Node {
  public:
-  explicit Input(uint32_t expected_input_dim, bool output_sparse)
-      : _expected_input_dim(expected_input_dim),
-        _output_sparse(output_sparse) {}
+  explicit Input(uint32_t expected_input_dim)
+      : _expected_input_dim(expected_input_dim) {}
 
   void compile() final {}
 
@@ -41,7 +40,10 @@ class Input final : public Node {
 
   uint32_t outputDim() const final { return _expected_input_dim; }
 
-  bool hasSparseOutput() const final { return _output_sparse; }
+  bool hasSparseOutput() const final {
+    throw std::logic_error(
+        "Cannot determine if Input is sparse or dense until runtime");
+  }
 
   uint32_t sparseOutputDim() const final {
     throw std::logic_error(
@@ -66,7 +68,6 @@ class Input final : public Node {
  private:
   BoltBatch* _input_batch;
   uint32_t _expected_input_dim;
-  bool _output_sparse;
 };
 
 };  // namespace thirdai::bolt

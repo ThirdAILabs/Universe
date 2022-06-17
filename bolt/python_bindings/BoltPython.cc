@@ -1,4 +1,9 @@
 #include "BoltPython.h"
+#include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/Node.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
+#include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/text_classifier/TextClassifier.h>
@@ -70,29 +75,33 @@ void createBoltSubmodule(py::module_& module) {
                      "the corresponding enum.");
 
   // TODO(Geordie, Nicholas): put loss functions in its own submodule
-  py::class_<LossFunction>(bolt_submodule, "LossFunction",  // NOLINT
-                           "Base class for all loss functions");
+  py::class_<LossFunction, std::shared_ptr<LossFunction>>(  // NOLINT
+      bolt_submodule, "LossFunction", "Base class for all loss functions");
 
-  py::class_<CategoricalCrossEntropyLoss, LossFunction>(
+  py::class_<CategoricalCrossEntropyLoss,
+             std::shared_ptr<CategoricalCrossEntropyLoss>, LossFunction>(
       bolt_submodule, "CategoricalCrossEntropyLoss",
       "A loss function for multi-class (one label per sample) classification "
       "tasks.")
       .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
 
-  py::class_<BinaryCrossEntropyLoss, LossFunction>(
+  py::class_<BinaryCrossEntropyLoss, std::shared_ptr<BinaryCrossEntropyLoss>,
+             LossFunction>(
       bolt_submodule, "BinaryCrossEntropyLoss",
       "A loss function for multi-label (multiple class labels per each sample) "
       "classification tasks.")
       .def(py::init<>(), "Constructs a BinaryCrossEntropyLoss object.");
 
-  py::class_<MeanSquaredError, LossFunction>(
+  py::class_<MeanSquaredError, std::shared_ptr<MeanSquaredError>, LossFunction>(
       bolt_submodule, "MeanSquaredError",
       "A loss function that minimizes mean squared error (MSE) for regression "
       "tasks. "
       "MSE = sum( (actual - prediction)^2 )")
       .def(py::init<>(), "Constructs a MeanSquaredError object.");
 
-  py::class_<WeightedMeanAbsolutePercentageErrorLoss, LossFunction>(
+  py::class_<WeightedMeanAbsolutePercentageErrorLoss,
+             std::shared_ptr<WeightedMeanAbsolutePercentageErrorLoss>,
+             LossFunction>(
       bolt_submodule, "WeightedMeanAbsolutePercentageError",
       "A loss function to minimize weighted mean absolute percentage error "
       "(WMAPE) "
@@ -576,6 +585,34 @@ void createBoltSubmodule(py::module_& module) {
           "Loads and builds a saved classifier from file.\n"
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
+
+  auto graph_submodule = bolt_submodule.def_submodule("graph");
+
+  py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
+
+  py::class_<FullyConnectedLayerNode, std::shared_ptr<FullyConnectedLayerNode>,
+             Node>(graph_submodule, "FullyConnected")
+      .def(py::init<FullyConnectedLayerConfig>())
+      .def("__call__", &FullyConnectedLayerNode::addPredecessor,
+           py::arg("prev_layer"));
+
+  py::class_<Input, InputPtr, Node>(graph_submodule, "Input")
+      .def(py::init<uint32_t>(), py::arg("dim"));
+
+  py::class_<BoltGraph>(graph_submodule, "Model")
+      .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
+           py::arg("output"))
+      .def("compile", &BoltGraph::compile, py::arg("loss"))
+      .def("train", &BoltGraph::train<BoltBatch>, py::arg("train_data"),
+           py::arg("train_labels"), py::arg("learning_rate"), py::arg("epochs"),
+           py::arg("rehash"), py::arg("rebuild"),
+           py::arg("metrics") = std::vector<std::string>(),
+           py::arg("verbose") = true)
+      .def("predict", &BoltGraph::predict<BoltBatch>, py::arg("test_data"),
+           py::arg("test_labels"),
+           py::arg("metrics") = std::vector<std::string>(),
+           py::arg("verbose") = true,
+           py::arg("batch_limit") = std::numeric_limits<uint32_t>::max());
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {

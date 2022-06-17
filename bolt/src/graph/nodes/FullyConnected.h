@@ -6,8 +6,8 @@ namespace thirdai::bolt {
 
 class FullyConnectedLayerNode final : public Node {
  public:
-  explicit FullyConnectedLayerNode(FullyConnectedLayerConfig& config)
-      : _layer(nullptr), _config(config), _predecessor(nullptr) {}
+  explicit FullyConnectedLayerNode(FullyConnectedLayerConfig config)
+      : _layer(nullptr), _config(std::move(config)), _predecessor(nullptr) {}
 
   void compile() final {
     if (_predecessor == nullptr) {
@@ -34,8 +34,13 @@ class FullyConnectedLayerNode final : public Node {
   }
 
   void backpropagate(uint32_t batch_index) final {
-    _layer->backpropagate(_predecessor->getOutput(batch_index),
-                          _outputs[batch_index]);
+    if (_predecessor->isInputNode()) {
+      _layer->backpropagateInputLayer(_predecessor->getOutput(batch_index),
+                                      _outputs[batch_index]);
+    } else {
+      _layer->backpropagate(_predecessor->getOutput(batch_index),
+                            _outputs[batch_index]);
+    }
   }
 
   void updateParameters(float learning_rate, uint32_t batch_cnt) final {
@@ -46,11 +51,13 @@ class FullyConnectedLayerNode final : public Node {
     return _outputs[batch_index];
   }
 
-  uint32_t outputDim() const final { return _layer->getDim(); }
+  uint32_t outputDim() const final { return _config.dim; }
 
-  bool hasSparseOutput() const final { return _layer->isSparse(); }
+  bool hasSparseOutput() const final { return _config.sparsity < 1.0; }
 
-  uint32_t sparseOutputDim() const final { return _layer->getSparseDim(); }
+  uint32_t sparseOutputDim() const final {
+    return _config.sparsity * _config.dim;
+  }
 
   void initializeState(uint32_t batch_size, bool use_sparsity) final {
     _outputs = _layer->createBatchState(batch_size, use_sparsity);
