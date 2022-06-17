@@ -1,10 +1,10 @@
 job = "Amazon Polarity"
 
 [dataset]
-train_data = "amazon_polarity/train.svm"
-test_data = "amazon_polarity/test.svm"
+train_data = "amazon_polarity/train_50.svm"
+test_data = "amazon_polarity/test_50.svm"
 format = "svm"
-input_dim = 100000
+input_dim = 50000
 max_test_batches = 20
 
 [params]
@@ -20,7 +20,7 @@ rehash = 6400
 rebuild = 128000
 
 [[layers]]
-dim = 8000
+dim = 10000
 activation = 'ReLU'
 sparsity = 0.005
 use_default_sampling = true

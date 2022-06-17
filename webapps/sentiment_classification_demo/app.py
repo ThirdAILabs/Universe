@@ -1,7 +1,7 @@
 from flask import Flask, request, render_template
 from thirdai import bolt
 import time
-# from transformers import pipeline
+from transformers import pipeline
 import torch
 import sys
 
@@ -10,23 +10,22 @@ torch.set_num_threads(1)
 
 class PredictionBackend:
     def __init__(self, bolt_model_path):
-        # self.roberta = pipeline(
-        #     "sentiment-analysis", model="siebert/sentiment-roberta-large-english"
-        # )
-        # self.bolt = bolt.SentimentClassifier(bolt_model_path)
-        pass
+        self.roberta = pipeline(
+            "sentiment-analysis", model="siebert/sentiment-roberta-large-english"
+        )
+        self.bolt = bolt.SentimentClassifier(bolt_model_path)
 
     def predict(self, sentence):
         start = time.time()
-        # bolt_pred = self.bolt.predict_sentiment(sentence.lower()) >= 0.5
-        bolt_pred = 1
+        bolt_pred = self.bolt.predict_sentiment(sentence.lower()) >= 0.5
         end = time.time()
-        bolt_latency = 0.8294
+        bolt_latency = 1000 * (end - start)
+
         start = time.time()
-        # roberta_pred = self.roberta(sentence)[0]["label"] == "POSITIVE"
-        roberta_pred = 0
+        roberta_pred = self.roberta(sentence)[0]["label"] == "POSITIVE"
         end = time.time()
-        roberta_latency = 248.4942
+        roberta_latency = 1000 * (end - start)
+        
         return bolt_pred, bolt_latency, roberta_pred, roberta_latency
 
 
@@ -39,10 +38,12 @@ def get_color(pred):
         return "rgb(8, 110, 20)"
     return "rgb(161, 34, 19)"
 
+
 def get_pred_name(pred):
     if pred:
         return "Positive"
     return "Negative"
+
 
 @app.route("/")
 def home():
@@ -54,8 +55,9 @@ def home():
 @app.route("/", methods=["POST"])
 def predict_sentiment():
     sentence = request.form["query"]
-    
-    bolt_pred, bolt_latency, roberta_pred, roberta_latency = predictor.predict(sentence)
+
+    bolt_pred, bolt_latency, roberta_pred, roberta_latency = predictor.predict(
+        sentence)
 
     return render_template(
         "home.html",
@@ -66,6 +68,7 @@ def predict_sentiment():
         roberta_prediction=get_pred_name(roberta_pred),
         roberta_latency=roberta_latency
     )
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
