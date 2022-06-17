@@ -9,7 +9,6 @@
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
-#include <dataset/src/encodings/categorical/MultiNumericId.h>
 #include <dataset/src/encodings/text/CharKGram.h>
 #include <dataset/src/encodings/text/PairGram.h>
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
@@ -119,32 +118,17 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<ContiguousNumericId, CategoricalEncoding,
              std::shared_ptr<ContiguousNumericId>>(
       categorical_encoding_submodule, "ContiguousNumericId",
-      "Expects a number and treats it as an ID in a contiguous set of "
-      "numeric IDs in a given range (0-indexed, excludes end of range). "
-      "If the ID is beyond the given range, it performs a modulo operation. "
-      "To illustrate, if dim = 10, then 0 through 9 map to themselves, "
-      "and any number n >= 10 maps to n % 10.")
-      .def(py::init<uint32_t>(), py::arg("dim"),
-           "Constructor. Accepts the desired dimension of the encoding.")
-      .def("feature_dim", &ContiguousNumericId::featureDim,
-           "Returns False since this is a sparse encoding.")
-      .def("is_dense", &ContiguousNumericId::isDense,
-           "The dimension of the encoding.");
-
-  py::class_<MultiNumericId, CategoricalEncoding,
-             std::shared_ptr<MultiNumericId>>(
-      categorical_encoding_submodule, "MultiNumericId",
       "Expects a character-delimited list of numbers and treats each number "
       "as an ID the contiguous range [0, dim). "
       "If the ID is beyond the given range, it performs a modulo operation. "
       "To illustrate, if dim = 10, then 0 through 9 map to themselves, "
       "and any number n >= 10 maps to n % 10.")
-      .def(py::init<char, uint32_t>(), py::arg("delimiter"), py::arg("dim"),
-           "Constructor. Accepts the delimiter between the numeric IDs "
-           "and the desired dimension of the encoding.")
-      .def("feature_dim", &MultiNumericId::featureDim,
+      .def(py::init<uint32_t, char>(), py::arg("dim"), py::arg("delimiter"),
+           "Constructor. Accepts the desired dimension of the encoding and "
+           "an optional character delimiter that defaults to ','.")
+      .def("feature_dim", &ContiguousNumericId::featureDim,
            "Returns False since this is a sparse encoding.")
-      .def("is_dense", &MultiNumericId::isDense,
+      .def("is_dense", &ContiguousNumericId::isDense,
            "The dimension of the encoding.");
 
   py::class_<Block, std::shared_ptr<Block>>(

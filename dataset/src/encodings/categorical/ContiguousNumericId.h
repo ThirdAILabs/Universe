@@ -29,13 +29,22 @@ class ContiguousNumericId : public CategoricalEncoding {
   /**
    * Constructor. Accepts the desired dimension of the encoding.
    */
-  explicit ContiguousNumericId(uint32_t dim) : _dim(dim) {}
+  explicit ContiguousNumericId(uint32_t dim, char delimiter=',') : _dim(dim), _delimiter(delimiter) {}
 
   void encodeCategory(const std::string_view id,
                       SegmentedFeatureVector& vec) final {
-    uint32_t id_int{};
-    std::from_chars(id.data(), id.data() + id.size(), id_int);
-    vec.addSparseFeatureToSegment(id_int % _dim, 1.0);
+    size_t start = 0;
+    size_t end = 0;
+    while (end != std::string::npos) {
+      end = id.find(_delimiter, start);
+      size_t len = end == std::string::npos ? id.size() - start : end - start;
+      
+      uint32_t id_int{};
+      std::from_chars(id.data() + start, id.data() + start + len, id_int);
+      vec.addSparseFeatureToSegment(id_int % _dim, 1.0);
+
+      start = end + 1;
+    }
   };
 
   bool isDense() final { return false; };
@@ -44,6 +53,7 @@ class ContiguousNumericId : public CategoricalEncoding {
 
  private:
   uint32_t _dim;
+  char _delimiter;
 };
 
 }  // namespace thirdai::dataset
