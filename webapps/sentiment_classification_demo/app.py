@@ -21,12 +21,14 @@ class PredictionBackend:
         # bolt_pred = self.bolt.predict_sentiment(sentence.lower()) >= 0.5
         bolt_pred = 1
         end = time.time()
-        bolt_latency = 0.8294
+        bolt_latency = 0.829423048234
+        bolt_latency = round(bolt_latency, 4)
         start = time.time()
         # roberta_pred = self.roberta(sentence)[0]["label"] == "POSITIVE"
         roberta_pred = 0
         end = time.time()
-        roberta_latency = 248.4942
+        roberta_latency = 248.4942023420
+        roberta_latency = round(roberta_latency, 4)
         return bolt_pred, bolt_latency, roberta_pred, roberta_latency
 
 
