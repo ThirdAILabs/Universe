@@ -4,7 +4,7 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
-#include <bolt/src/metrics/Metric.h>
+#include <bolt/src/metrics/MetricAggregator.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/bolt_datasets/StreamingDataset.h>
@@ -167,6 +167,24 @@ class Model {
   virtual uint32_t getInferenceOutputDim() const = 0;
 
   virtual ~Model() = default;
+
+  /**
+   * shallow layer: Layer without optimizer state
+   * setShallow sets the layer to shallow or non-shallow, ie, it can remove or
+   * initialize the optimizer respectively
+   * Only called for trimming the model or for resuming training.
+   */
+  virtual void setShallow(bool shallow) = 0;
+
+  /**
+   * setShallowSave sets whether layer should be saved shallowly, ie, whether
+   * layers should be saved with or without the optimizer state
+   * Called right before saving the model so that archive method knows whether
+   * or not to store the optimizer state.
+   */
+  virtual void setShallowSave(bool shallow) = 0;
+
+  virtual bool anyLayerShallow() = 0;
 
  protected:
   uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,
