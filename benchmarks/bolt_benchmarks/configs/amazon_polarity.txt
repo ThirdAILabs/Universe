@@ -1,8 +1,8 @@
 job = "Amazon Polarity"
 
 [dataset]
-train_data = "amazon_polarity/svm_train.txt"
-test_data = "amazon_polarity/svm_test.txt"
+train_data = "amazon_polarity/train.svm"
+test_data = "amazon_polarity/test.svm"
 format = "svm"
 input_dim = 100000
 max_test_batches = 20
@@ -13,12 +13,14 @@ train_metrics = []
 test_metrics = ["categorical_accuracy"]
 learning_rate = 0.0001
 epochs = 5
+sparse_inference_epoch = 3
+save_for_inference = "sentiment_model"
 batch_size = 256
 rehash = 6400
 rebuild = 128000
 
 [[layers]]
-dim = 10000
+dim = 8000
 activation = 'ReLU'
 sparsity = 0.005
 use_default_sampling = true
