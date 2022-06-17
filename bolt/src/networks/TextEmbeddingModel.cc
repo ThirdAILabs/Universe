@@ -42,6 +42,8 @@ void TextEmbeddingModel::updateParameters(float learning_rate, uint32_t iter) {
       _token_embedding_layers_used[i] = false;
     }
   }
+
+  _classifier.updateParameters(learning_rate, iter);
 }
 
 void TextEmbeddingModel::initializeNetworkState(uint32_t batch_size,
