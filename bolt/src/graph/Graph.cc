@@ -1,7 +1,9 @@
 #include "Graph.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/BoltVector.h>
+#include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
+#include <optional>
 #include <queue>
 #include <unordered_set>
 
@@ -14,6 +16,56 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss) {
     node->compile();
   }
 }
+
+class TrainContext {
+ public:
+  TrainContext(uint32_t initial_epoch_cnt, uint32_t num_train_batches,
+               const std::vector<std::string>& metric_names, bool verbose)
+      : _epoch_cnt(initial_epoch_cnt),
+        _num_train_batches(num_train_batches),
+        _metrics(metric_names, verbose),
+        _verbose(verbose) {}
+
+  void startEpoch() {
+    if (_verbose) {
+      std::cout << "\nEpoch " << (_epoch_cnt + 1) << ':' << std::endl;
+    }
+
+    _start_time = std::chrono::high_resolution_clock::now();
+  }
+
+  void endEpoch() {
+    auto end_time = std::chrono::high_resolution_clock::now();
+    int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
+                             end_time - _start_time.value())
+                             .count();
+    _start_time = std::nullopt;
+
+    _time_per_epoch.push_back(static_cast<double>(epoch_time));
+    if (_verbose) {
+      std::cout << std::endl
+                << "Processed " << _num_train_batches << " training batches in "
+                << epoch_time << " seconds" << std::endl;
+    }
+    _epoch_cnt++;
+
+    _metrics.logAndReset();
+  }
+
+ private:
+  uint32_t _epoch_cnt;
+  uint32_t _num_train_batches;
+  MetricAggregator _metrics;
+  bool _verbose;
+
+  std::vector<double> _time_per_epoch;
+
+  using TimePoint = std::chrono::time_point<
+      std::chrono::steady_clock,
+      std::chrono::duration<long long, std::ratio<1, 1000000000>>>;  // NOLINT
+
+  std::optional<TimePoint> _start_time;
+};
 
 template <typename BATCH_T>
 MetricData BoltGraph::train(
@@ -89,18 +141,19 @@ MetricData BoltGraph::train(
 }
 
 template <>
-void BoltGraph::processTrainingBatch(BoltBatch& batch_data,
+void BoltGraph::processTrainingBatch(BoltBatch& batch_inputs,
                                      const BoltBatch& batch_labels,
                                      float learning_rate,
                                      MetricAggregator& metrics) {
-  _inputs[0]->setInputs(&batch_data);
+  _inputs[0]->setInputs(&batch_inputs);
 
-#pragma omp parallel for default(none) shared(batch_data, batch_labels, metrics)
-  for (uint32_t vec_id = 0; vec_id < batch_data.getBatchSize(); vec_id++) {
+#pragma omp parallel for default(none) \
+    shared(batch_inputs, batch_labels, metrics)
+  for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
     forward(vec_id, &batch_labels[vec_id]);
 
     _loss->lossGradients(_output->getOutput(vec_id), batch_labels[vec_id],
-                         batch_data.getBatchSize());
+                         batch_inputs.getBatchSize());
 
     backpropagate(vec_id);
 
@@ -108,6 +161,86 @@ void BoltGraph::processTrainingBatch(BoltBatch& batch_data,
   }
 
   updateParameters(learning_rate, ++_batch_cnt);
+}
+
+template <typename BATCH_T>
+InferenceMetricData BoltGraph::predict(
+    // Test dataset
+    const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
+    // Test labels
+    const dataset::BoltDatasetPtr& labels,
+    // Metrics to compute
+    const std::vector<std::string>& metric_names,
+    // Restrict printouts
+    bool verbose,
+    // Limit the number of batches used in the dataset
+    uint32_t batch_limit) {
+  bool compute_metrics = labels != nullptr;
+
+  uint32_t batch_size = test_data->at(0).getBatchSize();
+
+  uint64_t num_test_batches = std::min(test_data->numBatches(), batch_limit);
+
+  MetricAggregator metrics(metric_names, verbose);
+
+  // Because of how the datasets are read we know that all batches will not have
+  // a batch size larger than this so we can just set the batch size here.
+  // If sparse inference is not enabled we want the outptus to be dense,
+  // otherwise we want whatever the default for the layer is.
+  initializeState(batch_size, metrics.forceDenseInference());
+
+  ProgressBar bar(num_test_batches, verbose);
+
+  auto test_start = std::chrono::high_resolution_clock::now();
+  for (uint32_t batch = 0; batch < num_test_batches; batch++) {
+    const BATCH_T& inputs = test_data->at(batch);
+
+    const BoltBatch* batch_labels =
+        compute_metrics ? &(*labels)[batch] : nullptr;
+
+    processTestBatch(inputs, batch_labels, metrics, compute_metrics);
+
+    bar.increment();
+  }
+
+  auto test_end = std::chrono::high_resolution_clock::now();
+  int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+                          test_end - test_start)
+                          .count();
+  if (verbose) {
+    std::cout << std::endl
+              << "Processed " << num_test_batches << " test batches in "
+              << test_time << " milliseconds" << std::endl;
+  }
+
+  metrics.logAndReset();
+
+  auto metric_vals = metrics.getOutputFromInference();
+
+  metric_vals["test_time"] = test_time;
+
+  return metric_vals;
+}
+
+template <>
+void BoltGraph::processInferenceBatch(BoltBatch& batch_inputs,
+                                      const BoltBatch* batch_labels,
+                                      MetricAggregator& metrics,
+                                      bool compute_metrics) {
+  _inputs[0]->setInputs(&batch_inputs);
+
+#pragma omp parallel for default(none) \
+    shared(batch_inputs, batch_labels, metrics, compute_metrics)
+  for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
+    // We set labels to nullptr so that they are not used in sampling during
+    // inference.
+    forward(vec_id, /*labels=*/nullptr);
+
+    if (compute_metrics) {
+      metrics.processSample(_output->getOutput(vec_id),
+                            (*batch_labels)[vec_id]);
+    }
+  }
 }
 
 void BoltGraph::forward(uint32_t batch_index, const BoltVector* labels) {

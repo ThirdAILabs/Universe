@@ -63,13 +63,6 @@ class BoltGraph {
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
       // Test labels
       const dataset::BoltDatasetPtr& labels,
-      // Array to store output active neurons in. This should be null if it is
-      // not desired for the output values to be returned or if the output is
-      // dense.
-      uint32_t* output_active_neurons,
-      // Array to store output activations in, will not return activations if
-      // this is null
-      float* output_activations,
       // Metrics to compute
       const std::vector<std::string>& metric_names = {},
       // Restrict printouts
@@ -79,12 +72,12 @@ class BoltGraph {
 
  private:
   template <typename BATCH_T>
-  void processTrainingBatch(BATCH_T& batch_data, const BoltBatch& labels,
+  void processTrainingBatch(BATCH_T& batch_inputs, const BoltBatch& batch_labels,
                             float learning_rate, MetricAggregator& metrics);
 
   template <typename BATCH_T>
-  void processInferenceBatch(BATCH_T& batch_data, const BoltBatch* labels,
-                             MetricAggregator& metrics);
+  void processInferenceBatch(BATCH_T& batch_inputs, const BoltBatch* batch_labels,
+                             MetricAggregator& metrics, bool compute_metrics);
 
   // Computes the forward pass through the graph.
   void forward(uint32_t batch_index, const BoltVector* labels);
