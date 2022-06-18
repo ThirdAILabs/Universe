@@ -17,6 +17,10 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss) {
   for (auto& node : _nodes) {
     node->compile();
   }
+
+  for (auto& node : _nodes) {
+    node->addSparseLayers(_sparse_layers);
+  }
 }
 
 template MetricData BoltGraph::train(
@@ -148,7 +152,7 @@ InferenceMetricData BoltGraph::predict(
   // a batch size larger than this so we can just set the batch size here.
   // If sparse inference is not enabled we want the outptus to be dense,
   // otherwise we want whatever the default for the layer is.
-  initializeState(batch_size, metrics.forceDenseInference());
+  initializeState(batch_size, !metrics.forceDenseInference());
 
   ProgressBar bar(num_test_batches, verbose);
 

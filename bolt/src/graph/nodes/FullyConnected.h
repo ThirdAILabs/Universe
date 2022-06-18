@@ -60,7 +60,8 @@ class FullyConnectedLayerNode final : public Node {
   }
 
   void initializeState(uint32_t batch_size, bool use_sparsity) final {
-    _outputs = _layer->createBatchState(batch_size, use_sparsity);
+    _outputs =
+        _layer->createBatchState(batch_size, /* force_dense=*/!use_sparsity);
   }
 
   void enqueuePredecessors(std::queue<NodePtr>& nodes) final {
