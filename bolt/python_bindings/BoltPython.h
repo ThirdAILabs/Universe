@@ -535,7 +535,7 @@ class SentimentClassifier {
 
   float predictSentiment(const std::string& sentence) {
     BoltVector vec =
-        dataset::python::parseSentenceToBoltVector(sentence, 341, 100000);
+        dataset::python::parseSentenceToBoltVector(sentence, 341, 50000);
     _model->forward(0, vec, _output, nullptr);
     return _output.activations[1];
   }

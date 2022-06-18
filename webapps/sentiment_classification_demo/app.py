@@ -27,7 +27,7 @@ class PredictionBackend:
         end = time.time()
         roberta_latency = 1000 * (end - start)
         roberta_latency = round(roberta_latency, 4)
-        
+
         return bolt_pred, bolt_latency, roberta_pred, roberta_latency
 
 
@@ -80,4 +80,4 @@ if __name__ == "__main__":
     predictor = PredictionBackend(sys.argv[1])
 
     # Set host = 0.0.0.0 so that the app is accessible outside of local via the machines ip address.
-    app.run(debug=True, host="0.0.0.0", port=1414)
+    app.run(debug=False, host="0.0.0.0")
