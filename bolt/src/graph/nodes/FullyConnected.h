@@ -83,4 +83,4 @@ class FullyConnectedLayerNode final : public Node {
   NodePtr _predecessor;
 };
 
-};  // namespace thirdai::bolt
+}  // namespace thirdai::bolt

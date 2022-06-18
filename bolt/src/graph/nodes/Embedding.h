@@ -2,4 +2,4 @@
 
 #include <bolt/src/graph/Node.h>
 
-namespace thirdai::bolt {};
+namespace thirdai::bolt {}

@@ -190,4 +190,4 @@ class Concatenate final : public Node {
   BoltBatch _outputs;
 };
 
-};  // namespace thirdai::bolt
+}  // namespace thirdai::bolt

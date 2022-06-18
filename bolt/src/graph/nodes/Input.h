@@ -70,4 +70,4 @@ class Input final : public Node {
   uint32_t _expected_input_dim;
 };
 
-};  // namespace thirdai::bolt
+}  // namespace thirdai::bolt
