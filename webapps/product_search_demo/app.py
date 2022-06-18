@@ -47,4 +47,4 @@ if __name__ == "__main__":
     product_index = DocRetrieval.deserialize_from_file(sys.argv[1])
 
     # Set host = 0.0.0.0 so that the app is accessible outside of local via the machines ip address.
-    app.run(debug=True, host="0.0.0.0")
+    app.run(debug=False, host="0.0.0.0")
