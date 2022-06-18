@@ -21,7 +21,7 @@ class PredictionBackend:
         end = time.time()
         bolt_latency = 1000 * (end - start)
         bolt_latency = round(bolt_latency, 4)
-        
+
         start = time.time()
         roberta_pred = self.roberta(sentence)[0]["label"] == "POSITIVE"
         end = time.time()
@@ -58,8 +58,7 @@ def home():
 def predict_sentiment():
     sentence = request.form["query"]
 
-    bolt_pred, bolt_latency, roberta_pred, roberta_latency = predictor.predict(
-        sentence)
+    bolt_pred, bolt_latency, roberta_pred, roberta_latency = predictor.predict(sentence)
 
     return render_template(
         "home.html",
@@ -68,14 +67,13 @@ def predict_sentiment():
         bolt_latency=bolt_latency,
         roberta_background=get_color(roberta_pred),
         roberta_prediction=get_pred_name(roberta_pred),
-        roberta_latency=roberta_latency
+        roberta_latency=roberta_latency,
     )
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        raise ValueError(
-            "Expected path to bolt model as command line argument.")
+        raise ValueError("Expected path to bolt model as command line argument.")
 
     predictor = PredictionBackend(sys.argv[1])
 
