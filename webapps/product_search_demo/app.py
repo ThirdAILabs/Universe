@@ -2,7 +2,8 @@ import time
 from flask import Flask, request, render_template
 import sys
 import warnings
-warnings.filterwarnings('ignore')
+
+warnings.filterwarnings("ignore")
 
 import thirdai
 from thirdai.search import DocRetrieval
@@ -13,6 +14,7 @@ product_index = None
 embedding_model = DocSearchModel()
 
 app = Flask(__name__)
+
 
 @app.route("/")
 def home():
@@ -33,16 +35,12 @@ def predict_sentiment():
     products = [x[1] for x in results]
 
     query_time = f"Query completed in {total_time} seconds."
-    return render_template(
-        "home.html",
-        products=products,
-        time=query_time
-    )
+    return render_template("home.html", products=products, time=query_time)
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-         raise ValueError("Expected path to saved index as command line argument.")
+        raise ValueError("Expected path to saved index as command line argument.")
 
     product_index = DocRetrieval.deserialize_from_file(sys.argv[1])
 
