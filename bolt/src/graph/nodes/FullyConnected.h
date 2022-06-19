@@ -44,7 +44,7 @@ class FullyConnectedLayerNode final : public Node {
   }
 
   void updateParameters(float learning_rate, uint32_t batch_cnt) final {
-    _layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA1, EPS);
+    _layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA2, EPS);
   }
 
   BoltVector& getOutput(uint32_t batch_index) final {
