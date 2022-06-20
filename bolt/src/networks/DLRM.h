@@ -40,11 +40,6 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
 
   void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
 
-  void shuffleRandomNeurons() final {
-    _bottom_mlp.shuffleRandomNeurons();
-    _top_mlp.shuffleRandomNeurons();
-  }
-
   void reBuildHashFunctions() final {
     _bottom_mlp.reBuildHashFunctions();
     _top_mlp.reBuildHashFunctions();
