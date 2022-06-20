@@ -33,7 +33,8 @@ def load_text_classification_dataset(
         schema = Schema(input_blocks=[text_block])
 
     # Assemble
-    loader = Loader(source, parser, schema, batch_size, est_num_elems=est_num_elems)
+    loader = Loader(source, parser, schema, batch_size,
+                    est_num_elems=est_num_elems)
 
     return loader.processInMemory(), loader.input_dim()
 
@@ -41,13 +42,7 @@ def load_text_classification_dataset(
 __all__.append(load_text_classification_dataset)
 
 
-def tokenize_to_svm(
-    input_file,
-    output_dim=100_000,
-    output_file="preprocessed_data.svm",
-    label_column=0,
-    numeric_labels=False,
-):
+def tokenize_to_svm(input_file, output_dim=100_000, output_file="preprocessed_data.svm"):
     """Utility function that converts text datasets into vector representations, saves them in SVM format.\n\n
     Arguments:\n
      * input_file: String - Path to a text dataset. More on this below.\n
@@ -77,16 +72,10 @@ def tokenize_to_svm(
         csvreader = csv.reader(open(input_file, "r"))
 
         for line in csvreader:
-            if len(line) != 2:
-                raise ValueError("Expcted csv to have 2 columns per line")
-
-            if numeric_labels:
-                label = int(line[label_column])
-            else:
-                label = 1 if line[label_column] == "pos" else 0
+            label = 1 if line[0] == "pos" else 0
             fw.write(str(label) + " ")
 
-            sentence = re.sub(r"[^\w\s]", "", line[1 - label_column])
+            sentence = re.sub(r"[^\w\s]", "", line[1])
             sentence = sentence.lower()
             # BOLT TOKENIZER START
             tup = thirdai._thirdai.dataset.bolt_tokenizer(
