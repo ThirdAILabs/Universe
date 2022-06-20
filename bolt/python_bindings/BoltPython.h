@@ -527,7 +527,7 @@ class DistributedPyNetwork final : public FullyConnectedNetwork {
   DistributedPyNetwork(SequentialConfigList configs, uint64_t input_dim)
       : FullyConnectedNetwork(std::move(configs), input_dim) {}
 
-  void initTrainDistributed(const py::object& data, const py::object& labels,
+  uint32_t initTrainDistributed(const py::object& data, const py::object& labels,
                    uint32_t batch_size = 0,
                    uint32_t rehash = 0, uint32_t rebuild = 0,
                    bool verbose = false) {
@@ -539,7 +539,7 @@ class DistributedPyNetwork final : public FullyConnectedNetwork {
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
 
 
-    FullyConnectedNetwork::initTrainDistributed(
+    return FullyConnectedNetwork::initTrainDistributed(
         train_data.dataset, train_labels.dataset, rehash, rebuild, verbose);
 
 
@@ -555,7 +555,7 @@ class DistributedPyNetwork final : public FullyConnectedNetwork {
     FullyConnectedNetwork::updateParametersDistributed(learning_rate);
   }
 
-  py::tuple predict(
+  py::tuple predictDistributed(
       const py::object& data, const py::object& labels, uint32_t batch_size = 0,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
@@ -695,24 +695,6 @@ class DistributedPyNetwork final : public FullyConnectedNetwork {
       uint32_t layer_index,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_weights_gradients){
-      int64_t dim = _layers.at(layer_index)->getDim();
-      int64_t prev_dim =
-          (layer_index > 0) ? _layers.at(layer_index - 1)->getDim() : _input_dim;
-
-      if (new_weights_gradients.ndim() != 2) {
-        std::stringstream err;
-        err << "Expected weight matrix to have 2 dimensions, received matrix "
-              "with "
-            << new_weights_gradients.ndim() << " dimensions.";
-        throw std::invalid_argument(err.str());
-      }
-      if (new_weights_gradients.shape(0) != dim || new_weights_gradients.shape(1) != prev_dim) {
-        std::stringstream err;
-        err << "Expected weight matrix to have dim (" << dim << ", " << prev_dim
-            << ") received matrix with dim (" << new_weights_gradients.shape(0) << ", "
-            << new_weights_gradients.shape(1) << ").";
-        throw std::invalid_argument(err.str());
-      }
 
       _layers.at(layer_index)->setWeightGradients(new_weights_gradients.data());
   }
@@ -743,24 +725,7 @@ void setBiasesGradients(
       uint32_t layer_index,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_biases_gradients){
-      int64_t dim = _layers.at(layer_index)->getDim();
-      int64_t prev_dim =
-          (layer_index > 0) ? _layers.at(layer_index - 1)->getDim() : _input_dim;
 
-      if (new_biases_gradients.ndim() != 2) {
-        std::stringstream err;
-        err << "Expected weight matrix to have 2 dimensions, received matrix "
-              "with "
-            << new_biases_gradients.ndim() << " dimensions.";
-        throw std::invalid_argument(err.str());
-      }
-      if (new_biases_gradients.shape(0) != dim || new_biases_gradients.shape(1) != prev_dim) {
-        std::stringstream err;
-        err << "Expected weight matrix to have dim (" << dim << ", " << prev_dim
-            << ") received matrix with dim (" << new_biases_gradients.shape(0) << ", "
-            << new_biases_gradients.shape(1) << ").";
-        throw std::invalid_argument(err.str());
-      }
 
       _layers.at(layer_index)->setBiasesGradients(new_biases_gradients.data());
   }

@@ -85,13 +85,13 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void setBiases(const float* new_biases) final;
 
-  void setWeightGradients(const float* update_weight_gradient);
+  void setWeightGradients(const float* update_weight_gradient) final;
   
-  void setBiasesGradients(const float* update_bias_gradient);
+  void setBiasesGradients(const float* update_bias_gradient) final;
 
-  float* getBiasesGradient();
+  float* getBiasesGradient() final;
   
-  float* getWeightsGradient();
+  float* getWeightsGradient() final;
 
   bool isShallow() final { return _is_shallow; }
 

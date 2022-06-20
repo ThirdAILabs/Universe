@@ -23,7 +23,8 @@ class DistributedModel {
  public:
  BoltBatch _outputs;
 
-  DistributedModel() : _batch_iter(0), _epoch_count(0) {
+  DistributedModel() : _batch_iter(0), _epoch_count(0), _rebuild_batch(0), _rehash_batch(0), _train_data(nullptr)
+  , _train_labels(nullptr)  {
     thirdai::licensing::LicenseWrapper::checkLicense();
   }
 
@@ -83,7 +84,7 @@ class DistributedModel {
                         float* output_activations, MetricAggregator& metrics,
                         bool compute_metrics);
   //Distributed Functions
-  void initTrainDistributed(
+  uint32_t initTrainDistributed(
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
     const dataset::BoltDatasetPtr& train_labels,
     // Clang tidy is disabled for this line because it wants to pass by
@@ -166,7 +167,7 @@ class DistributedModel {
   uint32_t _rebuild_batch;
   uint32_t _rehash_batch;
   std::shared_ptr<dataset::InMemoryDataset<BATCH_T>> _train_data;
-  const dataset::BoltDatasetPtr _train_labels;
+  dataset::BoltDatasetPtr _train_labels;
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;

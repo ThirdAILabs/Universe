@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cstdint>
 #include <iostream>
 #include <stdexcept>
 
@@ -16,7 +17,7 @@ template class DistributedModel<dataset::ClickThroughBatch>;
 
 
 template<typename BATCH_T>
-void DistributedModel<BATCH_T>::initTrainDistributed(
+uint32_t DistributedModel<BATCH_T>::initTrainDistributed(
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
     const dataset::BoltDatasetPtr& train_labels,
     // Clang tidy is disabled for this line because it wants to pass by
@@ -26,8 +27,8 @@ void DistributedModel<BATCH_T>::initTrainDistributed(
     _train_labels = train_labels;
     uint32_t batch_size = _train_data->at(0).getBatchSize();
     _rebuild_batch =
-        getRebuildBatch(rebuild, batch_size, train_data->len());
-    _rehash_batch = getRehashBatch(rehash, batch_size, train_data->len());
+        getRebuildBatchDistributed(rebuild, batch_size, train_data->len());
+    _rehash_batch = getRehashBatchDistributed(rehash, batch_size, train_data->len());
 
     // Because of how the datasets are read we know that all batches will not have
     // a batch size larger than this so we can just set the batch size here.
@@ -37,6 +38,7 @@ void DistributedModel<BATCH_T>::initTrainDistributed(
     if(verbose){
       std::cout << "Distributed Network initialization done on this Node" << std::endl;
     }
+    return train_data->numBatches();
 }
 
 template<typename BATCH_T>

@@ -668,7 +668,7 @@ void createBoltSubmodule(py::module_& module) {
            "epoch times. "
            "Set to True by default.\n\n"
 
-           "Returns void")
+           "Returns batch-size")
       .def("calculateGradientDistributed", &DistributedPyNetwork::calculateGradientDistributed, py::arg("batch"),
            py::arg("loss_fn"),
            "calculated the gradient for the network on the given training batch.\n"
@@ -765,7 +765,21 @@ void createBoltSubmodule(py::module_& module) {
            "array.")
       .def("get_weights_gradients", &DistributedPyNetwork::getWeightsGradients, py::arg("layer_index"),
            "Returns the weight gradient array at the given layer index as a 1D Numpy "
-           "array.");
+           "array.")
+      .def("enable_sparse_inference", &DistributedPyNetwork::enableSparseInference,
+           "Enables sparse inference. Freezes smart hash tables. Do not call "
+           "this method early on "
+           "in the training routine. It is recommended to call this method "
+           "right before the last training "
+           "epoch.")
+      .def("get_weights", &DistributedPyNetwork::getWeights, py::arg("layer_index"),
+           "Returns the weight matrix at the given layer index as a 2D Numpy "
+           "matrix.")
+      .def("set_weights", &DistributedPyNetwork::setWeights, py::arg("layer_index"),
+           py::arg("new_weights"),
+           "Sets the weight matrix at the given layer index to the given 2D "
+           "Numpy matrix. Throws an error if the dimension of the given weight "
+           "matrix does not match the layer's current weight matrix.");
 
 
 }

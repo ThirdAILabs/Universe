@@ -45,13 +45,13 @@ class SequentialLayer {
   virtual float* getBiases() = 0;
 
 
-  virtual void setWeightGradients(const float* update_weight_gradient);
+  virtual void setWeightGradients(const float* update_weight_gradient) = 0;
   
-  virtual void setBiasesGradients(const float* update_bias_gradient);
+  virtual void setBiasesGradients(const float* update_bias_gradient) = 0;
 
-  virtual float* getBiasesGradient();
+  virtual float* getBiasesGradient() = 0;
   
-  virtual float* getWeightsGradient();
+  virtual float* getWeightsGradient() = 0;
 
   virtual void setTrainable(bool trainable) = 0;
 

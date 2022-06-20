@@ -62,3 +62,51 @@ def gen_network(n_classes):
     ]
     network = bolt.Network(layers=layers, input_dim=n_classes)
     return network
+
+#APIs for testing the distributed network
+
+def build_sparse_hidden_layer_classifier_distributed(input_dim, sparse_dim, output_dim, sparsity):
+    layers = [
+        bolt.FullyConnected(
+            dim=sparse_dim,
+            sparsity=sparsity,
+            activation_function="ReLU",
+        ),
+        bolt.FullyConnected(dim=output_dim, activation_function="Softmax"),
+    ]
+    network = bolt.DistributedNetwork(layers=layers, input_dim=input_dim)
+    return network
+
+
+#training the distributed network
+def train_network_distributed(network, train_data, train_labels, epochs, learning_rate=0.0005):
+    batch_size = network.initTrainDistributed(
+        train_data, 
+        train_labels,
+        rehash=3000,
+        rebuild=10000,
+        verbose=True,
+        batch_size=64,)
+    for i in range(epochs):
+        for j in range(batch_size):
+            network.calculateGradientDistributed(j,bolt.CategoricalCrossEntropyLoss())
+            network.updateParametersDistributed(learning_rate)
+
+def get_categorical_acc_distributed(network, examples, labels, batch_size):
+    acc, _ = network.predictDistributed(
+        examples, labels, batch_size, ["categorical_accuracy"], verbose=False
+    )
+    return acc["categorical_accuracy"]
+
+# Returns a single layer (no hidden layer) bolt network with input_dim = output_dim and 50% sparsity.
+def gen_network_distributed(n_classes):
+
+    layers = [
+        bolt.FullyConnected(
+            dim=n_classes,
+            sparsity=0.5,
+            activation_function="Softmax",
+        ),
+    ]
+    network = bolt.DistributedNetwork(layers=layers, input_dim=n_classes)
+    return network
