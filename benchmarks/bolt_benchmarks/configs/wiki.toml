@@ -18,10 +18,6 @@ rebuild = 10000
 
 
 [[sentence_embedding_layers]]
-dim = 1000
-activation = 'ReLU'
-
-[[sentence_embedding_layers]]
 dim = 10000
 activation = 'ReLU'
 sparsity = 0.01
