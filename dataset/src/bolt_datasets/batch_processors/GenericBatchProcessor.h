@@ -55,43 +55,37 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     std::vector<bolt::BoltVector> batch_inputs(rows.size());
     std::vector<bolt::BoltVector> batch_labels(rows.size());
 
-    /*
-      These variables keep track of the presence of an erroneous input line.
-      We do this instead of throwing an error directly because throwing
-      an error inside an OpenMP structured block has undefined behavior.
-    */
-    std::atomic_bool found_error = false;
+    // These variables keep track of the presence of an erroneous input line.
+    // We do this instead of throwing an error directly because throwing
+    // an error inside an OpenMP structured block has undefined behavior.
+    bool found_error = false;
+    std::string erroneous_row;
 
 #pragma omp parallel for default(none) \
-    shared(rows, batch_inputs, batch_labels, found_error)
+    shared(rows, batch_inputs, batch_labels, found_error, erroneous_row)
     for (size_t i = 0; i < rows.size(); ++i) {
       auto columns = parseCsvRow(rows[i]);
       if (columns.size() < _expected_num_cols) {
+        // This will result in a data race, but this is ok
+        // since we only care about the existennce of
+        // such a line.
         found_error = true;
+        erroneous_row = rows[i];
         continue;
       }
       batch_inputs[i] = makeVector(columns, _input_blocks, _input_blocks_dense);
       batch_labels[i] = makeVector(columns, _label_blocks, _label_blocks_dense);
     }
 
-    /*
-      Throw error here instead of in the OpenMP parallel block.
-      We sequentially iterate through each row to find the first
-      erroneous row. It's alright to have sequential execution
-      here since the program is about to terminate anyway.
-    */
+    // Throw error here instead of in the OpenMP parallel block.
     if (found_error) {
-      for (const auto& row : rows) {
-        auto n_cols = parseCsvRow(row).size();
-        if (n_cols < _expected_num_cols) {
-          std::stringstream error_ss;
-          error_ss << "[GenericBatchProcessor::parseCsvRow] Expected "
-                   << _expected_num_cols << " columns delimited by '"
-                   << _delimiter << "' in each row of the dataset. Found row '"
-                   << row << "' with number of columns = " << n_cols << ".";
-          throw std::invalid_argument(error_ss.str());
-        }
-      }
+      std::stringstream error_ss;
+      error_ss << "[GenericBatchProcessor::parseCsvRow] Expected "
+               << _expected_num_cols << " columns delimited by '" << _delimiter
+               << "' in each row of the dataset. Found row '" << erroneous_row
+               << "' with, number of columns = "
+               << parseCsvRow(erroneous_row).size() << ".";
+      throw std::invalid_argument(error_ss.str());
     }
 
     return std::make_pair(bolt::BoltBatch(std::move(batch_inputs)),
