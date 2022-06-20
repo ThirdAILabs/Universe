@@ -10,7 +10,7 @@ torch.set_num_threads(1)
 
 def preprocess_amazon_polarity(input_file, output_dim, output_file):
     """
-    Helper function to preprocess the amazon polarity dataset for training. 
+    Helper function to preprocess the amazon polarity dataset for training.
     This assumes that the header of the dataset has been removed.
     """
     import csv
@@ -93,8 +93,7 @@ def home():
 def predict_sentiment():
     sentence = request.form["query"]
 
-    bolt_pred, bolt_latency, roberta_pred, roberta_latency = predictor.predict(
-        sentence)
+    bolt_pred, bolt_latency, roberta_pred, roberta_latency = predictor.predict(sentence)
 
     return render_template(
         "home.html",
@@ -109,8 +108,7 @@ def predict_sentiment():
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        raise ValueError(
-            "Expected path to bolt model as command line argument.")
+        raise ValueError("Expected path to bolt model as command line argument.")
 
     predictor = PredictionBackend(sys.argv[1])
 

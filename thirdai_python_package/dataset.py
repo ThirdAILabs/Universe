@@ -33,8 +33,7 @@ def load_text_classification_dataset(
         schema = Schema(input_blocks=[text_block])
 
     # Assemble
-    loader = Loader(source, parser, schema, batch_size,
-                    est_num_elems=est_num_elems)
+    loader = Loader(source, parser, schema, batch_size, est_num_elems=est_num_elems)
 
     return loader.processInMemory(), loader.input_dim()
 
@@ -42,7 +41,9 @@ def load_text_classification_dataset(
 __all__.append(load_text_classification_dataset)
 
 
-def tokenize_to_svm(input_file, output_dim=100_000, output_file="preprocessed_data.svm"):
+def tokenize_to_svm(
+    input_file, output_dim=100_000, output_file="preprocessed_data.svm"
+):
     """Utility function that converts text datasets into vector representations, saves them in SVM format.\n\n
     Arguments:\n
      * input_file: String - Path to a text dataset. More on this below.\n
