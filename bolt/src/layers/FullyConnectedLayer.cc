@@ -538,13 +538,6 @@ void FullyConnectedLayer::reBuildHashFunction() {
   _hasher = assignHashFunction(_sampling_config, _prev_dim);
 }
 
-void FullyConnectedLayer::shuffleRandNeurons() {
-  if (_sparsity < 1.0 && !_force_sparse_for_inference) {
-    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(),
-                 std::random_device{});
-  }
-}
-
 float* FullyConnectedLayer::getWeights() const {
   float* weights_copy = new float[_dim * _prev_dim];
   std::copy(_weights.begin(), _weights.end(), weights_copy);
