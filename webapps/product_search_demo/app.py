@@ -9,7 +9,6 @@ import thirdai
 from thirdai.search import DocRetrieval
 from thirdai.embeddings import DocSearchModel
 
-# Download "/share/data/Kaggle_Amazon_Product_Catalog/our_index_partial" to use as index
 product_index = None
 embedding_model = DocSearchModel()
 
