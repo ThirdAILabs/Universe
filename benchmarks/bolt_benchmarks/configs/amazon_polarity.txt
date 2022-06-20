@@ -1,8 +1,8 @@
 job = "Amazon Polarity"
 
 [dataset]
-train_data = "amazon_polarity/train_50.svm"
-test_data = "amazon_polarity/test_50.svm"
+train_data = "amazon_polarity/svm_train.txt"
+test_data = "amazon_polarity/svm_test.txt"
 format = "svm"
 input_dim = 100000
 max_test_batches = 20
