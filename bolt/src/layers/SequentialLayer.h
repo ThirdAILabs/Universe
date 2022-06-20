@@ -20,9 +20,9 @@ class SequentialLayer {
   virtual BoltBatch createBatchState(uint32_t batch_size,
                                      bool force_dense) const = 0;
 
-  virtual void forceSparseForInference() = 0;
+  virtual void enableSparseInference(bool insert_labels_if_not_found) = 0;
 
-  virtual bool isForceSparsity() const = 0;
+  virtual bool sparseInferenceEnabled() const = 0;
 
   virtual void buildHashTables() = 0;
 
