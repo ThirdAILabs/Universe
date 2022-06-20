@@ -4,6 +4,7 @@
 #include "batch_types/ClickThroughBatch.h"
 #include "batch_types/DenseBatch.h"
 #include "batch_types/SparseBatch.h"
+#include "utils/FileVerifier.h"
 #include <cstdint>
 #include <fstream>
 #include <memory>
@@ -23,9 +24,7 @@ class InMemoryDataset {
   InMemoryDataset(const std::string& filename, uint32_t batch_size,
                   Factory<BATCH_T>&& factory) {
     std::ifstream file(filename);
-    if (file.bad() || file.fail() || !file.good() || !file.is_open()) {
-      throw std::runtime_error("Unable to open file '" + filename + "'");
-    }
+    FileVerifier::verifyFile(file, filename);
 
     uint64_t curr_id = 0;
     while (!file.eof()) {
@@ -92,9 +91,7 @@ class StreamedDataset {
         _batch_size(batch_size),
         _curr_id(0),
         _factory(std::move(factory)) {
-    if (_file.bad() || _file.fail() || !_file.good() || !_file.is_open()) {
-      throw std::runtime_error("Unable to open file '" + filename + "'");
-    }
+    FileVerifier::verifyFile(_file, filename);
   }
 
   std::optional<BATCH_T> nextBatch() {

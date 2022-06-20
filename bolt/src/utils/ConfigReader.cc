@@ -1,4 +1,5 @@
 #include "ConfigReader.h"
+#include <dataset/src/utils/FileVerifier.h>
 #include <fstream>
 
 namespace thirdai::bolt {
@@ -17,9 +18,7 @@ std::vector<std::string> split(const std::string& line, char delimeter) {
 
 void ConfigReader::parseConfig(const std::string& filename) {
   std::ifstream file(filename);
-  if (file.bad() || file.fail() || !file.good() || !file.is_open()) {
-    throw std::runtime_error("Unable to open file '" + filename + "'");
-  }
+  dataset::FileVerifier::verifyFile(file, filename);
 
   std::string line;
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dataset/src/utils/FileVerifier.h>
 #include <fstream>
 #include <optional>
 #include <string>
@@ -30,9 +31,7 @@ class SimpleFileDataLoader final : public DataLoader {
  public:
   SimpleFileDataLoader(const std::string& filename, uint32_t target_batch_size)
       : DataLoader(target_batch_size), _file(filename), _filename(filename) {
-    if (_file.bad() || _file.fail() || !_file.good() || !_file.is_open()) {
-      throw std::runtime_error("Unable to open file '" + filename + "'");
-    }
+    FileVerifier::verifyFile(_file, _filename);
   }
 
   std::optional<std::vector<std::string>> nextBatch() final {
