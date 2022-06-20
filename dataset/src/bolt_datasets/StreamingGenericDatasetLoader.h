@@ -1,6 +1,7 @@
 #include "DataLoader.h"
 #include "StreamingDataset.h"
 #include <bolt/src/layers/BoltVector.h>
+#include <dataset/src/bolt_datasets/ShuffleableStreamingDataset.h>
 #include <dataset/src/bolt_datasets/batch_processors/GenericBatchProcessor.h>
 #include <memory>
 
@@ -35,7 +36,7 @@ class StreamingGenericDatasetLoader {
 
  private:
   std::shared_ptr<GenericBatchProcessor> _processor;
-  StreamingDataset<bolt::BoltBatch> _streamer;
+  ShuffleableStreamingDataset _streamer;
 };
 
 }  // namespace thirdai::dataset

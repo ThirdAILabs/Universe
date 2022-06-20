@@ -1,5 +1,7 @@
 #include <bolt/src/layers/BoltVector.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <cstddef>
+#include <ctime>
 #include <optional>
 #include <random>
 #include <sstream>
@@ -9,91 +11,165 @@
 
 namespace thirdai::dataset {
 
+template <typename ELEMENT_T>
+class CircularBuffer {
+ public:
+  CircularBuffer() : _insert_idx(0), _pop_idx(0), _size(0), _n_popped(0) {}
+
+  void insert(ELEMENT_T&& new_elem) {
+    if (_size == _buffer.size() && _n_popped > 0) {
+      throw std::runtime_error(
+          "[CircularBuffer::insert] Attempted to resize "
+          "non-contiguous buffer. CircularBuffer cannot be resized after "
+          "popping an element.");
+    }
+
+    if (_size == _buffer.size()) {
+      _buffer.push_back(std::move(new_elem));
+      _insert_idx = _buffer.size();
+    } else {
+      _buffer[_insert_idx] = std::move(new_elem);
+      _insert_idx = (_insert_idx + 1) % _buffer.size();
+    }
+    _size++;
+  }
+
+  std::optional<ELEMENT_T> pop() {
+    if (_size == 0) {
+      return {};
+    }
+
+    ELEMENT_T elem = std::move(_buffer[_pop_idx]);
+    _pop_idx = (_pop_idx + 1) % _buffer.size();
+    _size--;
+    _n_popped++;
+
+    return elem;
+  }
+
+  ELEMENT_T& at(size_t i) {
+    if (i >= _size) {
+      throw std::invalid_argument("[CircularBuffer::at] Index out of range.");
+    }
+    size_t index = (_pop_idx + i) % _buffer.size();
+    return _buffer[index];
+  }
+
+  size_t size() const { return _size; }
+
+  bool empty() const { return _size == 0; }
+
+  std::vector<ELEMENT_T> exportContiguousBuffer() {
+    if (_n_popped > 0) {
+      throw std::runtime_error(
+          "[CircularBuffer::exportContiguousBuffer] Attempted to export "
+          "non-contiguous buffer. Buffer cannot be exported after popping an "
+          "element.");
+    }
+
+    auto buffer = std::move(_buffer);
+
+    _buffer = std::vector<ELEMENT_T>();
+    _insert_idx = 0;
+    _pop_idx = 0;
+    _size = 0;
+    _n_popped = 0;
+
+    return buffer;
+  }
+
+ private:
+  std::vector<ELEMENT_T> _buffer;
+  size_t _insert_idx;
+  size_t _pop_idx;
+  size_t _size;
+  uint64_t _n_popped;
+};
+
 class ShuffleBatchBuffer {
  public:
-  ShuffleBatchBuffer(size_t n_batches_in_buffer, size_t batch_size,
-                     uint32_t shuffle_seed)
-      : _rand(shuffle_seed),
-        _last_batch(false),
-        _batch_size(batch_size),
-        _insert_batch_idx(0),
-        _pop_batch_idx(0),
-        _current_n_batches(0),
-        _batches(n_batches_in_buffer) {}
+  explicit ShuffleBatchBuffer(uint32_t shuffle_seed)
+      : _rand(shuffle_seed), _saw_last_batch(false), _batch_size(0) {}
 
-  void insertBatch(std::pair<bolt::BoltBatch, bolt::BoltBatch>&& batch, bool resize_if_full) {
-    if (_last_batch) {
+  void insertBatch(std::pair<bolt::BoltBatch, bolt::BoltBatch>&& batch,
+                   bool shuffle) {
+    if (empty()) {
+      _batch_size = batch.first.getBatchSize();
+      _saw_last_batch = false;
+    }
+
+    checkConsistentBatchSize(batch.first.getBatchSize());
+
+    if (shuffle) {
+      swapShuffle(_input_batches, batch.first, _label_batches, batch.second,
+                  _batch_size, _rand);
+    }
+
+    _input_batches.insert(std::move(batch.first));
+    _label_batches.insert(std::move(batch.second));
+  }
+
+  std::optional<std::pair<bolt::BoltBatch, bolt::BoltBatch>> popBatch() {
+    auto input_batch = _input_batches.pop();
+    auto label_batch = _label_batches.pop();
+    if (!input_batch) {
+      return {};
+    }
+    return {{std::move(input_batch.value()), std::move(label_batch.value())}};
+  }
+
+  std::pair<BoltDatasetPtr, BoltDatasetPtr> exportBuffer() {
+    auto input_batches = _input_batches.exportContiguousBuffer();
+    auto label_batches = _label_batches.exportContiguousBuffer();
+
+    auto len = input_batches.size() * _batch_size;
+    if (!input_batches.empty()) {
+      len = len - _batch_size + input_batches.back().getBatchSize();
+    }
+
+    return {std::make_shared<BoltDataset>(std::move(input_batches), len),
+            std::make_shared<BoltDataset>(std::move(label_batches), len)};
+  }
+
+  inline bool empty() const { return _input_batches.empty(); }
+
+ private:
+  inline void checkConsistentBatchSize(size_t batch_size) {
+    if (_saw_last_batch) {
       throw std::runtime_error(
           "[ShuffleBatchBuffer::insertBatch] Attempted to insert batch after "
           "last batch (batch with smaller number of vectors).");
     }
 
-    if (batch.first.getBatchSize() > _batch_size) {
+    if (batch_size > _batch_size) {
       std::stringstream error_ss;
       error_ss << "[ShuffleBatchBuffer::insertBatch] Attempted to insert "
                   "batch with more vectors than expected (expected = "
-               << _batch_size << " actual = " << batch.first.getBatchSize()
-               << ").";
+               << _batch_size << " actual = " << batch_size << ").";
       throw std::runtime_error(error_ss.str());
     }
 
-    bool full = _current_n_batches == _batches.size();
-
-    if (full && !resize_if_full) {
-      throw std::runtime_error(
-          "[ShuffleBatchBuffer::insertBatch] Attempted to insert batch to a "
-          "full buffer with resize_if_full = False.");
+    if (batch_size < _batch_size) {
+      _saw_last_batch = true;
     }
-    
-    if (full && _pop_batch_idx != 0) {
-      throw std::runtime_error(
-          "[ShuffleBatchBuffer::insertBatch] Attempted to resize "
-          "non-contiguous buffer. ShuffleBatchBuffer uses a circular "
-          "buffer and cannot be resized after popping a batch.");
-    }
-
-    if (full) {
-      _insert_batch_idx = _batches.size();
-      _batches.emplace_back();
-    }
-    _batches[_insert_batch_idx] = std::move(batch);
-    handleShuffle(/* inserted_batch = */ _batches[_insert_batch_idx],
-                  /* n_batches_before_insertion = */ _current_n_batches);
-
-    if (_batches[_insert_batch_idx].first.getBatchSize() < _batch_size) {
-      _last_batch = true;
-    }
-
-    _insert_batch_idx = (_insert_batch_idx + 1) % _batches.size();
-    _current_n_batches++;
   }
 
-  std::optional<std::pair<bolt::BoltBatch, bolt::BoltBatch>> popBatch() {
-    if (_current_n_batches == 0) {
-      return {};
-    }
-    auto popped = std::move(_batches[_pop_batch_idx]);
+  static inline void swapShuffle(CircularBuffer<bolt::BoltBatch>& input_batches,
+                                 bolt::BoltBatch& new_input_batch,
+                                 CircularBuffer<bolt::BoltBatch>& label_batches,
+                                 bolt::BoltBatch& new_label_batch,
+                                 size_t expected_batch_size,
+                                 std::mt19937& rand) {
+    for (size_t i = 0; i < new_input_batch.getBatchSize(); i++) {
+      size_t swap_with = rand();
+      if (swap_with < input_batches.size()) {
+        size_t swap_batch_pos = swap_with / expected_batch_size;
+        size_t swap_vec_idx = swap_with % expected_batch_size;
 
-    _pop_batch_idx = (_pop_batch_idx + 1) % _batches.size();
-    _current_n_batches--;
-
-    return popped;
-  }
-
- private:
-  inline void handleShuffle(
-      std::pair<bolt::BoltBatch, bolt::BoltBatch>& inserted_batch,
-      size_t n_batches_before_insertion) {
-    for (size_t i = 0; i < inserted_batch.first.getBatchSize(); i++) {
-      size_t swap_with = _rand();
-      if (swap_with < n_batches_before_insertion) {
-        size_t swap_batch_pos = swap_with / _batch_size;
-        size_t swap_batch_idx =
-            (_pop_batch_idx + swap_batch_pos) % _batches.size();
-        size_t swap_vec_idx = swap_with % _batch_size;
-        auto& swap_batch = _batches[swap_batch_idx];
-        swapVecs(swap_batch.first[swap_vec_idx], inserted_batch.first[i]);
-        swapVecs(swap_batch.second[swap_vec_idx], inserted_batch.second[i]);
+        swapVecs(input_batches.at(swap_batch_pos)[swap_vec_idx],
+                 new_input_batch[i]);
+        swapVecs(label_batches.at(swap_batch_pos)[swap_vec_idx],
+                 new_label_batch[i]);
       }
     }
   }
@@ -107,13 +183,23 @@ class ShuffleBatchBuffer {
 
   std::mt19937 _rand;
 
-  bool _last_batch;
+  bool _saw_last_batch;
   size_t _batch_size;
 
-  size_t _insert_batch_idx;
-  size_t _pop_batch_idx;
-  size_t _current_n_batches;
-  std::vector<std::pair<bolt::BoltBatch, bolt::BoltBatch>> _batches;
+  CircularBuffer<bolt::BoltBatch> _input_batches;
+  CircularBuffer<bolt::BoltBatch> _label_batches;
+};
+
+struct ShuffleBufferConfig {
+  ShuffleBufferConfig() : buffer_size(50), seed(time(NULL)) {}
+  explicit ShuffleBufferConfig(size_t buffer_size)
+      : buffer_size(buffer_size), seed(time(NULL)) {}
+  explicit ShuffleBufferConfig(uint32_t seed) : buffer_size(50), seed(seed) {}
+  ShuffleBufferConfig(size_t buffer_size, uint32_t seed)
+      : buffer_size(buffer_size), seed(seed) {}
+
+  size_t buffer_size;
+  uint32_t seed;
 };
 
 }  // namespace thirdai::dataset
