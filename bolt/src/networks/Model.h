@@ -148,7 +148,7 @@ class Model {
   // Called for network to allocate any necessary state to store activations and
   // gradients.
   virtual void initializeNetworkState(uint32_t batch_size,
-                                      bool force_dense) = 0;
+                                      bool use_sparsity) = 0;
 
   // Construct new hash functions (primarly for fully connected layers).
   virtual void reBuildHashFunctions() = 0;
@@ -157,7 +157,7 @@ class Model {
   virtual void buildHashTables() = 0;
 
   // Allocates storage for activations and gradients for output layer.
-  virtual BoltBatch getOutputs(uint32_t batch_size, bool force_dense) = 0;
+  virtual BoltBatch getOutputs(uint32_t batch_size, bool use_sparsity) = 0;
 
   virtual uint32_t getOutputDim() const = 0;
 

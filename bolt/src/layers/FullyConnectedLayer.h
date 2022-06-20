@@ -18,9 +18,9 @@ class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
 enum class LSHSamplingMode {
-  Regular,
-  SparseInference,
-  SparseInferenceWithInsertions
+  Default,
+  FreezeHashTables,
+  FreezeHashTablesWithInsertions
 };
 
 class FullyConnectedLayer final : public SequentialLayer {
@@ -48,23 +48,26 @@ class FullyConnectedLayer final : public SequentialLayer {
                         float eps) final;
 
   BoltBatch createBatchState(const uint32_t batch_size,
-                             bool force_dense) const final {
-    bool is_dense = (_sparse_dim == _dim) || force_dense;
+                             bool use_sparsity) const final {
+    bool is_sparse = (_sparsity < 1.0) && use_sparsity;
 
-    return BoltBatch(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
+    uint32_t curr_dim = is_sparse ? _sparse_dim : _dim;
+
+    return BoltBatch(/* dim= */ curr_dim, /* batch_size= */ batch_size,
+                     /* is_dense= */ !is_sparse);
   }
 
   void enableSparseInference(bool insert_labels_if_not_found) final {
     if (insert_labels_if_not_found) {
-      _sampling_mode = LSHSamplingMode::SparseInferenceWithInsertions;
+      _sampling_mode = LSHSamplingMode::FreezeHashTables;
     } else {
-      _sampling_mode = LSHSamplingMode::SparseInference;
+      _sampling_mode = LSHSamplingMode::FreezeHashTablesWithInsertions;
     }
   }
 
-  bool sparseInferenceEnabled() const final {
-    return _sampling_mode == LSHSamplingMode::SparseInference ||
-           _sampling_mode == LSHSamplingMode::SparseInferenceWithInsertions;
+  bool sparseInferenceEnabled() const {
+    return _sampling_mode == LSHSamplingMode::FreezeHashTables ||
+           _sampling_mode == LSHSamplingMode::FreezeHashTablesWithInsertions;
   }
 
   void buildHashTables() final;

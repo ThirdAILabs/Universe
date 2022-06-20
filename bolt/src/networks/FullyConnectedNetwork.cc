@@ -126,11 +126,11 @@ void FullyConnectedNetwork::backpropagate(uint32_t batch_index,
 }
 
 void FullyConnectedNetwork::initializeNetworkState(uint32_t batch_size,
-                                                   bool force_dense) {
+                                                   bool use_sparsity) {
   _states.clear();
   for (uint32_t l = 0; l < _num_layers - 1; l++) {
     _states.push_back(_layers[l]->createBatchState(
-        batch_size, useDenseComputations(force_dense)));
+        batch_size, /* use_sparsity= */ shouldUseSparsity(use_sparsity)));
   }
 }
 

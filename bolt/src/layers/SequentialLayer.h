@@ -4,6 +4,7 @@
 #include <bolt/src/layers/LayerConfig.h>
 
 namespace thirdai::bolt {
+
 class SequentialLayer {
  public:
   virtual void forward(const BoltVector& input, BoltVector& output,
@@ -18,11 +19,9 @@ class SequentialLayer {
                                 float eps) = 0;
 
   virtual BoltBatch createBatchState(uint32_t batch_size,
-                                     bool force_dense) const = 0;
+                                     bool use_sparsity) const = 0;
 
   virtual void enableSparseInference(bool insert_labels_if_not_found) = 0;
-
-  virtual bool sparseInferenceEnabled() const = 0;
 
   virtual void buildHashTables() = 0;
 

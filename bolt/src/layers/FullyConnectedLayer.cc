@@ -35,7 +35,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sampling_config(config.sampling_config),
       _prev_is_active(_prev_dim, false),
       _is_active(config.dim, false),
-      _sampling_mode(LSHSamplingMode::Regular) {
+      _sampling_mode(LSHSamplingMode::Default) {
   std::random_device rd;
   std::default_random_engine eng(rd());
   std::normal_distribution<float> dist(0.0, 0.01);
@@ -267,7 +267,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                               input.len, hashes.data());
   }
 
-  if (_sampling_mode == LSHSamplingMode::SparseInferenceWithInsertions) {
+  if (_sampling_mode == LSHSamplingMode::FreezeHashTablesWithInsertions) {
     /**
      * QueryBySet just returns a set of the elements in the given buckets of the
      * hash table.

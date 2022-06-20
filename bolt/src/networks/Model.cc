@@ -30,8 +30,8 @@ MetricData Model<BATCH_T>::train(
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
-  initializeNetworkState(batch_size, false);
-  BoltBatch outputs = getOutputs(batch_size, false);
+  initializeNetworkState(batch_size, /* use_sparsity= */ true);
+  BoltBatch outputs = getOutputs(batch_size, /* use_sparsity= */ true);
 
   std::vector<double> time_per_epoch;
 
@@ -97,8 +97,8 @@ MetricData Model<BATCH_T>::trainOnStream(
   MetricAggregator metrics(metric_names, verbose);
 
   uint32_t batch_size = train_data->getMaxBatchSize();
-  initializeNetworkState(batch_size, /* force_dense=*/false);
-  BoltBatch outputs = getOutputs(batch_size, /* force_dense=*/false);
+  initializeNetworkState(batch_size, /* use_sparsity= */ true);
+  BoltBatch outputs = getOutputs(batch_size, /* use_sparsity= */ false);
 
   if (verbose) {
     std::cout << std::endl
@@ -193,16 +193,12 @@ InferenceMetricData Model<BATCH_T>::predict(
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
-  // If sparse inference is not enabled we want the outptus to be dense,
-  // otherwise we want whatever the default for the layer is.
-  initializeNetworkState(batch_size, metrics.forceDenseInference());
+  // Here we disable sparsity if a network supports sparse inference it can
+  // handle that in its implementation of initializeNetworkState/getOutputs.
+  initializeNetworkState(batch_size, /* use_sparsity= */ false);
+  BoltBatch outputs = getOutputs(batch_size, /* use_sparsity= */ false);
 
   ProgressBar bar(num_test_batches, verbose);
-
-  // Don't force dense inference if the metric does not allow it.
-  // This is not the same as enable_sparse_inference(), which also freezes hash
-  // tables.
-  BoltBatch outputs = getOutputs(batch_size, metrics.forceDenseInference());
 
   auto test_start = std::chrono::high_resolution_clock::now();
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
@@ -257,8 +253,11 @@ InferenceMetricData Model<BATCH_T>::predictOnStream(
   MetricAggregator metrics(metric_names, verbose);
 
   uint32_t batch_size = test_data->getMaxBatchSize();
-  initializeNetworkState(batch_size, metrics.forceDenseInference());
-  BoltBatch outputs = getOutputs(batch_size, metrics.forceDenseInference());
+
+  // Here we disable sparsity if a network supports sparse inference it can
+  // handle that in its implementation of initializeNetworkState/getOutputs.
+  initializeNetworkState(batch_size, /* use_sparsity= */ false);
+  BoltBatch outputs = getOutputs(batch_size, /* use_sparsity= */ false);
 
   if (verbose) {
     std::cout << std::endl
