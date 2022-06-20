@@ -62,6 +62,9 @@ DatasetWithLabels loadBoltCsvDataset(const std::string& filename,
   auto start = std::chrono::high_resolution_clock::now();
 
   std::ifstream file(filename);
+  if (file.bad() || file.fail() || !file.good() || !file.is_open()) {
+    throw std::runtime_error("Unable to open file '" + filename + "'");
+  }
 
   CsvParser<bolt::BoltVector, bolt::BoltVector> parser(
       bolt::BoltVector::makeDenseVector,
@@ -105,6 +108,9 @@ ClickThroughDatasetWithLabels loadClickThroughDataset(
   auto start = std::chrono::high_resolution_clock::now();
 
   std::ifstream file(filename);
+  if (file.bad() || file.fail() || !file.good() || !file.is_open()) {
+    throw std::runtime_error("Unable to open file '" + filename + "'");
+  }
 
   ClickThroughParser parser(num_dense_features, num_categorical_features,
                             sparse_labels);

@@ -29,7 +29,11 @@ class DataLoader {
 class SimpleFileDataLoader final : public DataLoader {
  public:
   SimpleFileDataLoader(const std::string& filename, uint32_t target_batch_size)
-      : DataLoader(target_batch_size), _file(filename), _filename(filename) {}
+      : DataLoader(target_batch_size), _file(filename), _filename(filename) {
+    if (_file.bad() || _file.fail() || !_file.good() || !_file.is_open()) {
+      throw std::runtime_error("Unable to open file '" + filename + "'");
+    }
+  }
 
   std::optional<std::vector<std::string>> nextBatch() final {
     if (_file.eof()) {

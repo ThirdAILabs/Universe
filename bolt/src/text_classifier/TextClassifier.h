@@ -29,6 +29,10 @@ class TextClassifier {
 
   static std::unique_ptr<TextClassifier> load(const std::string& filename) {
     std::ifstream filestream(filename, std::ios::binary);
+    if (filestream.bad() || filestream.fail() || !filestream.good() ||
+        !filestream.is_open()) {
+      throw std::runtime_error("Unable to open file '" + filename + "'");
+    }
     cereal::BinaryInputArchive iarchive(filestream);
     std::unique_ptr<TextClassifier> deserialize_into(new TextClassifier());
     iarchive(*deserialize_into);
