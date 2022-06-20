@@ -58,7 +58,10 @@ MetricData Model<BATCH_T>::train(
       const BoltBatch& batch_labels = train_labels->at(batch);
 
       processTrainingBatch(batch_inputs, outputs, batch_labels, loss_fn,
-                           learning_rate, rehash_batch, rebuild_batch, metrics);
+                           learning_rate, metrics);
+
+      updateSampling(/* rehash_batch */ rehash_batch,
+                     /* rebuild_batch= */ rebuild_batch);
 
       bar.increment();
     }
@@ -109,8 +112,10 @@ MetricData Model<BATCH_T>::trainOnStream(
     processTrainingBatch(
         /* batch_inputs=*/batch->first, /* outputs= */ outputs,
         /* batch_labels= */ batch->second, /* loss_fn= */ loss_fn,
-        /* learning_rate= */ learning_rate, /* rehash_batch */ rehash_batch,
-        /* rebuild_batch= */ rebuild_batch, /* metrics= */ metrics);
+        /* learning_rate= */ learning_rate, /* metrics= */ metrics);
+
+    updateSampling(/* rehash_batch */ rehash_batch,
+                   /* rebuild_batch= */ rebuild_batch);
 
     batch_count++;
     if (batch_count == metric_log_batch_interval) {
@@ -138,14 +143,12 @@ MetricData Model<BATCH_T>::trainOnStream(
 }
 
 template <typename BATCH_T>
-inline void Model<BATCH_T>::processTrainingBatch(
-    BATCH_T& batch_inputs, BoltBatch& outputs, const BoltBatch& batch_labels,
-    const LossFunction& loss_fn, float learning_rate, uint32_t rehash_batch,
-    uint32_t rebuild_batch, MetricAggregator& metrics) {
-  if (_batch_iter % 1000 == 999) {
-    shuffleRandomNeurons();
-  }
-
+inline void Model<BATCH_T>::processTrainingBatch(BATCH_T& batch_inputs,
+                                                 BoltBatch& outputs,
+                                                 const BoltBatch& batch_labels,
+                                                 const LossFunction& loss_fn,
+                                                 float learning_rate,
+                                                 MetricAggregator& metrics) {
 #pragma omp parallel for default(none) \
     shared(batch_inputs, batch_labels, outputs, loss_fn, metrics)
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
@@ -160,11 +163,15 @@ inline void Model<BATCH_T>::processTrainingBatch(
   }
 
   updateParameters(learning_rate, ++_batch_iter);
+}
 
-  if (_batch_iter % rebuild_batch == (rebuild_batch - 1)) {
+template <typename BATCH_T>
+inline void Model<BATCH_T>::updateSampling(uint32_t rehash_batch,
+                                           uint32_t rebuild_batch) {
+  if (checkBatchInterval(rebuild_batch)) {
     reBuildHashFunctions();
     buildHashTables();
-  } else if (_batch_iter % rehash_batch == (rehash_batch - 1)) {
+  } else if (checkBatchInterval(rehash_batch)) {
     buildHashTables();
   }
 }
