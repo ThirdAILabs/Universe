@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdio>
-#include <fstream>
 #include <memory>
 #include <random>
 #include <stdexcept>
@@ -41,12 +40,8 @@ class CsvDatasetTestFixture : public ::testing::Test {
   }
 
   void generateTestFile(const char& delimiter) {
-    std::ofstream output_file(filename);
+    std::ofstream output_file = dataset::SafeFileMaker::ofstream(filename);
 
-    ASSERT_TRUE(output_file.is_open());
-    ASSERT_TRUE(output_file.good());
-    ASSERT_FALSE(output_file.bad());
-    ASSERT_FALSE(output_file.fail());
     for (const auto& vec : _vectors) {
       output_file << vec.label;
 
@@ -60,12 +55,8 @@ class CsvDatasetTestFixture : public ::testing::Test {
   }
 
   static void generateTestFileWithEntry(const std::string& entry) {
-    std::ofstream output_file(filename);
+    std::ofstream output_file = dataset::SafeFileMaker::ofstream(filename);
 
-    ASSERT_TRUE(output_file.is_open());
-    ASSERT_TRUE(output_file.good());
-    ASSERT_FALSE(output_file.bad());
-    ASSERT_FALSE(output_file.fail());
     output_file << entry;
     output_file << std::endl;
     output_file.close();

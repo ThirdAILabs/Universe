@@ -2,7 +2,6 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/Factory.h>
-#include <fstream>
 #include <iostream>
 #include <vector>
 

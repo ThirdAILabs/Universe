@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <dataset/src/string/global_frequency/GlobalFreq.h>
-#include <fstream>
+#include <dataset/src/utils/SafeFileMaker.h>
 #include <iostream>
 
 static std::string filename = "FreelandSep10_2020.txt";
@@ -79,7 +79,8 @@ static void print_to_file() {
       "incredible background"
       "and education at West Point and all of the things he did.";
 
-  std::ofstream outfile(filename, std::ios::trunc);
+  std::ofstream outfile =
+      dataset::SafeFileMaker::ofstream(filename, std::ios::trunc);
   // std::cout << "printing" << std::endl;
   outfile << origin << std::endl;
   outfile.close();

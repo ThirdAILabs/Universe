@@ -8,7 +8,7 @@
 #include <dataset/src/bolt_datasets/DataLoader.h>
 #include <dataset/src/bolt_datasets/StreamingDataset.h>
 #include <dataset/src/bolt_datasets/batch_processors/TextClassificationProcessor.h>
-#include <dataset/src/utils/FileUtils.h>
+#include <dataset/src/utils/SafeFileMaker.h>
 #include <memory>
 
 namespace thirdai::bolt {
@@ -23,14 +23,15 @@ class TextClassifier {
                const std::optional<std::string>& output_filename);
 
   void save(const std::string& filename) {
-    std::ofstream filestream(filename, std::ios::binary);
+    std::ofstream filestream =
+        dataset::SafeFileMaker::ofstream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
     oarchive(*this);
   }
 
   static std::unique_ptr<TextClassifier> load(const std::string& filename) {
-    std::ifstream filestream(filename, std::ios::binary);
-    dataset::FileUtils::verifyFile(filestream, filename);
+    std::ifstream filestream =
+        dataset::SafeFileMaker::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
     std::unique_ptr<TextClassifier> deserialize_into(new TextClassifier());
     iarchive(*deserialize_into);

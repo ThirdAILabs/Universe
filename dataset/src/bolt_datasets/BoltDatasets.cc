@@ -3,7 +3,7 @@
 #include <dataset/src/parsers/ClickThroughParser.h>
 #include <dataset/src/parsers/CsvParser.h>
 #include <dataset/src/parsers/SvmParser.h>
-#include <dataset/src/utils/FileVerifier.h>
+#include <dataset/src/utils/SafeFileMaker.h>
 #include <chrono>
 #include <fstream>
 
@@ -16,8 +16,7 @@ DatasetWithLabels loadBoltSvmDataset(const std::string& filename,
             << std::endl;
   auto start = std::chrono::high_resolution_clock::now();
 
-  std::ifstream file(filename);
-  FileVerifier::verifyFile(file, filename);
+  std::ifstream file = dataset::SafeFileMaker::ifstream(filename);
 
   SvmParser<bolt::BoltVector, bolt::BoltVector> parser(
       bolt::BoltVector::makeSparseVector,
@@ -60,8 +59,7 @@ DatasetWithLabels loadBoltCsvDataset(const std::string& filename,
             << std::endl;
   auto start = std::chrono::high_resolution_clock::now();
 
-  std::ifstream file(filename);
-  FileVerifier::verifyFile(file, filename);
+  std::ifstream file = dataset::SafeFileMaker::ifstream(filename);
 
   CsvParser<bolt::BoltVector, bolt::BoltVector> parser(
       bolt::BoltVector::makeDenseVector,
@@ -104,8 +102,7 @@ ClickThroughDatasetWithLabels loadClickThroughDataset(
             << std::endl;
   auto start = std::chrono::high_resolution_clock::now();
 
-  std::ifstream file(filename);
-  FileVerifier::verifyFile(file, filename);
+  std::ifstream file = dataset::SafeFileMaker::ifstream(filename);
 
   ClickThroughParser parser(num_dense_features, num_categorical_features,
                             sparse_labels);

@@ -4,9 +4,8 @@
 #include "batch_types/ClickThroughBatch.h"
 #include "batch_types/DenseBatch.h"
 #include "batch_types/SparseBatch.h"
-#include "utils/FileVerifier.h"
+#include "utils/SafeFileMaker.h"
 #include <cstdint>
-#include <fstream>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -23,8 +22,7 @@ class InMemoryDataset {
   // filenames
   InMemoryDataset(const std::string& filename, uint32_t batch_size,
                   Factory<BATCH_T>&& factory) {
-    std::ifstream file(filename);
-    FileVerifier::verifyFile(file, filename);
+    std::ifstream file = dataset::SafeFileMaker::ifstream(filename);
 
     uint64_t curr_id = 0;
     while (!file.eof()) {
@@ -91,7 +89,7 @@ class StreamedDataset {
         _batch_size(batch_size),
         _curr_id(0),
         _factory(std::move(factory)) {
-    FileVerifier::verifyFile(_file, filename);
+    // FileVerifier::verifyFile(_file, filename);
   }
 
   std::optional<BATCH_T> nextBatch() {
