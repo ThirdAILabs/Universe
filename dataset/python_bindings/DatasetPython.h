@@ -104,6 +104,9 @@ parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
 bolt::BoltVector parseSentenceToBoltVector(const std::string& sentence,
                                            uint32_t seed, uint32_t dimension);
 
+bolt::BoltBatch parseSentenceToBoltBatch(const std::string& sentence,
+                                         uint32_t seed, uint32_t dimension);
+
 /**
  * Checks whether the given bolt dataset and dense 2d matrix
  * have the same values. For testing purposes only.

@@ -12,11 +12,13 @@
 #include <dataset/src/encodings/text/UniGram.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
+#include <pybind11/cast.h>
 #include <sys/types.h>
 #include <chrono>
 #include <limits>
 #include <type_traits>
 #include <unordered_map>
+#include <utility>
 
 // TODO(Geordie): Split into smaller files.
 // I'm thinking one for each submodule of dataset_submodule.
@@ -44,6 +46,13 @@ void createDatasetSubmodule(py::module_& module) {
       .def("to_string", &BoltVector::toString)
       .def("__str__", &BoltVector::toString)
       .def("__repr__", &BoltVector::toString);
+
+  py::class_<bolt::BoltBatch>(dataset_submodule,  // NOLINT
+                              "BoltBatch");
+
+  dataset_submodule.def("get_boltbatch", &parseSentenceToBoltBatch,
+                        py::arg("sentence"), py::arg("seed") = 0,
+                        py::arg("dimension") = 100);
 
   // The no lint below is because clang tidy doesn't like instantiating an
   // object without a name and never using it.
@@ -758,6 +767,15 @@ BoltVector parseSentenceToBoltVector(const std::string& sentence, uint32_t seed,
   }
 
   return vec;
+}
+
+bolt::BoltBatch parseSentenceToBoltBatch(const std::string& sentence,
+                                         uint32_t seed = 0,
+                                         uint32_t dimension = 100) {
+  BoltVector vec = parseSentenceToBoltVector(sentence, seed, dimension);
+  std::vector<BoltVector> temp = {vec};
+  bolt::BoltBatch res(std::move(temp));
+  return res;
 }
 
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
