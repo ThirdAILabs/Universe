@@ -478,7 +478,6 @@ class PyNetwork final : public FullyConnectedNetwork {
         py::str(obj.get_type()).cast<std::string>());
   }
 
-  
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   PyNetwork() : FullyConnectedNetwork(){};
 };
@@ -527,10 +526,10 @@ class DistributedPyNetwork final : public FullyConnectedNetwork {
   DistributedPyNetwork(SequentialConfigList configs, uint64_t input_dim)
       : FullyConnectedNetwork(std::move(configs), input_dim, true) {}
 
-  uint32_t initTrainDistributed(const py::object& data, const py::object& labels,
-                   uint32_t batch_size = 0,
-                   uint32_t rehash = 0, uint32_t rebuild = 0,
-                   bool verbose = false) {
+  uint32_t initTrainDistributed(const py::object& data,
+                                const py::object& labels,
+                                uint32_t batch_size = 0, uint32_t rehash = 0,
+                                uint32_t rebuild = 0, bool verbose = false) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
@@ -538,20 +537,16 @@ class DistributedPyNetwork final : public FullyConnectedNetwork {
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
 
-
     return FullyConnectedNetwork::initTrainDistributed(
         train_data.dataset, train_labels.dataset, rehash, rebuild, verbose);
-
-
   }
 
-  void calculateGradientDistributed(uint32_t batch, const LossFunction& loss_fn){
-    FullyConnectedNetwork::calculateGradientDistributed(
-      batch, loss_fn
-    );
+  void calculateGradientDistributed(uint32_t batch,
+                                    const LossFunction& loss_fn) {
+    FullyConnectedNetwork::calculateGradientDistributed(batch, loss_fn);
   }
 
-  void updateParametersDistributed(float learning_rate){
+  void updateParametersDistributed(float learning_rate) {
     FullyConnectedNetwork::updateParametersDistributed(learning_rate);
   }
 
@@ -634,10 +629,12 @@ class DistributedPyNetwork final : public FullyConnectedNetwork {
    */
   bool isReadyForTraining() { return !this->anyLayerShallow(); }
 
-  static std::unique_ptr<DistributedPyNetwork> load(const std::string& filename) {
+  static std::unique_ptr<DistributedPyNetwork> load(
+      const std::string& filename) {
     std::ifstream filestream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<DistributedPyNetwork> deserialize_into(new DistributedPyNetwork());
+    std::unique_ptr<DistributedPyNetwork> deserialize_into(
+        new DistributedPyNetwork());
     iarchive(*deserialize_into);
     return deserialize_into;
   }
@@ -694,9 +691,8 @@ class DistributedPyNetwork final : public FullyConnectedNetwork {
   void setWeightGradients(
       uint32_t layer_index,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
-          new_weights_gradients){
-
-      _layers.at(layer_index)->setWeightGradients(new_weights_gradients.data());
+          new_weights_gradients) {
+    _layers.at(layer_index)->setWeightGradients(new_weights_gradients.data());
   }
 
   void setBiases(
@@ -721,13 +717,11 @@ class DistributedPyNetwork final : public FullyConnectedNetwork {
     _layers.at(layer_index)->setBiases(new_biases.data());
   }
 
-void setBiasesGradients(
+  void setBiasesGradients(
       uint32_t layer_index,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
-          new_biases_gradients){
-
-
-      _layers.at(layer_index)->setBiasesGradients(new_biases_gradients.data());
+          new_biases_gradients) {
+    _layers.at(layer_index)->setBiasesGradients(new_biases_gradients.data());
   }
 
   py::array_t<float> getBiases(uint32_t layer_index) {
@@ -760,7 +754,7 @@ void setBiasesGradients(
     return py::array_t<float>({dim}, {sizeof(float)}, mem, free_when_done);
   }
 
- py::array_t<float> getWeightsGradients(uint32_t layer_index) {
+  py::array_t<float> getWeightsGradients(uint32_t layer_index) {
     if (layer_index >= _num_layers) {
       return py::none();
     }
@@ -882,7 +876,6 @@ void setBiasesGradients(
         py::str(obj.get_type()).cast<std::string>());
   }
 
-  
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   DistributedPyNetwork() : FullyConnectedNetwork(){};
 };

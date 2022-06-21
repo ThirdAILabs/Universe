@@ -210,3 +210,4 @@ def test_get_set_weights():
     )
 
     assert new_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
+      

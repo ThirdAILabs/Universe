@@ -577,8 +577,9 @@ void createBoltSubmodule(py::module_& module) {
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
 
-  py::class_<DistributedPyNetwork>(bolt_submodule, "DistributedNetwork",
-                        "Fully connected Distributed neural network.")
+  py::class_<DistributedPyNetwork>(
+      bolt_submodule, "DistributedNetwork",
+      "Fully connected Distributed neural network.")
       .def(py::init<std::vector<
                         std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
                     uint64_t>(),
@@ -597,14 +598,15 @@ void createBoltSubmodule(py::module_& module) {
              return summary.str();
            })
       .def(
-          "summary", &DistributedPyNetwork::printSummary, py::arg("detailed") = false,
+          "summary", &DistributedPyNetwork::printSummary,
+          py::arg("detailed") = false,
           "Prints a summary of the network.\n"
           "Arguments:\n"
           " * detailed: boolean. Optional. When specified to \"True\", "
           "summary will additionally print layer config details for each layer "
           "in the network.")
-      .def("initTrainDistributed", &DistributedPyNetwork::initTrainDistributed, py::arg("train_data"),
-           py::arg("train_labels"), 
+      .def("initTrainDistributed", &DistributedPyNetwork::initTrainDistributed,
+           py::arg("train_data"), py::arg("train_labels"),
            py::arg("batch_size") = 0, py::arg("rehash") = 0,
            py::arg("rebuild") = 0, py::arg("verbose") = true,
            "Initializes the Distributed Training over a node\n"
@@ -669,22 +671,29 @@ void createBoltSubmodule(py::module_& module) {
            "Set to True by default.\n\n"
 
            "Returns batch-size")
-      .def("calculateGradientDistributed", &DistributedPyNetwork::calculateGradientDistributed, py::arg("batch"),
-           py::arg("loss_fn"),
-           "calculated the gradient for the network on the given training batch.\n"
+      .def("calculateGradientDistributed",
+           &DistributedPyNetwork::calculateGradientDistributed,
+           py::arg("batch"), py::arg("loss_fn"),
+           "calculated the gradient for the network on the given training "
+           "batch.\n"
            "Arguments:\n"
-           " * batch: Int (positive) The batch on which gradients are calcualted\n"
+           " * batch: Int (positive) The batch on which gradients are "
+           "calcualted\n"
            " * loss_fn: LossFunction - The loss function to minimize.\n"
-           
+
            "Returns void")
-      .def("updateParametersDistributed", &DistributedPyNetwork::updateParametersDistributed, py::arg("learning_rate"),
-           "calculated the gradient for the network on the given training batch.\n"
+      .def("updateParametersDistributed",
+           &DistributedPyNetwork::updateParametersDistributed,
+           py::arg("learning_rate"),
+           "calculated the gradient for the network on the given training "
+           "batch.\n"
            "Arguments:\n"
            " * learning rate: Float (positive) - Learning rate.\n"
-           
+
            "Returns void")
-      .def("predictDistributed", &DistributedPyNetwork::predictDistributed, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("batch_size") = 0,
+      .def("predictDistributed", &DistributedPyNetwork::predictDistributed,
+           py::arg("test_data"), py::arg("test_labels"),
+           py::arg("batch_size") = 0,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -745,43 +754,50 @@ void createBoltSubmodule(py::module_& module) {
            "their values "
            "and (1) output vectors (predictions) from the network in the form "
            "of a 2D Numpy matrix of floats.")
-      .def("get_biases", &DistributedPyNetwork::getBiases, py::arg("layer_index"),
+      .def("get_biases", &DistributedPyNetwork::getBiases,
+           py::arg("layer_index"),
            "Returns the bias array at the given layer index as a 1D Numpy "
            "array.")
-      .def("set_biases", &DistributedPyNetwork::setBiases, py::arg("layer_index"),
-           py::arg("new_biases"),
+      .def("set_biases", &DistributedPyNetwork::setBiases,
+           py::arg("layer_index"), py::arg("new_biases"),
            "Sets the bias array at the given layer index to the given 1D Numpy "
            "array.")
-     .def("set_biases_gradients", &DistributedPyNetwork::setBiasesGradients, py::arg("layer_index"),
-           py::arg("new_biases_gradients"),
-           "Returns the bias gradient array at the given layer index as the given 1D Numpy "
+      .def("set_biases_gradients", &DistributedPyNetwork::setBiasesGradients,
+           py::arg("layer_index"), py::arg("new_biases_gradients"),
+           "Returns the bias gradient array at the given layer index as the "
+           "given 1D Numpy "
            "array.")
-      .def("set_weights_gradients", &DistributedPyNetwork::setWeightGradients, py::arg("layer_index"),
-           py::arg("new_weights_gradients"),
-           "Sets the weights gradient array at the given layer index to the given 1D Numpy "
+      .def("set_weights_gradients", &DistributedPyNetwork::setWeightGradients,
+           py::arg("layer_index"), py::arg("new_weights_gradients"),
+           "Sets the weights gradient array at the given layer index to the "
+           "given 1D Numpy "
            "array.")
-      .def("get_biases_gradients", &DistributedPyNetwork::getBiasesGradients, py::arg("layer_index"),
-           "Returns the bias gradient array at the given layer index as a 1D Numpy "
+      .def("get_biases_gradients", &DistributedPyNetwork::getBiasesGradients,
+           py::arg("layer_index"),
+           "Returns the bias gradient array at the given layer index as a 1D "
+           "Numpy "
            "array.")
-      .def("get_weights_gradients", &DistributedPyNetwork::getWeightsGradients, py::arg("layer_index"),
-           "Returns the weight gradient array at the given layer index as a 1D Numpy "
+      .def("get_weights_gradients", &DistributedPyNetwork::getWeightsGradients,
+           py::arg("layer_index"),
+           "Returns the weight gradient array at the given layer index as a 1D "
+           "Numpy "
            "array.")
-      .def("enable_sparse_inference", &DistributedPyNetwork::enableSparseInference,
+      .def("enable_sparse_inference",
+           &DistributedPyNetwork::enableSparseInference,
            "Enables sparse inference. Freezes smart hash tables. Do not call "
            "this method early on "
            "in the training routine. It is recommended to call this method "
            "right before the last training "
            "epoch.")
-      .def("get_weights", &DistributedPyNetwork::getWeights, py::arg("layer_index"),
+      .def("get_weights", &DistributedPyNetwork::getWeights,
+           py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "
            "matrix.")
-      .def("set_weights", &DistributedPyNetwork::setWeights, py::arg("layer_index"),
-           py::arg("new_weights"),
+      .def("set_weights", &DistributedPyNetwork::setWeights,
+           py::arg("layer_index"), py::arg("new_weights"),
            "Sets the weight matrix at the given layer index to the given 2D "
            "Numpy matrix. Throws an error if the dimension of the given weight "
            "matrix does not match the layer's current weight matrix.");
-
-
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {

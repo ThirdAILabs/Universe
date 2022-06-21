@@ -10,7 +10,8 @@
 namespace thirdai::bolt {
 
 FullyConnectedLayer::FullyConnectedLayer(
-    const FullyConnectedLayerConfig& config, uint64_t prev_dim, bool is_distributed)
+    const FullyConnectedLayerConfig& config, uint64_t prev_dim,
+    bool is_distributed)
     : _dim(config.dim),
       _prev_dim(prev_dim),
       _sparse_dim(config.sparsity * config.dim),
@@ -345,10 +346,10 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
   }
 
   // continue if trainable layer
-  if(_is_distributed){
+  if (_is_distributed) {//NOLINT
     updateDenseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
                                      B2_bias_corrected);
-  }else if (!_prev_is_dense && !_this_is_dense) {
+  } else if (!_prev_is_dense && !_this_is_dense) {
     updateSparseSparseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
                                        B2_bias_corrected);
   } else if (!_prev_is_dense && _this_is_dense) {
@@ -572,30 +573,31 @@ void FullyConnectedLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
-
-void FullyConnectedLayer::setWeightGradients(const float* update_weight_gradient){
-  std::copy(update_weight_gradient, update_weight_gradient + _dim, _w_gradient.begin());
+void FullyConnectedLayer::setWeightGradients(
+    const float* update_weight_gradient) {
+  std::copy(update_weight_gradient, update_weight_gradient + _dim,
+            _w_gradient.begin());
 }
 
-void FullyConnectedLayer::setBiasesGradients(const float* update_bias_gradient){
-  std::copy(update_bias_gradient, update_bias_gradient + _dim, _b_gradient.begin());
+void FullyConnectedLayer::setBiasesGradients(
+    const float* update_bias_gradient) {
+  std::copy(update_bias_gradient, update_bias_gradient + _dim,
+            _b_gradient.begin());
 }
 
-float* FullyConnectedLayer::getBiasesGradient(){
+float* FullyConnectedLayer::getBiasesGradient() {
   float* biases_gradients_copy = new float[_dim * _prev_dim];
   std::copy(_b_gradient.begin(), _b_gradient.end(), biases_gradients_copy);
 
   return biases_gradients_copy;
 }
 
-float* FullyConnectedLayer::getWeightsGradient(){
+float* FullyConnectedLayer::getWeightsGradient() {
   float* weights_gradients_copy = new float[_dim * _prev_dim];
   std::copy(_w_gradient.begin(), _w_gradient.end(), weights_gradients_copy);
 
   return weights_gradients_copy;
 }
-
-
 
 void FullyConnectedLayer::setShallow(bool shallow) {
   /**
@@ -634,8 +636,6 @@ void FullyConnectedLayer::removeOptimizer() {
   _b_momentum.clear();
   _b_velocity.clear();
 }
-
-
 
 void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
                                             bool detailed) {

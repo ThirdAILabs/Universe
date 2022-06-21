@@ -395,28 +395,29 @@ void ConvLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
-void ConvLayer::setWeightGradients(const float* update_weight_gradient){
-  std::copy(update_weight_gradient, update_weight_gradient + _dim, _w_gradient.begin());
+void ConvLayer::setWeightGradients(const float* update_weight_gradient) {
+  std::copy(update_weight_gradient, update_weight_gradient + _dim,
+            _w_gradient.begin());
 }
 
-void ConvLayer::setBiasesGradients(const float* update_bias_gradient){
-  std::copy(update_bias_gradient, update_bias_gradient + _dim, _b_gradient.begin());
+void ConvLayer::setBiasesGradients(const float* update_bias_gradient) {
+  std::copy(update_bias_gradient, update_bias_gradient + _dim,
+            _b_gradient.begin());
 }
 
-float* ConvLayer::getBiasesGradient(){
+float* ConvLayer::getBiasesGradient() {
   float* biases_gradients_copy = new float[_dim];
   std::copy(_b_gradient.begin(), _b_gradient.end(), biases_gradients_copy);
 
   return biases_gradients_copy;
 }
 
-float* ConvLayer::getWeightsGradient(){
+float* ConvLayer::getWeightsGradient() {
   float* weights_gradients_copy = new float[_dim];
   std::copy(_w_gradient.begin(), _w_gradient.end(), weights_gradients_copy);
 
   return weights_gradients_copy;
 }
-
 
 // this function is only called from constructor
 void ConvLayer::buildPatchMaps(std::pair<uint32_t, uint32_t> next_kernel_size) {

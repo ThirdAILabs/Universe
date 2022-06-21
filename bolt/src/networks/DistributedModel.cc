@@ -15,41 +15,41 @@ namespace thirdai::bolt {
 template class DistributedModel<bolt::BoltBatch>;
 template class DistributedModel<dataset::ClickThroughBatch>;
 
-
-template<typename BATCH_T>
+template <typename BATCH_T>
 uint32_t DistributedModel<BATCH_T>::initTrainDistributed(
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
     const dataset::BoltDatasetPtr& train_labels,
     // Clang tidy is disabled for this line because it wants to pass by
     // reference, but shared_ptrs should not be passed by reference
-    uint32_t rehash, uint32_t rebuild, bool verbose){
-    _train_data = train_data;
-    _train_labels = train_labels;
-    uint32_t batch_size = _train_data->at(0).getBatchSize();
-    _rebuild_batch =
-        getRebuildBatchDistributed(rebuild, batch_size, train_data->len());
-    _rehash_batch = getRehashBatchDistributed(rehash, batch_size, train_data->len());
+    uint32_t rehash, uint32_t rebuild, bool verbose) {
+  _train_data = train_data;
+  _train_labels = train_labels;
+  uint32_t batch_size = _train_data->at(0).getBatchSize();
+  _rebuild_batch =
+      getRebuildBatchDistributed(rebuild, batch_size, train_data->len());
+  _rehash_batch =
+      getRehashBatchDistributed(rehash, batch_size, train_data->len());
 
-    // Because of how the datasets are read we know that all batches will not have
-    // a batch size larger than this so we can just set the batch size here.
-    initializeNetworkState(batch_size, false);
-    _outputs = getOutputs(batch_size, false);
+  // Because of how the datasets are read we know that all batches will not have
+  // a batch size larger than this so we can just set the batch size here.
+  initializeNetworkState(batch_size, false);
+  _outputs = getOutputs(batch_size, false);
 
-    if(verbose){
-      std::cout << "Distributed Network initialization done on this Node" << std::endl;
-    }
-    return train_data->numBatches();
+  if (verbose) {
+    std::cout << "Distributed Network initialization done on this Node"
+              << std::endl;
+  }
+  return train_data->numBatches();
 }
 
-template<typename BATCH_T>
+template <typename BATCH_T>
 void DistributedModel<BATCH_T>::calculateGradientDistributed(
-  uint32_t batch, const LossFunction& loss_fn){
+    uint32_t batch, const LossFunction& loss_fn) {
+  BATCH_T& batch_inputs = _train_data->at(batch);
 
-      BATCH_T& batch_inputs = _train_data->at(batch);
+  const BoltBatch& batch_labels = _train_labels->at(batch);
 
-      const BoltBatch& batch_labels = _train_labels->at(batch);
-
-    if (_batch_iter % 1000 == 999) {
+  if (_batch_iter % 1000 == 999) {
     shuffleRandomNeurons();
   }
 
@@ -61,17 +61,12 @@ void DistributedModel<BATCH_T>::calculateGradientDistributed(
     loss_fn.lossGradients(_outputs[vec_id], batch_labels[vec_id],
                           batch_inputs.getBatchSize());
     backpropagate(vec_id, batch_inputs, _outputs[vec_id]);
-    
-    }
   }
+}
 
-
-
-
-template<typename BATCH_T>
+template <typename BATCH_T>
 void DistributedModel<BATCH_T>::updateParametersDistributed(
-   float learning_rate){
-
+    float learning_rate) {
   updateParameters(learning_rate, ++_batch_iter);
   if (_batch_iter % _rebuild_batch == (_rebuild_batch - 1)) {
     reBuildHashFunctions();
@@ -79,8 +74,7 @@ void DistributedModel<BATCH_T>::updateParametersDistributed(
   } else if (_batch_iter % _rehash_batch == (_rehash_batch - 1)) {
     buildHashTables();
   }
-
-  }
+}
 
 template <typename BATCH_T>
 InferenceMetricData DistributedModel<BATCH_T>::predictDistributed(
@@ -128,8 +122,9 @@ InferenceMetricData DistributedModel<BATCH_T>::predictDistributed(
             ? nullptr
             : output_activations + batch * batch_size * getInferenceOutputDim();
 
-    processTestBatchDistributed(inputs, outputs, batch_labels, batch_active_neurons,
-                     batch_activations, metrics, compute_metrics);
+    processTestBatchDistributed(inputs, outputs, batch_labels,
+                                batch_active_neurons, batch_activations,
+                                metrics, compute_metrics);
 
     bar.increment();
   }
@@ -175,9 +170,9 @@ InferenceMetricData DistributedModel<BATCH_T>::predictOnStreamDistributed(
 
   while (auto batch = test_data->nextBatch()) {
     processTestBatchDistributed(batch->first, outputs, &batch->second,
-                     /* output_active_neurons=*/nullptr,
-                     /* output_activations=*/nullptr, metrics,
-                     /* compute_metrics= */ true);
+                                /* output_active_neurons=*/nullptr,
+                                /* output_activations=*/nullptr, metrics,
+                                /* compute_metrics= */ true);
 
     if (batch_callback) {
       batch_callback.value()(outputs, batch->first.getBatchSize());
@@ -203,13 +198,11 @@ InferenceMetricData DistributedModel<BATCH_T>::predictOnStreamDistributed(
 }
 
 template <typename BATCH_T>
-inline void DistributedModel<BATCH_T>::processTestBatchDistributed(const BATCH_T& batch_inputs,
-                                             BoltBatch& outputs,
-                                             const BoltBatch* batch_labels,
-                                             uint32_t* output_active_neurons,
-                                             float* output_activations,
-                                             MetricAggregator& metrics,
-                                             bool compute_metrics) {
+inline void DistributedModel<BATCH_T>::processTestBatchDistributed(
+    const BATCH_T& batch_inputs, BoltBatch& outputs,
+    const BoltBatch* batch_labels, uint32_t* output_active_neurons,
+    float* output_activations, MetricAggregator& metrics,
+    bool compute_metrics) {
 #pragma omp parallel for default(none)                                 \
     shared(batch_inputs, batch_labels, outputs, output_active_neurons, \
            output_activations, metrics, compute_metrics)
@@ -244,8 +237,8 @@ static constexpr uint32_t RehashAutoTuneFactor1 = 100;
 static constexpr uint32_t RehashAutoTuneFactor2 = 20;
 
 template <typename BATCH_T>
-uint32_t DistributedModel<BATCH_T>::getRehashBatchDistributed(uint32_t rehash, uint32_t batch_size,
-                                        uint32_t data_len) {
+uint32_t DistributedModel<BATCH_T>::getRehashBatchDistributed(
+    uint32_t rehash, uint32_t batch_size, uint32_t data_len) {
   if (rehash == 0) {
     if (data_len < RehashAutoTuneThreshold) {
       rehash = data_len / RehashAutoTuneFactor2;
@@ -257,17 +250,14 @@ uint32_t DistributedModel<BATCH_T>::getRehashBatchDistributed(uint32_t rehash, u
 }
 
 template <typename BATCH_T>
-uint32_t DistributedModel<BATCH_T>::getRebuildBatchDistributed(uint32_t rebuild, uint32_t batch_size,
-                                         uint32_t data_len) {
+uint32_t DistributedModel<BATCH_T>::getRebuildBatchDistributed(
+    uint32_t rebuild, uint32_t batch_size, uint32_t data_len) {
   rebuild = rebuild != 0 ? rebuild : (data_len / 4);
   return std::max<uint32_t>(rebuild / batch_size, 1);
 }
 
-
- // The following functions are added to make Bolt Distributed work.
- // These functions are going to be extended to python with the help 
- // of pybindings.
- 
-
+// The following functions are added to make Bolt Distributed work.
+// These functions are going to be extended to python with the help
+// of pybindings.
 
 }  // namespace thirdai::bolt

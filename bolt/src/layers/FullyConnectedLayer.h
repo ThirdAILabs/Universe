@@ -28,7 +28,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   FullyConnectedLayer& operator=(FullyConnectedLayer&&) = delete;
 
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
-                      uint64_t prev_dim, bool is_distributed=false);
+                      uint64_t prev_dim, bool is_distributed = false);
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels) final;
@@ -39,7 +39,6 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2,
                         float eps) final;
-  
 
   BoltBatch createBatchState(const uint32_t batch_size,
                              bool force_dense) const final {
@@ -86,11 +85,11 @@ class FullyConnectedLayer final : public SequentialLayer {
   void setBiases(const float* new_biases) final;
 
   void setWeightGradients(const float* update_weight_gradient) final;
-  
+
   void setBiasesGradients(const float* update_bias_gradient) final;
 
   float* getBiasesGradient() final;
-  
+
   float* getWeightsGradient() final;
 
   bool isShallow() final { return _is_shallow; }
@@ -139,7 +138,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   std::vector<bool> _is_active;
 
   bool _is_distributed;
-  
+
   bool _force_sparse_for_inference;
 
   static std::unique_ptr<hashing::HashFunction> assignHashFunction(

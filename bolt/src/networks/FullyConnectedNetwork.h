@@ -2,8 +2,8 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
-#include "Model.h"
 #include "DistributedModel.h"
+#include "Model.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SequentialLayer.h>
@@ -19,11 +19,13 @@ namespace thirdai::bolt {
 
 class DLRM;
 
-class FullyConnectedNetwork : public Model<bolt::BoltBatch>, public DistributedModel<bolt::BoltBatch> {
+class FullyConnectedNetwork : public Model<bolt::BoltBatch>,
+                              public DistributedModel<bolt::BoltBatch> {
   friend class DLRM;
 
  public:
-  FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim, bool is_distributed=false);
+  FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim,
+                        bool is_distributed = false);
 
   void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
 
@@ -69,7 +71,6 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch>, public DistributedM
       layer->shuffleRandNeurons();
     }
   }
-
 
   void buildNetworkSummary(std::stringstream& summary,
                            bool detailed = false) const {

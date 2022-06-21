@@ -21,8 +21,6 @@ struct FoundActiveNeuron {
   float activation;
 };
 
-
-
 struct BoltVector {
  public:
   uint32_t* active_neurons;
@@ -243,6 +241,7 @@ struct BoltVector {
 class BoltBatch {
  private:
   std::vector<BoltVector> _vectors;
+
  public:
   BoltBatch() {}
 
@@ -267,9 +266,9 @@ class BoltBatch {
 
   uint32_t getBatchSize() const { return _vectors.size(); }
   /**
-  * Commenting it as it is destructing the output BoltBatch
-  * vector.
-  */
+   * Commenting it as it is destructing the output BoltBatch
+   * vector.
+   */
   BoltBatch(const BoltBatch& other) = delete;
 
   BoltBatch(BoltBatch&& other) = default;

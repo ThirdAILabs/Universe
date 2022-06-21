@@ -65,17 +65,17 @@ class ConvLayer final : public SequentialLayer {
   void setTrainable(bool trainable) final;
 
   bool getTrainable() final;
-  
+
   void setWeights(const float* new_weights) final;
 
   void setBiases(const float* new_biases) final;
 
   void setWeightGradients(const float* update_weight_gradient) final;
-  
+
   void setBiasesGradients(const float* update_bias_gradient) final;
 
   float* getBiasesGradient() final;
-  
+
   float* getWeightsGradient() final;
 
   void setShallowSave(bool shallow) final {

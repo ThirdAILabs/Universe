@@ -4,8 +4,8 @@
 #include <cereal/types/vector.hpp>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
-#include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/metrics/Metric.h>
+#include <bolt/src/metrics/MetricAggregator.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/bolt_datasets/StreamingDataset.h>
@@ -21,13 +21,17 @@ namespace thirdai::bolt {
 template <typename BATCH_T>
 class DistributedModel {
  public:
- BoltBatch _outputs;
+  BoltBatch _outputs;
 
-  DistributedModel() : _batch_iter(0), _epoch_count(0), _rebuild_batch(0), _rehash_batch(0), _train_data(nullptr)
-  , _train_labels(nullptr)  {
+  DistributedModel()
+      : _batch_iter(0),
+        _epoch_count(0),
+        _rebuild_batch(0),
+        _rehash_batch(0),
+        _train_data(nullptr),
+        _train_labels(nullptr) {
     thirdai::licensing::LicenseWrapper::checkLicense();
   }
-
 
   /**
    * This function takes in a test dataset and uses it to evaluate the model. It
@@ -56,7 +60,7 @@ class DistributedModel {
       // Limit the number of batches used in the dataset
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
-    /**
+  /**
    * This function takes in a streaming dataset and uses it to evaluate the
    * model. Metrics can be passed in to be computed for the test set, and will
    * be returned by the function. Additionally a callback can optionally be
@@ -77,27 +81,25 @@ class DistributedModel {
       // Restrict printouts
       bool verbose = true);
 
-
-  void processTestBatchDistributed(const BATCH_T& batch_inputs, BoltBatch& outputs,
-                        const BoltBatch* batch_labels,
-                        uint32_t* output_active_neurons,
-                        float* output_activations, MetricAggregator& metrics,
-                        bool compute_metrics);
-  //Distributed Functions
+  void processTestBatchDistributed(const BATCH_T& batch_inputs,
+                                   BoltBatch& outputs,
+                                   const BoltBatch* batch_labels,
+                                   uint32_t* output_active_neurons,
+                                   float* output_activations,
+                                   MetricAggregator& metrics,
+                                   bool compute_metrics);
+  // Distributed Functions
   uint32_t initTrainDistributed(
-    std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
-    const dataset::BoltDatasetPtr& train_labels,
-    // Clang tidy is disabled for this line because it wants to pass by
-    // reference, but shared_ptrs should not be passed by reference
-    uint32_t rehash, uint32_t rebuild, bool verbose);
+      std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
+      const dataset::BoltDatasetPtr& train_labels,
+      // Clang tidy is disabled for this line because it wants to pass by
+      // reference, but shared_ptrs should not be passed by reference
+      uint32_t rehash, uint32_t rebuild, bool verbose);
 
-    void calculateGradientDistributed(
-      uint32_t batch,
-    const LossFunction& loss_fn);
+  void calculateGradientDistributed(uint32_t batch,
+                                    const LossFunction& loss_fn);
 
-    void updateParametersDistributed(
-   float learning_rate);
-
+  void updateParametersDistributed(float learning_rate);
 
   // Computes forward path through the network.
   virtual void forward(uint32_t batch_index, const BATCH_T& input,
@@ -155,10 +157,10 @@ class DistributedModel {
 
  protected:
   uint32_t getRehashBatchDistributed(uint32_t rehash, uint32_t batch_size,
-                          uint32_t data_len);
+                                     uint32_t data_len);
 
   uint32_t getRebuildBatchDistributed(uint32_t rebuild, uint32_t batch_size,
-                           uint32_t data_len);
+                                      uint32_t data_len);
 
   uint32_t _batch_iter;
 
