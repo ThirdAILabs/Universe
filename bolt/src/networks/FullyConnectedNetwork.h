@@ -23,7 +23,7 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch>, public DistributedM
   friend class DLRM;
 
  public:
-  FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim);
+  FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim, bool is_distributed=false);
 
   void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
 
@@ -146,6 +146,7 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch>, public DistributedM
   std::vector<BoltBatch> _states;
   uint32_t _num_layers;
   bool _sparse_inference_enabled;
+  bool _is_distributed;
 
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/

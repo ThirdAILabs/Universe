@@ -10,7 +10,7 @@
 namespace thirdai::bolt {
 
 FullyConnectedLayer::FullyConnectedLayer(
-    const FullyConnectedLayerConfig& config, uint64_t prev_dim)
+    const FullyConnectedLayerConfig& config, uint64_t prev_dim, bool is_distributed)
     : _dim(config.dim),
       _prev_dim(prev_dim),
       _sparse_dim(config.sparsity * config.dim),
@@ -34,6 +34,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sampling_config(config.sampling_config),
       _prev_is_active(_prev_dim, false),
       _is_active(config.dim, false),
+      _is_distributed(is_distributed),
       _force_sparse_for_inference(false) {
   std::random_device rd;
   std::default_random_engine eng(rd());
@@ -344,7 +345,10 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
   }
 
   // continue if trainable layer
-  if (!_prev_is_dense && !_this_is_dense) {
+  if(_is_distributed){
+    updateDenseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
+                                     B2_bias_corrected);
+  }else if (!_prev_is_dense && !_this_is_dense) {
     updateSparseSparseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
                                        B2_bias_corrected);
   } else if (!_prev_is_dense && _this_is_dense) {

@@ -28,7 +28,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   FullyConnectedLayer& operator=(FullyConnectedLayer&&) = delete;
 
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
-                      uint64_t prev_dim);
+                      uint64_t prev_dim, bool is_distributed=false);
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels) final;
@@ -138,6 +138,8 @@ class FullyConnectedLayer final : public SequentialLayer {
   // This is only used if _this_is_dense == false
   std::vector<bool> _is_active;
 
+  bool _is_distributed;
+  
   bool _force_sparse_for_inference;
 
   static std::unique_ptr<hashing::HashFunction> assignHashFunction(
