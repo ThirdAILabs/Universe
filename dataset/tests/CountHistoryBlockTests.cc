@@ -40,12 +40,12 @@ class CountHistoryBlockTests : public BlockTest {
     }
     return samples;
   }
-  static StringMatrix genNearNeighbours(uint32_t n) {
+  static StringMatrix genNearNeighbours(uint32_t n, uint32_t k) {
     StringMatrix near_neighbours;
     for(uint32_t i=0;i<n;i++) {
       std::vector<std::string> sample;
       sample.push_back(std::to_string(i));
-      for (uint32_t j=0;j<6;j++) {
+      for (uint32_t j=0;j<k;j++) {
         sample.push_back(std::to_string((i+1+j)%n));
       }
       near_neighbours.push_back(sample);
@@ -196,21 +196,38 @@ TEST_F(CountHistoryBlockTests, ErrorDoesNotGrowOverTime) {
 }
 
 TEST_F(CountHistoryBlockTests, NearNeighbours) {
-  std::vector<Window> windows{Window(/* lag = */ 0, /* size = */ 1)};
+  std::vector<Window> windows{Window(/* lag = */ 0, /* size = */ 2)};
   DynamicCountsConfig config(/* max_range = */ 1, /* n_rows = */ 5, /* range_pow = */ 10);
-  StringMatrix near_neighbours = genNearNeighbours(7);
+  StringMatrix near_neighbours = genNearNeighbours(3,2);
   std::vector<std::shared_ptr<Block>> blocks{std::make_shared<CountHistoryBlock>(/* has_count_col = */ false, /* id_col = */ 0, /* timestamp_col = */ 1, /* count_col = */ 0, windows, config,true,near_neighbours)};
 
-  auto samples = makeTrivialSamples(/* n_ids = */ 7, /* n_days = */ 365, /* day_offset = */ 365);
+  auto samples = makeTrivialSamples(/* n_ids = */ 3, /* n_days = */ 2, /* day_offset = */ 365);
   auto vecs = makeSparseSegmentedVecs(samples, blocks);
-
-  for (auto& vec : vecs) {
-    auto entries = vectorEntries(vec);
-    ASSERT_EQ(entries.size(), 7);
-    // ASSERT_EQ(entries[0], 1.0);
-    // ASSERT_EQ(entries[1], 1.0);
-    // ASSERT_EQ(entries[2], 1.0);
-    // ASSERT_EQ(entries[3], 1.0);
+  std::vector<uint32_t> num(3,0);
+  for (uint32_t i =0;i<vecs.size();i++) {
+    auto entries = vectorEntries(vecs[i]);
+    uint32_t a,b,c;
+    switch(i%3) {
+      case 0: {
+        num[0]++;
+        a = num[0];b=num[1];c = num[2];
+        break;
+      }
+      case 1: {
+        num[1]++;
+        a = num[1];b=num[2];c = num[0];
+        break;
+      }
+      case 2: {
+        num[2]++;
+        a = num[2];b=num[0];c = num[1];
+        break;
+      }
+    }
+    ASSERT_EQ(entries.size(), 3);
+    ASSERT_EQ(entries[0], a);
+    ASSERT_EQ(entries[1], b);
+    ASSERT_EQ(entries[2], c);
   }
 }
 

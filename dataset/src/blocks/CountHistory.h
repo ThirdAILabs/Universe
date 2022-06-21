@@ -13,9 +13,8 @@
 namespace thirdai::dataset {
 
 struct Window {
-  Window (uint32_t lag, uint32_t size)
-    : lag(lag), size(size) {}
- 
+  Window(uint32_t lag, uint32_t size) : lag(lag), size(size) {}
+
   uint32_t lag;
   uint32_t size;
 };
@@ -27,13 +26,15 @@ class CountHistoryBlock : public Block {
    *
    * If has_count_col == false, count_col is ignored.
    */
-  CountHistoryBlock(bool has_count_col, uint32_t id_col, uint32_t timestamp_col,
-                    uint32_t count_col, std::vector<Window> windows,
-                    DynamicCountsConfig& index_config,bool has_near = false, std::vector<std::vector< std::string>> near_neighbours = {{" "}})
+  CountHistoryBlock(
+      bool has_count_col, uint32_t id_col, uint32_t timestamp_col,
+      uint32_t count_col, std::vector<Window> windows,
+      DynamicCountsConfig& index_config, bool has_near_neighbours = false,
+      const std::vector<std::vector<std::string>>& near_neighbours = {{"0","0"}})
       : _primary_start_timestamp(0),
         _has_count_col(has_count_col),
-        _has_near(has_near),
-        _near_neighbours(std::move(near_neighbours)),
+        _has_near_neighbours(has_near_neighbours),
+        _near_neighbours({{0, 0}}),
         _id_col(id_col),
         _timestamp_col(timestamp_col),
         _count_col(count_col),
@@ -53,20 +54,43 @@ class CountHistoryBlock : public Block {
     }
     _expected_num_cols = max_col_idx + 1;
 
-    _matching = get_allocate(_near_neighbours);
+    if (_has_near_neighbours) {
+      _near_neighbours = conversionStringToInt(near_neighbours);
+    }
+
+    _map_id_to_near_neighbours = mapNeighbours(_near_neighbours);
   }
 
-  static std::unordered_map<std::string_view,uint32_t> get_allocate(std::vector<std::vector< std::string>> neighbours) {
-    std::unordered_map<std::string_view,uint32_t> maps;
-    for(uint32_t i=0;i<neighbours.size();i++) {
-      //std::string_view temp = std::string_view(neighbours[i][0].c_str(),neighbours[i][0].size());
-      maps[neighbours[i][0]] = i;
-      //maps[temp] = i;
+  static std::vector<std::vector<uint32_t>> conversionStringToInt(
+      const std::vector<std::vector<std::string>>& near_neighbours) {
+    std::vector<std::vector<uint32_t>> temp;
+    for (const auto& neighbours : near_neighbours) {
+      std::vector<uint32_t> res;
+      for (auto neighbour : neighbours) {
+        uint32_t id{};
+        std::from_chars(neighbour.data(), neighbour.data() + neighbour.size(),
+                        id);
+        res.push_back(id);
+      }
+      temp.push_back(res);
+    }
+    return temp;
+  }
+
+  static std::unordered_map<uint32_t, std::vector<uint32_t>> mapNeighbours(
+      std::vector<std::vector<uint32_t>> neighbours) {
+    std::unordered_map<uint32_t, std::vector<uint32_t>> maps;
+    for (auto& neighbour : neighbours) {
+      std::vector<uint32_t> temp(neighbour.begin() + 1, neighbour.end());
+      maps[neighbour[0]] = temp;
     }
     return maps;
   }
 
-  uint32_t featureDim() const final { return _has_near? _windows.size()*7 : _windows.size(); };
+  uint32_t featureDim() const final {
+    return _has_near_neighbours ? _windows.size() * (_near_neighbours[0].size())
+                                : _windows.size();
+  };
 
   bool isDense() const final { return false; };
 
@@ -82,20 +106,16 @@ class CountHistoryBlock : public Block {
     std::tm time = TimeUtils::timeStringToTimeObject(input_row[_timestamp_col]);
     // TODO(Geordie) should timestamp be uint64_t?
     uint32_t timestamp = std::mktime(&time);
-    
+
     float count = 1.0;
     if (_has_count_col) {
       auto count_str = input_row[_count_col];
       char* end;
       count = std::strtof(count_str.data(), &end);
     }
-    std::vector<uint32_t> ids(6);
-    if(_has_near) {
-      int t = _matching.find(id_str)->second;
-      for(int i=0;i<6;i++) {
-        auto id_str = _near_neighbours[t][i];
-        std::from_chars(id_str.data(), id_str.data() + id_str.size(), ids[i]);
-      }
+    std::vector<uint32_t> ids;
+    if (_has_near_neighbours) {
+      ids = _map_id_to_near_neighbours[id];
     }
 
 #pragma omp critical
@@ -106,20 +126,18 @@ class CountHistoryBlock : public Block {
       }
     }
     _index.index(id, timestamp, count);
-    uint32_t k = 0;
-    for (uint32_t i = 0; i < _windows.size(); i++) {
-      const auto& [lag, size] = _windows[i];
+    uint32_t position = 0;
+    for (auto window : _windows) {
+      const auto& [lag, size] = window;
       // Prevent overflow if given a date < 1970.
       auto look_back = (lag + size - 1) * SECONDS_IN_DAY;
       auto query_timestamp = timestamp >= look_back ? timestamp - look_back : 0;
-      auto query_result =
-          _index.query(id, query_timestamp, size);
-      vec.addSparseFeatureToSegment(k++, query_result);
-      if(_has_near) {
-        for(uint32_t j=0 ;j<6;j++) {
-          auto query_result =
-          _index.query(ids[j], query_timestamp, size);
-      vec.addSparseFeatureToSegment(k++, query_result);
+      auto query_result = _index.query(id, query_timestamp, size);
+      vec.addSparseFeatureToSegment(position++, query_result);
+      if (_has_near_neighbours) {
+        for (auto id : ids) {
+          auto query_result = _index.query(id, query_timestamp, size);
+          vec.addSparseFeatureToSegment(position++, query_result);
         }
       }
     }
@@ -129,15 +147,15 @@ class CountHistoryBlock : public Block {
   uint32_t _lifetime;
   uint32_t _primary_start_timestamp;
   bool _has_count_col;
-  bool _has_near;
-  std::vector<std::vector< std::string>> _near_neighbours;
+  bool _has_near_neighbours;
+  std::vector<std::vector<uint32_t>> _near_neighbours;
   uint32_t _id_col;
   uint32_t _timestamp_col;
   uint32_t _count_col;
   uint32_t _expected_num_cols;
   std::vector<Window> _windows;
   DynamicCounts _index;
-  std::unordered_map<std::string_view,uint32_t> _matching;
+  std::unordered_map<uint32_t, std::vector<uint32_t>> _map_id_to_near_neighbours;
 };
 
 }  // namespace thirdai::dataset
