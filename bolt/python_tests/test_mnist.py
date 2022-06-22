@@ -129,7 +129,11 @@ def test_mnist_sparse_inference():
     train_network(network, train_x, train_y, epochs=1)
 
     sparse_predict, _ = network.predict(
-        test_x, test_y, sparse_inference=True, metrics=["categorical_accuracy"], verbose=False
+        test_x,
+        test_y,
+        sparse_inference=True,
+        metrics=["categorical_accuracy"],
+        verbose=False,
     )
 
     assert sparse_predict["categorical_accuracy"] >= SPARSE_INFERENCE_ACCURACY_THRESHOLD
@@ -164,7 +168,11 @@ def test_sparse_inference_with_sparse_output():
     train_network(network, train_x, train_y, epochs=1)
 
     sparse_predict, active_neurons, activations = network.predict(
-        test_x, test_y, sparse_inference=True, metrics=["categorical_accuracy"], verbose=False
+        test_x,
+        test_y,
+        sparse_inference=True,
+        metrics=["categorical_accuracy"],
+        verbose=False,
     )
 
     assert (
