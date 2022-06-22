@@ -9,7 +9,7 @@ class Callback:
             doesn't show improvement over the baseline. Defaults to the monitored quantity
             observed on the first epoch.
         init_patience (int): Number of epochs with no improvement after which training will be stopped.
-        patience (integer): Current number of epochs after which training will be stopped 
+        patience (integer): Current number of epochs after which training will be stopped
             (patience <= init_patience).
         verbose (bool): False is silent, True displays a message if/when the callback takes effect.
     """
@@ -27,7 +27,7 @@ class Callback:
 
     def getBaseline(self):
         return self._baseline
-    
+
     def getMinDelta(self):
         return self._min_delta
 
@@ -66,9 +66,9 @@ class EarlyStop(Callback):
     def callback(self, epoch, lr, epoch_metrics):
         """Returns flag indicating if training should be stopped due to lack of improvement.
 
-        Implementation of standard callback function. Given the metrics for the most recent epoch, 
-        callback returns a boolean indicating whether training should be stopped and a learning 
-        rate (unchanged). 
+        Implementation of standard callback function. Given the metrics for the most recent epoch,
+        callback returns a boolean indicating whether training should be stopped and a learning
+        rate (unchanged).
 
         Args:
             epoch (integer): Unused. The epoch index (indexed from 0).
@@ -94,7 +94,9 @@ class EarlyStop(Callback):
                 self._patience -= 1  # Decrement patience but keep training
                 return False, lr
         else:
-            self._baseline = result  # Update baseline to reflect highest recorded metric
+            self._baseline = (
+                result  # Update baseline to reflect highest recorded metric
+            )
             self._patience = self._init_patience  # Showing improvement, reset patience
             return False, lr
 
@@ -129,8 +131,8 @@ class AdaptiveLearningRate(Callback):
         """Returns an updated learning rate if no improvement is observed after
             a specified number of epochs.
 
-        Implementation of standard callback function. Given the metrics for the most recent epoch, 
-        callback returns a boolean indicating whether training should be stopped (always False) and 
+        Implementation of standard callback function. Given the metrics for the most recent epoch,
+        callback returns a boolean indicating whether training should be stopped (always False) and
         a new learning rate.
 
         Args:
@@ -139,7 +141,7 @@ class AdaptiveLearningRate(Callback):
             epoch_metrics: The metrics for the most recent epoch as returned by Network.train().
 
         Returns:
-            A tuple of (boolean, float) indicating whether training should be stopped (always False) 
+            A tuple of (boolean, float) indicating whether training should be stopped (always False)
             and a learning rate.
         """
 
@@ -162,7 +164,9 @@ class AdaptiveLearningRate(Callback):
                 self._patience -= 1  # Decrement patience
                 return False, lr
         else:
-            self._baseline = result  # Update baseline to reflect highest recorded metric
+            self._baseline = (
+                result  # Update baseline to reflect highest recorded metric
+            )
             self._patience = self._init_patience  # Showing improvement, reset patience
             return False, lr
 
@@ -171,9 +175,9 @@ class LearningRateScheduler(Callback):
     """Modifies the learning rate after every epoch via a user-supplied function.
 
     Attributes:
-        schedule (function): A function that takes an epoch index (integer, indexed from 0) and 
+        schedule (function): A function that takes an epoch index (integer, indexed from 0) and
             current learning rate (float) as inputs and returns a new learning rate as output (float).
-        verbose (bool): False is silent, True displays a message when LearningRateScheduler updates the 
+        verbose (bool): False is silent, True displays a message when LearningRateScheduler updates the
             learning rate.
         Unused:
             metric (string): Quantity to be monitored. Currently, only categorical_accuracy is supported.
@@ -188,7 +192,7 @@ class LearningRateScheduler(Callback):
     def __init__(
         self,
         schedule,
-        metric='categorical_accuracy',
+        metric="categorical_accuracy",
         min_delta=None,
         baseline=None,
         patience=None,
@@ -200,7 +204,7 @@ class LearningRateScheduler(Callback):
     def callback(self, epoch, lr, epoch_metrics):
         """Returns a modified learning rate via a user-supplied function.
 
-        Implementation of standard callback function. Given the current learning rate, callback 
+        Implementation of standard callback function. Given the current learning rate, callback
         modifies and returns it according to a user-supplied function.
 
         Args:
@@ -209,7 +213,7 @@ class LearningRateScheduler(Callback):
             epoch_metrics: Unused. The metrics for the most recent epoch as returned by Network.train().
 
         Returns:
-            A tuple of (boolean, float) indicating whether training should be stopped (always False) 
+            A tuple of (boolean, float) indicating whether training should be stopped (always False)
             and a new learning rate.
         """
 
