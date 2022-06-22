@@ -35,7 +35,7 @@ class Callback:
         self._baseline = baseline
 
     def setDefaultMinDelta(self):
-        self._min_delta = 0.2  # min_delta defaults to 1% of baseline
+        self._min_delta = 0.01
 
 
 class EarlyStop(Callback):
@@ -94,6 +94,7 @@ class EarlyStop(Callback):
                 self._patience -= 1  # Decrement patience but keep training
                 return False, lr
         else:
+            self._baseline = result  # Update baseline to reflect highest recorded metric
             self._patience = self._init_patience  # Showing improvement, reset patience
             return False, lr
 
@@ -161,6 +162,7 @@ class AdaptiveLearningRate(Callback):
                 self._patience -= 1  # Decrement patience
                 return False, lr
         else:
+            self._baseline = result  # Update baseline to reflect highest recorded metric
             self._patience = self._init_patience  # Showing improvement, reset patience
             return False, lr
 
