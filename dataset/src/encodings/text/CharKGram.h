@@ -36,9 +36,11 @@ class CharKGram : public TextEncoding {
       char_tri_grams.push_back(tri_gram_hash);
     }
 
-    // Deduplication adds an overhead of around 10% but helps to reduce
-    // number of entries in the sparse vector, which can in turn make BOLT
-    // run faster.
+    /*
+      Deduplication adds an overhead of around 10% but helps to reduce
+      number of entries in the sparse vector, which can in turn make BOLT
+      run faster.
+    */
     TextEncodingUtils::sumRepeatedIndices(char_tri_grams, 1.0, vec);
   }
 
