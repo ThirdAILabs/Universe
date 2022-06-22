@@ -20,8 +20,9 @@ class Network(thirdai._thirdai.bolt.Network):
         loss_fn,
         learning_rate,
         epochs,
-        rehash,
-        rebuild,
+        batch_size=0,
+        rehash=0,
+        rebuild=0,
         verbose=True,
         metrics=[],
         callbacks=[],
@@ -43,15 +44,16 @@ class Network(thirdai._thirdai.bolt.Network):
 
             epoch_metrics = thirdai._thirdai.bolt.Network.train(
                 self,
-                train_data,
-                train_labels,
-                loss_fn,
-                lr,
-                1,
-                rehash,
-                rebuild,
-                verbose,
-                metrics,
+                train_data=train_data,
+                train_labels=train_labels,
+                loss_fn=loss_fn,
+                learning_rate=lr,
+                epochs=1,
+                batch_size=batch_size,
+                rehash=rehash,
+                rebuild=rebuild,
+                verbose=verbose,
+                metrics=metrics,
             )
 
             if epoch == 0:
