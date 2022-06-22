@@ -47,13 +47,6 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__str__", &BoltVector::toString)
       .def("__repr__", &BoltVector::toString);
 
-  py::class_<bolt::BoltBatch>(dataset_submodule,  // NOLINT
-                              "BoltBatch");
-
-  dataset_submodule.def("get_boltbatch", &parseSentenceToBoltBatch,
-                        py::arg("sentence"), py::arg("seed") = 0,
-                        py::arg("dimension") = 100);
-
   // The no lint below is because clang tidy doesn't like instantiating an
   // object without a name and never using it.
   py::class_<InMemoryDataset<SparseBatch>>(dataset_submodule,  // NOLINT
@@ -285,6 +278,10 @@ void createDatasetSubmodule(py::module_& module) {
   // object without a name and never using it.
   py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule,  // NOLINT
                                           "BoltDataset");
+
+  dataset_submodule.def("get_boltdataset", &parseSentenceToBoltDataset,
+                        py::arg("sentence"), py::arg("seed") = 0,
+                        py::arg("dimension") = 100);
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
@@ -753,10 +750,39 @@ std::unordered_map<uint32_t, uint32_t> parseSentenceToUnigrams(
   return idx_to_val_map;
 }
 
+std::unordered_map<uint32_t, uint32_t> parseSentenceToBigrams(
+    const std::string& sentence, uint32_t seed, uint32_t dimension) {
+  std::stringstream ss(sentence);
+  std::istream_iterator<std::string> begin(ss);
+  std::istream_iterator<std::string> end;
+  std::vector<std::string> tokens(begin, end);
+
+  std::unordered_map<uint32_t, uint32_t> idx_to_val_map;
+
+  for (uint32_t i=0;i<tokens.size();i++) {
+    for (uint32_t j=i;j<tokens.size();j++) {
+      std::string s = tokens[i] + "-" + tokens[j];
+      const char* cstr = s.c_str();
+      uint32_t hash =
+          thirdai::hashing::MurmurHash(cstr, s.length(), seed) % dimension;
+      if (idx_to_val_map.find(hash) == idx_to_val_map.end()) {
+        idx_to_val_map[hash] = 1;
+      } else {
+        idx_to_val_map[hash]++;
+      }
+    }
+  }
+
+  return idx_to_val_map;
+}
+
 BoltVector parseSentenceToBoltVector(const std::string& sentence, uint32_t seed,
-                                     uint32_t dimension) {
+                                     uint32_t dimension,
+                                     const std::string& encoding_type) {
   std::unordered_map<uint32_t, uint32_t> idx_to_val_map =
-      parseSentenceToUnigrams(sentence, seed, dimension);
+      (encoding_type == "unigrams")
+          ? parseSentenceToUnigrams(sentence, seed, dimension)
+          : parseSentenceToBigrams(sentence, seed, dimension);
 
   BoltVector vec(idx_to_val_map.size(), false, false);
   uint32_t i = 0;
@@ -769,13 +795,14 @@ BoltVector parseSentenceToBoltVector(const std::string& sentence, uint32_t seed,
   return vec;
 }
 
-bolt::BoltBatch parseSentenceToBoltBatch(const std::string& sentence,
-                                         uint32_t seed = 0,
-                                         uint32_t dimension = 100) {
-  BoltVector vec = parseSentenceToBoltVector(sentence, seed, dimension);
-  std::vector<BoltVector> temp = {vec};
-  bolt::BoltBatch res(std::move(temp));
-  return res;
+BoltDatasetPtr parseSentenceToBoltDataset(const std::string& sentence,
+                                          uint32_t seed = 0,
+                                          uint32_t dimension = 100) {
+  std::vector<BoltVector> temp = {
+      parseSentenceToBoltVector(sentence, seed, dimension, "pairgrams")};
+  std::vector<bolt::BoltBatch> batch_vec;
+  batch_vec.emplace_back(bolt::BoltBatch(std::move(temp)));
+  return std::make_shared<BoltDataset>(std::move(batch_vec), 1);
 }
 
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
