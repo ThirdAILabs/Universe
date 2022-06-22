@@ -5,18 +5,18 @@ import time
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
-def predict_train_one_epoch_predict(network, test_data, test_labels):
+def predict_train_one_epoch_predict(network, test_data, test_labels, sparse_inference):
     """
     Does a forward pass through the network with the test data, runs an epoch
     of training, then does another forward pass. Returns a tuple of the
     prediction before the epoch of training and the prediction after.
     """
     prediction_before = network.predict(
-        test_data=test_data, test_labels=None, metrics=[]
+        test_data=test_data, test_labels=None, sparse_inference=sparse_inference
     )[1:]
     train_network(network, train_data=test_data, train_labels=test_labels, epochs=1)
     prediction_after = network.predict(
-        test_data=test_data, test_labels=None, metrics=[]
+        test_data=test_data, test_labels=None, sparse_inference=sparse_inference
     )[1:]
     return prediction_before, prediction_after
 
@@ -40,17 +40,16 @@ def test_switch_dense_to_sparse():
 
     # Enable sparse inference first to ensure that enabling sparse inference is
     # persistent across changing the layer sparsity.
-    classifier.enable_sparse_inference()
 
-    dense_predictions = predict_train_one_epoch_predict(classifier, examples, labels)
+    dense_predictions = predict_train_one_epoch_predict(classifier, examples, labels, True)
 
     classifier.set_layer_sparsity(layer_index=1, sparsity=0.5)
 
-    sparse_predictions = predict_train_one_epoch_predict(classifier, examples, labels)
+    sparse_predictions = predict_train_one_epoch_predict(classifier, examples, labels, True)
 
     classifier.set_layer_sparsity(layer_index=1, sparsity=1)
 
-    dense_predictions += predict_train_one_epoch_predict(classifier, examples, labels)
+    dense_predictions += predict_train_one_epoch_predict(classifier, examples, labels, True)
 
     # All of these predictions were done with sparse inference = true. We
     # expect the output to be sparse when the layer was set to a sparsity < 1
