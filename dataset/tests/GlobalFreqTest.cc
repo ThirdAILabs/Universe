@@ -80,7 +80,7 @@ static void print_to_file() {
       "and education at West Point and all of the things he did.";
 
   std::ofstream outfile =
-      dataset::SafeFileMaker::ofstream(filename, std::ios::trunc);
+      thirdai::dataset::SafeFileMaker::ofstream(filename, std::ios::trunc);
   // std::cout << "printing" << std::endl;
   outfile << origin << std::endl;
   outfile.close();
