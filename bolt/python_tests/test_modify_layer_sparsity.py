@@ -41,15 +41,21 @@ def test_switch_dense_to_sparse():
     # Enable sparse inference first to ensure that enabling sparse inference is
     # persistent across changing the layer sparsity.
 
-    dense_predictions = predict_train_one_epoch_predict(classifier, examples, labels, True)
+    dense_predictions = predict_train_one_epoch_predict(
+        classifier, examples, labels, True
+    )
 
     classifier.set_layer_sparsity(layer_index=1, sparsity=0.5)
 
-    sparse_predictions = predict_train_one_epoch_predict(classifier, examples, labels, True)
+    sparse_predictions = predict_train_one_epoch_predict(
+        classifier, examples, labels, True
+    )
 
     classifier.set_layer_sparsity(layer_index=1, sparsity=1)
 
-    dense_predictions += predict_train_one_epoch_predict(classifier, examples, labels, True)
+    dense_predictions += predict_train_one_epoch_predict(
+        classifier, examples, labels, True
+    )
 
     # All of these predictions were done with sparse inference = true. We
     # expect the output to be sparse when the layer was set to a sparsity < 1
