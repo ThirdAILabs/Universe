@@ -12,6 +12,7 @@
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -70,6 +71,25 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     }
   }
 
+  void buildNetworkSummary(std::stringstream& summary,
+                           bool detailed = false) const {
+    summary << "========= Bolt Network =========\n";
+    summary << "InputLayer (Layer 0): dim=" << _input_dim << "\n";
+    uint32_t layerNum = 1;
+    for (const auto& layer : _layers) {
+      summary << "FullyConnectedLayer (Layer " << layerNum << "): ";
+      layer->buildLayerSummary(summary, detailed);
+      ++layerNum;
+    }
+    summary << "================================";
+  }
+
+  void printSummary(bool detailed = false) const {
+    std::stringstream summary;
+    this->buildNetworkSummary(summary, detailed);
+    std::cout << summary.str() << std::endl;
+  }
+
   BoltBatch getOutputs(uint32_t batch_size, bool force_dense) final {
     return _layers.back()->createBatchState(batch_size,
                                             useDenseComputations(force_dense));
@@ -81,11 +101,46 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     return _layers.back()->getInferenceOutputDim();
   }
 
+  bool anyLayerShallow() final {
+    bool shallow = false;
+    for (uint32_t i = 0; i < _num_layers; i++) {
+      shallow |= _layers[i]->isShallow();
+    }
+    return shallow;
+  }
+
+  void setShallow(bool shallow) final {
+    for (uint32_t i = 0; i < _num_layers; i++) {
+      _layers[i]->setShallow(shallow);
+    }
+  }
+
+  void setShallowSave(bool shallow) final {
+    for (uint32_t i = 0; i < _num_layers; i++) {
+      _layers[i]->setShallowSave(shallow);
+    }
+  }
+
   uint32_t getInputDim() const { return _layers.front()->getInputDim(); }
 
   void enableSparseInference() {
     _sparse_inference_enabled = true;
     _layers.back()->forceSparseForInference();
+  }
+
+  void setLayerSparsity(uint32_t layer_index, float sparsity) {
+    checkLayerIndex(layer_index);
+    _layers.at(layer_index)->setSparsity(sparsity);
+  }
+
+  float getLayerSparsity(uint32_t layer_index) {
+    checkLayerIndex(layer_index);
+    return _layers.at(layer_index)->getSparsity();
+  }
+
+  const SamplingConfig& getSamplingConfig(uint32_t layer_index) {
+    checkLayerIndex(layer_index);
+    return _layers.at(layer_index)->getSamplingConfig();
   }
 
  private:
@@ -98,6 +153,15 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
 
   bool useDenseComputations(bool force_dense) const {
     return force_dense && !_sparse_inference_enabled;
+  }
+
+  void checkLayerIndex(uint32_t layer_index) {
+    if (layer_index >= _layers.size()) {
+      throw std::invalid_argument(
+          "Layer index of " + std::to_string(layer_index) +
+          " is larger than the maximum layer index of " +
+          std::to_string(layer_index - 1));
+    }
   }
 
  protected:

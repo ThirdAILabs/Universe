@@ -96,6 +96,17 @@ target_link_libraries(
   dataset_core_lib
 )
 
+add_executable(
+  generic_batch_processor_test
+  GenericBatchProcessorTests.cc
+)
+
+target_link_libraries(
+  generic_batch_processor_test
+  PRIVATE
+  gtest_main
+)
+
 # add_executable(
 #   global_frequency_test
 #   GlobalFreqTest.cc
@@ -117,4 +128,5 @@ gtest_discover_tests(segmented_feature_vectors_test)
 gtest_discover_tests(categorical_block_test)
 gtest_discover_tests(text_block_test)
 gtest_discover_tests(block_batch_processor_test)
+gtest_discover_tests(generic_batch_processor_test)
 # gtest_discover_tests(global_frequency_test)

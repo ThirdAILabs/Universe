@@ -18,6 +18,7 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 #include <algorithm>
+#include <csignal>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -156,9 +157,45 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
 
-    return FullyConnectedNetwork::train(
+/**Overriding the SIG_INT exception handler to exit the program once
+ * CTRL+C is pressed by the user to interrupt the execution of any long
+ * running code.
+ */
+#if defined(__linux__) || defined(__APPLE__)
+
+    auto handler = [](int code) {
+      std::cout << "Caught a keyboard interrupt with code: " << code
+                << std::endl;
+      std::cout << "Gracefully shutting down the program!" << std::endl;
+      exit(code);
+    };
+
+    /**
+     * signal() function returns the current signal handler.
+     */
+    using sighandler_t = void (*)(int); /* for convenience */
+    sighandler_t old_signal_handler = std::signal(SIGINT, handler);
+
+#endif
+
+    /**
+     * For windows signal() function from csignal doesnot works for raising
+     * CTRL+C interrupts Look into below link for further information.
+     * https://stackoverflow.com/questions/54362699/windows-console-signal-handling-for-subprocess-c
+     */
+
+    MetricData metrics = FullyConnectedNetwork::train(
         train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
         epochs, rehash, rebuild, metric_names, verbose);
+
+#if defined(__linux__) || defined(__APPLE__)
+
+    // Restoring the old signal handler here
+    std::signal(SIGINT, old_signal_handler);
+
+#endif
+
+    return metrics;
   }
 
   py::tuple predict(
@@ -202,11 +239,43 @@ class PyNetwork final : public FullyConnectedNetwork {
                                 activations, output_sparse, alloc_success);
   }
 
-  void save(const std::string& filename) {
+  void saveForInference(const std::string& filename) {
+    this->save(filename, /* shallow= */ true);
+  }
+
+  /**
+   * To save without optimizer, shallow=true
+   */
+  void save(const std::string& filename, bool shallow) {
     std::ofstream filestream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
+    this->setShallowSave(shallow);
     oarchive(*this);
   }
+
+  void checkpoint(const std::string& filename) {
+    if (this->anyLayerShallow()) {
+      throw std::logic_error("Trying to checkpoint a model with no optimizer");
+    }
+    this->save(filename, /* shallow= */ false);
+  }
+
+  /**
+   * Removes the optimizer state for the network by setting layers to shallow
+   */
+  void trimForInference() { this->setShallow(true); }
+
+  /**
+   * If any of the layer is shallow, that is without an optimzier, reinitiliaze
+   * optimizer for that layer to 0.
+   */
+  void reinitOptimizerForTraining() { this->setShallow(false); }
+
+  /**
+   * If any layer in the model is shallow i.e, has uninitialized optimizer,
+   * return false
+   */
+  bool isReadyForTraining() { return !this->anyLayerShallow(); }
 
   static std::unique_ptr<PyNetwork> load(const std::string& filename) {
     std::ifstream filestream(filename, std::ios::binary);
@@ -233,6 +302,10 @@ class PyNetwork final : public FullyConnectedNetwork {
     return py::array_t<float>({dim, prev_dim},
                               {prev_dim * sizeof(float), sizeof(float)}, mem,
                               free_when_done);
+  }
+
+  void setTrainable(uint32_t layer_index, bool trainable) {
+    _layers.at(layer_index)->setTrainable(trainable);
   }
 
   void setWeights(
