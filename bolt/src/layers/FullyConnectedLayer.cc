@@ -508,8 +508,7 @@ inline void FullyConnectedLayer::deinitSparseDatastructures() {
 }
 
 void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
-  if ((!_trainable && !force_build) || _sparsity >= 1.0 ||
-      sparseInferenceEnabled()) {
+  if ((!_trainable && !force_build) || _sparsity >= 1.0 || hashTablesFrozen()) {
     return;
   }
   uint64_t num_tables = _hash_table->numTables();
@@ -532,7 +531,7 @@ void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
 void FullyConnectedLayer::buildHashTables() { buildHashTablesImpl(false); }
 
 void FullyConnectedLayer::reBuildHashFunction() {
-  if (!_trainable || _sparsity >= 1.0 || sparseInferenceEnabled()) {
+  if (!_trainable || _sparsity >= 1.0 || hashTablesFrozen()) {
     return;
   }
   _hasher = assignHashFunction(_sampling_config, _prev_dim);

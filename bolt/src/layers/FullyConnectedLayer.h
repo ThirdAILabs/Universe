@@ -57,15 +57,15 @@ class FullyConnectedLayer final : public SequentialLayer {
                      /* is_dense= */ !is_sparse);
   }
 
-  void enableSparseInference(bool insert_labels_if_not_found) final {
+  void freezeHashTables(bool insert_labels_if_not_found) final {
     if (insert_labels_if_not_found) {
-      _sampling_mode = LSHSamplingMode::FreezeHashTables;
-    } else {
       _sampling_mode = LSHSamplingMode::FreezeHashTablesWithInsertions;
+    } else {
+      _sampling_mode = LSHSamplingMode::FreezeHashTables;
     }
   }
 
-  bool sparseInferenceEnabled() const {
+  bool hashTablesFrozen() const {
     return _sampling_mode == LSHSamplingMode::FreezeHashTables ||
            _sampling_mode == LSHSamplingMode::FreezeHashTablesWithInsertions;
   }
@@ -78,12 +78,7 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   uint32_t getInputDim() const final { return _prev_dim; }
 
-  uint32_t getInferenceOutputDim() const final {
-    if (sparseInferenceEnabled()) {
-      return _sparse_dim;
-    }
-    return _dim;
-  }
+  uint32_t getSparseDim() const final { return _sparse_dim; }
 
   float* getWeights() const final;
 

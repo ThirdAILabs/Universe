@@ -37,10 +37,10 @@ class ConvLayer final : public SequentialLayer {
                      /* is_dense= */ !is_sparse);
   }
 
-  void enableSparseInference(bool insert_labels_if_not_found) final {
+  void freezeHashTables(bool insert_labels_if_not_found) final {
     (void)insert_labels_if_not_found;
     throw std::runtime_error(
-        "Sparse inference is not supported in conv layers.");
+        "'freezeHashTables' is not supported in conv layers.");
   }
 
   void buildHashTables() final;
@@ -51,7 +51,7 @@ class ConvLayer final : public SequentialLayer {
 
   uint32_t getInputDim() const final { return _prev_dim; }
 
-  uint32_t getInferenceOutputDim() const final { return getDim(); }
+  uint32_t getSparseDim() const final { return _sparse_dim; }
 
   float* getWeights() const final;
 

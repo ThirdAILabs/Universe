@@ -92,6 +92,8 @@ class Model {
       // Array to store output activations in, will not return activations if
       // this is null
       float* output_activations,
+      // Use sparse inference
+      bool use_sparse_inference = false,
       // Metrics to compute
       const std::vector<std::string>& metric_names = {},
       // Restrict printouts
@@ -108,6 +110,8 @@ class Model {
   InferenceMetricData predictOnStream(
       // Test dataset
       const std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& test_data,
+      // Use sparse inference
+      bool use_sparse_inference = false,
       // Metrics to compute
       const std::vector<std::string>& metric_names = {},
       // We choose not to store final layer activations for a streaming dataset
@@ -129,8 +133,9 @@ class Model {
   void processTestBatch(const BATCH_T& batch_inputs, BoltBatch& outputs,
                         const BoltBatch* batch_labels,
                         uint32_t* output_active_neurons,
-                        float* output_activations, MetricAggregator& metrics,
-                        bool compute_metrics);
+                        float* output_activations,
+                        uint64_t inference_output_dim,
+                        MetricAggregator& metrics, bool compute_metrics);
 
   void updateSampling(uint32_t rehash_batch, uint32_t rebuild_batch);
 
@@ -163,7 +168,7 @@ class Model {
 
   // Gets the dimension of the output layer during inference (depends of if
   // sparse inference is enabled).
-  virtual uint32_t getInferenceOutputDim() const = 0;
+  virtual uint32_t getInferenceOutputDim(bool using_sparsity) const = 0;
 
   virtual ~Model() = default;
 

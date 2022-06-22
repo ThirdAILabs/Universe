@@ -21,8 +21,8 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
 
   uint32_t getOutputDim() const final { return _top_mlp.getOutputDim(); }
 
-  uint32_t getInferenceOutputDim() const final {
-    return _top_mlp.getInferenceOutputDim();
+  uint32_t getInferenceOutputDim(bool using_sparsity) const final {
+    return _top_mlp.getInferenceOutputDim(using_sparsity);
   }
 
  private:

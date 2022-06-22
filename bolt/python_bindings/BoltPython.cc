@@ -348,6 +348,7 @@ void createBoltSubmodule(py::module_& module) {
            "every epoch.")
       .def("predict", &PyNetwork::predict, py::arg("test_data"),
            py::arg("test_labels"), py::arg("batch_size") = 2048,
+           py::arg("sparse_inference") = false,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -408,12 +409,11 @@ void createBoltSubmodule(py::module_& module) {
            "their values "
            "and (1) output vectors (predictions) from the network in the form "
            "of a 2D Numpy matrix of floats.")
-      .def("enable_sparse_inference", &PyNetwork::enableSparseInference,
-           "Enables sparse inference. Freezes smart hash tables. Do not call "
-           "this method early on "
-           "in the training routine. It is recommended to call this method "
-           "right before the last training "
-           "epoch.")
+      .def("freeze_hash_tables", &PyNetwork::freezeHashTables,
+           "Freezes the hash tables in the network, recommended when using "
+           "sparse inference. Freezes smart hash tables. Do not call "
+           "this method early on in the training routine. It is recommended to "
+           "call this method right before the last training epoch.")
       .def("save_for_inference", &PyNetwork::saveForInference,
            py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
@@ -536,7 +536,7 @@ void createBoltSubmodule(py::module_& module) {
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
       .def("predict", &PyDLRM::predict, py::arg("test_data"),
-           py::arg("test_labels"),
+           py::arg("test_labels"), py::arg("sparse_inference") = false,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),

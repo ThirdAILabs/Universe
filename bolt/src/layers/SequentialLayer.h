@@ -21,7 +21,7 @@ class SequentialLayer {
   virtual BoltBatch createBatchState(uint32_t batch_size,
                                      bool use_sparsity) const = 0;
 
-  virtual void enableSparseInference(bool insert_labels_if_not_found) = 0;
+  virtual void freezeHashTables(bool insert_labels_if_not_found) = 0;
 
   virtual void buildHashTables() = 0;
 
@@ -35,7 +35,7 @@ class SequentialLayer {
 
   // Returns the current output dimension for inference (different if sparse
   // inference).
-  virtual uint32_t getInferenceOutputDim() const = 0;
+  virtual uint32_t getSparseDim() const = 0;
 
   virtual float* getWeights() const = 0;
 

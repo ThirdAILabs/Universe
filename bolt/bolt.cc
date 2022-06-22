@@ -7,6 +7,7 @@
 #include <chrono>
 #include <filesystem>
 #include <iostream>
+#include <limits>
 #include <optional>
 #include <toml.h>
 #include <vector>
@@ -235,9 +236,8 @@ void trainFCN(toml::table& config) {
   auto loss_fn =
       thirdai::bolt::getLossFunction(getStrValue(param_table, "loss_fn"));
 
-  uint32_t sparse_inference_epoch = 0;
-  bool use_sparse_inference = param_table->contains("sparse_inference_epoch");
-  if (use_sparse_inference) {
+  uint32_t sparse_inference_epoch = std::numeric_limits<uint32_t>::max();
+  if (param_table->contains("sparse_inference_epoch")) {
     sparse_inference_epoch = getIntValue(param_table, "sparse_inference_epoch");
   }
 
@@ -272,14 +272,18 @@ void trainFCN(toml::table& config) {
   auto [test_data, test_labels] = test;
 
   for (uint32_t e = 0; e < epochs; e++) {
+    if (e == sparse_inference_epoch) {
+      network.freezeHashTables();
+    }
     network.train(train_data, train_labels, *loss_fn, learning_rate, 1, rehash,
                   rebuild, train_metrics);
-    if (use_sparse_inference && e == sparse_inference_epoch) {
-      network.enableSparseInference();
-    }
-    network.predict(
-        test_data, test_labels, /* output_active_neurons= */ nullptr,
-        /* output_activations= */ nullptr, test_metrics, max_test_batches);
+    bool use_sparse_inference = e >= sparse_inference_epoch;
+
+    network.predict(test_data, test_labels,
+                    /* output_active_neurons= */ nullptr,
+                    /* output_activations= */ nullptr,
+                    /* use_sparse_inference= */ use_sparse_inference,
+                    test_metrics, max_test_batches);
   }
 }
 
@@ -335,8 +339,10 @@ void trainDLRM(toml::table& config) {
     dlrm.train(train_data, train_labels, *loss_fn, learning_rate, 1, rehash,
                rebuild, train_metrics);
     dlrm.predict(test_data, test_labels,
-                 /* output_active_neurons= */ nullptr,
-                 /* output_activations= */ nullptr, test_metrics);
+                 /* output_active_neurons= */
+                 nullptr,
+                 /* output_activations= */ nullptr,
+                 /* use_sparse_inference= */ false, test_metrics);
   }
 }
 

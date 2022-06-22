@@ -44,18 +44,12 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   }
 
   void reBuildHashFunctions() final {
-    if (_sparse_inference_enabled) {
-      return;
-    }
     for (auto& layer : _layers) {
       layer->reBuildHashFunction();
     }
   }
 
   void buildHashTables() final {
-    if (_sparse_inference_enabled) {
-      return;
-    }
     for (auto& layer : _layers) {
       layer->buildHashTables();
     }
@@ -81,14 +75,16 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   }
 
   BoltBatch getOutputs(uint32_t batch_size, bool use_sparsity) final {
-    return _layers.back()->createBatchState(batch_size,
-                                            shouldUseSparsity(use_sparsity));
+    return _layers.back()->createBatchState(batch_size, use_sparsity);
   }
 
   uint32_t getOutputDim() const final { return _layers.back()->getDim(); }
 
-  uint32_t getInferenceOutputDim() const final {
-    return _layers.back()->getInferenceOutputDim();
+  uint32_t getInferenceOutputDim(bool using_sparsity) const final {
+    if (using_sparsity) {
+      return _layers.back()->getSparseDim();
+    }
+    return _layers.back()->getDim();
   }
 
   bool anyLayerShallow() final {
@@ -113,12 +109,11 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
 
   uint32_t getInputDim() const { return _layers.front()->getInputDim(); }
 
-  void enableSparseInference() {
-    _sparse_inference_enabled = true;
+  void freezeHashTables() {
     for (uint32_t i = 0; i < _layers.size(); i++) {
       // We want to insert labels when not found in hash tables for the last
       // layer only.
-      _layers[i]->enableSparseInference(
+      _layers[i]->freezeHashTables(
           /* insert_labels_if_not_found= */ i == _layers.size() - 1);
     }
   }
@@ -146,9 +141,9 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   void backpropagate(uint32_t batch_index, BoltVector& input,
                      BoltVector& output);
 
-  bool shouldUseSparsity(bool use_sparsity) const {
-    return use_sparsity || _sparse_inference_enabled;
-  }
+  // bool shouldUseSparsity(bool use_sparsity) const {
+  //   return use_sparsity || _sparse_inference_enabled;
+  // }
 
   void checkLayerIndex(uint32_t layer_index) {
     if (layer_index >= _layers.size()) {
@@ -164,7 +159,6 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   std::vector<std::shared_ptr<SequentialLayer>> _layers;
   std::vector<BoltBatch> _states;
   uint32_t _num_layers;
-  bool _sparse_inference_enabled;
 
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
@@ -172,7 +166,7 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<Model<bolt::BoltBatch>>(this), _input_dim,
-            _layers, _num_layers, _sparse_inference_enabled);
+            _layers, _num_layers);
   }
 
  protected:
