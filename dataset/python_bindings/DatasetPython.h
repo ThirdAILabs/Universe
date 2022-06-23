@@ -101,12 +101,11 @@ std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
 parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
                            uint32_t dimension);
 
-bolt::BoltVector parseSentenceToBoltVector(
-    const std::string& sentence, uint32_t seed, uint32_t dimension,
-    const std::string& encoding_type = "unigrams");
+bolt::BoltVector parseSentenceToBoltVector(const std::string& sentence,
+                                           uint32_t seed, uint32_t dimension);
 
-BoltDatasetPtr parseSentenceToBoltDataset(const std::string& sentence,
-                                          uint32_t seed, uint32_t dimension);
+BoltDatasetPtr parseSentenceToBoltDataset(
+    const std::string& sentence, std::shared_ptr<Block> block);
 
 /**
  * Checks whether the given bolt dataset and dense 2d matrix

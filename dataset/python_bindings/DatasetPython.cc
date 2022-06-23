@@ -4,6 +4,7 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/core/BlockBatchProcessor.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <dataset/src/encodings/text/PairGram.h>
@@ -279,9 +280,9 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule,  // NOLINT
                                           "BoltDataset");
 
-  dataset_submodule.def("get_boltdataset", &parseSentenceToBoltDataset,
-                        py::arg("sentence"), py::arg("seed") = 0,
-                        py::arg("dimension") = 100);
+  dataset_submodule.def("sentence_to_boltdataset",
+                        &parseSentenceToBoltDataset,
+                        py::arg("sentence"), py::arg("block"));
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
@@ -750,40 +751,10 @@ std::unordered_map<uint32_t, uint32_t> parseSentenceToUnigrams(
   return idx_to_val_map;
 }
 
-std::unordered_map<uint32_t, uint32_t> parseSentenceToBigrams(
-    const std::string& sentence, uint32_t seed, uint32_t dimension) {
-  std::stringstream ss(sentence);
-  std::istream_iterator<std::string> begin(ss);
-  std::istream_iterator<std::string> end;
-  std::vector<std::string> tokens(begin, end);
-
-  std::unordered_map<uint32_t, uint32_t> idx_to_val_map;
-
-  for (uint32_t i=0;i<tokens.size();i++) {
-    for (uint32_t j=i;j<tokens.size();j++) {
-      std::string s = tokens[i] + "-" + tokens[j];
-      const char* cstr = s.c_str();
-      uint32_t hash =
-          thirdai::hashing::MurmurHash(cstr, s.length(), seed) % dimension;
-      if (idx_to_val_map.find(hash) == idx_to_val_map.end()) {
-        idx_to_val_map[hash] = 1;
-      } else {
-        idx_to_val_map[hash]++;
-      }
-    }
-  }
-
-  return idx_to_val_map;
-}
-
 BoltVector parseSentenceToBoltVector(const std::string& sentence, uint32_t seed,
-                                     uint32_t dimension,
-                                     const std::string& encoding_type) {
+                                     uint32_t dimension) {
   std::unordered_map<uint32_t, uint32_t> idx_to_val_map =
-      (encoding_type == "unigrams")
-          ? parseSentenceToUnigrams(sentence, seed, dimension)
-          : parseSentenceToBigrams(sentence, seed, dimension);
-
+      parseSentenceToUnigrams(sentence, seed, dimension);
   BoltVector vec(idx_to_val_map.size(), false, false);
   uint32_t i = 0;
   for (auto [index, value] : idx_to_val_map) {
@@ -795,13 +766,14 @@ BoltVector parseSentenceToBoltVector(const std::string& sentence, uint32_t seed,
   return vec;
 }
 
-BoltDatasetPtr parseSentenceToBoltDataset(const std::string& sentence,
-                                          uint32_t seed = 0,
-                                          uint32_t dimension = 100) {
-  std::vector<BoltVector> temp = {
-      parseSentenceToBoltVector(sentence, seed, dimension, "pairgrams")};
+BoltDatasetPtr parseSentenceToBoltDataset(
+    const std::string& sentence, std::shared_ptr<Block> block) {
+  std::vector<std::string> sample = {sentence};
+  std::vector<std::shared_ptr<Block>> blocks = {std::move(block)};
+  std::vector<BoltVector> bolt_vec = {
+      BlockBatchProcessor::makeVector(sample, blocks, false)};
   std::vector<bolt::BoltBatch> batch_vec;
-  batch_vec.emplace_back(bolt::BoltBatch(std::move(temp)));
+  batch_vec.emplace_back(bolt::BoltBatch(std::move(bolt_vec)));
   return std::make_shared<BoltDataset>(std::move(batch_vec), 1);
 }
 

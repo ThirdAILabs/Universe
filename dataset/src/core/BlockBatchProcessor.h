@@ -34,6 +34,10 @@ class BlockBatchProcessor {
   std::pair<BoltDatasetPtr, BoltDatasetPtr> exportInMemoryDataset(
       bool shuffle = false, uint32_t shuffle_seed = std::rand());
 
+  static bolt::BoltVector makeVector(
+      std::vector<std::string>& sample,
+      std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense);
+
  private:
   /**
    * Produces a mapping from the final position of a vector in
@@ -47,9 +51,6 @@ class BlockBatchProcessor {
   /**
    * Encodes a sample as a BoltVector according to the given blocks.
    */
-  static bolt::BoltVector makeVector(
-      std::vector<std::string>& sample,
-      std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense);
 
   uint32_t _batch_size;
   bool _input_blocks_dense;
