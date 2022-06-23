@@ -30,11 +30,10 @@ class CountHistoryBlock : public Block {
       bool has_count_col, uint32_t id_col, uint32_t timestamp_col,
       uint32_t count_col, std::vector<Window> windows,
       DynamicCountsConfig& index_config, bool has_near_neighbours = false,
-      const std::vector<std::vector<std::string>>& near_neighbours = {{"0","0"}})
+      const std::vector<std::vector<std::string>>& adjacency_matrix = {{}})
       : _primary_start_timestamp(0),
         _has_count_col(has_count_col),
         _has_near_neighbours(has_near_neighbours),
-        _near_neighbours({{0, 0}}),
         _id_col(id_col),
         _timestamp_col(timestamp_col),
         _count_col(count_col),
@@ -55,15 +54,14 @@ class CountHistoryBlock : public Block {
     _expected_num_cols = max_col_idx + 1;
 
     if (_has_near_neighbours) {
-      _near_neighbours = conversionStringToInt(near_neighbours);
+      _num_neighbours = adjacency_matrix[0].size();
+      _map_id_to_near_neighbours = mapNeighbours(adjacency_matrix);
     }
-
-    _map_id_to_near_neighbours = mapNeighbours(_near_neighbours);
   }
 
-  static std::vector<std::vector<uint32_t>> conversionStringToInt(
+  static std::unordered_map<uint32_t, std::vector<uint32_t>> mapNeighbours(
       const std::vector<std::vector<std::string>>& near_neighbours) {
-    std::vector<std::vector<uint32_t>> temp;
+    std::unordered_map<uint32_t, std::vector<uint32_t>> maps;
     for (const auto& neighbours : near_neighbours) {
       std::vector<uint32_t> res;
       for (auto neighbour : neighbours) {
@@ -72,23 +70,13 @@ class CountHistoryBlock : public Block {
                         id);
         res.push_back(id);
       }
-      temp.push_back(res);
-    }
-    return temp;
-  }
-
-  static std::unordered_map<uint32_t, std::vector<uint32_t>> mapNeighbours(
-      std::vector<std::vector<uint32_t>> neighbours) {
-    std::unordered_map<uint32_t, std::vector<uint32_t>> maps;
-    for (auto& neighbour : neighbours) {
-      std::vector<uint32_t> temp(neighbour.begin() + 1, neighbour.end());
-      maps[neighbour[0]] = temp;
+      maps[res[0]] = std::vector<uint32_t>(res.begin() + 1, res.end());
     }
     return maps;
   }
 
   uint32_t featureDim() const final {
-    return _has_near_neighbours ? _windows.size() * (_near_neighbours[0].size())
+    return _has_near_neighbours ? _windows.size() * (_num_neighbours)
                                 : _windows.size();
   };
 
@@ -148,7 +136,7 @@ class CountHistoryBlock : public Block {
   uint32_t _primary_start_timestamp;
   bool _has_count_col;
   bool _has_near_neighbours;
-  std::vector<std::vector<uint32_t>> _near_neighbours;
+  uint32_t _num_neighbours;
   uint32_t _id_col;
   uint32_t _timestamp_col;
   uint32_t _count_col;
