@@ -9,46 +9,46 @@ import os
 
 def combine_hashes(a,b):
     """
-    we are combining hashes this way because , this is the 
-    way geordie had done.
+    This is the standard implementation of combineHashes in hashing::HashUtils
     """
     c = b + np.uint32(0x9e3779b9) + (a << 6) + (a >> 2)
     return a^c
-def get_bolt_dataset_from_python_pairgrams(sentence):
+
+def get_expected_pairgrams(sentence):
     words = sentence.split()
-    line = "0 "
-    temp = []
+    svm_line = "0 "
+    hash_values = []
     for i in range(len(words)):
-        hash_value = np.uint32(mmh3.hash(words[i],341))
-        temp.append(hash_value)
-    for i in range(len(temp)):
-        for j in range(i,len(temp)):
-            hash_value = (combine_hashes(temp[i],temp[j]))%100
-            line = line + str(hash_value)+":1 "
-    with open('hello.svm', 'w') as file:
-        file.write(line)
-    x,y = dataset.load_bolt_svm_dataset('hello.svm',1)
-    os.remove('hello.svm')
+        hash_value = np.uint32(mmh3.hash(words[i],341)) # we need uint32 to be consistent with our cpp murmurhash return type
+        hash_values.append(hash_value)
+    for i in range(len(hash_values)):
+        for j in range(i,len(hash_values)):
+            hash_value = (combine_hashes(hash_values[i],hash_values[j]))%100
+            svm_line = svm_line + str(hash_value)+":1 "
+    with open('pairgrams.svm', 'w') as file:
+        file.write(svm_line)
+    x,y = dataset.load_bolt_svm_dataset('pairgrams.svm',1)
+    os.remove('pairgrams.svm')
     return x,y
 
-def get_bolt_dataset_from_python_unigrams(sentence):
+def get_expected_unigrams(sentence):
     words = sentence.split()
-    line = "0 "
+    svm_line = "0 "
     for i in range(len(words)):
-        hash_value = (np.uint32(mmh3.hash(words[i],341))%100)
-        line = line + str(hash_value)+":1 "
+        hash_value = (np.uint32(mmh3.hash(words[i], 341)) % 100)
+        svm_line = svm_line + str(hash_value)+":1 "
     with open('unigrams.svm', 'w') as file:
-        file.write(line)
+        file.write(svm_line)
     x,y = dataset.load_bolt_svm_dataset('unigrams.svm',1)
     os.remove('unigrams.svm')
     return x,y
-def get_bolt_dataset_from_dataset_unigrams(sentence):
-    temp = dataset.sentence_to_boltdataset(sentence,blocks.Text(col=0, encoding=text_encodings.UniGram(dim=100)))
-    return temp
 
-def get_bolt_dataset_from_dataset_pairgrams(sentence):
-    temp = dataset.sentence_to_boltdataset(sentence,blocks.Text(col=0, encoding=text_encodings.PairGram(dim=100)))
-    return temp
+def get_actual_unigrams(sentence):
+    return dataset.string_to_bolt_dataset(sentence,blocks.Text(col=0, encoding=text_encodings.UniGram(dim=100)))
+
+def get_actual_pairgrams(sentence):
+    return dataset.string_to_bolt_dataset(sentence,blocks.Text(col=0, encoding=text_encodings.PairGram(dim=100)))
+    
 
 def build_network():
     layers = [
@@ -75,16 +75,16 @@ def test_sentence_to_boltdataset_unigrams():
     from two different ways, this is to ensure we are getting same
     boltdatsets from two methods.
     """
-    x,y = get_bolt_dataset_from_python_unigrams("hello world how are you")
-    z = get_bolt_dataset_from_dataset_unigrams("hello world how are you")
+    x,y = get_expected_unigrams("hello world how are you")
+    z = get_actual_unigrams("hello world how are you")
     network = build_network()
     temp1,act1 = network.predict(x,y)
     temp2,act2 = network.predict(z,None)
     assert act1.all() == act2.all()
 
 def test_sentence_to_boltdataset_pairgrams():
-    x,y = get_bolt_dataset_from_python_pairgrams("hello world how are you")
-    z = get_bolt_dataset_from_dataset_pairgrams("hello world how are you")
+    x,y = get_expected_pairgrams("hello world how are you")
+    z = get_actual_pairgrams("hello world how are you")
     network = build_network()
     temp1,act1 = network.predict(x,y)
     temp2,act2 = network.predict(z,None)

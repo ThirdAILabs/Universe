@@ -280,9 +280,14 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule,  // NOLINT
                                           "BoltDataset");
 
-  dataset_submodule.def("sentence_to_boltdataset",
-                        &parseSentenceToBoltDataset,
-                        py::arg("sentence"), py::arg("block"));
+  dataset_submodule.def("string_to_bolt_dataset",
+                        &parseStringToBoltDataset,
+                        py::arg("string"), py::arg("block"),
+                        "Takes in a python string and processes it to a BoltDataset object"
+                        "This is useful for inference API"
+                        "Arguments:\n"
+                        " * string: String - sentence to be parsed.\n"
+                        " * block: Admits all text blocks listed at dataset/src/encodings/text\n");
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
@@ -766,9 +771,9 @@ BoltVector parseSentenceToBoltVector(const std::string& sentence, uint32_t seed,
   return vec;
 }
 
-BoltDatasetPtr parseSentenceToBoltDataset(
-    const std::string& sentence, std::shared_ptr<Block> block) {
-  std::vector<std::string> sample = {sentence};
+BoltDatasetPtr parseStringToBoltDataset(
+    const std::string& string, std::shared_ptr<Block> block) {
+  std::vector<std::string> sample = {string};
   std::vector<std::shared_ptr<Block>> blocks = {std::move(block)};
   std::vector<BoltVector> bolt_vec = {
       BlockBatchProcessor::makeVector(sample, blocks, false)};
