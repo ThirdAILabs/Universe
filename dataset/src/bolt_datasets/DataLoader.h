@@ -30,9 +30,9 @@ class DataLoader {
 class SimpleFileDataLoader final : public DataLoader {
  public:
   SimpleFileDataLoader(const std::string& filename, uint32_t target_batch_size)
-      : DataLoader(target_batch_size), _file(filename), _filename(filename) {
-    // FileVerifier::verifyFile(_file, _filename);
-  }
+      : DataLoader(target_batch_size),
+        _file(SafeFileMaker::ifstream(filename)),
+        _filename(filename) {}
 
   std::optional<std::vector<std::string>> nextBatch() final {
     if (_file.eof()) {

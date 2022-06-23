@@ -85,12 +85,10 @@ class StreamedDataset {
   // dataset, and then the dataset is returned from the function.
   StreamedDataset(const std::string& filename, uint32_t batch_size,
                   std::unique_ptr<Factory<BATCH_T>> factory)
-      : _file(filename),
+      : _file(SafeFileMaker::ifstream(filename)),
         _batch_size(batch_size),
         _curr_id(0),
-        _factory(std::move(factory)) {
-    // FileVerifier::verifyFile(_file, filename);
-  }
+        _factory(std::move(factory)) {}
 
   std::optional<BATCH_T> nextBatch() {
     if (_file.eof()) {
