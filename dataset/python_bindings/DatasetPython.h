@@ -22,13 +22,6 @@ using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
 void createDatasetSubmodule(py::module_& module);
 
-InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
-                                            uint32_t batch_size);
-
-InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
-                                           uint32_t batch_size,
-                                           std::string delimiter);
-
 py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
                                     uint32_t batch_size,
                                     bool softmax_for_multiclass = true);
@@ -56,25 +49,6 @@ SparseBatch wrapNumpyIntoSparseData(
 DenseBatch wrapNumpyIntoDenseBatch(
     const py::array_t<float, py::array::c_style | py::array::forcecast>& data,
     uint64_t starting_id);
-
-InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
-    const py::array_t<float, py::array::c_style | py::array::forcecast>&
-        examples,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        labels,
-    uint32_t batch_size, uint64_t starting_id);
-
-InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        x_idxs,
-    const py::array_t<float, py::array::c_style | py::array::forcecast>& x_vals,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        x_offsets,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        y_idxs,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        y_offsets,
-    uint32_t batch_size, uint64_t starting_id);
 
 BoltDatasetPtr denseBoltDatasetFromNumpy(
     const py::array_t<float, py::array::c_style | py::array::forcecast>&

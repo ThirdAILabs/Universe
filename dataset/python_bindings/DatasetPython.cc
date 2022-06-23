@@ -223,13 +223,6 @@ void createDatasetSubmodule(py::module_& module) {
            "shuffling the "
            "dataset.");
 
-  dataset_submodule.def("load_svm_dataset", &loadSVMDataset,
-                        py::arg("filename"), py::arg("batch_size"));
-
-  dataset_submodule.def("load_csv_dataset", &loadCSVDataset,
-                        py::arg("filename"), py::arg("batch_size"),
-                        py::arg("delimiter") = ",");
-
   dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
                         py::arg("indices"), py::arg("values"));
 
@@ -354,38 +347,6 @@ void createDatasetSubmodule(py::module_& module) {
       "For testing purposes only.");
 }
 
-InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
-                                            uint32_t batch_size) {
-  auto start = std::chrono::high_resolution_clock::now();
-  InMemoryDataset<SparseBatch> data(filename, batch_size,
-                                    thirdai::dataset::SvmSparseBatchFactory{});
-  auto end = std::chrono::high_resolution_clock::now();
-
-  std::cout
-      << "Read " << data.len() << " vectors from " << filename << " in "
-      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds" << std::endl;
-
-  return data;
-}
-
-InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
-                                           uint32_t batch_size,
-                                           std::string delimiter) {
-  auto start = std::chrono::high_resolution_clock::now();
-  InMemoryDataset<DenseBatch> data(
-      filename, batch_size,
-      thirdai::dataset::CsvDenseBatchFactory(delimiter.at(0)));
-  auto end = std::chrono::high_resolution_clock::now();
-
-  std::cout
-      << "Read " << data.len() << " vectors in "
-      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds" << std::endl;
-
-  return data;
-}
-
 py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
                                     uint32_t batch_size,
                                     bool softmax_for_multiclass) {
@@ -483,69 +444,6 @@ DenseBatch wrapNumpyIntoDenseBatch(
   return DenseBatch(std::move(batch_vectors), starting_id);
 }
 
-InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
-    const py::array_t<float, py::array::c_style | py::array::forcecast>&
-        examples,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        labels,
-    uint32_t batch_size, uint64_t starting_id) {
-  // Get information from examples
-  const py::buffer_info examples_buf = examples.request();
-  const auto examples_shape = examples_buf.shape;
-  if (examples_shape.size() != 2) {
-    throw std::invalid_argument(
-        "For now, Numpy dense data must be 2D (each row is a dense data "
-        "vector).");
-  }
-
-  uint64_t num_examples = static_cast<uint64_t>(examples_shape.at(0));
-  uint64_t dimension = static_cast<uint64_t>(examples_shape.at(1));
-  float* examples_raw_data = static_cast<float*>(examples_buf.ptr);
-
-  // Get information from labels
-
-  const py::buffer_info labels_buf = labels.request();
-  const auto labels_shape = labels_buf.shape;
-  if (labels_shape.size() != 1) {
-    throw std::invalid_argument(
-        "For now, Numpy labels must be 1D (each element is an integer).");
-  }
-
-  uint64_t num_labels = static_cast<uint64_t>(labels_shape.at(0));
-  if (num_labels != num_examples) {
-    throw std::invalid_argument(
-        "The size of the label array must be equal to the number of rows in "
-        "the examples array.");
-  }
-  uint32_t* labels_raw_data = static_cast<uint32_t*>(labels_buf.ptr);
-
-  // Build batches
-
-  uint64_t num_batches = (num_examples + batch_size - 1) / batch_size;
-  std::vector<DenseBatch> batches;
-
-  for (uint32_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
-    std::vector<DenseVector> batch_vectors;
-    std::vector<std::vector<uint32_t>> batch_labels;
-
-    uint64_t start_vec_idx = batch_idx * batch_size;
-    uint64_t end_vec_idx = std::min(start_vec_idx + batch_size, num_examples);
-    for (uint64_t vec_idx = start_vec_idx; vec_idx < end_vec_idx; ++vec_idx) {
-      // owns_data = false because we don't want the numpy array to be deleted
-      // if this batch (and thus the underlying vectors) get deleted
-      bool owns_data = false;
-      batch_vectors.emplace_back(
-          dimension, examples_raw_data + dimension * vec_idx, owns_data);
-      batch_labels.push_back({labels_raw_data[vec_idx]});
-    }
-
-    batches.emplace_back(std::move(batch_vectors), std::move(batch_labels),
-                         starting_id + start_vec_idx);
-  }
-
-  return InMemoryDataset(std::move(batches), num_examples);
-}
-
 BoltDatasetPtr denseBoltDatasetFromNumpy(
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
         examples,
@@ -585,75 +483,6 @@ BoltDatasetPtr denseBoltDatasetFromNumpy(
   }
 
   return std::make_shared<BoltDataset>(std::move(batches), num_examples);
-}
-
-InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        x_idxs,
-    const py::array_t<float, py::array::c_style | py::array::forcecast>& x_vals,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        x_offsets,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        y_idxs,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        y_offsets,
-    uint32_t batch_size, uint64_t starting_id) {
-  // Get information from examples
-  const py::buffer_info x_idxs_buf = x_idxs.request();
-  const py::buffer_info x_vals_buf = x_vals.request();
-  const py::buffer_info x_offsets_buf = x_offsets.request();
-  const py::buffer_info y_idxs_buf = y_idxs.request();
-  const py::buffer_info y_offsets_buf = y_offsets.request();
-
-  uint64_t num_examples = static_cast<uint64_t>(x_offsets_buf.shape.at(0) - 1);
-  uint32_t* x_idxs_raw_data = static_cast<uint32_t*>(x_idxs_buf.ptr);
-  float* x_vals_raw_data = static_cast<float*>(x_vals_buf.ptr);
-  uint32_t* x_offsets_raw_data = static_cast<uint32_t*>(x_offsets_buf.ptr);
-  uint32_t* y_idxs_raw_data = static_cast<uint32_t*>(y_idxs_buf.ptr);
-  uint32_t* y_offsets_raw_data = static_cast<uint32_t*>(y_offsets_buf.ptr);
-
-  // Get information from labels
-
-  uint64_t num_labels = static_cast<uint64_t>(y_offsets_buf.shape.at(0) - 1);
-  if (num_labels != num_examples) {
-    throw std::invalid_argument(
-        "The size of the label array must be equal to the number of rows in "
-        "the examples array.");
-  }
-
-  // Build batches
-
-  uint64_t num_batches = (num_labels + batch_size - 1) / batch_size;
-  std::vector<SparseBatch> batches;
-
-  for (uint32_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
-    std::vector<SparseVector> batch_vectors;
-    std::vector<std::vector<uint32_t>> batch_labels;
-
-    uint64_t start_vec_idx = batch_idx * batch_size;
-    uint64_t end_vec_idx = std::min(start_vec_idx + batch_size, num_examples);
-    for (uint64_t vec_idx = start_vec_idx; vec_idx < end_vec_idx; ++vec_idx) {
-      // owns_data = false because we don't want the numpy array to be deleted
-      // if this batch (and thus the underlying vectors) get deleted
-      bool owns_data = false;
-      batch_vectors.emplace_back(
-          x_idxs_raw_data + x_offsets_raw_data[vec_idx],
-          x_vals_raw_data + x_offsets_raw_data[vec_idx],
-          x_offsets_raw_data[vec_idx + 1] - x_offsets_raw_data[vec_idx],
-          owns_data);
-      std::vector<uint32_t> vec_labels;
-      for (uint64_t nnz_id = y_offsets_raw_data[vec_idx];
-           nnz_id < y_offsets_raw_data[vec_idx + 1]; ++nnz_id) {
-        vec_labels.push_back(y_idxs_raw_data[nnz_id]);
-      }
-      batch_labels.push_back(std::move(vec_labels));
-    }
-
-    batches.emplace_back(std::move(batch_vectors), std::move(batch_labels),
-                         starting_id + start_vec_idx);
-  }
-
-  return InMemoryDataset(std::move(batches), num_examples);
 }
 
 BoltDatasetPtr sparseBoltDatasetFromNumpy(const NumpyArray<uint32_t>& indices,
