@@ -39,7 +39,12 @@ void createBoltSubmodule(py::module_& module) {
            "hash function "
            "used for sparse training and inference. One of DWTA, SRP, or "
            "FastSRP. Defaults to DWTA.")
-      .def(py::init<>(), "Builds a default SamplingConfig object.");
+      .def(py::init<>(), "Builds a default SamplingConfig object.")
+      .def_readonly("hashes_per_table", &SamplingConfig::hashes_per_table)
+      .def_readonly("num_tables", &SamplingConfig::num_tables)
+      .def_readonly("range_pow", &SamplingConfig::range_pow)
+      .def_readonly("reservoir_size", &SamplingConfig::reservoir_size)
+      .def_readonly("hash_function", &SamplingConfig::_hash_function);
 
 #endif
 
@@ -342,7 +347,7 @@ void createBoltSubmodule(py::module_& module) {
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
       .def("predict", &PyNetwork::predict, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("batch_size") = 0,
+           py::arg("test_labels"), py::arg("batch_size") = 2048,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -451,7 +456,22 @@ void createBoltSubmodule(py::module_& module) {
       .def("set_biases", &PyNetwork::setBiases, py::arg("layer_index"),
            py::arg("new_biases"),
            "Sets the bias array at the given layer index to the given 1D Numpy "
-           "array.");
+           "array.")
+      .def("set_layer_sparsity", &PyNetwork::setLayerSparsity,
+           py::arg("layer_index"), py::arg("sparsity"),
+           "Sets the sparsity of the layer at the given index. The 0th layer "
+           "is the first layer after the input layer. Note that this will "
+           "autotune the sampling config to work for the new sparsity.")
+      .def("get_layer_sparsity", &PyNetwork::getLayerSparsity,
+           py::arg("layer_index"),
+           "Gets the sparsity of the layer at the given index. The 0th layer "
+           "is the first layer after the input layer.")
+#if THIRDAI_EXPOSE_ALL
+      .def("get_sampling_config", &PyNetwork::getSamplingConfig,
+           py::arg("layer_index"),
+           "Returns the sampling config of the layer at layer_index.")
+#endif
+      ;
 
   py::class_<PyDLRM>(bolt_submodule, "DLRM",
                      "DLRM network with space-efficient embedding tables.")

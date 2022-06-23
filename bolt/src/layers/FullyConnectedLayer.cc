@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstdlib>
 #include <exception>
 #include <numeric>
 #include <random>
@@ -45,21 +46,7 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
-    _hasher = assignHashFunction(_sampling_config, _prev_dim);
-
-    _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
-        _sampling_config.num_tables, _sampling_config.reservoir_size,
-        1 << _sampling_config.range_pow);
-
-    /* Initializing hence, we need to force build the hash tables
-     * Hence, force_build is true here in buildHashTablesImpl(force_build)
-     */
-    buildHashTablesImpl(true);
-
-    _rand_neurons = std::vector<uint32_t>(_dim);
-
-    std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
-    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
+    initSparseDatastructures(rd);
   }
 }
 
@@ -502,6 +489,31 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
   _w_gradient[indx] = 0;
 }
 
+inline void FullyConnectedLayer::initSparseDatastructures(
+    std::random_device& rd) {
+  _hasher = assignHashFunction(_sampling_config, _prev_dim);
+
+  _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
+      _sampling_config.num_tables, _sampling_config.reservoir_size,
+      1 << _sampling_config.range_pow);
+
+  /* Initializing hence, we need to force build the hash tables
+   * Hence, force_build is true here in buildHashTablesImpl(force_build)
+   */
+  buildHashTablesImpl(true);
+
+  _rand_neurons = std::vector<uint32_t>(_dim);
+
+  std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
+  std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
+}
+
+inline void FullyConnectedLayer::deinitSparseDatastructures() {
+  _hasher = {};
+  _hash_table = {};
+  _rand_neurons = {};
+}
+
 void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
   if ((!_trainable && !force_build) || _sparsity >= 1.0 ||
       _force_sparse_for_inference) {
@@ -540,7 +552,7 @@ void FullyConnectedLayer::shuffleRandNeurons() {
   }
 }
 
-float* FullyConnectedLayer::getWeights() {
+float* FullyConnectedLayer::getWeights() const {
   float* weights_copy = new float[_dim * _prev_dim];
   std::copy(_weights.begin(), _weights.end(), weights_copy);
 
@@ -551,9 +563,9 @@ void FullyConnectedLayer::setTrainable(bool trainable) {
   _trainable = trainable;
 }
 
-bool FullyConnectedLayer::getTrainable() { return _trainable; }
+bool FullyConnectedLayer::getTrainable() const { return _trainable; }
 
-float* FullyConnectedLayer::getBiases() {
+float* FullyConnectedLayer::getBiases() const {
   float* biases_copy = new float[_dim];
   std::copy(_biases.begin(), _biases.end(), biases_copy);
 
@@ -617,6 +629,18 @@ void FullyConnectedLayer::setShallowSave(bool shallow) {
   _shallow_save = shallow;
 }
 
+void FullyConnectedLayer::setSparsity(float sparsity) {
+  deinitSparseDatastructures();
+  _sparsity = sparsity;
+  // TODO(josh): Right now this is using the autotuning for DWTA even if this
+  // hash function isn't DWTA. Add autotuning for other hash function types.
+  _sampling_config =
+      FullyConnectedLayerConfig(_dim, _sparsity, _act_func).sampling_config;
+  _sparse_dim = _sparsity * _dim;
+  std::random_device rd;
+  initSparseDatastructures(rd);
+}
+
 void FullyConnectedLayer::initOptimizer() {
   _w_gradient.assign(_dim * _prev_dim, 0);
   _w_momentum.assign(_dim * _prev_dim, 0);
@@ -638,7 +662,7 @@ void FullyConnectedLayer::removeOptimizer() {
 }
 
 void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
-                                            bool detailed) {
+                                            bool detailed) const {
   summary << "dim=" << _dim << ", sparsity=" << _sparsity << ", act_func=";
   switch (_act_func) {
     case ActivationFunction::ReLU:
