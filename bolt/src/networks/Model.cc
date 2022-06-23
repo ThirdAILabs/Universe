@@ -98,7 +98,7 @@ MetricData Model<BATCH_T>::trainOnStream(
 
   uint32_t batch_size = train_data->getMaxBatchSize();
   initializeNetworkState(batch_size, /* use_sparsity= */ true);
-  BoltBatch outputs = getOutputs(batch_size, /* use_sparsity= */ false);
+  BoltBatch outputs = getOutputs(batch_size, /* use_sparsity= */ true);
 
   if (verbose) {
     std::cout << std::endl

@@ -141,10 +141,6 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   void backpropagate(uint32_t batch_index, BoltVector& input,
                      BoltVector& output);
 
-  // bool shouldUseSparsity(bool use_sparsity) const {
-  //   return use_sparsity || _sparse_inference_enabled;
-  // }
-
   void checkLayerIndex(uint32_t layer_index) {
     if (layer_index >= _layers.size()) {
       throw std::invalid_argument(
