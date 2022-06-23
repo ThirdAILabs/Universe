@@ -19,15 +19,15 @@ def get_bolt_dataset_from_python_pairgrams(sentence):
     line = "0 "
     temp = []
     for i in range(len(words)):
-        hash_value = (np.uint32(mmh3.hash(words[i],341)))%100000
+        hash_value = np.uint32(mmh3.hash(words[i],341))
         temp.append(hash_value)
     for i in range(len(temp)):
         for j in range(i,len(temp)):
-            hash_value = (combine_hashes(temp[i],temp[j]))%100000
+            hash_value = (combine_hashes(temp[i],temp[j]))%100
             line = line + str(hash_value)+":1 "
     with open('hello.svm', 'w') as file:
         file.write(line)
-    x,y = dataset.load_bolt_svm_dataset('hello.svm',256)
+    x,y = dataset.load_bolt_svm_dataset('hello.svm',1)
     os.remove('hello.svm')
     return x,y
 
@@ -35,31 +35,29 @@ def get_bolt_dataset_from_python_unigrams(sentence):
     words = sentence.split()
     line = "0 "
     for i in range(len(words)):
-        hash_value = (np.uint32(mmh3.hash(words[i],341)))%100000
+        hash_value = (np.uint32(mmh3.hash(words[i],341))%100)
         line = line + str(hash_value)+":1 "
     with open('unigrams.svm', 'w') as file:
         file.write(line)
-    x,y = dataset.load_bolt_svm_dataset('unigrams.svm',256)
+    x,y = dataset.load_bolt_svm_dataset('unigrams.svm',1)
     os.remove('unigrams.svm')
     return x,y
 def get_bolt_dataset_from_dataset_unigrams(sentence):
-    temp = dataset.sentence_to_boltdataset(sentence,blocks.Text(col=0, encoding=text_encodings.UniGram(dim=100000)))
+    temp = dataset.sentence_to_boltdataset(sentence,blocks.Text(col=0, encoding=text_encodings.UniGram(dim=100)))
     return temp
 
 def get_bolt_dataset_from_dataset_pairgrams(sentence):
-    temp = dataset.sentence_to_boltdataset(sentence,blocks.Text(col=0, encoding=text_encodings.PairGram(dim=100000)))
+    temp = dataset.sentence_to_boltdataset(sentence,blocks.Text(col=0, encoding=text_encodings.PairGram(dim=100)))
     return temp
 
 def build_network():
     layers = [
         bolt.FullyConnected(
             dim=100,
-            sparsity=0.2,
             activation_function=bolt.ActivationFunctions.ReLU,
         ),
         bolt.FullyConnected(
             dim=10,
-            sparsity=0.3,
             activation_function=bolt.ActivationFunctions.ReLU,
         ),
         bolt.FullyConnected(
