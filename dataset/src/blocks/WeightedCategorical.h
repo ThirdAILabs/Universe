@@ -24,7 +24,8 @@ class WeightedCategoricalBlock : public Block {
    *     the categorical feature to be encoded.
    *   encoding: CategoricalEncoding - the categorical feature encoding model.
    */
-  WeightedCategoricalBlock(uint32_t col, std::shared_ptr<WeightedCategoricalEncoding> encoding)
+  WeightedCategoricalBlock(
+      uint32_t col, std::shared_ptr<WeightedCategoricalEncoding> encoding)
       : _col(col), _encoding(std::move(encoding)) {}
 
   /**
@@ -35,8 +36,10 @@ class WeightedCategoricalBlock : public Block {
    *     the categorical feature to be encoded.
    *   dim: int - the dimension of the encoding.
    */
-  WeightedCategoricalBlock(uint32_t col, uint32_t dim, char delimiter=',')
-      : _col(col), _encoding(std::make_shared<WeightedContiguousNumericId>(dim, delimiter)) {}
+  WeightedCategoricalBlock(uint32_t col, uint32_t dim, char delimiter = ',')
+      : _col(col),
+        _encoding(
+            std::make_shared<WeightedContiguousNumericId>(dim, delimiter)) {}
 
   uint32_t featureDim() const final { return _encoding->featureDim(); };
 

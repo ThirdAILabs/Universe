@@ -32,59 +32,62 @@ class WeightedContiguousNumericId : public WeightedCategoricalEncoding {
   /**
    * Constructor. Accepts the desired dimension of the encoding.
    */
-  explicit WeightedContiguousNumericId(uint32_t dim, char delimiter=',') : _dim(dim), _delimiter(delimiter) {}
+  explicit WeightedContiguousNumericId(uint32_t dim, char delimiter = ',')
+      : _dim(dim), _delimiter(delimiter) {}
 
-//   void encodeCategory(const std::string_view id,
-//                       SegmentedFeatureVector& vec) final {
-//     size_t start = 0;
-//     size_t end = 0;
-//     while (end != std::string::npos) {
-//       end = id.find(_delimiter, start);
-//       size_t len = end == std::string::npos ? id.size() - start : end - start;
-      
-//       uint32_t id_int{};
-//       std::from_chars(id.data() + start, id.data() + start + len, id_int);
-//       vec.addSparseFeatureToSegment(id_int % _dim, 1.0);
+  //   void encodeCategory(const std::string_view id,
+  //                       SegmentedFeatureVector& vec) final {
+  //     size_t start = 0;
+  //     size_t end = 0;
+  //     while (end != std::string::npos) {
+  //       end = id.find(_delimiter, start);
+  //       size_t len = end == std::string::npos ? id.size() - start : end -
+  //       start;
 
-//       start = end + 1;
-//     }
-//   };
+  //       uint32_t id_int{};
+  //       std::from_chars(id.data() + start, id.data() + start + len, id_int);
+  //       vec.addSparseFeatureToSegment(id_int % _dim, 1.0);
+
+  //       start = end + 1;
+  //     }
+  //   };
 
   void encodeCategory(const std::string_view id,
                       SegmentedFeatureVector& vec) final {
     size_t start = 0;
     size_t end = 0;
-		std::string str{id};
+    std::string str{id};
 
     while (end != std::string::npos) {
-      end =id.find(_seperator,start);
-      size_t len=end==std::string::npos? id.size()-start:end-start;
+      end = id.find(_seperator, start);
+      size_t len = end == std::string::npos ? id.size() - start : end - start;
 
-			if(end==std::string::npos){
-				throw std::logic_error("weight not found");
-			}
-
-			uint32_t id_int{};
-			std::from_chars(id.data() + start, id.data() + start + len, id_int);
-
-			start=end+1;
-
-			end=id.find(_delimiter,start);
-			len = end == std::string::npos ? id.size() - start : end - start;
-
-			float activation;
-			if(len==0){
-        activation=1.0;
+      if (end == std::string::npos) {
+        throw std::logic_error("weight not found");
       }
-			else { activation=::atof(str.substr(start,len).c_str());}
-			
-			vec.addSparseFeatureToSegment(id_int % _dim, activation);
-			
-			start=end+1;
-			
+
+      uint32_t id_int{};
+      std::from_chars(id.data() + start, id.data() + start + len, id_int);
+
+      start = end + 1;
+
+      end = id.find(_delimiter, start);
+      len = end == std::string::npos ? id.size() - start : end - start;
+
+      float activation;
+      if (len == 0) {
+        activation = 1.0;
+      } else {
+        activation = ::atof(str.substr(start, len).c_str());
+      }
+
+      vec.addSparseFeatureToSegment(id_int % _dim, activation);
+
+      start = end + 1;
+
       // end = id.find(_delimiter, start);
       // len = end == std::string::npos ? id.size() - start : end - start;
-      
+
       // id_int{};
       // std::from_chars(id.data() + start, id.data() + start + len, id_int);
       // vec.addSparseFeatureToSegment(id_int % _dim, 1.0);
@@ -100,7 +103,7 @@ class WeightedContiguousNumericId : public WeightedCategoricalEncoding {
  private:
   uint32_t _dim;
   char _delimiter;
-  char _seperator=':';
+  char _seperator = ':';
 };
 
 }  // namespace thirdai::dataset

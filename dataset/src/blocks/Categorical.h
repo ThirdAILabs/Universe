@@ -35,8 +35,9 @@ class CategoricalBlock : public Block {
    *     the categorical feature to be encoded.
    *   dim: int - the dimension of the encoding.
    */
-  CategoricalBlock(uint32_t col, uint32_t dim, char delimiter=',')
-      : _col(col), _encoding(std::make_shared<ContiguousNumericId>(dim, delimiter)) {}
+  CategoricalBlock(uint32_t col, uint32_t dim, char delimiter = ',')
+      : _col(col),
+        _encoding(std::make_shared<ContiguousNumericId>(dim, delimiter)) {}
 
   uint32_t featureDim() const final { return _encoding->featureDim(); };
 

@@ -3,20 +3,20 @@
 #include <dataset/src/Dataset.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/blocks/WeightedCategorical.h>
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
+#include <dataset/src/blocks/WeightedCategorical.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
-#include <dataset/src/encodings/weighted_categorical/WeightedCategoricalEncodingInterface.h>
-#include <dataset/src/encodings/weighted_categorical/WeightedContiguousNumericId.h>
 #include <dataset/src/encodings/text/CharKGram.h>
 #include <dataset/src/encodings/text/PairGram.h>
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
 #include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <dataset/src/encodings/text/UniGram.h>
+#include <dataset/src/encodings/weighted_categorical/WeightedCategoricalEncodingInterface.h>
+#include <dataset/src/encodings/weighted_categorical/WeightedContiguousNumericId.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
 #include <sys/types.h>
@@ -46,7 +46,8 @@ void createDatasetSubmodule(py::module_& module) {
       dataset_submodule.def_submodule("text_encodings");
   auto categorical_encoding_submodule =
       dataset_submodule.def_submodule("categorical_encodings");
-  auto weighted_categorical_encoding_submodule=dataset_submodule.def_submodule("weighted_categorical_encodings");
+  auto weighted_categorical_encoding_submodule =
+      dataset_submodule.def_submodule("weighted_categorical_encodings");
 
   py::class_<BoltVector>(dataset_submodule, "BoltVector")
       .def("to_string", &BoltVector::toString)
@@ -118,8 +119,9 @@ void createDatasetSubmodule(py::module_& module) {
            "True if the encoder produces dense features, False otherwise.")
       .def("is_dense", &CategoricalEncoding::isDense,
            "The dimension of the encoding.");
-  
-  py::class_<WeightedCategoricalEncoding, std::shared_ptr<WeightedCategoricalEncoding>>(
+
+  py::class_<WeightedCategoricalEncoding,
+             std::shared_ptr<WeightedCategoricalEncoding>>(
       internal_dataset_submodule, "WeightedCategoricalEncoding",
       "Interface for weighted categorical feature encoders.")
       .def("feature_dim", &WeightedCategoricalEncoding::featureDim,
@@ -214,19 +216,24 @@ void createDatasetSubmodule(py::module_& module) {
            " * col: Int - Column number of the input row containing "
            "the categorical feature to be encoded.\n"
            " * dim: Int - Dimension of the encoding")
-      .def(py::init<uint32_t, uint32_t, char>(), py::arg("col"), py::arg("dim"),py::arg("delimiter"),
+      .def(py::init<uint32_t, uint32_t, char>(), py::arg("col"), py::arg("dim"),
+           py::arg("delimiter"),
            "Constructor with default encoder.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
            "the categorical feature to be encoded.\n"
            " * dim: Int - Dimension of the encoding"
-           "* delimiter: char - delimiter if there are multiple categories in the column. Categories are mapped to the same encoding space for a block. Delimiter for categorical should not be the same as pipeline delimiter. Defaults to ',' ")
+           "* delimiter: char - delimiter if there are multiple categories in "
+           "the column. Categories are mapped to the same encoding space for a "
+           "block. Delimiter for categorical should not be the same as "
+           "pipeline delimiter. Defaults to ',' ")
       .def("feature_dim", &CategoricalBlock::featureDim,
            "Returns the dimension of the vector encoding.")
       .def("is_dense", &CategoricalBlock::isDense,
            "True if the block produces dense features, False otherwise.");
 
-  py::class_<WeightedCategoricalBlock, Block, std::shared_ptr<WeightedCategoricalBlock>>(
+  py::class_<WeightedCategoricalBlock, Block,
+             std::shared_ptr<WeightedCategoricalBlock>>(
       block_submodule, "WeightedCategorical",
       "A block that encodes categorical features (e.g. a numerical ID or an "
       "identification string).")
@@ -244,18 +251,21 @@ void createDatasetSubmodule(py::module_& module) {
            " * col: Int - Column number of the input row containing "
            "the categorical feature to be encoded.\n"
            " * dim: Int - Dimension of the encoding")
-      .def(py::init<uint32_t, uint32_t, char>(), py::arg("col"), py::arg("dim"),py::arg("delimiter"),
+      .def(py::init<uint32_t, uint32_t, char>(), py::arg("col"), py::arg("dim"),
+           py::arg("delimiter"),
            "Constructor with default encoder.\n\n"
            "Arguments:\n"
            " * col: Int - Column number of the input row containing "
            "the categorical feature to be encoded.\n"
            " * dim: Int - Dimension of the encoding"
-           "* delimiter: char - delimiter if there are multiple categories in the column. Categories are mapped to the same encoding space for a block. Delimiter for categorical should not be the same as pipeline delimiter. Defaults to ',' ")
+           "* delimiter: char - delimiter if there are multiple categories in "
+           "the column. Categories are mapped to the same encoding space for a "
+           "block. Delimiter for categorical should not be the same as "
+           "pipeline delimiter. Defaults to ',' ")
       .def("feature_dim", &WeightedCategoricalBlock::featureDim,
            "Returns the dimension of the vector encoding.")
       .def("is_dense", &WeightedCategoricalBlock::isDense,
            "True if the block produces dense features, False otherwise.");
-  
 
   py::class_<DenseArrayBlock, Block, std::shared_ptr<DenseArrayBlock>>(
       block_submodule, "DenseArray",

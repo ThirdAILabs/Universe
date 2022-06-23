@@ -27,7 +27,7 @@ def test_text_classification_data_pipeline(text_encoding, delim):
         batch_size=256,
         input_blocks=[blocks.Text(1, text_encoding)],
         label_blocks=[blocks.Categorical(0, 3)],
-        delimiter=delim
+        delimiter=delim,
     )
     [data, labels] = pipeline.load_in_memory()
 
@@ -71,17 +71,17 @@ def test_text_classification_data_pipeline(text_encoding, delim):
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_unigrams():
-    test_text_classification_data_pipeline(text_encodings.UniGram(100_000), ',')
-    test_text_classification_data_pipeline(text_encodings.UniGram(100_000), '\t')
+    test_text_classification_data_pipeline(text_encodings.UniGram(100_000), ",")
+    test_text_classification_data_pipeline(text_encodings.UniGram(100_000), "\t")
 
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_pairgrams():
-    test_text_classification_data_pipeline(text_encodings.PairGram(100_000), ',')
-    test_text_classification_data_pipeline(text_encodings.PairGram(100_000), '\t')
+    test_text_classification_data_pipeline(text_encodings.PairGram(100_000), ",")
+    test_text_classification_data_pipeline(text_encodings.PairGram(100_000), "\t")
 
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_chartrigrams():
-    test_text_classification_data_pipeline(text_encodings.CharKGram(3, 100_000), ',')
-    test_text_classification_data_pipeline(text_encodings.CharKGram(3, 100_000), '\t')
+    test_text_classification_data_pipeline(text_encodings.CharKGram(3, 100_000), ",")
+    test_text_classification_data_pipeline(text_encodings.CharKGram(3, 100_000), "\t")
