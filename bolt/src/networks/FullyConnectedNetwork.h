@@ -130,9 +130,9 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch>,
     _layers.back()->forceSparseForInference();
   }
 
-  void setLayerSparsity(uint32_t layer_index, float sparsity) {
+  void setLayerSparsity(uint32_t layer_index, float sparsity, uint32_t hash_seed, uint32_t shuffle_seed) {
     checkLayerIndex(layer_index);
-    _layers.at(layer_index)->setSparsity(sparsity);
+    _layers.at(layer_index)->setSparsity(sparsity, hash_seed, shuffle_seed);
   }
 
   float getLayerSparsity(uint32_t layer_index) {

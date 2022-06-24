@@ -12,7 +12,7 @@ namespace thirdai::bolt {
 
 FullyConnectedLayer::FullyConnectedLayer(
     const FullyConnectedLayerConfig& config, uint64_t prev_dim,
-    bool is_distributed)
+    bool is_distributed )
     : _dim(config.dim),
       _prev_dim(prev_dim),
       _sparse_dim(config.sparsity * config.dim),
@@ -490,12 +490,17 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
 }
 
 inline void FullyConnectedLayer::initSparseDatastructures(
-    std::random_device& rd) {
+        std::random_device &rd, uint32_t hash_seed, uint32_t shuffle_seed) {
   _hasher = assignHashFunction(_sampling_config, _prev_dim);
-
-  _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
-      _sampling_config.num_tables, _sampling_config.reservoir_size,
-      1 << _sampling_config.range_pow);
+  if(_is_distributed){
+    _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
+        _sampling_config.num_tables, _sampling_config.reservoir_size,
+        1 << _sampling_config.range_pow, hash_seed);
+  }else{
+    _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
+        _sampling_config.num_tables, _sampling_config.reservoir_size,
+        1 << _sampling_config.range_pow);
+  }
 
   /* Initializing hence, we need to force build the hash tables
    * Hence, force_build is true here in buildHashTablesImpl(force_build)
@@ -505,7 +510,11 @@ inline void FullyConnectedLayer::initSparseDatastructures(
   _rand_neurons = std::vector<uint32_t>(_dim);
 
   std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
-  std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
+  if(_is_distributed){
+    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), std::default_random_engine(shuffle_seed));
+  }else{
+    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
+  }
 }
 
 inline void FullyConnectedLayer::deinitSparseDatastructures() {
@@ -629,7 +638,7 @@ void FullyConnectedLayer::setShallowSave(bool shallow) {
   _shallow_save = shallow;
 }
 
-void FullyConnectedLayer::setSparsity(float sparsity) {
+void FullyConnectedLayer::setSparsity(float sparsity, uint32_t hash_seed, uint32_t shuffle_seed) {
   deinitSparseDatastructures();
   _sparsity = sparsity;
   // TODO(josh): Right now this is using the autotuning for DWTA even if this
@@ -638,7 +647,7 @@ void FullyConnectedLayer::setSparsity(float sparsity) {
       FullyConnectedLayerConfig(_dim, _sparsity, _act_func).sampling_config;
   _sparse_dim = _sparsity * _dim;
   std::random_device rd;
-  initSparseDatastructures(rd);
+  initSparseDatastructures(rd, hash_seed, shuffle_seed);
 }
 
 void FullyConnectedLayer::initOptimizer() {

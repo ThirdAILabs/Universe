@@ -98,8 +98,10 @@ class ConvLayer final : public SequentialLayer {
 
   float getSparsity() const final { return _sparsity; }
 
-  void setSparsity(float sparsity) final {
+  void setSparsity(float sparsity, uint32_t hash_seed, uint32_t shuffle_seed) final {
     (void)sparsity;
+    (void)hash_seed;
+    (void)shuffle_seed;
     // This is currently unimplemented because it would duplicate code from
     // FullyConnectedLayer, and instead of duplicating code we should come up
     // with a better design. Perhaps FullyConnectedLayer and ConvLayer can

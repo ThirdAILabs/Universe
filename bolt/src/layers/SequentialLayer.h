@@ -82,7 +82,7 @@ class SequentialLayer {
 
   virtual float getSparsity() const = 0;
 
-  virtual void setSparsity(float sparsity) = 0;
+  virtual void setSparsity(float sparsity, uint32_t hash_seed, uint32_t shuffle_seed) = 0;
 
   virtual const SamplingConfig& getSamplingConfig() const = 0;
 

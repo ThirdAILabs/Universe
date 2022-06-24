@@ -258,6 +258,6 @@ uint32_t DistributedModel<BATCH_T>::getRebuildBatchDistributed(
 
 // The following functions are added to make Bolt Distributed work.
 // These functions are going to be extended to python with the help
-// of pybindings.
+// of python bindings.
 
 }  // namespace thirdai::bolt

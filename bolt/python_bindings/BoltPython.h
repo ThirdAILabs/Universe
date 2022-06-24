@@ -524,7 +524,7 @@ class PyDLRM final : public DLRM {
 class DistributedPyNetwork final : public FullyConnectedNetwork {
  public:
   DistributedPyNetwork(SequentialConfigList configs, uint64_t input_dim)
-      : FullyConnectedNetwork(std::move(configs), input_dim, true) {}
+      : FullyConnectedNetwork(std::move(configs), input_dim, true /* is_distributed */) {}
 
   uint32_t initTrainDistributed(const py::object& data,
                                 const py::object& labels,
