@@ -11,6 +11,11 @@
 
 namespace thirdai::bolt {
 
+uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,
+                        uint32_t data_len);
+uint32_t getRebuildBatch(uint32_t rebuild, uint32_t batch_size,
+                         uint32_t data_len);
+
 void BoltGraph::compile(std::shared_ptr<LossFunction> loss) {
   _loss = std::move(loss);
 
@@ -40,8 +45,9 @@ MetricData BoltGraph::train(
     // Restrict printouts
     bool verbose) {
   uint32_t batch_size = train_data->at(0).getBatchSize();
-  uint32_t rebuild_batch = rebuild / batch_size;
-  uint32_t rehash_batch = rehash / batch_size;
+  uint32_t rebuild_batch =
+      getRebuildBatch(rebuild, batch_size, train_data->len());
+  uint32_t rehash_batch = getRehashBatch(rehash, batch_size, train_data->len());
   uint64_t num_train_batches = train_data->numBatches();
 
   // Because of how the datasets are read we know that all batches will not have
@@ -265,6 +271,28 @@ void BoltGraph::rebuildHashFunctions() {
   for (auto& layer : _sparse_layers) {
     layer->reBuildHashFunction();
   }
+}
+
+static constexpr uint32_t RehashAutoTuneThreshold = 100000;
+static constexpr uint32_t RehashAutoTuneFactor1 = 100;
+static constexpr uint32_t RehashAutoTuneFactor2 = 20;
+
+uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,
+                        uint32_t data_len) {
+  if (rehash == 0) {
+    if (data_len < RehashAutoTuneThreshold) {
+      rehash = data_len / RehashAutoTuneFactor2;
+    } else {
+      rehash = data_len / RehashAutoTuneFactor1;
+    }
+  }
+  return std::max<uint32_t>(rehash / batch_size, 1);
+}
+
+uint32_t getRebuildBatch(uint32_t rebuild, uint32_t batch_size,
+                         uint32_t data_len) {
+  rebuild = rebuild != 0 ? rebuild : (data_len / 4);
+  return std::max<uint32_t>(rebuild / batch_size, 1);
 }
 
 }  // namespace thirdai::bolt
