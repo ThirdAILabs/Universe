@@ -33,7 +33,7 @@ def get_data(path, use_softmax, limit):
 use_softmax = True
 
 train_x, train_y, train_gt = get_data(
-    "/Users/josh/amazon-670k/train_shuffled_noHeader.txt", use_softmax
+    "/Users/josh/amazon-670k/train_shuffled_noHeader.txt", use_softmax, limit=1000000
 )
 test_x, test_y, test_gt = get_data(
     "/Users/josh/amazon-670k/test_shuffled_noHeader_sampled.txt", use_softmax, limit=1000
@@ -45,8 +45,8 @@ test_match = match.Match(
     input_dim=135909,
     hidden_layer_dim=512,
     hidden_layer_sparsity=1,
-    last_layer_dim=20000,
-    last_layer_sparsity=0.05,
+    last_layer_dim=670091,
+    last_layer_sparsity=0.005,
     use_softmax=use_softmax,
 )
 
@@ -55,8 +55,8 @@ test_match.index(
     train_y=train_y,
     test_x=test_x,
     test_y=test_y,
-    num_iterations=1,
-    num_epochs_per_iteration=3,
+    num_iterations=3,
+    num_epochs_per_iteration=1,
 )
 
 query_results = test_match.query(test_x)
