@@ -87,17 +87,21 @@ class BoltGraph {
   // Computes the backward pass through the graph.
   void backpropagate(uint32_t batch_index);
 
-  void initializeState(uint32_t batch_size, bool use_sparsity);
+  void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity);
 
   void updateParameters(float learning_rate, uint32_t batch_cnt);
 
   void traverseGraph();
 
+  void updateSampling(uint32_t rehash_batch, uint32_t rebuild_batch);
+
+  constexpr bool checkBatchInterval(uint32_t num_batches) const {
+    return (_batch_cnt % num_batches) == (num_batches - 1);
+  }
+
   void rebuildHashTables();
 
   void rebuildHashFunctions();
-
-  void shuffleRandomNeurons();
 
   // List of nodes(layers) in the order in which they should be computed.
   std::vector<NodePtr> _nodes;

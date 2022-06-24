@@ -1,15 +1,18 @@
 #pragma once
 
 #include <bolt/src/graph/Node.h>
+#include <memory>
 
 namespace thirdai::bolt {
 
-class FullyConnectedLayerNode final : public Node {
+class FullyConnectedLayerNode final
+    : public Node,
+      public std::enable_shared_from_this<FullyConnectedLayerNode> {
  public:
   explicit FullyConnectedLayerNode(FullyConnectedLayerConfig config)
       : _layer(nullptr), _config(std::move(config)), _predecessor(nullptr) {}
 
-  void compile() final {
+  void initializeParameters() final {
     if (_predecessor == nullptr) {
       throw std::invalid_argument(
           "FullyConnected layer expected to have exactly one predecessor.");
@@ -19,27 +22,29 @@ class FullyConnectedLayerNode final : public Node {
                                                    _predecessor->outputDim());
   }
 
-  void addPredecessor(NodePtr node) {
+  std::shared_ptr<FullyConnectedLayerNode> addPredecessor(NodePtr node) {
     if (_predecessor != nullptr) {
       throw std::invalid_argument(
           "FullyConnected layer expected to have exactly one predecessor, and "
           "addPredecessor cannot be called twice.");
     }
     _predecessor = std::move(node);
+
+    return shared_from_this();
   }
 
   void forward(uint32_t batch_index, const BoltVector* labels) final {
-    _layer->forward(_predecessor->getOutput(batch_index), _outputs[batch_index],
-                    labels);
+    _layer->forward(_predecessor->getOutput(batch_index),
+                    this->getOutput(batch_index), labels);
   }
 
   void backpropagate(uint32_t batch_index) final {
     if (_predecessor->isInputNode()) {
       _layer->backpropagateInputLayer(_predecessor->getOutput(batch_index),
-                                      _outputs[batch_index]);
+                                      this->getOutput(batch_index));
     } else {
       _layer->backpropagate(_predecessor->getOutput(batch_index),
-                            _outputs[batch_index]);
+                            this->getOutput(batch_index));
     }
   }
 
@@ -55,22 +60,20 @@ class FullyConnectedLayerNode final : public Node {
 
   bool hasSparseOutput() const final { return _config.sparsity < 1.0; }
 
-  uint32_t sparseOutputDim() const final {
+  uint32_t numNonzerosInOutput() const final {
     return _config.sparsity * _config.dim;
   }
 
-  void initializeState(uint32_t batch_size, bool use_sparsity) final {
+  void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
     _outputs =
         _layer->createBatchState(batch_size, /* force_dense=*/!use_sparsity);
   }
 
-  void enqueuePredecessors(std::queue<NodePtr>& nodes) final {
-    nodes.push(_predecessor);
-  }
+  std::vector<NodePtr> getPredecessors() const final { return {_predecessor}; }
 
-  void addSparseLayers(
-      std::vector<std::shared_ptr<FullyConnectedLayer>>& sparse_layers) final {
-    sparse_layers.push_back(_layer);
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayers() const final {
+    return {_layer};
   }
 
   bool isInputNode() const final { return false; }

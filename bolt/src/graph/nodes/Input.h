@@ -16,7 +16,7 @@ class Input final : public Node {
   explicit Input(uint32_t expected_input_dim)
       : _expected_input_dim(expected_input_dim) {}
 
-  void compile() final {}
+  void initializeParameters() final {}
 
   void forward(uint32_t batch_index, const BoltVector* labels) final {
     (void)labels;
@@ -45,22 +45,22 @@ class Input final : public Node {
         "Cannot determine if Input is sparse or dense until runtime");
   }
 
-  uint32_t sparseOutputDim() const final {
+  uint32_t numNonzerosInOutput() const final {
     throw std::logic_error(
         "Cannot access sparseOutputDim of input layer since the number of "
         "nonzeros cannot be known until runtime");
   }
 
-  void initializeState(uint32_t batch_size, bool is_inference) final {
+  void prepareForBatchProcessing(uint32_t batch_size, bool is_inference) final {
     (void)batch_size;
     (void)is_inference;
   }
 
-  void enqueuePredecessors(std::queue<NodePtr>& nodes) final { (void)nodes; }
+  std::vector<NodePtr> getPredecessors() const final { return {}; }
 
-  void addSparseLayers(
-      std::vector<std::shared_ptr<FullyConnectedLayer>>& sparse_layers) final {
-    (void)sparse_layers;
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayers() const final {
+    return {};
   }
 
   bool isInputNode() const final { return true; }

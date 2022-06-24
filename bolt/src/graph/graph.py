@@ -90,4 +90,5 @@ def amzn():
     print(np.mean(np.array(times)))
 
 
-amzn()
+# amzn()
+mnist()

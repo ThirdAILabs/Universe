@@ -15,11 +15,13 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss) {
   _loss = std::move(loss);
 
   for (auto& node : _nodes) {
-    node->compile();
+    node->initializeParameters();
   }
 
   for (auto& node : _nodes) {
-    node->addSparseLayers(_sparse_layers);
+    auto node_layers = node->getInternalFullyConnectedLayers();
+    _sparse_layers.insert(_sparse_layers.end(), node_layers.begin(),
+                          node_layers.end());
   }
 }
 
@@ -44,7 +46,7 @@ MetricData BoltGraph::train(
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
-  initializeState(batch_size, true);
+  prepareForBatchProcessing(batch_size, /* use_sparsity=*/true);
 
   std::vector<double> time_per_epoch;
 
@@ -58,22 +60,13 @@ MetricData BoltGraph::train(
     auto train_start = std::chrono::high_resolution_clock::now();
 
     for (uint32_t batch = 0; batch < num_train_batches; batch++) {
-      if (_batch_cnt % 1000 == 999) {
-        shuffleRandomNeurons();
-      }
-
       BATCH_T& batch_inputs = train_data->at(batch);
 
       const BoltBatch& batch_labels = train_labels->at(batch);
 
       processTrainingBatch(batch_inputs, batch_labels, learning_rate, metrics);
 
-      if (_batch_cnt % rebuild_batch == (rebuild_batch - 1)) {
-        rebuildHashFunctions();
-        rebuildHashTables();
-      } else if (_batch_cnt % rehash_batch == (rehash_batch - 1)) {
-        rebuildHashTables();
-      }
+      updateSampling(rehash_batch, rebuild_batch);
 
       bar.increment();
     }
@@ -90,7 +83,6 @@ MetricData BoltGraph::train(
                 << epoch_time << " seconds" << std::endl;
     }
     _epoch_count++;
-
     metrics.logAndReset();
   }
 
@@ -123,6 +115,15 @@ void BoltGraph::processTrainingBatch(BoltBatch& batch_inputs,
   updateParameters(learning_rate, ++_batch_cnt);
 }
 
+void BoltGraph::updateSampling(uint32_t rehash_batch, uint32_t rebuild_batch) {
+  if (checkBatchInterval(rebuild_batch)) {
+    rebuildHashFunctions();
+    rebuildHashTables();
+  } else if (checkBatchInterval(rehash_batch)) {
+    rebuildHashTables();
+  }
+}
+
 template InferenceMetricData BoltGraph::predict(
     const std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>&,
     const dataset::BoltDatasetPtr&, const std::vector<std::string>&, bool,
@@ -152,7 +153,7 @@ InferenceMetricData BoltGraph::predict(
   // a batch size larger than this so we can just set the batch size here.
   // If sparse inference is not enabled we want the outptus to be dense,
   // otherwise we want whatever the default for the layer is.
-  initializeState(batch_size, !metrics.forceDenseInference());
+  prepareForBatchProcessing(batch_size, /* use_sparsity= */ false);
 
   ProgressBar bar(num_test_batches, verbose);
 
@@ -179,9 +180,7 @@ InferenceMetricData BoltGraph::predict(
   }
 
   metrics.logAndReset();
-
   auto metric_vals = metrics.getOutputFromInference();
-
   metric_vals["test_time"] = test_time;
 
   return metric_vals;
@@ -221,9 +220,10 @@ void BoltGraph::backpropagate(uint32_t batch_index) {
   }
 }
 
-void BoltGraph::initializeState(uint32_t batch_size, bool use_sparsity) {
+void BoltGraph::prepareForBatchProcessing(uint32_t batch_size,
+                                          bool use_sparsity) {
   for (auto& node : _nodes) {
-    node->initializeState(batch_size, use_sparsity);
+    node->prepareForBatchProcessing(batch_size, use_sparsity);
   }
 }
 
@@ -243,7 +243,11 @@ void BoltGraph::traverseGraph() {
     auto& next = queue.front();
     if (!visited.count(next) && !next->isInputNode()) {
       _nodes.push_back(next);
-      next->enqueuePredecessors(queue);
+
+      auto predecessors = next->getPredecessors();
+      for (auto& pred : predecessors) {
+        queue.push(std::move(pred));
+      }
     }
     queue.pop();
   }
@@ -260,12 +264,6 @@ void BoltGraph::rebuildHashTables() {
 void BoltGraph::rebuildHashFunctions() {
   for (auto& layer : _sparse_layers) {
     layer->reBuildHashFunction();
-  }
-}
-
-void BoltGraph::shuffleRandomNeurons() {
-  for (auto& layer : _sparse_layers) {
-    layer->shuffleRandNeurons();
   }
 }
 
