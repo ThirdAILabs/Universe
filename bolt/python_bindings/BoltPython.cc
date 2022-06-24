@@ -5,6 +5,7 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
+#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/text_classifier/TextClassifier.h>
 #include <pybind11/cast.h>
@@ -592,7 +593,22 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<FullyConnectedLayerNode, std::shared_ptr<FullyConnectedLayerNode>,
              Node>(graph_submodule, "FullyConnected")
-      .def(py::init<FullyConnectedLayerConfig>())
+      .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
+           py::arg("activation"))
+      .def(py::init<uint64_t, std::string>(), py::arg("dim"),
+           py::arg("activation"))
+      .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
+           py::arg("sparsity"), py::arg("activation"))
+      .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
+           py::arg("sparsity"), py::arg("activation"))
+#if THIRDAI_EXPOSE_ALL
+      .def(py::init<uint64_t, float, ActivationFunction, SamplingConfig>(),
+           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
+           py::arg("sampling_config"))
+      .def(py::init<uint64_t, float, std::string, SamplingConfig>(),
+           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
+           py::arg("sampling_config"))
+#endif
       .def("__call__", &FullyConnectedLayerNode::addPredecessor,
            py::arg("prev_layer"));
 

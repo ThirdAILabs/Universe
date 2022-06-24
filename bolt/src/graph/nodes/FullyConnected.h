@@ -2,6 +2,7 @@
 
 #include <bolt/src/graph/Node.h>
 #include <memory>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -9,8 +10,11 @@ class FullyConnectedLayerNode final
     : public Node,
       public std::enable_shared_from_this<FullyConnectedLayerNode> {
  public:
-  explicit FullyConnectedLayerNode(FullyConnectedLayerConfig config)
-      : _layer(nullptr), _config(std::move(config)), _predecessor(nullptr) {}
+  template <typename... Args>
+  explicit FullyConnectedLayerNode(Args&&... args)
+      : _layer(nullptr),
+        _config(std::forward<Args>(args)...),
+        _predecessor(nullptr) {}
 
   void initializeParameters() final {
     if (_predecessor == nullptr) {

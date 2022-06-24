@@ -30,23 +30,15 @@ def test_bolt_dag_on_mnist():
     input_layer = bolt.graph.Input(dim=784)
 
     hidden_layer = bolt.graph.FullyConnected(
-        bolt.FullyConnected(
-            dim=20000,
-            sparsity=0.01,
-            activation_function=bolt.ActivationFunctions.ReLU,
-            sampling_config=bolt.SamplingConfig(
-                num_tables=64, hashes_per_table=3, range_pow=9, reservoir_size=32
-            ),
-        )
-    )
-    hidden_layer(input_layer)
+        dim=20000,
+        sparsity=0.01,
+        activation="relu",
+        sampling_config=bolt.SamplingConfig(
+            num_tables=64, hashes_per_table=3, range_pow=9, reservoir_size=32
+        ),
+    )(input_layer)
 
-    output_layer = bolt.graph.FullyConnected(
-        bolt.FullyConnected(
-            dim=10, activation_function=bolt.ActivationFunctions.Softmax
-        )
-    )
-    output_layer(hidden_layer)
+    output_layer = bolt.graph.FullyConnected(dim=10, activation="softmax")(hidden_layer)
 
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
 
