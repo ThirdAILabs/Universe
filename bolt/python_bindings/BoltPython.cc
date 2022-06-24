@@ -819,9 +819,9 @@ void createBoltSubmodule(py::module_& module) {
            "Sets the weight matrix at the given layer index to the given 2D "
            "Numpy matrix. Throws an error if the dimension of the given weight "
            "matrix does not match the layer's current weight matrix.")
-      .def("set_layer_sparsity", &PyNetwork::setLayerSparsity,
+      .def("set_layer_sparsity", &DistributedPyNetwork::setLayerSparsity,
            py::arg("layer_index"), py::arg("sparsity"),
-           py::arg("hash_seed") = time(nullptr), py::arg("shuffle_ptr") = time(nullptr),
+          py::arg("hash_seed"), py::arg("shuffle_ptr"),
            "Sets the sparsity of the layer at the given index. The 0th layer "
            "is the first layer after the input layer. Note that this will "
            "autotune the sampling config to work for the new sparsity.");
