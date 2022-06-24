@@ -31,6 +31,8 @@ class CountHistoryBlock : public Block {
       uint32_t count_col, std::vector<Window> windows,
       DynamicCountsConfig& index_config, bool has_near_neighbours = false,
       const std::vector<std::vector<std::string>>& adjacency_matrix = {{}})
+      /*The expected format of adjacency matrix is first column is id of the node,
+      rest are ids of most correlated nodes.*/
       : _primary_start_timestamp(0),
         _has_count_col(has_count_col),
         _has_near_neighbours(has_near_neighbours),

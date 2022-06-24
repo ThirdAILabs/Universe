@@ -204,6 +204,9 @@ TEST_F(CountHistoryBlockTests, NearNeighbours) {
   auto samples = makeTrivialSamples(/* n_ids = */ 3, /* n_days = */ 2, /* day_offset = */ 365);
   auto vecs = makeSparseSegmentedVecs(samples, blocks);
   std::vector<uint32_t> num(3,0);
+  /*For each id the other two ids are near neighbours they stored in the circular order {0,1,2}
+  num vector stores the count of ids upto now in the dataset. a,b,c are to ensure the order in which 
+  they append to the segmented vecs.*/
   for (uint32_t i =0;i<vecs.size();i++) {
     auto entries = vectorEntries(vecs[i]);
     uint32_t a,b,c;
