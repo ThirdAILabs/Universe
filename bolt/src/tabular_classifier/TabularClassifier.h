@@ -10,11 +10,10 @@ class TabularClassifier {
  public:
   TabularClassifier(const std::string& model_size, uint32_t n_classes);
 
-  // void train(const std::string& filename, uint32_t epochs, float
-  // learning_rate);
+  void train(const std::string& filename, uint32_t epochs, float learning_rate);
 
-  // void predict(const std::string& filename,
-  //              const std::optional<std::string>& output_filename);
+  void predict(const std::string& filename,
+               const std::optional<std::string>& output_filename);
 
   void save(const std::string& filename) {
     std::ofstream filestream(filename, std::ios::binary);
