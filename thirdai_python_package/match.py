@@ -48,7 +48,7 @@ class Match:
             )
         labels_as_list = list(labels)
         group_mapper = np.vectorize(
-            lambda label: self.label_to_group[classifier_id, label]
+            lambda label: self.label_to_group[classifier_id][label]
         )
         labels_as_list[0] = group_mapper(labels_as_list[0]).astype("uint32")
         return tuple(labels_as_list)
@@ -68,12 +68,12 @@ class Match:
         for iteration in range(num_iterations):
             for classifier_id, classifier in enumerate(self.classifiers):
 
-                # mapped_train_y = self.map_labels_to_groups(train_y, classifier_id)
-                # mapped_test_y = self.map_labels_to_groups(test_y, classifier_id)
+                mapped_train_y = self.map_labels_to_groups(train_y, classifier_id)
+                mapped_test_y = self.map_labels_to_groups(test_y, classifier_id)
 
                 classifier.train(
                     train_data=train_x,
-                    train_labels=train_y,
+                    train_labels=mapped_train_y,
                     loss_fn=(
                         bolt.CategoricalCrossEntropyLoss()
                         if self.use_softmax
@@ -87,13 +87,7 @@ class Match:
 
                 classifier.predict(
                     test_data=test_x,
-                    test_labels=test_y,
-                    metrics=["categorical_accuracy"]
-                )
-
-                classifier.predict(
-                    test_data=train_x,
-                    test_labels=mapped_train_y,
+                    test_labels=mapped_test_y,
                     metrics=["categorical_accuracy"]
                 )
 

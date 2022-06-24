@@ -41,12 +41,12 @@ test_x, test_y, test_gt = get_data(
 
 test_match = match.Match(
     max_label=670091,
-    num_classifiers=4,
+    num_classifiers=3,
     input_dim=135909,
     hidden_layer_dim=512,
     hidden_layer_sparsity=1,
-    last_layer_dim=670091,
-    last_layer_sparsity=0.005,
+    last_layer_dim=10000,
+    last_layer_sparsity=0.1,
     use_softmax=use_softmax,
 )
 
@@ -57,10 +57,10 @@ test_match.index(
     test_y=test_y,
     num_iterations=3,
     num_epochs_per_iteration=1,
+    learning_rate=0.0001,
+    batch_size=256 
 )
 
 query_results = test_match.query(test_x)
 recalled = [q in gt for q, gt in zip(query_results, test_gt)]
-print(query_results)
-print(test_gt)
 print(f"R1@1 = {sum(recalled) / len(recalled)}")
