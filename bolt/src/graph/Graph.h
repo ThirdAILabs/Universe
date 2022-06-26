@@ -15,7 +15,13 @@ namespace thirdai::bolt {
 class Input;
 using InputPtr = std::shared_ptr<Input>;
 
+namespace tests {
+class GraphTraversalTestFixture;
+}  // namespace tests
+
 class BoltGraph {
+  friend class tests::GraphTraversalTestFixture;
+
  public:
   // The graph is constructed with a list of input layers, the order of these
   // input layers is used to define how training/test inputs are mapped to the
@@ -25,9 +31,7 @@ class BoltGraph {
       : _output(std::move(output)),
         _inputs(std::move(inputs)),
         _epoch_count(0),
-        _batch_cnt(0) {
-    traverseGraph();
-  }
+        _batch_cnt(0) {}
 
   // When the layers are initially defined the only have information about their
   // own dimensions, parameters etc. During compile the layers can use the

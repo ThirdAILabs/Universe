@@ -19,6 +19,8 @@ uint32_t getRebuildBatch(uint32_t rebuild, uint32_t batch_size,
 void BoltGraph::compile(std::shared_ptr<LossFunction> loss) {
   _loss = std::move(loss);
 
+  traverseGraph();
+
   for (auto& node : _nodes) {
     node->initializeParameters();
   }
@@ -249,6 +251,7 @@ void BoltGraph::traverseGraph() {
     auto& next = queue.front();
     if (!visited.count(next) && !next->isInputNode()) {
       _nodes.push_back(next);
+      visited.insert(next);
 
       auto predecessors = next->getPredecessors();
       for (auto& pred : predecessors) {
