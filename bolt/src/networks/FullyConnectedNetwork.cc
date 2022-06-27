@@ -32,7 +32,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
     if (auto fully_connected_config =
             std::dynamic_pointer_cast<FullyConnectedLayerConfig>(configs[i])) {
       _layers.push_back(std::make_shared<FullyConnectedLayer>(
-          *fully_connected_config, prev_dim));
+          *fully_connected_config, prev_dim, _is_distributed));
       // if ConvConfig
     } else if (auto conv_config =
                    std::dynamic_pointer_cast<ConvLayerConfig>(configs[i])) {
