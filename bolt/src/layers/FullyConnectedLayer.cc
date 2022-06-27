@@ -515,6 +515,11 @@ inline void FullyConnectedLayer::initSparseDatastructures(
   }else{
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
   }
+  std::cout << "Random Neurons: " ;
+  for(uint32_t i=0; i<_dim; i++){
+    std::cout << _rand_neurons[i] << " ";
+  }
+  std::cout << std::endl;
 }
 
 inline void FullyConnectedLayer::deinitSparseDatastructures() {
