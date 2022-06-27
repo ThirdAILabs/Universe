@@ -106,30 +106,35 @@ class Mach:
                     ]
         return np.argmax(scores, axis=1)
 
-    # def query_fast(self, batch, threshold=-1):
-    #     if threshold == -1:
-    #         threshold = self.num_classifiers
-    #     num_vectors = len(batch[2]) - 1
-    #     results = np.array(
-    #         [
-    #             classifier.predict(batch, None, 2048, verbose=True)[1]
-    #             for classifier in self.classifiers
-    #         ]
-    #     )
-    #     concatenated_results = np.concatenate(results)
-    #     sorted_groups = np.argsort(concatenated_results, axis=1)[::-1]
-    #     results = np.zeros(shape=(self.max_label,))
-    #     count = np.zeros(shape=(num_vectors, self.max_label))
-    #     for vec_id in tqdm(list(range(num_vectors))):
-    #         for group in sorted_groups[vec_id]:
-    #             for point in self.group_to_labels[group // self.max_label][
-    #                 group % self.max_label
-    #             ]:
-    #                 count[vec_id, point] += 1
-    #                 if count[vec_id, point] == threshold:
-    #                     results[vec_id] = point
-    #                     break
-    #     return results
+    # TODO(josh): Can implement in C++ for way more speed
+    def query_fast(self, batch, m=10):
+        num_elements = len(batch[2]) - 1
+        results = np.array(
+            [
+                classifier.predict(batch, None, 2048, verbose=True)[1]
+                for classifier in self.classifiers
+            ]
+        )
+        top_m_groups = np.array([self._top_k_indices(arr, m) for arr in results])
+
+        scores = np.zeros(shape=(num_elements, self.max_label))
+        for vec_id in list(range(len(scores))):
+            label_set = []
+            for classifier_id in range(self.num_classifiers):
+                for group in top_m_groups[classifier_id, vec_id]:
+                    for label in self.group_to_labels[classifier_id][group]:
+                        label_set.append(label)
+            label_set = set(label_set)
+            for classifier_id in range(self.num_classifiers):
+                for label in label_set:
+                    scores[vec_id, label] += results[
+                        classifier_id, vec_id, self.label_to_group[classifier_id, label]
+                    ]
+
+        return np.argmax(scores, axis=1)
+
+    def _top_k_indices(self, numpy_array, top_k):
+        return np.argpartition(numpy_array, -top_k, axis=1)[:, -top_k:]
 
     def _create_single_dense_classifier(
         self,

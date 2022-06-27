@@ -25,6 +25,16 @@ def generate_random_easy_sparse(output_dim, num_true_labels_per_example, num_exa
     )
 
 
+def get_recall(result, test_y, num_true_labels_per_sample):
+    count = 0
+    for i, start in enumerate(range(0, len(test_y[0]), num_true_labels_per_sample)):
+        end = start + num_true_labels_per_sample
+        if result[i] in test_y[0][start:end]:
+            count += 1
+    recall = count / (len(test_y[2]) - 1)
+    return recall
+
+
 @pytest.mark.unit
 def test_mach():
     num_train = 10000
@@ -56,18 +66,10 @@ def test_mach():
 
     mach.train(train_x, train_y, learning_rate=0.001)
 
-    start = time.time()
-    result = mach.query_slow(test_x)
-    print(time.time() - start)
+    result_fast = mach.query_fast(test_x)
+    result_slow = mach.query_slow(test_x)
+    assert get_recall(result_fast, test_y, num_true_labels_per_sample) > 0.8
+    assert get_recall(result_slow, test_y, num_true_labels_per_sample) > 0.8
 
-    count = 0
-    for i, start in enumerate(range(0, len(test_y[0]), num_true_labels_per_sample)):
-        end = start + 10
-        if result[i] in test_y[0][start:end]:
-            count += 1
-    recall = count / num_test
-
-    print(f"Recall: {recall}")
-    assert(recall > 0.8)
 
 test_mach()
