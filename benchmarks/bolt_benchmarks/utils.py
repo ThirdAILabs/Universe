@@ -4,8 +4,11 @@ import toml
 import platform
 import psutil
 import socket
+import sys
+import numpy as np
 
 from typing import Any, Dict
+from sklearn.datasets import load_svmlight_file
 
 
 def start_mlflow(experiment_name, run_name, dataset):
@@ -52,23 +55,20 @@ def log_config_info(config):
                 log_subconfig(f"{name}_{i}", subconfig_i)
 
 
-# CSR format is the format we typically use to represent sparse matrices,
-# (indices, values, offsets), see
-# https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)
-# for more details
-# This function returns a tuples of
-# 1. A CSR representation of the data
-# 2. A CSR represnetation of the labels
-# 3. A list of list representation of the labels
-def load_svm_as_csr_numpy(path, use_softmax):
-    data = load_svmlight_file(path, multilabel=True)
-    data_x = (
-        data[0].indices.astype("uint32"),
-        data[0].data.astype("float32"),
-        data[0].indptr.astype("uint32"),
+def find_full_filepath(filename: str) -> str:
+    data_path_file = (
+        os.path.dirname(os.path.abspath(__file__)) + "/../../dataset_paths.toml"
     )
-    data_y = list_of_lists_to_csr(data[1], use_softmax)
-    return data_x, data_y, data[1]
+    prefix_table = toml.load(data_path_file)
+    for prefix in prefix_table["prefixes"]:
+        if os.path.exists(prefix + filename):
+            return prefix + filename
+    print(
+        "Could not find file '"
+        + filename
+        + "' on any filepaths. Add correct path to 'Universe/dataset_paths.toml'"
+    )
+    sys.exit(1)
 
 
 def _list_of_lists_to_csr(lists, use_softmax):
@@ -85,3 +85,23 @@ def _list_of_lists_to_csr(lists, use_softmax):
                 values[j] /= length
     indices = np.concatenate(lists).astype("uint32")
     return (indices, values, offsets)
+
+
+# CSR format is the format we typically use to represent sparse matrices,
+# (indices, values, offsets), see
+# https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)
+# for more details
+# This function returns a tuples of
+# 1. A CSR representation of the data
+# 2. A CSR represnetation of the labels
+# 3. A list of list representation of the labels
+def load_svm_as_csr_numpy(path, use_softmax):
+    full_path = find_full_filepath(path)
+    data = load_svmlight_file(full_path, multilabel=True)
+    data_x = (
+        data[0].indices.astype("uint32"),
+        data[0].data.astype("float32"),
+        data[0].indptr.astype("uint32"),
+    )
+    data_y = _list_of_lists_to_csr(data[1], use_softmax)
+    return data_x, data_y, data[1]

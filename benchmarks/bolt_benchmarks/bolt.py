@@ -2,7 +2,6 @@ import toml
 import sys
 import os
 from thirdai import bolt, dataset
-from bolt import mach
 import numpy as np
 from sklearn.metrics import roc_auc_score
 from typing import Tuple, Any, Optional, Dict, List
@@ -11,7 +10,7 @@ import platform
 import psutil
 import mlflow
 import argparse
-from utils import log_config_info, log_machine_info, start_mlflow, load_svm_as_csr_numpy
+from utils import *
 import time
 
 
@@ -62,22 +61,6 @@ def create_embedding_layer_config(config: Dict[str, Any]) -> bolt.Embedding:
         lookup_size=config.get("lookup_size"),
         log_embedding_block_size=config.get("log_embedding_block_size"),
     )
-
-
-def find_full_filepath(filename: str) -> str:
-    data_path_file = (
-        os.path.dirname(os.path.abspath(__file__)) + "/../../dataset_paths.toml"
-    )
-    prefix_table = toml.load(data_path_file)
-    for prefix in prefix_table["prefixes"]:
-        if os.path.exists(prefix + filename):
-            return prefix + filename
-    print(
-        "Could not find file '"
-        + filename
-        + "' on any filepaths. Add correct path to 'Universe/dataset_paths.toml'"
-    )
-    sys.exit(1)
 
 
 def load_dataset(
@@ -296,7 +279,7 @@ def train_mach(config: Dict[str, Any], mlflow_enabled: bool):
     mach_config = config["mach"]
     params_config = config["params"]
 
-    mach = Mach(
+    mach = bolt.Mach(
         max_label=mach_config["max_label"],
         num_classifiers=mach_config["num_classifiers"],
         input_dim=config["dataset"]["input_dim"],
@@ -310,13 +293,12 @@ def train_mach(config: Dict[str, Any], mlflow_enabled: bool):
     learning_rate = params_config["learning_rate"]
     epochs = params_config["epochs"]
     batch_size = params_config["batch_size"]
-    train_metrics = params_config["train_metrics"]
-    test_metrics = params_config["test_metrics"]
 
-    use_sparse_labels = config["top_mlp_layers"][-1]["dim"] > 1
-    train_x, train_y, _ = get_data(config["dataset"]["train_data"], use_softmax)
-    test_x, _, test_y_list_of_lists = get_data(
-        config["dataset"]["test_data"], use_softmax
+    train_x, train_y, _ = load_svm_as_csr_numpy(
+        config["dataset"]["train_data"], use_softmax=mach_config["use_softmax"]
+    )
+    test_x, _, test_y_list_of_lists = load_svm_as_csr_numpy(
+        config["dataset"]["test_data"], use_softmax=mach_config["use_softmax"]
     )
 
     for _ in range(epochs):

@@ -19,4 +19,4 @@ hidden_layer_dim = 512
 hidden_layer_sparsity = 1
 last_layer_dim = 20000
 last_layer_sparsity = 0.1
-use_softmax = True
+use_softmax = true

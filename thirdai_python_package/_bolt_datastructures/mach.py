@@ -76,7 +76,7 @@ class Mach:
                         else bolt.BinaryCrossEntropyLoss()
                     ),
                     learning_rate=learning_rate,
-                    epochs=num_epochs_per_iteration,
+                    epochs=1,
                     batch_size=batch_size,
                     verbose=True,
                 )
