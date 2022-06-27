@@ -44,10 +44,10 @@ def get_expected_unigrams(sentence):
     return x,y
 
 def get_actual_unigrams(sentence):
-    return dataset.string_to_bolt_dataset(sentence,blocks.Text(col=0, encoding=text_encodings.UniGram(dim=100)))
+    return dataset.string_to_bolt_dataset(sentence,100)
 
 def get_actual_pairgrams(sentence):
-    return dataset.string_to_bolt_dataset(sentence,blocks.Text(col=0, encoding=text_encodings.PairGram(dim=100)))
+    return dataset.string_to_bolt_dataset(sentence,100,"pairgrams")
     
 
 def build_network():
@@ -78,14 +78,14 @@ def test_sentence_to_boltdataset_unigrams():
     x,y = get_expected_unigrams("hello world how are you")
     z = get_actual_unigrams("hello world how are you")
     network = build_network()
-    temp1,act1 = network.predict(x,y)
-    temp2,act2 = network.predict(z,None)
+    metrics1,act1 = network.predict(x,y)
+    metrics2,act2 = network.predict(z,None)
     assert act1.all() == act2.all()
 
 def test_sentence_to_boltdataset_pairgrams():
     x,y = get_expected_pairgrams("hello world how are you")
     z = get_actual_pairgrams("hello world how are you")
     network = build_network()
-    temp1,act1 = network.predict(x,y)
-    temp2,act2 = network.predict(z,None)
+    metrics1,act1 = network.predict(x,y)
+    metrics2,act2 = network.predict(z,None)
     assert act1.all() == act2.all()

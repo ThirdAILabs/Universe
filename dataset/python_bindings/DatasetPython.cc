@@ -282,12 +282,13 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def("string_to_bolt_dataset",
                         &parseStringToBoltDataset,
-                        py::arg("string"), py::arg("block"),
+                        py::arg("string"), py::arg("dim"), py::arg("encoding_type") = "unigram",
                         "Takes in a python string and processes it to a BoltDataset object"
                         "This is useful for inference API"
                         "Arguments:\n"
                         " * string: String - sentence to be parsed.\n"
-                        " * block: Admits all text blocks listed at dataset/src/encodings/text\n");
+                        " * dim - dimension.\n"
+                        " * encoding_type - string to specify the type of encoding\n");
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
@@ -772,8 +773,11 @@ BoltVector parseSentenceToBoltVector(const std::string& sentence, uint32_t seed,
 }
 
 BoltDatasetPtr parseStringToBoltDataset(
-    const std::string& string, std::shared_ptr<Block> block) {
+    const std::string& string,uint32_t dim, const std::string& encoding_type = "unigram") {
   std::vector<std::string> sample = {string};
+  std::shared_ptr<Block> block;
+  if(encoding_type == "unigram") {block = std::make_shared<TextBlock>(0,std::make_shared<UniGram>(dim));}
+  else {block = std::make_shared<TextBlock>(0,std::make_shared<PairGram>(dim));}
   std::vector<std::shared_ptr<Block>> blocks = {std::move(block)};
   std::vector<BoltVector> bolt_vec = {
       BlockBatchProcessor::makeVector(sample, blocks, false)};
