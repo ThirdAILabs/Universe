@@ -50,3 +50,38 @@ def log_config_info(config):
         if isinstance(subconfig, list):
             for i, subconfig_i in enumerate(subconfig):
                 log_subconfig(f"{name}_{i}", subconfig_i)
+
+
+# CSR format is the format we typically use to represent sparse matrices,
+# (indices, values, offsets), see
+# https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)
+# for more details
+# This function returns a tuples of
+# 1. A CSR representation of the data
+# 2. A CSR represnetation of the labels
+# 3. A list of list representation of the labels
+def load_svm_as_csr_numpy(path, use_softmax):
+    data = load_svmlight_file(path, multilabel=True)
+    data_x = (
+        data[0].indices.astype("uint32"),
+        data[0].data.astype("float32"),
+        data[0].indptr.astype("uint32"),
+    )
+    data_y = list_of_lists_to_csr(data[1], use_softmax)
+    return data_x, data_y, data[1]
+
+
+def _list_of_lists_to_csr(lists, use_softmax):
+    offsets = np.zeros(shape=(len(lists) + 1,), dtype="uint32")
+    for i in range(1, len(offsets)):
+        offsets[i] = offsets[i - 1] + len(lists[i - 1])
+    values = np.ones(shape=(offsets[-1],)).astype("float32")
+    if use_softmax:
+        for i in range(1, len(offsets)):
+            start = offsets[i - 1]
+            end = offsets[i]
+            length = end - start
+            for j in range(start, end):
+                values[j] /= length
+    indices = np.concatenate(lists).astype("uint32")
+    return (indices, values, offsets)

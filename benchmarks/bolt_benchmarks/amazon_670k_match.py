@@ -1,6 +1,7 @@
 from sklearn.datasets import load_svmlight_file
 import numpy as np
 from thirdai import match
+import time
 
 
 def list_of_lists_to_csr(lists, use_softmax):
@@ -33,10 +34,12 @@ def get_data(path, use_softmax, limit):
 use_softmax = True
 
 train_x, train_y, train_gt = get_data(
-    "/Users/josh/amazon-670k/train_shuffled_noHeader.txt", use_softmax, limit=1000000
+    "/Users/josh/amazon-670k/train_shuffled_noHeader.txt", use_softmax, limit=100000
 )
 test_x, test_y, test_gt = get_data(
-    "/Users/josh/amazon-670k/test_shuffled_noHeader_sampled.txt", use_softmax, limit=1000
+    "/Users/josh/amazon-670k/test_shuffled_noHeader_sampled.txt",
+    use_softmax,
+    limit=1000,
 )
 
 test_match = match.Match(
@@ -45,7 +48,7 @@ test_match = match.Match(
     input_dim=135909,
     hidden_layer_dim=512,
     hidden_layer_sparsity=1,
-    last_layer_dim=10000,
+    last_layer_dim=20000,
     last_layer_sparsity=0.1,
     use_softmax=use_softmax,
 )
@@ -55,12 +58,18 @@ test_match.index(
     train_y=train_y,
     test_x=test_x,
     test_y=test_y,
-    num_iterations=3,
+    num_iterations=1,
     num_epochs_per_iteration=1,
     learning_rate=0.0001,
-    batch_size=256 
+    batch_size=256,
 )
 
-query_results = test_match.query(test_x)
+# start = time.time()
+# query_results = test_match.query_slow(test_x)
+# recalled = [q in gt for q, gt in zip(query_results, test_gt)]
+# print(f"R1@1 = {sum(recalled) / len(recalled)}, Time = {time.time() - start}")
+
+start = time.time()
+query_results = test_match.query_fast(test_x)
 recalled = [q in gt for q, gt in zip(query_results, test_gt)]
-print(f"R1@1 = {sum(recalled) / len(recalled)}")
+print(f"R1@1 = {sum(recalled) / len(recalled)}, Time = {time.time() - start}")
