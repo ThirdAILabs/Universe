@@ -1,6 +1,7 @@
 from utils import *
 import pytest
 
+ptestmark = [pytest.mark.unit]
 
 def predict_train_one_epoch_predict(network, test_data, test_labels):
     """
@@ -82,7 +83,6 @@ def test_decrease_and_increase_sparsity():
 
 # This is not a release test because the sampling config isn't exposed in a
 # release build.
-@pytest.mark.unit
 def test_decrease_and_increase_sparsity_sampling_config():
     """
     Tests that changing the sparsity of an already sparse layer changes the
