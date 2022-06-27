@@ -2,6 +2,8 @@
 
 #include <cereal/archives/binary.hpp>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <dataset/src/blocks/TabularBlocks.h>
+#include <dataset/src/bolt_datasets/batch_processors/GenericBatchProcessor.h>
 #include <memory>
 
 namespace thirdai::bolt {
@@ -28,6 +30,30 @@ class TabularClassifier {
         new TabularClassifier());
     iarchive(*deserialize_into);
     return deserialize_into;
+  }
+
+ private:
+  dataset::TabularMetadata getTabularMetadata(const std::string& filename) {}
+
+  std::shared_ptr<dataset::StreamingDataset<BoltBatch>> loadStreamingDataset(
+      const std::string& filename, dataset::TabularMetadata metadata,
+      uint32_t batch_size = 256) {
+    std::shared_ptr<dataset::DataLoader> data_loader =
+        std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
+
+    std::vector<std::shared_ptr<dataset::Block>> input_blocks = {
+        std::make_shared<dataset::TabularPairGram>(metadata)};
+    std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
+        std::make_shared<dataset::TabularLabel>(metadata)};
+
+    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
+        std::make_shared<dataset::GenericBatchProcessor>(
+            /* input_blocks */ input_blocks, /* target_blocks */ target_blocks,
+            /* has_header */ true);
+
+    auto dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
+        data_loader, batch_processor);
+    return dataset;
   }
 
   // Private constructor for cereal

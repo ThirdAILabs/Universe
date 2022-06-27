@@ -37,29 +37,27 @@ TabularClassifier::TabularClassifier(const std::string& model_size,
 
 void TabularClassifier::train(const std::string& filename, uint32_t epochs,
                               float learning_rate) {
-  //   if metadata not initialized:
-  //     train
-  //   else
-  //      undefined behavior/ what does this do?
-  //      do we use the same metadata to process? or
+  dataset::TabularMetadata metadata = getTabularMetadata(filename);
 
-  // training looks like this
+  auto dataset = loadStreamingDataset(filename, metadata);
 
-  // read the csv into memory
-  // read all the headers, ensure there is a "category" column
-  // get the datatypes of all the headers
-  //    if values in a column can be converted to floating point or integers,
-  //    they will be numeric
-  //        otherwise they are categorical
-  //    record these datatypes in the metadata
-  // for each column, if its a numeric datatype, apply the binning
-  // afterwards, ensure the categories are unique
-  // next, create capped pairgrams out of the categories
-  // next, train the BOLT model
-  //
+  CategoricalCrossEntropyLoss loss;
+  if (!canLoadDatasetInMemory(filename)) {
+    for (uint32_t e = 0; e < epochs; e++) {
+      // Train on streaming dataset
+      _model->trainOnStream(dataset, loss, learning_rate);
 
-  // metadata should have:
-  //    column -> dtype, binning info if necessary
+      // Create new stream for next epoch with new data loader.
+      dataset = loadStreamingDataset(filename, metadata);
+    }
+
+  } else {
+    auto [train_data, train_labels] = dataset->loadInMemory();
+
+    _model->train(train_data, train_labels, loss, learning_rate, 1);
+    _model->enableSparseInference();
+    _model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
+  }
 }
 
 void TabularClassifier::predict(
