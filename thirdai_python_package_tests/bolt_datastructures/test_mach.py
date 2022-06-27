@@ -70,6 +70,3 @@ def test_mach():
     result_slow = mach.query_slow(test_x)
     assert get_recall(result_fast, test_y, num_true_labels_per_sample) > 0.8
     assert get_recall(result_slow, test_y, num_true_labels_per_sample) > 0.8
-
-
-test_mach()
