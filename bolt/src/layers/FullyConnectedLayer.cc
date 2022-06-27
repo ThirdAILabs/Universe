@@ -512,8 +512,9 @@ inline void FullyConnectedLayer::initSparseDatastructures(
   _rand_neurons = std::vector<uint32_t>(_dim);
 
   std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
-  std::cout << shuffle_seed << std::endl;
+  std::cout << "Shuffle Seed: " << shuffle_seed << std::endl;
   if(_is_distributed){
+    std::cout << "Shuffling neuron in distributed Block" << std::endl;
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), std::default_random_engine(shuffle_seed));
   }else{
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
@@ -646,6 +647,7 @@ void FullyConnectedLayer::setShallowSave(bool shallow) {
 
 void FullyConnectedLayer::setSparsity(float sparsity, uint32_t hash_seed, uint32_t shuffle_seed) {
   deinitSparseDatastructures();
+  std::cout << "Hash Seed: " << hash_seed << std::endl;
   _sparsity = sparsity;
   // TODO(josh): Right now this is using the autotuning for DWTA even if this
   // hash function isn't DWTA. Add autotuning for other hash function types.
