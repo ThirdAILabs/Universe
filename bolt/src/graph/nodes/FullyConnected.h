@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/layers/LayerUtils.h>
 #include <memory>
 #include <utility>
 
@@ -81,6 +82,8 @@ class FullyConnectedLayerNode final
   }
 
   bool isInputNode() const final { return false; }
+
+  ActivationFunction getActivationFunction() const { return _config.act_func; }
 
  private:
   std::shared_ptr<FullyConnectedLayer> _layer;

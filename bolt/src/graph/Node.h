@@ -48,16 +48,17 @@ class Node {
   virtual void prepareForBatchProcessing(uint32_t batch_size,
                                          bool use_sparsity) = 0;
 
-  // Enqueues any predecessors of the node. This is used to traverse the graph
+  // Returns any predecessors of the node. This is used to traverse the graph
   // during compilation.
   virtual std::vector<NodePtr> getPredecessors() const = 0;
 
-  // Add any sparse layers in the node to a list of sparse layers. A list of all
-  // the sparse layers in the network use useful when rebuilding hash tables or
-  // hash functions and when enabling sparse inference.
+  // Returns any fully connected layer objects used by the node. A list of all
+  // the fully connected layers in the network use useful when rebuilding hash
+  // tables or hash function, etc.
   virtual std::vector<std::shared_ptr<FullyConnectedLayer>>
   getInternalFullyConnectedLayers() const = 0;
 
+  // Returns true if the node is an input node.
   virtual bool isInputNode() const = 0;
 
   virtual ~Node() = default;

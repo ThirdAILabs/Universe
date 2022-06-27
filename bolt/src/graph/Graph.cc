@@ -1,12 +1,16 @@
 #include "Graph.h"
+#include "nodes/FullyConnected.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/BoltVector.h>
+#include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <algorithm>
 #include <chrono>
 #include <optional>
 #include <queue>
+#include <stdexcept>
+#include <type_traits>
 #include <unordered_set>
 
 namespace thirdai::bolt {
@@ -18,6 +22,8 @@ uint32_t getRebuildBatch(uint32_t rebuild, uint32_t batch_size,
 
 void BoltGraph::compile(std::shared_ptr<LossFunction> loss) {
   _loss = std::move(loss);
+
+  verifyGraphProperties();
 
   traverseGraph();
 
@@ -46,6 +52,8 @@ MetricData BoltGraph::train(
     const std::vector<std::string>& metric_names,
     // Restrict printouts
     bool verbose) {
+  verifyInputForGraph(train_data);
+
   uint32_t batch_size = train_data->at(0).getBatchSize();
   uint32_t rebuild_batch =
       getRebuildBatch(rebuild, batch_size, train_data->len());
@@ -149,6 +157,8 @@ InferenceMetricData BoltGraph::predict(
     bool verbose,
     // Limit the number of batches used in the dataset
     uint32_t batch_limit) {
+  verifyInputForGraph(test_data);
+
   bool compute_metrics = test_labels != nullptr;
 
   uint32_t batch_size = test_data->at(0).getBatchSize();
@@ -262,6 +272,49 @@ void BoltGraph::traverseGraph() {
   }
 
   std::reverse(_nodes.begin(), _nodes.end());
+}
+
+template <typename BATCH_T>
+void BoltGraph::verifyInputForGraph(
+    const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset) {
+  (void)dataset;
+  if (std::is_same<BATCH_T, BoltBatch>::value && _inputs.size() != 1) {
+    throw std::invalid_argument(
+        "Can only pass in dataset using type BoltBatch with a single input "
+        "layer.");
+  }
+}
+
+void BoltGraph::verifyGraphProperties() {
+  if (_output->isInputNode()) {
+    throw std::invalid_argument("Output node cannot be an input node.");
+  }
+
+  FullyConnectedLayerNode* fc_output =
+      dynamic_cast<FullyConnectedLayerNode*>(_output.get());
+
+  if (fc_output != nullptr) {
+    bool is_categorical_cross_entropy =
+        dynamic_cast<CategoricalCrossEntropyLoss*>(_loss.get()) != nullptr;
+    bool is_softmax =
+        fc_output->getActivationFunction() == ActivationFunction::Softmax;
+    if ((is_categorical_cross_entropy && !is_softmax) ||
+        (is_softmax && !is_categorical_cross_entropy)) {
+      throw std::invalid_argument(
+          "Softmax activation must be used with categorical cross entropy "
+          "loss.");
+    }
+
+    bool is_binary_cross_entropy =
+        dynamic_cast<BinaryCrossEntropyLoss*>(_loss.get()) != nullptr;
+    bool is_sigmoid =
+        fc_output->getActivationFunction() == ActivationFunction::Sigmoid;
+    if ((is_binary_cross_entropy && !is_sigmoid) ||
+        (is_sigmoid && !is_binary_cross_entropy)) {
+      throw std::invalid_argument(
+          "Sigmoid activation must be used with binary cross entropy loss.");
+    }
+  }
 }
 
 void BoltGraph::rebuildHashTables() {

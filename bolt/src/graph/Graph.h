@@ -5,6 +5,7 @@
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <dataset/src/Dataset.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <memory>
 #include <stdexcept>
@@ -96,6 +97,12 @@ class BoltGraph {
   void updateParameters(float learning_rate, uint32_t batch_cnt);
 
   void traverseGraph();
+
+  template <typename BATCH_T>
+  void verifyInputForGraph(
+      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset);
+
+  void verifyGraphProperties();
 
   void updateSampling(uint32_t rehash_batch, uint32_t rebuild_batch);
 
