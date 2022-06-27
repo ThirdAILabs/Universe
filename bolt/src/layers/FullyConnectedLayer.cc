@@ -603,7 +603,7 @@ void FullyConnectedLayer::setBiases(const float* new_biases) {
 
 void FullyConnectedLayer::setWeightGradients(
     const float* update_weight_gradient) {
-  std::copy(update_weight_gradient, update_weight_gradient + _dim,
+  std::copy(update_weight_gradient, update_weight_gradient + _dim * _prev_dim,
             _w_gradient.begin());
 }
 
@@ -614,7 +614,7 @@ void FullyConnectedLayer::setBiasesGradients(
 }
 
 float* FullyConnectedLayer::getBiasesGradient() {
-  float* biases_gradients_copy = new float[_dim * _prev_dim];
+  float* biases_gradients_copy = new float[_dim];
   std::copy(_b_gradient.begin(), _b_gradient.end(), biases_gradients_copy);
 
   return biases_gradients_copy;
