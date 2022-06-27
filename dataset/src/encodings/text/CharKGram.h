@@ -8,7 +8,7 @@
 namespace thirdai::dataset {
 
 /**
- * Encodes a sentence as a weighted set of character trigrams.
+ * Encodes a sentence as a weighted set of character k-grams.
  */
 class CharKGram : public TextEncoding {
  public:
@@ -25,15 +25,15 @@ class CharKGram : public TextEncoding {
     // TODO(Geordie): Do we need to make lower case?
     std::string lower_case_text = TextEncodingUtils::makeLowerCase(text);
 
-    std::vector<uint32_t> char_tri_grams;
+    std::vector<uint32_t> char_k_grams;
 
     // TODO(Geordie): Do we need to pad start and end of text by k-1 characters?
     for (uint32_t offset = 0; offset < text.size() - (_k - 1); offset++) {
-      uint32_t tri_gram_hash =
+      uint32_t k_gram_hash =
           hashing::MurmurHash(&text.at(offset), _k,
                               TextEncodingUtils::HASH_SEED) %
           _dim;
-      char_tri_grams.push_back(tri_gram_hash);
+      char_k_grams.push_back(k_gram_hash);
     }
 
     /*
@@ -41,7 +41,7 @@ class CharKGram : public TextEncoding {
       number of entries in the sparse vector, which can in turn make BOLT
       run faster.
     */
-    TextEncodingUtils::sumRepeatedIndices(char_tri_grams, 1.0, vec);
+    TextEncodingUtils::sumRepeatedIndices(char_k_grams, 1.0, vec);
   }
 
   uint32_t featureDim() final { return _dim; }
