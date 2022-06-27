@@ -151,7 +151,7 @@ void BoltGraph::processTrainingBatch(BoltBatch& batch_inputs,
 void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
                                uint32_t reconstruct_hash_functions_batch) {
   if (checkBatchInterval(reconstruct_hash_functions_batch)) {
-    rebuildHashFunctions();
+    reconstructHashFunctions();
     rebuildHashTables();
   } else if (checkBatchInterval(rebuild_hash_tables_batch)) {
     rebuildHashTables();
@@ -343,7 +343,7 @@ void BoltGraph::rebuildHashTables() {
   }
 }
 
-void BoltGraph::rebuildHashFunctions() {
+void BoltGraph::reconstructHashFunctions() {
   for (auto& layer : _sparse_layers) {
     layer->reBuildHashFunction();
   }

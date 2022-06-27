@@ -116,7 +116,7 @@ class BoltGraph {
 
   void rebuildHashTables();
 
-  void rebuildHashFunctions();
+  void reconstructHashFunctions();
 
   // List of nodes(layers) in the order in which they should be computed.
   std::vector<NodePtr> _nodes;
