@@ -141,6 +141,22 @@ def get_labels(dataset: str):
     return np.array(labels)
 
 
+def should_freeze_hash_tables(config: Dict[str, Any], epoch: int) -> bool:
+    params_config = config["params"]
+    return (
+        "freeze_hash_tables_epoch" in params_config.keys()
+        and epoch == params_config["freeze_hash_tables_epoch"]
+    )
+
+
+def should_use_sparse_inference(config: Dict[str, Any], epoch: int) -> bool:
+    params_config = config["params"]
+    return (
+        "sparse_inference_epoch" in params_config.keys()
+        and epoch >= params_config["sparse_inference_epoch"]
+    )
+
+
 def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
     layers = create_fully_connected_layer_configs(config["layers"])
     input_dim = config["dataset"]["input_dim"]
@@ -151,10 +167,6 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
     max_test_batches = config["dataset"].get("max_test_batches", None)
     rehash = config["params"]["rehash"]
     rebuild = config["params"]["rebuild"]
-    if use_sparse_inference:
-        sparse_inference_epoch = config["params"]["sparse_inference_epoch"]
-    else:
-        sparse_inference_epoch = None
 
     data = load_dataset(config)
     if data is None:
@@ -174,7 +186,8 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
     test_metrics = config["params"]["test_metrics"]
 
     for e in range(epochs):
-        if sparse_inference_epoch != None and e == sparse_inference_epoch:
+        if should_freeze_hash_tables(config=config, epoch=e):
+            print("Freezing Hash Tables in Network.")
             network.freeze_hash_tables()
         # Use keyword arguments to skip batch_size parameter.
         metrics = network.train(
@@ -190,9 +203,9 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
         if mlflow_enabled:
             log_training_metrics(metrics)
 
-        use_sparse_inference = (
-            sparse_inference_epoch != None and e >= sparse_inference_epoch
-        )
+        use_sparse_inference = should_use_sparse_inference(config=config, epoch=e)
+        if use_sparse_inference:
+            print("Using Sparse Inference.")
         if max_test_batches is None:
             # Use keyword arguments to skip batch_size parameter.
             metrics, _ = network.predict(
@@ -218,9 +231,9 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
     if not max_test_batches is None:
         # If we limited the number of test batches during training we run on the whole test set at the end.
         # Use keyword arguments to skip batch_size parameter.
-        use_sparse_inference = (
-            sparse_inference_epoch != None and epochs >= sparse_inference_epoch
-        )
+        use_sparse_inference = should_use_sparse_inference(config=config, epoch=e)
+        if use_sparse_inference:
+            print("Using Sparse Inference.")
         metrics, _ = network.predict(
             test_data=test_x,
             test_labels=test_y,

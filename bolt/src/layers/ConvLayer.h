@@ -39,8 +39,8 @@ class ConvLayer final : public SequentialLayer {
 
   void freezeHashTables(bool insert_labels_if_not_found) final {
     (void)insert_labels_if_not_found;
-    throw std::runtime_error(
-        "'freezeHashTables' is not supported in conv layers.");
+    throw exceptions::NotImplemented(
+        "Freeze hash tables is not supported in Conv layer.");
   }
 
   void buildHashTables() final;

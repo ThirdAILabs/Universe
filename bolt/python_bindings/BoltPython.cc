@@ -396,6 +396,9 @@ void createBoltSubmodule(py::module_& module) {
            "labels can be passed in as test_labels=None, in which case they "
            "will be ignored. If labels are not supplied then no metrics will "
            "be computed but activations will still be returned.\n"
+           " * sparse_inference: (Bool) - When this is true the model will use "
+           "sparsity in inference. This will lead to faster inference but can "
+           "cause a slight loss in accuracy. This option defaults to false.\n"
            " * metrics: List of str - Optional. The metrics to keep track of "
            "during training. "
            "See the section on metrics.\n"
@@ -410,10 +413,10 @@ void createBoltSubmodule(py::module_& module) {
            "and (1) output vectors (predictions) from the network in the form "
            "of a 2D Numpy matrix of floats.")
       .def("freeze_hash_tables", &PyNetwork::freezeHashTables,
-           "Freezes the hash tables in the network, recommended when using "
-           "sparse inference. Freezes smart hash tables. Do not call "
-           "this method early on in the training routine. It is recommended to "
-           "call this method right before the last training epoch.")
+           "Freezes hash tables in the network. If you plan to use sparse "
+           "inference, you may get a significant performance improvement if "
+           "you call this one or two epochs before you finish training. "
+           "Otherwise you should not call this method.")
       .def("save_for_inference", &PyNetwork::saveForInference,
            py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
@@ -546,8 +549,10 @@ void createBoltSubmodule(py::module_& module) {
            " * test_data: ClickThroughDataset - Test data.\n"
            " * test_labels: BoltDataset - Testing labels.\n"
            " * metrics: List of str - Optional. The metrics to keep track of "
-           "during training. "
-           "See the section on metrics.\n"
+           "during training. See the section on metrics.\n"
+           " * sparse_inference: (Bool) - When this is true the model will use "
+           "sparsity in inference. This will lead to faster inference but can "
+           "cause a slight loss in accuracy. This option defaults to false.\n"
            " * verbose: Boolean - Optional. If set to False, only displays "
            "progress bar. "
            "If set to True, prints additional information such as metrics and "

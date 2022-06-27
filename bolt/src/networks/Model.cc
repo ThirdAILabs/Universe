@@ -196,8 +196,6 @@ InferenceMetricData Model<BATCH_T>::predict(
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
-  // Here we disable sparsity if a network supports sparse inference it can
-  // handle that in its implementation of initializeNetworkState/getOutputs.
   initializeNetworkState(batch_size, /* use_sparsity= */ use_sparse_inference);
   BoltBatch outputs =
       getOutputs(batch_size, /* use_sparsity= */ use_sparse_inference);
@@ -260,8 +258,6 @@ InferenceMetricData Model<BATCH_T>::predictOnStream(
 
   uint64_t inference_output_dim = getInferenceOutputDim(use_sparse_inference);
 
-  // Here we disable sparsity if a network supports sparse inference it can
-  // handle that in its implementation of initializeNetworkState/getOutputs.
   initializeNetworkState(batch_size, /* use_sparsity= */ use_sparse_inference);
   BoltBatch outputs =
       getOutputs(batch_size, /* use_sparsity= */ use_sparse_inference);
