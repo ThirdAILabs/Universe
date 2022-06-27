@@ -107,6 +107,8 @@ class Mach:
         return np.argmax(scores, axis=1)
 
     # TODO(josh): Can implement in C++ for way more speed
+    # TODO(josh): Use better inference, this is equivalent to threshold = 1
+    # TODO(josh): Allow returning top k instead of just top 1
     def query_fast(self, batch, m=10):
         num_elements = len(batch[2]) - 1
         results = np.array(
