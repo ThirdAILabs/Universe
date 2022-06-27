@@ -43,7 +43,7 @@ TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
               /* metric_names= */ {},
               /* verbose= */ false);
   auto test_metrics =
-      model.predict(data.data, data.labels,
+      model.predict(data.data, data.labels, /* use_sparsity= */ false,
                     /* metric_names= */ {"categorical_accuracy"},
                     /* verbose= */ false);
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.98);
@@ -61,7 +61,7 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
               /* metric_names= */ {},
               /* verbose= */ false);
   auto test_metrics =
-      model.predict(data.data, data.labels,
+      model.predict(data.data, data.labels, /* use_sparsity= */ false,
                     /* metric_names= */ {"categorical_accuracy"},
                     /* verbose= */ false);
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
@@ -113,7 +113,7 @@ static void testSimpleDatasetMultiLayerModel(
             train_metrics.at("mean_squared_error").front());
 
   auto test_metrics =
-      model.predict(data.data, data.labels,
+      model.predict(data.data, data.labels, /* use_sparsity= */ false,
                     /* metric_names= */ {"categorical_accuracy"},
                     /* verbose= */ false);
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
@@ -149,7 +149,7 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
               /* verbose= */ false);
 
   auto test_metrics =
-      model.predict(data.data, data.labels,
+      model.predict(data.data, data.labels, /* use_sparsity= */ false,
                     /* metric_names= */ {"categorical_accuracy"},
                     /* verbose= */ false);
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
