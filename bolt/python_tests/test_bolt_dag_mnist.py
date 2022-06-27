@@ -1,4 +1,5 @@
 # Add an integration test marker for all tests in this file
+from tabnanny import verbose
 from test_mnist import load_mnist, load_mnist_labels
 from utils import train_network, build_sparse_hidden_layer_classifier
 import numpy as np
@@ -51,16 +52,13 @@ def test_bolt_dag_on_mnist():
         train_labels=train_labels,
         epochs=3,
         learning_rate=0.0001,
-        rehash=3000,
-        rebuild=10000,
-    )
-
-    model.predict(
-        test_data=test_data, test_labels=test_labels, metrics=["categorical_accuracy"]
+        rebuild_hash_tables=3000,
+        reconstruct_hash_functions=10000,
+        verbose=False
     )
 
     metrics = model.predict(
-        test_data, test_labels, metrics=["categorical_accuracy"], verbose=False
+        test_data=test_data, test_labels=test_labels, metrics=["categorical_accuracy"], verbose=False
     )
-
+    
     assert metrics["categorical_accuracy"] >= 0.9

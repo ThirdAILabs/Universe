@@ -714,7 +714,7 @@ void createBoltSubmodule(py::module_& module) {
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
       .def("predict", &BoltGraph::predict<BoltBatch>, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("sparse_inference"),
+           py::arg("test_labels"), py::arg("sparse_inference") = false,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
