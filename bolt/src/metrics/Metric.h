@@ -153,6 +153,51 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   std::atomic<float> _sum_of_truths;
 };
 
+/**
+ * Root mean squared error (RMSE) is a standard regression metric.
+ * RMSE = sqrt(sum((actual - prediction)^2))
+ */
+class RootMeanSquaredError final : public Metric {
+ public:
+  RootMeanSquaredError() : _sum_of_squared_errors(0.0), _count(0) {}
+
+  void processSample(const BoltVector& output, const BoltVector& labels) final {
+    float squared_errors = 0.0;
+    MetricUtilities::visitActiveNeurons(output, labels,
+                                        [&](float label_val, float output_val) {
+                                          float error = label_val - output_val;
+                                          squared_errors += error * error;
+                                        });
+
+    // Add to respective atomic accumulators
+    MetricUtilities::incrementAtomicFloat(_sum_of_squared_errors,
+                                          squared_errors);
+
+    _count.fetch_add(1);
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double rmse = std::sqrt(_sum_of_squared_errors / _count);
+    if (verbose) {
+      std::cout << "Root Mean Squared Error: " << std::setprecision(3) << rmse
+                << std::endl;
+    }
+    _sum_of_squared_errors = 0.0;
+    _count = 0;
+    return rmse;
+  }
+
+  static constexpr const char* name = "root_mean_squared_error";
+
+  std::string getName() final { return name; }
+
+  bool forceDenseInference() final { return false; }
+
+ private:
+  std::atomic<float> _sum_of_squared_errors;
+  std::atomic<uint64_t> _count;
+};
+
 using MetricData = std::unordered_map<std::string, std::vector<double>>;
 using InferenceMetricData = std::unordered_map<std::string, double>;
 
@@ -168,6 +213,8 @@ class MetricAggregator {
       } else if (name == WeightedMeanAbsolutePercentageError::name) {
         _metrics.push_back(
             std::make_unique<WeightedMeanAbsolutePercentageError>());
+      } else if (name == RootMeanSquaredError::name) {
+        _metrics.push_back(std::make_unique<RootMeanSquaredError>());
       } else {
         throw std::invalid_argument("'" + name + "' is not a valid metric.");
       }

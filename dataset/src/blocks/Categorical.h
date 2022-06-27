@@ -13,9 +13,7 @@ namespace thirdai::dataset {
  */
 class CategoricalBlock : public Block {
  public:
-  // Declaration included from BlockInterface.h
-  friend CategoricalBlockTest;
-
+  
   /**
    * Constructor.
    *

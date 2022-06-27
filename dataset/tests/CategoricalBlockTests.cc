@@ -1,3 +1,4 @@
+#include "BlockTest.h"
 #include <gtest/gtest.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -12,7 +13,7 @@
 
 namespace thirdai::dataset {
 
-class CategoricalBlockTest : public testing::Test {
+class CategoricalBlockTest : public BlockTest {
  public:
   /**
    * Generates a 2 dimensional matrix of integers in the form of a vector
@@ -50,29 +51,6 @@ class CategoricalBlockTest : public testing::Test {
     return str_matrix;
   }
 
-  /**
-   * Helper function to access addVectorSegment() method of CategoricalBlock,
-   * which is private.
-   */
-  static void addVectorSegmentWithBlock(
-      CategoricalBlock& block, const std::vector<std::string>& input_row,
-      SegmentedSparseFeatureVector& vec) {
-    std::vector<std::string_view> input_row_view(input_row.size());
-    for (uint32_t i = 0; i < input_row.size(); i++) {
-      input_row_view[i] =
-          std::string_view(input_row[i].c_str(), input_row[i].size());
-    }
-    block.addVectorSegment(input_row_view, vec);
-  }
-
-  /**
-   * Helper function to access entries() method of SegmentedFeatureVector,
-   * which is private.
-   */
-  static std::unordered_map<uint32_t, float> vectorEntries(
-      SegmentedFeatureVector& vec) {
-    return vec.entries();
-  }
 };
 
 /**
