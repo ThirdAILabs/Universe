@@ -661,26 +661,83 @@ void createBoltSubmodule(py::module_& module) {
            "initialize hash tables/functions.")
 #endif
       .def("__call__", &FullyConnectedLayerNode::addPredecessor,
-           py::arg("prev_layer"));
+           py::arg("prev_layer"),
+           "Tells the graph which layer should act as input to this fully "
+           "connected layer.");
 
   py::class_<Input, InputPtr, Node>(graph_submodule, "Input")
-      .def(py::init<uint32_t>(), py::arg("dim"));
+      .def(py::init<uint32_t>(), py::arg("dim"),
+           "Constructs an input layer node for the graph.");
 
   py::class_<BoltGraph>(graph_submodule, "Model")
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
-           py::arg("output"))
-      .def("compile", &BoltGraph::compile, py::arg("loss"))
+           py::arg("output"),
+           "Constructs a bolt model from a layer graph.\n"
+           "Arguments:\n"
+           " * inputs (List[Node]) - The input nodes to the graph. Note that "
+           "inputs are mapped to input layers by their index.\n"
+           " * output (Node) - The output node of the graph.")
+      .def("compile", &BoltGraph::compile, py::arg("loss"),
+           "Compiles the graph for the given loss function. In this step the "
+           "order in which to compute the layers is determined and various "
+           "checks are preformed to ensure the model architecture is correct.")
       .def("train", &BoltGraph::train<BoltBatch>, py::arg("train_data"),
            py::arg("train_labels"), py::arg("learning_rate"), py::arg("epochs"),
            py::arg("rebuild_hash_tables") = std::nullopt,
            py::arg("reconstruct_hash_functions") = std::nullopt,
            py::arg("metrics") = std::vector<std::string>(),
-           py::arg("verbose") = true)
+           py::arg("verbose") = true,
+           "Trains the network on the given training data.\n"
+           "Arguments:\n"
+           " * train_data: BoltDataset - Training data. This is a BoltDataset "
+           "as loaded by thirdai.dataset.load_bolt_svm_dataset or "
+           "thirdai.dataset.load_bolt_csv_dataset.\n"
+           " * train_labels: BoltDataset - Training labels. This is a "
+           "BoltDataset as loaded by thirdai.dataset.load_bolt_svm_dataset or "
+           "thirdai.dataset.load_bolt_csv_dataset.\n"
+           " * learning_rate: Float (positive) - Learning rate.\n"
+           " * epochs: Int (positive) - Number of training epochs over the "
+           "training data.\n"
+           " * rebuild_hash_tables: Int (positive) - Optional. Number of "
+           "training samples before rebuilding hash tables. If not provided, "
+           "BOLT will autotune this parameter.\n\n"
+           " * reconstruct_hash_functions: Int (positive) - Optional. Number "
+           "of training samples before generating new LSH hash functions. "
+           "If not provided, BOLT will autotune this parameter.\n"
+           " * metrics: List of str - Optional. The metrics to keep track of "
+           "during training. See the section on metrics.\n"
+           " * verbose: Boolean - Optional. If set to False, does not print "
+           "anything during training. If set to True, prints additional "
+           "information such as metrics and epoch times. Set to True by "
+           "default.\n\n"
+
+           "Returns a mapping from metric names to an array their values for "
+           "every epoch.")
       .def("predict", &BoltGraph::predict<BoltBatch>, py::arg("test_data"),
-           py::arg("test_labels"),
+           py::arg("test_labels"), py::arg("sparse_inference"),
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
-           py::arg("batch_limit") = std::numeric_limits<uint32_t>::max());
+           py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
+           "Predicts the output given the input vectors and evaluates the "
+           "predictions based on the given metrics.\n"
+           "Arguments:\n"
+           " * test_data: BoltDataset - Test data. This is a BoltDataset as "
+           "loaded by thirdai.dataset.load_bolt_svm_dataset or "
+           "thirdai.dataset.load_bolt_csv_dataset.\n"
+           " * test_labels: BoltDataset - Test labels. This is a BoltDataset "
+           "as loaded by thirdai.dataset.load_bolt_svm_dataset or "
+           "thirdai.dataset.load_bolt_csv_dataset.\n"
+           " * sparse_inference (Bool) - If true then sparse inference will be "
+           "used.\n"
+           " * metrics: List of str - Optional. The metrics to keep track of "
+           "during training. "
+           "See the section on metrics.\n"
+           " * verbose: Boolean - Optional. If set to False, does not print "
+           "anything during training. If set to True, prints additional "
+           "information such as metrics and epoch times. Set to True by "
+           "default.\n\n"
+
+           "Returns a  a mapping from metric names to their values.");
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
