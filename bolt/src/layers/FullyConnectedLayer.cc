@@ -508,6 +508,7 @@ inline void FullyConnectedLayer::initSparseDatastructures(
   buildHashTablesImpl(true);
 
   _rand_neurons = std::vector<uint32_t>(_dim);
+  std::cout << shuffle_seed << std::endl;
 
   std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
   std::cout << shuffle_seed << std::endl;
