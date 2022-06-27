@@ -11,6 +11,10 @@ class FullyConnectedLayerNode final
     : public Node,
       public std::enable_shared_from_this<FullyConnectedLayerNode> {
  public:
+  // This pattern means that any valid constructor for a
+  // FullyConnectedLayerConfig can be used to initialize the
+  // FullyConnectedLayerNode, and that the args are directly forwarded to the
+  // constructor for the config.
   template <typename... Args>
   explicit FullyConnectedLayerNode(Args&&... args)
       : _layer(nullptr),

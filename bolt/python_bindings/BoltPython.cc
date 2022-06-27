@@ -169,7 +169,7 @@ void createBoltSubmodule(py::module_& module) {
            " * activation_function: String specifying the activation function "
            "to use, no restrictions on case - We support five activation "
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
-           " * load_factor: Float - The fraction of neurons to use during "
+           " * sparsity: Float - The fraction of neurons to use during "
            "sparse training "
            "and sparse inference. For example, sparsity=0.05 means the "
            "layer uses 5% of "
@@ -595,20 +595,70 @@ void createBoltSubmodule(py::module_& module) {
   py::class_<FullyConnectedLayerNode, std::shared_ptr<FullyConnectedLayerNode>,
              Node>(graph_submodule, "FullyConnected")
       .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
-           py::arg("activation"))
+           py::arg("activation"),
+           "Constructs a dense FullyConnectedLayer object.\n"
+           "Arguments:\n"
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * activation: Enum specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
       .def(py::init<uint64_t, std::string>(), py::arg("dim"),
-           py::arg("activation"))
+           py::arg("activation"),
+           "Constructs a dense FullyConnectedLayer object.\n"
+           "Arguments:\n"
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * activation: String specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
       .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
-           py::arg("sparsity"), py::arg("activation"))
+           py::arg("sparsity"), py::arg("activation"),
+           "Constructs a sparse FullyConnectedLayer object with sampling "
+           "parameters autotuned.\n"
+           "Arguments:\n"
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * sparsity: Float - What fraction of nuerons to activate during "
+           "training and sparse inference.\n"
+           " * activation: Enum specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
       .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
-           py::arg("sparsity"), py::arg("activation"))
+           py::arg("sparsity"), py::arg("activation"),
+           "Constructs a sparse FullyConnectedLayer object with sampling "
+           "parameters autotuned.\n"
+           "Arguments:\n"
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * sparsity: Float - What fraction of nuerons to activate during "
+           "training and sparse inference.\n"
+           " * activation: String specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
 #if THIRDAI_EXPOSE_ALL
       .def(py::init<uint64_t, float, ActivationFunction, SamplingConfig>(),
            py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
-           py::arg("sampling_config"))
+           py::arg("sampling_config"),
+           "Constructs a sparse FullyConnectedLayer object.\n"
+           "Arguments:\n"
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * sparsity: Float - What fraction of nuerons to activate during "
+           "training and sparse inference.\n"
+           " * activation: Enum specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
+           " * sampling_config (SamplingConfig) - Sampling config object to "
+           "initialize hash tables/functions.")
       .def(py::init<uint64_t, float, std::string, SamplingConfig>(),
            py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
-           py::arg("sampling_config"))
+           py::arg("sampling_config"),
+           "Constructs a sparse FullyConnectedLayer object.\n"
+           "Arguments:\n"
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * sparsity: Float - What fraction of nuerons to activate during "
+           "training and sparse inference.\n"
+           " * activation: String specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
+           " * sampling_config (SamplingConfig) - Sampling config object to "
+           "initialize hash tables/functions.")
 #endif
       .def("__call__", &FullyConnectedLayerNode::addPredecessor,
            py::arg("prev_layer"));
