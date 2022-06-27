@@ -15,10 +15,11 @@
 
 namespace thirdai::bolt {
 
-uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,
-                        uint32_t data_len);
-uint32_t getRebuildBatch(uint32_t rebuild, uint32_t batch_size,
-                         uint32_t data_len);
+uint32_t getRebuildHashTablesBatchInterval(std::optional<uint32_t> rehash,
+                                           uint32_t batch_size,
+                                           uint32_t data_len);
+uint32_t getReconstructHashFunctionsBatchInterval(
+    std::optional<uint32_t> rebuild, uint32_t batch_size, uint32_t data_len);
 
 void BoltGraph::compile(std::shared_ptr<LossFunction> loss) {
   _loss = std::move(loss);
@@ -40,14 +41,23 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss) {
 
 template MetricData BoltGraph::train(
     std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>&,
-    const dataset::BoltDatasetPtr&, float, uint32_t, uint32_t, uint32_t,
-    const std::vector<std::string>&, bool);
+    const dataset::BoltDatasetPtr&, float, uint32_t, std::optional<uint32_t>,
+    std::optional<uint32_t>, const std::vector<std::string>&, bool);
 
 template <typename BATCH_T>
 MetricData BoltGraph::train(
+    // Train dataset
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
-    const dataset::BoltDatasetPtr& train_labels, float learning_rate,
-    uint32_t epochs, uint32_t rehash, uint32_t rebuild,
+    // Train labels
+    const dataset::BoltDatasetPtr& train_labels,
+    // Learning rate
+    float learning_rate,
+    // Epochs
+    uint32_t epochs,
+    // After how many vectors to reconstruct hash tables
+    std::optional<uint32_t> rebuild_hash_tables,
+    // After how many vectors to create new hash functions
+    std::optional<uint32_t> reconstruct_hash_functions,
     // Metrics to compute during training
     const std::vector<std::string>& metric_names,
     // Restrict printouts
@@ -55,9 +65,14 @@ MetricData BoltGraph::train(
   verifyInputForGraph(train_data);
 
   uint32_t batch_size = train_data->at(0).getBatchSize();
-  uint32_t rebuild_batch =
-      getRebuildBatch(rebuild, batch_size, train_data->len());
-  uint32_t rehash_batch = getRehashBatch(rehash, batch_size, train_data->len());
+
+  uint32_t rebuild_hash_tables_batch = getRebuildHashTablesBatchInterval(
+      rebuild_hash_tables, batch_size, train_data->len());
+
+  uint32_t reconstruct_hash_functions_batch =
+      getReconstructHashFunctionsBatchInterval(reconstruct_hash_functions,
+                                               batch_size, train_data->len());
+
   uint64_t num_train_batches = train_data->numBatches();
 
   // Because of how the datasets are read we know that all batches will not have
@@ -82,7 +97,9 @@ MetricData BoltGraph::train(
 
       processTrainingBatch(batch_inputs, batch_labels, learning_rate, metrics);
 
-      updateSampling(rehash_batch, rebuild_batch);
+      updateSampling(/* rebuild_hash_tables_batch= */ rebuild_hash_tables_batch,
+                     /* reconstruct_hash_functions_batch= */
+                     reconstruct_hash_functions_batch);
 
       bar.increment();
     }
@@ -131,11 +148,12 @@ void BoltGraph::processTrainingBatch(BoltBatch& batch_inputs,
   updateParameters(learning_rate, ++_batch_cnt);
 }
 
-void BoltGraph::updateSampling(uint32_t rehash_batch, uint32_t rebuild_batch) {
-  if (checkBatchInterval(rebuild_batch)) {
+void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
+                               uint32_t reconstruct_hash_functions_batch) {
+  if (checkBatchInterval(reconstruct_hash_functions_batch)) {
     rebuildHashFunctions();
     rebuildHashTables();
-  } else if (checkBatchInterval(rehash_batch)) {
+  } else if (checkBatchInterval(rebuild_hash_tables_batch)) {
     rebuildHashTables();
   }
 }
@@ -333,22 +351,23 @@ static constexpr uint32_t RehashAutoTuneThreshold = 100000;
 static constexpr uint32_t RehashAutoTuneFactor1 = 100;
 static constexpr uint32_t RehashAutoTuneFactor2 = 20;
 
-uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,
-                        uint32_t data_len) {
-  if (rehash == 0) {
+uint32_t getRebuildHashTablesBatchInterval(std::optional<uint32_t> rehash,
+                                           uint32_t batch_size,
+                                           uint32_t data_len) {
+  if (!rehash) {
     if (data_len < RehashAutoTuneThreshold) {
       rehash = data_len / RehashAutoTuneFactor2;
     } else {
       rehash = data_len / RehashAutoTuneFactor1;
     }
   }
-  return std::max<uint32_t>(rehash / batch_size, 1);
+  return std::max<uint32_t>(rehash.value() / batch_size, 1);
 }
 
-uint32_t getRebuildBatch(uint32_t rebuild, uint32_t batch_size,
-                         uint32_t data_len) {
-  rebuild = rebuild != 0 ? rebuild : (data_len / 4);
-  return std::max<uint32_t>(rebuild / batch_size, 1);
+uint32_t getReconstructHashFunctionsBatchInterval(
+    std::optional<uint32_t> rebuild, uint32_t batch_size, uint32_t data_len) {
+  rebuild = rebuild.has_value() ? rebuild : (data_len / 4);
+  return std::max<uint32_t>(rebuild.value() / batch_size, 1);
 }
 
 }  // namespace thirdai::bolt

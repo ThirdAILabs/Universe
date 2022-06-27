@@ -12,6 +12,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
 
@@ -621,7 +622,8 @@ void createBoltSubmodule(py::module_& module) {
       .def("compile", &BoltGraph::compile, py::arg("loss"))
       .def("train", &BoltGraph::train<BoltBatch>, py::arg("train_data"),
            py::arg("train_labels"), py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("rehash"), py::arg("rebuild"),
+           py::arg("rebuild_hash_tables") = std::nullopt,
+           py::arg("reconstruct_hash_functions") = std::nullopt,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true)
       .def("predict", &BoltGraph::predict<BoltBatch>, py::arg("test_data"),

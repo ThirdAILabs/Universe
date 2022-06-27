@@ -39,7 +39,8 @@ TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
 
   model.train(data.data, data.labels,
               /* learning_rate= */ 0.001, /* epochs= */ 5,
-              /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
+              /* rebuild_hash_tables= */ 0, /* reconstruct_hash_functions= */ 0,
+              /* metric_names= */ {},
               /* verbose= */ false);
   auto test_metrics =
       model.predict(data.data, data.labels,
@@ -55,7 +56,9 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
 
   model.train(data.data, data.labels,
               /* learning_rate= */ 0.001, /* epochs= */ 5,
-              /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
+              /* rebuild_hash_tables= */ std::nullopt,
+              /* reconstruct_hash_functions= */ std::nullopt,
+              /* metric_names= */ {},
               /* verbose= */ false);
   auto test_metrics =
       model.predict(data.data, data.labels,
@@ -102,7 +105,8 @@ static void testSimpleDatasetMultiLayerModel(
   auto train_metrics =
       model.train(data.data, data.labels,
                   /* learning_rate */ 0.001, /* epochs */ epochs,
-                  /* rehash= */ 0, /* rebuild= */ 0,
+                  /* rebuild_hash_tables= */ std::nullopt,
+                  /* reconstruct_hash_functions= */ std::nullopt,
                   /* metric_names= */ {"mean_squared_error"},
                   /* verbose= */ false);
   ASSERT_LT(train_metrics.at("mean_squared_error").back(),
@@ -139,7 +143,9 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
 
   model.train(data.data, data.labels,
               /* learning_rate= */ 0.001, /* epochs= */ 2,
-              /* rehash= */ 0, /* rebuild=*/0, /* metric_names= */ {},
+              /* rebuild_hash_tables= */ std::nullopt,
+              /* reconstruct_hash_functions=*/std::nullopt,
+              /* metric_names= */ {},
               /* verbose= */ false);
 
   auto test_metrics =
