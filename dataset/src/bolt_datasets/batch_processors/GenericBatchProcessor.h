@@ -100,13 +100,13 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
 
   bool expectsHeader() const final { return _expects_header; }
 
-  void processHeader(const std::string& header) final { (void)header; }
+  void processHeader(const std::string& header) override { (void)header; }
 
   uint32_t getInputDim() const { return sumBlockDims(_input_blocks); }
 
   uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
 
- private:
+ protected:
   std::vector<std::string_view> parseCsvRow(const std::string& row) const {
     std::vector<std::string_view> parsed;
     size_t start = 0;
@@ -120,6 +120,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     return parsed;
   }
 
+ private:
   /**
    * Encodes a sample as a BoltVector according to the given blocks.
    */

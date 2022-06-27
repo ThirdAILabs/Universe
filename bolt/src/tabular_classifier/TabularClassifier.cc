@@ -3,6 +3,7 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/utils/AutoTuneUtils.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <algorithm>
@@ -18,12 +19,12 @@ namespace thirdai::bolt {
 
 TabularClassifier::TabularClassifier(const std::string& model_size,
                                      uint32_t n_classes) {
-  // TODO(david) autotune these size depending on model_size and benchmark
-  // results
-  (void)model_size;
-  uint32_t input_dim = 100000;
-  uint32_t hidden_layer_size = 1000;
-  uint32_t hidden_layer_sparsity = 0.1;
+  // TODO(david) change these autotunes?
+  _input_dim = 100000;
+  uint32_t hidden_layer_size =
+      getHiddenLayerSize(model_size, n_classes, _input_dim);
+
+  float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_size);
 
   SequentialConfigList configs = {
       std::make_shared<FullyConnectedLayerConfig>(
@@ -32,7 +33,7 @@ TabularClassifier::TabularClassifier(const std::string& model_size,
                                                   ActivationFunction::Softmax)};
 
   _model =
-      std::make_unique<FullyConnectedNetwork>(std::move(configs), input_dim);
+      std::make_unique<FullyConnectedNetwork>(std::move(configs), _input_dim);
 }
 
 void TabularClassifier::train(const std::string& filename, uint32_t epochs,
@@ -62,6 +63,62 @@ void TabularClassifier::train(const std::string& filename, uint32_t epochs,
 
 void TabularClassifier::predict(
     const std::string& filename,
-    const std::optional<std::string>& output_filename) {}
+    const std::optional<std::string>& output_filename) {
+  if (_metadata.isEmpty()) {
+    throw std::invalid_argument(
+        "Cannot call predict(..) without calling train(..) first.");
+  }
+  auto dataset = loadStreamingDataset(
+      filename,
+      _metadata);  // TODO(david) add checks for validity of columns/data
+
+  // TODO(david) merge safe file maker PR on top of this
+  std::optional<std::ofstream> output_file;
+  if (output_filename) {
+    output_file = std::ofstream(*output_filename);
+    if (!output_file->good() || output_file->bad() || output_file->fail() ||
+        !output_file->is_open()) {
+      throw std::runtime_error("Unable to open output file '" +
+                               *output_filename + "'");
+    }
+  }
+
+  auto print_predictions_callback = [&](const BoltBatch& outputs,
+                                        uint32_t batch_size) {
+    if (!output_file) {
+      return;
+    }
+    for (uint32_t batch_id = 0; batch_id < batch_size; batch_id++) {
+      float max_act = 0.0;
+      uint32_t pred = 0;
+      for (uint32_t i = 0; i < outputs[batch_id].len; i++) {
+        if (outputs[batch_id].activations[i] > max_act) {
+          max_act = outputs[batch_id].activations[i];
+          if (outputs[batch_id].isDense()) {
+            pred = i;
+          } else {
+            pred = outputs[batch_id].active_neurons[i];
+          }
+        }
+      }
+
+      (*output_file) << _metadata.getClassName(pred) << std::endl;
+    }
+  };
+
+  /*
+    We are using predict with the stream directly because we only need a single
+    pass through the dataset, so this is more memory efficient, and we don't
+    have to worry about storing the activations in memory to compute the
+    predictions, and can instead compute the predictions using the
+    back_callback.
+  */
+  _model->predictOnStream(dataset, {"categorical_accuracy"},
+                          print_predictions_callback);
+
+  if (output_file) {
+    output_file->close();
+  }
+}
 
 }  // namespace thirdai::bolt
