@@ -510,15 +510,14 @@ inline void FullyConnectedLayer::initSparseDatastructures(
   _rand_neurons = std::vector<uint32_t>(_dim);
 
   std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
+  std::cout << shuffle_seed << std::endl;
   if(_is_distributed){
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), std::default_random_engine(shuffle_seed));
   }else{
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
   }
   std::cout << "Random Neurons: " ;
-  for(uint32_t i=0; i<_dim; i++){
-    std::cout << _rand_neurons[i] << " ";
-  }
+  std::cout << _rand_neurons[0] << " " << _rand_neurons[1] << " " << _rand_neurons[2] << std::endl;
   std::cout << std::endl;
 }
 
