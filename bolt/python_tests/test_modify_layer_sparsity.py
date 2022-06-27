@@ -3,6 +3,7 @@ import pytest
 
 ptestmark = [pytest.mark.unit]
 
+
 def predict_train_one_epoch_predict(network, test_data, test_labels):
     """
     Does a forward pass through the network with the test data, runs an epoch
