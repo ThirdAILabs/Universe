@@ -311,9 +311,14 @@ def train_mach(config: Dict[str, Any], mlflow_enabled: bool):
         )
 
         start = time.time()
-        query_results = test_match.query_slow(test_x)
+        query_results = test_match.query_fast(test_x)
         recalled = [q in gt for q, gt in zip(query_results, test_y_list_of_lists)]
-        print(f"P1@1 = {sum(recalled) / len(recalled)}, Time = {time.time() - start}")
+        precision = sum(recalled) / len(recalled)
+        end = time.time()
+        print(f"P1@1 = {precision}, Time = {time.time() - start}")
+
+        if mlflow_enabled:
+            mlflow.log_metric("P1@1", precision)
 
 
 def is_dlrm(config: Dict[str, Any]) -> bool:
