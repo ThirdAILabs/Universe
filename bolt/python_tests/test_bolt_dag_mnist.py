@@ -54,11 +54,14 @@ def test_bolt_dag_on_mnist():
         learning_rate=0.0001,
         rebuild_hash_tables=3000,
         reconstruct_hash_functions=10000,
-        verbose=False
+        verbose=False,
     )
 
     metrics = model.predict(
-        test_data=test_data, test_labels=test_labels, metrics=["categorical_accuracy"], verbose=False
+        test_data=test_data,
+        test_labels=test_labels,
+        metrics=["categorical_accuracy"],
+        verbose=False,
     )
-    
+
     assert metrics["categorical_accuracy"] >= 0.9
