@@ -491,11 +491,13 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
 
 inline void FullyConnectedLayer::initSparseDatastructures(
         std::random_device &rd, uint32_t hash_seed, uint32_t shuffle_seed) {
+  std::cout << "init Sparse Data Structure getting called!" << std::endl;
   _hasher = assignHashFunction(_sampling_config, _prev_dim);
   if(_is_distributed){
     _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow, hash_seed);
+        std::cout << "Updating in Distributed Block!" << std::endl; 
   }else{
     _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
@@ -508,7 +510,6 @@ inline void FullyConnectedLayer::initSparseDatastructures(
   buildHashTablesImpl(true);
 
   _rand_neurons = std::vector<uint32_t>(_dim);
-  std::cout << shuffle_seed << std::endl;
 
   std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
   std::cout << shuffle_seed << std::endl;
