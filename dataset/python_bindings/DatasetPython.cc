@@ -6,6 +6,7 @@
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/bolt_datasets/ShuffleBatchBuffer.h>
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
@@ -253,9 +254,10 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<StreamingGenericDatasetLoader>(dataset_submodule, "DataPipeline")
       .def(
           py::init<std::string, std::vector<std::shared_ptr<Block>>,
-                   std::vector<std::shared_ptr<Block>>, uint32_t, bool, char>(),
+                   std::vector<std::shared_ptr<Block>>, uint32_t, bool, ShuffleBufferConfig, bool, char>(),
           py::arg("filename"), py::arg("input_blocks"), py::arg("label_blocks"),
-          py::arg("batch_size"), py::arg("has_header") = false,
+          py::arg("batch_size"), py::arg("shuffle") = false, 
+          py::arg("config") = ShuffleBufferConfig(), py::arg("has_header") = false,
           py::arg("delimiter") = ',')
       .def("next_batch", &StreamingGenericDatasetLoader::nextBatch)
       .def("load_in_memory", &StreamingGenericDatasetLoader::loadInMemory)

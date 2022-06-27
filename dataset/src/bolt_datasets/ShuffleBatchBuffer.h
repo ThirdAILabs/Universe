@@ -25,10 +25,9 @@ class CircularBuffer {
           "non-contiguous buffer. CircularBuffer cannot be resized after "
           "popping an element.");
     }
-
     if (_size == _buffer.size()) {
       _buffer.push_back(std::move(new_elem));
-      _insert_idx = _buffer.size();
+      _insert_idx = 0;
     } else {
       _buffer[_insert_idx] = std::move(new_elem);
       _insert_idx = (_insert_idx + 1) % _buffer.size();
@@ -91,7 +90,7 @@ class CircularBuffer {
 class ShuffleBatchBuffer {
  public:
   explicit ShuffleBatchBuffer(uint32_t shuffle_seed)
-      : _rand(shuffle_seed), _saw_last_batch(false), _batch_size(0) {}
+      : _gen(shuffle_seed), _saw_last_batch(false), _batch_size(0) {}
 
   void insertBatch(std::pair<bolt::BoltBatch, bolt::BoltBatch>&& batch,
                    bool shuffle) {
@@ -103,8 +102,9 @@ class ShuffleBatchBuffer {
     checkConsistentBatchSize(batch.first.getBatchSize());
 
     if (shuffle) {
+
       swapShuffle(_input_batches, batch.first, _label_batches, batch.second,
-                  _batch_size, _rand);
+                  _batch_size, _gen);
     }
 
     _input_batches.insert(std::move(batch.first));
@@ -161,9 +161,11 @@ class ShuffleBatchBuffer {
                                  CircularBuffer<bolt::BoltBatch>& label_batches,
                                  bolt::BoltBatch& new_label_batch,
                                  size_t expected_batch_size,
-                                 std::mt19937& rand) {
+                                 std::mt19937& gen) {
     for (size_t i = 0; i < new_input_batch.getBatchSize(); i++) {
-      size_t swap_with = rand();
+      size_t rand_range = input_batches.size() + new_input_batch.getBatchSize();
+      std::uniform_int_distribution<> dist(0, rand_range);
+      size_t swap_with = dist(gen);
       if (swap_with < input_batches.size()) {
         size_t swap_batch_pos = swap_with / expected_batch_size;
         size_t swap_vec_idx = swap_with % expected_batch_size;
@@ -183,7 +185,7 @@ class ShuffleBatchBuffer {
     second = std::move(temp);
   }
 
-  std::mt19937 _rand;
+  std::mt19937 _gen;
 
   bool _saw_last_batch;
   size_t _batch_size;
