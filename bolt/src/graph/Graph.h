@@ -69,6 +69,8 @@ class BoltGraph {
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
       // Test labels
       const dataset::BoltDatasetPtr& test_labels,
+      // Use sparsity in inference
+      bool use_sparsity,
       // Metrics to compute
       const std::vector<std::string>& metric_names = {},
       // Restrict printouts
@@ -105,7 +107,8 @@ class BoltGraph {
 
   void verifyGraphProperties();
 
-  void updateSampling(uint32_t rebuild_hash_tables_batch, uint32_t reconstruct_hash_functions_batch);
+  void updateSampling(uint32_t rebuild_hash_tables_batch,
+                      uint32_t reconstruct_hash_functions_batch);
 
   constexpr bool checkBatchInterval(uint32_t num_batches) const {
     return (_batch_cnt % num_batches) == (num_batches - 1);

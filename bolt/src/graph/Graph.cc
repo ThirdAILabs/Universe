@@ -160,7 +160,7 @@ void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
 
 template InferenceMetricData BoltGraph::predict(
     const std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>&,
-    const dataset::BoltDatasetPtr&, const std::vector<std::string>&, bool,
+    const dataset::BoltDatasetPtr&, bool, const std::vector<std::string>&, bool,
     uint32_t);
 
 template <typename BATCH_T>
@@ -169,6 +169,8 @@ InferenceMetricData BoltGraph::predict(
     const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
     // Test labels
     const dataset::BoltDatasetPtr& test_labels,
+    // Use sparsity in inference
+    bool use_sparsity,
     // Metrics to compute
     const std::vector<std::string>& metric_names,
     // Restrict printouts
@@ -189,7 +191,7 @@ InferenceMetricData BoltGraph::predict(
   // a batch size larger than this so we can just set the batch size here.
   // If sparse inference is not enabled we want the outptus to be dense,
   // otherwise we want whatever the default for the layer is.
-  prepareForBatchProcessing(batch_size, /* use_sparsity= */ false);
+  prepareForBatchProcessing(batch_size, use_sparsity);
 
   ProgressBar bar(num_test_batches, verbose);
 
