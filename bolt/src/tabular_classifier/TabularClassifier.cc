@@ -70,9 +70,7 @@ void TabularClassifier::predict(
     throw std::invalid_argument(
         "Cannot call predict(..) without calling train(..) first.");
   }
-  auto dataset = loadStreamingDataset(
-      filename,
-      _metadata);  // TODO(david) add checks for validity of columns/data
+  auto dataset = loadStreamingDataset(filename, _metadata);
 
   // TODO(david) merge safe file maker PR on top of this
   std::optional<std::ofstream> output_file;
