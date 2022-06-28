@@ -51,7 +51,7 @@ class DummyNode final : public Node {
     throw exceptions::NotImplemented("Dummy method for test");
   }
 
-  BoltVector& getOutput(uint32_t vec_index) final {
+  BoltVector& getOutputVector(uint32_t vec_index) final {
     (void)vec_index;
     throw exceptions::NotImplemented("Dummy method for test");
   }
