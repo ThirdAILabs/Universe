@@ -17,6 +17,12 @@ namespace tests {
 class FullyConnectedLayerTestFixture;
 }  // namespace tests
 
+enum class LSHSamplingMode {
+  Default,
+  FreezeHashTables,
+  FreezeHashTablesWithInsertions
+};
+
 class FullyConnectedLayer final : public SequentialLayer {
   friend class tests::FullyConnectedLayerTestFixture;
 
@@ -42,21 +48,27 @@ class FullyConnectedLayer final : public SequentialLayer {
                         float eps) final;
 
   BoltBatch createBatchState(const uint32_t batch_size,
-                             bool force_dense) const final {
-    bool is_dense = (_sparse_dim == _dim) || force_dense;
+                             bool use_sparsity) const final {
+    bool is_sparse = (_sparsity < 1.0) && use_sparsity;
 
-    return BoltBatch(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
+    uint32_t curr_dim = is_sparse ? _sparse_dim : _dim;
+
+    return BoltBatch(/* dim= */ curr_dim, /* batch_size= */ batch_size,
+                     /* is_dense= */ !is_sparse);
   }
 
-  void forceSparseForInference() final {
-    // _force_sparse_for_inference can be true even if the layer is dense, this
-    // is important if later on we switch this layer between being sparse and
-    // dense. This is likely confusing, so will be changed when we change
-    // sparse inference.
-    _force_sparse_for_inference = true;
+  void freezeHashTables(bool insert_labels_if_not_found) final {
+    if (insert_labels_if_not_found) {
+      _sampling_mode = LSHSamplingMode::FreezeHashTablesWithInsertions;
+    } else {
+      _sampling_mode = LSHSamplingMode::FreezeHashTables;
+    }
   }
 
-  bool isForceSparsity() const final { return _force_sparse_for_inference; }
+  bool hashTablesFrozen() const {
+    return _sampling_mode == LSHSamplingMode::FreezeHashTables ||
+           _sampling_mode == LSHSamplingMode::FreezeHashTablesWithInsertions;
+  }
 
   void buildHashTables() final;
 
@@ -66,12 +78,7 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   uint32_t getInputDim() const final { return _prev_dim; }
 
-  uint32_t getInferenceOutputDim() const final {
-    if (_force_sparse_for_inference) {
-      return _sparse_dim;
-    }
-    return _dim;
-  }
+  uint32_t getSparseDim() const final { return _sparse_dim; }
 
   float* getWeights() const final;
 
@@ -143,10 +150,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   // This is only used if _this_is_dense == false
   std::vector<bool> _is_active;
 
-  // This variable is unused unless _sparsity < 1, but it is still important
-  // for tracking the state of whether sparse inference is currently active,
-  // (this is important if we make a previously dense layer sparse).
-  bool _force_sparse_for_inference;
+  LSHSamplingMode _sampling_mode;
 
   static std::unique_ptr<hashing::HashFunction> assignHashFunction(
       const SamplingConfig& config, uint64_t dim) {
@@ -228,14 +232,13 @@ class FullyConnectedLayer final : public SequentialLayer {
       archive(true);
       archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
               _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
-              _hash_table, _rand_neurons, _force_sparse_for_inference);
+              _hash_table, _rand_neurons, _sampling_mode);
     } else {
       archive(false);
       archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
               _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
-              _hash_table, _rand_neurons, _force_sparse_for_inference,
-              _w_gradient, _w_momentum, _w_velocity, _b_gradient, _b_momentum,
-              _b_velocity);
+              _hash_table, _rand_neurons, _sampling_mode, _w_gradient,
+              _w_momentum, _w_velocity, _b_gradient, _b_momentum, _b_velocity);
     }
   }
 
@@ -250,13 +253,12 @@ class FullyConnectedLayer final : public SequentialLayer {
     if (_is_shallow) {
       archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
               _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
-              _hash_table, _rand_neurons, _force_sparse_for_inference);
+              _hash_table, _rand_neurons, _sampling_mode);
     } else {
       archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
               _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
-              _hash_table, _rand_neurons, _force_sparse_for_inference,
-              _w_gradient, _w_momentum, _w_velocity, _b_gradient, _b_momentum,
-              _b_velocity);
+              _hash_table, _rand_neurons, _sampling_mode, _w_gradient,
+              _w_momentum, _w_velocity, _b_gradient, _b_momentum, _b_velocity);
     }
   }
 

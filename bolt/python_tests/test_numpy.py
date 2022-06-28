@@ -32,13 +32,13 @@ def train_simple_bolt_model(examples, labels, sparsity=1, n_classes=10):
         verbose=False,
     )
     acc, _ = network.predict(
-        examples, labels, batch_size, ["categorical_accuracy"], verbose=False
+        examples, labels, batch_size, metrics=["categorical_accuracy"], verbose=False
     )
 
     # Check that predict functions correctly and returns activations when
     # no labels are specified.
     _, activations = network.predict(
-        examples, None, batch_size, ["categorical_accuracy"], verbose=False
+        examples, None, batch_size, metrics=["categorical_accuracy"], verbose=False
     )
     preds = np.argmax(activations, axis=1)
     acc_computed = np.mean(preds == labels)
@@ -84,7 +84,7 @@ def train_simple_bolt_model_non_trainable_hidden_layer(
     after_training_weigths = network.get_weights(0)
 
     acc, _ = network.predict(
-        examples, labels, batch_size, ["categorical_accuracy"], verbose=False
+        examples, labels, batch_size, metrics=["categorical_accuracy"], verbose=False
     )
 
     return acc["categorical_accuracy"], np.linalg.norm(

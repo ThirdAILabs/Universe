@@ -102,6 +102,7 @@ TEST_F(DLRMTestFixture, NoisyCategoricalFeatures) {
   auto test_metrics = dlrm.predict(dataset.data, dataset.labels,
                                    /* output_active_neurons= */ nullptr,
                                    /* output_activations= */ nullptr,
+                                   /* use_sparse_inference= */ false,
                                    /* metric_names= */ {"categorical_accuracy"},
                                    /* verbose= */ false);
 
@@ -132,6 +133,7 @@ TEST_F(DLRMTestFixture, NoisyDenseFeatures) {
   auto test_metrics = dlrm.predict(dataset.data, dataset.labels,
                                    /* output_active_neurons= */ nullptr,
                                    /* output_activations= */ nullptr,
+                                   /* use_sparse_inference= */ false,
                                    /* metric_names= */ {"categorical_accuracy"},
                                    /* verbose= */ false);
 
@@ -162,6 +164,7 @@ TEST_F(DLRMTestFixture, NoisyDenseAndCategoricalFeatures) {
   auto test_metrics = dlrm.predict(dataset.data, dataset.labels,
                                    /* output_active_neurons= */ nullptr,
                                    /* output_activations= */ nullptr,
+                                   /* use_sparse_inference= */ false,
                                    /* metric_names= */ {"categorical_accuracy"},
                                    /* verbose= */ false);
 

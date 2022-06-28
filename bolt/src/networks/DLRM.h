@@ -21,8 +21,8 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
 
   uint32_t getOutputDim() const final { return _top_mlp.getOutputDim(); }
 
-  uint32_t getInferenceOutputDim() const final {
-    return _top_mlp.getInferenceOutputDim();
+  uint32_t getInferenceOutputDim(bool using_sparsity) const final {
+    return _top_mlp.getInferenceOutputDim(using_sparsity);
   }
 
  private:
@@ -38,7 +38,7 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
     _top_mlp.updateParameters(learning_rate, iter);
   }
 
-  void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
+  void initializeNetworkState(uint32_t batch_size, bool use_sparsity) final;
 
   void reBuildHashFunctions() final {
     _bottom_mlp.reBuildHashFunctions();
@@ -64,8 +64,8 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
 
   bool anyLayerShallow() final { return false; }
 
-  BoltBatch getOutputs(uint32_t batch_size, bool force_dense) final {
-    return _top_mlp.getOutputs(batch_size, force_dense);
+  BoltBatch getOutputs(uint32_t batch_size, bool use_sparsity) final {
+    return _top_mlp.getOutputs(batch_size, use_sparsity);
   }
 
   EmbeddingLayer _embedding_layer;
