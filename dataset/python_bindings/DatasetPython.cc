@@ -390,11 +390,6 @@ void createDatasetSubmodule(py::module_& module) {
                &bolt::BoltBatch::operator[]),
            py::arg("i"), py::return_value_policy::reference);
 
-  // The no lint below is because clang tidy doesn't like instantiating an
-  // object without a name and never using it.
-  py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule,  // NOLINT
-                                          "BoltDataset");
-
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
       py::arg("batch_size"), py::arg("softmax_for_multiclass") = true,

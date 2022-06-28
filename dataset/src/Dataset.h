@@ -4,8 +4,8 @@
 #include "batch_types/ClickThroughBatch.h"
 #include "batch_types/DenseBatch.h"
 #include "batch_types/SparseBatch.h"
+#include "utils/SafeFileIO.h"
 #include <cstdint>
-#include <fstream>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -22,10 +22,7 @@ class InMemoryDataset {
   // filenames
   InMemoryDataset(const std::string& filename, uint32_t batch_size,
                   Factory<BATCH_T>&& factory) {
-    std::ifstream file(filename);
-    if (file.bad() || file.fail() || !file.good() || !file.is_open()) {
-      throw std::runtime_error("Unable to open file '" + filename + "'");
-    }
+    std::ifstream file = dataset::SafeFileIO::ifstream(filename);
 
     uint64_t curr_id = 0;
     while (!file.eof()) {
@@ -88,14 +85,10 @@ class StreamedDataset {
   // dataset, and then the dataset is returned from the function.
   StreamedDataset(const std::string& filename, uint32_t batch_size,
                   std::unique_ptr<Factory<BATCH_T>> factory)
-      : _file(filename),
+      : _file(SafeFileIO::ifstream(filename)),
         _batch_size(batch_size),
         _curr_id(0),
-        _factory(std::move(factory)) {
-    if (_file.bad() || _file.fail() || !_file.good() || !_file.is_open()) {
-      throw std::runtime_error("Unable to open file '" + filename + "'");
-    }
-  }
+        _factory(std::move(factory)) {}
 
   std::optional<BATCH_T> nextBatch() {
     if (_file.eof()) {

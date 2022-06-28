@@ -19,7 +19,6 @@ class TextBlockTest : public BlockTest {
  public:
   using SentenceMatrix = StringMatrix;
   using WordMatrix = std::vector<std::vector<std::vector<std::string>>>;
-
   static std::pair<SentenceMatrix, WordMatrix> generateRandomStringMatrix(
       uint32_t n_rows, uint32_t n_cols, uint32_t word_length,
       uint32_t words_per_row) {

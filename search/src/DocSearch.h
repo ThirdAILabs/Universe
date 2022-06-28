@@ -54,6 +54,7 @@ class DocSearch {
       throw std::invalid_argument(
           "Must pass in at least one centroid, found 0.");
     }
+    _nprobe_query = std::min<uint64_t>(centroids_input.size(), _nprobe_query);
     for (uint32_t i = 0; i < centroids_input.size(); i++) {
       if (_dense_dim != centroids_input.at(i).size()) {
         throw std::invalid_argument(

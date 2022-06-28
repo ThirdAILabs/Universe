@@ -46,6 +46,7 @@ def create_fully_connected_layer_configs(
                     num_tables=config.get("num_tables", 0),
                     range_pow=config.get("range_pow", 0),
                     reservoir_size=config.get("reservoir_size", 128),
+                    hash_function=config.get("hash_function", "DWTA"),
                 ),
             )
 
@@ -140,6 +141,22 @@ def get_labels(dataset: str):
     return np.array(labels)
 
 
+def should_freeze_hash_tables(config: Dict[str, Any], epoch: int) -> bool:
+    params_config = config["params"]
+    return (
+        "freeze_hash_tables_epoch" in params_config.keys()
+        and epoch == params_config["freeze_hash_tables_epoch"]
+    )
+
+
+def should_use_sparse_inference(config: Dict[str, Any], epoch: int) -> bool:
+    params_config = config["params"]
+    return (
+        "sparse_inference_epoch" in params_config.keys()
+        and epoch >= params_config["sparse_inference_epoch"]
+    )
+
+
 def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
     layers = create_fully_connected_layer_configs(config["layers"])
     input_dim = config["dataset"]["input_dim"]
@@ -150,11 +167,6 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
     max_test_batches = config["dataset"].get("max_test_batches", None)
     rehash = config["params"]["rehash"]
     rebuild = config["params"]["rebuild"]
-    use_sparse_inference = "sparse_inference_epoch" in config["params"].keys()
-    if use_sparse_inference:
-        sparse_inference_epoch = config["params"]["sparse_inference_epoch"]
-    else:
-        sparse_inference_epoch = None
 
     data = load_dataset(config)
     if data is None:
@@ -174,6 +186,10 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
     test_metrics = config["params"]["test_metrics"]
 
     for e in range(epochs):
+        if should_freeze_hash_tables(config=config, epoch=e):
+            print("Freezing Hash Tables in Network.")
+            network.freeze_hash_tables()
+        # Use keyword arguments to skip batch_size parameter.
         metrics = network.train(
             train_data=train_x,
             train_labels=train_y,
@@ -187,19 +203,25 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
         if mlflow_enabled:
             log_training_metrics(metrics)
 
-        if use_sparse_inference and e == sparse_inference_epoch:
-            network.enable_sparse_inference()
-
+        use_sparse_inference = should_use_sparse_inference(config=config, epoch=e)
+        if use_sparse_inference:
+            print("Using Sparse Inference.")
         if max_test_batches is None:
+            # Use keyword arguments to skip batch_size parameter.
             metrics, _ = network.predict(
-                test_data=test_x, test_labels=test_y, metrics=test_metrics
+                test_data=test_x,
+                test_labels=test_y,
+                sparse_inference=use_sparse_inference,
+                metrics=test_metrics,
             )
             if mlflow_enabled:
                 mlflow.log_metrics(metrics)
         else:
+            # Use keyword arguments to skip batch_size parameter.
             metrics, _ = network.predict(
                 test_data=test_x,
                 test_labels=test_y,
+                sparse_inference=use_sparse_inference,
                 metrics=test_metrics,
                 verbose=True,
                 batch_limit=max_test_batches,
@@ -208,8 +230,15 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
                 mlflow.log_metrics(metrics)
     if not max_test_batches is None:
         # If we limited the number of test batches during training we run on the whole test set at the end.
+        # Use keyword arguments to skip batch_size parameter.
+        use_sparse_inference = should_use_sparse_inference(config=config, epoch=e)
+        if use_sparse_inference:
+            print("Using Sparse Inference.")
         metrics, _ = network.predict(
-            test_data=test_x, test_labels=test_y, metrics=test_metrics
+            test_data=test_x,
+            test_labels=test_y,
+            sparse_inference=use_sparse_inference,
+            metrics=test_metrics,
         )
         if mlflow_enabled:
             mlflow.log_metrics(metrics)
@@ -252,7 +281,14 @@ def train_dlrm(config: Dict[str, Any], mlflow_enabled: bool):
 
     for _ in range(epochs):
         metrics = dlrm.train(
-            train_x, train_y, loss, learning_rate, 1, rehash, rebuild, train_metrics
+            train_x,
+            train_y,
+            loss,
+            learning_rate,
+            1,
+            rehash,
+            rebuild,
+            train_metrics,
         )
         if mlflow_enabled:
             log_training_metrics(metrics)
@@ -302,6 +338,11 @@ def build_arg_parser():
         help="Disable mlflow logging for the current run.",
     )
     parser.add_argument(
+        "--disable_upload_artifacts",
+        action="store_true",
+        help="Disable the mlflow artifact file logging for the current run.",
+    )
+    parser.add_argument(
         "--run_name",
         default="",
         type=str,
@@ -328,7 +369,9 @@ def main():
         experiment_name = config["job"]
         dataset = config["dataset"]["train_data"].split("/")[-1]
         start_mlflow(experiment_name, args.run_name, dataset)
-        mlflow.log_artifact(config_filename)
+        # TODO(vihan): Get the credential authentication working in github actions
+        if not args.disable_upload_artifacts:
+            mlflow.log_artifact(config_filename)
         log_machine_info()
         log_config_info(config)
 
