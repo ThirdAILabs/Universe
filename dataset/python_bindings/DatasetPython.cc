@@ -214,7 +214,7 @@ void createDatasetSubmodule(py::module_& module) {
           py::init<std::vector<std::shared_ptr<Block>>,
                    std::vector<std::shared_ptr<Block>>, uint32_t, size_t>(),
           py::arg("input_blocks"), py::arg("target_blocks"),
-          py::arg("output_batch_size"), py::arg("est_num_elems"),
+          py::arg("output_batch_size"), py::arg("est_num_elems") = 0,
           "Constructor\n\n"
           "Arguments:\n"
           " * input_blocks: List of Blocks - Blocks that encode input samples "
