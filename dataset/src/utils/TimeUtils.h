@@ -13,7 +13,9 @@ class TimeUtils {
     std::stringstream time_ss;
     time_ss << time_string;
 
-    if (time_ss >> std::get_time(&time, "%Y-%m-%d")) { // TODO(Geordie): This uses local time... is this bad?
+    if (time_ss >>
+        std::get_time(&time, "%Y-%m-%d")) {  // TODO(Geordie): This uses local
+                                             // time... is this bad?
       return time;
     }
 

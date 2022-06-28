@@ -1,5 +1,5 @@
-#include <gtest/gtest.h>
 #include "MockBlock.h"
+#include <gtest/gtest.h>
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
 #include <cstdio>
 #include <fstream>
@@ -17,18 +17,16 @@ static void writeMockFile() {
   file.close();
 }
 
-static void deleteMockFile() {
-  remove(MOCK_FILE);
-}
+static void deleteMockFile() { remove(MOCK_FILE); }
 
 static StreamingGenericDatasetLoader makeMockPipeline(bool shuffle) {
-  auto mock_block = std::make_shared<MockBlock>(/* column = */ 0, /* dense = */ true);
-  return {
-    /* filename = */ MOCK_FILE, 
-    /* input_blocks = */ {mock_block}, 
-    /* label_blocks = */ {mock_block}, 
-    /* batch_size = */ 10, 
-    /* shuffle = */ shuffle};
+  auto mock_block =
+      std::make_shared<MockBlock>(/* column = */ 0, /* dense = */ true);
+  return {/* filename = */ MOCK_FILE,
+          /* input_blocks = */ {mock_block},
+          /* label_blocks = */ {mock_block},
+          /* batch_size = */ 10,
+          /* shuffle = */ shuffle};
 }
 
 TEST(StreamingGenericDatasetLoaderTests, CanShuffle) {
@@ -47,7 +45,8 @@ TEST(StreamingGenericDatasetLoaderTests, CanShuffle) {
   size_t n_under_100 = 0;
   while (auto batch = shuffled_pipeline.nextBatch()) {
     for (size_t i = 0; i < batch->first.getBatchSize(); i++) {
-      ASSERT_EQ(batch->first[i].activations[0], batch->second[i].activations[0]);
+      ASSERT_EQ(batch->first[i].activations[0],
+                batch->second[i].activations[0]);
       if (batch->first[i].activations[0] < 100 && line < 30) {
         n_under_100++;
       }
@@ -59,4 +58,4 @@ TEST(StreamingGenericDatasetLoaderTests, CanShuffle) {
   deleteMockFile();
 }
 
-} // namespace thirdai::dataset
+}  // namespace thirdai::dataset

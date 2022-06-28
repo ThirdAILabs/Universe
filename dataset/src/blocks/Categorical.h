@@ -13,7 +13,6 @@ namespace thirdai::dataset {
  */
 class CategoricalBlock : public Block {
  public:
-  
   /**
    * Constructor.
    *

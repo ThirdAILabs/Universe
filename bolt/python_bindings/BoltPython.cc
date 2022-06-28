@@ -1,6 +1,7 @@
 #include "BoltPython.h"
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/sequential_classifier/SequentialClassifier.h>
 #include <bolt/src/text_classifier/TextClassifier.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
@@ -8,6 +9,7 @@
 #include <limits>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 namespace thirdai::bolt::python {
 
@@ -561,6 +563,20 @@ void createBoltSubmodule(py::module_& module) {
           "Loads and builds a saved classifier from file.\n"
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
+
+  py::class_<SequentialClassifierConfig>(bolt_submodule,
+                                         "SequentialClassifierConfig")
+      .def(py::init<std::string, size_t, size_t, size_t, size_t, size_t>(),
+           py::arg("task"), py::arg("horizon"), py::arg("n_items"),
+           py::arg("n_users") = 0, py::arg("n_item_categories") = 0,
+           py::arg("n_target_classes") = 0);
+
+  py::class_<SequentialClassifier>(bolt_submodule, "SequentialClassifier")
+      .def(py::init<std::unordered_map<std::string, std::string>,
+                    SequentialClassifierConfig, char>(),
+           py::arg("schema"), py::arg("config"), py::arg("delimiter") = ',')
+      .def("train", &SequentialClassifier::train, py::arg("filename"))
+      .def("predict", &SequentialClassifier::predict, py::arg("filename"));
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {

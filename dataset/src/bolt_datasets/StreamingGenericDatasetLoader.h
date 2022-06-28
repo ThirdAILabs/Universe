@@ -12,18 +12,28 @@ namespace thirdai::dataset {
 class StreamingGenericDatasetLoader {
  public:
   StreamingGenericDatasetLoader(
-      std::string filename, std::vector<std::shared_ptr<Block>> input_blocks,
-      std::vector<std::shared_ptr<Block>> label_blocks, uint32_t batch_size,
-      bool shuffle = false, ShuffleBufferConfig config = ShuffleBufferConfig(),
+      std::shared_ptr<DataLoader> loader,
+      std::vector<std::shared_ptr<Block>> input_blocks,
+      std::vector<std::shared_ptr<Block>> label_blocks, bool shuffle = false,
+      ShuffleBufferConfig config = ShuffleBufferConfig(),
       bool has_header = false, char delimiter = ',')
       : _processor(std::make_shared<GenericBatchProcessor>(
             std::move(input_blocks), std::move(label_blocks), has_header,
             delimiter)),
-        _streamer(std::make_shared<SimpleFileDataLoader>(filename, batch_size),
-                  _processor),
+        _streamer(std::move(loader), _processor),
         _buffer(config.seed),
         _shuffle(shuffle),
         _buffer_size(config.buffer_size) {}
+
+  StreamingGenericDatasetLoader(
+      std::string filename, std::vector<std::shared_ptr<Block>> input_blocks,
+      std::vector<std::shared_ptr<Block>> label_blocks, uint32_t batch_size,
+      bool shuffle = false, ShuffleBufferConfig config = ShuffleBufferConfig(),
+      bool has_header = false, char delimiter = ',')
+      : StreamingGenericDatasetLoader(
+            std::make_shared<SimpleFileDataLoader>(filename, batch_size),
+            std::move(input_blocks), std::move(label_blocks), shuffle, config,
+            has_header, delimiter) {}
 
   std::optional<BoltDataLabelPair<bolt::BoltBatch>> nextBatch() {
     if (_buffer.empty()) {

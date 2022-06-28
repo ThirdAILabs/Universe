@@ -102,7 +102,6 @@ class ShuffleBatchBuffer {
     checkConsistentBatchSize(batch.first.getBatchSize());
 
     if (shuffle) {
-
       swapShuffle(_input_batches, batch.first, _label_batches, batch.second,
                   _batch_size, _gen);
     }

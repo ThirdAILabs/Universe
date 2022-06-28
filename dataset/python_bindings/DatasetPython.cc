@@ -3,6 +3,9 @@
 #include <dataset/src/Dataset.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/Continuous.h>
+#include <dataset/src/blocks/CountHistory.h>
+#include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
@@ -10,6 +13,7 @@
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
+#include <dataset/src/encodings/count_history/DynamicCounts.h>
 #include <dataset/src/encodings/text/CharKGram.h>
 #include <dataset/src/encodings/text/PairGram.h>
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
@@ -44,6 +48,14 @@ void createDatasetSubmodule(py::module_& module) {
       dataset_submodule.def_submodule("text_encodings");
   auto categorical_encoding_submodule =
       dataset_submodule.def_submodule("categorical_encodings");
+
+  py::class_<DynamicCounts>(dataset_submodule, "DynamicCounts")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("max_range"),
+           py::arg("n_rows"), py::arg("range_pow"))
+      .def("index", &DynamicCounts::index, py::arg("id"), py::arg("timestamp"),
+           py::arg("inc"))
+      .def("query", &DynamicCounts::query, py::arg("id"),
+           py::arg("start_timestamp"), py::arg("range"));
 
   py::class_<BoltVector>(dataset_submodule, "BoltVector")
       .def("to_string", &BoltVector::toString)
@@ -195,6 +207,47 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &DenseArrayBlock::isDense,
            "Returns true since this is a dense encoding.");
 
+  py::class_<DynamicCountsConfig>(block_submodule, "DynamicCountsConfig")
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+           py::arg("max_range"), py::arg("n_rows"), py::arg("range_pow"),
+           py::arg("reduce_range_pow_every_n_sketches") = 2);
+
+  py::class_<Window>(block_submodule, "Window")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("lag"), py::arg("size"));
+
+  py::class_<CountHistoryBlock, Block, std::shared_ptr<CountHistoryBlock>>(
+      block_submodule, "CountHistory",
+      "A block that encodes historical count features (time series).")
+      .def(py::init<bool, uint32_t, uint32_t, uint32_t, std::vector<Window>,
+                    DynamicCountsConfig&>(),
+           py::arg("has_count_col"), py::arg("id_col"),
+           py::arg("timestamp_col"), py::arg("count_col"), py::arg("windows"),
+           py::arg("index_config"))
+      .def("feature_dim", &CountHistoryBlock::featureDim,
+           "Returns the dimension of the vector encoding; the number of count "
+           "windows.")
+      .def("is_dense", &CountHistoryBlock::isDense,
+           "False since we return sparse features.");
+
+  py::class_<DateBlock, Block, std::shared_ptr<DateBlock>>(
+      block_submodule, "Date", "A block that encodes date features.")
+      .def(py::init<uint32_t>(), py::arg("col"))
+      .def("feature_dim", &DateBlock::featureDim,
+           "The sum of the dimensions of date features; "
+           "7 (days in a week) + 12 (months in a year) + "
+           "5 (weeks in a month) + 53 (weeks in a year).")
+      .def("is_dense", &DateBlock::isDense,
+           "False since we return sparse features.");
+
+  py::class_<ContinuousBlock, Block, std::shared_ptr<ContinuousBlock>>(
+      block_submodule, "Continuous",
+      "A block that encodes a continuous value as a 1-dimensional dense vector "
+      "segment.")
+      .def(py::init<uint32_t>(), py::arg("col"))
+      .def("feature_dim", &ContinuousBlock::featureDim, "1.")
+      .def("is_dense", &ContinuousBlock::isDense,
+           "True since we return dense features.");
+
   py::class_<MockBlock, Block, std::shared_ptr<MockBlock>>(
       internal_dataset_submodule, "MockBlock",
       "Mock implementation of block abstract class for testing purposes.")
@@ -252,13 +305,14 @@ void createDatasetSubmodule(py::module_& module) {
            "dataset.");
 
   py::class_<StreamingGenericDatasetLoader>(dataset_submodule, "DataPipeline")
-      .def(
-          py::init<std::string, std::vector<std::shared_ptr<Block>>,
-                   std::vector<std::shared_ptr<Block>>, uint32_t, bool, ShuffleBufferConfig, bool, char>(),
-          py::arg("filename"), py::arg("input_blocks"), py::arg("label_blocks"),
-          py::arg("batch_size"), py::arg("shuffle") = false, 
-          py::arg("config") = ShuffleBufferConfig(), py::arg("has_header") = false,
-          py::arg("delimiter") = ',')
+      .def(py::init<std::string, std::vector<std::shared_ptr<Block>>,
+                    std::vector<std::shared_ptr<Block>>, uint32_t, bool,
+                    ShuffleBufferConfig, bool, char>(),
+           py::arg("filename"), py::arg("input_blocks"),
+           py::arg("label_blocks"), py::arg("batch_size"),
+           py::arg("shuffle") = false,
+           py::arg("config") = ShuffleBufferConfig(),
+           py::arg("has_header") = false, py::arg("delimiter") = ',')
       .def("next_batch", &StreamingGenericDatasetLoader::nextBatch)
       .def("load_in_memory", &StreamingGenericDatasetLoader::loadInMemory)
       .def("get_max_batch_size",
@@ -335,6 +389,11 @@ void createDatasetSubmodule(py::module_& module) {
            static_cast<BoltVector& (bolt::BoltBatch::*)(size_t i)>(
                &bolt::BoltBatch::operator[]),
            py::arg("i"), py::return_value_policy::reference);
+
+  // The no lint below is because clang tidy doesn't like instantiating an
+  // object without a name and never using it.
+  py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule,  // NOLINT
+                                          "BoltDataset");
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),

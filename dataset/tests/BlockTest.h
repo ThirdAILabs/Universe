@@ -25,7 +25,7 @@ class BlockTest : public testing::Test {
     }
     return vecs;
   }
-  
+
   /**
    * Builds dense segmented vectors according to the supplied
    * string matrix and feature blocks.
@@ -47,9 +47,9 @@ class BlockTest : public testing::Test {
    * Helper function to access extendVector() method of TextBlock,
    * which is private.
    */
-  static void addVectorSegmentWithBlock(Block& block,
-                                    const std::vector<std::string>& input_row,
-                                    SegmentedFeatureVector& vec) {
+  static void addVectorSegmentWithBlock(
+      Block& block, const std::vector<std::string>& input_row,
+      SegmentedFeatureVector& vec) {
     std::vector<std::string_view> input_row_view(input_row.size());
     for (uint32_t i = 0; i < input_row.size(); i++) {
       input_row_view[i] =
@@ -76,5 +76,4 @@ class BlockTest : public testing::Test {
   }
 };
 
-
-} // namespace thirdai::dataset
+}  // namespace thirdai::dataset

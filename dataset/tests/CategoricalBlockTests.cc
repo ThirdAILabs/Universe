@@ -50,7 +50,6 @@ class CategoricalBlockTest : public BlockTest {
     }
     return str_matrix;
   }
-
 };
 
 /**

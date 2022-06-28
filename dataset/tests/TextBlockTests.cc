@@ -19,7 +19,7 @@ class TextBlockTest : public BlockTest {
  public:
   using SentenceMatrix = StringMatrix;
   using WordMatrix = std::vector<std::vector<std::vector<std::string>>>;
-  
+
   static std::pair<SentenceMatrix, WordMatrix> generateRandomStringMatrix(
       uint32_t n_rows, uint32_t n_cols, uint32_t word_length,
       uint32_t words_per_row) {
@@ -133,10 +133,12 @@ TEST_F(TextBlockTest, TestTextBlockWithUniGramPairGramCharTriGram) {
   uint32_t dim_for_encodings = 50;
   uint32_t k_chars = 3;
   std::vector<std::shared_ptr<Block>> blocks;
-  blocks.emplace_back(std::make_shared<TextBlock>(0, std::make_shared<UniGram>(dim_for_encodings)));
-  blocks.emplace_back(std::make_shared<TextBlock>(1, std::make_shared<PairGram>(dim_for_encodings)));
-  blocks.emplace_back(std::make_shared<TextBlock>(2,
-                      std::make_shared<CharKGram>(k_chars, dim_for_encodings)));
+  blocks.emplace_back(std::make_shared<TextBlock>(
+      0, std::make_shared<UniGram>(dim_for_encodings)));
+  blocks.emplace_back(std::make_shared<TextBlock>(
+      1, std::make_shared<PairGram>(dim_for_encodings)));
+  blocks.emplace_back(std::make_shared<TextBlock>(
+      2, std::make_shared<CharKGram>(k_chars, dim_for_encodings)));
 
   std::vector<SegmentedSparseFeatureVector> vecs =
       makeSparseSegmentedVecs(sentence_matrix, blocks);
@@ -202,10 +204,14 @@ TEST_F(TextBlockTest, TestEncodingsDeterministic) {
   std::vector<std::shared_ptr<Block>> blocks_2;
   // Duplicate each block. They will independently produce features
   // and we can check that the resulting vectors are equal.
-  blocks_1.emplace_back(std::make_shared<TextBlock>(0, std::make_shared<UniGram>(dim_for_encodings)));
-  blocks_2.emplace_back(std::make_shared<TextBlock>(0, std::make_shared<UniGram>(dim_for_encodings)));
-  blocks_1.emplace_back(std::make_shared<TextBlock>(1, std::make_shared<PairGram>(dim_for_encodings)));
-  blocks_2.emplace_back(std::make_shared<TextBlock>(1, std::make_shared<PairGram>(dim_for_encodings)));
+  blocks_1.emplace_back(std::make_shared<TextBlock>(
+      0, std::make_shared<UniGram>(dim_for_encodings)));
+  blocks_2.emplace_back(std::make_shared<TextBlock>(
+      0, std::make_shared<UniGram>(dim_for_encodings)));
+  blocks_1.emplace_back(std::make_shared<TextBlock>(
+      1, std::make_shared<PairGram>(dim_for_encodings)));
+  blocks_2.emplace_back(std::make_shared<TextBlock>(
+      1, std::make_shared<PairGram>(dim_for_encodings)));
   blocks_1.emplace_back(std::make_shared<TextBlock>(
       2, std::make_shared<CharKGram>(k_chars, dim_for_encodings)));
   blocks_2.emplace_back(std::make_shared<TextBlock>(
