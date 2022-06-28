@@ -1,3 +1,4 @@
+#include "BoltNetworkTestUtils.h"
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
@@ -15,40 +16,7 @@
 
 namespace thirdai::bolt::tests {
 
-static const uint32_t n_classes = 100, n_batches = 100, batch_size = 100;
-
-class FullyConnectedClassificationNetworkTestFixture : public testing::Test {
- public:
-  static dataset::DatasetWithLabels genDataset(bool add_noise) {
-    std::mt19937 gen(892734);
-    std::uniform_int_distribution<uint32_t> label_dist(0, n_classes - 1);
-    std::normal_distribution<float> data_dist(0, add_noise ? 1.0 : 0.1);
-
-    std::vector<bolt::BoltBatch> data_batches;
-    std::vector<bolt::BoltBatch> label_batches;
-    for (uint32_t b = 0; b < n_batches; b++) {
-      std::vector<bolt::BoltVector> labels;
-      std::vector<bolt::BoltVector> vectors;
-      for (uint32_t i = 0; i < batch_size; i++) {
-        uint32_t label = label_dist(gen);
-        bolt::BoltVector v(n_classes, true, false);
-        std::generate(v.activations, v.activations + n_classes,
-                      [&]() { return data_dist(gen); });
-        if (!add_noise) {
-          v.activations[label] += 1.0;
-        }
-        vectors.push_back(std::move(v));
-        labels.push_back(BoltVector::makeSparseVector({label}, {1.0}));
-      }
-      data_batches.push_back(bolt::BoltBatch(std::move(vectors)));
-      label_batches.push_back(bolt::BoltBatch(std::move(labels)));
-    }
-
-    return dataset::DatasetWithLabels(
-        dataset::BoltDataset(std::move(data_batches), n_batches * batch_size),
-        dataset::BoltDataset(std::move(label_batches), n_batches * batch_size));
-  }
-};
+class FullyConnectedClassificationNetworkTestFixture : public testing::Test {};
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
        TrainSimpleDatasetSingleLayerNetwork) {
@@ -98,12 +66,17 @@ static void testSimpleDatasetMultiLayerNetworkActivation(
            n_classes, ActivationFunction::Softmax)},
       n_classes);
 
-  auto data = FullyConnectedClassificationNetworkTestFixture::genDataset(false);
+  auto data = genDataset(false);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
-                /* learning_rate */ 0.001, /* epochs */ 2,
-                /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
-                /* verbose= */ false);
+  auto train_metrics =
+      network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                    /* learning_rate */ 0.001, /* epochs */ 2,
+                    /* rehash= */ 0, /* rebuild= */ 0,
+                    /* metric_names= */ {"mean_squared_error"},
+                    /* verbose= */ false);
+  ASSERT_LT(train_metrics.at("mean_squared_error").back(),
+            train_metrics.at("mean_squared_error").front());
+
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr,
@@ -130,20 +103,24 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
                                      n_classes, ActivationFunction::Sigmoid)},
                                 n_classes);
 
-  auto data = FullyConnectedClassificationNetworkTestFixture::genDataset(false);
+  auto data = genDataset(false);
 
-  network.train(data.data, data.labels, BinaryCrossEntropyLoss(),
-                /* learning_rate= */ 0.001, /* epochs= */ 2,
-                /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
-                /* verbose= */ true);
+  auto train_metrics =
+      network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                    /* learning_rate= */ 0.001, /* epochs= */ 5,
+                    /* rehash= */ 0, /* rebuild= */ 0,
+                    /* metric_names= */ {"mean_squared_error"},
+                    /* verbose= */ true);
+
+  ASSERT_LT(train_metrics.at("mean_squared_error").back(),
+            train_metrics.at("mean_squared_error").front());
+
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ true);
-  // Lower accuracy threshold to 0.6 because Sigmoid/BCE converges slower than
-  // ReLU/Tanh.
-  ASSERT_GE(test_metrics["categorical_accuracy"], 0.6);
+  ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
@@ -268,8 +245,7 @@ std::shared_ptr<dataset::StreamingDataset<BoltBatch>> getMockStreamingDataset(
 void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
                                        uint32_t epochs, float acc_threshold) {
   for (uint32_t e = 0; e < epochs; e++) {
-    auto in_mem_data =
-        FullyConnectedClassificationNetworkTestFixture::genDataset(false);
+    auto in_mem_data = genDataset(false);
     auto stream_data = getMockStreamingDataset(std::move(in_mem_data));
 
     network.trainOnStream(stream_data, CategoricalCrossEntropyLoss(),
@@ -280,8 +256,7 @@ void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
                           /* verbose= */ false);
   }
 
-  auto in_mem_data =
-      FullyConnectedClassificationNetworkTestFixture::genDataset(false);
+  auto in_mem_data = genDataset(false);
   auto stream_data = getMockStreamingDataset(std::move(in_mem_data));
 
   auto test_metrics =

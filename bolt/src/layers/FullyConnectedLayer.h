@@ -9,6 +9,7 @@
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <cstdint>
+#include <random>
 
 namespace thirdai::bolt {
 
@@ -48,9 +49,11 @@ class FullyConnectedLayer final : public SequentialLayer {
   }
 
   void forceSparseForInference() final {
-    if (_sparsity < 1.0) {
-      _force_sparse_for_inference = true;
-    }
+    // _force_sparse_for_inference can be true even if the layer is dense, this
+    // is important if later on we switch this layer between being sparse and
+    // dense. This is likely confusing, so will be changed when we change
+    // sparse inference.
+    _force_sparse_for_inference = true;
   }
 
   bool isForceSparsity() const final { return _force_sparse_for_inference; }
@@ -58,8 +61,6 @@ class FullyConnectedLayer final : public SequentialLayer {
   void buildHashTables() final;
 
   void reBuildHashFunction() final;
-
-  void shuffleRandNeurons() final;
 
   uint32_t getDim() const final { return _dim; }
 
@@ -72,25 +73,41 @@ class FullyConnectedLayer final : public SequentialLayer {
     return _dim;
   }
 
-  float* getWeights() final;
+  float* getWeights() const final;
 
-  float* getBiases() final;
+  float* getBiases() const final;
 
   void setTrainable(bool trainable) final;
 
-  bool getTrainable() final;
+  bool getTrainable() const final;
 
   void setWeights(const float* new_weights) final;
 
   void setBiases(const float* new_biases) final;
 
-  void buildLayerSummary(std::stringstream& summary, bool detailed) override;
+  bool isShallow() const final { return _is_shallow; }
+
+  void setShallow(bool shallow) final;
+
+  void setShallowSave(bool shallow) final;
+
+  float getSparsity() const final { return _sparsity; }
+
+  void setSparsity(float sparsity) final;
+
+  const SamplingConfig& getSamplingConfig() const final {
+    return _sampling_config;
+  }
+
+  void buildLayerSummary(std::stringstream& summary,
+                         bool detailed) const override;
 
   ~FullyConnectedLayer() = default;
 
  private:
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
+  bool _is_shallow, _shallow_save;
   bool _trainable, _force_build;
   ActivationFunction _act_func;
 
@@ -105,13 +122,16 @@ class FullyConnectedLayer final : public SequentialLayer {
   std::vector<float> _b_velocity;
 
   SamplingConfig _sampling_config;
-  std::unique_ptr<hashing::DWTAHashFunction> _hasher;
+  std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
   std::vector<uint32_t> _rand_neurons;
 
   using ActiveNeuronsPair =
       std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
 
+  // This set of variables are only used within a batch, so we do not use
+  // _this_is_dense to check if the layer is sparse, we instead check if
+  // _sparsity is less than 1.
   bool _prev_is_dense;
   bool _this_is_dense;
   // This is only used if _prev_is_dense == false and _this_is_dense == false
@@ -123,7 +143,35 @@ class FullyConnectedLayer final : public SequentialLayer {
   // This is only used if _this_is_dense == false
   std::vector<bool> _is_active;
 
+  // This variable is unused unless _sparsity < 1, but it is still important
+  // for tracking the state of whether sparse inference is currently active,
+  // (this is important if we make a previously dense layer sparse).
   bool _force_sparse_for_inference;
+
+  static std::unique_ptr<hashing::HashFunction> assignHashFunction(
+      const SamplingConfig& config, uint64_t dim) {
+    switch (config._hash_function) {
+      case HashFunctionEnum::DWTA:
+        return std::make_unique<hashing::DWTAHashFunction>(
+            dim, config.hashes_per_table, config.num_tables, config.range_pow);
+
+      case HashFunctionEnum::FastSRP:
+        return std::make_unique<hashing::FastSRP>(dim, config.hashes_per_table,
+                                                  config.num_tables);
+
+      case HashFunctionEnum::SRP:
+        return std::make_unique<hashing::SparseRandomProjection>(
+            dim, config.hashes_per_table, config.num_tables);
+
+      // Not supposed to reach here but compiler complains
+      default:
+        throw std::invalid_argument("Hash function not supported.");
+    }
+  }
+
+  void initOptimizer();
+
+  void removeOptimizer();
 
   inline void updateSparseSparseWeightParameters(float lr, float B1, float B2,
                                                  float eps,
@@ -150,6 +198,8 @@ class FullyConnectedLayer final : public SequentialLayer {
                                    float B1_bias_corrected,
                                    float B2_bias_corrected);
   inline void cleanupWithinBatchVars();
+  inline void initSparseDatastructures(std::random_device& rd);
+  inline void deinitSparseDatastructures();
 
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output,
@@ -164,13 +214,50 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
+
+  /**
+   * Not serializing _shallow_save because it is only used to decide to how to
+   * save the model. If _shallow_save or _is_shallow is true, archive
+   * _is_shallow as true. If both are false, archive _is_shallow as false. While
+   * dearchiving, we only need to know whether or not the layer is shallow,
+   * hence, _shallow_save not archived.
+   */
   template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-            _w_gradient, _w_momentum, _w_velocity, _biases, _b_gradient,
-            _b_momentum, _b_velocity, _sampling_config, _prev_is_active,
-            _is_active, _hasher, _hash_table, _rand_neurons,
-            _force_sparse_for_inference);
+  void save(Archive& archive) const {
+    if (_is_shallow || _shallow_save) {
+      archive(true);
+      archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+              _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
+              _hash_table, _rand_neurons, _force_sparse_for_inference);
+    } else {
+      archive(false);
+      archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+              _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
+              _hash_table, _rand_neurons, _force_sparse_for_inference,
+              _w_gradient, _w_momentum, _w_velocity, _b_gradient, _b_momentum,
+              _b_velocity);
+    }
+  }
+
+  /**
+   * Load first whether the layer is shallow
+   * Does not load the optimizer state if is_shallow
+   * Loads the optimizer state if !is_shallow
+   */
+  template <class Archive>
+  void load(Archive& archive) {
+    archive(_is_shallow);
+    if (_is_shallow) {
+      archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+              _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
+              _hash_table, _rand_neurons, _force_sparse_for_inference);
+    } else {
+      archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+              _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
+              _hash_table, _rand_neurons, _force_sparse_for_inference,
+              _w_gradient, _w_momentum, _w_velocity, _b_gradient, _b_momentum,
+              _b_velocity);
+    }
   }
 
   /**

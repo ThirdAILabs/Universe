@@ -2,6 +2,7 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
+#include <bolt/src/loss_functions/LossFunctions.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <algorithm>

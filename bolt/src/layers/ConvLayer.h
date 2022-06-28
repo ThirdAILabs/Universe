@@ -7,6 +7,7 @@
 #include "SequentialLayer.h"
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
+#include <exceptions/src/Exceptions.h>
 
 namespace thirdai::bolt {
 class ConvLayer final : public SequentialLayer {
@@ -44,8 +45,6 @@ class ConvLayer final : public SequentialLayer {
 
   void reBuildHashFunction() final;
 
-  void shuffleRandNeurons() final;
-
   uint32_t getDim() const final { return _dim; }
 
   uint32_t getInputDim() const final { return _prev_dim; }
@@ -57,17 +56,52 @@ class ConvLayer final : public SequentialLayer {
     return _dim;
   }
 
-  float* getWeights() final;
+  float* getWeights() const final;
 
-  float* getBiases() final;
+  float* getBiases() const final;
 
   void setTrainable(bool trainable) final;
 
-  bool getTrainable() final;
+  bool getTrainable() const final;
 
   void setWeights(const float* new_weights) final;
 
   void setBiases(const float* new_biases) final;
+
+  bool isShallow() const final {
+    throw thirdai::exceptions::NotImplemented(
+        "Error: isShallow not implemented for DLRM;");
+    return false;
+  }
+
+  void setShallow(bool shallow) final {
+    (void)shallow;
+    throw thirdai::exceptions::NotImplemented(
+        "Error: setShallow not implemented for DLRM;");
+  }
+
+  void setShallowSave(bool shallow) final {
+    (void)shallow;
+    throw thirdai::exceptions::NotImplemented(
+        "Error: setShallowSave not implemented for DLRM;");
+  }
+
+  float getSparsity() const final { return _sparsity; }
+
+  void setSparsity(float sparsity) final {
+    (void)sparsity;
+    // This is currently unimplemented because it would duplicate code from
+    // FullyConnectedLayer, and instead of duplicating code we should come up
+    // with a better design. Perhaps FullyConnectedLayer and ConvLayer can
+    // subclass SparseLayer.
+    // TODO(josh)
+    throw thirdai::exceptions::NotImplemented(
+        "Cannot currently set the sparsity of a convolutional layer.");
+  }
+
+  const SamplingConfig& getSamplingConfig() const final {
+    return _sampling_config;
+  }
 
  private:
   template <bool DENSE, bool PREV_DENSE>

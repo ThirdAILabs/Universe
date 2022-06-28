@@ -16,16 +16,36 @@ void createBoltSubmodule(py::module_& module) {
 
 #if THIRDAI_EXPOSE_ALL
 #pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
-
   py::class_<thirdai::bolt::SamplingConfig>(
       bolt_submodule, "SamplingConfig",
       "SamplingConfig represents a layer's sampling hyperparameters.")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, std::string>(),
            py::arg("hashes_per_table"), py::arg("num_tables"),
            py::arg("range_pow"), py::arg("reservoir_size"),
-           "Builds a SamplingConfig object. range_pow must always be 3 * "
-           "hashes_per_table.")
-      .def(py::init<>(), "Builds a default SamplingConfig object.");
+           py::arg("hash_function") = "DWTA",
+           "Builds a SamplingConfig object. \n\n"
+           "Arguments:\n"
+           " * hashes_per_table: Int - number of hashes to be concatenated in "
+           "each table."
+           " * num_tables: Int - number of hash tables."
+           " * range_pow: Int - hash range as a power of 2. E.g. if hash range "
+           "is 8, range_pow = 3. "
+           " Note that the correct range_pow differs for each hash function. "
+           "For DWTA, range_pow = 3 * hashes_per_table."
+           " For SRP or FastSRP, range_pow = hashes_per_table."
+           " * reservoir_size: Int - maximum number of elements stored in each "
+           "hash bucket."
+           " * hash_function: Pass hash function as string (Optional) - The "
+           "hash function "
+           "used for sparse training and inference. One of DWTA, SRP, or "
+           "FastSRP. Defaults to DWTA.")
+      .def(py::init<>(), "Builds a default SamplingConfig object.")
+      .def_readonly("hashes_per_table", &SamplingConfig::hashes_per_table)
+      .def_readonly("num_tables", &SamplingConfig::num_tables)
+      .def_readonly("range_pow", &SamplingConfig::range_pow)
+      .def_readonly("reservoir_size", &SamplingConfig::reservoir_size)
+      .def_readonly("hash_function", &SamplingConfig::_hash_function);
+
 #endif
 
   py::enum_<ActivationFunction>(
@@ -327,7 +347,7 @@ void createBoltSubmodule(py::module_& module) {
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
       .def("predict", &PyNetwork::predict, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("batch_size") = 0,
+           py::arg("test_labels"), py::arg("batch_size") = 2048,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -394,11 +414,26 @@ void createBoltSubmodule(py::module_& module) {
            "in the training routine. It is recommended to call this method "
            "right before the last training "
            "epoch.")
-      .def("save", &PyNetwork::save, py::arg("filename"),
+      .def("save_for_inference", &PyNetwork::saveForInference,
+           py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
-           "folders to be created")
+           "folders to be created. Saves only essential parameters for "
+           "inference, e.g. not the optimizer state")
       .def_static("load", &PyNetwork::load, py::arg("filename"),
                   "Loads and builds a saved network from file.")
+      .def("checkpoint", &PyNetwork::checkpoint, py::arg("filename"),
+           "Saves the network to a file. The file path must not require any "
+           "folders to be created. Saves all the paramters needed for "
+           "tranining. "
+           "This will throw an error if the model has been trimmed for "
+           "inference.")
+      .def("trim_for_inference", &PyNetwork::trimForInference,
+           "Removes all parameters that are not essential for inference, "
+           "shrinking the model")
+      .def("reinitialize_optimizer_for_training",
+           &PyNetwork::reinitOptimizerForTraining,
+           "If the model previously was trimmed for inference, this will "
+           "reinitialize the optimizer state, allowing training again.")
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "
            "matrix.")
@@ -412,13 +447,31 @@ void createBoltSubmodule(py::module_& module) {
            "Sets the weight matrix at the given layer index to the given 2D "
            "Numpy matrix. Throws an error if the dimension of the given weight "
            "matrix does not match the layer's current weight matrix.")
+      .def("ready_for_training", &PyNetwork::isReadyForTraining,
+           "Returns False if the optimizer state is not initialized, True "
+           "otherwise. Call resume_training to initialize optimizer")
       .def("get_biases", &PyNetwork::getBiases, py::arg("layer_index"),
            "Returns the bias array at the given layer index as a 1D Numpy "
            "array.")
       .def("set_biases", &PyNetwork::setBiases, py::arg("layer_index"),
            py::arg("new_biases"),
            "Sets the bias array at the given layer index to the given 1D Numpy "
-           "array.");
+           "array.")
+      .def("set_layer_sparsity", &PyNetwork::setLayerSparsity,
+           py::arg("layer_index"), py::arg("sparsity"),
+           "Sets the sparsity of the layer at the given index. The 0th layer "
+           "is the first layer after the input layer. Note that this will "
+           "autotune the sampling config to work for the new sparsity.")
+      .def("get_layer_sparsity", &PyNetwork::getLayerSparsity,
+           py::arg("layer_index"),
+           "Gets the sparsity of the layer at the given index. The 0th layer "
+           "is the first layer after the input layer.")
+#if THIRDAI_EXPOSE_ALL
+      .def("get_sampling_config", &PyNetwork::getSamplingConfig,
+           py::arg("layer_index"),
+           "Returns the sampling config of the layer at layer_index.")
+#endif
+      ;
 
   py::class_<PyDLRM>(bolt_submodule, "DLRM",
                      "DLRM network with space-efficient embedding tables.")
