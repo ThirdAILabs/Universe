@@ -1,7 +1,6 @@
 #pragma once
 
 #include "GenericBatchProcessor.h"
-#include <dataset/src/blocks/TabularBlocks.h>
 
 namespace thirdai::dataset {
 
@@ -16,7 +15,7 @@ class TabularBatchProcessor : public GenericBatchProcessor {
 
   void processHeader(const std::string& header) override {
     std::vector<std::string_view> actualColumns = parseCsvRow(header, ',');
-    std::vector<std::string_view> expectedColumns = _metadata->getColumnNames();
+    std::vector<std::string> expectedColumns = _metadata->getColumnNames();
     if (actualColumns.size() != expectedColumns.size()) {
       throw std::invalid_argument(
           "Expected " + std::to_string(expectedColumns.size()) +

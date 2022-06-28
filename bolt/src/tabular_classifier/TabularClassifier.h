@@ -78,7 +78,7 @@ class TabularClassifier {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_input_dim, _model);
+    archive(_input_dim, _metadata, _model);
   }
 
   uint32_t _input_dim;

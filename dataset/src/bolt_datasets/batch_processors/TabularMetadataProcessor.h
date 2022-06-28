@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/vector.hpp>
 #include <dataset/src/bolt_datasets/BatchProcessor.h>
 
 namespace thirdai::dataset {
@@ -23,7 +26,7 @@ class TabularMetadata {
 
   uint32_t numClasses() const { return _class_id_to_class.size(); }
 
-  std::vector<std::string_view> getColumnNames() { return _column_names; }
+  std::vector<std::string> getColumnNames() { return _column_names; }
 
   std::string getColBin(uint32_t col, float value) {
     return std::to_string(value - getColMin(col) / getColBinsize(col));
@@ -35,7 +38,8 @@ class TabularMetadata {
   }
   // TODO(david) check if invalid/new label?? or could do this in parsing
   uint32_t getClassId(const std::vector<std::string_view>& input_row) {
-    return _class_to_class_id[input_row[_label_col_index]];
+    std::string class_name(input_row[_label_col_index]);
+    return _class_to_class_id[class_name];
   }
 
  private:
@@ -56,11 +60,11 @@ class TabularMetadata {
 
   uint32_t _num_bins = 10;
   uint32_t _label_col_index;
-  std::vector<std::string_view> _column_names;
+  std::vector<std::string> _column_names;
   std::vector<TabularDataType> _column_dtypes;
   std::unordered_map<uint32_t, float> _col_to_max_val;
   std::unordered_map<uint32_t, float> _col_to_min_val;
-  std::unordered_map<std::string_view, uint32_t> _class_to_class_id;
+  std::unordered_map<std::string, uint32_t> _class_to_class_id;
   std::vector<std::string> _class_id_to_class;
 };
 
@@ -106,7 +110,9 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
           " columns but received " + std::to_string(column_names.size()) +
           " columns.");
     }
-    _metadata->_column_names = column_names;
+    std::vector<std::string> str_column_names(column_names.begin(),
+                                              column_names.end());
+    _metadata->_column_names = str_column_names;
   }
 
   void processRow(const std::string& row) final {
@@ -119,11 +125,12 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
           " columns.");
     }
     for (uint32_t col = 0; col < _metadata->_column_dtypes.size(); col++) {
+      std::string str_value(values[col]);
       switch (_metadata->_column_dtypes[col]) {
         case TabularDataType::Numeric: {
           // TODO(david) if empty, nan, or inf ignore
           // otherwise, report error
-          float val = std::stof(std::string(values[col]));
+          float val = std::stof(str_value);
           if (_metadata->_col_to_max_val[val] < val) {
             _metadata->_col_to_max_val[val] = val;
           }
@@ -135,10 +142,10 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
         case TabularDataType::Categorical:
           break;
         case TabularDataType::Label: {
-          if (!_metadata->_class_to_class_id.count(values[col])) {
+          if (!_metadata->_class_to_class_id.count(str_value)) {
             uint32_t label = _metadata->_class_id_to_class.size();
-            _metadata->_class_to_class_id[values[col]] = label;
-            _metadata->_class_id_to_class.push_back(std::string(values[col]));
+            _metadata->_class_to_class_id[str_value] = label;
+            _metadata->_class_id_to_class.push_back(str_value);
           }
           break;
         }
