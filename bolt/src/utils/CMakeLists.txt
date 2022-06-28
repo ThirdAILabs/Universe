@@ -1,1 +1,0 @@
-add_library(bolt_utils_lib ConfigReader.cc)

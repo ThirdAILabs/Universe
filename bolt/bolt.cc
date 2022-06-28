@@ -1,6 +1,5 @@
 #include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <bolt/src/utils/ConfigReader.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/Factory.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
