@@ -123,14 +123,14 @@ class SequentialClassifier {
     // const std::string& _act_func,
     // SamplingConfig _config
 
-    size_t output_dim =
-        toLower(_config._task) == "regression" ? 1 : _config._n_target_classes;
     configs.push_back(std::make_shared<FullyConnectedLayerConfig>(
         /* _dim = */ 5000, /* _sparsity = */ 0.02,
         /* _act_func = */ ActivationFunction::ReLU));
     configs.push_back(std::make_shared<FullyConnectedLayerConfig>(
-        /* _dim = */ output_dim, /* _sparsity = */ 0.02,
-        /* _act_func = */ ActivationFunction::ReLU));
+        /* _dim = */ pipeline.getLabelDim(), /* _sparsity = */ 0.02,
+        /* _act_func = */ toLower(_config._task) == "regression"
+            ? ActivationFunction::Linear
+            : ActivationFunction::Softmax));
     FullyConnectedNetwork network(configs,
                                   /* input_dim = */ pipeline.getInputDim());
     return network;
