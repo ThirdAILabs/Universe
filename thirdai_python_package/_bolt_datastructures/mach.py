@@ -146,6 +146,11 @@ class Mach:
         hidden_layer_dim,
         hidden_layer_sparsity,
     ):
+        last_layer_act_func = (
+            bolt.ActivationFunctions.Softmax
+            if use_softmax
+            else bolt.ActivationFunctions.Sigmoid
+        )
         layers = [
             bolt.FullyConnected(
                 dim=hidden_layer_dim,
@@ -155,11 +160,7 @@ class Mach:
             bolt.FullyConnected(
                 dim=last_layer_dim,
                 sparsity=last_layer_sparsity,
-                activation_function=(
-                    bolt.ActivationFunctions.Softmax
-                    if use_softmax
-                    else bolt.ActivationFunctions.Sigmoid
-                ),
+                activation_function=last_layer_act_func,
             ),
         ]
         network = bolt.Network(layers=layers, input_dim=input_dim)
