@@ -9,14 +9,15 @@ namespace thirdai::dataset {
 
 class TabularPairGram : public Block {
  public:
-  TabularPairGram(TabularMetadata& metadata, uint32_t output_range)
+  TabularPairGram(std::shared_ptr<TabularMetadata> metadata,
+                  uint32_t output_range)
       : _metadata(metadata), _output_range(output_range) {}
 
   uint32_t featureDim() const final { return _output_range; };
 
   bool isDense() const final { return false; };
 
-  uint32_t expectedNumColumns() const final { return _metadata.numColumns(); };
+  uint32_t expectedNumColumns() const final { return _metadata->numColumns(); };
 
  protected:
   // TODO(david) calculate unigrams and capped pairgrams correctly
@@ -25,11 +26,12 @@ class TabularPairGram : public Block {
     std::vector<uint32_t> unigram_hashes;
     for (uint32_t col = 0; col < input_row.size(); col++) {
       uint32_t unigram;
-      switch (_metadata.getType(col)) {
+      switch (_metadata->getType(col)) {
         case TabularDataType::Numeric: {
           // TODO(david) if stof fails
-          float value = std::stof(std::to_string(input_row[col]));
-          std::string bin = _metadata.getColBin(col, value);
+          std::string string_value(input_row[col]);
+          float value = std::stof(string_value);
+          std::string bin = _metadata->getColBin(col, value);
           unigram_hashes.push_back(calculateUnigram(bin));
           break;
         }
@@ -56,15 +58,16 @@ class TabularPairGram : public Block {
   }
 
   static constexpr uint32_t HASH_SEED = 3829;
-  TabularMetadata _metadata;
+  std::shared_ptr<TabularMetadata> _metadata;
   uint32_t _output_range;
 };
 
 class TabularLabel : public Block {
  public:
-  explicit TabularLabel(TabularMetadata& metadata) : _metadata(metadata) {}
+  explicit TabularLabel(std::shared_ptr<TabularMetadata> metadata)
+      : _metadata(metadata) {}
 
-  uint32_t featureDim() const final { return _metadata.numClasses(); };
+  uint32_t featureDim() const final { return _metadata->numClasses(); };
 
   bool isDense() const final { return true; };
 
@@ -73,11 +76,11 @@ class TabularLabel : public Block {
  protected:
   void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) final {
-    vec.addSparseFeatureToSegment(_metadata.getClassId(input_row), 1.0);
+    vec.addSparseFeatureToSegment(_metadata->getClassId(input_row), 1.0);
   }
 
  private:
-  TabularMetadata _metadata;
+  std::shared_ptr<TabularMetadata> _metadata;
 };
 
 }  // namespace thirdai::dataset

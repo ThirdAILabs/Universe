@@ -33,16 +33,22 @@ TabularClassifier::TabularClassifier(const std::string& model_size,
                                                   ActivationFunction::Softmax)};
   _model =
       std::make_unique<FullyConnectedNetwork>(std::move(configs), _input_dim);
-  // TODO(david) how to initialize metadata??
+
+  _metadata = nullptr;
 }
 
 void TabularClassifier::train(const std::string& filename,
                               std::vector<std::string>& column_datatypes,
                               uint32_t epochs, float learning_rate) {
-  // TODO(david) what happens if train() called twice?
-  _metadata = getTabularMetadata(filename, column_datatypes);
+  if (_metadata) {
+    std::cout << "Note: Metadata from the training dataset is used for "
+                 "predictions on future test data. Calling train(..) again "
+                 "resets this metadata."
+              << std::endl;
+  }
+  _metadata = setTabularMetadata(filename, column_datatypes);
 
-  auto dataset = loadStreamingDataset(filename, _metadata);
+  auto dataset = loadStreamingDataset(filename);
 
   CategoricalCrossEntropyLoss loss;
   if (!canLoadDatasetInMemory(filename)) {
@@ -51,7 +57,7 @@ void TabularClassifier::train(const std::string& filename,
       _model->trainOnStream(dataset, loss, learning_rate);
 
       // Create new stream for next epoch with new data loader.
-      dataset = loadStreamingDataset(filename, _metadata);
+      dataset = loadStreamingDataset(filename);
     }
 
   } else {
@@ -66,11 +72,11 @@ void TabularClassifier::train(const std::string& filename,
 void TabularClassifier::predict(
     const std::string& filename,
     const std::optional<std::string>& output_filename) {
-  if (_metadata.isEmpty()) {
+  if (!_metadata) {
     throw std::invalid_argument(
         "Cannot call predict(..) without calling train(..) first.");
   }
-  auto dataset = loadStreamingDataset(filename, _metadata);
+  auto dataset = loadStreamingDataset(filename);
 
   // TODO(david) merge safe file maker PR on top of this
   std::optional<std::ofstream> output_file;
@@ -102,7 +108,7 @@ void TabularClassifier::predict(
         }
       }
 
-      (*output_file) << _metadata.getClassName(pred) << std::endl;
+      (*output_file) << _metadata->getClassName(pred) << std::endl;
     }
   };
 

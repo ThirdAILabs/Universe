@@ -36,7 +36,7 @@ class TabularClassifier {
   }
 
  private:
-  dataset::TabularMetadata getTabularMetadata(
+  std::shared_ptr<dataset::TabularMetadata> setTabularMetadata(
       const std::string& filename, std::vector<std::string>& column_datatypes,
       uint32_t batch_size = 256) {
     std::shared_ptr<dataset::DataLoader> data_loader =
@@ -48,23 +48,23 @@ class TabularClassifier {
     std::make_shared<dataset::StreamingDataset<BoltBatch>>(data_loader,
                                                            batch_processor);
 
-    return batch_processor.getMetadata();
+    return batch_processor->getMetadata();
   }
 
   std::shared_ptr<dataset::StreamingDataset<BoltBatch>> loadStreamingDataset(
-      const std::string& filename, dataset::TabularMetadata metadata,
-      uint32_t batch_size = 256) {
+      const std::string& filename, uint32_t batch_size = 256) {
     std::shared_ptr<dataset::DataLoader> data_loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
 
     std::vector<std::shared_ptr<dataset::Block>> input_blocks = {
-        std::make_shared<dataset::TabularPairGram>(metadata, _input_dim)};
+        std::make_shared<dataset::TabularPairGram>(_metadata, _input_dim)};
     std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
-        std::make_shared<dataset::TabularLabel>(metadata)};
+        std::make_shared<dataset::TabularLabel>(_metadata)};
 
     std::shared_ptr<dataset::TabularBatchProcessor> batch_processor =
         std::make_shared<dataset::TabularBatchProcessor>(
-            /* input_blocks */ input_blocks, /* target_blocks */ target_blocks);
+            /* input_blocks */ input_blocks, /* target_blocks */ target_blocks,
+            _metadata);
 
     auto dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
         data_loader, batch_processor);
@@ -78,12 +78,11 @@ class TabularClassifier {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_model);
+    archive(_input_dim, _model);
   }
 
   uint32_t _input_dim;
-  dataset::TabularMetadata
-      _metadata;  // TODO(david) make shared pointer/optional??
+  std::shared_ptr<dataset::TabularMetadata> _metadata;
   std::unique_ptr<FullyConnectedNetwork> _model;
 };
 

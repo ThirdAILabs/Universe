@@ -9,14 +9,14 @@ class TabularBatchProcessor : public GenericBatchProcessor {
  public:
   TabularBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
                         std::vector<std::shared_ptr<Block>> label_blocks,
-                        dataset::TabularMetadata& metadata)
+                        std::shared_ptr<dataset::TabularMetadata> metadata)
       : GenericBatchProcessor(std::move(input_blocks), std::move(label_blocks),
                               /* expects_header */ true),
         _metadata(metadata) {}
 
   void processHeader(const std::string& header) override {
     std::vector<std::string_view> actualColumns = parseCsvRow(header, ',');
-    std::vector<std::string_view> expectedColumns = _metadata.getColumnNames();
+    std::vector<std::string_view> expectedColumns = _metadata->getColumnNames();
     if (actualColumns.size() != expectedColumns.size()) {
       throw std::invalid_argument(
           "Expected " + std::to_string(expectedColumns.size()) +
@@ -33,7 +33,7 @@ class TabularBatchProcessor : public GenericBatchProcessor {
     }
   }
 
-  dataset::TabularMetadata _metadata;
+  std::shared_ptr<dataset::TabularMetadata> _metadata;
 };
 
 }  // namespace thirdai::dataset
