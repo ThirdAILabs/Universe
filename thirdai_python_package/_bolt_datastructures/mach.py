@@ -118,7 +118,7 @@ class Mach:
         num_query_results = results.shape[1]
 
         scores = np.zeros(shape=(num_query_results, self.max_label))
-        for vec_id in range(len(scores)):
+        for vec_id in range(num_query_results):
 
             label_set = set()
             for classifier_id in range(self.num_classifiers):
