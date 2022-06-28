@@ -1,8 +1,7 @@
 from utils import *
 import pytest
-import time
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit]
 
 
 def predict_train_one_epoch_predict(network, test_data, test_labels, sparse_inference):
