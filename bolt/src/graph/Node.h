@@ -34,13 +34,6 @@ class Node {
   // during compilation.
   virtual uint32_t outputDim() const = 0;
 
-  // Returns if the output of the node is sparse.
-  virtual bool hasSparseOutput() const = 0;
-
-  // Returns the sparse output size of the node. If the node is dense then this
-  // should be equal to outputDim().
-  virtual uint32_t numNonzerosInOutput() const = 0;
-
   /*
     Initializes any state that the node must store for computations that is not
     part of the nodes parameters. For instance this could be the

@@ -76,12 +76,6 @@ class FullyConnectedLayerNode final
 
   uint32_t outputDim() const final { return _config.dim; }
 
-  bool hasSparseOutput() const final { return _config.sparsity < 1.0; }
-
-  uint32_t numNonzerosInOutput() const final {
-    return _config.sparsity * _config.dim;
-  }
-
   void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
     // TODO(Nicholas): rename createBatchState
     _outputs =

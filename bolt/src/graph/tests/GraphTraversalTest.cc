@@ -60,14 +60,6 @@ class DummyNode final : public Node {
     throw exceptions::NotImplemented("Dummy method for test");
   }
 
-  bool hasSparseOutput() const final {
-    throw exceptions::NotImplemented("Dummy method for test");
-  }
-
-  uint32_t numNonzerosInOutput() const final {
-    throw exceptions::NotImplemented("Dummy method for test");
-  }
-
   void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
     (void)batch_size;
     (void)use_sparsity;

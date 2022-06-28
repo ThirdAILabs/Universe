@@ -4,7 +4,7 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <gtest/gtest.h>
-#include <stdexcept>
+#include <exceptions/src/Exceptions.h>
 
 namespace thirdai::bolt::tests {
 
@@ -14,7 +14,7 @@ TEST(GraphRejectsInvalidInputsTest, RejectInputLayerInOutput) {
 
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       graph.compile(std::make_shared<MeanSquaredError>()),
-      std::invalid_argument);
+      exceptions::GraphCompilationFailure);
 }
 
 TEST(GraphRejectsInvalidInputsTest,
@@ -25,7 +25,7 @@ TEST(GraphRejectsInvalidInputsTest,
 
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       graph.compile(std::make_shared<MeanSquaredError>()),
-      std::invalid_argument);
+      exceptions::GraphCompilationFailure);
 }
 
 TEST(GraphRejectsInvalidInputsTest,
@@ -36,7 +36,7 @@ TEST(GraphRejectsInvalidInputsTest,
 
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       graph.compile(std::make_shared<CategoricalCrossEntropyLoss>()),
-      std::invalid_argument);
+      exceptions::GraphCompilationFailure);
 }
 
 TEST(GraphRejectsInvalidInputsTest, RejectBinaryCrossEntropyWithoutSigmoid) {
@@ -46,22 +46,28 @@ TEST(GraphRejectsInvalidInputsTest, RejectBinaryCrossEntropyWithoutSigmoid) {
 
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       graph.compile(std::make_shared<BinaryCrossEntropyLoss>()),
-      std::invalid_argument);
+      exceptions::GraphCompilationFailure);
 }
 
 TEST(GraphRejectsInvalidInputsTest, AcceptsCategoricalCrossEntropyWithSoftmax) {
+  auto input = std::make_shared<Input>(/* dim= */ 10);
   auto layer = std::make_shared<FullyConnectedLayerNode>(
       /* dim= */ 10, /* activation= */ ActivationFunction::Softmax);
-  BoltGraph graph(/* inputs= */ {}, /* output= */ layer);
+  layer->addPredecessor(input);
+
+  BoltGraph graph(/* inputs= */ {input}, /* output= */ layer);
 
   ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
       graph.compile(std::make_shared<CategoricalCrossEntropyLoss>()));
 }
 
 TEST(GraphRejectsInvalidInputsTest, AcceptsBinaryCrossEntropyWithSigmoid) {
+  auto input = std::make_shared<Input>(/* dim= */ 10);
   auto layer = std::make_shared<FullyConnectedLayerNode>(
       /* dim= */ 10, /* activation= */ ActivationFunction::Sigmoid);
-  BoltGraph graph(/* inputs= */ {}, /* output= */ layer);
+  layer->addPredecessor(input);
+
+  BoltGraph graph(/* inputs= */ {input}, /* output= */ layer);
 
   ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
       graph.compile(std::make_shared<BinaryCrossEntropyLoss>()));

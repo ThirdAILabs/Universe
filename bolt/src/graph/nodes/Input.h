@@ -55,17 +55,6 @@ class Input final : public Node {
 
   uint32_t outputDim() const final { return _expected_input_dim; }
 
-  bool hasSparseOutput() const final {
-    throw std::logic_error(
-        "Cannot determine if Input is sparse or dense until runtime");
-  }
-
-  uint32_t numNonzerosInOutput() const final {
-    throw std::logic_error(
-        "Cannot access sparseOutputDim of input layer since the number of "
-        "nonzeros cannot be known until runtime");
-  }
-
   void prepareForBatchProcessing(uint32_t batch_size, bool is_inference) final {
     (void)batch_size;
     (void)is_inference;
