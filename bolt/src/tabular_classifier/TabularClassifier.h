@@ -5,6 +5,7 @@
 #include <dataset/src/blocks/TabularBlocks.h>
 #include <dataset/src/bolt_datasets/batch_processors/TabularBatchProcessor.h>
 #include <dataset/src/bolt_datasets/batch_processors/TabularMetadataProcessor.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <memory>
 
 namespace thirdai::bolt {
@@ -21,13 +22,15 @@ class TabularClassifier {
                const std::optional<std::string>& output_filename);
 
   void save(const std::string& filename) {
-    std::ofstream filestream(filename, std::ios::binary);
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
     oarchive(*this);
   }
 
   static std::unique_ptr<TabularClassifier> load(const std::string& filename) {
-    std::ifstream filestream(filename, std::ios::binary);
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
     std::unique_ptr<TabularClassifier> deserialize_into(
         new TabularClassifier());
