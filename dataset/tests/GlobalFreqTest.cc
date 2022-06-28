@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <dataset/src/string/global_frequency/GlobalFreq.h>
-#include <dataset/src/utils/SafeFileMaker.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <iostream>
 
 static std::string filename = "FreelandSep10_2020.txt";
@@ -80,7 +80,7 @@ static void print_to_file() {
       "and education at West Point and all of the things he did.";
 
   std::ofstream outfile =
-      thirdai::dataset::SafeFileMaker::ofstream(filename, std::ios::trunc);
+      thirdai::dataset::SafeFileIO::ofstream(filename, std::ios::trunc);
   // std::cout << "printing" << std::endl;
   outfile << origin << std::endl;
   outfile.close();

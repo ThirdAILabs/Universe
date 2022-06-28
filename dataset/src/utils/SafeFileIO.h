@@ -4,7 +4,7 @@
 
 namespace thirdai::dataset {
 
-class SafeFileMaker {
+class SafeFileIO {
  public:
   static std::ifstream ifstream(
       const std::string& filename,

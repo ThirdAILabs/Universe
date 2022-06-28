@@ -53,7 +53,9 @@ class SvmDatasetTestFixture : public ::testing::Test {
       _vectors.push_back(createTestSparseVec());
     }
 
-    std::ofstream output_file = dataset::SafeFileMaker::ofstream(_filename);
+    std::ofstream output_file =
+
+        dataset::SafeFileIO::ofstream(_filename);
 
     uint32_t v = 0;
     for (const auto& vec : _vectors) {

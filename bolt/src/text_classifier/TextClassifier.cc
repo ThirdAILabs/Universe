@@ -89,7 +89,7 @@ void TextClassifier::predict(
 
   std::optional<std::ofstream> output_file;
   if (output_filename) {
-    output_file = dataset::SafeFileMaker::ofstream(*output_filename);
+    output_file = dataset::SafeFileIO::ofstream(*output_filename);
   }
 
   auto print_predictions_callback = [&](const BoltBatch& outputs,

@@ -40,7 +40,7 @@ class CsvDatasetTestFixture : public ::testing::Test {
   }
 
   void generateTestFile(const char& delimiter) {
-    std::ofstream output_file = dataset::SafeFileMaker::ofstream(filename);
+    std::ofstream output_file = dataset::SafeFileIO::ofstream(filename);
 
     for (const auto& vec : _vectors) {
       output_file << vec.label;
@@ -55,7 +55,7 @@ class CsvDatasetTestFixture : public ::testing::Test {
   }
 
   static void generateTestFileWithEntry(const std::string& entry) {
-    std::ofstream output_file = dataset::SafeFileMaker::ofstream(filename);
+    std::ofstream output_file = dataset::SafeFileIO::ofstream(filename);
 
     output_file << entry;
     output_file << std::endl;

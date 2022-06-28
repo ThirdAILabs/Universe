@@ -62,7 +62,7 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
       _vectors.push_back(createTestClickThroughVec());
     }
 
-    std::ofstream output_file = dataset::SafeFileMaker::ofstream(_filename);
+    std::ofstream output_file = dataset::SafeFileIO::ofstream(_filename);
 
     for (const auto& vec : _vectors) {
       output_file << std::dec << vec.label;

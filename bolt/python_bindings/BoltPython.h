@@ -9,7 +9,7 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <dataset/src/utils/SafeFileMaker.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
 #include <pybind11/iostream.h>
@@ -247,7 +247,7 @@ class PyNetwork final : public FullyConnectedNetwork {
    */
   void save(const std::string& filename, bool shallow) {
     std::ofstream filestream =
-        dataset::SafeFileMaker::ofstream(filename, std::ios::binary);
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
     this->setShallowSave(shallow);
     oarchive(*this);
@@ -279,7 +279,7 @@ class PyNetwork final : public FullyConnectedNetwork {
 
   static std::unique_ptr<PyNetwork> load(const std::string& filename) {
     std::ifstream filestream =
-        dataset::SafeFileMaker::ifstream(filename, std::ios::binary);
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
     std::unique_ptr<PyNetwork> deserialize_into(new PyNetwork());
     iarchive(*deserialize_into);
