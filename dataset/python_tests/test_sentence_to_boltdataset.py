@@ -47,7 +47,7 @@ def get_actual_unigrams(sentence):
     return dataset.string_to_bolt_dataset(sentence,100)
 
 def get_actual_pairgrams(sentence):
-    return dataset.string_to_bolt_dataset(sentence,100,"pairgrams")
+    return dataset.string_to_bolt_dataset(sentence,100,"pairgram")
     
 
 def build_network():

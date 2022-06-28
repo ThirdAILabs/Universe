@@ -288,7 +288,8 @@ void createDatasetSubmodule(py::module_& module) {
                         "Arguments:\n"
                         " * string: String - sentence to be parsed.\n"
                         " * dim - dimension.\n"
-                        " * encoding_type - string to specify the type of encoding\n");
+                        " * encoding_type - string to specify the type of encoding"
+                        "   one of unigram or pairgram, defaults to unigram.\n");
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
@@ -776,7 +777,11 @@ BoltDatasetPtr parseStringToBoltDataset(
     const std::string& string,uint32_t dim, const std::string& encoding_type = "unigram") {
   std::vector<std::string> sample = {string};
   std::shared_ptr<Block> block;
-  if(encoding_type == "unigram") {block = std::make_shared<TextBlock>(0,std::make_shared<UniGram>(dim));}
+  std::string lower_name;
+  for (char c : encoding_type) {
+    lower_name.push_back(std::tolower(c));
+  }
+  if(lower_name == "unigram") {block = std::make_shared<TextBlock>(0,std::make_shared<UniGram>(dim));}
   else {block = std::make_shared<TextBlock>(0,std::make_shared<PairGram>(dim));}
   std::vector<std::shared_ptr<Block>> blocks = {std::move(block)};
   std::vector<BoltVector> bolt_vec = {
