@@ -43,25 +43,34 @@ class FullyConnectedLayerNode final
   }
 
   void forward(uint32_t batch_index, const BoltVector* labels) final {
-    _layer->forward(_predecessor->getOutput(batch_index),
-                    this->getOutput(batch_index), labels);
+    assert(_layer != nullptr);
+
+    _layer->forward(_predecessor->getOutputVector(batch_index),
+                    this->getOutputVector(batch_index), labels);
   }
 
   void backpropagate(uint32_t batch_index) final {
+    assert(_layer != nullptr);
+
+    // TODO(Nicholas, Josh): Change to avoid having this check
     if (_predecessor->isInputNode()) {
-      _layer->backpropagateInputLayer(_predecessor->getOutput(batch_index),
-                                      this->getOutput(batch_index));
+      _layer->backpropagateInputLayer(
+          _predecessor->getOutputVector(batch_index),
+          this->getOutputVector(batch_index));
     } else {
-      _layer->backpropagate(_predecessor->getOutput(batch_index),
-                            this->getOutput(batch_index));
+      _layer->backpropagate(_predecessor->getOutputVector(batch_index),
+                            this->getOutputVector(batch_index));
     }
   }
 
   void updateParameters(float learning_rate, uint32_t batch_cnt) final {
+    assert(_layer != nullptr);
+
+    // TODO(Nicholas): Abstract away these constants
     _layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA2, EPS);
   }
 
-  BoltVector& getOutput(uint32_t batch_index) final {
+  BoltVector& getOutputVector(uint32_t batch_index) final {
     return _outputs[batch_index];
   }
 
@@ -74,8 +83,9 @@ class FullyConnectedLayerNode final
   }
 
   void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
+    // TODO(Nicholas): rename createBatchState
     _outputs =
-        _layer->createBatchState(batch_size, /* force_dense=*/!use_sparsity);
+        _layer->createBatchState(batch_size, /* use_sparsity=*/use_sparsity);
   }
 
   std::vector<NodePtr> getPredecessors() const final { return {_predecessor}; }

@@ -24,25 +24,27 @@ class BoltGraph {
   friend class tests::GraphTraversalTestFixture;
 
  public:
-  // The graph is constructed with a list of input layers, the order of these
-  // input layers is used to define how training/test inputs are mapped to the
-  // specific layers. Using the output node the graph can be traversed backwards
-  // to discover a reverse ordering in which to execute the layers.
+  /*
+    The graph is constructed with a list of input layers, the order of these
+    input layers is used to define how training/test inputs are mapped to the
+    specific layers. Using the output node the graph can be traversed backwards
+    to discover a reverse ordering in which to execute the layers.
+   */
   BoltGraph(std::vector<InputPtr> inputs, NodePtr output)
       : _output(std::move(output)),
         _inputs(std::move(inputs)),
         _epoch_count(0),
         _batch_cnt(0) {}
 
-  // When the layers are initially defined the only have information about their
-  // own dimensions, parameters etc. During compile the layers can use the
-  // information from their predecessor(s) such as output dim do fully
-  // initialize their parameters. Note that successors could be added to nodes
-  // as well if that is needed for certain layers to initialize. Additionally in
-  // this function the different layers can preform different checks to make
-  // sure that the network is properly formatted. For instance if
-  // CategoricalCrossEntropy loss is used, then it can verify that the output
-  // layer has a softmax activation.
+  /*
+    When the layers are initially defined the only have information about their
+    own dimensions, parameters etc. During compile the layers can use the
+    information from their predecessor(s) such as output dim to fully
+    initialize their parameters. Additionally in this function checks are
+    performed to ensure the graph is properly formatted. For instance if
+    CategoricalCrossEntropy loss is used, then it can verify that the output
+    layer has a softmax activation.
+  */
   void compile(std::shared_ptr<LossFunction> loss);
 
   template <typename BATCH_T>
@@ -78,6 +80,8 @@ class BoltGraph {
       // Limit the number of batches used in the dataset
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
+  const std::vector<NodePtr>& getNodeTraversalOrder() const { return _nodes; }
+
  private:
   template <typename BATCH_T>
   void processTrainingBatch(BATCH_T& batch_inputs,
@@ -95,7 +99,7 @@ class BoltGraph {
   // Computes the backward pass through the graph.
   void backpropagate(uint32_t batch_index);
 
-  void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity);
+  void prepareToProcessBatches(uint32_t batch_size, bool use_sparsity);
 
   void updateParameters(float learning_rate, uint32_t batch_cnt);
 
@@ -128,12 +132,13 @@ class BoltGraph {
   // layer.
   std::vector<InputPtr> _inputs;
 
-  // List of the sparse layers in the graph. This is so that when we want to do
+  // List of the sparse layers in the graph. This is so that we can do
   // things like enable sparse inference, update hash tables, or update hash
   // functions.
-  std::vector<std::shared_ptr<FullyConnectedLayer>> _sparse_layers;
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+      _internal_fully_connected_layers;
 
-  // The loss function the graph was compliled with.
+  // The loss function the graph was compiled with.
   std::shared_ptr<LossFunction> _loss;
 
   uint32_t _epoch_count;

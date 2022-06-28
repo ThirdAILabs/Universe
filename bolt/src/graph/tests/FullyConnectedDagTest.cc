@@ -35,7 +35,7 @@ static BoltGraph getSingleLayerModel() {
 TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
   BoltGraph model = getSingleLayerModel();
 
-  auto data = genDataset(false);
+  auto data = genDataset(/* add_noise= */ false);
 
   model.train(data.data, data.labels,
               /* learning_rate= */ 0.001, /* epochs= */ 5,
@@ -52,7 +52,7 @@ TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
 TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
   BoltGraph model = getSingleLayerModel();
 
-  auto data = genDataset(true);
+  auto data = genDataset(/* add_noise= */ true);
 
   model.train(data.data, data.labels,
               /* learning_rate= */ 0.001, /* epochs= */ 5,
@@ -71,13 +71,14 @@ static BoltGraph getMultiLayerModel(ActivationFunction hidden_layer_act,
                                     ActivationFunction output_layer_act) {
   auto input_layer = std::make_shared<Input>(n_classes);
 
-  auto hidden_layer =
-      std::make_shared<FullyConnectedLayerNode>(10000, 0.1, hidden_layer_act);
+  auto hidden_layer = std::make_shared<FullyConnectedLayerNode>(
+      /* dim= */ 10000, /* sparsity= */ 0.1,
+      /* activation= */ hidden_layer_act);
 
   hidden_layer->addPredecessor(input_layer);
 
-  auto output_layer =
-      std::make_shared<FullyConnectedLayerNode>(n_classes, output_layer_act);
+  auto output_layer = std::make_shared<FullyConnectedLayerNode>(
+      /* dim= */ n_classes, /* activation= */ output_layer_act);
 
   output_layer->addPredecessor(hidden_layer);
 
@@ -100,7 +101,7 @@ static void testSimpleDatasetMultiLayerModel(
     uint32_t epochs) {
   BoltGraph model = getMultiLayerModel(hidden_layer_act, output_layer_act);
 
-  auto data = genDataset(false);
+  auto data = genDataset(/* add_noise= */ false);
 
   auto train_metrics =
       model.train(data.data, data.labels,
@@ -139,7 +140,7 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
       getMultiLayerModel(ActivationFunction::ReLU, ActivationFunction::Softmax);
   model.compile(std::make_shared<CategoricalCrossEntropyLoss>());
 
-  auto data = genDataset(true);
+  auto data = genDataset(/* add_noise= */ true);
 
   model.train(data.data, data.labels,
               /* learning_rate= */ 0.001, /* epochs= */ 2,

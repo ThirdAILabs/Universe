@@ -17,8 +17,26 @@ class DummyNode final : public Node {
     return std::make_shared<DummyNode>(id);
   }
 
+  // These are the only methods that will be called in this node subclass.
+  std::vector<NodePtr> getPredecessors() const final { return _predecessors; }
+
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayers() const final {
+    return {};
+  }
+
+  bool isInputNode() const final { return false; }
+
+  void setPredecesors(const std::vector<NodePtr>& predecessors) {
+    _predecessors = predecessors;
+  }
+
+  uint32_t getID() const { return _id; }
+
   void initializeParameters() final {}
 
+  // These remaining methods are required for the interface but are not used for
+  // this test.
   void forward(uint32_t vec_index, const BoltVector* labels) final {
     (void)vec_index;
     (void)labels;
@@ -55,21 +73,6 @@ class DummyNode final : public Node {
     (void)use_sparsity;
     throw exceptions::NotImplemented("Dummy method for test");
   }
-
-  std::vector<NodePtr> getPredecessors() const final { return _predecessors; }
-
-  std::vector<std::shared_ptr<FullyConnectedLayer>>
-  getInternalFullyConnectedLayers() const final {
-    return {};
-  }
-
-  bool isInputNode() const final { return false; }
-
-  void setPredecesors(const std::vector<NodePtr>& predecessors) {
-    _predecessors = predecessors;
-  }
-
-  uint32_t getID() const { return _id; }
 
  private:
   std::vector<NodePtr> _predecessors;

@@ -1,10 +1,13 @@
 #include "Graph.h"
+#include "GraphPropertyChecks.h"
 #include "nodes/FullyConnected.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
+#include <bolt/src/utils/RebuildHashTablesFunctionsAutotuning.h>
+#include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <chrono>
 #include <optional>
@@ -15,13 +18,12 @@
 
 namespace thirdai::bolt {
 
-uint32_t getRebuildHashTablesBatchInterval(std::optional<uint32_t> rehash,
-                                           uint32_t batch_size,
-                                           uint32_t data_len);
-uint32_t getReconstructHashFunctionsBatchInterval(
-    std::optional<uint32_t> rebuild, uint32_t batch_size, uint32_t data_len);
-
 void BoltGraph::compile(std::shared_ptr<LossFunction> loss) {
+  if (_output == nullptr) {
+    throw exceptions::GraphCompilationFailure(
+        "Output NodePtr cannot be a nullptr.");
+  }
+
   _loss = std::move(loss);
 
   verifyGraphProperties();
@@ -34,8 +36,9 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss) {
 
   for (auto& node : _nodes) {
     auto node_layers = node->getInternalFullyConnectedLayers();
-    _sparse_layers.insert(_sparse_layers.end(), node_layers.begin(),
-                          node_layers.end());
+    _internal_fully_connected_layers.insert(
+        _internal_fully_connected_layers.end(), node_layers.begin(),
+        node_layers.end());
   }
 }
 
@@ -64,20 +67,27 @@ MetricData BoltGraph::train(
     bool verbose) {
   verifyInputForGraph(train_data);
 
-  uint32_t batch_size = train_data->at(0).getBatchSize();
+  // TODO(Nicholas): Switch to batch_size property in dataset.
+  uint32_t max_batch_size = train_data->at(0).getBatchSize();
 
-  uint32_t rebuild_hash_tables_batch = getRebuildHashTablesBatchInterval(
-      rebuild_hash_tables, batch_size, train_data->len());
+  uint32_t rebuild_hash_tables_batch =
+      RebuildHashTablesFunctionsAutotuning::getRebuildHashTablesBatchInterval(
+          rebuild_hash_tables, max_batch_size, train_data->len());
 
   uint32_t reconstruct_hash_functions_batch =
-      getReconstructHashFunctionsBatchInterval(reconstruct_hash_functions,
-                                               batch_size, train_data->len());
+      RebuildHashTablesFunctionsAutotuning::
+          getReconstructHashFunctionsBatchInterval(
+              reconstruct_hash_functions, max_batch_size, train_data->len());
 
   uint64_t num_train_batches = train_data->numBatches();
 
-  // Because of how the datasets are read we know that all batches will not have
-  // a batch size larger than this so we can just set the batch size here.
-  prepareForBatchProcessing(batch_size, /* use_sparsity=*/true);
+  /*
+    Because of how the datasets are read we know that all batches will not have
+    a batch size larger than the first batch_size. We will be using the same
+    datastructures to store the activations for every batch during training so
+    we need this to be able to support the largest batch size.
+   */
+  prepareToProcessBatches(max_batch_size, /* use_sparsity=*/true);
 
   std::vector<double> time_per_epoch;
 
@@ -137,15 +147,17 @@ void BoltGraph::processTrainingBatch(BoltBatch& batch_inputs,
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
     forward(vec_id, &batch_labels[vec_id]);
 
-    _loss->lossGradients(_output->getOutput(vec_id), batch_labels[vec_id],
+    _loss->lossGradients(_output->getOutputVector(vec_id), batch_labels[vec_id],
                          batch_inputs.getBatchSize());
 
     backpropagate(vec_id);
 
-    metrics.processSample(_output->getOutput(vec_id), batch_labels[vec_id]);
+    metrics.processSample(_output->getOutputVector(vec_id),
+                          batch_labels[vec_id]);
   }
 
-  updateParameters(learning_rate, ++_batch_cnt);
+  ++_batch_cnt;
+  updateParameters(learning_rate, _batch_cnt);
 }
 
 void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
@@ -181,17 +193,19 @@ InferenceMetricData BoltGraph::predict(
 
   bool compute_metrics = test_labels != nullptr;
 
-  uint32_t batch_size = test_data->at(0).getBatchSize();
+  uint32_t max_batch_size = test_data->at(0).getBatchSize();
 
   uint64_t num_test_batches = std::min(test_data->numBatches(), batch_limit);
 
   MetricAggregator metrics(metric_names, verbose);
 
-  // Because of how the datasets are read we know that all batches will not have
-  // a batch size larger than this so we can just set the batch size here.
-  // If sparse inference is not enabled we want the outptus to be dense,
-  // otherwise we want whatever the default for the layer is.
-  prepareForBatchProcessing(batch_size, use_sparsity);
+  /*
+   Because of how the datasets are read we know that all batches will not have
+   a batch size larger than the first batch_size. We will be using the same
+   datastructures to store the activations for every batch during training so
+   we need this to be able to support the largest batch size.
+  */
+  prepareToProcessBatches(max_batch_size, use_sparsity);
 
   ProgressBar bar(num_test_batches, verbose);
 
@@ -224,11 +238,16 @@ InferenceMetricData BoltGraph::predict(
   return metric_vals;
 }
 
+// This syntax means that we are implementing the template but only for the
+// specific case where the template is a BoltBatch, i.e. this version of the
+// code will be used iff the template is a BoltBatch.
 template <>
 void BoltGraph::processInferenceBatch(BoltBatch& batch_inputs,
                                       const BoltBatch* batch_labels,
                                       MetricAggregator& metrics,
                                       bool compute_metrics) {
+  // If we are using a BoltBatch we assume there is only one input. This is
+  // checked in the verifyInputForGraph() function.
   _inputs[0]->setInputs(&batch_inputs);
 
 #pragma omp parallel for default(none) \
@@ -239,7 +258,7 @@ void BoltGraph::processInferenceBatch(BoltBatch& batch_inputs,
     forward(vec_id, /*labels=*/nullptr);
 
     if (compute_metrics) {
-      metrics.processSample(_output->getOutput(vec_id),
+      metrics.processSample(_output->getOutputVector(vec_id),
                             (*batch_labels)[vec_id]);
     }
   }
@@ -253,13 +272,13 @@ void BoltGraph::forward(uint32_t batch_index, const BoltVector* labels) {
 }
 
 void BoltGraph::backpropagate(uint32_t batch_index) {
-  for (uint32_t i = _nodes.size(); i > 0; i--) {
-    _nodes[i - 1]->backpropagate(batch_index);
+  for (auto node_itr = _nodes.rbegin(); node_itr != _nodes.rend(); ++node_itr) {
+    (*node_itr)->backpropagate(batch_index);
   }
 }
 
-void BoltGraph::prepareForBatchProcessing(uint32_t batch_size,
-                                          bool use_sparsity) {
+void BoltGraph::prepareToProcessBatches(uint32_t batch_size,
+                                        bool use_sparsity) {
   for (auto& node : _nodes) {
     node->prepareForBatchProcessing(batch_size, use_sparsity);
   }
@@ -299,77 +318,32 @@ void BoltGraph::verifyInputForGraph(
     const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset) {
   (void)dataset;
   if (std::is_same<BATCH_T, BoltBatch>::value && _inputs.size() != 1) {
-    throw std::invalid_argument(
-        "Can only pass in dataset using type BoltBatch with a single input "
-        "layer.");
+    throw exceptions::GraphCompilationFailure(
+        "Only graphs with a single input layer can take in a dataset with "
+        "batch type BoltBatch.");
   }
 }
 
 void BoltGraph::verifyGraphProperties() {
-  if (_output->isInputNode()) {
-    throw std::invalid_argument("Output node cannot be an input node.");
-  }
+  GraphPropertyChecks::verifyOutputIsNotInputLayer(_output);
 
-  FullyConnectedLayerNode* fc_output =
-      dynamic_cast<FullyConnectedLayerNode*>(_output.get());
+  GraphPropertyChecks::verifySoftmaxIsUsedWithCategoricalCrossEntropy(_output,
+                                                                      _loss);
 
-  if (fc_output != nullptr) {
-    bool is_categorical_cross_entropy =
-        dynamic_cast<CategoricalCrossEntropyLoss*>(_loss.get()) != nullptr;
-    bool is_softmax =
-        fc_output->getActivationFunction() == ActivationFunction::Softmax;
-    if ((is_categorical_cross_entropy && !is_softmax) ||
-        (is_softmax && !is_categorical_cross_entropy)) {
-      throw std::invalid_argument(
-          "Softmax activation must be used with categorical cross entropy "
-          "loss.");
-    }
-
-    bool is_binary_cross_entropy =
-        dynamic_cast<BinaryCrossEntropyLoss*>(_loss.get()) != nullptr;
-    bool is_sigmoid =
-        fc_output->getActivationFunction() == ActivationFunction::Sigmoid;
-    if ((is_binary_cross_entropy && !is_sigmoid) ||
-        (is_sigmoid && !is_binary_cross_entropy)) {
-      throw std::invalid_argument(
-          "Sigmoid activation must be used with binary cross entropy loss.");
-    }
-  }
+  GraphPropertyChecks::verifySigmoidIsUsedWithBinaryCrossEntropy(_output,
+                                                                 _loss);
 }
 
 void BoltGraph::rebuildHashTables() {
-  for (auto& layer : _sparse_layers) {
+  for (auto& layer : _internal_fully_connected_layers) {
     layer->buildHashTables();
   }
 }
 
 void BoltGraph::reconstructHashFunctions() {
-  for (auto& layer : _sparse_layers) {
+  for (auto& layer : _internal_fully_connected_layers) {
     layer->reBuildHashFunction();
   }
-}
-
-static constexpr uint32_t RehashAutoTuneThreshold = 100000;
-static constexpr uint32_t RehashAutoTuneFactor1 = 100;
-static constexpr uint32_t RehashAutoTuneFactor2 = 20;
-
-uint32_t getRebuildHashTablesBatchInterval(std::optional<uint32_t> rehash,
-                                           uint32_t batch_size,
-                                           uint32_t data_len) {
-  if (!rehash) {
-    if (data_len < RehashAutoTuneThreshold) {
-      rehash = data_len / RehashAutoTuneFactor2;
-    } else {
-      rehash = data_len / RehashAutoTuneFactor1;
-    }
-  }
-  return std::max<uint32_t>(rehash.value() / batch_size, 1);
-}
-
-uint32_t getReconstructHashFunctionsBatchInterval(
-    std::optional<uint32_t> rebuild, uint32_t batch_size, uint32_t data_len) {
-  rebuild = rebuild.has_value() ? rebuild : (data_len / 4);
-  return std::max<uint32_t>(rebuild.value() / batch_size, 1);
 }
 
 }  // namespace thirdai::bolt

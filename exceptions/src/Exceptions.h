@@ -17,4 +17,10 @@ class LicenseCheckException : public std::logic_error {
       : std::logic_error("The license was found to be invalid: " + message){};
 };
 
+class GraphCompilationFailure : public std::logic_error {
+ public:
+  explicit GraphCompilationFailure(const std::string& message)
+      : std::logic_error("Error compiling graph: " + message) {}
+};
+
 }  // namespace thirdai::exceptions

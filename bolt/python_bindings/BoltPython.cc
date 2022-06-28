@@ -82,6 +82,16 @@ void createBoltSubmodule(py::module_& module) {
                      "the corresponding enum.");
 
   // TODO(Geordie, Nicholas): put loss functions in its own submodule
+
+  /*
+    The second template argument to py::class_ specifies the holder class,
+    which by default would be a std::unique_ptr.
+    See: https://pybind11.readthedocs.io/en/stable/advanced/smart_ptrs.html
+
+    The third template argument to py::class_ specifies the parent class if
+    there is a polymorphic relationship.
+    See: https://pybind11.readthedocs.io/en/stable/advanced/classes.html
+  */
   py::class_<LossFunction, std::shared_ptr<LossFunction>>(  // NOLINT
       bolt_submodule, "LossFunction", "Base class for all loss functions");
 

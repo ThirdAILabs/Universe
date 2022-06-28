@@ -1,7 +1,11 @@
 #pragma once
 
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/layers/BoltVector.h>
+#include <exceptions/src/Exceptions.h>
+#include <sstream>
 #include <stdexcept>
+#include <string>
 
 namespace thirdai::bolt {
 
@@ -16,7 +20,12 @@ class Input final : public Node {
   explicit Input(uint32_t expected_input_dim)
       : _expected_input_dim(expected_input_dim) {}
 
-  void initializeParameters() final {}
+  void initializeParameters() final {
+    if (_expected_input_dim == 0) {
+      throw exceptions::GraphCompilationFailure(
+          "Cannot have input layer with dimension 0.");
+    }
+  }
 
   void forward(uint32_t batch_index, const BoltVector* labels) final {
     (void)labels;
@@ -30,9 +39,15 @@ class Input final : public Node {
     (void)batch_cnt;
   }
 
-  void setInputs(BoltBatch* inputs) { _input_batch = inputs; }
+  void setInputs(BoltBatch* inputs) {
+    for (uint32_t i = 0; i < inputs->getBatchSize(); i++) {
+      checkDimForInput((*inputs)[i]);
+    }
 
-  BoltVector& getOutput(uint32_t batch_index) final {
+    _input_batch = inputs;
+  }
+
+  BoltVector& getOutputVector(uint32_t batch_index) final {
     return (*_input_batch)[batch_index];
   }
 
@@ -66,6 +81,28 @@ class Input final : public Node {
   bool isInputNode() const final { return true; }
 
  private:
+  void checkDimForInput(const BoltVector& vec) const {
+    if (vec.isDense()) {
+      if (vec.len > _expected_input_dim) {
+        throw std::invalid_argument(
+            "Received dense BoltVector with dimension=" +
+            std::to_string(vec.len) + " in input layer with dimension=" +
+            std::to_string(_expected_input_dim));
+      }
+    } else {
+      for (uint32_t i = 0; i < vec.len; i++) {
+        uint32_t active_neuron = vec.active_neurons[i];
+        if (active_neuron >= _expected_input_dim) {
+          throw std::invalid_argument(
+              "Received sparse BoltVector with active_neuron=" +
+              std::to_string(active_neuron) +
+              " in input layer with dimension=" +
+              std::to_string(_expected_input_dim));
+        }
+      }
+    }
+  }
+
   BoltBatch* _input_batch;
   uint32_t _expected_input_dim;
 };

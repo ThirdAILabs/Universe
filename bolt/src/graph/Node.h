@@ -28,7 +28,7 @@ class Node {
   virtual void updateParameters(float learning_rate, uint32_t batch_cnt) = 0;
 
   // Returns the ith output of the node.
-  virtual BoltVector& getOutput(uint32_t vec_index) = 0;
+  virtual BoltVector& getOutputVector(uint32_t vec_index) = 0;
 
   // Returns the output dimension of the node. This is used for subsequent nodes
   // during compilation.
@@ -38,13 +38,17 @@ class Node {
   virtual bool hasSparseOutput() const = 0;
 
   // Returns the sparse output size of the node. If the node is dense then this
-  // should be equivalent to outputDim().
+  // should be equal to outputDim().
   virtual uint32_t numNonzerosInOutput() const = 0;
 
-  // Initializes any state that the node must store for computations that is not
-  // part of the nodes parameters. For instance this could be the
-  // activations/gradients for a batch, or some other internal state that must
-  // be allocated after the batch size is known.
+  /*
+    Initializes any state that the node must store for computations that is not
+    part of the nodes parameters. For instance this could be the
+    activations/gradients for a batch, or some other internal state that must
+    be allocated after the batch size is known. This needs to be called before
+    training or inference with a new set of batches, since the batch size might
+    change in different calls to predict or train.
+  */
   virtual void prepareForBatchProcessing(uint32_t batch_size,
                                          bool use_sparsity) = 0;
 
@@ -52,9 +56,12 @@ class Node {
   // during compilation.
   virtual std::vector<NodePtr> getPredecessors() const = 0;
 
-  // Returns any fully connected layer objects used by the node. A list of all
-  // the fully connected layers in the network use useful when rebuilding hash
-  // tables or hash function, etc.
+  /*
+    Returns any fully connected layer objects used by the node. This list is
+    needed by the graph object to perform sparsity specific operations on the
+    entire network, like rebuilding all hash tables or reinitializing hash
+    functions after a certain number of batches.
+  */
   virtual std::vector<std::shared_ptr<FullyConnectedLayer>>
   getInternalFullyConnectedLayers() const = 0;
 

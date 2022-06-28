@@ -49,4 +49,22 @@ TEST(GraphRejectsInvalidInputsTest, RejectBinaryCrossEntropyWithoutSigmoid) {
       std::invalid_argument);
 }
 
+TEST(GraphRejectsInvalidInputsTest, AcceptsCategoricalCrossEntropyWithSoftmax) {
+  auto layer = std::make_shared<FullyConnectedLayerNode>(
+      /* dim= */ 10, /* activation= */ ActivationFunction::Softmax);
+  BoltGraph graph(/* inputs= */ {}, /* output= */ layer);
+
+  ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
+      graph.compile(std::make_shared<CategoricalCrossEntropyLoss>()));
+}
+
+TEST(GraphRejectsInvalidInputsTest, AcceptsBinaryCrossEntropyWithSigmoid) {
+  auto layer = std::make_shared<FullyConnectedLayerNode>(
+      /* dim= */ 10, /* activation= */ ActivationFunction::Sigmoid);
+  BoltGraph graph(/* inputs= */ {}, /* output= */ layer);
+
+  ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
+      graph.compile(std::make_shared<BinaryCrossEntropyLoss>()));
+}
+
 }  // namespace thirdai::bolt::tests
