@@ -110,8 +110,9 @@ class SequentialClassifier {
     auto [data, label] = pipeline.loadInMemory();
     std::vector<std::string> metrics{"root_mean_squared_error"};
     _network->predict(data, label, /* output_active_neurons= */ nullptr,
-                      /* output_activations= */ nullptr, metrics,
-                      std::numeric_limits<size_t>::max());
+                      /* output_activations = */ nullptr, 
+                      /* use_sparse_inference = */ true,
+                      metrics);
   }
 
  private:

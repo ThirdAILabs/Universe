@@ -244,7 +244,7 @@ class RootMeanSquaredError final : public Metric {
  public:
   RootMeanSquaredError() : _sum_of_squared_errors(0.0), _count(0) {}
 
-  void processSample(const BoltVector& output, const BoltVector& labels) final {
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
     float squared_errors = 0.0;
     MetricUtilities::visitActiveNeurons(output, labels,
                                         [&](float label_val, float output_val) {
@@ -273,8 +273,6 @@ class RootMeanSquaredError final : public Metric {
   static constexpr const char* name = "root_mean_squared_error";
 
   std::string getName() final { return name; }
-
-  bool forceDenseInference() final { return false; }
 
  private:
   std::atomic<float> _sum_of_squared_errors;

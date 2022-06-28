@@ -25,6 +25,8 @@ class MetricAggregator {
             std::make_shared<WeightedMeanAbsolutePercentageError>());
       } else if (name == MeanSquaredErrorMetric::name) {
         _metrics.push_back(std::make_shared<MeanSquaredErrorMetric>());
+      } else if (name == RootMeanSquaredError::name) {
+        _metrics.push_back(std::make_shared<RootMeanSquaredError>());
       } else {
         throw std::invalid_argument("'" + name + "' is not a valid metric.");
       }

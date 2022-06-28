@@ -21,6 +21,7 @@
 #include <dataset/src/encodings/text/UniGram.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
+#include <pybind11/pybind11.h>
 #include <sys/types.h>
 #include <chrono>
 #include <limits>
@@ -303,6 +304,9 @@ void createDatasetSubmodule(py::module_& module) {
            " * shuffle_seed: Int (Optional) - The seed for the RNG for "
            "shuffling the "
            "dataset.");
+
+  py::class_<ShuffleBufferConfig>(dataset_submodule, "ShuffleBufferConfig")
+      .def(py::init<>());
 
   py::class_<StreamingGenericDatasetLoader>(dataset_submodule, "DataPipeline")
       .def(py::init<std::string, std::vector<std::shared_ptr<Block>>,
