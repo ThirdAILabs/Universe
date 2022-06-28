@@ -123,7 +123,7 @@ class Model {
   void processTrainingBatch(BATCH_T& batch_inputs, BoltBatch& outputs,
                             const BoltBatch& batch_labels,
                             const LossFunction& loss_fn, float learning_rate,
-                            uint32_t rehash_batch, uint32_t rebuild_batch,
+
                             MetricAggregator& metrics);
 
   void processTestBatch(const BATCH_T& batch_inputs, BoltBatch& outputs,
@@ -131,6 +131,8 @@ class Model {
                         uint32_t* output_active_neurons,
                         float* output_activations, MetricAggregator& metrics,
                         bool compute_metrics);
+
+  void updateSampling(uint32_t rehash_batch, uint32_t rebuild_batch);
 
   // Computes forward path through the network.
   virtual void forward(uint32_t batch_index, const BATCH_T& input,
@@ -153,9 +155,6 @@ class Model {
 
   // Rebuild any hash tables (primarly for fully connected layers).
   virtual void buildHashTables() = 0;
-
-  // Shuffles neurons for random sampling.
-  virtual void shuffleRandomNeurons() = 0;
 
   // Allocates storage for activations and gradients for output layer.
   virtual BoltBatch getOutputs(uint32_t batch_size, bool force_dense) = 0;
@@ -196,6 +195,10 @@ class Model {
   uint32_t _batch_iter;
 
  private:
+  constexpr bool checkBatchInterval(uint32_t num_batches) {
+    return (_batch_iter % num_batches) == (num_batches - 1);
+  }
+
   uint32_t _epoch_count;
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/

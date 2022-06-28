@@ -7,7 +7,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <algorithm>
-#include <fstream>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -70,12 +69,7 @@ void TextClassifier::predict(
 
   std::optional<std::ofstream> output_file;
   if (output_filename) {
-    output_file = std::ofstream(*output_filename);
-    if (!output_file->good() || output_file->bad() || output_file->fail() ||
-        !output_file->is_open()) {
-      throw std::runtime_error("Unable to open output file '" +
-                               *output_filename + "'");
-    }
+    output_file = dataset::SafeFileIO::ofstream(*output_filename);
   }
 
   auto print_predictions_callback = [&](const BoltBatch& outputs,

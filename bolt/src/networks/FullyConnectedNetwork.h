@@ -61,15 +61,6 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     }
   }
 
-  void shuffleRandomNeurons() final {
-    if (_sparse_inference_enabled) {
-      return;
-    }
-    for (auto& layer : _layers) {
-      layer->shuffleRandNeurons();
-    }
-  }
-
   void buildNetworkSummary(std::stringstream& summary,
                            bool detailed = false) const {
     summary << "========= Bolt Network =========\n";

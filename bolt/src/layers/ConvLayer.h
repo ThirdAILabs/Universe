@@ -45,8 +45,6 @@ class ConvLayer final : public SequentialLayer {
 
   void reBuildHashFunction() final;
 
-  void shuffleRandNeurons() final;
-
   uint32_t getDim() const final { return _dim; }
 
   uint32_t getInputDim() const final { return _prev_dim; }

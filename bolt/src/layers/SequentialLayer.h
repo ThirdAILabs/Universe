@@ -28,8 +28,6 @@ class SequentialLayer {
 
   virtual void reBuildHashFunction() = 0;
 
-  virtual void shuffleRandNeurons() = 0;
-
   // Returns the dimenion of the layer.
   virtual uint32_t getDim() const = 0;
 

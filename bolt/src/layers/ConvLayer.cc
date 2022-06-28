@@ -355,13 +355,6 @@ void ConvLayer::buildHashTables() {
   _hash_table->insertSequential(_num_filters, 0, hashes.data());
 }
 
-void ConvLayer::shuffleRandNeurons() {
-  if (_sparsity < 1.0 && !_force_sparse_for_inference) {
-    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(),
-                 std::random_device{});
-  }
-}
-
 float* ConvLayer::getWeights() const {
   float* weights_copy = new float[_dim * _prev_dim];
   std::copy(_weights.begin(), _weights.end(), weights_copy);

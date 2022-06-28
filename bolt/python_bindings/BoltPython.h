@@ -9,6 +9,7 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
 #include <pybind11/iostream.h>
@@ -19,7 +20,6 @@
 #include <algorithm>
 #include <csignal>
 #include <exception>
-#include <fstream>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -246,7 +246,8 @@ class PyNetwork final : public FullyConnectedNetwork {
    * To save without optimizer, shallow=true
    */
   void save(const std::string& filename, bool shallow) {
-    std::ofstream filestream(filename, std::ios::binary);
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
     this->setShallowSave(shallow);
     oarchive(*this);
@@ -277,7 +278,8 @@ class PyNetwork final : public FullyConnectedNetwork {
   bool isReadyForTraining() { return !this->anyLayerShallow(); }
 
   static std::unique_ptr<PyNetwork> load(const std::string& filename) {
-    std::ifstream filestream(filename, std::ios::binary);
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
     std::unique_ptr<PyNetwork> deserialize_into(new PyNetwork());
     iarchive(*deserialize_into);
