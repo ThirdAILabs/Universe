@@ -2,46 +2,10 @@
 
 #include "BlockInterface.h"
 #include <dataset/src/bolt_datasets/batch_processors/PairgramHasher.h>
+#include <dataset/src/bolt_datasets/batch_processors/TabularMetadataProcessor.h>
 #include <unordered_map>
 
 namespace thirdai::dataset {
-
-enum class TabularDataType {
-  Numeric,
-  Categorical,
-  Label
-};  // TODO(david) add datetime/text support
-
-// TODO(david) verify each column is valid?
-class TabularMetadata {
- public:
-  TabularMetadata() {}
-
-  // TODO(david) use a different map here?
-  uint32_t numColumns() const { return _col_to_type.size(); }
-
-  TabularDataType getType(uint32_t col) { return _col_to_type[col]; }
-
-  uint32_t numClasses() const { return _class_id_to_class.size(); }
-
-  std::vector<std::string> getColumnNames() { return _column_names; }
-
-  // TODO(david) check if invalid id
-  std::string getClassName(uint32_t class_id) {
-    return _class_id_to_class[class_id];
-  }
-  // TODO(david) check if invalid/new label?? or could do this in parsing
-  uint32_t getClassId(const std::vector<std::string_view>& input_row) {
-    _class_to_class_id[input_row[label_col_index]];
-  }
-
- private:
-  uint32_t label_col_index;
-  std::vector<std::string> _column_names;
-  std::unordered_map<uint32_t, TabularDataType> _col_to_type;
-  std::unordered_map<std::string_view, uint32_t> _class_to_class_id;
-  std::vector<std::string> _class_id_to_class;
-};
 
 class TabularPairGram : public Block {
  public:
@@ -62,13 +26,19 @@ class TabularPairGram : public Block {
     for (uint32_t col = 0; col < input_row.size(); col++) {
       uint32_t unigram;
       switch (_metadata.getType(col)) {
-        case TabularDataType::Numeric:
-          // bin the column according to min and max
-          // get the unigram of the column
-          input_row[col];
-        case TabularDataType::Categorical:
-          // get unigram from the column
-          input_row[col];
+        case TabularDataType::Numeric: {
+          // TODO(david) if stof fails
+          float value = std::stof(std::to_string(input_row[col]));
+          std::string bin = _metadata.getColBin(col, value);
+          unigram_hashes.push_back(calculateUnigram(bin));
+          break;
+        }
+        case TabularDataType::Categorical: {
+          unigram_hashes.push_back(calculateUnigram(input_row[col]));
+          break;
+        }
+        case TabularDataType::Label:
+          break;
       }
       unigram_hashes.push_back(unigram);
       vec.addSparseFeatureToSegment(unigram % _output_range,
@@ -81,6 +51,11 @@ class TabularPairGram : public Block {
   }
 
  private:
+  uint32_t calculateUnigram(const std::string_view& item) {
+    return hashing::MurmurHash(item.data(), item.size(), HASH_SEED);
+  }
+
+  static constexpr uint32_t HASH_SEED = 3829;
   TabularMetadata _metadata;
   uint32_t _output_range;
 };

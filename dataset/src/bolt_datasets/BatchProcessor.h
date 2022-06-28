@@ -24,6 +24,20 @@ class BatchProcessor {
   virtual ~BatchProcessor() = default;
 
  protected:
+  std::vector<std::string_view> parseCsvRow(const std::string& row,
+                                            char delimiter) const {
+    std::vector<std::string_view> parsed;
+    size_t start = 0;
+    size_t end = 0;
+    while (end != std::string::npos) {
+      end = row.find(delimiter, start);
+      size_t len = end == std::string::npos ? row.size() - start : end - start;
+      parsed.push_back(std::string_view(row.data() + start, len));
+      start = end + 1;
+    }
+    return parsed;
+  }
+
   // Default constructor for cereal.
   BatchProcessor() {}
 
@@ -79,7 +93,7 @@ class ComputeBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
   std::optional<BoltDataLabelPair<bolt::BoltBatch>> createBatch(
       const std::vector<std::string>& rows) final {
     // #pragma omp parallel for default(none) shared(rows)
-    for (const std::string row : rows) {
+    for (const std::string& row : rows) {
       processRow(row);
     }
 
@@ -87,8 +101,7 @@ class ComputeBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
   }
 
  protected:
-  virtual std::pair<bolt::BoltVector, bolt::BoltVector> processRow(
-      const std::string& row) = 0;
+  virtual void processRow(const std::string& row) = 0;
 
   // Default constructor for cereal.
   ComputeBatchProcessor() {}

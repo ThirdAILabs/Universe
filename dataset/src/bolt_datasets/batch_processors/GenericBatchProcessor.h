@@ -65,7 +65,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
 #pragma omp parallel for default(none) \
     shared(rows, batch_inputs, batch_labels, found_error)
     for (size_t i = 0; i < rows.size(); ++i) {
-      auto columns = parseCsvRow(rows[i]);
+      auto columns = parseCsvRow(rows[i], _delimiter);
       if (columns.size() < _expected_num_cols) {
         found_error = true;
         continue;
@@ -82,7 +82,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     */
     if (found_error) {
       for (const auto& row : rows) {
-        auto n_cols = parseCsvRow(row).size();
+        auto n_cols = parseCsvRow(row, _delimiter).size();
         if (n_cols < _expected_num_cols) {
           std::stringstream error_ss;
           error_ss << "[GenericBatchProcessor::parseCsvRow] Expected "
@@ -105,20 +105,6 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
   uint32_t getInputDim() const { return sumBlockDims(_input_blocks); }
 
   uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
-
- protected:
-  std::vector<std::string_view> parseCsvRow(const std::string& row) const {
-    std::vector<std::string_view> parsed;
-    size_t start = 0;
-    size_t end = 0;
-    while (end != std::string::npos) {
-      end = row.find(_delimiter, start);
-      size_t len = end == std::string::npos ? row.size() - start : end - start;
-      parsed.push_back(std::string_view(row.data() + start, len));
-      start = end + 1;
-    }
-    return parsed;
-  }
 
  private:
   /**

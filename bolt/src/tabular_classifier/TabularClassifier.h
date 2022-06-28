@@ -13,7 +13,9 @@ class TabularClassifier {
  public:
   TabularClassifier(const std::string& model_size, uint32_t n_classes);
 
-  void train(const std::string& filename, uint32_t epochs, float learning_rate);
+  void train(const std::string& filename,
+             std::vector<std::string>& column_datatypes, uint32_t epochs,
+             float learning_rate);
 
   void predict(const std::string& filename,
                const std::optional<std::string>& output_filename);
@@ -34,13 +36,14 @@ class TabularClassifier {
   }
 
  private:
-  dataset::TabularMetadata getTabularMetadata(const std::string& filename,
-                                              uint32_t batch_size = 256) {
+  dataset::TabularMetadata getTabularMetadata(
+      const std::string& filename, std::vector<std::string>& column_datatypes,
+      uint32_t batch_size = 256) {
     std::shared_ptr<dataset::DataLoader> data_loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
 
     std::shared_ptr<dataset::TabularMetadataProcessor> batch_processor =
-        std::make_shared<dataset::TabularMetadataProcessor>();
+        std::make_shared<dataset::TabularMetadataProcessor>(column_datatypes);
 
     std::make_shared<dataset::StreamingDataset<BoltBatch>>(data_loader,
                                                            batch_processor);

@@ -33,14 +33,14 @@ TabularClassifier::TabularClassifier(const std::string& model_size,
                                                   ActivationFunction::Softmax)};
   _model =
       std::make_unique<FullyConnectedNetwork>(std::move(configs), _input_dim);
-
-  _metadata;  // TODO(david) how to initialize metadata??
+  // TODO(david) how to initialize metadata??
 }
 
-void TabularClassifier::train(const std::string& filename, uint32_t epochs,
-                              float learning_rate) {
+void TabularClassifier::train(const std::string& filename,
+                              std::vector<std::string>& column_datatypes,
+                              uint32_t epochs, float learning_rate) {
   // TODO(david) what happens if train() called twice?
-  _metadata = getTabularMetadata(filename);
+  _metadata = getTabularMetadata(filename, column_datatypes);
 
   auto dataset = loadStreamingDataset(filename, _metadata);
 
