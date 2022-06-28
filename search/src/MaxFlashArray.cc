@@ -19,11 +19,22 @@ MaxFlashArray<LABEL_T>::MaxFlashArray(hashing::HashFunction* function,
           max_doc_size, std::numeric_limits<LABEL_T>::max())),
       _hash_function(function),
       _maxflash_array(),
-      _collision_count_to_sim(function->range()) {
-  for (uint32_t i = 0; i < _hash_function->numTables(); i++) {
-    _collision_count_to_sim[i] =
-        std::exp(std::log(static_cast<float>(i) / function->numTables()) /
-                 hashes_per_table);
+      // This goes up to _hash_function->numTables() inclusive because it is
+      // possible for a point to collide anywhere in [0, num_tables]
+      _collision_count_to_sim(_hash_function->numTables() + 1) {
+  for (uint32_t collision_count = 0;
+       collision_count <= _collision_count_to_sim.size(); collision_count++) {
+    float table_collision_probability =
+        static_cast<float>(collision_count) / _hash_function->numTables();
+    // For a given query and datapoint, if their similariy is sim, then each of
+    // the hashes_per_table hash functions in the LSH table has collision
+    // probability sim. Since the point collides only if all hashes_per_table
+    // hashes collide, we have that
+    // sim^hashes_per_table = table_collision_probability
+    // Simplifying,
+    // sim = e^(ln(table_collion_probability) / hashes_per_table)
+    _collision_count_to_sim[collision_count] =
+        std::exp(std::log(table_collision_probability) / hashes_per_table);
   }
 }
 
@@ -82,6 +93,10 @@ std::vector<float> MaxFlashArray<LABEL_T>::getDocumentScores(
       result[i] = _maxflash_array.at(flash_index)
                       ->getScore(hashes, query.getBatchSize(), buffer,
                                  _collision_count_to_sim);
+      // We normalize different size queries (thereby computing avg sim instead
+      // of max sim) in order to not overweight long queries. This only matters
+      // when different queries can have different number of embeddings.
+      result[i] /= query.getBatchSize();
     }
   }
 

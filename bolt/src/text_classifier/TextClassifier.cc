@@ -6,7 +6,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <algorithm>
-#include <fstream>
 #include <memory>
 #include <optional>
 #include <regex>
@@ -56,7 +55,7 @@ TextClassifier::TextClassifier(const std::string& model_size,
   _batch_processor =
       std::make_shared<dataset::TextClassificationProcessor>(input_dim);
 
-  _model->enableSparseInference();
+  _model->freezeHashTables();
 }
 
 void TextClassifier::train(const std::string& filename, uint32_t epochs,
@@ -78,7 +77,7 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
     auto [train_data, train_labels] = dataset->loadInMemory();
 
     _model->train(train_data, train_labels, loss, learning_rate, 1);
-    _model->enableSparseInference();
+    _model->freezeHashTables();
     _model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
   }
 }
@@ -90,12 +89,7 @@ void TextClassifier::predict(
 
   std::optional<std::ofstream> output_file;
   if (output_filename) {
-    output_file = std::ofstream(*output_filename);
-    if (!output_file->good() || output_file->bad() || output_file->fail() ||
-        !output_file->is_open()) {
-      throw std::runtime_error("Unable to open output file '" +
-                               *output_filename + "'");
-    }
+    output_file = dataset::SafeFileIO::ofstream(*output_filename);
   }
 
   auto print_predictions_callback = [&](const BoltBatch& outputs,
@@ -128,7 +122,8 @@ void TextClassifier::predict(
     predictions, and can instead compute the predictions using the
     back_callback.
   */
-  _model->predictOnStream(dataset, {"categorical_accuracy"},
+  _model->predictOnStream(dataset, /* use_sparse_inference= */ true,
+                          /* metric_names= */ {"categorical_accuracy"},
                           print_predictions_callback);
 
   if (output_file) {
