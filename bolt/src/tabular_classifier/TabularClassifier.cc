@@ -18,9 +18,9 @@
 namespace thirdai::bolt {
 
 TabularClassifier::TabularClassifier(const std::string& model_size,
-                                     uint32_t n_classes) {
-  // TODO(david) change these autotunes?
-  _input_dim = 100000;
+                                     uint32_t n_classes)
+    : _input_dim(100000) {
+  // TODO(david) change autotunes?
   uint32_t hidden_layer_size =
       getHiddenLayerSize(model_size, n_classes, _input_dim);
 
@@ -31,16 +31,18 @@ TabularClassifier::TabularClassifier(const std::string& model_size,
           hidden_layer_size, hidden_layer_sparsity, ActivationFunction::ReLU),
       std::make_shared<FullyConnectedLayerConfig>(n_classes,
                                                   ActivationFunction::Softmax)};
-
   _model =
       std::make_unique<FullyConnectedNetwork>(std::move(configs), _input_dim);
+
+  _metadata;  // TODO(david) how to initialize metadata??
 }
 
 void TabularClassifier::train(const std::string& filename, uint32_t epochs,
                               float learning_rate) {
-  dataset::TabularMetadata metadata = getTabularMetadata(filename);
+  // TODO(david) what happens if train() called twice?
+  _metadata = getTabularMetadata(filename);
 
-  auto dataset = loadStreamingDataset(filename, metadata);
+  auto dataset = loadStreamingDataset(filename, _metadata);
 
   CategoricalCrossEntropyLoss loss;
   if (!canLoadDatasetInMemory(filename)) {
@@ -49,7 +51,7 @@ void TabularClassifier::train(const std::string& filename, uint32_t epochs,
       _model->trainOnStream(dataset, loss, learning_rate);
 
       // Create new stream for next epoch with new data loader.
-      dataset = loadStreamingDataset(filename, metadata);
+      dataset = loadStreamingDataset(filename, _metadata);
     }
 
   } else {

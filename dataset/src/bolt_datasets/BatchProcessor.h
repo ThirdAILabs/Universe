@@ -74,7 +74,37 @@ class UnaryBoltBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
   }
 };
 
+class ComputeBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
+ public:
+  std::optional<BoltDataLabelPair<bolt::BoltBatch>> createBatch(
+      const std::vector<std::string>& rows) final {
+    // #pragma omp parallel for default(none) shared(rows)
+    for (const std::string row : rows) {
+      processRow(row);
+    }
+
+    return std::make_pair(bolt::BoltBatch(), bolt::BoltBatch());
+  }
+
+ protected:
+  virtual std::pair<bolt::BoltVector, bolt::BoltVector> processRow(
+      const std::string& row) = 0;
+
+  // Default constructor for cereal.
+  ComputeBatchProcessor() {}
+
+ private:
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<BatchProcessor>(this));
+  }
+};
+
 }  // namespace thirdai::dataset
 
 CEREAL_REGISTER_TYPE(thirdai::dataset::BatchProcessor<thirdai::bolt::BoltBatch>)
 CEREAL_REGISTER_TYPE(thirdai::dataset::UnaryBoltBatchProcessor)
+CEREAL_REGISTER_TYPE(thirdai::dataset::ComputeBatchProcessor)

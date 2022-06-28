@@ -4,6 +4,7 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/src/blocks/TabularBlocks.h>
 #include <dataset/src/bolt_datasets/batch_processors/TabularBatchProcessor.h>
+#include <dataset/src/bolt_datasets/batch_processors/TabularMetadataProcessor.h>
 #include <memory>
 
 namespace thirdai::bolt {
@@ -33,7 +34,19 @@ class TabularClassifier {
   }
 
  private:
-  dataset::TabularMetadata getTabularMetadata(const std::string& filename) {}
+  dataset::TabularMetadata getTabularMetadata(const std::string& filename,
+                                              uint32_t batch_size = 256) {
+    std::shared_ptr<dataset::DataLoader> data_loader =
+        std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
+
+    std::shared_ptr<dataset::TabularMetadataProcessor> batch_processor =
+        std::make_shared<dataset::TabularMetadataProcessor>();
+
+    std::make_shared<dataset::StreamingDataset<BoltBatch>>(data_loader,
+                                                           batch_processor);
+
+    return batch_processor.getMetadata();
+  }
 
   std::shared_ptr<dataset::StreamingDataset<BoltBatch>> loadStreamingDataset(
       const std::string& filename, dataset::TabularMetadata metadata,
@@ -66,7 +79,8 @@ class TabularClassifier {
   }
 
   uint32_t _input_dim;
-  dataset::TabularMetadata _metadata;  // TODO(david) make shared pointer??
+  dataset::TabularMetadata
+      _metadata;  // TODO(david) make shared pointer/optional??
   std::unique_ptr<FullyConnectedNetwork> _model;
 };
 

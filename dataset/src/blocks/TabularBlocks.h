@@ -9,7 +9,8 @@ namespace thirdai::dataset {
 enum class TabularDataType {
   Numeric,
   Categorical,
-};
+  Label
+};  // TODO(david) add datetime/text support
 
 // TODO(david) verify each column is valid?
 class TabularMetadata {
