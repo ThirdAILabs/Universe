@@ -32,6 +32,7 @@ def get_recall(result, test_y, num_true_labels_per_sample):
         if result[i] in test_y[0][start:end]:
             count += 1
     recall = count / (len(test_y[2]) - 1)
+    print("Recall: ", recall)
     return recall
 
 
@@ -64,7 +65,7 @@ def test_mach():
         use_softmax=True,
     )
 
-    mach.train(train_x, train_y, learning_rate=0.001)
+    mach.train(train_x, train_y, learning_rate=0.001, batch_size=512, num_epochs=5)
 
     result_fast = mach.query_fast(test_x)
     result_slow = mach.query_slow(test_x)

@@ -1,7 +1,6 @@
 import math
 import numpy as np
 from thirdai._thirdai import bolt
-from tqdm import tqdm
 
 
 class Mach:
@@ -57,10 +56,16 @@ class Mach:
         self,
         train_x,
         train_y,
-        num_epochs=5,
-        batch_size=512,
-        learning_rate=0.001,
+        learning_rate,
+        num_epochs,
+        batch_size,
     ):
+
+        loss_func = (
+            bolt.CategoricalCrossEntropyLoss()
+            if self.use_softmax
+            else bolt.BinaryCrossEntropyLoss()
+        )
 
         for epoch in range(num_epochs):
             for classifier_id, classifier in enumerate(self.classifiers):
@@ -70,35 +75,23 @@ class Mach:
                 classifier.train(
                     train_data=train_x,
                     train_labels=mapped_train_y,
-                    loss_fn=(
-                        bolt.CategoricalCrossEntropyLoss()
-                        if self.use_softmax
-                        else bolt.BinaryCrossEntropyLoss()
-                    ),
+                    loss_fn=loss_func,
                     learning_rate=learning_rate,
                     epochs=1,
                     batch_size=batch_size,
                     verbose=True,
                 )
 
-    def print_current_metrics(metrics=["categorical_accuracy"]):
-        for classifier in self.classifiers:
-            mapped_test_y = self.map_labels_to_groups(test_y, classifier_id)
-            classifier.predict(
-                test_data=test_x,
-                test_labels=mapped_test_y,
-                metrics=metrics,
-            )
-
     def query_slow(self, batch):
         results = np.array(
             [
-                classifier.predict(batch, None, 2048, verbose=True)[1]
+                classifier.predict(batch, test_labels=None, verbose=False)[1]
                 for classifier in self.classifiers
             ]
         )
-        scores = np.zeros(shape=(len(batch[2]) - 1, self.max_label))
-        for vec_id in tqdm(list(range(len(scores)))):
+        num_query_results = results.shape[1]
+        scores = np.zeros(shape=(num_query_results, self.max_label))
+        for vec_id in range(num_query_results):
             for label in range(self.max_label):
                 for classifier_id in range(self.num_classifiers):
                     scores[vec_id, label] += results[
@@ -109,24 +102,30 @@ class Mach:
     # TODO(josh): Can implement in C++ for way more speed
     # TODO(josh): Use better inference, this is equivalent to threshold = 1
     # TODO(josh): Allow returning top k instead of just top 1
-    def query_fast(self, batch, m=10):
-        num_elements = len(batch[2]) - 1
+    def query_fast(self, batch, num_groups_to_check_per_classifier=10):
         results = np.array(
             [
-                classifier.predict(batch, None, 2048, verbose=True)[1]
+                classifier.predict(batch, test_labels=None, verbose=False)[1]
                 for classifier in self.classifiers
             ]
         )
-        top_m_groups = np.array([self._top_k_indices(arr, m) for arr in results])
+        top_m_groups = np.array(
+            [
+                self._top_k_indices(arr, num_groups_to_check_per_classifier)
+                for arr in results
+            ]
+        )
+        num_query_results = results.shape[1]
 
-        scores = np.zeros(shape=(num_elements, self.max_label))
-        for vec_id in list(range(len(scores))):
-            label_set = []
+        scores = np.zeros(shape=(num_query_results, self.max_label))
+        for vec_id in range(len(scores)):
+
+            label_set = set()
             for classifier_id in range(self.num_classifiers):
                 for group in top_m_groups[classifier_id, vec_id]:
                     for label in self.group_to_labels[classifier_id][group]:
-                        label_set.append(label)
-            label_set = set(label_set)
+                        label_set.add(label)
+
             for classifier_id in range(self.num_classifiers):
                 for label in label_set:
                     scores[vec_id, label] += results[
