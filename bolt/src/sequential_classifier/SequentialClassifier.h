@@ -74,7 +74,8 @@ class SequentialClassifier {
     auto label_blocks = buildLabelBlocks(columns);
     dataset::StreamingGenericDatasetLoader pipeline(
         loader, input_blocks, label_blocks, /* shuffle = */ true,
-        dataset::ShuffleBufferConfig(),
+        dataset::ShuffleBufferConfig(/* buffer_size = */ 1000,
+                                     /* seed = */ 341),
         /* has_header = */ false, _delimiter);
     if (!_network) {
       _network = buildNetwork(pipeline);
@@ -99,7 +100,7 @@ class SequentialClassifier {
     auto input_blocks = buildInputBlocks(columns);
     auto label_blocks = buildLabelBlocks(columns);
     dataset::StreamingGenericDatasetLoader pipeline(
-        loader, input_blocks, label_blocks, /* shuffle = */ true,
+        loader, input_blocks, label_blocks, /* shuffle = */ false,
         dataset::ShuffleBufferConfig(),
         /* has_header = */ false, _delimiter);
     if (!_network) {
@@ -110,9 +111,8 @@ class SequentialClassifier {
     auto [data, label] = pipeline.loadInMemory();
     std::vector<std::string> metrics{"root_mean_squared_error"};
     _network->predict(data, label, /* output_active_neurons= */ nullptr,
-                      /* output_activations = */ nullptr, 
-                      /* use_sparse_inference = */ true,
-                      metrics);
+                      /* output_activations = */ nullptr,
+                      /* use_sparse_inference = */ true, metrics);
   }
 
  private:
@@ -156,7 +156,8 @@ class SequentialClassifier {
   Blocks buildLabelBlocks(Columns& columns) {
     auto task_lower = toLower(_config._task);
     if (task_lower == "regression") {
-      return {std::make_shared<dataset::ContinuousBlock>(columns.at("target"))};
+      return {std::make_shared<dataset::ContinuousBlock>(
+          columns.at(_schema.at("target")))};
     }
     if (task_lower == "classification") {
       if (_config._n_target_classes == 0) {
@@ -165,7 +166,7 @@ class SequentialClassifier {
             "n_target_classes is set to 0 in config.");
       }
       return {std::make_shared<dataset::CategoricalBlock>(
-          columns.at("target"), _config._n_target_classes)};
+          columns.at(_schema.at("target")), _config._n_target_classes)};
     }
     std::stringstream error_ss;
     error_ss
@@ -184,6 +185,7 @@ class SequentialClassifier {
 
   Blocks buildInputBlocks(const Columns& columns) {
     checkValidSchema();
+    checkColumns(columns);
     std::vector<std::shared_ptr<dataset::Block>> blocks;
     addDateBlock(columns, blocks);
     addUserIdBlock(columns, blocks);
@@ -216,6 +218,18 @@ class SequentialClassifier {
     }
   }
 
+  void checkColumns(const Columns& columns) {
+    for (const auto& [key, name] : _schema) {
+      if (columns.count(name) == 0) {
+        std::stringstream error_ss;
+        error_ss << "[SequentialClassifier] Column name for key '" << key
+                 << "' is set to '" << name
+                 << "' but we could not find this column in the header.";
+        throw std::invalid_argument(error_ss.str());
+      }
+    }
+  }
+
   void addUserIdBlock(const Columns& columns, Blocks& blocks) {
     if (_schema.count("user") == 0) {
       return;
@@ -226,7 +240,7 @@ class SequentialClassifier {
           "n_users is set to 0 in config.");
     }
     blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
-        columns.at("user"), _config._n_users));
+        columns.at(_schema.at("user")), _config._n_users));
   }
 
   void addItemIdBlock(const Columns& columns, Blocks& blocks) {
@@ -235,7 +249,7 @@ class SequentialClassifier {
           "Could not find required key 'item' in schema.");
     }
     blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
-        columns.at("item"), _config._n_items));
+        columns.at(_schema.at("item")), _config._n_items));
   }
 
   void addUserTimeSeriesBlock(const Columns& columns,
@@ -253,14 +267,14 @@ class SequentialClassifier {
     if (_schema.count("quantities") == 0) {
       has_count_col = false;
     } else {
-      count_col = columns.at("quantities");
+      count_col = columns.at(_schema.at("quantities"));
     }
 
     dataset::DynamicCountsConfig config(/* max_range = */ 1, /* n_rows = */ 5,
                                         /* range_pow = */ 22);
     blocks.push_back(std::make_shared<dataset::TrendBlock>(
-        has_count_col, columns.at("user"), columns.at("timestamp"), count_col,
-        _config._horizon,
+        has_count_col, columns.at(_schema.at("user")),
+        columns.at(_schema.at("timestamp")), count_col, _config._horizon,
         /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
         config));
   }
@@ -279,7 +293,7 @@ class SequentialClassifier {
     if (_schema.count("quantities") == 0) {
       has_count_col = false;
     } else {
-      count_col = columns.at("quantities");
+      count_col = columns.at(_schema.at("quantities"));
     }
 
     dataset::DynamicCountsConfig config(/* max_range = */ 1, /* n_rows = */ 5,
@@ -287,8 +301,8 @@ class SequentialClassifier {
 
     if (_trend_block == nullptr) {
       _trend_block = std::make_shared<dataset::TrendBlock>(
-          has_count_col, columns.at("item"), columns.at("timestamp"), count_col,
-          _config._horizon,
+          has_count_col, columns.at(_schema.at("item")),
+          columns.at(_schema.at("timestamp")), count_col, _config._horizon,
           /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
           config);
     }
@@ -303,7 +317,7 @@ class SequentialClassifier {
           "Could not find required key 'timestamp' in schema.");
     }
     blocks.push_back(std::make_shared<dataset::DateBlock>(
-        /* col = */ columns.at("timestamp")));
+        /* col = */ columns.at(_schema.at("timestamp"))));
   }
 
   void addItemTextBlock(const Columns& columns, Blocks& blocks) {
@@ -311,7 +325,7 @@ class SequentialClassifier {
       return;
     }
     blocks.push_back(std::make_shared<dataset::TextBlock>(
-        columns.at("item_text"), /* dim = */ 100000));
+        columns.at(_schema.at("item_text")), /* dim = */ 100000));
   }
 
   void addItemCategoricalBlock(const Columns& columns, Blocks& blocks) {
@@ -324,7 +338,8 @@ class SequentialClassifier {
           "schema but n_item_categories is set to 0 in config.");
     }
     blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
-        columns.at("item_categorical"), _config._n_item_categories));
+        columns.at(_schema.at("item_categorical")),
+        _config._n_item_categories));
   }
 
   Schema _schema;
