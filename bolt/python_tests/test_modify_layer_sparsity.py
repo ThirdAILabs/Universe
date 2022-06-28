@@ -1,7 +1,7 @@
 from utils import *
 import pytest
 
-ptestmark = [pytest.mark.unit]
+pytestmark = [pytest.mark.unit]
 
 
 def predict_train_one_epoch_predict(network, test_data, test_labels):
