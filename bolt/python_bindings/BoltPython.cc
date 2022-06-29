@@ -282,8 +282,8 @@ void createBoltSubmodule(py::module_& module) {
            " * loss_fn: LossFunction - The loss function to minimize."
            " * batch_size: Batch size , default is set to 256."
            " * get_difference: Boolean - optional, If set to False, return "
-           "only the gradients of input with labels being set with second highest "
-           "activation")
+           "only the gradients of input with labels being set with second "
+           "highest activation.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),
