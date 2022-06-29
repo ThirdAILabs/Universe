@@ -49,6 +49,16 @@ class TrendBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _expected_num_cols; };
 
+  void prepareForBatch(const std::vector<std::string_view>& first_row) final {
+    std::tm time = TimeUtils::timeStringToTimeObject(first_row[_timestamp_col]);
+    // TODO(Geordie) should timestamp be uint64_t?
+    uint32_t timestamp = std::mktime(&time);
+    if (timestamp - _primary_start_timestamp > _lifetime) {
+      _primary_start_timestamp = timestamp;
+      _index.handleNewLifetime();
+    }
+  }
+
  protected:
   void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) final {
@@ -67,13 +77,6 @@ class TrendBlock : public Block {
       count = std::strtof(count_str.data(), &end);
     }
 
-#pragma omp critical
-    {
-      if (timestamp - _primary_start_timestamp > _lifetime) {
-        _primary_start_timestamp = timestamp;
-        _index.handleNewLifetime();
-      }
-    }
     _index.index(id, timestamp, count);
     std::vector<float> counts(_lookback);
     float sum = 0;

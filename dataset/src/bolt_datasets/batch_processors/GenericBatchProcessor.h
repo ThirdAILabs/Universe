@@ -62,6 +62,14 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     */
     std::atomic_bool found_error = false;
 
+    auto first_row = parseCsvRow(rows[0]);
+    for (auto& block : _input_blocks) {
+      block->prepareForBatch(first_row);
+    }
+    for (auto& block : _label_blocks) {
+      block->prepareForBatch(first_row);
+    }
+
 #pragma omp parallel for default(none) \
     shared(rows, batch_inputs, batch_labels, found_error)
     for (size_t i = 0; i < rows.size(); ++i) {
