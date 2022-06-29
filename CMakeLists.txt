@@ -167,6 +167,7 @@ endif()
 
 file(
   GLOB BOLT_SOURCES 
+  bolt/src/graph/*.cc
   bolt/src/layers/*.cc 
   bolt/src/networks/*.cc 
   bolt/src/utils/*.cc 

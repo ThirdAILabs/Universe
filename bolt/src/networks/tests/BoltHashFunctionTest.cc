@@ -29,7 +29,7 @@ static void testSimpleDatasetHashFunction(const std::string& hash_function) {
            n_classes, ActivationFunction::Softmax)},
       n_classes);
 
-  auto data = genDataset(/*add_noise = */ false);
+  auto data = genDataset(/* noisy_dataset = */ false);
 
   // train the network for two epochs
   network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
