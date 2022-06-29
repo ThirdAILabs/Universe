@@ -93,13 +93,13 @@ TEST(GraphTraversalTest, CorrectlyTraversesDAG) {
 
   std::vector<NodePtr> graph_nodes = graph.getNodeTraversalOrder();
 
-  ASSERT_EQ(graph_nodes.size(), 6);
+  ASSERT_EQ(graph_nodes.size(), 7);
 
   for (uint32_t node_indx = 0; node_indx < graph_nodes.size(); node_indx++) {
     DummyNode* dummy_node =
         dynamic_cast<DummyNode*>(graph_nodes[node_indx].get());
     ASSERT_NE(dummy_node, nullptr);
-    ASSERT_EQ(dummy_node->getID(), node_indx + 1);
+    ASSERT_EQ(dummy_node->getID(), node_indx);
   }
 }
 
