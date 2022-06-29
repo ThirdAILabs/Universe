@@ -1,3 +1,5 @@
+#pragma once
+
 #include "gmock/gmock.h"
 #include <bolt/src/graph/Node.h>
 
@@ -19,6 +21,8 @@ class MockNode : public Node {
   MOCK_METHOD(BoltVector&, getOutputVector, (uint32_t vec_index), (override));
 
   MOCK_METHOD(uint32_t, outputDim, (), (const override));
+
+  MOCK_METHOD(uint32_t, numNonzerosInOutput, (), (const override));
 
   MOCK_METHOD(void, prepareForBatchProcessing,
               (uint32_t batch_size, bool use_sparsity), (override));

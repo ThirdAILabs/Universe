@@ -22,7 +22,7 @@ TEST(ConcatenatedNodeTest, ForwardPassDenseConcatenationTest) {
       .WillByDefault(ReturnPointee(&node_2_output));
 
   ConcatenatedNode concat_node;
-  concat_node.setConcatenationInputs({concatenated_node1, concatenated_node2});
+  concat_node.setConcatenatedNodes({concatenated_node1, concatenated_node2});
 
   concat_node.prepareForBatchProcessing(/* batch_size = */ 1,
                                         /* use_sparsity = */ false);

@@ -55,6 +55,12 @@ class Input final : public Node {
 
   uint32_t outputDim() const final { return _expected_input_dim; }
 
+  uint32_t numNonzerosInOutput() const final {
+    throw std::logic_error(
+        "Cannot know ahead of time the number of nonzeros "
+        "in the output of an Input layer.");
+  }
+
   void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
     (void)batch_size;
     (void)use_sparsity;
