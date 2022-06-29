@@ -1,5 +1,6 @@
-#include "gmock/gmock.h"  // Brings in gMock.
+#include "gmock/gmock.h"
 #include <bolt/src/graph/Node.h>
+
 namespace thirdai::bolt::tests {
 
 // See https://google.github.io/googletest/gmock_for_dummies.html

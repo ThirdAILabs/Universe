@@ -14,7 +14,7 @@ class MockTraversalNode final : public MockNode {
  public:
   explicit MockTraversalNode(uint32_t id) : _id(id) {}
 
-  static std::shared_ptr<MockTraversalNode> make(uint32_t id) {
+  static std::shared_ptr<MockTraversalNode> makePtr(uint32_t id) {
     return std::make_shared<MockTraversalNode>(id);
   }
 
@@ -32,13 +32,13 @@ class MockTraversalNode final : public MockNode {
 };
 
 TEST(GraphTraversalTest, CorrectlyTraversesDAG) {
-  auto node0 = MockTraversalNode::make(0);
-  auto node1 = MockTraversalNode::make(1);
-  auto node2 = MockTraversalNode::make(2);
-  auto node3 = MockTraversalNode::make(3);
-  auto node4 = MockTraversalNode::make(4);
-  auto node5 = MockTraversalNode::make(5);
-  auto node6 = MockTraversalNode::make(6);
+  auto node0 = MockTraversalNode::makePtr(0);
+  auto node1 = MockTraversalNode::makePtr(1);
+  auto node2 = MockTraversalNode::makePtr(2);
+  auto node3 = MockTraversalNode::makePtr(3);
+  auto node4 = MockTraversalNode::makePtr(4);
+  auto node5 = MockTraversalNode::makePtr(5);
+  auto node6 = MockTraversalNode::makePtr(6);
 
   node6->setPredecesors({node0, node1, node2, node3, node4, node5});
   node5->setPredecesors({node0, node1, node2, node3, node4});
@@ -64,11 +64,11 @@ TEST(GraphTraversalTest, CorrectlyTraversesDAG) {
 }
 
 TEST(GraphTraversalTest, ThrowsExceptionForCycle) {
-  auto node0 = MockTraversalNode::make(0);
-  auto node1 = MockTraversalNode::make(1);
-  auto node2 = MockTraversalNode::make(2);
-  auto node3 = MockTraversalNode::make(3);
-  auto node4 = MockTraversalNode::make(4);
+  auto node0 = MockTraversalNode::makePtr(0);
+  auto node1 = MockTraversalNode::makePtr(1);
+  auto node2 = MockTraversalNode::makePtr(2);
+  auto node3 = MockTraversalNode::makePtr(3);
+  auto node4 = MockTraversalNode::makePtr(4);
 
   node4->setPredecesors({node3});
   node3->setPredecesors({node2});
@@ -82,8 +82,8 @@ TEST(GraphTraversalTest, ThrowsExceptionForCycle) {
 }
 
 TEST(GraphTraversalTest, ThrowsExceptionForSelfLoop) {
-  auto node0 = MockTraversalNode::make(0);
-  auto node1 = MockTraversalNode::make(1);
+  auto node0 = MockTraversalNode::makePtr(0);
+  auto node1 = MockTraversalNode::makePtr(1);
 
   node1->setPredecesors({node0});
   node0->setPredecesors({node0});
@@ -95,7 +95,7 @@ TEST(GraphTraversalTest, ThrowsExceptionForSelfLoop) {
 }
 
 TEST(GraphTraversalTest, ThrowsExceptionForOutputSelfLoop) {
-  auto node0 = MockTraversalNode::make(0);
+  auto node0 = MockTraversalNode::makePtr(0);
 
   node0->setPredecesors({node0});
 
