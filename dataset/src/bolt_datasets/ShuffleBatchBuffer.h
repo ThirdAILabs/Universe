@@ -194,7 +194,7 @@ class ShuffleBatchBuffer {
 };
 
 struct ShuffleBufferConfig {
-  ShuffleBufferConfig() : buffer_size(50), seed(time(NULL)) {}
+  ShuffleBufferConfig() : buffer_size(1000), seed(time(NULL)) {}
   explicit ShuffleBufferConfig(size_t buffer_size)
       : buffer_size(buffer_size), seed(time(NULL)) {}
   explicit ShuffleBufferConfig(uint32_t seed) : buffer_size(50), seed(seed) {}
