@@ -81,7 +81,11 @@ class SequentialClassifier {
       _network = buildNetwork(*pipeline);
     }
     MeanSquaredError loss;
-    _network->trainOnStream(pipeline, loss, /* learning_rate = */ 0.0001);
+    _network->trainOnStream(pipeline, loss, /* learning_rate = */ 0.0001,
+    /* rehash_batch = */ 20,
+      /* rebuild_batch = */ 100,
+      /* metric_names = */ {},
+      /* metric_log_batch_interval = */ 50);
   }
 
   void predict(std::string filename) {
