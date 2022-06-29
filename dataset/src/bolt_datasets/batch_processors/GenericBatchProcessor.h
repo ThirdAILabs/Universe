@@ -60,7 +60,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
       We do this instead of throwing an error directly because throwing
       an error inside an OpenMP structured block has undefined behavior.
     */
-    std::atomic_bool found_error = false;
+    bool found_error = false;
 
     auto first_row = parseCsvRow(rows[0]);
     for (auto& block : _input_blocks) {
