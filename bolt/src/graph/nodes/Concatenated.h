@@ -40,7 +40,7 @@ class ConcatenatedNode final
       const auto& node = concatenated_nodes.at(concat_id);
       auto& current_concat_input = node->getOutputVector(vec_index);
       uint32_t start_offset = positional_offsets.at(concat_id);
-      uint32_t end_offset = positional_offsets.at(concat_id);
+      uint32_t end_offset = positional_offsets.at(concat_id + 1);
       uint32_t label_starting_offset = label_offsets.at(concat_id);
       for (uint32_t index = start_offset; index < end_offset; index++) {
         output_vector.activations[index] =
@@ -67,7 +67,7 @@ class ConcatenatedNode final
       const auto& node = concatenated_nodes.at(concat_id);
       auto& current_concat_input = node->getOutputVector(vec_index);
       uint32_t start_offset = positional_offsets.at(concat_id);
-      uint32_t end_offset = positional_offsets.at(concat_id);
+      uint32_t end_offset = positional_offsets.at(concat_id + 1);
       for (uint32_t index = start_offset; index < end_offset; index++) {
         current_concat_input.gradients[index - start_offset] =
             output_vector.gradients[index];
@@ -200,7 +200,6 @@ class ConcatenatedNode final
     std::vector<uint32_t> new_offsets = {0};
     uint64_t current_offset = 0;
     for (const auto& node : nodes) {
-      ;
       current_offset +=
           use_sparsity ? node->numNonzerosInOutput() : node->outputDim();
       new_offsets.push_back(current_offset);

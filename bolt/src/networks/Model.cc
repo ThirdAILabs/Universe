@@ -318,7 +318,6 @@ inline void Model<BATCH_T>::processTestBatch(
     }
 
     if (output_activations != nullptr) {
-      assert(outputs[vec_id].len == getInferenceOutputDim());
 
       const float* start = outputs[vec_id].activations;
       uint32_t offset = vec_id * inference_output_dim;
