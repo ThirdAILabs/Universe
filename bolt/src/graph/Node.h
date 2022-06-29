@@ -9,7 +9,7 @@ namespace thirdai::bolt {
 
 class Node;
 
-// Node objects should always be initialized as shared pointers and not raw 
+// Node objects should always be initialized as shared pointers and not raw
 // Nodes, since otherwise shared_from_this() might throw an error (we need
 // shared_from_this for a clean functional style python api)
 using NodePtr = std::shared_ptr<Node>;

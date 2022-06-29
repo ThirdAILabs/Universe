@@ -318,7 +318,6 @@ inline void Model<BATCH_T>::processTestBatch(
     }
 
     if (output_activations != nullptr) {
-
       const float* start = outputs[vec_id].activations;
       uint32_t offset = vec_id * inference_output_dim;
       std::copy(start, start + outputs[vec_id].len,

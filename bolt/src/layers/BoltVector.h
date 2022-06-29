@@ -179,6 +179,13 @@ struct BoltVector {
     return findSparseActiveNeuron(active_neuron);
   }
 
+  FoundActiveNeuron findActiveNeuronNoTemplate(uint32_t active_neuron) const {
+    if (isDense()) {
+      return {active_neuron, activations[active_neuron]};
+    }
+    return findSparseActiveNeuron(active_neuron);
+  }
+
   constexpr bool isDense() const { return this->active_neurons == nullptr; }
 
   std::string toString() const {
