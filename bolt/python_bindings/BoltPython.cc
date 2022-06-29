@@ -613,7 +613,7 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<SequentialClassifier>(bolt_submodule, "SequentialClassifier")
       .def(py::init<std::unordered_map<std::string, std::string>,
-                    SequentialClassifierConfig, char>(),
+                    SequentialClassifierConfig, char, bool>(),
            py::arg("schema"), py::arg("config"), py::arg("delimiter") = ',',
            py::arg("use_sequential_feats") = true)
       .def("train", &SequentialClassifier::train, py::arg("filename"))
