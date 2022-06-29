@@ -27,12 +27,12 @@ class Input final : public Node {
     }
   }
 
-  void forward(uint32_t batch_index, const BoltVector* labels) final {
+  void forward(uint32_t vec_index, const BoltVector* labels) final {
     (void)labels;
-    (void)batch_index;
+    (void)vec_index;
   }
 
-  void backpropagate(uint32_t batch_index) final { (void)batch_index; }
+  void backpropagate(uint32_t vec_index) final { (void)vec_index; }
 
   void updateParameters(float learning_rate, uint32_t batch_cnt) final {
     (void)learning_rate;
@@ -47,8 +47,8 @@ class Input final : public Node {
     _input_batch = inputs;
   }
 
-  BoltVector& getOutputVector(uint32_t batch_index) final {
-    return (*_input_batch)[batch_index];
+  BoltVector& getOutputVector(uint32_t vec_index) final {
+    return (*_input_batch)[vec_index];
   }
 
   uint32_t expectedInputDim() const { return _expected_input_dim; }

@@ -10,6 +10,7 @@
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <memory>
 #include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -17,13 +18,7 @@ namespace thirdai::bolt {
 class Input;
 using InputPtr = std::shared_ptr<Input>;
 
-namespace tests {
-class GraphTraversalTestFixture;
-}  // namespace tests
-
 class BoltGraph {
-  friend class tests::GraphTraversalTestFixture;
-
  public:
   /*
     The graph is constructed with a list of input layers, the order of these
@@ -90,6 +85,8 @@ class BoltGraph {
   void updateParameters(float learning_rate, uint32_t batch_cnt);
 
   void traverseGraph();
+
+  std::unordered_map<NodePtr, uint32_t> getSuccessorCounts() const;
 
   template <typename BATCH_T>
   void verifyInputForGraph(

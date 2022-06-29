@@ -1,6 +1,7 @@
 #include "Graph.h"
 #include "GraphPropertyChecks.h"
 #include "nodes/FullyConnected.h"
+#include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -276,6 +277,8 @@ void BoltGraph::traverseGraph() {
   std::queue<NodePtr> queue;
   std::unordered_set<NodePtr> visited;
 
+  std::unordered_map<NodePtr, uint32_t> successor_counts = getSuccessorCounts();
+
   queue.push(_output);
 
   while (!queue.empty()) {
@@ -286,13 +289,54 @@ void BoltGraph::traverseGraph() {
 
       auto predecessors = next->getPredecessors();
       for (auto& pred : predecessors) {
-        queue.push(std::move(pred));
+        successor_counts[pred]--;
+        if (successor_counts[pred] == 0) {
+          queue.push(std::move(pred));
+        }
       }
     }
     queue.pop();
   }
 
+  for (auto [node, cnt] : successor_counts) {
+    if (cnt != 0) {
+      throw exceptions::GraphCompilationFailure(
+          "Cannot compile model from graph containing a cycle.");
+    }
+  }
+
   std::reverse(_nodes.begin(), _nodes.end());
+}
+
+std::unordered_map<NodePtr, uint32_t> BoltGraph::getSuccessorCounts() const {
+  std::unordered_map<NodePtr, uint32_t> num_successors;
+
+  std::queue<NodePtr> queue;
+  std::unordered_set<NodePtr> visited;
+
+  queue.push(_output);
+
+  while (!queue.empty()) {
+    auto& next = queue.front();
+    if (!visited.count(next)) {
+      visited.insert(next);
+
+      auto predecessors = next->getPredecessors();
+      for (auto& pred : predecessors) {
+        num_successors[pred]++;
+        queue.push(std::move(pred));
+      }
+    }
+
+    queue.pop();
+  }
+
+  if (num_successors[_output] != 0) {
+    throw exceptions::GraphCompilationFailure(
+        "Output node cannot have successor nodes.");
+  }
+
+  return num_successors;
 }
 
 template <typename BATCH_T>

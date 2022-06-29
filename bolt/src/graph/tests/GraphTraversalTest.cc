@@ -71,47 +71,35 @@ class DummyNode final : public Node {
   uint32_t _id;
 };
 
-class GraphTraversalTestFixture : public ::testing::Test {
- public:
-  static std::vector<NodePtr> getNodes(BoltGraph& graph) {
-    return graph._nodes;
-  }
-};
-
-TEST_F(GraphTraversalTestFixture, CorrectlyTraversesDAG) {
+TEST(GraphTraversalTest, CorrectlyTraversesDAG) {
+  auto node0 = DummyNode::makeDummyNode(0);
   auto node1 = DummyNode::makeDummyNode(1);
   auto node2 = DummyNode::makeDummyNode(2);
   auto node3 = DummyNode::makeDummyNode(3);
   auto node4 = DummyNode::makeDummyNode(4);
   auto node5 = DummyNode::makeDummyNode(5);
   auto node6 = DummyNode::makeDummyNode(6);
-  auto node7 = DummyNode::makeDummyNode(7);
-  auto node8 = DummyNode::makeDummyNode(8);
 
-  node4->setPredecesors({node1, node2});
-  node5->setPredecesors({node3});
+  node6->setPredecesors({node0, node1, node2, node3, node4, node5});
+  node5->setPredecesors({node0, node1, node2, node3, node4});
+  node4->setPredecesors({node0, node1, node2, node3});
+  node3->setPredecesors({node0, node1, node2});
+  node2->setPredecesors({node0, node1});
+  node1->setPredecesors({node0});
 
-  node6->setPredecesors({node5});
-  node7->setPredecesors({node5});
-
-  node8->setPredecesors({node4, node6, node7});
-
-  BoltGraph graph(/* inputs= */ {}, /* output= */ node8);
+  BoltGraph graph(/* inputs= */ {}, /* output= */ node6);
 
   graph.compile(std::make_shared<MeanSquaredError>());
 
-  std::vector<uint32_t> expected_ids = {8, 4, 6, 7, 1, 2, 5, 3};
-  std::reverse(expected_ids.begin(), expected_ids.end());
+  std::vector<NodePtr> graph_nodes = graph.getNodeTraversalOrder();
 
-  std::vector<NodePtr> graph_nodes = getNodes(graph);
-
-  ASSERT_EQ(graph_nodes.size(), expected_ids.size());
+  ASSERT_EQ(graph_nodes.size(), 6);
 
   for (uint32_t node_indx = 0; node_indx < graph_nodes.size(); node_indx++) {
     DummyNode* dummy_node =
         dynamic_cast<DummyNode*>(graph_nodes[node_indx].get());
     ASSERT_NE(dummy_node, nullptr);
-    ASSERT_EQ(dummy_node->getID(), expected_ids[node_indx]);
+    ASSERT_EQ(dummy_node->getID(), node_indx + 1);
   }
 }
 
