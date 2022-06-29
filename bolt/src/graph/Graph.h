@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ExecutionConfig.h"
 #include "Node.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
@@ -53,17 +54,8 @@ class BoltGraph {
       std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
       // Train labels
       const dataset::BoltDatasetPtr& train_labels,
-      // Learning rate for training
-      float learning_rate,
-      // Number of training epochs
-      uint32_t epochs,
-      // Rehash, rebuild parameters for hash functions/tables
-      std::optional<uint32_t> rebuild_hash_tables,
-      std::optional<uint32_t> reconstruct_hash_functions,
-      // Metrics to compute during training
-      const std::vector<std::string>& metric_names = {},
-      // Restrict printouts
-      bool verbose = true);
+      // Other train parameters
+      const TrainConfig& train_config);
 
   template <typename BATCH_T>
   InferenceMetricData predict(
@@ -71,14 +63,8 @@ class BoltGraph {
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
       // Test labels
       const dataset::BoltDatasetPtr& test_labels,
-      // Use sparsity in inference
-      bool use_sparsity,
-      // Metrics to compute
-      const std::vector<std::string>& metric_names = {},
-      // Restrict printouts
-      bool verbose = true,
-      // Limit the number of batches used in the dataset
-      uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
+      // Other prediction parameters
+      const PredictConfig& predict_config);
 
   const std::vector<NodePtr>& getNodeTraversalOrder() const { return _nodes; }
 

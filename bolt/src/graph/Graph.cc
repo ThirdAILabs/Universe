@@ -6,7 +6,6 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
-#include <bolt/src/utils/RebuildHashTablesFunctionsAutotuning.h>
 #include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <chrono>
@@ -44,40 +43,25 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss) {
 
 template MetricData BoltGraph::train(
     std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>&,
-    const dataset::BoltDatasetPtr&, float, uint32_t, std::optional<uint32_t>,
-    std::optional<uint32_t>, const std::vector<std::string>&, bool);
+    const dataset::BoltDatasetPtr&, const TrainConfig& train_config);
 
 template <typename BATCH_T>
 MetricData BoltGraph::train(
-    // Train dataset
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
-    // Train labels
     const dataset::BoltDatasetPtr& train_labels,
-    // Learning rate
-    float learning_rate,
-    // Epochs
-    uint32_t epochs,
-    // After how many vectors to reconstruct hash tables
-    std::optional<uint32_t> rebuild_hash_tables,
-    // After how many vectors to create new hash functions
-    std::optional<uint32_t> reconstruct_hash_functions,
-    // Metrics to compute during training
-    const std::vector<std::string>& metric_names,
-    // Restrict printouts
-    bool verbose) {
+    const TrainConfig& train_config) {
   verifyInputForGraph(train_data);
 
   // TODO(Nicholas): Switch to batch_size property in dataset.
   uint32_t max_batch_size = train_data->at(0).getBatchSize();
 
   uint32_t rebuild_hash_tables_batch =
-      RebuildHashTablesFunctionsAutotuning::getRebuildHashTablesBatchInterval(
-          rebuild_hash_tables, max_batch_size, train_data->len());
+      train_config.getRebuildHashTablesBatchInterval(max_batch_size,
+                                                     train_data->len());
 
   uint32_t reconstruct_hash_functions_batch =
-      RebuildHashTablesFunctionsAutotuning::
-          getReconstructHashFunctionsBatchInterval(
-              reconstruct_hash_functions, max_batch_size, train_data->len());
+      train_config.getReconstructHashFunctionsBatchInterval(max_batch_size,
+                                                            train_data->len());
 
   uint64_t num_train_batches = train_data->numBatches();
 
@@ -91,13 +75,13 @@ MetricData BoltGraph::train(
 
   std::vector<double> time_per_epoch;
 
-  MetricAggregator metrics(metric_names, verbose);
+  MetricAggregator metrics = train_config.getMetricAggregator();
 
-  for (uint32_t epoch = 0; epoch < epochs; epoch++) {
-    if (verbose) {
+  for (uint32_t epoch = 0; epoch < train_config.epochs(); epoch++) {
+    if (train_config.verbose()) {
       std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
     }
-    ProgressBar bar(num_train_batches, verbose);
+    ProgressBar bar(num_train_batches, train_config.verbose());
     auto train_start = std::chrono::high_resolution_clock::now();
 
     for (uint32_t batch = 0; batch < num_train_batches; batch++) {
@@ -105,7 +89,8 @@ MetricData BoltGraph::train(
 
       const BoltBatch& batch_labels = train_labels->at(batch);
 
-      processTrainingBatch(batch_inputs, batch_labels, learning_rate, metrics);
+      processTrainingBatch(batch_inputs, batch_labels,
+                           train_config.learningRate(), metrics);
 
       updateSampling(/* rebuild_hash_tables_batch= */ rebuild_hash_tables_batch,
                      /* reconstruct_hash_functions_batch= */
@@ -120,7 +105,7 @@ MetricData BoltGraph::train(
                              .count();
 
     time_per_epoch.push_back(static_cast<double>(epoch_time));
-    if (verbose) {
+    if (train_config.verbose()) {
       std::cout << std::endl
                 << "Processed " << num_train_batches << " training batches in "
                 << epoch_time << " seconds" << std::endl;
@@ -172,8 +157,7 @@ void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
 
 template InferenceMetricData BoltGraph::predict(
     const std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>&,
-    const dataset::BoltDatasetPtr&, bool, const std::vector<std::string>&, bool,
-    uint32_t);
+    const dataset::BoltDatasetPtr&, const PredictConfig&);
 
 template <typename BATCH_T>
 InferenceMetricData BoltGraph::predict(
@@ -181,23 +165,17 @@ InferenceMetricData BoltGraph::predict(
     const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
     // Test labels
     const dataset::BoltDatasetPtr& test_labels,
-    // Use sparsity in inference
-    bool use_sparsity,
-    // Metrics to compute
-    const std::vector<std::string>& metric_names,
-    // Restrict printouts
-    bool verbose,
-    // Limit the number of batches used in the dataset
-    uint32_t batch_limit) {
+    // Other prediction parameters
+    const PredictConfig& predict_config) {
   verifyInputForGraph(test_data);
 
   bool compute_metrics = test_labels != nullptr;
 
   uint32_t max_batch_size = test_data->at(0).getBatchSize();
 
-  uint64_t num_test_batches = std::min(test_data->numBatches(), batch_limit);
+  uint64_t num_test_batches = test_data->numBatches();
 
-  MetricAggregator metrics(metric_names, verbose);
+  MetricAggregator metrics = predict_config.getMetricAggregator();
 
   /*
    Because of how the datasets are read we know that all batches will not have
@@ -205,9 +183,10 @@ InferenceMetricData BoltGraph::predict(
    datastructures to store the activations for every batch during training so
    we need this to be able to support the largest batch size.
   */
-  prepareToProcessBatches(max_batch_size, use_sparsity);
+  prepareToProcessBatches(max_batch_size,
+                          predict_config.sparseInferenceEnabled());
 
-  ProgressBar bar(num_test_batches, verbose);
+  ProgressBar bar(num_test_batches, predict_config.verbose());
 
   auto test_start = std::chrono::high_resolution_clock::now();
   for (uint32_t batch = 0; batch < num_test_batches; batch++) {
@@ -225,7 +204,8 @@ InferenceMetricData BoltGraph::predict(
   int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
                           test_end - test_start)
                           .count();
-  if (verbose) {
+
+  if (predict_config.verbose()) {
     std::cout << std::endl
               << "Processed " << num_test_batches << " test batches in "
               << test_time << " milliseconds" << std::endl;

@@ -704,6 +704,23 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<uint32_t>(), py::arg("dim"),
            "Constructs an input layer node for the graph.");
 
+  py::class_<TrainConfig>(graph_submodule, "TrainConfig")
+      .def_static("makeConfig", &TrainConfig::makeConfig,
+                  py::arg("learning_rate"), py::arg("epochs"))
+      .def("withMetrics", &TrainConfig::withMetrics, py::arg("metrics"))
+      .def("silence", &TrainConfig::silence)
+      .def("withRebuildHashTables", &TrainConfig::withRebuildHashTables,
+           py::arg("rebuild_hash_tables"))
+      .def("withReconstructHashFunctions",
+           &TrainConfig::withReconstructHashFunctions,
+           py::arg("reconstruct_hash_functions"));
+
+  py::class_<PredictConfig>(graph_submodule, "PredictConfig")
+      .def_static("makeConfig", &PredictConfig::makeConfig)
+      .def("enableSparseInference", &PredictConfig::enableSparseInference)
+      .def("withMetrics", &PredictConfig::withMetrics, py::arg("metrics"))
+      .def("silence", &PredictConfig::silence);
+
   py::class_<BoltGraph>(graph_submodule, "Model")
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
            py::arg("output"),
@@ -717,11 +734,7 @@ void createBoltSubmodule(py::module_& module) {
            "order in which to compute the layers is determined and various "
            "checks are preformed to ensure the model architecture is correct.")
       .def("train", &BoltGraph::train<BoltBatch>, py::arg("train_data"),
-           py::arg("train_labels"), py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("rebuild_hash_tables") = std::nullopt,
-           py::arg("reconstruct_hash_functions") = std::nullopt,
-           py::arg("metrics") = std::vector<std::string>(),
-           py::arg("verbose") = true,
+           py::arg("train_labels"), py::arg("train_config"),
            "Trains the network on the given training data.\n"
            "Arguments:\n"
            " * train_data: BoltDataset - Training data. This is a BoltDataset "
@@ -730,29 +743,13 @@ void createBoltSubmodule(py::module_& module) {
            " * train_labels: BoltDataset - Training labels. This is a "
            "BoltDataset as loaded by thirdai.dataset.load_bolt_svm_dataset or "
            "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * learning_rate: Float (positive) - Learning rate.\n"
-           " * epochs: Int (positive) - Number of training epochs over the "
-           "training data.\n"
-           " * rebuild_hash_tables: Int (positive) - Optional. Number of "
-           "training samples before rebuilding hash tables. If not provided, "
-           "BOLT will autotune this parameter.\n\n"
-           " * reconstruct_hash_functions: Int (positive) - Optional. Number "
-           "of training samples before generating new LSH hash functions. "
-           "If not provided, BOLT will autotune this parameter.\n"
-           " * metrics: List of str - Optional. The metrics to keep track of "
-           "during training. See the section on metrics.\n"
-           " * verbose: Boolean - Optional. If set to False, does not print "
-           "anything during training. If set to True, prints additional "
-           "information such as metrics and epoch times. Set to True by "
-           "default.\n\n"
+           " * train_config: TrainConfig - the additional training parameters. "
+           "See the TrainConfig documentation above.\n\n"
 
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
       .def("predict", &BoltGraph::predict<BoltBatch>, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("sparse_inference") = false,
-           py::arg("metrics") = std::vector<std::string>(),
-           py::arg("verbose") = true,
-           py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
+           py::arg("test_labels"), py::arg("predict_config"),
            "Predicts the output given the input vectors and evaluates the "
            "predictions based on the given metrics.\n"
            "Arguments:\n"
@@ -762,15 +759,8 @@ void createBoltSubmodule(py::module_& module) {
            " * test_labels: BoltDataset - Test labels. This is a BoltDataset "
            "as loaded by thirdai.dataset.load_bolt_svm_dataset or "
            "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * sparse_inference (Bool) - If true then sparse inference will be "
-           "used.\n"
-           " * metrics: List of str - Optional. The metrics to keep track of "
-           "during training. "
-           "See the section on metrics.\n"
-           " * verbose: Boolean - Optional. If set to False, does not print "
-           "anything during training. If set to True, prints additional "
-           "information such as metrics and epoch times. Set to True by "
-           "default.\n\n"
+           " * predict_config: PredictConfig - the additional prediction "
+           "parameters. See the PredictConfig documentation above.\n\n"
 
            "Returns a  a mapping from metric names to their values.");
 }

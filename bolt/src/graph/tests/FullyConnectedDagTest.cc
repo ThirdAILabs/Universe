@@ -32,20 +32,32 @@ static BoltGraph getSingleLayerModel() {
   return model;
 }
 
+static TrainConfig getTrainConfig(uint32_t epochs) {
+  TrainConfig config =
+      TrainConfig::makeConfig(/* learning_rate= */ 0.001, /* epochs= */ epochs)
+          .withMetrics({"mean_squared_error"})
+          .silence();
+
+  return config;
+}
+
+static PredictConfig getPredictConfig() {
+  PredictConfig config = PredictConfig::makeConfig()
+                             .withMetrics({"categorical_accuracy"})
+                             .silence();
+
+  return config;
+}
+
 TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
   BoltGraph model = getSingleLayerModel();
 
   auto data = genDataset(/* add_noise= */ false);
 
-  model.train(data.data, data.labels,
-              /* learning_rate= */ 0.001, /* epochs= */ 5,
-              /* rebuild_hash_tables= */ 0, /* reconstruct_hash_functions= */ 0,
-              /* metric_names= */ {},
-              /* verbose= */ false);
-  auto test_metrics =
-      model.predict(data.data, data.labels, /* use_sparsity= */ false,
-                    /* metric_names= */ {"categorical_accuracy"},
-                    /* verbose= */ false);
+  model.train(data.data, data.labels, getTrainConfig(5));
+
+  auto test_metrics = model.predict(data.data, data.labels, getPredictConfig());
+
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.98);
 }
 
@@ -54,16 +66,10 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
 
   auto data = genDataset(/* add_noise= */ true);
 
-  model.train(data.data, data.labels,
-              /* learning_rate= */ 0.001, /* epochs= */ 5,
-              /* rebuild_hash_tables= */ std::nullopt,
-              /* reconstruct_hash_functions= */ std::nullopt,
-              /* metric_names= */ {},
-              /* verbose= */ false);
-  auto test_metrics =
-      model.predict(data.data, data.labels, /* use_sparsity= */ false,
-                    /* metric_names= */ {"categorical_accuracy"},
-                    /* verbose= */ false);
+  model.train(data.data, data.labels, getTrainConfig(5));
+
+  auto test_metrics = model.predict(data.data, data.labels, getPredictConfig());
+
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
 }
 
@@ -104,19 +110,13 @@ static void testSimpleDatasetMultiLayerModel(
   auto data = genDataset(/* add_noise= */ false);
 
   auto train_metrics =
-      model.train(data.data, data.labels,
-                  /* learning_rate */ 0.001, /* epochs */ epochs,
-                  /* rebuild_hash_tables= */ std::nullopt,
-                  /* reconstruct_hash_functions= */ std::nullopt,
-                  /* metric_names= */ {"mean_squared_error"},
-                  /* verbose= */ false);
+      model.train(data.data, data.labels, getTrainConfig(epochs));
+
   ASSERT_LT(train_metrics.at("mean_squared_error").back(),
             train_metrics.at("mean_squared_error").front());
 
-  auto test_metrics =
-      model.predict(data.data, data.labels, /* use_sparsity= */ false,
-                    /* metric_names= */ {"categorical_accuracy"},
-                    /* verbose= */ false);
+  auto test_metrics = model.predict(data.data, data.labels, getPredictConfig());
+
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
 
@@ -142,17 +142,10 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
 
   auto data = genDataset(/* add_noise= */ true);
 
-  model.train(data.data, data.labels,
-              /* learning_rate= */ 0.001, /* epochs= */ 2,
-              /* rebuild_hash_tables= */ std::nullopt,
-              /* reconstruct_hash_functions=*/std::nullopt,
-              /* metric_names= */ {},
-              /* verbose= */ false);
+  model.train(data.data, data.labels, getTrainConfig(2));
 
-  auto test_metrics =
-      model.predict(data.data, data.labels, /* use_sparsity= */ false,
-                    /* metric_names= */ {"categorical_accuracy"},
-                    /* verbose= */ false);
+  auto test_metrics = model.predict(data.data, data.labels, getPredictConfig());
+
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
 }
 

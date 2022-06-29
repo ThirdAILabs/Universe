@@ -47,21 +47,25 @@ def test_bolt_dag_on_mnist():
 
     train_data, train_labels, test_data, test_labels = load_mnist()
 
+    train_config = (
+        bolt.graph.TrainConfig.makeConfig(learning_rate=0.0001, epochs=3)
+        .silence()
+        .withRebuildHashTables(3000)
+        .withReconstructHashFunctions(10000)
+    )
+
     metrics = model.train(
-        train_data=train_data,
-        train_labels=train_labels,
-        epochs=3,
-        learning_rate=0.0001,
-        rebuild_hash_tables=3000,
-        reconstruct_hash_functions=10000,
-        verbose=False,
+        train_data=train_data, train_labels=train_labels, train_config=train_config
+    )
+
+    predict_config = (
+        bolt.graph.PredictConfig.makeConfig()
+        .withMetrics(["categorical_accuracy"])
+        .silence()
     )
 
     metrics = model.predict(
-        test_data=test_data,
-        test_labels=test_labels,
-        metrics=["categorical_accuracy"],
-        verbose=False,
+        test_data=test_data, test_labels=test_labels, predict_config=predict_config
     )
 
     assert metrics["categorical_accuracy"] >= 0.9

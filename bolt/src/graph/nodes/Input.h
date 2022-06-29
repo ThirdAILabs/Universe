@@ -72,7 +72,7 @@ class Input final : public Node {
  private:
   void checkDimForInput(const BoltVector& vec) const {
     if (vec.isDense()) {
-      if (vec.len > _expected_input_dim) {
+      if (vec.len != _expected_input_dim) {
         throw std::invalid_argument(
             "Received dense BoltVector with dimension=" +
             std::to_string(vec.len) + " in input layer with dimension=" +
