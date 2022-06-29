@@ -612,22 +612,26 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("learning_rate"),
            "Trains the classifier on the given dataset.\n"
            "Arguments:\n"
-           " * train_file: string - The path to the training dataset to use.\n"
+           " * train_file: string - The path to the training dataset to use. "
+           "Data is assumed to be in CSV format with ',' delimiter and a "
+           "header line. \n"
            " * column_datatypes: List of str - How to interpret data types of "
            "columns"
            " in the dataset. One of 'numeric', 'categorical', 'label'\n"
            " * epochs: Int - How many epochs to train for.\n"
            " * learning_rate: Float - The learning rate to use for training.\n")
-      .def("predict", &TabularClassifier::predict, py::arg("test_file"),
-           py::arg("output_file") = std::nullopt,
-           "Runs the classifier on the specified test dataset and optionally "
-           "logs the prediction to a file.\n"
-           "Arguments:\n"
-           " * test_file: string - The path to the test dataset to use.\n"
-           " * output_file: string - Optional argument, if this is specified "
-           "then the classifier will output the name of the class/category of "
-           "each prediction this file with one prediction result on each "
-           "line.\n")
+      .def(
+          "predict", &TabularClassifier::predict, py::arg("test_file"),
+          py::arg("output_file") = std::nullopt,
+          "Runs the classifier on the specified test dataset and optionally "
+          "logs the prediction to a file.\n"
+          "Arguments:\n"
+          " * test_file: string - The path to the test dataset to use. Data is "
+          "assumed to be in CSV format with ',' delimiter and a header line. \n"
+          " * output_file: string - Optional argument, if this is specified "
+          "then the classifier will output the name of the class/category of "
+          "each prediction this file with one prediction result on each "
+          "line.\n")
       .def("save", &TabularClassifier::save, py::arg("filename"),
            "Saves the classifier to a file. The file path must not require any "
            "folders to be created\n"

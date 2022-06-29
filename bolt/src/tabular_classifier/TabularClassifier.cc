@@ -4,6 +4,7 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/utils/AutoTuneUtils.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <algorithm>
@@ -46,7 +47,7 @@ void TabularClassifier::train(const std::string& filename,
                  "resets this metadata."
               << std::endl;
   }
-  _metadata = setTabularMetadata(filename, column_datatypes);
+  setTabularMetadata(filename, column_datatypes);
 
   auto dataset = loadStreamingDataset(filename);
 
@@ -78,15 +79,9 @@ void TabularClassifier::predict(
   }
   auto dataset = loadStreamingDataset(filename);
 
-  // TODO(david) merge safe file maker PR on top of this
   std::optional<std::ofstream> output_file;
   if (output_filename) {
-    output_file = std::ofstream(*output_filename);
-    if (!output_file->good() || output_file->bad() || output_file->fail() ||
-        !output_file->is_open()) {
-      throw std::runtime_error("Unable to open output file '" +
-                               *output_filename + "'");
-    }
+    output_file = dataset::SafeFileIO::ofstream(*output_filename);
   }
 
   auto print_predictions_callback = [&](const BoltBatch& outputs,

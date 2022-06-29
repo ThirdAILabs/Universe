@@ -6,7 +6,6 @@
 #include <dataset/src/bolt_datasets/batch_processors/TabularBatchProcessor.h>
 #include <dataset/src/bolt_datasets/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/utils/SafeFileIO.h>
-#include <memory>
 
 namespace thirdai::bolt {
 
@@ -39,9 +38,9 @@ class TabularClassifier {
   }
 
  private:
-  std::shared_ptr<dataset::TabularMetadata> setTabularMetadata(
-      const std::string& filename, std::vector<std::string>& column_datatypes,
-      uint32_t batch_size = 256) {
+  void setTabularMetadata(const std::string& filename,
+                          std::vector<std::string>& column_datatypes,
+                          uint32_t batch_size = 256) {
     std::shared_ptr<dataset::DataLoader> data_loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
 
@@ -51,7 +50,7 @@ class TabularClassifier {
     std::make_shared<dataset::StreamingDataset<BoltBatch>>(data_loader,
                                                            batch_processor);
 
-    return batch_processor->getMetadata();
+    _metadata = batch_processor->getMetadata();
   }
 
   std::shared_ptr<dataset::StreamingDataset<BoltBatch>> loadStreamingDataset(

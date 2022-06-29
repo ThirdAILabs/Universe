@@ -13,7 +13,6 @@ enum class TabularDataType {
   Label
 };  // TODO(david) add datetime/text support
 
-// TODO(david) verify each column is valid?
 class TabularMetadata {
   friend class TabularMetadataProcessor;
 
@@ -22,7 +21,7 @@ class TabularMetadata {
 
   uint32_t numColumns() const { return _column_dtypes.size(); }
 
-  TabularDataType getType(uint32_t col) { return _column_dtypes[col]; }
+  TabularDataType getType(uint32_t col) const { return _column_dtypes[col]; }
 
   uint32_t numClasses() const { return _class_id_to_class.size(); }
 
@@ -32,7 +31,20 @@ class TabularMetadata {
     return std::to_string(value - getColMin(col) / getColBinsize(col));
   }
 
-  // TODO(david) check if invalid id
+  /**
+   * To compute pairgrams of categories across columns we need all categories to
+   * be unique. This method returns "salt" to make each category unique
+   * dependent on its column. By adding the column number padded to a fixed
+   * length, we ensure this characteristic.
+   */
+  std::string getColSalt(uint32_t col) {
+    std::string col_str = std::to_string(col);
+    if (col_str.size() < _max_salt_len) {
+      col_str.insert(0, _max_salt_len - col_str.size(), '0');
+    }
+    return col_str;
+  }
+
   std::string getClassName(uint32_t class_id) {
     return _class_id_to_class[class_id];
   }
@@ -60,6 +72,7 @@ class TabularMetadata {
 
   uint32_t _num_bins = 10;
   uint32_t _label_col_index;
+  uint32_t _max_salt_len;
   std::vector<std::string> _column_names;
   std::vector<TabularDataType> _column_dtypes;
   std::unordered_map<uint32_t, float> _col_to_max_val;
@@ -95,6 +108,7 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
     if (!found_label_column) {
       throw std::invalid_argument("Dataset does not contain a 'label' column.");
     }
+    _metadata->_max_salt_len = std::to_string(column_datatypes.size()).size();
   }
 
   bool expectsHeader() const final { return true; }

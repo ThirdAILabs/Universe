@@ -88,6 +88,10 @@ class UnaryBoltBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
   }
 };
 
+/**
+ * This BatchProcessor provides an interface to compute metadata about a dataset
+ * in a streaming fashion without creating BoltVectors
+ */
 class ComputeBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
  public:
   std::optional<BoltDataLabelPair<bolt::BoltBatch>> createBatch(
