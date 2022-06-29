@@ -69,7 +69,7 @@ class ConcatenatedNode final
       uint32_t start_offset = positional_offsets.at(concat_id);
       uint32_t end_offset = positional_offsets.at(concat_id + 1);
       for (uint32_t index = start_offset; index < end_offset; index++) {
-        current_concat_input.gradients[index - start_offset] =
+        current_concat_input.gradients[index - start_offset] +=
             output_vector.gradients[index];
       }
     }

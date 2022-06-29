@@ -19,6 +19,7 @@ constexpr float EPS = 0.0000001;
 struct FoundActiveNeuron {
   std::optional<size_t> pos;
   float activation;
+  float gradient;
 };
 
 struct BoltVector {
@@ -174,14 +175,14 @@ struct BoltVector {
   template <bool DENSE>
   FoundActiveNeuron findActiveNeuron(uint32_t active_neuron) const {
     if (DENSE) {
-      return {active_neuron, activations[active_neuron]};
+      return {active_neuron, activations[active_neuron], gradients[active_neuron]};
     }
     return findSparseActiveNeuron(active_neuron);
   }
 
   FoundActiveNeuron findActiveNeuronNoTemplate(uint32_t active_neuron) const {
     if (isDense()) {
-      return {active_neuron, activations[active_neuron]};
+      return {active_neuron, activations[active_neuron], gradients[active_neuron]};
     }
     return findSparseActiveNeuron(active_neuron);
   }
@@ -228,10 +229,10 @@ struct BoltVector {
     const uint32_t* end = active_neurons + len;
     const uint32_t* itr = std::find(start, end, active_neuron);
     if (itr == end) {
-      return {{}, 0.0};
+      return {{}, 0.0, 0.0};
     }
     uint32_t pos = std::distance(start, itr);
-    return {pos, activations[pos]};
+    return {pos, activations[pos], gradients[pos]};
   }
 
   bool _owns_data;
