@@ -30,7 +30,7 @@ class StreamingDataset {
     }
   }
 
-  std::optional<BoltDataLabelPair<BATCH_T>> nextBatch() {
+  virtual std::optional<BoltDataLabelPair<BATCH_T>> nextBatch() {
     auto rows = _data_loader->nextBatch();
     if (!rows) {
       return std::nullopt;
@@ -40,7 +40,7 @@ class StreamingDataset {
     return batch;
   }
 
-  std::pair<std::shared_ptr<InMemoryDataset<BATCH_T>>, BoltDatasetPtr>
+  virtual std::pair<std::shared_ptr<InMemoryDataset<BATCH_T>>, BoltDatasetPtr>
   loadInMemory() {
     std::vector<BATCH_T> data;
     std::vector<bolt::BoltBatch> labels;
@@ -57,7 +57,7 @@ class StreamingDataset {
             std::make_shared<BoltDataset>(std::move(labels), len)};
   }
 
-  uint32_t getMaxBatchSize() const { return _data_loader->getMaxBatchSize(); }
+  virtual uint32_t getMaxBatchSize() const { return _data_loader->getMaxBatchSize(); }
 
  private:
   std::shared_ptr<DataLoader> _data_loader;

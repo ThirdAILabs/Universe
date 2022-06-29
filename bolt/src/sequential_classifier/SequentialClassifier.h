@@ -72,19 +72,16 @@ class SequentialClassifier {
         parseHeader(*header, _delimiter);
     auto input_blocks = buildInputBlocks(columns);
     auto label_blocks = buildLabelBlocks(columns);
-    dataset::StreamingGenericDatasetLoader pipeline(
+    auto pipeline = std::make_shared<dataset::StreamingGenericDatasetLoader>(
         loader, input_blocks, label_blocks, /* shuffle = */ true,
         dataset::ShuffleBufferConfig(/* buffer_size = */ 1000,
                                      /* seed = */ 341),
         /* has_header = */ false, _delimiter);
     if (!_network) {
-      _network = buildNetwork(pipeline);
+      _network = buildNetwork(*pipeline);
     }
-    auto data = pipeline.loadInMemory();
     MeanSquaredError loss;
-    _network->train(data.first, data.second, loss, /* learning_rate = */ 0.0001,
-                    /* epochs = */ 5, /* rehash = */ 6400,
-                    /* rebuild = */ 128000);
+    _network->trainOnStream(pipeline, loss, /* learning_rate = */ 0.0001);
   }
 
   void predict(std::string filename) {
@@ -99,7 +96,7 @@ class SequentialClassifier {
         parseHeader(*header, _delimiter);
     auto input_blocks = buildInputBlocks(columns);
     auto label_blocks = buildLabelBlocks(columns);
-    dataset::StreamingGenericDatasetLoader pipeline(
+    auto pipeline = std::make_shared<dataset::StreamingGenericDatasetLoader>(
         loader, input_blocks, label_blocks, /* shuffle = */ false,
         dataset::ShuffleBufferConfig(),
         /* has_header = */ false, _delimiter);
@@ -108,11 +105,9 @@ class SequentialClassifier {
           "[SequentialClassifier::predict] Predict method called before "
           "training the classifier.");
     }
-    auto [data, label] = pipeline.loadInMemory();
     std::vector<std::string> metrics{"root_mean_squared_error"};
-    _network->predict(data, label, /* output_active_neurons= */ nullptr,
-                      /* output_activations = */ nullptr,
-                      /* use_sparse_inference = */ true, metrics);
+    _network->predictOnStream(pipeline, /* use_sparse_inference = */ true,
+                              metrics);
   }
 
  private:

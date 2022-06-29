@@ -90,7 +90,7 @@ MetricData Model<BATCH_T>::train(
 
 template <typename BATCH_T>
 MetricData Model<BATCH_T>::trainOnStream(
-    std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& train_data,
+    std::shared_ptr<dataset::StreamingDataset<BATCH_T>> train_data,
     const LossFunction& loss_fn, float learning_rate, uint32_t rehash_batch,
     uint32_t rebuild_batch, const std::vector<std::string>& metric_names,
     uint32_t metric_log_batch_interval, bool verbose) {
@@ -247,7 +247,7 @@ InferenceMetricData Model<BATCH_T>::predict(
 
 template <typename BATCH_T>
 InferenceMetricData Model<BATCH_T>::predictOnStream(
-    const std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& test_data,
+    const std::shared_ptr<dataset::StreamingDataset<BATCH_T>> test_data,
     bool use_sparse_inference, const std::vector<std::string>& metric_names,
     std::optional<std::function<void(const bolt::BoltBatch&, uint32_t)>>
         batch_callback,

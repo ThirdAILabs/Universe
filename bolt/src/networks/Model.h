@@ -56,7 +56,7 @@ class Model {
    */
   MetricData trainOnStream(
       // Train dataset
-      std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& train_data,
+      std::shared_ptr<dataset::StreamingDataset<BATCH_T>> train_data,
       // Loss function to use
       const LossFunction& loss_fn,
       // Learning rate for training
@@ -109,7 +109,7 @@ class Model {
    */
   InferenceMetricData predictOnStream(
       // Test dataset
-      const std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& test_data,
+      const std::shared_ptr<dataset::StreamingDataset<BATCH_T>> test_data,
       // Use sparse inference
       bool use_sparse_inference = false,
       // Metrics to compute
