@@ -123,7 +123,7 @@ class Model {
   // Verify that the maximum index of any sparse vector in the dataset is
   // smaller than the dimension of the input layer. Only FullyConnected network
   // requires this check.
-  virtual void verifyInputDim(uint32_t max_dim) = 0;
+  virtual void verifyInputDim(std::optional<uint32_t> max_dim) = 0;
 
   virtual ~Model() = default;
 

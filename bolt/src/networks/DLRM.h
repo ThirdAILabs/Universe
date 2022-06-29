@@ -57,7 +57,7 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
     return _top_mlp.getOutputs(batch_size, force_dense);
   }
 
-  void verifyInputDim(uint32_t max_index) final {
+  void verifyInputDim(std::optional<uint32_t> max_index) final {
     (void)max_index;  // unused
   }
 

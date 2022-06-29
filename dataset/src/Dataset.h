@@ -65,7 +65,7 @@ class InMemoryDataset {
 
   uint64_t len() const { return _len; }
 
-  uint32_t maxDim() const { return _max_dim.value_or(0); }
+  std::optional<uint32_t> maxDim() const { return _max_dim; }
 
   static InMemoryDataset<SparseBatch> loadInMemorySvmDataset(
       const std::string& filename, uint32_t batch_size) {
