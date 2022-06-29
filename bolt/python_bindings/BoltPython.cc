@@ -271,7 +271,7 @@ void createBoltSubmodule(py::module_& module) {
           "in the network.")
       .def("get_input_gradients", &PyNetwork::getInputGradientsFromModel,
            py::arg("input"), py::arg("loss_fn"), py::arg("batch_size") = 256,
-           py::arg("get_difference") = true,
+           py::arg("get_difference") = false,
            "Get the difference of input gradients when back propagated with "
            "two different"
            "labels, one with high activation and another one with second "
