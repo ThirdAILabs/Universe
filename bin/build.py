@@ -88,13 +88,20 @@ def main():
         os.environ["THIRDAI_FEATURE_FLAGS"] = joined_feature_flags
         os.environ["THIRDAI_NUM_JOBS"] = str(args.jobs)
 
-        os.system("pip3 install . --verbose --force")
+        exit_code = os.system("pip3 install . --verbose --force")
+        if exit_code != 0:
+            exit(exit_code)
     else:
         cmake_command = f"cmake -B build -S . -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE={args.build_mode} -DFEATURE_FLAGS='{joined_feature_flags}'"
         build_command = f"cmake --build build --target {args.target} -j {args.jobs}"
 
-        os.system(cmake_command)
-        os.system(build_command)
+        exit_code = os.system(cmake_command)
+        if exit_code != 0:
+            exit(exit_code)
+
+        exit_code = os.system(build_command)
+        if exit_code != 0:
+            exit(exit_code)
 
 
 if __name__ == "__main__":
