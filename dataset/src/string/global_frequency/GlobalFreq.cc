@@ -1,4 +1,5 @@
 #include "GlobalFreq.h"
+#include <dataset/src/utils/SafeFileIO.h>
 
 namespace thirdai::dataset {
 
@@ -12,14 +13,14 @@ GlobalFreq::GlobalFreq(std::unique_ptr<StringLoader> string_loader,
   std::vector<std::vector<uint32_t>> loaded_labels;
   std::unordered_map<uint32_t, float> index_to_value_map;
   CompositeVectorizer composite_vectorizer(vectorizer_config);
-  for (auto const& file : filenames) {
-    std::ifstream fstream(file);
+  for (auto const& filename : filenames) {
+    std::ifstream file = dataset::SafeFileIO::ifstream(filename);
+
     // Load one vector at a time to get document frequency
     // batch_size is used to create a one-string-at-a-time streaming setting
     uint32_t batch_size = 1;
     // Keep loading until the whole file is loaded
-    while (string_loader->loadStringsAndLabels(fstream, batch_size,
-                                               loaded_strings,
+    while (string_loader->loadStringsAndLabels(file, batch_size, loaded_strings,
                                                loaded_labels) == batch_size) {
       composite_vectorizer.fillIndexToValueMap(loaded_strings[0],
                                                index_to_value_map, empty_map);

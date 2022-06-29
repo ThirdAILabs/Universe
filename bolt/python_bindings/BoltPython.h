@@ -9,6 +9,7 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
 #include <pybind11/iostream.h>
@@ -19,7 +20,6 @@
 #include <algorithm>
 #include <csignal>
 #include <exception>
-#include <fstream>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -210,6 +210,7 @@ class PyNetwork final : public FullyConnectedNetwork {
 
   py::tuple predict(
       const py::object& data, const py::object& labels, uint32_t batch_size = 0,
+      bool use_sparse_inference = false,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
     // Redirect to python output.
@@ -225,7 +226,8 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     uint32_t num_samples = test_data.dataset->len();
 
-    bool output_sparse = getInferenceOutputDim() < getOutputDim();
+    uint64_t inference_output_dim = getInferenceOutputDim(use_sparse_inference);
+    bool output_sparse = inference_output_dim < getOutputDim();
 
     // Declare pointers to memory for activations and active neurons, if the
     // allocation succeeds this will be assigned valid addresses by the
@@ -235,17 +237,17 @@ class PyNetwork final : public FullyConnectedNetwork {
     float* activations = nullptr;
 
     bool alloc_success =
-        allocateActivations(num_samples, getInferenceOutputDim(),
-                            &active_neurons, &activations, output_sparse);
+        allocateActivations(num_samples, inference_output_dim, &active_neurons,
+                            &activations, output_sparse);
 
     auto metric_data = FullyConnectedNetwork::predict(
         test_data.dataset, test_labels.dataset, active_neurons, activations,
-        metrics, verbose, batch_limit);
+        use_sparse_inference, metrics, verbose, batch_limit);
 
     py::dict py_metric_data = py::cast(metric_data);
 
     return constructNumpyArrays(std::move(py_metric_data), num_samples,
-                                getInferenceOutputDim(), active_neurons,
+                                inference_output_dim, active_neurons,
                                 activations, output_sparse, alloc_success);
   }
 
@@ -257,7 +259,8 @@ class PyNetwork final : public FullyConnectedNetwork {
    * To save without optimizer, shallow=true
    */
   void save(const std::string& filename, bool shallow) {
-    std::ofstream filestream(filename, std::ios::binary);
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
     this->setShallowSave(shallow);
     oarchive(*this);
@@ -288,7 +291,8 @@ class PyNetwork final : public FullyConnectedNetwork {
   bool isReadyForTraining() { return !this->anyLayerShallow(); }
 
   static std::unique_ptr<PyNetwork> load(const std::string& filename) {
-    std::ifstream filestream(filename, std::ios::binary);
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
     std::unique_ptr<PyNetwork> deserialize_into(new PyNetwork());
     iarchive(*deserialize_into);
@@ -503,12 +507,13 @@ class PyDLRM final : public DLRM {
 
   py::tuple predict(
       const dataset::ClickThroughDatasetPtr& test_data,
-      const dataset::BoltDatasetPtr& test_labels,
+      const dataset::BoltDatasetPtr& test_labels, bool use_sparse_inference,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
     uint32_t num_samples = test_data->len();
+    uint64_t inference_output_dim = getInferenceOutputDim(use_sparse_inference);
 
-    bool output_sparse = getInferenceOutputDim() < getOutputDim();
+    bool output_sparse = inference_output_dim < getOutputDim();
 
     // Declare pointers to memory for activations and active neurons, if the
     // allocation succeeds this will be assigned valid addresses by the
@@ -518,16 +523,16 @@ class PyDLRM final : public DLRM {
     float* activations = nullptr;
 
     bool alloc_success =
-        allocateActivations(num_samples, getInferenceOutputDim(),
-                            &active_neurons, &activations, output_sparse);
+        allocateActivations(num_samples, inference_output_dim, &active_neurons,
+                            &activations, output_sparse);
 
     auto metric_data =
         DLRM::predict(test_data, test_labels, active_neurons, activations,
-                      metrics, verbose, batch_limit);
+                      use_sparse_inference, metrics, verbose, batch_limit);
     py::dict py_metric_data = py::cast(metric_data);
 
     return constructNumpyArrays(std::move(py_metric_data), num_samples,
-                                getInferenceOutputDim(), active_neurons,
+                                inference_output_dim, active_neurons,
                                 activations, output_sparse, alloc_success);
   }
 };

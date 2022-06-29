@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dataset/src/utils/SafeFileIO.h>
 #include <fstream>
 #include <optional>
 #include <string>
@@ -29,7 +30,9 @@ class DataLoader {
 class SimpleFileDataLoader final : public DataLoader {
  public:
   SimpleFileDataLoader(const std::string& filename, uint32_t target_batch_size)
-      : DataLoader(target_batch_size), _file(filename), _filename(filename) {}
+      : DataLoader(target_batch_size),
+        _file(SafeFileIO::ifstream(filename)),
+        _filename(filename) {}
 
   std::optional<std::vector<std::string>> nextBatch() final {
     if (_file.eof()) {
