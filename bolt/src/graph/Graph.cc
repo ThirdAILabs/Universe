@@ -120,6 +120,8 @@ MetricData BoltGraph::train(
   return metric_data;
 }
 
+// This syntax means that we are implmenting the function for the specific case
+// in which BATCH_T is equivalent to BoltBatch.
 template <>
 void BoltGraph::processTrainingBatch(BoltBatch& batch_inputs,
                                      const BoltBatch& batch_labels,
