@@ -46,6 +46,7 @@ class ConcatenatedNode final
         output_vector.activations[index] =
             current_concat_input.activations[index - start_offset];
         if (!current_concat_input.isDense()) {
+          assert(!output_vector.isDense());
           output_vector.active_neurons[index] =
               current_concat_input.active_neurons[index - start_offset] +
               label_starting_offset;
@@ -69,6 +70,8 @@ class ConcatenatedNode final
       uint32_t start_offset = positional_offsets.at(concat_id);
       uint32_t end_offset = positional_offsets.at(concat_id + 1);
       for (uint32_t index = start_offset; index < end_offset; index++) {
+        std::cout << index << " " << start_offset << " " << end_offset << " "
+                  << current_concat_input.gradients << std::endl;
         current_concat_input.gradients[index - start_offset] +=
             output_vector.gradients[index];
       }
@@ -139,12 +142,17 @@ class ConcatenatedNode final
     }
     const auto& concatenated_nodes = _graph_state->concatenated_nodes;
 
-    bool concatenation_sparse =
-        concatenationHasSparseNode(concatenated_nodes) && use_sparsity;
+    bool sparse_concatenation = concatenationHasSparseNode(concatenated_nodes);
+    if (sparse_concatenation && !use_sparsity) {
+      throw std::logic_error(
+          "Input to concatenation contains a sparse vector but use_sparsity in "
+          "this call to prepareForBatchProcessing is false.");
+    }
+
     std::vector<uint32_t> positional_offsets = getPositionalOffsets(
-        concatenated_nodes, /* use_sparsity = */ concatenation_sparse);
+        concatenated_nodes, /* use_sparsity = */ sparse_concatenation);
     BoltBatch new_concateated_batch = generateBatch(
-        /* use_sparsity = */ concatenation_sparse,
+        /* use_sparsity = */ sparse_concatenation,
         /* positional_offsets = */ positional_offsets,
         /* label_offsets = */ _graph_state->label_offsets,
         /* batch_size = */ batch_size);

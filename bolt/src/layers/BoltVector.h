@@ -60,16 +60,30 @@ struct BoltVector {
   static BoltVector makeSparseVector(const std::vector<uint32_t>& indices,
                                      const std::vector<float>& values) {
     assert(indices.size() == values.size());
-    BoltVector vec(indices.size(), false, false);
+    BoltVector vec(indices.size(), /* is_dense = */ false);
     std::copy(indices.begin(), indices.end(), vec.active_neurons);
     std::copy(values.begin(), values.end(), vec.activations);
     return vec;
   }
 
   static BoltVector makeDenseVector(const std::vector<float>& values) {
-    BoltVector vec(values.size(), true, false);
+    BoltVector vec(values.size(), /* is_dense = */ true);
     std::copy(values.begin(), values.end(), vec.activations);
     return vec;
+  }
+
+  static BoltVector makeSparseVectorWithGradients(
+      const std::vector<uint32_t>& indices, const std::vector<float>& values) {
+    auto vector = makeSparseVector(indices, values);
+    vector.gradients = new float[values.size()];
+    return vector;
+  }
+
+  static BoltVector makeDenseVectorWithGradients(
+      const std::vector<float>& values) {
+    auto vector = makeDenseVector(values);
+    vector.gradients = new float[values.size()];
+    return vector;
   }
 
   // TODO(nicholas): delete copy constructor/assignment and make load dataset
@@ -175,14 +189,16 @@ struct BoltVector {
   template <bool DENSE>
   FoundActiveNeuron findActiveNeuron(uint32_t active_neuron) const {
     if (DENSE) {
-      return {active_neuron, activations[active_neuron], gradients[active_neuron]};
+      return {active_neuron, activations[active_neuron],
+              gradients[active_neuron]};
     }
     return findSparseActiveNeuron(active_neuron);
   }
 
   FoundActiveNeuron findActiveNeuronNoTemplate(uint32_t active_neuron) const {
     if (isDense()) {
-      return {active_neuron, activations[active_neuron], gradients[active_neuron]};
+      return {active_neuron, activations[active_neuron],
+              gradients[active_neuron]};
     }
     return findSparseActiveNeuron(active_neuron);
   }
