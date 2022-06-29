@@ -268,11 +268,13 @@ class SequentialClassifier {
 
     dataset::DynamicCountsConfig config(/* max_range = */ 1, /* n_rows = */ 5,
                                         /* range_pow = */ 22);
-    blocks.push_back(std::make_shared<dataset::TrendBlock>(
-        has_count_col, columns.at(_schema.at("user")),
-        columns.at(_schema.at("timestamp")), count_col, _config._horizon,
-        /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
-        config));
+
+    _user_trend_block = std::make_shared<dataset::TrendBlock>(
+      has_count_col, columns.at(_schema.at("user")),
+      columns.at(_schema.at("timestamp")), count_col, _config._horizon,
+      /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
+      config);
+    blocks.push_back(_user_trend_block);
   }
 
   void addItemTimeSeriesBlock(const Columns& columns, Blocks& blocks) {
@@ -295,14 +297,12 @@ class SequentialClassifier {
     dataset::DynamicCountsConfig config(/* max_range = */ 1, /* n_rows = */ 5,
                                         /* range_pow = */ 22);
 
-    if (_trend_block == nullptr) {
-      _trend_block = std::make_shared<dataset::TrendBlock>(
-          has_count_col, columns.at(_schema.at("item")),
-          columns.at(_schema.at("timestamp")), count_col, _config._horizon,
-          /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
-          config);
-    }
-    blocks.push_back(_trend_block);
+    _item_trend_block = std::make_shared<dataset::TrendBlock>(
+        has_count_col, columns.at(_schema.at("item")),
+        columns.at(_schema.at("timestamp")), count_col, _config._horizon,
+        /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
+        config);
+    blocks.push_back(_item_trend_block);
   }
 
   void addDateBlock(const Columns& columns,
@@ -340,7 +340,8 @@ class SequentialClassifier {
 
   Schema _schema;
   SequentialClassifierConfig _config;
-  std::shared_ptr<dataset::TrendBlock> _trend_block;
+  std::shared_ptr<dataset::TrendBlock> _user_trend_block;
+  std::shared_ptr<dataset::TrendBlock> _item_trend_block;
   char _delimiter;
   std::optional<FullyConnectedNetwork> _network;
 };
