@@ -114,15 +114,12 @@ class SequentialClassifier {
   FullyConnectedNetwork buildNetwork(
       dataset::StreamingGenericDatasetLoader& pipeline) const {
     SequentialConfigList configs;
-    // _dim, float _sparsity,
-    // const std::string& _act_func,
-    // SamplingConfig _config
-
+    
     configs.push_back(std::make_shared<FullyConnectedLayerConfig>(
         /* _dim = */ 5000, /* _sparsity = */ 0.02,
         /* _act_func = */ ActivationFunction::ReLU));
     configs.push_back(std::make_shared<FullyConnectedLayerConfig>(
-        /* _dim = */ pipeline.getLabelDim(), /* _sparsity = */ 0.02,
+        /* _dim = */ pipeline.getLabelDim(),
         /* _act_func = */ toLower(_config._task) == "regression"
             ? ActivationFunction::Linear
             : ActivationFunction::Softmax));
