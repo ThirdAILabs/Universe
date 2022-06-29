@@ -18,7 +18,6 @@
 #include <pybind11/stl.h>
 #include <algorithm>
 #include <csignal>
-#include <cstddef>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -201,10 +200,10 @@ class PyNetwork final : public FullyConnectedNetwork {
   py::array_t<float> getInputGradientsFromModel(const py::object& data,
                                                 const LossFunction& loss_fn,
                                                 uint32_t batch_size = 256) {
-    auto train_data = convertPyObjectToBoltDataset(data, batch_size, false);
+    auto analysis_data = convertPyObjectToBoltDataset(data, batch_size, false);
 
     auto gradients = FullyConnectedNetwork::getInputGradientsFromModel(
-        train_data.dataset, loss_fn);
+        analysis_data.dataset, loss_fn);
 
     return py::cast(gradients);
   }

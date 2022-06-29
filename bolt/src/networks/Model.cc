@@ -208,7 +208,7 @@ inline std::vector<float> Model<BATCH_T>::getInputGradientsFromModel(
       // before.
       batch_input->at(r)[vec_id].gradients =
           new float[batch_input->at(r)[vec_id].len];
-      forward(0, batch_input->at(r), output[vec_id], nullptr);
+      forward(vec_id, batch_input->at(r), output[vec_id], nullptr);
       uint32_t max_index, second_max_index;
       getMaxandSecondMax(output[vec_id].activations, getOutputDim(), max_index,
                          second_max_index);
@@ -221,11 +221,11 @@ inline std::vector<float> Model<BATCH_T>::getInputGradientsFromModel(
       loss_fn.lossGradients(output[vec_id], batch_label_first,
                             batch_input->at(r).getBatchSize());
       std::vector<float> input_gradients_first =
-          backpropagateInput(0, batch_input->at(r), output[vec_id]);
+          backpropagateInput(vec_id, batch_input->at(r), output[vec_id]);
       loss_fn.lossGradients(output[vec_id], batch_label_second,
                             batch_input->at(r).getBatchSize());
       std::vector<float> input_gradients_second =
-          backpropagateInput(0, batch_input->at(r), output[vec_id]);
+          backpropagateInput(vec_id, batch_input->at(r), output[vec_id]);
       for (uint32_t i = 0; i < batch_input->at(r)[vec_id].len; i++) {
         input_gradients_second[i] = input_gradients_second[i] - input_gradients_first[i];
         total_grad.push_back(input_gradients_second[i]);

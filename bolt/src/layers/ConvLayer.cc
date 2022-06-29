@@ -200,12 +200,11 @@ std::vector<float> ConvLayer::backpropagateInputLayerGetGradients(
       backpropagateImpl<false, false, false>(input, output);
     }
   }
-  std::vector<float> temp(input.len);
+  std::vector<float> grad(input.len);
   for (uint32_t i = 0; i < input.len; i++) {
-    temp[i] = input.gradients[i];
+    grad[i] = input.gradients[i];
   }
-  return temp;
-  // return input.gradients;
+  return grad;
 }
 
 void ConvLayer::backpropagateInputLayer(BoltVector& input, BoltVector& output) {

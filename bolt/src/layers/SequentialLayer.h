@@ -2,7 +2,6 @@
 
 #include "BoltVector.h"
 #include <bolt/src/layers/LayerConfig.h>
-#include <vector>
 
 namespace thirdai::bolt {
 class SequentialLayer {

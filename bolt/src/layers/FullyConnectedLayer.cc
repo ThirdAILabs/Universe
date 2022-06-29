@@ -3,7 +3,6 @@
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
-#include <cstring>
 #include <exception>
 #include <numeric>
 #include <random>
@@ -221,11 +220,11 @@ std::vector<float> FullyConnectedLayer::backpropagateInputLayerGetGradients(
       backpropagateImpl<false, false, false>(input, output);
     }
   }
-  std::vector<float> temp(input.len);
+  std::vector<float> grad(input.len);
   for (uint32_t i = 0; i < input.len; i++) {
-    temp[i] = input.gradients[i];
+    grad[i] = input.gradients[i];
   }
-  return temp;
+  return grad;
 }
 
 template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
