@@ -84,9 +84,9 @@ class SequentialClassifier {
     }
     MeanSquaredError loss;
     _network->trainOnStream(pipeline, loss, /* learning_rate = */ 0.0001,
-    /* rehash_batch = */ 20,
-      /* rebuild_batch = */ 100,
-      /* metric_names = */ {"root_mean_squared_error"});
+                            /* rehash_batch = */ 20,
+                            /* rebuild_batch = */ 100,
+                            /* metric_names = */ {"root_mean_squared_error"});
   }
 
   void predict(std::string filename) {
@@ -119,7 +119,7 @@ class SequentialClassifier {
   FullyConnectedNetwork buildNetwork(
       dataset::StreamingGenericDatasetLoader& pipeline) const {
     SequentialConfigList configs;
-    
+
     configs.push_back(std::make_shared<FullyConnectedLayerConfig>(
         /* _dim = */ 5000, /* _sparsity = */ 0.02,
         /* _act_func = */ ActivationFunction::ReLU));
@@ -273,10 +273,10 @@ class SequentialClassifier {
                                         /* range_pow = */ 22);
 
     _user_trend_block = std::make_shared<dataset::TrendBlock>(
-      has_count_col, columns.at(_schema.at("user")),
-      columns.at(_schema.at("timestamp")), count_col, _config._horizon,
-      /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
-      config);
+        has_count_col, columns.at(_schema.at("user")),
+        columns.at(_schema.at("timestamp")), count_col, _config._horizon,
+        /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
+        config);
     blocks.push_back(_user_trend_block);
   }
 

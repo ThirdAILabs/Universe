@@ -230,18 +230,16 @@ void createDatasetSubmodule(py::module_& module) {
            "windows.")
       .def("is_dense", &CountHistoryBlock::isDense,
            "False since we return sparse features.");
-  
+
   py::class_<TrendBlock, Block, std::shared_ptr<TrendBlock>>(
-      block_submodule, "Trend",
-      "A block that encodes time series trends.")
+      block_submodule, "Trend", "A block that encodes time series trends.")
       // bool has_count_col, size_t id_col, size_t timestamp_col,
-            //  size_t count_col, size_t horizon, size_t lookback,
-            //  DynamicCountsConfig& index_config
-      .def(py::init<bool, size_t, size_t, size_t, size_t, size_t,
-                    DynamicCountsConfig&>(),
+      //  size_t count_col, size_t horizon, size_t lookback,
+      //  DynamicCountsConfig& index_config
+      .def(py::init<bool, size_t, size_t, size_t, size_t, size_t>(),
            py::arg("has_count_col"), py::arg("id_col"),
            py::arg("timestamp_col"), py::arg("count_col"), py::arg("horizon"),
-           py::arg("lookback"), py::arg("index_config"))
+           py::arg("lookback"))
       .def("feature_dim", &TrendBlock::featureDim,
            "Returns the dimension of the vector encoding; equal to lookback.")
       .def("is_dense", &TrendBlock::isDense,

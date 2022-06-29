@@ -57,7 +57,9 @@ class StreamingDataset {
             std::make_shared<BoltDataset>(std::move(labels), len)};
   }
 
-  virtual uint32_t getMaxBatchSize() const { return _data_loader->getMaxBatchSize(); }
+  virtual uint32_t getMaxBatchSize() const {
+    return _data_loader->getMaxBatchSize();
+  }
 
  private:
   std::shared_ptr<DataLoader> _data_loader;

@@ -118,7 +118,7 @@ class Block {
   virtual uint32_t expectedNumColumns() const = 0;
 
   virtual void prepareForBatch(const std::vector<std::string_view>& first_row) {
-    (void) first_row;
+    (void)first_row;
   }
 
  protected:

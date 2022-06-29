@@ -12,20 +12,19 @@ namespace thirdai::dataset {
 
 class StreamingGenericDatasetLoader : public StreamingDataset<bolt::BoltBatch> {
  public:
-
-// The idea is to pass the input loader and generic batch processor into the primary constructor
-// This primary constructor calls the base class constructor.
+  // The idea is to pass the input loader and generic batch processor into the
+  // primary constructor This primary constructor calls the base class
+  // constructor.
 
   StreamingGenericDatasetLoader(
-    std::shared_ptr<DataLoader> loader, 
-    std::shared_ptr<GenericBatchProcessor> processor,
-    bool shuffle = false,
-    ShuffleBufferConfig config = ShuffleBufferConfig())
-    : StreamingDataset(std::move(loader), processor), 
-      _processor(std::move(processor)), 
-      _buffer(config.seed),
-      _shuffle(shuffle),
-      _buffer_size(config.buffer_size) {}
+      std::shared_ptr<DataLoader> loader,
+      std::shared_ptr<GenericBatchProcessor> processor, bool shuffle = false,
+      ShuffleBufferConfig config = ShuffleBufferConfig())
+      : StreamingDataset(std::move(loader), processor),
+        _processor(std::move(processor)),
+        _buffer(config.seed),
+        _shuffle(shuffle),
+        _buffer_size(config.buffer_size) {}
 
   StreamingGenericDatasetLoader(
       std::shared_ptr<DataLoader> loader,
@@ -33,9 +32,12 @@ class StreamingGenericDatasetLoader : public StreamingDataset<bolt::BoltBatch> {
       std::vector<std::shared_ptr<Block>> label_blocks, bool shuffle = false,
       ShuffleBufferConfig config = ShuffleBufferConfig(),
       bool has_header = false, char delimiter = ',')
-      : StreamingGenericDatasetLoader(std::move(loader), std::make_shared<GenericBatchProcessor>(
-            std::move(input_blocks), std::move(label_blocks), has_header,
-            delimiter), shuffle, config) {}
+      : StreamingGenericDatasetLoader(
+            std::move(loader),
+            std::make_shared<GenericBatchProcessor>(std::move(input_blocks),
+                                                    std::move(label_blocks),
+                                                    has_header, delimiter),
+            shuffle, config) {}
 
   StreamingGenericDatasetLoader(
       std::string filename, std::vector<std::shared_ptr<Block>> input_blocks,
@@ -65,7 +67,9 @@ class StreamingGenericDatasetLoader : public StreamingDataset<bolt::BoltBatch> {
     return _buffer.exportBuffer();
   }
 
-  uint32_t getMaxBatchSize() const final { return StreamingDataset<bolt::BoltBatch>::getMaxBatchSize(); }
+  uint32_t getMaxBatchSize() const final {
+    return StreamingDataset<bolt::BoltBatch>::getMaxBatchSize();
+  }
 
   uint32_t getInputDim() { return _processor->getInputDim(); }
 

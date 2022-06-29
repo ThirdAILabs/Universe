@@ -20,7 +20,9 @@ class TrendBlock : public Block {
    */
   TrendBlock(bool has_count_col, size_t id_col, size_t timestamp_col,
              size_t count_col, size_t horizon, size_t lookback,
-             DynamicCountsConfig& index_config)
+             DynamicCountsConfig index_config =
+                 DynamicCountsConfig(/* max_range = */ 1, /* n_rows = */ 5,
+                                     /* range_pow = */ 22))
       : _primary_start_timestamp(0),
         _horizon(horizon),
         _lookback(lookback),
