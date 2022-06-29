@@ -52,9 +52,9 @@ static PredictConfig getPredictConfig() {
 TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
   BoltGraph model = getSingleLayerModel();
 
-  auto data = genDataset(/* add_noise= */ false);
+  auto data = genDataset(/* noisy_dataset= */ false);
 
-  model.train(data.data, data.labels, getTrainConfig(5));
+  model.train(data.data, data.labels, getTrainConfig(/* epochs= */ 5));
 
   auto test_metrics = model.predict(data.data, data.labels, getPredictConfig());
 
@@ -64,9 +64,9 @@ TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
 TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
   BoltGraph model = getSingleLayerModel();
 
-  auto data = genDataset(/* add_noise= */ true);
+  auto data = genDataset(/* noisy_dataset= */ true);
 
-  model.train(data.data, data.labels, getTrainConfig(5));
+  model.train(data.data, data.labels, getTrainConfig(/* epochs= */ 5));
 
   auto test_metrics = model.predict(data.data, data.labels, getPredictConfig());
 
@@ -107,7 +107,7 @@ static void testSimpleDatasetMultiLayerModel(
     uint32_t epochs) {
   BoltGraph model = getMultiLayerModel(hidden_layer_act, output_layer_act);
 
-  auto data = genDataset(/* add_noise= */ false);
+  auto data = genDataset(/* noisy_dataset= */ false);
 
   auto train_metrics =
       model.train(data.data, data.labels, getTrainConfig(epochs));
@@ -121,18 +121,18 @@ static void testSimpleDatasetMultiLayerModel(
 }
 
 TEST(FullyConnectedDagTest, TrainSimpleDatasetMultiLayerNetworkRelu) {
-  testSimpleDatasetMultiLayerModel(ActivationFunction::ReLU,
-                                   ActivationFunction::Softmax, 2);
+  testSimpleDatasetMultiLayerModel(
+      ActivationFunction::ReLU, ActivationFunction::Softmax, /* epochs= */ 2);
 }
 
 TEST(FullyConnectedDagTest, TrainSimpleDatasetMultiLayerNetworkTanh) {
-  testSimpleDatasetMultiLayerModel(ActivationFunction::Tanh,
-                                   ActivationFunction::Softmax, 2);
+  testSimpleDatasetMultiLayerModel(
+      ActivationFunction::Tanh, ActivationFunction::Softmax, /* epochs= */ 2);
 }
 
 TEST(FullyConnectedDagTest, TrainSimpleDatasetMultiLayerNetworkSigmoid) {
-  testSimpleDatasetMultiLayerModel(ActivationFunction::ReLU,
-                                   ActivationFunction::Sigmoid, 5);
+  testSimpleDatasetMultiLayerModel(
+      ActivationFunction::ReLU, ActivationFunction::Sigmoid, /* epochs= */ 5);
 }
 
 TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
@@ -140,9 +140,9 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
       getMultiLayerModel(ActivationFunction::ReLU, ActivationFunction::Softmax);
   model.compile(std::make_shared<CategoricalCrossEntropyLoss>());
 
-  auto data = genDataset(/* add_noise= */ true);
+  auto data = genDataset(/* noisy_dataset= */ true);
 
-  model.train(data.data, data.labels, getTrainConfig(2));
+  model.train(data.data, data.labels, getTrainConfig(/* epochs= */ 2));
 
   auto test_metrics = model.predict(data.data, data.labels, getPredictConfig());
 

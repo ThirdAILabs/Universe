@@ -277,7 +277,7 @@ void BoltGraph::traverseGraph() {
   std::queue<NodePtr> queue;
   std::unordered_set<NodePtr> visited;
 
-  std::unordered_map<NodePtr, uint32_t> successor_counts = getSuccessorCounts();
+  std::unordered_map<NodePtr, int32_t> successor_counts = getSuccessorCounts();
 
   queue.push(_output);
 
@@ -291,7 +291,7 @@ void BoltGraph::traverseGraph() {
       for (auto& pred : predecessors) {
         successor_counts[pred]--;
         if (successor_counts[pred] == 0) {
-          queue.push(std::move(pred));
+          queue.push(pred);
         }
       }
     }
@@ -308,8 +308,8 @@ void BoltGraph::traverseGraph() {
   std::reverse(_nodes.begin(), _nodes.end());
 }
 
-std::unordered_map<NodePtr, uint32_t> BoltGraph::getSuccessorCounts() const {
-  std::unordered_map<NodePtr, uint32_t> num_successors;
+std::unordered_map<NodePtr, int32_t> BoltGraph::getSuccessorCounts() const {
+  std::unordered_map<NodePtr, int32_t> num_successors;
 
   std::queue<NodePtr> queue;
   std::unordered_set<NodePtr> visited;
@@ -324,7 +324,7 @@ std::unordered_map<NodePtr, uint32_t> BoltGraph::getSuccessorCounts() const {
       auto predecessors = next->getPredecessors();
       for (auto& pred : predecessors) {
         num_successors[pred]++;
-        queue.push(std::move(pred));
+        queue.push(pred);
       }
     }
 

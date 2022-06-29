@@ -57,8 +57,7 @@ class TrainConfig {
     uint32_t rebuild_param;
 
     if (!_rebuild_hash_tables) {
-      // For larger datasets we can rebuild hash functions and tables less
-      // frequently.
+      // For larger datasts we want to do more frequent hash table updates.
       if (data_len < LargeDatasetThreshold) {
         rebuild_param = data_len / SmallDatasetFactor;
       } else {

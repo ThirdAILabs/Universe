@@ -86,7 +86,7 @@ class BoltGraph {
 
   void traverseGraph();
 
-  std::unordered_map<NodePtr, uint32_t> getSuccessorCounts() const;
+  std::unordered_map<NodePtr, int32_t> getSuccessorCounts() const;
 
   template <typename BATCH_T>
   void verifyInputForGraph(

@@ -103,4 +103,46 @@ TEST(GraphTraversalTest, CorrectlyTraversesDAG) {
   }
 }
 
+TEST(GraphTraversalTest, ThrowsExceptionForCycle) {
+  auto node0 = DummyNode::makeDummyNode(0);
+  auto node1 = DummyNode::makeDummyNode(1);
+  auto node2 = DummyNode::makeDummyNode(2);
+  auto node3 = DummyNode::makeDummyNode(3);
+  auto node4 = DummyNode::makeDummyNode(4);
+
+  node4->setPredecesors({node3});
+  node3->setPredecesors({node2});
+  node2->setPredecesors({node1});
+  node1->setPredecesors({node0, node3});
+
+  BoltGraph graph(/* inputs= */ {}, /* output= */ node4);
+
+  ASSERT_THROW(graph.compile(std::make_shared<MeanSquaredError>()),  // NOLINT
+               exceptions::GraphCompilationFailure);
+}
+
+TEST(GraphTraversalTest, ThrowsExceptionForSelfLoop) {
+  auto node0 = DummyNode::makeDummyNode(0);
+  auto node1 = DummyNode::makeDummyNode(1);
+
+  node1->setPredecesors({node0});
+  node0->setPredecesors({node0});
+
+  BoltGraph graph(/* inputs= */ {}, /* output= */ node1);
+
+  ASSERT_THROW(graph.compile(std::make_shared<MeanSquaredError>()),  // NOLINT
+               exceptions::GraphCompilationFailure);
+}
+
+TEST(GraphTraversalTest, ThrowsExceptionForOutputSelfLoop) {
+  auto node0 = DummyNode::makeDummyNode(0);
+
+  node0->setPredecesors({node0});
+
+  BoltGraph graph(/* inputs= */ {}, /* output= */ node0);
+
+  ASSERT_THROW(graph.compile(std::make_shared<MeanSquaredError>()),  // NOLINT
+               exceptions::GraphCompilationFailure);
+}
+
 }  // namespace thirdai::bolt::tests
