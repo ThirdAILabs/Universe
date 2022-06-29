@@ -97,11 +97,11 @@ void DLRM::backpropagate(uint32_t batch_index,
                                   _bottom_mlp_output[batch_index]);
 }
 
-std::vector<float> DLRM::backpropagateInput(uint32_t  /*batch_index*/,
-                                            dataset::ClickThroughBatch&  /*input*/,
-                                            BoltVector&  /*output*/) {
-// TODO(Yash) implement this function.
-// Had to write this otherwise compiler throws error. 
+std::vector<float> DLRM::backpropagateInput(
+    uint32_t /*batch_index*/, dataset::ClickThroughBatch& /*input*/,
+    BoltVector& /*output*/) {
+  // TODO(Yash) implement this function.
+  // Had to write this otherwise compiler throws error.
   std::vector<float> temp;
   return temp;
 }

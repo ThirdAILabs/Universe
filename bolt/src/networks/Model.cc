@@ -195,12 +195,12 @@ inline std::vector<float> Model<BATCH_T>::getInputGradientsFromModel(
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& batch_input,
     const LossFunction& loss_fn) {
   uint64_t num_batches = batch_input->numBatches();
+  // Because of how the datasets are read we know that all batches will not
+  // have a batch size larger than this so we can just set the batch size
+  // here.
+  initializeNetworkState(batch_input->at(0).getBatchSize(), false);
   std::vector<float> total_grad;
   for (uint64_t r = 0; r < num_batches; r++) {
-    // Because of how the datasets are read we know that all batches will not
-    // have a batch size larger than this so we can just set the batch size
-    // here.
-    initializeNetworkState(batch_input->at(r).getBatchSize(), false);
     BoltBatch output = getOutputs(batch_input->at(r).getBatchSize(), false);
     for (uint32_t vec_id = 0; vec_id < batch_input->at(r).getBatchSize();
          vec_id++) {
@@ -212,8 +212,9 @@ inline std::vector<float> Model<BATCH_T>::getInputGradientsFromModel(
       uint32_t max_index, second_max_index;
       getMaxandSecondMax(output[vec_id].activations, getOutputDim(), max_index,
                          second_max_index);
-      // backpropagating twice with different output labels one with highest activation and another
-      // second highest activation and getting the difference of input gradients.
+      // backpropagating twice with different output labels one with highest
+      // activation and another second highest activation and getting the
+      // difference of input gradients.
       BoltVector batch_label_first = BoltVector::makeSparseVector(
           std::vector<uint32_t>{max_index}, std::vector<float>{1.0});
       BoltVector batch_label_second = BoltVector::makeSparseVector(
@@ -227,7 +228,8 @@ inline std::vector<float> Model<BATCH_T>::getInputGradientsFromModel(
       std::vector<float> input_gradients_second =
           backpropagateInput(vec_id, batch_input->at(r), output[vec_id]);
       for (uint32_t i = 0; i < batch_input->at(r)[vec_id].len; i++) {
-        input_gradients_second[i] = input_gradients_second[i] - input_gradients_first[i];
+        input_gradients_second[i] =
+            input_gradients_second[i] - input_gradients_first[i];
         total_grad.push_back(input_gradients_second[i]);
       }
     }
