@@ -55,6 +55,9 @@ MetricData BoltGraph::train(
 
   // TODO(Nicholas): Switch to batch_size property in dataset.
   uint32_t max_batch_size = train_data->at(0).getBatchSize();
+  if (max_batch_size == 0) {
+    throw std::invalid_argument("Batch size must be greater than 0");
+  }
 
   uint32_t rebuild_hash_tables_batch =
       train_config.getRebuildHashTablesBatchInterval(max_batch_size,
