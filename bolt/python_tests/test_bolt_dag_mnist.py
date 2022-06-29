@@ -1,12 +1,9 @@
-# Add an integration test marker for all tests in this file
-from tabnanny import verbose
-from test_mnist import load_mnist, load_mnist_labels
-from utils import train_network, build_sparse_hidden_layer_classifier
-import numpy as np
-from thirdai import bolt, dataset
+from test_mnist import load_mnist
+from thirdai import bolt
 import os
 import pytest
 
+# Add an integration test marker for all tests in this file
 pytestmark = [pytest.mark.integration]
 
 
