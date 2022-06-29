@@ -6,3 +6,7 @@ target_link_libraries(
   bolt_datasets_lib
   hash_function_lib
 )
+
+add_subdirectory(tests)
+
+enable_testing()
