@@ -132,7 +132,7 @@ class Model {
 
   std::vector<float> getInputGradientsFromModel(
       std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& batch_input,
-      const LossFunction& loss_fn);
+      const LossFunction& loss_fn, bool get_difference);
 
   void processTestBatch(const BATCH_T& batch_inputs, BoltBatch& outputs,
                         const BoltBatch* batch_labels,

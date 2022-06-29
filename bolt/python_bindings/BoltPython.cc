@@ -270,7 +270,20 @@ void createBoltSubmodule(py::module_& module) {
           "summary will additionally print layer config details for each layer "
           "in the network.")
       .def("get_input_gradients", &PyNetwork::getInputGradientsFromModel,
-           py::arg("input"), py::arg("loss_fn"), py::arg("batch_size") = 256)
+           py::arg("input"), py::arg("loss_fn"), py::arg("batch_size") = 256,
+           py::arg("get_difference") = true,
+           "Get the difference of input gradients when back propagated with "
+           "two different"
+           "labels, one with high activation and another one with second "
+           "highest activation."
+           "Arguments:\n"
+           " * input: The input is same type as we give for train_data of "
+           "train method."
+           " * loss_fn: LossFunction - The loss function to minimize."
+           " * batch_size: Batch size , default is set to 256."
+           " * get_difference: Boolean - optional, If set to False, return "
+           "only the gradients of input with labels being set with second highest "
+           "activation")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),
@@ -454,7 +467,8 @@ void createBoltSubmodule(py::module_& module) {
            "matrix does not match the layer's current weight matrix.")
       .def("ready_for_training", &PyNetwork::isReadyForTraining,
            "Returns False if the optimizer state is not initialized, True "
-           "otherwise. Call resume_training to initialize optimizer")
+           "otherwise. Call reinitialize_optimizer_for_training to initialize "
+           "optimizer")
       .def("get_biases", &PyNetwork::getBiases, py::arg("layer_index"),
            "Returns the bias array at the given layer index as a 1D Numpy "
            "array.")
