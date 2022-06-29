@@ -55,10 +55,12 @@ class SequentialClassifier {
  public:
   explicit SequentialClassifier(
       std::unordered_map<std::string, std::string> schema,
-      SequentialClassifierConfig config, char delimiter = ',')
+      SequentialClassifierConfig config, char delimiter = ',',
+      bool use_sequential_feats = true)
       : _schema(std::move(schema)),
         _config(std::move(config)),
-        _delimiter(delimiter) {}
+        _delimiter(delimiter),
+        _use_sequential_feats(use_sequential_feats) {}
 
   void train(std::string filename) {
     auto loader =
@@ -185,11 +187,13 @@ class SequentialClassifier {
     std::vector<std::shared_ptr<dataset::Block>> blocks;
     addDateBlock(columns, blocks);
     addUserIdBlock(columns, blocks);
-    addUserTimeSeriesBlock(columns, blocks);
     addItemIdBlock(columns, blocks);
-    addItemTimeSeriesBlock(columns, blocks);
     addItemTextBlock(columns, blocks);
     addItemCategoricalBlock(columns, blocks);
+    if (_use_sequential_feats) {
+      addUserTimeSeriesBlock(columns, blocks);
+      addItemTimeSeriesBlock(columns, blocks);
+    }
     return blocks;
   }
 
@@ -344,6 +348,7 @@ class SequentialClassifier {
   std::shared_ptr<dataset::TrendBlock> _item_trend_block;
   char _delimiter;
   std::optional<FullyConnectedNetwork> _network;
+  bool _use_sequential_feats;
 };
 
 }  // namespace thirdai::bolt
