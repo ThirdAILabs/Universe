@@ -86,8 +86,7 @@ class SequentialClassifier {
     _network->trainOnStream(pipeline, loss, /* learning_rate = */ 0.0001,
     /* rehash_batch = */ 20,
       /* rebuild_batch = */ 100,
-      /* metric_names = */ {"root_mean_squared_error"},
-      /* metric_log_batch_interval = */ 50);
+      /* metric_names = */ {"root_mean_squared_error"});
   }
 
   void predict(std::string filename) {
