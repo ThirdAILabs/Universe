@@ -27,8 +27,7 @@ def parse_feature_flag(flag):
 def checked_system_call(cmd):
     exit_code = os.system(cmd)
     if exit_code != 0:
-        print(f"Process failed with exit code {exit_code}")
-        exit(exit_code)
+        exit(1)
 
 
 def main():
