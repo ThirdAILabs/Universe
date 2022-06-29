@@ -55,9 +55,9 @@ class Input final : public Node {
 
   uint32_t outputDim() const final { return _expected_input_dim; }
 
-  void prepareForBatchProcessing(uint32_t batch_size, bool is_inference) final {
+  void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
     (void)batch_size;
-    (void)is_inference;
+    (void)use_sparsity;
   }
 
   std::vector<NodePtr> getPredecessors() const final { return {}; }
