@@ -171,6 +171,7 @@ file(
   bolt/src/networks/*.cc 
   bolt/src/utils/*.cc 
   bolt/src/text_classifier/*.cc
+  bolt/src/tabular_classifier/*.cc
 )
 
 file(

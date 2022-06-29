@@ -23,9 +23,10 @@ TabularClassifier::TabularClassifier(const std::string& model_size,
     : _input_dim(100000) {
   // TODO(david) change autotunes?
   uint32_t hidden_layer_size =
-      getHiddenLayerSize(model_size, n_classes, _input_dim);
+      AutoTuneUtils::getHiddenLayerSize(model_size, n_classes, _input_dim);
 
-  float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_size);
+  float hidden_layer_sparsity =
+      AutoTuneUtils::getHiddenLayerSparsity(hidden_layer_size);
 
   SequentialConfigList configs = {
       std::make_shared<FullyConnectedLayerConfig>(
@@ -52,7 +53,7 @@ void TabularClassifier::train(const std::string& filename,
   auto dataset = loadStreamingDataset(filename);
 
   CategoricalCrossEntropyLoss loss;
-  if (!canLoadDatasetInMemory(filename)) {
+  if (!AutoTuneUtils::canLoadDatasetInMemory(filename)) {
     for (uint32_t e = 0; e < epochs; e++) {
       // Train on streaming dataset
       _model->trainOnStream(dataset, loss, learning_rate);

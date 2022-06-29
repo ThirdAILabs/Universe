@@ -19,9 +19,10 @@ TextClassifier::TextClassifier(const std::string& model_size,
                                uint32_t n_classes) {
   uint32_t input_dim = 100000;
   uint32_t hidden_layer_size =
-      getHiddenLayerSize(model_size, n_classes, input_dim);
+      AutoTuneUtils::getHiddenLayerSize(model_size, n_classes, input_dim);
 
-  float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_size);
+  float hidden_layer_sparsity =
+      AutoTuneUtils::getHiddenLayerSparsity(hidden_layer_size);
 
   SequentialConfigList configs = {
       std::make_shared<FullyConnectedLayerConfig>(
@@ -44,7 +45,7 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
 
   CategoricalCrossEntropyLoss loss;
 
-  if (!canLoadDatasetInMemory(filename)) {
+  if (!AutoTuneUtils::canLoadDatasetInMemory(filename)) {
     for (uint32_t e = 0; e < epochs; e++) {
       // Train on streaming dataset
       _model->trainOnStream(dataset, loss, learning_rate);
