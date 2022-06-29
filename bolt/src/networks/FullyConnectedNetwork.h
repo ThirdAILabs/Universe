@@ -147,10 +147,6 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   void backpropagate(uint32_t batch_index, BoltVector& input,
                      BoltVector& output);
 
-  bool useDenseComputations(bool force_dense) const {
-    return force_dense && !_sparse_inference_enabled;
-  }
-
   std::vector<float> backpropagateInput(uint32_t batch_index, BoltVector& input,
                                         BoltVector& output);
 
