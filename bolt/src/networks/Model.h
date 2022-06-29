@@ -126,6 +126,10 @@ class Model {
                             uint32_t rehash_batch, uint32_t rebuild_batch,
                             MetricAggregator& metrics);
 
+  std::vector<float> getInputGradientsFromModel(
+      std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& batch_input,
+      const LossFunction& loss_fn);
+
   void processTestBatch(const BATCH_T& batch_inputs, BoltBatch& outputs,
                         const BoltBatch* batch_labels,
                         uint32_t* output_active_neurons,
@@ -139,6 +143,10 @@ class Model {
   // Backpropagates gradients through the network
   virtual void backpropagate(uint32_t batch_index, BATCH_T& input,
                              BoltVector& output) = 0;
+
+  virtual std::vector<float> backpropagateInput(uint32_t batch_index,
+                                                BATCH_T& input,
+                                                BoltVector& output) = 0;
 
   // Performs parameter updates for the network.
   virtual void updateParameters(float learning_rate, uint32_t iter) = 0;

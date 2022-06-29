@@ -37,6 +37,12 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     backpropagate<true>(batch_index, inputs[batch_index], output);
   }
 
+  std::vector<float> backpropagateInput(uint32_t batch_index,
+                                        bolt::BoltBatch& input,
+                                        BoltVector& output) final {
+    return backpropagateInput(batch_index, input[batch_index], output);
+  };
+
   void updateParameters(float learning_rate, uint32_t iter) final {
     for (auto& layer : _layers) {
       layer->updateParameters(learning_rate, iter, BETA1, BETA2, EPS);
@@ -153,6 +159,9 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   bool useDenseComputations(bool force_dense) const {
     return force_dense && !_sparse_inference_enabled;
   }
+  
+  std::vector<float> backpropagateInput(uint32_t batch_index, BoltVector& input,
+                                        BoltVector& output);
 
   void checkLayerIndex(uint32_t layer_index) {
     if (layer_index >= _layers.size()) {

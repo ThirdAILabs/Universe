@@ -2,6 +2,7 @@
 
 #include "BoltVector.h"
 #include <bolt/src/layers/LayerConfig.h>
+#include <vector>
 
 namespace thirdai::bolt {
 class SequentialLayer {
@@ -13,6 +14,9 @@ class SequentialLayer {
 
   virtual void backpropagateInputLayer(BoltVector& input,
                                        BoltVector& output) = 0;
+
+  virtual std::vector<float> backpropagateInputLayerGetGradients(
+      BoltVector& input, BoltVector& output) = 0;
 
   virtual void updateParameters(float lr, uint32_t iter, float B1, float B2,
                                 float eps) = 0;

@@ -168,7 +168,72 @@ inline void Model<BATCH_T>::processTrainingBatch(
     buildHashTables();
   }
 }
-
+inline void getMaxandSecondMax(const float* activations, uint32_t dim,
+                               uint32_t& max_index,
+                               uint32_t& second_max_index) {
+  float first = std::numeric_limits<float>::min(),
+        second = std::numeric_limits<float>::min();
+  uint32_t max = 0, second_max = 0;
+  if (dim < 2) {
+    throw std::invalid_argument("cant do this process");
+  }
+  for (uint32_t i = 0; i < dim; i++) {
+    if (activations[i] > first) {
+      second = first;
+      second_max = max;
+      first = activations[i];
+      max = i;
+    } else if (activations[i] > second && activations[i] != first) {
+      second = activations[i];
+      second_max = i;
+    }
+  }
+  max_index = max, second_max_index = second_max;
+}
+template <typename BATCH_T>
+inline std::vector<float> Model<BATCH_T>::getInputGradientsFromModel(
+    std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& batch_input,
+    const LossFunction& loss_fn) {
+  uint64_t num_batches = batch_input->numBatches();
+  std::vector<float> total_grad;
+  for (uint64_t r = 0; r < num_batches; r++) {
+    // Because of how the datasets are read we know that all batches will not
+    // have a batch size larger than this so we can just set the batch size
+    // here.
+    initializeNetworkState(batch_input->at(r).getBatchSize(), false);
+    BoltBatch output = getOutputs(batch_input->at(r).getBatchSize(), false);
+    for (uint32_t vec_id = 0; vec_id < batch_input->at(r).getBatchSize();
+         vec_id++) {
+      // Initializing the input gradients, because they were not initialized
+      // before.
+      batch_input->at(r)[vec_id].gradients =
+          new float[batch_input->at(r)[vec_id].len];
+      forward(0, batch_input->at(r), output[vec_id], nullptr);
+      uint32_t max_index, second_max_index;
+      getMaxandSecondMax(output[vec_id].activations, getOutputDim(), max_index,
+                         second_max_index);
+      // backpropagating twice with different output labels one with highest activation and another
+      // second highest activation and getting the difference of input gradients.
+      BoltVector batch_label_first = BoltVector::makeSparseVector(
+          std::vector<uint32_t>{max_index}, std::vector<float>{1.0});
+      BoltVector batch_label_second = BoltVector::makeSparseVector(
+          std::vector<uint32_t>{second_max_index}, std::vector<float>{1.0});
+      loss_fn.lossGradients(output[vec_id], batch_label_first,
+                            batch_input->at(r).getBatchSize());
+      std::vector<float> input_gradients_first =
+          backpropagateInput(0, batch_input->at(r), output[vec_id]);
+      loss_fn.lossGradients(output[vec_id], batch_label_second,
+                            batch_input->at(r).getBatchSize());
+      std::vector<float> input_gradients_second =
+          backpropagateInput(0, batch_input->at(r), output[vec_id]);
+      for (uint32_t i = 0; i < batch_input->at(r)[vec_id].len; i++) {
+        input_gradients_second[i] = input_gradients_second[i] - input_gradients_first[i];
+        total_grad.push_back(input_gradients_second[i]);
+      }
+    }
+  }
+  return total_grad;
+}
 template <typename BATCH_T>
 InferenceMetricData Model<BATCH_T>::predict(
     const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,

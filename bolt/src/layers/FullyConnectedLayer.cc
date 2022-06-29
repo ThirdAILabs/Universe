@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 #include <exception>
 #include <numeric>
 #include <random>
@@ -203,6 +204,28 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
       backpropagateImpl<true, false, false>(input, output);
     }
   }
+}
+
+std::vector<float> FullyConnectedLayer::backpropagateInputLayerGetGradients(
+    BoltVector& input, BoltVector& output) {
+  if (output.active_neurons == nullptr) {
+    if (input.len == _prev_dim) {
+      backpropagateImpl<false, true, true>(input, output);
+    } else {
+      backpropagateImpl<false, true, false>(input, output);
+    }
+  } else {
+    if (input.len == _prev_dim) {
+      backpropagateImpl<false, false, true>(input, output);
+    } else {
+      backpropagateImpl<false, false, false>(input, output);
+    }
+  }
+  std::vector<float> temp(input.len);
+  for (uint32_t i = 0; i < input.len; i++) {
+    temp[i] = input.gradients[i];
+  }
+  return temp;
 }
 
 template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
