@@ -11,30 +11,22 @@ namespace thirdai::bolt {
 
 class TextEmbeddingModel final : public Model<dataset::MaskedSentenceBatch> {
  public:
-  // TextEmbeddingModel(SequentialConfigList sentence_embedding_model_config,
-  //                    const std::shared_ptr<FullyConnectedLayerConfig>&
-  //                        token_embedding_layers_config,
-  //                    SequentialConfigList classifier_config,
-  //                    uint32_t max_num_tokens, uint32_t input_dim)
-  //     : _sentence_embedding_model(std::move(sentence_embedding_model_config),
-  //                                 input_dim),
-  //       _classifier(std::move(classifier_config),
-  //                   token_embedding_layers_config->getDim()),
-  //       _token_embedding_layers_used(max_num_tokens, false) {
-  //   for (uint32_t i = 0; i < max_num_tokens; i++) {
-  //     _token_embedding_layers.emplace_back(
-  //         *token_embedding_layers_config,
-  //         _sentence_embedding_model.getOutputDim());
-  //   }
-  // }
-
-  TextEmbeddingModel(SequentialConfigList& /*sentence_embedding_model_config */,
+  TextEmbeddingModel(SequentialConfigList sentence_embedding_model_config,
                      const std::shared_ptr<FullyConnectedLayerConfig>&
-                     /* token_embedding_layers_config */,
+                         token_embedding_layers_config,
                      SequentialConfigList classifier_config,
-                     uint32_t /* max_num_tokens */, uint32_t input_dim)
-
-      : _classifier(std::move(classifier_config), input_dim) {}
+                     uint32_t max_num_tokens, uint32_t input_dim)
+      : _sentence_embedding_model(std::move(sentence_embedding_model_config),
+                                  input_dim),
+        _classifier(std::move(classifier_config),
+                    token_embedding_layers_config->getDim()),
+        _token_embedding_layers_used(max_num_tokens, false) {
+    for (uint32_t i = 0; i < max_num_tokens; i++) {
+      _token_embedding_layers.emplace_back(
+          *token_embedding_layers_config,
+          _sentence_embedding_model.getOutputDim());
+    }
+  }
 
   void forward(uint32_t batch_index, const dataset::MaskedSentenceBatch& input,
                BoltVector& output, const BoltVector* labels) final;
@@ -52,28 +44,28 @@ class TextEmbeddingModel final : public Model<dataset::MaskedSentenceBatch> {
 
   // Construct new hash functions (primarly for fully connected layers).
   void reBuildHashFunctions() final {
-    // _sentence_embedding_model.reBuildHashFunctions();
-    // for (auto& layer : _token_embedding_layers) {
-    //   layer.reBuildHashFunction();
-    // }
+    _sentence_embedding_model.reBuildHashFunctions();
+    for (auto& layer : _token_embedding_layers) {
+      layer.reBuildHashFunction();
+    }
     _classifier.reBuildHashFunctions();
   }
 
   // Rebuild any hash tables (primarly for fully connected layers).
   void buildHashTables() final {
-    // _sentence_embedding_model.buildHashTables();
-    // for (auto& layer : _token_embedding_layers) {
-    //   layer.buildHashTables();
-    // }
+    _sentence_embedding_model.buildHashTables();
+    for (auto& layer : _token_embedding_layers) {
+      layer.buildHashTables();
+    }
     _classifier.buildHashTables();
   }
 
   // Shuffles neurons for random sampling.
   void shuffleRandomNeurons() final {
-    // _sentence_embedding_model.shuffleRandomNeurons();
-    // for (auto& layer : _token_embedding_layers) {
-    //   layer.shuffleRandNeurons();
-    // }
+    _sentence_embedding_model.shuffleRandomNeurons();
+    for (auto& layer : _token_embedding_layers) {
+      layer.shuffleRandNeurons();
+    }
     _classifier.shuffleRandomNeurons();
   }
 
@@ -104,14 +96,14 @@ class TextEmbeddingModel final : public Model<dataset::MaskedSentenceBatch> {
   bool anyLayerShallow() final { return false; }
 
  private:
-  // FullyConnectedNetwork _sentence_embedding_model;
-  // std::vector<FullyConnectedLayer> _token_embedding_layers;
+  FullyConnectedNetwork _sentence_embedding_model;
+  std::vector<FullyConnectedLayer> _token_embedding_layers;
   FullyConnectedNetwork _classifier;
 
-  // BoltBatch _sentence_embedding_output;
-  // BoltBatch _token_embedding_output;
+  BoltBatch _sentence_embedding_output;
+  BoltBatch _token_embedding_output;
 
-  // std::vector<bool> _token_embedding_layers_used;
+  std::vector<bool> _token_embedding_layers_used;
 };
 
 }  // namespace thirdai::bolt

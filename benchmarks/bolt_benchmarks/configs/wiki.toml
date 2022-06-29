@@ -27,10 +27,6 @@ use_default_sampling = true
 dim = 1000
 activation = 'ReLU'
 
-[[classifier_layers]]
-dim = 10000
-activation = 'ReLU'
-
 [[classifier_layers]] 
 dim = 30224
 activation = 'Softmax'
