@@ -49,7 +49,7 @@ jobs:
           bin/build.py -t all -f THIRDAI_BUILD_LICENSE -m RelWithAsan
           bin/cpp-test.sh -V
 
-  cpp-asan-tests:
+  cpp-debug-tests:
     runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
