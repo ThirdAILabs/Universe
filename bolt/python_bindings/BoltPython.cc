@@ -272,18 +272,16 @@ void createBoltSubmodule(py::module_& module) {
       .def("get_input_gradients", &PyNetwork::getInputGradientsFromModel,
            py::arg("input"), py::arg("loss_fn"), py::arg("batch_size") = 256,
            py::arg("get_difference") = false,
-           "Get the difference of input gradients when back propagated with "
-           "two different"
-           "labels, one with high activation and another one with second "
-           "highest activation."
+           "Get the values of input gradients when back propagated "
+           "with labels with second highest activation."
            "Arguments:\n"
            " * input: The input is same type as we give for train_data of "
            "train method."
            " * loss_fn: LossFunction - The loss function to minimize."
            " * batch_size: Batch size , default is set to 256."
-           " * get_difference: Boolean - optional, If set to False, return "
-           "only the gradients of input with labels being set with second "
-           "highest activation.")
+           " * get_difference: Boolean - optional, If set to True, returns "
+           "the difference of the input gradients  when backpropagated "
+           "twice with labels with highest activation also.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),

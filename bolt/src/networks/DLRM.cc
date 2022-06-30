@@ -102,8 +102,7 @@ std::vector<float> DLRM::backpropagateInput(
     BoltVector& /*output*/) {
   // TODO(Yash) implement this function.
   // Had to write this otherwise compiler throws error.
-  std::vector<float> temp;
-  return temp;
+  throw std::invalid_argument("not implemented");
 }
 
 }  // namespace thirdai::bolt
