@@ -29,7 +29,7 @@ class ConcatenatedNode final
     (void)labels;
     assert(prepared_for_batch_processing() && predecessors_set());
 
-    const auto& output_vector = getOutputVector(vec_index);
+    const BoltVector& output_vector = getOutputVector(vec_index);
     std::fill_n(output_vector.gradients, output_vector.len, 0);
 
     const auto& concatenated_nodes = _graph_state->inputs;
@@ -40,19 +40,24 @@ class ConcatenatedNode final
     for (uint32_t input_node_id = 0; input_node_id < concatenated_nodes.size();
          input_node_id++) {
       const auto& current_input_node = concatenated_nodes.at(input_node_id);
-      auto& current_input = current_input_node->getOutputVector(vec_index);
+      BoltVector& current_input =
+          current_input_node->getOutputVector(vec_index);
       uint32_t start_position = positional_offsets.at(input_node_id);
       uint32_t end_position = positional_offsets.at(input_node_id + 1);
       uint32_t label_starting_offset = label_offsets.at(input_node_id);
 
-      for (uint32_t output_position = start_position;
-           output_position < end_position; output_position++) {
-        output_vector.activations[output_position] =
-            current_input.activations[output_position - start_position];
-        if (!current_input.isDense()) {
-          assert(!output_vector.isDense());
-          output_vector.active_neurons[output_position] =
-              current_input.active_neurons[output_position - start_position] +
+      std::copy(current_input.activations,
+                current_input.activations + current_input.len,
+                output_vector.activations + start_position);
+
+      if (!current_input.isDense()) {
+        assert(!output_vector.isDense());
+        std::copy(current_input.active_neurons,
+                  current_input.active_neurons + current_input.len,
+                  output_vector.active_neurons + start_position);
+        for (uint32_t output_position = start_position;
+             output_position < end_position; output_position++) {
+          output_vector.active_neurons[output_position] +=
               label_starting_offset;
         }
       }
@@ -70,14 +75,14 @@ class ConcatenatedNode final
     for (uint32_t input_node_id = 0; input_node_id < concatenated_nodes.size();
          input_node_id++) {
       const auto& current_input_node = concatenated_nodes.at(input_node_id);
-      auto& current_concat_input =
+      BoltVector& current_input =
           current_input_node->getOutputVector(vec_index);
       uint32_t start_position = positional_offsets.at(input_node_id);
       uint32_t end_position = positional_offsets.at(input_node_id + 1);
 
       for (uint32_t output_position = start_position;
            output_position < end_position; output_position++) {
-        current_concat_input.gradients[output_position - start_position] +=
+        current_input.gradients[output_position - start_position] +=
             output_vector.gradients[output_position];
       }
     }
@@ -101,9 +106,9 @@ class ConcatenatedNode final
           "Have already set the incoming concatenated nodes for this "
           "concatenation layer");
     }
-    if (nodes.empty()) {
-      throw std::invalid_argument(
-          "Must concatenate at least one node, found 0");
+    if (nodes.size() < 2) {
+      throw std::invalid_argument("Must concatenate at least two node, found " +
+                                  std::to_string(nodes.size()));
     }
 
     verifyNoInputNodes(nodes);
@@ -161,7 +166,7 @@ class ConcatenatedNode final
 
     std::vector<uint32_t> positional_offsets = getPositionalOffsets(
         concatenated_nodes, /* use_sparsity = */ sparse_concatenation);
-    BoltBatch new_concateated_batch = generateBatch(
+    BoltBatch new_concatenated_batch = generateBatch(
         /* use_sparsity = */ sparse_concatenation,
         /* positional_offsets = */ positional_offsets,
         /* label_offsets = */ _graph_state->label_offsets,
@@ -171,10 +176,11 @@ class ConcatenatedNode final
     // arguments are named correctly. C++ 20 has native support for named enum
     // creation but we use C++ 17 for now. Just be careful if you change the
     // struct definition!
+    uint32_t num_nonzeros_in_concatenation = positional_offsets.back();
     _batch_processing_state = {
-        /* positional_offsets = */ positional_offsets,
-        /* outputs = */ std::move(new_concateated_batch),
-        /* num_nonzeros_in_concatenation = */ positional_offsets.back()};
+        /* positional_offsets = */ std::move(positional_offsets),
+        /* outputs = */ std::move(new_concatenated_batch),
+        /* num_nonzeros_in_concatenation = */ num_nonzeros_in_concatenation};
   }
 
   std::vector<NodePtr> getPredecessors() const final {
@@ -320,3 +326,4 @@ class ConcatenatedNode final
 };
 
 }  // namespace thirdai::bolt
+

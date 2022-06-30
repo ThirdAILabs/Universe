@@ -66,7 +66,7 @@ def run_simple_test(
 
     train_config = bolt.graph.TrainConfig.makeConfig(
         learning_rate=learning_rate, epochs=num_training_epochs
-    )
+    ).silence()
 
     metrics = model.train_np(
         train_data=train_data,
@@ -77,7 +77,7 @@ def run_simple_test(
 
     predict_config = bolt.graph.PredictConfig.makeConfig().withMetrics(
         ["categorical_accuracy"]
-    )
+    ).silence()
 
     metrics = model.predict_np(
         test_data=train_data,
