@@ -44,10 +44,10 @@ def get_expected_unigrams(sentence):
     return x,y
 
 def get_actual_unigrams(sentence):
-    return dataset.string_to_bolt_dataset(sentence,blocks.Text(col=0, encoding=text_encodings.UniGram(dim=100)))
+    return dataset.string_to_bolt_dataset(sentence,100)
 
 def get_actual_pairgrams(sentence):
-    return dataset.string_to_bolt_dataset(sentence,blocks.Text(col=0, encoding=text_encodings.PairGram(dim=100)))
+    return dataset.string_to_bolt_dataset(sentence,100,"pairgram")
     
 
 def build_network():

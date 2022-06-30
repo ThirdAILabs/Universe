@@ -104,8 +104,8 @@ parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
 bolt::BoltVector parseSentenceToBoltVector(const std::string& sentence,
                                            uint32_t seed, uint32_t dimension);
 
-BoltDatasetPtr parseStringToBoltDataset(
-    const std::string& string, std::shared_ptr<Block> block);
+BoltDatasetPtr parseStringToBoltDataset(const std::string& string, uint32_t dim,
+                                        const std::string& encoding_type);
 
 /**
  * Checks whether the given bolt dataset and dense 2d matrix

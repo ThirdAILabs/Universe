@@ -13,13 +13,11 @@
 #include <dataset/src/encodings/text/UniGram.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
-#include <pybind11/cast.h>
 #include <sys/types.h>
 #include <chrono>
 #include <limits>
 #include <type_traits>
 #include <unordered_map>
-#include <utility>
 
 // TODO(Geordie): Split into smaller files.
 // I'm thinking one for each submodule of dataset_submodule.
@@ -280,14 +278,16 @@ void createDatasetSubmodule(py::module_& module) {
   py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule,  // NOLINT
                                           "BoltDataset");
 
-  dataset_submodule.def("string_to_bolt_dataset",
-                        &parseStringToBoltDataset,
-                        py::arg("string"), py::arg("block"),
-                        "Takes in a python string and processes it to a BoltDataset object"
-                        "This is useful for inference API"
-                        "Arguments:\n"
-                        " * string: String - sentence to be parsed.\n"
-                        " * block: Admits all text blocks listed at dataset/src/encodings/text\n");
+  dataset_submodule.def(
+      "string_to_bolt_dataset", &parseStringToBoltDataset, py::arg("string"),
+      py::arg("dim"), py::arg("encoding_type") = "unigram",
+      "Takes in a python string and processes it to a BoltDataset object"
+      "This is useful for inference API"
+      "Arguments:\n"
+      " * string: String - sentence to be parsed.\n"
+      " * dim - dimension.\n"
+      " * encoding_type - string to specify the type of encoding"
+      "   one of unigram or pairgram, defaults to unigram.\n");
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
@@ -772,8 +772,19 @@ BoltVector parseSentenceToBoltVector(const std::string& sentence, uint32_t seed,
 }
 
 BoltDatasetPtr parseStringToBoltDataset(
-    const std::string& string, std::shared_ptr<Block> block) {
+    const std::string& string, uint32_t dim,
+    const std::string& encoding_type = "unigram") {
   std::vector<std::string> sample = {string};
+  std::shared_ptr<Block> block;
+  std::string lower_name;
+  for (char c : encoding_type) {
+    lower_name.push_back(std::tolower(c));
+  }
+  if (lower_name == "unigram") {
+    block = std::make_shared<TextBlock>(0, std::make_shared<UniGram>(dim));
+  } else {
+    block = std::make_shared<TextBlock>(0, std::make_shared<PairGram>(dim));
+  }
   std::vector<std::shared_ptr<Block>> blocks = {std::move(block)};
   std::vector<BoltVector> bolt_vec = {
       BlockBatchProcessor::makeVector(sample, blocks, false)};
