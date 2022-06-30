@@ -1,3 +1,5 @@
+#pragma once
+
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <pybind11/cast.h>
