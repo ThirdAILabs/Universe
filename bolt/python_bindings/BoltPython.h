@@ -57,7 +57,7 @@ class PyBoltGraph final : public BoltGraph {
 
   MetricData trainNumpy(const py::object& train_data_numpy,
                         const py::object& train_labels_numpy,
-                        uint32_t batch_size, const TrainConfig& train_config) {
+                        const TrainConfig& train_config, uint32_t batch_size) {
     auto train_data =
         convertPyObjectToBoltDataset(train_data_numpy, batch_size, false);
 
@@ -70,8 +70,8 @@ class PyBoltGraph final : public BoltGraph {
 
   InferenceMetricData predictNumpy(const py::object& test_data_numpy,
                                    const py::object& test_labels_numpy,
-                                   uint32_t batch_size,
-                                   const PredictConfig& predict_config) {
+                                   const PredictConfig& predict_config,
+                                   uint32_t batch_size) {
     auto test_data =
         convertPyObjectToBoltDataset(test_data_numpy, batch_size, false);
 

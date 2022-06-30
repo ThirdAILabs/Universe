@@ -187,7 +187,7 @@ def test_easy_sparse_layer():
     Generates easy mock dataset as a numpy array and asserts that BOLT performs well trained with a sparse output.
     """
     examples, labels = gen_training_data(n_classes=100, n_samples=10000)
-    acc = train_simple_bolt_model(examples, labels, sparsity=0.1, n_classes=n_classes)
+    acc = train_simple_bolt_model(examples, labels, sparsity=0.1, n_classes=100)
     assert acc > 0.8
 
 

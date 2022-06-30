@@ -40,8 +40,10 @@ class Node {
   /*
    * Returns the number of nonzeros this node will have in its output. If the
    * node is dense then this will be equal to outputDim(). If the node is sparse
-   * this will return the sparse dimension, the number of neurons this node will
-   * select during training or inference. If this quantity is unknowable, this
+   * and the current network is prepared for sparse, this will return the sparse
+   * dimension, the number of neurons this node will select during training or
+   * inference. If the node is sparse and the network is prepared for dense,
+   * this will be equal to outputDim(). If this quantity is unknowable, this
    * will throw an error. Currently, it is only unknowable for the Input node,
    * so it is the responsibility of the caller to call isInputNode() first.
    */
