@@ -33,6 +33,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr,
+      /* use_sparse_inference= */ false,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.98);
@@ -52,7 +53,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
                 /* verbose= */ false);
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
-      /* output_activations= */ nullptr,
+      /* output_activations= */ nullptr, /* use_sparse_inference= */ false,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
@@ -80,6 +81,7 @@ static void testSimpleDatasetMultiLayerNetworkActivation(
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr,
+      /* use_sparse_inference= */ false,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
@@ -118,6 +120,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr,
+      /* use_sparse_inference= */ false,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ true);
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
@@ -140,6 +143,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr,
+      /* use_sparse_inference= */ false,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
@@ -260,7 +264,7 @@ void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
   auto stream_data = getMockStreamingDataset(std::move(in_mem_data));
 
   auto test_metrics =
-      network.predictOnStream(stream_data,
+      network.predictOnStream(stream_data, /* use_sparse_inference= */ false,
                               /* metric_names= */ {"categorical_accuracy"},
                               /* batch_callback= */ std::nullopt,
                               /* verbose= */ false);

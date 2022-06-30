@@ -8,6 +8,7 @@
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <exceptions/src/Exceptions.h>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 class ConvLayer final : public SequentialLayer {
@@ -27,36 +28,30 @@ class ConvLayer final : public SequentialLayer {
                         float eps) override;
 
   BoltBatch createBatchState(const uint32_t batch_size,
-                             bool force_dense) const final {
-    bool is_dense = (_sparse_dim == _dim) || force_dense;
+                             bool use_sparsity) const final {
+    bool is_sparse = (_sparsity < 1.0) && use_sparsity;
 
-    return BoltBatch(is_dense ? _dim : _sparse_dim, batch_size, is_dense);
+    uint32_t curr_dim = is_sparse ? _sparse_dim : _dim;
+
+    return BoltBatch(/* dim= */ curr_dim, /* batch_size= */ batch_size,
+                     /* is_dense= */ !is_sparse);
   }
 
-  void forceSparseForInference() final {
-    if (_sparsity < 1.0) {
-      _force_sparse_for_inference = true;
-    }
+  void freezeHashTables(bool insert_labels_if_not_found) final {
+    (void)insert_labels_if_not_found;
+    throw exceptions::NotImplemented(
+        "Freeze hash tables is not supported in Conv layer.");
   }
-
-  bool isForceSparsity() const final { return _force_sparse_for_inference; }
 
   void buildHashTables() final;
 
   void reBuildHashFunction() final;
 
-  void shuffleRandNeurons() final;
-
   uint32_t getDim() const final { return _dim; }
 
   uint32_t getInputDim() const final { return _prev_dim; }
 
-  uint32_t getInferenceOutputDim() const final {
-    if (_force_sparse_for_inference) {
-      return _sparse_dim;
-    }
-    return _dim;
-  }
+  uint32_t getSparseDim() const final { return _sparse_dim; }
 
   float* getWeights() const final;
 
@@ -157,8 +152,6 @@ class ConvLayer final : public SequentialLayer {
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
   std::vector<uint32_t> _rand_neurons;
 
-  bool _force_sparse_for_inference;
-
   uint32_t _num_filters;         // number of convolutional filters
   uint32_t _num_sparse_filters;  // _num_filters * sparsity
   uint32_t _patch_dim;           // the dim of a patch if the input was dense
@@ -176,10 +169,9 @@ class ConvLayer final : public SequentialLayer {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
             _w_gradient, _w_momentum, _w_velocity, _biases, _b_gradient,
             _b_momentum, _b_velocity, _is_active, _sampling_config, _hasher,
-            _hash_table, _rand_neurons, _force_sparse_for_inference, _patch_dim,
-            _sparse_patch_dim, _num_patches, _num_filters, _num_sparse_filters,
-            _prev_num_filters, _prev_num_sparse_filters, _kernel_size,
-            _in_to_out, _out_to_in);
+            _hash_table, _rand_neurons, _patch_dim, _sparse_patch_dim,
+            _num_patches, _num_filters, _num_sparse_filters, _prev_num_filters,
+            _prev_num_sparse_filters, _kernel_size, _in_to_out, _out_to_in);
   }
 
  protected:

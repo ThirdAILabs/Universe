@@ -28,7 +28,7 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch>,
   FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim,
                         bool is_distributed = false);
 
-  void initializeNetworkState(uint32_t batch_size, bool force_dense) final;
+  void initializeNetworkState(uint32_t batch_size, bool use_sparsity) final;
 
   void forward(uint32_t batch_index, const bolt::BoltBatch& inputs,
                BoltVector& output, const BoltVector* labels) final {
@@ -47,29 +47,14 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch>,
   }
 
   void reBuildHashFunctions() final {
-    if (_sparse_inference_enabled) {
-      return;
-    }
     for (auto& layer : _layers) {
       layer->reBuildHashFunction();
     }
   }
 
   void buildHashTables() final {
-    if (_sparse_inference_enabled) {
-      return;
-    }
     for (auto& layer : _layers) {
       layer->buildHashTables();
-    }
-  }
-
-  void shuffleRandomNeurons() final {
-    if (_sparse_inference_enabled) {
-      return;
-    }
-    for (auto& layer : _layers) {
-      layer->shuffleRandNeurons();
     }
   }
 
@@ -92,15 +77,17 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch>,
     std::cout << summary.str() << std::endl;
   }
 
-  BoltBatch getOutputs(uint32_t batch_size, bool force_dense) final {
-    return _layers.back()->createBatchState(batch_size,
-                                            useDenseComputations(force_dense));
+  BoltBatch getOutputs(uint32_t batch_size, bool use_sparsity) final {
+    return _layers.back()->createBatchState(batch_size, use_sparsity);
   }
 
   uint32_t getOutputDim() const final { return _layers.back()->getDim(); }
 
-  uint32_t getInferenceOutputDim() const final {
-    return _layers.back()->getInferenceOutputDim();
+  uint32_t getInferenceOutputDim(bool using_sparsity) const final {
+    if (using_sparsity) {
+      return _layers.back()->getSparseDim();
+    }
+    return _layers.back()->getDim();
   }
 
   bool anyLayerShallow() final {
@@ -125,9 +112,13 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch>,
 
   uint32_t getInputDim() const { return _layers.front()->getInputDim(); }
 
-  void enableSparseInference() {
-    _sparse_inference_enabled = true;
-    _layers.back()->forceSparseForInference();
+  void freezeHashTables() {
+    for (uint32_t i = 0; i < _layers.size(); i++) {
+      // We want to insert labels when not found in hash tables for the last
+      // layer only.
+      _layers[i]->freezeHashTables(
+          /* insert_labels_if_not_found= */ i == _layers.size() - 1);
+    }
   }
 
   void setLayerSparsity(uint32_t layer_index, float sparsity, uint32_t hash_seed, uint32_t shuffle_seed) {
@@ -153,10 +144,6 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch>,
   void backpropagate(uint32_t batch_index, BoltVector& input,
                      BoltVector& output);
 
-  bool useDenseComputations(bool force_dense) const {
-    return force_dense && !_sparse_inference_enabled;
-  }
-
   void checkLayerIndex(uint32_t layer_index) {
     if (layer_index >= _layers.size()) {
       throw std::invalid_argument(
@@ -171,7 +158,6 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch>,
   std::vector<std::shared_ptr<SequentialLayer>> _layers;
   std::vector<BoltBatch> _states;
   uint32_t _num_layers;
-  bool _sparse_inference_enabled;
   bool _is_distributed;
 
  private:
@@ -180,7 +166,7 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch>,
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<Model<bolt::BoltBatch>>(this), _input_dim,
-            _layers, _num_layers, _sparse_inference_enabled);
+            _layers, _num_layers);
   }
 
  protected:
