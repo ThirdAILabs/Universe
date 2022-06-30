@@ -23,7 +23,7 @@ MaxFlashArray<LABEL_T>::MaxFlashArray(hashing::HashFunction* function,
       // possible for a point to collide anywhere in [0, num_tables]
       _collision_count_to_sim(_hash_function->numTables() + 1) {
   for (uint32_t collision_count = 0;
-       collision_count <= _collision_count_to_sim.size(); collision_count++) {
+       collision_count < _collision_count_to_sim.size(); collision_count++) {
     float table_collision_probability =
         static_cast<float>(collision_count) / _hash_function->numTables();
     // For a given query and datapoint, if their similariy is sim, then each of

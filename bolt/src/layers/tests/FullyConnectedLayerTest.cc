@@ -149,7 +149,8 @@ class FullyConnectedLayerTestFixture : public testing::Test {
 TEST_F(FullyConnectedLayerTestFixture, DenseDenseTest) {
   makeDenseInputs();
 
-  BoltBatch outputs = _layer.createBatchState(BATCH_SIZE, true);
+  BoltBatch outputs =
+      _layer.createBatchState(BATCH_SIZE, /* use_sparsity= */ false);
 
   for (uint32_t b = 0; b < BATCH_SIZE; b++) {
     _layer.forward(_bolt_inputs[b], outputs[b], nullptr);
@@ -195,7 +196,8 @@ TEST_F(FullyConnectedLayerTestFixture, DenseDenseTest) {
 TEST_F(FullyConnectedLayerTestFixture, SparseDenseTest) {
   makeSparseInputs();
 
-  BoltBatch outputs = _layer.createBatchState(BATCH_SIZE, true);
+  BoltBatch outputs =
+      _layer.createBatchState(BATCH_SIZE, /* use_sparsity= */ false);
 
   for (uint32_t b = 0; b < BATCH_SIZE; b++) {
     _layer.forward(_bolt_inputs[b], outputs[b], nullptr);
@@ -242,7 +244,8 @@ TEST_F(FullyConnectedLayerTestFixture, DenseSparseTest) {
   makeDenseInputs();
   makeSparseLabels();
 
-  BoltBatch outputs = _layer.createBatchState(BATCH_SIZE, false);
+  BoltBatch outputs =
+      _layer.createBatchState(BATCH_SIZE, /* use_sparsity= */ true);
 
   for (uint32_t b = 0; b < BATCH_SIZE; b++) {
     _layer.forward(_bolt_inputs[b], outputs[b], &_bolt_labels.at(b));
@@ -290,7 +293,8 @@ TEST_F(FullyConnectedLayerTestFixture, SparseSparseTest) {
   makeSparseInputs();
   makeSparseLabels();
 
-  BoltBatch outputs = _layer.createBatchState(BATCH_SIZE, false);
+  BoltBatch outputs =
+      _layer.createBatchState(BATCH_SIZE, /* use_sparsity= */ true);
 
   for (uint32_t b = 0; b < BATCH_SIZE; b++) {
     _layer.forward(_bolt_inputs[b], outputs[b], &_bolt_labels.at(b));

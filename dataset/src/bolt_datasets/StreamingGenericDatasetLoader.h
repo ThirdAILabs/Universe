@@ -1,3 +1,5 @@
+#pragma once
+
 #include "DataLoader.h"
 #include "StreamingDataset.h"
 #include <bolt/src/layers/BoltVector.h>

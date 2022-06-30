@@ -42,7 +42,7 @@ DLRM::DLRM(EmbeddingLayerConfig embedding_config,
       _embedding_layer.getEmbeddingDim() + bottom_mlp_configs.back()->getDim();
 }
 
-void DLRM::initializeNetworkState(uint32_t batch_size, bool force_dense) {
+void DLRM::initializeNetworkState(uint32_t batch_size, bool use_sparsity) {
   _concat_layer_state = BoltBatch(_concat_layer_dim, batch_size, true);
 
   uint32_t embedding_dim = _embedding_layer.getEmbeddingDim();
@@ -67,8 +67,8 @@ void DLRM::initializeNetworkState(uint32_t batch_size, bool force_dense) {
 
   _embedding_layer.initializeLayer(batch_size);
 
-  _bottom_mlp.initializeNetworkState(batch_size, force_dense);
-  _top_mlp.initializeNetworkState(batch_size, force_dense);
+  _bottom_mlp.initializeNetworkState(batch_size, use_sparsity);
+  _top_mlp.initializeNetworkState(batch_size, use_sparsity);
 }
 
 void DLRM::forward(uint32_t batch_index,

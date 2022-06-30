@@ -3,7 +3,6 @@
 #include "LayerUtils.h"
 #include <cmath>
 #include <exception>
-#include <fstream>
 #include <iostream>
 #include <stdexcept>
 
