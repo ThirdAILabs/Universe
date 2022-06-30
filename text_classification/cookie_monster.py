@@ -45,8 +45,11 @@ class CookieMonster:
         self.bolt_classifier.set_hidden_weights(weights)
         self.bolt_classifier.set_hidden_biases(biases)
 
-    def train_corpus(self, path_to_config_directory, mlflow_enabled=True):
-        if mlflow_enabled:
+    def train_corpus(self, path_to_config_directory, mlflow_enabled=True, evaluate=False):
+        if mlflow_enabled and evaluate:
+            mlflow.start_run(run_name="evaluation_run")
+        
+        if mlflow_enabled and (not evaluate):
             mlflow.start_run(run_name="train_run")
 
         # TODO(henry): work out a way to feed data into the model
@@ -58,6 +61,7 @@ class CookieMonster:
                     mlflow.log_artifact(path)
 
                 with open(path, "r") as f:
+                    print("Training: ", path)
                     config = toml.load(f)
                     train_file = config["train_file"]
                     test_file = config["test_file"]
@@ -76,21 +80,26 @@ class CookieMonster:
                         epochs=epochs,
                         learning_rate=learning_rate,
                     )
+                    # Text classifier predict() method should return the accuracies for logging
                     self.bolt_classifier.predict(test_file=test_file)
 
                 print("\n")
 
-        # weights = self.bolt_classifier.get_hidden_weights()
-        # biases = self.bolt_classifier.get_hidden_biases()
-        # np.save("weights_1000.npy", weights)
-        # np.save("biases_1000.npy", biases)
-        # mlflow.log_artifact("weights_1000.npy")
-        # mlflow.log_artifact("biases_1000.npy")
         if mlflow_enabled:
+            weights = self.bolt_classifier.get_hidden_weights()
+            biases = self.bolt_classifier.get_hidden_biases()
+            np.save("weights.npy", weights)
+            np.save("biases.npy", biases)
+            mlflow.log_artifact("weights.npy")
+            mlflow.log_artifact("biases.npy")
             mlflow.end_run()
 
     def evaluate(self, path_to_config_directory):
-        mlflow.log_artifact("weights.npy")
-        # print("Logged weights")
+        # mlflow.log_artifact("weights.npy")
+        # For now, we will support obtaining the categorical accuracies of each dataset
+        # Similar to training, we will fine-tune on each dataset and get accuracy
+        self.train_corpus(path_to_config_directory, True)
+        # Text classifier predict() method should return the accuracies for logging
+        
 
     # TODO(henry): work out a way to manage the versions of weights
