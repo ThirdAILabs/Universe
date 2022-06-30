@@ -175,6 +175,7 @@ inline void Model<BATCH_T>::updateSampling(uint32_t rehash_batch,
     buildHashTables();
   }
 }
+
 inline void getMaxandSecondMax(const float* activations, uint32_t dim,
                                uint32_t& max_index,
                                uint32_t& second_max_index) {
@@ -197,6 +198,7 @@ inline void getMaxandSecondMax(const float* activations, uint32_t dim,
   }
   max_index = max, second_max_index = second_max;
 }
+
 template <typename BATCH_T>
 inline std::vector<float> Model<BATCH_T>::getInputGradientsFromModel(
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& batch_input,
@@ -205,10 +207,10 @@ inline std::vector<float> Model<BATCH_T>::getInputGradientsFromModel(
   // Because of how the datasets are read we know that all batches will not
   // have a batch size larger than this so we can just set the batch size
   // here.
-  initializeNetworkState(batch_input->at(0).getBatchSize(), false);
+  initializeNetworkState(batch_input->at(0).getBatchSize(), true);
   std::vector<float> total_grad;
   for (uint64_t r = 0; r < num_batches; r++) {
-    BoltBatch output = getOutputs(batch_input->at(r).getBatchSize(), false);
+    BoltBatch output = getOutputs(batch_input->at(r).getBatchSize(), true);
     for (uint32_t vec_id = 0; vec_id < batch_input->at(r).getBatchSize();
          vec_id++) {
       // Initializing the input gradients, because they were not initialized
@@ -250,6 +252,7 @@ inline std::vector<float> Model<BATCH_T>::getInputGradientsFromModel(
   }
   return total_grad;
 }
+
 template <typename BATCH_T>
 InferenceMetricData Model<BATCH_T>::predict(
     const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
