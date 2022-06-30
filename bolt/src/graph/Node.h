@@ -18,10 +18,15 @@ class Node {
  public:
   virtual void initializeParameters() = 0;
 
-  // Computes the forward pass for the node. The node will access its inputs
-  // through the getOutput() method on is predecessor(s). The labels are an
-  // optional argument that will only be specified for the output layer in order
-  // for sparse layers to sample the labels as active neurons during training.
+  /*
+   * Computes the forward pass for the node. The node will access its inputs
+   * through the getOutput() method on is predecessor(s). The labels are an
+   * optional argument that will only be specified for the output layer in order
+   * for sparse layers to sample the labels as active neurons during training.
+   * This forward pass must fill the output vector specified by
+   * getOutputVector(vec_index), including setting the gradients equal to 0
+   * (so they can be += to correctly in backpropogate in succesor nodes).
+   */
   virtual void forward(uint32_t vec_index, const BoltVector* labels) = 0;
 
   // Computes the backwards pass through the node.

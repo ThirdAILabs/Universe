@@ -34,6 +34,7 @@ class ConcatenatedNode final
         _batch_processing_state->positional_offsets;
     const auto& label_offsets = _graph_state->label_offsets;
     const auto& output_vector = getOutputVector(vec_index);
+    std::fill_n(output_vector.gradients, output_vector.len, 0);
 
     for (uint32_t concat_id = 0; concat_id < concatenated_nodes.size();
          concat_id++) {
