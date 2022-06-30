@@ -1,6 +1,5 @@
 import os
 from typing import Tuple
-from typing_extensions import Self
 
 from ..interfaces import Source, Parser
 from .schema import Schema
@@ -59,7 +58,7 @@ class Loader:
         self._shuffle_seed = shuffle_seed
         self._est_num_elems = est_num_elems
 
-    def set_source(self, source: Source) -> Self:
+    def set_source(self, source: Source):
         """Defines the location of the dataset.
 
         Arguments:
@@ -69,7 +68,7 @@ class Loader:
         self._source = source
         return self  ### Returns self so we can chain the set() method calls.
 
-    def set_parser(self, parser: Parser) -> Self:
+    def set_parser(self, parser: Parser):
         """Defines how the dataset can be parsed.
 
         Arguments:
@@ -79,7 +78,7 @@ class Loader:
         self._parser = parser
         return self  ### Returns self so we can chain the set() method calls.
 
-    def set_schema(self, schema: Schema) -> Self:
+    def set_schema(self, schema: Schema):
         """Defines the how each sample in the dataset is processed.
 
         Arguments:
@@ -89,7 +88,7 @@ class Loader:
         self._schema = schema
         return self  ### Returns self so we can chain the set() method calls.
 
-    def set_batch_size(self, size: int) -> Self:
+    def set_batch_size(self, size: int):
         """Sets the batch size.
 
         Arguments:
@@ -98,7 +97,7 @@ class Loader:
         self._batch_size = size
         return self  ### Returns self so we can chain the set() method calls.
 
-    def shuffle(self, seed: int = None) -> Self:
+    def shuffle(self, seed: int = None):
         """Samples will be shuffled before being batched."""
         self._shuffle_rows = True
         # We use a ternary here instead of setting default seed to random.randint()
