@@ -29,27 +29,30 @@ class ConcatenatedNode final
     (void)labels;
     assert(prepared_for_batch_processing() && predecessors_set());
 
+    const auto& output_vector = getOutputVector(vec_index);
+    std::fill_n(output_vector.gradients, output_vector.len, 0);
+
     const auto& concatenated_nodes = _graph_state->inputs;
     const auto& positional_offsets =
         _batch_processing_state->positional_offsets;
     const auto& label_offsets = _graph_state->label_offsets;
-    const auto& output_vector = getOutputVector(vec_index);
-    std::fill_n(output_vector.gradients, output_vector.len, 0);
 
-    for (uint32_t concat_id = 0; concat_id < concatenated_nodes.size();
-         concat_id++) {
-      const auto& node = concatenated_nodes.at(concat_id);
-      auto& current_concat_input = node->getOutputVector(vec_index);
-      uint32_t start_offset = positional_offsets.at(concat_id);
-      uint32_t end_offset = positional_offsets.at(concat_id + 1);
-      uint32_t label_starting_offset = label_offsets.at(concat_id);
-      for (uint32_t index = start_offset; index < end_offset; index++) {
-        output_vector.activations[index] =
-            current_concat_input.activations[index - start_offset];
-        if (!current_concat_input.isDense()) {
+    for (uint32_t input_node_id = 0; input_node_id < concatenated_nodes.size();
+         input_node_id++) {
+      const auto& current_input_node = concatenated_nodes.at(input_node_id);
+      auto& current_input = current_input_node->getOutputVector(vec_index);
+      uint32_t start_position = positional_offsets.at(input_node_id);
+      uint32_t end_position = positional_offsets.at(input_node_id + 1);
+      uint32_t label_starting_offset = label_offsets.at(input_node_id);
+
+      for (uint32_t output_position = start_position;
+           output_position < end_position; output_position++) {
+        output_vector.activations[output_position] =
+            current_input.activations[output_position - start_position];
+        if (!current_input.isDense()) {
           assert(!output_vector.isDense());
-          output_vector.active_neurons[index] =
-              current_concat_input.active_neurons[index - start_offset] +
+          output_vector.active_neurons[output_position] =
+              current_input.active_neurons[output_position - start_position] +
               label_starting_offset;
         }
       }
@@ -64,15 +67,18 @@ class ConcatenatedNode final
         _batch_processing_state->positional_offsets;
     const auto& output_vector = getOutputVector(vec_index);
 
-    for (uint32_t concat_id = 0; concat_id < concatenated_nodes.size();
-         concat_id++) {
-      const auto& node = concatenated_nodes.at(concat_id);
-      auto& current_concat_input = node->getOutputVector(vec_index);
-      uint32_t start_offset = positional_offsets.at(concat_id);
-      uint32_t end_offset = positional_offsets.at(concat_id + 1);
-      for (uint32_t index = start_offset; index < end_offset; index++) {
-        current_concat_input.gradients[index - start_offset] +=
-            output_vector.gradients[index];
+    for (uint32_t input_node_id = 0; input_node_id < concatenated_nodes.size();
+         input_node_id++) {
+      const auto& current_input_node = concatenated_nodes.at(input_node_id);
+      auto& current_concat_input =
+          current_input_node->getOutputVector(vec_index);
+      uint32_t start_position = positional_offsets.at(input_node_id);
+      uint32_t end_position = positional_offsets.at(input_node_id + 1);
+
+      for (uint32_t output_position = start_position;
+           output_position < end_position; output_position++) {
+        current_concat_input.gradients[output_position - start_position] +=
+            output_vector.gradients[output_position];
       }
     }
   }
@@ -100,7 +106,7 @@ class ConcatenatedNode final
           "Must concatenate at least one node, found 0");
     }
 
-    verifyNotConcatenatingInputNode(nodes);
+    verifyNoInputNodes(nodes);
 
     std::vector<uint32_t> label_offsets = {0};
     uint32_t output_dim = 0;
@@ -166,7 +172,7 @@ class ConcatenatedNode final
     // creation but we use C++ 17 for now. Just be careful if you change the
     // struct definition!
     _batch_processing_state = {
-        /* positional_offsets = */ std::move(positional_offsets),
+        /* positional_offsets = */ positional_offsets,
         /* outputs = */ std::move(new_concateated_batch),
         /* num_nonzeros_in_concatenation = */ positional_offsets.back()};
   }
@@ -193,8 +199,7 @@ class ConcatenatedNode final
   bool isInputNode() const final { return false; }
 
  private:
-  static void verifyNotConcatenatingInputNode(
-      const std::vector<NodePtr>& nodes) {
+  static void verifyNoInputNodes(const std::vector<NodePtr>& nodes) {
     for (const auto& node : nodes) {
       if (node->isInputNode()) {
         throw exceptions::GraphCompilationFailure(
@@ -213,12 +218,12 @@ class ConcatenatedNode final
 
   static std::vector<uint32_t> getPositionalOffsets(
       const std::vector<NodePtr>& nodes, bool use_sparsity) {
-    std::vector<uint32_t> new_offsets = {0};
+    std::vector<uint32_t> offsets = {0};
     uint64_t current_offset = 0;
     for (const auto& node : nodes) {
       current_offset +=
           use_sparsity ? node->numNonzerosInOutput() : node->outputDim();
-      new_offsets.push_back(current_offset);
+      offsets.push_back(current_offset);
     }
     if (current_offset > UINT32_MAX) {
       throw std::logic_error(
@@ -226,7 +231,7 @@ class ConcatenatedNode final
           std::to_string(UINT32_MAX) + ", but was " +
           std::to_string(current_offset));
     }
-    return new_offsets;
+    return offsets;
   }
 
   static BoltBatch generateBatch(
@@ -243,18 +248,22 @@ class ConcatenatedNode final
     return batch;
   }
 
+  // This method prefills the active_neurons for the concatenated output,
+  // assuming that each vector is dense. This has no impact on sparse parts
+  // of the concatenation since they will override the preset active_neurons.
   static void fillSparseBatchWithConsecutiveIndices(
       BoltBatch& batch, const std::vector<uint32_t>& positional_offsets,
       const std::vector<uint32_t>& label_offsets) {
     for (uint32_t vec_id = 0; vec_id < batch.getBatchSize(); vec_id++) {
-      for (uint32_t concat_id = 0; concat_id < positional_offsets.size() - 1;
-           concat_id++) {
-        uint32_t start_offset = positional_offsets.at(concat_id);
-        uint32_t end_offset = positional_offsets.at(concat_id + 1);
-        uint32_t starting_label = label_offsets.at(concat_id);
-        for (uint32_t offset = start_offset; offset < end_offset; offset++) {
-          batch[vec_id].active_neurons[offset] =
-              starting_label + (offset - start_offset);
+      for (uint32_t input_node_id = 0;
+           input_node_id < positional_offsets.size() - 1; input_node_id++) {
+        uint32_t start_position = positional_offsets.at(input_node_id);
+        uint32_t end_position = positional_offsets.at(input_node_id + 1);
+        uint32_t starting_label = label_offsets.at(input_node_id);
+        for (uint32_t output_position = start_position;
+             output_position < end_position; output_position++) {
+          batch[vec_id].active_neurons[output_position] =
+              starting_label + (output_position - start_position);
         }
       }
     }
