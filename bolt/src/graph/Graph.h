@@ -111,10 +111,14 @@ class BoltGraph {
   // Output layer.
   NodePtr _output;
 
+ protected:
   // Input layers. When train is called, the ith input is fed into the ith input
   // layer.
+  // TODO(josh/nick): This is temporary, make this private again when we
+  // fix numpy input.
   std::vector<InputPtr> _inputs;
 
+ private:
   // List of the sparse layers in the graph. This is so that we can do
   // things like enable sparse inference, update hash tables, or update hash
   // functions.
