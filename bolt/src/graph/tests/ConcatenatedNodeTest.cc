@@ -19,21 +19,22 @@ std::shared_ptr<MockNode> getMockNodeWithOutput(BoltVector& output,
   return node;
 }
 
-void testConcatForwardAndBackwardPass(
-    std::vector<uint32_t> predecessor_output_dims,
-    std::vector<BoltVector> predecessor_outputs, bool sparse) {
+void testConcatForwardAndBackwardPass(std::vector<uint32_t> input_label_dims,
+                                      std::vector<BoltVector> inputs,
+                                      bool sparse) {
   std::vector<std::shared_ptr<Node>> nodes_to_concatenate;
 
-  uint32_t expected_output_length = 0;
+  uint32_t expected_num_output_nonzeros = 0;
   bool sparse_node_in_concatenation = false;
   std::vector<uint32_t> label_offsets = {0};
-  for (uint32_t concat_id = 0; concat_id < predecessor_output_dims.size();
-       concat_id++) {
-    uint32_t label_dim = predecessor_output_dims.at(concat_id);
-    auto& output = predecessor_outputs.at(concat_id);
-    nodes_to_concatenate.push_back(getMockNodeWithOutput(output, label_dim));
-    sparse_node_in_concatenation |= !output.isDense();
-    expected_output_length += sparse ? output.len : label_dim;
+  for (uint32_t input_node_id = 0; input_node_id < input_label_dims.size();
+       input_node_id++) {
+    uint32_t label_dim = input_label_dims.at(input_node_id);
+    auto& input_vector = inputs.at(input_node_id);
+    nodes_to_concatenate.push_back(
+        getMockNodeWithOutput(input_vector, label_dim));
+    sparse_node_in_concatenation |= !input_vector.isDense();
+    expected_num_output_nonzeros += sparse ? input_vector.len : label_dim;
     label_offsets.push_back(label_offsets.back() + label_dim);
   }
 
@@ -46,20 +47,23 @@ void testConcatForwardAndBackwardPass(
   concat_node->forward(/* vec_index = */ 3, /* labels = */ nullptr);
   auto& output = concat_node->getOutputVector(/* vec_index = */ 3);
 
-  ASSERT_EQ(output.len, expected_output_length);
+  ASSERT_EQ(output.len, expected_num_output_nonzeros);
   bool outputDense = output.isDense();
-  ASSERT_EQ(outputDense, !(sparse_node_in_concatenation && sparse));
+  bool outputShouldBeSparse = sparse_node_in_concatenation && sparse;
+  ASSERT_EQ(outputDense, !outputShouldBeSparse);
 
   for (uint32_t i = 0; i < output.len; i++) {
+    // The value of the gradients don't matter at all, we just want to make sure
+    // they are being backpropogated correctly
     output.gradients[i] = rand();
   }
   concat_node->backpropagate(/* vec_index = */ 3);
 
-  for (uint32_t concat_id = 0; concat_id < predecessor_output_dims.size();
-       concat_id++) {
-    uint32_t starting_label = label_offsets.at(concat_id);
-    uint32_t ending_label = label_offsets.at(concat_id + 1);
-    auto& current_output = predecessor_outputs.at(concat_id);
+  for (uint32_t input_node_id = 0; input_node_id < input_label_dims.size();
+       input_node_id++) {
+    uint32_t starting_label = label_offsets.at(input_node_id);
+    uint32_t ending_label = label_offsets.at(input_node_id + 1);
+    auto& current_output = inputs.at(input_node_id);
 
     for (uint32_t label = starting_label; label < ending_label; label++) {
       auto input_neuron = output.findActiveNeuronNoTemplate(label);
@@ -79,12 +83,12 @@ TEST(ConcatenatedNodeTest, DenseConcatTest) {
   BoltVector node_3_output =
       BoltVector::makeDenseVectorWithGradients(/* values = */ {0});
   testConcatForwardAndBackwardPass(
-      /* predecessor_output_dims = */ {2, 3, 1},
-      /* predecessor_outputs = */ {node_1_output, node_2_output, node_3_output},
+      /* input_label_dims = */ {2, 3, 1},
+      /* inputs = */ {node_1_output, node_2_output, node_3_output},
       /* sparse = */ false);
   testConcatForwardAndBackwardPass(
-      /* predecessor_output_dims = */ {2, 3, 1},
-      /* predecessor_outputs = */ {node_1_output, node_2_output, node_3_output},
+      /* input_label_dims = */ {2, 3, 1},
+      /* inputs = */ {node_1_output, node_2_output, node_3_output},
       /* sparse = */ true);
 }
 
@@ -97,14 +101,13 @@ TEST(ConcatenatedNodeTest, SparseConcatTest) {
       /* indices = */ {1}, /* values = */ {0.25});
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       testConcatForwardAndBackwardPass(
-          /* predecessor_output_dims = */ {1000, 25, 2},
-          /* predecessor_outputs = */
-          {node_1_output, node_2_output, node_3_output},
+          /* input_label_dims = */ {1000, 25, 2},
+          /* inputs = */ {node_1_output, node_2_output, node_3_output},
           /* sparse = */ false),
       std::logic_error);
   testConcatForwardAndBackwardPass(
-      /* predecessor_output_dims = */ {1000, 25, 2},
-      /* predecessor_outputs = */ {node_1_output, node_2_output, node_3_output},
+      /* input_label_dims = */ {1000, 25, 2},
+      /* inputs = */ {node_1_output, node_2_output, node_3_output},
       /* sparse = */ true);
 }
 
@@ -115,13 +118,13 @@ TEST(ConcatenatedNodeTest, SparseAndDenseConcatTest) {
       BoltVector::makeDenseVectorWithGradients(/* values = */ {0.25, 0, 0.25});
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       testConcatForwardAndBackwardPass(
-          /* predecessor_output_dims = */ {25, 3},
-          /* predecessor_outputs = */ {node_1_output, node_2_output},
+          /* input_label_dims = */ {25, 3},
+          /* inputs = */ {node_1_output, node_2_output},
           /* sparse = */ false),
       std::logic_error);
   testConcatForwardAndBackwardPass(
-      /* predecessor_output_dims = */ {25, 3},
-      /* predecessor_outputs = */ {node_1_output, node_2_output},
+      /* input_label_dims = */ {25, 3},
+      /* inputs = */ {node_1_output, node_2_output},
       /* sparse = */ true);
 }
 
