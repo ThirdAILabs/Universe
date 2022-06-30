@@ -35,7 +35,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sampling_config(config.sampling_config),
       _prev_is_active(_prev_dim, false),
       _is_active(config.dim, false),
-      _force_sparse_for_inference(false) {
+      _sampling_mode(LSHSamplingMode::Default) {
   std::random_device rd;
   std::default_random_engine eng(rd());
   std::normal_distribution<float> dist(0.0, 0.01);
@@ -267,9 +267,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                               input.len, hashes.data());
   }
 
-  if (_force_sparse_for_inference &&
-      (_act_func == ActivationFunction::Softmax ||
-       _act_func == ActivationFunction::Sigmoid)) {
+  if (_sampling_mode == LSHSamplingMode::FreezeHashTablesWithInsertions) {
     /**
      * QueryBySet just returns a set of the elements in the given buckets of the
      * hash table.
@@ -510,8 +508,7 @@ inline void FullyConnectedLayer::deinitSparseDatastructures() {
 }
 
 void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
-  if ((!_trainable && !force_build) || _sparsity >= 1.0 ||
-      _force_sparse_for_inference) {
+  if ((!_trainable && !force_build) || _sparsity >= 1.0 || hashTablesFrozen()) {
     return;
   }
   uint64_t num_tables = _hash_table->numTables();
@@ -534,17 +531,10 @@ void FullyConnectedLayer::buildHashTablesImpl(bool force_build) {
 void FullyConnectedLayer::buildHashTables() { buildHashTablesImpl(false); }
 
 void FullyConnectedLayer::reBuildHashFunction() {
-  if (!_trainable || _sparsity >= 1.0 || _force_sparse_for_inference) {
+  if (!_trainable || _sparsity >= 1.0 || hashTablesFrozen()) {
     return;
   }
   _hasher = assignHashFunction(_sampling_config, _prev_dim);
-}
-
-void FullyConnectedLayer::shuffleRandNeurons() {
-  if (_sparsity < 1.0 && !_force_sparse_for_inference) {
-    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(),
-                 std::random_device{});
-  }
 }
 
 float* FullyConnectedLayer::getWeights() const {

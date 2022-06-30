@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdio>
-#include <fstream>
 #include <memory>
 #include <random>
 #include <unordered_set>
@@ -54,12 +53,9 @@ class SvmDatasetTestFixture : public ::testing::Test {
       _vectors.push_back(createTestSparseVec());
     }
 
-    std::ofstream output_file(_filename);
+    std::ofstream output_file =
 
-    ASSERT_TRUE(output_file.is_open());
-    ASSERT_TRUE(output_file.good());
-    ASSERT_FALSE(output_file.bad());
-    ASSERT_FALSE(output_file.fail());
+        dataset::SafeFileIO::ofstream(_filename);
 
     uint32_t v = 0;
     for (const auto& vec : _vectors) {

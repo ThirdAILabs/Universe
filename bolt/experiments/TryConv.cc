@@ -54,13 +54,15 @@ int main() {  // NOLINT exceptions
   uint32_t epochs = 25;
   uint32_t rehash = 3000;
   uint32_t rebuild = 10000;
-  uint32_t max_test_batches = std::numeric_limits<uint32_t>::max();
 
   for (uint32_t e = 0; e < epochs; e++) {
     network.train(train_data.data, train_data.labels, loss_fn, learning_rate, 1,
                   rehash, rebuild, metrics);
-    network.predict(test_data.data, test_data.labels, nullptr, nullptr, metrics,
-                    max_test_batches);
+    network.predict(test_data.data, test_data.labels,
+                    /* output_active_neurons= */ nullptr,
+                    /* output_activations= */ nullptr,
+                    /* use_sparse_inference= */ false,
+                    /* metric_names= */ metrics);
   }
 
   return 0;

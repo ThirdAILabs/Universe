@@ -38,6 +38,7 @@ def train_bolt_with_wmape(
         metrics, _ = network.predict(
             test_data=(x_idxs, x_vals, x_offsets),
             test_labels=(y_idxs, y_vals, y_offsets),
+            sparse_inference=True,
             batch_size=batch_size,
             metrics=["weighted_mean_absolute_percentage_error"],
             verbose=False,

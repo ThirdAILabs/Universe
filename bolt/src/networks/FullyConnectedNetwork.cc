@@ -16,9 +16,7 @@ namespace thirdai::bolt {
 
 FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
                                              uint32_t input_dim)
-    : _input_dim(input_dim),
-      _num_layers(configs.size()),
-      _sparse_inference_enabled(false) {
+    : _input_dim(input_dim), _num_layers(configs.size()) {
   auto start = std::chrono::high_resolution_clock::now();
 
   std::cout << "Initializing Bolt network..." << std::endl;
@@ -126,11 +124,11 @@ void FullyConnectedNetwork::backpropagate(uint32_t batch_index,
 }
 
 void FullyConnectedNetwork::initializeNetworkState(uint32_t batch_size,
-                                                   bool force_dense) {
+                                                   bool use_sparsity) {
   _states.clear();
   for (uint32_t l = 0; l < _num_layers - 1; l++) {
     _states.push_back(_layers[l]->createBatchState(
-        batch_size, useDenseComputations(force_dense)));
+        batch_size, /* use_sparsity= */ use_sparsity));
   }
 }
 
