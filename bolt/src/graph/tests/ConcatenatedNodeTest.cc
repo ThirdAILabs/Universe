@@ -37,7 +37,7 @@ void testConcatForwardAndBackwardPass(
     label_offsets.push_back(label_offsets.back() + label_dim);
   }
 
-  // Use make_shared to
+  // Use a shared pointer so shared_from_this() works
   std::shared_ptr<ConcatenatedNode> concat_node =
       std::make_shared<ConcatenatedNode>();
   concat_node->setConcatenatedNodes(nodes_to_concatenate);
@@ -60,16 +60,12 @@ void testConcatForwardAndBackwardPass(
     uint32_t starting_label = label_offsets.at(concat_id);
     uint32_t ending_label = label_offsets.at(concat_id + 1);
     auto& current_output = predecessor_outputs.at(concat_id);
+
     for (uint32_t label = starting_label; label < ending_label; label++) {
       auto input_neuron = output.findActiveNeuronNoTemplate(label);
       auto output_neuron =
           current_output.findActiveNeuronNoTemplate(label - starting_label);
       ASSERT_EQ(input_neuron.activation, output_neuron.activation);
-      // This handles the case where there are sparse inputs but the
-      // concatenation is dense
-      if (input_neuron.activation == 0 && output_neuron.gradient != 0) {
-        continue;
-      }
       ASSERT_EQ(input_neuron.gradient, output_neuron.gradient);
     }
   }
@@ -107,7 +103,7 @@ TEST(ConcatenatedNodeTest, SparseConcatTest) {
           /* sparse = */ false),
       std::logic_error);
   testConcatForwardAndBackwardPass(
-      /* predecessor_output_dims = */ {100, 25, 2},
+      /* predecessor_output_dims = */ {1000, 25, 2},
       /* predecessor_outputs = */ {node_1_output, node_2_output, node_3_output},
       /* sparse = */ true);
 }
