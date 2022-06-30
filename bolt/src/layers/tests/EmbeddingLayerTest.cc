@@ -26,7 +26,13 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
     return _layer->_embedding_block_size;
   }
 
-  uint64_t getHash(uint64_t id) const { return _layer->_hash_fn.gethash(id); }
+  uint64_t getHashLocFromLayer(uint32_t token, uint32_t lookup_index) const {
+    return _layer->getHashLocForToken(token, lookup_index);
+  }
+
+  uint32_t getHash(uint64_t token) const {
+    return _layer->_hash_fn.gethash(token);
+  }
 
   static std::vector<std::pair<uint64_t, uint64_t>> getDisjointRangesFromLayer(
       EmbeddingLayer& layer, std::vector<std::vector<uint64_t>>& hash_locs) {
@@ -43,8 +49,19 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
   std::unique_ptr<EmbeddingLayer> _layer;
 };
 
+TEST_F(EmbeddingLayerTestFixture, TestGetHashLoc) {
+  ASSERT_EQ(getHashLocFromLayer(5, 3),
+            getHash(5 * 50 + 3) >> (64 - _log_block_size));
+
+  ASSERT_EQ(getHashLocFromLayer(5, 17),
+            getHash(5 * 50 + 17) >> (64 - _log_block_size));
+
+  ASSERT_NE(getHashLocFromLayer(5, 17), getHashLocFromLayer(17, 5));
+  ASSERT_NE(getHashLocFromLayer(5, 17), getHashLocFromLayer(5, 18));
+}
+
 TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
-  std::vector<uint32_t> tokens = {6};
+  std::vector<uint32_t> tokens = {6, 18, 3};
 
   BoltBatch output = _layer->createBatchState(tokens.size());
 
@@ -52,16 +69,15 @@ TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
     _layer->forward(i, {tokens[i]}, output[i]);
   }
 
-  for (uint32_t i = 0; i < tokens.size(); i++) {
-    const float* embedding = output[i].activations;
+  for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
+    const float* embedding = output[batch_index].activations;
 
-    for (uint32_t e = 0; e < _num_lookups; e++) {
-      uint64_t id = tokens[i] * _num_lookups + e;
-      uint64_t start = getHash(id);
-      start = start >> (64 - _log_block_size);
+    for (uint32_t lookup_index = 0; lookup_index < _num_lookups;
+         lookup_index++) {
+      uint64_t start = getHashLocFromLayer(tokens[batch_index], lookup_index);
 
       for (uint32_t j = 0; j < _lookup_size; j++) {
-        ASSERT_EQ(embedding[e * _lookup_size + j], start + j + 1);
+        ASSERT_EQ(embedding[lookup_index * _lookup_size + j], start + j + 1);
       }
     }
   }
@@ -77,20 +93,19 @@ TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbedding) {
     _layer->forward(i, tokens[i], output[i]);
   }
 
-  for (uint32_t i = 0; i < tokens.size(); i++) {
-    const float* embedding = output[i].activations;
+  for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
+    const float* embedding = output[batch_index].activations;
 
-    for (uint32_t e = 0; e < _num_lookups; e++) {
-      for (uint32_t j = 0; j < _lookup_size; j++) {
+    for (uint32_t lookup_index = 0; lookup_index < _num_lookups;
+         lookup_index++) {
+      for (uint32_t i = 0; i < _lookup_size; i++) {
         float expected_val = 0;
-        for (uint32_t t : tokens[i]) {
-          uint64_t id = t * _num_lookups + e;
-          uint64_t start = getHash(id);
-          start = start >> (64 - _log_block_size);
+        for (uint32_t token : tokens[batch_index]) {
+          uint64_t start = getHashLocFromLayer(token, lookup_index);
 
-          expected_val += start + j + 1;
+          expected_val += start + i + 1;
         }
-        ASSERT_EQ(embedding[e * _lookup_size + j], expected_val);
+        ASSERT_EQ(embedding[lookup_index * _lookup_size + i], expected_val);
       }
     }
   }
@@ -108,21 +123,23 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
 
   std::unordered_map<uint32_t, float> deltas;
 
-  for (uint32_t b = 0; b < 4; b++) {
+  for (uint32_t batch_index = 0; batch_index < tokens.size(); batch_index++) {
     for (uint32_t i = 0; i < _num_lookups * _lookup_size; i++) {
-      output[b].gradients[i] = 0.5 * i + b * 0.125;
+      // Make the gradient some semi-random value, make sure its a multiple of 2
+      // to prevent floating point inpreceision.
+      output[batch_index].gradients[i] = 0.5 * i + batch_index * 0.125;
     }
 
-    _layer->backpropagate(b, output[b]);
+    _layer->backpropagate(batch_index, output[batch_index]);
 
-    for (uint32_t t : tokens[b]) {
-      for (uint32_t e = 0; e < _num_lookups; e++) {
-        uint64_t id = t * _num_lookups + e;
-        uint64_t loc = getHash(id);
-        loc = loc >> (64 - _log_block_size);
+    for (uint32_t token : tokens[batch_index]) {
+      for (uint32_t lookup_index = 0; lookup_index < _num_lookups;
+           lookup_index++) {
+        uint64_t loc = getHashLocFromLayer(token, lookup_index);
 
-        for (uint32_t j = 0; j < _lookup_size; j++) {
-          deltas[loc + j] += output[b].gradients[e * _lookup_size + j];
+        for (uint32_t i = 0; i < _lookup_size; i++) {
+          deltas[loc + i] +=
+              output[batch_index].gradients[lookup_index * _lookup_size + i];
         }
       }
     }

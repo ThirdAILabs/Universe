@@ -45,12 +45,13 @@ class EmbeddingLayer {
  private:
   std::vector<std::pair<uint64_t, uint64_t>> getDisjointUpdateRanges() const;
 
-  inline uint64_t getHashLocForToken(uint32_t token, uint32_t lookup_index) {
+  inline uint32_t getHashLocForToken(uint32_t token, uint32_t lookup_index) {
     uint64_t id = token * _num_embedding_lookups + lookup_index;
-    uint64_t hash = _hash_fn.gethash(id);
+    uint32_t hash = _hash_fn.gethash(id);
+
     // We bit shift to make sure that the hash loc is within the range of the
     // embedding block.
-    return hash >> (64 - _log_embedding_block_size);
+    return hash >> (32 - _log_embedding_block_size);
   }
 
   constexpr uint32_t getOutputOffset(uint32_t lookup_index) const {
