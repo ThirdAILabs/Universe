@@ -41,7 +41,7 @@ class BoltGraph {
     CategoricalCrossEntropy loss is used, then it can verify that the output
     layer has a softmax activation.
   */
-  void compile(std::shared_ptr<LossFunction> loss);
+  void compile(std::shared_ptr<LossFunction> loss, bool print_when_done = true);
 
   template <typename BATCH_T>
   MetricData train(
@@ -62,6 +62,8 @@ class BoltGraph {
       const PredictConfig& predict_config);
 
   const std::vector<NodePtr>& getNodeTraversalOrder() const { return _nodes; }
+
+  std::string summarize(bool print, bool detailed) const;
 
  private:
   template <typename BATCH_T>
@@ -105,6 +107,8 @@ class BoltGraph {
 
   void reconstructHashFunctions();
 
+  bool graphCompiled() const { return _compilation_state.has_value(); }
+
   // List of nodes(layers) in the order in which they should be computed.
   std::vector<NodePtr> _nodes;
 
@@ -121,8 +125,12 @@ class BoltGraph {
   std::vector<std::shared_ptr<FullyConnectedLayer>>
       _internal_fully_connected_layers;
 
-  // The loss function the graph was compiled with.
-  std::shared_ptr<LossFunction> _loss;
+  struct CompilationState {
+    // The loss function the graph was compiled with.
+    std::shared_ptr<LossFunction> _loss;
+  };
+
+  std::optional<CompilationState> _compilation_state;
 
   uint32_t _epoch_count;
   uint32_t _batch_cnt;

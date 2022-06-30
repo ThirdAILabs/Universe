@@ -4,6 +4,7 @@
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <queue>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace thirdai::bolt {
 
@@ -60,6 +61,13 @@ class Node {
 
   // Returns true if the node is an input node.
   virtual bool isInputNode() const = 0;
+
+  virtual void summarize(std::stringstream& summary, bool detailed) const = 0;
+
+  virtual void setNameAndUpdateCount(
+      std::unordered_map<std::string, uint32_t>& layer_type_name_to_count) = 0;
+
+  virtual const std::string& name() const = 0;
 
   virtual ~Node() = default;
 };

@@ -730,6 +730,7 @@ void createBoltSubmodule(py::module_& module) {
            "inputs are mapped to input layers by their index.\n"
            " * output (Node) - The output node of the graph.")
       .def("compile", &BoltGraph::compile, py::arg("loss"),
+           py::arg("print_when_done") = true,
            "Compiles the graph for the given loss function. In this step the "
            "order in which to compute the layers is determined and various "
            "checks are preformed to ensure the model architecture is correct.")
@@ -762,7 +763,24 @@ void createBoltSubmodule(py::module_& module) {
            " * predict_config: PredictConfig - the additional prediction "
            "parameters. See the PredictConfig documentation above.\n\n"
 
-           "Returns a  a mapping from metric names to their values.");
+           "Returns a  a mapping from metric names to their values.")
+      .def("__str__",
+           [](const BoltGraph& model) {
+             return model.summarize(/* print = */ false,
+                                    /* detailed = */ false);
+           })
+      .def(
+          "summary", &BoltGraph::summarize, py::arg("print") = true,
+          py::arg("detailed") = false,
+          "Returns a summary of the network.\n"
+          "Arguments:\n"
+          " * print: boolean. Optional, default True. When specified to "
+          "\"True\", "
+          "summary will additionally print layer config details for each layer "
+          "in the network. "
+          "* detailed: boolean. Optional, default False. When specified to "
+          "\"True\", summary will additionally print layer config details "
+          "for each layer in the network.");
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {

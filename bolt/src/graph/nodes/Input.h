@@ -3,6 +3,7 @@
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
+#include <iomanip>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -69,6 +70,20 @@ class Input final : public Node {
 
   bool isInputNode() const final { return true; }
 
+  void summarize(std::stringstream& summary, bool detailed) const final {
+    (void)detailed;
+    summary << name() << " (Input) : dim=" << _expected_input_dim << "\n";
+  }
+
+  void setNameAndUpdateCount(std::unordered_map<std::string, uint32_t>&
+                                 layer_type_name_to_count) final {
+    layer_type_name_to_count[LAYER_TYPE_NAME] += 1;
+    _name = LAYER_TYPE_NAME +
+            std::to_string(layer_type_name_to_count[LAYER_TYPE_NAME]);
+  }
+
+  const std::string& name() const final { return _name; }
+
  private:
   void checkDimForInput(const BoltVector& vec) const {
     if (vec.isDense()) {
@@ -92,8 +107,11 @@ class Input final : public Node {
     }
   }
 
+  inline static const std::string LAYER_TYPE_NAME = "input";
+
   BoltBatch* _input_batch;
   uint32_t _expected_input_dim;
+  std::string _name;
 };
 
 }  // namespace thirdai::bolt

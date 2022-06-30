@@ -3,6 +3,8 @@
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <memory>
+#include <string>
+#include <unordered_map>
 #include <utility>
 
 namespace thirdai::bolt {
@@ -91,14 +93,31 @@ class FullyConnectedLayerNode final
 
   bool isInputNode() const final { return false; }
 
+  void summarize(std::stringstream& summary, bool detailed) const final {
+    summary << _predecessor->name() << " -> " << name()
+            << " (FullyConnected): ";
+    _layer->buildLayerSummary(summary, detailed);
+  }
+
+  void setNameAndUpdateCount(std::unordered_map<std::string, uint32_t>&
+                                 layer_type_name_to_count) final {
+    layer_type_name_to_count[LAYER_TYPE_NAME] += 1;
+    _name = LAYER_TYPE_NAME +
+            std::to_string(layer_type_name_to_count[LAYER_TYPE_NAME]);
+  }
+
+  const std::string& name() const final { return _name; }
+
   ActivationFunction getActivationFunction() const { return _config.act_func; }
 
  private:
+  inline static const std::string LAYER_TYPE_NAME = "full";
+
   std::shared_ptr<FullyConnectedLayer> _layer;
   FullyConnectedLayerConfig _config;
   BoltBatch _outputs;
-
   NodePtr _predecessor;
+  std::string _name;
 };
 
 }  // namespace thirdai::bolt

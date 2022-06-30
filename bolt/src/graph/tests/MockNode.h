@@ -31,6 +31,16 @@ class MockNode : public Node {
               getInternalFullyConnectedLayers, (), (const override));
 
   MOCK_METHOD(bool, isInputNode, (), (const override));
+
+  MOCK_METHOD(void, summarize, (std::stringstream & summary, bool detailed),
+              (const override));
+
+  MOCK_METHOD(
+      void, setNameAndUpdateCount,
+      ((std::unordered_map<std::string, uint32_t>)&layer_type_name_to_count),
+      (override));
+
+  MOCK_METHOD(const std::string&, name, (), (const ovveride));
 };
 
 }  // namespace thirdai::bolt::tests
