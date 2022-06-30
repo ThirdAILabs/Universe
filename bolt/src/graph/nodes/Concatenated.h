@@ -29,7 +29,7 @@ class ConcatenatedNode final
     (void)labels;
     assert(prepared_for_batch_processing() && predecessors_set());
 
-    const auto& concatenated_nodes = _graph_state->concatenated_nodes;
+    const auto& concatenated_nodes = _graph_state->inputs;
     const auto& positional_offsets =
         _batch_processing_state->positional_offsets;
     const auto& label_offsets = _graph_state->label_offsets;
@@ -59,7 +59,7 @@ class ConcatenatedNode final
   void backpropagate(uint32_t vec_index) final {
     assert(prepared_for_batch_processing() && predecessors_set());
 
-    const auto& concatenated_nodes = _graph_state->concatenated_nodes;
+    const auto& concatenated_nodes = _graph_state->inputs;
     const auto& positional_offsets =
         _batch_processing_state->positional_offsets;
     const auto& output_vector = getOutputVector(vec_index);
@@ -108,9 +108,14 @@ class ConcatenatedNode final
       output_dim += node->outputDim();
       label_offsets.push_back(output_dim);
     }
-    _graph_state = {/* concatenated_nodes = */ nodes,
+
+    // Unfortunately because this is a struct, clang tidy won't check that the
+    // arguments are named correctly. C++ 20 has native support for named enum
+    // creation but we use C++ 17 for now. Just be careful if you change the
+    // struct definition!
+    _graph_state = {/* inputs = */ nodes,
                     /* label_offsets = */ label_offsets,
-                    /* output_dim = */ output_dim};
+                    /* concatenated_label_dim = */ output_dim};
 
     return shared_from_this();
   }
@@ -121,7 +126,7 @@ class ConcatenatedNode final
           "Cannot get the output dim for this concatenation layer because the "
           "incoming concatenated nodes have not been set yet");
     }
-    return _graph_state->output_dim;
+    return _graph_state->concatenated_label_dim;
   }
 
   uint32_t numNonzerosInOutput() const final {
@@ -130,7 +135,7 @@ class ConcatenatedNode final
           "Cannot get the number of nonzeros for this concatenation layer "
           "because the node is not prepared for batch processing");
     }
-    return _batch_processing_state->num_nonzeros;
+    return _batch_processing_state->num_nonzeros_in_concatenation;
   }
 
   void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
@@ -139,7 +144,7 @@ class ConcatenatedNode final
           "The preceeding nodes to this concatenation layer "
           " must be set before preparing for batch processing.");
     }
-    const auto& concatenated_nodes = _graph_state->concatenated_nodes;
+    const auto& concatenated_nodes = _graph_state->inputs;
 
     bool sparse_concatenation = concatenationHasSparseNode(concatenated_nodes);
     if (sparse_concatenation && !use_sparsity) {
@@ -156,10 +161,14 @@ class ConcatenatedNode final
         /* label_offsets = */ _graph_state->label_offsets,
         /* batch_size = */ batch_size);
 
+    // Unfortunately because this is a struct, clang tidy won't check that the
+    // arguments are named correctly. C++ 20 has native support for named enum
+    // creation but we use C++ 17 for now. Just be careful if you change the
+    // struct definition!
     _batch_processing_state = {
-        /* num_nonzeros = */ positional_offsets.back(),
         /* positional_offsets = */ std::move(positional_offsets),
-        /* outputs = */ std::move(new_concateated_batch)};
+        /* outputs = */ std::move(new_concateated_batch),
+        /* num_nonzeros_in_concatenation = */ positional_offsets.back()};
   }
 
   std::vector<NodePtr> getPredecessors() const final {
@@ -168,7 +177,7 @@ class ConcatenatedNode final
           "Cannot get the predecessors for this concatenation layer because "
           "they have not been set yet");
     }
-    return _graph_state->concatenated_nodes;
+    return _graph_state->inputs;
   }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
@@ -257,24 +266,44 @@ class ConcatenatedNode final
     return _batch_processing_state.has_value();
   }
 
+  // TODO(josh): Add similar enums to other node subclasses
   struct GraphState {
-    std::vector<NodePtr> concatenated_nodes;
-    // The ith element is the label offset for the ith concat.
-    // Contains len(concatenated_nodes) + 1 number of elements, as we use the
-    // pattern where the last item would be the label start for the "next"
-    // concat if there was one.
+    // The input Nodes we are concatenating
+    std::vector<NodePtr> inputs;
+    /*
+     * The ith element in label_offsets is the "label offset" for the ith input
+     * vector in the output concatenated vector. In other words, (index, value)
+     * or (index, gradient) pairs in the output vector of inputs[i] map to
+     * (index + label_offset, value) and (index + label_offset, gradient) in
+     * the output concatenated vector. Contains len(inputs) + 1 number of
+     * elements, as we use the pattern where the last item would be the label
+     * offset for the "next" input if there was one (this allows you to find
+     * the label dim of the ith input vector by doing label_offsets[i + 1] -
+     * label_offsets[i]).
+     */
     std::vector<uint32_t> label_offsets;
-    // Also equals the last element of label_offsets
-    uint32_t output_dim;
+    // Also equals the last element of label_offsets. This is the dense
+    // dimension of the output vector
+    uint32_t concatenated_label_dim;
   };
   struct BatchProcessingState {
-    uint32_t num_nonzeros;
-    // The ith element is the positional offset for the ith concatenated output.
-    // We use the same pattern as for label_offsets above, so there are
-    // len(concatenated_nodes) + 1 number of elements
+    /*
+     * The ith element in positional_offets is the "positional offset" for the
+     * ith input vector in the output concatenated vector. In other words,
+     * activations[j] for input vector i will be at
+     * activations[j + positional_offsets[i]] in the output concatenated vector,
+     * and similar for the gradient and active neurons (the corresponding active
+     * neurons will be offset by label_offsets[i], see the comment for
+     * label_offsets). Uses the same pattern as label_offsets
+     * where this contains len(inputs) + 1 number of elements.
+     */
     std::vector<uint32_t> positional_offsets;
-    // Each vector here has dimension num_nonzeros
+    // Each vector in the batch has dimension num_nonzeros_in_concatenation
     BoltBatch outputs;
+    // Also equals the last element of positional_offsets. This is the number of
+    // non zeros in the output vector (i.e. the value of outputs[i].len) for
+    // all i).
+    uint32_t num_nonzeros_in_concatenation;
   };
 
   std::optional<GraphState> _graph_state;
