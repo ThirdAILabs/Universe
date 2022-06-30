@@ -6,6 +6,7 @@ pytestmark = [pytest.mark.integration]
 import os
 from thirdai import bolt, dataset
 import numpy as np
+from utils import train_network, build_sparse_hidden_layer_classifier
 
 LEARNING_RATE = 0.0001
 
@@ -47,37 +48,6 @@ def build_sparse_output_layer_network():
     return network
 
 
-# Constructs a bolt network for mnist with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
-def build_sparse_hidden_layer_network(dim, sparsity):
-    layers = [
-        bolt.FullyConnected(
-            dim=dim,
-            sparsity=sparsity,
-            activation_function="ReLU",
-        ),
-        bolt.FullyConnected(dim=10, activation_function="Softmax"),
-    ]
-    network = bolt.Network(layers=layers, input_dim=784)
-    return network
-
-
-def train_network(
-    network, train_data, train_labels, epochs, learning_rate=LEARNING_RATE
-):
-    times = network.train(
-        train_data,
-        train_labels,
-        bolt.CategoricalCrossEntropyLoss(),
-        learning_rate,
-        epochs,
-        rehash=3000,
-        rebuild=10000,
-        metrics=[],
-        verbose=False,
-    )
-    return times
-
-
 def load_mnist():
     train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
     test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
@@ -114,11 +84,13 @@ def test_mnist_sparse_output_layer():
 
 
 def test_mnist_sparse_hidden_layer():
-    network = build_sparse_hidden_layer_network(20000, 0.01)
+    network = build_sparse_hidden_layer_classifier(
+        input_dim=784, sparse_dim=20000, output_dim=10, sparsity=0.01
+    )
 
     train_x, train_y, test_x, test_y = load_mnist()
 
-    train_network(network, train_x, train_y, epochs=10)
+    train_network(network, train_x, train_y, epochs=12)
 
     acc, activations = network.predict(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
@@ -138,7 +110,9 @@ def test_mnist_sparse_hidden_layer():
 
 
 def test_mnist_sparse_inference():
-    network = build_sparse_hidden_layer_network(20000, 0.01)
+    network = build_sparse_hidden_layer_classifier(
+        input_dim=784, sparse_dim=20000, output_dim=10, sparsity=0.01
+    )
 
     train_x, train_y, test_x, test_y = load_mnist()
 
@@ -208,49 +182,6 @@ def test_sparse_inference_with_sparse_output():
     acc_computed = np.mean(predictions == labels)
 
     assert sparse_predict["categorical_accuracy"] == acc_computed
-
-
-def test_load_save_fc_network():
-    network = build_sparse_hidden_layer_network(1000, 0.2)
-
-    train_x, train_y, test_x, test_y = load_mnist()
-
-    train_network(network, train_x, train_y, epochs=2)
-
-    original_acc, _ = network.predict(
-        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
-    )
-
-    # Accuracy is around 95-96%
-    assert original_acc["categorical_accuracy"] >= 0.9
-
-    save_loc = "./bolt_model_save"
-
-    if os.path.exists(save_loc):
-        os.remove(save_loc)
-
-    # Save network and load as a new network
-    network.save(save_loc)
-
-    new_network = bolt.Network.load(save_loc)
-
-    new_acc, _ = new_network.predict(
-        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
-    )
-
-    assert new_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
-
-    # Continue to train loaded network
-    train_network(new_network, train_x, train_y, epochs=2)
-
-    another_acc, _ = new_network.predict(
-        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
-    )
-
-    # Accuracy is around 95-96%
-    assert another_acc["categorical_accuracy"] >= 0.9
-
-    os.remove(save_loc)
 
 
 def test_get_set_weights():

@@ -6,6 +6,7 @@
 #include <cctype>
 #include <chrono>
 #include <iostream>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -35,6 +36,14 @@ MetricData Model<BATCH_T>::train(
   std::vector<double> time_per_epoch;
 
   MetricAggregator metrics(metric_names, verbose);
+
+  // if any layer is shallow, call enable training to set the optimizer state
+  // before training
+  if (anyLayerShallow()) {
+    throw std::logic_error(
+        "Call reinitialize_optimizer_for_training before training to "
+        "initialize optimizer state");
+  }
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
     if (verbose) {

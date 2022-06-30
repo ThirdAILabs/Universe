@@ -2,6 +2,7 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <cstdint>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -96,7 +97,7 @@ class Block {
    * vec: the vector to be concatenated with the vector
    *   encoding of input_row.
    */
-  void addVectorSegment(const std::vector<std::string>& input_row,
+  void addVectorSegment(const std::vector<std::string_view>& input_row,
                         SegmentedFeatureVector& vec) {
     vec.addFeatureSegment(featureDim());
     buildSegment(input_row, vec);
@@ -112,6 +113,12 @@ class Block {
    */
   virtual bool isDense() const = 0;
 
+  /**
+   * Returns the minimum number of columns that the block expects
+   * to see in each row of the dataset.
+   */
+  virtual uint32_t expectedNumColumns() const = 0;
+
  protected:
   /**
    * Derived class-specific implementation of how input rows get
@@ -120,7 +127,7 @@ class Block {
    * WARNING: This function may be called in many threads simultaneously,
    * so it should be thread-safe or robust to data races.
    */
-  virtual void buildSegment(const std::vector<std::string>& input_row,
+  virtual void buildSegment(const std::vector<std::string_view>& input_row,
                             SegmentedFeatureVector& vec) = 0;
 };
 

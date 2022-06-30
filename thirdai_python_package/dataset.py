@@ -73,10 +73,10 @@ def tokenize_to_svm(
         csvreader = csv.reader(open(input_file, "r"))
 
         for line in csvreader:
-            label = int(line[1])
+            label = 1 if line[0] == "pos" else 0
             fw.write(str(label) + " ")
 
-            sentence = re.sub(r"[^\w\s]", "", line[0])
+            sentence = re.sub(r"[^\w\s]", "", line[1])
             sentence = sentence.lower()
             ### BOLT TOKENIZER START
             tup = thirdai._thirdai.dataset.bolt_tokenizer(
