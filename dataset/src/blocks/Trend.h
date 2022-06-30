@@ -96,7 +96,7 @@ class TrendBlock : public Block {
     float mean = sum / _lookback;
     if (sum != 0) {
       for (auto& count : counts) {
-        count = (count - mean) / mean;
+        count = (count - mean) / sum;
       }
     }
     for (const auto& count : counts) {
