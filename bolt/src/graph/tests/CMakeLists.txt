@@ -14,6 +14,7 @@ target_link_libraries(
   PRIVATE
   bolt_graph_lib
   gtest_main
+  gmock_main
 )
 
 add_executable(graph_reject_inputs_test GraphRejectsInvalidInputsTest.cc)

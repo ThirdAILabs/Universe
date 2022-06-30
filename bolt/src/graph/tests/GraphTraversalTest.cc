@@ -1,3 +1,4 @@
+#include "MockNode.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -9,61 +10,20 @@
 
 namespace thirdai::bolt::tests {
 
-class DummyNode final : public Node {
+class MockTraversalNode final : public MockNode {
  public:
-  explicit DummyNode(uint32_t id) : _id(id) {}
+  explicit MockTraversalNode(uint32_t id) : _id(id) {}
 
-  static std::shared_ptr<DummyNode> makeDummyNode(uint32_t id) {
-    return std::make_shared<DummyNode>(id);
-  }
-
-  // These are the only methods that will be called in this node subclass.
-  std::vector<NodePtr> getPredecessors() const final { return _predecessors; }
-
-  std::vector<std::shared_ptr<FullyConnectedLayer>>
-  getInternalFullyConnectedLayers() const final {
-    return {};
-  }
-
-  bool isInputNode() const final { return false; }
-
-  void setPredecesors(const std::vector<NodePtr>& predecessors) {
-    _predecessors = predecessors;
+  static std::shared_ptr<MockTraversalNode> makePtr(uint32_t id) {
+    return std::make_shared<MockTraversalNode>(id);
   }
 
   uint32_t getID() const { return _id; }
 
-  void initializeParameters() final {}
+  std::vector<NodePtr> getPredecessors() const final { return _predecessors; }
 
-  // These remaining methods are required for the interface but are not used for
-  // this test.
-  void forward(uint32_t vec_index, const BoltVector* labels) final {
-    (void)vec_index;
-    (void)labels;
-    throw exceptions::NotImplemented("Dummy method for test");
-  }
-
-  void backpropagate(uint32_t vec_index) final { (void)vec_index; }
-
-  void updateParameters(float learning_rate, uint32_t batch_cnt) final {
-    (void)learning_rate;
-    (void)batch_cnt;
-    throw exceptions::NotImplemented("Dummy method for test");
-  }
-
-  BoltVector& getOutputVector(uint32_t vec_index) final {
-    (void)vec_index;
-    throw exceptions::NotImplemented("Dummy method for test");
-  }
-
-  uint32_t outputDim() const final {
-    throw exceptions::NotImplemented("Dummy method for test");
-  }
-
-  void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
-    (void)batch_size;
-    (void)use_sparsity;
-    throw exceptions::NotImplemented("Dummy method for test");
+  void setPredecessors(const std::vector<NodePtr>& predecessors) {
+    _predecessors = predecessors;
   }
 
  private:
@@ -72,20 +32,20 @@ class DummyNode final : public Node {
 };
 
 TEST(GraphTraversalTest, CorrectlyTraversesDAG) {
-  auto node0 = DummyNode::makeDummyNode(0);
-  auto node1 = DummyNode::makeDummyNode(1);
-  auto node2 = DummyNode::makeDummyNode(2);
-  auto node3 = DummyNode::makeDummyNode(3);
-  auto node4 = DummyNode::makeDummyNode(4);
-  auto node5 = DummyNode::makeDummyNode(5);
-  auto node6 = DummyNode::makeDummyNode(6);
+  auto node0 = MockTraversalNode::makePtr(0);
+  auto node1 = MockTraversalNode::makePtr(1);
+  auto node2 = MockTraversalNode::makePtr(2);
+  auto node3 = MockTraversalNode::makePtr(3);
+  auto node4 = MockTraversalNode::makePtr(4);
+  auto node5 = MockTraversalNode::makePtr(5);
+  auto node6 = MockTraversalNode::makePtr(6);
 
-  node6->setPredecesors({node0, node1, node2, node3, node4, node5});
-  node5->setPredecesors({node0, node1, node2, node3, node4});
-  node4->setPredecesors({node0, node1, node2, node3});
-  node3->setPredecesors({node0, node1, node2});
-  node2->setPredecesors({node0, node1});
-  node1->setPredecesors({node0});
+  node6->setPredecessors({node0, node1, node2, node3, node4, node5});
+  node5->setPredecessors({node0, node1, node2, node3, node4});
+  node4->setPredecessors({node0, node1, node2, node3});
+  node3->setPredecessors({node0, node1, node2});
+  node2->setPredecessors({node0, node1});
+  node1->setPredecessors({node0});
 
   BoltGraph graph(/* inputs= */ {}, /* output= */ node6);
 
@@ -96,53 +56,62 @@ TEST(GraphTraversalTest, CorrectlyTraversesDAG) {
   ASSERT_EQ(graph_nodes.size(), 7);
 
   for (uint32_t node_indx = 0; node_indx < graph_nodes.size(); node_indx++) {
-    DummyNode* dummy_node =
-        dynamic_cast<DummyNode*>(graph_nodes[node_indx].get());
+    MockTraversalNode* dummy_node =
+        dynamic_cast<MockTraversalNode*>(graph_nodes[node_indx].get());
     ASSERT_NE(dummy_node, nullptr);
     ASSERT_EQ(dummy_node->getID(), node_indx);
   }
 }
 
 TEST(GraphTraversalTest, ThrowsExceptionForCycle) {
-  auto node0 = DummyNode::makeDummyNode(0);
-  auto node1 = DummyNode::makeDummyNode(1);
-  auto node2 = DummyNode::makeDummyNode(2);
-  auto node3 = DummyNode::makeDummyNode(3);
-  auto node4 = DummyNode::makeDummyNode(4);
+  auto node0 = MockTraversalNode::makePtr(0);
+  auto node1 = MockTraversalNode::makePtr(1);
+  auto node2 = MockTraversalNode::makePtr(2);
+  auto node3 = MockTraversalNode::makePtr(3);
+  auto node4 = MockTraversalNode::makePtr(4);
 
-  node4->setPredecesors({node3});
-  node3->setPredecesors({node2});
-  node2->setPredecesors({node1});
-  node1->setPredecesors({node0, node3});
+  node4->setPredecessors({node3});
+  node3->setPredecessors({node2});
+  node2->setPredecessors({node1});
+  node1->setPredecessors({node0, node3});
 
   BoltGraph graph(/* inputs= */ {}, /* output= */ node4);
 
   ASSERT_THROW(graph.compile(std::make_shared<MeanSquaredError>()),  // NOLINT
                exceptions::GraphCompilationFailure);
+
+  // We have to break the cycle of smart pointers to avoid a memory leak here.
+  node3->setPredecessors({});
 }
 
 TEST(GraphTraversalTest, ThrowsExceptionForSelfLoop) {
-  auto node0 = DummyNode::makeDummyNode(0);
-  auto node1 = DummyNode::makeDummyNode(1);
+  auto node0 = MockTraversalNode::makePtr(0);
+  auto node1 = MockTraversalNode::makePtr(1);
 
-  node1->setPredecesors({node0});
-  node0->setPredecesors({node0});
+  node1->setPredecessors({node0});
+  node0->setPredecessors({node0});
 
   BoltGraph graph(/* inputs= */ {}, /* output= */ node1);
 
   ASSERT_THROW(graph.compile(std::make_shared<MeanSquaredError>()),  // NOLINT
                exceptions::GraphCompilationFailure);
+
+  // We have to break the cycle of smart pointers to avoid a memory leak here.
+  node0->setPredecessors({});
 }
 
 TEST(GraphTraversalTest, ThrowsExceptionForOutputSelfLoop) {
-  auto node0 = DummyNode::makeDummyNode(0);
+  auto node0 = MockTraversalNode::makePtr(0);
 
-  node0->setPredecesors({node0});
+  node0->setPredecessors({node0});
 
   BoltGraph graph(/* inputs= */ {}, /* output= */ node0);
 
   ASSERT_THROW(graph.compile(std::make_shared<MeanSquaredError>()),  // NOLINT
                exceptions::GraphCompilationFailure);
+
+  // We have to break the cycle of smart pointers to avoid a memory leak here.
+  node0->setPredecessors({});
 }
 
 }  // namespace thirdai::bolt::tests
