@@ -78,14 +78,14 @@ def test_sentence_to_boltdataset_unigrams():
     x,y = get_expected_unigrams("hello world how are you")
     z = get_actual_unigrams("hello world how are you")
     network = build_network()
-    temp1,act1 = network.predict(x,y)
-    temp2,act2 = network.predict(z,None)
+    metrics1,act1 = network.predict(x,y)
+    metrics2,act2 = network.predict(z,None)
     assert act1.all() == act2.all()
 
 def test_sentence_to_boltdataset_pairgrams():
     x,y = get_expected_pairgrams("hello world how are you")
     z = get_actual_pairgrams("hello world how are you")
     network = build_network()
-    temp1,act1 = network.predict(x,y)
-    temp2,act2 = network.predict(z,None)
+    metrics1,act1 = network.predict(x,y)
+    metrics2,act2 = network.predict(z,None)
     assert act1.all() == act2.all()
