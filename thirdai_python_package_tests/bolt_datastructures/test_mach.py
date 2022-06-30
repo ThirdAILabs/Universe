@@ -1,7 +1,10 @@
+from hashlib import new
 import numpy as np
 from thirdai import bolt
 import pytest
 import time
+import os
+import shutil
 
 # Returns data and labels for learning the function f(a) = a, where a is
 # sparse (num_true_labels_per_example number of nonzeros).
@@ -32,7 +35,7 @@ def get_recall(result, test_y, num_true_labels_per_sample):
         if result[i] in test_y[0][start:end]:
             count += 1
     recall = count / (len(test_y[2]) - 1)
-    print("Recall: ", recall)
+    # print("Recall: ", recall)
     return recall
 
 
@@ -71,3 +74,106 @@ def test_mach():
     result_slow = mach.query_slow(test_x)
     assert get_recall(result_fast, test_y, num_true_labels_per_sample) > 0.8
     assert get_recall(result_slow, test_y, num_true_labels_per_sample) > 0.8
+
+
+@pytest.mark.unit
+def test_checkpoint_mach():
+    num_train = 10000
+    num_test = 1000
+    num_true_labels_per_sample = 10
+    input_and_output_dim = 1000
+
+    train_x, train_y = generate_random_easy_sparse(
+        output_dim=input_and_output_dim,
+        num_true_labels_per_example=num_true_labels_per_sample,
+        num_examples=num_train,
+    )
+    test_x, test_y = generate_random_easy_sparse(
+        output_dim=input_and_output_dim,
+        num_true_labels_per_example=num_true_labels_per_sample,
+        num_examples=num_test,
+    )
+
+    mach = bolt.Mach(
+        max_label=input_and_output_dim,
+        num_classifiers=4,
+        input_dim=input_and_output_dim,
+        hidden_layer_dim=input_and_output_dim,
+        hidden_layer_sparsity=1,
+        last_layer_dim=input_and_output_dim // 10,
+        last_layer_sparsity=1,
+        use_softmax=True,
+    )
+
+    mach.train(train_x, train_y, learning_rate=0.001, batch_size=512, num_epochs=5)
+
+    result_fast = mach.query_fast(test_x)
+    result_slow = mach.query_slow(test_x)
+    recall_fast = get_recall(result_fast, test_y, num_true_labels_per_sample)
+    recall_slow = get_recall(result_slow, test_y, num_true_labels_per_sample)
+
+    # save mach to a random folder and then load it
+    mach.checkpoint("mach_saved_XASZD")
+
+    newMach = bolt.Mach.load("mach_saved_XASZD")
+
+    # asserts that the loaded model has the same recall
+    assert recall_fast == get_recall(
+        newMach.query_fast(test_x), test_y, num_true_labels_per_sample
+    )
+    assert recall_slow == get_recall(
+        newMach.query_slow(test_x), test_y, num_true_labels_per_sample
+    )
+
+    shutil.rmtree("mach_saved_XASZD")
+
+
+@pytest.mark.unit
+def test_save_mach():
+    num_train = 10000
+    num_test = 1000
+    num_true_labels_per_sample = 10
+    input_and_output_dim = 1000
+
+    train_x, train_y = generate_random_easy_sparse(
+        output_dim=input_and_output_dim,
+        num_true_labels_per_example=num_true_labels_per_sample,
+        num_examples=num_train,
+    )
+    test_x, test_y = generate_random_easy_sparse(
+        output_dim=input_and_output_dim,
+        num_true_labels_per_example=num_true_labels_per_sample,
+        num_examples=num_test,
+    )
+
+    mach = bolt.Mach(
+        max_label=input_and_output_dim,
+        num_classifiers=4,
+        input_dim=input_and_output_dim,
+        hidden_layer_dim=input_and_output_dim,
+        hidden_layer_sparsity=1,
+        last_layer_dim=input_and_output_dim // 10,
+        last_layer_sparsity=1,
+        use_softmax=True,
+    )
+
+    mach.train(train_x, train_y, learning_rate=0.001, batch_size=512, num_epochs=5)
+
+    result_fast = mach.query_fast(test_x)
+    result_slow = mach.query_slow(test_x)
+    recall_fast = get_recall(result_fast, test_y, num_true_labels_per_sample)
+    recall_slow = get_recall(result_slow, test_y, num_true_labels_per_sample)
+
+    # save mach to a random folder and then load it
+    mach.save("mach_saved_XASZD")
+
+    newMach = bolt.Mach.load("mach_saved_XASZD")
+
+    # asserts that the loaded model has the same recall
+    assert recall_fast == get_recall(
+        newMach.query_fast(test_x), test_y, num_true_labels_per_sample
+    )
+    assert recall_slow == get_recall(
+        newMach.query_slow(test_x), test_y, num_true_labels_per_sample
+    )
+    shutil.rmtree("mach_saved_XASZD")
