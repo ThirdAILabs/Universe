@@ -76,7 +76,7 @@ class SequentialClassifier {
     auto label_blocks = buildLabelBlocks(columns);
     auto pipeline = std::make_shared<dataset::StreamingGenericDatasetLoader>(
         loader, input_blocks, label_blocks, /* shuffle = */ true,
-        dataset::ShuffleBufferConfig(/* buffer_size = */ 1000,
+        dataset::ShuffleBufferConfig(/* buffer_size = */ 4096,
                                      /* seed = */ 341),
         /* has_header = */ false, _delimiter);
     if (!_network) {
