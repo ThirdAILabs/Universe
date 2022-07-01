@@ -73,11 +73,35 @@ TEST_F(TabularClassifierTestFixture, TestTrainVSTestColumns) {
                std::invalid_argument);
 }
 
-// /**
-//  * This test asserts a failure when a column specified as "numeric" cannot be
-//  * interpreted as "numeric".
-//  */
-// TEST_F(TabularClassifierTestFixture, TestName) {}
+/**
+ * This test asserts a failure when a column specified as "numeric" cannot be
+ * interpreted as "numeric".
+ */
+TEST_F(TabularClassifierTestFixture, TestIncorrectNumericColumn) {
+  std::shared_ptr<bolt::TabularClassifier> tab_model =
+      std::make_shared<TabularClassifier>("small", 2);
+  std::vector<std::string> contents = {"column1,column2", "value1,value2"};
+  setTempFileContents(contents);
+  std::vector<std::string> column_datatypes = {"numeric", "label"};
+  ASSERT_THROW(tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
+               std::invalid_argument);
+}
+
+/**
+ * This test asserts no failure when an empty value is passed in to categorical
+ * or numeric columns.
+ */
+TEST_F(TabularClassifierTestFixture, TestEmptyColumns) {
+  std::shared_ptr<bolt::TabularClassifier> tab_model =
+      std::make_shared<TabularClassifier>("small", 2);
+  std::vector<std::string> contents = {"column1,column2,column3, column4",
+                                       "value1,,,label1"};
+  setTempFileContents(contents);
+  std::vector<std::string> column_datatypes = {"categorical", "numeric",
+                                               "categorical", "label"};
+
+  ASSERT_NO_THROW(tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01));
+}
 
 // /**
 //  * This test asserts a failure when a new category/label is found in the

@@ -29,14 +29,24 @@ class TabularMetadata {
 
   std::vector<std::string> getColumnNames() { return _column_names; }
 
-  std::string getColBin(uint32_t col, double value) {
-    double binsize = getColBinsize(col);
-    if (binsize == 0) {
-      return "0";
+  std::string getColBin(uint32_t col, std::string str_val) {
+    // map empty values to their own bin
+    if (str_val == "") {
+      return std::to_string(_num_non_empty_bins);
     }
-    // TODO(david) put infs to upper and lower bins. put nans to their own bin
-    return std::to_string(static_cast<uint32_t>(
-        std::round((value - getColMin(col)) / getColBinsize(col))));
+    try {
+      double value = std::stod(str_val);
+      double binsize = getColBinsize(col);
+      if (binsize == 0) {
+        return "0";
+      }
+      return std::to_string(static_cast<uint32_t>(
+          std::round((value - getColMin(col)) / getColBinsize(col))));
+    } catch (std::invalid_argument& e) {
+      throw std::invalid_argument(
+          "Could not process column " + std::to_string(col) +
+          " as type 'numeric.' Received value: '" + str_val + ".'");
+    }
   }
 
   /**
@@ -70,19 +80,20 @@ class TabularMetadata {
   double getColMin(uint32_t col) { return _col_to_min_val[col]; }
 
   double getColBinsize(uint32_t col) {
-    return (_col_to_max_val[col] - _col_to_min_val[col]) / _num_bins;
+    return (_col_to_max_val[col] - _col_to_min_val[col]) / _num_non_empty_bins;
   }
 
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_num_bins, _label_col_index, _column_names, _column_dtypes,
-            _col_to_max_val, _col_to_min_val, _class_to_class_id,
-            _class_id_to_class);
+    archive(_num_non_empty_bins, _label_col_index, _column_names,
+            _column_dtypes, _col_to_max_val, _col_to_min_val,
+            _class_to_class_id, _class_id_to_class);
   }
 
-  uint32_t _num_bins = 10;
+  uint32_t _num_non_empty_bins =
+      10;  // one additional bin is reserved for empty values
   uint32_t _label_col_index;
   uint32_t _max_salt_len;
   std::vector<std::string> _column_names;
@@ -161,31 +172,13 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
       std::string str_value(values[col]);
       switch (_metadata->_column_dtypes[col]) {
         case TabularDataType::Numeric: {
-          // TODO(david) if empty, nan, or inf ignore
-          // otherwise, report error
-          double val = std::stod(str_value);
-          if (_metadata->_col_to_max_val[col] < val) {
-            _metadata->_col_to_max_val[col] = val;
-          }
-          if (_metadata->_col_to_min_val[col] > val) {
-            _metadata->_col_to_min_val[col] = val;
-          }
+          processNumeric(str_value, col);
           break;
         }
         case TabularDataType::Categorical:
           break;
         case TabularDataType::Label: {
-          if (!_metadata->_class_to_class_id.count(str_value)) {
-            uint32_t label = _metadata->_class_id_to_class.size();
-            if (_metadata->numClasses() == _n_classes) {
-              throw std::invalid_argument(
-                  "Expected " + std::to_string(_n_classes) +
-                  " classes but found an additional class: '" + str_value +
-                  ".'");
-            }
-            _metadata->_class_to_class_id[str_value] = label;
-            _metadata->_class_id_to_class.push_back(str_value);
-          }
+          processLabel(str_value);
           break;
         }
       }
@@ -195,6 +188,42 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
   std::shared_ptr<TabularMetadata> getMetadata() { return _metadata; }
 
  private:
+  void processNumeric(std::string str_value, uint32_t col) {
+    // TODO(david) handle nan/inf/large number cases
+
+    // we want to process empty values and put them in their own bin later, thus
+    // we don't fail here
+    if (str_value == "") {
+      return;
+    }
+    try {
+      double val = std::stod(str_value);
+      if (_metadata->_col_to_max_val[col] < val) {
+        _metadata->_col_to_max_val[col] = val;
+      }
+      if (_metadata->_col_to_min_val[col] > val) {
+        _metadata->_col_to_min_val[col] = val;
+      }
+    } catch (std::invalid_argument& e) {
+      throw std::invalid_argument(
+          "Could not process column " + std::to_string(col) +
+          " as type 'numeric.' Received value: '" + str_value + ".'");
+    }
+  }
+
+  void processLabel(std::string str_value) {
+    if (!_metadata->_class_to_class_id.count(str_value)) {
+      uint32_t label = _metadata->_class_id_to_class.size();
+      if (_metadata->numClasses() == _n_classes) {
+        throw std::invalid_argument(
+            "Expected " + std::to_string(_n_classes) +
+            " classes but found an additional class: '" + str_value + ".'");
+      }
+      _metadata->_class_to_class_id[str_value] = label;
+      _metadata->_class_id_to_class.push_back(str_value);
+    }
+  }
+
   char _delimiter;
   uint32_t _n_classes;
   std::shared_ptr<TabularMetadata> _metadata;

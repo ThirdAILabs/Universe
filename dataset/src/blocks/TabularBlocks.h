@@ -36,10 +36,8 @@ class TabularPairGram : public Block {
       std::string str_val(input_row[col]);
       switch (_metadata->getType(col)) {
         case TabularDataType::Numeric: {
-          // TODO(david) if stof fails
-          double value = std::stod(str_val);
           std::string unique_bin =
-              _metadata->getColBin(col, value) + _metadata->getColSalt(col);
+              _metadata->getColBin(col, str_val) + _metadata->getColSalt(col);
           unigram_hashes.push_back(PairgramHasher::computeUnigram(
               unique_bin.data(), unique_bin.size()));
           break;
