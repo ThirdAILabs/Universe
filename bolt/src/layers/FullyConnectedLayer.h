@@ -160,10 +160,6 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   bool _is_distributed;
 
-  // This variable is unused unless _sparsity < 1, but it is still important
-  // for tracking the state of whether sparse inference is currently active,
-  // (this is important if we make a previously dense layer sparse).
-  bool _force_sparse_for_inference;
   LSHSamplingMode _sampling_mode;
 
   static std::unique_ptr<hashing::HashFunction> assignHashFunction(

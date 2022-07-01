@@ -19,6 +19,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sparsity(config.sparsity),
       _is_shallow(false),
       _shallow_save(false),
+      
       // trainable parameter not present in config file
       // TODO(Shubh) : should we add a trainable parameter to the config file?
       _trainable(true),
@@ -36,7 +37,6 @@ FullyConnectedLayer::FullyConnectedLayer(
       _prev_is_active(_prev_dim, false),
       _is_active(config.dim, false),
       _is_distributed(is_distributed),
-      _force_sparse_for_inference(false),
       _sampling_mode(LSHSamplingMode::Default) {
   std::random_device rd;
   std::default_random_engine eng(rd());
@@ -489,13 +489,11 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
 
 inline void FullyConnectedLayer::initSparseDatastructures(
         std::random_device &rd, uint32_t hash_seed, uint32_t shuffle_seed) {
-  std::cout << "init Sparse Data Structure getting called!" << std::endl;
   _hasher = assignHashFunction(_sampling_config, _prev_dim);
   if(_is_distributed){
     _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow, hash_seed);
-        std::cout << "Updating in Distributed Block!" << std::endl; 
   }else{
     _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
@@ -510,16 +508,11 @@ inline void FullyConnectedLayer::initSparseDatastructures(
   _rand_neurons = std::vector<uint32_t>(_dim);
 
   std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
-  std::cout << "Shuffle Seed: " << shuffle_seed << std::endl;
   if(_is_distributed){
-    std::cout << "Shuffling neuron in distributed Block" << std::endl;
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), std::default_random_engine(shuffle_seed));
   }else{
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
   }
-  std::cout << "Random Neurons: " ;
-  std::cout << _rand_neurons[0] << " " << _rand_neurons[1] << " " << _rand_neurons[2] << std::endl;
-  std::cout << std::endl;
 }
 
 inline void FullyConnectedLayer::deinitSparseDatastructures() {
@@ -637,7 +630,6 @@ void FullyConnectedLayer::setShallowSave(bool shallow) {
 
 void FullyConnectedLayer::setSparsity(float sparsity, uint32_t hash_seed, uint32_t shuffle_seed) {
   deinitSparseDatastructures();
-  std::cout << "Hash Seed: " << hash_seed << std::endl;
   _sparsity = sparsity;
   // TODO(josh): Right now this is using the autotuning for DWTA even if this
   // hash function isn't DWTA. Add autotuning for other hash function types.

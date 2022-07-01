@@ -265,10 +265,7 @@ class BoltBatch {
   }
 
   uint32_t getBatchSize() const { return _vectors.size(); }
-  /**
-   * Commenting it as it is destructing the output BoltBatch
-   * vector.
-   */
+  
   BoltBatch(const BoltBatch& other) = delete;
 
   BoltBatch(BoltBatch&& other) = default;
