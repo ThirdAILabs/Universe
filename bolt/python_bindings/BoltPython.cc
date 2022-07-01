@@ -628,8 +628,8 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
 
-  py::class_<FullyConnectedNode, std::shared_ptr<FullyConnectedNode>,
-             Node>(graph_submodule, "FullyConnected")
+  py::class_<FullyConnectedNode, std::shared_ptr<FullyConnectedNode>, Node>(
+      graph_submodule, "FullyConnected")
       .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
            py::arg("activation"),
            "Constructs a dense FullyConnectedLayer object.\n"
