@@ -92,6 +92,8 @@ class Model {
       // Array to store output activations in, will not return activations if
       // this is null
       float* output_activations,
+      // Use sparse inference
+      bool use_sparse_inference = false,
       // Metrics to compute
       const std::vector<std::string>& metric_names = {},
       // Restrict printouts
@@ -108,6 +110,8 @@ class Model {
   InferenceMetricData predictOnStream(
       // Test dataset
       const std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& test_data,
+      // Use sparse inference
+      bool use_sparse_inference = false,
       // Metrics to compute
       const std::vector<std::string>& metric_names = {},
       // We choose not to store final layer activations for a streaming dataset
@@ -129,8 +133,9 @@ class Model {
   void processTestBatch(const BATCH_T& batch_inputs, BoltBatch& outputs,
                         const BoltBatch* batch_labels,
                         uint32_t* output_active_neurons,
-                        float* output_activations, MetricAggregator& metrics,
-                        bool compute_metrics);
+                        float* output_activations,
+                        uint64_t inference_output_dim,
+                        MetricAggregator& metrics, bool compute_metrics);
 
   void updateSampling(uint32_t rehash_batch, uint32_t rebuild_batch);
 
@@ -148,7 +153,7 @@ class Model {
   // Called for network to allocate any necessary state to store activations and
   // gradients.
   virtual void initializeNetworkState(uint32_t batch_size,
-                                      bool force_dense) = 0;
+                                      bool use_sparsity) = 0;
 
   // Construct new hash functions (primarly for fully connected layers).
   virtual void reBuildHashFunctions() = 0;
@@ -157,13 +162,13 @@ class Model {
   virtual void buildHashTables() = 0;
 
   // Allocates storage for activations and gradients for output layer.
-  virtual BoltBatch getOutputs(uint32_t batch_size, bool force_dense) = 0;
+  virtual BoltBatch getOutputs(uint32_t batch_size, bool use_sparsity) = 0;
 
   virtual uint32_t getOutputDim() const = 0;
 
   // Gets the dimension of the output layer during inference (depends of if
   // sparse inference is enabled).
-  virtual uint32_t getInferenceOutputDim() const = 0;
+  virtual uint32_t getInferenceOutputDim(bool using_sparsity) const = 0;
 
   virtual ~Model() = default;
 

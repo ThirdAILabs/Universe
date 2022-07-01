@@ -66,7 +66,7 @@ void TabularClassifier::train(const std::string& filename,
     auto [train_data, train_labels] = dataset->loadInMemory();
 
     _model->train(train_data, train_labels, loss, learning_rate, 1);
-    _model->enableSparseInference();
+    _model->freezeHashTables();
     _model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
   }
 }
@@ -115,7 +115,8 @@ void TabularClassifier::predict(
     predictions, and can instead compute the predictions using the
     back_callback.
   */
-  _model->predictOnStream(dataset, {"categorical_accuracy"},
+  _model->predictOnStream(dataset, /* use_sparse_inference= */ true,
+                          /* metric_names= */ {"categorical_accuracy"},
                           print_predictions_callback);
 
   if (output_file) {

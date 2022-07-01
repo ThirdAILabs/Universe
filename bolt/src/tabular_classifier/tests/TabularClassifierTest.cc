@@ -59,14 +59,14 @@ TEST_F(TabularClassifierTestFixture, TestOddCsvFormatsWithTabularClassifier) {
 /**
  * This test asserts a failure when the user calls predict(..) before train(..).
  */
-TEST_F(TabularClassifierTestFixture, TestPredictBeforeTrain) {
-  std::shared_ptr<bolt::TabularClassifier> tab_model =
-      std::make_shared<TabularClassifier>("small", 2);
+// TEST_F(TabularClassifierTestFixture, TestPredictBeforeTrain) {
+//   std::shared_ptr<bolt::TabularClassifier> tab_model =
+//       std::make_shared<TabularClassifier>("small", 2);
 
-  setTempFileContents()
+//   setTempFileContents()
 
-      tab_model->predict();
-}
+//       tab_model->predict();
+// }
 
 /**
  * This test asserts a failure when there is a mismatch between the number of
@@ -78,36 +78,38 @@ TEST_F(TabularClassifierTestFixture, TestProvidedColumnsMatchCsvColumns) {}
  * This test asserts a failure when rows in the train/test CSVs have an
  * incorrect number of columns.
  */
-TEST_F(TabularClassifierTestFixture, TestName) {}
+// TEST_F(TabularClassifierTestFixture, TestName) {}
 
-/**
- * This test asserts a failure when a column specified as "numeric" cannot be
- * interpreted as "numeric".
- */
-TEST_F(TabularClassifierTestFixture, TestName) {}
+// /**
+//  * This test asserts a failure when a column specified as "numeric" cannot be
+//  * interpreted as "numeric".
+//  */
+// TEST_F(TabularClassifierTestFixture, TestName) {}
 
-/**
- * This test asserts a failure when a new category/label is found in the testing
- * dataset.
- */
-TEST_F(TabularClassifierTestFixture, TestName) {}
+// /**
+//  * This test asserts a failure when a new category/label is found in the
+//  testing
+//  * dataset.
+//  */
+// TEST_F(TabularClassifierTestFixture, TestName) {}
 
-/**
- * This test asserts a failure when the user forgets to specify a label datatype
- * in column_datatypes.
- */
-TEST_F(TabularClassifierTestFixture, TestName) {}
+// /**
+//  * This test asserts a failure when the user forgets to specify a label
+//  datatype
+//  * in column_datatypes.
+//  */
+// TEST_F(TabularClassifierTestFixture, TestName) {}
 
-/**
- * This test asserts a failure when the user specifies two label datatypes
- * in column_datatypes.
- */
-TEST_F(TabularClassifierTestFixture, TestName) {}
+// /**
+//  * This test asserts a failure when the user specifies two label datatypes
+//  * in column_datatypes.
+//  */
+// TEST_F(TabularClassifierTestFixture, TestName) {}
 
-/**
- * This test asserts no failures when odd but valid values are found in a
- * "numeric" column.
- */
-TEST_F(TabularClassifierTestFixture, TestName) {}
+// /**
+//  * This test asserts no failures when odd but valid values are found in a
+//  * "numeric" column.
+//  */
+// TEST_F(TabularClassifierTestFixture, TestName) {}
 
 }  // namespace thirdai::bolt

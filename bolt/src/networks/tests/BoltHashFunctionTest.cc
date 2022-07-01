@@ -29,7 +29,7 @@ static void testSimpleDatasetHashFunction(const std::string& hash_function) {
            n_classes, ActivationFunction::Softmax)},
       n_classes);
 
-  auto data = genDataset(/*add_noise = */ false);
+  auto data = genDataset(/* noisy_dataset = */ false);
 
   // train the network for two epochs
   network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
@@ -39,6 +39,7 @@ static void testSimpleDatasetHashFunction(const std::string& hash_function) {
   auto first_test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr,
+      /* use_sparse_inference= */ false,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
 
@@ -50,6 +51,7 @@ static void testSimpleDatasetHashFunction(const std::string& hash_function) {
   auto second_test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr,
+      /* use_sparse_inference= */ false,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
 
