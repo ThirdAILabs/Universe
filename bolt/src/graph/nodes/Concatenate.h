@@ -213,6 +213,38 @@ class ConcatenateNode final
 
   bool isInputNode() const final { return false; }
 
+  void summarize(std::stringstream& summary, bool detailed) const final {
+    (void)detailed;
+    if (!predecessors_set()) {
+      throw exceptions::NodeStateMachineError(
+          "summarize should not be called before predecessors have been set");
+    }  
+    const auto &inputs = _graph_state->inputs;
+    summary << "(";
+    for (uint32_t i = 0; i < inputs.size(); i++) {
+      summary << inputs.at(i)->name();
+      if (i != inputs.size() - 1) {
+        summary << ", ";
+      }
+    }
+    summary << ") -> " << name() << " (Concatenate)\n";
+  }
+
+  void setNameAndUpdateCount(
+      std::unordered_map<std::string, uint32_t>& layer_type_name_to_count) final {
+    if (!predecessors_set()) {
+      throw exceptions::NodeStateMachineError(
+          "setNameAndUpdateCount should not be called before predecessors have been set");
+    }  
+    layer_type_name_to_count[LAYER_TYPE_NAME] += 1;
+    _name = LAYER_TYPE_NAME +
+            std::to_string(layer_type_name_to_count[LAYER_TYPE_NAME]);    
+  }
+
+  const std::string& name() const final {
+    return _name;
+  }
+
  private:
   static void verifyNoInputNodes(const std::vector<NodePtr>& nodes) {
     for (const auto& node : nodes) {
@@ -344,6 +376,8 @@ class ConcatenateNode final
     uint32_t num_nonzeros_in_concatenation;
   };
 
+  inline static const std::string LAYER_TYPE_NAME = "concat";
+  std::string _name;
   std::optional<GraphState> _graph_state;
   std::optional<BatchProcessingState> _batch_processing_state;
 };
