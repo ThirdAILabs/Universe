@@ -19,7 +19,6 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sparsity(config.sparsity),
       _is_shallow(false),
       _shallow_save(false),
-
       // trainable parameter not present in config file
       // TODO(Shubh) : should we add a trainable parameter to the config file?
       _trainable(true),
