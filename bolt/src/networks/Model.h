@@ -62,7 +62,13 @@ class Model {
       // Learning rate for training
       float learning_rate,
       // After how many batches to rebuild hash tables
-      x
+      uint32_t rehash_batch = 20,
+      // After how many batches to recreate hash functions
+      uint32_t rebuild_batch = 100,
+      // Metrics to compute during training
+      const std::vector<std::string>& metric_names = {},
+      // Interval at which to log metrics when processing stream,
+      uint32_t metric_log_batch_interval = 0,
       // Restrict printouts
       bool verbose = true);
 
