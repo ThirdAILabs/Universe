@@ -100,7 +100,7 @@ class ConcatenateNode final
 
   std::shared_ptr<ConcatenateNode> setConcatenatedNodes(
       const std::vector<NodePtr>& nodes) {
-    if (predecessors_set()) {
+    if (predecessorsSet()) {
       throw exceptions::NodeStateMachineError(
           "Have already set the incoming concatenated nodes for this "
           "concatenation layer");
@@ -128,7 +128,7 @@ class ConcatenateNode final
   }
 
   uint32_t outputDim() const final {
-    if (!predecessors_set()) {
+    if (!predecessorsSet()) {
       throw exceptions::NodeStateMachineError(
           "Cannot get the output dim for this concatenation layer because the "
           "incoming concatenated nodes have not been set yet");
@@ -137,7 +137,7 @@ class ConcatenateNode final
   }
 
   uint32_t numNonzerosInOutput() const final {
-    if (!prepared_for_batch_processing()) {
+    if (!preparedForBatchProcessing()) {
       throw exceptions::NodeStateMachineError(
           "Cannot get the number of nonzeros for this concatenation layer "
           "because the node is not prepared for batch processing");
@@ -146,12 +146,12 @@ class ConcatenateNode final
   }
 
   void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
-    if (!predecessors_set()) {
+    if (!predecessorsSet()) {
       throw exceptions::NodeStateMachineError(
           "The preceeding nodes to this concatenation layer "
           " must be set before preparing for batch processing.");
     }
-    if (prepared_for_batch_processing()) {
+    if (preparedForBatchProcessing()) {
       throw exceptions::NodeStateMachineError(
           "Need to cleanup after batch processing before we can prepare again");
     }
@@ -184,7 +184,7 @@ class ConcatenateNode final
   }
 
   void cleanupAfterBatchProcessing() final {
-    if (!predecessors_set() || !prepared_for_batch_processing()) {
+    if (!preparedForBatchProcessing()) {
       throw exceptions::NodeStateMachineError(
           "Cannot cleanup after batch processing unless we have already "
           "prepared for batch processing");
@@ -193,7 +193,7 @@ class ConcatenateNode final
   }
 
   std::vector<NodePtr> getPredecessors() const final {
-    if (!predecessors_set()) {
+    if (!predecessorsSet()) {
       throw exceptions::NodeStateMachineError(
           "Cannot get the predecessors for this concatenation layer because "
           "they have not been set yet");
@@ -203,7 +203,7 @@ class ConcatenateNode final
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
   getInternalFullyConnectedLayers() const final {
-    if (!predecessors_set()) {
+    if (!predecessorsSet()) {
       throw exceptions::NodeStateMachineError(
           "getInternalFullyConnectedLayers method should not be called before "
           "predecessors have been set");
@@ -282,9 +282,9 @@ class ConcatenateNode final
     }
   }
 
-  bool predecessors_set() const { return _graph_state.has_value(); }
+  bool predecessorsSet() const { return _graph_state.has_value(); }
 
-  bool prepared_for_batch_processing() const {
+  bool preparedForBatchProcessing() const {
     return _batch_processing_state.has_value();
   }
 

@@ -21,7 +21,7 @@ namespace thirdai::bolt::tests {
 
 static BoltGraph getSingleLayerModel() {
   auto input_layer = std::make_shared<Input>(n_classes);
-  auto output_layer = std::make_shared<FullyConnectedLayerNode>(
+  auto output_layer = std::make_shared<FullyConnectedNode>(
       n_classes, ActivationFunction::Softmax);
 
   output_layer->addPredecessor(input_layer);
@@ -77,13 +77,13 @@ static BoltGraph getMultiLayerModel(ActivationFunction hidden_layer_act,
                                     ActivationFunction output_layer_act) {
   auto input_layer = std::make_shared<Input>(n_classes);
 
-  auto hidden_layer = std::make_shared<FullyConnectedLayerNode>(
+  auto hidden_layer = std::make_shared<FullyConnectedNode>(
       /* dim= */ 10000, /* sparsity= */ 0.1,
       /* activation= */ hidden_layer_act);
 
   hidden_layer->addPredecessor(input_layer);
 
-  auto output_layer = std::make_shared<FullyConnectedLayerNode>(
+  auto output_layer = std::make_shared<FullyConnectedNode>(
       /* dim= */ n_classes, /* activation= */ output_layer_act);
 
   output_layer->addPredecessor(hidden_layer);
