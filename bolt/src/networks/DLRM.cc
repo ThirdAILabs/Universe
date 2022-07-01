@@ -97,7 +97,7 @@ void DLRM::backpropagate(uint32_t batch_index,
                                   _bottom_mlp_output[batch_index]);
 }
 
-std::vector<float> DLRM::backpropagateInput(
+std::vector<float> DLRM::backpropagateInputForGradients(
     uint32_t /*batch_index*/, dataset::ClickThroughBatch& /*input*/,
     BoltVector& /*output*/) {
   // TODO(Yash) implement this function.

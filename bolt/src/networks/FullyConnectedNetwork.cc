@@ -91,15 +91,15 @@ void FullyConnectedNetwork::forward(uint32_t batch_index,
   }
 }
 
-std::vector<float> FullyConnectedNetwork::backpropagateInput(
+std::vector<float> FullyConnectedNetwork::backpropagateInputForGradients(
     uint32_t batch_index, BoltVector& input, BoltVector& output) {
   for (uint32_t i = _num_layers; i > 0; i--) {
     uint32_t layer = i - 1;
     if (layer == 0 && _num_layers == 1) {  // First and last layer
-      return _layers[0]->backpropagateInputLayerGetGradients(input, output);
+      return _layers[0]->backpropagateInputLayerForGradients(input, output);
     }
     if (layer == 0) {  // First layer
-      return _layers[0]->backpropagateInputLayerGetGradients(
+      return _layers[0]->backpropagateInputLayerForGradients(
           input, _states[0][batch_index]);
     }
     if (layer == _num_layers - 1) {  // Last layer

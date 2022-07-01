@@ -205,7 +205,7 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
   }
 }
 
-std::vector<float> FullyConnectedLayer::backpropagateInputLayerGetGradients(
+std::vector<float> FullyConnectedLayer::backpropagateInputLayerForGradients(
     BoltVector& input, BoltVector& output) {
   if (output.active_neurons == nullptr) {
     if (input.len == _prev_dim) {

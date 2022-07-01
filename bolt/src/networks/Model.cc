@@ -176,39 +176,42 @@ inline void Model<BATCH_T>::updateSampling(uint32_t rehash_batch,
   }
 }
 
-inline void getMaxandSecondMax(const float* activations, uint32_t dim,
-                               uint32_t& max_index,
-                               uint32_t& second_max_index) {
+inline uint32_t getSecondBestLabel(const float* activations, uint32_t dim) {
   float first = std::numeric_limits<float>::min(),
         second = std::numeric_limits<float>::min();
-  uint32_t max = 0, second_max = 0;
+  uint32_t max_id = 0, second_max_id = 0;
   if (dim < 2) {
     throw std::invalid_argument("cant do this process");
   }
   for (uint32_t i = 0; i < dim; i++) {
     if (activations[i] > first) {
       second = first;
-      second_max = max;
+      second_max_id = max_id;
       first = activations[i];
-      max = i;
+      max_id = i;
     } else if (activations[i] > second && activations[i] != first) {
       second = activations[i];
-      second_max = i;
+      second_max_id = i;
     }
   }
-  max_index = max, second_max_index = second_max;
+  return second_max_id;
 }
 
 template <typename BATCH_T>
-inline std::vector<float> Model<BATCH_T>::getInputGradientsFromModel(
+inline std::vector<float> Model<BATCH_T>::getInputGradients(
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& batch_input,
-    const LossFunction& loss_fn, bool get_difference) {
+    const LossFunction& loss_fn, const std::vector<uint32_t>& required_labels) {
   uint64_t num_batches = batch_input->numBatches();
   // Because of how the datasets are read we know that all batches will not
   // have a batch size larger than this so we can just set the batch size
   // here.
+  if (!required_labels.empty() &&
+      !(required_labels.size() ==
+        num_batches * batch_input->at(0).getBatchSize())) {
+    throw std::invalid_argument("number of labels does not match");
+  }
   initializeNetworkState(batch_input->at(0).getBatchSize(), true);
-  std::vector<float> total_grad;
+  std::vector<float> concatenated_grad;
   for (uint64_t r = 0; r < num_batches; r++) {
     BoltBatch output = getOutputs(batch_input->at(r).getBatchSize(), true);
     for (uint32_t vec_id = 0; vec_id < batch_input->at(r).getBatchSize();
@@ -218,39 +221,26 @@ inline std::vector<float> Model<BATCH_T>::getInputGradientsFromModel(
       batch_input->at(r)[vec_id].gradients =
           new float[batch_input->at(r)[vec_id].len];
       forward(vec_id, batch_input->at(r), output[vec_id], nullptr);
-      uint32_t max_index, second_max_index;
-      getMaxandSecondMax(output[vec_id].activations, getOutputDim(), max_index,
-                         second_max_index);
-      // if get_difference is false it only backpropagates once with second
-      // highest activation as label return the input gradients other wise
-      // backpropagates twice with the one with highest activation also and
-      // return the difference of input gradients.
-      BoltVector batch_label_second = BoltVector::makeSparseVector(
-          std::vector<uint32_t>{second_max_index}, std::vector<float>{1.0});
-      loss_fn.lossGradients(output[vec_id], batch_label_second,
+      uint32_t required_index =
+          (required_labels.empty())
+              ? getSecondBestLabel(output[vec_id].activations, getOutputDim())
+          : (required_labels[r * batch_input->at(r).getBatchSize() + vec_id] <=
+             getOutputDim() - 1)
+              ? required_labels[r * batch_input->at(r).getBatchSize() + vec_id]
+              : throw std::invalid_argument(
+                    "one of the label crossing the output dim");
+      BoltVector batch_label = BoltVector::makeSparseVector(
+          std::vector<uint32_t>{required_index}, std::vector<float>{1.0});
+      loss_fn.lossGradients(output[vec_id], batch_label,
                             batch_input->at(r).getBatchSize());
-      std::vector<float> input_gradients_second =
-          backpropagateInput(vec_id, batch_input->at(r), output[vec_id]);
-      if (!get_difference) {
-        for (uint32_t i = 0; i < batch_input->at(r)[vec_id].len; i++) {
-          total_grad.push_back(input_gradients_second[i]);
-        }
-      } else {
-        BoltVector batch_label_first = BoltVector::makeSparseVector(
-            std::vector<uint32_t>{max_index}, std::vector<float>{1.0});
-        loss_fn.lossGradients(output[vec_id], batch_label_first,
-                              batch_input->at(r).getBatchSize());
-        std::vector<float> input_gradients_first =
-            backpropagateInput(vec_id, batch_input->at(r), output[vec_id]);
-        for (uint32_t i = 0; i < batch_input->at(r)[vec_id].len; i++) {
-          input_gradients_second[i] =
-              input_gradients_second[i] - input_gradients_first[i];
-          total_grad.push_back(input_gradients_second[i]);
-        }
+      std::vector<float> input_gradients = backpropagateInputForGradients(
+          vec_id, batch_input->at(r), output[vec_id]);
+      for (uint32_t i = 0; i < batch_input->at(r)[vec_id].len; i++) {
+        concatenated_grad.push_back(input_gradients[i]);
       }
     }
   }
-  return total_grad;
+  return concatenated_grad;
 }
 
 template <typename BATCH_T>

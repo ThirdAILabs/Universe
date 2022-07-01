@@ -290,19 +290,20 @@ void createBoltSubmodule(py::module_& module) {
           " * detailed: boolean. Optional. When specified to \"True\", "
           "summary will additionally print layer config details for each layer "
           "in the network.")
-      .def("get_input_gradients", &PyNetwork::getInputGradientsFromModel,
-           py::arg("input"), py::arg("loss_fn"), py::arg("batch_size") = 256,
-           py::arg("get_difference") = false,
+      .def("get_input_gradients", &PyNetwork::getInputGradients,
+           py::arg("input"), py::arg("loss_fn"),
+           py::arg("required_labels") = std::vector<uint32_t>(),
+           py::arg("batch_size") = 256,
            "Get the values of input gradients when back propagated "
-           "with labels with second highest activation."
+           "with labels with second highest activation or with the required "
+           "label."
            "Arguments:\n"
            " * input: The input is same type as we give for train_data of "
            "train method."
            " * loss_fn: LossFunction - The loss function to minimize."
-           " * batch_size: Batch size , default is set to 256."
-           " * get_difference: Boolean - optional, If set to True, returns "
-           "the difference of the input gradients  when backpropagated "
-           "twice with labels with highest activation also.")
+           " * required_labels: expected labels for each input vector default "
+           "to empty vector"
+           " * batch_size: Batch size , default batch size is 256.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),

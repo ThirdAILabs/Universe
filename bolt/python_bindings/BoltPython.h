@@ -197,14 +197,13 @@ class PyNetwork final : public FullyConnectedNetwork {
     return metrics;
   }
 
-  py::array_t<float> getInputGradientsFromModel(const py::object& data,
-                                                const LossFunction& loss_fn,
-                                                uint32_t batch_size = 256,
-                                                bool get_difference = false) {
+  py::array_t<float> getInputGradients(
+      const py::object& data, const LossFunction& loss_fn,
+      const std::vector<uint32_t>& required_labels = std::vector<uint32_t>(),
+      uint32_t batch_size = 256) {
     auto analysis_data = convertPyObjectToBoltDataset(data, batch_size, false);
-
-    auto gradients = FullyConnectedNetwork::getInputGradientsFromModel(
-        analysis_data.dataset, loss_fn, get_difference);
+    auto gradients = FullyConnectedNetwork::getInputGradients(
+        analysis_data.dataset, loss_fn, required_labels);
 
     return py::cast(gradients);
   }

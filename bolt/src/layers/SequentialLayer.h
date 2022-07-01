@@ -15,7 +15,7 @@ class SequentialLayer {
   virtual void backpropagateInputLayer(BoltVector& input,
                                        BoltVector& output) = 0;
 
-  virtual std::vector<float> backpropagateInputLayerGetGradients(
+  virtual std::vector<float> backpropagateInputLayerForGradients(
       BoltVector& input, BoltVector& output) = 0;
 
   virtual void updateParameters(float lr, uint32_t iter, float B1, float B2,

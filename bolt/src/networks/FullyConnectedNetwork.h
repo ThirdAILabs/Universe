@@ -37,10 +37,11 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     backpropagate<true>(batch_index, inputs[batch_index], output);
   }
 
-  std::vector<float> backpropagateInput(uint32_t batch_index,
-                                        bolt::BoltBatch& input,
-                                        BoltVector& output) final {
-    return backpropagateInput(batch_index, input[batch_index], output);
+  std::vector<float> backpropagateInputForGradients(uint32_t batch_index,
+                                                    bolt::BoltBatch& input,
+                                                    BoltVector& output) final {
+    return backpropagateInputForGradients(batch_index, input[batch_index],
+                                          output);
   };
 
   void updateParameters(float learning_rate, uint32_t iter) final {
@@ -147,8 +148,9 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   void backpropagate(uint32_t batch_index, BoltVector& input,
                      BoltVector& output);
 
-  std::vector<float> backpropagateInput(uint32_t batch_index, BoltVector& input,
-                                        BoltVector& output);
+  std::vector<float> backpropagateInputForGradients(uint32_t batch_index,
+                                                    BoltVector& input,
+                                                    BoltVector& output);
 
   void checkLayerIndex(uint32_t layer_index) {
     if (layer_index >= _layers.size()) {

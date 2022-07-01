@@ -184,7 +184,7 @@ void ConvLayer::backpropagate(BoltVector& input, BoltVector& output) {
   }
 }
 
-std::vector<float> ConvLayer::backpropagateInputLayerGetGradients(
+std::vector<float> ConvLayer::backpropagateInputLayerForGradients(
     BoltVector& input, BoltVector& output) {
   if (output.active_neurons == nullptr) {
     if (input.len == _prev_dim) {
