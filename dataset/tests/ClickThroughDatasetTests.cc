@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdio>
-#include <fstream>
 #include <limits>
 #include <random>
 #include <unordered_set>
@@ -63,12 +62,7 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
       _vectors.push_back(createTestClickThroughVec());
     }
 
-    std::ofstream output_file(_filename);
-
-    ASSERT_TRUE(output_file.is_open());
-    ASSERT_TRUE(output_file.good());
-    ASSERT_FALSE(output_file.bad());
-    ASSERT_FALSE(output_file.fail());
+    std::ofstream output_file = dataset::SafeFileIO::ofstream(_filename);
 
     for (const auto& vec : _vectors) {
       output_file << std::dec << vec.label;

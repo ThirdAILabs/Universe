@@ -39,14 +39,15 @@ class LossFunction {
     if (OUTPUT_DENSE && LABEL_DENSE) {
       assert(output.len == labels.len);
     }
-
-    // Loss functions are only used in training.
-    // If the label is sparse, the neurons of the network's final
-    // layer that correspond to the label's nonzero elements are
-    // automatically selected and activated during training.
-    // Thus, we don't have to consider the case where there are
-    // nonzeros in the label that correspond to inactive neurons in
-    // the output layer.
+    /*
+      Loss functions are only used in training.
+      If the label is sparse, the neurons of the network's final
+      layer that correspond to the label's nonzero elements are
+      automatically selected and activated during training.
+      Thus, we don't have to consider the case where there are
+      nonzeros in the label that correspond to inactive neurons in
+      the output layer.
+    */
     for (uint32_t i = 0; i < output.len; i++) {
       uint32_t active_neuron = OUTPUT_DENSE ? i : output.active_neurons[i];
       float label_val =
@@ -69,7 +70,7 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
 
  private:
   float elementLossGradient(float label, float activation,
-                            uint32_t batch_size) const override {
+                            uint32_t batch_size) const final {
     return (label - activation) / batch_size;
   }
 };

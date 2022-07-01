@@ -29,7 +29,6 @@ class ParsedWebsite:
         html = urllib.request.urlopen(url).read()
 
         text = self._get_clean_text(html)
-        self.seen_urls.add(url)
         self.url_text_pairs.append((url, text))
 
         urls_to_recurse_to = self._get_valid_urls_from_html(html)

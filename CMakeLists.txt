@@ -105,6 +105,8 @@ include_directories(deps/pybind11/include)
 include_directories(deps/cereal/include)
 include_directories(deps/tomlplusplus/include/toml++)
 include_directories(deps/eigen)
+include_directories(deps/googletest/googletest/include)
+include_directories(deps/googletest/googlemock/include)
 
 # Source dependencies
 add_subdirectory(deps/pybind11)
@@ -167,6 +169,7 @@ endif()
 
 file(
   GLOB BOLT_SOURCES 
+  bolt/src/graph/*.cc
   bolt/src/layers/*.cc 
   bolt/src/networks/*.cc 
   bolt/src/utils/*.cc 
