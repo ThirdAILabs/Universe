@@ -25,6 +25,7 @@
 #include <pybind11/pybind11.h>
 #include <sys/types.h>
 #include <chrono>
+#include <cstddef>
 #include <limits>
 #include <type_traits>
 #include <unordered_map>
@@ -321,7 +322,7 @@ void createDatasetSubmodule(py::module_& module) {
            "dataset.");
 
   py::class_<ShuffleBufferConfig>(dataset_submodule, "ShuffleBufferConfig")
-      .def(py::init<>());
+      .def(py::init<size_t, uint32_t>(), py::arg("buffer_size")=1000, py::arg("seed")=time(NULL));
 
   py::class_<StreamingGenericDatasetLoader>(dataset_submodule, "DataPipeline")
       .def(py::init<std::string, std::vector<std::shared_ptr<Block>>,
