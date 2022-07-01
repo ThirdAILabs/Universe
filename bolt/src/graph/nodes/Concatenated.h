@@ -35,7 +35,7 @@ class ConcatenatedNode final
     const auto& concatenated_nodes = _graph_state->inputs;
     const auto& positional_offsets =
         _batch_processing_state->positional_offsets;
-    const auto& label_offsets = _graph_state->label_offsets;
+    const auto& neuron_index_offsets = _graph_state->neuron_index_offsets;
 
     for (uint32_t input_node_id = 0; input_node_id < concatenated_nodes.size();
          input_node_id++) {
@@ -44,7 +44,7 @@ class ConcatenatedNode final
           current_input_node->getOutputVector(vec_index);
       uint32_t start_position = positional_offsets.at(input_node_id);
       uint32_t end_position = positional_offsets.at(input_node_id + 1);
-      uint32_t label_starting_offset = label_offsets.at(input_node_id);
+      uint32_t neuron_index_offset = neuron_index_offsets.at(input_node_id);
 
       std::copy(current_input.activations,
                 current_input.activations + current_input.len,
@@ -57,8 +57,7 @@ class ConcatenatedNode final
                   output_vector.active_neurons + start_position);
         for (uint32_t output_position = start_position;
              output_position < end_position; output_position++) {
-          output_vector.active_neurons[output_position] +=
-              label_starting_offset;
+          output_vector.active_neurons[output_position] += neuron_index_offset;
         }
       }
     }
@@ -102,7 +101,7 @@ class ConcatenatedNode final
   std::shared_ptr<ConcatenatedNode> setConcatenatedNodes(
       const std::vector<NodePtr>& nodes) {
     if (predecessors_set()) {
-      throw std::logic_error(
+      throw exceptions::NodeStateMachineError(
           "Have already set the incoming concatenated nodes for this "
           "concatenation layer");
     }
@@ -113,11 +112,11 @@ class ConcatenatedNode final
 
     verifyNoInputNodes(nodes);
 
-    std::vector<uint32_t> label_offsets = {0};
+    std::vector<uint32_t> neuron_index_offsets = {0};
     uint32_t output_dim = 0;
     for (const auto& node : nodes) {
       output_dim += node->outputDim();
-      label_offsets.push_back(output_dim);
+      neuron_index_offsets.push_back(output_dim);
     }
 
     // Unfortunately because this is a struct, clang tidy won't check that the
@@ -125,24 +124,24 @@ class ConcatenatedNode final
     // creation but we use C++ 17 for now. Just be careful if you change the
     // struct definition!
     _graph_state = {/* inputs = */ nodes,
-                    /* label_offsets = */ label_offsets,
-                    /* concatenated_label_dim = */ output_dim};
+                    /* neuron_index_offsets = */ neuron_index_offsets,
+                    /* concatenated_dense_dim = */ output_dim};
 
     return shared_from_this();
   }
 
   uint32_t outputDim() const final {
     if (!predecessors_set()) {
-      throw std::logic_error(
+      throw exceptions::NodeStateMachineError(
           "Cannot get the output dim for this concatenation layer because the "
           "incoming concatenated nodes have not been set yet");
     }
-    return _graph_state->concatenated_label_dim;
+    return _graph_state->concatenated_dense_dim;
   }
 
   uint32_t numNonzerosInOutput() const final {
     if (!prepared_for_batch_processing()) {
-      throw std::logic_error(
+      throw exceptions::NodeStateMachineError(
           "Cannot get the number of nonzeros for this concatenation layer "
           "because the node is not prepared for batch processing");
     }
@@ -151,7 +150,7 @@ class ConcatenatedNode final
 
   void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
     if (!predecessors_set()) {
-      throw std::logic_error(
+      throw exceptions::NodeStateMachineError(
           "The preceeding nodes to this concatenation layer "
           " must be set before preparing for batch processing.");
     }
@@ -159,7 +158,7 @@ class ConcatenatedNode final
 
     bool sparse_concatenation = concatenationHasSparseNode(concatenated_nodes);
     if (sparse_concatenation && !use_sparsity) {
-      throw std::logic_error(
+      throw exceptions::NodeStateMachineError(
           "Input to concatenation contains a sparse vector but use_sparsity in "
           "this call to prepareForBatchProcessing is false.");
     }
@@ -169,7 +168,7 @@ class ConcatenatedNode final
     BoltBatch new_concatenated_batch = generateBatch(
         /* use_sparsity = */ sparse_concatenation,
         /* positional_offsets = */ positional_offsets,
-        /* label_offsets = */ _graph_state->label_offsets,
+        /* neuron_index_offsets = */ _graph_state->neuron_index_offsets,
         /* batch_size = */ batch_size);
 
     // Unfortunately because this is a struct, clang tidy won't check that the
@@ -183,9 +182,18 @@ class ConcatenatedNode final
         /* num_nonzeros_in_concatenation = */ num_nonzeros_in_concatenation};
   }
 
+  void cleanupAfterBatchProcessing() final {
+    if (!predecessors_set() || !prepared_for_batch_processing()) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot cleanup after batch processing unless we have already "
+          "prepared for batch processing");
+    }
+    _batch_processing_state = {};
+  }
+
   std::vector<NodePtr> getPredecessors() const final {
     if (!predecessors_set()) {
-      throw std::logic_error(
+      throw exceptions::NodeStateMachineError(
           "Cannot get the predecessors for this concatenation layer because "
           "they have not been set yet");
     }
@@ -195,7 +203,7 @@ class ConcatenatedNode final
   std::vector<std::shared_ptr<FullyConnectedLayer>>
   getInternalFullyConnectedLayers() const final {
     if (!predecessors_set()) {
-      throw std::logic_error(
+      throw exceptions::NodeStateMachineError(
           "getInternalFullyConnectedLayers method should not be called before "
           "predecessors have been set");
     }
@@ -231,10 +239,10 @@ class ConcatenatedNode final
           use_sparsity ? node->numNonzerosInOutput() : node->outputDim();
       offsets.push_back(current_offset);
     }
-    if (current_offset > UINT32_MAX) {
-      throw std::logic_error(
+    if (current_offset > std::numeric_limits<uint32_t>::max()) {
+      throw exceptions::NodeStateMachineError(
           "Sum of input node dimensions must be less than UINT32_MAX: " +
-          std::to_string(UINT32_MAX) + ", but was " +
+          std::to_string(std::numeric_limits<uint32_t>::max()) + ", but was " +
           std::to_string(current_offset));
     }
     return offsets;
@@ -242,14 +250,14 @@ class ConcatenatedNode final
 
   static BoltBatch generateBatch(
       bool use_sparsity, const std::vector<uint32_t>& positional_offsets,
-      const std::vector<uint32_t>& label_offsets, uint32_t batch_size) {
+      const std::vector<uint32_t>& neuron_index_offsets, uint32_t batch_size) {
     BoltBatch batch = BoltBatch(/* dim= */ positional_offsets.back(),
                                 /* batch_size= */ batch_size,
                                 /* is_dense= */ !use_sparsity);
     if (use_sparsity) {
       fillSparseBatchWithConsecutiveIndices(
           batch, /* positional_offsets = */ positional_offsets,
-          /* label_offsets = */ label_offsets);
+          /* neuron_index_offsets = */ neuron_index_offsets);
     }
     return batch;
   }
@@ -259,17 +267,18 @@ class ConcatenatedNode final
   // of the concatenation since they will override the preset active_neurons.
   static void fillSparseBatchWithConsecutiveIndices(
       BoltBatch& batch, const std::vector<uint32_t>& positional_offsets,
-      const std::vector<uint32_t>& label_offsets) {
+      const std::vector<uint32_t>& neuron_index_offsets) {
     for (uint32_t vec_id = 0; vec_id < batch.getBatchSize(); vec_id++) {
       for (uint32_t input_node_id = 0;
            input_node_id < positional_offsets.size() - 1; input_node_id++) {
         uint32_t start_position = positional_offsets.at(input_node_id);
         uint32_t end_position = positional_offsets.at(input_node_id + 1);
-        uint32_t starting_label = label_offsets.at(input_node_id);
+        uint32_t neuron_index_offset = neuron_index_offsets.at(input_node_id);
+        std::iota(batch[vec_id].active_neurons + start_position,
+                  batch[vec_id].active_neurons + end_position, 0);
         for (uint32_t output_position = start_position;
              output_position < end_position; output_position++) {
-          batch[vec_id].active_neurons[output_position] =
-              starting_label + (output_position - start_position);
+          batch[vec_id].active_neurons[output_position] += neuron_index_offset;
         }
       }
     }
@@ -281,25 +290,25 @@ class ConcatenatedNode final
     return _batch_processing_state.has_value();
   }
 
-  // TODO(josh): Add similar enums to other node subclasses
+  // TODO(josh): Use similar optional state pattern in other node subclasses
   struct GraphState {
     // The input Nodes we are concatenating
     std::vector<NodePtr> inputs;
     /*
-     * The ith element in label_offsets is the "label offset" for the ith input
-     * vector in the output concatenated vector. In other words, (index, value)
-     * or (index, gradient) pairs in the output vector of inputs[i] map to
-     * (index + label_offset, value) and (index + label_offset, gradient) in
-     * the output concatenated vector. Contains len(inputs) + 1 number of
-     * elements, as we use the pattern where the last item would be the label
-     * offset for the "next" input if there was one (this allows you to find
-     * the label dim of the ith input vector by doing label_offsets[i + 1] -
-     * label_offsets[i]).
+     * The ith element in neuron_index_offsets is the "index offset" for the ith
+     * input vector in the output concatenated vector. In other words,
+     * neuron_index_offsets[i] is how much we need to add to the indices of
+     * (index, activation) neuron pairs of the ith input vector to convert them
+     * to their correct values in the concatenated output vector. Contains
+     * len(inputs) + 1 number of elements, as we use the pattern where the last
+     * item would be the neuron index offset for the "next" input if there was
+     * one (this allows you to find the dense dim of the ith input vector by
+     * doing neuron_index_offsets[i + 1] - neuron_index_offsets[i]).
      */
-    std::vector<uint32_t> label_offsets;
-    // Also equals the last element of label_offsets. This is the dense
+    std::vector<uint32_t> neuron_index_offsets;
+    // Also equals the last element of neuron_index_offsets. This is the dense
     // dimension of the output vector
-    uint32_t concatenated_label_dim;
+    uint32_t concatenated_dense_dim;
   };
   struct BatchProcessingState {
     /*
@@ -308,8 +317,8 @@ class ConcatenatedNode final
      * activations[j] for input vector i will be at
      * activations[j + positional_offsets[i]] in the output concatenated vector,
      * and similar for the gradient and active neurons (the corresponding active
-     * neurons will be offset by label_offsets[i], see the comment for
-     * label_offsets). Uses the same pattern as label_offsets
+     * neurons will be offset by neuron_index_offsets[i], see the comment for
+     * neuron_index_offsets). Uses the same pattern as neuron_index_offsets
      * where this contains len(inputs) + 1 number of elements.
      */
     std::vector<uint32_t> positional_offsets;
@@ -326,4 +335,3 @@ class ConcatenatedNode final
 };
 
 }  // namespace thirdai::bolt
-

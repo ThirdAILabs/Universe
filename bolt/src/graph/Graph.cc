@@ -118,6 +118,8 @@ MetricData BoltGraph::train(
     metrics.logAndReset();
   }
 
+  cleanupAfterBatchProcessing();
+
   auto metric_data = metrics.getOutput();
   metric_data["epoch_times"] = std::move(time_per_epoch);
 
@@ -206,6 +208,8 @@ InferenceMetricData BoltGraph::predict(
     bar.increment();
   }
 
+  cleanupAfterBatchProcessing();
+
   auto test_end = std::chrono::high_resolution_clock::now();
   int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
                           test_end - test_start)
@@ -267,6 +271,12 @@ void BoltGraph::prepareToProcessBatches(uint32_t batch_size,
                                         bool use_sparsity) {
   for (auto& node : _nodes) {
     node->prepareForBatchProcessing(batch_size, use_sparsity);
+  }
+}
+
+void BoltGraph::cleanupAfterBatchProcessing() {
+  for (auto& node : _nodes) {
+    node->cleanupAfterBatchProcessing();
   }
 }
 

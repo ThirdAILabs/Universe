@@ -65,6 +65,10 @@ class Node {
   virtual void prepareForBatchProcessing(uint32_t batch_size,
                                          bool use_sparsity) = 0;
 
+  // Do any cleanup to bring the Node into the same state it was in before
+  // prepareForBatchProcessing was called.
+  virtual void cleanupAfterBatchProcessing() = 0;
+
   // Returns any predecessors of the node. This is used to traverse the graph
   // during compilation.
   virtual std::vector<NodePtr> getPredecessors() const = 0;

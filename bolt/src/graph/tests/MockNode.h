@@ -27,6 +27,8 @@ class MockNode : public Node {
   MOCK_METHOD(void, prepareForBatchProcessing,
               (uint32_t batch_size, bool use_sparsity), (override));
 
+  MOCK_METHOD(void, cleanupAfterBatchProcessing, (), (override));
+
   MOCK_METHOD(std::vector<NodePtr>, getPredecessors, (), (const override));
 
   MOCK_METHOD(std::vector<std::shared_ptr<FullyConnectedLayer>>,

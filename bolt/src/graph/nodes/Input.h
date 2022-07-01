@@ -66,6 +66,8 @@ class Input final : public Node {
     (void)use_sparsity;
   }
 
+  void cleanupAfterBatchProcessing() final {}
+
   std::vector<NodePtr> getPredecessors() const final { return {}; }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>

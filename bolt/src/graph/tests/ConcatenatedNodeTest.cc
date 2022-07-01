@@ -22,7 +22,7 @@ std::shared_ptr<MockNode> getMockNodeWithOutput(BoltVector& output,
 void testConcatForwardAndBackwardPass(std::vector<uint32_t> input_label_dims,
                                       std::vector<BoltVector> inputs,
                                       bool sparse) {
-  std::vector<std::shared_ptr<Node>> nodes_to_concatenate;
+  std::vector<NodePtr> nodes_to_concatenate;
 
   uint32_t expected_num_output_nonzeros = 0;
   bool sparse_node_in_concatenation = false;
@@ -104,7 +104,7 @@ TEST(ConcatenatedNodeTest, SparseConcatTest) {
           /* input_label_dims = */ {1000, 25, 2},
           /* inputs = */ {node_1_output, node_2_output, node_3_output},
           /* sparse = */ false),
-      std::logic_error);
+      exceptions::NodeStateMachineError);
   testConcatForwardAndBackwardPass(
       /* input_label_dims = */ {1000, 25, 2},
       /* inputs = */ {node_1_output, node_2_output, node_3_output},
@@ -121,7 +121,7 @@ TEST(ConcatenatedNodeTest, SparseAndDenseConcatTest) {
           /* input_label_dims = */ {25, 3},
           /* inputs = */ {node_1_output, node_2_output},
           /* sparse = */ false),
-      std::logic_error);
+      exceptions::NodeStateMachineError);
   testConcatForwardAndBackwardPass(
       /* input_label_dims = */ {25, 3},
       /* inputs = */ {node_1_output, node_2_output},

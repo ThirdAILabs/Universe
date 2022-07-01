@@ -84,6 +84,11 @@ class FullyConnectedLayerNode final
         _layer->createBatchState(batch_size, /* use_sparsity=*/use_sparsity);
   }
 
+  void cleanupAfterBatchProcessing() final {
+    BoltBatch empty_outputs;
+    _outputs = std::move(empty_outputs);
+  }
+
   std::vector<NodePtr> getPredecessors() const final { return {_predecessor}; }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
