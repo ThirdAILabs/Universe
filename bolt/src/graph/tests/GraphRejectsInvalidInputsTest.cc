@@ -1,5 +1,5 @@
 #include <bolt/src/graph/Graph.h>
-#include <bolt/src/graph/nodes/Concatenated.h>
+#include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/LayerUtils.h>
@@ -78,7 +78,7 @@ TEST(GraphRejectsInvalidInputsTest, AcceptsBinaryCrossEntropyWithSigmoid) {
 TEST(GraphRejectsInvalidInputsTest, RejectConcatenatingInputLayer) {
   auto input_layer = std::make_shared<Input>(/* dim= */ 10);
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-      std::make_shared<ConcatenatedNode>()->setConcatenatedNodes(
+      std::make_shared<ConcatenateNode>()->setConcatenatedNodes(
           {input_layer, input_layer}),
       exceptions::GraphCompilationFailure);
 }
@@ -88,8 +88,8 @@ TEST(GraphRejectsInvalidInputsTest, RejectConcatenateAsOutputLayer) {
   auto layer = std::make_shared<FullyConnectedLayerNode>(
                    /* dim= */ 10, /* activation= */ ActivationFunction::ReLU)
                    ->addPredecessor(input);
-  auto concat = std::make_shared<ConcatenatedNode>()->setConcatenatedNodes(
-      {layer, layer});
+  auto concat =
+      std::make_shared<ConcatenateNode>()->setConcatenatedNodes({layer, layer});
   BoltGraph graph(/* inputs= */ {input}, /* output= */ concat);
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       graph.compile(std::make_shared<MeanSquaredError>()),
@@ -104,12 +104,12 @@ TEST(GraphRejectsInvalidInputsTest, AcceptsCorrectConcatenation) {
   auto layer_2 = std::make_shared<FullyConnectedLayerNode>(
                      /* dim= */ 10, /* activation= */ ActivationFunction::ReLU)
                      ->addPredecessor(input);
-  auto concat_1 = std::make_shared<ConcatenatedNode>()->setConcatenatedNodes(
+  auto concat_1 = std::make_shared<ConcatenateNode>()->setConcatenatedNodes(
       {layer_1, layer_2, layer_2});
   auto layer_3 = std::make_shared<FullyConnectedLayerNode>(
                      /* dim= */ 10, /* activation= */ ActivationFunction::ReLU)
                      ->addPredecessor(concat_1);
-  auto concat_2 = std::make_shared<ConcatenatedNode>()->setConcatenatedNodes(
+  auto concat_2 = std::make_shared<ConcatenateNode>()->setConcatenatedNodes(
       {layer_1, layer_3, concat_1});
   auto output = std::make_shared<FullyConnectedLayerNode>(
                     /* dim= */ 10, /* activation= */ ActivationFunction::ReLU)

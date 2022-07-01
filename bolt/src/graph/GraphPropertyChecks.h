@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Node.h"
-#include <bolt/src/graph/nodes/Concatenated.h>
+#include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -18,7 +18,7 @@ class GraphPropertyChecks {
   }
 
   static void verifyOutputIsNotConcatLayer(const NodePtr& output) {
-    if (dynamic_cast<ConcatenatedNode*>(output.get())) {
+    if (dynamic_cast<ConcatenateNode*>(output.get())) {
       throw exceptions::GraphCompilationFailure(
           "Output node cannot be a Concatenate node.");
     }

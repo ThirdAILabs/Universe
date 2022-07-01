@@ -1,7 +1,7 @@
 #include "BoltPython.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
-#include <bolt/src/graph/nodes/Concatenated.h>
+#include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/BoltVector.h>
@@ -701,12 +701,12 @@ void createBoltSubmodule(py::module_& module) {
            "Tells the graph which layer should act as input to this fully "
            "connected layer.");
 
-  py::class_<ConcatenatedNode, std::shared_ptr<ConcatenatedNode>, Node>(
+  py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
       graph_submodule, "Concatenate")
       .def(
           py::init<>(),
           "A layer that concatenates an arbitrary number of layers together.\n")
-      .def("__call__", &ConcatenatedNode::setConcatenatedNodes,
+      .def("__call__", &ConcatenateNode::setConcatenatedNodes,
            py::arg("input_layers"),
            "Tells the graph which layers will be concatenated. Must be at "
            "least one node (although this is just an identity function, so "

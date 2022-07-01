@@ -1,6 +1,6 @@
 
 #include "MockNode.h"
-#include <bolt/src/graph/nodes/Concatenated.h>
+#include <bolt/src/graph/nodes/Concatenate.h>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <algorithm>
@@ -72,8 +72,8 @@ void testConcatForwardAndBackwardPass(
   bool sparse_node_in_concatenation = containsSparseVector(inputs);
 
   // Use a shared pointer so shared_from_this() works
-  std::shared_ptr<ConcatenatedNode> concat_node =
-      std::make_shared<ConcatenatedNode>();
+  std::shared_ptr<ConcatenateNode> concat_node =
+      std::make_shared<ConcatenateNode>();
   concat_node->setConcatenatedNodes(nodes_to_concatenate);
   concat_node->prepareForBatchProcessing(/* batch_size = */ 10,
                                          /* use_sparsity = */ sparse);
