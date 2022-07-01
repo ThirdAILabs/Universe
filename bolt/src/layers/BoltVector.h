@@ -77,6 +77,7 @@ struct BoltVector {
       const std::vector<uint32_t>& indices, const std::vector<float>& values) {
     auto vector = makeSparseVector(indices, values);
     vector.gradients = new float[values.size()];
+    std::fill(vector.gradients, vector.gradients + vector.len, 0);
     return vector;
   }
 
@@ -84,6 +85,7 @@ struct BoltVector {
       const std::vector<float>& values) {
     auto vector = makeDenseVector(values);
     vector.gradients = new float[vector.len];
+    std::fill(vector.gradients, vector.gradients + vector.len, 0);
     return vector;
   }
 

@@ -19,13 +19,13 @@ std::shared_ptr<MockNode> getMockNodeWithOutput(BoltVector& output,
   return node;
 }
 
-float gradientFromActiveNeuron(BoltVector& output,
+float gradientFromActiveNeuron(BoltVector& vector,
                                FoundActiveNeuron& active_neuron) {
   if (!active_neuron.pos) {
     return 0;
   }
 
-  return output.gradients[active_neuron.pos.value()];
+  return vector.gradients[active_neuron.pos.value()];
 }
 
 void testConcatForwardAndBackwardPass(std::vector<uint32_t> input_label_dims,
@@ -75,8 +75,8 @@ void testConcatForwardAndBackwardPass(std::vector<uint32_t> input_label_dims,
     auto& current_input = inputs.at(input_node_id);
 
     for (uint32_t label = starting_label; label < ending_label; label++) {
-      auto input_neuron = output.findActiveNeuronNoTemplate(label);
-      auto output_neuron =
+      auto output_neuron = output.findActiveNeuronNoTemplate(label);
+      auto input_neuron =
           current_input.findActiveNeuronNoTemplate(label - starting_label);
       ASSERT_EQ(input_neuron.activation, output_neuron.activation);
       float input_gradient =
