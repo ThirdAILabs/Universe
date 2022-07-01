@@ -5,7 +5,6 @@
 #include <dataset/src/bolt_datasets/BatchProcessor.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
-#include <atomic>
 #include <sstream>
 #include <stdexcept>
 
@@ -43,10 +42,12 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     for (const auto& block : _input_blocks) {
       _expected_num_cols =
           std::max(block->expectedNumColumns(), _expected_num_cols);
+      block->use();
     }
     for (const auto& block : _label_blocks) {
       _expected_num_cols =
           std::max(block->expectedNumColumns(), _expected_num_cols);
+      block->use();
     }
   }
 
