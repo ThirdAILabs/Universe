@@ -273,15 +273,16 @@ class SequentialClassifier {
     dataset::DynamicCountsConfig config(/* max_range = */ 1, /* n_rows = */ 5,
                                         /* range_pow = */ 22);
 
-    std::cout << "TRAIN is " << train << std::endl;
     if (train) {
+
       _user_trend_block = std::make_shared<dataset::TrendBlock>(
           has_count_col, columns.at(_schema.at("user")),
           columns.at(_schema.at("timestamp")), count_col, _config._horizon,
           /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
           config);
-    } else if (_user_trend_block == nullptr) {
-      throw std::runtime_error("Predicted before training.");
+    } 
+    if (_user_trend_block == nullptr) {
+      throw std::runtime_error("USER TREND BLOCK IS NULL");
     }
     blocks.push_back(_user_trend_block);
   }
@@ -311,8 +312,9 @@ class SequentialClassifier {
           columns.at(_schema.at("timestamp")), count_col, _config._horizon,
           /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
           config);
-    } else if (_item_trend_block == nullptr) {
-      throw std::runtime_error("Predicted before training.");
+    } 
+    if (_item_trend_block == nullptr) {
+      throw std::runtime_error("ITEM TREND BLOCK IS NULL");
     }
     blocks.push_back(_item_trend_block);
   }
