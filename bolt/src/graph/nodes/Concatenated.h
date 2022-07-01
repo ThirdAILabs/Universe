@@ -119,13 +119,9 @@ class ConcatenatedNode final
       neuron_index_offsets.push_back(output_dim);
     }
 
-    // Unfortunately because this is a struct, clang tidy won't check that the
-    // arguments are named correctly. C++ 20 has native support for named enum
-    // creation but we use C++ 17 for now. Just be careful if you change the
-    // struct definition!
-    _graph_state = {/* inputs = */ nodes,
-                    /* neuron_index_offsets = */ neuron_index_offsets,
-                    /* concatenated_dense_dim = */ output_dim};
+    _graph_state = GraphState(/* inputs = */ nodes,
+                              /* neuron_index_offsets = */ neuron_index_offsets,
+                              /* concatenated_dense_dim = */ output_dim);
 
     return shared_from_this();
   }
@@ -176,10 +172,10 @@ class ConcatenatedNode final
     // creation but we use C++ 17 for now. Just be careful if you change the
     // struct definition!
     uint32_t num_nonzeros_in_concatenation = positional_offsets.back();
-    _batch_processing_state = {
+    _batch_processing_state = BatchProcessingState(
         /* positional_offsets = */ std::move(positional_offsets),
         /* outputs = */ std::move(new_concatenated_batch),
-        /* num_nonzeros_in_concatenation = */ num_nonzeros_in_concatenation};
+        /* num_nonzeros_in_concatenation = */ num_nonzeros_in_concatenation);
   }
 
   void cleanupAfterBatchProcessing() final {
@@ -292,6 +288,14 @@ class ConcatenatedNode final
 
   // TODO(josh): Use similar optional state pattern in other node subclasses
   struct GraphState {
+    // We have this constructor so clang tidy can check variable names
+    GraphState(std::vector<NodePtr> inputs,
+               std::vector<uint32_t> neuron_index_offsets,
+               uint32_t concatenated_dense_dim)
+        : inputs(std::move(inputs)),
+          neuron_index_offsets(std::move(neuron_index_offsets)),
+          concatenated_dense_dim(concatenated_dense_dim){};
+
     // The input Nodes we are concatenating
     std::vector<NodePtr> inputs;
     /*
@@ -311,6 +315,14 @@ class ConcatenatedNode final
     uint32_t concatenated_dense_dim;
   };
   struct BatchProcessingState {
+    // We have this constructor so clang tidy can check variable names
+    BatchProcessingState(std::vector<uint32_t> positional_offsets,
+                         BoltBatch outputs,
+                         uint32_t num_nonzeros_in_concatenation)
+        : positional_offsets(std::move(positional_offsets)),
+          outputs(std::move(outputs)),
+          num_nonzeros_in_concatenation(num_nonzeros_in_concatenation){};
+
     /*
      * The ith element in positional_offets is the "positional offset" for the
      * ith input vector in the output concatenated vector. In other words,
