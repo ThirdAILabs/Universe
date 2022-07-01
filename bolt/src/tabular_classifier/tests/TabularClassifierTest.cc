@@ -3,9 +3,21 @@
 
 namespace thirdai::bolt {
 
+const std::string TEMP_FILENAME = "tempTabularFile.csv";
+
 class TabularClassifierTestFixture : public testing::Test {
  public:
-  // define static methods here
+  void SetUp() override {}
+
+  void TearDown() override { std::remove(TEMP_FILENAME.c_str()); }
+
+  void setTempFileContents(std::vector<std::string> lines) {
+    std::ofstream file = dataset::SafeFileIO::ofstream(TEMP_FILENAME);
+    for (auto line : lines) {
+      file << line << "\n";
+    }
+    file.close();
+  }
 };
 
 TEST_F(TabularClassifierTestFixture, TestOddCsvFormatsWithTabularClassifier) {
@@ -44,19 +56,58 @@ TEST_F(TabularClassifierTestFixture, TestOddCsvFormatsWithTabularClassifier) {
   tc.predict(test_filename, std::nullopt);
 }
 
-// TODO TESTS
-//  test for different number of columns in train vs test, in dtypes vs train,
+/**
+ * This test asserts a failure when the user calls predict(..) before train(..).
+ */
+TEST_F(TabularClassifierTestFixture, TestPredictBeforeTrain) {
+  std::shared_ptr<bolt::TabularClassifier> tab_model =
+      std::make_shared<TabularClassifier>("small", 2);
 
-// text random csv row has different number of columns
+  setTempFileContents()
 
-// test csv row has a differing datatype than specified
+      tab_model->predict();
+}
 
-// test finding a new category/label in testing dataset
+/**
+ * This test asserts a failure when there is a mismatch between the number of
+ * columns in the CSV provided and in the column_datatypes.
+ */
+TEST_F(TabularClassifierTestFixture, TestProvidedColumnsMatchCsvColumns) {}
 
-// test not specifing a label datatype
+/**
+ * This test asserts a failure when rows in the train/test CSVs have an
+ * incorrect number of columns.
+ */
+TEST_F(TabularClassifierTestFixture, TestName) {}
 
-// test specifiing 2 label columns
+/**
+ * This test asserts a failure when a column specified as "numeric" cannot be
+ * interpreted as "numeric".
+ */
+TEST_F(TabularClassifierTestFixture, TestName) {}
 
-// test empty csv
+/**
+ * This test asserts a failure when a new category/label is found in the testing
+ * dataset.
+ */
+TEST_F(TabularClassifierTestFixture, TestName) {}
+
+/**
+ * This test asserts a failure when the user forgets to specify a label datatype
+ * in column_datatypes.
+ */
+TEST_F(TabularClassifierTestFixture, TestName) {}
+
+/**
+ * This test asserts a failure when the user specifies two label datatypes
+ * in column_datatypes.
+ */
+TEST_F(TabularClassifierTestFixture, TestName) {}
+
+/**
+ * This test asserts no failures when odd but valid values are found in a
+ * "numeric" column.
+ */
+TEST_F(TabularClassifierTestFixture, TestName) {}
 
 }  // namespace thirdai::bolt

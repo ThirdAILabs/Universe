@@ -45,6 +45,7 @@ class TabularPairGram : public Block {
           break;
         }
         case TabularDataType::Categorical: {
+          // TODO(david) should we notify user of new categories in test data?
           std::string unique_category = str_val + _metadata->getColSalt(col);
           unigram_hashes.push_back(PairgramHasher::computeUnigram(
               unique_category.data(), unique_category.size()));
