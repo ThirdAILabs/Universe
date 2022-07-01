@@ -72,7 +72,7 @@ class SequentialClassifier {
     }
     std::unordered_map<std::string, size_t> columns =
         parseHeader(*header, _delimiter);
-    auto input_blocks = buildInputBlocks(columns);
+    auto input_blocks = buildInputBlocks(columns, /* train = */ true);
     auto label_blocks = buildLabelBlocks(columns);
     auto pipeline = std::make_shared<dataset::StreamingGenericDatasetLoader>(
         loader, input_blocks, label_blocks, /* shuffle = */ true,
@@ -99,7 +99,7 @@ class SequentialClassifier {
     }
     std::unordered_map<std::string, size_t> columns =
         parseHeader(*header, _delimiter);
-    auto input_blocks = buildInputBlocks(columns);
+    auto input_blocks = buildInputBlocks(columns, /* train = */ false);
     auto label_blocks = buildLabelBlocks(columns);
     auto pipeline = std::make_shared<dataset::StreamingGenericDatasetLoader>(
         loader, input_blocks, label_blocks, /* shuffle = */ false,
@@ -180,7 +180,7 @@ class SequentialClassifier {
     return lower;
   }
 
-  Blocks buildInputBlocks(const Columns& columns) {
+  Blocks buildInputBlocks(const Columns& columns, bool train) {
     checkValidSchema();
     checkColumns(columns);
     std::vector<std::shared_ptr<dataset::Block>> blocks;
@@ -190,8 +190,8 @@ class SequentialClassifier {
     addItemTextBlock(columns, blocks);
     addItemCategoricalBlock(columns, blocks);
     if (_use_sequential_feats) {
-      addUserTimeSeriesBlock(columns, blocks);
-      addItemTimeSeriesBlock(columns, blocks);
+      addUserTimeSeriesBlock(columns, blocks, train);
+      addItemTimeSeriesBlock(columns, blocks, train);
     }
     return blocks;
   }
@@ -253,7 +253,8 @@ class SequentialClassifier {
 
   void addUserTimeSeriesBlock(const Columns& columns,
 
-                              Blocks& blocks) {
+                              Blocks& blocks,
+                              bool train) {
     if (_schema.count("user") == 0) {
       return;
     }
@@ -272,15 +273,19 @@ class SequentialClassifier {
     dataset::DynamicCountsConfig config(/* max_range = */ 1, /* n_rows = */ 5,
                                         /* range_pow = */ 22);
 
-    _user_trend_block = std::make_shared<dataset::TrendBlock>(
-        has_count_col, columns.at(_schema.at("user")),
-        columns.at(_schema.at("timestamp")), count_col, _config._horizon,
-        /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
-        config);
+    if (train) {
+      _user_trend_block = std::make_shared<dataset::TrendBlock>(
+          has_count_col, columns.at(_schema.at("user")),
+          columns.at(_schema.at("timestamp")), count_col, _config._horizon,
+          /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
+          config);
+    } else if (_user_trend_block == nullptr) {
+      throw std::runtime_error("Predicted before training.");
+    }
     blocks.push_back(_user_trend_block);
   }
 
-  void addItemTimeSeriesBlock(const Columns& columns, Blocks& blocks) {
+  void addItemTimeSeriesBlock(const Columns& columns, Blocks& blocks, bool train) {
     if (_schema.count("item") == 0) {
       throw std::invalid_argument(
           "Could not find required key 'item' in schema.");
@@ -299,12 +304,15 @@ class SequentialClassifier {
 
     dataset::DynamicCountsConfig config(/* max_range = */ 1, /* n_rows = */ 5,
                                         /* range_pow = */ 22);
-
-    _item_trend_block = std::make_shared<dataset::TrendBlock>(
-        has_count_col, columns.at(_schema.at("item")),
-        columns.at(_schema.at("timestamp")), count_col, _config._horizon,
-        /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
-        config);
+    if (train) {
+      _item_trend_block = std::make_shared<dataset::TrendBlock>(
+          has_count_col, columns.at(_schema.at("item")),
+          columns.at(_schema.at("timestamp")), count_col, _config._horizon,
+          /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
+          config);
+    } else if (_item_trend_block == nullptr) {
+      throw std::runtime_error("Predicted before training.");
+    }
     blocks.push_back(_item_trend_block);
   }
 

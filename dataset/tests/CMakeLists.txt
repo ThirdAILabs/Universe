@@ -97,6 +97,18 @@ target_link_libraries(
 )
 
 add_executable(
+  trend_block_test
+  TrendBlockTests.cc
+)
+
+target_link_libraries(
+  trend_block_test
+  PRIVATE
+  gtest_main
+  hash_function_lib
+)
+
+add_executable(
   block_batch_processor_test
   BlockBatchProcessorTests.cc
 )
@@ -140,6 +152,7 @@ gtest_discover_tests(segmented_feature_vectors_test)
 gtest_discover_tests(categorical_block_test)
 gtest_discover_tests(text_block_test)
 gtest_discover_tests(count_history_block_test)
+gtest_discover_tests(trend_block_test)
 gtest_discover_tests(block_batch_processor_test)
 gtest_discover_tests(generic_batch_processor_test)
 # gtest_discover_tests(global_frequency_test)
