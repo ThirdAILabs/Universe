@@ -46,6 +46,10 @@ template MetricData BoltGraph::train(
     std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>&,
     const dataset::BoltDatasetPtr&, const TrainConfig& train_config);
 
+template MetricData BoltGraph::train(
+    std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&,
+    const dataset::BoltDatasetPtr&, const TrainConfig& train_config);
+
 template <typename BATCH_T>
 MetricData BoltGraph::train(
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
@@ -121,14 +125,12 @@ MetricData BoltGraph::train(
   return metric_data;
 }
 
-// This syntax means that we are implmenting the function for the specific case
-// in which BATCH_T is equivalent to BoltBatch.
-template <>
-void BoltGraph::processTrainingBatch(BoltBatch& batch_inputs,
+template <typename BATCH_T>
+void BoltGraph::processTrainingBatch(BATCH_T& batch_inputs,
                                      const BoltBatch& batch_labels,
                                      float learning_rate,
                                      MetricAggregator& metrics) {
-  _inputs[0]->setInputs(&batch_inputs);
+  setInputs(batch_inputs);
 
 #pragma omp parallel for default(none) \
     shared(batch_inputs, batch_labels, metrics)
@@ -160,6 +162,10 @@ void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
 
 template InferenceMetricData BoltGraph::predict(
     const std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>&,
+    const dataset::BoltDatasetPtr&, const PredictConfig&);
+
+template InferenceMetricData BoltGraph::predict(
+    const std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&,
     const dataset::BoltDatasetPtr&, const PredictConfig&);
 
 template <typename BATCH_T>
@@ -221,17 +227,12 @@ InferenceMetricData BoltGraph::predict(
   return metric_vals;
 }
 
-// This syntax means that we are implementing the template but only for the
-// specific case where the template is a BoltBatch, i.e. this version of the
-// code will be used iff the template is a BoltBatch.
-template <>
-void BoltGraph::processInferenceBatch(BoltBatch& batch_inputs,
+template <typename BATCH_T>
+void BoltGraph::processInferenceBatch(BATCH_T& batch_inputs,
                                       const BoltBatch* batch_labels,
                                       MetricAggregator& metrics,
                                       bool compute_metrics) {
-  // If we are using a BoltBatch we assume there is only one input. This is
-  // checked in the verifyInputForGraph() function.
-  _inputs[0]->setInputs(&batch_inputs);
+  setInputs(batch_inputs);
 
 #pragma omp parallel for default(none) \
     shared(batch_inputs, batch_labels, metrics, compute_metrics)
@@ -245,6 +246,24 @@ void BoltGraph::processInferenceBatch(BoltBatch& batch_inputs,
                             (*batch_labels)[vec_id]);
     }
   }
+}
+
+// This syntax means that we are implmenting the function for the specific case
+// in which BATCH_T is equivalent to BoltBatch.
+template <>
+void BoltGraph::setInputs(BoltBatch& batch_inputs) {
+  // If we are using a BoltBatch we assume there is only one input. This is
+  // checked in the verifyInputForGraph() function.
+  _inputs[0]->setInputs(&batch_inputs);
+}
+
+// This syntax means that we are implmenting the function for the specific case
+// in which BATCH_T is equivalent to BoltTokenBatch.
+template <>
+void BoltGraph::setInputs(dataset::BoltTokenBatch& batch_inputs) {
+  // If we are using a BoltBatch we assume there is only one token input. This
+  // is checked in the verifyInputForGraph() function.
+  _token_inputs[0]->setTokenInputs(&batch_inputs);
 }
 
 void BoltGraph::forward(uint32_t batch_index, const BoltVector* labels) {
@@ -343,10 +362,18 @@ template <typename BATCH_T>
 void BoltGraph::verifyInputForGraph(
     const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset) {
   (void)dataset;
-  if (std::is_same<BATCH_T, BoltBatch>::value && _inputs.size() != 1) {
+  if (std::is_same<BATCH_T, BoltBatch>::value && _inputs.size() != 1 &&
+      !_token_inputs.empty()) {
     throw exceptions::GraphCompilationFailure(
         "Only graphs with a single input layer can take in a dataset with "
         "batch type BoltBatch.");
+  }
+
+  if (std::is_same<BATCH_T, dataset::BoltTokenBatch>::value &&
+      !_inputs.empty() && _token_inputs.size() != 1) {
+    throw exceptions::GraphCompilationFailure(
+        "Only graphs with a single token input layer can take in a dataset "
+        "with batch type BoltTokenBatch.");
   }
 }
 

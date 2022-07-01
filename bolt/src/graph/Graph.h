@@ -2,6 +2,7 @@
 
 #include "ExecutionConfig.h"
 #include "Node.h"
+#include <bolt/src/graph/nodes/TokenInput.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -27,8 +28,14 @@ class BoltGraph {
     to discover a reverse ordering in which to execute the layers.
    */
   BoltGraph(std::vector<InputPtr> inputs, NodePtr output)
+      : BoltGraph(std::move(inputs), /* token-inputs= */ {},
+                  std::move(output)) {}
+
+  BoltGraph(std::vector<InputPtr> inputs,
+            std::vector<TokenInputPtr> token_inputs, NodePtr output)
       : _output(std::move(output)),
         _inputs(std::move(inputs)),
+        _token_inputs(std::move(token_inputs)),
         _epoch_count(0),
         _batch_cnt(0) {}
 
@@ -74,6 +81,9 @@ class BoltGraph {
                              const BoltBatch* batch_labels,
                              MetricAggregator& metrics, bool compute_metrics);
 
+  template <typename BATCH_T>
+  void setInputs(BATCH_T& batch_inputs);
+
   // Computes the forward pass through the graph.
   void forward(uint32_t batch_index, const BoltVector* labels);
 
@@ -114,6 +124,10 @@ class BoltGraph {
   // Input layers. When train is called, the ith input is fed into the ith input
   // layer.
   std::vector<InputPtr> _inputs;
+
+  // Token input layers. Function similarly to the input layers but are specific
+  // to nodes that require token inputs like the Embedding layer.
+  std::vector<TokenInputPtr> _token_inputs;
 
   // List of the sparse layers in the graph. This is so that we can do
   // things like enable sparse inference, update hash tables, or update hash
