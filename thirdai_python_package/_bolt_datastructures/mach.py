@@ -1,6 +1,8 @@
 import math
 import numpy as np
 from thirdai._thirdai import bolt
+import os
+import pickle
 
 
 class Mach:
@@ -15,12 +17,23 @@ class Mach:
         last_layer_sparsity,
         use_softmax,
     ):
+
         self.num_classifiers = num_classifiers
         self.max_label = max_label
+        self.input_dim = input_dim
+        self.hidden_layer_dim = hidden_layer_dim
+        self.hidden_layer_sparsity = hidden_layer_sparsity
+        self.last_layer_dim = last_layer_dim
+        self.last_layer_sparsity = last_layer_sparsity
+        self.use_softmax = use_softmax
+
+        # setting a random seed
+        np.random.seed(0)
+
         self.label_to_group = np.random.randint(
             0, last_layer_dim, size=(num_classifiers, max_label)
         )
-        self.use_softmax = use_softmax
+
         self.group_to_labels = [
             [[] for _ in range(last_layer_dim)] for _ in range(num_classifiers)
         ]
@@ -39,6 +52,102 @@ class Mach:
             )
             for _ in range(num_classifiers)
         ]
+
+    def checkpoint(self, folder):
+
+        if os.path.isfile(folder):
+            raise Exception("Provide a path to a directory")
+        if not os.path.exists(folder):
+            os.mkdir(folder)
+
+        metadata = {
+            "max_label": self.max_label,
+            "num_classifiers": self.num_classifiers,
+            "use_softmax": self.use_softmax,
+            "input_dim": self.input_dim,
+            "hidden_layer_dim": self.hidden_layer_dim,
+            "hidden_layer_sparsity": self.hidden_layer_sparsity,
+            "last_layer_dim": self.last_layer_dim,
+            "last_layer_sparsity": self.last_layer_sparsity,
+        }
+
+        with open(folder + "/metadata_mach", "wb") as f:
+            pickle.dump(metadata, f)
+
+        i = 0
+        for classifiers in self.classifiers:
+            classifiers.checkpoint(folder + f"/classifier_{i}")
+            i = i + 1
+
+    def save(self, folder):
+
+        if os.path.isfile(folder):
+            raise Exception("Provide a path to a directory")
+        if not os.path.exists(folder):
+            os.mkdir(folder)
+
+        metadata = {
+            "max_label": self.max_label,
+            "num_classifiers": self.num_classifiers,
+            "use_softmax": self.use_softmax,
+            "input_dim": self.input_dim,
+            "hidden_layer_dim": self.hidden_layer_dim,
+            "hidden_layer_sparsity": self.hidden_layer_sparsity,
+            "last_layer_dim": self.last_layer_dim,
+            "last_layer_sparsity": self.last_layer_sparsity,
+        }
+
+        with open(folder + "/metadata_mach", "wb") as f:
+            pickle.dump(metadata, f)
+
+        i = 0
+        for classifiers in self.classifiers:
+            classifiers.save_for_inference(folder + f"/classifier_{i}")
+            i = i + 1
+
+    def load(folder):
+
+        if os.path.isfile(folder):
+            raise Exception(
+                "Provide path to a folder that contains metadata and classifiers"
+            )
+
+        if not os.path.exists(folder):
+            raise Exception("The folder with the provided path does not exist")
+
+        if not os.path.exists(folder + "/metadata_mach"):
+            raise Exception("Metadata not found for the mach model")
+
+        with open(folder + "/metadata_mach", "rb") as f:
+            metadata = pickle.load(f)
+
+        max_label = metadata["max_label"]
+        num_classifiers = metadata["num_classifiers"]
+        use_softmax = metadata["use_softmax"]
+        input_dim = metadata["input_dim"]
+        hidden_layer_dim = metadata["hidden_layer_dim"]
+        hidden_layer_sparsity = metadata["hidden_layer_sparsity"]
+        last_layer_dim = metadata["last_layer_dim"]
+        last_layer_sparsity = metadata["last_layer_sparsity"]
+
+        newMach = Mach(
+            max_label=max_label,
+            num_classifiers=num_classifiers,
+            input_dim=input_dim,
+            hidden_layer_dim=hidden_layer_dim,
+            hidden_layer_sparsity=hidden_layer_sparsity,
+            last_layer_dim=last_layer_dim,
+            last_layer_sparsity=last_layer_sparsity,
+            use_softmax=use_softmax,
+        )
+
+        newMach.classifiers = []
+        for i in range(newMach.num_classifiers):
+            if not os.path.exists(folder + f"/classifier_{i}"):
+                raise Exception(f"the {i}th classifier does not exist")
+            newMach.classifiers.append(bolt.Network.load(folder + f"/classifier_{i}"))
+
+        return newMach
 
     def map_labels_to_groups(self, labels, classifier_id):
         if len(labels) != 3:
