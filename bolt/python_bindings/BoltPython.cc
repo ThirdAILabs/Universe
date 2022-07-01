@@ -631,7 +631,7 @@ void createBoltSubmodule(py::module_& module) {
                         std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
                     uint64_t>(),
            py::arg("layers"), py::arg("input_dim"),
-           "Constructs a neural network.\n"
+           "Constructs a Distributed neural network.\n"
            "Arguments:\n"
            " * layers: List of SequentialLayerConfig - Configurations for the "
            "sequence of "
@@ -715,19 +715,19 @@ void createBoltSubmodule(py::module_& module) {
       .def("calculateGradientDistributed",
            &DistributedPyNetwork::calculateGradientDistributed,
            py::arg("batch"), py::arg("loss_fn"),
-           "calculated the gradient for the network on the given training "
+           "Calculates the gradient for the network on the given training "
            "batch.\n"
            "Arguments:\n"
-           " * batch: Int (positive) The batch on which gradients are "
-           "calcualted\n"
+           " * batch: Int (positive) The batch number on which gradients are "
+           "to be calcualted\n"
            " * loss_fn: LossFunction - The loss function to minimize.\n"
 
            "Returns void")
       .def("updateParametersDistributed",
            &DistributedPyNetwork::updateParametersDistributed,
            py::arg("learning_rate"),
-           "calculated the gradient for the network on the given training "
-           "batch.\n"
+           "Updates the parameters for the neural network using the "
+           "gradients values already present\n"
            "Arguments:\n"
            " * learning rate: Float (positive) - Learning rate.\n"
 
@@ -838,6 +838,8 @@ void createBoltSubmodule(py::module_& module) {
            "Sets the sparsity of the layer at the given index. The 0th layer "
            "is the first layer after the input layer. Note that this will "
            "autotune the sampling config to work for the new sparsity.");
+
+
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 
   py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT

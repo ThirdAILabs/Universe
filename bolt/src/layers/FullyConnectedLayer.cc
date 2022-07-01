@@ -12,7 +12,7 @@ namespace thirdai::bolt {
 
 FullyConnectedLayer::FullyConnectedLayer(
     const FullyConnectedLayerConfig& config, uint64_t prev_dim,
-    bool is_distributed )
+    bool is_distributed)
     : _dim(config.dim),
       _prev_dim(prev_dim),
       _sparse_dim(config.sparsity * config.dim),
@@ -36,12 +36,9 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sampling_config(config.sampling_config),
       _prev_is_active(_prev_dim, false),
       _is_active(config.dim, false),
-<<<<<<< HEAD
       _is_distributed(is_distributed),
-      _force_sparse_for_inference(false) {
-=======
+      _force_sparse_for_inference(false),
       _sampling_mode(LSHSamplingMode::Default) {
->>>>>>> d4d75a9978cbfa52ecaecb7dbab4c07418843eea
   std::random_device rd;
   std::default_random_engine eng(rd());
   std::normal_distribution<float> dist(0.0, 0.01);
