@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -183,7 +184,7 @@ class ConcatenatedNode final
           "Cannot cleanup after batch processing unless we have already "
           "prepared for batch processing");
     }
-    _batch_processing_state = {};
+    _batch_processing_state = std::nullopt;
   }
 
   std::vector<NodePtr> getPredecessors() const final {
