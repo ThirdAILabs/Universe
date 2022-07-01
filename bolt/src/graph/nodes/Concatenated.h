@@ -106,8 +106,9 @@ class ConcatenatedNode final
           "concatenation layer");
     }
     if (nodes.size() < 2) {
-      throw std::invalid_argument("Must concatenate at least two node, found " +
-                                  std::to_string(nodes.size()));
+      throw exceptions::GraphCompilationFailure(
+          "Must concatenate at least two nodes, found " +
+          std::to_string(nodes.size()));
     }
 
     verifyNoInputNodes(nodes);
@@ -149,6 +150,10 @@ class ConcatenatedNode final
       throw exceptions::NodeStateMachineError(
           "The preceeding nodes to this concatenation layer "
           " must be set before preparing for batch processing.");
+    }
+    if (prepared_for_batch_processing()) {
+      throw exceptions::NodeStateMachineError(
+          "Need to cleanup after batch processing before we can prepare again");
     }
     const auto& concatenated_nodes = _graph_state->inputs;
 

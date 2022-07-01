@@ -39,6 +39,9 @@ def get_simple_concat_model(
     return model
 
 
+# TODO(josh): Refactor this test once we have exposed support for multiple
+# inputs to split up the input so that there isn't a complete set of information
+# that's being provided to both layers in the concatenation
 def run_simple_test(
     num_classes,
     hidden_layer_top_dim,

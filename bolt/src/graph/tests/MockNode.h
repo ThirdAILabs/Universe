@@ -37,4 +37,23 @@ class MockNode : public Node {
   MOCK_METHOD(bool, isInputNode, (), (const override));
 };
 
+class MockNodeWithOutput : public MockNode {
+ public:
+  explicit MockNodeWithOutput(BoltVector output, uint32_t output_dense_dim)
+      : _output(std::move(output)), _output_dim(output_dense_dim) {}
+
+  BoltVector& getOutputVector(uint32_t vec_index) final {
+    (void)vec_index;
+    return _output;
+  }
+
+  uint32_t outputDim() const final { return _output_dim; }
+
+  uint32_t numNonzerosInOutput() const final { return _output.len; }
+
+ private:
+  BoltVector _output;
+  uint32_t _output_dim;
+};
+
 }  // namespace thirdai::bolt::tests

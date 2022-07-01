@@ -3,21 +3,10 @@
 #include <bolt/src/graph/nodes/Concatenated.h>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <algorithm>
 #include <memory>
 
-using testing::Return;
-using testing::ReturnRef;
-
 namespace thirdai::bolt::tests {
-
-std::shared_ptr<MockNode> getMockNodeWithOutput(BoltVector& output,
-                                                uint32_t output_dim) {
-  std::shared_ptr<MockNode> node = std::make_shared<MockNode>();
-  EXPECT_CALL(*node, getOutputVector).WillRepeatedly(ReturnRef(output));
-  EXPECT_CALL(*node, outputDim).WillRepeatedly(Return(output_dim));
-  EXPECT_CALL(*node, numNonzerosInOutput).WillRepeatedly(Return(output.len));
-  return node;
-}
 
 float gradientFromActiveNeuron(BoltVector& vector,
                                FoundActiveNeuron& active_neuron) {
@@ -28,24 +17,59 @@ float gradientFromActiveNeuron(BoltVector& vector,
   return vector.gradients[active_neuron.pos.value()];
 }
 
-void testConcatForwardAndBackwardPass(std::vector<uint32_t> input_label_dims,
-                                      std::vector<BoltVector> inputs,
-                                      bool sparse) {
-  std::vector<NodePtr> nodes_to_concatenate;
-
+uint32_t getExpectedNumNonzeros(const std::vector<uint32_t>& input_dense_dims,
+                                const std::vector<BoltVector>& inputs,
+                                bool sparse) {
   uint32_t expected_num_output_nonzeros = 0;
-  bool sparse_node_in_concatenation = false;
-  std::vector<uint32_t> label_offsets = {0};
-  for (uint32_t input_node_id = 0; input_node_id < input_label_dims.size();
+  for (uint32_t input_node_id = 0; input_node_id < input_dense_dims.size();
        input_node_id++) {
-    uint32_t label_dim = input_label_dims.at(input_node_id);
-    auto& input_vector = inputs.at(input_node_id);
-    nodes_to_concatenate.push_back(
-        getMockNodeWithOutput(input_vector, label_dim));
-    sparse_node_in_concatenation |= !input_vector.isDense();
-    expected_num_output_nonzeros += sparse ? input_vector.len : label_dim;
-    label_offsets.push_back(label_offsets.back() + label_dim);
+    const auto& input_vector = inputs.at(input_node_id);
+    uint32_t input_dense_dim = input_dense_dims.at(input_node_id);
+
+    expected_num_output_nonzeros += sparse ? input_vector.len : input_dense_dim;
   }
+  return expected_num_output_nonzeros;
+}
+
+std::vector<NodePtr> getNodesToConcatenate(
+    const std::vector<uint32_t>& input_dense_dims,
+    const std::vector<BoltVector>& inputs) {
+  std::vector<NodePtr> nodes_to_concatenate;
+  for (uint32_t input_node_id = 0; input_node_id < input_dense_dims.size();
+       input_node_id++) {
+    uint32_t input_dense_dim = input_dense_dims.at(input_node_id);
+    const auto& input_vector = inputs.at(input_node_id);
+    nodes_to_concatenate.emplace_back(
+        std::make_shared<MockNodeWithOutput>(input_vector, input_dense_dim));
+  }
+  return nodes_to_concatenate;
+}
+
+std::vector<uint32_t> getNeuronIndexOffsets(
+    const std::vector<uint32_t>& input_dense_dims) {
+  std::vector<uint32_t> neuron_index_offsets = {0};
+  for (uint32_t input_dense_dim : input_dense_dims) {
+    neuron_index_offsets.push_back(neuron_index_offsets.back() +
+                                   input_dense_dim);
+  }
+  return neuron_index_offsets;
+}
+
+bool containsSparseVector(const std::vector<BoltVector>& inputs) {
+  return std::any_of(inputs.begin(), inputs.end(),
+                     [](const BoltVector& v) { return !v.isDense(); });
+}
+
+void testConcatForwardAndBackwardPass(
+    const std::vector<uint32_t>& input_dense_dims,
+    const std::vector<BoltVector>& inputs, bool sparse) {
+  std::vector<NodePtr> nodes_to_concatenate =
+      getNodesToConcatenate(input_dense_dims, inputs);
+  uint32_t expected_num_output_nonzeros =
+      getExpectedNumNonzeros(input_dense_dims, inputs, sparse);
+  std::vector<uint32_t> neuron_index_offsets =
+      getNeuronIndexOffsets(input_dense_dims);
+  bool sparse_node_in_concatenation = containsSparseVector(inputs);
 
   // Use a shared pointer so shared_from_this() works
   std::shared_ptr<ConcatenatedNode> concat_node =
@@ -68,16 +92,18 @@ void testConcatForwardAndBackwardPass(std::vector<uint32_t> input_label_dims,
   }
   concat_node->backpropagate(/* vec_index = */ 3);
 
-  for (uint32_t input_node_id = 0; input_node_id < input_label_dims.size();
+  for (uint32_t input_node_id = 0; input_node_id < nodes_to_concatenate.size();
        input_node_id++) {
-    uint32_t starting_label = label_offsets.at(input_node_id);
-    uint32_t ending_label = label_offsets.at(input_node_id + 1);
-    auto& current_input = inputs.at(input_node_id);
+    uint32_t starting_output_index = neuron_index_offsets.at(input_node_id);
+    uint32_t ending_output_index = neuron_index_offsets.at(input_node_id + 1);
+    auto& current_input = nodes_to_concatenate.at(input_node_id)
+                              ->getOutputVector(/* vec_index = */ 3);
 
-    for (uint32_t label = starting_label; label < ending_label; label++) {
-      auto output_neuron = output.findActiveNeuronNoTemplate(label);
-      auto input_neuron =
-          current_input.findActiveNeuronNoTemplate(label - starting_label);
+    for (uint32_t output_index = starting_output_index;
+         output_index < ending_output_index; output_index++) {
+      auto output_neuron = output.findActiveNeuronNoTemplate(output_index);
+      auto input_neuron = current_input.findActiveNeuronNoTemplate(
+          output_index - starting_output_index);
       ASSERT_EQ(input_neuron.activation, output_neuron.activation);
       float input_gradient =
           gradientFromActiveNeuron(current_input, input_neuron);
@@ -95,11 +121,11 @@ TEST(ConcatenatedNodeTest, DenseConcatTest) {
   BoltVector node_3_output =
       BoltVector::makeDenseVectorWithGradients(/* values = */ {0});
   testConcatForwardAndBackwardPass(
-      /* input_label_dims = */ {2, 3, 1},
+      /* input_dense_dims = */ {2, 3, 1},
       /* inputs = */ {node_1_output, node_2_output, node_3_output},
       /* sparse = */ false);
   testConcatForwardAndBackwardPass(
-      /* input_label_dims = */ {2, 3, 1},
+      /* input_dense_dims = */ {2, 3, 1},
       /* inputs = */ {node_1_output, node_2_output, node_3_output},
       /* sparse = */ true);
 }
@@ -113,12 +139,12 @@ TEST(ConcatenatedNodeTest, SparseConcatTest) {
       /* indices = */ {1}, /* values = */ {0.25});
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       testConcatForwardAndBackwardPass(
-          /* input_label_dims = */ {1000, 25, 2},
+          /* input_dense_dims = */ {1000, 25, 2},
           /* inputs = */ {node_1_output, node_2_output, node_3_output},
           /* sparse = */ false),
       exceptions::NodeStateMachineError);
   testConcatForwardAndBackwardPass(
-      /* input_label_dims = */ {1000, 25, 2},
+      /* input_dense_dims = */ {1000, 25, 2},
       /* inputs = */ {node_1_output, node_2_output, node_3_output},
       /* sparse = */ true);
 }
@@ -130,12 +156,12 @@ TEST(ConcatenatedNodeTest, SparseAndDenseConcatTest) {
       BoltVector::makeDenseVectorWithGradients(/* values = */ {0.25, 0, 0.25});
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       testConcatForwardAndBackwardPass(
-          /* input_label_dims = */ {25, 3},
+          /* input_dense_dims = */ {25, 3},
           /* inputs = */ {node_1_output, node_2_output},
           /* sparse = */ false),
       exceptions::NodeStateMachineError);
   testConcatForwardAndBackwardPass(
-      /* input_label_dims = */ {25, 3},
+      /* input_dense_dims = */ {25, 3},
       /* inputs = */ {node_1_output, node_2_output},
       /* sparse = */ true);
 }
