@@ -32,20 +32,20 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 
   traverseGraph();
 
+  LayerNameManager name_manager;
+  for (auto& input : _inputs) {
+    input->compile(name_manager);
+  }
   for (auto& node : _nodes) {
-    node->initializeParameters();
+    node->compile(name_manager);
   }
 
   std::unordered_map<std::string, uint32_t> layer_type_name_to_count;
-  for (auto& input : _inputs) {
-    input->setNameAndUpdateCount(layer_type_name_to_count);
-  }
   for (auto& node : _nodes) {
     auto node_layers = node->getInternalFullyConnectedLayers();
     _internal_fully_connected_layers.insert(
         _internal_fully_connected_layers.end(), node_layers.begin(),
         node_layers.end());
-    node->setNameAndUpdateCount(layer_type_name_to_count);
   }
 
   if (print_when_done) {

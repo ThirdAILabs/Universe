@@ -8,7 +8,7 @@ namespace thirdai::bolt::tests {
 // See https://google.github.io/googletest/gmock_for_dummies.html
 class MockNode : public Node {
  public:
-  MOCK_METHOD(void, initializeParameters, (), (override));
+  MOCK_METHOD(void, compile, (LayerNameManager&), (override));
 
   MOCK_METHOD(void, forward, (uint32_t vec_index, const BoltVector* labels),
               (override));
@@ -38,11 +38,6 @@ class MockNode : public Node {
 
   MOCK_METHOD(void, summarize, (std::stringstream & summary, bool detailed),
               (const override));
-
-  MOCK_METHOD(
-      void, setNameAndUpdateCount,
-      ((std::unordered_map<std::string, uint32_t>)&layer_type_name_to_count),
-      (override));
 
   MOCK_METHOD(const std::string&, name, (), (const ovveride));
 };

@@ -793,10 +793,11 @@ void createBoltSubmodule(py::module_& module) {
           "* detailed: boolean. Optional, default False. When specified to "
           "\"True\", summary will additionally print layer config details "
           "for each layer in the network.")
-  // TODO(josh/nick): These are temporary until we have a better story
-  // for converting numpy to BoltGraphs
-  .def("train_np", &PyBoltGraph::trainNumpy, py::arg("train_data"),
-       py::arg("train_labels"), py::arg("train_config"), py::arg("batch_size"))
+      // TODO(josh/nick): These are temporary until we have a better story
+      // for converting numpy to BoltGraphs
+      .def("train_np", &PyBoltGraph::trainNumpy, py::arg("train_data"),
+           py::arg("train_labels"), py::arg("train_config"),
+           py::arg("batch_size"))
       .def("predict_np", &PyBoltGraph::predictNumpy, py::arg("test_data"),
            py::arg("test_labels"), py::arg("predict_config"),
            py::arg("batch_size") = 256);

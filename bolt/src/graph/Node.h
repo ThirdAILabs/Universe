@@ -4,11 +4,13 @@
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <queue>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 
 namespace thirdai::bolt {
 
 class Node;
+class LayerNameManager;
 
 // Node objects should always be initialized as shared pointers and not raw
 // Nodes, since otherwise shared_from_this() might throw an error (we need
@@ -17,7 +19,10 @@ using NodePtr = std::shared_ptr<Node>;
 
 class Node {
  public:
-  virtual void initializeParameters() = 0;
+  // Compiles a single node, including initializing any parameters and setting
+  // the name. The node should used the passed in LayerNameManager to get the
+  // name for its node type.
+  virtual void compile(LayerNameManager& name_manager) = 0;
 
   /*
    * Computes the forward pass for the node. The node will access its inputs
@@ -86,14 +91,27 @@ class Node {
   // Returns true if the node is an input node.
   virtual bool isInputNode() const = 0;
 
+  // Prints out a single line summary in the format
+  // (pred_names) -> node_name (NodeType): parameter_1=1, parameter_2=0 ...
   virtual void summarize(std::stringstream& summary, bool detailed) const = 0;
 
-  virtual void setNameAndUpdateCount(
-      std::unordered_map<std::string, uint32_t>& layer_type_name_to_count) = 0;
-
+  // Returns the name of this node (only valid after the node has been
+  // compiled).
   virtual const std::string& name() const = 0;
 
   virtual ~Node() = default;
+};
+
+class LayerNameManager {
+ public:
+  std::string registerNodeAndGetName(const std::string& node_type) {
+    type_to_count[node_type] += 1;
+    std::string name = node_type + std::to_string(type_to_count[node_type]);
+    return name;
+  }
+
+ private:
+  std::unordered_map<std::string, uint32_t> type_to_count;
 };
 
 }  // namespace thirdai::bolt

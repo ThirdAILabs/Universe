@@ -23,11 +23,12 @@ class FullyConnectedLayerNode final
         _config(std::forward<Args>(args)...),
         _predecessor(nullptr) {}
 
-  void initializeParameters() final {
+  void compile(LayerNameManager& name_manager) final {
     if (_predecessor == nullptr) {
       throw std::invalid_argument(
           "FullyConnected layer expected to have exactly one predecessor.");
     }
+    _name = name_manager.registerNodeAndGetName(/* node_type = */ "full");
 
     _layer = std::make_shared<FullyConnectedLayer>(_config,
                                                    _predecessor->outputDim());
@@ -104,13 +105,6 @@ class FullyConnectedLayerNode final
     summary << _predecessor->name() << " -> " << name()
             << " (FullyConnected): ";
     _layer->buildLayerSummary(summary, detailed);
-  }
-
-  void setNameAndUpdateCount(std::unordered_map<std::string, uint32_t>&
-                                 layer_type_name_to_count) final {
-    layer_type_name_to_count[LAYER_TYPE_NAME] += 1;
-    _name = LAYER_TYPE_NAME +
-            std::to_string(layer_type_name_to_count[LAYER_TYPE_NAME]);
   }
 
   const std::string& name() const final { return _name; }

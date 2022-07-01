@@ -21,11 +21,12 @@ class Input final : public Node {
   explicit Input(uint32_t expected_input_dim)
       : _expected_input_dim(expected_input_dim) {}
 
-  void initializeParameters() final {
+  void compile(LayerNameManager& name_manager) final {
     if (_expected_input_dim == 0) {
       throw exceptions::GraphCompilationFailure(
           "Cannot have input layer with dimension 0.");
     }
+    _name = name_manager.registerNodeAndGetName(/* node_type = */ "input");
   }
 
   void forward(uint32_t vec_index, const BoltVector* labels) final {
@@ -83,13 +84,6 @@ class Input final : public Node {
     summary << name() << " (Input) : dim=" << _expected_input_dim << "\n";
   }
 
-  void setNameAndUpdateCount(std::unordered_map<std::string, uint32_t>&
-                                 layer_type_name_to_count) final {
-    layer_type_name_to_count[LAYER_TYPE_NAME] += 1;
-    _name = LAYER_TYPE_NAME +
-            std::to_string(layer_type_name_to_count[LAYER_TYPE_NAME]);
-  }
-
   const std::string& name() const final { return _name; }
 
  private:
@@ -114,8 +108,6 @@ class Input final : public Node {
       }
     }
   }
-
-  inline static const std::string LAYER_TYPE_NAME = "input";
 
   BoltBatch* _input_batch;
   uint32_t _expected_input_dim;
