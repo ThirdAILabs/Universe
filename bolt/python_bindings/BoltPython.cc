@@ -638,12 +638,6 @@ void createBoltSubmodule(py::module_& module) {
            "layers in the neural network.\n"
            " * input_dim: Int (positive) - Dimension of input vectors in the "
            "dataset.")
-      .def("__str__",
-           [](const DistributedPyNetwork& network) {
-             std::stringstream summary;
-             network.buildNetworkSummary(summary);
-             return summary.str();
-           })
       .def(
           "summary", &DistributedPyNetwork::printSummary,
           py::arg("detailed") = false,
@@ -829,13 +823,6 @@ void createBoltSubmodule(py::module_& module) {
            "Returns the weight gradient array at the given layer index as a 1D "
            "Numpy "
            "array.")
-      .def("enable_sparse_inference",
-           &DistributedPyNetwork::enableSparseInference,
-           "Enables sparse inference. Freezes smart hash tables. Do not call "
-           "this method early on "
-           "in the training routine. It is recommended to call this method "
-           "right before the last training "
-           "epoch.")
       .def("get_weights", &DistributedPyNetwork::getWeights,
            py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "
