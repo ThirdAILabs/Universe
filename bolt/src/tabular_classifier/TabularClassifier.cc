@@ -20,7 +20,7 @@ namespace thirdai::bolt {
 
 TabularClassifier::TabularClassifier(const std::string& model_size,
                                      uint32_t n_classes)
-    : _input_dim(100000) {
+    : _input_dim(100000), _n_classes(n_classes) {
   // TODO(david) change autotunes?
   uint32_t hidden_layer_size =
       AutoTuneUtils::getHiddenLayerSize(model_size, n_classes, _input_dim);

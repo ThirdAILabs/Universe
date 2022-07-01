@@ -23,11 +23,10 @@ class TabularBatchProcessor : public GenericBatchProcessor {
           " columns.");
     }
     for (uint32_t col = 0; col < expectedColumns.size(); col++) {
-      if (std::string(actualColumns[col]) !=
-          std::string(expectedColumns[col])) {
-        throw std::invalid_argument(
-            "Expected column '" + std::string(expectedColumns[col]) +
-            "' but received column '" + std::string(actualColumns[col]) + ".'");
+      if (actualColumns[col] != expectedColumns[col]) {
+        throw std::invalid_argument("Expected column '" + expectedColumns[col] +
+                                    "' but received column '" +
+                                    std::string(actualColumns[col]) + ".'");
       }
     }
   }

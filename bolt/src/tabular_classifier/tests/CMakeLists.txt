@@ -5,6 +5,7 @@ target_link_libraries(
   bolt_tabular_classifier_test
   PRIVATE
   bolt_network_lib
+  bolt_tabular_classifier_lib
   gtest_main
 )
 

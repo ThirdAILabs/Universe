@@ -21,9 +21,7 @@ class TabularPairGram : public Block {
 
   bool isDense() const final { return false; };
 
-  uint32_t expectedNumColumns() const final {
-    return _metadata->numColumns() - 1;
-  };
+  uint32_t expectedNumColumns() const final { return _metadata->numColumns(); };
 
  protected:
   // TODO(david) We should always include all unigrams but if the number of
@@ -35,11 +33,11 @@ class TabularPairGram : public Block {
     std::vector<uint32_t> unigram_hashes;
     for (uint32_t col = 0; col < input_row.size(); col++) {
       uint32_t unigram;
+      std::string str_val(input_row[col]);
       switch (_metadata->getType(col)) {
         case TabularDataType::Numeric: {
           // TODO(david) if stof fails
-          std::string string_value(input_row[col]);
-          float value = std::stof(string_value);
+          double value = std::stod(str_val);
           std::string unique_bin =
               _metadata->getColBin(col, value) + _metadata->getColSalt(col);
           unigram_hashes.push_back(PairgramHasher::computeUnigram(
@@ -47,7 +45,6 @@ class TabularPairGram : public Block {
           break;
         }
         case TabularDataType::Categorical: {
-          std::string str_val(input_row[col]);
           std::string unique_category = str_val + _metadata->getColSalt(col);
           unigram_hashes.push_back(PairgramHasher::computeUnigram(
               unique_category.data(), unique_category.size()));
@@ -80,9 +77,9 @@ class TabularLabel : public Block {
 
   uint32_t featureDim() const final { return _metadata->numClasses(); };
 
-  bool isDense() const final { return true; };
+  bool isDense() const final { return false; };
 
-  uint32_t expectedNumColumns() const final { return 1; };
+  uint32_t expectedNumColumns() const final { return _metadata->numColumns(); };
 
  protected:
   void buildSegment(const std::vector<std::string_view>& input_row,

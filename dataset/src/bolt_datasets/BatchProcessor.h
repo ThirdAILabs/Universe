@@ -96,6 +96,7 @@ class ComputeBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
  public:
   std::optional<BoltDataLabelPair<bolt::BoltBatch>> createBatch(
       const std::vector<std::string>& rows) final {
+    // TODO(david) enable parallel by making metadata calculation thread safe
     // #pragma omp parallel for default(none) shared(rows)
     for (const std::string& row : rows) {
       processRow(row);

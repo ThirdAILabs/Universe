@@ -45,10 +45,12 @@ class TabularClassifier {
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
 
     std::shared_ptr<dataset::TabularMetadataProcessor> batch_processor =
-        std::make_shared<dataset::TabularMetadataProcessor>(column_datatypes);
+        std::make_shared<dataset::TabularMetadataProcessor>(column_datatypes,
+                                                            _n_classes);
 
     std::make_shared<dataset::StreamingDataset<BoltBatch>>(data_loader,
-                                                           batch_processor);
+                                                           batch_processor)
+        ->loadInMemory();
 
     _metadata = batch_processor->getMetadata();
   }
@@ -84,6 +86,7 @@ class TabularClassifier {
   }
 
   uint32_t _input_dim;
+  uint32_t _n_classes;
   std::shared_ptr<dataset::TabularMetadata> _metadata;
   std::unique_ptr<FullyConnectedNetwork> _model;
 };
