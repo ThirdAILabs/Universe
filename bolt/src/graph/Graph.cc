@@ -30,7 +30,16 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss) {
 
   traverseGraph();
 
+  std::cout << "Nodes.len=" << _nodes.size() << std::endl;
+
   for (auto& node : _nodes) {
+    ConcatenateNode* fcn = dynamic_cast<ConcatenateNode*>(node.get());
+    if (fcn) {
+      std::cout << "concat node: " << fcn->outputDim() << std::endl;
+    } else {
+      std::cout << "other node" << std::endl;
+    }
+
     node->initializeParameters();
   }
 

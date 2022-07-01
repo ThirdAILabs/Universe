@@ -78,12 +78,10 @@ class NodeStateMachineTest {
 
   // Methods for testing invalid calls within each state.
   void testBadCallsInState1() {
-    if (!isConcatenateNode()) {
-      // initializeParameters is a noop and performs no checks in
-      // ConcatenateNode.
-      ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-          _node->initializeParameters(), exceptions::NodeStateMachineError);
-    }
+    // initializeParameters is a noop and performs no checks in
+    // ConcatenateNode.
+    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
+        _node->initializeParameters(), exceptions::NodeStateMachineError);
 
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
         _node->prepareForBatchProcessing(
@@ -100,16 +98,11 @@ class NodeStateMachineTest {
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
         setNodePrecessors({_mock_node}), exceptions::NodeStateMachineError);
 
-    if (!isConcatenateNode()) {
-      // The concatenate node can go directly from state 2 to 4 since it has no
-      // state 3.
-      ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-          _node->prepareForBatchProcessing(
-              /* batch_size = */ 0,
-              /* use_sparsity = */ false),
-          exceptions::NodeStateMachineError);
-    } else {
-    }
+    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
+        _node->prepareForBatchProcessing(
+            /* batch_size = */ 0,
+            /* use_sparsity = */ false),
+        exceptions::NodeStateMachineError);
 
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
         _node->cleanupAfterBatchProcessing(),
@@ -134,10 +127,8 @@ class NodeStateMachineTest {
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
         setNodePrecessors({_mock_node}), exceptions::NodeStateMachineError);
 
-    if (!isConcatenateNode()) {
-      ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-          _node->initializeParameters(), exceptions::NodeStateMachineError);
-    }
+    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
+        _node->initializeParameters(), exceptions::NodeStateMachineError);
 
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
         _node->prepareForBatchProcessing(

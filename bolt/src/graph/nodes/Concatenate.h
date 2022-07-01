@@ -17,9 +17,7 @@ class ConcatenateNode final
     : public Node,
       public std::enable_shared_from_this<ConcatenateNode> {
  public:
-  ConcatenateNode(){};
-
-  void initializeParameters() final {}
+  ConcatenateNode() : _parameters_initialized(false){};
 
   void forward(uint32_t vec_index, const BoltVector* labels) final {
     // We currently do not allow a concatenation layer to be the last
@@ -145,16 +143,32 @@ class ConcatenateNode final
     return _batch_processing_state->num_nonzeros_in_concatenation;
   }
 
-  void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
+  std::vector<NodePtr> getPredecessors() const final {
     if (!predecessorsSet()) {
       throw exceptions::NodeStateMachineError(
-          "The preceeding nodes to this concatenation layer "
-          " must be set before preparing for batch processing.");
+          "Cannot get the predecessors for this concatenation layer because "
+          "they have not been set yet");
     }
-    if (preparedForBatchProcessing()) {
+    return _graph_state->inputs;
+  }
+
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayers() const final {
+    if (!predecessorsSet()) {
       throw exceptions::NodeStateMachineError(
-          "Need to cleanup after batch processing before we can prepare again");
+          "getInternalFullyConnectedLayers method should not be called before "
+          "predecessors have been set");
     }
+    return {};
+  }
+
+  bool isInputNode() const final { return false; }
+
+ private:
+  void initializeParametersImpl() final { _parameters_initialized = true; }
+
+  void prepareForBatchProcessingImpl(uint32_t batch_size,
+                                     bool use_sparsity) final {
     const auto& concatenated_nodes = _graph_state->inputs;
 
     bool sparse_concatenation = concatenationHasSparseNode(concatenated_nodes);
@@ -183,37 +197,18 @@ class ConcatenateNode final
         /* num_nonzeros_in_concatenation = */ num_nonzeros_in_concatenation);
   }
 
-  void cleanupAfterBatchProcessing() final {
-    if (!preparedForBatchProcessing()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot cleanup after batch processing unless we have already "
-          "prepared for batch processing");
-    }
+  void cleanupAfterBatchProcessingImpl() final {
     _batch_processing_state = std::nullopt;
   }
 
-  std::vector<NodePtr> getPredecessors() const final {
-    if (!predecessorsSet()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot get the predecessors for this concatenation layer because "
-          "they have not been set yet");
-    }
-    return _graph_state->inputs;
+  bool predecessorsSet() const final { return _graph_state.has_value(); }
+
+  bool parametersInitialized() const final { return _parameters_initialized; }
+
+  bool preparedForBatchProcessing() const final {
+    return _batch_processing_state.has_value();
   }
 
-  std::vector<std::shared_ptr<FullyConnectedLayer>>
-  getInternalFullyConnectedLayers() const final {
-    if (!predecessorsSet()) {
-      throw exceptions::NodeStateMachineError(
-          "getInternalFullyConnectedLayers method should not be called before "
-          "predecessors have been set");
-    }
-    return {};
-  }
-
-  bool isInputNode() const final { return false; }
-
- private:
   static void verifyNoInputNodes(const std::vector<NodePtr>& nodes) {
     for (const auto& node : nodes) {
       if (node->isInputNode()) {
@@ -282,12 +277,6 @@ class ConcatenateNode final
     }
   }
 
-  bool predecessorsSet() const { return _graph_state.has_value(); }
-
-  bool preparedForBatchProcessing() const {
-    return _batch_processing_state.has_value();
-  }
-
   // TODO(josh): Use similar optional state pattern in other node subclasses
   struct GraphState {
     // We have this constructor so clang tidy can check variable names
@@ -345,6 +334,9 @@ class ConcatenateNode final
   };
 
   std::optional<GraphState> _graph_state;
+  // There are no parameters, but this allows the state machine to have
+  // consistent behavior.
+  bool _parameters_initialized;
   std::optional<BatchProcessingState> _batch_processing_state;
 };
 

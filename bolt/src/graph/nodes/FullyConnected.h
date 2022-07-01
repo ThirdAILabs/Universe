@@ -23,21 +23,6 @@ class FullyConnectedNode final
         _config(std::forward<Args>(args)...),
         _predecessor(nullptr) {}
 
-  void initializeParameters() final {
-    if (!predecessorsSet()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call initializeParameters before setting predecessor of "
-          "FullyConnectedNode.");
-    }
-    if (parametersInitialized()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call initializeParameters twice for FullyConnectedNode.");
-    }
-
-    _layer = std::make_shared<FullyConnectedLayer>(_config,
-                                                   _predecessor->outputDim());
-  }
-
   std::shared_ptr<FullyConnectedNode> addPredecessor(NodePtr node) {
     if (predecessorsSet()) {
       throw exceptions::NodeStateMachineError(
@@ -95,34 +80,6 @@ class FullyConnectedNode final
     return (*_outputs)[0].len;
   }
 
-  void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
-    if (!parametersInitialized()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call prepareForBatchProcessing before initializeParameters "
-          "in FullyConnectedNode.");
-    }
-
-    if (preparedForBatchProcessing()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call prepareForBatchProcessing twice in a row in "
-          "FullyConnectedNode");
-    }
-
-    // TODO(Nicholas): rename createBatchState
-    _outputs =
-        _layer->createBatchState(batch_size, /* use_sparsity=*/use_sparsity);
-  }
-
-  void cleanupAfterBatchProcessing() final {
-    if (!preparedForBatchProcessing()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call cleanupAfterBatchProcessing before "
-          "prepareForBatchProcessing in FullyConnectedNode.");
-    }
-
-    _outputs = std::nullopt;
-  }
-
   std::vector<NodePtr> getPredecessors() const final {
     if (!predecessorsSet()) {
       throw exceptions::NodeStateMachineError(
@@ -149,11 +106,25 @@ class FullyConnectedNode final
   ActivationFunction getActivationFunction() const { return _config.act_func; }
 
  private:
-  bool predecessorsSet() const { return _predecessor != nullptr; }
+  void initializeParametersImpl() final {
+    _layer = std::make_shared<FullyConnectedLayer>(_config,
+                                                   _predecessor->outputDim());
+  }
 
-  bool parametersInitialized() const { return _layer != nullptr; }
+  void prepareForBatchProcessingImpl(uint32_t batch_size,
+                                     bool use_sparsity) final {
+    // TODO(Nicholas): rename createBatchState
+    _outputs =
+        _layer->createBatchState(batch_size, /* use_sparsity=*/use_sparsity);
+  }
 
-  bool preparedForBatchProcessing() const { return _outputs.has_value(); }
+  void cleanupAfterBatchProcessingImpl() final { _outputs = std::nullopt; }
+
+  bool predecessorsSet() const final { return _predecessor != nullptr; }
+
+  bool parametersInitialized() const final { return _layer != nullptr; }
+
+  bool preparedForBatchProcessing() const final { return _outputs.has_value(); }
 
   std::shared_ptr<FullyConnectedLayer> _layer;
   FullyConnectedLayerConfig _config;

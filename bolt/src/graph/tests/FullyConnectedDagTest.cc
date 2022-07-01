@@ -138,7 +138,6 @@ TEST(FullyConnectedDagTest, TrainSimpleDatasetMultiLayerNetworkSigmoid) {
 TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
   BoltGraph model =
       getMultiLayerModel(ActivationFunction::ReLU, ActivationFunction::Softmax);
-  model.compile(std::make_shared<CategoricalCrossEntropyLoss>());
 
   auto data = genDataset(/* noisy_dataset= */ true);
 
