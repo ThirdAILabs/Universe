@@ -59,16 +59,34 @@ struct BoltVector {
   static BoltVector makeSparseVector(const std::vector<uint32_t>& indices,
                                      const std::vector<float>& values) {
     assert(indices.size() == values.size());
-    BoltVector vec(indices.size(), false, false);
+    BoltVector vec(indices.size(), /* is_dense = */ false,
+                   /* has_gradient = */ false);
     std::copy(indices.begin(), indices.end(), vec.active_neurons);
     std::copy(values.begin(), values.end(), vec.activations);
     return vec;
   }
 
   static BoltVector makeDenseVector(const std::vector<float>& values) {
-    BoltVector vec(values.size(), true, false);
+    BoltVector vec(values.size(), /* is_dense = */ true,
+                   /* has_gradient = */ false);
     std::copy(values.begin(), values.end(), vec.activations);
     return vec;
+  }
+
+  static BoltVector makeSparseVectorWithGradients(
+      const std::vector<uint32_t>& indices, const std::vector<float>& values) {
+    auto vector = makeSparseVector(indices, values);
+    vector.gradients = new float[values.size()];
+    std::fill(vector.gradients, vector.gradients + vector.len, 0);
+    return vector;
+  }
+
+  static BoltVector makeDenseVectorWithGradients(
+      const std::vector<float>& values) {
+    auto vector = makeDenseVector(values);
+    vector.gradients = new float[vector.len];
+    std::fill(vector.gradients, vector.gradients + vector.len, 0);
+    return vector;
   }
 
   // TODO(nicholas): delete copy constructor/assignment and make load dataset
@@ -174,6 +192,13 @@ struct BoltVector {
   template <bool DENSE>
   FoundActiveNeuron findActiveNeuron(uint32_t active_neuron) const {
     if (DENSE) {
+      return {active_neuron, activations[active_neuron]};
+    }
+    return findSparseActiveNeuron(active_neuron);
+  }
+
+  FoundActiveNeuron findActiveNeuronNoTemplate(uint32_t active_neuron) const {
+    if (isDense()) {
       return {active_neuron, activations[active_neuron]};
     }
     return findSparseActiveNeuron(active_neuron);
