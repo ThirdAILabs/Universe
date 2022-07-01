@@ -3,7 +3,6 @@
 #include "BlockInterface.h"
 #include <dataset/src/encodings/count_history/DynamicCounts.h>
 #include <dataset/src/utils/TimeUtils.h>
-#include <atomic>
 #include <charconv>
 #include <cstdlib>
 #include <ctime>
@@ -33,7 +32,7 @@ class TrendBlock : public Block {
         _index(index_config) {
     uint32_t max_history_days = lookback + horizon;
     _lifetime = max_history_days * SECONDS_IN_DAY;
-
+    
     size_t max_col_idx = 0;
     max_col_idx = std::max(max_col_idx, _id_col);
     max_col_idx = std::max(max_col_idx, _timestamp_col);
@@ -54,7 +53,7 @@ class TrendBlock : public Block {
   void prepareForBatch(const std::vector<std::string_view>& first_row) final {
     std::tm time = TimeUtils::timeStringToTimeObject(first_row[_timestamp_col]);
     // TODO(Geordie) should timestamp be uint64_t?
-    uint32_t timestamp = std::mktime(&time);
+    uint32_t timestamp = TimeUtils::timeToEpoch(&time, 0);
     if (timestamp - _primary_start_timestamp > _lifetime) {
       _primary_start_timestamp = timestamp;
       _index.handleNewLifetime();
@@ -70,7 +69,7 @@ class TrendBlock : public Block {
 
     std::tm time = TimeUtils::timeStringToTimeObject(input_row[_timestamp_col]);
     // TODO(Geordie) should timestamp be uint64_t?
-    uint32_t timestamp = std::mktime(&time);
+    uint32_t timestamp = TimeUtils::timeToEpoch(&time, 0);
 
     float count = 1.0;
     if (_has_count_col) {
@@ -92,7 +91,6 @@ class TrendBlock : public Block {
       counts[i] = query_result;
       sum += query_result;
     }
-
     float mean = sum / _lookback;
     if (sum != 0) {
       for (auto& count : counts) {
