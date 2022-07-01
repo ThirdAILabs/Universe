@@ -20,65 +20,58 @@ class TabularClassifierTestFixture : public testing::Test {
   }
 };
 
-TEST_F(TabularClassifierTestFixture, TestOddCsvFormatsWithTabularClassifier) {
-  std::cout << "Starting Tabular Tests" << std::endl;
-
-  bolt::TabularClassifier tc("small", 2);
-
-  std::string train_filename =
-      "/Users/david/Documents/python_/tabular_experiments/data/"
-      "CensusIncome/"
-      "Train.csv";
-  //   census income column types
-  std::vector<std::string> column_datatypes = {
-      "numeric",     "categorical", "numeric",     "categorical", "numeric",
-      "categorical", "categorical", "categorical", "categorical", "categorical",
-      "numeric",     "numeric",     "numeric",     "categorical", "label"};
-  // poker hand induction column types
-  //   std::vector<std::string> column_datatypes = {
-  //       "numeric", "numeric", "numeric", "numeric", "numeric", "numeric",
-  //       "numeric", "numeric", "numeric", "numeric", "label"};
-
-  // OttoGroupProductClassificationChallenge columns
-  //   std::vector<std::string> column_datatypes;
-  //   for (int i = 0; i < 94; i++) {
-  //     column_datatypes.push_back("numeric");
-  //   }
-  //   column_datatypes.push_back("label");
-
-  tc.train(train_filename, column_datatypes, 1, 0.01);
-
-  std::string test_filename =
-      "/Users/david/Documents/python_/tabular_experiments/data/"
-      "CensusIncome/"
-      "Test.csv";
-
-  tc.predict(test_filename, std::nullopt);
-}
-
 /**
  * This test asserts a failure when the user calls predict(..) before train(..).
  */
-// TEST_F(TabularClassifierTestFixture, TestPredictBeforeTrain) {
-//   std::shared_ptr<bolt::TabularClassifier> tab_model =
-//       std::make_shared<TabularClassifier>("small", 2);
+TEST_F(TabularClassifierTestFixture, TestPredictBeforeTrain) {
+  std::shared_ptr<bolt::TabularClassifier> tab_model =
+      std::make_shared<TabularClassifier>("small", 2);
 
-//   setTempFileContents()
+  std::vector<std::string> contents = {"column1,column2", "value1,value2"};
+  setTempFileContents(contents);
 
-//       tab_model->predict();
-// }
+  ASSERT_THROW(tab_model->predict(TEMP_FILENAME, std::nullopt),
+               std::invalid_argument);
+}
 
 /**
  * This test asserts a failure when there is a mismatch between the number of
  * columns in the CSV provided and in the column_datatypes.
  */
-TEST_F(TabularClassifierTestFixture, TestProvidedColumnsMatchCsvColumns) {}
+TEST_F(TabularClassifierTestFixture, TestProvidedColumnsMatchCsvColumns) {
+  std::shared_ptr<bolt::TabularClassifier> tab_model =
+      std::make_shared<TabularClassifier>("small", 2);
+  std::vector<std::string> contents = {"column1,column2", "value1,value2"};
+  setTempFileContents(contents);
+  std::vector<std::string> column_datatypes = {"label"};
+  ASSERT_THROW(tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
+               std::invalid_argument);
+}
 
 /**
- * This test asserts a failure when rows in the train/test CSVs have an
- * incorrect number of columns.
+ * This test asserts a failure when rows in the train/test CSVs have
+ * inconsistent columns in the header (in number and in name).
  */
-// TEST_F(TabularClassifierTestFixture, TestName) {}
+TEST_F(TabularClassifierTestFixture, TestTrainVSTestColumns) {
+  std::shared_ptr<bolt::TabularClassifier> tab_model =
+      std::make_shared<TabularClassifier>("small", 2);
+  std::vector<std::string> train_contents = {"column1,column2",
+                                             "value1,value2"};
+  setTempFileContents(train_contents);
+  std::vector<std::string> column_datatypes = {"categorical", "label"};
+  tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01);
+
+  std::vector<std::string> test_contents1 = {"column1,column3",
+                                             "value1,value2"};
+  setTempFileContents(test_contents1);
+  ASSERT_THROW(tab_model->predict(TEMP_FILENAME, std::nullopt),
+               std::invalid_argument);
+
+  std::vector<std::string> test_contents2 = {"column1", "value1,value2"};
+  setTempFileContents(test_contents2);
+  ASSERT_THROW(tab_model->predict(TEMP_FILENAME, std::nullopt),
+               std::invalid_argument);
+}
 
 // /**
 //  * This test asserts a failure when a column specified as "numeric" cannot be
