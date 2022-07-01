@@ -84,6 +84,8 @@ class BoltGraph {
 
   void prepareToProcessBatches(uint32_t batch_size, bool use_sparsity);
 
+  void cleanupAfterBatchProcessing();
+
   void updateParameters(float learning_rate, uint32_t batch_cnt);
 
   void traverseGraph();

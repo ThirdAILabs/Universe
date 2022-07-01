@@ -22,8 +22,12 @@ class MockNode : public Node {
 
   MOCK_METHOD(uint32_t, outputDim, (), (const override));
 
+  MOCK_METHOD(uint32_t, numNonzerosInOutput, (), (const override));
+
   MOCK_METHOD(void, prepareForBatchProcessing,
               (uint32_t batch_size, bool use_sparsity), (override));
+
+  MOCK_METHOD(void, cleanupAfterBatchProcessing, (), (override));
 
   MOCK_METHOD(std::vector<NodePtr>, getPredecessors, (), (const override));
 
@@ -41,6 +45,25 @@ class MockNode : public Node {
       (override));
 
   MOCK_METHOD(const std::string&, name, (), (const ovveride));
+};
+
+class MockNodeWithOutput : public MockNode {
+ public:
+  explicit MockNodeWithOutput(BoltVector output, uint32_t output_dense_dim)
+      : _output(std::move(output)), _output_dim(output_dense_dim) {}
+
+  BoltVector& getOutputVector(uint32_t vec_index) final {
+    (void)vec_index;
+    return _output;
+  }
+
+  uint32_t outputDim() const final { return _output_dim; }
+
+  uint32_t numNonzerosInOutput() const final { return _output.len; }
+
+ private:
+  BoltVector _output;
+  uint32_t _output_dim;
 };
 
 }  // namespace thirdai::bolt::tests
