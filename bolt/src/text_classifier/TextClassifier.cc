@@ -3,6 +3,7 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <dataset/src/bolt_datasets/batch_processors/PairgramHasher.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <algorithm>
@@ -80,6 +81,20 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
     _model->freezeHashTables();
     _model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
   }
+}
+
+std::vector<float> TextClassifier::predict_on_sentence(
+    const std::string& sentence) {
+  BoltVector vec = dataset::PairgramHasher::computePairgrams(
+      sentence, _model->getOutputDim());
+  BoltBatch bolt_batch(std::vector<BoltVector>{vec});
+  BoltBatch output = _model->getOutputs(bolt_batch.getBatchSize(), true);
+  _model->forward(0, bolt_batch, output[0], nullptr);
+  std::vector<float> output_activations;
+  for (uint32_t i = 0; i < _model->getOutputDim(); i++) {
+    output_activations.push_back(output[0].activations[i]);
+  }
+  return output_activations;
 }
 
 void TextClassifier::predict(

@@ -601,6 +601,8 @@ void createBoltSubmodule(py::module_& module) {
            " * train_file: string - The path to the training dataset to use.\n"
            " * epochs: Int - How many epochs to train for.\n"
            " * learning_rate: Float - The learning rate to use for training.\n")
+      .def("predict_on_sentence", &TextClassifier::predict_on_sentence,
+           py::arg("sentence"))
       .def("predict", &TextClassifier::predict, py::arg("test_file"),
            py::arg("output_file") = std::nullopt,
            "Runs the classifier on the specified test dataset and optionally "
