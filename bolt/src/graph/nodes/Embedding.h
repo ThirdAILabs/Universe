@@ -6,6 +6,7 @@
 #include <bolt/src/layers/EmbeddingLayer.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <exceptions/src/Exceptions.h>
+#include <optional>
 #include <stdexcept>
 
 namespace thirdai::bolt {
@@ -72,17 +73,31 @@ class EmbeddingNode final : public Node {
     return _embedding_layer->getEmbeddingDim();
   }
 
+  uint32_t numNonzerosInOutput() const final {
+    // The embedding is dense so we can just return the result of outputDim.
+    return outputDim();
+  }
+
   void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
     (void)use_sparsity;
 
     if (!parametersInitialized()) {
-      throw std::logic_error(
-          "Cannot call prepareForBatchProcessing before initializeParamters in "
-          "EmbeddingNode.");
+      throw exceptions::NodeStateMachineError(
+          "Cannot call prepareForBatchProcessing before initializeParameters "
+          "in EmbeddingNode.");
     }
 
     _embedding_layer->initializeLayer(batch_size);
     _outputs = _embedding_layer->createBatchState(batch_size);
+  }
+
+  void cleanupAfterBatchProcessing() final {
+    if (!parametersInitialized()) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot call cleanupAfterBatchProcessing before initializeParameters "
+          "in EmbeddingNode.");
+    }
+    _outputs = std::nullopt;
   }
 
   std::vector<NodePtr> getPredecessors() const final { return {}; }
