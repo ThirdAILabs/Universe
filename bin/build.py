@@ -24,6 +24,12 @@ def parse_feature_flag(flag):
     return flag
 
 
+def checked_system_call(cmd):
+    exit_code = os.system(cmd)
+    if exit_code != 0:
+        exit(1)
+
+
 def main():
 
     bin_directory = os.path.dirname(os.path.realpath(__file__))
@@ -88,13 +94,13 @@ def main():
         os.environ["THIRDAI_FEATURE_FLAGS"] = joined_feature_flags
         os.environ["THIRDAI_NUM_JOBS"] = str(args.jobs)
 
-        os.system("pip3 install . --verbose --force")
+        checked_system_call("pip3 install . --verbose --force")
     else:
         cmake_command = f"cmake -B build -S . -DPYTHON_EXECUTABLE=$(which python3) -DCMAKE_BUILD_TYPE={args.build_mode} -DFEATURE_FLAGS='{joined_feature_flags}'"
         build_command = f"cmake --build build --target {args.target} -j {args.jobs}"
 
-        os.system(cmake_command)
-        os.system(build_command)
+        checked_system_call(cmake_command)
+        checked_system_call(build_command)
 
 
 if __name__ == "__main__":
