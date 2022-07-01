@@ -273,6 +273,7 @@ class SequentialClassifier {
     dataset::DynamicCountsConfig config(/* max_range = */ 1, /* n_rows = */ 5,
                                         /* range_pow = */ 22);
 
+    std::cout << "TRAIN is " << train << std::endl;
     if (train) {
       _user_trend_block = std::make_shared<dataset::TrendBlock>(
           has_count_col, columns.at(_schema.at("user")),
