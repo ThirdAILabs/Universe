@@ -78,7 +78,8 @@ TEST(GraphRejectsInvalidInputsTest, AcceptsBinaryCrossEntropyWithSigmoid) {
 TEST(GraphRejectsInvalidInputsTest, RejectConcatenatingInputLayer) {
   auto input_layer = std::make_shared<Input>(/* dim= */ 10);
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-      std::make_shared<ConcatenatedNode>()->setConcatenatedNodes({input_layer}),
+      std::make_shared<ConcatenatedNode>()->setConcatenatedNodes(
+          {input_layer, input_layer}),
       exceptions::GraphCompilationFailure);
 }
 
@@ -87,8 +88,8 @@ TEST(GraphRejectsInvalidInputsTest, RejectConcatenateAsOutputLayer) {
   auto layer = std::make_shared<FullyConnectedLayerNode>(
                    /* dim= */ 10, /* activation= */ ActivationFunction::ReLU)
                    ->addPredecessor(input);
-  auto concat =
-      std::make_shared<ConcatenatedNode>()->setConcatenatedNodes({layer});
+  auto concat = std::make_shared<ConcatenatedNode>()->setConcatenatedNodes(
+      {layer, layer});
   BoltGraph graph(/* inputs= */ {input}, /* output= */ concat);
   ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
       graph.compile(std::make_shared<MeanSquaredError>()),
