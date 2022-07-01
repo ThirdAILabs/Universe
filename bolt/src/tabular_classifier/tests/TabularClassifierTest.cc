@@ -25,7 +25,7 @@ class TabularClassifierTestFixture : public testing::Test {
  */
 TEST_F(TabularClassifierTestFixture, TestPredictBeforeTrain) {
   std::shared_ptr<bolt::TabularClassifier> tab_model =
-      std::make_shared<TabularClassifier>("small", 2);
+      std::make_shared<TabularClassifier>("small", 1);
 
   std::vector<std::string> contents = {"column1,column2", "value1,value2"};
   setTempFileContents(contents);
@@ -40,7 +40,7 @@ TEST_F(TabularClassifierTestFixture, TestPredictBeforeTrain) {
  */
 TEST_F(TabularClassifierTestFixture, TestProvidedColumnsMatchCsvColumns) {
   std::shared_ptr<bolt::TabularClassifier> tab_model =
-      std::make_shared<TabularClassifier>("small", 2);
+      std::make_shared<TabularClassifier>("small", 1);
   std::vector<std::string> contents = {"column1,column2", "value1,value2"};
   setTempFileContents(contents);
   std::vector<std::string> column_datatypes = {"label"};
@@ -54,7 +54,7 @@ TEST_F(TabularClassifierTestFixture, TestProvidedColumnsMatchCsvColumns) {
  */
 TEST_F(TabularClassifierTestFixture, TestTrainVSTestColumns) {
   std::shared_ptr<bolt::TabularClassifier> tab_model =
-      std::make_shared<TabularClassifier>("small", 2);
+      std::make_shared<TabularClassifier>("small", 1);
   std::vector<std::string> train_contents = {"column1,column2",
                                              "value1,value2"};
   setTempFileContents(train_contents);
@@ -79,7 +79,7 @@ TEST_F(TabularClassifierTestFixture, TestTrainVSTestColumns) {
  */
 TEST_F(TabularClassifierTestFixture, TestIncorrectNumericColumn) {
   std::shared_ptr<bolt::TabularClassifier> tab_model =
-      std::make_shared<TabularClassifier>("small", 2);
+      std::make_shared<TabularClassifier>("small", 1);
   std::vector<std::string> contents = {"column1,column2", "value1,value2"};
   setTempFileContents(contents);
   std::vector<std::string> column_datatypes = {"numeric", "label"};
@@ -93,7 +93,7 @@ TEST_F(TabularClassifierTestFixture, TestIncorrectNumericColumn) {
  */
 TEST_F(TabularClassifierTestFixture, TestEmptyColumns) {
   std::shared_ptr<bolt::TabularClassifier> tab_model =
-      std::make_shared<TabularClassifier>("small", 2);
+      std::make_shared<TabularClassifier>("small", 1);
   std::vector<std::string> contents = {"column1,column2,column3, column4",
                                        "value1,,,label1"};
   setTempFileContents(contents);
@@ -101,32 +101,73 @@ TEST_F(TabularClassifierTestFixture, TestEmptyColumns) {
                                                "categorical", "label"};
 
   ASSERT_NO_THROW(tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01));
+
+  ASSERT_NO_THROW(tab_model->predict(TEMP_FILENAME, std::nullopt));
 }
 
-// /**
-//  * This test asserts a failure when a new category/label is found in the
-//  testing
-//  * dataset.
-//  */
-// TEST_F(TabularClassifierTestFixture, TestName) {}
+/**
+ * This test asserts a failure when a new category/label is found in the testing
+ * dataset.
+ */
+TEST_F(TabularClassifierTestFixture, TestFailureOnNewTestLabel) {
+  std::shared_ptr<bolt::TabularClassifier> tab_model =
+      std::make_shared<TabularClassifier>("small", 1);
+  std::vector<std::string> train_contents = {"column1,column2",
+                                             "value1,value2"};
+  setTempFileContents(train_contents);
+  std::vector<std::string> column_datatypes = {"categorical", "label"};
+  tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01);
 
-// /**
-//  * This test asserts a failure when the user forgets to specify a label
-//  datatype
-//  * in column_datatypes.
-//  */
-// TEST_F(TabularClassifierTestFixture, TestName) {}
+  std::vector<std::string> test_contents1 = {"column1,column2",
+                                             "value1,value3"};
+  setTempFileContents(test_contents1);
+  ASSERT_THROW(tab_model->predict(TEMP_FILENAME, std::nullopt),
+               std::invalid_argument);
+}
 
-// /**
-//  * This test asserts a failure when the user specifies two label datatypes
-//  * in column_datatypes.
-//  */
-// TEST_F(TabularClassifierTestFixture, TestName) {}
+/**
+ * This test asserts a failure when more labels are in the dataset than
+ * specified in the constructor
+ */
+TEST_F(TabularClassifierTestFixture, TestTooManyLabels) {
+  std::shared_ptr<bolt::TabularClassifier> tab_model =
+      std::make_shared<TabularClassifier>("small", 1);
+  std::vector<std::string> train_contents = {"column1,column2", "value1,value2",
+                                             "value1,value3"};
+  setTempFileContents(train_contents);
+  std::vector<std::string> column_datatypes = {"categorical", "label"};
+  ASSERT_THROW(tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
+               std::invalid_argument);
+}
 
-// /**
-//  * This test asserts no failures when odd but valid values are found in a
-//  * "numeric" column.
-//  */
-// TEST_F(TabularClassifierTestFixture, TestName) {}
+/**
+ * This test asserts a failure when the user forgets to specify a label datatype
+ * in column_datatypes.
+ */
+TEST_F(TabularClassifierTestFixture, TestNoLabelDatatype) {
+  std::shared_ptr<bolt::TabularClassifier> tab_model =
+      std::make_shared<TabularClassifier>("small", 1);
+  std::vector<std::string> train_contents = {"column1,column2",
+                                             "value1,value2"};
+  setTempFileContents(train_contents);
+  std::vector<std::string> column_datatypes = {"categorical", "numeric"};
+  ASSERT_THROW(tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
+               std::invalid_argument);
+}
+
+/**
+ * This test asserts a failure when the user specifies two label datatypes
+ * in column_datatypes.
+ */
+TEST_F(TabularClassifierTestFixture, TestFailureOnTwoLabelColumns) {
+  std::shared_ptr<bolt::TabularClassifier> tab_model =
+      std::make_shared<TabularClassifier>("small", 1);
+  std::vector<std::string> train_contents = {"column1,column2",
+                                             "value1,value2"};
+  setTempFileContents(train_contents);
+  std::vector<std::string> column_datatypes = {"label", "label"};
+  ASSERT_THROW(tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
+               std::invalid_argument);
+}
 
 }  // namespace thirdai::bolt

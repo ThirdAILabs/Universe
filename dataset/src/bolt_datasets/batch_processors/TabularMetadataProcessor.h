@@ -66,7 +66,6 @@ class TabularMetadata {
   std::string getClassName(uint32_t class_id) {
     return _class_id_to_class[class_id];
   }
-  // TODO(david) check if invalid/new label?? or could do this in parsing
   uint32_t getClassId(const std::vector<std::string_view>& input_row) {
     std::string class_name(input_row[_label_col_index]);
     if (!_class_to_class_id.count(class_name)) {
