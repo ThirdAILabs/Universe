@@ -21,7 +21,7 @@ class CircularBuffer {
 
     if (_size == _buffer.size()) {
       _buffer.push_back(std::move(new_elem));
-      _insert_idx = _buffer.size();
+      _insert_idx = 0;
     } else {
       _buffer[_insert_idx] = std::move(new_elem);
       _insert_idx = (_insert_idx + 1) % _buffer.size();
