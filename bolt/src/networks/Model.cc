@@ -221,14 +221,20 @@ inline std::vector<float> Model<BATCH_T>::getInputGradients(
       batch_input->at(r)[vec_id].gradients =
           new float[batch_input->at(r)[vec_id].len];
       forward(vec_id, batch_input->at(r), output[vec_id], nullptr);
-      uint32_t required_index =
-          (required_labels.empty())
-              ? getSecondBestLabel(output[vec_id].activations, getOutputDim())
-          : (required_labels[r * batch_input->at(r).getBatchSize() + vec_id] <=
-             getOutputDim() - 1)
-              ? required_labels[r * batch_input->at(r).getBatchSize() + vec_id]
-              : throw std::invalid_argument(
-                    "one of the label crossing the output dim");
+      uint32_t required_index;
+      if (required_labels.empty()) {
+        required_index =
+            getSecondBestLabel(output[vec_id].activations, getOutputDim());
+      } else {
+        if (required_labels[r * batch_input->at(r).getBatchSize() + vec_id] <=
+            getOutputDim() - 1) {
+          required_index =
+              required_labels[r * batch_input->at(r).getBatchSize() + vec_id];
+        } else {
+          throw std::invalid_argument(
+              "one of the label crossing the output dim");
+        }
+      }
       BoltVector batch_label = BoltVector::makeSparseVector(
           std::vector<uint32_t>{required_index}, std::vector<float>{1.0});
       loss_fn.lossGradients(output[vec_id], batch_label,
