@@ -1,12 +1,14 @@
 #pragma once
 
 #include "BlockInterface.h"
+#include <hashing/src/MurmurHash.h>
 #include <dataset/src/encodings/count_history/DynamicCounts.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <charconv>
 #include <cstdlib>
 #include <ctime>
 #include <limits>
+#include <unordered_map>
 
 namespace thirdai::dataset {
 
@@ -19,20 +21,19 @@ class TrendBlock : public Block {
    */
   TrendBlock(bool has_count_col, size_t id_col, size_t timestamp_col,
              size_t count_col, size_t horizon, size_t lookback,
-             DynamicCountsConfig index_config =
-                 DynamicCountsConfig(/* max_range = */ 1, /* n_rows = */ 5,
-                                     /* range_pow = */ 22))
-      : _primary_start_timestamp(0),
+             Graph graph = nullptr, size_t max_n_neighbors = 0)
+      : _lifetime((lookback + horizon) * SECONDS_IN_DAY),
         _horizon(horizon),
         _lookback(lookback),
         _has_count_col(has_count_col),
         _id_col(id_col),
         _timestamp_col(timestamp_col),
         _count_col(count_col),
-        _index(index_config) {
-    uint32_t max_history_days = lookback + horizon;
-    _lifetime = max_history_days * SECONDS_IN_DAY;
-    
+        _index(DynamicCountsConfig(/* max_range = */ 1, /* n_rows = */ 5,
+                                   /* range_pow = */ 22,
+                                   /* lifetime = */ _lifetime)),
+        _graph(std::move(graph)),
+        _max_n_neighbors(max_n_neighbors) {
     size_t max_col_idx = 0;
     max_col_idx = std::max(max_col_idx, _id_col);
     max_col_idx = std::max(max_col_idx, _timestamp_col);
@@ -44,7 +45,10 @@ class TrendBlock : public Block {
     assert(_lookback != 0);
   }
 
-  uint32_t featureDim() const final { return _lookback + 1; };
+  uint32_t featureDim() const final {
+    uint32_t multiplier = _max_n_neighbors + 1;
+    return (_lookback + 1) * multiplier;
+  };
 
   bool isDense() const final { return true; };
 
@@ -54,36 +58,59 @@ class TrendBlock : public Block {
     std::tm time = TimeUtils::timeStringToTimeObject(first_row[_timestamp_col]);
     // TODO(Geordie) should timestamp be uint64_t?
     uint32_t timestamp = TimeUtils::timeToEpoch(&time, 0);
-    if (timestamp - _primary_start_timestamp > _lifetime) {
-      _primary_start_timestamp = timestamp;
-      _index.handleNewLifetime();
-    }
+    _index.handleLifetime(timestamp);
   }
 
  protected:
   void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) final {
-    auto id_str = input_row[_id_col];
-    uint32_t id{};
-    std::from_chars(id_str.data(), id_str.data() + id_str.size(), id);
+    uint32_t id = getId(input_row[_id_col]);
+    uint32_t timestamp = getTimestamp(input_row);
+    float count = getCount(input_row);
 
+    _index.index(id, timestamp, count);
+
+    addFeaturesForId(id, timestamp, vec);
+
+    std::string id_str(input_row[_id_col]);
+    if (_graph && _graph->count(id_str) > 0) {
+      auto& neighbors = _graph->at(id_str);
+      for (size_t i = 0; i < std::min(_max_n_neighbors, neighbors.size());
+           i++) {
+        uint32_t neighbor_id = getId(neighbors[i]);
+        addFeaturesForId(neighbor_id, timestamp, vec);
+      }
+    }
+  }
+
+ private:
+  static uint32_t getId(const std::string_view id_str) {
+    const char* start = id_str.data();
+    uint32_t len = id_str.size();
+    return hashing::MurmurHash(start, len, /* seed = */ 341);
+  }
+
+  uint32_t getTimestamp(const std::vector<std::string_view>& input_row) const {
     std::tm time = TimeUtils::timeStringToTimeObject(input_row[_timestamp_col]);
-    // TODO(Geordie) should timestamp be uint64_t?
-    uint32_t timestamp = TimeUtils::timeToEpoch(&time, 0);
+    return TimeUtils::timeToEpoch(&time, 0);
+  }
 
+  float getCount(const std::vector<std::string_view>& input_row) const {
     float count = 1.0;
     if (_has_count_col) {
       auto count_str = input_row[_count_col];
       char* end;
       count = std::strtof(count_str.data(), &end);
     }
+    return count;
+  }
 
-    _index.index(id, timestamp, count);
+  void addFeaturesForId(uint32_t id, uint32_t timestamp,
+                        SegmentedFeatureVector& vec) {
     std::vector<float> counts(_lookback);
     float sum = 0;
     for (uint32_t i = 0; i < _lookback; i++) {
-      const auto lag = _horizon + i;
-      auto look_back = lag * SECONDS_IN_DAY;
+      auto look_back = (_horizon + i) * SECONDS_IN_DAY;
       // Prevent overflow if given a date < 1970.
       auto query_timestamp = timestamp >= look_back ? timestamp - look_back : 0;
       auto query_result = _index.query(id, query_timestamp, 1);
@@ -91,6 +118,11 @@ class TrendBlock : public Block {
       counts[i] = query_result;
       sum += query_result;
     }
+
+    /*
+      Center and normalize by sum so sum is 0 and
+      values are always between -1 and 1.
+    */
     float mean = sum / _lookback;
     if (sum != 0) {
       for (auto& count : counts) {
@@ -103,9 +135,7 @@ class TrendBlock : public Block {
     vec.addDenseFeatureToSegment(mean);
   }
 
- private:
   uint32_t _lifetime;
-  uint32_t _primary_start_timestamp;
   size_t _horizon;
   size_t _lookback;
   bool _has_count_col;
@@ -114,6 +144,8 @@ class TrendBlock : public Block {
   size_t _count_col;
   size_t _expected_num_cols;
   DynamicCounts _index;
+  Graph _graph;
+  size_t _max_n_neighbors;
 };
 
 }  // namespace thirdai::dataset

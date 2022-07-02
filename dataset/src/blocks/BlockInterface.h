@@ -5,6 +5,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 namespace thirdai::dataset {
 
@@ -135,9 +136,12 @@ class Block {
    */
   virtual void buildSegment(const std::vector<std::string_view>& input_row,
                             SegmentedFeatureVector& vec) = 0;
-  
+
  private:
   size_t _use_count = 0;
 };
+
+using Graph =
+    std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>>;
 
 }  // namespace thirdai::dataset

@@ -52,8 +52,10 @@ void createDatasetSubmodule(py::module_& module) {
       dataset_submodule.def_submodule("categorical_encodings");
 
   py::class_<DynamicCounts>(dataset_submodule, "DynamicCounts")
-      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("max_range"),
-           py::arg("n_rows"), py::arg("range_pow"))
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, uint32_t>(),
+           py::arg("max_range"), py::arg("n_rows"), py::arg("range_pow"),
+           py::arg("lifetime"),
+           py::arg("reduce_range_pow_every_n_sketches") = 2)
       .def("index", &DynamicCounts::index, py::arg("id"), py::arg("timestamp"),
            py::arg("inc"))
       .def("query", &DynamicCounts::query, py::arg("id"),
@@ -210,8 +212,9 @@ void createDatasetSubmodule(py::module_& module) {
            "Returns true since this is a dense encoding.");
 
   py::class_<DynamicCountsConfig>(block_submodule, "DynamicCountsConfig")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, uint32_t>(),
            py::arg("max_range"), py::arg("n_rows"), py::arg("range_pow"),
+           py::arg("lifetime"),
            py::arg("reduce_range_pow_every_n_sketches") = 2);
 
   py::class_<TrendBlock, Block, std::shared_ptr<TrendBlock>>(
@@ -304,7 +307,8 @@ void createDatasetSubmodule(py::module_& module) {
            "dataset.");
 
   py::class_<ShuffleBufferConfig>(dataset_submodule, "ShuffleBufferConfig")
-      .def(py::init<size_t, uint32_t>(), py::arg("buffer_size")=1000, py::arg("seed")=time(NULL));
+      .def(py::init<size_t, uint32_t>(), py::arg("buffer_size") = 1000,
+           py::arg("seed") = time(NULL));
 
   py::class_<StreamingGenericDatasetLoader>(dataset_submodule, "DataPipeline")
       .def(py::init<std::string, std::vector<std::shared_ptr<Block>>,

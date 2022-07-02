@@ -14,7 +14,8 @@ class BlockTest : public testing::Test {
    * string matrix and feature blocks.
    */
   static std::vector<SegmentedSparseFeatureVector> makeSparseSegmentedVecs(
-      StringMatrix& matrix, std::vector<std::shared_ptr<Block>>& blocks, size_t batch_interval = 0) {
+      StringMatrix& matrix, std::vector<std::shared_ptr<Block>>& blocks,
+      size_t batch_interval = 0) {
     std::vector<SegmentedSparseFeatureVector> vecs;
     size_t i = 0;
     for (const auto& row : matrix) {
@@ -39,7 +40,8 @@ class BlockTest : public testing::Test {
    * string matrix and feature blocks.
    */
   static std::vector<SegmentedDenseFeatureVector> makeDenseSegmentedVecs(
-      StringMatrix& matrix, std::vector<std::shared_ptr<Block>>& blocks, size_t batch_interval = 0) {
+      StringMatrix& matrix, std::vector<std::shared_ptr<Block>>& blocks,
+      size_t batch_interval = 0) {
     std::vector<SegmentedDenseFeatureVector> vecs;
     size_t i = 0;
     for (const auto& row : matrix) {
@@ -63,7 +65,8 @@ class BlockTest : public testing::Test {
    * Helper function to build vector of string views
    * from vector of strings.
    */
-  static std::vector<std::string_view> toStringViewVec(const std::vector<std::string>& input_row) {
+  static std::vector<std::string_view> toStringViewVec(
+      const std::vector<std::string>& input_row) {
     std::vector<std::string_view> input_row_view(input_row.size());
     for (uint32_t i = 0; i < input_row.size(); i++) {
       input_row_view[i] =

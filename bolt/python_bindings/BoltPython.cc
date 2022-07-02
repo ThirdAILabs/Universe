@@ -606,17 +606,20 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<SequentialClassifierConfig>(bolt_submodule,
                                          "SequentialClassifierConfig")
-      .def(py::init<std::string, size_t, size_t, size_t, size_t, size_t>(),
-           py::arg("task"), py::arg("horizon"), py::arg("n_items"),
-           py::arg("n_users") = 0, py::arg("n_item_categories") = 0,
-           py::arg("n_target_classes") = 0);
+      .def(py::init<std::string, std::string, size_t, size_t, size_t, size_t,
+                    size_t>(),
+           py::arg("model_size"), py::arg("task"), py::arg("horizon"),
+           py::arg("n_items"), py::arg("n_users") = 0,
+           py::arg("n_item_categories") = 0, py::arg("n_target_classes") = 0);
 
   py::class_<SequentialClassifier>(bolt_submodule, "SequentialClassifier")
       .def(py::init<std::unordered_map<std::string, std::string>,
                     SequentialClassifierConfig, char, bool>(),
            py::arg("schema"), py::arg("config"), py::arg("delimiter") = ',',
            py::arg("use_sequential_feats") = true)
-      .def("train", &SequentialClassifier::train, py::arg("filename"))
+      .def("train", &SequentialClassifier::train, py::arg("filename"),
+           py::arg("epochs"), py::arg("learning_rate"),
+           py::arg("overwrite_index") = false)
       .def("predict", &SequentialClassifier::predict, py::arg("filename"));
 }
 

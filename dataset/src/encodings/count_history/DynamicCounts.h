@@ -2,6 +2,7 @@
 
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
+#include <atomic>
 #include <bitset>
 #include <cstddef>
 #include <cstdint>
@@ -132,15 +133,18 @@ struct TimeBoundCountMinSketch {
 
 struct DynamicCountsConfig {
   DynamicCountsConfig(uint32_t max_range, uint32_t n_rows, uint32_t range_pow,
+                      uint32_t lifetime,
                       uint32_t reduce_range_pow_every_n_sketches = 2)
       : _max_range(max_range),
         _n_rows(n_rows),
         _range_pow(range_pow),
+        _lifetime(lifetime),
         _reduce_range_pow_every_n_sketches(reduce_range_pow_every_n_sketches) {}
 
   uint32_t _max_range;
   uint32_t _n_rows;
   uint32_t _range_pow;
+  uint32_t _lifetime;
   uint32_t _reduce_range_pow_every_n_sketches;
 };
 
@@ -148,8 +152,11 @@ class DynamicCounts {
   // TODO(Geordie) should timestamp be uint64_t?
  public:
   DynamicCounts(uint32_t max_range, uint32_t n_rows, uint32_t range_pow,
-                bool swap = true,
-                uint32_t reduce_range_pow_every_n_sketches = 2) {
+                uint32_t lifetime,
+                uint32_t reduce_range_pow_every_n_sketches = 2)
+      : _timestamp_lifetime(lifetime),
+        _index_lifetime(
+            1 << (range_pow - std::min(range_pow, static_cast<uint32_t>(10)))) {
     for (size_t largest_interval = 1; largest_interval <= max_range;
          largest_interval <<= 1) {
       _n_sketches++;
@@ -158,14 +165,19 @@ class DynamicCounts {
       _count_min_sketches.push_back(TimeBoundCountMinSketch(
           n_rows, range_pow - i / reduce_range_pow_every_n_sketches,
           _sketch_buffer, _hash_seeds_buffer,
-          swap));  // TODO(Geordie): n rows also needs to change.
+          /* should_swap = */ true));  // TODO(Geordie): n rows also needs to
+                                       // change.
       // _interval_n_buckets >>= 1;
     }
   }
 
-  explicit DynamicCounts(DynamicCountsConfig& config)
-      : DynamicCounts(config._max_range, config._n_rows, config._range_pow,
-                      true, config._reduce_range_pow_every_n_sketches) {}
+  explicit DynamicCounts(DynamicCountsConfig config)
+      : DynamicCounts(/* max_range = */ config._max_range,
+                      /* n_rows = */ config._n_rows,
+                      /* range_pow = */ config._range_pow,
+                      /* lifetime = */ config._lifetime,
+                      /* reduce_range_pow_every_n_sketches = */
+                      config._reduce_range_pow_every_n_sketches) {}
 
   void setVerbose(bool verbosity) {
     _verbose = verbosity;
@@ -186,6 +198,7 @@ class DynamicCounts {
       auto cms_timestamp = timestampToDay(timestamp) >> i;
       _count_min_sketches[cms_idx].index(pack(id, cms_timestamp), inc);
     }
+    _n_indexed++;
   }
 
   float query(uint32_t id, uint32_t start_timestamp, uint32_t range) const {
@@ -222,6 +235,25 @@ class DynamicCounts {
     return count;
   }
 
+  void handleLifetime(uint32_t timestamp) {
+    if (mustResetLifetime(timestamp) ||
+        (reachedIndexLifetime() && canResetLifetime(timestamp))) {
+      _primary_start_timestamp = timestamp;
+      _n_indexed = 0;
+      handleNewLifetime();
+    }
+  }
+
+  bool mustResetLifetime(uint32_t timestamp) const {
+    return timestamp < _primary_start_timestamp;
+  }
+
+  bool canResetLifetime(uint32_t timestamp) const {
+    return (timestamp - _primary_start_timestamp) > _timestamp_lifetime;
+  }
+
+  bool reachedIndexLifetime() { return _n_indexed > _index_lifetime; }
+
  private:
   static uint64_t pack(uint32_t id, uint32_t timestamp) {
     uint64_t packed = id;
@@ -239,6 +271,10 @@ class DynamicCounts {
   std::vector<float> _sketch_buffer;
   std::vector<uint32_t> _hash_seeds_buffer;
   std::vector<TimeBoundCountMinSketch> _count_min_sketches;
+  std::atomic_uint32_t _n_indexed{0};
+  uint32_t _primary_start_timestamp{0};
+  uint32_t _timestamp_lifetime;
+  uint32_t _index_lifetime;
 };
 }  // namespace thirdai::dataset
 
