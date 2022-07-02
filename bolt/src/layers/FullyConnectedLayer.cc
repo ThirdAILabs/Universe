@@ -205,28 +205,6 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
   }
 }
 
-std::vector<float> FullyConnectedLayer::backpropagateInputLayerForGradients(
-    BoltVector& input, BoltVector& output) {
-  if (output.active_neurons == nullptr) {
-    if (input.len == _prev_dim) {
-      backpropagateImpl<false, true, true>(input, output);
-    } else {
-      backpropagateImpl<false, true, false>(input, output);
-    }
-  } else {
-    if (input.len == _prev_dim) {
-      backpropagateImpl<false, false, true>(input, output);
-    } else {
-      backpropagateImpl<false, false, false>(input, output);
-    }
-  }
-  std::vector<float> grad(input.len);
-  for (uint32_t i = 0; i < input.len; i++) {
-    grad[i] = input.gradients[i];
-  }
-  return grad;
-}
-
 template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
                                             BoltVector& output) {

@@ -239,10 +239,10 @@ inline std::vector<float> Model<BATCH_T>::getInputGradients(
           std::vector<uint32_t>{required_index}, std::vector<float>{1.0});
       loss_fn.lossGradients(output[vec_id], batch_label,
                             batch_input->at(r).getBatchSize());
-      std::vector<float> input_gradients = backpropagateInputForGradients(
-          vec_id, batch_input->at(r), output[vec_id]);
+      backpropagateInputForGradients(vec_id, batch_input->at(r),
+                                     output[vec_id]);
       for (uint32_t i = 0; i < batch_input->at(r)[vec_id].len; i++) {
-        concatenated_grad.push_back(input_gradients[i]);
+        concatenated_grad.push_back(batch_input->at(r)[vec_id].gradients[i]);
       }
     }
   }

@@ -152,8 +152,9 @@ class Model {
   virtual void backpropagate(uint32_t batch_index, BATCH_T& input,
                              BoltVector& output) = 0;
 
-  virtual std::vector<float> backpropagateInputForGradients(
-      uint32_t batch_index, BATCH_T& input, BoltVector& output) = 0;
+  virtual void backpropagateInputForGradients(uint32_t batch_index,
+                                              BATCH_T& input,
+                                              BoltVector& output) = 0;
 
   // Performs parameter updates for the network.
   virtual void updateParameters(float learning_rate, uint32_t iter) = 0;

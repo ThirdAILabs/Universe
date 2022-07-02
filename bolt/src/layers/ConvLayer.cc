@@ -184,28 +184,6 @@ void ConvLayer::backpropagate(BoltVector& input, BoltVector& output) {
   }
 }
 
-std::vector<float> ConvLayer::backpropagateInputLayerForGradients(
-    BoltVector& input, BoltVector& output) {
-  if (output.active_neurons == nullptr) {
-    if (input.len == _prev_dim) {
-      backpropagateImpl<false, true, true>(input, output);
-    } else {
-      backpropagateImpl<false, true, false>(input, output);
-    }
-  } else {
-    if (input.len == _prev_dim) {
-      backpropagateImpl<false, false, true>(input, output);
-    } else {
-      backpropagateImpl<false, false, false>(input, output);
-    }
-  }
-  std::vector<float> grad(input.len);
-  for (uint32_t i = 0; i < input.len; i++) {
-    grad[i] = input.gradients[i];
-  }
-  return grad;
-}
-
 void ConvLayer::backpropagateInputLayer(BoltVector& input, BoltVector& output) {
   if (output.isDense()) {
     if (input.isDense()) {

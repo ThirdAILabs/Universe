@@ -91,28 +91,6 @@ void FullyConnectedNetwork::forward(uint32_t batch_index,
   }
 }
 
-std::vector<float> FullyConnectedNetwork::backpropagateInputForGradients(
-    uint32_t batch_index, BoltVector& input, BoltVector& output) {
-  for (uint32_t i = _num_layers; i > 0; i--) {
-    uint32_t layer = i - 1;
-    if (layer == 0 && _num_layers == 1) {  // First and last layer
-      return _layers[0]->backpropagateInputLayerForGradients(input, output);
-    }
-    if (layer == 0) {  // First layer
-      return _layers[0]->backpropagateInputLayerForGradients(
-          input, _states[0][batch_index]);
-    }
-    if (layer == _num_layers - 1) {  // Last layer
-      _layers[layer]->backpropagate(_states[layer - 1][batch_index], output);
-    } else {  // Middle layer
-      _layers[layer]->backpropagate(_states[layer - 1][batch_index],
-                                    _states[layer][batch_index]);
-    }
-  }
-  // should not reach here but compiler throws error.
-  throw std::invalid_argument("should not reach here");
-}
-
 template void FullyConnectedNetwork::backpropagate<true>(uint32_t, BoltVector&,
                                                          BoltVector&);
 template void FullyConnectedNetwork::backpropagate<false>(uint32_t, BoltVector&,

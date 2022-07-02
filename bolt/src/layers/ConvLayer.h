@@ -24,9 +24,6 @@ class ConvLayer final : public SequentialLayer {
 
   void backpropagateInputLayer(BoltVector& input, BoltVector& output) final;
 
-  std::vector<float> backpropagateInputLayerForGradients(
-      BoltVector& input, BoltVector& output) final;
-
   void updateParameters(float lr, uint32_t iter, float B1, float B2,
                         float eps) override;
 
