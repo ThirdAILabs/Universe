@@ -5,7 +5,6 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Continuous.h>
-#include <dataset/src/blocks/CountHistory.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/Trend.h>
@@ -51,7 +50,10 @@ struct SequentialClassifierConfig {
 
 const size_t BATCH_SIZE = 2048;
 
+class SequentialClassifierTests;
+
 class SequentialClassifier {
+  friend SequentialClassifierTests;
  public:
   explicit SequentialClassifier(
       std::unordered_map<std::string, std::string> schema,
@@ -86,10 +88,10 @@ class SequentialClassifier {
     _network->trainOnStream(pipeline, loss, /* learning_rate = */ 0.0001,
                             /* rehash_batch = */ 20,
                             /* rebuild_batch = */ 100,
-                            /* metric_names = */ {"root_mean_squared_error"});
+                            /* metric_names = */ {metricName()});
   }
 
-  void predict(std::string filename) {
+  float predict(std::string filename) {
     auto loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, BATCH_SIZE);
     auto header = loader->getHeader();
@@ -110,12 +112,18 @@ class SequentialClassifier {
           "[SequentialClassifier::predict] Predict method called before "
           "training the classifier.");
     }
-    std::vector<std::string> metrics{"root_mean_squared_error"};
-    _network->predictOnStream(pipeline, /* use_sparse_inference = */ true,
+    std::vector<std::string> metrics{metricName()};
+    auto res = _network->predictOnStream(pipeline, /* use_sparse_inference = */ true,
                               metrics);
+    return res[metricName()];                
   }
 
  private:
+
+  std::string metricName() const {
+    return toLower(_config._task) == "regression" ? "root_mean_squared_error" : "categorical_accuracy";
+  }
+
   FullyConnectedNetwork buildNetwork(
       dataset::StreamingGenericDatasetLoader& pipeline) const {
     SequentialConfigList configs;
@@ -253,8 +261,7 @@ class SequentialClassifier {
 
   void addUserTimeSeriesBlock(const Columns& columns,
 
-                              Blocks& blocks,
-                              bool train) {
+                              Blocks& blocks, bool train) {
     if (_schema.count("user") == 0) {
       return;
     }
@@ -274,20 +281,20 @@ class SequentialClassifier {
                                         /* range_pow = */ 22);
 
     if (train) {
-
       _user_trend_block = std::make_shared<dataset::TrendBlock>(
           has_count_col, columns.at(_schema.at("user")),
           columns.at(_schema.at("timestamp")), count_col, _config._horizon,
           /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
           config);
-    } 
+    }
     if (_user_trend_block == nullptr) {
       throw std::runtime_error("USER TREND BLOCK IS NULL");
     }
     blocks.push_back(_user_trend_block);
   }
 
-  void addItemTimeSeriesBlock(const Columns& columns, Blocks& blocks, bool train) {
+  void addItemTimeSeriesBlock(const Columns& columns, Blocks& blocks,
+                              bool train) {
     if (_schema.count("item") == 0) {
       throw std::invalid_argument(
           "Could not find required key 'item' in schema.");
@@ -312,7 +319,7 @@ class SequentialClassifier {
           columns.at(_schema.at("timestamp")), count_col, _config._horizon,
           /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
           config);
-    } 
+    }
     if (_item_trend_block == nullptr) {
       throw std::runtime_error("ITEM TREND BLOCK IS NULL");
     }
