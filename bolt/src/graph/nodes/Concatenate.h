@@ -26,7 +26,7 @@ class ConcatenateNode final
     // a concatenation layer as the last layer they can split the labels
     assert(labels == nullptr);
     (void)labels;
-    assert(prepared_for_batch_processing() && predecessors_set());
+    assert(preparedForBatchProcessing() && predecessorsSet());
 
     const BoltVector& output_vector = getOutputVector(vec_index);
     std::fill_n(output_vector.gradients, output_vector.len, 0);
@@ -62,7 +62,7 @@ class ConcatenateNode final
   }
 
   void backpropagate(uint32_t vec_index) final {
-    assert(prepared_for_batch_processing() && predecessors_set());
+    assert(preparedForBatchProcessing() && predecessorsSet());
 
     const auto& concatenated_nodes = _graph_state->inputs;
     const auto& positional_offsets =
@@ -92,7 +92,7 @@ class ConcatenateNode final
   }
 
   BoltVector& getOutputVector(uint32_t vec_index) final {
-    assert(prepared_for_batch_processing());
+    assert(preparedForBatchProcessing());
     return _batch_processing_state->outputs[vec_index];
   }
 
