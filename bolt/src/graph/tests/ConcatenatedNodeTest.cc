@@ -75,6 +75,7 @@ void testConcatForwardAndBackwardPass(
   std::shared_ptr<ConcatenateNode> concat_node =
       std::make_shared<ConcatenateNode>();
   concat_node->setConcatenatedNodes(nodes_to_concatenate);
+  concat_node->initializeParameters();
   concat_node->prepareForBatchProcessing(/* batch_size = */ 10,
                                          /* use_sparsity = */ sparse);
   concat_node->forward(/* vec_index = */ 3, /* labels = */ nullptr);
@@ -97,7 +98,7 @@ void testConcatForwardAndBackwardPass(
     uint32_t starting_output_index = neuron_index_offsets.at(input_node_id);
     uint32_t ending_output_index = neuron_index_offsets.at(input_node_id + 1);
     auto& current_input = nodes_to_concatenate.at(input_node_id)
-                              ->getOutputVector(/* vec_index = */ 3);
+                              ->getOutputVector(/* batch_index = */ 3);
 
     for (uint32_t output_index = starting_output_index;
          output_index < ending_output_index; output_index++) {

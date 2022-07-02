@@ -18,9 +18,7 @@ class ConcatenateNode final
     : public Node,
       public std::enable_shared_from_this<ConcatenateNode> {
  public:
-  ConcatenateNode(){};
-
-  void initializeParameters() final {}
+  ConcatenateNode() : _parameters_initialized(false){};
 
   void forward(uint32_t vec_index, const BoltVector* labels) final {
     // We currently do not allow a concatenation layer to be the last
@@ -29,7 +27,7 @@ class ConcatenateNode final
     // a concatenation layer as the last layer they can split the labels
     assert(labels == nullptr);
     (void)labels;
-    assert(prepared_for_batch_processing() && predecessors_set());
+    assert(preparedForBatchProcessing() && predecessorsSet());
 
     const BoltVector& output_vector = getOutputVector(vec_index);
     std::fill_n(output_vector.gradients, output_vector.len, 0);
@@ -65,7 +63,7 @@ class ConcatenateNode final
   }
 
   void backpropagate(uint32_t vec_index) final {
-    assert(prepared_for_batch_processing() && predecessors_set());
+    assert(preparedForBatchProcessing() && predecessorsSet());
 
     const auto& concatenated_nodes = _graph_state->inputs;
     const auto& positional_offsets =
@@ -95,13 +93,13 @@ class ConcatenateNode final
   }
 
   BoltVector& getOutputVector(uint32_t vec_index) final {
-    assert(prepared_for_batch_processing());
+    assert(preparedForBatchProcessing());
     return _batch_processing_state->outputs[vec_index];
   }
 
   std::shared_ptr<ConcatenateNode> setConcatenatedNodes(
       const std::vector<NodePtr>& nodes) {
-    if (predecessors_set()) {
+    if (predecessorsSet()) {
       throw exceptions::NodeStateMachineError(
           "Have already set the incoming concatenated nodes for this "
           "concatenation layer");
@@ -129,7 +127,7 @@ class ConcatenateNode final
   }
 
   uint32_t outputDim() const final {
-    if (!predecessors_set()) {
+    if (!predecessorsSet()) {
       throw exceptions::NodeStateMachineError(
           "Cannot get the output dim for this concatenation layer because the "
           "incoming concatenated nodes have not been set yet");
@@ -138,7 +136,7 @@ class ConcatenateNode final
   }
 
   uint32_t numNonzerosInOutput() const final {
-    if (!prepared_for_batch_processing()) {
+    if (!preparedForBatchProcessing()) {
       throw exceptions::NodeStateMachineError(
           "Cannot get the number of nonzeros for this concatenation layer "
           "because the node is not prepared for batch processing");
@@ -146,16 +144,32 @@ class ConcatenateNode final
     return _batch_processing_state->num_nonzeros_in_concatenation;
   }
 
-  void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
-    if (!predecessors_set()) {
+  std::vector<NodePtr> getPredecessors() const final {
+    if (!predecessorsSet()) {
       throw exceptions::NodeStateMachineError(
-          "The preceeding nodes to this concatenation layer "
-          " must be set before preparing for batch processing.");
+          "Cannot get the predecessors for this concatenation layer because "
+          "they have not been set yet");
     }
-    if (prepared_for_batch_processing()) {
+    return _graph_state->inputs;
+  }
+
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayers() const final {
+    if (!predecessorsSet()) {
       throw exceptions::NodeStateMachineError(
-          "Need to cleanup after batch processing before we can prepare again");
+          "getInternalFullyConnectedLayers method should not be called before "
+          "predecessors have been set");
     }
+    return {};
+  }
+
+  bool isInputNode() const final { return false; }
+
+ private:
+  void initializeParametersImpl() final { _parameters_initialized = true; }
+
+  void prepareForBatchProcessingImpl(uint32_t batch_size,
+                                     bool use_sparsity) final {
     const auto& concatenated_nodes = _graph_state->inputs;
 
     bool sparse_concatenation = concatenationHasSparseNode(concatenated_nodes);
@@ -184,37 +198,18 @@ class ConcatenateNode final
         /* num_nonzeros_in_concatenation = */ num_nonzeros_in_concatenation);
   }
 
-  void cleanupAfterBatchProcessing() final {
-    if (!predecessors_set() || !prepared_for_batch_processing()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot cleanup after batch processing unless we have already "
-          "prepared for batch processing");
-    }
+  void cleanupAfterBatchProcessingImpl() final {
     _batch_processing_state = std::nullopt;
   }
 
-  std::vector<NodePtr> getPredecessors() const final {
-    if (!predecessors_set()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot get the predecessors for this concatenation layer because "
-          "they have not been set yet");
-    }
-    return _graph_state->inputs;
+  bool predecessorsSet() const final { return _graph_state.has_value(); }
+
+  bool parametersInitialized() const final { return _parameters_initialized; }
+
+  bool preparedForBatchProcessing() const final {
+    return _batch_processing_state.has_value();
   }
 
-  std::vector<std::shared_ptr<FullyConnectedLayer>>
-  getInternalFullyConnectedLayers() const final {
-    if (!predecessors_set()) {
-      throw exceptions::NodeStateMachineError(
-          "getInternalFullyConnectedLayers method should not be called before "
-          "predecessors have been set");
-    }
-    return {};
-  }
-
-  bool isInputNode() const final { return false; }
-
- private:
   static void verifyNoInputNodes(const std::vector<NodePtr>& nodes) {
     for (const auto& node : nodes) {
       if (node->isInputNode()) {
@@ -283,12 +278,6 @@ class ConcatenateNode final
     }
   }
 
-  bool predecessors_set() const { return _graph_state.has_value(); }
-
-  bool prepared_for_batch_processing() const {
-    return _batch_processing_state.has_value();
-  }
-
   // TODO(josh): Use similar optional state pattern in other node subclasses
   struct GraphState {
     // We have this constructor so clang tidy can check variable names
@@ -346,6 +335,9 @@ class ConcatenateNode final
   };
 
   std::optional<GraphState> _graph_state;
+  // There are no parameters, but this allows the state machine to have
+  // consistent behavior.
+  bool _parameters_initialized;
   std::optional<BatchProcessingState> _batch_processing_state;
 };
 

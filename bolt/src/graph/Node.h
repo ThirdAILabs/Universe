@@ -2,8 +2,8 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
+#include <exceptions/src/Exceptions.h>
 #include <queue>
-#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -16,7 +16,19 @@ using NodePtr = std::shared_ptr<Node>;
 
 class Node {
  public:
-  virtual void initializeParameters() = 0;
+  void initializeParameters() {
+    if (!predecessorsSet()) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot call initializeParameters before setting predecessor of "
+          "node.");
+    }
+    if (parametersInitialized()) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot call initializeParameters twice.");
+    }
+
+    initializeParametersImpl();
+  }
 
   /*
    * Computes the forward pass for the node. The node will access its inputs
@@ -27,16 +39,16 @@ class Node {
    * getOutputVector(vec_index), including setting the gradients equal to 0
    * (so they can be += to correctly in backpropogate in succesor nodes).
    */
-  virtual void forward(uint32_t vec_index, const BoltVector* labels) = 0;
+  virtual void forward(uint32_t batch_index, const BoltVector* labels) = 0;
 
   // Computes the backwards pass through the node.
-  virtual void backpropagate(uint32_t vec_index) = 0;
+  virtual void backpropagate(uint32_t batch_index) = 0;
 
   // Updates any trainable parameters
   virtual void updateParameters(float learning_rate, uint32_t batch_cnt) = 0;
 
   // Returns the ith output of the node.
-  virtual BoltVector& getOutputVector(uint32_t vec_index) = 0;
+  virtual BoltVector& getOutputVector(uint32_t batch_index) = 0;
 
   // Returns the output dimension of the node. This is used for subsequent nodes
   // during compilation.
@@ -62,12 +74,31 @@ class Node {
     training or inference with a new set of batches, since the batch size might
     change in different calls to predict or train.
   */
-  virtual void prepareForBatchProcessing(uint32_t batch_size,
-                                         bool use_sparsity) = 0;
+  void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) {
+    if (!parametersInitialized()) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot call prepareForBatchProcessing before initializeParameters.");
+    }
+
+    if (preparedForBatchProcessing()) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot call prepareForBatchProcessing consecutively.");
+    }
+
+    prepareForBatchProcessingImpl(batch_size, use_sparsity);
+  }
 
   // Do any cleanup to bring the Node into the same state it was in before
   // prepareForBatchProcessing was called.
-  virtual void cleanupAfterBatchProcessing() = 0;
+  void cleanupAfterBatchProcessing() {
+    if (!preparedForBatchProcessing()) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot call cleanupAfterBatchProcessing before "
+          "prepareForBatchProcessing.");
+    }
+
+    cleanupAfterBatchProcessingImpl();
+  }
 
   // Returns any predecessors of the node. This is used to traverse the graph
   // during compilation.
@@ -86,6 +117,22 @@ class Node {
   virtual bool isInputNode() const = 0;
 
   virtual ~Node() = default;
+
+ protected:
+  virtual void initializeParametersImpl() = 0;
+
+  virtual void prepareForBatchProcessingImpl(uint32_t batch_size,
+                                             bool use_sparsity) = 0;
+
+  // Do any cleanup to bring the Node into the same state it was in before
+  // prepareForBatchProcessing was called.
+  virtual void cleanupAfterBatchProcessingImpl() = 0;
+
+  virtual bool predecessorsSet() const = 0;
+
+  virtual bool parametersInitialized() const = 0;
+
+  virtual bool preparedForBatchProcessing() const = 0;
 };
 
 }  // namespace thirdai::bolt

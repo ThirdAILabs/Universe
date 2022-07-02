@@ -8,8 +8,6 @@ namespace thirdai::bolt::tests {
 // See https://google.github.io/googletest/gmock_for_dummies.html
 class MockNode : public Node {
  public:
-  MOCK_METHOD(void, initializeParameters, (), (override));
-
   MOCK_METHOD(void, forward, (uint32_t vec_index, const BoltVector* labels),
               (override));
 
@@ -24,17 +22,26 @@ class MockNode : public Node {
 
   MOCK_METHOD(uint32_t, numNonzerosInOutput, (), (const override));
 
-  MOCK_METHOD(void, prepareForBatchProcessing,
-              (uint32_t batch_size, bool use_sparsity), (override));
-
-  MOCK_METHOD(void, cleanupAfterBatchProcessing, (), (override));
-
   MOCK_METHOD(std::vector<NodePtr>, getPredecessors, (), (const override));
 
   MOCK_METHOD(std::vector<std::shared_ptr<FullyConnectedLayer>>,
               getInternalFullyConnectedLayers, (), (const override));
 
   MOCK_METHOD(bool, isInputNode, (), (const override));
+
+ private:
+  MOCK_METHOD(void, initializeParametersImpl, (), (override));
+
+  MOCK_METHOD(void, prepareForBatchProcessingImpl,
+              (uint32_t batch_size, bool use_sparsity), (override));
+
+  MOCK_METHOD(void, cleanupAfterBatchProcessingImpl, (), (override));
+
+  MOCK_METHOD(bool, predecessorsSet, (), (const override));
+
+  MOCK_METHOD(bool, parametersInitialized, (), (const override));
+
+  MOCK_METHOD(bool, preparedForBatchProcessing, (), (const override));
 };
 
 class MockNodeWithOutput : public MockNode {

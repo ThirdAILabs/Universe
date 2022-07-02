@@ -628,8 +628,8 @@ void createBoltSubmodule(py::module_& module) {
 
   py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
 
-  py::class_<FullyConnectedLayerNode, std::shared_ptr<FullyConnectedLayerNode>,
-             Node>(graph_submodule, "FullyConnected")
+  py::class_<FullyConnectedNode, std::shared_ptr<FullyConnectedNode>, Node>(
+      graph_submodule, "FullyConnected")
       .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
            py::arg("activation"),
            "Constructs a dense FullyConnectedLayer object.\n"
@@ -696,7 +696,7 @@ void createBoltSubmodule(py::module_& module) {
            " * sampling_config (SamplingConfig) - Sampling config object to "
            "initialize hash tables/functions.")
 #endif
-      .def("__call__", &FullyConnectedLayerNode::addPredecessor,
+      .def("__call__", &FullyConnectedNode::addPredecessor,
            py::arg("prev_layer"),
            "Tells the graph which layer should act as input to this fully "
            "connected layer.");
