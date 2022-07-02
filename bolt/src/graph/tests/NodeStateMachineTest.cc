@@ -2,8 +2,10 @@
 
 #include "MockNode.h"
 #include <bolt/src/graph/nodes/Concatenate.h>
+#include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/graph/nodes/TokenInput.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <gtest/gtest.h>
@@ -184,6 +186,34 @@ TEST(NodeStateMachineTest, FullyConnectedStateMachine) {
       /* dim= */ 10, /* activation= */ ActivationFunction::ReLU);
 
   FullyConnectedStateMachineTest test(fully_connected_node);
+
+  test.runTest();
+}
+
+class EmbeddingStateMachineTest final : public NodeStateMachineTest {
+ public:
+  explicit EmbeddingStateMachineTest(NodePtr node)
+      : NodeStateMachineTest(std::move(node)) {}
+
+ private:
+  void setNodePrecessors(const std::vector<NodePtr>& predecessors) override {
+    (void)predecessors;
+
+    EmbeddingNode* embedding_node = dynamic_cast<EmbeddingNode*>(_node.get());
+    ASSERT_NE(embedding_node, nullptr);
+
+    TokenInputPtr input = std::make_shared<TokenInput>();
+
+    embedding_node->addInput(input);
+  }
+};
+
+TEST(NodeStateMachineTest, EmbeddingStateMachine) {
+  auto embedding_node = std::make_shared<EmbeddingNode>(
+      /* num_embedding_lookups= */ 10, /* lookup_size= */ 8,
+      /* log_embedding_block_size= */ 5);
+
+  EmbeddingStateMachineTest test(embedding_node);
 
   test.runTest();
 }

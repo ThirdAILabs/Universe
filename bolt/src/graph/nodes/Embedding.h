@@ -22,12 +22,7 @@ class EmbeddingNode final : public Node {
         _outputs(std::nullopt),
         _token_input(nullptr) {}
 
-  void initializeParameters() final {
-    if (!predecessorsSet()) {
-      throw exceptions::GraphCompilationFailure(
-          "Must set token input for embedding layer before compiling graph.");
-    }
-
+  void initializeParametersImpl() final {
     _embedding_layer = std::make_shared<EmbeddingLayer>(_config);
   }
 
@@ -64,12 +59,6 @@ class EmbeddingNode final : public Node {
   }
 
   uint32_t outputDim() const final {
-    if (!parametersInitialized()) {
-      throw exceptions::GraphCompilationFailure(
-          "Cannot call outputDim() on EmbeddingNode before calling "
-          "initializeParameters().");
-    }
-
     return _embedding_layer->getEmbeddingDim();
   }
 
@@ -78,29 +67,27 @@ class EmbeddingNode final : public Node {
     return outputDim();
   }
 
-  void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
+  void prepareForBatchProcessingImpl(uint32_t batch_size,
+                                     bool use_sparsity) final {
     (void)use_sparsity;
-
-    if (!parametersInitialized()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call prepareForBatchProcessing before initializeParameters "
-          "in EmbeddingNode.");
-    }
 
     _embedding_layer->initializeLayer(batch_size);
     _outputs = _embedding_layer->createBatchState(batch_size);
   }
 
-  void cleanupAfterBatchProcessing() final {
-    if (!parametersInitialized()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call cleanupAfterBatchProcessing before initializeParameters "
-          "in EmbeddingNode.");
-    }
-    _outputs = std::nullopt;
-  }
+  void cleanupAfterBatchProcessingImpl() final { _outputs = std::nullopt; }
 
   std::vector<NodePtr> getPredecessors() const final { return {}; }
+
+  void addInput(TokenInputPtr input) {
+    if (predecessorsSet()) {
+      throw exceptions::NodeStateMachineError(
+          "Embedding expected to have exactly one input, and "
+          "addInput cannot be called twice.");
+    }
+
+    _token_input = std::move(input);
+  }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
   getInternalFullyConnectedLayers() const final {
@@ -110,11 +97,13 @@ class EmbeddingNode final : public Node {
   bool isInputNode() const final { return false; }
 
  private:
-  bool predecessorsSet() const { return _token_input != nullptr; }
+  bool predecessorsSet() const final { return _token_input != nullptr; }
 
-  bool parametersInitialized() const { return _embedding_layer != nullptr; }
+  bool parametersInitialized() const final {
+    return _embedding_layer != nullptr;
+  }
 
-  bool preparedForBatchProcessing() const { return _outputs.has_value(); }
+  bool preparedForBatchProcessing() const final { return _outputs.has_value(); }
 
   std::shared_ptr<EmbeddingLayer> _embedding_layer;
   EmbeddingLayerConfig _config;
