@@ -4,7 +4,6 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/Continuous.h>
-#include <dataset/src/blocks/CountHistory.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
@@ -214,23 +213,6 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
            py::arg("max_range"), py::arg("n_rows"), py::arg("range_pow"),
            py::arg("reduce_range_pow_every_n_sketches") = 2);
-
-  py::class_<Window>(block_submodule, "Window")
-      .def(py::init<uint32_t, uint32_t>(), py::arg("lag"), py::arg("size"));
-
-  py::class_<CountHistoryBlock, Block, std::shared_ptr<CountHistoryBlock>>(
-      block_submodule, "CountHistory",
-      "A block that encodes historical count features (time series).")
-      .def(py::init<bool, uint32_t, uint32_t, uint32_t, std::vector<Window>,
-                    DynamicCountsConfig&>(),
-           py::arg("has_count_col"), py::arg("id_col"),
-           py::arg("timestamp_col"), py::arg("count_col"), py::arg("windows"),
-           py::arg("index_config"))
-      .def("feature_dim", &CountHistoryBlock::featureDim,
-           "Returns the dimension of the vector encoding; the number of count "
-           "windows.")
-      .def("is_dense", &CountHistoryBlock::isDense,
-           "False since we return sparse features.");
 
   py::class_<TrendBlock, Block, std::shared_ptr<TrendBlock>>(
       block_submodule, "Trend", "A block that encodes time series trends.")

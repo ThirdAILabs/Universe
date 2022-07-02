@@ -14,9 +14,17 @@ class BlockTest : public testing::Test {
    * string matrix and feature blocks.
    */
   static std::vector<SegmentedSparseFeatureVector> makeSparseSegmentedVecs(
-      StringMatrix& matrix, std::vector<std::shared_ptr<Block>>& blocks) {
+      StringMatrix& matrix, std::vector<std::shared_ptr<Block>>& blocks, size_t batch_interval = 0) {
     std::vector<SegmentedSparseFeatureVector> vecs;
+    size_t i = 0;
     for (const auto& row : matrix) {
+      i++;
+      if (i == batch_interval) {
+        for (auto& block : blocks) {
+          block->prepareForBatch(toStringViewVec(row));
+        }
+        i = 0;
+      }
       SegmentedSparseFeatureVector vec;
       for (auto& block : blocks) {
         addVectorSegmentWithBlock(*block, row, vec);
@@ -31,9 +39,17 @@ class BlockTest : public testing::Test {
    * string matrix and feature blocks.
    */
   static std::vector<SegmentedDenseFeatureVector> makeDenseSegmentedVecs(
-      StringMatrix& matrix, std::vector<std::shared_ptr<Block>>& blocks) {
+      StringMatrix& matrix, std::vector<std::shared_ptr<Block>>& blocks, size_t batch_interval = 0) {
     std::vector<SegmentedDenseFeatureVector> vecs;
+    size_t i = 0;
     for (const auto& row : matrix) {
+      i++;
+      if (i == batch_interval) {
+        for (auto& block : blocks) {
+          block->prepareForBatch(toStringViewVec(row));
+        }
+        i = 0;
+      }
       SegmentedDenseFeatureVector vec;
       for (auto& block : blocks) {
         addVectorSegmentWithBlock(*block, row, vec);
@@ -44,17 +60,26 @@ class BlockTest : public testing::Test {
   }
 
   /**
+   * Helper function to build vector of string views
+   * from vector of strings.
+   */
+  static std::vector<std::string_view> toStringViewVec(const std::vector<std::string>& input_row) {
+    std::vector<std::string_view> input_row_view(input_row.size());
+    for (uint32_t i = 0; i < input_row.size(); i++) {
+      input_row_view[i] =
+          std::string_view(input_row[i].c_str(), input_row[i].size());
+    }
+    return input_row_view;
+  }
+
+  /**
    * Helper function to access extendVector() method of TextBlock,
    * which is private.
    */
   static void addVectorSegmentWithBlock(
       Block& block, const std::vector<std::string>& input_row,
       SegmentedFeatureVector& vec) {
-    std::vector<std::string_view> input_row_view(input_row.size());
-    for (uint32_t i = 0; i < input_row.size(); i++) {
-      input_row_view[i] =
-          std::string_view(input_row[i].c_str(), input_row[i].size());
-    }
+    auto input_row_view = toStringViewVec(input_row);
     block.addVectorSegment(input_row_view, vec);
   }
 

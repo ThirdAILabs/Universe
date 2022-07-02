@@ -6,8 +6,10 @@
 #include <dataset/src/utils/TimeUtils.h>
 #include <sys/types.h>
 #include <ctime>
+#include <limits>
 #include <memory>
 #include <sstream>
+#include <valarray>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -38,7 +40,7 @@ class TrendBlockTests : public BlockTest {
         count = (day % 2) * count;
         std::stringstream count_ss;
         count_ss << count;
-        sample.push_back( count_ss.str());
+        sample.push_back(count_ss.str());
 
         samples.push_back(sample);
       }
@@ -48,35 +50,81 @@ class TrendBlockTests : public BlockTest {
 };
 
 TEST_F(TrendBlockTests, Trivial) {
-  DynamicCountsConfig config(/* max_range = */ 1, /* n_rows = */ 5,
-                             /* range_pow = */ 10);
-  std::vector<std::shared_ptr<Block>> blocks{
-      std::make_shared<TrendBlock>(
-          /* has_count_col = */ true, /* id_col = */ 0,
-          /* timestamp_col = */ 1, /* count_col = */ 0, 
-          /* horizon = */ 0, /* lookback = */ 2, config)};
+  DynamicCountsConfig config(/* max_range = */ 1, /* n_rows = */ 6,
+                             /* range_pow = */ 6);
+  std::vector<std::shared_ptr<Block>> blocks{std::make_shared<TrendBlock>(
+      /* has_count_col = */ true, /* id_col = */ 0,
+      /* timestamp_col = */ 1, /* count_col = */ 2,
+      /* horizon = */ 0, /* lookback = */ 2, config)};
 
   auto samples = makeTrivialSamples(/* n_ids = */ 1, /* n_days = */ 3650,
                                     /* day_offset = */ 365);
-  auto vecs = makeSparseSegmentedVecs(samples, blocks);
+  auto vecs = makeSparseSegmentedVecs(samples, blocks, /* batch_interval = */ 10);
 
   size_t i = 0;
   for (auto& vec : vecs) {
     auto entries = vectorEntries(vec);
     ASSERT_EQ(entries.size(), 3);
-    std::cout << "i " << i << std::endl;
     if (i == 0) {
-      ASSERT_EQ(entries.at(0), 0); 
-      ASSERT_EQ(entries.at(1), 0); 
-      ASSERT_EQ(entries.at(2), 0); 
+      ASSERT_EQ(entries.at(0), 0);
+      ASSERT_EQ(entries.at(1), 0);
+      ASSERT_EQ(entries.at(2), 0);
     } else {
-      std::cout << samples[i][2] << std::endl;
-      ASSERT_EQ(entries.at(0), (i % 2) - 0.5); 
-      ASSERT_EQ(entries.at(1), ((i + 1) % 2) - 0.5); 
-      ASSERT_EQ(entries.at(2), 0.5); 
+      ASSERT_EQ(entries.at(0), (i % 2) - 0.5);
+      ASSERT_EQ(entries.at(1), ((i + 1) % 2) - 0.5);
+      ASSERT_EQ(entries.at(2), 0.5);
     }
     i++;
   }
+}
+
+TEST_F(TrendBlockTests, CorrectCenteringAndNormalization) {
+  DynamicCountsConfig config(/* max_range = */ 1, /* n_rows = */ 5,
+                             /* range_pow = */ 20);
+
+  size_t n_ids = 100;
+  size_t lookback = 10;
+  std::vector<std::shared_ptr<Block>> blocks{std::make_shared<TrendBlock>(
+      /* has_count_col = */ true, /* id_col = */ 0,
+      /* timestamp_col = */ 1, /* count_col = */ 2,
+      /* horizon = */ 0, /* lookback = */ lookback, config)};
+
+  auto samples = makeTrivialSamples(/* n_ids = */ n_ids, /* n_days = */ 365,
+                                    /* day_offset = */ 365, /* inc_by_id */ true);
+  auto vecs = makeSparseSegmentedVecs(samples, blocks, 256);
+
+  bool found_nonzero_mean = false;
+  float delta = 1e-6;
+
+  size_t i = 0;
+  for (auto& vec : vecs) {
+    auto entries = vectorEntries(vec);
+    ASSERT_EQ(entries.size(), lookback + 1);
+    auto mean = entries.at(lookback);
+    if (i >= lookback * n_ids) {
+      ASSERT_FLOAT_EQ(mean, static_cast<float>(i % 100) / 2);
+    }
+    float sum = 0;
+    for (size_t i = 0; i < lookback; i++) {
+
+      sum += entries[i];
+    }
+    ASSERT_LE(std::abs(sum - 0.0), delta);
+
+    float expected_sum = mean * lookback;
+    float actual_sum = 0;
+    for (size_t i = 0; i < lookback; i++) {
+      actual_sum += entries[i] * expected_sum + mean;
+    }
+    ASSERT_FLOAT_EQ(expected_sum, actual_sum);
+    
+    if (mean != 0.0) {
+      found_nonzero_mean = true;
+    }
+    i++;
+  }
+
+  ASSERT_TRUE(found_nonzero_mean);
 }
 
 // TEST_F(CountHistoryBlockTests, TrivialManyUsers) {
@@ -138,7 +186,8 @@ TEST_F(TrendBlockTests, Trivial) {
 //     sample.push_back("0");
 
 //     time_t timestamp = static_cast<time_t>(day + 365) *
-//                        SECONDS_IN_DAY;  // Add offset to prevent overflow due to
+//                        SECONDS_IN_DAY;  // Add offset to prevent overflow due
+//                        to
 //                                         // timezone differences.
 //     auto* tm = std::localtime(&timestamp);
 //     std::string timestamp_str;
@@ -185,7 +234,8 @@ TEST_F(TrendBlockTests, Trivial) {
 //                              /* range_pow = */ 20);
 //   std::vector<std::shared_ptr<Block>> blocks{
 //       std::make_shared<CountHistoryBlock>(
-//           /* has_count_col = */ true, /* id_col = */ 0, /* timestamp_col = */ 1,
+//           /* has_count_col = */ true, /* id_col = */ 0, /* timestamp_col = */
+//           1,
 //           /* count_col = */ 2, windows, config)};
 
 //   uint32_t n_ids = 500;
@@ -230,11 +280,11 @@ TEST_F(TrendBlockTests, Trivial) {
 //   }
 // }
 
-// // TODO(Geordie): Should change lifetime to check number of samples too because
-// // otherwise if we have a window size of 1 and lag of zero we keep making new
-// // sketches. In fact, maybe only check number of samples instead of the dates.
-// // This allows for some neat things, like e.g. instead of having a critical
-// // section within the add vector segment method, we can do it before the
-// // parallel for loop.
+// TODO(Geordie): Should change lifetime to check number of samples too because
+// otherwise if we have a window size of 1 and lag of zero we keep making new
+// sketches. In fact, maybe only check number of samples instead of the dates.
+// This allows for some neat things, like e.g. instead of having a critical
+// section within the add vector segment method, we can do it before the
+// parallel for loop.
 
 }  // namespace thirdai::dataset
