@@ -113,10 +113,8 @@ class NodeStateMachineTest {
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
         setNodePrecessors({_mock_node}), exceptions::NodeStateMachineError);
 
-    if (!isConcatenateNode()) {
-      ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-          _node->initializeParameters(), exceptions::NodeStateMachineError);
-    }
+    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
+        _node->initializeParameters(), exceptions::NodeStateMachineError);
 
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
         _node->cleanupAfterBatchProcessing(),
@@ -135,10 +133,6 @@ class NodeStateMachineTest {
             /* batch_size = */ 0,
             /* use_sparsity = */ false),
         exceptions::NodeStateMachineError);
-  }
-
-  bool isConcatenateNode() const {
-    return dynamic_cast<ConcatenateNode*>(_node.get()) != nullptr;
   }
 
   BoltVector _mock_output;
