@@ -2,9 +2,11 @@
 
 #include <cereal/archives/binary.hpp>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/TabularBlocks.h>
 #include <dataset/src/bolt_datasets/batch_processors/TabularBatchProcessor.h>
 #include <dataset/src/bolt_datasets/batch_processors/TabularMetadataProcessor.h>
+#include <dataset/src/encodings/categorical/UidMapEncoding.h>
 #include <dataset/src/utils/SafeFileIO.h>
 
 namespace thirdai::bolt {
@@ -48,6 +50,8 @@ class TabularClassifier {
         std::make_shared<dataset::TabularMetadataProcessor>(column_datatypes,
                                                             _n_classes);
 
+    // TabularMetadataProcessor inherets ComputeBatchProcessor so this doesn't
+    // produce any vectors
     std::make_shared<dataset::StreamingDataset<BoltBatch>>(data_loader,
                                                            batch_processor)
         ->loadInMemory();
@@ -63,7 +67,9 @@ class TabularClassifier {
     std::vector<std::shared_ptr<dataset::Block>> input_blocks = {
         std::make_shared<dataset::TabularPairGram>(_metadata, _input_dim)};
     std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
-        std::make_shared<dataset::TabularLabel>(_metadata)};
+        std::make_shared<dataset::CategoricalBlock>(
+            _metadata->getLabelCol(), std::make_shared<dataset::UidMapEncoding>(
+                                          _metadata->getClassToIdMap()))};
 
     std::shared_ptr<dataset::TabularBatchProcessor> batch_processor =
         std::make_shared<dataset::TabularBatchProcessor>(
@@ -89,6 +95,6 @@ class TabularClassifier {
   uint32_t _n_classes;
   std::shared_ptr<dataset::TabularMetadata> _metadata;
   std::unique_ptr<FullyConnectedNetwork> _model;
-};
+};  // namespace thirdai::bolt
 
 }  // namespace thirdai::bolt

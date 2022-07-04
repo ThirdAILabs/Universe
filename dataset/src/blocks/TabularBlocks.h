@@ -3,7 +3,6 @@
 #include "BlockInterface.h"
 #include <dataset/src/bolt_datasets/batch_processors/PairgramHasher.h>
 #include <dataset/src/bolt_datasets/batch_processors/TabularMetadataProcessor.h>
-#include <unordered_map>
 
 namespace thirdai::dataset {
 
@@ -67,27 +66,6 @@ class TabularPairGram : public Block {
  private:
   std::shared_ptr<TabularMetadata> _metadata;
   uint32_t _output_range;
-};
-
-class TabularLabel : public Block {
- public:
-  explicit TabularLabel(std::shared_ptr<TabularMetadata>& metadata)
-      : _metadata(metadata) {}
-
-  uint32_t featureDim() const final { return _metadata->numClasses(); };
-
-  bool isDense() const final { return false; };
-
-  uint32_t expectedNumColumns() const final { return _metadata->numColumns(); };
-
- protected:
-  void buildSegment(const std::vector<std::string_view>& input_row,
-                    SegmentedFeatureVector& vec) final {
-    vec.addSparseFeatureToSegment(_metadata->getClassId(input_row), 1.0);
-  }
-
- private:
-  std::shared_ptr<TabularMetadata> _metadata;
 };
 
 }  // namespace thirdai::dataset

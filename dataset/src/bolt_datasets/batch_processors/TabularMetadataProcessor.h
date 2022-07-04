@@ -29,6 +29,12 @@ class TabularMetadata {
 
   std::vector<std::string> getColumnNames() { return _column_names; }
 
+  uint32_t getLabelCol() const { return _label_col_index; }
+
+  std::unordered_map<std::string, uint32_t> getClassToIdMap() {
+    return _class_to_class_id;
+  }
+
   std::string getColBin(uint32_t col, std::string str_val) {
     // map empty values to their own bin
     if (str_val == "") {
@@ -65,14 +71,6 @@ class TabularMetadata {
 
   std::string getClassName(uint32_t class_id) {
     return _class_id_to_class[class_id];
-  }
-  uint32_t getClassId(const std::vector<std::string_view>& input_row) {
-    std::string class_name(input_row[_label_col_index]);
-    if (!_class_to_class_id.count(class_name)) {
-      throw std::invalid_argument("Received unexpected class name: '" +
-                                  class_name + "' in test data.");
-    }
-    return _class_to_class_id[class_name];
   }
 
  private:
