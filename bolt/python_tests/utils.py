@@ -16,16 +16,17 @@ def build_sparse_hidden_layer_classifier(input_dim, sparse_dim, output_dim, spar
     return network
 
 
-# generates easy training data
-def gen_training_data(n_classes=10, n_samples=1000):
+# Generates easy training data: the ground truth function is f(x_i) = i, where
+# x_i is the one hot encoding of i. Thus the input and output dimension are both
+# n_classes. We randomize the order of the (x_i, i) example and label pairs
+# we return, and also add some normal noise to the examples.
+def gen_training_data(n_classes=10, n_samples=1000, noise_std=0.1):
     possible_one_hot_encodings = np.eye(n_classes)
     labels = np.random.choice(n_classes, size=n_samples)
     examples = possible_one_hot_encodings[labels]
-    noise = np.random.normal(0, 0.1, examples.shape)
+    noise = np.random.normal(0, noise_std, examples.shape)
     examples = examples + noise
-    labels = labels.astype("uint32")
-    examples = examples.astype("float32")
-    return labels, examples, n_classes
+    return examples.astype("float32"), labels.astype("uint32")
 
 
 # training the model
