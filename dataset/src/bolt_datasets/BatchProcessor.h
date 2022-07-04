@@ -24,8 +24,8 @@ class BatchProcessor {
   virtual ~BatchProcessor() = default;
 
  protected:
-  std::vector<std::string_view> parseCsvRow(const std::string& row,
-                                            char delimiter) const {
+  static std::vector<std::string_view> parseCsvRow(const std::string& row,
+                                                   char delimiter) const {
     std::vector<std::string_view> parsed;
     size_t start = 0;
     size_t end = 0;
