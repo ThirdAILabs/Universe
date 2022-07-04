@@ -1,6 +1,7 @@
 #include "BoltPython.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/BoltVector.h>
@@ -912,6 +913,17 @@ void createBoltSubmodule(py::module_& module) {
            "Tells the graph which layer should act as input to this fully "
            "connected layer.");
 
+  py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
+      graph_submodule, "Concatenate")
+      .def(
+          py::init<>(),
+          "A layer that concatenates an arbitrary number of layers together.\n")
+      .def("__call__", &ConcatenateNode::setConcatenatedNodes,
+           py::arg("input_layers"),
+           "Tells the graph which layers will be concatenated. Must be at "
+           "least one node (although this is just an identity function, so "
+           "really should be at least two).");
+
   py::class_<Input, InputPtr, Node>(graph_submodule, "Input")
       .def(py::init<uint32_t>(), py::arg("dim"),
            "Constructs an input layer node for the graph.");
@@ -933,7 +945,7 @@ void createBoltSubmodule(py::module_& module) {
       .def("withMetrics", &PredictConfig::withMetrics, py::arg("metrics"))
       .def("silence", &PredictConfig::silence);
 
-  py::class_<BoltGraph>(graph_submodule, "Model")
+  py::class_<PyBoltGraph>(graph_submodule, "Model")
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
            py::arg("output"),
            "Constructs a bolt model from a layer graph.\n"
@@ -941,11 +953,11 @@ void createBoltSubmodule(py::module_& module) {
            " * inputs (List[Node]) - The input nodes to the graph. Note that "
            "inputs are mapped to input layers by their index.\n"
            " * output (Node) - The output node of the graph.")
-      .def("compile", &BoltGraph::compile, py::arg("loss"),
+      .def("compile", &PyBoltGraph::compile, py::arg("loss"),
            "Compiles the graph for the given loss function. In this step the "
            "order in which to compute the layers is determined and various "
            "checks are preformed to ensure the model architecture is correct.")
-      .def("train", &BoltGraph::train<BoltBatch>, py::arg("train_data"),
+      .def("train", &PyBoltGraph::train<BoltBatch>, py::arg("train_data"),
            py::arg("train_labels"), py::arg("train_config"),
            "Trains the network on the given training data.\n"
            "Arguments:\n"
@@ -960,7 +972,7 @@ void createBoltSubmodule(py::module_& module) {
 
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
-      .def("predict", &BoltGraph::predict<BoltBatch>, py::arg("test_data"),
+      .def("predict", &PyBoltGraph::predict<BoltBatch>, py::arg("test_data"),
            py::arg("test_labels"), py::arg("predict_config"),
            "Predicts the output given the input vectors and evaluates the "
            "predictions based on the given metrics.\n"
@@ -974,7 +986,15 @@ void createBoltSubmodule(py::module_& module) {
            " * predict_config: PredictConfig - the additional prediction "
            "parameters. See the PredictConfig documentation above.\n\n"
 
-           "Returns a  a mapping from metric names to their values.");
+           "Returns a  a mapping from metric names to their values.")
+      // TODO(josh/nick): These are temporary until we have a better story
+      // for converting numpy to BoltGraphs
+      .def("train_np", &PyBoltGraph::trainNumpy, py::arg("train_data"),
+           py::arg("train_labels"), py::arg("train_config"),
+           py::arg("batch_size"))
+      .def("predict_np", &PyBoltGraph::predictNumpy, py::arg("test_data"),
+           py::arg("test_labels"), py::arg("predict_config"),
+           py::arg("batch_size") = 256);
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
