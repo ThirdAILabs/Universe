@@ -3,11 +3,14 @@ import pytest
 import os
 import pandas as pd
 
-CENSUS_INCOME_BASE_DOWNLOAD_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/"
+CENSUS_INCOME_BASE_DOWNLOAD_URL = (
+    "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/"
+)
 
 TRAIN_FILE = "./census_income_train.csv"
 TEST_FILE = "./census_income_test.csv"
 PREDICTION_FILE = "./census_income_predictions.txt"
+
 
 def download_census_income_dataset():
     if not os.path.exists(TRAIN_FILE):
@@ -20,12 +23,11 @@ def download_census_income_dataset():
         )
 
     # first line is bogus so delete it
-    with open(TEST_FILE, 'r') as fin:
+    with open(TEST_FILE, "r") as fin:
         data = fin.read().splitlines(True)
-    with open(TEST_FILE, 'w') as fout:
-        # for some reason each of the labels end with a "." in the test set 
+    with open(TEST_FILE, "w") as fout:
+        # for some reason each of the labels end with a "." in the test set
         fout.writelines([line.replace(".", "") for line in data[1:]])
-
 
     df = pd.read_csv(TEST_FILE)
     n_classes = df[df.columns[-1]].nunique()
@@ -38,6 +40,7 @@ def download_census_income_dataset():
     column_datatypes.append("label")
 
     return n_classes, column_datatypes, df[df.columns[-1]]
+
 
 def remove_files():
     os.remove(TRAIN_FILE)
@@ -65,7 +68,12 @@ def test_tabular_classifier_census_income_dataset():
     (n_classes, column_datatypes, test_labels) = download_census_income_dataset()
     classifier = bolt.TabularClassifier(model_size="medium", n_classes=n_classes)
 
-    classifier.train(train_file=TRAIN_FILE, column_datatypes=column_datatypes, epochs=3, learning_rate=0.01)
+    classifier.train(
+        train_file=TRAIN_FILE,
+        column_datatypes=column_datatypes,
+        epochs=3,
+        learning_rate=0.01,
+    )
 
     classifier.predict(test_file=TEST_FILE, output_file=PREDICTION_FILE)
 
