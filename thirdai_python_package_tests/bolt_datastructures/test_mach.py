@@ -28,6 +28,43 @@ def generate_random_easy_sparse(output_dim, num_true_labels_per_example, num_exa
     )
 
 
+def build_and_train_mach(
+    num_train=10000,
+    num_true_labels_per_sample=10,
+    input_and_output_dim=1000,
+    learning_rate=0.001,
+    batch_size=512,
+    num_epochs=5,
+):
+
+    train_x, train_y = generate_random_easy_sparse(
+        output_dim=input_and_output_dim,
+        num_true_labels_per_example=num_true_labels_per_sample,
+        num_examples=num_train,
+    )
+
+    mach = bolt.Mach(
+        max_label=input_and_output_dim,
+        num_classifiers=4,
+        input_dim=input_and_output_dim,
+        hidden_layer_dim=input_and_output_dim,
+        hidden_layer_sparsity=1,
+        last_layer_dim=input_and_output_dim // 10,
+        last_layer_sparsity=1,
+        use_softmax=True,
+    )
+
+    mach.train(
+        train_x,
+        train_y,
+        learning_rate=learning_rate,
+        batch_size=batch_size,
+        num_epochs=num_epochs,
+    )
+
+    return mach
+
+
 def get_recall(result, test_y, num_true_labels_per_sample):
     count = 0
     for i, start in enumerate(range(0, len(test_y[0]), num_true_labels_per_sample)):
@@ -39,141 +76,90 @@ def get_recall(result, test_y, num_true_labels_per_sample):
     return recall
 
 
-@pytest.mark.unit
-def test_mach_random_data():
+def helper_for_testing_save_checkpoint(test_for_checkpoint):
     num_train = 10000
     num_test = 1000
     num_true_labels_per_sample = 10
     input_and_output_dim = 1000
 
-    train_x, train_y = generate_random_easy_sparse(
-        output_dim=input_and_output_dim,
-        num_true_labels_per_example=num_true_labels_per_sample,
-        num_examples=num_train,
+    mach = build_and_train_mach(
+        num_train=num_train,
+        num_true_labels_per_sample=num_true_labels_per_sample,
+        input_and_output_dim=input_and_output_dim,
+        learning_rate=0.001,
+        batch_size=512,
+        num_epochs=5,
     )
+
     test_x, test_y = generate_random_easy_sparse(
         output_dim=input_and_output_dim,
         num_true_labels_per_example=num_true_labels_per_sample,
         num_examples=num_test,
     )
 
-    mach = bolt.Mach(
-        max_label=input_and_output_dim,
-        num_classifiers=4,
-        input_dim=input_and_output_dim,
-        hidden_layer_dim=input_and_output_dim,
-        hidden_layer_sparsity=1,
-        last_layer_dim=input_and_output_dim // 10,
-        last_layer_sparsity=1,
-        use_softmax=True,
+    result_fast = mach.query_fast(test_x)
+    result_slow = mach.query_slow(test_x)
+    recall_fast_before_save = get_recall(
+        result_fast, test_y, num_true_labels_per_sample
+    )
+    recall_slow_before_save = get_recall(
+        result_slow, test_y, num_true_labels_per_sample
     )
 
-    mach.train(train_x, train_y, learning_rate=0.001, batch_size=512, num_epochs=5)
+    if test_for_checkpoint:
+        save_folder_name = "mach_checkpointed_for_test"
+        mach.checkpoint(save_folder_name)
+    else:
+        save_folder_name = "mach_saved_for_test"
+        mach.save_for_inference(save_folder_name)
+
+    newMach = bolt.Mach.load(save_folder_name)
+
+    assert recall_fast_before_save == get_recall(
+        newMach.query_fast(test_x), test_y, num_true_labels_per_sample
+    )
+    assert recall_slow_before_save == get_recall(
+        newMach.query_slow(test_x), test_y, num_true_labels_per_sample
+    )
+
+    shutil.rmtree(save_folder_name)
+
+
+@pytest.mark.unit
+def test_mach_random_data():
+
+    num_train = 10000
+    num_test = 1000
+    num_true_labels_per_sample = 10
+    input_and_output_dim = 1000
+
+    mach = build_and_train_mach(
+        num_train=num_train,
+        num_true_labels_per_sample=num_true_labels_per_sample,
+        input_and_output_dim=input_and_output_dim,
+        learning_rate=0.001,
+        batch_size=512,
+        num_epochs=5,
+    )
+
+    test_x, test_y = generate_random_easy_sparse(
+        output_dim=input_and_output_dim,
+        num_true_labels_per_example=num_true_labels_per_sample,
+        num_examples=num_test,
+    )
 
     result_fast = mach.query_fast(test_x)
     result_slow = mach.query_slow(test_x)
+
     assert get_recall(result_fast, test_y, num_true_labels_per_sample) > 0.8
     assert get_recall(result_slow, test_y, num_true_labels_per_sample) > 0.8
 
 
 @pytest.mark.unit
 def test_checkpoint_mach():
-    num_train = 10000
-    num_test = 1000
-    num_true_labels_per_sample = 10
-    input_and_output_dim = 1000
-
-    train_x, train_y = generate_random_easy_sparse(
-        output_dim=input_and_output_dim,
-        num_true_labels_per_example=num_true_labels_per_sample,
-        num_examples=num_train,
-    )
-    test_x, test_y = generate_random_easy_sparse(
-        output_dim=input_and_output_dim,
-        num_true_labels_per_example=num_true_labels_per_sample,
-        num_examples=num_test,
-    )
-
-    mach = bolt.Mach(
-        max_label=input_and_output_dim,
-        num_classifiers=4,
-        input_dim=input_and_output_dim,
-        hidden_layer_dim=input_and_output_dim,
-        hidden_layer_sparsity=1,
-        last_layer_dim=input_and_output_dim // 10,
-        last_layer_sparsity=1,
-        use_softmax=True,
-    )
-
-    mach.train(train_x, train_y, learning_rate=0.001, batch_size=512, num_epochs=5)
-
-    result_fast = mach.query_fast(test_x)
-    result_slow = mach.query_slow(test_x)
-    recall_fast = get_recall(result_fast, test_y, num_true_labels_per_sample)
-    recall_slow = get_recall(result_slow, test_y, num_true_labels_per_sample)
-
-    # save mach to a random folder and then load it
-    mach.checkpoint("mach_saved_XASZD")
-
-    newMach = bolt.Mach.load("mach_saved_XASZD")
-
-    # asserts that the loaded model has the same recall
-    assert recall_fast == get_recall(
-        newMach.query_fast(test_x), test_y, num_true_labels_per_sample
-    )
-    assert recall_slow == get_recall(
-        newMach.query_slow(test_x), test_y, num_true_labels_per_sample
-    )
-
-    shutil.rmtree("mach_saved_XASZD")
+    helper_for_testing_save_checkpoint(test_for_checkpoint=True)
 
 
 @pytest.mark.unit
 def test_save_mach():
-    num_train = 10000
-    num_test = 1000
-    num_true_labels_per_sample = 10
-    input_and_output_dim = 1000
-
-    train_x, train_y = generate_random_easy_sparse(
-        output_dim=input_and_output_dim,
-        num_true_labels_per_example=num_true_labels_per_sample,
-        num_examples=num_train,
-    )
-    test_x, test_y = generate_random_easy_sparse(
-        output_dim=input_and_output_dim,
-        num_true_labels_per_example=num_true_labels_per_sample,
-        num_examples=num_test,
-    )
-
-    mach = bolt.Mach(
-        max_label=input_and_output_dim,
-        num_classifiers=4,
-        input_dim=input_and_output_dim,
-        hidden_layer_dim=input_and_output_dim,
-        hidden_layer_sparsity=1,
-        last_layer_dim=input_and_output_dim // 10,
-        last_layer_sparsity=1,
-        use_softmax=True,
-    )
-
-    mach.train(train_x, train_y, learning_rate=0.001, batch_size=512, num_epochs=5)
-
-    result_fast = mach.query_fast(test_x)
-    result_slow = mach.query_slow(test_x)
-    recall_fast = get_recall(result_fast, test_y, num_true_labels_per_sample)
-    recall_slow = get_recall(result_slow, test_y, num_true_labels_per_sample)
-
-    # save mach to a random folder and then load it
-    mach.save("mach_saved_XASZD")
-
-    newMach = bolt.Mach.load("mach_saved_XASZD")
-
-    # asserts that the loaded model has the same recall
-    assert recall_fast == get_recall(
-        newMach.query_fast(test_x), test_y, num_true_labels_per_sample
-    )
-    assert recall_slow == get_recall(
-        newMach.query_slow(test_x), test_y, num_true_labels_per_sample
-    )
-    shutil.rmtree("mach_saved_XASZD")
+    helper_for_testing_save_checkpoint(test_for_checkpoint=False)

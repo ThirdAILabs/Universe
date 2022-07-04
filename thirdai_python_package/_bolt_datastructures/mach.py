@@ -16,6 +16,7 @@ class Mach:
         last_layer_dim,
         last_layer_sparsity,
         use_softmax,
+        seed_for_group_assigments=0,
     ):
 
         self.num_classifiers = num_classifiers
@@ -28,7 +29,7 @@ class Mach:
         self.use_softmax = use_softmax
 
         # setting a random seed
-        np.random.seed(0)
+        np.random.seed(seed_for_group_assigments)
 
         self.label_to_group = np.random.randint(
             0, last_layer_dim, size=(num_classifiers, max_label)
@@ -53,67 +54,57 @@ class Mach:
             for _ in range(num_classifiers)
         ]
 
+    def freeze_hash_tables(self):
+        for classifiers in self.classifiers:
+            classifiers.freeze_hash_tables()
+
+    def save(self, folder, save_for_inference):
+
+        if not os.path.exists(folder):
+            os.mkdir(folder)
+
+        if not os.path.isdir(folder):
+            raise FileNotFoundError(f"{folder} is not a valid path to a directory")
+
+        metadata = {
+            "max_label": self.max_label,
+            "num_classifiers": self.num_classifiers,
+            "use_softmax": self.use_softmax,
+            "input_dim": self.input_dim,
+            "hidden_layer_dim": self.hidden_layer_dim,
+            "hidden_layer_sparsity": self.hidden_layer_sparsity,
+            "last_layer_dim": self.last_layer_dim,
+            "last_layer_sparsity": self.last_layer_sparsity,
+        }
+
+        with open(folder + "/metadata_mach", "wb") as f:
+            pickle.dump(metadata, f)
+
+        for classifiers_id in range(self.num_classifiers):
+            if save_for_inference:
+                self.classifiers[classifiers_id].save_for_inference(
+                    f"{folder}/classifier_{classifiers_id}"
+                )
+            else:
+                self.classifiers[classifiers_id].checkpoint(
+                    f"{folder}/classifier_{classifiers_id}"
+                )
+
     def checkpoint(self, folder):
+        self.save(folder, save_for_inference=False)
 
-        if os.path.isfile(folder):
-            raise Exception("Provide a path to a directory")
-        if not os.path.exists(folder):
-            os.mkdir(folder)
-
-        metadata = {
-            "max_label": self.max_label,
-            "num_classifiers": self.num_classifiers,
-            "use_softmax": self.use_softmax,
-            "input_dim": self.input_dim,
-            "hidden_layer_dim": self.hidden_layer_dim,
-            "hidden_layer_sparsity": self.hidden_layer_sparsity,
-            "last_layer_dim": self.last_layer_dim,
-            "last_layer_sparsity": self.last_layer_sparsity,
-        }
-
-        with open(folder + "/metadata_mach", "wb") as f:
-            pickle.dump(metadata, f)
-
-        i = 0
-        for classifiers in self.classifiers:
-            classifiers.checkpoint(folder + f"/classifier_{i}")
-            i = i + 1
-
-    def save(self, folder):
-
-        if os.path.isfile(folder):
-            raise Exception("Provide a path to a directory")
-        if not os.path.exists(folder):
-            os.mkdir(folder)
-
-        metadata = {
-            "max_label": self.max_label,
-            "num_classifiers": self.num_classifiers,
-            "use_softmax": self.use_softmax,
-            "input_dim": self.input_dim,
-            "hidden_layer_dim": self.hidden_layer_dim,
-            "hidden_layer_sparsity": self.hidden_layer_sparsity,
-            "last_layer_dim": self.last_layer_dim,
-            "last_layer_sparsity": self.last_layer_sparsity,
-        }
-
-        with open(folder + "/metadata_mach", "wb") as f:
-            pickle.dump(metadata, f)
-
-        i = 0
-        for classifiers in self.classifiers:
-            classifiers.save_for_inference(folder + f"/classifier_{i}")
-            i = i + 1
+    def save_for_inference(self, folder):
+        self.save(folder, save_for_inference=True)
 
     def load(folder):
 
-        if os.path.isfile(folder):
-            raise Exception(
-                "Provide path to a folder that contains metadata and classifiers"
-            )
-
         if not os.path.exists(folder):
-            raise Exception("The folder with the provided path does not exist")
+            raise FileNotFoundError(f"The passed in path {folder} does not exist")
+
+        if not os.path.isdir(folder):
+            raise Exception(
+                f"{folder} is not a path to a folder that contains metadata and classifiers"
+            )
 
         if not os.path.exists(folder + "/metadata_mach"):
             raise Exception("Metadata not found for the mach model")
@@ -121,30 +112,23 @@ class Mach:
         with open(folder + "/metadata_mach", "rb") as f:
             metadata = pickle.load(f)
 
-        max_label = metadata["max_label"]
-        num_classifiers = metadata["num_classifiers"]
-        use_softmax = metadata["use_softmax"]
-        input_dim = metadata["input_dim"]
-        hidden_layer_dim = metadata["hidden_layer_dim"]
-        hidden_layer_sparsity = metadata["hidden_layer_sparsity"]
-        last_layer_dim = metadata["last_layer_dim"]
-        last_layer_sparsity = metadata["last_layer_sparsity"]
-
         newMach = Mach(
-            max_label=max_label,
-            num_classifiers=num_classifiers,
-            input_dim=input_dim,
-            hidden_layer_dim=hidden_layer_dim,
-            hidden_layer_sparsity=hidden_layer_sparsity,
-            last_layer_dim=last_layer_dim,
-            last_layer_sparsity=last_layer_sparsity,
-            use_softmax=use_softmax,
+            max_label=metadata["max_label"],
+            num_classifiers=metadata["num_classifiers"],
+            input_dim=metadata["input_dim"],
+            hidden_layer_dim=metadata["hidden_layer_dim"],
+            hidden_layer_sparsity=metadata["hidden_layer_sparsity"],
+            last_layer_dim=metadata["last_layer_dim"],
+            last_layer_sparsity=metadata["last_layer_sparsity"],
+            use_softmax=metadata["use_softmax"],
         )
 
         newMach.classifiers = []
         for i in range(newMach.num_classifiers):
             if not os.path.exists(folder + f"/classifier_{i}"):
-                raise Exception(f"the {i}th classifier does not exist")
+                raise Exception(
+                    f"Could not find the {i}th classifier for the mach model inside the folder {folder}"
+                )
             newMach.classifiers.append(bolt.Network.load(folder + f"/classifier_{i}"))
 
         return newMach
