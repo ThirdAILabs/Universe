@@ -8,7 +8,7 @@
 namespace thirdai::dataset {
 
 /**
- *
+ * Maps string values to sparse ids as specified by the input map
  */
 class UidMapEncoding : public CategoricalEncoding {
  public:
