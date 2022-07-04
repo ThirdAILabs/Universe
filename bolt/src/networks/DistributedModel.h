@@ -158,7 +158,7 @@ inline void processTestBatch(
         "Warning: setShallowSave not implemented for DLRM;");
   }
 
-  void setLayerSparsity(uint32_t layer_index, float sparsity, uint32_t hash_seed, uint32_t shuffle_seed) {
+  void setSparsityUpdateHashing(uint32_t layer_index, float sparsity, uint32_t hash_seed, uint32_t shuffle_seed) {
     DistributedNetwork.checkLayerIndex(layer_index);
     DistributedNetwork._layers.at(layer_index)->setSparsity(sparsity, hash_seed, shuffle_seed);
   }
