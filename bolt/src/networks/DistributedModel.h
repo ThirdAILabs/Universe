@@ -1,5 +1,9 @@
 #pragma once
 
+#include "Model.h"
+#include <bolt/src/layers/LayerConfig.h>
+#include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <bolt/src/layers/BoltVector.h>
 #include <wrappers/src/LicenseWrapper.h>
 #include <cereal/types/vector.hpp>
 #include <bolt/src/layers/BoltVector.h>
@@ -9,28 +13,42 @@
 #include <dataset/src/Dataset.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/bolt_datasets/StreamingDataset.h>
+#include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <limits>
 #include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace thirdai::bolt {
 
-template <typename BATCH_T>
-class DistributedModel {
+class DistributedModel: Model<bolt::BoltBatch>{
  public:
-  BoltBatch _outputs;
+  enum get_type{
+    get_weights,
+    get_biases,
+    get_weights_gradients,
+    get_biases_gradients
+  };
 
-  DistributedModel()
-      : _batch_iter(0),
+  enum set_type{
+    set_weights,
+    set_biases,
+    set_weights_gradients,
+    set_biases_gradients
+  };
+
+  DistributedModel(SequentialConfigList configs, uint64_t input_dim)
+      : DistributedNetwork(std::move(configs), input_dim, true),
+        _batch_iter(0),
         _epoch_count(0),
         _rebuild_batch(0),
         _rehash_batch(0),
         _train_data(nullptr),
-        _train_labels(nullptr) {
-    thirdai::licensing::LicenseWrapper::checkLicense();
+        _train_labels(nullptr){
+        thirdai::licensing::LicenseWrapper::checkLicense();
   }
 
   /**
@@ -43,9 +61,9 @@ class DistributedModel {
    */
   InferenceMetricData predictDistributed(
       // Test dataset
-      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
+      const std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& test_data,
       // Test labels
-      const dataset::BoltDatasetPtr& labels,
+      const dataset::BoltDatasetPtr& test_labels,
       // Array to store output active neurons in. This should be null if it is
       // not desired for the output values to be returned or if the output is
       // dense.
@@ -53,6 +71,8 @@ class DistributedModel {
       // Array to store output activations in, will not return activations if
       // this is null
       float* output_activations,
+      // Use sparse inference
+      bool use_sparse_inference = false,
       // Metrics to compute
       const std::vector<std::string>& metric_names = {},
       // Restrict printouts
@@ -60,37 +80,17 @@ class DistributedModel {
       // Limit the number of batches used in the dataset
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
-  /**
-   * This function takes in a streaming dataset and uses it to evaluate the
-   * model. Metrics can be passed in to be computed for the test set, and will
-   * be returned by the function. Additionally a callback can optionally be
-   * provided that will be called on the output of the model for each batch.
-   */
-  InferenceMetricData predictOnStreamDistributed(
-      // Test dataset
-      const std::shared_ptr<dataset::StreamingDataset<BATCH_T>>& test_data,
-      // Metrics to compute
-      const std::vector<std::string>& metric_names = {},
-      // We choose not to store final layer activations for a streaming dataset
-      // as streaming datasets could be large enough that storing all of the
-      // activation is not possible and the size of the dataset is not known at
-      // the beginning, so instead we provide the ability to have a callback
-      // which is called with the output activations after every batch.
-      std::optional<std::function<void(const bolt::BoltBatch&, uint32_t)>>
-          batch_callback = std::nullopt,
-      // Restrict printouts
-      bool verbose = true);
 
-  void processTestBatchDistributed(const BATCH_T& batch_inputs,
-                                   BoltBatch& outputs,
-                                   const BoltBatch* batch_labels,
-                                   uint32_t* output_active_neurons,
-                                   float* output_activations,
-                                   MetricAggregator& metrics,
-                                   bool compute_metrics);
+inline void processTestBatch(
+    const bolt::BoltBatch& batch_inputs, BoltBatch& outputs,
+    const BoltBatch* batch_labels, uint32_t* output_active_neurons,
+    float* output_activations, uint64_t inference_output_dim,
+    MetricAggregator& metrics, bool compute_metrics);
+
+
   // Distributed Functions
   uint32_t initTrainDistributed(
-      std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
+      std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
       const dataset::BoltDatasetPtr& train_labels,
       // Clang tidy is disabled for this line because it wants to pass by
       // reference, but shared_ptrs should not be passed by reference
@@ -101,82 +101,92 @@ class DistributedModel {
 
   void updateParametersDistributed(float learning_rate);
 
-  // Computes forward path through the network.
-  virtual void forward(uint32_t batch_index, const BATCH_T& input,
-                       BoltVector& output, const BoltVector* labels) = 0;
+  uint32_t getInferenceOutputDim(bool use_sparse_inference) const final;
 
-  // Backpropagates gradients through the network
-  virtual void backpropagate(uint32_t batch_index, BATCH_T& input,
-                             BoltVector& output) = 0;
+    void forward(uint32_t batch_index, const bolt::BoltBatch& inputs,
+      BoltVector& output, const BoltVector* labels) final {
+        DistributedNetwork.forward(batch_index, inputs, output, labels);
+      };
 
-  // Performs parameter updates for the network.
-  virtual void updateParameters(float learning_rate, uint32_t iter) = 0;
+  void backpropagate(uint32_t batch_index, bolt::BoltBatch& inputs,
+      BoltVector& output) final{
+        DistributedNetwork.backpropagate(batch_index, inputs, output);
+      };
 
-  // Called for network to allocate any necessary state to store activations and
-  // gradients.
-  virtual void initializeNetworkState(uint32_t batch_size,
-                                      bool force_dense) = 0;
+  void updateParameters(float learning_rate, uint32_t iter) final {
+    DistributedNetwork.updateParameters(learning_rate , iter);
+  }
 
-  // Construct new hash functions (primarly for fully connected layers).
-  virtual void reBuildHashFunctions() = 0;
+  void initializeNetworkState(uint32_t batch_size, bool use_sparsity) final{
+    DistributedNetwork.initializeNetworkState(batch_size, use_sparsity);
+  };
 
-  // Rebuild any hash tables (primarly for fully connected layers).
-  virtual void buildHashTables() = 0;
 
-  // Shuffles neurons for random sampling.
-  virtual void shuffleRandomNeurons() = 0;
+  BoltBatch getOutputs(uint32_t batch_size, bool use_sparsity) final {
+    return DistributedNetwork.getOutputs(batch_size, use_sparsity);
+  }
 
-  // Allocates storage for activations and gradients for output layer.
-  virtual BoltBatch getOutputs(uint32_t batch_size, bool force_dense) = 0;
+  uint32_t getOutputDim() const final;
 
-  virtual uint32_t getOutputDim() const = 0;
+  uint32_t numLayers() const;
 
-  // Gets the dimension of the output layer during inference (depends of if
-  // sparse inference is enabled).
-  virtual uint32_t getInferenceOutputDim() const = 0;
+  float* getLayerData(uint32_t layer_index, get_type type);
 
-  virtual ~DistributedModel() = default;
+  void setLayerData(uint32_t layer_index, const float* data, set_type type);
 
-  /**
-   * shallow layer: Layer without optimizer state
-   * setShallow sets the layer to shallow or non-shallow, ie, it can remove or
-   * initialize the optimizer respectively
-   * Only called for trimming the model or for resuming training.
-   */
-  virtual void setShallow(bool shallow) = 0;
+  uint32_t getDim(uint32_t layer_index) const;
 
-  /**
-   * setShallowSave sets whether layer should be saved shallowly, ie, whether
-   * layers should be saved with or without the optimizer state
-   * Called right before saving the model so that archive method knows whether
-   * or not to store the optimizer state.
-   */
-  virtual void setShallowSave(bool shallow) = 0;
+  uint32_t getInputDim() const;
 
-  virtual bool anyLayerShallow() = 0;
+  void reBuildHashFunctions() final {
+    DistributedNetwork.reBuildHashFunctions();
+  }
+  
+
+  void buildHashTables() final {
+    DistributedNetwork.buildHashTables();
+  }
+  void setShallow(bool shallow) final {
+    (void)shallow;
+    throw thirdai::exceptions::NotImplemented(
+        "Warning: setShallow not implemented for DLRM;");
+  }
+
+  void setShallowSave(bool shallow) final {
+    (void)shallow;
+    throw thirdai::exceptions::NotImplemented(
+        "Warning: setShallowSave not implemented for DLRM;");
+  }
+
+  void setLayerSparsity(uint32_t layer_index, float sparsity, uint32_t hash_seed, uint32_t shuffle_seed) {
+    DistributedNetwork.checkLayerIndex(layer_index);
+    DistributedNetwork._layers.at(layer_index)->setSparsity(sparsity, hash_seed, shuffle_seed);
+  }
+
+  bool anyLayerShallow() final { return false; }
+  
+  BoltBatch _outputs;
+  FullyConnectedNetwork DistributedNetwork;
 
  protected:
-  uint32_t getRehashBatchDistributed(uint32_t rehash, uint32_t batch_size,
+  static uint32_t getRehashBatchDistributed(uint32_t rehash, uint32_t batch_size,
                                      uint32_t data_len);
 
-  uint32_t getRebuildBatchDistributed(uint32_t rebuild, uint32_t batch_size,
+  static uint32_t getRebuildBatchDistributed(uint32_t rebuild, uint32_t batch_size,
                                       uint32_t data_len);
 
   uint32_t _batch_iter;
 
  private:
+  
   uint32_t _epoch_count;
   uint32_t _rebuild_batch;
   uint32_t _rehash_batch;
-  std::shared_ptr<dataset::InMemoryDataset<BATCH_T>> _train_data;
+  std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>> _train_data;
   dataset::BoltDatasetPtr _train_labels;
 
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(_epoch_count, _batch_iter);
-  }
+
+
 };
 
 }  // namespace thirdai::bolt

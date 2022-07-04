@@ -121,7 +121,7 @@ def test_mnist_sparse_hidden_layer_distributed():
     assert acc_computed == acc["categorical_accuracy"]
 
 
-def test_mnist_sparse_hidden_layer_distributed():
+def test_mnist_sparse_inference_distributed():
     network = build_sparse_hidden_layer_classifier_distributed(
         input_dim=784, sparse_dim=20000, output_dim=10, sparsity=0.01
     )
@@ -196,6 +196,34 @@ def test_sparse_inference_with_sparse_output_distributed():
     assert sparse_predict["categorical_accuracy"] == acc_computed
 
 
+def test_get_set_weights_distributed():
+
+    network = build_sparse_output_layer_network_distributed()
+    train_x, train_y, test_x, test_y = load_mnist()
+
+    train_network_distributed(network, train_x, train_y, epochs=10)
+
+    original_acc, _ = network.predictDistributed(
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
+    )
+
+    assert original_acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
+
+    untrained_network = build_sparse_output_layer_network_distributed()
+
+    untrained_network.set_weights(0, network.get_weights(0))
+    untrained_network.set_weights(1, network.get_weights(1))
+
+    untrained_network.set_biases(0, network.get_biases(0))
+    untrained_network.set_biases(1, network.get_biases(1))
+
+    new_acc, _ = untrained_network.predictDistributed(
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
+    )
+
+    assert new_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
+
+
 def test_get_set_weights_biases_gradients():
 
     network = build_dense_output_layer_network_distributed()
@@ -225,6 +253,8 @@ def test_get_set_weights_biases_gradients():
     untrained_network.set_biases(1, network.get_biases(1))
 
 
+
+
     for j in range(batch_size):
         network.calculateGradientDistributed(j,bolt.CategoricalCrossEntropyLoss())
         untrained_network.set_weights_gradients(0, network.get_weights_gradients(0))
@@ -239,8 +269,9 @@ def test_get_set_weights_biases_gradients():
             test_x, test_y, metrics=["categorical_accuracy"], verbose=False
         )
 
-    new_acc, _ = network.predictDistributed(
+    new_acc, _ = untrained_network.predictDistributed(
             test_x, test_y, metrics=["categorical_accuracy"], verbose=False
         )
+    
 
     assert new_acc["categorical_accuracy"] == old_acc["categorical_accuracy"]

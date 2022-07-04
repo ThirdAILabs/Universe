@@ -638,14 +638,6 @@ void createBoltSubmodule(py::module_& module) {
            "layers in the neural network.\n"
            " * input_dim: Int (positive) - Dimension of input vectors in the "
            "dataset.")
-      .def(
-          "summary", &DistributedPyNetwork::printSummary,
-          py::arg("detailed") = false,
-          "Prints a summary of the network.\n"
-          "Arguments:\n"
-          " * detailed: boolean. Optional. When specified to \"True\", "
-          "summary will additionally print layer config details for each layer "
-          "in the network.")
       .def("initTrainDistributed", &DistributedPyNetwork::initTrainDistributed,
            py::arg("train_data"), py::arg("train_labels"),
            py::arg("batch_size") = 0, py::arg("rehash") = 0,
@@ -732,9 +724,9 @@ void createBoltSubmodule(py::module_& module) {
            " * learning rate: Float (positive) - Learning rate.\n"
 
            "Returns void")
-      .def("predictDistributed", &DistributedPyNetwork::predictDistributed,
-           py::arg("test_data"), py::arg("test_labels"),
-           py::arg("batch_size") = 0,
+      .def("predictDistributed",&DistributedPyNetwork::predictDistributed, py::arg("test_data"),
+           py::arg("test_labels"), py::arg("batch_size") = 2048,
+           py::arg("sparse_inference") = false,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -782,6 +774,9 @@ void createBoltSubmodule(py::module_& module) {
            "labels can be passed in as test_labels=None, in which case they "
            "will be ignored. If labels are not supplied then no metrics will "
            "be computed but activations will still be returned.\n"
+           " * sparse_inference: (Bool) - When this is true the model will use "
+           "sparsity in inference. This will lead to faster inference but can "
+           "cause a slight loss in accuracy. This option defaults to false.\n"
            " * metrics: List of str - Optional. The metrics to keep track of "
            "during training. "
            "See the section on metrics.\n"

@@ -5,8 +5,10 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <bolt/src/networks/DistributedModel.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/utils/SafeFileIO.h>
@@ -526,10 +528,10 @@ class PyDLRM final : public DLRM {
   }
 };
 
-class DistributedPyNetwork final : public FullyConnectedNetwork {
+class DistributedPyNetwork final : public DistributedModel {
  public:
   DistributedPyNetwork(SequentialConfigList configs, uint64_t input_dim)
-      : FullyConnectedNetwork(std::move(configs), input_dim, true /* is_distributed */) {}
+      : DistributedModel(std::move(configs), input_dim) {}
 
   uint32_t initTrainDistributed(const py::object& data,
                                 const py::object& labels,
@@ -542,21 +544,22 @@ class DistributedPyNetwork final : public FullyConnectedNetwork {
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
 
-    return FullyConnectedNetwork::initTrainDistributed(
+    return DistributedModel::initTrainDistributed(
         train_data.dataset, train_labels.dataset, rehash, rebuild, verbose);
   }
 
   void calculateGradientDistributed(uint32_t batch,
                                     const LossFunction& loss_fn) {
-    FullyConnectedNetwork::calculateGradientDistributed(batch, loss_fn);
+    DistributedModel::calculateGradientDistributed(batch, loss_fn);
   }
 
   void updateParametersDistributed(float learning_rate) {
-    FullyConnectedNetwork::updateParametersDistributed(learning_rate);
+    DistributedModel::updateParametersDistributed(learning_rate);
   }
 
   py::tuple predictDistributed(
       const py::object& data, const py::object& labels, uint32_t batch_size = 0,
+      bool use_sparse_inference = false,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
     // Redirect to python output.
@@ -572,7 +575,8 @@ class DistributedPyNetwork final : public FullyConnectedNetwork {
 
     uint32_t num_samples = test_data.dataset->len();
 
-    bool output_sparse = getInferenceOutputDim() < getOutputDim();
+    uint64_t inference_output_dim = DistributedModel::getInferenceOutputDim(use_sparse_inference);
+    bool output_sparse = inference_output_dim < DistributedModel::getOutputDim();
 
     // Declare pointers to memory for activations and active neurons, if the
     // allocation succeeds this will be assigned valid addresses by the
@@ -582,98 +586,49 @@ class DistributedPyNetwork final : public FullyConnectedNetwork {
     float* activations = nullptr;
 
     bool alloc_success =
-        allocateActivations(num_samples, getInferenceOutputDim(),
-                            &active_neurons, &activations, output_sparse);
+        allocateActivations(num_samples, inference_output_dim, &active_neurons,
+                            &activations, output_sparse);
 
-    auto metric_data = FullyConnectedNetwork::predictDistributed(
+    auto metric_data = DistributedModel::predictDistributed(
         test_data.dataset, test_labels.dataset, active_neurons, activations,
-        metrics, verbose, batch_limit);
+        use_sparse_inference, metrics, verbose, batch_limit);
 
     py::dict py_metric_data = py::cast(metric_data);
 
     return constructNumpyArrays(std::move(py_metric_data), num_samples,
-                                getInferenceOutputDim(), active_neurons,
+                                inference_output_dim, active_neurons,
                                 activations, output_sparse, alloc_success);
   }
 
-  void saveForInference(const std::string& filename) {
-    this->save(filename, /* shallow= */ true);
-  }
 
-  /**
-   * To save without optimizer, shallow=true
-   */
-  void save(const std::string& filename, bool shallow) {
-    std::ofstream filestream(filename, std::ios::binary);
-    cereal::BinaryOutputArchive oarchive(filestream);
-    this->setShallowSave(shallow);
-    oarchive(*this);
-  }
-
-  void checkpoint(const std::string& filename) {
-    if (this->anyLayerShallow()) {
-      throw std::logic_error("Trying to checkpoint a model with no optimizer");
-    }
-    this->save(filename, /* shallow= */ false);
-  }
-
-  /**
-   * Removes the optimizer state for the network by setting layers to shallow
-   */
-  void trimForInference() { this->setShallow(true); }
-
-  /**
-   * If any of the layer is shallow, that is without an optimzier, reinitiliaze
-   * optimizer for that layer to 0.
-   */
-  void reinitOptimizerForTraining() { this->setShallow(false); }
-
-  /**
-   * If any layer in the model is shallow i.e, has uninitialized optimizer,
-   * return false
-   */
-  bool isReadyForTraining() { return !this->anyLayerShallow(); }
-
-  static std::unique_ptr<DistributedPyNetwork> load(
-      const std::string& filename) {
-    std::ifstream filestream(filename, std::ios::binary);
-    cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<DistributedPyNetwork> deserialize_into(
-        new DistributedPyNetwork());
-    iarchive(*deserialize_into);
-    return deserialize_into;
-  }
 
   py::array_t<float> getWeights(uint32_t layer_index) {
-    if (layer_index >= _num_layers) {
+    if (layer_index >= DistributedModel::numLayers()) {
       return py::none();
     }
 
-    float* mem = _layers[layer_index]->getWeights();
+    float* mem = DistributedModel::getLayerData(layer_index, get_weights);
 
     py::capsule free_when_done(
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
 
-    size_t dim = _layers.at(layer_index)->getDim();
+    size_t dim = DistributedModel::getDim(layer_index);
     size_t prev_dim =
-        (layer_index > 0) ? _layers.at(layer_index - 1)->getDim() : _input_dim;
+        (layer_index > 0) ? DistributedModel::getDim(layer_index-1) : DistributedModel::getInputDim();
 
     return py::array_t<float>({dim, prev_dim},
                               {prev_dim * sizeof(float), sizeof(float)}, mem,
                               free_when_done);
   }
 
-  void setTrainable(uint32_t layer_index, bool trainable) {
-    _layers.at(layer_index)->setTrainable(trainable);
-  }
 
   void setWeights(
       uint32_t layer_index,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_weights) {
-    int64_t dim = _layers.at(layer_index)->getDim();
+    int64_t dim = DistributedModel::getDim(layer_index);
     int64_t prev_dim =
-        (layer_index > 0) ? _layers.at(layer_index - 1)->getDim() : _input_dim;
+        (layer_index > 0) ? DistributedModel::getDim(layer_index-1) : DistributedModel::getInputDim();
 
     if (new_weights.ndim() != 2) {
       std::stringstream err;
@@ -690,21 +645,40 @@ class DistributedPyNetwork final : public FullyConnectedNetwork {
       throw std::invalid_argument(err.str());
     }
 
-    _layers.at(layer_index)->setWeights(new_weights.data());
+    DistributedModel::setLayerData(layer_index, new_weights.data() ,set_weights);
   }
 
   void setWeightGradients(
       uint32_t layer_index,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_weights_gradients) {
-    _layers.at(layer_index)->setWeightGradients(new_weights_gradients.data());
+      int64_t dim = DistributedModel::getDim(layer_index);
+    int64_t prev_dim =
+        (layer_index > 0) ? DistributedModel::getDim(layer_index-1) : DistributedModel::getInputDim();
+
+    if (new_weights_gradients.ndim() != 2) {
+      std::stringstream err;
+      err << "Expected weight matrix to have 2 dimensions, received matrix "
+             "with "
+          << new_weights_gradients.ndim() << " dimensions.";
+      throw std::invalid_argument(err.str());
+    }
+    if (new_weights_gradients.shape(0) != dim || new_weights_gradients.shape(1) != prev_dim) {
+      std::stringstream err;
+      err << "Expected weight matrix to have dim (" << dim << ", " << prev_dim
+          << ") received matrix with dim (" << new_weights_gradients.shape(0) << ", "
+          << new_weights_gradients.shape(1) << ").";
+      throw std::invalid_argument(err.str());
+    }
+
+    DistributedModel::setLayerData(layer_index, new_weights_gradients.data() ,set_weights_gradients);
   }
 
   void setBiases(
       uint32_t layer_index,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_biases) {
-    int64_t dim = _layers.at(layer_index)->getDim();
+    int64_t dim = DistributedModel::getDim(layer_index);
     if (new_biases.ndim() != 1) {
       std::stringstream err;
       err << "Expected weight matrix to have 1 dimension, received matrix "
@@ -719,68 +693,82 @@ class DistributedPyNetwork final : public FullyConnectedNetwork {
       throw std::invalid_argument(err.str());
     }
 
-    _layers.at(layer_index)->setBiases(new_biases.data());
+    DistributedModel::setLayerData(layer_index, new_biases.data() ,set_biases);
   }
 
   void setBiasesGradients(
       uint32_t layer_index,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_biases_gradients) {
-    _layers.at(layer_index)->setBiasesGradients(new_biases_gradients.data());
+    int64_t dim = DistributedModel::getDim(layer_index);
+    if (new_biases_gradients.ndim() != 1) {
+      std::stringstream err;
+      err << "Expected weight matrix to have 1 dimension, received matrix "
+             "with "
+          << new_biases_gradients.ndim() << " dimensions.";
+      throw std::invalid_argument(err.str());
+    }
+    if (new_biases_gradients.shape(0) != dim) {
+      std::stringstream err;
+      err << "Expected weight matrix to have dim " << dim
+          << " received matrix with dim " << new_biases_gradients.shape(0) << ".";
+      throw std::invalid_argument(err.str());
+    }
+
+    DistributedModel::setLayerData(layer_index, new_biases_gradients.data() ,set_biases_gradients);
   }
 
   py::array_t<float> getBiases(uint32_t layer_index) {
-    if (layer_index >= _num_layers) {
+    if (layer_index >= DistributedModel::numLayers()) {
       return py::none();
     }
 
-    float* mem = _layers[layer_index]->getBiases();
+    float* mem = DistributedModel::getLayerData(layer_index, get_biases);
 
     py::capsule free_when_done(
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
 
-    size_t dim = _layers.at(layer_index)->getDim();
+    size_t dim = DistributedModel::getDim(layer_index);
 
     return py::array_t<float>({dim}, {sizeof(float)}, mem, free_when_done);
   }
 
   py::array_t<float> getBiasesGradients(uint32_t layer_index) {
-    if (layer_index >= _num_layers) {
+    if (layer_index >= DistributedModel::numLayers()) {
       return py::none();
     }
 
-    float* mem = _layers[layer_index]->getBiasesGradient();
+    float* mem = DistributedModel::getLayerData(layer_index, get_biases_gradients);
 
     py::capsule free_when_done(
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
 
-    size_t dim = _layers.at(layer_index)->getDim();
+    size_t dim = DistributedModel::getDim(layer_index);
 
     return py::array_t<float>({dim}, {sizeof(float)}, mem, free_when_done);
   }
 
   py::array_t<float> getWeightsGradients(uint32_t layer_index) {
-    if (layer_index >= _num_layers) {
+    
+    if (layer_index >= DistributedModel::numLayers()) {
       return py::none();
     }
 
-    float* mem = _layers[layer_index]->getWeightsGradient();
+    float* mem = DistributedModel::getLayerData(layer_index, get_weights_gradients);
 
     py::capsule free_when_done(
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
 
-    size_t dim = _layers.at(layer_index)->getDim();
+    size_t dim = DistributedModel::getDim(layer_index);
+    size_t prev_dim =
+        (layer_index > 0) ? DistributedModel::getDim(layer_index-1) : DistributedModel::getInputDim();
 
-    return py::array_t<float>({dim}, {sizeof(float)}, mem, free_when_done);
+    return py::array_t<float>({dim, prev_dim},
+                              {prev_dim * sizeof(float), sizeof(float)}, mem,
+                              free_when_done);
   }
 
  private:
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(cereal::base_class<FullyConnectedNetwork>(this));
-  }
   static void printCopyWarning(const std::string& array_name,
                                const py::str& dtype_recv,
                                const std::string& dtype_expected) {
@@ -881,8 +869,6 @@ class DistributedPyNetwork final : public FullyConnectedNetwork {
         py::str(obj.get_type()).cast<std::string>());
   }
 
-  // Private constructor for Cereal. See https://uscilab.github.io/cereal/
-  DistributedPyNetwork() : FullyConnectedNetwork(){};
 };
 }  // namespace thirdai::bolt::python
 

@@ -2,7 +2,6 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
-#include "DistributedModel.h"
 #include "Model.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
@@ -19,10 +18,11 @@
 namespace thirdai::bolt {
 
 class DLRM;
+class DistributedModel;
 
-class FullyConnectedNetwork : public Model<bolt::BoltBatch>,
-                              public DistributedModel<bolt::BoltBatch> {
+class FullyConnectedNetwork : public Model<bolt::BoltBatch>{
   friend class DLRM;
+  friend class DistributedModel;
 
  public:
   FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim,
