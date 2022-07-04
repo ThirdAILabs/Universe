@@ -76,10 +76,17 @@ class FullyConnectedLayerNode final
 
   uint32_t outputDim() const final { return _config.dim; }
 
+  uint32_t numNonzerosInOutput() const final { return _outputs[0].len; }
+
   void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
     // TODO(Nicholas): rename createBatchState
     _outputs =
         _layer->createBatchState(batch_size, /* use_sparsity=*/use_sparsity);
+  }
+
+  void cleanupAfterBatchProcessing() final {
+    BoltBatch empty_outputs;
+    _outputs = std::move(empty_outputs);
   }
 
   std::vector<NodePtr> getPredecessors() const final { return {_predecessor}; }
