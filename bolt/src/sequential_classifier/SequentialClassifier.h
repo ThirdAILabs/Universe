@@ -13,7 +13,6 @@
 #include <dataset/src/bolt_datasets/ShuffleBatchBuffer.h>
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
 #include <dataset/src/encodings/categorical/StringToUidMap.h>
-#include <dataset/src/encodings/count_history/DynamicCounts.h>
 #include <algorithm>
 #include <cstddef>
 #include <limits>
@@ -294,9 +293,13 @@ class SequentialClassifier {
   }
 
   void checkValidSchema() {
-    std::vector<std::string> valid_keys{"user", "item", "timestamp",
-                                        "text_attr", "categorical_attr",
-                                        "trackable_quantity", "target"};
+    std::vector<std::string> valid_keys{"user",
+                                        "item",
+                                        "timestamp",
+                                        "text_attr",
+                                        "categorical_attr",
+                                        "trackable_quantity",
+                                        "target"};
     for (const auto& [key, _] : _schema) {
       if (std::count(valid_keys.begin(), valid_keys.end(), key) == 0) {
         std::stringstream ss;

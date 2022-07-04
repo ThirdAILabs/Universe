@@ -24,7 +24,8 @@ class CategoricalBlockTest : public BlockTest {
    * of vectors of integers.
    */
   static std::vector<std::vector<uint32_t>> generate_int_matrix(
-      uint32_t n_rows, uint32_t n_cols, uint32_t max=std::numeric_limits<uint32_t>::max()) {
+      uint32_t n_rows, uint32_t n_cols,
+      uint32_t max = std::numeric_limits<uint32_t>::max()) {
     std::vector<std::vector<uint32_t>> matrix;
     for (uint32_t row_idx = 0; row_idx < n_rows; row_idx++) {
       std::vector<uint32_t> row;
@@ -121,7 +122,8 @@ TEST_F(CategoricalBlockTest, ContiguousNumericIdWithGraph) {
   CategoricalBlock block(/* col = */ 0, /* dim = */ n_ids, graph,
                          block_max_n_neighbors);
 
-  auto int_matrix = generate_int_matrix(/* n_rows = */ 1000, /* n_cols = */ 1, /* max = */ n_ids);
+  auto int_matrix = generate_int_matrix(/* n_rows = */ 1000, /* n_cols = */ 1,
+                                        /* max = */ n_ids);
   auto input_matrix = generate_input_matrix(int_matrix);
 
   for (const auto& row : input_matrix) {
@@ -164,7 +166,8 @@ TEST_F(CategoricalBlockTest, StringToUidMapWithGraph) {
   CategoricalBlock block(/* col = */ 0, map_encoding, graph,
                          block_max_n_neighbors);
 
-  auto int_matrix = generate_int_matrix(/* n_rows = */ 1, /* n_cols = */ 1, /* max = */ n_ids);
+  auto int_matrix = generate_int_matrix(/* n_rows = */ 1, /* n_cols = */ 1,
+                                        /* max = */ n_ids);
   auto input_matrix = generate_input_matrix(int_matrix);
 
   for (const auto& row : input_matrix) {
@@ -188,7 +191,7 @@ TEST_F(CategoricalBlockTest, StringToUidMapWithGraph) {
     ASSERT_EQ(entries_under_n_id, 1);
 
     auto nbrs = (*graph)[map_encoding->uidToClass(current_id)];
-    
+
     std::unordered_map<std::string, bool> neighbor_exists;
     for (const auto& nbr : nbrs) {
       neighbor_exists[nbr] = true;
@@ -196,7 +199,7 @@ TEST_F(CategoricalBlockTest, StringToUidMapWithGraph) {
     ASSERT_EQ(entries.size(), std::min(nbrs.size(), block_max_n_neighbors) + 1);
     for (const auto& [key, val] : entries) {
       ASSERT_LT(key, block.featureDim());
-      if (key > n_ids) {  
+      if (key > n_ids) {
         ASSERT_EQ(val, 1.0);
         auto class_name = map_encoding->uidToClass(key - n_ids);
         ASSERT_TRUE(neighbor_exists[class_name]);

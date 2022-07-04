@@ -13,7 +13,6 @@
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
-#include <dataset/src/encodings/count_history/DynamicCounts.h>
 #include <dataset/src/encodings/text/CharKGram.h>
 #include <dataset/src/encodings/text/PairGram.h>
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
@@ -50,16 +49,6 @@ void createDatasetSubmodule(py::module_& module) {
       dataset_submodule.def_submodule("text_encodings");
   auto categorical_encoding_submodule =
       dataset_submodule.def_submodule("categorical_encodings");
-
-  py::class_<DynamicCounts>(dataset_submodule, "DynamicCounts")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, uint32_t>(),
-           py::arg("max_range"), py::arg("n_rows"), py::arg("range_pow"),
-           py::arg("lifetime"),
-           py::arg("reduce_range_pow_every_n_sketches") = 2)
-      .def("index", &DynamicCounts::index, py::arg("id"), py::arg("timestamp"),
-           py::arg("inc"))
-      .def("query", &DynamicCounts::query, py::arg("id"),
-           py::arg("start_timestamp"), py::arg("range"));
 
   py::class_<BoltVector>(dataset_submodule, "BoltVector")
       .def("to_string", &BoltVector::toString)
@@ -211,17 +200,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &DenseArrayBlock::isDense,
            "Returns true since this is a dense encoding.");
 
-  py::class_<DynamicCountsConfig>(block_submodule, "DynamicCountsConfig")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, uint32_t>(),
-           py::arg("max_range"), py::arg("n_rows"), py::arg("range_pow"),
-           py::arg("lifetime"),
-           py::arg("reduce_range_pow_every_n_sketches") = 2);
-
   py::class_<TrendBlock, Block, std::shared_ptr<TrendBlock>>(
       block_submodule, "Trend", "A block that encodes time series trends.")
-      // bool has_count_col, size_t id_col, size_t timestamp_col,
-      //  size_t count_col, size_t horizon, size_t lookback,
-      //  DynamicCountsConfig& index_config
       .def(py::init<bool, size_t, size_t, size_t, size_t, size_t>(),
            py::arg("has_count_col"), py::arg("id_col"),
            py::arg("timestamp_col"), py::arg("count_col"), py::arg("horizon"),

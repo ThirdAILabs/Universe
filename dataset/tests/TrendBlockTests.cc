@@ -48,7 +48,10 @@ class TrendBlockTests : public BlockTest {
     return samples;
   }
 
-  static void checkSegment(std::unordered_map<uint32_t, float>& entries, size_t lookback, bool can_check_mean, float delta, uint32_t id, bool neighbor, uint32_t neighbor_idx=0) {
+  static void checkSegment(std::unordered_map<uint32_t, float>& entries,
+                           size_t lookback, bool can_check_mean, float delta,
+                           uint32_t id, bool neighbor,
+                           uint32_t neighbor_idx = 0) {
     uint32_t offset = neighbor ? (neighbor_idx + 1) * (lookback + 1) : 0;
     auto mean = entries.at(offset + lookback);
     if (can_check_mean) {
@@ -154,9 +157,8 @@ TEST_F(TrendBlockTests, Graph) {
 
   std::vector<std::shared_ptr<Block>> blocks{std::make_shared<TrendBlock>(
       /* has_count_col = */ true, /* id_col = */ 0,
-      /* timestamp_col = */ 1, /* count_col = */ 2,
-      horizon, lookback, 
-      graph, block_max_n_neighbors)};
+      /* timestamp_col = */ 1, /* count_col = */ 2, horizon, lookback, graph,
+      block_max_n_neighbors)};
 
   auto samples =
       makeTrivialSamples(/* n_ids = */ n_ids, /* n_days = */ 365,
@@ -175,14 +177,15 @@ TEST_F(TrendBlockTests, Graph) {
     auto entries = vectorEntries(vec);
     ASSERT_EQ(entries.size(), (expected_n_neighbors + 1) * (lookback + 1));
     bool can_check_mean = i >= (lookback + horizon + 1) * n_ids;
-    checkSegment(entries, lookback, can_check_mean, delta, id, /* neighbor */ false);
+    checkSegment(entries, lookback, can_check_mean, delta, id,
+                 /* neighbor */ false);
     for (uint32_t i = 0; i < expected_n_neighbors; i++) {
-      checkSegment(entries, lookback, can_check_mean, delta, nbrs[i], /* neighbor */ true, /* neighbor_idx = */ i);
+      checkSegment(entries, lookback, can_check_mean, delta, nbrs[i],
+                   /* neighbor */ true, /* neighbor_idx = */ i);
     }
     i++;
   }
 }
-
 
 // TODO(Geordie): Should change lifetime to check number of samples too because
 // otherwise if we have a window size of 1 and lag of zero we keep making new

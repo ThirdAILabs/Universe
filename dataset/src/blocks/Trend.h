@@ -2,13 +2,9 @@
 
 #include "BlockInterface.h"
 #include <hashing/src/MurmurHash.h>
-#include <dataset/src/encodings/count_history/DynamicCounts.h>
+#include <dataset/src/encodings/count_history/DailyCountHistoryIndex.h>
 #include <dataset/src/utils/TimeUtils.h>
-#include <charconv>
 #include <cstdlib>
-#include <ctime>
-#include <limits>
-#include <unordered_map>
 
 namespace thirdai::dataset {
 
@@ -29,27 +25,18 @@ class TrendBlock : public Block {
         _id_col(id_col),
         _timestamp_col(timestamp_col),
         _count_col(count_col),
-        _index(DynamicCountsConfig(/* max_range = */ 1, /* n_rows = */ 5,
-                                   /* range_pow = */ 22,
-                                   /* lifetime = */ _lifetime)),
+        _index(/* n_rows = */ 5, /* range_pow = */ 22,
+               /* lifetime = */ _lifetime),
         _graph(std::move(graph)),
         _max_n_neighbors(max_n_neighbors) {
-    
     if (_graph != nullptr && _max_n_neighbors == 0) {
       throw std::invalid_argument(
-          "Provided a graph but `max_n_neighbors` is set to 0. This means "
+          "[SequentialClassifier] Provided a graph but `max_n_neighbors` is "
+          "set to 0. This means "
           "graph information will not be used at all.");
     }
-    
-    size_t max_col_idx = 0;
-    max_col_idx = std::max(max_col_idx, _id_col);
-    max_col_idx = std::max(max_col_idx, _timestamp_col);
-    if (_has_count_col) {
-      max_col_idx = std::max(max_col_idx, _count_col);
-    }
-    _expected_num_cols = max_col_idx + 1;
 
-    assert(_lookback != 0);
+    _expected_num_cols = expectedNumCols();
   }
 
   uint32_t featureDim() const final {
@@ -71,37 +58,49 @@ class TrendBlock : public Block {
  protected:
   void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) final {
-    uint32_t id = getId(input_row[_id_col]);
-    uint32_t timestamp = getTimestamp(input_row);
-    float count = getCount(input_row);
-
-    _index.index(id, timestamp, count);
-    addFeaturesForId(id, timestamp, vec);
-
     std::string id_str(input_row[_id_col]);
+    uint32_t id = idHash(id_str);
+    uint32_t timestamp = timestampFromInputRow(input_row);
+    float count = countFromInputRow(input_row);
+    _index.index(id, timestamp, count);
+
+    addFeaturesForId(id, timestamp, vec);
     if (_graph && _graph->count(id_str) > 0) {
       auto& neighbors = _graph->at(id_str);
-      for (size_t i = 0; i < std::min(_max_n_neighbors, neighbors.size());
-           i++) {
-        uint32_t neighbor_id = getId(neighbors[i]);
+      size_t included_nbrs = std::min(_max_n_neighbors, neighbors.size());
+      for (size_t i = 0; i < included_nbrs; i++) {
+        uint32_t neighbor_id = idHash(neighbors[i]);
         addFeaturesForId(neighbor_id, timestamp, vec);
       }
     }
   }
 
  private:
-  static uint32_t getId(const std::string_view id_str) {
+  uint32_t expectedNumCols() const {
+    size_t max_col_idx = 0;
+    max_col_idx = std::max(max_col_idx, _id_col);
+    max_col_idx = std::max(max_col_idx, _timestamp_col);
+    if (_has_count_col) {
+      max_col_idx = std::max(max_col_idx, _count_col);
+    }
+
+    return max_col_idx + 1;
+  }
+
+  static uint32_t idHash(const std::string_view id_str) {
     const char* start = id_str.data();
     uint32_t len = id_str.size();
     return hashing::MurmurHash(start, len, /* seed = */ 341);
   }
 
-  uint32_t getTimestamp(const std::vector<std::string_view>& input_row) const {
+  uint32_t timestampFromInputRow(
+      const std::vector<std::string_view>& input_row) const {
     std::tm time = TimeUtils::timeStringToTimeObject(input_row[_timestamp_col]);
     return TimeUtils::timeToEpoch(&time, 0);
   }
 
-  float getCount(const std::vector<std::string_view>& input_row) const {
+  float countFromInputRow(
+      const std::vector<std::string_view>& input_row) const {
     float count = 1.0;
     if (_has_count_col) {
       auto count_str = input_row[_count_col];
@@ -115,29 +114,41 @@ class TrendBlock : public Block {
                         SegmentedFeatureVector& vec) {
     std::vector<float> counts(_lookback);
     float sum = 0;
-    for (uint32_t i = 0; i < _lookback; i++) {
-      auto look_back = (_horizon + i) * SECONDS_IN_DAY;
-      // Prevent overflow if given a date < 1970.
-      auto query_timestamp = timestamp >= look_back ? timestamp - look_back : 0;
-      auto query_result = _index.query(id, query_timestamp, 1);
-      assert(query_result >= 0);
-      counts[i] = query_result;
-      sum += query_result;
-    }
+    fillCountsAndSum(id, timestamp, counts, sum);
+
     /*
       Center and normalize by sum so sum is 0 and
       values are always between -1 and 1.
     */
     float mean = sum / _lookback;
+    centerAndNormalize(counts, sum, mean);
+
+    for (const auto& count : counts) {
+      vec.addDenseFeatureToSegment(count);
+    }
+    vec.addDenseFeatureToSegment(mean);
+  }
+
+  void fillCountsAndSum(uint32_t id, uint32_t timestamp,
+                        std::vector<float>& counts, float& sum) {
+    for (uint32_t i = 0; i < _lookback; i++) {
+      auto look_back = (_horizon + i) * SECONDS_IN_DAY;
+      // Prevent overflow if given a date < 1970.
+      auto query_timestamp = timestamp >= look_back ? timestamp - look_back : 0;
+      auto query_result = _index.query(id, query_timestamp);
+      assert(query_result >= 0);
+      counts[i] = query_result;
+      sum += query_result;
+    }
+  }
+
+  static void centerAndNormalize(std::vector<float>& counts, float sum,
+                                 float mean) {
     if (sum != 0) {
       for (auto& count : counts) {
         count = (count - mean) / sum;
       }
     }
-    for (const auto& count : counts) {
-      vec.addDenseFeatureToSegment(count);
-    }
-    vec.addDenseFeatureToSegment(mean);
   }
 
   uint32_t _lifetime;
@@ -148,7 +159,7 @@ class TrendBlock : public Block {
   size_t _timestamp_col;
   size_t _count_col;
   size_t _expected_num_cols;
-  DynamicCounts _index;
+  DailyCountHistoryIndex _index;
   GraphPtr _graph;
   size_t _max_n_neighbors;
 };

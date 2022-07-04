@@ -621,7 +621,8 @@ void createBoltSubmodule(py::module_& module) {
       .def("train", &SequentialClassifier::train, py::arg("filename"),
            py::arg("epochs"), py::arg("learning_rate"),
            py::arg("overwrite_index") = false)
-      .def("predict", &SequentialClassifier::predict, py::arg("filename"), py::arg("output_filename") = std::nullopt);
+      .def("predict", &SequentialClassifier::predict, py::arg("filename"),
+           py::arg("output_filename") = std::nullopt);
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
