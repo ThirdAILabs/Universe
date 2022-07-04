@@ -21,7 +21,7 @@ class TrendBlock : public Block {
    */
   TrendBlock(bool has_count_col, size_t id_col, size_t timestamp_col,
              size_t count_col, size_t horizon, size_t lookback,
-             Graph graph = nullptr, size_t max_n_neighbors = 0)
+             GraphPtr graph = nullptr, size_t max_n_neighbors = 0)
       : _lifetime((lookback + horizon) * SECONDS_IN_DAY),
         _horizon(horizon),
         _lookback(lookback),
@@ -34,6 +34,13 @@ class TrendBlock : public Block {
                                    /* lifetime = */ _lifetime)),
         _graph(std::move(graph)),
         _max_n_neighbors(max_n_neighbors) {
+    
+    if (_graph != nullptr && _max_n_neighbors == 0) {
+      throw std::invalid_argument(
+          "Provided a graph but `max_n_neighbors` is set to 0. This means "
+          "graph information will not be used at all.");
+    }
+    
     size_t max_col_idx = 0;
     max_col_idx = std::max(max_col_idx, _id_col);
     max_col_idx = std::max(max_col_idx, _timestamp_col);
@@ -50,7 +57,7 @@ class TrendBlock : public Block {
     return (_lookback + 1) * multiplier;
   };
 
-  bool isDense() const final { return true; };
+  bool isDense() const final { return _max_n_neighbors == 0; };
 
   uint32_t expectedNumColumns() const final { return _expected_num_cols; };
 
@@ -69,7 +76,6 @@ class TrendBlock : public Block {
     float count = getCount(input_row);
 
     _index.index(id, timestamp, count);
-
     addFeaturesForId(id, timestamp, vec);
 
     std::string id_str(input_row[_id_col]);
@@ -118,7 +124,6 @@ class TrendBlock : public Block {
       counts[i] = query_result;
       sum += query_result;
     }
-
     /*
       Center and normalize by sum so sum is 0 and
       values are always between -1 and 1.
@@ -144,7 +149,7 @@ class TrendBlock : public Block {
   size_t _count_col;
   size_t _expected_num_cols;
   DynamicCounts _index;
-  Graph _graph;
+  GraphPtr _graph;
   size_t _max_n_neighbors;
 };
 

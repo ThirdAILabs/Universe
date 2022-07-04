@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
+#include <charconv>
 #include <memory>
 #include <vector>
 
@@ -101,6 +102,29 @@ class BlockTest : public testing::Test {
       sum += v;
     }
     return static_cast<uint32_t>(sum);
+  }
+
+  static GraphPtr buildGraph(uint32_t n_ids, uint32_t max_n_neighbors) {
+    auto graph = std::make_shared<Graph>();
+    for (uint32_t id = 0; id < n_ids; id++) {
+      for (uint32_t neighbor = 1; neighbor <= std::min(id, max_n_neighbors);
+           neighbor++) {
+        uint32_t neighbor_id = (id + neighbor) % n_ids;
+        graph->operator[](std::to_string(id))
+            .push_back(std::to_string(neighbor_id));
+      }
+    }
+    return graph;
+  }
+
+  static std::vector<uint32_t> getIntNeighbors(uint32_t id, Graph& graph) {
+    std::vector<uint32_t> int_nbrs;
+    for (const auto& str_nbr : graph[std::to_string(id)]) {
+      uint32_t nbr_id;
+      std::from_chars(str_nbr.data(), str_nbr.data() + str_nbr.size(), nbr_id);
+      int_nbrs.push_back(nbr_id);
+    }
+    return int_nbrs;
   }
 };
 

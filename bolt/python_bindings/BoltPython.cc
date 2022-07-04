@@ -7,6 +7,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -620,7 +621,7 @@ void createBoltSubmodule(py::module_& module) {
       .def("train", &SequentialClassifier::train, py::arg("filename"),
            py::arg("epochs"), py::arg("learning_rate"),
            py::arg("overwrite_index") = false)
-      .def("predict", &SequentialClassifier::predict, py::arg("filename"));
+      .def("predict", &SequentialClassifier::predict, py::arg("filename"), py::arg("output_filename") = std::nullopt);
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {

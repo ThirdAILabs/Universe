@@ -4,6 +4,7 @@
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <memory>
+#include <stdexcept>
 #include <string_view>
 #include <unordered_map>
 
@@ -24,11 +25,17 @@ class CategoricalBlock : public Block {
    *   encoding: CategoricalEncoding - the categorical feature encoding model.
    */
   CategoricalBlock(uint32_t col, std::shared_ptr<CategoricalEncoding> encoding,
-                   Graph graph = nullptr, size_t max_n_neighbors = 0)
+                   GraphPtr graph = nullptr, size_t max_n_neighbors = 0)
       : _col(col),
         _encoding(std::move(encoding)),
         _graph(std::move(graph)),
-        _max_n_neighbors(max_n_neighbors) {}
+        _max_n_neighbors(max_n_neighbors) {
+    if (_graph != nullptr && _max_n_neighbors == 0) {
+      throw std::invalid_argument(
+          "Provided a graph but `max_n_neighbors` is set to 0. This means "
+          "graph information will not be used at all.");
+    }
+  }
 
   /**
    * Constructor with default encoder.
@@ -38,10 +45,10 @@ class CategoricalBlock : public Block {
    *     the categorical feature to be encoded.
    *   dim: int - the dimension of the encoding.
    */
-  CategoricalBlock(uint32_t col, uint32_t dim)
-      : _col(col),
-        _encoding(std::make_shared<ContiguousNumericId>(dim)),
-        _max_n_neighbors(0) {}
+  CategoricalBlock(uint32_t col, uint32_t dim, GraphPtr graph = nullptr,
+                   size_t max_n_neighbors = 0)
+      : CategoricalBlock(col, std::make_shared<ContiguousNumericId>(dim),
+                         std::move(graph), max_n_neighbors) {}
 
   uint32_t featureDim() const final {
     uint32_t multiplier = _max_n_neighbors > 0 ? 2 : 1;
@@ -72,7 +79,7 @@ class CategoricalBlock : public Block {
  private:
   uint32_t _col;
   std::shared_ptr<CategoricalEncoding> _encoding;
-  Graph _graph;
+  GraphPtr _graph;
   size_t _max_n_neighbors;
 };
 

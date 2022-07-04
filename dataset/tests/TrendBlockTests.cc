@@ -8,6 +8,7 @@
 #include <limits>
 #include <memory>
 #include <sstream>
+#include <unordered_map>
 #include <valarray>
 #include <vector>
 
@@ -46,6 +47,26 @@ class TrendBlockTests : public BlockTest {
     }
     return samples;
   }
+
+  static void checkSegment(std::unordered_map<uint32_t, float>& entries, size_t lookback, bool can_check_mean, float delta, uint32_t id, bool neighbor, uint32_t neighbor_idx=0) {
+    uint32_t offset = neighbor ? (neighbor_idx + 1) * (lookback + 1) : 0;
+    auto mean = entries.at(offset + lookback);
+    if (can_check_mean) {
+      ASSERT_FLOAT_EQ(mean, static_cast<float>(id) / 2);
+    }
+    float sum = 0;
+    for (size_t i = 0; i < lookback; i++) {
+      sum += entries[i];
+    }
+    ASSERT_LE(std::abs(sum - 0.0), delta);
+
+    float expected_sum = mean * lookback;
+    float actual_sum = 0;
+    for (size_t i = 0; i < lookback; i++) {
+      actual_sum += entries[i] * expected_sum + mean;
+    }
+    ASSERT_FLOAT_EQ(expected_sum, actual_sum);
+  }
 };
 
 TEST_F(TrendBlockTests, Trivial) {
@@ -77,7 +98,6 @@ TEST_F(TrendBlockTests, Trivial) {
 }
 
 TEST_F(TrendBlockTests, CorrectCenteringAndNormalization) {
-  
   size_t n_ids = 100;
   size_t lookback = 10;
   std::vector<std::shared_ptr<Block>> blocks{std::make_shared<TrendBlock>(
@@ -122,6 +142,47 @@ TEST_F(TrendBlockTests, CorrectCenteringAndNormalization) {
 
   ASSERT_TRUE(found_nonzero_mean);
 }
+
+TEST_F(TrendBlockTests, Graph) {
+  size_t n_ids = 100;
+  size_t horizon = 1;
+  size_t lookback = 10;
+  size_t graph_max_n_neighbors = 10;
+  size_t block_max_n_neighbors = 8;
+
+  auto graph = buildGraph(n_ids, graph_max_n_neighbors);
+
+  std::vector<std::shared_ptr<Block>> blocks{std::make_shared<TrendBlock>(
+      /* has_count_col = */ true, /* id_col = */ 0,
+      /* timestamp_col = */ 1, /* count_col = */ 2,
+      horizon, lookback, 
+      graph, block_max_n_neighbors)};
+
+  auto samples =
+      makeTrivialSamples(/* n_ids = */ n_ids, /* n_days = */ 365,
+                         /* day_offset = */ 365, /* inc_by_id */ true);
+  auto vecs = makeSparseSegmentedVecs(samples, blocks, 256);
+
+  float delta = 1e-6;
+
+  size_t i = 0;
+
+  for (auto& vec : vecs) {
+    size_t id = i % n_ids;
+    auto nbrs = getIntNeighbors(id, *graph);
+    size_t expected_n_neighbors = std::min(nbrs.size(), block_max_n_neighbors);
+
+    auto entries = vectorEntries(vec);
+    ASSERT_EQ(entries.size(), (expected_n_neighbors + 1) * (lookback + 1));
+    bool can_check_mean = i >= (lookback + horizon + 1) * n_ids;
+    checkSegment(entries, lookback, can_check_mean, delta, id, /* neighbor */ false);
+    for (uint32_t i = 0; i < expected_n_neighbors; i++) {
+      checkSegment(entries, lookback, can_check_mean, delta, nbrs[i], /* neighbor */ true, /* neighbor_idx = */ i);
+    }
+    i++;
+  }
+}
+
 
 // TODO(Geordie): Should change lifetime to check number of samples too because
 // otherwise if we have a window size of 1 and lag of zero we keep making new

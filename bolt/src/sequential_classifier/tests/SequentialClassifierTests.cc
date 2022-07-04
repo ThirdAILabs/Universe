@@ -43,7 +43,8 @@ class SequentialClassifierTests : public testing::Test {
   //                              0,
 
   static SequentialClassifierConfig buildConfig() {
-    return {/* model_size = */ "small", /* task = */ "regression", /* horizon = */ 0, /* n_items = */ 100000,
+    return {/* model_size = */ "small", /* task = */ "regression",
+            /* horizon = */ 0, /* n_items = */ 100000,
             /*n_users = */ 100000};
   }
 
@@ -60,7 +61,8 @@ TEST_F(SequentialClassifierTests, ReuseTemporalBlocksForPrediction) {
   writeMockFile();
   SequentialClassifier seq(buildSchema(), buildConfig());
   std::cout << "A" << std::endl;
-  seq.train(MOCK_FILE, /* epochs = */ 1, /* learning_rate */ 0.0001, /* overwrite_index = */ false);
+  seq.train(MOCK_FILE, /* epochs = */ 1, /* learning_rate */ 0.0001,
+            /* overwrite_index = */ false);
   ASSERT_EQ(userTemporalBlockUseCount(seq), 1);
   ASSERT_EQ(itemTemporalBlockUseCount(seq), 1);
   std::cout << "B" << std::endl;
@@ -82,7 +84,8 @@ TEST_F(SequentialClassifierTests, NewTemporalBlocksForTraining) {
   seq.predict(MOCK_FILE);
   ASSERT_EQ(userTemporalBlockUseCount(seq), 3);
   ASSERT_EQ(itemTemporalBlockUseCount(seq), 3);
-  seq.train(MOCK_FILE, /* epochs = */ 1, /* learning_rate */ 0.0001, /* overwrite_index = */ true);
+  seq.train(MOCK_FILE, /* epochs = */ 1, /* learning_rate */ 0.0001,
+            /* overwrite_index = */ true);
   ASSERT_EQ(userTemporalBlockUseCount(seq), 1);
   ASSERT_EQ(itemTemporalBlockUseCount(seq), 1);
   removeMockFile();
@@ -92,7 +95,8 @@ TEST_F(SequentialClassifierTests, SameModelForTraining) {
   SequentialClassifier seq(buildSchema(), buildConfig());
   seq.train(MOCK_FILE, /* epochs = */ 1, /* learning_rate */ 0.0001);
   float rmse_after_train_once = seq.predict(MOCK_FILE);
-  seq.train(MOCK_FILE, /* epochs = */ 1, /* learning_rate */ 0.0001, /* overwrite_index = */ true);
+  seq.train(MOCK_FILE, /* epochs = */ 1, /* learning_rate */ 0.0001,
+            /* overwrite_index = */ true);
   float rmse_after_train_twice = seq.predict(MOCK_FILE);
   ASSERT_LT(rmse_after_train_twice, rmse_after_train_once);
   removeMockFile();

@@ -13,10 +13,11 @@ class StringToUidMap : public CategoricalEncoding {
   void encodeCategory(std::string_view id, SegmentedFeatureVector& vec,
                       uint32_t offset) final {
     std::string class_name(id);
+    size_t uid;
 #pragma omp critical(string_to_uid_map)
     {
       if (_class_to_uid.count(class_name) == 0) {
-        size_t uid = _class_to_uid.size();
+        uint32_t uid = _class_to_uid.size();
         if (uid >= _n_classes) {
           uid = _n_classes - 1;
           std::cout << "WARNING: expected " << _n_classes << " classes, found "
@@ -27,8 +28,8 @@ class StringToUidMap : public CategoricalEncoding {
         _class_to_uid[class_name] = uid;
         _uid_to_class[uid] = class_name;
       }
+      uid = _class_to_uid.at(class_name);
     }
-    size_t uid = _class_to_uid.at(class_name);
     vec.addSparseFeatureToSegment(uid + offset, /* value = */ 1.0);
   }
 
@@ -36,8 +37,10 @@ class StringToUidMap : public CategoricalEncoding {
 
   uint32_t featureDim() final { return _n_classes; }
 
+  std::string uidToClass(uint32_t uid) { return _uid_to_class[uid]; }
+
  private:
-  std::unordered_map<std::string, size_t> _class_to_uid;
+  std::unordered_map<std::string, uint32_t> _class_to_uid;
   std::vector<std::string> _uid_to_class;
   size_t _n_classes;
 };

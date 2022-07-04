@@ -2,10 +2,10 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <cstdint>
+#include <memory>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
-#include <memory>
 
 namespace thirdai::dataset {
 
@@ -141,7 +141,7 @@ class Block {
   size_t _use_count = 0;
 };
 
-using Graph =
-    std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>>;
+using Graph = std::unordered_map<std::string, std::vector<std::string>>;
+using GraphPtr = std::shared_ptr<Graph>;
 
 }  // namespace thirdai::dataset
