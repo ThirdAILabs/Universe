@@ -27,15 +27,13 @@ class TabularMetadata {
 
   uint32_t numClasses() const { return _class_id_to_class.size(); }
 
-  std::vector<std::string> getColumnNames() { return _column_names; }
-
   uint32_t getLabelCol() const { return _label_col_index; }
 
   std::unordered_map<std::string, uint32_t> getClassToIdMap() {
     return _class_to_class_id;
   }
 
-  std::string getColBin(uint32_t col, std::string str_val) {
+  std::string getColBin(uint32_t col, const std::string& str_val) {
     // map empty values to their own bin
     if (str_val == "") {
       return std::to_string(_num_non_empty_bins);
@@ -84,16 +82,15 @@ class TabularMetadata {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_num_non_empty_bins, _label_col_index, _column_names,
-            _column_dtypes, _col_to_max_val, _col_to_min_val,
-            _class_to_class_id, _class_id_to_class);
+    archive(_num_non_empty_bins, _label_col_index, _column_dtypes,
+            _col_to_max_val, _col_to_min_val, _class_to_class_id,
+            _class_id_to_class);
   }
 
   uint32_t _num_non_empty_bins =
       10;  // one additional bin is reserved for empty values
   uint32_t _label_col_index;
   uint32_t _max_salt_len;
-  std::vector<std::string> _column_names;
   std::vector<TabularDataType> _column_dtypes;
   std::unordered_map<uint32_t, double> _col_to_max_val;
   std::unordered_map<uint32_t, double> _col_to_min_val;
@@ -138,23 +135,9 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
     _metadata->_max_salt_len = std::to_string(column_datatypes.size()).size();
   }
 
-  bool expectsHeader() const final { return true; }
+  bool expectsHeader() const final { return false; }
 
-  void processHeader(const std::string& header) final {
-    std::vector<std::string_view> column_names =
-        parseCsvRow(header, _delimiter);
-    if (column_names.size() != _metadata->_column_dtypes.size()) {
-      throw std::invalid_argument(
-          "Mismatching number of columns in csv. Based on the datatypes "
-          "specified, expected " +
-          std::to_string(_metadata->_column_dtypes.size()) +
-          " columns but received " + std::to_string(column_names.size()) +
-          " columns.");
-    }
-    std::vector<std::string> str_column_names(column_names.begin(),
-                                              column_names.end());
-    _metadata->_column_names = str_column_names;
-  }
+  void processHeader(const std::string& header) final { (void)header; }
 
   void processRow(const std::string& row) final {
     std::vector<std::string_view> values = parseCsvRow(row, _delimiter);

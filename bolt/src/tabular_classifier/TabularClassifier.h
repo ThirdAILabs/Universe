@@ -4,7 +4,7 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/TabularBlocks.h>
-#include <dataset/src/bolt_datasets/batch_processors/TabularBatchProcessor.h>
+#include <dataset/src/bolt_datasets/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/bolt_datasets/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/encodings/categorical/UidMapEncoding.h>
 #include <dataset/src/utils/SafeFileIO.h>
@@ -71,10 +71,9 @@ class TabularClassifier {
             _metadata->getLabelCol(), std::make_shared<dataset::UidMapEncoding>(
                                           _metadata->getClassToIdMap()))};
 
-    std::shared_ptr<dataset::TabularBatchProcessor> batch_processor =
-        std::make_shared<dataset::TabularBatchProcessor>(
-            /* input_blocks */ input_blocks, /* target_blocks */ target_blocks,
-            _metadata);
+    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
+        std::make_shared<dataset::GenericBatchProcessor>(
+            /* input_blocks */ input_blocks, /* target_blocks */ target_blocks);
 
     auto dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
         data_loader, batch_processor);

@@ -38,9 +38,6 @@ class TextClassifier {
   }
 
  private:
-  void trainOnStreamingDataset(dataset::StreamingDataset<BoltBatch>& dataset,
-                               const LossFunction& loss, float learning_rate);
-
   std::shared_ptr<dataset::StreamingDataset<BoltBatch>> loadStreamingDataset(
       const std::string& filename, uint32_t batch_size = 256) {
     std::shared_ptr<dataset::DataLoader> data_loader =
