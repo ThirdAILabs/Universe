@@ -181,7 +181,7 @@ inline uint32_t getSecondBestLabel(const float* activations, uint32_t dim) {
         second = std::numeric_limits<float>::min();
   uint32_t max_id = 0, second_max_id = 0;
   if (dim < 2) {
-    throw std::invalid_argument("cant do this process");
+    throw std::invalid_argument("The output dimension should be atleast 2.");
   }
   for (uint32_t i = 0; i < dim; i++) {
     if (activations[i] > first) {
@@ -198,7 +198,8 @@ inline uint32_t getSecondBestLabel(const float* activations, uint32_t dim) {
 }
 
 template <typename BATCH_T>
-inline std::vector<float> Model<BATCH_T>::getInputGradients(
+inline std::pair<std::vector<float>, std::vector<uint32_t>>
+Model<BATCH_T>::getInputGradients(
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& batch_input,
     const LossFunction& loss_fn, const std::vector<uint32_t>& required_labels) {
   uint64_t num_batches = batch_input->numBatches();
@@ -212,41 +213,45 @@ inline std::vector<float> Model<BATCH_T>::getInputGradients(
   }
   initializeNetworkState(batch_input->at(0).getBatchSize(), true);
   std::vector<float> concatenated_grad;
-  for (uint64_t r = 0; r < num_batches; r++) {
-    BoltBatch output = getOutputs(batch_input->at(r).getBatchSize(), true);
-    for (uint32_t vec_id = 0; vec_id < batch_input->at(r).getBatchSize();
+  uint32_t total_count = 0;
+  std::vector<uint32_t> offset_values;
+  offset_values.push_back(0);
+  for (uint64_t id = 0; id < num_batches; id++) {
+    BoltBatch output = getOutputs(batch_input->at(id).getBatchSize(), true);
+    for (uint32_t vec_id = 0; vec_id < batch_input->at(id).getBatchSize();
          vec_id++) {
+      total_count += batch_input->at(id)[vec_id].len;
+      offset_values.push_back((total_count));
       // Initializing the input gradients, because they were not initialized
       // before.
-      batch_input->at(r)[vec_id].gradients =
-          new float[batch_input->at(r)[vec_id].len];
-      forward(vec_id, batch_input->at(r), output[vec_id], nullptr);
+      batch_input->at(id)[vec_id].gradients =
+          new float[batch_input->at(id)[vec_id].len];
+      forward(vec_id, batch_input->at(id), output[vec_id], nullptr);
       uint32_t required_index;
       if (required_labels.empty()) {
         required_index =
             getSecondBestLabel(output[vec_id].activations, getOutputDim());
       } else {
-        if (required_labels[r * batch_input->at(r).getBatchSize() + vec_id] <=
-            getOutputDim() - 1) {
-          required_index =
-              required_labels[r * batch_input->at(r).getBatchSize() + vec_id];
-        } else {
-          throw std::invalid_argument(
-              "one of the label crossing the output dim");
-        }
+        required_index =
+            (required_labels[id * batch_input->at(id).getBatchSize() +
+                             vec_id] <= getOutputDim() - 1)
+                ? required_labels[id * batch_input->at(id).getBatchSize() +
+                                  vec_id]
+                : throw std::invalid_argument(
+                      "one of the label crossing the output dim");
       }
       BoltVector batch_label = BoltVector::makeSparseVector(
           std::vector<uint32_t>{required_index}, std::vector<float>{1.0});
       loss_fn.lossGradients(output[vec_id], batch_label,
-                            batch_input->at(r).getBatchSize());
-      backpropagateInputForGradients(vec_id, batch_input->at(r),
+                            batch_input->at(id).getBatchSize());
+      backpropagateInputForGradients(vec_id, batch_input->at(id),
                                      output[vec_id]);
-      for (uint32_t i = 0; i < batch_input->at(r)[vec_id].len; i++) {
-        concatenated_grad.push_back(batch_input->at(r)[vec_id].gradients[i]);
+      for (uint32_t i = 0; i < batch_input->at(id)[vec_id].len; i++) {
+        concatenated_grad.push_back(batch_input->at(id)[vec_id].gradients[i]);
       }
     }
   }
-  return concatenated_grad;
+  return std::make_pair(std::move(concatenated_grad), std::move(offset_values));
 }
 
 template <typename BATCH_T>

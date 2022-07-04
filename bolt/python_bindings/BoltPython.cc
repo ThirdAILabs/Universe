@@ -303,7 +303,11 @@ void createBoltSubmodule(py::module_& module) {
            " * loss_fn: LossFunction - The loss function to minimize."
            " * required_labels: expected labels for each input vector default "
            "to empty vector"
-           " * batch_size: Batch size , default batch size is 256.")
+           " * batch_size: Batch size , default batch size is 256."
+           " Returns tuple (0) consisting of concatenated array of input "
+           "gradients and"
+           " (1) consisting of the offset values corresponding to input "
+           "vectors.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),
