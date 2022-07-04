@@ -68,8 +68,8 @@ def gen_single_sparse_layer_network(n_classes, sparsity=0.5):
     network = bolt.Network(layers=layers, input_dim=n_classes)
     return network
 
-#APIs for testing the distributed network
-
+# APIs for testing the distributed network(similar to functions defined above but for Distributed APIs)
+# Constructs a bolt network with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
 def build_sparse_hidden_layer_classifier_distributed(input_dim, sparse_dim, output_dim, sparsity):
     layers = [
         bolt.FullyConnected(

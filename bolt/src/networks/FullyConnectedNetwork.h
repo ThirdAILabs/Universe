@@ -20,7 +20,7 @@ namespace thirdai::bolt {
 class DLRM;
 class DistributedModel;
 
-class FullyConnectedNetwork : public Model<bolt::BoltBatch>{
+class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   friend class DLRM;
   friend class DistributedModel;
 
@@ -158,6 +158,9 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch>{
   std::vector<std::shared_ptr<SequentialLayer>> _layers;
   std::vector<BoltBatch> _states;
   uint32_t _num_layers;
+
+  // Added a flag here, to find whether the network 
+  // is running on a serial system or distributed system
   bool _is_distributed;
 
  private:

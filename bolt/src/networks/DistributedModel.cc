@@ -15,7 +15,11 @@ namespace thirdai::bolt {
 
 
 
-
+/*
+ * This function initializes the network on the node for which it 
+ * is called. It initializes the network, output array and return 
+ * number of batches available for training.
+*/
 uint32_t DistributedModel::initTrainDistributed(
     std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
     const dataset::BoltDatasetPtr& train_labels,
@@ -42,6 +46,11 @@ uint32_t DistributedModel::initTrainDistributed(
   return train_data->numBatches();
 }
 
+/*
+ * This function calculates the gradient using the train_data of 
+ * particular batch(provided using batch_no) and for a particular 
+ * loss_function.  
+*/
 void DistributedModel::calculateGradientDistributed(
     uint32_t batch, const LossFunction& loss_fn) {
   bolt::BoltBatch& batch_inputs = _train_data->at(batch);
@@ -60,6 +69,12 @@ void DistributedModel::calculateGradientDistributed(
   }
 }
 
+/*
+ * This function updates the parameters for the neural network
+ * using the updated gradients.
+ * Right now, the updates are dense meaning that every parameter
+ * is getting updated irrespective of type of training(dense or sparse)
+ */
 void DistributedModel::updateParametersDistributed(
     float learning_rate) {
   updateParameters(learning_rate, ++_batch_iter);
@@ -70,6 +85,7 @@ void DistributedModel::updateParametersDistributed(
     buildHashTables();
   }
 }
+
 
 InferenceMetricData DistributedModel::predictDistributed(
     const std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& test_data,
@@ -255,9 +271,5 @@ uint32_t DistributedModel::getRebuildBatchDistributed(
 }
 
 
-
-// The following functions are added to make Bolt Distributed work.
-// These functions are going to be extended to python with the help
-// of python bindings.
 
 }  // namespace thirdai::bolt

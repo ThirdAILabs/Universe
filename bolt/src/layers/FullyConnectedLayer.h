@@ -158,6 +158,8 @@ class FullyConnectedLayer final : public SequentialLayer {
   // This is only used if _this_is_dense == false
   std::vector<bool> _is_active;
 
+  // A flag to check whether the current network is running in the normal settings
+  // and distributed settings
   bool _is_distributed;
 
   LSHSamplingMode _sampling_mode;
@@ -212,6 +214,9 @@ class FullyConnectedLayer final : public SequentialLayer {
                                    float B1_bias_corrected,
                                    float B2_bias_corrected);
   inline void cleanupWithinBatchVars();
+
+  // hash_seed and shuffle_seed are the parameters to make sure the hash tables 
+  // are same on all the node in distributed settings.
   inline void initSparseDatastructures(std::random_device &rd, uint32_t hash_seed = time(nullptr), uint32_t shuffle_seed = time(nullptr));
   inline void deinitSparseDatastructures();
 

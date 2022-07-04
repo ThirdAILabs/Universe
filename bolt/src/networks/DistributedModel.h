@@ -165,7 +165,10 @@ inline void processTestBatch(
 
   bool anyLayerShallow() final { return false; }
   
+  // output  needed to be global variable because three 
+  // different function calls are using the same variable 
   BoltBatch _outputs;
+  
   FullyConnectedNetwork DistributedNetwork;
 
  protected:

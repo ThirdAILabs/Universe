@@ -388,7 +388,7 @@ void ConvLayer::setBiases(const float* new_biases) {
 }
 
 void ConvLayer::setWeightGradients(const float* update_weight_gradient) {
-  std::copy(update_weight_gradient, update_weight_gradient + _dim,
+  std::copy(update_weight_gradient, update_weight_gradient + _dim * _prev_dim,
             _w_gradient.begin());
 }
 

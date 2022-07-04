@@ -387,7 +387,7 @@ class DistributedPyNetwork final : public DistributedModel {
     auto train_data = convertPyObjectToBoltDataset(data, batch_size, false);
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
-
+    
     return DistributedModel::initTrainDistributed(
         train_data.dataset, train_labels.dataset, rehash, rebuild, verbose);
   }

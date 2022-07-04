@@ -1,4 +1,3 @@
-# Add an integration test marker for all tests in this file
 import pytest
 
 pytestmark = [pytest.mark.integration]
@@ -34,7 +33,7 @@ def load_mnist_labels():
     return np.array(labels)
 
 
-# Constructs a bolt network for mnist with a sparse output layer.
+# Constructs a bolt network for mnist with a sparse output layer in distributed setting.
 def build_sparse_output_layer_network_distributed():
     layers = [
         bolt.FullyConnected(dim=256, activation_function="ReLU"),
@@ -48,7 +47,7 @@ def build_sparse_output_layer_network_distributed():
     return network
 
 
-# Constructs a bolt network for mnist with a sparse output layer.
+# Constructs a bolt network for mnist with a sparse output layer in distributed setting.
 def build_dense_output_layer_network_distributed():
     layers = [
         bolt.FullyConnected(dim=256, activation_function="ReLU"),
