@@ -87,12 +87,16 @@ std::vector<float> TextClassifier::predict_on_sentence(
     const std::string& sentence) {
   BoltVector vec = dataset::PairgramHasher::computePairgrams(
       sentence, _model->getOutputDim());
-  BoltBatch bolt_batch(std::vector<BoltVector>{vec});
-  BoltBatch output = _model->getOutputs(bolt_batch.getBatchSize(), true);
-  _model->forward(0, bolt_batch, output[0], nullptr);
+  BoltVector output = BoltVector(_model->getOutputDim(), true);
+  if (_model->_states.empty()) {
+    throw std::invalid_argument(
+        "you may not trained the model. try training "
+        "the model first.");
+  }
+  _model->forward(0, vec, output, nullptr);
   std::vector<float> output_activations;
   for (uint32_t i = 0; i < _model->getOutputDim(); i++) {
-    output_activations.push_back(output[0].activations[i]);
+    output_activations.push_back(output.activations[i]);
   }
   return output_activations;
 }
