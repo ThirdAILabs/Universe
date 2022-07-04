@@ -203,14 +203,14 @@ Model<BATCH_T>::getInputGradients(
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& batch_input,
     const LossFunction& loss_fn, const std::vector<uint32_t>& required_labels) {
   uint64_t num_batches = batch_input->numBatches();
-  // Because of how the datasets are read we know that all batches will not
-  // have a batch size larger than this so we can just set the batch size
-  // here.
   if (!required_labels.empty() &&
       !(required_labels.size() ==
         num_batches * batch_input->at(0).getBatchSize())) {
     throw std::invalid_argument("number of labels does not match");
   }
+  // Because of how the datasets are read we know that all batches will not
+  // have a batch size larger than this so we can just set the batch size
+  // here.
   initializeNetworkState(batch_input->at(0).getBatchSize(), true);
   std::vector<float> concatenated_grad;
   uint32_t total_count = 0;
@@ -249,6 +249,8 @@ Model<BATCH_T>::getInputGradients(
       for (uint32_t i = 0; i < batch_input->at(id)[vec_id].len; i++) {
         concatenated_grad.push_back(batch_input->at(id)[vec_id].gradients[i]);
       }
+      delete[] batch_input->at(id)[vec_id].gradients;
+      batch_input->at(id)[vec_id].gradients = nullptr;
     }
   }
   return std::make_pair(std::move(concatenated_grad), std::move(offset_values));
