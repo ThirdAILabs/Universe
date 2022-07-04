@@ -5,7 +5,10 @@ pytestmark = [pytest.mark.integration]
 import os
 from thirdai import bolt, dataset
 import numpy as np
-from utils import train_network_distributed, build_sparse_hidden_layer_classifier_distributed
+from utils import (
+    train_network_distributed,
+    build_sparse_hidden_layer_classifier_distributed,
+)
 
 LEARNING_RATE = 0.0001
 
@@ -58,6 +61,7 @@ def build_dense_output_layer_network_distributed():
     ]
     network = bolt.DistributedNetwork(layers=layers, input_dim=784)
     return network
+
 
 def load_mnist():
     train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
@@ -229,48 +233,45 @@ def test_get_set_weights_biases_gradients():
     train_x, train_y, test_x, test_y = load_mnist()
     learning_rate = 0.0005
     batch_size = network.initTrainSingleNode(
-        train_x, 
+        train_x,
         train_y,
         rehash=3000,
         rebuild=10000,
         verbose=False,
-        batch_size=64,)
+        batch_size=64,
+    )
 
     untrained_network = build_dense_output_layer_network_distributed()
 
     batch_size = untrained_network.initTrainSingleNode(
-        train_x, 
+        train_x,
         train_y,
         rehash=3000,
         rebuild=10000,
         verbose=False,
-        batch_size=64,)
+        batch_size=64,
+    )
 
     untrained_network.set_weights(0, network.get_weights(0))
-    untrained_network.set_biases(0,network.get_biases(0))
+    untrained_network.set_biases(0, network.get_biases(0))
     untrained_network.set_weights(1, network.get_weights(1))
     untrained_network.set_biases(1, network.get_biases(1))
 
-
-
-
     for j in range(batch_size):
-        network.calculateGradientSingleNode(j,bolt.CategoricalCrossEntropyLoss())
+        network.calculateGradientSingleNode(j, bolt.CategoricalCrossEntropyLoss())
         untrained_network.set_weights_gradients(0, network.get_weights_gradients(0))
         untrained_network.set_biases_gradients(0, network.get_biases_gradients(0))
         untrained_network.set_weights_gradients(1, network.get_weights_gradients(1))
         untrained_network.set_biases_gradients(1, network.get_biases_gradients(1))
         untrained_network.updateParametersSingleNode(learning_rate)
         network.updateParametersSingleNode(learning_rate)
-    
 
     old_acc, _ = network.predictSingleNode(
-            test_x, test_y, metrics=["categorical_accuracy"], verbose=False
-        )
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
+    )
 
     new_acc, _ = untrained_network.predictSingleNode(
-            test_x, test_y, metrics=["categorical_accuracy"], verbose=False
-        )
-    
+        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
+    )
 
     assert abs(new_acc["categorical_accuracy"] - old_acc["categorical_accuracy"]) < 0.01

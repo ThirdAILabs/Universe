@@ -707,8 +707,8 @@ void createBoltSubmodule(py::module_& module) {
 
            "Returns number of batch")
       .def("calculateGradientSingleNode",
-           &DistributedPyNetwork::calculateGradientSingleNode,
-           py::arg("batch"), py::arg("loss_fn"),
+           &DistributedPyNetwork::calculateGradientSingleNode, py::arg("batch"),
+           py::arg("loss_fn"),
            "Calculates the gradient for the network on the given training "
            "batch.\n"
            "Arguments:\n"
@@ -722,15 +722,15 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("learning_rate"),
            "Updates the parameters for the neural network using the "
            "gradients values already present\n"
-           "Important: while using this function the updates are always" 
+           "Important: while using this function the updates are always"
            " DENSE"
            "Arguments:\n"
            " * learning rate: Float (positive) - Learning rate.\n"
 
            "Returns void")
-      .def("predictSingleNode",&DistributedPyNetwork::predictSingleNode, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("batch_size") = 2048,
-           py::arg("sparse_inference") = false,
+      .def("predictSingleNode", &DistributedPyNetwork::predictSingleNode,
+           py::arg("test_data"), py::arg("test_labels"),
+           py::arg("batch_size") = 2048, py::arg("sparse_inference") = false,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -808,7 +808,8 @@ void createBoltSubmodule(py::module_& module) {
            "1D Numpy array.")
       .def("set_weights_gradients", &DistributedPyNetwork::setWeightGradients,
            py::arg("layer_index"), py::arg("new_weights_gradients"),
-           "Sets the weights gradient array at the given layer index to the given 2D "
+           "Sets the weights gradient array at the given layer index to the "
+           "given 2D "
            "Numpy matrix. Throws an error if the dimension of the given weight "
            "matrix does not match the layer's current weight matrix.")
       .def("get_biases_gradients", &DistributedPyNetwork::getBiasesGradients,
@@ -817,7 +818,8 @@ void createBoltSubmodule(py::module_& module) {
            "Numpy array.")
       .def("get_weights_gradients", &DistributedPyNetwork::getWeightsGradients,
            py::arg("layer_index"),
-           "Returns the weight gradient matrix at the given layer index as a 2D Numpy "
+           "Returns the weight gradient matrix at the given layer index as a "
+           "2D Numpy "
            "matrix.")
       .def("get_weights", &DistributedPyNetwork::getWeights,
            py::arg("layer_index"),
@@ -828,7 +830,6 @@ void createBoltSubmodule(py::module_& module) {
            "Sets the weight matrix at the given layer index to the given 2D "
            "Numpy matrix. Throws an error if the dimension of the given weight "
            "matrix does not match the layer's current weight matrix.");
-
 
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 

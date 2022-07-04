@@ -1,15 +1,14 @@
 #pragma once
 
-#include "Model.h"
-#include <bolt/src/layers/LayerConfig.h>
-#include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <bolt/src/layers/BoltVector.h>
 #include <wrappers/src/LicenseWrapper.h>
 #include <cereal/types/vector.hpp>
+#include "Model.h"
 #include <bolt/src/layers/BoltVector.h>
+#include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/metrics/MetricAggregator.h>
+#include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/bolt_datasets/StreamingDataset.h>
@@ -24,16 +23,16 @@
 
 namespace thirdai::bolt {
 
-class DistributedModel: Model<bolt::BoltBatch>{
+class DistributedModel : Model<bolt::BoltBatch> {
  public:
-  enum get_type{
+  enum get_type {
     get_weights,
     get_biases,
     get_weights_gradients,
     get_biases_gradients
   };
 
-  enum set_type{
+  enum set_type {
     set_weights,
     set_biases,
     set_weights_gradients,
@@ -47,8 +46,8 @@ class DistributedModel: Model<bolt::BoltBatch>{
         _rebuild_batch(0),
         _rehash_batch(0),
         _train_data(nullptr),
-        _train_labels(nullptr){
-        thirdai::licensing::LicenseWrapper::checkLicense();
+        _train_labels(nullptr) {
+    thirdai::licensing::LicenseWrapper::checkLicense();
   }
 
   /**
@@ -61,7 +60,8 @@ class DistributedModel: Model<bolt::BoltBatch>{
    */
   InferenceMetricData predictSingleNode(
       // Test dataset
-      const std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& test_data,
+      const std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>&
+          test_data,
       // Test labels
       const dataset::BoltDatasetPtr& test_labels,
       // Array to store output active neurons in. This should be null if it is
@@ -80,13 +80,13 @@ class DistributedModel: Model<bolt::BoltBatch>{
       // Limit the number of batches used in the dataset
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
-
-inline void processTestBatch(
-    const bolt::BoltBatch& batch_inputs, BoltBatch& outputs,
-    const BoltBatch* batch_labels, uint32_t* output_active_neurons,
-    float* output_activations, uint64_t inference_output_dim,
-    MetricAggregator& metrics, bool compute_metrics);
-
+  inline void processTestBatch(const bolt::BoltBatch& batch_inputs,
+                               BoltBatch& outputs,
+                               const BoltBatch* batch_labels,
+                               uint32_t* output_active_neurons,
+                               float* output_activations,
+                               uint64_t inference_output_dim,
+                               MetricAggregator& metrics, bool compute_metrics);
 
   // Distributed Functions
   uint32_t initTrainSingleNode(
@@ -96,31 +96,29 @@ inline void processTestBatch(
       // reference, but shared_ptrs should not be passed by reference
       uint32_t rehash, uint32_t rebuild, bool verbose);
 
-  void calculateGradientSingleNode(uint32_t batch,
-                                    const LossFunction& loss_fn);
+  void calculateGradientSingleNode(uint32_t batch, const LossFunction& loss_fn);
 
   void updateParametersSingleNode(float learning_rate);
 
   uint32_t getInferenceOutputDim(bool use_sparse_inference) const final;
 
-    void forward(uint32_t batch_index, const bolt::BoltBatch& inputs,
-      BoltVector& output, const BoltVector* labels) final {
-        DistributedNetwork.forward(batch_index, inputs, output, labels);
-      };
-
-  void backpropagate(uint32_t batch_index, bolt::BoltBatch& inputs,
-      BoltVector& output) final{
-        DistributedNetwork.backpropagate(batch_index, inputs, output);
-      };
-
-  void updateParameters(float learning_rate, uint32_t iter) final {
-    DistributedNetwork.updateParameters(learning_rate , iter);
-  }
-
-  void initializeNetworkState(uint32_t batch_size, bool use_sparsity) final{
-    DistributedNetwork.initializeNetworkState(batch_size, use_sparsity);
+  void forward(uint32_t batch_index, const bolt::BoltBatch& inputs,
+               BoltVector& output, const BoltVector* labels) final {
+    DistributedNetwork.forward(batch_index, inputs, output, labels);
   };
 
+  void backpropagate(uint32_t batch_index, bolt::BoltBatch& inputs,
+                     BoltVector& output) final {
+    DistributedNetwork.backpropagate(batch_index, inputs, output);
+  };
+
+  void updateParameters(float learning_rate, uint32_t iter) final {
+    DistributedNetwork.updateParameters(learning_rate, iter);
+  }
+
+  void initializeNetworkState(uint32_t batch_size, bool use_sparsity) final {
+    DistributedNetwork.initializeNetworkState(batch_size, use_sparsity);
+  };
 
   BoltBatch getOutputs(uint32_t batch_size, bool use_sparsity) final {
     return DistributedNetwork.getOutputs(batch_size, use_sparsity);
@@ -141,11 +139,8 @@ inline void processTestBatch(
   void reBuildHashFunctions() final {
     DistributedNetwork.reBuildHashFunctions();
   }
-  
 
-  void buildHashTables() final {
-    DistributedNetwork.buildHashTables();
-  }
+  void buildHashTables() final { DistributedNetwork.buildHashTables(); }
   void setShallow(bool shallow) final {
     (void)shallow;
     throw thirdai::exceptions::NotImplemented(
@@ -158,39 +153,33 @@ inline void processTestBatch(
         "Warning: setShallowSave not implemented for DLRM;");
   }
 
-  
-
   bool anyLayerShallow() final { return false; }
 
-
   void setRandomSeed(uint32_t random_seed) const;
-  
-  // output  needed to be global variable because three 
-  // different function calls are using the same variable 
+
+  // output  needed to be global variable because three
+  // different function calls are using the same variable
   BoltBatch _outputs;
 
   FullyConnectedNetwork DistributedNetwork;
 
  protected:
-  static uint32_t getRehashBatchDistributed(uint32_t rehash, uint32_t batch_size,
-                                     uint32_t data_len);
+  static uint32_t getRehashBatchDistributed(uint32_t rehash,
+                                            uint32_t batch_size,
+                                            uint32_t data_len);
 
-  static uint32_t getRebuildBatchDistributed(uint32_t rebuild, uint32_t batch_size,
-                                      uint32_t data_len);
-
+  static uint32_t getRebuildBatchDistributed(uint32_t rebuild,
+                                             uint32_t batch_size,
+                                             uint32_t data_len);
 
   uint32_t _batch_iter;
 
  private:
-  
   uint32_t _epoch_count;
   uint32_t _rebuild_batch;
   uint32_t _rehash_batch;
   std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>> _train_data;
   dataset::BoltDatasetPtr _train_labels;
-
-
-
 };
 
 }  // namespace thirdai::bolt

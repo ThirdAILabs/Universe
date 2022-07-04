@@ -332,16 +332,16 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
 
   // continue if trainable layer
   /*
-    * In distributed setting, as of now the updates are dense as we 
-    * are averaging the gradient over multiple training examples.
-    * 
-    * //NOLINT because, clang was producing error as same function is
-    * being called in two different if-else blocks. However, the content 
-    * inside the _is_distributed block might change with time. Hence,
-    * was thinking of having different blocks. It also make is visually
-    * more clear.
-  */
-  if (_is_distributed) { //NOLINT
+   * In distributed setting, as of now the updates are dense as we
+   * are averaging the gradient over multiple training examples.
+   *
+   * //NOLINT because, clang was producing error as same function is
+   * being called in two different if-else blocks. However, the content
+   * inside the _is_distributed block might change with time. Hence,
+   * was thinking of having different blocks. It also make is visually
+   * more clear.
+   */
+  if (_is_distributed) {  // NOLINT
     updateDenseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
                                      B2_bias_corrected);
   } else if (!_prev_is_dense && !_this_is_dense) {
@@ -498,18 +498,18 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
 }
 
 inline void FullyConnectedLayer::initSparseDatastructures(
-        std::random_device &rd, uint32_t random_seed) {
+    std::random_device& rd, uint32_t random_seed) {
   _hasher = assignHashFunction(_sampling_config, _prev_dim);
 
   /*
    * Right now, we are making sure the hash seeds for all the nodes to be
-   * same, hence passing the hash_seed in the distributed block. 
-  */
-  if(_is_distributed){
+   * same, hence passing the hash_seed in the distributed block.
+   */
+  if (_is_distributed) {
     _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow, random_seed);
-  }else{
+  } else {
     _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
         1 << _sampling_config.range_pow);
@@ -524,14 +524,15 @@ inline void FullyConnectedLayer::initSparseDatastructures(
 
   std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
   /*
-    * Right now, we are making sure that rand_neurons for all the nodes to be
-    * same, hence rather than shuffling using rd(random_device), we are shuffling using 
-    * default_random_engine using the same shuffle_seed on every node in the 
-    * distributed block. 
-  */
-  if(_is_distributed){
-    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), std::default_random_engine(random_seed));
-  }else{
+   * Right now, we are making sure that rand_neurons for all the nodes to be
+   * same, hence rather than shuffling using rd(random_device), we are shuffling
+   * using default_random_engine using the same shuffle_seed on every node in
+   * the distributed block.
+   */
+  if (_is_distributed) {
+    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(),
+                 std::default_random_engine(random_seed));
+  } else {
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
   }
 }
@@ -650,10 +651,10 @@ void FullyConnectedLayer::setShallowSave(bool shallow) {
 }
 
 /*
- * Added the argument of hash_Seed and shuffle_seed to the set_sparsity functions
- * for making sure all the nodes in the distributed setting have the same hash tables.
- * Also, made sure that the setSparsity for usage other than in Distributed setting 
- * remain unaffacccted to this change.
+ * Added the argument of hash_Seed and shuffle_seed to the set_sparsity
+ * functions for making sure all the nodes in the distributed setting have the
+ * same hash tables. Also, made sure that the setSparsity for usage other than
+ * in Distributed setting remain unaffacccted to this change.
  */
 void FullyConnectedLayer::setSparsity(float sparsity, uint32_t random_seed) {
   deinitSparseDatastructures();

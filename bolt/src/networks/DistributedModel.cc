@@ -12,14 +12,11 @@
 
 namespace thirdai::bolt {
 
-
-
-
 /*
- * This function initializes the network on the node for which it 
- * is called. It initializes the network, output array and return 
+ * This function initializes the network on the node for which it
+ * is called. It initializes the network, output array and return
  * number of batches available for training.
-*/
+ */
 uint32_t DistributedModel::initTrainSingleNode(
     std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
     const dataset::BoltDatasetPtr& train_labels,
@@ -47,16 +44,15 @@ uint32_t DistributedModel::initTrainSingleNode(
 }
 
 /*
- * This function calculates the gradient using the train_data of 
- * particular batch(provided using batch_no) and for a particular 
- * loss_function.  
-*/
+ * This function calculates the gradient using the train_data of
+ * particular batch(provided using batch_no) and for a particular
+ * loss_function.
+ */
 void DistributedModel::calculateGradientSingleNode(
     uint32_t batch, const LossFunction& loss_fn) {
   bolt::BoltBatch& batch_inputs = _train_data->at(batch);
 
   const BoltBatch& batch_labels = _train_labels->at(batch);
-
 
 #pragma omp parallel for default(none) \
     shared(batch_inputs, batch_labels, _outputs, loss_fn)
@@ -75,8 +71,7 @@ void DistributedModel::calculateGradientSingleNode(
  * Right now, the updates are dense meaning that every parameter
  * is getting updated irrespective of type of training(dense or sparse)
  */
-void DistributedModel::updateParametersSingleNode(
-    float learning_rate) {
+void DistributedModel::updateParametersSingleNode(float learning_rate) {
   updateParameters(learning_rate, ++_batch_iter);
   if (_batch_iter % _rebuild_batch == (_rebuild_batch - 1)) {
     reBuildHashFunctions();
@@ -86,14 +81,12 @@ void DistributedModel::updateParametersSingleNode(
   }
 }
 
-
 InferenceMetricData DistributedModel::predictSingleNode(
     const std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& test_data,
     const dataset::BoltDatasetPtr& labels, uint32_t* output_active_neurons,
     float* output_activations, bool use_sparse_inference,
     const std::vector<std::string>& metric_names, bool verbose,
     uint32_t batch_limit) {
-  
   assert(output_activations != nullptr || output_active_neurons == nullptr);
   bool compute_metrics = labels != nullptr;
 
@@ -101,15 +94,17 @@ InferenceMetricData DistributedModel::predictSingleNode(
 
   uint64_t num_test_batches = std::min(test_data->numBatches(), batch_limit);
 
-  uint64_t inference_output_dim = DistributedNetwork.getInferenceOutputDim(use_sparse_inference);
+  uint64_t inference_output_dim =
+      DistributedNetwork.getInferenceOutputDim(use_sparse_inference);
 
   MetricAggregator metrics(metric_names, verbose);
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
-  DistributedNetwork.initializeNetworkState(batch_size, /* use_sparsity= */ use_sparse_inference);
-  BoltBatch outputs =
-      DistributedNetwork.getOutputs(batch_size, /* use_sparsity= */ use_sparse_inference);
+  DistributedNetwork.initializeNetworkState(
+      batch_size, /* use_sparsity= */ use_sparse_inference);
+  BoltBatch outputs = DistributedNetwork.getOutputs(
+      batch_size, /* use_sparsity= */ use_sparse_inference);
 
   ProgressBar bar(num_test_batches, verbose);
 
@@ -154,9 +149,8 @@ InferenceMetricData DistributedModel::predictSingleNode(
   metric_vals["test_time"] = test_time;
 
   return metric_vals;
-  }
+}
 
- 
 inline void DistributedModel::processTestBatch(
     const bolt::BoltBatch& batch_inputs, BoltBatch& outputs,
     const BoltBatch* batch_labels, uint32_t* output_active_neurons,
@@ -168,7 +162,8 @@ inline void DistributedModel::processTestBatch(
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
     // We set labels to nullptr so that they are not used in sampling during
     // inference.
-    DistributedNetwork.forward(vec_id, batch_inputs, outputs[vec_id], /*labels=*/nullptr);
+    DistributedNetwork.forward(vec_id, batch_inputs, outputs[vec_id],
+                               /*labels=*/nullptr);
 
     if (compute_metrics) {
       metrics.processSample(outputs[vec_id], (*batch_labels)[vec_id]);
@@ -190,78 +185,80 @@ inline void DistributedModel::processTestBatch(
   }
 }
 
-uint32_t DistributedModel::getInferenceOutputDim(bool use_sparse_inference) const {
+uint32_t DistributedModel::getInferenceOutputDim(
+    bool use_sparse_inference) const {
   return DistributedNetwork.getInferenceOutputDim(use_sparse_inference);
 }
 
-uint32_t DistributedModel::getOutputDim() const{
+uint32_t DistributedModel::getOutputDim() const {
   return DistributedNetwork.getOutputDim();
 }
 
-uint32_t DistributedModel::numLayers() const{
-    return DistributedNetwork._num_layers;
+uint32_t DistributedModel::numLayers() const {
+  return DistributedNetwork._num_layers;
 }
 
-float* DistributedModel::getLayerData(uint32_t layer_index, get_type type){
-  
-    switch(type){
-      case get_weights:
-        return DistributedNetwork._layers[layer_index]->getWeights();
+float* DistributedModel::getLayerData(uint32_t layer_index, get_type type) {
+  switch (type) {
+    case get_weights:
+      return DistributedNetwork._layers[layer_index]->getWeights();
       break;
-      case get_biases:
-        return DistributedNetwork._layers[layer_index]->getBiases();
+    case get_biases:
+      return DistributedNetwork._layers[layer_index]->getBiases();
       break;
-      case get_weights_gradients:
-        return DistributedNetwork._layers[layer_index]->getWeightsGradient();
+    case get_weights_gradients:
+      return DistributedNetwork._layers[layer_index]->getWeightsGradient();
       break;
-      case get_biases_gradients:
-        return DistributedNetwork._layers[layer_index]->getBiasesGradient();
+    case get_biases_gradients:
+      return DistributedNetwork._layers[layer_index]->getBiasesGradient();
       break;
-    }
-    throw std::invalid_argument("Wrong argument for getLayerData Function");
+  }
+  throw std::invalid_argument("Wrong argument for getLayerData Function");
   return NULL;
 }
 
-void DistributedModel::setLayerData(uint32_t layer_index, const float* set_data, set_type type){
-  
-    switch(type){
-      case set_weights:
-        DistributedNetwork._layers[layer_index]->setWeights(set_data);
+void DistributedModel::setLayerData(uint32_t layer_index, const float* set_data,
+                                    set_type type) {
+  switch (type) {
+    case set_weights:
+      DistributedNetwork._layers[layer_index]->setWeights(set_data);
       break;
-      case set_biases:
-        DistributedNetwork._layers[layer_index]->setBiases(set_data);
+    case set_biases:
+      DistributedNetwork._layers[layer_index]->setBiases(set_data);
       break;
-      case set_weights_gradients:
-        DistributedNetwork._layers[layer_index]->setWeightGradients(set_data);
+    case set_weights_gradients:
+      DistributedNetwork._layers[layer_index]->setWeightGradients(set_data);
       break;
-      case set_biases_gradients:
-        DistributedNetwork._layers[layer_index]->setBiasesGradients(set_data);
+    case set_biases_gradients:
+      DistributedNetwork._layers[layer_index]->setBiasesGradients(set_data);
       break;
-    }
+  }
 }
 
-uint32_t DistributedModel::getDim(uint32_t layer_index) const{
-    return DistributedNetwork._layers.at(layer_index)->getDim();
+uint32_t DistributedModel::getDim(uint32_t layer_index) const {
+  return DistributedNetwork._layers.at(layer_index)->getDim();
 }
 
-uint32_t DistributedModel::getInputDim() const{
+uint32_t DistributedModel::getInputDim() const {
   return DistributedNetwork._input_dim;
 }
 
-  void DistributedModel::setRandomSeed(uint32_t random_seed) const{
-    for(uint32_t i=0; i< DistributedNetwork._num_layers; i++){
-        if(DistributedNetwork._layers[i]->getSparsity()<1){
-          DistributedNetwork._layers[i]->setSparsity(DistributedNetwork._layers[i]->getSparsity() , random_seed);
-        }
+void DistributedModel::setRandomSeed(uint32_t random_seed) const {
+  for (uint32_t i = 0; i < DistributedNetwork._num_layers; i++) {
+    if (DistributedNetwork._layers[i]->getSparsity() < 1) {
+      DistributedNetwork._layers[i]->setSparsity(
+          DistributedNetwork._layers[i]->getSparsity(), random_seed);
     }
   }
+}
 
 static constexpr uint32_t RehashAutoTuneThreshold = 100000;
 static constexpr uint32_t RehashAutoTuneFactor1 = 100;
 static constexpr uint32_t RehashAutoTuneFactor2 = 20;
 
-uint32_t DistributedModel::getRehashBatchDistributed(
-    uint32_t rehash, uint32_t batch_size, uint32_t data_len) {
+uint32_t DistributedModel::getRehashBatchDistributed(uint32_t rehash,
+                                                     uint32_t batch_size,
+                                                     uint32_t data_len) {
   if (rehash == 0) {
     if (data_len < RehashAutoTuneThreshold) {
       rehash = data_len / RehashAutoTuneFactor2;
@@ -272,12 +269,11 @@ uint32_t DistributedModel::getRehashBatchDistributed(
   return std::max<uint32_t>(rehash / batch_size, 1);
 }
 
-uint32_t DistributedModel::getRebuildBatchDistributed(
-    uint32_t rebuild, uint32_t batch_size, uint32_t data_len) {
+uint32_t DistributedModel::getRebuildBatchDistributed(uint32_t rebuild,
+                                                      uint32_t batch_size,
+                                                      uint32_t data_len) {
   rebuild = rebuild != 0 ? rebuild : (data_len / 4);
   return std::max<uint32_t>(rebuild / batch_size, 1);
 }
-
-
 
 }  // namespace thirdai::bolt

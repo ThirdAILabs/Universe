@@ -21,7 +21,7 @@ SampledHashTable<LABEL_T>::SampledHashTable(uint64_t num_tables,
       _counters(num_tables * range, 0),
       _gen_rand(max_rand) {
   std::mt19937 generator(seed);
-  
+
   for (uint64_t i = 1; i < _max_rand; i++) {
     _gen_rand[i] = generator();
   }
