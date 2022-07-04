@@ -108,7 +108,7 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   float getSparsity() const final { return _sparsity; }
 
-  void setSparsity(float sparsity, uint32_t hash_seed = time(nullptr), uint32_t shuffle_seed = time(nullptr)) final;
+  void setSparsity(float sparsity, uint32_t hash_seed , uint32_t shuffle_seed ) final;
 
   const SamplingConfig& getSamplingConfig() const final {
     return _sampling_config;

@@ -710,8 +710,8 @@ void createBoltSubmodule(py::module_& module) {
            "Calculates the gradient for the network on the given training "
            "batch.\n"
            "Arguments:\n"
-           " * batch: Int (positive) The batch number on which gradients are "
-           "to be calcualted\n"
+           " * batch: Int (positive) The batch number for which gradients are "
+           "needed to be calcualted\n"
            " * loss_fn: LossFunction - The loss function to minimize.\n"
 
            "Returns void")
@@ -720,6 +720,8 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("learning_rate"),
            "Updates the parameters for the neural network using the "
            "gradients values already present\n"
+           "Important: while using this function the updates are always" 
+           " DENSE"
            "Arguments:\n"
            " * learning rate: Float (positive) - Learning rate.\n"
 
@@ -800,24 +802,21 @@ void createBoltSubmodule(py::module_& module) {
            "array.")
       .def("set_biases_gradients", &DistributedPyNetwork::setBiasesGradients,
            py::arg("layer_index"), py::arg("new_biases_gradients"),
-           "Returns the bias gradient array at the given layer index as the "
-           "given 1D Numpy "
-           "array.")
+           "Sets the bias gradient array at the given layer index to the given"
+           "1D Numpy array.")
       .def("set_weights_gradients", &DistributedPyNetwork::setWeightGradients,
            py::arg("layer_index"), py::arg("new_weights_gradients"),
-           "Sets the weights gradient array at the given layer index to the "
-           "given 1D Numpy "
-           "array.")
+           "Sets the weights gradient array at the given layer index to the given 2D "
+           "Numpy matrix. Throws an error if the dimension of the given weight "
+           "matrix does not match the layer's current weight matrix.")
       .def("get_biases_gradients", &DistributedPyNetwork::getBiasesGradients,
            py::arg("layer_index"),
            "Returns the bias gradient array at the given layer index as a 1D "
-           "Numpy "
-           "array.")
+           "Numpy array.")
       .def("get_weights_gradients", &DistributedPyNetwork::getWeightsGradients,
            py::arg("layer_index"),
-           "Returns the weight gradient array at the given layer index as a 1D "
-           "Numpy "
-           "array.")
+           "Returns the weight gradient matrix at the given layer index as a 2D Numpy "
+           "matrix.")
       .def("get_weights", &DistributedPyNetwork::getWeights,
            py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "
@@ -829,6 +828,7 @@ void createBoltSubmodule(py::module_& module) {
            "matrix does not match the layer's current weight matrix.")
       .def("set_layer_sparsity", &DistributedPyNetwork::setSparsityUpdateHashing,
            py::arg("layer_index"), py::arg("sparsity"),
+           py::arg("hash_seed"), py::arg("shuffle_ptr"),
            "Sets the sparsity of the layer at the given index. The 0th layer "
            "is the first layer after the input layer. Note that this will "
            "autotune the sampling config to work for the new sparsity.");
