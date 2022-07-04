@@ -139,7 +139,7 @@ def test_mnist_sparse_inference_distributed():
 
     assert dense_predict["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
-    network.enable_sparse_inference()
+    network.freeze_hash_tables()
 
     train_network_distributed(network, train_x, train_y, epochs=1)
 
@@ -174,7 +174,7 @@ def test_sparse_inference_with_sparse_output_distributed():
 
     assert dense_predict["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
-    network.enable_sparse_inference()
+    network.freeze_hash_tables()
 
     train_network_distributed(network, train_x, train_y, epochs=1)
 

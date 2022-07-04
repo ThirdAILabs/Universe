@@ -829,7 +829,12 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("layer_index"), py::arg("new_weights"),
            "Sets the weight matrix at the given layer index to the given 2D "
            "Numpy matrix. Throws an error if the dimension of the given weight "
-           "matrix does not match the layer's current weight matrix.");
+           "matrix does not match the layer's current weight matrix.")
+      .def("freeze_hash_tables", &DistributedPyNetwork::freezeHashTables,
+           "Freezes hash tables in the network. If you plan to use sparse "
+           "inference, you may get a significant performance improvement if "
+           "you call this one or two epochs before you finish training. "
+           "Otherwise you should not call this method.");
 
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 

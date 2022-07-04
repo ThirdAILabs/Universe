@@ -157,6 +157,7 @@ class DistributedModel : Model<bolt::BoltBatch> {
 
   void setRandomSeed(uint32_t random_seed) const;
 
+  void freezeHashTables() { DistributedNetwork.freezeHashTables(); }
   // output  needed to be global variable because three
   // different function calls are using the same variable
   BoltBatch _outputs;
