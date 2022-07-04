@@ -377,10 +377,11 @@ class DistributedPyNetwork final : public DistributedModel {
   DistributedPyNetwork(SequentialConfigList configs, uint64_t input_dim)
       : DistributedModel(std::move(configs), input_dim) {}
 
-  uint32_t initTrainDistributed(const py::object& data,
+  uint32_t initTrainSingleNode(const py::object& data,
                                 const py::object& labels,
                                 uint32_t batch_size = 0, uint32_t rehash = 0,
-                                uint32_t rebuild = 0, bool verbose = false) {
+                                uint32_t rebuild = 0, bool verbose = false,
+                                uint32_t random_seed = time(nullptr)) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
@@ -388,20 +389,23 @@ class DistributedPyNetwork final : public DistributedModel {
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
     
-    return DistributedModel::initTrainDistributed(
+    uint32_t num_of_batches = DistributedModel::initTrainSingleNode(
         train_data.dataset, train_labels.dataset, rehash, rebuild, verbose);
+    DistributedModel::setRandomSeed(random_seed);
+
+    return num_of_batches;
   }
 
-  void calculateGradientDistributed(uint32_t batch,
+  void calculateGradientSingleNode(uint32_t batch,
                                     const LossFunction& loss_fn) {
-    DistributedModel::calculateGradientDistributed(batch, loss_fn);
+    DistributedModel::calculateGradientSingleNode(batch, loss_fn);
   }
 
-  void updateParametersDistributed(float learning_rate) {
-    DistributedModel::updateParametersDistributed(learning_rate);
+  void updateParametersSingleNode(float learning_rate) {
+    DistributedModel::updateParametersSingleNode(learning_rate);
   }
 
-  py::tuple predictDistributed(
+  py::tuple predictSingleNode(
       const py::object& data, const py::object& labels, uint32_t batch_size = 0,
       bool use_sparse_inference = false,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
@@ -433,7 +437,7 @@ class DistributedPyNetwork final : public DistributedModel {
         allocateActivations(num_samples, inference_output_dim, &active_neurons,
                             &activations, output_sparse);
 
-    auto metric_data = DistributedModel::predictDistributed(
+    auto metric_data = DistributedModel::predictSingleNode(
         test_data.dataset, test_labels.dataset, active_neurons, activations,
         use_sparse_inference, metrics, verbose, batch_limit);
 

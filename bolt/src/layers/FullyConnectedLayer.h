@@ -108,7 +108,7 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   float getSparsity() const final { return _sparsity; }
 
-  void setSparsity(float sparsity, uint32_t hash_seed , uint32_t shuffle_seed ) final;
+  void setSparsity(float sparsity, uint32_t random_seed) final;
 
   const SamplingConfig& getSamplingConfig() const final {
     return _sampling_config;
@@ -217,7 +217,7 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   // hash_seed and shuffle_seed are the parameters to make sure the hash tables 
   // are same on all the node in distributed settings.
-  inline void initSparseDatastructures(std::random_device &rd, uint32_t hash_seed = time(nullptr), uint32_t shuffle_seed = time(nullptr));
+  inline void initSparseDatastructures(std::random_device &rd, uint32_t random_seed = time(nullptr));
   inline void deinitSparseDatastructures();
 
   template <bool DENSE, bool PREV_DENSE>

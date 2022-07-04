@@ -123,7 +123,7 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
 
   void setLayerSparsity(uint32_t layer_index, float sparsity) {
     checkLayerIndex(layer_index);
-    _layers.at(layer_index)->setSparsity(sparsity, time(nullptr), time(nullptr));
+    _layers.at(layer_index)->setSparsity(sparsity, time(nullptr));
   }
 
   float getLayerSparsity(uint32_t layer_index) {
@@ -152,6 +152,7 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
           std::to_string(layer_index - 1));
     }
   }
+
 
  protected:
   uint64_t _input_dim;

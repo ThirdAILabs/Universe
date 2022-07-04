@@ -85,7 +85,7 @@ def build_sparse_hidden_layer_classifier_distributed(input_dim, sparse_dim, outp
 
 #training the distributed network
 def train_network_distributed(network, train_data, train_labels, epochs, learning_rate=0.0005):
-    batch_size = network.initTrainDistributed(
+    batch_size = network.initTrainSingleNode(
         train_data, 
         train_labels,
         rehash=3000,
@@ -94,11 +94,11 @@ def train_network_distributed(network, train_data, train_labels, epochs, learnin
         batch_size=64,)
     for i in range(epochs):
         for j in range(batch_size):
-            network.calculateGradientDistributed(j,bolt.CategoricalCrossEntropyLoss())
-            network.updateParametersDistributed(learning_rate)
+            network.calculateGradientSingleNode(j,bolt.CategoricalCrossEntropyLoss())
+            network.updateParametersSingleNode(learning_rate)
 
 def get_categorical_acc_distributed(network, examples, labels, batch_size):
-    acc, _ = network.predictDistributed(
+    acc, _ = network.predictSingleNode(
         examples, labels, batch_size, ["categorical_accuracy"], verbose=False
     )
     return acc["categorical_accuracy"]

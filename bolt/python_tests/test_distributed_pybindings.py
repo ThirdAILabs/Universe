@@ -77,7 +77,7 @@ def test_mnist_sparse_output_layer_distributed():
 
     train_network_distributed(network, train_x, train_y, epochs=10)
 
-    acc, activations = network.predictDistributed(
+    acc, activations = network.predictSingleNode(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
@@ -103,7 +103,7 @@ def test_mnist_sparse_hidden_layer_distributed():
 
     train_network_distributed(network, train_x, train_y, epochs=12)
 
-    acc, activations = network.predictDistributed(
+    acc, activations = network.predictSingleNode(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
@@ -129,7 +129,7 @@ def test_mnist_sparse_inference_distributed():
 
     train_network_distributed(network, train_x, train_y, epochs=9)
 
-    dense_predict, _ = network.predictDistributed(
+    dense_predict, _ = network.predictSingleNode(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
@@ -139,7 +139,7 @@ def test_mnist_sparse_inference_distributed():
 
     train_network_distributed(network, train_x, train_y, epochs=1)
 
-    sparse_predict, _ = network.predictDistributed(
+    sparse_predict, _ = network.predictSingleNode(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
@@ -164,7 +164,7 @@ def test_sparse_inference_with_sparse_output_distributed():
 
     train_network_distributed(network, train_x, train_y, epochs=10)
 
-    dense_predict, _ = network.predictDistributed(
+    dense_predict, _ = network.predictSingleNode(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
@@ -174,7 +174,7 @@ def test_sparse_inference_with_sparse_output_distributed():
 
     train_network_distributed(network, train_x, train_y, epochs=1)
 
-    sparse_predict, active_neurons, activations = network.predictDistributed(
+    sparse_predict, active_neurons, activations = network.predictSingleNode(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
@@ -202,7 +202,7 @@ def test_get_set_weights_distributed():
 
     train_network_distributed(network, train_x, train_y, epochs=10)
 
-    original_acc, _ = network.predictDistributed(
+    original_acc, _ = network.predictSingleNode(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
@@ -216,7 +216,7 @@ def test_get_set_weights_distributed():
     untrained_network.set_biases(0, network.get_biases(0))
     untrained_network.set_biases(1, network.get_biases(1))
 
-    new_acc, _ = untrained_network.predictDistributed(
+    new_acc, _ = untrained_network.predictSingleNode(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
@@ -228,7 +228,7 @@ def test_get_set_weights_biases_gradients():
     network = build_dense_output_layer_network_distributed()
     train_x, train_y, test_x, test_y = load_mnist()
     learning_rate = 0.0005
-    batch_size = network.initTrainDistributed(
+    batch_size = network.initTrainSingleNode(
         train_x, 
         train_y,
         rehash=3000,
@@ -238,7 +238,7 @@ def test_get_set_weights_biases_gradients():
 
     untrained_network = build_dense_output_layer_network_distributed()
 
-    batch_size = untrained_network.initTrainDistributed(
+    batch_size = untrained_network.initTrainSingleNode(
         train_x, 
         train_y,
         rehash=3000,
@@ -255,22 +255,22 @@ def test_get_set_weights_biases_gradients():
 
 
     for j in range(batch_size):
-        network.calculateGradientDistributed(j,bolt.CategoricalCrossEntropyLoss())
+        network.calculateGradientSingleNode(j,bolt.CategoricalCrossEntropyLoss())
         untrained_network.set_weights_gradients(0, network.get_weights_gradients(0))
         untrained_network.set_biases_gradients(0, network.get_biases_gradients(0))
         untrained_network.set_weights_gradients(1, network.get_weights_gradients(1))
         untrained_network.set_biases_gradients(1, network.get_biases_gradients(1))
-        untrained_network.updateParametersDistributed(learning_rate)
-        network.updateParametersDistributed(learning_rate)
+        untrained_network.updateParametersSingleNode(learning_rate)
+        network.updateParametersSingleNode(learning_rate)
     
 
-    old_acc, _ = network.predictDistributed(
+    old_acc, _ = network.predictSingleNode(
             test_x, test_y, metrics=["categorical_accuracy"], verbose=False
         )
 
-    new_acc, _ = untrained_network.predictDistributed(
+    new_acc, _ = untrained_network.predictSingleNode(
             test_x, test_y, metrics=["categorical_accuracy"], verbose=False
         )
     
 
-    assert new_acc["categorical_accuracy"] == old_acc["categorical_accuracy"]
+    assert abs(new_acc["categorical_accuracy"] - old_acc["categorical_accuracy"]) < 0.01

@@ -498,7 +498,7 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
 }
 
 inline void FullyConnectedLayer::initSparseDatastructures(
-        std::random_device &rd, uint32_t hash_seed, uint32_t shuffle_seed) {
+        std::random_device &rd, uint32_t random_seed) {
   _hasher = assignHashFunction(_sampling_config, _prev_dim);
 
   /*
@@ -508,7 +508,7 @@ inline void FullyConnectedLayer::initSparseDatastructures(
   if(_is_distributed){
     _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
-        1 << _sampling_config.range_pow, hash_seed);
+        1 << _sampling_config.range_pow, random_seed);
   }else{
     _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
         _sampling_config.num_tables, _sampling_config.reservoir_size,
@@ -530,7 +530,7 @@ inline void FullyConnectedLayer::initSparseDatastructures(
     * distributed block. 
   */
   if(_is_distributed){
-    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), std::default_random_engine(shuffle_seed));
+    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), std::default_random_engine(random_seed));
   }else{
     std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
   }
@@ -655,7 +655,7 @@ void FullyConnectedLayer::setShallowSave(bool shallow) {
  * Also, made sure that the setSparsity for usage other than in Distributed setting 
  * remain unaffacccted to this change.
  */
-void FullyConnectedLayer::setSparsity(float sparsity, uint32_t hash_seed, uint32_t shuffle_seed) {
+void FullyConnectedLayer::setSparsity(float sparsity, uint32_t random_seed) {
   deinitSparseDatastructures();
   _sparsity = sparsity;
   // TODO(josh): Right now this is using the autotuning for DWTA even if this
@@ -664,7 +664,7 @@ void FullyConnectedLayer::setSparsity(float sparsity, uint32_t hash_seed, uint32
       FullyConnectedLayerConfig(_dim, _sparsity, _act_func).sampling_config;
   _sparse_dim = _sparsity * _dim;
   std::random_device rd;
-  initSparseDatastructures(rd, hash_seed, shuffle_seed);
+  initSparseDatastructures(rd, random_seed);
 }
 
 void FullyConnectedLayer::initOptimizer() {

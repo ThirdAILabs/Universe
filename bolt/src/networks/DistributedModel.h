@@ -59,7 +59,7 @@ class DistributedModel: Model<bolt::BoltBatch>{
    * the test set, and the function optionally store the activations for the
    * output layer in the output_activations array.
    */
-  InferenceMetricData predictDistributed(
+  InferenceMetricData predictSingleNode(
       // Test dataset
       const std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& test_data,
       // Test labels
@@ -89,17 +89,17 @@ inline void processTestBatch(
 
 
   // Distributed Functions
-  uint32_t initTrainDistributed(
+  uint32_t initTrainSingleNode(
       std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
       const dataset::BoltDatasetPtr& train_labels,
       // Clang tidy is disabled for this line because it wants to pass by
       // reference, but shared_ptrs should not be passed by reference
       uint32_t rehash, uint32_t rebuild, bool verbose);
 
-  void calculateGradientDistributed(uint32_t batch,
+  void calculateGradientSingleNode(uint32_t batch,
                                     const LossFunction& loss_fn);
 
-  void updateParametersDistributed(float learning_rate);
+  void updateParametersSingleNode(float learning_rate);
 
   uint32_t getInferenceOutputDim(bool use_sparse_inference) const final;
 
@@ -158,17 +158,17 @@ inline void processTestBatch(
         "Warning: setShallowSave not implemented for DLRM;");
   }
 
-  void setSparsityUpdateHashing(uint32_t layer_index, float sparsity, uint32_t hash_seed, uint32_t shuffle_seed) {
-    DistributedNetwork.checkLayerIndex(layer_index);
-    DistributedNetwork._layers.at(layer_index)->setSparsity(sparsity, hash_seed, shuffle_seed);
-  }
+  
 
   bool anyLayerShallow() final { return false; }
+
+
+  void setRandomSeed(uint32_t random_seed) const;
   
   // output  needed to be global variable because three 
   // different function calls are using the same variable 
   BoltBatch _outputs;
-  
+
   FullyConnectedNetwork DistributedNetwork;
 
  protected:
@@ -177,6 +177,7 @@ inline void processTestBatch(
 
   static uint32_t getRebuildBatchDistributed(uint32_t rebuild, uint32_t batch_size,
                                       uint32_t data_len);
+
 
   uint32_t _batch_iter;
 

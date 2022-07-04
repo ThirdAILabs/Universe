@@ -20,7 +20,7 @@ namespace thirdai::bolt {
  * is called. It initializes the network, output array and return 
  * number of batches available for training.
 */
-uint32_t DistributedModel::initTrainDistributed(
+uint32_t DistributedModel::initTrainSingleNode(
     std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
     const dataset::BoltDatasetPtr& train_labels,
     // Clang tidy is disabled for this line because it wants to pass by
@@ -51,7 +51,7 @@ uint32_t DistributedModel::initTrainDistributed(
  * particular batch(provided using batch_no) and for a particular 
  * loss_function.  
 */
-void DistributedModel::calculateGradientDistributed(
+void DistributedModel::calculateGradientSingleNode(
     uint32_t batch, const LossFunction& loss_fn) {
   bolt::BoltBatch& batch_inputs = _train_data->at(batch);
 
@@ -75,7 +75,7 @@ void DistributedModel::calculateGradientDistributed(
  * Right now, the updates are dense meaning that every parameter
  * is getting updated irrespective of type of training(dense or sparse)
  */
-void DistributedModel::updateParametersDistributed(
+void DistributedModel::updateParametersSingleNode(
     float learning_rate) {
   updateParameters(learning_rate, ++_batch_iter);
   if (_batch_iter % _rebuild_batch == (_rebuild_batch - 1)) {
@@ -87,7 +87,7 @@ void DistributedModel::updateParametersDistributed(
 }
 
 
-InferenceMetricData DistributedModel::predictDistributed(
+InferenceMetricData DistributedModel::predictSingleNode(
     const std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& test_data,
     const dataset::BoltDatasetPtr& labels, uint32_t* output_active_neurons,
     float* output_activations, bool use_sparse_inference,
@@ -247,6 +247,14 @@ uint32_t DistributedModel::getDim(uint32_t layer_index) const{
 uint32_t DistributedModel::getInputDim() const{
   return DistributedNetwork._input_dim;
 }
+
+  void DistributedModel::setRandomSeed(uint32_t random_seed) const{
+    for(uint32_t i=0; i< DistributedNetwork._num_layers; i++){
+        if(DistributedNetwork._layers[i]->getSparsity()<1){
+          DistributedNetwork._layers[i]->setSparsity(DistributedNetwork._layers[i]->getSparsity() , random_seed);
+        }
+    }
+  }
 
 static constexpr uint32_t RehashAutoTuneThreshold = 100000;
 static constexpr uint32_t RehashAutoTuneFactor1 = 100;

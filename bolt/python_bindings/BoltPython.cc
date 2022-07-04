@@ -638,10 +638,11 @@ void createBoltSubmodule(py::module_& module) {
            "layers in the neural network.\n"
            " * input_dim: Int (positive) - Dimension of input vectors in the "
            "dataset.")
-      .def("initTrainDistributed", &DistributedPyNetwork::initTrainDistributed,
+      .def("initTrainSingleNode", &DistributedPyNetwork::initTrainSingleNode,
            py::arg("train_data"), py::arg("train_labels"),
            py::arg("batch_size") = 0, py::arg("rehash") = 0,
            py::arg("rebuild") = 0, py::arg("verbose") = true,
+           py::arg("random_seed") = time(nullptr),
            "Initializes the Distributed Training over a node\n"
            "Arguments:\n"
            " * train_data: BoltDataset - Training data. This can be one of "
@@ -702,10 +703,11 @@ void createBoltSubmodule(py::module_& module) {
            "If set to True, prints additional information such as metrics and "
            "epoch times. "
            "Set to True by default.\n\n"
+           "Assign the random seed to the network"
 
-           "Returns batch-size")
-      .def("calculateGradientDistributed",
-           &DistributedPyNetwork::calculateGradientDistributed,
+           "Returns number of batch")
+      .def("calculateGradientSingleNode",
+           &DistributedPyNetwork::calculateGradientSingleNode,
            py::arg("batch"), py::arg("loss_fn"),
            "Calculates the gradient for the network on the given training "
            "batch.\n"
@@ -715,8 +717,8 @@ void createBoltSubmodule(py::module_& module) {
            " * loss_fn: LossFunction - The loss function to minimize.\n"
 
            "Returns void")
-      .def("updateParametersDistributed",
-           &DistributedPyNetwork::updateParametersDistributed,
+      .def("updateParametersSingleNode",
+           &DistributedPyNetwork::updateParametersSingleNode,
            py::arg("learning_rate"),
            "Updates the parameters for the neural network using the "
            "gradients values already present\n"
@@ -726,7 +728,7 @@ void createBoltSubmodule(py::module_& module) {
            " * learning rate: Float (positive) - Learning rate.\n"
 
            "Returns void")
-      .def("predictDistributed",&DistributedPyNetwork::predictDistributed, py::arg("test_data"),
+      .def("predictSingleNode",&DistributedPyNetwork::predictSingleNode, py::arg("test_data"),
            py::arg("test_labels"), py::arg("batch_size") = 2048,
            py::arg("sparse_inference") = false,
            py::arg("metrics") = std::vector<std::string>(),
@@ -825,13 +827,7 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("layer_index"), py::arg("new_weights"),
            "Sets the weight matrix at the given layer index to the given 2D "
            "Numpy matrix. Throws an error if the dimension of the given weight "
-           "matrix does not match the layer's current weight matrix.")
-      .def("set_layer_sparsity", &DistributedPyNetwork::setSparsityUpdateHashing,
-           py::arg("layer_index"), py::arg("sparsity"),
-           py::arg("hash_seed"), py::arg("shuffle_ptr"),
-           "Sets the sparsity of the layer at the given index. The 0th layer "
-           "is the first layer after the input layer. Note that this will "
-           "autotune the sampling config to work for the new sparsity.");
+           "matrix does not match the layer's current weight matrix.");
 
 
   auto graph_submodule = bolt_submodule.def_submodule("graph");
