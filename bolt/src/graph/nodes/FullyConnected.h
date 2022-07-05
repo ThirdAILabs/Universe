@@ -41,10 +41,7 @@ class FullyConnectedNode final
 
   ActivationFunction getActivationFunction() const { return _config.act_func; }
 
-  float getSparsity() {
-    if (getState() == )
-    return _layer->getSparsity();    
-  }
+  float getSparsity() { return _config.getSparsity(); }
 
  private:
   void compileImpl() final {
