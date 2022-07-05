@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <memory>
+#include <numeric>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -19,24 +20,96 @@ class ConcatenateNode final
  public:
   ConcatenateNode(){};
 
-  void compile(LayerNameManager& name_manager) final {
-    assertCurrentState(NodeState::PredecessorsSet,
-                       /* method_name = */ "compile");
+  std::shared_ptr<ConcatenateNode> setConcatenatedNodes(
+      const std::vector<NodePtr>& nodes) {
+    if (getState() != NodeState::Constructed) {
+      throw exceptions::NodeStateMachineError(
+          "Have already set the incoming concatenated nodes for this "
+          "concatenation layer");
+    }
+    if (nodes.size() < 2) {
+      throw exceptions::GraphCompilationFailure(
+          "Must concatenate at least two nodes, found " +
+          std::to_string(nodes.size()));
+    }
+
+    verifyNoInputNodes(nodes);
+
+    std::vector<uint32_t> neuron_index_offsets = {0};
+    uint32_t output_dim = 0;
+    for (const auto& node : nodes) {
+      output_dim += node->outputDim();
+      neuron_index_offsets.push_back(output_dim);
+    }
+
+    _graph_state = GraphState(/* inputs = */ nodes,
+                              /* neuron_index_offsets = */ neuron_index_offsets,
+                              /* concatenated_dense_dim = */ output_dim);
+
+    return shared_from_this();
+  }
+
+  uint32_t outputDim() const final {
+    if (getState() == NodeState::Constructed) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot get the output dim for this concatenation layer because the "
+          "incoming concatenated nodes have not been set yet");
+    }
+    return _graph_state->concatenated_dense_dim;
+  }
+
+  bool isInputNode() const final { return false; }
+
+ private:
+  void compileImpl(LayerNameManager& name_manager) final {
     _compile_state = {
         name_manager.registerNodeAndGetName(/* node_type = */ "concat")};
   }
 
-  void forward(uint32_t vec_index, const BoltVector* labels) final {
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayersImpl() const final {
+    return {};
+  }
+
+  void prepareForBatchProcessingImpl(uint32_t batch_size,
+                                     bool use_sparsity) final {
+    const auto& concatenated_nodes = _graph_state->inputs;
+
+    bool sparse_concatenation = concatenationHasSparseNode(concatenated_nodes);
+    if (sparse_concatenation && !use_sparsity) {
+      throw exceptions::NodeStateMachineError(
+          "Input to concatenation contains a sparse vector but use_sparsity in "
+          "this call to prepareForBatchProcessing is false.");
+    }
+
+    std::vector<uint32_t> positional_offsets = getPositionalOffsets(
+        concatenated_nodes, /* use_sparsity = */ sparse_concatenation);
+    BoltBatch new_concatenated_batch = generateBatch(
+        /* use_sparsity = */ sparse_concatenation,
+        /* positional_offsets = */ positional_offsets,
+        /* neuron_index_offsets = */ _graph_state->neuron_index_offsets,
+        /* batch_size = */ batch_size);
+
+    uint32_t num_nonzeros_in_concatenation = positional_offsets.back();
+    _batch_processing_state = BatchProcessingState(
+        /* positional_offsets = */ std::move(positional_offsets),
+        /* outputs = */ std::move(new_concatenated_batch),
+        /* num_nonzeros_in_concatenation = */ num_nonzeros_in_concatenation);
+  }
+
+  uint32_t numNonzerosInOutputImpl() const final {
+    return _batch_processing_state->num_nonzeros_in_concatenation;
+  }
+
+  void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
     // We currently do not allow a concatenation layer to be the last
     // layer in the graph.
     // TODO(josh/nick): Add support for n sets of outputs, and if users want
     // a concatenation layer as the last layer they can split the labels
     assert(labels == nullptr);
     (void)labels;
-    assert(assertCurrentState(NodeState::PreparedForBatchProcessing,
-                              /* method_name = */ "forward"));
 
-    const BoltVector& output_vector = getOutputVector(vec_index);
+    const BoltVector& output_vector = getOutputVectorImpl(vec_index);
     std::fill_n(output_vector.gradients, output_vector.len, 0);
 
     const auto& concatenated_nodes = _graph_state->inputs;
@@ -69,14 +142,11 @@ class ConcatenateNode final
     }
   }
 
-  void backpropagate(uint32_t vec_index) final {
-    assert(assertCurrentState(NodeState::PreparedForBatchProcessing,
-                              /* method_name = */ "backpropagate"));
-
+  void backpropagateImpl(uint32_t vec_index) final {
     const auto& concatenated_nodes = _graph_state->inputs;
     const auto& positional_offsets =
         _batch_processing_state->positional_offsets;
-    const auto& output_vector = getOutputVector(vec_index);
+    const auto& output_vector = getOutputVectorImpl(vec_index);
 
     for (uint32_t input_node_id = 0; input_node_id < concatenated_nodes.size();
          input_node_id++) {
@@ -94,124 +164,26 @@ class ConcatenateNode final
     }
   }
 
-  void updateParameters(float learning_rate, uint32_t batch_cnt) final {
+  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
     (void)learning_rate;
     (void)batch_cnt;
     // NOOP because a concatenation layer has no parameters
-    assert(assertCurrentState(NodeState::PreparedForBatchProcessing,
-                              /* method_name = */ "updateParameters"));
   }
 
-  BoltVector& getOutputVector(uint32_t vec_index) final {
-    assert(assertCurrentState(NodeState::PreparedForBatchProcessing,
-                              /* method_name = */ "updateParameters"));
+  BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
     return _batch_processing_state->outputs[vec_index];
   }
 
-  std::shared_ptr<ConcatenateNode> setConcatenatedNodes(
-      const std::vector<NodePtr>& nodes) {
-    assertCurrentState(NodeState::Constructed,
-                       /* method_name = */ "setConcatenatedNodes");
-    if (nodes.size() < 2) {
-      throw exceptions::GraphCompilationFailure(
-          "Must concatenate at least two nodes, found " +
-          std::to_string(nodes.size()));
-    }
-
-    verifyNoInputNodes(nodes);
-
-    std::vector<uint32_t> neuron_index_offsets = {0};
-    uint32_t output_dim = 0;
-    for (const auto& node : nodes) {
-      output_dim += node->outputDim();
-      neuron_index_offsets.push_back(output_dim);
-    }
-
-    _graph_state = GraphState(/* inputs = */ nodes,
-                              /* neuron_index_offsets = */ neuron_index_offsets,
-                              /* concatenated_dense_dim = */ output_dim);
-
-    return shared_from_this();
-  }
-
-  uint32_t outputDim() const final {
-    if (getState() == NodeState::Constructed) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot get the output dim for this concatenation layer because the "
-          "incoming concatenated nodes have not been set yet");
-    }
-    return _graph_state->concatenated_dense_dim;
-  }
-
-  uint32_t numNonzerosInOutput() const final {
-    assertCurrentState(NodeState::PreparedForBatchProcessing,
-                       /* method_name = */ "numNonzerosInOutput");
-    return _batch_processing_state->num_nonzeros_in_concatenation;
-  }
-
-  void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
-    assertCurrentState(NodeState::Compiled,
-                       /* method_name = */ "prepareForBatchProcessing");
-    const auto& concatenated_nodes = _graph_state->inputs;
-
-    bool sparse_concatenation = concatenationHasSparseNode(concatenated_nodes);
-    if (sparse_concatenation && !use_sparsity) {
-      throw exceptions::NodeStateMachineError(
-          "Input to concatenation contains a sparse vector but use_sparsity in "
-          "this call to prepareForBatchProcessing is false.");
-    }
-
-    std::vector<uint32_t> positional_offsets = getPositionalOffsets(
-        concatenated_nodes, /* use_sparsity = */ sparse_concatenation);
-    BoltBatch new_concatenated_batch = generateBatch(
-        /* use_sparsity = */ sparse_concatenation,
-        /* positional_offsets = */ positional_offsets,
-        /* neuron_index_offsets = */ _graph_state->neuron_index_offsets,
-        /* batch_size = */ batch_size);
-
-    // Unfortunately because this is a struct, clang tidy won't check that the
-    // arguments are named correctly. C++ 20 has native support for named enum
-    // creation but we use C++ 17 for now. Just be careful if you change the
-    // struct definition!
-    uint32_t num_nonzeros_in_concatenation = positional_offsets.back();
-    _batch_processing_state = BatchProcessingState(
-        /* positional_offsets = */ std::move(positional_offsets),
-        /* outputs = */ std::move(new_concatenated_batch),
-        /* num_nonzeros_in_concatenation = */ num_nonzeros_in_concatenation);
-  }
-
-  void cleanupAfterBatchProcessing() final {
-    assertCurrentState(NodeState::PreparedForBatchProcessing,
-                       /* method_name = */ "cleanupAfterBatchProcessing");
+  void cleanupAfterBatchProcessingImpl() final {
     _batch_processing_state = std::nullopt;
   }
 
-  std::vector<NodePtr> getPredecessors() const final {
-    if (getState() == NodeState::Constructed) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot get the predecessors for this concatenation layer because "
-          "they have not been set yet");
-    }
+  std::vector<NodePtr> getPredecessorsImpl() const final {
     return _graph_state->inputs;
   }
 
-  std::vector<std::shared_ptr<FullyConnectedLayer>>
-  getInternalFullyConnectedLayers() const final {
-    if (getState() == NodeState::Constructed) {
-      throw exceptions::NodeStateMachineError(
-          "getInternalFullyConnectedLayers method should not be called before "
-          "predecessors have been set");
-    }
-    return {};
-  }
-
-  bool isInputNode() const final { return false; }
-
-  void summarize(std::stringstream& summary, bool detailed) const final {
+  void summarizeImpl(std::stringstream& summary, bool detailed) const final {
     (void)detailed;
-    // It is okay to assert compiled here because we don't really want to
-    // summarize once we've prepared for batch processing.
-    assertCurrentState(NodeState::Compiled, /* method_name = */ "summarize");
     const auto& inputs = _graph_state->inputs;
     summary << "(";
     for (uint32_t i = 0; i < inputs.size(); i++) {
@@ -223,14 +195,8 @@ class ConcatenateNode final
     summary << ") -> " << name() << " (Concatenate)\n";
   }
 
-  const std::string& name() const final {
-    // It is okay to assert compiled here because we don't really want to
-    // summarize once we've prepared for batch processing.
-    assertCurrentState(NodeState::Compiled, /* method_name = */ "name");
-    return _compile_state->name;
-  }
+  const std::string& nameImpl() const final { return _compile_state->name; }
 
- private:
   static void verifyNoInputNodes(const std::vector<NodePtr>& nodes) {
     for (const auto& node : nodes) {
       if (node->isInputNode()) {
@@ -299,30 +265,7 @@ class ConcatenateNode final
     }
   }
 
-  enum NodeState {
-    Constructed,
-    PredecessorsSet,
-    Compiled,
-    PreparedForBatchProcessing
-  };
-
-  static std::string nodeStateToString(NodeState state) {
-    if (state == NodeState::Constructed) {
-      return "Constructed";
-    }
-    if (state == NodeState::PredecessorsSet) {
-      return "PredecessorsSet";
-    }
-    if (state == NodeState::Compiled) {
-      return "Compiled";
-    }
-    if (state == NodeState::PreparedForBatchProcessing) {
-      return "PreparedForBatchProcessing";
-    }
-    throw std::logic_error("Unrecognized node state");
-  }
-
-  NodeState getState() const {
+  NodeState getState() const final {
     if (!_graph_state && !_compile_state && !_batch_processing_state) {
       return NodeState::Constructed;
     }
@@ -335,26 +278,10 @@ class ConcatenateNode final
     if (_graph_state && _compile_state && _batch_processing_state) {
       return NodeState::PreparedForBatchProcessing;
     }
-    throw std::logic_error("Node is in an invalid internal state");
-  }
-
-  // This method return true on success and throws an exception on failure.
-  // We do this so it works in both an assert statement in debug mode and as a
-  // validation method call in release.
-  bool assertCurrentState(NodeState goal_state,
-                          const std::string& method_name) const {
-    NodeState current_state = getState();
-    if (goal_state == current_state) {
-      return true;
-    }
-
     throw exceptions::NodeStateMachineError(
-        "Cannot call " + method_name + ", node should be in " +
-        nodeStateToString(goal_state) + " but was in " +
-        nodeStateToString(current_state));
+        "Node is in an invalid internal state");
   }
 
-  // TODO(josh): Use similar optional state pattern in other node subclasses
   struct GraphState {
     // We have this constructor so clang tidy can check variable names
     GraphState(std::vector<NodePtr> inputs,
@@ -381,9 +308,6 @@ class ConcatenateNode final
     // Also equals the last element of neuron_index_offsets. This is the dense
     // dimension of the output vector
     uint32_t concatenated_dense_dim;
-  };
-  struct CompileState {
-    std::string name;
   };
   struct BatchProcessingState {
     // We have this constructor so clang tidy can check variable names
@@ -412,8 +336,10 @@ class ConcatenateNode final
     // all i).
     uint32_t num_nonzeros_in_concatenation;
   };
+  struct CompileState {
+    std::string name;
+  };
 
-  inline static const std::string LAYER_TYPE_NAME = "concat";
   std::optional<GraphState> _graph_state;
   std::optional<CompileState> _compile_state;
   std::optional<BatchProcessingState> _batch_processing_state;

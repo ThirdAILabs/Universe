@@ -20,13 +20,17 @@ class MockTraversalNode final : public MockNode {
 
   uint32_t getID() const { return _id; }
 
-  std::vector<NodePtr> getPredecessors() const final { return _predecessors; }
-
   void setPredecessors(const std::vector<NodePtr>& predecessors) {
     _predecessors = predecessors;
   }
 
  private:
+  std::vector<NodePtr> getPredecessorsImpl() const final {
+    return _predecessors;
+  }
+
+  NodeState getState() const final { return NodeState::Compiled; }
+
   std::vector<NodePtr> _predecessors;
   uint32_t _id;
 };
