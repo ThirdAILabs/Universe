@@ -8,6 +8,7 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <bolt/src/text_classifier/TextClassifier.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
@@ -624,6 +625,10 @@ void createBoltSubmodule(py::module_& module) {
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
 
+  py::class_<SentimentClassifier>(bolt_submodule, "SentimentClassifier")
+      .def(py::init<const std::string&>(), py::arg("model_path"))
+      .def("predict_sentiment", &SentimentClassifier::predictSentiment,
+           py::arg("sentence"));
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 
   py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
