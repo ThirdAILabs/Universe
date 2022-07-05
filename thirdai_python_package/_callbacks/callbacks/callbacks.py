@@ -20,8 +20,6 @@ class Callback:
         self._baseline = baseline
         self._verbose = verbose
 
-        if (patience)
-
     def getMetric(self):
         return self._metric
 
