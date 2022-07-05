@@ -91,7 +91,7 @@ inline py::str getDtype(const py::object& obj) {
   return py::str(obj.attr("dtype"));
 }
 
-inline bool checkNumpyDtype(const py::object& obj, std::string type) {
+inline bool checkNumpyDtype(const py::object& obj, const std::string &type) {
   return getDtype(obj).equal(py::str(type));
 }
 
