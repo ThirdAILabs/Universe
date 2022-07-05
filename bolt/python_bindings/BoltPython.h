@@ -508,7 +508,7 @@ class DistributedPyNetwork final : public DistributedModel {
 
     if (new_weights_gradients.ndim() != 2) {
       std::stringstream err;
-      err << "Expected weight matrix to have 2 dimensions, received matrix "
+      err << "Expected weight gradients matrix to have 2 dimensions, received matrix "
              "with "
           << new_weights_gradients.ndim() << " dimensions.";
       throw std::invalid_argument(err.str());
@@ -516,7 +516,7 @@ class DistributedPyNetwork final : public DistributedModel {
     if (new_weights_gradients.shape(0) != dim ||
         new_weights_gradients.shape(1) != prev_dim) {
       std::stringstream err;
-      err << "Expected weight matrix to have dim (" << dim << ", " << prev_dim
+      err << "Expected weight gradients matrix to have dim (" << dim << ", " << prev_dim
           << ") received matrix with dim (" << new_weights_gradients.shape(0)
           << ", " << new_weights_gradients.shape(1) << ").";
       throw std::invalid_argument(err.str());
@@ -533,14 +533,14 @@ class DistributedPyNetwork final : public DistributedModel {
     int64_t dim = DistributedModel::getDim(layer_index);
     if (new_biases.ndim() != 1) {
       std::stringstream err;
-      err << "Expected weight matrix to have 1 dimension, received matrix "
+      err << "Expected bias matrix to have 1 dimension, received matrix "
              "with "
           << new_biases.ndim() << " dimensions.";
       throw std::invalid_argument(err.str());
     }
     if (new_biases.shape(0) != dim) {
       std::stringstream err;
-      err << "Expected weight matrix to have dim " << dim
+      err << "Expected bias matrix to have dim " << dim
           << " received matrix with dim " << new_biases.shape(0) << ".";
       throw std::invalid_argument(err.str());
     }
@@ -555,14 +555,14 @@ class DistributedPyNetwork final : public DistributedModel {
     int64_t dim = DistributedModel::getDim(layer_index);
     if (new_biases_gradients.ndim() != 1) {
       std::stringstream err;
-      err << "Expected weight matrix to have 1 dimension, received matrix "
+      err << "Expected bias gradients matrix to have 1 dimension, received matrix "
              "with "
           << new_biases_gradients.ndim() << " dimensions.";
       throw std::invalid_argument(err.str());
     }
     if (new_biases_gradients.shape(0) != dim) {
       std::stringstream err;
-      err << "Expected weight matrix to have dim " << dim
+      err << "Expected bias gradients matrix to have dim " << dim
           << " received matrix with dim " << new_biases_gradients.shape(0)
           << ".";
       throw std::invalid_argument(err.str());
