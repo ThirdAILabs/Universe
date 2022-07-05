@@ -20,9 +20,7 @@ namespace thirdai::bolt {
 class Input final : public Node {
  public:
   explicit Input(uint32_t expected_input_dim)
-      : _compiled(false),
-        _input_batch(nullptr),
-        _expected_input_dim(expected_input_dim) {}
+      : _expected_input_dim(expected_input_dim) {}
 
   // This class does not own this memory, but we pass it in as a pointer that
   // will be stored as a field so it can be used in future method calls. It is
