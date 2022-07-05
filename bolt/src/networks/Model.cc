@@ -249,6 +249,8 @@ Model<BATCH_T>::getInputGradients(
       for (uint32_t i = 0; i < batch_input->at(id)[vec_id].len; i++) {
         concatenated_grad.push_back(batch_input->at(id)[vec_id].gradients[i]);
       }
+      // de allocating the memory and pointing the gradients to nullptr as it
+      // was earlier.
       delete[] batch_input->at(id)[vec_id].gradients;
       batch_input->at(id)[vec_id].gradients = nullptr;
     }
