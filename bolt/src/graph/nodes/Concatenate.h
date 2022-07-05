@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
@@ -276,6 +279,9 @@ class ConcatenateNode final
 
   // TODO(josh): Use similar optional state pattern in other node subclasses
   struct GraphState {
+    // Constructor for cereal.
+    GraphState() {}
+
     // We have this constructor so clang tidy can check variable names
     GraphState(std::vector<NodePtr> inputs,
                std::vector<uint32_t> neuron_index_offsets,
@@ -303,9 +309,6 @@ class ConcatenateNode final
     uint32_t concatenated_dense_dim;
 
    private:
-    // Private constructor for cereal.
-    GraphState() {}
-
     friend class cereal::access;
     template <class Archive>
     void serialize(Archive& archive) {
@@ -344,7 +347,8 @@ class ConcatenateNode final
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Node>(this), _parameters_initialized);
+    archive(cereal::base_class<Node>(this), _graph_state,
+            _parameters_initialized);
   }
 
   std::optional<GraphState> _graph_state;

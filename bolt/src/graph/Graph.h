@@ -3,6 +3,9 @@
 #include <cereal/archives/binary.hpp>
 #include "ExecutionConfig.h"
 #include "Node.h"
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>

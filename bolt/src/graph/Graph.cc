@@ -1,4 +1,7 @@
 #include "Graph.h"
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/vector.hpp>
 #include "GraphPropertyChecks.h"
 #include "nodes/FullyConnected.h"
 #include <bolt/src/graph/Node.h>

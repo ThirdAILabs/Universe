@@ -43,6 +43,13 @@ target_link_libraries(
   gmock_main
 )
 
+add_executable(save_load_test SaveLoadTest.cc)
+target_link_libraries(
+  save_load_test
+  PRIVATE
+  bolt_graph_lib
+  gtest_main
+)
 
 include(GoogleTest)
 gtest_discover_tests(concatenated_node_test)
@@ -50,3 +57,4 @@ gtest_discover_tests(fully_connected_dag_test)
 gtest_discover_tests(graph_traversal_test)
 gtest_discover_tests(graph_reject_inputs_test)
 gtest_discover_tests(state_machine_test)
+gtest_discover_tests(save_load_test)

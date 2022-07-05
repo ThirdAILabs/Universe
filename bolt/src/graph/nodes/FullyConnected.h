@@ -2,6 +2,8 @@
 
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <dataset/src/utils/SafeFileIO.h>
@@ -76,51 +78,53 @@ class FullyConnectedNode final
 
   ActivationFunction getActivationFunction() const { return _config.act_func; }
 
-  // void saveParameters(const std::string& filename) const {
-  //   std::ofstream filestream =
-  //       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
-  //   cereal::BinaryOutputArchive oarchive(filestream);
-  //   oarchive(*_layer);
-  // }
+  void saveParameters(const std::string& filename) const {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*_layer);
+  }
 
-  // void loadParameters(const std::string& filename) {
-  //   std::ifstream filestream =
-  //       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
-  //   cereal::BinaryInputArchive iarchive(filestream);
-  //   auto loaded_parameters = std::make_shared<FullyConnectedLayer>();
-  //   iarchive(*loaded_parameters);
+  void loadParameters(const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    auto loaded_parameters = std::make_shared<FullyConnectedLayer>();
+    iarchive(*loaded_parameters);
 
-  //   if (loaded_parameters->getDim() != _layer->getDim()) {
-  //     std::stringstream error_msg;
-  //     error_msg << "Cannot load parameters from FullyConnected layer with dim="
-  //               << loaded_parameters->getDim()
-  //               << "into FullyConnected layer with dim=" << _layer->getDim()
-  //               << ".";
-  //     throw std::logic_error(error_msg.str());
-  //   }
-  //   if (loaded_parameters->getInputDim() != _layer->getInputDim()) {
-  //     std::stringstream error_msg;
-  //     error_msg
-  //         << "Cannot load parameters from FullyConnected layer with input_dim="
-  //         << loaded_parameters->getInputDim()
-  //         << "into FullyConnected layer with input_dim="
-  //         << _layer->getInputDim() << ".";
-  //     throw std::logic_error(error_msg.str());
-  //   }
+    if (loaded_parameters->getDim() != _layer->getDim()) {
+      std::stringstream error_msg;
+      error_msg << "Cannot load parameters from FullyConnected layer with dim="
+                << loaded_parameters->getDim()
+                << "into FullyConnected layer with dim=" << _layer->getDim()
+                << ".";
+      throw std::logic_error(error_msg.str());
+    }
+    if (loaded_parameters->getInputDim() != _layer->getInputDim()) {
+      std::stringstream error_msg;
+      error_msg
+          << "Cannot load parameters from FullyConnected layer with input_dim="
+          << loaded_parameters->getInputDim()
+          << "into FullyConnected layer with input_dim="
+          << _layer->getInputDim() << ".";
+      throw std::logic_error(error_msg.str());
+    }
 
-  //   if (loaded_parameters->getActivationFunction() !=
-  //       _layer->getActivationFunction()) {
-  //     std::stringstream error_msg;
-  //     error_msg
-  //         << "Cannot load parameters from FullyConnected layer with activation="
-  //         << activationFunctionToStr(loaded_parameters->getActivationFunction())
-  //         << "into FullyConnected layer with activation="
-  //         << activationFunctionToStr(_layer->getActivationFunction()) << ".";
-  //     throw std::logic_error(error_msg.str());
-  //   }
+    if (loaded_parameters->getActivationFunction() !=
+        _layer->getActivationFunction()) {
+      std::stringstream error_msg;
+      error_msg << "Cannot load parameters from FullyConnected layer with "
+                   "activation ="
+                << activationFunctionToStr(
+                       loaded_parameters->getActivationFunction())
+                << "into FullyConnected layer with activation="
+                << activationFunctionToStr(_layer->getActivationFunction())
+                << ".";
+      throw std::logic_error(error_msg.str());
+    }
 
-  //   _layer = loaded_parameters;
-  // }
+    _layer = loaded_parameters;
+  }
 
  private:
   void initializeParametersImpl() final {
