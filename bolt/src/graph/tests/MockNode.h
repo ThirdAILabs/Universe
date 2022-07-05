@@ -14,16 +14,18 @@ class MockNode : public Node {
 
   MOCK_METHOD(std::vector<NodePtr>, getPredecessors, (), (const override));
 
-  MOCK_METHOD(std::vector<std::shared_ptr<FullyConnectedLayer>>,
-              getInternalFullyConnectedLayers, (), (const override));
-
   MOCK_METHOD(bool, isInputNode, (), (const override));
 
  private:
   MOCK_METHOD(void, compileImpl, (LayerNameManager & manager), (override));
 
+  MOCK_METHOD(std::vector<std::shared_ptr<FullyConnectedLayer>>,
+              getInternalFullyConnectedLayersImpl, (), (const override));
+
   MOCK_METHOD(void, prepareForBatchProcessingImpl,
               (uint32_t batch_size, bool use_sparsity), (override));
+
+  MOCK_METHOD(uint32_t, numNonzerosInOutputImpl, (), (const override));
 
   MOCK_METHOD(void, forwardImpl, (uint32_t vec_index, const BoltVector* labels),
               (override));
@@ -40,6 +42,8 @@ class MockNode : public Node {
 
   MOCK_METHOD(void, summarizeImpl, (std::stringstream & summary, bool detailed),
               (const override));
+
+  MOCK_METHOD(std::vector<NodePtr>, getPredecessorsImpl, (), (const override));
 
   MOCK_METHOD(const std::string&, nameImpl, (), (const ovveride));
 
@@ -58,13 +62,13 @@ class MockNodeWithOutput : public MockNode {
 
   uint32_t outputDim() const final { return _output_dim; }
 
-  uint32_t numNonzerosInOutput() const final { return _output.len; }
-
   NodeState getState() const final {
     return NodeState::PreparedForBatchProcessing;
   }
 
  private:
+  uint32_t numNonzerosInOutputImpl() const final { return _output.len; }
+
   BoltVector _output;
   uint32_t _output_dim;
 };

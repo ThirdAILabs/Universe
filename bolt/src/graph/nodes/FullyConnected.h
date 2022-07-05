@@ -35,38 +35,6 @@ class FullyConnectedNode final
 
   uint32_t outputDim() const final { return _config.dim; }
 
-  uint32_t numNonzerosInOutput() const final {
-    if (getState() != NodeState::PreparedForBatchProcessing) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call numNonzerosInOutput before prepareForBatchProcessing in "
-          "FullyConnectedNode.");
-    }
-
-    return (*_outputs)[0].len;
-  }
-
-  std::vector<NodePtr> getPredecessors() const final {
-    if (getState() == NodeState::Constructed) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call getPredecessors before "
-          "setting predecessors in FullyConnectedNode.");
-    }
-
-    return {_predecessor};
-  }
-
-  std::vector<std::shared_ptr<FullyConnectedLayer>>
-  getInternalFullyConnectedLayers() const final {
-    if (getState() == NodeState::Constructed ||
-        getState() == NodeState::PredecessorsSet) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call getInternalFullyConnectedLayers before "
-          "compile in FullyConnectedNode.");
-    }
-
-    return {_compile_state->layer};
-  }
-
   bool isInputNode() const final { return false; }
 
   ActivationFunction getActivationFunction() const { return _config.act_func; }
@@ -85,12 +53,19 @@ class FullyConnectedNode final
     _compile_state = CompileState(/* name = */ name, /* layer = */ layer);
   }
 
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayersImpl() const final {
+    return {_compile_state->layer};
+  }
+
   void prepareForBatchProcessingImpl(uint32_t batch_size,
                                      bool use_sparsity) final {
     // TODO(Nicholas): rename createBatchState
     _outputs = _compile_state->layer->createBatchState(
         batch_size, /* use_sparsity=*/use_sparsity);
   }
+
+  uint32_t numNonzerosInOutputImpl() const final { return (*_outputs)[0].len; }
 
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
     _compile_state->layer->forward(_predecessor->getOutputVector(vec_index),
@@ -122,6 +97,10 @@ class FullyConnectedNode final
   }
 
   void cleanupAfterBatchProcessingImpl() final { _outputs = std::nullopt; }
+
+  std::vector<NodePtr> getPredecessorsImpl() const final {
+    return {_predecessor};
+  }
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final {
     summary << _predecessor->name() << " -> " << name()

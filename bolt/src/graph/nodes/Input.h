@@ -37,19 +37,6 @@ class Input final : public Node {
 
   uint32_t outputDim() const final { return _expected_input_dim; }
 
-  uint32_t numNonzerosInOutput() const final {
-    throw std::logic_error(
-        "Cannot know ahead of time the number of nonzeros "
-        "in the output of an Input layer.");
-  }
-
-  std::vector<NodePtr> getPredecessors() const final { return {}; }
-
-  std::vector<std::shared_ptr<FullyConnectedLayer>>
-  getInternalFullyConnectedLayers() const final {
-    return {};
-  }
-
   bool isInputNode() const final { return true; }
 
  private:
@@ -59,6 +46,11 @@ class Input final : public Node {
           "Cannot have input layer with dimension 0.");
     }
     _name = name_manager.registerNodeAndGetName(/* node_type = */ "input");
+  }
+
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayersImpl() const final {
+    return {};
   }
 
   void prepareForBatchProcessingImpl(uint32_t batch_size,
@@ -72,6 +64,12 @@ class Input final : public Node {
           "The input node is unique, and need to have setBatch called before "
           "prepareForBatchProcessing.");
     }
+  }
+
+  uint32_t numNonzerosInOutputImpl() const final {
+    throw std::logic_error(
+        "Cannot know ahead of time the number of nonzeros "
+        "in the output of an Input layer.");
   }
 
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
@@ -98,6 +96,8 @@ class Input final : public Node {
     (void)detailed;
     summary << name() << " (Input) : dim=" << _expected_input_dim << "\n";
   }
+
+  std::vector<NodePtr> getPredecessorsImpl() const final { return {}; }
 
   const std::string& nameImpl() const final { return *_name; }
 

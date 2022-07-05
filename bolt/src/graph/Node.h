@@ -104,7 +104,15 @@ class Node {
    * will throw an error. Currently, it is only unknowable for the Input node,
    * so it is the responsibility of the caller to call isInputNode() first.
    */
-  virtual uint32_t numNonzerosInOutput() const = 0;
+  uint32_t numNonzerosInOutput() const {
+    if (getState() != NodeState::PreparedForBatchProcessing) {
+      throw exceptions::NodeStateMachineError(
+          "Must call prepareForBatchProcessing before calling "
+          "numNonzerosInOutput.");
+    }
+
+    return numNonzerosInOutputImpl();
+  }
 
   /*
     Initializes any state that the node must store for computations that is not
@@ -147,7 +155,14 @@ class Node {
 
   // Returns any predecessors of the node. This is used to traverse the graph
   // during compilation.
-  virtual std::vector<NodePtr> getPredecessors() const = 0;
+  std::vector<NodePtr> getPredecessors() const {
+    if (getState() == NodeState::Constructed) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot get the predecessors for this layer because "
+          "they have not been set yet");
+    }
+    return getPredecessorsImpl();
+  }
 
   /*
     Returns any fully connected layer objects used by the node. This list is
@@ -155,8 +170,16 @@ class Node {
     entire network, like rebuilding all hash tables or reinitializing hash
     functions after a certain number of batches.
   */
-  virtual std::vector<std::shared_ptr<FullyConnectedLayer>>
-  getInternalFullyConnectedLayers() const = 0;
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayers() {
+    if (getState() == NodeState::Constructed ||
+        getState() == NodeState::PredecessorsSet) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot call getInternalFullyConnectedLayers before "
+          "calling compile.");
+    }
+    return getInternalFullyConnectedLayersImpl();
+  }
 
   // Returns true if the node is an input node.
   virtual bool isInputNode() const = 0;
@@ -184,8 +207,13 @@ class Node {
  protected:
   virtual void compileImpl(LayerNameManager& name_manager) = 0;
 
+  virtual std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayersImpl() const = 0;
+
   virtual void prepareForBatchProcessingImpl(uint32_t batch_size,
                                              bool use_sparsity) = 0;
+
+  virtual uint32_t numNonzerosInOutputImpl() const = 0;
 
   virtual void forwardImpl(uint32_t vec_index, const BoltVector* labels) = 0;
 
@@ -197,6 +225,8 @@ class Node {
   virtual BoltVector& getOutputVectorImpl(uint32_t vec_index) = 0;
 
   virtual void cleanupAfterBatchProcessingImpl() = 0;
+
+  virtual std::vector<NodePtr> getPredecessorsImpl() const = 0;
 
   // Prints out a single line summary in the format
   // (pred_names) -> node_name (NodeType): parameter_1=1, parameter_2=0 ...

@@ -58,40 +58,17 @@ class ConcatenateNode final
     return _graph_state->concatenated_dense_dim;
   }
 
-  uint32_t numNonzerosInOutput() const final {
-    if (getState() != NodeState::PreparedForBatchProcessing) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot get the number of nonzeros for this concatenation layer "
-          "because the node is not prepared for batch processing");
-    }
-    return _batch_processing_state->num_nonzeros_in_concatenation;
-  }
-
-  std::vector<NodePtr> getPredecessors() const final {
-    if (getState() == NodeState::Constructed) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot get the predecessors for this concatenation layer because "
-          "they have not been set yet");
-    }
-    return _graph_state->inputs;
-  }
-
-  std::vector<std::shared_ptr<FullyConnectedLayer>>
-  getInternalFullyConnectedLayers() const final {
-    if (getState() == NodeState::Constructed) {
-      throw exceptions::NodeStateMachineError(
-          "getInternalFullyConnectedLayers method should not be called before "
-          "predecessors have been set");
-    }
-    return {};
-  }
-
   bool isInputNode() const final { return false; }
 
  private:
   void compileImpl(LayerNameManager& name_manager) final {
     _compile_state = {
         name_manager.registerNodeAndGetName(/* node_type = */ "concat")};
+  }
+
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayersImpl() const final {
+    return {};
   }
 
   void prepareForBatchProcessingImpl(uint32_t batch_size,
@@ -118,6 +95,10 @@ class ConcatenateNode final
         /* positional_offsets = */ std::move(positional_offsets),
         /* outputs = */ std::move(new_concatenated_batch),
         /* num_nonzeros_in_concatenation = */ num_nonzeros_in_concatenation);
+  }
+
+  uint32_t numNonzerosInOutputImpl() const final {
+    return _batch_processing_state->num_nonzeros_in_concatenation;
   }
 
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
@@ -195,6 +176,10 @@ class ConcatenateNode final
 
   void cleanupAfterBatchProcessingImpl() final {
     _batch_processing_state = std::nullopt;
+  }
+
+  std::vector<NodePtr> getPredecessorsImpl() const final {
+    return _graph_state->inputs;
   }
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final {

@@ -78,8 +78,8 @@ class NodeStateMachineTest {
   // Methods for testing invalid calls within each state.
   void testBadCallsInState1() {
     LayerNameManager manager;
-    ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
-        _node->compile(manager));
+    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
+        _node->compile(manager), exceptions::NodeStateMachineError);
 
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
         _node->prepareForBatchProcessing(
@@ -112,8 +112,8 @@ class NodeStateMachineTest {
         setNodePrecessors({_mock_node}), exceptions::NodeStateMachineError);
 
     LayerNameManager manager;
-    ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
-        _node->compile(manager));
+    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
+        _node->compile(manager), exceptions::NodeStateMachineError);
 
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
         _node->cleanupAfterBatchProcessing(),
@@ -125,8 +125,8 @@ class NodeStateMachineTest {
         setNodePrecessors({_mock_node}), exceptions::NodeStateMachineError);
 
     LayerNameManager manager;
-    ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
-        _node->compile(manager));
+    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
+        _node->compile(manager), exceptions::NodeStateMachineError);
 
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
         _node->prepareForBatchProcessing(
