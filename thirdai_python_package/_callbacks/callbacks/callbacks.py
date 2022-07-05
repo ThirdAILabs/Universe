@@ -22,6 +22,9 @@ class Callback:
         self._patience = patience
         self._verbose = verbose
 
+        if (self._baseline == None):
+            self._patience = self._patience + 1  # No baseline specified, increase initial patience to account for determining baseline
+
     def getMetric(self):
         return self._metric
 
@@ -37,8 +40,38 @@ class Callback:
     def setDefaultMinDelta(self):
         self._min_delta = 0.01
 
+    def callback(self, epoch, lr, epoch_metrics):
+        return False, lr
 
-class EarlyStop(Callback):
+class CallbackWithPatience(Callback):
+    """Parent class for callbacks with patience. Should never be instantiated.
+
+    Attributes:
+        metric (string): Quantity to be monitored. Currently, only categorical_accuracy is supported.
+        min_delta (float): Minimum change in the monitored quantity to qualify as an improvement, i.e.
+            an absolute change of less than min_delta, will count as no improvement.
+        baseline (float): Baseline value for the monitored quantity. Training will stop if the model
+            doesn't show improvement over the baseline. Defaults to the monitored quantity
+            observed on the first epoch.
+        init_patience (int): Number of epochs with no improvement after which training will be stopped.
+        patience (integer): Current number of epochs after which training will be stopped
+            (patience <= init_patience).
+        verbose (bool): False is silent, True displays a message if/when the callback takes effect.
+    """
+
+    def __init__(
+        self,
+        metric,
+        min_delta,
+        baseline,
+        patience,
+        verbose
+    ):
+        super().__init__(metric, min_delta, baseline, patience, verbose)
+
+    def onZeroPatience():
+
+class EarlyStop(CallbackWithPatience):
     """Monitors a metric and terminates training if no improvement is observed after a specified
         number of epochs.
 
@@ -84,6 +117,7 @@ class EarlyStop(Callback):
             0
         ]  # Get specified metric value for previous epoch
         if result - self._baseline < self._min_delta:
+            self._patience -= 1
             if self._patience == 0:
                 if self._verbose:
                     print(
@@ -91,7 +125,6 @@ class EarlyStop(Callback):
                     )
                 return True, lr  # Patience exhausted, stop training
             else:
-                self._patience -= 1  # Decrement patience but keep training
                 return False, lr
         else:
             self._baseline = (
@@ -149,6 +182,7 @@ class AdaptiveLearningRate(Callback):
             0
         ]  # Get specified metric value for previous epoch
         if result - self._baseline < self._min_delta:
+            self._patience -= 1  # Decrement patience
             if self._patience == 0:
                 _lr = lr * 10**-1
                 self._patience = self._init_patience  # Reset patience
@@ -161,7 +195,6 @@ class AdaptiveLearningRate(Callback):
                     _lr,
                 )  # Patience exhausted, reduce learning rate exponentially
             else:
-                self._patience -= 1  # Decrement patience
                 return False, lr
         else:
             self._baseline = (
