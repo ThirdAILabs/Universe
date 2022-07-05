@@ -98,8 +98,6 @@ def test_mnist_sparse_output_layer_distributed():
     assert acc_computed == acc["categorical_accuracy"]
 
 
-
-
 def test_get_set_weights_distributed():
 
     network = build_sparse_output_layer_network_distributed()
