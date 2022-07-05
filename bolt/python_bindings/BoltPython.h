@@ -376,7 +376,7 @@ class SentimentClassifier {
   explicit SentimentClassifier(const std::string& model_path) {
     _model = PyNetwork::load(model_path);
     _model->initializeNetworkState(/* batch_size= */ 1,
-                                   /* force_dense= */ true);
+                                   /* use_sparsity= */ false);
     if (_model->getOutputDim() != 2) {
       throw std::invalid_argument(
           "Expected model output dim to be 2 for sentiment classifier.");

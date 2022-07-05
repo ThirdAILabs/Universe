@@ -49,33 +49,34 @@ def main():
         "--input_file",
         type=str,
         required=True,
-        help='Path to the dataset.',
+        help="Path to the dataset.",
     )
     parser.add_argument(
         "-d",
         "--output_dim",
         type=int,
         required=True,
-        help='Dimension of output.',
+        help="Dimension of output.",
     )
     parser.add_argument(
         "-o",
         "--output_file",
         type=str,
         required=True,
-        help='Output filename.',
+        help="Output filename.",
     )
     parser.add_argument(
         "-a",
         "--has_header",
         action="store_true",
-        help='Dimension of output.',
+        help="Dimension of output.",
     )
 
     args = parser.parse_args()
 
     preprocess_amazon_polarity(
-        args.input_file, args.output_dim, args.output_file, args.has_header)
+        args.input_file, args.output_dim, args.output_file, args.has_header
+    )
 
 
 if __name__ == "__main__":
