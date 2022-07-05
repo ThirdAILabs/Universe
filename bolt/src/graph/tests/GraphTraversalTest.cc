@@ -89,6 +89,7 @@ TEST(GraphTraversalTest, ThrowsExceptionForCycle) {
   node3->setPredecessors({node2});
   node2->setPredecessors({node1});
   node1->setPredecessors({node0, node3});
+  node0->setPredecessors({});
 
   BoltGraph graph(/* inputs= */ {}, /* output= */ node4);
 
