@@ -5,8 +5,14 @@
 
 namespace thirdai::bolt {
 
-const std::unordered_map<std::string, SchemaKey>
-    SchemaProcessor::string_to_key = {
+// Declarations for helper functions.
+static bool isValidKey(const std::string& key);
+static void throwInvalidKeyError(const std::string& key);
+static void throwMissingKeyError(const std::string& key);
+static void throwMissingColumnError(const std::string& col_name);
+
+static const std::unordered_map<std::string, SchemaKey>
+    string_to_key = {
         {"user", SchemaKey::user},
         {"item", SchemaKey::item},
         {"timestamp", SchemaKey::timestamp},
@@ -15,8 +21,8 @@ const std::unordered_map<std::string, SchemaKey>
         {"trackable_quantity", SchemaKey::trackable_quantity},
         {"target", SchemaKey::target}};
 
-const std::unordered_map<SchemaKey, std::string>
-    SchemaProcessor::required_keys_to_str = {
+static const std::unordered_map<SchemaKey, std::string>
+    required_keys_to_str = {
         {SchemaKey::item, "item"},
         {SchemaKey::timestamp, "timestamp"},
         {SchemaKey::target, "target"}};
@@ -60,11 +66,11 @@ ColumnNumbers SchemaProcessor::parseHeader(const std::string& header,
   return keys_to_col_nums;
 }
 
-bool SchemaProcessor::isValidKey(const std::string& key) {
+bool isValidKey(const std::string& key) {
   return string_to_key.count(key) > 0;
 }
 
-void SchemaProcessor::throwInvalidKeyError(const std::string& key) {
+void throwInvalidKeyError(const std::string& key) {
   std::stringstream ss;
   ss << "Found invalid key '" << key << "' in schema. Valid keys: ";
 
@@ -77,7 +83,7 @@ void SchemaProcessor::throwInvalidKeyError(const std::string& key) {
   throw std::invalid_argument(ss.str());
 }
 
-void SchemaProcessor::throwMissingKeyError(const std::string& key) {
+void throwMissingKeyError(const std::string& key) {
   std::stringstream ss;
   ss << "Schema is missing required key '" << key
      << "' in schema. Required keys: ";
@@ -91,7 +97,7 @@ void SchemaProcessor::throwMissingKeyError(const std::string& key) {
   throw std::invalid_argument(ss.str());
 }
 
-void SchemaProcessor::throwMissingColumnError(const std::string& col_name) {
+void throwMissingColumnError(const std::string& col_name) {
   std::stringstream ss;
   ss << "Could not find a column named '" << col_name << "' in header.";
   throw std::invalid_argument(ss.str());

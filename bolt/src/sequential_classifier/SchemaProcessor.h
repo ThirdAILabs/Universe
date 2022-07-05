@@ -15,6 +15,7 @@ enum class SchemaKey {
   trackable_quantity,
   target
 };
+
 using GivenSchema = std::unordered_map<std::string, std::string>;
 using InternalSchema = std::unordered_map<SchemaKey, std::string>;
 using ColumnNumbers = std::unordered_map<SchemaKey, size_t>;
@@ -27,17 +28,6 @@ class SchemaProcessor {
 
  private:
   InternalSchema _schema;
-
-  static bool isValidKey(const std::string& key);
-
-  static void throwInvalidKeyError(const std::string& key);
-
-  static void throwMissingKeyError(const std::string& key);
-
-  static void throwMissingColumnError(const std::string& col_name);
-
-  const static std::unordered_map<std::string, SchemaKey> string_to_key;
-  const static std::unordered_map<SchemaKey, std::string> required_keys_to_str;
 };
 
 }  // namespace thirdai::bolt
