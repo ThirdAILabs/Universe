@@ -81,8 +81,6 @@ class Input final : public Node {
   }
 
   BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
-    assert(preparedForBatchProcessing());
-
     return (*_input_batch)[vec_index];
   }
 
