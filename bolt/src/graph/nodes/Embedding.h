@@ -22,42 +22,6 @@ class EmbeddingNode final : public Node {
         _outputs(std::nullopt),
         _token_input(nullptr) {}
 
-  void initializeParametersImpl() final {
-    _embedding_layer = std::make_shared<EmbeddingLayer>(_config);
-  }
-
-  void forward(uint32_t batch_index, const BoltVector* labels) final {
-    (void)labels;
-
-    assert(preparedForBatchProcessing());
-
-    _embedding_layer->forward(
-        /* batch_index= */ batch_index,
-        /* tokens= */ _token_input->getTokens(batch_index),
-        /* output= */ (*_outputs)[batch_index]);
-  }
-
-  void backpropagate(uint32_t batch_index) final {
-    assert(preparedForBatchProcessing());
-
-    _embedding_layer->backpropagate(
-        /* batch_index= */ batch_index,
-        /* output= */ (*_outputs)[batch_index]);
-  }
-
-  void updateParameters(float learning_rate, uint32_t batch_cnt) final {
-    assert(preparedForBatchProcessing());
-
-    _embedding_layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA2,
-                                       EPS);
-  }
-
-  BoltVector& getOutputVector(uint32_t batch_index) final {
-    assert(preparedForBatchProcessing());
-
-    return (*_outputs)[batch_index];
-  }
-
   uint32_t outputDim() const final {
     return _embedding_layer->getEmbeddingDim();
   }
@@ -66,16 +30,6 @@ class EmbeddingNode final : public Node {
     // The embedding is dense so we can just return the result of outputDim.
     return outputDim();
   }
-
-  void prepareForBatchProcessingImpl(uint32_t batch_size,
-                                     bool use_sparsity) final {
-    (void)use_sparsity;
-
-    _embedding_layer->initializeLayer(batch_size);
-    _outputs = _embedding_layer->createBatchState(batch_size);
-  }
-
-  void cleanupAfterBatchProcessingImpl() final { _outputs = std::nullopt; }
 
   std::vector<NodePtr> getPredecessors() const final { return {}; }
 
@@ -97,6 +51,52 @@ class EmbeddingNode final : public Node {
   bool isInputNode() const final { return false; }
 
  private:
+  void initializeParametersImpl() final {
+    _embedding_layer = std::make_shared<EmbeddingLayer>(_config);
+  }
+
+  void prepareForBatchProcessingImpl(uint32_t batch_size,
+                                     bool use_sparsity) final {
+    (void)use_sparsity;
+
+    _embedding_layer->initializeLayer(batch_size);
+    _outputs = _embedding_layer->createBatchState(batch_size);
+  }
+
+  void forwardImpl(uint32_t batch_index, const BoltVector* labels) final {
+    (void)labels;
+
+    assert(preparedForBatchProcessing());
+
+    _embedding_layer->forward(
+        /* batch_index= */ batch_index,
+        /* tokens= */ _token_input->getTokens(batch_index),
+        /* output= */ (*_outputs)[batch_index]);
+  }
+
+  void backpropagateImpl(uint32_t batch_index) final {
+    assert(preparedForBatchProcessing());
+
+    _embedding_layer->backpropagate(
+        /* batch_index= */ batch_index,
+        /* output= */ (*_outputs)[batch_index]);
+  }
+
+  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
+    assert(preparedForBatchProcessing());
+
+    _embedding_layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA2,
+                                       EPS);
+  }
+
+  BoltVector& getOutputVectorImpl(uint32_t batch_index) final {
+    assert(preparedForBatchProcessing());
+
+    return (*_outputs)[batch_index];
+  }
+
+  void cleanupAfterBatchProcessingImpl() final { _outputs = std::nullopt; }
+
   bool predecessorsSet() const final { return _token_input != nullptr; }
 
   bool parametersInitialized() const final {
