@@ -28,12 +28,6 @@ class Metric {
   // Returns the name of the metric.
   virtual std::string getName() = 0;
 
-  // Returns whether this metric allows forced dense inference.
-  // Use case: for regression metrics such as RMSE and WMAPE, inference sparsity
-  // must be consistent with training sparsity so forced dense inference is not
-  // allowed.
-  virtual bool forceDenseInference() = 0;
-
   virtual ~Metric() = default;
 };
 
@@ -98,8 +92,6 @@ class CategoricalAccuracy final : public Metric {
 
   std::string getName() final { return name; }
 
-  bool forceDenseInference() final { return true; }
-
  private:
   std::atomic<uint32_t> _correct;
   std::atomic<uint32_t> _num_samples;
@@ -143,8 +135,6 @@ class MeanSquaredErrorMetric final : public Metric {
   static constexpr const char* name = "mean_squared_error";
 
   std::string getName() final { return name; }
-
-  bool forceDenseInference() final { return true; }
 
  private:
   template <bool DENSE, bool LABEL_DENSE>
@@ -240,8 +230,6 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   static constexpr const char* name = "weighted_mean_absolute_percentage_error";
 
   std::string getName() final { return name; }
-
-  bool forceDenseInference() final { return false; }
 
  private:
   std::atomic<float> _sum_of_deviations;

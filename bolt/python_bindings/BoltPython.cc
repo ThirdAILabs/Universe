@@ -1,11 +1,19 @@
 #include "BoltPython.h"
+#include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/Node.h>
+#include <bolt/src/graph/nodes/Concatenate.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
+#include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
+#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/text_classifier/TextClassifier.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
 
@@ -75,29 +83,43 @@ void createBoltSubmodule(py::module_& module) {
                      "the corresponding enum.");
 
   // TODO(Geordie, Nicholas): put loss functions in its own submodule
-  py::class_<LossFunction>(bolt_submodule, "LossFunction",  // NOLINT
-                           "Base class for all loss functions");
 
-  py::class_<CategoricalCrossEntropyLoss, LossFunction>(
+  /*
+    The second template argument to py::class_ specifies the holder class,
+    which by default would be a std::unique_ptr.
+    See: https://pybind11.readthedocs.io/en/stable/advanced/smart_ptrs.html
+
+    The third template argument to py::class_ specifies the parent class if
+    there is a polymorphic relationship.
+    See: https://pybind11.readthedocs.io/en/stable/advanced/classes.html
+  */
+  py::class_<LossFunction, std::shared_ptr<LossFunction>>(  // NOLINT
+      bolt_submodule, "LossFunction", "Base class for all loss functions");
+
+  py::class_<CategoricalCrossEntropyLoss,
+             std::shared_ptr<CategoricalCrossEntropyLoss>, LossFunction>(
       bolt_submodule, "CategoricalCrossEntropyLoss",
       "A loss function for multi-class (one label per sample) classification "
       "tasks.")
       .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
 
-  py::class_<BinaryCrossEntropyLoss, LossFunction>(
+  py::class_<BinaryCrossEntropyLoss, std::shared_ptr<BinaryCrossEntropyLoss>,
+             LossFunction>(
       bolt_submodule, "BinaryCrossEntropyLoss",
       "A loss function for multi-label (multiple class labels per each sample) "
       "classification tasks.")
       .def(py::init<>(), "Constructs a BinaryCrossEntropyLoss object.");
 
-  py::class_<MeanSquaredError, LossFunction>(
+  py::class_<MeanSquaredError, std::shared_ptr<MeanSquaredError>, LossFunction>(
       bolt_submodule, "MeanSquaredError",
       "A loss function that minimizes mean squared error (MSE) for regression "
       "tasks. "
       "MSE = sum( (actual - prediction)^2 )")
       .def(py::init<>(), "Constructs a MeanSquaredError object.");
 
-  py::class_<WeightedMeanAbsolutePercentageErrorLoss, LossFunction>(
+  py::class_<WeightedMeanAbsolutePercentageErrorLoss,
+             std::shared_ptr<WeightedMeanAbsolutePercentageErrorLoss>,
+             LossFunction>(
       bolt_submodule, "WeightedMeanAbsolutePercentageError",
       "A loss function to minimize weighted mean absolute percentage error "
       "(WMAPE) "
@@ -163,7 +185,7 @@ void createBoltSubmodule(py::module_& module) {
            " * activation_function: String specifying the activation function "
            "to use, no restrictions on case - We support five activation "
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
-           " * load_factor: Float - The fraction of neurons to use during "
+           " * sparsity: Float - The fraction of neurons to use during "
            "sparse training "
            "and sparse inference. For example, sparsity=0.05 means the "
            "layer uses 5% of "
@@ -348,6 +370,7 @@ void createBoltSubmodule(py::module_& module) {
            "every epoch.")
       .def("predict", &PyNetwork::predict, py::arg("test_data"),
            py::arg("test_labels"), py::arg("batch_size") = 2048,
+           py::arg("sparse_inference") = false,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -395,6 +418,9 @@ void createBoltSubmodule(py::module_& module) {
            "labels can be passed in as test_labels=None, in which case they "
            "will be ignored. If labels are not supplied then no metrics will "
            "be computed but activations will still be returned.\n"
+           " * sparse_inference: (Bool) - When this is true the model will use "
+           "sparsity in inference. This will lead to faster inference but can "
+           "cause a slight loss in accuracy. This option defaults to false.\n"
            " * metrics: List of str - Optional. The metrics to keep track of "
            "during training. "
            "See the section on metrics.\n"
@@ -408,12 +434,11 @@ void createBoltSubmodule(py::module_& module) {
            "their values "
            "and (1) output vectors (predictions) from the network in the form "
            "of a 2D Numpy matrix of floats.")
-      .def("enable_sparse_inference", &PyNetwork::enableSparseInference,
-           "Enables sparse inference. Freezes smart hash tables. Do not call "
-           "this method early on "
-           "in the training routine. It is recommended to call this method "
-           "right before the last training "
-           "epoch.")
+      .def("freeze_hash_tables", &PyNetwork::freezeHashTables,
+           "Freezes hash tables in the network. If you plan to use sparse "
+           "inference, you may get a significant performance improvement if "
+           "you call this one or two epochs before you finish training. "
+           "Otherwise you should not call this method.")
       .def("save_for_inference", &PyNetwork::saveForInference,
            py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
@@ -536,7 +561,7 @@ void createBoltSubmodule(py::module_& module) {
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
       .def("predict", &PyDLRM::predict, py::arg("test_data"),
-           py::arg("test_labels"),
+           py::arg("test_labels"), py::arg("sparse_inference") = false,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -546,8 +571,10 @@ void createBoltSubmodule(py::module_& module) {
            " * test_data: ClickThroughDataset - Test data.\n"
            " * test_labels: BoltDataset - Testing labels.\n"
            " * metrics: List of str - Optional. The metrics to keep track of "
-           "during training. "
-           "See the section on metrics.\n"
+           "during training. See the section on metrics.\n"
+           " * sparse_inference: (Bool) - When this is true the model will use "
+           "sparsity in inference. This will lead to faster inference but can "
+           "cause a slight loss in accuracy. This option defaults to false.\n"
            " * verbose: Boolean - Optional. If set to False, only displays "
            "progress bar. "
            "If set to True, prints additional information such as metrics and "
@@ -596,6 +623,166 @@ void createBoltSubmodule(py::module_& module) {
           "Loads and builds a saved classifier from file.\n"
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
+
+  auto graph_submodule = bolt_submodule.def_submodule("graph");
+
+  py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
+
+  py::class_<FullyConnectedNode, std::shared_ptr<FullyConnectedNode>, Node>(
+      graph_submodule, "FullyConnected")
+      .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
+           py::arg("activation"),
+           "Constructs a dense FullyConnectedLayer object.\n"
+           "Arguments:\n"
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * activation: Enum specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
+      .def(py::init<uint64_t, std::string>(), py::arg("dim"),
+           py::arg("activation"),
+           "Constructs a dense FullyConnectedLayer object.\n"
+           "Arguments:\n"
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * activation: String specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
+      .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
+           py::arg("sparsity"), py::arg("activation"),
+           "Constructs a sparse FullyConnectedLayer object with sampling "
+           "parameters autotuned.\n"
+           "Arguments:\n"
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * sparsity: Float - What fraction of nuerons to activate during "
+           "training and sparse inference.\n"
+           " * activation: Enum specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
+      .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
+           py::arg("sparsity"), py::arg("activation"),
+           "Constructs a sparse FullyConnectedLayer object with sampling "
+           "parameters autotuned.\n"
+           "Arguments:\n"
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * sparsity: Float - What fraction of nuerons to activate during "
+           "training and sparse inference.\n"
+           " * activation: String specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
+#if THIRDAI_EXPOSE_ALL
+      .def(py::init<uint64_t, float, ActivationFunction, SamplingConfig>(),
+           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
+           py::arg("sampling_config"),
+           "Constructs a sparse FullyConnectedLayer object.\n"
+           "Arguments:\n"
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * sparsity: Float - What fraction of nuerons to activate during "
+           "training and sparse inference.\n"
+           " * activation: Enum specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
+           " * sampling_config (SamplingConfig) - Sampling config object to "
+           "initialize hash tables/functions.")
+      .def(py::init<uint64_t, float, std::string, SamplingConfig>(),
+           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
+           py::arg("sampling_config"),
+           "Constructs a sparse FullyConnectedLayer object.\n"
+           "Arguments:\n"
+           " * dim: Int (positive) - The dimension of the layer.\n"
+           " * sparsity: Float - What fraction of nuerons to activate during "
+           "training and sparse inference.\n"
+           " * activation: String specifying the activation function "
+           "to use, no restrictions on case - We support five activation "
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
+           " * sampling_config (SamplingConfig) - Sampling config object to "
+           "initialize hash tables/functions.")
+#endif
+      .def("__call__", &FullyConnectedNode::addPredecessor,
+           py::arg("prev_layer"),
+           "Tells the graph which layer should act as input to this fully "
+           "connected layer.");
+
+  py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
+      graph_submodule, "Concatenate")
+      .def(
+          py::init<>(),
+          "A layer that concatenates an arbitrary number of layers together.\n")
+      .def("__call__", &ConcatenateNode::setConcatenatedNodes,
+           py::arg("input_layers"),
+           "Tells the graph which layers will be concatenated. Must be at "
+           "least one node (although this is just an identity function, so "
+           "really should be at least two).");
+
+  py::class_<Input, InputPtr, Node>(graph_submodule, "Input")
+      .def(py::init<uint32_t>(), py::arg("dim"),
+           "Constructs an input layer node for the graph.");
+
+  py::class_<TrainConfig>(graph_submodule, "TrainConfig")
+      .def_static("makeConfig", &TrainConfig::makeConfig,
+                  py::arg("learning_rate"), py::arg("epochs"))
+      .def("withMetrics", &TrainConfig::withMetrics, py::arg("metrics"))
+      .def("silence", &TrainConfig::silence)
+      .def("withRebuildHashTables", &TrainConfig::withRebuildHashTables,
+           py::arg("rebuild_hash_tables"))
+      .def("withReconstructHashFunctions",
+           &TrainConfig::withReconstructHashFunctions,
+           py::arg("reconstruct_hash_functions"));
+
+  py::class_<PredictConfig>(graph_submodule, "PredictConfig")
+      .def_static("makeConfig", &PredictConfig::makeConfig)
+      .def("enableSparseInference", &PredictConfig::enableSparseInference)
+      .def("withMetrics", &PredictConfig::withMetrics, py::arg("metrics"))
+      .def("silence", &PredictConfig::silence);
+
+  py::class_<PyBoltGraph>(graph_submodule, "Model")
+      .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
+           py::arg("output"),
+           "Constructs a bolt model from a layer graph.\n"
+           "Arguments:\n"
+           " * inputs (List[Node]) - The input nodes to the graph. Note that "
+           "inputs are mapped to input layers by their index.\n"
+           " * output (Node) - The output node of the graph.")
+      .def("compile", &PyBoltGraph::compile, py::arg("loss"),
+           "Compiles the graph for the given loss function. In this step the "
+           "order in which to compute the layers is determined and various "
+           "checks are preformed to ensure the model architecture is correct.")
+      .def("train", &PyBoltGraph::train<BoltBatch>, py::arg("train_data"),
+           py::arg("train_labels"), py::arg("train_config"),
+           "Trains the network on the given training data.\n"
+           "Arguments:\n"
+           " * train_data: BoltDataset - Training data. This is a BoltDataset "
+           "as loaded by thirdai.dataset.load_bolt_svm_dataset or "
+           "thirdai.dataset.load_bolt_csv_dataset.\n"
+           " * train_labels: BoltDataset - Training labels. This is a "
+           "BoltDataset as loaded by thirdai.dataset.load_bolt_svm_dataset or "
+           "thirdai.dataset.load_bolt_csv_dataset.\n"
+           " * train_config: TrainConfig - the additional training parameters. "
+           "See the TrainConfig documentation above.\n\n"
+
+           "Returns a mapping from metric names to an array their values for "
+           "every epoch.")
+      .def("predict", &PyBoltGraph::predict<BoltBatch>, py::arg("test_data"),
+           py::arg("test_labels"), py::arg("predict_config"),
+           "Predicts the output given the input vectors and evaluates the "
+           "predictions based on the given metrics.\n"
+           "Arguments:\n"
+           " * test_data: BoltDataset - Test data. This is a BoltDataset as "
+           "loaded by thirdai.dataset.load_bolt_svm_dataset or "
+           "thirdai.dataset.load_bolt_csv_dataset.\n"
+           " * test_labels: BoltDataset - Test labels. This is a BoltDataset "
+           "as loaded by thirdai.dataset.load_bolt_svm_dataset or "
+           "thirdai.dataset.load_bolt_csv_dataset.\n"
+           " * predict_config: PredictConfig - the additional prediction "
+           "parameters. See the PredictConfig documentation above.\n\n"
+
+           "Returns a  a mapping from metric names to their values.")
+      // TODO(josh/nick): These are temporary until we have a better story
+      // for converting numpy to BoltGraphs
+      .def("train_np", &PyBoltGraph::trainNumpy, py::arg("train_data"),
+           py::arg("train_labels"), py::arg("train_config"),
+           py::arg("batch_size"))
+      .def("predict_np", &PyBoltGraph::predictNumpy, py::arg("test_data"),
+           py::arg("test_labels"), py::arg("predict_config"),
+           py::arg("batch_size") = 256);
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
