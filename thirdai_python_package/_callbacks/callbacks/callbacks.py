@@ -18,12 +18,7 @@ class Callback:
         self._metric = metric
         self._min_delta = min_delta
         self._baseline = baseline
-        self._init_patience = patience
-        self._patience = patience
         self._verbose = verbose
-
-        if (self._baseline == None):
-            self._patience = self._patience + 1  # No baseline specified, increase initial patience to account for determining baseline
 
     def getMetric(self):
         return self._metric
@@ -43,6 +38,7 @@ class Callback:
     def callback(self, epoch, lr, epoch_metrics):
         return False, lr
 
+
 class CallbackWithPatience(Callback):
     """Parent class for callbacks with patience. Should never be instantiated.
 
@@ -59,17 +55,52 @@ class CallbackWithPatience(Callback):
         verbose (bool): False is silent, True displays a message if/when the callback takes effect.
     """
 
-    def __init__(
-        self,
-        metric,
-        min_delta,
-        baseline,
-        patience,
-        verbose
-    ):
-        super().__init__(metric, min_delta, baseline, patience, verbose)
+    def __init__(self, metric, min_delta, baseline, patience, verbose):
+        super().__init__(metric, min_delta, baseline, verbose)
+        self._patience = patience
+        self._init_patience = patience
 
-    def onZeroPatience():
+        if self._baseline == None:
+            self._patience = (
+                self._patience + 1
+            )  # No baseline specified, increase initial patience to account for determining baseline
+
+    def callback(self, epoch, lr, epoch_metrics):
+        """Returns flag indicating if training should be stopped due to lack of improvement.
+
+        Implementation of standard callback function. Given the metrics for the most recent epoch,
+        callback returns a boolean indicating whether training should be stopped and a learning
+        rate.
+
+        Args:
+            epoch (integer): Unused. The epoch index (indexed from 0).
+            lr (float): The current learning rate.
+            epoch_metrics: The metrics for the most recent epoch as returned by Network.train().
+
+        Returns:
+            A tuple of (boolean, float) indicating whether training should be stopped and a learning
+            rate (unchanged).
+        """
+
+        result = epoch_metrics[self._metric][
+            0
+        ]  # Get specified metric value for previous epoch
+        if result - self._baseline < self._min_delta:
+            self._patience -= 1
+            if self._patience == 0:
+                return self.onZeroPatience()
+            else:
+                return False, lr
+        else:
+            self._baseline = (
+                result  # Update baseline to reflect highest recorded metric
+            )
+            self._patience = self._init_patience  # Showing improvement, reset patience
+            return False, lr
+
+    def onZeroPatience(self, lr):
+        return False, lr
+
 
 class EarlyStop(CallbackWithPatience):
     """Monitors a metric and terminates training if no improvement is observed after a specified
@@ -96,45 +127,25 @@ class EarlyStop(CallbackWithPatience):
     ):
         super().__init__(metric, min_delta, baseline, patience, verbose)
 
-    def callback(self, epoch, lr, epoch_metrics):
-        """Returns flag indicating if training should be stopped due to lack of improvement.
-
-        Implementation of standard callback function. Given the metrics for the most recent epoch,
-        callback returns a boolean indicating whether training should be stopped and a learning
-        rate (unchanged).
+    def onZeroPatience(self, lr):
+        """Returns a boolean flag to halt training.
 
         Args:
-            epoch (integer): Unused. The epoch index (indexed from 0).
-            lr (float): The current learning rate.
-            epoch_metrics: The metrics for the most recent epoch as returned by Network.train().
+            lr (unused): The current learning rate.
 
         Returns:
-            A tuple of (boolean, float) indicating whether training should be stopped and a learning
-            rate (unchanged).
+            A tuple of (boolean, float) indicating whether training should be stopped (always True)
+            and a learning rate (unchanged).
         """
 
-        result = epoch_metrics[self._metric][
-            0
-        ]  # Get specified metric value for previous epoch
-        if result - self._baseline < self._min_delta:
-            self._patience -= 1
-            if self._patience == 0:
-                if self._verbose:
-                    print(
-                        f"EarlyStop halted training after failing to meet improvement threshold for past {self._init_patience} epochs."
-                    )
-                return True, lr  # Patience exhausted, stop training
-            else:
-                return False, lr
-        else:
-            self._baseline = (
-                result  # Update baseline to reflect highest recorded metric
+        if self._verbose:
+            print(
+                f"EarlyStop halted training after failing to meet improvement threshold for past {self._init_patience} epochs."
             )
-            self._patience = self._init_patience  # Showing improvement, reset patience
-            return False, lr
+        return True, lr
 
 
-class AdaptiveLearningRate(Callback):
+class AdaptiveLearningRate(CallbackWithPatience):
     """Monitors a metric and exponentially reduces learning rate if no improvement is observed after
         a specified number of epochs.
 
@@ -160,48 +171,23 @@ class AdaptiveLearningRate(Callback):
     ):
         super().__init__(metric, min_delta, baseline, patience, verbose)
 
-    def callback(self, epoch, lr, epoch_metrics):
-        """Returns an updated learning rate if no improvement is observed after
-            a specified number of epochs.
-
-        Implementation of standard callback function. Given the metrics for the most recent epoch,
-        callback returns a boolean indicating whether training should be stopped (always False) and
-        a new learning rate.
+    def onZeroPatience(self, lr):
+        """Returns an updated learning rate.
 
         Args:
-            epoch (integer): Unused. The epoch index (indexed from 0).
             lr (float): The current learning rate.
-            epoch_metrics: The metrics for the most recent epoch as returned by Network.train().
 
         Returns:
             A tuple of (boolean, float) indicating whether training should be stopped (always False)
             and a learning rate.
         """
 
-        result = epoch_metrics[self._metric][
-            0
-        ]  # Get specified metric value for previous epoch
-        if result - self._baseline < self._min_delta:
-            self._patience -= 1  # Decrement patience
-            if self._patience == 0:
-                _lr = lr * 10**-1
-                self._patience = self._init_patience  # Reset patience
-                if self._verbose:
-                    print(
-                        f"AdaptiveLearningRate reduced learning rate from {lr} to {_lr} after failing to meet improvement threshold for past {self._init_patience} epochs."
-                    )
-                return (
-                    False,
-                    _lr,
-                )  # Patience exhausted, reduce learning rate exponentially
-            else:
-                return False, lr
-        else:
-            self._baseline = (
-                result  # Update baseline to reflect highest recorded metric
+        _lr = lr * 10**-1
+        if self._verbose:
+            print(
+                f"AdaptiveLearningRate reduced learning rate from {lr} to {_lr} after failing to meet improvement threshold for past {self._init_patience} epochs."
             )
-            self._patience = self._init_patience  # Showing improvement, reset patience
-            return False, lr
+        return False, _lr  # Reduce learning rate exponentially
 
 
 class LearningRateScheduler(Callback):
@@ -228,10 +214,9 @@ class LearningRateScheduler(Callback):
         metric="categorical_accuracy",
         min_delta=None,
         baseline=None,
-        patience=None,
         verbose=True,
     ):
-        super().__init__(metric, min_delta, baseline, patience, verbose)
+        super().__init__(metric, min_delta, baseline, verbose)
         self._schedule = schedule
 
     def callback(self, epoch, lr, epoch_metrics):
