@@ -398,17 +398,11 @@ void ConvLayer::setBiasesGradients(const float* update_bias_gradient) {
 }
 
 float* ConvLayer::getBiasesGradient() {
-  float* biases_gradients_copy = new float[_dim];
-  std::copy(_b_gradient.begin(), _b_gradient.end(), biases_gradients_copy);
-
-  return biases_gradients_copy;
+  return _b_gradient.data();
 }
 
 float* ConvLayer::getWeightsGradient() {
-  float* weights_gradients_copy = new float[_dim];
-  std::copy(_w_gradient.begin(), _w_gradient.end(), weights_gradients_copy);
-
-  return weights_gradients_copy;
+  return _w_gradient.data();
 }
 
 // this function is only called from constructor
