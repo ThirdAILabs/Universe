@@ -20,8 +20,6 @@ class TimeUtils {
     }
     leaps =
         (tyears_for_leaps + 2) / 4;  // no of next two lines until year 2100.
-    // i = (ltm->tm_year – 100) / 100;
-    // leaps -= ( (i/4)*3 + i%4 );
     tdays = 0;
     for (i = 0; i < ltm->tm_mon; i++) {
       tdays += mon_days[i];
@@ -34,27 +32,7 @@ class TimeUtils {
     return (tdays * 86400) + (utc_hrs * 3600);
   }
 
-  static void strToTm(const char* mdate, struct tm* mtm) {
-    char* pstr;
-    int32_t year, month, day;
-
-    year = strtol(mdate, &pstr, 10);
-    month = strtol(++pstr, &pstr, 10);
-    day = strtol(++pstr, &pstr, 10);
-
-    mtm->tm_sec = 0;
-    mtm->tm_min = 0;
-    mtm->tm_hour = 0;
-    mtm->tm_mday = day;
-    mtm->tm_mon = month - 1;
-    mtm->tm_year = year - 1900;
-  }
-
   static std::tm timeStringToTimeObject(std::string_view time_string) {
-    // std::tm time = {};
-    // strToTm(time_string.data(), &time);
-    // return time;
-
     std::tm time = {};
     std::stringstream time_ss;
     time_ss << time_string;
