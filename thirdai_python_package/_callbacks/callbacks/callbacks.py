@@ -14,7 +14,7 @@ class Callback:
         verbose (bool): False is silent, True displays a message if/when the callback takes effect.
     """
 
-    def __init__(self, metric, min_delta, baseline, patience, verbose):
+    def __init__(self, metric, min_delta, baseline, verbose):
         self._metric = metric
         self._min_delta = min_delta
         self._baseline = baseline
@@ -88,7 +88,7 @@ class CallbackWithPatience(Callback):
         if result - self._baseline < self._min_delta:
             self._patience -= 1
             if self._patience == 0:
-                return self.onZeroPatience()
+                return self.onZeroPatience(lr)
             else:
                 return False, lr
         else:
@@ -183,6 +183,7 @@ class AdaptiveLearningRate(CallbackWithPatience):
         """
 
         _lr = lr * 10**-1
+        self._patience = self._init_patience
         if self._verbose:
             print(
                 f"AdaptiveLearningRate reduced learning rate from {lr} to {_lr} after failing to meet improvement threshold for past {self._init_patience} epochs."
