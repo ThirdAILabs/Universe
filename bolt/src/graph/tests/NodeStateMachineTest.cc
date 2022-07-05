@@ -17,8 +17,6 @@ namespace thirdai::bolt::tests {
 // state 3 = parameters initialized
 // state 4 = prepared for batch processing
 
-// TODO(Josh): Make this test general to other nodes once we add state machines
-// to them.
 // TODO(Josh): Do we want to try to test forward and backpropogate and other
 //  methods that use assertions instead of exceptions?
 
@@ -78,8 +76,6 @@ class NodeStateMachineTest {
 
   // Methods for testing invalid calls within each state.
   void testBadCallsInState1() {
-    // initializeParameters is a noop and performs no checks in
-    // ConcatenateNode.
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
         _node->initializeParameters(), exceptions::NodeStateMachineError);
 
