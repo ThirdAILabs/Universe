@@ -22,7 +22,7 @@ class TextClassifier {
   void predict(const std::string& filename,
                const std::optional<std::string>& output_filename);
 
-  std::vector<float> predict_on_sentence(const std::string& sentence);
+  std::string predict_on_sentence(const std::string& sentence);
 
   void save(const std::string& filename) {
     std::ofstream filestream =

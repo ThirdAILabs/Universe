@@ -604,7 +604,7 @@ void createBoltSubmodule(py::module_& module) {
            " * learning_rate: Float - The learning rate to use for training.\n")
       .def("predict_on_sentence", &TextClassifier::predict_on_sentence,
            py::arg("sentence"),
-           "Get the output activations when given a sentence as input to a "
+           "Get the predicted class name, when sentence is given as input to a "
            "trained text classifier.\n"
            "Arguments:\n"
            " * sentence: Sentence to predict on text classifier.\n")

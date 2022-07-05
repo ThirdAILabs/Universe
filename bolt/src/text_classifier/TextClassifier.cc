@@ -83,10 +83,9 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
   }
 }
 
-std::vector<float> TextClassifier::predict_on_sentence(
-    const std::string& sentence) {
+std::string TextClassifier::predict_on_sentence(const std::string& sentence) {
   BoltVector vec = dataset::PairgramHasher::computePairgrams(
-      sentence, _model->getOutputDim());
+      sentence, _model->getInputDim());
   BoltVector output = BoltVector(_model->getOutputDim(), true);
   if (_model->_states.empty()) {
     throw std::invalid_argument(
@@ -94,11 +93,15 @@ std::vector<float> TextClassifier::predict_on_sentence(
         "the model first.");
   }
   _model->forward(0, vec, output, nullptr);
-  std::vector<float> output_activations;
-  for (uint32_t i = 0; i < _model->getOutputDim(); i++) {
-    output_activations.push_back(output.activations[i]);
+  float max_act = 0.0;
+  uint32_t pred = 0;
+  for (uint32_t i = 0; i < output.len; i++) {
+    if (output.activations[i] > max_act) {
+      max_act = output.activations[i];
+      pred = i;
+    }
   }
-  return output_activations;
+  return _batch_processor->getClassName(pred);
 }
 
 void TextClassifier::predict(
