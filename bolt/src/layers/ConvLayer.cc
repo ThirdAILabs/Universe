@@ -397,13 +397,9 @@ void ConvLayer::setBiasesGradients(const float* update_bias_gradient) {
             _b_gradient.begin());
 }
 
-float* ConvLayer::getBiasesGradient() {
-  return _b_gradient.data();
-}
+float* ConvLayer::getBiasesGradient() { return _b_gradient.data(); }
 
-float* ConvLayer::getWeightsGradient() {
-  return _w_gradient.data();
-}
+float* ConvLayer::getWeightsGradient() { return _w_gradient.data(); }
 
 // this function is only called from constructor
 void ConvLayer::buildPatchMaps(std::pair<uint32_t, uint32_t> next_kernel_size) {

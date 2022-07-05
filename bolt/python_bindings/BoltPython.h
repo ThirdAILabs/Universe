@@ -592,10 +592,10 @@ class DistributedPyNetwork final : public DistributedModel {
 
   /*
    * We dont need to free the float* mem we are getting from the getLayerData
-   * in the next two function as the pointer directly points to raw data of the 
-   * vector(due to vector.data()) and would be freed by the destructor of vector 
+   * in the next two function as the pointer directly points to raw data of the
+   * vector(due to vector.data()) and would be freed by the destructor of vector
    * itself.
-  */
+   */
   py::array_t<float> getBiasesGradients(uint32_t layer_index) {
     if (layer_index >= DistributedModel::numLayers()) {
       return py::none();
