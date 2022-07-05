@@ -57,13 +57,9 @@ class Input final : public Node {
                                      bool use_sparsity) final {
     (void)batch_size;
     (void)use_sparsity;
-
-    // TODO(josh): Fix this
-    if (getState() != NodeState::PreparedForBatchProcessing) {
-      throw exceptions::NodeStateMachineError(
-          "The input node is unique, and need to have setBatch called before "
-          "prepareForBatchProcessing.");
-    }
+    throw exceptions::NodeStateMachineError(
+        "Should never call prepareForBatchProcessing on Input (instead should "
+        "call setInputs).");
   }
 
   uint32_t numNonzerosInOutputImpl() const final {
