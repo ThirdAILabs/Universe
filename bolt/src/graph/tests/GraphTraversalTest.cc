@@ -32,7 +32,7 @@ class MockTraversalNode final : public MockNode {
 
   void compileImpl() final { _state = NodeState::Compiled; }
 
-  const std::string& type() const final { return _type; }
+  std::string type() const final { return _type; }
 
   NodeState getState() const final { return _state; }
 

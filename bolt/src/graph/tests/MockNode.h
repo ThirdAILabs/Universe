@@ -43,7 +43,7 @@ class MockNode : public Node {
   MOCK_METHOD(void, summarizeImpl, (std::stringstream & summary, bool detailed),
               (const override));
 
-  MOCK_METHOD(const std::string&, type, (), (const override));
+  MOCK_METHOD(std::string, type, (), (const override));
 
   MOCK_METHOD(std::vector<NodePtr>, getPredecessorsImpl, (), (const override));
 

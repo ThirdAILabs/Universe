@@ -18,7 +18,7 @@ class ConcatenateNode final
     : public Node,
       public std::enable_shared_from_this<ConcatenateNode> {
  public:
-  ConcatenateNode(){};
+  ConcatenateNode() : _compiled(false){};
 
   std::shared_ptr<ConcatenateNode> setConcatenatedNodes(
       const std::vector<NodePtr>& nodes) {
@@ -192,7 +192,7 @@ class ConcatenateNode final
     summary << ") -> " << name() << " (Concatenate)\n";
   }
 
-  const std::string& type() const final { return LAYER_TYPE; }
+  std::string type() const final { return "concat"; }
 
   static void verifyNoInputNodes(const std::vector<NodePtr>& nodes) {
     for (const auto& node : nodes) {
@@ -334,7 +334,6 @@ class ConcatenateNode final
     uint32_t num_nonzeros_in_concatenation;
   };
 
-  const std::string LAYER_TYPE = "concat";
   std::optional<GraphState> _graph_state;
   bool _compiled = false;
   std::optional<BatchProcessingState> _batch_processing_state;

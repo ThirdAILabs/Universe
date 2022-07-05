@@ -20,7 +20,9 @@ namespace thirdai::bolt {
 class Input final : public Node {
  public:
   explicit Input(uint32_t expected_input_dim)
-      : _expected_input_dim(expected_input_dim) {}
+      : _compiled(false),
+        _input_batch(nullptr),
+        _expected_input_dim(expected_input_dim) {}
 
   // This class does not own this memory, but we pass it in as a pointer that
   // will be stored as a field so it can be used in future method calls. It is
@@ -91,7 +93,7 @@ class Input final : public Node {
     summary << name() << " (Input) : dim=" << _expected_input_dim << "\n";
   }
 
-  const std::string& type() const final { return LAYER_TYPE; }
+  std::string type() const final { return "input"; }
 
   std::vector<NodePtr> getPredecessorsImpl() const final { return {}; }
 
@@ -131,7 +133,6 @@ class Input final : public Node {
     }
   }
 
-  const std::string LAYER_TYPE = "input";
   bool _compiled;
   BoltBatch* _input_batch;
   uint32_t _expected_input_dim;

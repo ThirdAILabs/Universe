@@ -98,7 +98,7 @@ class FullyConnectedNode final
     _layer->buildLayerSummary(summary, detailed);
   }
 
-  const std::string& type() const final { return LAYER_TYPE; }
+  std::string type() const final { return "fc"; }
 
   NodeState getState() const final {
     if (_predecessor == nullptr && _layer == nullptr && !_outputs.has_value()) {
@@ -117,7 +117,6 @@ class FullyConnectedNode final
         "Node is in an invalid internal state");
   }
 
-  std::string LAYER_TYPE = "fc";
   std::shared_ptr<FullyConnectedLayer> _layer;
   FullyConnectedLayerConfig _config;
   std::optional<BoltBatch> _outputs;

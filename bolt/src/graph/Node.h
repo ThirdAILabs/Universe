@@ -25,7 +25,7 @@ class LayerNameManager {
    * registerNodeAndGetName("concat") -> concat_1
    * registerNodeAndGetName("input") -> input_1
    * registerNodeAndGetName("concat") -> concat_2
-   * registerNodeAndGetName("full") -> full_1
+   * registerNodeAndGetName("fc") -> fc_1
    * registerNodeAndGetName("input") -> input_2
    */
   std::string registerNodeAndGetName(const std::string& node_type) {
@@ -260,7 +260,7 @@ class Node {
 
   // Return a short all lowercase string representing the type of this node for
   // use in printing the graph, e.g. concat, fc, input
-  virtual const std::string& type() const = 0;
+  virtual std::string type() const = 0;
 
   enum NodeState {
     Constructed,
