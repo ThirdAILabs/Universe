@@ -22,6 +22,8 @@ class Callback:
         self._patience = patience
         self._verbose = verbose
 
+        if (patience)
+
     def getMetric(self):
         return self._metric
 
@@ -35,7 +37,7 @@ class Callback:
         self._baseline = baseline
 
     def setDefaultMinDelta(self):
-        self._min_delta = 0.01
+        self._min_delta = 0.001
 
 
 class EarlyStop(Callback):
