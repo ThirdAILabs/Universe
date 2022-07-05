@@ -33,6 +33,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr,
+      /* use_sparse_inference= */ false,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.98);
@@ -52,7 +53,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
                 /* verbose= */ false);
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
-      /* output_activations= */ nullptr,
+      /* output_activations= */ nullptr, /* use_sparse_inference= */ false,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
@@ -68,13 +69,19 @@ static void testSimpleDatasetMultiLayerNetworkActivation(
 
   auto data = genDataset(false);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
-                /* learning_rate */ 0.001, /* epochs */ 2,
-                /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
-                /* verbose= */ false);
+  auto train_metrics =
+      network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                    /* learning_rate */ 0.001, /* epochs */ 2,
+                    /* rehash= */ 0, /* rebuild= */ 0,
+                    /* metric_names= */ {"mean_squared_error"},
+                    /* verbose= */ false);
+  ASSERT_LT(train_metrics.at("mean_squared_error").back(),
+            train_metrics.at("mean_squared_error").front());
+
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr,
+      /* use_sparse_inference= */ false,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
@@ -100,18 +107,23 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 
   auto data = genDataset(false);
 
-  network.train(data.data, data.labels, BinaryCrossEntropyLoss(),
-                /* learning_rate= */ 0.001, /* epochs= */ 2,
-                /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
-                /* verbose= */ true);
+  auto train_metrics =
+      network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+                    /* learning_rate= */ 0.001, /* epochs= */ 5,
+                    /* rehash= */ 0, /* rebuild= */ 0,
+                    /* metric_names= */ {"mean_squared_error"},
+                    /* verbose= */ true);
+
+  ASSERT_LT(train_metrics.at("mean_squared_error").back(),
+            train_metrics.at("mean_squared_error").front());
+
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr,
+      /* use_sparse_inference= */ false,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ true);
-  // Lower accuracy threshold to 0.6 because Sigmoid/BCE converges slower than
-  // ReLU/Tanh.
-  ASSERT_GE(test_metrics["categorical_accuracy"], 0.6);
+  ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
 
 TEST_F(FullyConnectedClassificationNetworkTestFixture,
@@ -131,6 +143,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
   auto test_metrics = network.predict(
       data.data, data.labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr,
+      /* use_sparse_inference= */ false,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
@@ -251,7 +264,7 @@ void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
   auto stream_data = getMockStreamingDataset(std::move(in_mem_data));
 
   auto test_metrics =
-      network.predictOnStream(stream_data,
+      network.predictOnStream(stream_data, /* use_sparse_inference= */ false,
                               /* metric_names= */ {"categorical_accuracy"},
                               /* batch_callback= */ std::nullopt,
                               /* verbose= */ false);

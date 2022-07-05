@@ -1,9 +1,10 @@
 #pragma once
 
 #include "BoltVector.h"
-#include <iostream>
+#include <bolt/src/layers/LayerConfig.h>
 
 namespace thirdai::bolt {
+
 class SequentialLayer {
  public:
   virtual void forward(const BoltVector& input, BoltVector& output,
@@ -18,17 +19,13 @@ class SequentialLayer {
                                 float eps) = 0;
 
   virtual BoltBatch createBatchState(uint32_t batch_size,
-                                     bool force_dense) const = 0;
+                                     bool use_sparsity) const = 0;
 
-  virtual void forceSparseForInference() = 0;
-
-  virtual bool isForceSparsity() const = 0;
+  virtual void freezeHashTables(bool insert_labels_if_not_found) = 0;
 
   virtual void buildHashTables() = 0;
 
   virtual void reBuildHashFunction() = 0;
-
-  virtual void shuffleRandNeurons() = 0;
 
   // Returns the dimenion of the layer.
   virtual uint32_t getDim() const = 0;
@@ -38,19 +35,25 @@ class SequentialLayer {
 
   // Returns the current output dimension for inference (different if sparse
   // inference).
-  virtual uint32_t getInferenceOutputDim() const = 0;
+  virtual uint32_t getSparseDim() const = 0;
 
-  virtual float* getWeights() = 0;
+  virtual float* getWeights() const = 0;
 
-  virtual float* getBiases() = 0;
+  virtual float* getBiases() const = 0;
 
   virtual void setTrainable(bool trainable) = 0;
 
   virtual void setWeights(const float* new_weights) = 0;
 
-  virtual bool getTrainable() = 0;
+  virtual bool getTrainable() const = 0;
 
   virtual void setBiases(const float* new_biases) = 0;
+
+  /**
+   * Checks whether the layer is shallow, ie, it's optimizer is initialized or
+   * uninitialized.
+   */
+  virtual bool isShallow() const = 0;
 
   /**
    * Sets whether the layer is currently shallow (shallow
@@ -61,17 +64,19 @@ class SequentialLayer {
   virtual void setShallow(bool shallow) = 0;
 
   /**
-   * Checks whether the layer is shallow, ie, it's optimizer is initialized or
-   * uninitialized.
-   */
-  virtual bool isShallow() = 0;
-
-  /**
    * Sets the save parameter for a layer indicating whether the layer should be
    * saved with or without the optimizer state.
    */
   virtual void setShallowSave(bool shallow) = 0;
-  virtual void buildLayerSummary(std::stringstream& summary, bool detailed) {
+
+  virtual float getSparsity() const = 0;
+
+  virtual void setSparsity(float sparsity) = 0;
+
+  virtual const SamplingConfig& getSamplingConfig() const = 0;
+
+  virtual void buildLayerSummary(std::stringstream& summary,
+                                 bool detailed) const {
     (void)detailed;
     summary << "dim=" << getDim() << "\n";
   }

@@ -1,6 +1,10 @@
 import pytest
 from utils import build_sparse_hidden_layer_classifier, train_network
-from utils import gen_network, gen_training_data, get_categorical_acc
+from utils import (
+    gen_single_sparse_layer_network,
+    gen_training_data,
+    get_categorical_acc,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -33,8 +37,8 @@ def test_save_shallow_size():
 # Asserts that model cannot be trained after trimming for inference and is shallow
 # Asserts that after reinitialize_optimizer_for_training, model runs and is not shallow
 def test_trim_then_train():
-    labels, examples, n_classes = gen_training_data(n_classes=100, n_samples=1000)
-    network = gen_network(n_classes=100)
+    examples, labels = gen_training_data(n_classes=100, n_samples=1000)
+    network = gen_single_sparse_layer_network(n_classes=100)
     train_network(network, examples, labels, 5)
     network.trim_for_inference()
 
@@ -51,8 +55,8 @@ def test_trim_then_train():
 
 # Asserts that the trimmed model and checkpointed model gives the same accuracy
 def test_same_accuracy_save_shallow():
-    labels, examples, n_classes = gen_training_data(n_classes=100, n_samples=1000)
-    network = gen_network(n_classes=100)
+    examples, labels = gen_training_data(n_classes=100, n_samples=1000)
+    network = gen_single_sparse_layer_network(n_classes=100)
     train_network(network, examples, labels, 5)
     save_loc = "./bolt_model_save"
     checkpoint_loc = "./bolt_model_checkpoint"
@@ -80,8 +84,8 @@ def test_same_accuracy_save_shallow():
 
 # Checks that both trimmed and checkpointed model gains accuracy after training
 def test_accuracy_gain_save_shallow():
-    labels, examples, n_classes = gen_training_data(n_classes=100, n_samples=1000)
-    network = gen_network(n_classes=100)
+    examples, labels = gen_training_data(n_classes=100, n_samples=1000)
+    network = gen_single_sparse_layer_network(n_classes=100)
     train_network(network, examples, labels, 2)
     save_loc = "./bolt_model_save"
     checkpoint_loc = "./bolt_model_checkpoint"
@@ -117,8 +121,8 @@ def test_accuracy_gain_save_shallow():
 # Checks whether an exception is thrown while checkpointing a trimmed model
 def test_checkpoint_shallow():
 
-    labels, examples, n_classes = gen_training_data(n_classes=100, n_samples=1000)
-    network = gen_network(n_classes=100)
+    examples, labels = gen_training_data(n_classes=100, n_samples=1000)
+    network = gen_single_sparse_layer_network(n_classes=100)
     train_network(network, examples, labels, 2)
     network.trim_for_inference()
     checkpoint_loc = "./bolt_model_checkpoint"

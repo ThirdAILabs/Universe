@@ -18,7 +18,7 @@ class Metric {
  public:
   // Computes and updates the value of the metric given the sample.
   // For instance this may update the accuracy.
-  virtual void processSample(const BoltVector& output,
+  virtual void computeMetric(const BoltVector& output,
                              const BoltVector& labels) = 0;
 
   // Returns the value of the metric and resets it. For instance this would be
@@ -27,12 +27,6 @@ class Metric {
 
   // Returns the name of the metric.
   virtual std::string getName() = 0;
-
-  // Returns whether this metric allows forced dense inference.
-  // Use case: for regression metrics such as RMSE and WMAPE, inference sparsity
-  // must be consistent with training sparsity so forced dense inference is not
-  // allowed.
-  virtual bool forceDenseInference() = 0;
 
   virtual ~Metric() = default;
 };
@@ -45,9 +39,9 @@ class CategoricalAccuracy final : public Metric {
  public:
   CategoricalAccuracy() : _correct(0), _num_samples(0) {}
 
-  void processSample(const BoltVector& output, const BoltVector& labels) final {
-    float max_act = std::numeric_limits<float>::min();
-    uint32_t max_act_index = std::numeric_limits<uint32_t>::max();
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+    float max_act = -std::numeric_limits<float>::max();
+    std::optional<uint32_t> max_act_index = std::nullopt;
     for (uint32_t i = 0; i < output.len; i++) {
       if (output.activations[i] > max_act) {
         max_act = output.activations[i];
@@ -55,9 +49,16 @@ class CategoricalAccuracy final : public Metric {
       }
     }
 
+    if (!max_act_index) {
+      throw std::runtime_error(
+          "Unable to find a output activation larger than the minimum "
+          "representable float. This is likely do to a Nan or incorrect "
+          "activation function in the final layer.");
+    }
+
     // The nueron with the largest activation is the prediction
-    uint32_t pred =
-        output.isDense() ? max_act_index : output.active_neurons[max_act_index];
+    uint32_t pred = output.isDense() ? *max_act_index
+                                     : output.active_neurons[*max_act_index];
 
     if (labels.isDense()) {
       // If labels are dense we check if the predection has a non-zero label.
@@ -91,10 +92,94 @@ class CategoricalAccuracy final : public Metric {
 
   std::string getName() final { return name; }
 
-  bool forceDenseInference() final { return true; }
-
  private:
   std::atomic<uint32_t> _correct;
+  std::atomic<uint32_t> _num_samples;
+};
+
+class MeanSquaredErrorMetric final : public Metric {
+ public:
+  MeanSquaredErrorMetric() : _mse(0), _num_samples(0) {}
+
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+    float error;
+    if (output.isDense()) {
+      if (labels.isDense()) {
+        error = computeMSE<true, true>(output, labels);
+      } else {
+        error = computeMSE<true, false>(output, labels);
+      }
+    } else {
+      if (labels.isDense()) {
+        error = computeMSE<false, true>(output, labels);
+
+      } else {
+        error = computeMSE<false, false>(output, labels);
+      }
+    }
+
+    MetricUtilities::incrementAtomicFloat(_mse, error);
+    _num_samples++;
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double error = _mse / _num_samples;
+    if (verbose) {
+      std::cout << "MSE: " << error << std::endl;
+    }
+    _mse = 0;
+    _num_samples = 0;
+    return error;
+  }
+
+  static constexpr const char* name = "mean_squared_error";
+
+  std::string getName() final { return name; }
+
+ private:
+  template <bool DENSE, bool LABEL_DENSE>
+  float computeMSE(const BoltVector& output, const BoltVector& labels) {
+    if (DENSE || LABEL_DENSE) {
+      // If either vector is dense then we need to iterate over the full
+      // dimension from the layer.
+      uint32_t dim = std::max(output.len, labels.len);
+
+      float error = 0.0;
+      for (uint32_t i = 0; i < dim; i++) {
+        float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
+        float act = output.findActiveNeuron<DENSE>(i).activation;
+        float delta = label - act;
+        error += delta * delta;
+      }
+      return error;
+    }
+
+    // If both are sparse then we need to iterate over the nonzeros from both
+    // vectors. To avoid double counting the overlapping neurons we avoid
+    // computing the error while iterating over the output active_neurons, if
+    // the labels also contain the same active_neuron.
+
+    float error = 0.0;
+    for (uint32_t i = 0; i < output.len; i++) {
+      float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
+      if (label > 0.0) {
+        continue;
+      }
+      float act = output.findActiveNeuron<DENSE>(i).activation;
+      float delta = label - act;
+      error += delta * delta;
+    }
+
+    for (uint32_t i = 0; i < labels.len; i++) {
+      float label = labels.findActiveNeuron<LABEL_DENSE>(i).activation;
+      float act = output.findActiveNeuron<DENSE>(i).activation;
+      float delta = label - act;
+      error += delta * delta;
+    }
+    return error;
+  }
+
+  std::atomic<float> _mse;
   std::atomic<uint32_t> _num_samples;
 };
 
@@ -110,7 +195,7 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   WeightedMeanAbsolutePercentageError()
       : _sum_of_deviations(0.0), _sum_of_truths(0.0) {}
 
-  void processSample(const BoltVector& output, const BoltVector& labels) final {
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
     // Calculate |actual - predicted| and |actual|.
     float sum_of_squared_differences = 0.0;
     float sum_of_squared_label_elems = 0.0;
@@ -146,67 +231,9 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
 
   std::string getName() final { return name; }
 
-  bool forceDenseInference() final { return false; }
-
  private:
   std::atomic<float> _sum_of_deviations;
   std::atomic<float> _sum_of_truths;
-};
-
-using MetricData = std::unordered_map<std::string, std::vector<double>>;
-using InferenceMetricData = std::unordered_map<std::string, double>;
-
-// TODO(Geordie): Instead of hard coding the options, use a static map.
-class MetricAggregator {
- public:
-  explicit MetricAggregator(const std::vector<std::string>& metrics,
-                            bool verbose = true)
-      : _verbose(verbose), _allow_force_dense_inference(true) {
-    for (const auto& name : metrics) {
-      if (name == CategoricalAccuracy::name) {
-        _metrics.push_back(std::make_unique<CategoricalAccuracy>());
-      } else if (name == WeightedMeanAbsolutePercentageError::name) {
-        _metrics.push_back(
-            std::make_unique<WeightedMeanAbsolutePercentageError>());
-      } else {
-        throw std::invalid_argument("'" + name + "' is not a valid metric.");
-      }
-      // If at least one metric does not allow forced dense inference, forced
-      // dense inference is not allowed.
-      _allow_force_dense_inference &=
-          _metrics.at(_metrics.size() - 1)->forceDenseInference();
-    }
-  }
-
-  void processSample(const BoltVector& output, const BoltVector& labels) {
-    for (auto& m : _metrics) {
-      m->processSample(output, labels);
-    }
-  }
-
-  void logAndReset() {
-    for (auto& m : _metrics) {
-      _output[m->getName()].push_back(m->getMetricAndReset(_verbose));
-    }
-  }
-
-  MetricData getOutput() { return _output; }
-
-  InferenceMetricData getOutputFromInference() {
-    InferenceMetricData data;
-    for (const auto& metric : _output) {
-      data[metric.first] = metric.second.at(0);
-    }
-    return data;
-  }
-
-  bool forceDenseInference() const { return _allow_force_dense_inference; }
-
- private:
-  std::vector<std::unique_ptr<Metric>> _metrics;
-  MetricData _output;
-  bool _verbose;
-  bool _allow_force_dense_inference;
 };
 
 }  // namespace thirdai::bolt
