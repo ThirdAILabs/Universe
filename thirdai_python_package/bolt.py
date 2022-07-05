@@ -65,6 +65,7 @@ class Network(thirdai._thirdai.bolt.Network):
                         callback.setBaseline(epoch_metrics[callback.getMetric()][0])
                     if callback.getMinDelta() == None:
                         callback.setDefaultMinDelta()
+                    callback.setLearningRate(lr)
             else:
                 for (
                     key,
