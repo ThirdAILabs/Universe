@@ -1,37 +1,54 @@
-#include "RecentCMS.h"
 #include <dataset/src/encodings/count_history/CountMinSketch.h>
 #include <atomic>
+#include <stdexcept>
 
 namespace thirdai::dataset {
 
 constexpr uint32_t SECONDS_IN_DAY = 60 * 60 * 24;
 
-class DailyCountHistoryIndex {
+class CountHistoryIndex {
  public:
-  DailyCountHistoryIndex(uint32_t n_rows, uint32_t range_pow, uint32_t lifetime)
-      : _sketch(n_rows, range_pow, _sketch_memory),
+  CountHistoryIndex(uint32_t n_rows, uint32_t range_pow, uint32_t lifetime)
+      : _recent(std::make_unique<CountMinSketch>(n_rows, range_pow)),
+        _old(std::make_unique<CountMinSketch>(n_rows, range_pow)),
         _timestamp_lifetime(lifetime),
         _start_timestamp(0),
         _index_lifetime(indexLifetime(range_pow)),
         _n_indexed(0) {}
 
+  CountHistoryIndex(uint32_t n_rows, uint32_t range_pow)
+      : _recent(std::make_unique<CountMinSketch>(n_rows, range_pow)),
+        _old(std::make_unique<CountMinSketch>(n_rows, range_pow)),
+        _timestamp_lifetime(0),
+        _start_timestamp(0),
+        _index_lifetime(indexLifetime(range_pow)),
+        _n_indexed(0) {}
+
+  void setTimestampLifetime(uint32_t lifetime) {
+    _timestamp_lifetime = lifetime;
+  }
+
   void index(uint32_t id, uint32_t timestamp, float inc = 1.0) {
     auto cms_timestamp = timestampToDay(timestamp);
-    _sketch.index(pack(id, cms_timestamp), inc);
+    addToSketches(pack(id, cms_timestamp), inc);
     _n_indexed++;
   }
 
   float query(uint32_t id, uint32_t timestamp) {
     auto day = timestampToDay(timestamp);
-    return _sketch.query(pack(id, day));
+    return querySketches(pack(id, day));
   }
 
   void handleLifetime(uint32_t timestamp) {
+    if (_timestamp_lifetime == 0) {
+      throw std::logic_error(
+          "[CountHistoryIndex] Timestamp lifetime cannot be 0.");
+    }
     if (mustResetLifetime(timestamp) ||
         (reachedIndexLifetime() && canResetLifetime(timestamp))) {
       _start_timestamp = timestamp;
       _n_indexed = 0;
-      _sketch.discardOld();
+      discardOld();
     }
   }
 
@@ -61,8 +78,22 @@ class DailyCountHistoryIndex {
     return (timestamp - _start_timestamp) > _timestamp_lifetime;
   }
 
-  SketchMemory _sketch_memory;
-  RecentCMS _sketch;
+  void addToSketches(uint64_t x, float inc) const { _recent->index(x, inc); }
+
+  float querySketches(uint64_t x) const {
+    return _recent->query(x) + _old->query(x);
+  }
+
+  void discardOld() {
+    _old->clear();
+
+    auto new_recent = std::move(_old);
+    _old = std::move(_recent);
+    _recent = std::move(new_recent);
+  }
+
+  std::unique_ptr<CountMinSketch> _recent;
+  std::unique_ptr<CountMinSketch> _old;
   uint32_t _timestamp_lifetime;
   uint32_t _start_timestamp;
   uint32_t _index_lifetime;

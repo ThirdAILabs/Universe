@@ -2,9 +2,10 @@
 
 #include "BlockInterface.h"
 #include <hashing/src/MurmurHash.h>
-#include <dataset/src/encodings/count_history/DailyCountHistoryIndex.h>
+#include <dataset/src/encodings/count_history/CountHistoryIndex.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <cstdlib>
+#include <memory>
 
 namespace thirdai::dataset {
 
@@ -17,16 +18,15 @@ class TrendBlock : public Block {
    */
   TrendBlock(bool has_count_col, size_t id_col, size_t timestamp_col,
              size_t count_col, size_t horizon, size_t lookback,
-             GraphPtr graph = nullptr, size_t max_n_neighbors = 0)
-      : _lifetime((lookback + horizon) * SECONDS_IN_DAY),
-        _horizon(horizon),
+             std::shared_ptr<CountHistoryIndex> index, GraphPtr graph = nullptr,
+             size_t max_n_neighbors = 0)
+      : _horizon(horizon),
         _lookback(lookback),
         _has_count_col(has_count_col),
         _id_col(id_col),
         _timestamp_col(timestamp_col),
         _count_col(count_col),
-        _index(/* n_rows = */ 5, /* range_pow = */ 22,
-               /* lifetime = */ _lifetime),
+        _index(std::move(index)),
         _graph(std::move(graph)),
         _max_n_neighbors(max_n_neighbors) {
     if (_graph != nullptr && _max_n_neighbors == 0) {
@@ -37,7 +37,18 @@ class TrendBlock : public Block {
     }
 
     _expected_num_cols = expectedNumCols();
+    _index->setTimestampLifetime(lifetime(horizon, lookback));
   }
+
+  TrendBlock(bool has_count_col, size_t id_col, size_t timestamp_col,
+             size_t count_col, size_t horizon, size_t lookback,
+             GraphPtr graph = nullptr, size_t max_n_neighbors = 0)
+      : TrendBlock(has_count_col, id_col, timestamp_col, count_col, horizon,
+                   lookback,
+                   std::make_shared<CountHistoryIndex>(
+                       /* n_rows = */ 5, /* range_pow = */ 22,
+                       lifetime(horizon, lookback)),
+                   std::move(graph), max_n_neighbors) {}
 
   uint32_t featureDim() const final {
     uint32_t multiplier = _max_n_neighbors + 1;
@@ -52,7 +63,7 @@ class TrendBlock : public Block {
     std::tm time = TimeUtils::timeStringToTimeObject(first_row[_timestamp_col]);
     // TODO(Geordie) should timestamp be uint64_t?
     uint32_t timestamp = TimeUtils::timeToEpoch(&time, 0);
-    _index.handleLifetime(timestamp);
+    _index->handleLifetime(timestamp);
   }
 
  protected:
@@ -62,7 +73,7 @@ class TrendBlock : public Block {
     uint32_t id = idHash(id_str);
     uint32_t timestamp = timestampFromInputRow(input_row);
     float count = countFromInputRow(input_row);
-    _index.index(id, timestamp, count);
+    _index->index(id, timestamp, count);
 
     addFeaturesForId(id, timestamp, vec);
     if (_graph && _graph->count(id_str) > 0) {
@@ -135,7 +146,7 @@ class TrendBlock : public Block {
       auto look_back = (_horizon + i) * SECONDS_IN_DAY;
       // Prevent overflow if given a date < 1970.
       auto query_timestamp = timestamp >= look_back ? timestamp - look_back : 0;
-      auto query_result = _index.query(id, query_timestamp);
+      auto query_result = _index->query(id, query_timestamp);
       assert(query_result >= 0);
       counts[i] = query_result;
       sum += query_result;
@@ -151,7 +162,10 @@ class TrendBlock : public Block {
     }
   }
 
-  uint32_t _lifetime;
+  static uint32_t lifetime(uint32_t horizon, uint32_t lookback) {
+    return (lookback + horizon) * SECONDS_IN_DAY;
+  }
+
   size_t _horizon;
   size_t _lookback;
   bool _has_count_col;
@@ -159,7 +173,7 @@ class TrendBlock : public Block {
   size_t _timestamp_col;
   size_t _count_col;
   size_t _expected_num_cols;
-  DailyCountHistoryIndex _index;
+  std::shared_ptr<CountHistoryIndex> _index;
   GraphPtr _graph;
   size_t _max_n_neighbors;
 };

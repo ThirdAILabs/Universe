@@ -31,11 +31,19 @@ using Columns = std::unordered_map<std::string, size_t>;
 using Schema = std::unordered_map<std::string, std::string>;
 using Blocks = std::vector<std::shared_ptr<dataset::Block>>;
 
+struct PersistentPipelineStates {
+  std::shared_ptr<dataset::CountHistoryIndex> _user_history;
+  std::shared_ptr<dataset::CountHistoryIndex> _item_history;
+  std::shared_ptr<dataset::StringToUidMap> _user_id_map;
+  std::shared_ptr<dataset::StringToUidMap> _item_id_map;
+  std::shared_ptr<dataset::StringToUidMap> _target_id_map;
+  std::shared_ptr<dataset::StringToUidMap> _cat_attr_map;
+};
+
 struct SequentialClassifierConfig {
-  SequentialClassifierConfig(std::string model_size, std::string task,
+  SequentialClassifierConfig(std::string model_size, size_t n_target_classes,
                              size_t horizon, size_t n_items, size_t n_users = 0,
                              size_t n_item_categories = 0,
-                             size_t n_target_classes = 0,
                              dataset::GraphPtr user_graph = nullptr,
                              size_t user_max_neighbors = 0,
                              dataset::GraphPtr item_graph = nullptr,
@@ -45,7 +53,6 @@ struct SequentialClassifierConfig {
         _n_categories(n_item_categories),
         _horizon(horizon),
         _n_target_classes(n_target_classes),
-        _task(std::move(task)),
         _model_size(std::move(model_size)),
         _item_graph(std::move(item_graph)),
         _item_max_neighbors(item_max_neighbors),
@@ -57,7 +64,6 @@ struct SequentialClassifierConfig {
   size_t _n_categories;
   size_t _horizon;
   size_t _n_target_classes;
-  std::string _task;
   std::string _model_size;
   dataset::GraphPtr _item_graph;
   size_t _item_max_neighbors;
@@ -80,62 +86,57 @@ class SequentialClassifier {
       : _schema(std::move(schema)),
         _config(std::move(config)),
         _delimiter(delimiter),
-        _use_sequential_feats(use_sequential_feats) {}
-
-  std::shared_ptr<dataset::StreamingGenericDatasetLoader> buildPipeline(
-      std::string& filename, bool train, bool overwrite_index) {
-    startBuildingPipeline();
-    auto loader =
-        std::make_shared<dataset::SimpleFileDataLoader>(filename, BATCH_SIZE);
-    auto header = loader->getHeader();
-    if (!header) {
-      throw std::invalid_argument(
-          "[SequentialClassifier::train] The file has no header.");
-    }
-    std::unordered_map<std::string, size_t> columns =
-        parseHeader(*header, _delimiter);
-    auto input_blocks = buildInputBlocks(columns, overwrite_index);
-    auto label_blocks = buildLabelBlocks(columns);
-    auto buffer_size = autotuneShuffleBufferSize();
-
-    return std::make_shared<dataset::StreamingGenericDatasetLoader>(
-        loader, input_blocks, label_blocks, /* shuffle = */ train,
-        dataset::ShuffleBufferConfig(buffer_size),
-        /* has_header = */ false, _delimiter);
+        _use_sequential_feats(use_sequential_feats) {
+    checkValidSchema();
   }
 
   void train(std::string filename, uint32_t epochs, float learning_rate,
              bool overwrite_index = false) {
     auto pipeline =
         buildPipeline(filename, /* train = */ true, overwrite_index);
+
     if (!_network) {
       _network = buildNetwork(*pipeline);
     }
+
     MeanSquaredError loss;
 
     if (!AutoTuneUtils::canLoadDatasetInMemory(filename)) {
-      for (uint32_t e = 0; e < epochs; e++) {
-        // Train on streaming dataset
-        _network->trainOnStream(pipeline, loss, learning_rate);
-
-        /*
-          Create new stream for next epoch with new data loader.
-          overwrite_index always true in this case because we're
-          rereading from the same file.
-        */
-
-        pipeline = buildPipeline(filename, /* train = */ true,
-                                 /* overwrite_index = */ true);
-      }
-
+      trainOnStream(filename, epochs, learning_rate, pipeline);
     } else {
-      auto [train_data, train_labels] = pipeline->loadInMemory();
-
-      _network->train(train_data, train_labels, loss, learning_rate, 1);
-      _network->freezeHashTables();
-      _network->train(train_data, train_labels, loss, learning_rate,
-                      epochs - 1);
+      trainInMemory(epochs, learning_rate, pipeline);
     }
+  }
+
+  void trainOnStream(
+      std::string& filename, uint32_t epochs, float learning_rate,
+      std::shared_ptr<dataset::StreamingGenericDatasetLoader>& pipeline) {
+    MeanSquaredError loss;
+
+    for (uint32_t e = 0; e < epochs; e++) {
+      _network->trainOnStream(pipeline, loss, learning_rate);
+
+      /*
+        Create new stream for next epoch with new data loader.
+        overwrite_index always true in this case because we're
+        rereading from the same file.
+      */
+
+      pipeline = buildPipeline(filename, /* train = */ true,
+                               /* overwrite_index = */ true);
+    }
+  }
+
+  void trainInMemory(
+      uint32_t epochs, float learning_rate,
+      std::shared_ptr<dataset::StreamingGenericDatasetLoader>& pipeline) {
+    MeanSquaredError loss;
+
+    auto [train_data, train_labels] = pipeline->loadInMemory();
+
+    _network->train(train_data, train_labels, loss, learning_rate, 1);
+    _network->freezeHashTables();
+    _network->train(train_data, train_labels, loss, learning_rate, epochs - 1);
   }
 
   float predict(
@@ -165,19 +166,11 @@ class SequentialClassifier {
               }
             }
 
-            (*output_file) << _target_id_encoding->uidToClass(pred)
+            (*output_file) << _pipeline_states._target_id_map->uidToClass(pred)
                            << std::endl;
           }
         };
-    auto regression_print_predictions_callback = [&](const BoltBatch& outputs,
-                                                     uint32_t batch_size) {
-      if (!output_file) {
-        return;
-      }
-      for (uint32_t batch_id = 0; batch_id < batch_size; batch_id++) {
-        (*output_file) << outputs[batch_id].activations[0] << std::endl;
-      }
-    };
+
     auto pipeline = buildPipeline(filename, /* train = */ false,
                                   /* overwrite_index = */ false);
     if (!_network) {
@@ -186,12 +179,6 @@ class SequentialClassifier {
           "training the classifier.");
     }
     std::vector<std::string> metrics{metricName()};
-    if (toLower(_config._task) == "regression") {
-      auto res = _network->predictOnStream(
-          pipeline, /* use_sparse_inference = */ true, metrics,
-          regression_print_predictions_callback);
-      return res[metricName()];
-    }
     auto res = _network->predictOnStream(
         pipeline, /* use_sparse_inference = */ true, metrics,
         classification_print_predictions_callback);
@@ -199,33 +186,53 @@ class SequentialClassifier {
   }
 
  private:
-  std::string metricName() const {
-    return toLower(_config._task) == "regression" ? "root_mean_squared_error"
-                                                  : "categorical_accuracy";
+  std::shared_ptr<dataset::StreamingGenericDatasetLoader> buildPipeline(
+      std::string& filename, bool train, bool overwrite_index) {
+    _est_nonzeros = 0;
+
+    auto loader =
+        std::make_shared<dataset::SimpleFileDataLoader>(filename, BATCH_SIZE);
+    auto header = getHeader(*loader);
+    auto name_to_number = columnNameToNumber(header, _delimiter);
+    auto columns = schemaToColNum(name_to_number);
+
+    auto input_blocks = buildInputBlocks(columns, overwrite_index);
+    auto label_blocks = buildLabelBlocks(columns);
+    auto buffer_size = autotuneShuffleBufferSize();
+
+    return std::make_shared<dataset::StreamingGenericDatasetLoader>(
+        loader, input_blocks, label_blocks, /* shuffle = */ train,
+        dataset::ShuffleBufferConfig(buffer_size),
+        /* has_header = */ false, _delimiter);
   }
+
+  static std::string getHeader(dataset::DataLoader& loader) {
+    auto header = loader.getHeader();
+    if (!header) {
+      throw std::invalid_argument(
+          "[SequentialClassifier::train] The file has no header.");
+    }
+    return *header;
+  }
+
+  static std::string metricName() { return "categorical_accuracy"; }
 
   FullyConnectedNetwork buildNetwork(
       dataset::StreamingGenericDatasetLoader& pipeline) const {
-    SequentialConfigList configs;
-
     auto hidden_dim = AutoTuneUtils::getHiddenLayerSize(
         _config._model_size, pipeline.getLabelDim(), pipeline.getInputDim());
     auto hidden_sparsity = AutoTuneUtils::getHiddenLayerSparsity(hidden_dim);
 
+    SequentialConfigList configs;
     configs.push_back(std::make_shared<FullyConnectedLayerConfig>(
-        hidden_dim, /* _sparsity = */ hidden_sparsity,
-        /* _act_func = */ ActivationFunction::ReLU));
+        hidden_dim, hidden_sparsity, ActivationFunction::ReLU));
     configs.push_back(std::make_shared<FullyConnectedLayerConfig>(
-        /* _dim = */ pipeline.getLabelDim(),
-        /* _act_func = */ toLower(_config._task) == "regression"
-            ? ActivationFunction::Linear
-            : ActivationFunction::Softmax));
-    FullyConnectedNetwork network(configs,
-                                  /* input_dim = */ pipeline.getInputDim());
-    return network;
+        pipeline.getLabelDim(), ActivationFunction::Softmax));
+
+    return {configs, pipeline.getInputDim()};
   }
 
-  static std::unordered_map<std::string, size_t> parseHeader(
+  static std::unordered_map<std::string, size_t> columnNameToNumber(
       std::string& header, char delimiter) {
     std::unordered_map<std::string, size_t> columns;
     size_t col = 0;
@@ -242,30 +249,29 @@ class SequentialClassifier {
     return columns;
   }
 
+  std::unordered_map<std::string, size_t> schemaToColNum(
+      std::unordered_map<std::string, size_t>& column_name_to_number) {
+    std::unordered_map<std::string, size_t> col_nums;
+    for (const auto& [key, name] : _schema) {
+      if (column_name_to_number.count(name) == 0) {
+        std::stringstream error_ss;
+        error_ss << "[SequentialClassifier] Column name for '" << key
+                 << "' is set to '" << name << "' but could not find '" << name
+                 << "' in header.";
+        throw std::invalid_argument(error_ss.str());
+      }
+      col_nums[key] = column_name_to_number.at(name);
+    }
+    return col_nums;
+  }
+
   Blocks buildLabelBlocks(Columns& columns) {
-    auto task_lower = toLower(_config._task);
-    if (task_lower == "regression") {
-      return {std::make_shared<dataset::ContinuousBlock>(
-          columns.at(_schema.at("target")))};
+    if (_pipeline_states._target_id_map == nullptr) {
+      _pipeline_states._target_id_map =
+          std::make_shared<dataset::StringToUidMap>(_config._n_target_classes);
     }
-    if (task_lower == "classification") {
-      if (_config._n_target_classes == 0) {
-        throw std::invalid_argument(
-            "[SequentialClassifier] Task is classification but "
-            "n_target_classes is set to 0 in config.");
-      }
-      if (_target_id_encoding == nullptr) {
-        _target_id_encoding = std::make_shared<dataset::StringToUidMap>(
-            _config._n_target_classes);
-      }
-      return {std::make_shared<dataset::CategoricalBlock>(
-          columns.at(_schema.at("target")), _target_id_encoding)};
-    }
-    std::stringstream error_ss;
-    error_ss
-        << "[SequentialClassifier::buildLabelBlocks] Got invalid task name '"
-        << _config._task << "'. Choose either 'regression' or 'classification'";
-    throw std::invalid_argument(error_ss.str());
+    return {std::make_shared<dataset::CategoricalBlock>(
+        columns.at("target"), _pipeline_states._target_id_map)};
   }
 
   static std::string toLower(const std::string& str) {
@@ -277,8 +283,6 @@ class SequentialClassifier {
   }
 
   Blocks buildInputBlocks(const Columns& columns, bool overwrite_index) {
-    checkValidSchema();
-    checkColumns(columns);
     std::vector<std::shared_ptr<dataset::Block>> blocks;
     addDateBlock(columns, blocks);
     addUserIdBlock(columns, blocks);
@@ -315,18 +319,6 @@ class SequentialClassifier {
     }
   }
 
-  void checkColumns(const Columns& columns) {
-    for (const auto& [key, name] : _schema) {
-      if (columns.count(name) == 0) {
-        std::stringstream error_ss;
-        error_ss << "[SequentialClassifier] Column name for key '" << key
-                 << "' is set to '" << name
-                 << "' but we could not find this column in the header.";
-        throw std::invalid_argument(error_ss.str());
-      }
-    }
-  }
-
   void addUserIdBlock(const Columns& columns, Blocks& blocks) {
     if (_schema.count("user") == 0) {
       return;
@@ -336,12 +328,12 @@ class SequentialClassifier {
           "[SequentialClassifier] Found key 'user' in provided schema but "
           "n_users is set to 0 in config.");
     }
-    if (_user_id_encoding == nullptr) {
-      _user_id_encoding =
+    if (_pipeline_states._user_id_map == nullptr) {
+      _pipeline_states._user_id_map =
           std::make_shared<dataset::StringToUidMap>(_config._n_users);
     }
     blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
-        columns.at(_schema.at("user")), _user_id_encoding, _config._user_graph,
+        columns.at("user"), _pipeline_states._user_id_map, _config._user_graph,
         _config._user_max_neighbors));
     addNonzeros(1);
   }
@@ -351,12 +343,12 @@ class SequentialClassifier {
       throw std::invalid_argument(
           "Could not find required key 'item' in schema.");
     }
-    if (_item_id_encoding == nullptr) {
-      _item_id_encoding =
+    if (_pipeline_states._item_id_map == nullptr) {
+      _pipeline_states._item_id_map =
           std::make_shared<dataset::StringToUidMap>(_config._n_items);
     }
     blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
-        columns.at(_schema.at("item")), _item_id_encoding, _config._item_graph,
+        columns.at("item"), _pipeline_states._item_id_map, _config._item_graph,
         _config._item_max_neighbors));
     addNonzeros(1);
   }
@@ -376,20 +368,20 @@ class SequentialClassifier {
     if (_schema.count("trackable_quantity") == 0) {
       has_count_col = false;
     } else {
-      count_col = columns.at(_schema.at("trackable_quantity"));
+      count_col = columns.at("trackable_quantity");
     }
 
-    if (_user_trend_block == nullptr || overwrite_index) {
-      _user_trend_block = std::make_shared<dataset::TrendBlock>(
-          has_count_col, columns.at(_schema.at("user")),
-          columns.at(_schema.at("timestamp")), count_col, _config._horizon,
-          /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)));
+    if (_pipeline_states._user_history == nullptr || overwrite_index) {
+      _pipeline_states._user_history = makeDefaultCountHistoryIndex();
     }
-    if (_user_trend_block == nullptr) {
-      throw std::runtime_error("USER TREND BLOCK IS NULL");
-    }
-    blocks.push_back(_user_trend_block);
-    addNonzeros(_user_trend_block->featureDim());
+
+    auto trend_block = std::make_shared<dataset::TrendBlock>(
+        has_count_col, columns.at("user"), columns.at("timestamp"), count_col,
+        _config._horizon,
+        /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)),
+        _pipeline_states._user_history);
+    blocks.push_back(trend_block);
+    addNonzeros(trend_block->featureDim());
   }
 
   void addItemTimeSeriesBlock(const Columns& columns, Blocks& blocks,
@@ -407,20 +399,18 @@ class SequentialClassifier {
     if (_schema.count("trackable_quantity") == 0) {
       has_count_col = false;
     } else {
-      count_col = columns.at(_schema.at("trackable_quantity"));
+      count_col = columns.at("trackable_quantity");
     }
 
-    if (_item_trend_block == nullptr || overwrite_index) {
-      _item_trend_block = std::make_shared<dataset::TrendBlock>(
-          has_count_col, columns.at(_schema.at("item")),
-          columns.at(_schema.at("timestamp")), count_col, _config._horizon,
-          /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)));
+    if (_pipeline_states._item_history == nullptr || overwrite_index) {
+      _pipeline_states._item_history = makeDefaultCountHistoryIndex();
     }
-    if (_item_trend_block == nullptr) {
-      throw std::runtime_error("ITEM TREND BLOCK IS NULL");
-    }
-    blocks.push_back(_item_trend_block);
-    addNonzeros(_item_trend_block->featureDim());
+    auto trend_block = std::make_shared<dataset::TrendBlock>(
+          has_count_col, columns.at("item"), columns.at("timestamp"), count_col,
+          _config._horizon,
+          /* lookback = */ std::max(_config._horizon, static_cast<size_t>(30)), _pipeline_states._item_history);
+    blocks.push_back(trend_block);
+    addNonzeros(trend_block->featureDim());
   }
 
   void addDateBlock(const Columns& columns,
@@ -431,7 +421,7 @@ class SequentialClassifier {
           "Could not find required key 'timestamp' in schema.");
     }
     blocks.push_back(std::make_shared<dataset::DateBlock>(
-        /* col = */ columns.at(_schema.at("timestamp"))));
+        /* col = */ columns.at("timestamp")));
     addNonzeros(4);
   }
 
@@ -440,7 +430,7 @@ class SequentialClassifier {
       return;
     }
     blocks.push_back(std::make_shared<dataset::TextBlock>(
-        columns.at(_schema.at("text_attr")), /* dim = */ 100000));
+        columns.at("text_attr"), /* dim = */ 100000));
     addNonzeros(100);
   }
 
@@ -453,16 +443,14 @@ class SequentialClassifier {
           "[SequentialClassifier] Found key 'categorical_attr' in provided "
           "schema but n_item_categories is set to 0 in config.");
     }
-    if (_item_cat_encoding == nullptr) {
-      _item_cat_encoding =
+    if (_pipeline_states._cat_attr_map == nullptr) {
+      _pipeline_states._cat_attr_map =
           std::make_shared<dataset::StringToUidMap>(_config._n_categories);
     }
     blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
-        columns.at(_schema.at("categorical_attr")), _item_cat_encoding));
+        columns.at("categorical_attr"), _pipeline_states._cat_attr_map));
     addNonzeros(100);
   }
-
-  void startBuildingPipeline() { _est_nonzeros = 0; }
 
   void addNonzeros(size_t nonzeros) { _est_nonzeros += nonzeros; }
 
@@ -478,14 +466,13 @@ class SequentialClassifier {
     return 1000;
   }
 
+  static std::shared_ptr<dataset::CountHistoryIndex> makeDefaultCountHistoryIndex() {
+    return std::make_shared<dataset::CountHistoryIndex>(/* n_rows = */ 5, /* range_pow = */ 22, /* lifetime = */ std::numeric_limits<uint32_t>::max());
+  }
+
   Schema _schema;
   SequentialClassifierConfig _config;
-  std::shared_ptr<dataset::TrendBlock> _user_trend_block;
-  std::shared_ptr<dataset::TrendBlock> _item_trend_block;
-  std::shared_ptr<dataset::StringToUidMap> _user_id_encoding;
-  std::shared_ptr<dataset::StringToUidMap> _item_id_encoding;
-  std::shared_ptr<dataset::StringToUidMap> _item_cat_encoding;
-  std::shared_ptr<dataset::StringToUidMap> _target_id_encoding;
+  PersistentPipelineStates _pipeline_states;
   char _delimiter;
   std::optional<FullyConnectedNetwork> _network;
   bool _use_sequential_feats;
