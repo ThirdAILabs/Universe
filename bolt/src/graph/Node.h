@@ -25,9 +25,9 @@ using NodePtr = std::shared_ptr<Node>;
   called in the correct order. It has the following states:
     1. Constructed - the node object is created.
     2. Predecessors set - the predecessor nodes (if any) of the node are set.
-    3. Initialized - any parameters are initialized/allocated that are not
-       changed during the node's lifetime. For instance weight matrices,
-       embedding tables, hash tables.
+    3. Compiled - the nodes name is set, and any other parameters that do not
+       change during the node's lifetime are set (e.g. weight matrices,
+       embedding tables, hash tables, etc.).
     4. Prepared for batch processing - in this state any temporary data
        structures for maintaining the state of the node are created. Most
        commonly this will be allocating arrays for the activations and
@@ -40,15 +40,15 @@ using NodePtr = std::shared_ptr<Node>;
 */
 class Node {
  public:
-  // Compiles a single node, including initializing any parameters and setting
-  // the name. The node should used the passed in LayerNameManager to get the
-  // name for its node type.
-  // Moves the node from state 2 to state 3
+  /*
+   * Compiles a single Node, including initializing any parameters and setting
+   * the Node's name. The Node should use the passed in LayerNameManager to get
+   * the name for its Node type. This moves the Node from state 2 to state 3.
+   */
   void compile(LayerNameManager& name_manager) {
     if (getState() == NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
-          "Cannot call compile before setting predecessor of "
-          "node.");
+          "Cannot call compile before setting predecessor(s) of this Node.");
     }
     if (getState() == NodeState::Compiled ||
         getState() == NodeState::PreparedForBatchProcessing) {
@@ -140,9 +140,11 @@ class Node {
     prepareForBatchProcessingImpl(batch_size, use_sparsity);
   }
 
-  // Do any cleanup to bring the Node into the same state it was in before
-  // prepareForBatchProcessing was called. This moves the node from state 4 to
-  // state 3.
+  /*
+   * Do any cleanup to bring the Node into the same state it was in before
+   * prepareForBatchProcessing was called. This moves the node from state 4 to
+   * state 3.
+   */
   void cleanupAfterBatchProcessing() {
     if (getState() != Node::PreparedForBatchProcessing) {
       throw exceptions::NodeStateMachineError(
@@ -184,6 +186,8 @@ class Node {
   // Returns true if the node is an input node.
   virtual bool isInputNode() const = 0;
 
+  // Prints out a single line summary in the format
+  // (pred_names) -> node_name (NodeType): parameter_1=1, parameter_2=0 ...
   void summarize(std::stringstream& summary, bool detailed) const {
     if (getState() == NodeState::Constructed ||
         getState() == NodeState::PredecessorsSet) {
@@ -193,6 +197,8 @@ class Node {
     summarizeImpl(summary, detailed);
   }
 
+  // Returns the name of this node (only valid after the node has been
+  // compiled).
   const std::string& name() const {
     if (getState() == NodeState::Constructed ||
         getState() == NodeState::PredecessorsSet) {
@@ -228,13 +234,9 @@ class Node {
 
   virtual std::vector<NodePtr> getPredecessorsImpl() const = 0;
 
-  // Prints out a single line summary in the format
-  // (pred_names) -> node_name (NodeType): parameter_1=1, parameter_2=0 ...
   virtual void summarizeImpl(std::stringstream& summary,
                              bool detailed) const = 0;
 
-  // Returns the name of this node (only valid after the node has been
-  // compiled).
   virtual const std::string& nameImpl() const = 0;
 
   enum NodeState {
@@ -247,8 +249,18 @@ class Node {
   virtual NodeState getState() const = 0;
 };
 
+// This class keeps track of the node types that have been traversed so that
+// each node can get a unique name.
 class LayerNameManager {
  public:
+  /*
+   * Example usage:
+   * registerNodeAndGetName("concat") -> concat_1
+   * registerNodeAndGetName("input") -> input_1
+   * registerNodeAndGetName("concat") -> concat_2
+   * registerNodeAndGetName("full") -> full_1
+   * registerNodeAndGetName("input") -> input_2
+   */
   std::string registerNodeAndGetName(const std::string& node_type) {
     type_to_count[node_type] += 1;
     std::string name = node_type + std::to_string(type_to_count[node_type]);
