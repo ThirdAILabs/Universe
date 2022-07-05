@@ -32,13 +32,16 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 
   traverseGraph();
 
+  std::cout << "HEREA" << std::endl;
   LayerNameManager name_manager;
   for (auto& input : _inputs) {
     input->compile(name_manager);
   }
+  std::cout << "HEREB" << std::endl;
   for (auto& node : _nodes) {
     node->compile(name_manager);
   }
+  std::cout << "HEREC" << std::endl;
 
   std::unordered_map<std::string, uint32_t> layer_type_name_to_count;
   for (auto& node : _nodes) {
@@ -48,9 +51,12 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
         node_layers.end());
   }
 
+  std::cout << "HERED" << std::endl;
+
   if (print_when_done) {
     summarize(/* print = */ true, /* detailed = */ false);
   }
+  std::cout << "HEREE" << std::endl;
 }
 
 template MetricData BoltGraph::train(
@@ -255,7 +261,7 @@ std::string BoltGraph::summarize(bool print, bool detailed) const {
   }
   std::stringstream summary;
   summary << "\n";
-  summary << "======================= Bolt Network =======================\n";
+  summary << "======================= Bolt Model =======================\n";
   for (const auto& input : _inputs) {
     input->summarize(summary, detailed);
   }

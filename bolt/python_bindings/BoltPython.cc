@@ -284,13 +284,12 @@ void createBoltSubmodule(py::module_& module) {
              network.buildNetworkSummary(summary);
              return summary.str();
            })
-      .def(
-          "summary", &PyNetwork::printSummary, py::arg("detailed") = false,
-          "Prints a summary of the network.\n"
-          "Arguments:\n"
-          " * detailed: boolean. Optional. When specified to \"True\", "
-          "summary will additionally print layer config details for each layer "
-          "in the network.")
+      .def("summary", &PyNetwork::printSummary, py::arg("detailed") = false,
+           "Prints a summary of the network.\n"
+           "Arguments:\n"
+           " * detailed: boolean. Optional. When specified to \"True\", "
+           "summary will additionally print sampling config details for each "
+           "layer in the network.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),
@@ -790,9 +789,8 @@ void createBoltSubmodule(py::module_& module) {
           "\"True\", "
           "summary will print the network summary in addition to returning it. "
           "* detailed: boolean. Optional, default False. When specified to "
-          "\"True\", summary will additionally return/print layer config "
-          "details "
-          "for each layer in the network.")
+          "\"True\", summary will additionally return/print sampling config "
+          "details for each layer in the network.")
       // TODO(josh/nick): These are temporary until we have a better story
       // for converting numpy to BoltGraphs
       .def("train_np", &PyBoltGraph::trainNumpy, py::arg("train_data"),

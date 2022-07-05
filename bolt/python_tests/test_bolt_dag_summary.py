@@ -7,25 +7,25 @@ import textwrap
 def test_simple_bolt_dag_summary():
     input_layer_1 = bolt.graph.Input(dim=10)
 
-    full_layer_1 = bolt.graph.FullyConnected(
+    fc_layer_1 = bolt.graph.FullyConnected(
         dim=10,
         activation="relu",
     )(input_layer_1)
 
-    full_layer_2 = bolt.graph.FullyConnected(
+    fc_layer_2 = bolt.graph.FullyConnected(
         dim=10,
         sparsity=0.01,
         activation="relu",
-    )(full_layer_1)
+    )(fc_layer_1)
 
-    concat_layer = bolt.graph.Concatenate()([full_layer_1, full_layer_2])
+    concat_layer = bolt.graph.Concatenate()([fc_layer_1, fc_layer_2])
 
-    full_layer_3 = bolt.graph.FullyConnected(
+    fc_layer_3 = bolt.graph.FullyConnected(
         dim=100,
         activation="relu",
     )(concat_layer)
 
-    output_layer = bolt.graph.FullyConnected(dim=10, activation="softmax")(full_layer_3)
+    output_layer = bolt.graph.FullyConnected(dim=10, activation="softmax")(fc_layer_3)
 
     model = bolt.graph.Model(inputs=[input_layer_1], output=output_layer)
 
@@ -35,24 +35,24 @@ def test_simple_bolt_dag_summary():
     detailed_summary = model.summary(detailed=True, print=False)
 
     expected_normal = """
-      ======================= Bolt Network =======================
-      input1 (Input) : dim=10
-      input1 -> full1 (FullyConnected): dim=10, sparsity=1, act_func=ReLU
-      full1 -> full2 (FullyConnected): dim=10, sparsity=0.01, act_func=ReLU
-      (full1, full2) -> concat1 (Concatenate)
-      concat1 -> full3 (FullyConnected): dim=100, sparsity=1, act_func=ReLU
-      full3 -> full4 (FullyConnected): dim=10, sparsity=1, act_func=Softmax
+      ======================= Bolt Model =======================
+      input_1 (Input) : dim=10
+      input_1 -> fc_1 (FullyConnected): dim=10, sparsity=1, act_func=ReLU
+      fc_1 -> fc_2 (FullyConnected): dim=10, sparsity=0.01, act_func=ReLU
+      (fc_1, fc_2) -> concat_1 (Concatenate)
+      concat_1 -> fc_3 (FullyConnected): dim=100, sparsity=1, act_func=ReLU
+      fc_3 -> fc_4 (FullyConnected): dim=10, sparsity=1, act_func=Softmax
       ============================================================
     """
 
     expected_detailed = """
-      ======================= Bolt Network =======================
-      input1 (Input) : dim=10
-      input1 -> full1 (FullyConnected): dim=10, sparsity=1, act_func=ReLU (hashes_per_table=0, num_tables=0, range_pow=0, resevoir_size=0, hash_function=DWTA)
-      full1 -> full2 (FullyConnected): dim=10, sparsity=0.01, act_func=ReLU (hashes_per_table=5, num_tables=328, range_pow=15, resevoir_size=4, hash_function=DWTA)
-      (full1, full2) -> concat1 (Concatenate)
-      concat1 -> full3 (FullyConnected): dim=100, sparsity=1, act_func=ReLU (hashes_per_table=0, num_tables=0, range_pow=0, resevoir_size=0, hash_function=DWTA)
-      full3 -> full4 (FullyConnected): dim=10, sparsity=1, act_func=Softmax (hashes_per_table=0, num_tables=0, range_pow=0, resevoir_size=0, hash_function=DWTA)
+      ======================= Bolt Model =======================
+      input_1 (Input) : dim=10
+      input_1 -> fc_1 (FullyConnected): dim=10, sparsity=1, act_func=ReLU (hashes_per_table=0, num_tables=0, range_pow=0, resevoir_size=0, hash_function=DWTA)
+      fc_1 -> fc_2 (FullyConnected): dim=10, sparsity=0.01, act_func=ReLU (hashes_per_table=5, num_tables=328, range_pow=15, resevoir_size=4, hash_function=DWTA)
+      (fc_1, fc_2) -> concat_1 (Concatenate)
+      concat_1 -> fc_3 (FullyConnected): dim=100, sparsity=1, act_func=ReLU (hashes_per_table=0, num_tables=0, range_pow=0, resevoir_size=0, hash_function=DWTA)
+      fc_3 -> fc_4 (FullyConnected): dim=10, sparsity=1, act_func=Softmax (hashes_per_table=0, num_tables=0, range_pow=0, resevoir_size=0, hash_function=DWTA)
       ============================================================
     """
 

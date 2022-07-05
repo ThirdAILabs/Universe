@@ -61,10 +61,7 @@ class ConcatenateNode final
   bool isInputNode() const final { return false; }
 
  private:
-  void compileImpl(LayerNameManager& name_manager) final {
-    _compile_state = {
-        name_manager.registerNodeAndGetName(/* node_type = */ "concat")};
-  }
+  void compileImpl() final { _compiled = true; }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
   getInternalFullyConnectedLayersImpl() const final {
@@ -195,7 +192,7 @@ class ConcatenateNode final
     summary << ") -> " << name() << " (Concatenate)\n";
   }
 
-  const std::string& nameImpl() const final { return _compile_state->name; }
+  const std::string& type() const final { return LAYER_TYPE; }
 
   static void verifyNoInputNodes(const std::vector<NodePtr>& nodes) {
     for (const auto& node : nodes) {
@@ -266,16 +263,16 @@ class ConcatenateNode final
   }
 
   NodeState getState() const final {
-    if (!_graph_state && !_compile_state && !_batch_processing_state) {
+    if (!_graph_state && !_compiled && !_batch_processing_state) {
       return NodeState::Constructed;
     }
-    if (_graph_state && !_compile_state && !_batch_processing_state) {
+    if (_graph_state && !_compiled && !_batch_processing_state) {
       return NodeState::PredecessorsSet;
     }
-    if (_graph_state && _compile_state && !_batch_processing_state) {
+    if (_graph_state && _compiled && !_batch_processing_state) {
       return NodeState::Compiled;
     }
-    if (_graph_state && _compile_state && _batch_processing_state) {
+    if (_graph_state && _compiled && _batch_processing_state) {
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
@@ -336,12 +333,10 @@ class ConcatenateNode final
     // all i).
     uint32_t num_nonzeros_in_concatenation;
   };
-  struct CompileState {
-    std::string name;
-  };
 
+  const std::string LAYER_TYPE = "concat";
   std::optional<GraphState> _graph_state;
-  std::optional<CompileState> _compile_state;
+  bool _compiled = false;
   std::optional<BatchProcessingState> _batch_processing_state;
 };
 

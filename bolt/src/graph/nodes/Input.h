@@ -20,7 +20,9 @@ namespace thirdai::bolt {
 class Input final : public Node {
  public:
   explicit Input(uint32_t expected_input_dim)
-      : _input_batch(nullptr), _expected_input_dim(expected_input_dim) {}
+      : _compiled(false),
+        _input_batch(nullptr),
+        _expected_input_dim(expected_input_dim) {}
 
   // This class does not own this memory, but we pass it in as a pointer that
   // will be stored as a field so it can be used in future method calls. It is
@@ -40,12 +42,12 @@ class Input final : public Node {
   bool isInputNode() const final { return true; }
 
  private:
-  void compileImpl(LayerNameManager& name_manager) final {
+  void compileImpl() final {
     if (_expected_input_dim == 0) {
       throw exceptions::GraphCompilationFailure(
           "Cannot have input layer with dimension 0.");
     }
-    _name = name_manager.registerNodeAndGetName(/* node_type = */ "input");
+    _compiled = true;
   }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
@@ -91,18 +93,18 @@ class Input final : public Node {
     summary << name() << " (Input) : dim=" << _expected_input_dim << "\n";
   }
 
+  const std::string& type() const final { return LAYER_TYPE; }
+
   std::vector<NodePtr> getPredecessorsImpl() const final { return {}; }
 
-  const std::string& nameImpl() const final { return *_name; }
-
   NodeState getState() const final {
-    if (!_name.has_value() && _input_batch == nullptr) {
+    if (!_compiled && _input_batch == nullptr) {
       return NodeState::PredecessorsSet;
     }
-    if (_name.has_value() && _input_batch == nullptr) {
+    if (_compiled && _input_batch == nullptr) {
       return NodeState::Compiled;
     }
-    if (_name.has_value() && _input_batch != nullptr) {
+    if (_compiled && _input_batch != nullptr) {
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
@@ -131,9 +133,10 @@ class Input final : public Node {
     }
   }
 
+  const std::string LAYER_TYPE = "input";
+  bool _compiled;
   BoltBatch* _input_batch;
   uint32_t _expected_input_dim;
-  std::optional<std::string> _name;
 };
 
 }  // namespace thirdai::bolt

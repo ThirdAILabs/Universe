@@ -17,7 +17,7 @@ class MockNode : public Node {
   MOCK_METHOD(bool, isInputNode, (), (const override));
 
  private:
-  MOCK_METHOD(void, compileImpl, (LayerNameManager & manager), (override));
+  MOCK_METHOD(void, compileImpl, (), (override));
 
   MOCK_METHOD(std::vector<std::shared_ptr<FullyConnectedLayer>>,
               getInternalFullyConnectedLayersImpl, (), (const override));
@@ -42,6 +42,8 @@ class MockNode : public Node {
 
   MOCK_METHOD(void, summarizeImpl, (std::stringstream & summary, bool detailed),
               (const override));
+
+  MOCK_METHOD(const std::string&, type, (), (const override));
 
   MOCK_METHOD(std::vector<NodePtr>, getPredecessorsImpl, (), (const override));
 

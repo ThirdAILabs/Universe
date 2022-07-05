@@ -11,12 +11,33 @@
 namespace thirdai::bolt {
 
 class Node;
-class LayerNameManager;
-
 // Node objects should always be initialized as shared pointers and not raw
 // Nodes, since otherwise shared_from_this() might throw an error (we need
 // shared_from_this for a clean functional style python api)
 using NodePtr = std::shared_ptr<Node>;
+
+// This class keeps track of the node types that have been traversed so that
+// each node can get a unique name.
+class LayerNameManager {
+ public:
+  /*
+   * Example usage:
+   * registerNodeAndGetName("concat") -> concat_1
+   * registerNodeAndGetName("input") -> input_1
+   * registerNodeAndGetName("concat") -> concat_2
+   * registerNodeAndGetName("full") -> full_1
+   * registerNodeAndGetName("input") -> input_2
+   */
+  std::string registerNodeAndGetName(const std::string& node_type) {
+    type_to_count[node_type] += 1;
+    std::string name =
+        node_type + "_" + std::to_string(type_to_count[node_type]);
+    return name;
+  }
+
+ private:
+  std::unordered_map<std::string, uint32_t> type_to_count;
+};
 
 /*
   This class represents the interface used for nodes in a graph. It acts as a
@@ -54,8 +75,8 @@ class Node {
         getState() == NodeState::PreparedForBatchProcessing) {
       throw exceptions::NodeStateMachineError("Cannot call compile twice.");
     }
-
-    compileImpl(name_manager);
+    _name = name_manager.registerNodeAndGetName(/* node_type = */ type());
+    compileImpl();
   }
 
   /*
@@ -205,13 +226,13 @@ class Node {
       throw exceptions::NodeStateMachineError(
           "Can only get the name of a node after compiling");
     }
-    return nameImpl();
+    return *_name;
   }
 
   virtual ~Node() = default;
 
  protected:
-  virtual void compileImpl(LayerNameManager& name_manager) = 0;
+  virtual void compileImpl() = 0;
 
   virtual std::vector<std::shared_ptr<FullyConnectedLayer>>
   getInternalFullyConnectedLayersImpl() const = 0;
@@ -237,7 +258,9 @@ class Node {
   virtual void summarizeImpl(std::stringstream& summary,
                              bool detailed) const = 0;
 
-  virtual const std::string& nameImpl() const = 0;
+  // Return a short all lowercase string representing the type of this node for
+  // use in printing the graph, e.g. concat, fc, input
+  virtual const std::string& type() const = 0;
 
   enum NodeState {
     Constructed,
@@ -247,28 +270,8 @@ class Node {
   };
 
   virtual NodeState getState() const = 0;
-};
 
-// This class keeps track of the node types that have been traversed so that
-// each node can get a unique name.
-class LayerNameManager {
- public:
-  /*
-   * Example usage:
-   * registerNodeAndGetName("concat") -> concat_1
-   * registerNodeAndGetName("input") -> input_1
-   * registerNodeAndGetName("concat") -> concat_2
-   * registerNodeAndGetName("full") -> full_1
-   * registerNodeAndGetName("input") -> input_2
-   */
-  std::string registerNodeAndGetName(const std::string& node_type) {
-    type_to_count[node_type] += 1;
-    std::string name = node_type + std::to_string(type_to_count[node_type]);
-    return name;
-  }
-
- private:
-  std::unordered_map<std::string, uint32_t> type_to_count;
+  std::optional<std::string> _name;
 };
 
 }  // namespace thirdai::bolt

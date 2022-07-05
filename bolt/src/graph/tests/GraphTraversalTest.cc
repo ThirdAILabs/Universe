@@ -30,19 +30,16 @@ class MockTraversalNode final : public MockNode {
     return _predecessors;
   }
 
-  void compileImpl(LayerNameManager& manager) final {
-    (void)manager;
-    _state = NodeState::Compiled;
-  }
+  void compileImpl() final { _state = NodeState::Compiled; }
 
-  const std::string& nameImpl() const final { return _name; }
+  const std::string& type() const final { return _type; }
 
   NodeState getState() const final { return _state; }
 
   std::vector<NodePtr> _predecessors;
   uint32_t _id;
   NodeState _state = NodeState::Constructed;
-  std::string _name;
+  std::string _type = "test";
 };
 
 TEST(GraphTraversalTest, CorrectlyTraversesDAG) {
