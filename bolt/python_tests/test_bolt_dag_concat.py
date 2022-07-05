@@ -1,42 +1,7 @@
 from thirdai import bolt, dataset
-from utils import gen_training_data
+from utils import gen_training_data, get_simple_concat_model
 import pytest
 import numpy
-
-
-def get_simple_concat_model(
-    hidden_layer_top_dim,
-    hidden_layer_bottom_dim,
-    hidden_layer_top_sparsity,
-    hidden_layer_bottom_sparsity,
-    num_classes,
-):
-
-    input_layer = bolt.graph.Input(dim=num_classes)
-
-    hidden_layer_top = bolt.graph.FullyConnected(
-        dim=hidden_layer_top_dim,
-        sparsity=hidden_layer_top_sparsity,
-        activation="relu",
-    )(input_layer)
-
-    hidden_layer_bottom = bolt.graph.FullyConnected(
-        dim=hidden_layer_bottom_dim,
-        sparsity=hidden_layer_bottom_sparsity,
-        activation="relu",
-    )(input_layer)
-
-    concate_layer = bolt.graph.Concatenate()([hidden_layer_top, hidden_layer_bottom])
-
-    output_layer = bolt.graph.FullyConnected(dim=num_classes, activation="softmax")(
-        concate_layer
-    )
-
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
-
-    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
-
-    return model
 
 
 # TODO(josh): Refactor this test once we have exposed support for multiple

@@ -798,7 +798,13 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("batch_size"))
       .def("predict_np", &PyBoltGraph::predictNumpy, py::arg("test_data"),
            py::arg("test_labels"), py::arg("predict_config"),
-           py::arg("batch_size") = 256);
+           py::arg("batch_size") = 256)
+      .def("get_layer", py::arg("layer_name"), &PyBoltGraph::getNodeByName,
+           "Looks up a layer (node) of the network by using the layer's "
+           "assigned name. As such, must be called after compile. You can "
+           "determine which layer is which by printing a graph summary. "
+           "Possible operations to perform on the returned object include "
+           "setting layer sparsity, freezing weights, or saving to a file");
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
