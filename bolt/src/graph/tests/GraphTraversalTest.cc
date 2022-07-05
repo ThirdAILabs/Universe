@@ -22,6 +22,7 @@ class MockTraversalNode final : public MockNode {
 
   void setPredecessors(const std::vector<NodePtr>& predecessors) {
     _predecessors = predecessors;
+    _state = NodeState::PredecessorsSet;
   }
 
  private:
@@ -29,10 +30,19 @@ class MockTraversalNode final : public MockNode {
     return _predecessors;
   }
 
-  NodeState getState() const final { return NodeState::Compiled; }
+  void compileImpl(LayerNameManager& manager) final {
+    (void)manager;
+    _state = NodeState::Compiled;
+  }
+
+  const std::string& nameImpl() const final { return _name; }
+
+  NodeState getState() const final { return _state; }
 
   std::vector<NodePtr> _predecessors;
   uint32_t _id;
+  NodeState _state = NodeState::Constructed;
+  std::string _name;
 };
 
 TEST(GraphTraversalTest, CorrectlyTraversesDAG) {
@@ -50,6 +60,7 @@ TEST(GraphTraversalTest, CorrectlyTraversesDAG) {
   node3->setPredecessors({node0, node1, node2});
   node2->setPredecessors({node0, node1});
   node1->setPredecessors({node0});
+  node0->setPredecessors({});
 
   BoltGraph graph(/* inputs= */ {}, /* output= */ node6);
 
