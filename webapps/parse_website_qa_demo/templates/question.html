@@ -1,0 +1,48 @@
+<body>
+  <style>
+    body {
+      background-color: {
+          {
+          background_color
+        }
+      }
+
+      ;
+      font-family: 'Trebuchet MS',
+      sans-serif;
+      justify-content: center;
+    }
+
+    #input-form {
+      text-align: center;
+      width: 60%;
+      padding-top: 100px;
+      margin: auto
+    }
+
+    h2 {
+      font-weight: normal;
+    }
+
+    #question-input {
+      font-size: 16pt;
+      width: 80%;
+    }
+
+    #console-output {
+      font-size: 14pt;
+      width: 100%;
+    }
+
+  </style>
+  <div id="input-form">
+    <form method="POST">
+      <h2>Input your question:</h2>
+      <input name="question" id="question-input">
+      <input type="submit" style="display: none" />
+    </form>
+    <textarea id="console-output" rows="12" readonly
+      style="visibility:{{ visibility }}">{{console_output}}</textarea>
+    <br></br>
+  </div>
+</body>

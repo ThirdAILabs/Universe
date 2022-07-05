@@ -1,8 +1,7 @@
 from utils import *
 import pytest
-import time
 
-pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit]
 
 
 def predict_train_one_epoch_predict(network, test_data, test_labels, sparse_inference):
@@ -33,7 +32,7 @@ def test_switch_dense_to_sparse():
     return both the activations and the indices of those activations.
     """
     dataset_dim = 100
-    labels, examples, _ = gen_training_data(n_classes=dataset_dim, n_samples=1000)
+    examples, labels = gen_training_data(n_classes=dataset_dim, n_samples=1000)
     classifier = build_sparse_hidden_layer_classifier(
         input_dim=dataset_dim, sparse_dim=100, output_dim=dataset_dim, sparsity=0.01
     )

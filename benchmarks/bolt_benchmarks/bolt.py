@@ -10,7 +10,8 @@ import platform
 import psutil
 import mlflow
 import argparse
-from utils import log_config_info, log_machine_info, start_mlflow
+from utils import *
+import time
 
 
 def log_training_metrics(metrics: Dict[str, List[float]]):
@@ -60,22 +61,6 @@ def create_embedding_layer_config(config: Dict[str, Any]) -> bolt.Embedding:
         lookup_size=config.get("lookup_size"),
         log_embedding_block_size=config.get("log_embedding_block_size"),
     )
-
-
-def find_full_filepath(filename: str) -> str:
-    data_path_file = (
-        os.path.dirname(os.path.abspath(__file__)) + "/../../dataset_paths.toml"
-    )
-    prefix_table = toml.load(data_path_file)
-    for prefix in prefix_table["prefixes"]:
-        if os.path.exists(prefix + filename):
-            return prefix + filename
-    print(
-        "Could not find file '"
-        + filename
-        + "' on any filepaths. Add correct path to 'Universe/dataset_paths.toml'"
-    )
-    sys.exit(1)
 
 
 def load_dataset(
@@ -314,12 +299,62 @@ def train_dlrm(config: Dict[str, Any], mlflow_enabled: bool):
             print("AUC: ", auc)
 
 
+def train_mach(config: Dict[str, Any], mlflow_enabled: bool):
+    mach_config = config["mach"]
+    params_config = config["params"]
+
+    mach = bolt.Mach(
+        max_label=mach_config["max_label"],
+        num_classifiers=mach_config["num_classifiers"],
+        input_dim=config["dataset"]["input_dim"],
+        hidden_layer_dim=mach_config["hidden_layer_dim"],
+        hidden_layer_sparsity=mach_config["hidden_layer_sparsity"],
+        last_layer_dim=mach_config["last_layer_dim"],
+        last_layer_sparsity=mach_config["last_layer_sparsity"],
+        use_softmax=mach_config["use_softmax"],
+    )
+
+    learning_rate = params_config["learning_rate"]
+    epochs = params_config["epochs"]
+    batch_size = params_config["batch_size"]
+
+    train_x, train_y, _ = load_svm_as_csr_numpy(
+        config["dataset"]["train_data"], use_softmax=mach_config["use_softmax"]
+    )
+    test_x, _, test_y_list_of_lists = load_svm_as_csr_numpy(
+        config["dataset"]["test_data"], use_softmax=mach_config["use_softmax"]
+    )
+
+    for _ in range(epochs):
+        mach.train(
+            train_x,
+            train_y,
+            num_epochs=1,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+        )
+
+        start = time.time()
+        query_results = mach.query_fast(test_x)
+        recalled = [q in gt for q, gt in zip(query_results, test_y_list_of_lists)]
+        precision = sum(recalled) / len(recalled)
+        end = time.time()
+        print(f"P1@1 = {precision}, Time = {time.time() - start}")
+
+        if mlflow_enabled:
+            mlflow.log_metric("P1 at 1", precision)
+
+
 def is_dlrm(config: Dict[str, Any]) -> bool:
     return "bottom_mlp_layers" in config.keys() and "top_mlp_layers" in config.keys()
 
 
 def is_fcn(config: Dict[str, Any]) -> bool:
     return "layers" in config.keys()
+
+
+def is_mach(config: Dict[str, Any]) -> bool:
+    return "mach" in config.keys()
 
 
 def build_arg_parser():
@@ -379,6 +414,8 @@ def main():
         train_fcn(config, mlflow_enabled)
     elif is_dlrm(config):
         train_dlrm(config, mlflow_enabled)
+    elif is_mach(config):
+        train_mach(config, mlflow_enabled)
     else:
         print("Invalid network architecture specified")
 
