@@ -23,7 +23,7 @@ def home():
 
 
 @app.route("/", methods=["POST"])
-def predict_sentiment():
+def query_products():
     query_text = request.form["query"]
 
     start = time.time()
@@ -44,4 +44,4 @@ if __name__ == "__main__":
     product_index = DocRetrieval.deserialize_from_file(sys.argv[1])
 
     # Set host = 0.0.0.0 so that the app is accessible outside of local via the machines ip address.
-    app.run(debug=False, host="0.0.0.0")
+    app.run(debug=True, host="0.0.0.0")
