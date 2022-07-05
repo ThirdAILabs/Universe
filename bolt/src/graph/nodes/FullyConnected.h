@@ -105,8 +105,8 @@ class FullyConnectedNode final
     _layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA2, EPS);
   }
 
-  BoltVector& getOutputVectorImpl(uint32_t batch_index) final {
-    return (*_outputs)[batch_index];
+  BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
+    return (*_outputs)[vec_index];
   }
 
   void cleanupAfterBatchProcessingImpl() final { _outputs = std::nullopt; }
