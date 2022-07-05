@@ -1,10 +1,12 @@
+#pragma once
+
 #include <dataset/src/encodings/count_history/CountMinSketch.h>
 #include <atomic>
 #include <stdexcept>
 
 namespace thirdai::dataset {
 
-constexpr uint32_t SECONDS_IN_DAY = 60 * 60 * 24;
+static constexpr uint32_t SECONDS_IN_DAY = 60 * 60 * 24;
 
 class CountHistoryIndex {
  public:

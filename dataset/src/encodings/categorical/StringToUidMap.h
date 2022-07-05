@@ -1,3 +1,5 @@
+#pragma once
+
 #include "CategoricalEncodingInterface.h"
 #include <string>
 #include <unordered_map>

@@ -39,7 +39,8 @@
 //   }
 
 //   // std::string task, size_t horizon, size_t n_items,
-//   //                              size_t n_users = 0, size_t n_item_categories =
+//   //                              size_t n_users = 0, size_t
+//   n_item_categories =
 //   //                              0,
 
 //   static SequentialClassifierConfig buildConfig() {
