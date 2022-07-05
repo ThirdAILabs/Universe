@@ -86,17 +86,17 @@ class FullyConnectedNode final
 
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
     _layer->forward(_predecessor->getOutputVector(vec_index),
-                    this->getOutputVector(vec_index), labels);
+                    this->getOutputVectorImpl(vec_index), labels);
   }
 
   void backpropagateImpl(uint32_t vec_index) final {
     // TODO(Nicholas, Josh): Change to avoid having this check
     if (_predecessor->isInputNode()) {
       _layer->backpropagateInputLayer(_predecessor->getOutputVector(vec_index),
-                                      this->getOutputVector(vec_index));
+                                      this->getOutputVectorImpl(vec_index));
     } else {
       _layer->backpropagate(_predecessor->getOutputVector(vec_index),
-                            this->getOutputVector(vec_index));
+                            this->getOutputVectorImpl(vec_index));
     }
   }
 

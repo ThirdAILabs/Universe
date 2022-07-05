@@ -128,7 +128,7 @@ class ConcatenateNode final
     assert(labels == nullptr);
     (void)labels;
 
-    const BoltVector& output_vector = getOutputVector(vec_index);
+    const BoltVector& output_vector = getOutputVectorImpl(vec_index);
     std::fill_n(output_vector.gradients, output_vector.len, 0);
 
     const auto& concatenated_nodes = _graph_state->inputs;
@@ -165,7 +165,7 @@ class ConcatenateNode final
     const auto& concatenated_nodes = _graph_state->inputs;
     const auto& positional_offsets =
         _batch_processing_state->positional_offsets;
-    const auto& output_vector = getOutputVector(vec_index);
+    const auto& output_vector = getOutputVectorImpl(vec_index);
 
     for (uint32_t input_node_id = 0; input_node_id < concatenated_nodes.size();
          input_node_id++) {

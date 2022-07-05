@@ -59,6 +59,8 @@ class MockNodeWithOutput : public MockNode {
 
   uint32_t numNonzerosInOutput() const final { return _output.len; }
 
+  bool preparedForBatchProcessing() const final { return true; }
+
  private:
   BoltVector _output;
   uint32_t _output_dim;
