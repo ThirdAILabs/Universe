@@ -698,7 +698,8 @@ void createBoltSubmodule(py::module_& module) {
       .def("__call__", &FullyConnectedNode::addPredecessor,
            py::arg("prev_layer"),
            "Tells the graph which layer should act as input to this fully "
-           "connected layer.");
+           "connected layer.")
+      .def("get_sparsity", &FullyConnectedNode::getSparsity);
 
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
       graph_submodule, "Concatenate")
@@ -799,7 +800,7 @@ void createBoltSubmodule(py::module_& module) {
       .def("predict_np", &PyBoltGraph::predictNumpy, py::arg("test_data"),
            py::arg("test_labels"), py::arg("predict_config"),
            py::arg("batch_size") = 256)
-      .def("get_layer", py::arg("layer_name"), &PyBoltGraph::getNodeByName,
+      .def("get_layer", &PyBoltGraph::getNodeByName, py::arg("layer_name"), 
            "Looks up a layer (node) of the network by using the layer's "
            "assigned name. As such, must be called after compile. You can "
            "determine which layer is which by printing a graph summary. "
