@@ -598,12 +598,9 @@ class DistributedPyNetwork final : public DistributedModel {
     float* mem =
         DistributedModel::getLayerData(layer_index, get_biases_gradients);
 
-    py::capsule free_when_done(
-        mem, [](void* ptr) { delete static_cast<float*>(ptr); });
-
     size_t dim = DistributedModel::getDim(layer_index);
 
-    return py::array_t<float>({dim}, {sizeof(float)}, mem, free_when_done);
+    return py::array_t<float>({dim}, {sizeof(float)}, mem);
   }
 
   py::array_t<float> getWeightsGradients(uint32_t layer_index) {
@@ -614,17 +611,13 @@ class DistributedPyNetwork final : public DistributedModel {
     float* mem =
         DistributedModel::getLayerData(layer_index, get_weights_gradients);
 
-    py::capsule free_when_done(
-        mem, [](void* ptr) { delete static_cast<float*>(ptr); });
-
     size_t dim = DistributedModel::getDim(layer_index);
     size_t prev_dim = (layer_index > 0)
                           ? DistributedModel::getDim(layer_index - 1)
                           : DistributedModel::getInputDim();
 
     return py::array_t<float>({dim, prev_dim},
-                              {prev_dim * sizeof(float), sizeof(float)}, mem,
-                              free_when_done);
+                              {prev_dim * sizeof(float), sizeof(float)}, mem);
   }
 
  private:
