@@ -20,83 +20,6 @@ class ConcatenateNode final
  public:
   ConcatenateNode() : _parameters_initialized(false){};
 
-  void forward(uint32_t vec_index, const BoltVector* labels) final {
-    // We currently do not allow a concatenation layer to be the last
-    // layer in the graph.
-    // TODO(josh/nick): Add support for n sets of outputs, and if users want
-    // a concatenation layer as the last layer they can split the labels
-    assert(labels == nullptr);
-    (void)labels;
-    assert(preparedForBatchProcessing() && predecessorsSet());
-
-    const BoltVector& output_vector = getOutputVector(vec_index);
-    std::fill_n(output_vector.gradients, output_vector.len, 0);
-
-    const auto& concatenated_nodes = _graph_state->inputs;
-    const auto& positional_offsets =
-        _batch_processing_state->positional_offsets;
-    const auto& neuron_index_offsets = _graph_state->neuron_index_offsets;
-
-    for (uint32_t input_node_id = 0; input_node_id < concatenated_nodes.size();
-         input_node_id++) {
-      const auto& current_input_node = concatenated_nodes.at(input_node_id);
-      BoltVector& current_input =
-          current_input_node->getOutputVector(vec_index);
-      uint32_t start_position = positional_offsets.at(input_node_id);
-      uint32_t end_position = positional_offsets.at(input_node_id + 1);
-      std::copy(current_input.activations,
-                current_input.activations + current_input.len,
-                output_vector.activations + start_position);
-
-      if (!current_input.isDense()) {
-        assert(!output_vector.isDense());
-        uint32_t neuron_index_offset = neuron_index_offsets.at(input_node_id);
-        std::copy(current_input.active_neurons,
-                  current_input.active_neurons + current_input.len,
-                  output_vector.active_neurons + start_position);
-        for (uint32_t output_position = start_position;
-             output_position < end_position; output_position++) {
-          output_vector.active_neurons[output_position] += neuron_index_offset;
-        }
-      }
-    }
-  }
-
-  void backpropagate(uint32_t vec_index) final {
-    assert(preparedForBatchProcessing() && predecessorsSet());
-
-    const auto& concatenated_nodes = _graph_state->inputs;
-    const auto& positional_offsets =
-        _batch_processing_state->positional_offsets;
-    const auto& output_vector = getOutputVector(vec_index);
-
-    for (uint32_t input_node_id = 0; input_node_id < concatenated_nodes.size();
-         input_node_id++) {
-      const auto& current_input_node = concatenated_nodes.at(input_node_id);
-      BoltVector& current_input =
-          current_input_node->getOutputVector(vec_index);
-      uint32_t start_position = positional_offsets.at(input_node_id);
-      uint32_t end_position = positional_offsets.at(input_node_id + 1);
-
-      for (uint32_t output_position = start_position;
-           output_position < end_position; output_position++) {
-        current_input.gradients[output_position - start_position] +=
-            output_vector.gradients[output_position];
-      }
-    }
-  }
-
-  void updateParameters(float learning_rate, uint32_t batch_cnt) final {
-    (void)learning_rate;
-    (void)batch_cnt;
-    // NOOP because a concatenation layer has no parameters
-  }
-
-  BoltVector& getOutputVector(uint32_t vec_index) final {
-    assert(preparedForBatchProcessing());
-    return _batch_processing_state->outputs[vec_index];
-  }
-
   std::shared_ptr<ConcatenateNode> setConcatenatedNodes(
       const std::vector<NodePtr>& nodes) {
     if (predecessorsSet()) {
@@ -196,6 +119,79 @@ class ConcatenateNode final
         /* positional_offsets = */ std::move(positional_offsets),
         /* outputs = */ std::move(new_concatenated_batch),
         /* num_nonzeros_in_concatenation = */ num_nonzeros_in_concatenation);
+  }
+
+  void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
+    // We currently do not allow a concatenation layer to be the last
+    // layer in the graph.
+    // TODO(josh/nick): Add support for n sets of outputs, and if users want
+    // a concatenation layer as the last layer they can split the labels
+    assert(labels == nullptr);
+    (void)labels;
+
+    const BoltVector& output_vector = getOutputVector(vec_index);
+    std::fill_n(output_vector.gradients, output_vector.len, 0);
+
+    const auto& concatenated_nodes = _graph_state->inputs;
+    const auto& positional_offsets =
+        _batch_processing_state->positional_offsets;
+    const auto& neuron_index_offsets = _graph_state->neuron_index_offsets;
+
+    for (uint32_t input_node_id = 0; input_node_id < concatenated_nodes.size();
+         input_node_id++) {
+      const auto& current_input_node = concatenated_nodes.at(input_node_id);
+      BoltVector& current_input =
+          current_input_node->getOutputVector(vec_index);
+      uint32_t start_position = positional_offsets.at(input_node_id);
+      uint32_t end_position = positional_offsets.at(input_node_id + 1);
+      std::copy(current_input.activations,
+                current_input.activations + current_input.len,
+                output_vector.activations + start_position);
+
+      if (!current_input.isDense()) {
+        assert(!output_vector.isDense());
+        uint32_t neuron_index_offset = neuron_index_offsets.at(input_node_id);
+        std::copy(current_input.active_neurons,
+                  current_input.active_neurons + current_input.len,
+                  output_vector.active_neurons + start_position);
+        for (uint32_t output_position = start_position;
+             output_position < end_position; output_position++) {
+          output_vector.active_neurons[output_position] += neuron_index_offset;
+        }
+      }
+    }
+  }
+
+  void backpropagateImpl(uint32_t vec_index) final {
+    const auto& concatenated_nodes = _graph_state->inputs;
+    const auto& positional_offsets =
+        _batch_processing_state->positional_offsets;
+    const auto& output_vector = getOutputVector(vec_index);
+
+    for (uint32_t input_node_id = 0; input_node_id < concatenated_nodes.size();
+         input_node_id++) {
+      const auto& current_input_node = concatenated_nodes.at(input_node_id);
+      BoltVector& current_input =
+          current_input_node->getOutputVector(vec_index);
+      uint32_t start_position = positional_offsets.at(input_node_id);
+      uint32_t end_position = positional_offsets.at(input_node_id + 1);
+
+      for (uint32_t output_position = start_position;
+           output_position < end_position; output_position++) {
+        current_input.gradients[output_position - start_position] +=
+            output_vector.gradients[output_position];
+      }
+    }
+  }
+
+  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
+    (void)learning_rate;
+    (void)batch_cnt;
+    // NOOP because a concatenation layer has no parameters
+  }
+
+  BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
+    return _batch_processing_state->outputs[vec_index];
   }
 
   void cleanupAfterBatchProcessingImpl() final {

@@ -34,40 +34,6 @@ class FullyConnectedNode final
     return shared_from_this();
   }
 
-  void forward(uint32_t batch_index, const BoltVector* labels) final {
-    assert(preparedForBatchProcessing());
-
-    _layer->forward(_predecessor->getOutputVector(batch_index),
-                    this->getOutputVector(batch_index), labels);
-  }
-
-  void backpropagate(uint32_t batch_index) final {
-    assert(preparedForBatchProcessing());
-
-    // TODO(Nicholas, Josh): Change to avoid having this check
-    if (_predecessor->isInputNode()) {
-      _layer->backpropagateInputLayer(
-          _predecessor->getOutputVector(batch_index),
-          this->getOutputVector(batch_index));
-    } else {
-      _layer->backpropagate(_predecessor->getOutputVector(batch_index),
-                            this->getOutputVector(batch_index));
-    }
-  }
-
-  void updateParameters(float learning_rate, uint32_t batch_cnt) final {
-    assert(preparedForBatchProcessing());
-
-    // TODO(Nicholas): Abstract away these constants
-    _layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA2, EPS);
-  }
-
-  BoltVector& getOutputVector(uint32_t batch_index) final {
-    assert(preparedForBatchProcessing());
-
-    return (*_outputs)[batch_index];
-  }
-
   uint32_t outputDim() const final { return _config.dim; }
 
   uint32_t numNonzerosInOutput() const final {
@@ -116,6 +82,31 @@ class FullyConnectedNode final
     // TODO(Nicholas): rename createBatchState
     _outputs =
         _layer->createBatchState(batch_size, /* use_sparsity=*/use_sparsity);
+  }
+
+  void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
+    _layer->forward(_predecessor->getOutputVector(vec_index),
+                    this->getOutputVector(vec_index), labels);
+  }
+
+  void backpropagateImpl(uint32_t vec_index) final {
+    // TODO(Nicholas, Josh): Change to avoid having this check
+    if (_predecessor->isInputNode()) {
+      _layer->backpropagateInputLayer(_predecessor->getOutputVector(vec_index),
+                                      this->getOutputVector(vec_index));
+    } else {
+      _layer->backpropagate(_predecessor->getOutputVector(vec_index),
+                            this->getOutputVector(vec_index));
+    }
+  }
+
+  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
+    // TODO(Nicholas): Abstract away these constants
+    _layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA2, EPS);
+  }
+
+  BoltVector& getOutputVectorImpl(uint32_t batch_index) final {
+    return (*_outputs)[batch_index];
   }
 
   void cleanupAfterBatchProcessingImpl() final { _outputs = std::nullopt; }

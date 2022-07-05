@@ -98,7 +98,7 @@ void testConcatForwardAndBackwardPass(
     uint32_t starting_output_index = neuron_index_offsets.at(input_node_id);
     uint32_t ending_output_index = neuron_index_offsets.at(input_node_id + 1);
     auto& current_input = nodes_to_concatenate.at(input_node_id)
-                              ->getOutputVector(/* batch_index = */ 3);
+                              ->getOutputVector(/* vec_index = */ 3);
 
     for (uint32_t output_index = starting_output_index;
          output_index < ending_output_index; output_index++) {
