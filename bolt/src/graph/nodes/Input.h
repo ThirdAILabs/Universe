@@ -3,6 +3,7 @@
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
+#include <cstddef>
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
@@ -19,38 +20,17 @@ namespace thirdai::bolt {
 class Input final : public Node {
  public:
   explicit Input(uint32_t expected_input_dim)
-      : _expected_input_dim(expected_input_dim) {}
+      : _input_batch(nullptr), _expected_input_dim(expected_input_dim) {}
 
-  void compile(LayerNameManager& name_manager) final {
-    if (_expected_input_dim == 0) {
-      throw exceptions::GraphCompilationFailure(
-          "Cannot have input layer with dimension 0.");
-    }
-    _name = name_manager.registerNodeAndGetName(/* node_type = */ "input");
-  }
-
-  void forward(uint32_t vec_index, const BoltVector* labels) final {
-    (void)labels;
-    (void)vec_index;
-  }
-
-  void backpropagate(uint32_t vec_index) final { (void)vec_index; }
-
-  void updateParameters(float learning_rate, uint32_t batch_cnt) final {
-    (void)learning_rate;
-    (void)batch_cnt;
-  }
-
+  // This class does not own this memory, but we pass it in as a pointer that
+  // will be stored as a field so it can be used in future method calls. It is
+  // only valid until the next time cleanupAfterBatchProcessing is called.
   void setInputs(BoltBatch* inputs) {
     for (uint32_t i = 0; i < inputs->getBatchSize(); i++) {
       checkDimForInput((*inputs)[i]);
     }
 
     _input_batch = inputs;
-  }
-
-  BoltVector& getOutputVector(uint32_t vec_index) final {
-    return (*_input_batch)[vec_index];
   }
 
   uint32_t expectedInputDim() const { return _expected_input_dim; }
@@ -63,13 +43,6 @@ class Input final : public Node {
         "in the output of an Input layer.");
   }
 
-  void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
-    (void)batch_size;
-    (void)use_sparsity;
-  }
-
-  void cleanupAfterBatchProcessing() final {}
-
   std::vector<NodePtr> getPredecessors() const final { return {}; }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
@@ -79,14 +52,69 @@ class Input final : public Node {
 
   bool isInputNode() const final { return true; }
 
-  void summarize(std::stringstream& summary, bool detailed) const final {
+ private:
+  void compileImpl(LayerNameManager& name_manager) final {
+    if (_expected_input_dim == 0) {
+      throw exceptions::GraphCompilationFailure(
+          "Cannot have input layer with dimension 0.");
+    }
+    _name = name_manager.registerNodeAndGetName(/* node_type = */ "input");
+  }
+
+  void prepareForBatchProcessingImpl(uint32_t batch_size,
+                                     bool use_sparsity) final {
+    (void)batch_size;
+    (void)use_sparsity;
+
+    // TODO(josh): Fix this
+    if (getState() != NodeState::PreparedForBatchProcessing) {
+      throw exceptions::NodeStateMachineError(
+          "The input node is unique, and need to have setBatch called before "
+          "prepareForBatchProcessing.");
+    }
+  }
+
+  void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
+    (void)labels;
+    (void)vec_index;
+  }
+
+  void backpropagateImpl(uint32_t vec_index) final { (void)vec_index; }
+
+  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
+    (void)learning_rate;
+    (void)batch_cnt;
+  }
+
+  BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
+    assert(preparedForBatchProcessing());
+
+    return (*_input_batch)[vec_index];
+  }
+
+  void cleanupAfterBatchProcessingImpl() final { _input_batch = nullptr; }
+
+  void summarizeImpl(std::stringstream& summary, bool detailed) const final {
     (void)detailed;
     summary << name() << " (Input) : dim=" << _expected_input_dim << "\n";
   }
 
-  const std::string& name() const final { return _name; }
+  const std::string& nameImpl() const final { return *_name; }
 
- private:
+  NodeState getState() const final {
+    if (!_name.has_value() && _input_batch == nullptr) {
+      return NodeState::PredecessorsSet;
+    }
+    if (_name.has_value() && _input_batch == nullptr) {
+      return NodeState::Compiled;
+    }
+    if (_name.has_value() && _input_batch != nullptr) {
+      return NodeState::PreparedForBatchProcessing;
+    }
+    throw exceptions::NodeStateMachineError(
+        "Node is in an invalid internal state");
+  }
+
   void checkDimForInput(const BoltVector& vec) const {
     if (vec.isDense()) {
       if (vec.len != _expected_input_dim) {
@@ -111,7 +139,7 @@ class Input final : public Node {
 
   BoltBatch* _input_batch;
   uint32_t _expected_input_dim;
-  std::string _name;
+  std::optional<std::string> _name;
 };
 
 }  // namespace thirdai::bolt

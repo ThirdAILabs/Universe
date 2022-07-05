@@ -27,6 +27,8 @@ class MockTraversalNode final : public MockNode {
   }
 
  private:
+  NodeState getState() const final { return NodeState::Compiled; }
+
   std::vector<NodePtr> _predecessors;
   uint32_t _id;
 };
