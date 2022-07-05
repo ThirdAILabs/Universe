@@ -525,7 +525,8 @@ class SentimentClassifier {
  public:
   explicit SentimentClassifier(const std::string& model_path) {
     _model = PyNetwork::load(model_path);
-    _model->initializeNetworkState(1, true);
+    _model->initializeNetworkState(/* batch_size= */ 1,
+                                   /* force_dense= */ true);
     if (_model->getOutputDim() != 2) {
       throw std::invalid_argument(
           "Expected model output dim to be 2 for sentiment classifier.");
@@ -534,9 +535,9 @@ class SentimentClassifier {
   }
 
   float predictSentiment(const std::string& sentence) {
-    BoltVector vec =
-        dataset::python::parseSentenceToBoltVector(sentence, 341, 50000);
-    _model->forward(0, vec, _output, nullptr);
+    BoltVector vec = dataset::python::parseSentenceToBoltVector(
+        sentence, /* seed= */ 341, _model->getInputDim());
+    _model->forward(0, vec, _output, /* labels= */ nullptr);
     return _output.activations[1];
   }
 
