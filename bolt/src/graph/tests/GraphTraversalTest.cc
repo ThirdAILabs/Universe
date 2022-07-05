@@ -27,6 +27,8 @@ class MockTraversalNode final : public MockNode {
   }
 
  private:
+  bool predecessorsSet() const final { return true; }
+
   std::vector<NodePtr> _predecessors;
   uint32_t _id;
 };

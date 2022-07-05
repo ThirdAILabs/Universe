@@ -18,26 +18,7 @@ namespace thirdai::bolt {
 class Input final : public Node {
  public:
   explicit Input(uint32_t expected_input_dim)
-      : _expected_input_dim(expected_input_dim) {}
-
-  void initializeParameters() final {
-    if (_expected_input_dim == 0) {
-      throw exceptions::GraphCompilationFailure(
-          "Cannot have input layer with dimension 0.");
-    }
-  }
-
-  void forward(uint32_t vec_index, const BoltVector* labels) final {
-    (void)labels;
-    (void)vec_index;
-  }
-
-  void backpropagate(uint32_t vec_index) final { (void)vec_index; }
-
-  void updateParameters(float learning_rate, uint32_t batch_cnt) final {
-    (void)learning_rate;
-    (void)batch_cnt;
-  }
+      : _input_batch(nullptr), _expected_input_dim(expected_input_dim) {}
 
   void setInputs(BoltBatch* inputs) {
     for (uint32_t i = 0; i < inputs->getBatchSize(); i++) {
@@ -45,10 +26,6 @@ class Input final : public Node {
     }
 
     _input_batch = inputs;
-  }
-
-  BoltVector& getOutputVector(uint32_t vec_index) final {
-    return (*_input_batch)[vec_index];
   }
 
   uint32_t expectedInputDim() const { return _expected_input_dim; }
@@ -61,13 +38,6 @@ class Input final : public Node {
         "in the output of an Input layer.");
   }
 
-  void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) final {
-    (void)batch_size;
-    (void)use_sparsity;
-  }
-
-  void cleanupAfterBatchProcessing() final {}
-
   std::vector<NodePtr> getPredecessors() const final { return {}; }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
@@ -78,6 +48,53 @@ class Input final : public Node {
   bool isInputNode() const final { return true; }
 
  private:
+  void initializeParametersImpl() final {
+    if (_expected_input_dim == 0) {
+      throw exceptions::GraphCompilationFailure(
+          "Cannot have input layer with dimension 0.");
+    }
+  }
+
+  void prepareForBatchProcessingImpl(uint32_t batch_size,
+                                     bool use_sparsity) final {
+    (void)batch_size;
+    (void)use_sparsity;
+
+    if (preparedForBatchProcessing()) {
+      throw exceptions::NodeStateMachineError(
+          "Input should have setBatch called before "
+          "prepareForBatchProcessing.");
+    }
+  }
+
+  void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
+    (void)labels;
+    (void)vec_index;
+  }
+
+  void backpropagateImpl(uint32_t vec_index) final { (void)vec_index; }
+
+  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
+    (void)learning_rate;
+    (void)batch_cnt;
+  }
+
+  BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
+    assert(preparedForBatchProcessing());
+
+    return (*_input_batch)[vec_index];
+  }
+
+  void cleanupAfterBatchProcessingImpl() final {}
+
+  bool predecessorsSet() const final { return true; }
+
+  bool parametersInitialized() const final { return true; }
+
+  bool preparedForBatchProcessing() const final {
+    return _input_batch != nullptr;
+  }
+
   void checkDimForInput(const BoltVector& vec) const {
     if (vec.isDense()) {
       if (vec.len != _expected_input_dim) {
