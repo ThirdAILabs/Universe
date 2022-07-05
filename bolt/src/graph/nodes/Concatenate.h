@@ -301,7 +301,18 @@ class ConcatenateNode final
     // Also equals the last element of neuron_index_offsets. This is the dense
     // dimension of the output vector
     uint32_t concatenated_dense_dim;
+
+   private:
+    // Private constructor for cereal.
+    GraphState() {}
+
+    friend class cereal::access;
+    template <class Archive>
+    void serialize(Archive& archive) {
+      archive(inputs, neuron_index_offsets, concatenated_dense_dim);
+    }
   };
+
   struct BatchProcessingState {
     // We have this constructor so clang tidy can check variable names
     BatchProcessingState(std::vector<uint32_t> positional_offsets,
@@ -330,6 +341,12 @@ class ConcatenateNode final
     uint32_t num_nonzeros_in_concatenation;
   };
 
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Node>(this), _parameters_initialized);
+  }
+
   std::optional<GraphState> _graph_state;
   // There are no parameters, but this allows the state machine to have
   // consistent behavior.
@@ -338,3 +355,5 @@ class ConcatenateNode final
 };
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::ConcatenateNode)

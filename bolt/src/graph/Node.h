@@ -179,6 +179,13 @@ class Node {
 
   // Returns true if the node is in state 4.
   virtual bool preparedForBatchProcessing() const = 0;
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 }  // namespace thirdai::bolt

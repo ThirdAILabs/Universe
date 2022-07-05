@@ -1,10 +1,15 @@
 #pragma once
 
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/LayerUtils.h>
+#include <dataset/src/utils/SafeFileIO.h>
 #include <exceptions/src/Exceptions.h>
 #include <memory>
 #include <optional>
+#include <sstream>
+#include <stdexcept>
 #include <utility>
 
 namespace thirdai::bolt {
@@ -71,6 +76,52 @@ class FullyConnectedNode final
 
   ActivationFunction getActivationFunction() const { return _config.act_func; }
 
+  // void saveParameters(const std::string& filename) const {
+  //   std::ofstream filestream =
+  //       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  //   cereal::BinaryOutputArchive oarchive(filestream);
+  //   oarchive(*_layer);
+  // }
+
+  // void loadParameters(const std::string& filename) {
+  //   std::ifstream filestream =
+  //       dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  //   cereal::BinaryInputArchive iarchive(filestream);
+  //   auto loaded_parameters = std::make_shared<FullyConnectedLayer>();
+  //   iarchive(*loaded_parameters);
+
+  //   if (loaded_parameters->getDim() != _layer->getDim()) {
+  //     std::stringstream error_msg;
+  //     error_msg << "Cannot load parameters from FullyConnected layer with dim="
+  //               << loaded_parameters->getDim()
+  //               << "into FullyConnected layer with dim=" << _layer->getDim()
+  //               << ".";
+  //     throw std::logic_error(error_msg.str());
+  //   }
+  //   if (loaded_parameters->getInputDim() != _layer->getInputDim()) {
+  //     std::stringstream error_msg;
+  //     error_msg
+  //         << "Cannot load parameters from FullyConnected layer with input_dim="
+  //         << loaded_parameters->getInputDim()
+  //         << "into FullyConnected layer with input_dim="
+  //         << _layer->getInputDim() << ".";
+  //     throw std::logic_error(error_msg.str());
+  //   }
+
+  //   if (loaded_parameters->getActivationFunction() !=
+  //       _layer->getActivationFunction()) {
+  //     std::stringstream error_msg;
+  //     error_msg
+  //         << "Cannot load parameters from FullyConnected layer with activation="
+  //         << activationFunctionToStr(loaded_parameters->getActivationFunction())
+  //         << "into FullyConnected layer with activation="
+  //         << activationFunctionToStr(_layer->getActivationFunction()) << ".";
+  //     throw std::logic_error(error_msg.str());
+  //   }
+
+  //   _layer = loaded_parameters;
+  // }
+
  private:
   void initializeParametersImpl() final {
     _layer = std::make_shared<FullyConnectedLayer>(_config,
@@ -117,6 +168,16 @@ class FullyConnectedNode final
 
   bool preparedForBatchProcessing() const final { return _outputs.has_value(); }
 
+  // Private constructor for cereal. Must create dummy config since no default
+  // constructor exists for layer config.
+  FullyConnectedNode() : _config(/* dim= */ 0, ActivationFunction::Linear) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Node>(this), _layer, _config, _predecessor);
+  }
+
   std::shared_ptr<FullyConnectedLayer> _layer;
   FullyConnectedLayerConfig _config;
   std::optional<BoltBatch> _outputs;
@@ -125,3 +186,5 @@ class FullyConnectedNode final
 };
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedNode)

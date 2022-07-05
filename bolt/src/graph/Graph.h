@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/archives/binary.hpp>
 #include "ExecutionConfig.h"
 #include "Node.h"
 #include <bolt/src/layers/BoltVector.h>
@@ -63,6 +64,10 @@ class BoltGraph {
 
   const std::vector<NodePtr>& getNodeTraversalOrder() const { return _nodes; }
 
+  void save(const std::string& filename);
+
+  static std::unique_ptr<BoltGraph> load(const std::string& filename);
+
  private:
   template <typename BATCH_T>
   void processTrainingBatch(BATCH_T& batch_inputs,
@@ -106,6 +111,13 @@ class BoltGraph {
   void rebuildHashTables();
 
   void reconstructHashFunctions();
+
+  // Private constructor for cereal.
+  BoltGraph() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
 
   // List of nodes(layers) in the order in which they should be computed.
   std::vector<NodePtr> _nodes;

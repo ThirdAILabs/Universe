@@ -387,4 +387,26 @@ void BoltGraph::reconstructHashFunctions() {
   }
 }
 
+template <class Archive>
+void BoltGraph::serialize(Archive& archive) {
+  archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
+          _epoch_count, _batch_cnt);
+}
+
+void BoltGraph::save(const std::string& filename) {
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  cereal::BinaryOutputArchive oarchive(filestream);
+  oarchive(*this);
+}
+
+std::unique_ptr<BoltGraph> BoltGraph::load(const std::string& filename) {
+  std::ifstream filestream =
+      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  cereal::BinaryInputArchive iarchive(filestream);
+  std::unique_ptr<BoltGraph> deserialize_into(new BoltGraph());
+  iarchive(*deserialize_into);
+  return deserialize_into;
+}
+
 }  // namespace thirdai::bolt

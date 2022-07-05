@@ -102,6 +102,10 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void setSparsity(float sparsity) final;
 
+  ActivationFunction getActivationFunction() const {
+    return _act_func;
+  }
+
   const SamplingConfig& getSamplingConfig() const final {
     return _sampling_config;
   }

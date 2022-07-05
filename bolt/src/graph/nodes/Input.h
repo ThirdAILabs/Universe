@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
@@ -117,8 +118,19 @@ class Input final : public Node {
     }
   }
 
+  // Private constructor for cereal.
+  Input() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Node>(this), _expected_input_dim);
+  }
+
   BoltBatch* _input_batch;
   uint32_t _expected_input_dim;
 };
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::Input)
