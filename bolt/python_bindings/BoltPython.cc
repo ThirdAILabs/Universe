@@ -285,13 +285,12 @@ void createBoltSubmodule(py::module_& module) {
              network.buildNetworkSummary(summary);
              return summary.str();
            })
-      .def(
-          "summary", &PyNetwork::printSummary, py::arg("detailed") = false,
-          "Prints a summary of the network.\n"
-          "Arguments:\n"
-          " * detailed: boolean. Optional. When specified to \"True\", "
-          "summary will additionally print layer config details for each layer "
-          "in the network.")
+      .def("summary", &PyNetwork::printSummary, py::arg("detailed") = false,
+           "Prints a summary of the network.\n"
+           "Arguments:\n"
+           " * detailed: boolean. Optional. When specified to \"True\", "
+           "summary will additionally print sampling config details for each "
+           "layer in the network.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),
@@ -747,6 +746,7 @@ void createBoltSubmodule(py::module_& module) {
            "inputs are mapped to input layers by their index.\n"
            " * output (Node) - The output node of the graph.")
       .def("compile", &PyBoltGraph::compile, py::arg("loss"),
+           py::arg("print_when_done") = true,
            "Compiles the graph for the given loss function. In this step the "
            "order in which to compute the layers is determined and various "
            "checks are preformed to ensure the model architecture is correct.")
@@ -780,6 +780,22 @@ void createBoltSubmodule(py::module_& module) {
            "parameters. See the PredictConfig documentation above.\n\n"
 
            "Returns a  a mapping from metric names to their values.")
+      .def("__str__",
+           [](const BoltGraph& model) {
+             return model.summarize(/* print = */ false,
+                                    /* detailed = */ false);
+           })
+      .def(
+          "summary", &BoltGraph::summarize, py::arg("print") = true,
+          py::arg("detailed") = false,
+          "Returns a summary of the network.\n"
+          "Arguments:\n"
+          " * print: boolean. Optional, default True. When specified to "
+          "\"True\", "
+          "summary will print the network summary in addition to returning it. "
+          "* detailed: boolean. Optional, default False. When specified to "
+          "\"True\", summary will additionally return/print sampling config "
+          "details for each layer in the network.")
       // TODO(josh/nick): These are temporary until we have a better story
       // for converting numpy to BoltGraphs
       .def("train_np", &PyBoltGraph::trainNumpy, py::arg("train_data"),
