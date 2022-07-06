@@ -158,13 +158,6 @@ class DistributedModel : Model<bolt::BoltBatch> {
   FullyConnectedNetwork DistributedNetwork;
 
  protected:
-  static uint32_t getRehashBatchDistributed(uint32_t rehash,
-                                            uint32_t batch_size,
-                                            uint32_t data_len);
-
-  static uint32_t getRebuildBatchDistributed(uint32_t rebuild,
-                                             uint32_t batch_size,
-                                             uint32_t data_len);
 
   uint32_t _batch_iter;
 

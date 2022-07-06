@@ -26,10 +26,9 @@ uint32_t DistributedModel::initTrainSingleNode(
   _train_data = train_data;
   _train_labels = train_labels;
   uint32_t batch_size = _train_data->at(0).getBatchSize();
-  _rebuild_batch =
-      getRebuildBatchDistributed(rebuild, batch_size, train_data->len());
+  _rebuild_batch =  DistributedNetwork.getRebuildBatch(rebuild, batch_size, train_data->len());
   _rehash_batch =
-      getRehashBatchDistributed(rehash, batch_size, train_data->len());
+      DistributedNetwork.getRehashBatch(rehash, batch_size, train_data->len());
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
@@ -159,28 +158,5 @@ void DistributedModel::setRandomSeed(uint32_t random_seed) const {
   }
 }
 
-static constexpr uint32_t RehashAutoTuneThreshold = 100000;
-static constexpr uint32_t RehashAutoTuneFactor1 = 100;
-static constexpr uint32_t RehashAutoTuneFactor2 = 20;
-
-uint32_t DistributedModel::getRehashBatchDistributed(uint32_t rehash,
-                                                     uint32_t batch_size,
-                                                     uint32_t data_len) {
-  if (rehash == 0) {
-    if (data_len < RehashAutoTuneThreshold) {
-      rehash = data_len / RehashAutoTuneFactor2;
-    } else {
-      rehash = data_len / RehashAutoTuneFactor1;
-    }
-  }
-  return std::max<uint32_t>(rehash / batch_size, 1);
-}
-
-uint32_t DistributedModel::getRebuildBatchDistributed(uint32_t rebuild,
-                                                      uint32_t batch_size,
-                                                      uint32_t data_len) {
-  rebuild = rebuild != 0 ? rebuild : (data_len / 4);
-  return std::max<uint32_t>(rebuild / batch_size, 1);
-}
 
 }  // namespace thirdai::bolt
