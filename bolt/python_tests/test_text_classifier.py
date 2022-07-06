@@ -75,5 +75,18 @@ def test_text_classifier_clinc_dataset():
 
     print("Computed Accuracy: ", acc)
     assert acc > 0.7
+    """
+    giving some sentences for predict_on_sentence and matching the 
+    predicted class with the one predicted from predict method.
+    """
+    with open("./clinc_predictions.txt") as pred:
+        predictions = pred.readlines()
+
+    with open("./clinc_test.csv") as test:
+        test_set = test.readlines()
+
+    for i in range(10):
+        predicted = classifier.predict_on_sentence(test_set[i + 1][1:-2].split('","')[0])
+        assert predicted == predictions[i][:-1]
 
     remove_files()
