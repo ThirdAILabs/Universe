@@ -2,6 +2,8 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/MetricHelpers.h>
+#include <_types/_uint32_t.h>
+#include <sys/types.h>
 #include <algorithm>
 #include <atomic>
 #include <iomanip>
@@ -22,7 +24,7 @@ class Metric {
                              const BoltVector& labels) = 0;
 
   // Returns the value of the metric and resets it. For instance this would be
-  // called ad the end of each epoch.
+  // called at the end of each epoch.
   virtual double getMetricAndReset(bool verbose) = 0;
 
   // Returns the name of the metric.
@@ -52,7 +54,7 @@ class CategoricalAccuracy final : public Metric {
     if (!max_act_index) {
       throw std::runtime_error(
           "Unable to find a output activation larger than the minimum "
-          "representable float. This is likely do to a Nan or incorrect "
+          "representable float. This is likely due to a Nan or incorrect "
           "activation function in the final layer.");
     }
 
@@ -61,7 +63,7 @@ class CategoricalAccuracy final : public Metric {
                                      : output.active_neurons[*max_act_index];
 
     if (labels.isDense()) {
-      // If labels are dense we check if the predection has a non-zero label.
+      // If labels are dense we check if the prediction has a non-zero label.
       if (labels.activations[pred] > 0) {
         _correct++;
       }
@@ -235,5 +237,71 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   std::atomic<float> _sum_of_deviations;
   std::atomic<float> _sum_of_truths;
 };
+
+class FMeasure final : public Metric {
+ public:
+  FMeasure() : _tp(0), _fp(0), _fn(0) {}
+
+ private:
+  std::pair<uint32_t, uint32_t> computePrecisionAndRecall(const BoltVector& output, const BoltVector& labels, const float threshold) {
+    std::pair<uint32_t, uint32_t> metrics;
+    std::vector<uint32_t> pos_predictions;
+    std::vector<uint32_t> neg_predictions;
+    uint32_t tp;
+    uint32_t fp;
+    uint32_t fn;
+
+    for (uint32_t i = 0; i < output.len; i++) {
+      uint32_t pred = output.isDense() ? i : output.active_neurons[i];
+      if (output.activations[i] > threshold) {
+        pos_predictions.push_back(pred);
+      } else {
+        neg_predictions.push_back(pred);
+      }
+    }
+
+    if (pos_predictions.empty()) {
+      throw std::runtime_error(
+          "Unable to find a output activation larger than the minimum "
+          "threshold. This is likely due to an incorrect "
+          "activation function in the final layer.");
+    }
+
+    if (labels.isDense()) {
+      for (uint32_t pos_pred : pos_predictions) {
+        if (labels.activations[pos_pred] > 0) {
+          tp++;
+        } else {
+          fp++;
+        }
+      }
+      for (uint32_t neg_pred : neg_predictions) {
+        if (labels.activations[neg_pred] > 0) {
+          fn++;
+        }
+      }
+    } else {
+      const uint32_t* label_start = labels.active_neurons;
+      const uint32_t* label_end = labels.active_neurons + labels.len;
+      for (uint32_t pos_pred : pos_predictions) {
+        if (std::find(label_start, label_end, pos_pred) != label_end) {
+          tp++;
+        } else {
+          fp++;
+        }
+      }
+      for (uint32_t neg_pred : neg_predictions) {
+        if (std::find(label_start, label_end, neg_pred) != label_end) {
+          fn++;
+        }
+      }
+    }
+
+    metrics.first = static_cast<float>(tp) / (tp + fp);
+    metrics.second = static_cast<float>(tp) / (tp + fn);
+
+    return metrics;
+  }
+}
 
 }  // namespace thirdai::bolt

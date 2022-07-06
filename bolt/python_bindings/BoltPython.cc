@@ -623,6 +623,9 @@ void createBoltSubmodule(py::module_& module) {
           "Loads and builds a saved classifier from file.\n"
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
+  
+  py::class_<>(bolt_submodule, "MultiLabelTextClassifier")
+      .def(py::init<const std::string&, uint32t>(), py::arg(""))
 
   py::class_<SentimentClassifier>(bolt_submodule, "SentimentClassifier")
       .def(py::init<const std::string&>(), py::arg("model_path"))
