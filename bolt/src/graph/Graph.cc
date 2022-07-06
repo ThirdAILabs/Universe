@@ -454,10 +454,7 @@ std::string BoltGraph::summarize(bool print, bool detailed) const {
   std::stringstream summary;
   summary << "\n";
   summary << "======================= Bolt Model =======================\n";
-  for (const auto& input : _inputs) {
-    input->summarize(summary, detailed);
-  }
-  for (const auto& node : _nodes) {
+  for (const auto& node : getNodeTraversalOrder()) {
     node->summarize(summary, detailed);
   }
   summary << "============================================================\n";
@@ -472,12 +469,7 @@ NodePtr BoltGraph::getNodeByName(const std::string& node_name) const {
     throw std::logic_error(
         "Cannot get a node by name from the graph before it is compiled.");
   }
-  for (const auto& node : _inputs) {
-    if (node->name() == node_name) {
-      return node;
-    }
-  }
-  for (const auto& node : _nodes) {
+  for (const auto& node : getNodeTraversalOrder()) {
     if (node->name() == node_name) {
       return node;
     }

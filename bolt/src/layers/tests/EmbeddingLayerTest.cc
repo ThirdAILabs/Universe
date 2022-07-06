@@ -3,6 +3,7 @@
 #include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
 #include <algorithm>
+#include <numeric>
 #include <unordered_map>
 #include <vector>
 
@@ -10,15 +11,18 @@ namespace thirdai::bolt::tests {
 
 constexpr uint32_t seed = 8274953;
 
+// These tests are overriding the embedding block to be sequential integers, and
+// then checking that the embeddings computed are sequential integers starting
+// at the hash of the token.
 class EmbeddingLayerTestFixture : public ::testing::Test {
  public:
   void SetUp() override {
     EmbeddingLayerConfig config(_num_lookups, _lookup_size, _log_block_size);
     _layer = std::make_unique<EmbeddingLayer>(config, seed);
 
-    for (uint32_t i = 0; i < _layer->_embedding_block_size_bytes; i++) {
-      _layer->_embedding_block[i] = i + 1;
-    }
+    std::iota(_layer->_embedding_block.begin(), _layer->_embedding_block.end(),
+              1.0);
+
     _layer->initializeLayer(/* new_batch_size= */ 4);
   }
 
@@ -27,7 +31,7 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
   }
 
   uint64_t getHashLocFromLayer(uint32_t token, uint32_t lookup_index) const {
-    return _layer->getHashLocForToken(token, lookup_index);
+    return _layer->getEmbeddingBlockOffset(token, lookup_index);
   }
 
   uint32_t getHash(uint64_t token) const {
@@ -36,7 +40,7 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
 
   static std::vector<std::pair<uint64_t, uint64_t>> getDisjointRangesFromLayer(
       EmbeddingLayer& layer, std::vector<std::vector<uint64_t>>& hash_locs) {
-    layer._hash_locs = std::move(hash_locs);
+    layer._embedding_block_offsets = std::move(hash_locs);
 
     return layer.getDisjointUpdateRanges();
   }
@@ -52,12 +56,6 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
 // Test that the hash locs computed are unique if the token or lookup_index
 // changes.
 TEST_F(EmbeddingLayerTestFixture, TestGetHashLoc) {
-  ASSERT_EQ(getHashLocFromLayer(/* token= */ 5, /* lookup_index= */ 3),
-            getHash(5 * 50 + 3) >> (64 - _log_block_size));
-
-  ASSERT_EQ(getHashLocFromLayer(/* token= */ 5, /* lookup_index= */ 17),
-            getHash(5 * 50 + 17) >> (64 - _log_block_size));
-
   ASSERT_NE(getHashLocFromLayer(/* token= */ 5, /* lookup_index= */ 17),
             getHashLocFromLayer(/* token= */ 17, /* lookup_index= */ 5));
   ASSERT_NE(getHashLocFromLayer(/* token= */ 5, /* lookup_index= */ 17),

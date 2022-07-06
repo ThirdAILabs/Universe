@@ -47,7 +47,8 @@ class EmbeddingLayer {
  private:
   std::vector<std::pair<uint64_t, uint64_t>> getDisjointUpdateRanges() const;
 
-  inline uint32_t getHashLocForToken(uint32_t token, uint32_t lookup_index) {
+  inline uint32_t getEmbeddingBlockOffset(uint32_t token,
+                                          uint32_t lookup_index) {
     uint64_t id = token * _num_lookups_per_token + lookup_index;
     uint32_t hash = _hash_fn.gethash(id);
 
@@ -67,13 +68,13 @@ class EmbeddingLayer {
     return lookup_index * num_tokens + token_index;
   }
 
-  void recordHashLoc(uint32_t vec_index, uint64_t hash_loc) {
-    _hash_locs[vec_index].push_back(hash_loc);
+  void recordEmbeddingBlockOffset(uint32_t vec_index, uint64_t hash_loc) {
+    _embedding_block_offsets[vec_index].push_back(hash_loc);
   }
 
-  uint64_t retrieveHashLoc(uint32_t vec_index, uint32_t lookup_index,
+  uint64_t retrieveEmbeddingBlockOffset(uint32_t vec_index, uint32_t lookup_index,
                            uint32_t token_index, uint32_t num_tokens) {
-    return _hash_locs[vec_index]
+    return _embedding_block_offsets[vec_index]
                      [getHashLocIndex(lookup_index, token_index, num_tokens)];
   }
 
@@ -88,7 +89,10 @@ class EmbeddingLayer {
   std::vector<float> _momentum;
   std::vector<float> _velocity;
 
-  std::vector<std::vector<uint64_t>> _hash_locs;
+  // This structure stores the embedding block offset for each token in each
+  // input. This is used for backpropagation and for update paramters to know
+  // what parts of the embedding block were used.
+  std::vector<std::vector<uint64_t>> _embedding_block_offsets;
 };
 
 }  // namespace thirdai::bolt

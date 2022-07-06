@@ -33,14 +33,15 @@ EmbeddingLayer::EmbeddingLayer(const EmbeddingLayerConfig& config,
 void EmbeddingLayer::forward(uint32_t vec_index,
                              const std::vector<uint32_t>& tokens,
                              BoltVector& output) {
-  assert(output.len == _total_embedding_dim);
+  assert(output.len == _total_embedding_dim_bytes);
   assert(output.active_neurons == nullptr);
 
   std::fill_n(output.activations, _total_embedding_dim_bytes, 0);
   std::fill_n(output.gradients, _total_embedding_dim_bytes, 0);
 
-  _hash_locs[vec_index].clear();
-  _hash_locs[vec_index].reserve(tokens.size() * _num_lookups_per_token);
+  _embedding_block_offsets[vec_index].clear();
+  _embedding_block_offsets[vec_index].reserve(tokens.size() *
+                                              _num_lookups_per_token);
 
   for (uint32_t lookup_index = 0; lookup_index < _num_lookups_per_token;
        lookup_index++) {
@@ -48,14 +49,16 @@ void EmbeddingLayer::forward(uint32_t vec_index,
         output.activations + getOutputOffsetWithinEmbedding(lookup_index);
 
     for (uint32_t token : tokens) {
-      uint64_t hash_loc = getHashLocForToken(token, lookup_index);
-      recordHashLoc(vec_index, hash_loc);
+      uint64_t embedding_block_offset =
+          getEmbeddingBlockOffset(token, lookup_index);
+      recordEmbeddingBlockOffset(vec_index, embedding_block_offset);
 
-      assert(hash_loc < _embedding_block_size - _lookup_size);
+      assert(embedding_block_offset <
+             _embedding_block_size_bytes - _lookup_size_bytes);
 
       // Safe since we allocated 2^_log_embedding_block_size+_lookup_size
       for (uint32_t i = 0; i < _lookup_size_bytes; i++) {
-        output_start[i] += _embedding_block[hash_loc + i];
+        output_start[i] += _embedding_block[embedding_block_offset + i];
       }
     }
   }
@@ -63,7 +66,8 @@ void EmbeddingLayer::forward(uint32_t vec_index,
 
 void EmbeddingLayer::backpropagate(uint32_t vec_index,
                                    const BoltVector& output) {
-  uint32_t num_tokens = _hash_locs[vec_index].size() / _num_lookups_per_token;
+  uint32_t num_tokens =
+      _embedding_block_offsets[vec_index].size() / _num_lookups_per_token;
 
   for (uint32_t lookup_index = 0; lookup_index < _num_lookups_per_token;
        lookup_index++) {
@@ -71,12 +75,13 @@ void EmbeddingLayer::backpropagate(uint32_t vec_index,
         output.gradients + getOutputOffsetWithinEmbedding(lookup_index);
 
     for (uint32_t token_index = 0; token_index < num_tokens; token_index++) {
-      uint64_t hash_loc =
-          retrieveHashLoc(vec_index, lookup_index, token_index, num_tokens);
+      uint64_t embedding_block_offset = retrieveEmbeddingBlockOffset(
+          vec_index, lookup_index, token_index, num_tokens);
 
-      assert(hash_loc < _embedding_block_size - _lookup_size);
+      assert(embedding_block_offset <
+             _embedding_block_size_bytes - _lookup_size_bytes);
 
-      float* update_loc = _gradients.data() + hash_loc;
+      float* update_loc = _gradients.data() + embedding_block_offset;
 
       for (uint32_t i = 0; i < _lookup_size_bytes; i++) {
         update_loc[i] += output_gradients[i];
@@ -120,7 +125,7 @@ void EmbeddingLayer::updateParameters(float lr, uint32_t iter, float B1,
 }
 
 void EmbeddingLayer::initializeLayer(uint32_t new_batch_size) {
-  _hash_locs = std::vector<std::vector<uint64_t>>(new_batch_size);
+  _embedding_block_offsets = std::vector<std::vector<uint64_t>>(new_batch_size);
 }
 
 void EmbeddingLayer::buildLayerSummary(std::stringstream& summary) const {
@@ -132,7 +137,7 @@ void EmbeddingLayer::buildLayerSummary(std::stringstream& summary) const {
 std::vector<std::pair<uint64_t, uint64_t>>
 EmbeddingLayer::getDisjointUpdateRanges() const {
   std::vector<uint64_t> all_embedding_locs;
-  for (const auto& locs : _hash_locs) {
+  for (const auto& locs : _embedding_block_offsets) {
     all_embedding_locs.insert(all_embedding_locs.end(), locs.begin(),
                               locs.end());
   }
