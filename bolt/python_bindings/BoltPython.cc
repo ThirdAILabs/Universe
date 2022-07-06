@@ -8,6 +8,7 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <bolt/src/text_classifier/TextClassifier.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
@@ -284,13 +285,12 @@ void createBoltSubmodule(py::module_& module) {
              network.buildNetworkSummary(summary);
              return summary.str();
            })
-      .def(
-          "summary", &PyNetwork::printSummary, py::arg("detailed") = false,
-          "Prints a summary of the network.\n"
-          "Arguments:\n"
-          " * detailed: boolean. Optional. When specified to \"True\", "
-          "summary will additionally print layer config details for each layer "
-          "in the network.")
+      .def("summary", &PyNetwork::printSummary, py::arg("detailed") = false,
+           "Prints a summary of the network.\n"
+           "Arguments:\n"
+           " * detailed: boolean. Optional. When specified to \"True\", "
+           "summary will additionally print sampling config details for each "
+           "layer in the network.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),
@@ -630,12 +630,16 @@ void createBoltSubmodule(py::module_& module) {
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
 
+  py::class_<SentimentClassifier>(bolt_submodule, "SentimentClassifier")
+      .def(py::init<const std::string&>(), py::arg("model_path"))
+      .def("predict_sentiment", &SentimentClassifier::predictSentiment,
+           py::arg("sentence"));
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 
   py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
 
-  py::class_<FullyConnectedLayerNode, std::shared_ptr<FullyConnectedLayerNode>,
-             Node>(graph_submodule, "FullyConnected")
+  py::class_<FullyConnectedNode, std::shared_ptr<FullyConnectedNode>, Node>(
+      graph_submodule, "FullyConnected")
       .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
            py::arg("activation"),
            "Constructs a dense FullyConnectedLayer object.\n"
@@ -702,7 +706,7 @@ void createBoltSubmodule(py::module_& module) {
            " * sampling_config (SamplingConfig) - Sampling config object to "
            "initialize hash tables/functions.")
 #endif
-      .def("__call__", &FullyConnectedLayerNode::addPredecessor,
+      .def("__call__", &FullyConnectedNode::addPredecessor,
            py::arg("prev_layer"),
            "Tells the graph which layer should act as input to this fully "
            "connected layer.");
@@ -748,6 +752,7 @@ void createBoltSubmodule(py::module_& module) {
            "inputs are mapped to input layers by their index.\n"
            " * output (Node) - The output node of the graph.")
       .def("compile", &PyBoltGraph::compile, py::arg("loss"),
+           py::arg("print_when_done") = true,
            "Compiles the graph for the given loss function. In this step the "
            "order in which to compute the layers is determined and various "
            "checks are preformed to ensure the model architecture is correct.")
@@ -781,6 +786,22 @@ void createBoltSubmodule(py::module_& module) {
            "parameters. See the PredictConfig documentation above.\n\n"
 
            "Returns a  a mapping from metric names to their values.")
+      .def("__str__",
+           [](const BoltGraph& model) {
+             return model.summarize(/* print = */ false,
+                                    /* detailed = */ false);
+           })
+      .def(
+          "summary", &BoltGraph::summarize, py::arg("print") = true,
+          py::arg("detailed") = false,
+          "Returns a summary of the network.\n"
+          "Arguments:\n"
+          " * print: boolean. Optional, default True. When specified to "
+          "\"True\", "
+          "summary will print the network summary in addition to returning it. "
+          "* detailed: boolean. Optional, default False. When specified to "
+          "\"True\", summary will additionally return/print sampling config "
+          "details for each layer in the network.")
       // TODO(josh/nick): These are temporary until we have a better story
       // for converting numpy to BoltGraphs
       .def("train_np", &PyBoltGraph::trainNumpy, py::arg("train_data"),

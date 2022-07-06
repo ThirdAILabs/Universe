@@ -19,9 +19,14 @@ namespace thirdai::bolt {
 
 class DLRM;
 
+namespace python {
+class SentimentClassifier;
+}  // namespace python
+
 class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   friend class DLRM;
   friend class TextClassifier;
+  friend class python::SentimentClassifier;
 
  public:
   FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim);
