@@ -8,7 +8,6 @@ from thirdai._callbacks.callbacks import *
 
 __all__ = []
 __all__.extend(dir(thirdai._thirdai.bolt))
-
 __all__.extend(dir(thirdai._callbacks.callbacks))
 
 

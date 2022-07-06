@@ -404,7 +404,7 @@ void createBoltSubmodule(py::module_& module) {
       .def("checkpoint", &PyNetwork::checkpoint, py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
            "folders to be created. Saves all the parameters needed for "
-           "tranining. "
+           "training. "
            "This will throw an error if the model has been trimmed for "
            "inference.")
       .def("trim_for_inference", &PyNetwork::trimForInference,
