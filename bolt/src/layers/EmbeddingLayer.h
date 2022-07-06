@@ -72,10 +72,12 @@ class EmbeddingLayer {
     _embedding_block_offsets[vec_index].push_back(hash_loc);
   }
 
-  uint64_t retrieveEmbeddingBlockOffset(uint32_t vec_index, uint32_t lookup_index,
-                           uint32_t token_index, uint32_t num_tokens) {
-    return _embedding_block_offsets[vec_index]
-                     [getHashLocIndex(lookup_index, token_index, num_tokens)];
+  uint64_t retrieveEmbeddingBlockOffset(uint32_t vec_index,
+                                        uint32_t lookup_index,
+                                        uint32_t token_index,
+                                        uint32_t num_tokens) {
+    return _embedding_block_offsets[vec_index][getHashLocIndex(
+        lookup_index, token_index, num_tokens)];
   }
 
   uint32_t _num_lookups_per_token, _lookup_size_bytes,
