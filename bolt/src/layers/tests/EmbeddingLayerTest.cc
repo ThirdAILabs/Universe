@@ -16,14 +16,14 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
     EmbeddingLayerConfig config(_num_lookups, _lookup_size, _log_block_size);
     _layer = std::make_unique<EmbeddingLayer>(config, seed);
 
-    for (uint32_t i = 0; i < _layer->_embedding_block_size; i++) {
+    for (uint32_t i = 0; i < _layer->_embedding_block_size_bytes; i++) {
       _layer->_embedding_block[i] = i + 1;
     }
-    _layer->initializeLayer(4);
+    _layer->initializeLayer(/* new_batch_size= */ 4);
   }
 
   uint32_t getEmbeddingBlockSize() const {
-    return _layer->_embedding_block_size;
+    return _layer->_embedding_block_size_bytes;
   }
 
   uint64_t getHashLocFromLayer(uint32_t token, uint32_t lookup_index) const {
@@ -49,17 +49,23 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
   std::unique_ptr<EmbeddingLayer> _layer;
 };
 
+// Test that the hash locs computed are unique if the token or lookup_index
+// changes.
 TEST_F(EmbeddingLayerTestFixture, TestGetHashLoc) {
-  ASSERT_EQ(getHashLocFromLayer(5, 3),
+  ASSERT_EQ(getHashLocFromLayer(/* token= */ 5, /* lookup_index= */ 3),
             getHash(5 * 50 + 3) >> (64 - _log_block_size));
 
-  ASSERT_EQ(getHashLocFromLayer(5, 17),
+  ASSERT_EQ(getHashLocFromLayer(/* token= */ 5, /* lookup_index= */ 17),
             getHash(5 * 50 + 17) >> (64 - _log_block_size));
 
-  ASSERT_NE(getHashLocFromLayer(5, 17), getHashLocFromLayer(17, 5));
-  ASSERT_NE(getHashLocFromLayer(5, 17), getHashLocFromLayer(5, 18));
+  ASSERT_NE(getHashLocFromLayer(/* token= */ 5, /* lookup_index= */ 17),
+            getHashLocFromLayer(/* token= */ 17, /* lookup_index= */ 5));
+  ASSERT_NE(getHashLocFromLayer(/* token= */ 5, /* lookup_index= */ 17),
+            getHashLocFromLayer(/* token= */ 5, /* lookup_index= */ 18));
 }
 
+// Check that for a single token the embeddings contain the data at the correct
+// index in the embedding block.
 TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
   std::vector<uint32_t> tokens = {6, 18, 3};
 
@@ -83,6 +89,8 @@ TEST_F(EmbeddingLayerTestFixture, SingleTokenEmbedding) {
   }
 }
 
+// Check that with multiple tokens per input, the embedding is the sum of the
+// contents of the embedding block at each hash location.
 TEST_F(EmbeddingLayerTestFixture, MultipleTokenEmbedding) {
   std::vector<std::vector<uint32_t>> tokens = {
       {7, 4, 18}, {98, 34, 55, 2}, {9, 24}, {61, 75, 11}};
@@ -150,11 +158,15 @@ TEST_F(EmbeddingLayerTestFixture, Backpropagation) {
   }
 }
 
+// Test that the disjoint ranges are computed correctly for gradient updates,
+// based off of the areas of the embedding block that are used.
 TEST_F(EmbeddingLayerTestFixture, UpdateRangeCorrectness) {
   std::vector<std::vector<uint64_t>> test_hash_locs = {
       {4, 21, 68, 32, 99, 45, 2, 79}, {23, 82, 20, 32, 86, 63, 54, 47}};
 
-  EmbeddingLayerConfig config(4, 5, 7);
+  EmbeddingLayerConfig config(/* num_embedding_lookups= */ 4,
+                              /* lookup_size= */ 5,
+                              /* log_embedding_block_size= */ 7);
   EmbeddingLayer layer(config);
 
   std::vector<std::pair<uint64_t, uint64_t>> ranges =

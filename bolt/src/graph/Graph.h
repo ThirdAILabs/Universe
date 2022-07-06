@@ -2,6 +2,7 @@
 
 #include "ExecutionConfig.h"
 #include "Node.h"
+#include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
@@ -15,9 +16,6 @@
 #include <vector>
 
 namespace thirdai::bolt {
-
-class Input;
-using InputPtr = std::shared_ptr<Input>;
 
 class BoltGraph {
  public:
@@ -68,7 +66,14 @@ class BoltGraph {
       // Other prediction parameters
       const PredictConfig& predict_config);
 
-  const std::vector<NodePtr>& getNodeTraversalOrder() const { return _nodes; }
+  std::vector<NodePtr> getNodeTraversalOrder() const {
+    std::vector<NodePtr> nodes;
+    nodes.insert(nodes.end(), _inputs.begin(), _inputs.end());
+    nodes.insert(nodes.end(), _token_inputs.begin(), _token_inputs.end());
+    nodes.insert(nodes.end(), _nodes.begin(), _nodes.end());
+
+    return nodes;
+  }
 
   std::string summarize(bool print, bool detailed) const;
 
@@ -89,10 +94,10 @@ class BoltGraph {
   void setInputs(BATCH_T& batch_inputs);
 
   // Computes the forward pass through the graph.
-  void forward(uint32_t batch_index, const BoltVector* labels);
+  void forward(uint32_t vec_index, const BoltVector* labels);
 
   // Computes the backward pass through the graph.
-  void backpropagate(uint32_t batch_index);
+  void backpropagate(uint32_t vec_index);
 
   void prepareToProcessBatches(uint32_t batch_size, bool use_sparsity);
 

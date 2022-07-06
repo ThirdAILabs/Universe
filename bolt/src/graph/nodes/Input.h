@@ -138,4 +138,6 @@ class Input final : public Node {
   uint32_t _expected_input_dim;
 };
 
+using InputPtr = std::shared_ptr<Input>;
+
 }  // namespace thirdai::bolt

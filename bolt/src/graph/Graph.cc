@@ -33,13 +33,7 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
   traverseGraph();
 
   LayerNameManager name_manager;
-  for (auto& input : _inputs) {
-    input->compile(name_manager);
-  }
-  for (auto& token_input : _token_inputs) {
-    token_input->compile(name_manager);
-  }
-  for (auto& node : _nodes) {
+  for (auto& node : getNodeTraversalOrder()) {
     node->compile(name_manager);
   }
 
@@ -282,7 +276,7 @@ void BoltGraph::processInferenceBatch(BATCH_T& batch_inputs,
 // in which BATCH_T is equivalent to BoltBatch.
 template <>
 void BoltGraph::setInputs(BoltBatch& batch_inputs) {
-  // If we are using a BoltBatch we assume there is only one input. This is
+  // If we are using a BoltBatch then there is only one input. This is
   // checked in the verifyInputForGraph() function.
   _inputs[0]->setInputs(&batch_inputs);
 }
@@ -291,21 +285,21 @@ void BoltGraph::setInputs(BoltBatch& batch_inputs) {
 // in which BATCH_T is equivalent to BoltTokenBatch.
 template <>
 void BoltGraph::setInputs(dataset::BoltTokenBatch& batch_inputs) {
-  // If we are using a BoltBatch we assume there is only one token input. This
+  // If we are using a BoltTokenBatch then there is only one token input. This
   // is checked in the verifyInputForGraph() function.
   _token_inputs[0]->setTokenInputs(&batch_inputs);
 }
 
-void BoltGraph::forward(uint32_t batch_index, const BoltVector* labels) {
+void BoltGraph::forward(uint32_t vec_index, const BoltVector* labels) {
   for (uint32_t i = 0; i < _nodes.size() - 1; i++) {
-    _nodes[i]->forward(batch_index, nullptr);
+    _nodes[i]->forward(vec_index, nullptr);
   }
-  _nodes.back()->forward(batch_index, labels);
+  _nodes.back()->forward(vec_index, labels);
 }
 
-void BoltGraph::backpropagate(uint32_t batch_index) {
+void BoltGraph::backpropagate(uint32_t vec_index) {
   for (auto node_itr = _nodes.rbegin(); node_itr != _nodes.rend(); ++node_itr) {
-    (*node_itr)->backpropagate(batch_index);
+    (*node_itr)->backpropagate(vec_index);
   }
 }
 

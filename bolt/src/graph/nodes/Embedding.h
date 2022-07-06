@@ -23,14 +23,14 @@ class EmbeddingNode final : public Node {
         _token_input(nullptr) {}
 
   uint32_t outputDim() const final {
-    return _embedding_layer->getEmbeddingDim();
+    return _config.num_embedding_lookups * _config.lookup_size;
   }
 
   void addInput(TokenInputPtr input) {
     if (getState() != NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
-          "Embedding expected to have exactly one input, and "
-          "addInput cannot be called twice.");
+          "EmbeddingNodes have exactly one TokenInput node as input and the "
+          "addInput function cannot be called more than once.");
     }
 
     _token_input = std::move(input);
@@ -74,36 +74,30 @@ class EmbeddingNode final : public Node {
     _outputs = _embedding_layer->createBatchState(batch_size);
   }
 
-  void forwardImpl(uint32_t batch_index, const BoltVector* labels) final {
+  void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
     (void)labels;
 
-    assert(getState() == NodeState::PreparedForBatchProcessing);
-
     _embedding_layer->forward(
-        /* batch_index= */ batch_index,
-        /* tokens= */ _token_input->getTokens(batch_index),
-        /* output= */ (*_outputs)[batch_index]);
+        /* vec_index= */ vec_index,
+        /* tokens= */ _token_input->getTokens(vec_index),
+        /* output= */ (*_outputs)[vec_index]);
   }
 
-  void backpropagateImpl(uint32_t batch_index) final {
-    assert(getState() == NodeState::PreparedForBatchProcessing);
-
+  void backpropagateImpl(uint32_t vec_index) final {
     _embedding_layer->backpropagate(
-        /* batch_index= */ batch_index,
-        /* output= */ (*_outputs)[batch_index]);
+        /* vec_index= */ vec_index,
+        /* output= */ (*_outputs)[vec_index]);
   }
 
   void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
-    assert(getState() == NodeState::PreparedForBatchProcessing);
-
     _embedding_layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA2,
                                        EPS);
   }
 
-  BoltVector& getOutputVectorImpl(uint32_t batch_index) final {
+  BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
     assert(getState() == NodeState::PreparedForBatchProcessing);
 
-    return (*_outputs)[batch_index];
+    return (*_outputs)[vec_index];
   }
 
   void cleanupAfterBatchProcessingImpl() final { _outputs = std::nullopt; }
@@ -126,11 +120,17 @@ class EmbeddingNode final : public Node {
     _embedding_layer->buildLayerSummary(summary);
   }
 
+  // This field will be a nullptr except for when the node is in the
+  // PrepareForBatchProcessing state.
   std::shared_ptr<EmbeddingLayer> _embedding_layer;
+
   EmbeddingLayerConfig _config;
+
+  // This field will be std::nullopt except for when the node is in the
+  // PrepareForBatchProcessing state.
   std::optional<BoltBatch> _outputs;
 
-  std::shared_ptr<TokenInput> _token_input;
+  TokenInputPtr _token_input;
 };
 
 }  // namespace thirdai::bolt

@@ -19,8 +19,8 @@ class TokenInput : public Node {
 
   void setTokenInputs(dataset::BoltTokenBatch* tokens) { _tokens = tokens; }
 
-  const std::vector<uint32_t>& getTokens(uint32_t batch_index) {
-    return (*_tokens)[batch_index];
+  const std::vector<uint32_t>& getTokens(uint32_t vec_index) {
+    return (*_tokens)[vec_index];
   }
 
   uint32_t outputDim() const final {

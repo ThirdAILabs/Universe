@@ -16,6 +16,7 @@ namespace thirdai::bolt::tests {
 
 static constexpr uint32_t num_batches = 100;
 static constexpr uint32_t batch_size = 100;
+static constexpr uint32_t seed = 24902;
 
 // This generates a dataset of random numbers whose label is 0 if even and 1 if
 // odd. This tests the embedding layers ability to essentially memorize the
@@ -28,7 +29,7 @@ genDataset() {
   std::vector<uint32_t> tokens(dataset_size);
 
   std::iota(tokens.begin(), tokens.end(), 1);
-  std::shuffle(tokens.begin(), tokens.end(), std::mt19937(24902));
+  std::shuffle(tokens.begin(), tokens.end(), std::mt19937(seed));
 
   std::vector<dataset::BoltTokenBatch> data;
   std::vector<BoltBatch> labels;
