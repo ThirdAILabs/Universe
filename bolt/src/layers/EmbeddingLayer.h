@@ -72,7 +72,7 @@ class EmbeddingLayer {
   }
 
   uint64_t retrieveHashLoc(uint32_t vec_index, uint32_t lookup_index,
-                      uint32_t token_index, uint32_t num_tokens) {
+                           uint32_t token_index, uint32_t num_tokens) {
     return _hash_locs[vec_index]
                      [getHashLocIndex(lookup_index, token_index, num_tokens)];
   }
