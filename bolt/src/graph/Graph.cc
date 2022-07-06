@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <chrono>
 #include <optional>
+#include <ostream>
 #include <queue>
 #include <stdexcept>
 #include <type_traits>
@@ -18,27 +19,37 @@
 
 namespace thirdai::bolt {
 
-void BoltGraph::compile(std::shared_ptr<LossFunction> loss) {
+void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
+                        bool print_when_done) {
   if (_output == nullptr) {
     throw exceptions::GraphCompilationFailure(
         "Output NodePtr cannot be a nullptr.");
   }
 
-  _loss = std::move(loss);
+  _compilation_state = {std::move(loss)};
 
   verifyGraphProperties();
 
   traverseGraph();
 
+  LayerNameManager name_manager;
+  for (auto& input : _inputs) {
+    input->compile(name_manager);
+  }
   for (auto& node : _nodes) {
-    node->initializeParameters();
+    node->compile(name_manager);
   }
 
+  std::unordered_map<std::string, uint32_t> layer_type_name_to_count;
   for (auto& node : _nodes) {
     auto node_layers = node->getInternalFullyConnectedLayers();
     _internal_fully_connected_layers.insert(
         _internal_fully_connected_layers.end(), node_layers.begin(),
         node_layers.end());
+  }
+
+  if (print_when_done) {
+    summarize(/* print = */ true, /* detailed = */ false);
   }
 }
 
@@ -56,6 +67,9 @@ MetricData BoltGraph::train(
     const dataset::BoltDatasetPtr& train_labels,
     const TrainConfig& train_config) {
   verifyInputForGraph(train_data);
+  if (!graphCompiled()) {
+    throw std::logic_error("Graph must be compiled before training");
+  }
 
   // TODO(Nicholas): Switch to batch_size property in dataset.
   uint32_t max_batch_size = train_data->at(0).getBatchSize();
@@ -135,6 +149,7 @@ void BoltGraph::processTrainingBatch(BATCH_T& batch_inputs,
                                      const BoltBatch& batch_labels,
                                      float learning_rate,
                                      MetricAggregator& metrics) {
+  assert(_compilation_state.has_value());
   setInputs(batch_inputs);
 
 #pragma omp parallel for default(none) \
@@ -142,8 +157,9 @@ void BoltGraph::processTrainingBatch(BATCH_T& batch_inputs,
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
     forward(vec_id, &batch_labels[vec_id]);
 
-    _loss->lossGradients(_output->getOutputVector(vec_id), batch_labels[vec_id],
-                         batch_inputs.getBatchSize());
+    _compilation_state->_loss->lossGradients(_output->getOutputVector(vec_id),
+                                             batch_labels[vec_id],
+                                             batch_inputs.getBatchSize());
 
     backpropagate(vec_id);
 
@@ -182,6 +198,10 @@ InferenceMetricData BoltGraph::predict(
     // Other prediction parameters
     const PredictConfig& predict_config) {
   verifyInputForGraph(test_data);
+
+  if (!graphCompiled()) {
+    throw std::logic_error("Graph must be compiled before inference");
+  }
 
   bool compute_metrics = test_labels != nullptr;
 
@@ -395,11 +415,11 @@ void BoltGraph::verifyGraphProperties() {
 
   GraphPropertyChecks::verifyOutputIsNotConcatLayer(_output);
 
-  GraphPropertyChecks::verifySoftmaxIsUsedWithCategoricalCrossEntropy(_output,
-                                                                      _loss);
+  GraphPropertyChecks::verifySoftmaxIsUsedWithCategoricalCrossEntropy(
+      _output, _compilation_state->_loss);
 
-  GraphPropertyChecks::verifySigmoidIsUsedWithBinaryCrossEntropy(_output,
-                                                                 _loss);
+  GraphPropertyChecks::verifySigmoidIsUsedWithBinaryCrossEntropy(
+      _output, _compilation_state->_loss);
 }
 
 void BoltGraph::rebuildHashTables() {
@@ -412,6 +432,26 @@ void BoltGraph::reconstructHashFunctions() {
   for (auto& layer : _internal_fully_connected_layers) {
     layer->reBuildHashFunction();
   }
+}
+
+std::string BoltGraph::summarize(bool print, bool detailed) const {
+  if (!graphCompiled()) {
+    throw std::logic_error("Cannot summarize the graph before it is compiled.");
+  }
+  std::stringstream summary;
+  summary << "\n";
+  summary << "======================= Bolt Model =======================\n";
+  for (const auto& input : _inputs) {
+    input->summarize(summary, detailed);
+  }
+  for (const auto& node : _nodes) {
+    node->summarize(summary, detailed);
+  }
+  summary << "============================================================\n";
+  if (print) {
+    std::cout << summary.str() << std::flush;
+  }
+  return summary.str();
 }
 
 }  // namespace thirdai::bolt

@@ -26,15 +26,15 @@ class EmbeddingNode final : public Node {
     return _embedding_layer->getEmbeddingDim();
   }
 
-  uint32_t numNonzerosInOutput() const final {
+  uint32_t numNonzerosInOutputImpl() const final {
     // The embedding is dense so we can just return the result of outputDim.
     return outputDim();
   }
 
-  std::vector<NodePtr> getPredecessors() const final { return {}; }
+  std::vector<NodePtr> getPredecessorsImpl() const final { return {}; }
 
   void addInput(TokenInputPtr input) {
-    if (predecessorsSet()) {
+    if (getState() != NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
           "Embedding expected to have exactly one input, and "
           "addInput cannot be called twice.");
@@ -44,14 +44,16 @@ class EmbeddingNode final : public Node {
   }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
-  getInternalFullyConnectedLayers() const final {
+  getInternalFullyConnectedLayersImpl() const final {
     return {};
   }
 
   bool isInputNode() const final { return false; }
 
+  std::string type() const final { return "embedding"; }
+
  private:
-  void initializeParametersImpl() final {
+  void compileImpl() final {
     _embedding_layer = std::make_shared<EmbeddingLayer>(_config);
   }
 
@@ -97,13 +99,12 @@ class EmbeddingNode final : public Node {
 
   void cleanupAfterBatchProcessingImpl() final { _outputs = std::nullopt; }
 
-  bool predecessorsSet() const final { return _token_input != nullptr; }
+  NodeState getState() const final { return NodeState::Constructed; }
 
-  bool parametersInitialized() const final {
-    return _embedding_layer != nullptr;
+  void summarizeImpl(std::stringstream& summary, bool detailed) const final {
+    summary << "Embedding:";
+    (void)detailed;
   }
-
-  bool preparedForBatchProcessing() const final { return _outputs.has_value(); }
 
   std::shared_ptr<EmbeddingLayer> _embedding_layer;
   EmbeddingLayerConfig _config;

@@ -60,8 +60,9 @@ class NodeStateMachineTest {
   }
 
   void moveNodeState2ToState3() {
+    LayerNameManager manager;
     ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
-        _node->initializeParameters());
+        _node->compile(manager));
   }
 
   void moveNodeState3ToState4() {
@@ -78,8 +79,9 @@ class NodeStateMachineTest {
 
   // Methods for testing invalid calls within each state.
   void testBadCallsInState1() {
-    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-        _node->initializeParameters(), exceptions::NodeStateMachineError);
+    LayerNameManager manager;
+    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
+        _node->compile(manager), exceptions::NodeStateMachineError);
 
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
         _node->prepareForBatchProcessing(
@@ -111,8 +113,9 @@ class NodeStateMachineTest {
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
         setNodePrecessors({_mock_node}), exceptions::NodeStateMachineError);
 
-    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-        _node->initializeParameters(), exceptions::NodeStateMachineError);
+    LayerNameManager manager;
+    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
+        _node->compile(manager), exceptions::NodeStateMachineError);
 
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
         _node->cleanupAfterBatchProcessing(),
@@ -123,8 +126,9 @@ class NodeStateMachineTest {
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
         setNodePrecessors({_mock_node}), exceptions::NodeStateMachineError);
 
-    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
-        _node->initializeParameters(), exceptions::NodeStateMachineError);
+    LayerNameManager manager;
+    ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
+        _node->compile(manager), exceptions::NodeStateMachineError);
 
     ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
         _node->prepareForBatchProcessing(
