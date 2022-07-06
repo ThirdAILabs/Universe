@@ -116,7 +116,7 @@ class FullyConnectedNode final
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
-        "Node is in an invalid internal state");
+        "FullyConnectedNode is in an invalid internal state");
   }
 
   std::shared_ptr<FullyConnectedLayer> _layer;

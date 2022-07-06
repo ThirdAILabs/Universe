@@ -108,7 +108,7 @@ class Input final : public Node {
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
-        "Node is in an invalid internal state");
+        "InputNode is in an invalid internal state");
   }
 
   void checkDimForInput(const BoltVector& vec) const {

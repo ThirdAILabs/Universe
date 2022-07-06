@@ -15,7 +15,7 @@ namespace thirdai::bolt {
  */
 class TokenInput : public Node {
  public:
-  TokenInput() {}
+  TokenInput() : _tokens(nullptr), _compiled(false) {}
 
   void setTokenInputs(dataset::BoltTokenBatch* tokens) { _tokens = tokens; }
 
@@ -90,7 +90,7 @@ class TokenInput : public Node {
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
-        "Node is in an invalid internal state");
+        "TokenInputNode is in an invalid internal state");
   }
 
   dataset::BoltTokenBatch* _tokens;

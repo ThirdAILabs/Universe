@@ -58,7 +58,7 @@ class EmbeddingNode final : public Node {
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
-        "Node is in an invalid internal state");
+        "EmbeddingNode is in an invalid internal state");
   }
 
  private:
@@ -77,7 +77,7 @@ class EmbeddingNode final : public Node {
   void forwardImpl(uint32_t batch_index, const BoltVector* labels) final {
     (void)labels;
 
-    assert(preparedForBatchProcessing());
+    assert(getState() == NodeState::PreparedForBatchProcessing);
 
     _embedding_layer->forward(
         /* batch_index= */ batch_index,
@@ -86,7 +86,7 @@ class EmbeddingNode final : public Node {
   }
 
   void backpropagateImpl(uint32_t batch_index) final {
-    assert(preparedForBatchProcessing());
+    assert(getState() == NodeState::PreparedForBatchProcessing);
 
     _embedding_layer->backpropagate(
         /* batch_index= */ batch_index,
@@ -94,14 +94,14 @@ class EmbeddingNode final : public Node {
   }
 
   void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
-    assert(preparedForBatchProcessing());
+    assert(getState() == NodeState::PreparedForBatchProcessing);
 
     _embedding_layer->updateParameters(learning_rate, batch_cnt, BETA1, BETA2,
                                        EPS);
   }
 
   BoltVector& getOutputVectorImpl(uint32_t batch_index) final {
-    assert(preparedForBatchProcessing());
+    assert(getState() == NodeState::PreparedForBatchProcessing);
 
     return (*_outputs)[batch_index];
   }

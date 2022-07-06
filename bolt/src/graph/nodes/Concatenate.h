@@ -276,7 +276,7 @@ class ConcatenateNode final
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
-        "Node is in an invalid internal state");
+        "ConcatenateNode is in an invalid internal state");
   }
 
   struct GraphState {
