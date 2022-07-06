@@ -41,6 +41,8 @@ class FullyConnectedNode final
 
   ActivationFunction getActivationFunction() const { return _config.act_func; }
 
+  float getSparsity() { return _config.getSparsity(); }
+
  private:
   void compileImpl() final {
     _layer = std::make_shared<FullyConnectedLayer>(_config,
