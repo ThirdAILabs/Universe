@@ -10,6 +10,8 @@
 
 namespace thirdai::bolt::tests {
 
+uint32_t n_classes = 100;
+
 class ModelWithLayers {
  public:
   ModelWithLayers() {
@@ -59,7 +61,7 @@ class ModelWithLayers {
 };
 
 TEST(SaveLoadDAGTest, SaveAndLoadGraph) {
-  auto data = genDataset(/* noisy_dataset= */ false);
+  auto data = genDataset(/* n_classes =*/n_classes, /* noisy_dataset= */ false);
 
   ModelWithLayers model;
 
@@ -88,7 +90,7 @@ TEST(SaveLoadDAGTest, SaveAndLoadGraph) {
 }
 
 TEST(SaveLoadDAGTest, SaveFullyConnectedParameters) {
-  auto data = genDataset(/* noisy_dataset= */ false);
+  auto data = genDataset(/* n_classes =*/n_classes, /* noisy_dataset= */ false);
 
   ModelWithLayers model;
 

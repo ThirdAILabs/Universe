@@ -12,7 +12,7 @@
 
 namespace thirdai::bolt::tests {
 
-class BoltHashFunctionTestFixture : public testing::Test {};
+uint32_t n_classes = 100;
 
 static void testSimpleDatasetHashFunction(const std::string& hash_function) {
   // As we train for more epochs, the model should learn better using these hash
@@ -29,7 +29,8 @@ static void testSimpleDatasetHashFunction(const std::string& hash_function) {
            n_classes, ActivationFunction::Softmax)},
       n_classes);
 
-  auto data = genDataset(/* noisy_dataset = */ false);
+  auto data =
+      genDataset(/* n_classes= */ n_classes, /* noisy_dataset = */ false);
 
   // train the network for two epochs
   network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
@@ -61,17 +62,17 @@ static void testSimpleDatasetHashFunction(const std::string& hash_function) {
 }
 
 // test for DWTA Hash Function
-TEST_F(BoltHashFunctionTestFixture, TrainSimpleDatasetDWTA) {
+TEST(BoltHashFunctionTest, TrainSimpleDatasetDWTA) {
   testSimpleDatasetHashFunction("DWTA");
 }
 
 // test for SRP Hash Function
-TEST_F(BoltHashFunctionTestFixture, TrainSimpleDatasetSRP) {
+TEST(BoltHashFunctionTest, TrainSimpleDatasetSRP) {
   testSimpleDatasetHashFunction("SRP");
 }
 
 // test for FastSRP Hash Function
-TEST_F(BoltHashFunctionTestFixture, TrainSimpleDatasetFastSRP) {
+TEST(BoltHashFunctionTest, TrainSimpleDatasetFastSRP) {
   testSimpleDatasetHashFunction("FastSRP");
 }
 

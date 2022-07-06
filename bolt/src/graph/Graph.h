@@ -77,6 +77,9 @@ class BoltGraph {
   NodePtr getNodeByName(const std::string& node_name) const;
 
  private:
+  // Private constructor for cereal.
+  BoltGraph() {}
+
   template <typename BATCH_T>
   void processTrainingBatch(BATCH_T& batch_inputs,
                             const BoltBatch& batch_labels, float learning_rate,
@@ -119,9 +122,6 @@ class BoltGraph {
   void rebuildHashTables();
 
   void reconstructHashFunctions();
-
-  // Private constructor for cereal.
-  BoltGraph() {}
 
   friend class cereal::access;
   template <class Archive>
