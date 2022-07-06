@@ -351,8 +351,7 @@ class ConcatenateNode final
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Node>(this), _graph_state,
-            _compiled);
+    archive(cereal::base_class<Node>(this), _graph_state, _compiled);
   }
 
   std::optional<GraphState> _graph_state;

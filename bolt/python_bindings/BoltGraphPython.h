@@ -8,4 +8,4 @@ namespace thirdai::bolt::python {
 
 void createBoltGraphSubmodule(py::module_& bolt_submodule);
 
-} // namespace thirdai::bolt::python
+}  // namespace thirdai::bolt::python
