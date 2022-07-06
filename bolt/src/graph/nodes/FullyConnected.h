@@ -8,6 +8,7 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <exceptions/src/Exceptions.h>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -31,7 +32,7 @@ class FullyConnectedNode final
         _predecessor(nullptr) {}
 
   std::shared_ptr<FullyConnectedNode> addPredecessor(NodePtr node) {
-    if (predecessorsSet()) {
+    if (getState() != NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
           "FullyConnectedNode expected to have exactly one predecessor, and "
           "addPredecessor cannot be called twice.");
@@ -42,37 +43,6 @@ class FullyConnectedNode final
   }
 
   uint32_t outputDim() const final { return _config.dim; }
-
-  uint32_t numNonzerosInOutput() const final {
-    if (!preparedForBatchProcessing()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call numNonzerosInOutput before prepareForBatchProcessing in "
-          "FullyConnectedNode.");
-    }
-
-    return (*_outputs)[0].len;
-  }
-
-  std::vector<NodePtr> getPredecessors() const final {
-    if (!predecessorsSet()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call getPredecessors before "
-          "setting predecessors in FullyConnectedNode.");
-    }
-
-    return {_predecessor};
-  }
-
-  std::vector<std::shared_ptr<FullyConnectedLayer>>
-  getInternalFullyConnectedLayers() const final {
-    if (!parametersInitialized()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call getInternalFullyConnectedLayers before "
-          "initializeParameters in FullyConnectedNode.");
-    }
-
-    return {_layer};
-  }
 
   bool isInputNode() const final { return false; }
 
@@ -127,9 +97,14 @@ class FullyConnectedNode final
   }
 
  private:
-  void initializeParametersImpl() final {
+  void compileImpl() final {
     _layer = std::make_shared<FullyConnectedLayer>(_config,
                                                    _predecessor->outputDim());
+  }
+
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayersImpl() const final {
+    return {_layer};
   }
 
   void prepareForBatchProcessingImpl(uint32_t batch_size,
@@ -138,6 +113,8 @@ class FullyConnectedNode final
     _outputs =
         _layer->createBatchState(batch_size, /* use_sparsity=*/use_sparsity);
   }
+
+  uint32_t numNonzerosInOutputImpl() const final { return (*_outputs)[0].len; }
 
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
     _layer->forward(_predecessor->getOutputVector(vec_index),
@@ -166,11 +143,34 @@ class FullyConnectedNode final
 
   void cleanupAfterBatchProcessingImpl() final { _outputs = std::nullopt; }
 
-  bool predecessorsSet() const final { return _predecessor != nullptr; }
+  std::vector<NodePtr> getPredecessorsImpl() const final {
+    return {_predecessor};
+  }
 
-  bool parametersInitialized() const final { return _layer != nullptr; }
+  void summarizeImpl(std::stringstream& summary, bool detailed) const final {
+    summary << _predecessor->name() << " -> " << name()
+            << " (FullyConnected): ";
+    _layer->buildLayerSummary(summary, detailed);
+  }
 
-  bool preparedForBatchProcessing() const final { return _outputs.has_value(); }
+  std::string type() const final { return "fc"; }
+
+  NodeState getState() const final {
+    if (_predecessor == nullptr && _layer == nullptr && !_outputs.has_value()) {
+      return NodeState::Constructed;
+    }
+    if (_predecessor != nullptr && _layer == nullptr && !_outputs.has_value()) {
+      return NodeState::PredecessorsSet;
+    }
+    if (_predecessor != nullptr && _layer != nullptr && !_outputs.has_value()) {
+      return NodeState::Compiled;
+    }
+    if (_predecessor != nullptr && _layer != nullptr && _outputs.has_value()) {
+      return NodeState::PreparedForBatchProcessing;
+    }
+    throw exceptions::NodeStateMachineError(
+        "Node is in an invalid internal state");
+  }
 
   // Private constructor for cereal. Must create dummy config since no default
   // constructor exists for layer config.

@@ -21,11 +21,11 @@ class ConcatenateNode final
     : public Node,
       public std::enable_shared_from_this<ConcatenateNode> {
  public:
-  ConcatenateNode() : _parameters_initialized(false){};
+  ConcatenateNode() : _compiled(false){};
 
   std::shared_ptr<ConcatenateNode> setConcatenatedNodes(
       const std::vector<NodePtr>& nodes) {
-    if (predecessorsSet()) {
+    if (getState() != NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
           "Have already set the incoming concatenated nodes for this "
           "concatenation layer");
@@ -53,7 +53,7 @@ class ConcatenateNode final
   }
 
   uint32_t outputDim() const final {
-    if (!predecessorsSet()) {
+    if (getState() == NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
           "Cannot get the output dim for this concatenation layer because the "
           "incoming concatenated nodes have not been set yet");
@@ -61,38 +61,15 @@ class ConcatenateNode final
     return _graph_state->concatenated_dense_dim;
   }
 
-  uint32_t numNonzerosInOutput() const final {
-    if (!preparedForBatchProcessing()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot get the number of nonzeros for this concatenation layer "
-          "because the node is not prepared for batch processing");
-    }
-    return _batch_processing_state->num_nonzeros_in_concatenation;
-  }
-
-  std::vector<NodePtr> getPredecessors() const final {
-    if (!predecessorsSet()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot get the predecessors for this concatenation layer because "
-          "they have not been set yet");
-    }
-    return _graph_state->inputs;
-  }
-
-  std::vector<std::shared_ptr<FullyConnectedLayer>>
-  getInternalFullyConnectedLayers() const final {
-    if (!predecessorsSet()) {
-      throw exceptions::NodeStateMachineError(
-          "getInternalFullyConnectedLayers method should not be called before "
-          "predecessors have been set");
-    }
-    return {};
-  }
-
   bool isInputNode() const final { return false; }
 
  private:
-  void initializeParametersImpl() final { _parameters_initialized = true; }
+  void compileImpl() final { _compiled = true; }
+
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayersImpl() const final {
+    return {};
+  }
 
   void prepareForBatchProcessingImpl(uint32_t batch_size,
                                      bool use_sparsity) final {
@@ -113,15 +90,15 @@ class ConcatenateNode final
         /* neuron_index_offsets = */ _graph_state->neuron_index_offsets,
         /* batch_size = */ batch_size);
 
-    // Unfortunately because this is a struct, clang tidy won't check that the
-    // arguments are named correctly. C++ 20 has native support for named enum
-    // creation but we use C++ 17 for now. Just be careful if you change the
-    // struct definition!
     uint32_t num_nonzeros_in_concatenation = positional_offsets.back();
     _batch_processing_state = BatchProcessingState(
         /* positional_offsets = */ std::move(positional_offsets),
         /* outputs = */ std::move(new_concatenated_batch),
         /* num_nonzeros_in_concatenation = */ num_nonzeros_in_concatenation);
+  }
+
+  uint32_t numNonzerosInOutputImpl() const final {
+    return _batch_processing_state->num_nonzeros_in_concatenation;
   }
 
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
@@ -201,13 +178,24 @@ class ConcatenateNode final
     _batch_processing_state = std::nullopt;
   }
 
-  bool predecessorsSet() const final { return _graph_state.has_value(); }
-
-  bool parametersInitialized() const final { return _parameters_initialized; }
-
-  bool preparedForBatchProcessing() const final {
-    return _batch_processing_state.has_value();
+  std::vector<NodePtr> getPredecessorsImpl() const final {
+    return _graph_state->inputs;
   }
+
+  void summarizeImpl(std::stringstream& summary, bool detailed) const final {
+    (void)detailed;
+    const auto& inputs = _graph_state->inputs;
+    summary << "(";
+    for (uint32_t i = 0; i < inputs.size(); i++) {
+      summary << inputs.at(i)->name();
+      if (i != inputs.size() - 1) {
+        summary << ", ";
+      }
+    }
+    summary << ") -> " << name() << " (Concatenate)\n";
+  }
+
+  std::string type() const final { return "concat"; }
 
   static void verifyNoInputNodes(const std::vector<NodePtr>& nodes) {
     for (const auto& node : nodes) {
@@ -277,7 +265,23 @@ class ConcatenateNode final
     }
   }
 
-  // TODO(josh): Use similar optional state pattern in other node subclasses
+  NodeState getState() const final {
+    if (!_graph_state && !_compiled && !_batch_processing_state) {
+      return NodeState::Constructed;
+    }
+    if (_graph_state && !_compiled && !_batch_processing_state) {
+      return NodeState::PredecessorsSet;
+    }
+    if (_graph_state && _compiled && !_batch_processing_state) {
+      return NodeState::Compiled;
+    }
+    if (_graph_state && _compiled && _batch_processing_state) {
+      return NodeState::PreparedForBatchProcessing;
+    }
+    throw exceptions::NodeStateMachineError(
+        "Node is in an invalid internal state");
+  }
+
   struct GraphState {
     // Constructor for cereal.
     GraphState() {}
@@ -348,13 +352,11 @@ class ConcatenateNode final
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<Node>(this), _graph_state,
-            _parameters_initialized);
+            _compiled);
   }
 
   std::optional<GraphState> _graph_state;
-  // There are no parameters, but this allows the state machine to have
-  // consistent behavior.
-  bool _parameters_initialized;
+  bool _compiled = false;
   std::optional<BatchProcessingState> _batch_processing_state;
 };
 
