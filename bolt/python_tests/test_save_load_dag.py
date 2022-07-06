@@ -29,17 +29,18 @@ class ModelWithLayers:
 
         self.concat = bolt.graph.Concatenate()([self.hidden1, self.hidden2])
 
-        self.output = bolt.graph.FullyConnected(
-            dim=n_classes, activation="softmax")(self.concat)
+        self.output = bolt.graph.FullyConnected(dim=n_classes, activation="softmax")(
+            self.concat
+        )
 
-        self.model = bolt.graph.Model(
-            inputs=[self.input_layer], output=self.output)
+        self.model = bolt.graph.Model(inputs=[self.input_layer], output=self.output)
 
         self.model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     def train(self, data, labels, epochs):
-        self.model.train_np(data, labels, batch_size=100,
-                            train_config=get_train_config(epochs))
+        self.model.train_np(
+            data, labels, batch_size=100, train_config=get_train_config(epochs)
+        )
 
     def predict(self, data, labels):
         return self.model.predict_np(data, labels, predict_config=get_predict_config())
@@ -64,17 +65,20 @@ def test_save_load_dag():
 
     # Verify accuracy matches.
     test_metrics2 = new_model.predict_np(
-        data, labels, predict_config=get_predict_config())
+        data, labels, predict_config=get_predict_config()
+    )
     assert test_metrics2["categorical_accuracy"] >= 0.9
     assert (
         test_metrics1["categorical_accuracy"] == test_metrics2["categorical_accuracy"]
     )
 
     # Verify accuarcy improves when training new model.
-    new_model.train_np(data, labels, batch_size=100,
-                       train_config=get_train_config(epochs=1))
+    new_model.train_np(
+        data, labels, batch_size=100, train_config=get_train_config(epochs=1)
+    )
     test_metrics3 = new_model.predict_np(
-        data, labels, predict_config=get_predict_config())
+        data, labels, predict_config=get_predict_config()
+    )
     assert test_metrics3["categorical_accuracy"] > test_metrics2["categorical_accuracy"]
 
 
