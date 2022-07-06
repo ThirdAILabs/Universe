@@ -29,7 +29,7 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
         "Output NodePtr cannot be a nullptr.");
   }
 
-  _compilation_state = {std::move(loss)};
+  _loss = std::move(loss);
 
   verifyGraphProperties();
 
@@ -159,9 +159,8 @@ void BoltGraph::processTrainingBatch(BoltBatch& batch_inputs,
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
     forward(vec_id, &batch_labels[vec_id]);
 
-    _compilation_state->_loss->lossGradients(_output->getOutputVector(vec_id),
-                                             batch_labels[vec_id],
-                                             batch_inputs.getBatchSize());
+    _loss->lossGradients(_output->getOutputVector(vec_id), batch_labels[vec_id],
+                         batch_inputs.getBatchSize());
 
     backpropagate(vec_id);
 
@@ -412,11 +411,11 @@ void BoltGraph::verifyGraphProperties() {
 
   GraphPropertyChecks::verifyOutputIsNotConcatLayer(_output);
 
-  GraphPropertyChecks::verifySoftmaxIsUsedWithCategoricalCrossEntropy(
-      _output, _compilation_state->_loss);
+  GraphPropertyChecks::verifySoftmaxIsUsedWithCategoricalCrossEntropy(_output,
+                                                                      _loss);
 
-  GraphPropertyChecks::verifySigmoidIsUsedWithBinaryCrossEntropy(
-      _output, _compilation_state->_loss);
+  GraphPropertyChecks::verifySigmoidIsUsedWithBinaryCrossEntropy(_output,
+                                                                 _loss);
 }
 
 void BoltGraph::rebuildHashTables() {
@@ -433,8 +432,8 @@ void BoltGraph::reconstructHashFunctions() {
 
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {
-  archive(_nodes, _output, _inputs, _internal_fully_connected_layers,
-          _compilation_state, _epoch_count, _batch_cnt);
+  archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
+          _epoch_count, _batch_cnt);
 }
 
 void BoltGraph::save(const std::string& filename) {

@@ -125,7 +125,7 @@ class BoltGraph {
   template <class Archive>
   void serialize(Archive& archive);
 
-  bool graphCompiled() const { return _compilation_state.has_value(); }
+  bool graphCompiled() const { return _loss != nullptr; }
 
   // List of nodes(layers) in the order in which they should be computed.
   std::vector<NodePtr> _nodes;
@@ -143,18 +143,7 @@ class BoltGraph {
   std::vector<std::shared_ptr<FullyConnectedLayer>>
       _internal_fully_connected_layers;
 
-  struct CompilationState {
-    // The loss function the graph was compiled with.
-    std::shared_ptr<LossFunction> _loss;
-
-    friend cereal::access;
-    template <class Archive>
-    void serialize(Archive& archive) {
-      archive(_loss);
-    }
-  };
-
-  std::optional<CompilationState> _compilation_state;
+  std::shared_ptr<LossFunction> _loss;
 
   uint32_t _epoch_count;
   uint32_t _batch_cnt;
