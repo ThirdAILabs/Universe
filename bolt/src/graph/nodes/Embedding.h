@@ -107,7 +107,9 @@ class EmbeddingNode final : public Node {
     return outputDim();
   }
 
-  std::vector<NodePtr> getPredecessorsImpl() const final { return {}; }
+  std::vector<NodePtr> getPredecessorsImpl() const final {
+    return {_token_input};
+  }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
   getInternalFullyConnectedLayersImpl() const final {

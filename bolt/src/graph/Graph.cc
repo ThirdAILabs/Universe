@@ -326,6 +326,10 @@ void BoltGraph::traverseGraph() {
   std::queue<NodePtr> queue;
   std::unordered_set<NodePtr> visited;
 
+  std::unordered_set<NodePtr> all_inputs;
+  all_inputs.insert(_inputs.begin(), _inputs.end());
+  all_inputs.insert(_token_inputs.begin(), _token_inputs.end());
+
   std::unordered_map<NodePtr, int32_t> successor_counts = getSuccessorCounts();
 
   queue.push(_output);
@@ -344,7 +348,19 @@ void BoltGraph::traverseGraph() {
         }
       }
     }
+    if (next->isInputNode()) {
+      if (!all_inputs.count(next)) {
+        throw exceptions::GraphCompilationFailure(
+            "Found input that was not provided in list of input nodes.");
+      }
+      all_inputs.erase(next);
+    }
     queue.pop();
+  }
+
+  if (!all_inputs.empty()) {
+    throw exceptions::GraphCompilationFailure(
+        "Not all provided inputs were reached during graph traversal.");
   }
 
   for (auto [node, cnt] : successor_counts) {
