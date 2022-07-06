@@ -26,8 +26,8 @@ class GraphPropertyChecks {
 
   static void verifySoftmaxIsUsedWithCategoricalCrossEntropy(
       const NodePtr& output, const std::shared_ptr<LossFunction>& loss) {
-    FullyConnectedLayerNode* fc_output =
-        dynamic_cast<FullyConnectedLayerNode*>(output.get());
+    FullyConnectedNode* fc_output =
+        dynamic_cast<FullyConnectedNode*>(output.get());
 
     if (fc_output != nullptr) {
       bool is_categorical_cross_entropy =
@@ -45,8 +45,8 @@ class GraphPropertyChecks {
 
   static void verifySigmoidIsUsedWithBinaryCrossEntropy(
       const NodePtr& output, const std::shared_ptr<LossFunction>& loss) {
-    FullyConnectedLayerNode* fc_output =
-        dynamic_cast<FullyConnectedLayerNode*>(output.get());
+    FullyConnectedNode* fc_output =
+        dynamic_cast<FullyConnectedNode*>(output.get());
 
     if (fc_output != nullptr) {
       bool is_binary_cross_entropy =

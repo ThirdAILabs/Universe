@@ -75,6 +75,8 @@ void testConcatForwardAndBackwardPass(
   std::shared_ptr<ConcatenateNode> concat_node =
       std::make_shared<ConcatenateNode>();
   concat_node->setConcatenatedNodes(nodes_to_concatenate);
+  LayerNameManager name_manager;
+  concat_node->compile(name_manager);
   concat_node->prepareForBatchProcessing(/* batch_size = */ 10,
                                          /* use_sparsity = */ sparse);
   concat_node->forward(/* vec_index = */ 3, /* labels = */ nullptr);
