@@ -87,103 +87,10 @@ InferenceMetricData DistributedModel::predictSingleNode(
     float* output_activations, bool use_sparse_inference,
     const std::vector<std::string>& metric_names, bool verbose,
     uint32_t batch_limit) {
-  assert(output_activations != nullptr || output_active_neurons == nullptr);
-  bool compute_metrics = labels != nullptr;
+      return DistributedNetwork.predict(test_data, labels, output_active_neurons,  output_activations, use_sparse_inference, metric_names, verbose, batch_limit);
 
-  uint32_t batch_size = test_data->at(0).getBatchSize();
-
-  uint64_t num_test_batches = std::min(test_data->numBatches(), batch_limit);
-
-  uint64_t inference_output_dim =
-      DistributedNetwork.getInferenceOutputDim(use_sparse_inference);
-
-  MetricAggregator metrics(metric_names, verbose);
-
-  // Because of how the datasets are read we know that all batches will not have
-  // a batch size larger than this so we can just set the batch size here.
-  DistributedNetwork.initializeNetworkState(
-      batch_size, /* use_sparsity= */ use_sparse_inference);
-  BoltBatch outputs = DistributedNetwork.getOutputs(
-      batch_size, /* use_sparsity= */ use_sparse_inference);
-
-  ProgressBar bar(num_test_batches, verbose);
-
-  auto test_start = std::chrono::high_resolution_clock::now();
-  for (uint32_t batch = 0; batch < num_test_batches; batch++) {
-    const bolt::BoltBatch& inputs = test_data->at(batch);
-
-    const BoltBatch* batch_labels =
-        compute_metrics ? &(*labels)[batch] : nullptr;
-
-    uint32_t* batch_active_neurons =
-        output_active_neurons == nullptr
-            ? nullptr
-            : output_active_neurons + batch * batch_size * inference_output_dim;
-
-    float* batch_activations =
-        output_activations == nullptr
-            ? nullptr
-            : output_activations + batch * batch_size * inference_output_dim;
-
-    processTestBatch(inputs, outputs, batch_labels, batch_active_neurons,
-                     batch_activations, inference_output_dim, metrics,
-                     compute_metrics);
-
-    bar.increment();
-  }
-
-  auto test_end = std::chrono::high_resolution_clock::now();
-  int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
-                          test_end - test_start)
-                          .count();
-  if (verbose) {
-    std::cout << std::endl
-              << "Processed " << num_test_batches << " test batches in "
-              << test_time << " milliseconds" << std::endl;
-  }
-
-  metrics.logAndReset();
-
-  auto metric_vals = metrics.getOutputFromInference();
-
-  metric_vals["test_time"] = test_time;
-
-  return metric_vals;
 }
 
-inline void DistributedModel::processTestBatch(
-    const bolt::BoltBatch& batch_inputs, BoltBatch& outputs,
-    const BoltBatch* batch_labels, uint32_t* output_active_neurons,
-    float* output_activations, uint64_t inference_output_dim,
-    MetricAggregator& metrics, bool compute_metrics) {
-#pragma omp parallel for default(none)                                 \
-    shared(batch_inputs, batch_labels, outputs, output_active_neurons, \
-           output_activations, inference_output_dim, metrics, compute_metrics)
-  for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
-    // We set labels to nullptr so that they are not used in sampling during
-    // inference.
-    DistributedNetwork.forward(vec_id, batch_inputs, outputs[vec_id],
-                               /*labels=*/nullptr);
-
-    if (compute_metrics) {
-      metrics.processSample(outputs[vec_id], (*batch_labels)[vec_id]);
-    }
-
-    if (output_activations != nullptr) {
-      assert(outputs[vec_id].len == inference_output_dim);
-      const float* start = outputs[vec_id].activations;
-      uint32_t offset = vec_id * inference_output_dim;
-      std::copy(start, start + outputs[vec_id].len,
-                output_activations + offset);
-      if (!outputs[vec_id].isDense()) {
-        assert(output_active_neurons != nullptr);
-        const uint32_t* start = outputs[vec_id].active_neurons;
-        std::copy(start, start + outputs[vec_id].len,
-                  output_active_neurons + offset);
-      }
-    }
-  }
-}
 
 uint32_t DistributedModel::getInferenceOutputDim(
     bool use_sparse_inference) const {

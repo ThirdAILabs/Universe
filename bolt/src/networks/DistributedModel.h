@@ -80,13 +80,6 @@ class DistributedModel : Model<bolt::BoltBatch> {
       // Limit the number of batches used in the dataset
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
-  inline void processTestBatch(const bolt::BoltBatch& batch_inputs,
-                               BoltBatch& outputs,
-                               const BoltBatch* batch_labels,
-                               uint32_t* output_active_neurons,
-                               float* output_activations,
-                               uint64_t inference_output_dim,
-                               MetricAggregator& metrics, bool compute_metrics);
 
   // Distributed Functions
   uint32_t initTrainSingleNode(
