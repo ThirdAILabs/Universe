@@ -86,7 +86,9 @@ def test_text_classifier_clinc_dataset():
         test_set = test.readlines()
 
     for i in range(10):
-        predicted = classifier.predict_on_sentence(test_set[i + 1][1:-2].split('","')[0])
+        predicted = classifier.predict_on_sentence(
+            test_set[i + 1][1:-2].split('","')[0]
+        )
         assert predicted == predictions[i][:-1]
 
     remove_files()
