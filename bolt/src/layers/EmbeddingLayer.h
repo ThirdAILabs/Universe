@@ -35,6 +35,8 @@ class EmbeddingLayer {
     return BoltBatch(_total_embedding_dim, batch_size, true);
   }
 
+  void buildLayerSummary(std::stringstream& summary) const;
+
   EmbeddingLayer(const EmbeddingLayer&) = delete;
   EmbeddingLayer(EmbeddingLayer&&) = delete;
   EmbeddingLayer& operator=(const EmbeddingLayer&) = delete;

@@ -26,13 +26,6 @@ class EmbeddingNode final : public Node {
     return _embedding_layer->getEmbeddingDim();
   }
 
-  uint32_t numNonzerosInOutputImpl() const final {
-    // The embedding is dense so we can just return the result of outputDim.
-    return outputDim();
-  }
-
-  std::vector<NodePtr> getPredecessorsImpl() const final { return {}; }
-
   void addInput(TokenInputPtr input) {
     if (getState() != NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
@@ -43,14 +36,30 @@ class EmbeddingNode final : public Node {
     _token_input = std::move(input);
   }
 
-  std::vector<std::shared_ptr<FullyConnectedLayer>>
-  getInternalFullyConnectedLayersImpl() const final {
-    return {};
-  }
-
   bool isInputNode() const final { return false; }
 
   std::string type() const final { return "embedding"; }
+
+  NodeState getState() const final {
+    if (_token_input == nullptr && _embedding_layer == nullptr &&
+        !_outputs.has_value()) {
+      return NodeState::Constructed;
+    }
+    if (_token_input != nullptr && _embedding_layer == nullptr &&
+        !_outputs.has_value()) {
+      return NodeState::PredecessorsSet;
+    }
+    if (_token_input != nullptr && _embedding_layer != nullptr &&
+        !_outputs.has_value()) {
+      return NodeState::Compiled;
+    }
+    if (_token_input != nullptr && _embedding_layer != nullptr &&
+        _outputs.has_value()) {
+      return NodeState::PreparedForBatchProcessing;
+    }
+    throw exceptions::NodeStateMachineError(
+        "Node is in an invalid internal state");
+  }
 
  private:
   void compileImpl() final {
@@ -99,11 +108,22 @@ class EmbeddingNode final : public Node {
 
   void cleanupAfterBatchProcessingImpl() final { _outputs = std::nullopt; }
 
-  NodeState getState() const final { return NodeState::Constructed; }
+  uint32_t numNonzerosInOutputImpl() const final {
+    // The embedding is dense so we can just return the result of outputDim.
+    return outputDim();
+  }
+
+  std::vector<NodePtr> getPredecessorsImpl() const final { return {}; }
+
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayersImpl() const final {
+    return {};
+  }
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final {
-    summary << "Embedding:";
     (void)detailed;
+    summary << _token_input->name() << " -> " << name() << ": (Embedding):";
+    _embedding_layer->buildLayerSummary(summary);
   }
 
   std::shared_ptr<EmbeddingLayer> _embedding_layer;

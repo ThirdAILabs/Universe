@@ -36,6 +36,9 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
   for (auto& input : _inputs) {
     input->compile(name_manager);
   }
+  for (auto& token_input : _token_inputs) {
+    token_input->compile(name_manager);
+  }
   for (auto& node : _nodes) {
     node->compile(name_manager);
   }

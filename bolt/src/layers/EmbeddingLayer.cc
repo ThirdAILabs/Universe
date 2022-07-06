@@ -145,4 +145,10 @@ void EmbeddingLayer::initializeLayer(uint32_t new_batch_size) {
   _hash_locs = std::vector<std::vector<uint64_t>>(new_batch_size);
 }
 
+void EmbeddingLayer::buildLayerSummary(std::stringstream& summary) const {
+  summary << " num_embedding_lookups=" << _num_embedding_lookups;
+  summary << ", lookup_size=" << _num_embedding_lookups;
+  summary << ", log_embedding_block_size=" << _log_embedding_block_size;
+}
+
 }  // namespace thirdai::bolt
