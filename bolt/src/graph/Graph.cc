@@ -271,6 +271,25 @@ std::string BoltGraph::summarize(bool print, bool detailed) const {
   return summary.str();
 }
 
+NodePtr BoltGraph::getNodeByName(const std::string& node_name) const {
+  if (!graphCompiled()) {
+    throw std::logic_error(
+        "Cannot get a node by name from the graph before it is compiled.");
+  }
+  for (const auto& node : _inputs) {
+    if (node->name() == node_name) {
+      return node;
+    }
+  }
+  for (const auto& node : _nodes) {
+    if (node->name() == node_name) {
+      return node;
+    }
+  }
+  throw std::invalid_argument("A node with name \"" + node_name +
+                              "\" was not found");
+}
+
 // This syntax means that we are implementing the template but only for the
 // specific case where the template is a BoltBatch, i.e. this version of the
 // code will be used iff the template is a BoltBatch.

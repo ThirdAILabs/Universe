@@ -96,6 +96,8 @@ class FullyConnectedNode final
     _layer = loaded_parameters;
   }
 
+  float getSparsity() { return _config.getSparsity(); }
+
  private:
   void compileImpl() final {
     _layer = std::make_shared<FullyConnectedLayer>(_config,

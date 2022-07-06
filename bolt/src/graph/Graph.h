@@ -74,6 +74,8 @@ class BoltGraph {
 
   std::string summarize(bool print, bool detailed) const;
 
+  NodePtr getNodeByName(const std::string& node_name) const;
+
  private:
   template <typename BATCH_T>
   void processTrainingBatch(BATCH_T& batch_inputs,
