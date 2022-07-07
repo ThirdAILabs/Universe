@@ -64,6 +64,7 @@ struct Schema {
 
     setColNum(name_to_num, item.col_name, item.col_num);
     setColNum(name_to_num, timestamp.col_name, timestamp.col_num);
+    setColNum(name_to_num, target.col_name, target.col_num);
     for (auto& text : text_attributes) {
       setColNum(name_to_num, text.col_name, text.col_num);
     }
