@@ -33,10 +33,7 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
   traverseGraph();
 
   LayerNameManager name_manager;
-  for (auto& input : _inputs) {
-    input->compile(name_manager);
-  }
-  for (auto& node : _nodes) {
+  for (auto& node : getNodeTraversalOrder()) {
     node->compile(name_manager);
   }
 
@@ -55,6 +52,10 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 
 template MetricData BoltGraph::train(
     std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>&,
+    const dataset::BoltDatasetPtr&, const TrainConfig& train_config);
+
+template MetricData BoltGraph::train(
+    std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&,
     const dataset::BoltDatasetPtr&, const TrainConfig& train_config);
 
 template <typename BATCH_T>
@@ -140,16 +141,13 @@ MetricData BoltGraph::train(
   return metric_data;
 }
 
-// This syntax means that we are implmenting the function for the specific case
-// in which BATCH_T is equivalent to BoltBatch.
-template <>
-void BoltGraph::processTrainingBatch(BoltBatch& batch_inputs,
+template <typename BATCH_T>
+void BoltGraph::processTrainingBatch(BATCH_T& batch_inputs,
                                      const BoltBatch& batch_labels,
                                      float learning_rate,
                                      MetricAggregator& metrics) {
   assert(_compilation_state.has_value());
-
-  _inputs[0]->setInputs(&batch_inputs);
+  setInputs(batch_inputs);
 
 #pragma omp parallel for default(none) \
     shared(batch_inputs, batch_labels, metrics)
@@ -182,6 +180,10 @@ void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
 
 template InferenceMetricData BoltGraph::predict(
     const std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>&,
+    const dataset::BoltDatasetPtr&, const PredictConfig&);
+
+template InferenceMetricData BoltGraph::predict(
+    const std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&,
     const dataset::BoltDatasetPtr&, const PredictConfig&);
 
 template <typename BATCH_T>
@@ -249,56 +251,12 @@ InferenceMetricData BoltGraph::predict(
   return metric_vals;
 }
 
-std::string BoltGraph::summarize(bool print, bool detailed) const {
-  if (!graphCompiled()) {
-    throw std::logic_error("Cannot summarize the graph before it is compiled.");
-  }
-  std::stringstream summary;
-  summary << "\n";
-  summary << "======================= Bolt Model =======================\n";
-  for (const auto& input : _inputs) {
-    input->summarize(summary, detailed);
-  }
-  for (const auto& node : _nodes) {
-    node->summarize(summary, detailed);
-  }
-  summary << "============================================================\n";
-  if (print) {
-    std::cout << summary.str() << std::flush;
-  }
-  return summary.str();
-}
-
-NodePtr BoltGraph::getNodeByName(const std::string& node_name) const {
-  if (!graphCompiled()) {
-    throw std::logic_error(
-        "Cannot get a node by name from the graph before it is compiled.");
-  }
-  for (const auto& node : _inputs) {
-    if (node->name() == node_name) {
-      return node;
-    }
-  }
-  for (const auto& node : _nodes) {
-    if (node->name() == node_name) {
-      return node;
-    }
-  }
-  throw std::invalid_argument("A node with name \"" + node_name +
-                              "\" was not found");
-}
-
-// This syntax means that we are implementing the template but only for the
-// specific case where the template is a BoltBatch, i.e. this version of the
-// code will be used iff the template is a BoltBatch.
-template <>
-void BoltGraph::processInferenceBatch(BoltBatch& batch_inputs,
+template <typename BATCH_T>
+void BoltGraph::processInferenceBatch(BATCH_T& batch_inputs,
                                       const BoltBatch* batch_labels,
                                       MetricAggregator& metrics,
                                       bool compute_metrics) {
-  // If we are using a BoltBatch we assume there is only one input. This is
-  // checked in the verifyInputForGraph() function.
-  _inputs[0]->setInputs(&batch_inputs);
+  setInputs(batch_inputs);
 
 #pragma omp parallel for default(none) \
     shared(batch_inputs, batch_labels, metrics, compute_metrics)
@@ -314,16 +272,34 @@ void BoltGraph::processInferenceBatch(BoltBatch& batch_inputs,
   }
 }
 
-void BoltGraph::forward(uint32_t batch_index, const BoltVector* labels) {
-  for (uint32_t i = 0; i < _nodes.size() - 1; i++) {
-    _nodes[i]->forward(batch_index, nullptr);
-  }
-  _nodes.back()->forward(batch_index, labels);
+// This syntax means that we are implmenting the function for the specific case
+// in which BATCH_T is equivalent to BoltBatch.
+template <>
+void BoltGraph::setInputs(BoltBatch& batch_inputs) {
+  // If we are using a BoltBatch then there is only one input. This is
+  // checked in the verifyInputForGraph() function.
+  _inputs[0]->setInputs(&batch_inputs);
 }
 
-void BoltGraph::backpropagate(uint32_t batch_index) {
+// This syntax means that we are implmenting the function for the specific case
+// in which BATCH_T is equivalent to BoltTokenBatch.
+template <>
+void BoltGraph::setInputs(dataset::BoltTokenBatch& batch_inputs) {
+  // If we are using a BoltTokenBatch then there is only one token input. This
+  // is checked in the verifyInputForGraph() function.
+  _token_inputs[0]->setTokenInputs(&batch_inputs);
+}
+
+void BoltGraph::forward(uint32_t vec_index, const BoltVector* labels) {
+  for (uint32_t i = 0; i < _nodes.size() - 1; i++) {
+    _nodes[i]->forward(vec_index, nullptr);
+  }
+  _nodes.back()->forward(vec_index, labels);
+}
+
+void BoltGraph::backpropagate(uint32_t vec_index) {
   for (auto node_itr = _nodes.rbegin(); node_itr != _nodes.rend(); ++node_itr) {
-    (*node_itr)->backpropagate(batch_index);
+    (*node_itr)->backpropagate(vec_index);
   }
 }
 
@@ -350,6 +326,10 @@ void BoltGraph::traverseGraph() {
   std::queue<NodePtr> queue;
   std::unordered_set<NodePtr> visited;
 
+  std::unordered_set<NodePtr> all_inputs;
+  all_inputs.insert(_inputs.begin(), _inputs.end());
+  all_inputs.insert(_token_inputs.begin(), _token_inputs.end());
+
   std::unordered_map<NodePtr, int32_t> successor_counts = getSuccessorCounts();
 
   queue.push(_output);
@@ -368,7 +348,19 @@ void BoltGraph::traverseGraph() {
         }
       }
     }
+    if (next->isInputNode()) {
+      if (!all_inputs.count(next)) {
+        throw exceptions::GraphCompilationFailure(
+            "Found input that was not provided in list of input nodes.");
+      }
+      all_inputs.erase(next);
+    }
     queue.pop();
+  }
+
+  if (!all_inputs.empty()) {
+    throw exceptions::GraphCompilationFailure(
+        "Not all provided inputs were reached during graph traversal.");
   }
 
   for (auto [node, cnt] : successor_counts) {
@@ -416,10 +408,18 @@ template <typename BATCH_T>
 void BoltGraph::verifyInputForGraph(
     const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset) {
   (void)dataset;
-  if (std::is_same<BATCH_T, BoltBatch>::value && _inputs.size() != 1) {
+  if (std::is_same<BATCH_T, BoltBatch>::value && _inputs.size() != 1 &&
+      !_token_inputs.empty()) {
     throw exceptions::GraphCompilationFailure(
         "Only graphs with a single input layer can take in a dataset with "
         "batch type BoltBatch.");
+  }
+
+  if (std::is_same<BATCH_T, dataset::BoltTokenBatch>::value &&
+      !_inputs.empty() && _token_inputs.size() != 1) {
+    throw exceptions::GraphCompilationFailure(
+        "Only graphs with a single token input layer can take in a dataset "
+        "with batch type BoltTokenBatch.");
   }
 }
 
@@ -445,6 +445,37 @@ void BoltGraph::reconstructHashFunctions() {
   for (auto& layer : _internal_fully_connected_layers) {
     layer->reBuildHashFunction();
   }
+}
+
+std::string BoltGraph::summarize(bool print, bool detailed) const {
+  if (!graphCompiled()) {
+    throw std::logic_error("Cannot summarize the graph before it is compiled.");
+  }
+  std::stringstream summary;
+  summary << "\n";
+  summary << "======================= Bolt Model =======================\n";
+  for (const auto& node : getNodeTraversalOrder()) {
+    node->summarize(summary, detailed);
+  }
+  summary << "============================================================\n";
+  if (print) {
+    std::cout << summary.str() << std::flush;
+  }
+  return summary.str();
+}
+
+NodePtr BoltGraph::getNodeByName(const std::string& node_name) const {
+  if (!graphCompiled()) {
+    throw std::logic_error(
+        "Cannot get a node by name from the graph before it is compiled.");
+  }
+  for (const auto& node : getNodeTraversalOrder()) {
+    if (node->name() == node_name) {
+      return node;
+    }
+  }
+  throw std::invalid_argument("A node with name \"" + node_name +
+                              "\" was not found");
 }
 
 }  // namespace thirdai::bolt
