@@ -178,7 +178,10 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Prevents updates to hash tables in the model. If you plan to use "
            "sparse inference, you may get a significant performance "
            "improvement if you call this one or two epochs before you finish "
-           "training. Otherwise you should not call this method.")
+           "training. Otherwise you should not call this method. If "
+           "insert_labels_if_not_found is true then if the output layer is "
+           "sparse it will insert the training labels into the hash hash "
+           "tables if they are not found for a given input.")
       .def(
           "summary", &BoltGraph::summarize, py::arg("print") = true,
           py::arg("detailed") = false,
