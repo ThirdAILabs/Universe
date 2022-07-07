@@ -107,20 +107,20 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Constructs an input layer node for the graph.");
 
   py::class_<TrainConfig>(graph_submodule, "TrainConfig")
-      .def_static("makeConfig", &TrainConfig::makeConfig,
-                  py::arg("learning_rate"), py::arg("epochs"))
-      .def("withMetrics", &TrainConfig::withMetrics, py::arg("metrics"))
+      .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),
+                  py::arg("epochs"))
+      .def("with_metrics", &TrainConfig::withMetrics, py::arg("metrics"))
       .def("silence", &TrainConfig::silence)
-      .def("withRebuildHashTables", &TrainConfig::withRebuildHashTables,
+      .def("with_rebuild_hash_tables", &TrainConfig::withRebuildHashTables,
            py::arg("rebuild_hash_tables"))
-      .def("withReconstructHashFunctions",
+      .def("with_reconstruct_hash_functions",
            &TrainConfig::withReconstructHashFunctions,
            py::arg("reconstruct_hash_functions"));
 
   py::class_<PredictConfig>(graph_submodule, "PredictConfig")
-      .def_static("makeConfig", &PredictConfig::makeConfig)
-      .def("enableSparseInference", &PredictConfig::enableSparseInference)
-      .def("withMetrics", &PredictConfig::withMetrics, py::arg("metrics"))
+      .def_static("make", &PredictConfig::makeConfig)
+      .def("enable_sparse_inference", &PredictConfig::enableSparseInference)
+      .def("with_metrics", &PredictConfig::withMetrics, py::arg("metrics"))
       .def("silence", &PredictConfig::silence);
 
   py::class_<BoltGraph>(graph_submodule, "Model")
@@ -173,6 +173,15 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
              return model.summarize(/* print = */ false,
                                     /* detailed = */ false);
            })
+      .def("freeze_hash_tables", &BoltGraph::freezeHashTables,
+           py::arg("insert_labels_if_not_found") = true,
+           "Prevents updates to hash tables in the model. If you plan to use "
+           "sparse inference, you may get a significant performance "
+           "improvement if you call this one or two epochs before you finish "
+           "training. Otherwise you should not call this method. If "
+           "insert_labels_if_not_found is true then if the output layer is "
+           "sparse it will insert the training labels into the hash hash "
+           "tables if they are not found for a given input.")
       .def(
           "summary", &BoltGraph::summarize, py::arg("print") = true,
           py::arg("detailed") = false,
