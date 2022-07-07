@@ -626,17 +626,6 @@ class DistributedPyNetwork final : public DistributedModel {
                               {prev_dim * sizeof(float), sizeof(float)}, mem);
   }
 
- private:
-  static void printCopyWarning(const std::string& array_name,
-                               const py::str& dtype_recv,
-                               const std::string& dtype_expected) {
-    std::cout << "Warning: " << array_name << " array has dtype=" << dtype_recv
-              << " but " << dtype_expected
-              << " was expected. This will result in a copy of "
-                 "the array in order to ensure type safety. Try specifying "
-                 "the dtype of the array or use .astype(...)."
-              << std::endl;
-  }
 };
 class SentimentClassifier {
  public:

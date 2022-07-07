@@ -1,6 +1,28 @@
 from thirdai import bolt
 import numpy as np
 
+def setup_module():
+    if not os.path.exists("mnist"):
+        os.system(
+            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
+        )
+        os.system("bzip2 -d mnist.bz2")
+
+    if not os.path.exists("mnist.t"):
+        os.system(
+            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
+        )
+        os.system("bzip2 -d mnist.t.bz2")
+
+
+def load_mnist_labels():
+    labels = []
+    with open("mnist.t") as file:
+        for line in file.readlines():
+            label = int(line.split(" ")[0])
+            labels.append(label)
+    return np.array(labels)
+
 
 # Constructs a bolt network with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
 def build_sparse_hidden_layer_classifier(input_dim, sparse_dim, output_dim, sparsity):

@@ -5,36 +5,9 @@ pytestmark = [pytest.mark.integration]
 import os
 from thirdai import bolt, dataset
 import numpy as np
-from utils import (
-    train_network_distributed,
-    build_sparse_hidden_layer_classifier_distributed,
-)
+from utils import  train_network_distributed, build_sparse_hidden_layer_classifier_distributed, setup_module, load_mnist, load_mnist_labels
 
 LEARNING_RATE = 0.0001
-
-
-def setup_module():
-    if not os.path.exists("mnist"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
-        )
-        os.system("bzip2 -d mnist.bz2")
-
-    if not os.path.exists("mnist.t"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
-        )
-        os.system("bzip2 -d mnist.t.bz2")
-
-
-def load_mnist_labels():
-    labels = []
-    with open("mnist.t") as file:
-        for line in file.readlines():
-            label = int(line.split(" ")[0])
-            labels.append(label)
-    return np.array(labels)
-
 
 # Constructs a bolt network for mnist with a sparse output layer in distributed setting.
 def build_sparse_output_layer_network_distributed():
@@ -63,10 +36,6 @@ def build_dense_output_layer_network_distributed():
     return network
 
 
-def load_mnist():
-    train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
-    test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
-    return train_x, train_y, test_x, test_y
 
 
 ACCURACY_THRESHOLD = 0.94
