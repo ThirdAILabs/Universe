@@ -10,7 +10,7 @@
 
 namespace thirdai::bolt::tests {
 
-uint32_t n_classes = 100;
+static constexpr uint32_t n_classes = 100;
 
 class ModelWithLayers {
  public:

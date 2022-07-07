@@ -12,7 +12,7 @@
 
 namespace thirdai::bolt::tests {
 
-uint32_t n_classes = 100;
+static constexpr uint32_t n_classes = 100;
 
 static void testSimpleDatasetHashFunction(const std::string& hash_function) {
   // As we train for more epochs, the model should learn better using these hash
