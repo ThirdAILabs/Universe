@@ -2,7 +2,7 @@ import pytest
 
 pytestmark = [pytest.mark.integration]
 
-from thirdai import bolt, dataset
+from thirdai import bolt
 import numpy as np
 from utils import (
     train_network_distributed,
