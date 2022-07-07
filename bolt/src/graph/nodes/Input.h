@@ -109,7 +109,7 @@ class Input final : public Node {
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
-        "Node is in an invalid internal state");
+        "InputNode is in an invalid internal state");
   }
 
   void checkDimForInput(const BoltVector& vec) const {
@@ -147,6 +147,8 @@ class Input final : public Node {
   BoltBatch* _input_batch;
   uint32_t _expected_input_dim;
 };
+
+using InputPtr = std::shared_ptr<Input>;
 
 }  // namespace thirdai::bolt
 

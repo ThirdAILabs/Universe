@@ -171,7 +171,7 @@ class FullyConnectedNode final
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
-        "Node is in an invalid internal state");
+        "FullyConnectedNode is in an invalid internal state");
   }
 
   // Private constructor for cereal. Must create dummy config since no default
