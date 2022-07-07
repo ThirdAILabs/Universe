@@ -13,6 +13,7 @@
 #include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <chrono>
+#include <exception>
 #include <optional>
 #include <ostream>
 #include <queue>
@@ -456,6 +457,10 @@ void BoltGraph::serialize(Archive& archive) {
 }
 
 void BoltGraph::save(const std::string& filename) {
+  if (!graphCompiled()) {
+    throw exceptions::NodeStateMachineError(
+        "Cannot save graph that is not compiled.");
+  }
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   cereal::BinaryOutputArchive oarchive(filestream);
