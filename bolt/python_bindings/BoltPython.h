@@ -275,7 +275,7 @@ class PyNetwork final : public FullyConnectedNetwork {
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_biases) {
     int64_t dim = _layers.at(layer_index)->getDim();
-    
+
     biasDimensionCheck(new_biases, dim);
     _layers.at(layer_index)->setBiases(new_biases.data());
   }
@@ -488,7 +488,7 @@ class DistributedPyNetwork final : public DistributedModel {
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_biases_gradients) {
     int64_t dim = DistributedModel::getDim(layer_index);
-    
+
     biasGradientDimensionCheck(new_biases_gradients, dim);
     DistributedModel::setLayerData(layer_index, new_biases_gradients.data(),
                                    SET_BIASES_GRADIENTS);
@@ -544,7 +544,6 @@ class DistributedPyNetwork final : public DistributedModel {
     return py::array_t<float>({dim, prev_dim},
                               {prev_dim * sizeof(float), sizeof(float)}, mem);
   }
-
 };
 class SentimentClassifier {
  public:

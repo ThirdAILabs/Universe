@@ -63,7 +63,6 @@ class BoltDatasetNumpyContext {
   std::optional<py::buffer_info> dataset_context_2;
 };
 
-
 inline void printCopyWarning(const std::string& array_name,
                              const py::str& dtype_recv,
                              const std::string& dtype_expected) {
@@ -75,81 +74,87 @@ inline void printCopyWarning(const std::string& array_name,
             << std::endl;
 }
 
-inline void biasDimensionCheck(const py::array_t<float, py::array::c_style | py::array::forcecast>&
-          new_biases, int64_t dim){
-    if (new_biases.ndim() != 1) {
-      std::stringstream err;
-      err << "Expected bias matrix to have 1 dimension, received matrix "
-             "with "
-          << new_biases.ndim() << " dimensions.";
-      throw std::invalid_argument(err.str());
-    }
-    if (new_biases.shape(0) != dim) {
-      std::stringstream err;
-      err << "Expected bias matrix to have dim " << dim
-          << " received matrix with dim " << new_biases.shape(0) << ".";
-      throw std::invalid_argument(err.str());
-    }
+inline void biasDimensionCheck(
+    const py::array_t<float, py::array::c_style | py::array::forcecast>&
+        new_biases,
+    int64_t dim) {
+  if (new_biases.ndim() != 1) {
+    std::stringstream err;
+    err << "Expected bias matrix to have 1 dimension, received matrix "
+           "with "
+        << new_biases.ndim() << " dimensions.";
+    throw std::invalid_argument(err.str());
   }
-
-  inline void weightDimensionCheck(const py::array_t<float, py::array::c_style | py::array::forcecast>&
-        new_weights, int64_t dim, int64_t prev_dim){
-          if (new_weights.ndim() != 2) {
-      std::stringstream err;
-      err << "Expected weight matrix to have 2 dimensions, received matrix "
-             "with "
-          << new_weights.ndim() << " dimensions.";
-      throw std::invalid_argument(err.str());
-    }
-    if (new_weights.shape(0) != dim || new_weights.shape(1) != prev_dim) {
-      std::stringstream err;
-      err << "Expected weight matrix to have dim (" << dim << ", " << prev_dim
-          << ") received matrix with dim (" << new_weights.shape(0) << ", "
-          << new_weights.shape(1) << ").";
-      throw std::invalid_argument(err.str());
-    }
+  if (new_biases.shape(0) != dim) {
+    std::stringstream err;
+    err << "Expected bias matrix to have dim " << dim
+        << " received matrix with dim " << new_biases.shape(0) << ".";
+    throw std::invalid_argument(err.str());
   }
+}
 
-inline void biasGradientDimensionCheck(const py::array_t<float, py::array::c_style | py::array::forcecast>&
-        new_biases_gradients, int64_t dim){
-          if (new_biases_gradients.ndim() != 1) {
-      std::stringstream err;
-      err << "Expected bias gradients matrix to have 1 dimension, received "
-             "matrix "
-             "with "
-          << new_biases_gradients.ndim() << " dimensions.";
-      throw std::invalid_argument(err.str());
-    }
-    if (new_biases_gradients.shape(0) != dim) {
-      std::stringstream err;
-      err << "Expected bias gradients matrix to have dim " << dim
-          << " received matrix with dim " << new_biases_gradients.shape(0)
-          << ".";
-      throw std::invalid_argument(err.str());
-    }
-        }
+inline void weightDimensionCheck(
+    const py::array_t<float, py::array::c_style | py::array::forcecast>&
+        new_weights,
+    int64_t dim, int64_t prev_dim) {
+  if (new_weights.ndim() != 2) {
+    std::stringstream err;
+    err << "Expected weight matrix to have 2 dimensions, received matrix "
+           "with "
+        << new_weights.ndim() << " dimensions.";
+    throw std::invalid_argument(err.str());
+  }
+  if (new_weights.shape(0) != dim || new_weights.shape(1) != prev_dim) {
+    std::stringstream err;
+    err << "Expected weight matrix to have dim (" << dim << ", " << prev_dim
+        << ") received matrix with dim (" << new_weights.shape(0) << ", "
+        << new_weights.shape(1) << ").";
+    throw std::invalid_argument(err.str());
+  }
+}
 
-inline void weightGradientDimensionCheck(const py::array_t<float, py::array::c_style | py::array::forcecast>&
-      new_weights_gradients, int64_t dim, int64_t prev_dim){
-        if (new_weights_gradients.ndim() != 2) {
-      std::stringstream err;
-      err << "Expected weight gradients matrix to have 2 dimensions, received "
-             "matrix "
-             "with "
-          << new_weights_gradients.ndim() << " dimensions.";
-      throw std::invalid_argument(err.str());
-    }
-    if (new_weights_gradients.shape(0) != dim ||
-        new_weights_gradients.shape(1) != prev_dim) {
-      std::stringstream err;
-      err << "Expected weight gradients matrix to have dim (" << dim << ", "
-          << prev_dim << ") received matrix with dim ("
-          << new_weights_gradients.shape(0) << ", "
-          << new_weights_gradients.shape(1) << ").";
-      throw std::invalid_argument(err.str());
-    }
+inline void biasGradientDimensionCheck(
+    const py::array_t<float, py::array::c_style | py::array::forcecast>&
+        new_biases_gradients,
+    int64_t dim) {
+  if (new_biases_gradients.ndim() != 1) {
+    std::stringstream err;
+    err << "Expected bias gradients matrix to have 1 dimension, received "
+           "matrix "
+           "with "
+        << new_biases_gradients.ndim() << " dimensions.";
+    throw std::invalid_argument(err.str());
+  }
+  if (new_biases_gradients.shape(0) != dim) {
+    std::stringstream err;
+    err << "Expected bias gradients matrix to have dim " << dim
+        << " received matrix with dim " << new_biases_gradients.shape(0) << ".";
+    throw std::invalid_argument(err.str());
+  }
+}
 
-      }
+inline void weightGradientDimensionCheck(
+    const py::array_t<float, py::array::c_style | py::array::forcecast>&
+        new_weights_gradients,
+    int64_t dim, int64_t prev_dim) {
+  if (new_weights_gradients.ndim() != 2) {
+    std::stringstream err;
+    err << "Expected weight gradients matrix to have 2 dimensions, received "
+           "matrix "
+           "with "
+        << new_weights_gradients.ndim() << " dimensions.";
+    throw std::invalid_argument(err.str());
+  }
+  if (new_weights_gradients.shape(0) != dim ||
+      new_weights_gradients.shape(1) != prev_dim) {
+    std::stringstream err;
+    err << "Expected weight gradients matrix to have dim (" << dim << ", "
+        << prev_dim << ") received matrix with dim ("
+        << new_weights_gradients.shape(0) << ", "
+        << new_weights_gradients.shape(1) << ").";
+    throw std::invalid_argument(err.str());
+  }
+}
 
 inline bool isBoltDataset(const py::object& obj) {
   return py::str(obj.get_type())
@@ -255,7 +260,6 @@ inline BoltDatasetNumpyContext convertPyObjectToBoltDataset(
   if (isTuple(obj)) {
     return convertTupleToBoltDataset(obj, batch_size);
   }
-
 
   throw std::invalid_argument(
       "Expected object of type BoltDataset, tuple, or numpy array (or None "
