@@ -1,4 +1,7 @@
 #include "Graph.h"
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/vector.hpp>
 #include "GraphPropertyChecks.h"
 #include "nodes/FullyConnected.h"
 #include <bolt/src/graph/Node.h>
@@ -10,6 +13,7 @@
 #include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <chrono>
+#include <exception>
 #include <optional>
 #include <ostream>
 #include <queue>
@@ -26,7 +30,7 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
         "Output NodePtr cannot be a nullptr.");
   }
 
-  _compilation_state = {std::move(loss)};
+  _loss = std::move(loss);
 
   verifyGraphProperties();
 
@@ -146,7 +150,7 @@ void BoltGraph::processTrainingBatch(BATCH_T& batch_inputs,
                                      const BoltBatch& batch_labels,
                                      float learning_rate,
                                      MetricAggregator& metrics) {
-  assert(_compilation_state.has_value());
+  assert(graphCompiled());
   setInputs(batch_inputs);
 
 #pragma omp parallel for default(none) \
@@ -154,9 +158,8 @@ void BoltGraph::processTrainingBatch(BATCH_T& batch_inputs,
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
     forward(vec_id, &batch_labels[vec_id]);
 
-    _compilation_state->_loss->lossGradients(_output->getOutputVector(vec_id),
-                                             batch_labels[vec_id],
-                                             batch_inputs.getBatchSize());
+    _loss->lossGradients(_output->getOutputVector(vec_id), batch_labels[vec_id],
+                         batch_inputs.getBatchSize());
 
     backpropagate(vec_id);
 
@@ -428,11 +431,11 @@ void BoltGraph::verifyGraphProperties() {
 
   GraphPropertyChecks::verifyOutputIsNotConcatLayer(_output);
 
-  GraphPropertyChecks::verifySoftmaxIsUsedWithCategoricalCrossEntropy(
-      _output, _compilation_state->_loss);
+  GraphPropertyChecks::verifySoftmaxIsUsedWithCategoricalCrossEntropy(_output,
+                                                                      _loss);
 
-  GraphPropertyChecks::verifySigmoidIsUsedWithBinaryCrossEntropy(
-      _output, _compilation_state->_loss);
+  GraphPropertyChecks::verifySigmoidIsUsedWithBinaryCrossEntropy(_output,
+                                                                 _loss);
 }
 
 void BoltGraph::rebuildHashTables() {
@@ -445,6 +448,32 @@ void BoltGraph::reconstructHashFunctions() {
   for (auto& layer : _internal_fully_connected_layers) {
     layer->reBuildHashFunction();
   }
+}
+
+template <class Archive>
+void BoltGraph::serialize(Archive& archive) {
+  archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
+          _epoch_count, _batch_cnt);
+}
+
+void BoltGraph::save(const std::string& filename) {
+  if (!graphCompiled()) {
+    throw exceptions::NodeStateMachineError(
+        "Cannot save graph that is not compiled.");
+  }
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  cereal::BinaryOutputArchive oarchive(filestream);
+  oarchive(*this);
+}
+
+std::unique_ptr<BoltGraph> BoltGraph::load(const std::string& filename) {
+  std::ifstream filestream =
+      dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+  cereal::BinaryInputArchive iarchive(filestream);
+  std::unique_ptr<BoltGraph> deserialize_into(new BoltGraph());
+  iarchive(*deserialize_into);
+  return deserialize_into;
 }
 
 std::string BoltGraph::summarize(bool print, bool detailed) const {
