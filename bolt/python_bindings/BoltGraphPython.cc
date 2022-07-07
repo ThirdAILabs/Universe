@@ -113,7 +113,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("silence", &TrainConfig::silence)
       .def("with_rebuild_hash_tables", &TrainConfig::withRebuildHashTables,
            py::arg("rebuild_hash_tables"))
-      .def("with_reconstruct_hash_hunctions",
+      .def("with_reconstruct_hash_functions",
            &TrainConfig::withReconstructHashFunctions,
            py::arg("reconstruct_hash_functions"));
 
