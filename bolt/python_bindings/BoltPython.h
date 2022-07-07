@@ -265,20 +265,7 @@ class PyNetwork final : public FullyConnectedNetwork {
     int64_t prev_dim =
         (layer_index > 0) ? _layers.at(layer_index - 1)->getDim() : _input_dim;
 
-    if (new_weights.ndim() != 2) {
-      std::stringstream err;
-      err << "Expected weight matrix to have 2 dimensions, received matrix "
-             "with "
-          << new_weights.ndim() << " dimensions.";
-      throw std::invalid_argument(err.str());
-    }
-    if (new_weights.shape(0) != dim || new_weights.shape(1) != prev_dim) {
-      std::stringstream err;
-      err << "Expected weight matrix to have dim (" << dim << ", " << prev_dim
-          << ") received matrix with dim (" << new_weights.shape(0) << ", "
-          << new_weights.shape(1) << ").";
-      throw std::invalid_argument(err.str());
-    }
+    weightDimensionCheck(new_weights, dim, prev_dim);
 
     _layers.at(layer_index)->setWeights(new_weights.data());
   }
@@ -288,20 +275,8 @@ class PyNetwork final : public FullyConnectedNetwork {
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_biases) {
     int64_t dim = _layers.at(layer_index)->getDim();
-    if (new_biases.ndim() != 1) {
-      std::stringstream err;
-      err << "Expected weight matrix to have 1 dimension, received matrix "
-             "with "
-          << new_biases.ndim() << " dimensions.";
-      throw std::invalid_argument(err.str());
-    }
-    if (new_biases.shape(0) != dim) {
-      std::stringstream err;
-      err << "Expected weight matrix to have dim " << dim
-          << " received matrix with dim " << new_biases.shape(0) << ".";
-      throw std::invalid_argument(err.str());
-    }
-
+    
+    biasDimensionCheck(new_biases, dim);
     _layers.at(layer_index)->setBiases(new_biases.data());
   }
 
@@ -478,20 +453,7 @@ class DistributedPyNetwork final : public DistributedModel {
                            ? DistributedModel::getDim(layer_index - 1)
                            : DistributedModel::getInputDim();
 
-    if (new_weights.ndim() != 2) {
-      std::stringstream err;
-      err << "Expected weight matrix to have 2 dimensions, received matrix "
-             "with "
-          << new_weights.ndim() << " dimensions.";
-      throw std::invalid_argument(err.str());
-    }
-    if (new_weights.shape(0) != dim || new_weights.shape(1) != prev_dim) {
-      std::stringstream err;
-      err << "Expected weight matrix to have dim (" << dim << ", " << prev_dim
-          << ") received matrix with dim (" << new_weights.shape(0) << ", "
-          << new_weights.shape(1) << ").";
-      throw std::invalid_argument(err.str());
-    }
+    weightDimensionCheck(new_weights, dim, prev_dim);
 
     DistributedModel::setLayerData(layer_index, new_weights.data(),
                                    SET_WEIGHTS);
@@ -506,24 +468,7 @@ class DistributedPyNetwork final : public DistributedModel {
                            ? DistributedModel::getDim(layer_index - 1)
                            : DistributedModel::getInputDim();
 
-    if (new_weights_gradients.ndim() != 2) {
-      std::stringstream err;
-      err << "Expected weight gradients matrix to have 2 dimensions, received "
-             "matrix "
-             "with "
-          << new_weights_gradients.ndim() << " dimensions.";
-      throw std::invalid_argument(err.str());
-    }
-    if (new_weights_gradients.shape(0) != dim ||
-        new_weights_gradients.shape(1) != prev_dim) {
-      std::stringstream err;
-      err << "Expected weight gradients matrix to have dim (" << dim << ", "
-          << prev_dim << ") received matrix with dim ("
-          << new_weights_gradients.shape(0) << ", "
-          << new_weights_gradients.shape(1) << ").";
-      throw std::invalid_argument(err.str());
-    }
-
+    weightGradientDimensionCheck(new_weights_gradients, dim, prev_dim);
     DistributedModel::setLayerData(layer_index, new_weights_gradients.data(),
                                    SET_WEIGHTS_GRADIENTS);
   }
@@ -533,19 +478,7 @@ class DistributedPyNetwork final : public DistributedModel {
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_biases) {
     int64_t dim = DistributedModel::getDim(layer_index);
-    if (new_biases.ndim() != 1) {
-      std::stringstream err;
-      err << "Expected bias matrix to have 1 dimension, received matrix "
-             "with "
-          << new_biases.ndim() << " dimensions.";
-      throw std::invalid_argument(err.str());
-    }
-    if (new_biases.shape(0) != dim) {
-      std::stringstream err;
-      err << "Expected bias matrix to have dim " << dim
-          << " received matrix with dim " << new_biases.shape(0) << ".";
-      throw std::invalid_argument(err.str());
-    }
+    biasDimensionCheck(new_biases, dim);
 
     DistributedModel::setLayerData(layer_index, new_biases.data(), SET_BIASES);
   }
@@ -555,22 +488,8 @@ class DistributedPyNetwork final : public DistributedModel {
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_biases_gradients) {
     int64_t dim = DistributedModel::getDim(layer_index);
-    if (new_biases_gradients.ndim() != 1) {
-      std::stringstream err;
-      err << "Expected bias gradients matrix to have 1 dimension, received "
-             "matrix "
-             "with "
-          << new_biases_gradients.ndim() << " dimensions.";
-      throw std::invalid_argument(err.str());
-    }
-    if (new_biases_gradients.shape(0) != dim) {
-      std::stringstream err;
-      err << "Expected bias gradients matrix to have dim " << dim
-          << " received matrix with dim " << new_biases_gradients.shape(0)
-          << ".";
-      throw std::invalid_argument(err.str());
-    }
-
+    
+    biasGradientDimensionCheck(new_biases_gradients, dim);
     DistributedModel::setLayerData(layer_index, new_biases_gradients.data(),
                                    SET_BIASES_GRADIENTS);
   }
@@ -625,6 +544,7 @@ class DistributedPyNetwork final : public DistributedModel {
     return py::array_t<float>({dim, prev_dim},
                               {prev_dim * sizeof(float), sizeof(float)}, mem);
   }
+
 };
 class SentimentClassifier {
  public:

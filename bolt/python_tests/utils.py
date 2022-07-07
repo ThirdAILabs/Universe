@@ -1,6 +1,6 @@
 from thirdai import bolt
 import numpy as np
-
+import os
 
 def setup_module():
     if not os.path.exists("mnist"):
