@@ -149,7 +149,7 @@ void BoltGraph::processTrainingBatch(BATCH_T& batch_inputs,
                                      const BoltBatch& batch_labels,
                                      float learning_rate,
                                      MetricAggregator& metrics) {
-  assert(_compilation_state.has_value());
+  assert(graphCompiled());
   setInputs(batch_inputs);
 
 #pragma omp parallel for default(none) \
