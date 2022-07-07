@@ -176,7 +176,7 @@ inline void Model<BATCH_T>::updateSampling(uint32_t rehash_batch,
   }
 }
 
-inline uint32_t getSecondBestLabel(const float* activations, uint32_t dim) {
+inline uint32_t getSecondBestIndex(const float* activations, uint32_t dim) {
   float first = std::numeric_limits<float>::min(),
         second = std::numeric_limits<float>::min();
   uint32_t max_id = 0, second_max_id = 0;
@@ -222,15 +222,22 @@ Model<BATCH_T>::getInputGradients(
          vec_id++) {
       total_count += batch_input->at(id)[vec_id].len;
       offset_values.push_back((total_count));
-      // Initializing the input gradients, because they were not initialized
-      // before.
+      // Initializing the input gradients because they were not initialized
+      // before. and assigning them to zero because new method gets some random
+      // garbage value and gradient calculation uses += operator.
       batch_input->at(id)[vec_id].gradients =
           new float[batch_input->at(id)[vec_id].len];
+      for (uint32_t i = 0; i < batch_input->at(id)[vec_id].len; i++) {
+        batch_input->at(id)[vec_id].gradients[i] = 0;
+      }
       forward(vec_id, batch_input->at(id), output[vec_id], nullptr);
       uint32_t required_index;
+      // we are taking the second best index to know which input features are
+      // important by observing input gradients, by flipping the predicted label
+      // as second best index.
       if (required_labels.empty()) {
         required_index =
-            getSecondBestLabel(output[vec_id].activations, getOutputDim());
+            getSecondBestIndex(output[vec_id].activations, getOutputDim());
       } else {
         required_index =
             (required_labels[id * batch_input->at(id).getBatchSize() +
@@ -249,8 +256,8 @@ Model<BATCH_T>::getInputGradients(
       for (uint32_t i = 0; i < batch_input->at(id)[vec_id].len; i++) {
         concatenated_grad.push_back(batch_input->at(id)[vec_id].gradients[i]);
       }
-      // de allocating the memory and pointing the gradients to nullptr as it
-      // was earlier.
+      // de allocating the memory and pointing the gradients to nullptr to
+      // prevent using invalid memory reference.
       delete[] batch_input->at(id)[vec_id].gradients;
       batch_input->at(id)[vec_id].gradients = nullptr;
     }
