@@ -642,7 +642,7 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("overwrite_index") = false)
       .def("predict", &SequentialClassifier::predict, py::arg("filename"),
            py::arg("output_filename") = std::nullopt);
-           
+
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 
   py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
