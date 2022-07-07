@@ -32,7 +32,7 @@ def run_simple_test(
         n_classes=num_classes, n_samples=num_training_samples
     )
 
-    train_config = bolt.graph.TrainConfig.makeConfig(
+    train_config = bolt.graph.TrainConfig.make(
         learning_rate=learning_rate, epochs=num_training_epochs
     ).silence()
 
@@ -44,7 +44,7 @@ def run_simple_test(
     )
 
     predict_config = (
-        bolt.graph.PredictConfig.makeConfig()
+        bolt.graph.PredictConfig.make()
         .withMetrics(["categorical_accuracy"])
         .silence()
     )

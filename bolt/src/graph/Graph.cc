@@ -452,7 +452,11 @@ void BoltGraph::reconstructHashFunctions() {
 
 void BoltGraph::freezeHashTables() {
   for (auto& layer : _internal_fully_connected_layers) {
-    layer->freezeHashTables(false);
+    layer->freezeHashTables(/* insert_labels_if_not_found= */ false);
+  }
+
+  for (auto& layer : _output->getInternalFullyConnectedLayers()) {
+    layer->freezeHashTables(/* insert_labels_if_not_found= */ true);
   }
 }
 

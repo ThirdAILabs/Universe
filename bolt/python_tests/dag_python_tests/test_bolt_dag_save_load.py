@@ -6,11 +6,11 @@ pytestmark = [pytest.mark.unit]
 
 
 def get_train_config(epochs):
-    return bolt.graph.TrainConfig.makeConfig(learning_rate=0.001, epochs=epochs)
+    return bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=epochs).silence()
 
 
 def get_predict_config():
-    return bolt.graph.PredictConfig.makeConfig().withMetrics(["categorical_accuracy"])
+    return bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
 
 
 class ModelWithLayers:
