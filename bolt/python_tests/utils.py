@@ -69,7 +69,6 @@ def gen_single_sparse_layer_network(n_classes, sparsity=0.5):
     return network
 
 
-<<<<<<< HEAD
 # APIs for testing the distributed network(similar to functions defined above but for Distributed APIs)
 # Constructs a bolt network with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
 def build_sparse_hidden_layer_classifier_distributed(
@@ -124,7 +123,6 @@ def gen_network_distributed(n_classes):
     ]
     network = bolt.DistributedNetwork(layers=layers, input_dim=n_classes)
     return network
-=======
 def get_simple_concat_model(
     hidden_layer_top_dim,
     hidden_layer_bottom_dim,
@@ -158,4 +156,3 @@ def get_simple_concat_model(
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     return model
->>>>>>> a6d413890a69dcc020b64478444684e272eca71a
