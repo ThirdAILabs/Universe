@@ -1,4 +1,4 @@
-from utils import *
+from .utils import *
 import pytest
 
 pytestmark = [pytest.mark.unit]
