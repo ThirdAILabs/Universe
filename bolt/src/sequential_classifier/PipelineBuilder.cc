@@ -56,7 +56,7 @@ Blocks PipelineBuilder::buildInputBlocks(const ColumnNumbers& columns,
 }
 
 Blocks PipelineBuilder::buildLabelBlocks(const ColumnNumbers& columns) {
-  checkCategoricalMap(_states._target_id_map);
+  checkCategoricalMap(_states._target_id_map, _config._n_target_classes);
   return {std::make_shared<dataset::CategoricalBlock>(
       columns.at(SchemaKey::target), _states._target_id_map)};
 }
@@ -83,7 +83,7 @@ void PipelineBuilder::addUserIdFeats(const ColumnNumbers& columns,
   if (columns.count(SchemaKey::user) == 0) {
     return;
   }
-  checkCategoricalMap(_states._user_id_map);
+  checkCategoricalMap(_states._user_id_map, _config._n_users);
   blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
       columns.at(SchemaKey::user), _states._user_id_map, _config._user_graph,
       _config._user_max_neighbors));
@@ -92,9 +92,9 @@ void PipelineBuilder::addUserIdFeats(const ColumnNumbers& columns,
 
 void PipelineBuilder::addItemIdFeats(const ColumnNumbers& columns,
                                      Blocks& blocks) {
-  checkCategoricalMap(_states._item_id_map);
+  checkCategoricalMap(_states._item_id_map, _config._n_items);
   blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
-      columns.at(SchemaKey::user), _states._item_id_map, _config._item_graph,
+      columns.at(SchemaKey::item), _states._item_id_map, _config._item_graph,
       _config._item_max_neighbors));
   addNonzeros(1);
 }
@@ -114,7 +114,7 @@ void PipelineBuilder::addCategoricalAttrFeats(const ColumnNumbers& columns,
   if (columns.count(SchemaKey::categorical_attr) == 0) {
     return;
   }
-  checkCategoricalMap(_states._cat_attr_map);
+  checkCategoricalMap(_states._cat_attr_map, _config._n_categories);
   blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
       columns.at(SchemaKey::categorical_attr), _states._cat_attr_map));
   addNonzeros(1);
@@ -155,9 +155,10 @@ void PipelineBuilder::addItemTemporalFeats(const ColumnNumbers& columns,
 }
 
 void PipelineBuilder::checkCategoricalMap(
-    std::shared_ptr<dataset::StringToUidMap>& map) {
+    std::shared_ptr<dataset::StringToUidMap>& map,
+    uint32_t n_classes) {
   if (map == nullptr) {
-    map = std::make_shared<dataset::StringToUidMap>(_config._n_users);
+    map = std::make_shared<dataset::StringToUidMap>(n_classes);
   }
 }
 

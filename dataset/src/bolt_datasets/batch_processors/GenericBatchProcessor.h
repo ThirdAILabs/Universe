@@ -71,6 +71,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
       block->prepareForBatch(first_row);
     }
 
+
 #pragma omp parallel for default(none) \
     shared(rows, batch_inputs, batch_labels, found_error)
     for (size_t i = 0; i < rows.size(); ++i) {

@@ -4,6 +4,7 @@
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/encodings/count_history/CountHistoryIndex.h>
 #include <dataset/src/utils/TimeUtils.h>
+#include <cmath>
 #include <cstdlib>
 #include <memory>
 
@@ -125,31 +126,35 @@ class TrendBlock : public Block {
                         SegmentedFeatureVector& vec) {
     std::vector<float> counts(_lookback);
     float sum = 0;
-    fillCountsAndSum(id, timestamp, counts, sum);
+    float sum_of_squares = 0;
+    fillCountsAndSum(id, timestamp, counts, sum, sum_of_squares);
 
     /*
       Center and normalize by sum so sum is 0 and
       values are always between -1 and 1.
     */
     float mean = sum / _lookback;
-    centerAndNormalize(counts, sum, mean);
-
+    float l2norm = std::sqrt(sum_of_squares); 
+    centerAndNormalize(counts, l2norm, mean);
+    
     for (const auto& count : counts) {
       vec.addDenseFeatureToSegment(count);
     }
-    vec.addDenseFeatureToSegment(mean);
+    // vec.addDenseFeatureToSegment(mean);
   }
 
   void fillCountsAndSum(uint32_t id, uint32_t timestamp,
-                        std::vector<float>& counts, float& sum) {
+                        std::vector<float>& counts, float& sum,
+                        float& sum_of_squares) {
     for (uint32_t i = 0; i < _lookback; i++) {
-      auto look_back = (_horizon + i) * SECONDS_IN_DAY;
+      auto look_back = (_horizon + i) * TimeUtils::SECONDS_IN_DAY;
       // Prevent overflow if given a date < 1970.
       auto query_timestamp = timestamp >= look_back ? timestamp - look_back : 0;
       auto query_result = _index->query(id, query_timestamp);
       assert(query_result >= 0);
       counts[i] = query_result;
       sum += query_result;
+      sum_of_squares += query_result * query_result;
     }
   }
 
@@ -163,7 +168,7 @@ class TrendBlock : public Block {
   }
 
   static uint32_t lifetime(uint32_t horizon, uint32_t lookback) {
-    return (lookback + horizon) * SECONDS_IN_DAY;
+    return (lookback + horizon) * TimeUtils::SECONDS_IN_DAY;
   }
 
   size_t _horizon;

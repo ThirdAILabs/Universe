@@ -22,15 +22,16 @@ class DateBlock : public Block {
   static constexpr uint32_t day_of_week_dim = 7;
   static constexpr uint32_t month_of_year_dim = 12;
   static constexpr uint32_t week_of_month_dim = 5;
-  static constexpr uint32_t week_of_year_dim = 53;
+  static constexpr uint32_t week_of_year_dim = 49;
 
   void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) final {
     auto time = TimeUtils::timeStringToTimeObject(input_row[_col]);
+    auto epoch_time = TimeUtils::timeToEpoch(&time, /* utcdiff = */ 0);
     uint32_t offset = 0;
 
     // Day of week
-    vec.addSparseFeatureToSegment(offset + time.tm_wday, 1.0);
+    vec.addSparseFeatureToSegment(offset + ((epoch_time / TimeUtils::SECONDS_IN_DAY) % 7), 1.0);
     offset += day_of_week_dim;
 
     // Month of year
@@ -42,7 +43,8 @@ class DateBlock : public Block {
     offset += week_of_month_dim;
 
     // Week of year
-    vec.addSparseFeatureToSegment(offset + time.tm_yday / 7, 1.0);
+    uint32_t week_of_year = time.tm_mon * 4 + (time.tm_mday - 1) / 7;
+    vec.addSparseFeatureToSegment(offset + week_of_year, 1.0);
   }
 
  private:

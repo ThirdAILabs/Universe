@@ -4,7 +4,7 @@ add_executable(sequential_classifier_tests SequentialClassifierTests.cc)
 target_link_libraries(
   sequential_classifier_tests 
   PRIVATE 
-  bolt_network_lib
+  sequential_classifier_lib
   gtest_main
 )
 

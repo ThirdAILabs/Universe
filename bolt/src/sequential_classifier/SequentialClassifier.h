@@ -34,8 +34,6 @@ class SequentialClassifier {
       _network = buildNetwork(*pipeline);
     }
 
-    MeanSquaredError loss;
-
     if (!AutoTuneUtils::canLoadDatasetInMemory(filename)) {
       trainOnStream(filename, epochs, learning_rate, pipeline);
     } else {
@@ -101,7 +99,7 @@ class SequentialClassifier {
   void trainOnStream(
       std::string& filename, uint32_t epochs, float learning_rate,
       std::shared_ptr<dataset::StreamingGenericDatasetLoader>& pipeline) {
-    MeanSquaredError loss;
+    CategoricalCrossEntropyLoss loss;
 
     for (uint32_t e = 0; e < epochs; e++) {
       _network->trainOnStream(pipeline, loss, learning_rate);
@@ -121,7 +119,7 @@ class SequentialClassifier {
   void trainInMemory(
       uint32_t epochs, float learning_rate,
       std::shared_ptr<dataset::StreamingGenericDatasetLoader>& pipeline) {
-    MeanSquaredError loss;
+    CategoricalCrossEntropyLoss loss;
 
     auto [train_data, train_labels] = pipeline->loadInMemory();
 

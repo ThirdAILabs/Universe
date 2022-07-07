@@ -27,9 +27,10 @@ class TrendBlockTests : public BlockTest {
         id_ss << id;
         sample.push_back(id_ss.str());
 
-        time_t timestamp = static_cast<time_t>(day + day_offset) *
-                           SECONDS_IN_DAY;  // Add offset to prevent overflow
-                                            // due to timezone differences.
+        time_t timestamp =
+            static_cast<time_t>(day + day_offset) * TimeUtils::SECONDS_IN_DAY;
+        // Add offset to prevent overflow
+        // due to timezone differences.
         auto* tm = std::localtime(&timestamp);
         std::string timestamp_str;
         timestamp_str.resize(10);

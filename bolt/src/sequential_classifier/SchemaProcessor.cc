@@ -1,4 +1,5 @@
 #include "SchemaProcessor.h"
+#include <iostream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -11,21 +12,19 @@ static void throwInvalidKeyError(const std::string& key);
 static void throwMissingKeyError(const std::string& key);
 static void throwMissingColumnError(const std::string& col_name);
 
-static const std::unordered_map<std::string, SchemaKey>
-    string_to_key = {
-        {"user", SchemaKey::user},
-        {"item", SchemaKey::item},
-        {"timestamp", SchemaKey::timestamp},
-        {"text_attr", SchemaKey::text_attr},
-        {"categorical_attr", SchemaKey::categorical_attr},
-        {"trackable_quantity", SchemaKey::trackable_quantity},
-        {"target", SchemaKey::target}};
+static const std::unordered_map<std::string, SchemaKey> string_to_key = {
+    {"user", SchemaKey::user},
+    {"item", SchemaKey::item},
+    {"timestamp", SchemaKey::timestamp},
+    {"text_attr", SchemaKey::text_attr},
+    {"categorical_attr", SchemaKey::categorical_attr},
+    {"trackable_quantity", SchemaKey::trackable_quantity},
+    {"target", SchemaKey::target}};
 
-static const std::unordered_map<SchemaKey, std::string>
-    required_keys_to_str = {
-        {SchemaKey::item, "item"},
-        {SchemaKey::timestamp, "timestamp"},
-        {SchemaKey::target, "target"}};
+static const std::unordered_map<SchemaKey, std::string> required_keys_to_str = {
+    {SchemaKey::item, "item"},
+    {SchemaKey::timestamp, "timestamp"},
+    {SchemaKey::target, "target"}};
 
 SchemaProcessor::SchemaProcessor(GivenSchema& schema) {
   for (const auto& [key_str, name] : schema) {
@@ -66,9 +65,7 @@ ColumnNumbers SchemaProcessor::parseHeader(const std::string& header,
   return keys_to_col_nums;
 }
 
-bool isValidKey(const std::string& key) {
-  return string_to_key.count(key) > 0;
-}
+bool isValidKey(const std::string& key) { return string_to_key.count(key) > 0; }
 
 void throwInvalidKeyError(const std::string& key) {
   std::stringstream ss;

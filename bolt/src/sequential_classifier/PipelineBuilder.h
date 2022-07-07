@@ -89,7 +89,7 @@ class PipelineBuilder {
 
   void addNonzeros(size_t nonzeros) { _est_nonzeros += nonzeros; }
 
-  void checkCategoricalMap(std::shared_ptr<dataset::StringToUidMap>& map);
+  static void checkCategoricalMap(std::shared_ptr<dataset::StringToUidMap>& map, uint32_t n_classes);
 
   static void checkCountHistoryIndex(
       std::shared_ptr<dataset::CountHistoryIndex>& index, bool overwrite_index);

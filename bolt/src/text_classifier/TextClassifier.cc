@@ -22,7 +22,8 @@ TextClassifier::TextClassifier(const std::string& model_size,
   uint32_t hidden_layer_size =
       AutoTuneUtils::getHiddenLayerSize(model_size, n_classes, input_dim);
 
-  float hidden_layer_sparsity = AutoTuneUtils::getHiddenLayerSparsity(hidden_layer_size);
+  float hidden_layer_sparsity =
+      AutoTuneUtils::getHiddenLayerSparsity(hidden_layer_size);
 
   SequentialConfigList configs = {
       std::make_shared<FullyConnectedLayerConfig>(
