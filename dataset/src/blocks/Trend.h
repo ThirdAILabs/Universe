@@ -4,6 +4,7 @@
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/encodings/count_history/CountHistoryIndex.h>
 #include <dataset/src/utils/TimeUtils.h>
+#include <sys/types.h>
 #include <cmath>
 #include <cstdlib>
 #include <memory>
@@ -18,7 +19,7 @@ class TrendBlock : public Block {
    * If has_count_col == false, count_col is ignored.
    */
   TrendBlock(bool has_count_col, size_t id_col, size_t timestamp_col,
-             size_t count_col, size_t horizon, size_t lookback,
+             size_t count_col, uint32_t horizon, uint32_t lookback,
              std::shared_ptr<CountHistoryIndex> index, GraphPtr graph = nullptr,
              size_t max_n_neighbors = 0)
       : _horizon(horizon),
@@ -42,13 +43,14 @@ class TrendBlock : public Block {
   }
 
   TrendBlock(bool has_count_col, size_t id_col, size_t timestamp_col,
-             size_t count_col, size_t horizon, size_t lookback,
+             size_t count_col, uint32_t horizon, uint32_t lookback, uint32_t period,
              GraphPtr graph = nullptr, size_t max_n_neighbors = 0)
       : TrendBlock(has_count_col, id_col, timestamp_col, count_col, horizon,
                    lookback,
                    std::make_shared<CountHistoryIndex>(
                        /* n_rows = */ 5, /* range_pow = */ 22,
-                       lifetime(horizon, lookback)),
+                       lifetime(horizon, lookback),
+                       period),
                    std::move(graph), max_n_neighbors) {}
 
   uint32_t featureDim() const final {
@@ -172,8 +174,8 @@ class TrendBlock : public Block {
     return (lookback + horizon) * TimeUtils::SECONDS_IN_DAY;
   }
 
-  size_t _horizon;
-  size_t _lookback;
+  uint32_t _horizon;
+  uint32_t _lookback;
   bool _has_count_col;
   size_t _id_col;
   size_t _timestamp_col;

@@ -131,7 +131,8 @@ void PipelineBuilder::addTrackableQtyFeats(Blocks& blocks,
       _states.trackable_counts.push_back(
         std::make_shared<dataset::CountHistoryIndex>(
           /* n_rows = */ 5, /* range_pow = */ 22,
-          /* lifetime = */ std::numeric_limits<uint32_t>::max()));
+          /* lifetime = */ std::numeric_limits<uint32_t>::max(),
+          /* period = */ config.period));
     }
     auto trend_block = std::make_shared<dataset::TrendBlock>(
         qty.has_col_num, item.col_num, _schema.timestamp.col_num, qty.col_num,

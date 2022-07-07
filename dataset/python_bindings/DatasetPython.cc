@@ -202,10 +202,10 @@ void createDatasetSubmodule(py::module_& module) {
 
   py::class_<TrendBlock, Block, std::shared_ptr<TrendBlock>>(
       block_submodule, "Trend", "A block that encodes time series trends.")
-      .def(py::init<bool, size_t, size_t, size_t, size_t, size_t>(),
+      .def(py::init<bool, size_t, size_t, size_t, uint32_t, uint32_t, uint32_t>(),
            py::arg("has_count_col"), py::arg("id_col"),
            py::arg("timestamp_col"), py::arg("count_col"), py::arg("horizon"),
-           py::arg("lookback"))
+           py::arg("lookback"), py::arg("period"))
       .def("feature_dim", &TrendBlock::featureDim,
            "Returns the dimension of the vector encoding; equal to lookback.")
       .def("is_dense", &TrendBlock::isDense,
