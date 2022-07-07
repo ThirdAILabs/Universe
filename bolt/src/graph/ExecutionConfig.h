@@ -126,13 +126,17 @@ class PredictConfig {
 
   constexpr bool verbose() const { return _verbose; }
 
+  constexpr bool shouldReturnActivations() const {return _return_activations;}
+
  private:
   PredictConfig()
-      : _use_sparse_inference(false), _metric_names({}), _verbose(true) {}
+      : _metric_names({}),
+        _use_sparse_inference(false),
+        _verbose(true),
+        _return_activations(true) {}
 
-  bool _use_sparse_inference;
   std::vector<std::string> _metric_names;
-  bool _verbose;
+  bool _use_sparse_inference, _verbose, _return_activations;
 };
 
 }  // namespace thirdai::bolt
