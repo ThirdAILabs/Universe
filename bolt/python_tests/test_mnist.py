@@ -6,11 +6,14 @@ pytestmark = [pytest.mark.integration]
 import os
 from thirdai import bolt, dataset
 import numpy as np
-from utils import train_network, build_sparse_hidden_layer_classifier, setup_module, load_mnist
+from utils import (
+    train_network,
+    build_sparse_hidden_layer_classifier,
+    setup_module,
+    load_mnist,
+)
 
 LEARNING_RATE = 0.0001
-
-
 
 
 # Constructs a bolt network for mnist with a sparse output layer.

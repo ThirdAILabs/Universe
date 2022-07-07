@@ -625,7 +625,6 @@ class DistributedPyNetwork final : public DistributedModel {
     return py::array_t<float>({dim, prev_dim},
                               {prev_dim * sizeof(float), sizeof(float)}, mem);
   }
-
 };
 class SentimentClassifier {
  public:

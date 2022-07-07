@@ -1,6 +1,7 @@
 from thirdai import bolt
 import numpy as np
 
+
 def setup_module():
     if not os.path.exists("mnist"):
         os.system(
@@ -19,6 +20,7 @@ def load_mnist():
     train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
     test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
     return train_x, train_y, test_x, test_y
+
 
 def load_mnist_labels():
     labels = []
@@ -129,7 +131,6 @@ def train_network_distributed(
         for j in range(batch_size):
             network.calculateGradientSingleNode(j, bolt.CategoricalCrossEntropyLoss())
             network.updateParametersSingleNode(learning_rate)
-
 
 
 def get_simple_concat_model(
