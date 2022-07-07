@@ -19,7 +19,7 @@ def generate_text_classification_dataset(filename, delim):
                 f.write(f"2{delim}neutral stuff\n")
 
 
-def test_text_classification_data_pipeline(text_encoding, delim):
+def run_text_classification_data_pipeline_test(text_encoding, delim):
     file = "test_text_classification.csv"
     generate_text_classification_dataset(file, delim)
     pipeline = DataPipeline(
@@ -55,14 +55,14 @@ def test_text_classification_data_pipeline(text_encoding, delim):
             loss_fn=bolt.CategoricalCrossEntropyLoss(),
             learning_rate=learning_rate,
             epochs=1,
-            verbose=True,
+            verbose=False,
         )
         metrics, preds = network.predict(
             test_data=data,
             test_labels=labels,
             batch_size=batch_size,
             metrics=["categorical_accuracy"],
-            verbose=True,
+            verbose=False,
         )
     assert metrics["categorical_accuracy"] > 0.9
 
@@ -71,17 +71,17 @@ def test_text_classification_data_pipeline(text_encoding, delim):
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_unigrams():
-    test_text_classification_data_pipeline(text_encodings.UniGram(100_000), ",")
-    test_text_classification_data_pipeline(text_encodings.UniGram(100_000), "\t")
+    run_text_classification_data_pipeline_test(text_encodings.UniGram(100_000), ",")
+    run_text_classification_data_pipeline_test(text_encodings.UniGram(100_000), "\t")
 
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_pairgrams():
-    test_text_classification_data_pipeline(text_encodings.PairGram(100_000), ",")
-    test_text_classification_data_pipeline(text_encodings.PairGram(100_000), "\t")
+    run_text_classification_data_pipeline_test(text_encodings.PairGram(100_000), ",")
+    run_text_classification_data_pipeline_test(text_encodings.PairGram(100_000), "\t")
 
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_chartrigrams():
-    test_text_classification_data_pipeline(text_encodings.CharKGram(3, 100_000), ",")
-    test_text_classification_data_pipeline(text_encodings.CharKGram(3, 100_000), "\t")
+    run_text_classification_data_pipeline_test(text_encodings.CharKGram(3, 100_000), ",")
+    run_text_classification_data_pipeline_test(text_encodings.CharKGram(3, 100_000), "\t")
