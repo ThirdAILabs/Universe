@@ -127,18 +127,12 @@ class TrendBlock : public Block {
   void addFeaturesForId(uint32_t id, uint32_t timestamp,
                         SegmentedFeatureVector& vec) {
     std::vector<float> counts(_lookback);
-    float sum = 0;
-    float sum_of_squares = 0;
-    fillCountsAndSum(id, timestamp, counts, sum, sum_of_squares);
+    float mean = 0;
+    fillCountsAndMean(id, timestamp, counts, mean);
 
-    if (_lookback > 1) {
-      /*
-        Center and normalize by sum so sum is 0 and
-        values are always between -1 and 1.
-      */
-      float mean = sum / _lookback;
-      float l2norm = std::sqrt(sum_of_squares);
-      centerAndNormalize(counts, l2norm, mean);
+    if (_lookback > 1 && mean != 0) {
+      center(counts, mean);
+      l2Normalize(counts);
     }
 
     for (const auto& count : counts) {
@@ -146,9 +140,9 @@ class TrendBlock : public Block {
     }
   }
 
-  void fillCountsAndSum(uint32_t id, uint32_t timestamp,
-                        std::vector<float>& counts, float& sum,
-                        float& sum_of_squares) {
+  void fillCountsAndMean(uint32_t id, uint32_t timestamp,
+                        std::vector<float>& counts, float& mean) {
+    mean = 0;
     for (uint32_t i = 0; i < _lookback; i++) {
       auto look_back = (_horizon + i) * TimeUtils::SECONDS_IN_DAY;
       // Prevent overflow if given a date < 1970.
@@ -156,17 +150,25 @@ class TrendBlock : public Block {
       auto query_result = _index->query(id, query_timestamp);
       assert(query_result >= 0);
       counts[i] = query_result;
-      sum += query_result;
-      sum_of_squares += query_result * query_result;
+      mean += query_result;
+    }
+    mean /= _lookback;
+  }
+
+  static void center(std::vector<float>& counts, uint32_t mean) {
+    for (auto& count : counts) {
+      count -= mean;
     }
   }
 
-  static void centerAndNormalize(std::vector<float>& counts, float sum,
-                                 float mean) {
-    if (sum != 0) {
-      for (auto& count : counts) {
-        count = (count - mean) / sum;
-      }
+  static void l2Normalize(std::vector<float>& counts) {
+    float sum_sqr = 0;
+    for (const auto& count : counts) {
+      sum_sqr += count * count;
+    }
+    float l2_norm = std::sqrt(sum_sqr);
+    for (auto& count : counts) {
+      count /= l2_norm;
     }
   }
 
