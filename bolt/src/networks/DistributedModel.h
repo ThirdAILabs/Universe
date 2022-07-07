@@ -47,49 +47,39 @@ class DistributedModel : Model<bolt::BoltBatch> {
         _rehash_batch(0),
         _train_data(nullptr),
         _train_labels(nullptr) {
-    thirdai::licensing::LicenseWrapper::checkLicense();
   }
 
-  /**
-   * This function takes in a test dataset and uses it to evaluate the model. It
-   * returns the final accuracy. The batch_limit parameter limits the number of
-   * test batches used, this is intended for intermediate accuracy checks during
-   * training with large datasets. Metrics can be passed in to be computed for
-   * the test set, and the function optionally store the activations for the
-   * output layer in the output_activations array.
-   */
+  // This function is inherently calling predict in model.h
+  // So, see model.h for more info
   InferenceMetricData predictSingleNode(
-      // Test dataset
-      const std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>&
-          test_data,
-      // Test labels
+      const std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>&test_data,
       const dataset::BoltDatasetPtr& test_labels,
-      // Array to store output active neurons in. This should be null if it is
-      // not desired for the output values to be returned or if the output is
-      // dense.
       uint32_t* output_active_neurons,
-      // Array to store output activations in, will not return activations if
-      // this is null
       float* output_activations,
-      // Use sparse inference
       bool use_sparse_inference = false,
-      // Metrics to compute
       const std::vector<std::string>& metric_names = {},
-      // Restrict printouts
       bool verbose = true,
-      // Limit the number of batches used in the dataset
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
   // Distributed Functions
   uint32_t initTrainSingleNode(
       std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
       const dataset::BoltDatasetPtr& train_labels,
-      // Clang tidy is disabled for this line because it wants to pass by
-      // reference, but shared_ptrs should not be passed by reference
       uint32_t rehash, uint32_t rebuild, bool verbose);
-
+  
+/*
+ * This function calculates the gradient using the train_data of
+ * particular batch(provided using batch_no) and for a particular
+ * loss_function.
+ */
   void calculateGradientSingleNode(uint32_t batch, const LossFunction& loss_fn);
 
+/*
+ * This function updates the parameters for the neural network
+ * using the updated gradients.
+ * Right now, the updates are dense meaning that every parameter
+ * is getting updated irrespective of type of training(dense or sparse)
+ */
   void updateParametersSingleNode(float learning_rate);
 
   uint32_t getInferenceOutputDim(bool use_sparse_inference) const final;

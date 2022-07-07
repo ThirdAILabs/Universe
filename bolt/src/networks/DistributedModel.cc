@@ -20,8 +20,6 @@ namespace thirdai::bolt {
 uint32_t DistributedModel::initTrainSingleNode(
     std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
     const dataset::BoltDatasetPtr& train_labels,
-    // Clang tidy is disabled for this line because it wants to pass by
-    // reference, but shared_ptrs should not be passed by reference
     uint32_t rehash, uint32_t rebuild, bool verbose) {
   _train_data = train_data;
   _train_labels = train_labels;
@@ -43,11 +41,6 @@ uint32_t DistributedModel::initTrainSingleNode(
   return train_data->numBatches();
 }
 
-/*
- * This function calculates the gradient using the train_data of
- * particular batch(provided using batch_no) and for a particular
- * loss_function.
- */
 void DistributedModel::calculateGradientSingleNode(
     uint32_t batch, const LossFunction& loss_fn) {
   bolt::BoltBatch& batch_inputs = _train_data->at(batch);
@@ -57,22 +50,16 @@ void DistributedModel::calculateGradientSingleNode(
 #pragma omp parallel for default(none) \
     shared(batch_inputs, batch_labels, _outputs, loss_fn)
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
-    forward(vec_id, batch_inputs, _outputs[vec_id], &batch_labels[vec_id]);
+    DistributedNetwork.forward(vec_id, batch_inputs, _outputs[vec_id], &batch_labels[vec_id]);
 
     loss_fn.lossGradients(_outputs[vec_id], batch_labels[vec_id],
                           batch_inputs.getBatchSize());
-    backpropagate(vec_id, batch_inputs, _outputs[vec_id]);
+    DistributedNetwork.backpropagate(vec_id, batch_inputs, _outputs[vec_id]);
   }
 }
 
-/*
- * This function updates the parameters for the neural network
- * using the updated gradients.
- * Right now, the updates are dense meaning that every parameter
- * is getting updated irrespective of type of training(dense or sparse)
- */
 void DistributedModel::updateParametersSingleNode(float learning_rate) {
-  updateParameters(learning_rate, ++_batch_iter);
+   DistributedNetwork.updateParameters(learning_rate, ++_batch_iter);
   if (_batch_iter % _rebuild_batch == (_rebuild_batch - 1)) {
     reBuildHashFunctions();
     buildHashTables();
