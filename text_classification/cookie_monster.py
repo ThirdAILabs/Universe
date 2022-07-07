@@ -15,21 +15,12 @@ class CookieMonster:
         input_dimension,
         hidden_dimension=2000,
         hidden_sparsity=0.1,
-        hidden_sampling_config=None,
+        # hidden_sampling_config=None,
     ):
         self.input_dimension = input_dimension
-        input_layer = bolt.graph.Input(dim=input_dimension)
-        self.hidden_layer = bolt.graph.FullyConnected(
-            dim=hidden_dimension,
-            sparsity=hidden_sparsity,
-            activation_function=bolt.ActivationFunctions.Softmax,
-            sampling_config=hidden_sampling_config,
-        )(input_layer)
-        self.output_layer = bolt.graph.FullyConnected(
-            dim=2, activation_function=bolt.ActivationFunctions.Softmax
-        )(self.hidden_layer)
-        self.model = bolt.graph.Model(input=input_layer, output=self.output_layer)
-        self.model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+        self.hidden_dim = hidden_dimension
+        self.hidden_sparsity = hidden_sparsity
+        self.construct(2)
 
         self.file_dir = os.path.dirname(os.path.abspath(__file__))
         self.file_name = os.path.join(self.file_dir, "../benchmarks/config.toml")
@@ -38,17 +29,32 @@ class CookieMonster:
         mlflow.set_tracking_uri(parsed_config["tracking"]["uri"])
         mlflow.set_experiment("Cookie Monster")
 
+    def construct(self, output_dim):
+        self.input_layer = bolt.graph.Input(dim=self.input_dimension)
+        self.hidden_layer = bolt.graph.FullyConnected(
+            dim=self.hidden_dim,
+            sparsity=self.hidden_sparsity,
+            activation="relu",
+            # sampling_config=hidden_sampling_config
+        )(self.input_layer)
+        self.output_layer = bolt.graph.FullyConnected(
+            dim=output_dim, activation="softmax"
+        )(self.hidden_layer)
+        self.model = bolt.graph.Model(
+            inputs=[self.input_layer], output=self.output_layer
+        )
+        self.model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+
     def set_output_dimension(self, dimension):
         # TODO: write DAG get_dim() python binding
         if self.output_layer.get_dim() == dimension:
             return
         # del self.model
+        save_loc = "./hidden_layer_parameters"
+        self.hidden_layer.save_parameters(save_loc)
 
-        self.output_layer = bolt.graph.FullyConnected(
-            dim=dimension, activation_function=bolt.ActivationFunctions.Softmax
-        )(self.hidden_layer)
-        self.model = bolt.graph.Model(input=self.input_layer, output=self.output_layer)
-        self.model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+        self.construct(dimension)
+        self.hidden_layer.load_parameters(save_loc)
 
     def train_corpus(
         self,
