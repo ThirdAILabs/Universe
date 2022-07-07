@@ -1,5 +1,5 @@
 from thirdai import bolt, dataset
-from utils import gen_training_data, get_simple_concat_model
+from ..utils import gen_training_data, get_simple_concat_model
 import pytest
 import numpy
 

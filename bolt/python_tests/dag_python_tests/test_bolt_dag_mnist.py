@@ -1,4 +1,4 @@
-from test_mnist import load_mnist
+from ..test_mnist import load_mnist
 from thirdai import bolt
 import os
 import pytest
