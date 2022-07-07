@@ -38,7 +38,7 @@ std::string PipelineBuilder::getHeader(dataset::DataLoader& loader) {
   auto header = loader.getHeader();
   if (!header) {
     throw std::invalid_argument(
-        "[SequentialClassifier::train] The file has no header.");
+        "The file has no header.");
   }
   return *header;
 }

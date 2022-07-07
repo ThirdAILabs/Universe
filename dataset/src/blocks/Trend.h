@@ -33,7 +33,7 @@ class TrendBlock : public Block {
         _max_n_neighbors(max_n_neighbors) {
     if (_graph != nullptr && _max_n_neighbors == 0) {
       throw std::invalid_argument(
-          "[SequentialClassifier] Provided a graph but `max_n_neighbors` is "
+          "Provided a graph but `max_n_neighbors` is "
           "set to 0. This means "
           "graph information will not be used at all.");
     }
