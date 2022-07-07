@@ -98,9 +98,10 @@ class Block {
    *   encoding of input_row.
    */
   void addVectorSegment(const std::vector<std::string_view>& input_row,
-                        SegmentedFeatureVector& vec) {
+                        SegmentedFeatureVector& vec,
+                        std::string& block_exception_message) {
     vec.addFeatureSegment(featureDim());
-    buildSegment(input_row, vec);
+    buildSegment(input_row, vec, block_exception_message);
   }
 
   /**
@@ -128,7 +129,8 @@ class Block {
    * so it should be thread-safe or robust to data races.
    */
   virtual void buildSegment(const std::vector<std::string_view>& input_row,
-                            SegmentedFeatureVector& vec) = 0;
+                            SegmentedFeatureVector& vec,
+                            std::string& block_exception_message) = 0;
 };
 
 }  // namespace thirdai::dataset

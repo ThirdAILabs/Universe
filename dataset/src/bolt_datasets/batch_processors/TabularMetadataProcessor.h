@@ -33,7 +33,8 @@ class TabularMetadata {
     return _class_to_class_id;
   }
 
-  std::string getColBin(uint32_t col, const std::string& str_val) {
+  std::string getColBin(uint32_t col, const std::string& str_val,
+                        std::string& block_exception_message) {
     // map empty values to their own bin
     if (str_val == "") {
       return std::to_string(_num_non_empty_bins);
@@ -47,9 +48,9 @@ class TabularMetadata {
       return std::to_string(static_cast<uint32_t>(
           std::round((value - getColMin(col)) / getColBinsize(col))));
     } catch (std::invalid_argument& e) {
-      throw std::invalid_argument(
+      block_exception_message =
           "Could not process column " + std::to_string(col) +
-          " as type 'numeric.' Received value: '" + str_val + ".'");
+          " as type 'numeric.' Received value: '" + str_val + ".'";
     }
   }
 

@@ -61,6 +61,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
       an error inside an OpenMP structured block has undefined behavior.
     */
     std::atomic_bool found_error = false;
+    std::string block_exception_message;
 
 #pragma omp parallel for default(none) \
     shared(rows, batch_inputs, batch_labels, found_error)
@@ -70,8 +71,10 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
         found_error = true;
         continue;
       }
-      batch_inputs[i] = makeVector(columns, _input_blocks, _input_blocks_dense);
-      batch_labels[i] = makeVector(columns, _label_blocks, _label_blocks_dense);
+      batch_inputs[i] = makeVector(columns, _input_blocks, _input_blocks_dense,
+                                   block_exception_message);
+      batch_labels[i] = makeVector(columns, _label_blocks, _label_blocks_dense,
+                                   block_exception_message);
     }
 
     /*
@@ -112,7 +115,8 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
    */
   static bolt::BoltVector makeVector(
       std::vector<std::string_view>& sample,
-      std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
+      std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense,
+      std::string& block_exception_message) {
     std::shared_ptr<SegmentedFeatureVector> vec_ptr;
 
     // Dense vector if all blocks produce dense features, sparse vector
@@ -126,7 +130,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     // Let each block encode the input sample and adds a new segment
     // containing this encoding to the vector.
     for (auto& block : blocks) {
-      block->addVectorSegment(sample, *vec_ptr);
+      block->addVectorSegment(sample, *vec_ptr, block_exception_message);
     }
     return vec_ptr->toBoltVector();
   }

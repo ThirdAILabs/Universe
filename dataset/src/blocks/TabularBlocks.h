@@ -28,7 +28,8 @@ class TabularPairGram : public Block {
   // the number of pairgrams at a certain threshold by selecting random pairs of
   // columns to pairgram together.
   void buildSegment(const std::vector<std::string_view>& input_row,
-                    SegmentedFeatureVector& vec) final {
+                    SegmentedFeatureVector& vec,
+                    std::string& block_exception_message) final {
     std::vector<uint32_t> unigram_hashes;
     for (uint32_t col = 0; col < input_row.size(); col++) {
       uint32_t unigram;
@@ -36,7 +37,8 @@ class TabularPairGram : public Block {
       switch (_metadata->getType(col)) {
         case TabularDataType::Numeric: {
           std::string unique_bin =
-              _metadata->getColBin(col, str_val) + _metadata->getColSalt(col);
+              _metadata->getColBin(col, str_val, block_exception_message) +
+              _metadata->getColSalt(col);
           unigram_hashes.push_back(PairgramHasher::computeUnigram(
               unique_bin.data(), unique_bin.size()));
           break;
