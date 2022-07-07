@@ -11,6 +11,7 @@ from utils import (
     build_sparse_hidden_layer_classifier,
     setup_module,
     load_mnist,
+    load_mnist_labels,
 )
 
 LEARNING_RATE = 0.0001
@@ -28,12 +29,6 @@ def build_sparse_output_layer_network():
     ]
     network = bolt.Network(layers=layers, input_dim=784)
     return network
-
-
-def load_mnist():
-    train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
-    test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
-    return train_x, train_y, test_x, test_y
 
 
 ACCURACY_THRESHOLD = 0.94
