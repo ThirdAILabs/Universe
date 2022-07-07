@@ -25,18 +25,18 @@ namespace thirdai::bolt {
 
 class DistributedModel : Model<bolt::BoltBatch> {
  public:
-  enum get_type {
-    get_weights,
-    get_biases,
-    get_weights_gradients,
-    get_biases_gradients
+  enum GetType {
+    GET_WEIGHTS,
+    GET_BIASES,
+    GET_WEIGHT_GRADIENTS,
+    GET_BIASES_GRADIENTS
   };
 
-  enum set_type {
-    set_weights,
-    set_biases,
-    set_weights_gradients,
-    set_biases_gradients
+  enum SetType {
+    SET_WEIGHTS,
+    SET_BIASES,
+    SET_WEIGHTS_GRADIENTS,
+    SET_BIASES_GRADIENTS
   };
 
   DistributedModel(SequentialConfigList configs, uint64_t input_dim)
@@ -120,9 +120,9 @@ class DistributedModel : Model<bolt::BoltBatch> {
 
   uint32_t numLayers() const;
 
-  float* getLayerData(uint32_t layer_index, get_type type);
+  float* getLayerData(uint32_t layer_index, GetType type);
 
-  void setLayerData(uint32_t layer_index, const float* data, set_type type);
+  void setLayerData(uint32_t layer_index, const float* data, SetType type);
 
   uint32_t getDim(uint32_t layer_index) const;
 

@@ -15,6 +15,11 @@ def setup_module():
         os.system("bzip2 -d mnist.t.bz2")
 
 
+def load_mnist():
+    train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
+    test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
+    return train_x, train_y, test_x, test_y
+
 def load_mnist_labels():
     labels = []
     with open("mnist.t") as file:
@@ -125,26 +130,6 @@ def train_network_distributed(
             network.calculateGradientSingleNode(j, bolt.CategoricalCrossEntropyLoss())
             network.updateParametersSingleNode(learning_rate)
 
-
-def get_categorical_acc_distributed(network, examples, labels, batch_size):
-    acc, _ = network.predictSingleNode(
-        examples, labels, batch_size, ["categorical_accuracy"], verbose=False
-    )
-    return acc["categorical_accuracy"]
-
-
-# Returns a single layer (no hidden layer) bolt network with input_dim = output_dim and 50% sparsity.
-def gen_network_distributed(n_classes):
-
-    layers = [
-        bolt.FullyConnected(
-            dim=n_classes,
-            sparsity=0.5,
-            activation_function="Softmax",
-        ),
-    ]
-    network = bolt.DistributedNetwork(layers=layers, input_dim=n_classes)
-    return network
 
 
 def get_simple_concat_model(

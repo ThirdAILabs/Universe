@@ -105,18 +105,18 @@ uint32_t DistributedModel::numLayers() const {
   return DistributedNetwork._num_layers;
 }
 
-float* DistributedModel::getLayerData(uint32_t layer_index, get_type type) {
+float* DistributedModel::getLayerData(uint32_t layer_index, GetType type) {
   switch (type) {
-    case get_weights:
+    case GET_WEIGHTS:
       return DistributedNetwork._layers[layer_index]->getWeights();
       break;
-    case get_biases:
+    case GET_BIASES:
       return DistributedNetwork._layers[layer_index]->getBiases();
       break;
-    case get_weights_gradients:
+    case GET_WEIGHT_GRADIENTS:
       return DistributedNetwork._layers[layer_index]->getWeightsGradient();
       break;
-    case get_biases_gradients:
+    case GET_BIASES_GRADIENTS:
       return DistributedNetwork._layers[layer_index]->getBiasesGradient();
       break;
   }
@@ -125,18 +125,18 @@ float* DistributedModel::getLayerData(uint32_t layer_index, get_type type) {
 }
 
 void DistributedModel::setLayerData(uint32_t layer_index, const float* set_data,
-                                    set_type type) {
+                                    SetType type) {
   switch (type) {
-    case set_weights:
+    case SET_WEIGHTS:
       DistributedNetwork._layers[layer_index]->setWeights(set_data);
       break;
-    case set_biases:
+    case SET_BIASES:
       DistributedNetwork._layers[layer_index]->setBiases(set_data);
       break;
-    case set_weights_gradients:
+    case SET_WEIGHTS_GRADIENTS:
       DistributedNetwork._layers[layer_index]->setWeightGradients(set_data);
       break;
-    case set_biases_gradients:
+    case SET_BIASES_GRADIENTS:
       DistributedNetwork._layers[layer_index]->setBiasesGradients(set_data);
       break;
   }

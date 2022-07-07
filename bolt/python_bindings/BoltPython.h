@@ -454,7 +454,7 @@ class DistributedPyNetwork final : public DistributedModel {
       return py::none();
     }
 
-    float* mem = DistributedModel::getLayerData(layer_index, get_weights);
+    float* mem = DistributedModel::getLayerData(layer_index, GET_WEIGHTS);
 
     py::capsule free_when_done(
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
@@ -494,7 +494,7 @@ class DistributedPyNetwork final : public DistributedModel {
     }
 
     DistributedModel::setLayerData(layer_index, new_weights.data(),
-                                   set_weights);
+                                   SET_WEIGHTS);
   }
 
   void setWeightGradients(
@@ -525,7 +525,7 @@ class DistributedPyNetwork final : public DistributedModel {
     }
 
     DistributedModel::setLayerData(layer_index, new_weights_gradients.data(),
-                                   set_weights_gradients);
+                                   SET_WEIGHTS_GRADIENTS);
   }
 
   void setBiases(
@@ -547,7 +547,7 @@ class DistributedPyNetwork final : public DistributedModel {
       throw std::invalid_argument(err.str());
     }
 
-    DistributedModel::setLayerData(layer_index, new_biases.data(), set_biases);
+    DistributedModel::setLayerData(layer_index, new_biases.data(), SET_BIASES);
   }
 
   void setBiasesGradients(
@@ -572,7 +572,7 @@ class DistributedPyNetwork final : public DistributedModel {
     }
 
     DistributedModel::setLayerData(layer_index, new_biases_gradients.data(),
-                                   set_biases_gradients);
+                                   SET_BIASES_GRADIENTS);
   }
 
   py::array_t<float> getBiases(uint32_t layer_index) {
@@ -580,7 +580,7 @@ class DistributedPyNetwork final : public DistributedModel {
       return py::none();
     }
 
-    float* mem = DistributedModel::getLayerData(layer_index, get_biases);
+    float* mem = DistributedModel::getLayerData(layer_index, GET_BIASES);
 
     py::capsule free_when_done(
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
@@ -602,7 +602,7 @@ class DistributedPyNetwork final : public DistributedModel {
     }
 
     float* mem =
-        DistributedModel::getLayerData(layer_index, get_biases_gradients);
+        DistributedModel::getLayerData(layer_index, GET_BIASES_GRADIENTS);
 
     size_t dim = DistributedModel::getDim(layer_index);
 
@@ -615,7 +615,7 @@ class DistributedPyNetwork final : public DistributedModel {
     }
 
     float* mem =
-        DistributedModel::getLayerData(layer_index, get_weights_gradients);
+        DistributedModel::getLayerData(layer_index, GET_WEIGHT_GRADIENTS);
 
     size_t dim = DistributedModel::getDim(layer_index);
     size_t prev_dim = (layer_index > 0)
