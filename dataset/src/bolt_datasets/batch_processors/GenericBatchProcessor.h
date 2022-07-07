@@ -5,8 +5,10 @@
 #include <dataset/src/bolt_datasets/BatchProcessor.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
+#include <vector>
 
 namespace thirdai::dataset {
 
@@ -53,6 +55,11 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
 
   std::optional<BoltDataLabelPair<bolt::BoltBatch>> createBatch(
       const std::vector<std::string>& rows) final {
+    
+    if (rows.empty()) {
+      return std::nullopt;
+    }
+
     std::vector<bolt::BoltVector> batch_inputs(rows.size());
     std::vector<bolt::BoltVector> batch_labels(rows.size());
 
@@ -63,7 +70,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     */
     bool found_error = false;
 
-    auto first_row = parseCsvRow(rows[0]);
+    auto first_row = parseCsvRow(rows.at(0));
     for (auto& block : _input_blocks) {
       block->prepareForBatch(first_row);
     }
