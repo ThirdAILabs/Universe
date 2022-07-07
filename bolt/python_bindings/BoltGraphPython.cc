@@ -174,6 +174,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
                                     /* detailed = */ false);
            })
       .def("freeze_hash_tables", &BoltGraph::freezeHashTables,
+           py::arg("insert_labels_if_not_found") = true,
            "Prevents updates to hash tables in the model. If you plan to use "
            "sparse inference, you may get a significant performance "
            "improvement if you call this one or two epochs before you finish "

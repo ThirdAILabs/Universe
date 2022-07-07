@@ -450,13 +450,15 @@ void BoltGraph::reconstructHashFunctions() {
   }
 }
 
-void BoltGraph::freezeHashTables() {
+void BoltGraph::freezeHashTables(bool insert_labels_if_not_found) {
   for (auto& layer : _internal_fully_connected_layers) {
     layer->freezeHashTables(/* insert_labels_if_not_found= */ false);
   }
 
-  for (auto& layer : _output->getInternalFullyConnectedLayers()) {
-    layer->freezeHashTables(/* insert_labels_if_not_found= */ true);
+  if (insert_labels_if_not_found) {
+    for (auto& layer : _output->getInternalFullyConnectedLayers()) {
+      layer->freezeHashTables(/* insert_labels_if_not_found= */ true);
+    }
   }
 }
 
