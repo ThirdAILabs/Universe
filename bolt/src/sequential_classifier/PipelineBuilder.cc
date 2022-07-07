@@ -37,8 +37,7 @@ PipelineBuilder::buildPipelineForFile(std::string& filename, bool shuffle,
 std::string PipelineBuilder::getHeader(dataset::DataLoader& loader) {
   auto header = loader.getHeader();
   if (!header) {
-    throw std::invalid_argument(
-        "The file has no header.");
+    throw std::invalid_argument("The file has no header.");
   }
   return *header;
 }
@@ -76,7 +75,8 @@ size_t PipelineBuilder::autotuneShuffleBufferSize() const {
 }
 
 void PipelineBuilder::addDateFeats(Blocks& blocks) {
-  blocks.push_back(std::make_shared<dataset::DateBlock>(_schema.timestamp.col_num));
+  blocks.push_back(
+      std::make_shared<dataset::DateBlock>(_schema.timestamp.col_num));
   addNonzeros(4);
 }
 
@@ -106,7 +106,8 @@ void PipelineBuilder::addCategoricalAttrFeats(Blocks& blocks) {
   for (uint32_t i = 0; i < cat_attrs.size(); i++) {
     auto cat = cat_attrs[i];
     if (i >= _states.cat_attr_maps.size()) {
-      _states.cat_attr_maps.push_back(std::make_shared<dataset::StringToUidMap>(cat.n_distinct));
+      _states.cat_attr_maps.push_back(
+          std::make_shared<dataset::StringToUidMap>(cat.n_distinct));
     }
     blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
         cat.col_num, _states.cat_attr_maps[i]));
@@ -129,10 +130,10 @@ void PipelineBuilder::addTrackableQtyFeats(Blocks& blocks,
     auto qty = trackable_qty[i];
     if (i >= _states.trackable_counts.size()) {
       _states.trackable_counts.push_back(
-        std::make_shared<dataset::CountHistoryIndex>(
-          /* n_rows = */ 5, /* range_pow = */ 22,
-          /* lifetime = */ std::numeric_limits<uint32_t>::max(),
-          /* period = */ config.period));
+          std::make_shared<dataset::CountHistoryIndex>(
+              /* n_rows = */ 5, /* range_pow = */ 22,
+              /* lifetime = */ std::numeric_limits<uint32_t>::max(),
+              /* period = */ config.period));
     }
     auto trend_block = std::make_shared<dataset::TrendBlock>(
         qty.has_col_num, item.col_num, _schema.timestamp.col_num, qty.col_num,

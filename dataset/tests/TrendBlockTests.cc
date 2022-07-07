@@ -28,7 +28,8 @@
 //         sample.push_back(id_ss.str());
 
 //         time_t timestamp =
-//             static_cast<time_t>(day + day_offset) * TimeUtils::SECONDS_IN_DAY;
+//             static_cast<time_t>(day + day_offset) *
+//             TimeUtils::SECONDS_IN_DAY;
 //         // Add offset to prevent overflow
 //         // due to timezone differences.
 //         auto* tm = std::localtime(&timestamp);
@@ -173,7 +174,8 @@
 //   for (auto& vec : vecs) {
 //     size_t id = i % n_ids;
 //     auto nbrs = getIntNeighbors(id, *graph);
-//     size_t expected_n_neighbors = std::min(nbrs.size(), block_max_n_neighbors);
+//     size_t expected_n_neighbors = std::min(nbrs.size(),
+//     block_max_n_neighbors);
 
 //     auto entries = vectorEntries(vec);
 //     ASSERT_EQ(entries.size(), (expected_n_neighbors + 1) * (lookback + 1));
@@ -188,9 +190,11 @@
 //   }
 // }
 
-// // TODO(Geordie): Should change lifetime to check number of samples too because
+// // TODO(Geordie): Should change lifetime to check number of samples too
+// because
 // // otherwise if we have a window size of 1 and lag of zero we keep making new
-// // sketches. In fact, maybe only check number of samples instead of the dates.
+// // sketches. In fact, maybe only check number of samples instead of the
+// dates.
 // // This allows for some neat things, like e.g. instead of having a critical
 // // section within the add vector segment method, we can do it before the
 // // parallel for loop.

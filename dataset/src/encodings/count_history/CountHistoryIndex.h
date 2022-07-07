@@ -9,7 +9,8 @@ namespace thirdai::dataset {
 
 class CountHistoryIndex {
  public:
-  CountHistoryIndex(uint32_t n_rows, uint32_t range_pow, uint32_t lifetime, uint32_t period = 1)
+  CountHistoryIndex(uint32_t n_rows, uint32_t range_pow, uint32_t lifetime,
+                    uint32_t period = 1)
       : _recent(std::make_unique<CountMinSketch>(n_rows, range_pow)),
         _old(std::make_unique<CountMinSketch>(n_rows, range_pow)),
         _timestamp_lifetime(lifetime),

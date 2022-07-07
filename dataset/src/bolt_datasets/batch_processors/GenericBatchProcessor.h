@@ -55,7 +55,6 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
 
   std::optional<BoltDataLabelPair<bolt::BoltBatch>> createBatch(
       const std::vector<std::string>& rows) final {
-    
     if (rows.empty()) {
       return std::nullopt;
     }

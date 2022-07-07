@@ -50,8 +50,8 @@
 //         return "stagnant";
 //       default:
 //         throw std::invalid_argument(
-//             "State is not increasing, decreasing, nor stagnant. Something is "
-//             "wrong.");
+//             "State is not increasing, decreasing, nor stagnant. Something is
+//             " "wrong.");
 //     }
 //   }
 

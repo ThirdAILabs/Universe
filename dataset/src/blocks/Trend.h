@@ -43,19 +43,19 @@ class TrendBlock : public Block {
   }
 
   TrendBlock(bool has_count_col, size_t id_col, size_t timestamp_col,
-             size_t count_col, uint32_t horizon, uint32_t lookback, uint32_t period,
-             GraphPtr graph = nullptr, size_t max_n_neighbors = 0)
+             size_t count_col, uint32_t horizon, uint32_t lookback,
+             uint32_t period, GraphPtr graph = nullptr,
+             size_t max_n_neighbors = 0)
       : TrendBlock(has_count_col, id_col, timestamp_col, count_col, horizon,
                    lookback,
                    std::make_shared<CountHistoryIndex>(
                        /* n_rows = */ 5, /* range_pow = */ 22,
-                       lifetime(horizon, lookback),
-                       period),
+                       lifetime(horizon, lookback), period),
                    std::move(graph), max_n_neighbors) {}
 
   uint32_t featureDim() const final {
     uint32_t multiplier = _max_n_neighbors + 1;
-    return (_lookback) * multiplier;
+    return (_lookback)*multiplier;
   };
 
   bool isDense() const final { return _max_n_neighbors == 0; };
