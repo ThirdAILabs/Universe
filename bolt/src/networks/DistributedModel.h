@@ -80,7 +80,6 @@ class DistributedModel : Model<bolt::BoltBatch> {
       // Limit the number of batches used in the dataset
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
-
   // Distributed Functions
   uint32_t initTrainSingleNode(
       std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
@@ -158,7 +157,6 @@ class DistributedModel : Model<bolt::BoltBatch> {
   FullyConnectedNetwork DistributedNetwork;
 
  protected:
-
   uint32_t _batch_iter;
 
  private:

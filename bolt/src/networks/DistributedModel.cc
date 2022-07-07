@@ -26,7 +26,8 @@ uint32_t DistributedModel::initTrainSingleNode(
   _train_data = train_data;
   _train_labels = train_labels;
   uint32_t batch_size = _train_data->at(0).getBatchSize();
-  _rebuild_batch =  DistributedNetwork.getRebuildBatch(rebuild, batch_size, train_data->len());
+  _rebuild_batch = DistributedNetwork.getRebuildBatch(rebuild, batch_size,
+                                                      train_data->len());
   _rehash_batch =
       DistributedNetwork.getRehashBatch(rehash, batch_size, train_data->len());
 
@@ -86,10 +87,10 @@ InferenceMetricData DistributedModel::predictSingleNode(
     float* output_activations, bool use_sparse_inference,
     const std::vector<std::string>& metric_names, bool verbose,
     uint32_t batch_limit) {
-      return DistributedNetwork.predict(test_data, labels, output_active_neurons,  output_activations, use_sparse_inference, metric_names, verbose, batch_limit);
-
+  return DistributedNetwork.predict(test_data, labels, output_active_neurons,
+                                    output_activations, use_sparse_inference,
+                                    metric_names, verbose, batch_limit);
 }
-
 
 uint32_t DistributedModel::getInferenceOutputDim(
     bool use_sparse_inference) const {
@@ -157,6 +158,5 @@ void DistributedModel::setRandomSeed(uint32_t random_seed) const {
     }
   }
 }
-
 
 }  // namespace thirdai::bolt

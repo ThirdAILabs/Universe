@@ -637,7 +637,6 @@ class DistributedPyNetwork final : public DistributedModel {
                  "the dtype of the array or use .astype(...)."
               << std::endl;
   }
-
 };
 class SentimentClassifier {
  public:

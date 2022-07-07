@@ -123,6 +123,8 @@ def gen_network_distributed(n_classes):
     ]
     network = bolt.DistributedNetwork(layers=layers, input_dim=n_classes)
     return network
+
+
 def get_simple_concat_model(
     hidden_layer_top_dim,
     hidden_layer_bottom_dim,
