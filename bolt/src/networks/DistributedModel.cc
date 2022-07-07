@@ -19,8 +19,8 @@ namespace thirdai::bolt {
  */
 uint32_t DistributedModel::initTrainSingleNode(
     std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
-    const dataset::BoltDatasetPtr& train_labels,
-    uint32_t rehash, uint32_t rebuild, bool verbose) {
+    const dataset::BoltDatasetPtr& train_labels, uint32_t rehash,
+    uint32_t rebuild, bool verbose) {
   _train_data = train_data;
   _train_labels = train_labels;
   uint32_t batch_size = _train_data->at(0).getBatchSize();
@@ -50,7 +50,8 @@ void DistributedModel::calculateGradientSingleNode(
 #pragma omp parallel for default(none) \
     shared(batch_inputs, batch_labels, _outputs, loss_fn)
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
-    DistributedNetwork.forward(vec_id, batch_inputs, _outputs[vec_id], &batch_labels[vec_id]);
+    DistributedNetwork.forward(vec_id, batch_inputs, _outputs[vec_id],
+                               &batch_labels[vec_id]);
 
     loss_fn.lossGradients(_outputs[vec_id], batch_labels[vec_id],
                           batch_inputs.getBatchSize());
@@ -59,7 +60,7 @@ void DistributedModel::calculateGradientSingleNode(
 }
 
 void DistributedModel::updateParametersSingleNode(float learning_rate) {
-   DistributedNetwork.updateParameters(learning_rate, ++_batch_iter);
+  DistributedNetwork.updateParameters(learning_rate, ++_batch_iter);
   if (_batch_iter % _rebuild_batch == (_rebuild_batch - 1)) {
     reBuildHashFunctions();
     buildHashTables();

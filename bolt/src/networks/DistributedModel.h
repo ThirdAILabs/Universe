@@ -46,40 +46,38 @@ class DistributedModel : Model<bolt::BoltBatch> {
         _rebuild_batch(0),
         _rehash_batch(0),
         _train_data(nullptr),
-        _train_labels(nullptr) {
-  }
+        _train_labels(nullptr) {}
 
   // This function is inherently calling predict in model.h
   // So, see model.h for more info
   InferenceMetricData predictSingleNode(
-      const std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>&test_data,
+      const std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>&
+          test_data,
       const dataset::BoltDatasetPtr& test_labels,
-      uint32_t* output_active_neurons,
-      float* output_activations,
+      uint32_t* output_active_neurons, float* output_activations,
       bool use_sparse_inference = false,
-      const std::vector<std::string>& metric_names = {},
-      bool verbose = true,
+      const std::vector<std::string>& metric_names = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
 
   // Distributed Functions
   uint32_t initTrainSingleNode(
       std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
-      const dataset::BoltDatasetPtr& train_labels,
-      uint32_t rehash, uint32_t rebuild, bool verbose);
-  
-/*
- * This function calculates the gradient using the train_data of
- * particular batch(provided using batch_no) and for a particular
- * loss_function.
- */
+      const dataset::BoltDatasetPtr& train_labels, uint32_t rehash,
+      uint32_t rebuild, bool verbose);
+
+  /*
+   * This function calculates the gradient using the train_data of
+   * particular batch(provided using batch_no) and for a particular
+   * loss_function.
+   */
   void calculateGradientSingleNode(uint32_t batch, const LossFunction& loss_fn);
 
-/*
- * This function updates the parameters for the neural network
- * using the updated gradients.
- * Right now, the updates are dense meaning that every parameter
- * is getting updated irrespective of type of training(dense or sparse)
- */
+  /*
+   * This function updates the parameters for the neural network
+   * using the updated gradients.
+   * Right now, the updates are dense meaning that every parameter
+   * is getting updated irrespective of type of training(dense or sparse)
+   */
   void updateParametersSingleNode(float learning_rate);
 
   uint32_t getInferenceOutputDim(bool use_sparse_inference) const final;
