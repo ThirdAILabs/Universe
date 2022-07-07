@@ -4,15 +4,40 @@
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <exceptions/src/Exceptions.h>
 #include <queue>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
 
 namespace thirdai::bolt {
 
 class Node;
-
 // Node objects should always be initialized as shared pointers and not raw
 // Nodes, since otherwise shared_from_this() might throw an error (we need
 // shared_from_this for a clean functional style python api)
 using NodePtr = std::shared_ptr<Node>;
+
+// This class keeps track of the node types that have been traversed so that
+// each node can get a unique name.
+class LayerNameManager {
+ public:
+  /*
+   * Example usage:
+   * registerNodeAndGetName("concat") -> concat_1
+   * registerNodeAndGetName("input") -> input_1
+   * registerNodeAndGetName("concat") -> concat_2
+   * registerNodeAndGetName("fc") -> fc_1
+   * registerNodeAndGetName("input") -> input_2
+   */
+  std::string registerNodeAndGetName(const std::string& node_type) {
+    type_to_count[node_type] += 1;
+    std::string name =
+        node_type + "_" + std::to_string(type_to_count[node_type]);
+    return name;
+  }
+
+ private:
+  std::unordered_map<std::string, uint32_t> type_to_count;
+};
 
 /*
   This class represents the interface used for nodes in a graph. It acts as a
@@ -21,9 +46,9 @@ using NodePtr = std::shared_ptr<Node>;
   called in the correct order. It has the following states:
     1. Constructed - the node object is created.
     2. Predecessors set - the predecessor nodes (if any) of the node are set.
-    3. Initialized - any parameters are initialized/allocated that are not
-       changed during the node's lifetime. For instance weight matrices,
-       embedding tables, hash tables.
+    3. Compiled - the nodes name is set, and any other parameters that do not
+       change during the node's lifetime are set (e.g. weight matrices,
+       embedding tables, hash tables, etc.).
     4. Prepared for batch processing - in this state any temporary data
        structures for maintaining the state of the node are created. Most
        commonly this will be allocating arrays for the activations and
@@ -36,19 +61,22 @@ using NodePtr = std::shared_ptr<Node>;
 */
 class Node {
  public:
-  // Moves the node from state 2 to state 3.
-  void initializeParameters() {
-    if (!predecessorsSet()) {
+  /*
+   * Compiles a single Node, including initializing any parameters and setting
+   * the Node's name. The Node should use the passed in LayerNameManager to get
+   * the name for its Node type. This moves the Node from state 2 to state 3.
+   */
+  void compile(LayerNameManager& name_manager) {
+    if (getState() == NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
-          "Cannot call initializeParameters before setting predecessor of "
-          "node.");
+          "Cannot call compile before setting predecessor(s) of this Node.");
     }
-    if (parametersInitialized()) {
-      throw exceptions::NodeStateMachineError(
-          "Cannot call initializeParameters twice.");
+    if (getState() == NodeState::Compiled ||
+        getState() == NodeState::PreparedForBatchProcessing) {
+      throw exceptions::NodeStateMachineError("Cannot call compile twice.");
     }
-
-    initializeParametersImpl();
+    _name = name_manager.registerNodeAndGetName(/* node_type = */ type());
+    compileImpl();
   }
 
   /*
@@ -61,25 +89,25 @@ class Node {
    * (so they can be += to correctly in backpropogate in succesor nodes).
    */
   inline void forward(uint32_t vec_index, const BoltVector* labels) {
-    assert(preparedForBatchProcessing());
+    assert(getState() == NodeState::PreparedForBatchProcessing);
     forwardImpl(vec_index, labels);
   }
 
   // Computes the backwards pass through the node.
   inline void backpropagate(uint32_t vec_index) {
-    assert(preparedForBatchProcessing());
+    assert(getState() == NodeState::PreparedForBatchProcessing);
     backpropagateImpl(vec_index);
   }
 
   // Updates any trainable parameters
   inline void updateParameters(float learning_rate, uint32_t batch_cnt) {
-    assert(preparedForBatchProcessing());
+    assert(getState() == NodeState::PreparedForBatchProcessing);
     updateParametersImpl(learning_rate, batch_cnt);
   }
 
   // Returns the ith output of the node.
   inline BoltVector& getOutputVector(uint32_t vec_index) {
-    assert(preparedForBatchProcessing());
+    assert(getState() == NodeState::PreparedForBatchProcessing);
     return getOutputVectorImpl(vec_index);
   }
 
@@ -97,7 +125,15 @@ class Node {
    * will throw an error. Currently, it is only unknowable for the Input node,
    * so it is the responsibility of the caller to call isInputNode() first.
    */
-  virtual uint32_t numNonzerosInOutput() const = 0;
+  uint32_t numNonzerosInOutput() const {
+    if (getState() != NodeState::PreparedForBatchProcessing) {
+      throw exceptions::NodeStateMachineError(
+          "Must call prepareForBatchProcessing before calling "
+          "numNonzerosInOutput.");
+    }
+
+    return numNonzerosInOutputImpl();
+  }
 
   /*
     Initializes any state that the node must store for computations that is not
@@ -110,26 +146,30 @@ class Node {
     This moves the node from state 3 to state 4.
   */
   void prepareForBatchProcessing(uint32_t batch_size, bool use_sparsity) {
-    if (!parametersInitialized()) {
+    if (getState() == NodeState::Constructed ||
+        getState() == NodeState::PredecessorsSet) {
       throw exceptions::NodeStateMachineError(
-          "Cannot call prepareForBatchProcessing before initializeParameters.");
+          "Cannot call prepareForBatchProcessing before calling compile.");
     }
 
-    if (preparedForBatchProcessing()) {
+    if (getState() == NodeState::PreparedForBatchProcessing) {
       throw exceptions::NodeStateMachineError(
-          "Cannot call prepareForBatchProcessing consecutively.");
+          "Cannot call prepareForBatchProcessing consecutively (must call "
+          "cleanupAfterBatchProcessing in between).");
     }
 
     prepareForBatchProcessingImpl(batch_size, use_sparsity);
   }
 
-  // Do any cleanup to bring the Node into the same state it was in before
-  // prepareForBatchProcessing was called. This moves the node from state 4 to
-  // state 3.
+  /*
+   * Do any cleanup to bring the Node into the same state it was in before
+   * prepareForBatchProcessing was called. This moves the node from state 4 to
+   * state 3.
+   */
   void cleanupAfterBatchProcessing() {
-    if (!preparedForBatchProcessing()) {
+    if (getState() != Node::PreparedForBatchProcessing) {
       throw exceptions::NodeStateMachineError(
-          "Cannot call cleanupAfterBatchProcessing before "
+          "Can only call cleanupAfterBatchProcessing after "
           "prepareForBatchProcessing.");
     }
 
@@ -138,7 +178,14 @@ class Node {
 
   // Returns any predecessors of the node. This is used to traverse the graph
   // during compilation.
-  virtual std::vector<NodePtr> getPredecessors() const = 0;
+  std::vector<NodePtr> getPredecessors() const {
+    if (getState() == NodeState::Constructed) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot get the predecessors for this layer because "
+          "they have not been set yet");
+    }
+    return getPredecessorsImpl();
+  }
 
   /*
     Returns any fully connected layer objects used by the node. This list is
@@ -146,19 +193,54 @@ class Node {
     entire network, like rebuilding all hash tables or reinitializing hash
     functions after a certain number of batches.
   */
-  virtual std::vector<std::shared_ptr<FullyConnectedLayer>>
-  getInternalFullyConnectedLayers() const = 0;
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayers() {
+    if (getState() == NodeState::Constructed ||
+        getState() == NodeState::PredecessorsSet) {
+      throw exceptions::NodeStateMachineError(
+          "Cannot call getInternalFullyConnectedLayers before "
+          "calling compile.");
+    }
+    return getInternalFullyConnectedLayersImpl();
+  }
 
   // Returns true if the node is an input node.
   virtual bool isInputNode() const = 0;
 
+  // Prints out a single line summary in the format
+  // (pred_names) -> node_name (NodeType): parameter_1=1, parameter_2=0 ...
+  void summarize(std::stringstream& summary, bool detailed) const {
+    if (getState() == NodeState::Constructed ||
+        getState() == NodeState::PredecessorsSet) {
+      throw exceptions::NodeStateMachineError(
+          "Can only summarize a node after compiling");
+    }
+    summarizeImpl(summary, detailed);
+  }
+
+  // Returns the name of this node (only valid after the node has been
+  // compiled).
+  const std::string& name() const {
+    if (getState() == NodeState::Constructed ||
+        getState() == NodeState::PredecessorsSet) {
+      throw exceptions::NodeStateMachineError(
+          "Can only get the name of a node after compiling");
+    }
+    return *_name;
+  }
+
   virtual ~Node() = default;
 
  protected:
-  virtual void initializeParametersImpl() = 0;
+  virtual void compileImpl() = 0;
+
+  virtual std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayersImpl() const = 0;
 
   virtual void prepareForBatchProcessingImpl(uint32_t batch_size,
                                              bool use_sparsity) = 0;
+
+  virtual uint32_t numNonzerosInOutputImpl() const = 0;
 
   virtual void forwardImpl(uint32_t vec_index, const BoltVector* labels) = 0;
 
@@ -171,14 +253,25 @@ class Node {
 
   virtual void cleanupAfterBatchProcessingImpl() = 0;
 
-  // Returns true if the node is in state 2.
-  virtual bool predecessorsSet() const = 0;
+  virtual std::vector<NodePtr> getPredecessorsImpl() const = 0;
 
-  // Returns true if the node is in state 3
-  virtual bool parametersInitialized() const = 0;
+  virtual void summarizeImpl(std::stringstream& summary,
+                             bool detailed) const = 0;
 
-  // Returns true if the node is in state 4.
-  virtual bool preparedForBatchProcessing() const = 0;
+  // Return a short all lowercase string representing the type of this node for
+  // use in printing the graph, e.g. concat, fc, input
+  virtual std::string type() const = 0;
+
+  enum NodeState {
+    Constructed,
+    PredecessorsSet,
+    Compiled,
+    PreparedForBatchProcessing
+  };
+
+  virtual NodeState getState() const = 0;
+
+  std::optional<std::string> _name;
 };
 
 }  // namespace thirdai::bolt

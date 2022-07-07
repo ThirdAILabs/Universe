@@ -20,17 +20,26 @@ class MockTraversalNode final : public MockNode {
 
   uint32_t getID() const { return _id; }
 
-  std::vector<NodePtr> getPredecessors() const final { return _predecessors; }
-
   void setPredecessors(const std::vector<NodePtr>& predecessors) {
     _predecessors = predecessors;
+    _state = NodeState::PredecessorsSet;
   }
 
  private:
-  bool predecessorsSet() const final { return true; }
+  std::vector<NodePtr> getPredecessorsImpl() const final {
+    return _predecessors;
+  }
+
+  void compileImpl() final { _state = NodeState::Compiled; }
+
+  std::string type() const final { return _type; }
+
+  NodeState getState() const final { return _state; }
 
   std::vector<NodePtr> _predecessors;
   uint32_t _id;
+  NodeState _state = NodeState::Constructed;
+  std::string _type = "test";
 };
 
 TEST(GraphTraversalTest, CorrectlyTraversesDAG) {
@@ -48,6 +57,7 @@ TEST(GraphTraversalTest, CorrectlyTraversesDAG) {
   node3->setPredecessors({node0, node1, node2});
   node2->setPredecessors({node0, node1});
   node1->setPredecessors({node0});
+  node0->setPredecessors({});
 
   BoltGraph graph(/* inputs= */ {}, /* output= */ node6);
 
@@ -76,6 +86,7 @@ TEST(GraphTraversalTest, ThrowsExceptionForCycle) {
   node3->setPredecessors({node2});
   node2->setPredecessors({node1});
   node1->setPredecessors({node0, node3});
+  node0->setPredecessors({});
 
   BoltGraph graph(/* inputs= */ {}, /* output= */ node4);
 
