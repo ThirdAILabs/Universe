@@ -1,5 +1,3 @@
-from fileinput import filename
-from numpy import save
 from thirdai import bolt
 from utils import gen_training_data
 import pytest
