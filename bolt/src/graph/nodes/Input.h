@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
@@ -108,7 +109,7 @@ class Input final : public Node {
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
-        "Node is in an invalid internal state");
+        "InputNode is in an invalid internal state");
   }
 
   void checkDimForInput(const BoltVector& vec) const {
@@ -133,9 +134,22 @@ class Input final : public Node {
     }
   }
 
+  // Private constructor for cereal.
+  Input() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Node>(this), _compiled, _expected_input_dim);
+  }
+
   bool _compiled;
   BoltBatch* _input_batch;
   uint32_t _expected_input_dim;
 };
 
+using InputPtr = std::shared_ptr<Input>;
+
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::Input)

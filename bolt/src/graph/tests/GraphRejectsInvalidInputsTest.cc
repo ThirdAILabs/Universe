@@ -119,4 +119,32 @@ TEST(GraphRejectsInvalidInputsTest, AcceptsCorrectConcatenation) {
       graph.compile(std::make_shared<MeanSquaredError>()));
 }
 
+TEST(GraphRejectsInvalidInputsTest, RejectsUnkownInput) {
+  auto input1 = std::make_shared<Input>(/* dim= */ 10);
+  auto input2 = std::make_shared<Input>(/* dim= */ 20);
+
+  auto layer = std::make_shared<FullyConnectedNode>(
+                   /* dim= */ 10, /* activation= */ ActivationFunction::ReLU)
+                   ->addPredecessor(input1);
+
+  BoltGraph graph(/* inputs= */ {input2}, /* output= */ layer);
+  ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
+      graph.compile(std::make_shared<MeanSquaredError>()),
+      exceptions::GraphCompilationFailure);
+}
+
+TEST(GraphRejectsInvalidInputsTest, RejectsUnusedInput) {
+  auto input1 = std::make_shared<Input>(/* dim= */ 10);
+  auto input2 = std::make_shared<Input>(/* dim= */ 20);
+
+  auto layer = std::make_shared<FullyConnectedNode>(
+                   /* dim= */ 10, /* activation= */ ActivationFunction::ReLU)
+                   ->addPredecessor(input1);
+
+  BoltGraph graph(/* inputs= */ {input1, input2}, /* output= */ layer);
+  ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
+      graph.compile(std::make_shared<MeanSquaredError>()),
+      exceptions::GraphCompilationFailure);
+}
+
 }  // namespace thirdai::bolt::tests
