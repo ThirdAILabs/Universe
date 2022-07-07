@@ -9,7 +9,9 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <bolt/src/sequential_classifier/SequentialClassifier.h>
 #include <dataset/python_bindings/DatasetPython.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <pybind11/buffer_info.h>
@@ -394,6 +396,113 @@ class SentimentClassifier {
  private:
   std::unique_ptr<PyNetwork> _model;
   BoltVector _output;
+};
+
+class PySequentialClassifier : public SequentialClassifier {
+ public:
+  PySequentialClassifier(const std::string& size, const py::tuple& item,
+                         const std::string& timestamp, const py::tuple& target,
+                         uint32_t horizon, uint32_t lookback,
+                         uint32_t period = 1,
+                         const std::vector<std::string>& text = {},
+                         const std::vector<py::tuple>& categorical = {},
+                         const std::vector<std::string>& trackable_qty = {})
+                         : SequentialClassifier({
+                           toItem(item),
+                           toTimestamp(timestamp),
+                           toTarget(target),
+                           toTrackConfig(horizon, lookback, period),
+                           toText(text),
+                           toCategoricals(categorical),
+                           toTrackables(trackable_qty)
+                         }, size) {}
+ private:
+  static Item toItem(const py::tuple& tuple) {
+    if (tuple.size() != 2 && tuple.size() != 4) {
+      std::stringstream error_ss;
+      error_ss << "An Item tuple either contains two elements: \n"
+        "(item_column: str, n_distinct_items: int) \n"
+        "or 4 elements: \n"
+        "(item_column: str, n_distinct_items: int, item_graph: Dict[str, List[str]], max_neighbors: int). \n"
+        "Found tuple " << tuple;
+      throw std::invalid_argument(error_ss.str());
+    }
+
+    Item item {/* col_name = */ tuple[0].cast<std::string>(), /* n_distinct = */ tuple[1].cast<uint32_t>()};
+    
+    if (tuple.size() > 2) {
+      /*
+        Casting tuple[2] to dataset::GraphPtr (shared_ptr of dataset::Graph) results
+        in compilation issues. We copy the graph and then move the copy into a 
+        shared_ptr to avoid having multiple smart pointers to the same object 
+        (since Python also keeps its own smart pointer to the object).
+      */
+      dataset::Graph graph(tuple[2].cast<dataset::Graph>()); // Invokes copy constructor.
+      item.graph = std::make_shared<dataset::Graph>(std::move(graph));
+      item.max_neighbors = tuple[3].cast<uint32_t>();
+    }
+    return item;
+  }
+
+  static CategoricalAttribute toTarget(const py::tuple& tuple) {
+    if (tuple.size() != 2 && tuple.size() != 4) {
+      std::stringstream error_ss;
+      error_ss << "A Target tuple must contains two elements: \n"
+        "(target_column: str, n_distinct_classes: int) \n"
+        "Found tuple " << tuple;
+      throw std::invalid_argument(error_ss.str());
+    }
+
+    return {
+      /* col_name = */ tuple[0].cast<std::string>(),
+      /* n_distinct = */ tuple[1].cast<uint32_t>()
+    };
+  }
+
+  static std::vector<CategoricalAttribute> toCategoricals(const std::vector<py::tuple>& tuples) {
+    std::vector<CategoricalAttribute> categoricals;
+    for (const auto& tuple : tuples) {
+      if (tuple.size() != 2 && tuple.size() != 4) {
+        std::stringstream error_ss;
+        error_ss << "A Categorical tuple must contains two elements: \n"
+          "(categorical_attr_column: str, n_distinct_categories: int) \n"
+          "Found tuple " << tuple;
+        throw std::invalid_argument(error_ss.str());
+      }
+      
+      categoricals.push_back({
+        /* col_name = */ tuple[0].cast<std::string>(),
+        /* n_distinct = */ tuple[1].cast<uint32_t>()
+      });
+    }
+    return categoricals;
+  }
+
+  static Timestamp toTimestamp(const std::string& timestamp) {
+    return {/* col_name = */ timestamp};
+  }
+
+  static TrackingConfig toTrackConfig(uint32_t horizon, uint32_t lookback, uint32_t period) {
+    return {horizon, lookback, period};
+  }
+
+  static std::vector<TrackableQuantity> toTrackables(const std::vector<std::string>& trackable_names) {
+    std::vector<TrackableQuantity> trackables;
+    trackables.reserve(trackable_names.size());
+    for (const auto& name : trackable_names) {
+      trackables.push_back({/* col+name = */ name});
+    }
+    return trackables;
+  }
+
+  static std::vector<TextAttribute> toText(const std::vector<std::string>& text_names) {
+    std::vector<TextAttribute> texts;
+    texts.reserve(text_names.size());
+    for (const auto& name : text_names) {
+      texts.push_back({/* col_name = */ name});
+    }
+    return texts;
+  }
 };
 
 }  // namespace thirdai::bolt::python

@@ -53,7 +53,7 @@ class TrendBlock : public Block {
 
   uint32_t featureDim() const final {
     uint32_t multiplier = _max_n_neighbors + 1;
-    return (_lookback + 1) * multiplier;
+    return (_lookback) * multiplier;
   };
 
   bool isDense() const final { return _max_n_neighbors == 0; };
@@ -129,18 +129,19 @@ class TrendBlock : public Block {
     float sum_of_squares = 0;
     fillCountsAndSum(id, timestamp, counts, sum, sum_of_squares);
 
-    /*
-      Center and normalize by sum so sum is 0 and
-      values are always between -1 and 1.
-    */
-    float mean = sum / _lookback;
-    float l2norm = std::sqrt(sum_of_squares); 
-    centerAndNormalize(counts, l2norm, mean);
-    
+    if (_lookback > 1) {
+      /*
+        Center and normalize by sum so sum is 0 and
+        values are always between -1 and 1.
+      */
+      float mean = sum / _lookback;
+      float l2norm = std::sqrt(sum_of_squares);
+      centerAndNormalize(counts, l2norm, mean);
+    }
+
     for (const auto& count : counts) {
       vec.addDenseFeatureToSegment(count);
     }
-    // vec.addDenseFeatureToSegment(mean);
   }
 
   void fillCountsAndSum(uint32_t id, uint32_t timestamp,

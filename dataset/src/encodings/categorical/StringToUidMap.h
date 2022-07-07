@@ -22,8 +22,8 @@ class StringToUidMap : public CategoricalEncoding {
         uint32_t uid = _class_to_uid.size();
         if (uid >= _n_classes) {
           uid = _n_classes - 1;
-          std::cout << "WARNING: expected " << _n_classes << " classes, found at least "
-                    << _class_to_uid.size() + 1
+          std::cout << "WARNING: expected " << _n_classes
+                    << " classes, found at least " << _class_to_uid.size() + 1
                     << " classes. Clubbing extraneous classes into one ID."
                     << std::endl;
         }

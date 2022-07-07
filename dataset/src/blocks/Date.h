@@ -31,7 +31,8 @@ class DateBlock : public Block {
     uint32_t offset = 0;
 
     // Day of week
-    vec.addSparseFeatureToSegment(offset + ((epoch_time / TimeUtils::SECONDS_IN_DAY) % 7), 1.0);
+    vec.addSparseFeatureToSegment(
+        offset + ((epoch_time / TimeUtils::SECONDS_IN_DAY) % 7), 1.0);
     offset += day_of_week_dim;
 
     // Month of year

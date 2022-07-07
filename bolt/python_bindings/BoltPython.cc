@@ -8,9 +8,10 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
-#include <bolt/src/sequential_classifier/SequentialClassifier.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <bolt/src/sequential_classifier/SequentialClassifier.h>
 #include <bolt/src/text_classifier/TextClassifier.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -626,21 +627,24 @@ void createBoltSubmodule(py::module_& module) {
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
 
-  py::class_<SequentialClassifierConfig>(bolt_submodule,
-                                         "SequentialClassifierConfig")
-      .def(py::init<std::string, size_t, size_t, size_t, size_t, size_t>(),
-           py::arg("model_size"), py::arg("n_target_classes"),
-           py::arg("horizon"), py::arg("n_items"), py::arg("n_users") = 0,
-           py::arg("n_item_categories") = 0);
-
-  py::class_<SequentialClassifier>(bolt_submodule, "SequentialClassifier")
-      .def(py::init<std::unordered_map<std::string, std::string>,
-                    SequentialClassifierConfig, char>(),
-           py::arg("schema"), py::arg("config"), py::arg("delimiter") = ',')
-      .def("train", &SequentialClassifier::train, py::arg("filename"),
+  py::class_<PySequentialClassifier>(bolt_submodule,
+                                     "SequentialClassifier")
+      .def(py::init<const std::string&, const py::tuple&,
+                         const std::string&, const py::tuple&,
+                         uint32_t, uint32_t,
+                         uint32_t,
+                         const std::vector<std::string>&,
+                         const std::vector<py::tuple>&,
+                         const std::vector<std::string>&>(),
+                         py::arg("size"), py::arg("item"), py::arg("timestamp"),
+                         py::arg("target"), py::arg("horizon"), py::arg("lookback"),
+                         py::arg("period") = 1, py::arg("text") = std::vector<std::string>(), 
+                         py::arg("categorical") = std::vector<py::tuple>(),
+                         py::arg("trackable_qty") = std::vector<std::string>())
+      .def("train", &PySequentialClassifier::train, py::arg("filename"),
            py::arg("epochs"), py::arg("learning_rate"),
            py::arg("overwrite_index") = false)
-      .def("predict", &SequentialClassifier::predict, py::arg("filename"),
+      .def("predict", &PySequentialClassifier::predict, py::arg("filename"),
            py::arg("output_filename") = std::nullopt);
 
   py::class_<SentimentClassifier>(bolt_submodule, "SentimentClassifier")

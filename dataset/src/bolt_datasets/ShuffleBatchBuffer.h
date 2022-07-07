@@ -85,7 +85,8 @@ class ShuffleBatchBuffer {
                                  size_t expected_batch_size,
                                  std::mt19937& gen) {
     for (size_t i = 0; i < new_input_batch.getBatchSize(); i++) {
-      size_t rand_range = input_batches.size() * expected_batch_size + new_input_batch.getBatchSize();
+      size_t rand_range = input_batches.size() * expected_batch_size +
+                          new_input_batch.getBatchSize();
       std::uniform_int_distribution<> dist(0, rand_range);
       size_t swap_with = dist(gen);
       if (swap_with < input_batches.size() * expected_batch_size) {
