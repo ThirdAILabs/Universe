@@ -10,7 +10,9 @@ def get_train_config(epochs):
 
 
 def get_predict_config():
-    return bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
+    return (
+        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
+    )
 
 
 class ModelWithLayers:

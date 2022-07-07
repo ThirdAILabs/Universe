@@ -44,9 +44,7 @@ def run_simple_test(
     )
 
     predict_config = (
-        bolt.graph.PredictConfig.make()
-        .withMetrics(["categorical_accuracy"])
-        .silence()
+        bolt.graph.PredictConfig.make().withMetrics(["categorical_accuracy"]).silence()
     )
 
     metrics = model.predict_np(

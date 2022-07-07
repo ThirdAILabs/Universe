@@ -56,9 +56,7 @@ def test_bolt_dag_on_mnist():
     )
 
     predict_config = (
-        bolt.graph.PredictConfig.make()
-        .with_metrics(["categorical_accuracy"])
-        .silence()
+        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
     )
 
     metrics = model.predict(

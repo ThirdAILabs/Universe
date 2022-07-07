@@ -10,9 +10,11 @@ def test_freeze_dag_hash_tables():
     n_classes = 100
     input_layer = bolt.graph.Input(dim=n_classes)
     hidden_layer = bolt.graph.FullyConnected(
-        dim=1000, sparsity=0.15, activation="relu")(input_layer)
-    output_layer = bolt.graph.FullyConnected(
-        dim=n_classes, activation="softmax")(hidden_layer)
+        dim=1000, sparsity=0.15, activation="relu"
+    )(input_layer)
+    output_layer = bolt.graph.FullyConnected(dim=n_classes, activation="softmax")(
+        hidden_layer
+    )
 
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
     model.compile(bolt.CategoricalCrossEntropyLoss())
@@ -24,8 +26,11 @@ def test_freeze_dag_hash_tables():
     train_config = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=2)
     model.train_np(data, labels, train_config, batch_size=100)
 
-    predict_config = bolt.graph.PredictConfig.make(
-    ).enable_sparse_inference().with_metrics(["categorical_accuracy"])
+    predict_config = (
+        bolt.graph.PredictConfig.make()
+        .enable_sparse_inference()
+        .with_metrics(["categorical_accuracy"])
+    )
     test_metrics1 = model.predict_np(data, labels, predict_config)
 
     assert test_metrics1["categorical_accuracy"] >= 0.8
