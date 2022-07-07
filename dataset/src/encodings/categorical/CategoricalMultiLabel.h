@@ -9,7 +9,8 @@ namespace thirdai::dataset {
 
 class CategoricalMultiLabel final : public CategoricalEncoding {
  public:
-  explicit CategoricalMultiLabel(uint32_t max_label) : _max_label(max_label) {}
+  explicit CategoricalMultiLabel(uint32_t max_label, char delimiter = ',')
+      : _max_label(max_label), _delimiter(delimiter) {}
 
   void encodeCategory(std::string_view labels,
                       SegmentedFeatureVector& vec) final {
@@ -22,7 +23,7 @@ class CategoricalMultiLabel final : public CategoricalEncoding {
       // because exceptions in openmp is undefined.
       vec.addSparseFeatureToSegment(label, 1.0);
       start = end;
-    } while ((*start++) == ',');
+    } while ((*start++) == _delimiter);
   }
 
   bool isDense() const final { return false; }
@@ -31,6 +32,7 @@ class CategoricalMultiLabel final : public CategoricalEncoding {
 
  private:
   uint32_t _max_label;
+  char _delimiter = ',';
 };
 
 }  // namespace thirdai::dataset
