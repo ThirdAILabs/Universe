@@ -22,10 +22,10 @@ def download_census_income_dataset():
             f"curl {CENSUS_INCOME_BASE_DOWNLOAD_URL}adult.test --output {TEST_FILE}"
         )
 
-    # first line is bogus so delete it
     with open(TEST_FILE, "r") as fin:
         data = fin.read().splitlines(True)
     with open(TEST_FILE, "w") as fout:
+        # first line is bogus so delete it
         # for some reason each of the labels end with a "." in the test set
         fout.writelines([line.replace(".", "") for line in data[1:]])
 
@@ -39,7 +39,10 @@ def download_census_income_dataset():
             column_datatypes.append("categorical")
     column_datatypes.append("label")
 
-    return n_classes, column_datatypes, df[df.columns[-1]]
+    # theres no header so add the first column name as part of the labels
+    test_labels = [df.columns[-1]] + list(df[df.columns[-1]])
+
+    return n_classes, column_datatypes, test_labels
 
 
 def remove_files():
@@ -71,7 +74,7 @@ def test_tabular_classifier_census_income_dataset():
     classifier.train(
         train_file=TRAIN_FILE,
         column_datatypes=column_datatypes,
-        epochs=3,
+        epochs=1,
         learning_rate=0.01,
     )
 
@@ -80,6 +83,6 @@ def test_tabular_classifier_census_income_dataset():
     acc = compute_accuracy(test_labels, PREDICTION_FILE)
 
     print("Computed Accuracy: ", acc)
-    assert acc > 0.55
+    assert acc > 0.79
 
     remove_files()

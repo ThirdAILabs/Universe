@@ -68,7 +68,7 @@ class TabularMetadata {
   }
 
   std::string getClassName(uint32_t class_id) {
-    return _class_id_to_class[class_id];
+    return _class_id_to_class.at(class_id);
   }
 
  private:
