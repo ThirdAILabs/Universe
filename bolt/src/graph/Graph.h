@@ -80,6 +80,8 @@ class BoltGraph {
     return nodes;
   }
 
+  void freezeHashTables();
+
   // This only saves the graph in the compiled state, that is any parameters and
   // graph structure are preserved, but any state related to train or predict is
   // discarded.
