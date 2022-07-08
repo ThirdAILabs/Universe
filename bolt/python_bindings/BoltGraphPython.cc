@@ -217,15 +217,27 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
             }
             auto [metrics, output] = model.predict(
                 test_data.dataset, test_labels.dataset, predict_config);
-            // The InferenceOutput object owns the memory for the activation and
-            // active_neuron vectors, so we can use it as the "handle"
-            // when we build the numpy arrays.
-            py::object output_handle = py::cast(output);
+
+            // We need to get these now because we are about to std::move output
+            const auto* activation_pointer =
+                output.getNonowningActivationPointer();
+            const auto* active_neuron_pointer =
+                output.getNonowningActiveNeuronPointer();
+            uint32_t num_nonzeros = output.numNonzerosInOutput();
+
+            // At first, the InferenceOutput object owns the memory for the
+            // activation and active_neuron vectors. We want to use it as the
+            // owning object when we build the numpy array, but to do that we
+            // need to cast it to a py::object. Importantly, we need to use
+            // std::move to ensure that we are casting output itself to a python
+            // object, not a copy of it. See return_value_policy::automatic here
+            // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies
+            py::object output_handle = py::cast(std::move(output));
+
             return constructPythonInferenceTuple(
-                py::cast(metrics), test_data.dataset->len(),
-                output.numNonzerosInOutput(),
-                /* activations = */ output.getNonowningActivationPointer(),
-                /* active_neurons = */ output.getNonowningActiveNeuronPointer(),
+                py::cast(metrics), test_data.dataset->len(), num_nonzeros,
+                /* activations = */ activation_pointer,
+                /* active_neurons = */ active_neuron_pointer,
                 /* activation_handle = */ output_handle,
                 /* active_neuron_handle = */ output_handle);
           },

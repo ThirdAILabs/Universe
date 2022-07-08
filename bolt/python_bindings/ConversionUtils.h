@@ -220,8 +220,8 @@ inline py::tuple constructPythonInferenceTuple(
       active_neurons_array({num_samples, inference_dim},
                            {inference_dim * sizeof(uint32_t), sizeof(uint32_t)},
                            active_neurons, active_neuron_handle);
-  return py::make_tuple(py_metric_data, active_neurons_array,
-                        activations_array);
+  return py::make_tuple(py_metric_data, activations_array,
+                        active_neurons_array);
 }
 
 // Helper method where the handles for active_neurons and activations are

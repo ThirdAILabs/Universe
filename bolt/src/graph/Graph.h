@@ -16,6 +16,7 @@
 #include <dataset/src/Dataset.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
@@ -197,11 +198,10 @@ class InferenceOutputTracker {
                          const PredictConfig& config,
                          uint32_t total_num_samples)
       : InferenceOutputTracker(
-            /* num_nonzeros_per_sample = */ output_node->outputDim(),
+            /* num_nonzeros_per_sample = */ output_node->getOutputVector(0).len,
             /* num_samples = */ total_num_samples,
             /* save_output  = */ config.shouldReturnActivations(),
-            /* output_sparse = */ output_node->numNonzerosInOutput() <
-                output_node->outputDim()) {}
+            /* output_sparse = */ !output_node->getOutputVector(0).isDense()) {}
 
   InferenceOutputTracker(uint32_t num_nonzeros_per_sample, uint32_t num_samples,
                          bool save_output, bool output_sparse)
@@ -216,9 +216,13 @@ class InferenceOutputTracker {
     try {
       if (_save_activations) {
         _activations = std::vector<float>(total_output_length);
+      } else {
+        _activations = std::nullopt;
       }
       if (_save_active_neurons) {
         _active_neurons = std::vector<uint32_t>(total_output_length);
+      } else {
+        _active_neurons = std::nullopt;
       }
     } catch (std::bad_alloc& e) {
       throw std::invalid_argument(
@@ -259,7 +263,7 @@ class InferenceOutputTracker {
   // Returns a (possible null) pointer to the saved activation data
   // Will be null if we did not save activations.
   const float* getNonowningActivationPointer() const {
-    if (_activations->empty()) {
+    if (!_activations.has_value()) {
       return nullptr;
     }
     return _activations->data();
@@ -269,7 +273,7 @@ class InferenceOutputTracker {
   // The pointer will be null if we did not save activations or if the ouput
   // was dense.
   const uint32_t* getNonowningActiveNeuronPointer() const {
-    if (_active_neurons->empty()) {
+    if (!_active_neurons.has_value()) {
       return nullptr;
     }
     return _active_neurons->data();
