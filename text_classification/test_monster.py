@@ -9,9 +9,10 @@ def test_new_dimension():
 
 
 def test_train():
-    model = CookieMonster(500000, hidden_dimension=2000, hidden_sparsity=0.1)
-    model.train_corpus("/home/henry/cookie_train/", True, False, True)
-    model.evaluate("/home/henry/cookie_test/", True, True)
+    model = CookieMonster(500000, hidden_dimension=2000, hidden_sparsity=0.1, mlflow_enabled=False)
+    # model.train_corpus("/home/henry/cookie_train/", False, True)
+    model.evaluate("/home/henry/cookie_test/")
+    # model.evaluate("/home/henry/cookie_test/")
 
 # test_new_dimension()
 test_train()
