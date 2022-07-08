@@ -40,9 +40,11 @@ class CookieMonster:
         self.output_layer = bolt.graph.FullyConnected(
             dim=output_dim, activation="softmax"
         )(self.hidden_layer)
+
         self.model = bolt.graph.Model(
             inputs=[self.input_layer], output=self.output_layer
         )
+
         self.model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     def set_output_dimension(self, dimension):
@@ -50,11 +52,15 @@ class CookieMonster:
             return
         save_loc = "./hidden_layer_parameters"
         self.hidden_layer.save_parameters(save_loc)
+        del self.model
+        del self.hidden_layer
+        del self.input_layer
+        del self.output_layer
 
         self.construct(dimension)
         self.hidden_layer.load_parameters(save_loc)
 
-    def train_corpus(
+    def eat_corpus(
         self,
         path_to_config_directory,
         evaluate=False,
@@ -103,10 +109,10 @@ class CookieMonster:
                         test_file, batch_size
                     )
 
-                    train_config = (bolt.graph.TrainConfig.makeConfig(learning_rate=learning_rate, epochs=1))
+                    train_config = (bolt.graph.TrainConfig.make(learning_rate=learning_rate, epochs=1))
                     predict_config = (
-                        bolt.graph.PredictConfig.makeConfig()
-                        .withMetrics(["categorical_accuracy"])
+                        bolt.graph.PredictConfig.make()
+                        .with_metrics(["categorical_accuracy"])
                         .silence()
                     )
                     for i in range(epochs):
@@ -135,7 +141,7 @@ class CookieMonster:
             mlflow.end_run()
 
     def evaluate(self, path_to_config_directory):
-        self.train_corpus(path_to_config_directory, evaluate=True)
+        self.eat_corpus(path_to_config_directory, evaluate=True)
 
     def download_hidden_parameters(self, link_to_parameter):
         local_param_path = mlflow.artifacts.download_artifacts(link_to_parameter)
