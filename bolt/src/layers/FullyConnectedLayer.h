@@ -217,8 +217,6 @@ class FullyConnectedLayer final : public SequentialLayer {
                                    float B2_bias_corrected);
   inline void cleanupWithinBatchVars();
 
-  // Here, the random_seed parameter is there to make sure the hash tables
-  // are same on all the node in distributed settings.
   inline void initSparseDatastructures(std::random_device& rd);
   inline void deinitSparseDatastructures();
 

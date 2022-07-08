@@ -501,10 +501,6 @@ inline void FullyConnectedLayer::initSparseDatastructures(
     std::random_device& rd) {
   _hasher = assignHashFunction(_sampling_config, _prev_dim);
 
-  /*
-   * Right now, we are making sure the hash seeds for all the nodes to be
-   * same, hence passing the hash_seed in the distributed block.
-   */
   _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
       _sampling_config.num_tables, _sampling_config.reservoir_size,
       1 << _sampling_config.range_pow);
@@ -517,12 +513,6 @@ inline void FullyConnectedLayer::initSparseDatastructures(
   _rand_neurons = std::vector<uint32_t>(_dim);
 
   std::iota(_rand_neurons.begin(), _rand_neurons.end(), 0);
-  /*
-   * Right now, we are making sure that rand_neurons for all the nodes to be
-   * same, hence rather than shuffling using rd(random_device), we are shuffling
-   * using default_random_engine using the same shuffle_seed on every node in
-   * the distributed block.
-   */
   std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
 }
 
