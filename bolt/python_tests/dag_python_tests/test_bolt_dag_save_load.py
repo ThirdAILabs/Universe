@@ -1,21 +1,20 @@
-from fileinput import filename
-from numpy import save
 from thirdai import bolt
-from utils import gen_training_data
+from ..utils import gen_training_data
 import pytest
 
 pytestmark = [pytest.mark.unit]
 
 
 def get_train_config(epochs):
-    return bolt.graph.TrainConfig.makeConfig(learning_rate=0.001, epochs=epochs)
+    return bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=epochs).silence()
 
 
 def get_predict_config():
     return (
-        bolt.graph.PredictConfig.makeConfig()
+        bolt.graph.PredictConfig.make()
         .dont_return_activations()
-        .withMetrics(["categorical_accuracy"])
+        .with_metrics(["categorical_accuracy"])
+        .silence()
     )
 
 
@@ -24,11 +23,11 @@ class ModelWithLayers:
         self.input_layer = bolt.graph.Input(dim=n_classes)
 
         self.hidden1 = bolt.graph.FullyConnected(
-            dim=2000, sparsity=0.1, activation="relu"
+            dim=2000, sparsity=0.15, activation="relu"
         )(self.input_layer)
 
         self.hidden2 = bolt.graph.FullyConnected(
-            dim=2000, sparsity=0.1, activation="relu"
+            dim=2000, sparsity=0.15, activation="relu"
         )(self.input_layer)
 
         self.concat = bolt.graph.Concatenate()([self.hidden1, self.hidden2])
@@ -78,7 +77,7 @@ def test_save_load_dag():
 
     # Verify accuarcy improves when training new model.
     new_model.train_np(
-        data, labels, batch_size=100, train_config=get_train_config(epochs=1)
+        data, labels, batch_size=100, train_config=get_train_config(epochs=2)
     )
     test_metrics3 = new_model.predict(
         data, labels, predict_config=get_predict_config()
@@ -120,6 +119,6 @@ def test_save_fully_connected_layer_parameters():
     )
 
     # Verify accuarcy improves when training new model.
-    new_model.train(data, labels, epochs=1)
+    new_model.train(data, labels, epochs=2)
     test_metrics3 = new_model.predict(data, labels)
     assert test_metrics3["categorical_accuracy"] > test_metrics2["categorical_accuracy"]

@@ -1,4 +1,4 @@
-from test_mnist import load_mnist
+from ..test_mnist import load_mnist
 from thirdai import bolt
 import os
 import pytest
@@ -45,10 +45,10 @@ def test_bolt_dag_on_mnist():
     train_data, train_labels, test_data, test_labels = load_mnist()
 
     train_config = (
-        bolt.graph.TrainConfig.makeConfig(learning_rate=0.0001, epochs=3)
+        bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=3)
         .silence()
-        .withRebuildHashTables(3000)
-        .withReconstructHashFunctions(10000)
+        .with_rebuild_hash_tables(3000)
+        .with_reconstruct_hash_functions(10000)
     )
 
     # metrics = model.train(
@@ -56,9 +56,7 @@ def test_bolt_dag_on_mnist():
     # )
 
     predict_config = (
-        bolt.graph.PredictConfig.makeConfig()
-        .withMetrics(["categorical_accuracy"])
-        .silence()
+        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
     )
 
     metrics = model.predict(

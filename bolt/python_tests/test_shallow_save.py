@@ -1,6 +1,6 @@
 import pytest
-from utils import build_sparse_hidden_layer_classifier, train_network
-from utils import (
+from .utils import build_sparse_hidden_layer_classifier, train_network
+from .utils import (
     gen_single_sparse_layer_network,
     gen_training_data,
     get_categorical_acc,
