@@ -210,7 +210,7 @@ class InferenceOutputTracker {
         _current_vec_index(0),
         _save_activations(save_output),
         _save_active_neurons(output_sparse && save_output) {
-    // So the debugger won't complain in Release mode
+    // So the linteger won't complain in Release mode
     (void)_num_samples;
     uint64_t total_output_length = num_nonzeros_per_sample * num_samples;
     try {
@@ -260,8 +260,8 @@ class InferenceOutputTracker {
     }
   }
 
-  // Returns a (possible null) pointer to the saved activation data
-  // Will be null if we did not save activations.
+  // Returns a (possibly null) pointer to the saved activation data.
+  // The pointer will be null if we did not save activations.
   const float* getNonowningActivationPointer() const {
     if (!_activations.has_value()) {
       return nullptr;
@@ -269,7 +269,7 @@ class InferenceOutputTracker {
     return _activations->data();
   }
 
-  // Returns a pointer to the saved active neuron data.
+  // Returns a (possibly null) pointer to the saved active neuron data.
   // The pointer will be null if we did not save activations or if the ouput
   // was dense.
   const uint32_t* getNonowningActiveNeuronPointer() const {

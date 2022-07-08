@@ -37,7 +37,9 @@ def test_dense_numpy_output():
     num_samples = 1000
 
     data, labels = gen_training_data(n_classes=num_classes, n_samples=num_samples)
-    metrics, activations = build_train_and_predict(data, labels, num_classes, sparsity=1)
+    metrics, activations = build_train_and_predict(
+        data, labels, num_classes, sparsity=1
+    )
 
     assert activations.shape == (num_samples, num_classes)
 
@@ -53,7 +55,9 @@ def test_sparse_numpy_output():
     num_samples = 1000
 
     data, labels = gen_training_data(n_classes=num_classes, n_samples=num_samples)
-    metrics, activations, active_neurons = build_train_and_predict(data, labels, num_classes, sparsity=sparsity)
+    metrics, activations, active_neurons = build_train_and_predict(
+        data, labels, num_classes, sparsity=sparsity
+    )
 
     assert activations.shape == (num_samples, num_classes * sparsity)
     assert active_neurons.shape == (num_samples, num_classes * sparsity)

@@ -14,7 +14,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 
   py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
 
-  // Needed so InferenceOutput objects can be handles
+  // Needed so python can know that InferenceOutput objects can own memory
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
                                      "InferenceOutput");
 
