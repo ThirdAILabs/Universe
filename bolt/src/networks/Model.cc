@@ -198,21 +198,20 @@ inline uint32_t getSecondBestIndex(const float* activations, uint32_t dim) {
 }
 
 template <typename BATCH_T>
-inline std::vector<std::vector<float> >
-Model<BATCH_T>::getInputGradients(
+inline std::vector<std::vector<float>> Model<BATCH_T>::getInputGradients(
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& batch_input,
     const LossFunction& loss_fn, const std::vector<uint32_t>& required_labels) {
   uint64_t num_batches = batch_input->numBatches();
   if (!required_labels.empty() &&
       (required_labels.size() !=
-        num_batches * batch_input->at(0).getBatchSize())) {
+       num_batches * batch_input->at(0).getBatchSize())) {
     throw std::invalid_argument("number of labels does not match");
   }
   // Because of how the datasets are read we know that all batches will not
   // have a batch size larger than this so we can just set the batch size
   // here.
   initializeNetworkState(batch_input->at(0).getBatchSize(), true);
-  std::vector<std::vector<float> > concatenated_grad;
+  std::vector<std::vector<float>> concatenated_grad;
   for (uint64_t id = 0; id < num_batches; id++) {
     BoltBatch output = getOutputs(batch_input->at(id).getBatchSize(), true);
     for (uint32_t vec_id = 0; vec_id < batch_input->at(id).getBatchSize();
