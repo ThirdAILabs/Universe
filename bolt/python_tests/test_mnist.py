@@ -5,13 +5,40 @@ pytestmark = [pytest.mark.integration]
 
 from thirdai import bolt
 import numpy as np
-from .utils import train_network, build_sparse_hidden_layer_classifier, setup_module, load_mnist, load_mnist_labels
+from .utils import (
+    train_network,
+    train_network_distributed,
+    build_sparse_hidden_layer_classifier,
+)
 
 LEARNING_RATE = 0.0001
 
 
+def setup_module():
+    if not os.path.exists("mnist"):
+        os.system(
+            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
+        )
+        os.system("bzip2 -d mnist.bz2")
+
+    if not os.path.exists("mnist.t"):
+        os.system(
+            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
+        )
+        os.system("bzip2 -d mnist.t.bz2")
+
+
+def load_mnist_labels():
+    labels = []
+    with open("mnist.t") as file:
+        for line in file.readlines():
+            label = int(line.split(" ")[0])
+            labels.append(label)
+    return np.array(labels)
+
+
 # Constructs a bolt network for mnist with a sparse output layer.
-def build_sparse_output_layer_network(distributed = False):
+def build_sparse_output_layer_network(distributed=False):
     layers = [
         bolt.FullyConnected(dim=256, activation_function="ReLU"),
         bolt.FullyConnected(
@@ -27,9 +54,16 @@ def build_sparse_output_layer_network(distributed = False):
     return network
 
 
+def load_mnist():
+    train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
+    test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
+    return train_x, train_y, test_x, test_y
+
+
 ACCURACY_THRESHOLD = 0.94
 SPARSE_INFERENCE_ACCURACY_THRESHOLD = 0.9
 SPARSE_INFERENCE_SPARSE_OUTPUT_ACCURACY_THRESHOLD = 0.35
+
 
 def check_categorical_accuracies(acc, activations):
 
@@ -158,14 +192,13 @@ def test_sparse_inference_with_sparse_output():
 
     assert sparse_predict["categorical_accuracy"] == acc_computed
 
+
 def set_get_weights(network, untrained_network):
     untrained_network.set_weights(0, network.get_weights(0))
     untrained_network.set_weights(1, network.get_weights(1))
 
     untrained_network.set_biases(0, network.get_biases(0))
     untrained_network.set_biases(1, network.get_biases(1))
-
-
 
 
 def test_get_set_weights():
@@ -192,10 +225,8 @@ def test_get_set_weights():
     assert new_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
 
 
-
-
 def test_mnist_sparse_output_layer_distributed():
-    network = build_sparse_output_layer_network_distributed(True)
+    network = build_sparse_output_layer_network(True)
 
     train_x, train_y, test_x, test_y = load_mnist()
 
@@ -209,18 +240,17 @@ def test_mnist_sparse_output_layer_distributed():
 
 def test_get_set_weights_distributed():
 
-    network = build_sparse_output_layer_network_distributed(True)
+    network = build_sparse_output_layer_network(True)
     train_x, train_y, test_x, test_y = load_mnist()
 
     train_network_distributed(network, train_x, train_y, epochs=10)
-    
 
     original_acc, _ = network.predictSingleNode(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
     assert original_acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
-    untrained_network = build_sparse_output_layer_network_distributed(True)
+    untrained_network = build_sparse_output_layer_network(True)
 
     set_get_weights(network, untrained_network)
 
@@ -232,7 +262,7 @@ def test_get_set_weights_distributed():
 
 def test_get_set_weights_biases_gradients():
 
-    network = build_sparse_output_layer_network_distributed(True)
+    network = build_sparse_output_layer_network(True)
     train_x, train_y, test_x, test_y = load_mnist()
     learning_rate = 0.0005
     num_of_batch = network.initTrainSingleNode(
@@ -244,7 +274,7 @@ def test_get_set_weights_biases_gradients():
         batch_size=64,
     )
 
-    untrained_network = build_sparse_output_layer_network_distributed(True)
+    untrained_network = build_sparse_output_layer_network(True)
 
     num_of_batch = untrained_network.initTrainSingleNode(
         train_x,
