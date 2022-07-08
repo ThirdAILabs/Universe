@@ -195,15 +195,16 @@ inline BoltDatasetNumpyContext convertPyObjectToBoltDataset(
 }
 
 // Takes in the activations arrays (if they were allocated) and returns the
-// correct python tuple containing the activations (and active neurons if
-// sparse) and the metrics computed.
+// python tuple containing the metrics computed, along with the activations
+// and active neurons if those are not nullptrs. Note that just the
+// active_neuron pointer can be null if the output is dense.
 inline py::tuple constructPythonInferenceTuple(
     py::dict&& py_metric_data, uint32_t num_samples, uint32_t inference_dim,
-    const uint32_t* active_neurons, const float* activations,
+    const float* activations, const uint32_t* active_neurons,
     const py::object& activation_handle,
     const py::object& active_neuron_handle) {
   if (!activations) {
-    return py::make_tuple(py_metric_data, py::none());
+    return py::make_tuple(py_metric_data);
   }
 
   py::array_t<float, py::array::c_style | py::array::forcecast>
@@ -223,21 +224,31 @@ inline py::tuple constructPythonInferenceTuple(
                         activations_array);
 }
 
+// Helper method where the handles for active_neurons and activations are
+// automatically constructed assuming no other c++ object owns their memory
 inline py::tuple constructPythonInferenceTuple(py::dict&& py_metric_data,
                                                uint32_t num_samples,
                                                uint32_t inference_dim,
-                                               const uint32_t* active_neurons,
-                                               const float* activations) {
-  // Deallocates the memory for the array since we are allocating it ourselves.
-  py::capsule free_when_done_activations(
-      activations, [](void* ptr) { delete static_cast<float*>(ptr); });
-  py::capsule free_when_done_active_neurons(
-      active_neurons, [](void* ptr) { delete static_cast<uint32_t*>(ptr); });
+                                               const float* activations,
+                                               const uint32_t* active_neurons) {
+  // These ternary operators ensure we are not creating a python capsule of a
+  // nullptr, which python doesn't like (even if we never use that capsule as a
+  // handle)
+  py::object activation_handle =
+      (activations != nullptr)
+          ? py::capsule(activations,
+                        [](void* ptr) { delete static_cast<float*>(ptr); })
+          : static_cast<py::object>(py::none());
+  py::object active_neuron_handle =
+      (active_neurons != nullptr)
+          ? py::capsule(active_neurons,
+                        [](void* ptr) { delete static_cast<float*>(ptr); })
+          : static_cast<py::object>(py::none());
   return constructPythonInferenceTuple(
-      std::move(py_metric_data), num_samples, inference_dim, active_neurons,
-      activations,
-      /* activation_handle = */ free_when_done_activations,
-      /* active_neuron_handle = */ free_when_done_active_neurons);
+      std::move(py_metric_data), num_samples, inference_dim, activations,
+      active_neurons,
+      /* activation_handle = */ activation_handle,
+      /* active_neuron_handle = */ active_neuron_handle);
 }
 
 }  // namespace thirdai::bolt::python

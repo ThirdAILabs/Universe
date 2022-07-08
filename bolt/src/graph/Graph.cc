@@ -197,22 +197,15 @@ InferenceResult BoltGraph::predict(
     const dataset::BoltDatasetPtr& test_labels,
     // Other prediction parameters
     const PredictConfig& predict_config) {
-  verifyInputForGraph(test_data);
-
-  if (!graphCompiled()) {
-    throw std::logic_error("Graph must be compiled before inference");
-  }
-
+  bool has_labels = (test_labels != nullptr);
   MetricAggregator metrics = predict_config.getMetricAggregator();
 
-  bool no_labels = (test_labels == nullptr);
-
-  if (no_labels && metrics.getNumMetricsTracked() != 0) {
-    throw std::invalid_argument("Cannot track accuracy metrics without labels");
-  }
+  verifyCanPredict(
+      test_data, /* has_labels = */ has_labels,
+      /* returning_activations = */ predict_config.shouldReturnActivations(),
+      /* num_metrics_tracked = */ metrics.getNumMetricsTracked());
 
   uint32_t max_batch_size = test_data->at(0).getBatchSize();
-
   uint64_t num_test_batches = test_data->numBatches();
 
   /*
@@ -224,13 +217,8 @@ InferenceResult BoltGraph::predict(
   prepareToProcessBatches(max_batch_size,
                           predict_config.sparseInferenceEnabled());
 
-  bool output_sparse = !_output->getOutputVector(0).isDense();
-  InferenceOutput output(
-      /* num_nonzeros_per_sample = */ _output->outputDim(),
-      /* num_samples = */ test_data->len(),
-      /* save_activations  = */ predict_config.shouldReturnActivations(),
-      /* save_active_neurons = */ predict_config.shouldReturnActivations() &&
-          output_sparse);
+  InferenceOutputTracker outputTracker(
+      _output, predict_config, /* total_num_samples = */ test_data->len());
 
   ProgressBar bar(num_test_batches, predict_config.verbose());
 
@@ -239,13 +227,13 @@ InferenceResult BoltGraph::predict(
     BATCH_T& inputs = test_data->at(batch);
 
     const BoltBatch* batch_labels =
-        no_labels ? nullptr : &(*test_labels)[batch];
+        has_labels ? &(*test_labels)[batch] : nullptr;
 
     processInferenceBatch(inputs, batch_labels, metrics);
 
     bar.increment();
 
-    output.saveOutputBatch(_output, inputs.getBatchSize());
+    outputTracker.saveOutputBatch(_output, inputs.getBatchSize());
   }
 
   cleanupAfterBatchProcessing();
@@ -265,7 +253,7 @@ InferenceResult BoltGraph::predict(
   auto metric_vals = metrics.getOutputFromInference();
   metric_vals["test_time"] = test_time;
 
-  return {std::move(metric_vals), std::move(output)};
+  return {std::move(metric_vals), std::move(outputTracker)};
 }
 
 template <typename BATCH_T>
@@ -420,6 +408,26 @@ std::unordered_map<NodePtr, int32_t> BoltGraph::getSuccessorCounts() const {
   }
 
   return num_successors;
+}
+
+template <typename BATCH_T>
+void BoltGraph::verifyCanPredict(
+    const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
+    bool has_labels, bool returning_activations, uint32_t num_metrics_tracked) {
+  verifyInputForGraph(test_data);
+
+  if (!graphCompiled()) {
+    throw std::logic_error("Graph must be compiled before inference");
+  }
+
+  if (!has_labels && num_metrics_tracked != 0) {
+    throw std::invalid_argument("Cannot track accuracy metrics without labels");
+  }
+  if (!returning_activations && num_metrics_tracked == 0) {
+    throw std::invalid_argument(
+        "Doing inference without returning activations and no metrics is a "
+        "NOOP");
+  }
 }
 
 template <typename BATCH_T>

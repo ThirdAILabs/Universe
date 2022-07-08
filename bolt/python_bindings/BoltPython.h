@@ -141,8 +141,8 @@ class PyNetwork final : public FullyConnectedNetwork {
     py::dict py_metric_data = py::cast(metric_data);
 
     return constructPythonInferenceTuple(std::move(py_metric_data), num_samples,
-                                         inference_output_dim, active_neurons,
-                                         activations);
+                                         inference_output_dim, activations,
+                                         active_neurons);
   }
 
   void saveForInference(const std::string& filename) {
@@ -325,8 +325,8 @@ class PyDLRM final : public DLRM {
     py::dict py_metric_data = py::cast(metric_data);
 
     return constructPythonInferenceTuple(std::move(py_metric_data), num_samples,
-                                         inference_output_dim, active_neurons,
-                                         activations);
+                                         inference_output_dim, activations,
+                                         active_neurons);
   }
 };
 

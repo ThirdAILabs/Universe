@@ -16,7 +16,6 @@
 #include <dataset/src/Dataset.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <memory>
-#include <new>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
@@ -24,10 +23,10 @@
 namespace thirdai::bolt {
 
 // Forward declerations
-class InferenceOutput;
+class InferenceOutputTracker;
 class BoltGraph;
 
-using InferenceResult = std::pair<InferenceMetricData, InferenceOutput>;
+using InferenceResult = std::pair<InferenceMetricData, InferenceOutputTracker>;
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;
 
 class BoltGraph {
@@ -135,6 +134,12 @@ class BoltGraph {
   std::unordered_map<NodePtr, int32_t> getSuccessorCounts() const;
 
   template <typename BATCH_T>
+  void verifyCanPredict(
+      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
+      bool has_labels, bool returning_activations,
+      uint32_t num_metrics_tracked);
+
+  template <typename BATCH_T>
   void verifyInputForGraph(
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset);
 
@@ -184,23 +189,35 @@ class BoltGraph {
 };
 
 // This class is NOT thread safe
-class InferenceOutput {
+class InferenceOutputTracker {
  public:
-  InferenceOutput(uint32_t num_nonzeros_per_sample, uint32_t num_samples,
-                  bool save_activations, bool save_active_neurons)
+  // Should only be called after the output_node has been prepared for batch
+  // processing
+  InferenceOutputTracker(const NodePtr& output_node,
+                         const PredictConfig& config,
+                         uint32_t total_num_samples)
+      : InferenceOutputTracker(
+            /* num_nonzeros_per_sample = */ output_node->outputDim(),
+            /* num_samples = */ total_num_samples,
+            /* save_output  = */ config.shouldReturnActivations(),
+            /* output_sparse = */ output_node->numNonzerosInOutput() <
+                output_node->outputDim()) {}
+
+  InferenceOutputTracker(uint32_t num_nonzeros_per_sample, uint32_t num_samples,
+                         bool save_output, bool output_sparse)
       : _num_nonzeros_per_sample(num_nonzeros_per_sample),
         _num_samples(num_samples),
         _current_vec_index(0),
-        _save_activations(save_activations),
-        _save_active_neurons(save_active_neurons) {
+        _save_activations(save_output),
+        _save_active_neurons(output_sparse && save_output) {
     // So the debugger won't complain in Release mode
     (void)_num_samples;
     uint64_t total_output_length = num_nonzeros_per_sample * num_samples;
     try {
-      if (save_activations) {
+      if (_save_activations) {
         _activations = std::vector<float>(total_output_length);
       }
-      if (save_active_neurons) {
+      if (_save_active_neurons) {
         _active_neurons = std::vector<uint32_t>(total_output_length);
       }
     } catch (std::bad_alloc& e) {
@@ -240,15 +257,18 @@ class InferenceOutput {
   }
 
   // Returns a (possible null) pointer to the saved activation data
-  const float* getActivationPointer() const {
+  // Will be null if we did not save activations.
+  const float* getNonowningActivationPointer() const {
     if (_activations->empty()) {
       return nullptr;
     }
     return _activations->data();
   }
 
-  // Returns a (possible null) pointer to the saved active neuron data
-  const uint32_t* getActiveNeuronPointer() const {
+  // Returns a pointer to the saved active neuron data.
+  // The pointer will be null if we did not save activations or if the ouput
+  // was dense.
+  const uint32_t* getNonowningActiveNeuronPointer() const {
     if (_active_neurons->empty()) {
       return nullptr;
     }
