@@ -27,7 +27,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   friend class tests::FullyConnectedLayerTestFixture;
 
  public:
-  FullyConnectedLayer() {}
+  FullyConnectedLayer() : _shallow_save(false) {}
 
   FullyConnectedLayer(const FullyConnectedLayer&) = delete;
   FullyConnectedLayer(FullyConnectedLayer&&) = delete;
