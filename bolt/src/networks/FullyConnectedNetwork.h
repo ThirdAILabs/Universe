@@ -18,7 +18,6 @@
 namespace thirdai::bolt {
 
 class DLRM;
-class DistributedModel;
 
 namespace python {
 class SentimentClassifier;
@@ -26,7 +25,6 @@ class SentimentClassifier;
 
 class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   friend class DLRM;
-  friend class DistributedModel;
   friend class python::SentimentClassifier;
 
  public:

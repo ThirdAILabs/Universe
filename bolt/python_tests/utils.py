@@ -1,4 +1,4 @@
-from thirdai import bolt, dataset
+from thirdai import bolt
 import numpy as np
 
 

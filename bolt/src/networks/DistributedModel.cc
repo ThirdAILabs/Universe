@@ -73,41 +73,38 @@ InferenceMetricData DistributedModel::predictSingleNode(
 
 uint32_t DistributedModel::numLayers() const { return _num_layers; }
 
-float* DistributedModel::getLayerData(uint32_t layer_index, GetType type) {
-  switch (type) {
-    case GET_WEIGHTS:
-      return _layers[layer_index]->getWeights();
-      break;
-    case GET_BIASES:
-      return _layers[layer_index]->getBiases();
-      break;
-    case GET_WEIGHT_GRADIENTS:
-      return _layers[layer_index]->getWeightsGradient();
-      break;
-    case GET_BIASES_GRADIENTS:
-      return _layers[layer_index]->getBiasesGradient();
-      break;
-  }
-  throw std::invalid_argument("Wrong argument for getLayerData Function");
-  return NULL;
+float* DistributedModel::getWeights(uint32_t layer_index) {
+  return _layers.at(layer_index)->getWeights();
 }
 
-void DistributedModel::setLayerData(uint32_t layer_index, const float* set_data,
-                                    SetType type) {
-  switch (type) {
-    case SET_WEIGHTS:
-      _layers[layer_index]->setWeights(set_data);
-      break;
-    case SET_BIASES:
-      _layers[layer_index]->setBiases(set_data);
-      break;
-    case SET_WEIGHTS_GRADIENTS:
-      _layers[layer_index]->setWeightGradients(set_data);
-      break;
-    case SET_BIASES_GRADIENTS:
-      _layers[layer_index]->setBiasesGradients(set_data);
-      break;
-  }
+float* DistributedModel::getBiases(uint32_t layer_index) {
+  return _layers.at(layer_index)->getBiases();
+}
+
+float* DistributedModel::getWeightsGradient(uint32_t layer_index) {
+  return _layers.at(layer_index)->getWeightsGradient();
+}
+
+float* DistributedModel::getBiasesGradient(uint32_t layer_index) {
+  return _layers.at(layer_index)->getBiasesGradient();
+}
+
+void DistributedModel::setWeights(uint32_t layer_index, const float* data) {
+  _layers.at(layer_index)->setWeights(data);
+}
+
+void DistributedModel::setBiases(uint32_t layer_index, const float* data) {
+  _layers.at(layer_index)->setBiases(data);
+}
+
+void DistributedModel::setWeightGradients(uint32_t layer_index,
+                                          const float* data) {
+  _layers.at(layer_index)->setWeightGradients(data);
+}
+
+void DistributedModel::setBiasesGradients(uint32_t layer_index,
+                                          const float* data) {
+  _layers.at(layer_index)->setBiasesGradients(data);
 }
 
 uint32_t DistributedModel::getDim(uint32_t layer_index) const {

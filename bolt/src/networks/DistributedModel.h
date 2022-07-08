@@ -26,20 +26,6 @@ namespace thirdai::bolt {
 
 class DistributedModel : public FullyConnectedNetwork {
  public:
-  enum GetType {
-    GET_WEIGHTS,
-    GET_BIASES,
-    GET_WEIGHT_GRADIENTS,
-    GET_BIASES_GRADIENTS
-  };
-
-  enum SetType {
-    SET_WEIGHTS,
-    SET_BIASES,
-    SET_WEIGHTS_GRADIENTS,
-    SET_BIASES_GRADIENTS
-  };
-
   DistributedModel(SequentialConfigList configs, uint64_t input_dim)
       : FullyConnectedNetwork(std::move(configs), input_dim, true),
         _batch_iter(0),
@@ -83,14 +69,25 @@ class DistributedModel : public FullyConnectedNetwork {
 
   uint32_t numLayers() const;
 
-  float* getLayerData(uint32_t layer_index, GetType type);
-
-  void setLayerData(uint32_t layer_index, const float* data, SetType type);
-
   uint32_t getDim(uint32_t layer_index) const;
 
   uint32_t getInputDim() const;
 
+  float* getWeights(uint32_t layer_index);
+
+  float* getBiases(uint32_t layer_index);
+
+  float* getWeightsGradient(uint32_t layer_index);
+
+  float* getBiasesGradient(uint32_t layer_index);
+
+  void setWeights(uint32_t layer_index, const float* data);
+
+  void setBiases(uint32_t layer_index, const float* data);
+
+  void setWeightGradients(uint32_t layer_index, const float* data);
+
+  void setBiasesGradients(uint32_t layer_index, const float* data);
   // output  needed to be global variable because three
   // different function calls are using the same variable
   BoltBatch _outputs;

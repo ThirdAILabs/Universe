@@ -396,7 +396,7 @@ class DistributedPyNetwork final : public DistributedModel {
       return py::none();
     }
 
-    float* mem = DistributedModel::getLayerData(layer_index, GET_WEIGHTS);
+    float* mem = DistributedModel::getWeights(layer_index);
 
     py::capsule free_when_done(
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
@@ -422,8 +422,7 @@ class DistributedPyNetwork final : public DistributedModel {
 
     weightDimensionCheck(new_weights, dim, prev_dim);
 
-    DistributedModel::setLayerData(layer_index, new_weights.data(),
-                                   SET_WEIGHTS);
+    DistributedModel::setWeights(layer_index, new_weights.data());
   }
 
   void setWeightGradients(
@@ -436,8 +435,8 @@ class DistributedPyNetwork final : public DistributedModel {
                            : DistributedModel::getInputDim();
 
     weightGradientDimensionCheck(new_weights_gradients, dim, prev_dim);
-    DistributedModel::setLayerData(layer_index, new_weights_gradients.data(),
-                                   SET_WEIGHTS_GRADIENTS);
+    DistributedModel::setWeightGradients(layer_index,
+                                         new_weights_gradients.data());
   }
 
   void setBiases(
@@ -447,7 +446,7 @@ class DistributedPyNetwork final : public DistributedModel {
     int64_t dim = DistributedModel::getDim(layer_index);
     biasDimensionCheck(new_biases, dim);
 
-    DistributedModel::setLayerData(layer_index, new_biases.data(), SET_BIASES);
+    DistributedModel::setBiases(layer_index, new_biases.data());
   }
 
   void setBiasesGradients(
@@ -457,8 +456,8 @@ class DistributedPyNetwork final : public DistributedModel {
     int64_t dim = DistributedModel::getDim(layer_index);
 
     biasGradientDimensionCheck(new_biases_gradients, dim);
-    DistributedModel::setLayerData(layer_index, new_biases_gradients.data(),
-                                   SET_BIASES_GRADIENTS);
+    DistributedModel::setBiasesGradients(layer_index,
+                                         new_biases_gradients.data());
   }
 
   py::array_t<float> getBiases(uint32_t layer_index) {
@@ -466,7 +465,7 @@ class DistributedPyNetwork final : public DistributedModel {
       return py::none();
     }
 
-    float* mem = DistributedModel::getLayerData(layer_index, GET_BIASES);
+    float* mem = DistributedModel::getBiases(layer_index);
 
     py::capsule free_when_done(
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
@@ -487,8 +486,7 @@ class DistributedPyNetwork final : public DistributedModel {
       return py::none();
     }
 
-    float* mem =
-        DistributedModel::getLayerData(layer_index, GET_BIASES_GRADIENTS);
+    float* mem = DistributedModel::getBiasesGradient(layer_index);
 
     size_t dim = DistributedModel::getDim(layer_index);
 
@@ -500,8 +498,7 @@ class DistributedPyNetwork final : public DistributedModel {
       return py::none();
     }
 
-    float* mem =
-        DistributedModel::getLayerData(layer_index, GET_WEIGHT_GRADIENTS);
+    float* mem = DistributedModel::getWeightsGradient(layer_index);
 
     size_t dim = DistributedModel::getDim(layer_index);
     size_t prev_dim = (layer_index > 0)

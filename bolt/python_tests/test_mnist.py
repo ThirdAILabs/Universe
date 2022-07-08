@@ -3,7 +3,7 @@ import pytest
 
 pytestmark = [pytest.mark.integration]
 
-from thirdai import bolt
+from thirdai import bolt, dataset
 import numpy as np
 import os
 from .utils import (
