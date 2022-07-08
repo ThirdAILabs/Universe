@@ -1,4 +1,3 @@
-
 from thirdai._thirdai import bolt, dataset
 from typing import Tuple, Any, Optional, Dict, List
 import toml
@@ -79,4 +78,5 @@ def create_fully_connected_layer_configs(
 
         layers.append(layer)
     return layers
+
 
