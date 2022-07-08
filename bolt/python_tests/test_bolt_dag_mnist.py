@@ -51,9 +51,9 @@ def test_bolt_dag_on_mnist():
         .withReconstructHashFunctions(10000)
     )
 
-    metrics = model.train(
-        train_data=train_data, train_labels=train_labels, train_config=train_config
-    )
+    # metrics = model.train(
+    #     train_data=train_data, train_labels=train_labels, train_config=train_config
+    # )
 
     predict_config = (
         bolt.graph.PredictConfig.makeConfig()
@@ -64,5 +64,8 @@ def test_bolt_dag_on_mnist():
     metrics = model.predict(
         test_data=test_data, test_labels=test_labels, predict_config=predict_config
     )
+
+    print(metrics)
+    print(metrics[1])
 
     assert metrics["categorical_accuracy"] >= 0.9

@@ -1,5 +1,6 @@
 #include "BoltGraphPython.h"
 #include "ConversionUtils.h"
+#include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
@@ -12,6 +13,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 
   py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
+
+  // Needed so the returned InferenceOutput object can be
+  py::class_<InferenceOutput>(graph_submodule, "InferenceOutput");  // NOLINT
 
   py::class_<FullyConnectedNode, std::shared_ptr<FullyConnectedNode>, Node>(
       graph_submodule, "FullyConnected")
@@ -121,7 +125,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def_static("makeConfig", &PredictConfig::makeConfig)
       .def("enableSparseInference", &PredictConfig::enableSparseInference)
       .def("withMetrics", &PredictConfig::withMetrics, py::arg("metrics"))
-      .def("silence", &PredictConfig::silence);
+      .def("silence", &PredictConfig::silence)
+      .def("dont_return_activations", &PredictConfig::dontReturnActivations);
 
   py::class_<BoltGraph>(graph_submodule, "Model")
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
@@ -151,21 +156,44 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
-      .def("predict", &BoltGraph::predict<BoltBatch>, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("predict_config"),
-           "Predicts the output given the input vectors and evaluates the "
-           "predictions based on the given metrics.\n"
-           "Arguments:\n"
-           " * test_data: BoltDataset - Test data. This is a BoltDataset as "
-           "loaded by thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * test_labels: BoltDataset - Test labels. This is a BoltDataset "
-           "as loaded by thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * predict_config: PredictConfig - the additional prediction "
-           "parameters. See the PredictConfig documentation above.\n\n"
+      .def(
+          "predict",
+          [](BoltGraph& model, const py::object& data, const py::object& labels,
+             const PredictConfig& predict_config) {
+            auto test_data = convertPyObjectToBoltDataset(
+                data, /* batch_size = */ 2048, /* is_labels = */ false);
 
-           "Returns a  a mapping from metric names to their values.")
+            BoltDatasetNumpyContext test_labels;
+            if (!labels.is_none()) {
+              test_labels = convertPyObjectToBoltDataset(
+                  labels, /* batch_size = */ 2048, true);
+            }
+            auto [metrics, output] = model.predict(
+                test_data.dataset, test_labels.dataset, predict_config);
+            // The InferenceOutput object owns the memory for the activation and
+            // active_neuron vectors, so we can use it as the "handle"
+            // when we build the numpy arrays.
+            py::object output_handle = py::cast(output);
+            return constructPythonInferenceTuple(
+                py::cast(metrics), test_data.dataset->len(),
+                output.numNonzerosInOutput(), output.getActiveNeuronPointer(),
+                output.getActivationPointer(), output_handle, output_handle);
+          },
+          py::arg("test_data"), py::arg("test_labels"),
+          py::arg("predict_config"),
+          "Predicts the output given the input vectors and evaluates the "
+          "predictions based on the given metrics.\n"
+          "Arguments:\n"
+          " * test_data: BoltDataset - Test data. This is a BoltDataset as "
+          "loaded by thirdai.dataset.load_bolt_svm_dataset or "
+          "thirdai.dataset.load_bolt_csv_dataset.\n"
+          " * test_labels: BoltDataset - Test labels. This is a BoltDataset "
+          "as loaded by thirdai.dataset.load_bolt_svm_dataset or "
+          "thirdai.dataset.load_bolt_csv_dataset.\n"
+          " * predict_config: PredictConfig - the additional prediction "
+          "parameters. See the PredictConfig documentation above.\n\n"
+
+          "Returns a  a mapping from metric names to their values.")
       .def("save", &BoltGraph::save, py::arg("filename"))
       .def_static("load", &BoltGraph::load, py::arg("filename"))
       .def("__str__",
@@ -202,23 +230,6 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           },
           py::arg("train_data"), py::arg("train_labels"),
           py::arg("train_config"), py::arg("batch_size"))
-
-      .def(
-          "predict_np",
-          [](BoltGraph& model, const py::object& test_data_numpy,
-             const py::object& test_labels_numpy,
-             const PredictConfig& predict_config, uint32_t batch_size) {
-            auto test_data = convertPyObjectToBoltDataset(test_data_numpy,
-                                                          batch_size, false);
-
-            auto test_labels = convertPyObjectToBoltDataset(test_labels_numpy,
-                                                            batch_size, true);
-
-            return model.predict(test_data.dataset, test_labels.dataset,
-                                 predict_config);
-          },
-          py::arg("test_data"), py::arg("test_labels"),
-          py::arg("predict_config"), py::arg("batch_size") = 256)
       .def("get_layer", &BoltGraph::getNodeByName, py::arg("layer_name"),
            "Looks up a layer (node) of the network by using the layer's "
            "assigned name. As such, must be called after compile. You can "

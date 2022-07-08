@@ -49,13 +49,13 @@ def run_simple_test(
         .silence()
     )
 
-    metrics = model.predict_np(
+    metrics = model.predict(
         test_data=train_data,
         test_labels=train_labels,
         predict_config=predict_config,
     )
 
-    assert metrics["categorical_accuracy"] >= accuracy_threshold
+    assert metrics[0]["categorical_accuracy"] >= accuracy_threshold
 
 
 @pytest.mark.unit
@@ -92,3 +92,8 @@ def test_concat_sparse_dense_train():
         hidden_layer_bottom_sparsity=1,
         num_training_samples=10000,
     )
+
+
+test_concat_dense_train()
+test_concat_sparse_train()
+test_concat_sparse_dense_train()

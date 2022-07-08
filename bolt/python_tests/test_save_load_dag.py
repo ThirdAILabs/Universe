@@ -12,7 +12,11 @@ def get_train_config(epochs):
 
 
 def get_predict_config():
-    return bolt.graph.PredictConfig.makeConfig().withMetrics(["categorical_accuracy"])
+    return (
+        bolt.graph.PredictConfig.makeConfig()
+        .dont_return_activations()
+        .withMetrics(["categorical_accuracy"])
+    )
 
 
 class ModelWithLayers:
@@ -43,7 +47,7 @@ class ModelWithLayers:
         )
 
     def predict(self, data, labels):
-        return self.model.predict_np(data, labels, predict_config=get_predict_config())
+        return self.model.predict(data, labels, predict_config=get_predict_config())[0]
 
 
 def test_save_load_dag():
@@ -64,9 +68,9 @@ def test_save_load_dag():
     new_model = bolt.graph.Model.load(filename=save_loc)
 
     # Verify accuracy matches.
-    test_metrics2 = new_model.predict_np(
+    test_metrics2 = new_model.predict(
         data, labels, predict_config=get_predict_config()
-    )
+    )[0]
     assert test_metrics2["categorical_accuracy"] >= 0.9
     assert (
         test_metrics1["categorical_accuracy"] == test_metrics2["categorical_accuracy"]
@@ -76,9 +80,9 @@ def test_save_load_dag():
     new_model.train_np(
         data, labels, batch_size=100, train_config=get_train_config(epochs=1)
     )
-    test_metrics3 = new_model.predict_np(
+    test_metrics3 = new_model.predict(
         data, labels, predict_config=get_predict_config()
-    )
+    )[0]
     assert test_metrics3["categorical_accuracy"] > test_metrics2["categorical_accuracy"]
 
 

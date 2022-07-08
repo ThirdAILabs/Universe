@@ -113,6 +113,11 @@ class PredictConfig {
     return *this;
   }
 
+  PredictConfig& dontReturnActivations() {
+    _return_activations = false;
+    return *this;
+  }
+
   PredictConfig& silence() {
     _verbose = false;
     return *this;
@@ -126,7 +131,7 @@ class PredictConfig {
 
   constexpr bool verbose() const { return _verbose; }
 
-  constexpr bool shouldReturnActivations() const {return _return_activations;}
+  constexpr bool shouldReturnActivations() const { return _return_activations; }
 
  private:
   PredictConfig()

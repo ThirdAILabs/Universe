@@ -181,16 +181,16 @@ void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
   }
 }
 
-template InferenceMetricData BoltGraph::predict(
+template InferenceResult BoltGraph::predict(
     const std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>&,
     const dataset::BoltDatasetPtr&, const PredictConfig&);
 
-template InferenceMetricData BoltGraph::predict(
+template InferenceResult BoltGraph::predict(
     const std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&,
     const dataset::BoltDatasetPtr&, const PredictConfig&);
 
 template <typename BATCH_T>
-InferenceMetricData BoltGraph::predict(
+InferenceResult BoltGraph::predict(
     // Test dataset
     const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
     // Test labels
@@ -203,13 +203,17 @@ InferenceMetricData BoltGraph::predict(
     throw std::logic_error("Graph must be compiled before inference");
   }
 
-  bool compute_metrics = test_labels != nullptr;
+  MetricAggregator metrics = predict_config.getMetricAggregator();
+
+  bool no_labels = (test_labels == nullptr);
+
+  if (no_labels && metrics.getNumMetricsTracked() != 0) {
+    throw std::invalid_argument("Cannot track accuracy metrics without labels");
+  }
 
   uint32_t max_batch_size = test_data->at(0).getBatchSize();
 
   uint64_t num_test_batches = test_data->numBatches();
-
-  MetricAggregator metrics = predict_config.getMetricAggregator();
 
   /*
    Because of how the datasets are read we know that all batches will not have
@@ -220,6 +224,14 @@ InferenceMetricData BoltGraph::predict(
   prepareToProcessBatches(max_batch_size,
                           predict_config.sparseInferenceEnabled());
 
+  bool output_sparse = !_output->getOutputVector(0).isDense();
+  InferenceOutput output(
+      /* num_nonzeros_per_sample = */ _output->outputDim(),
+      /* num_samples = */ test_data->len(),
+      /* save_activations  = */ predict_config.shouldReturnActivations(),
+      /* save_active_neurons = */ predict_config.shouldReturnActivations() &&
+          output_sparse);
+
   ProgressBar bar(num_test_batches, predict_config.verbose());
 
   auto test_start = std::chrono::high_resolution_clock::now();
@@ -227,11 +239,13 @@ InferenceMetricData BoltGraph::predict(
     BATCH_T& inputs = test_data->at(batch);
 
     const BoltBatch* batch_labels =
-        compute_metrics ? &(*test_labels)[batch] : nullptr;
+        no_labels ? nullptr : &(*test_labels)[batch];
 
-    processInferenceBatch(inputs, batch_labels, metrics, compute_metrics);
+    processInferenceBatch(inputs, batch_labels, metrics);
 
     bar.increment();
+
+    output.saveOutputBatch(_output, inputs.getBatchSize());
   }
 
   cleanupAfterBatchProcessing();
@@ -251,27 +265,28 @@ InferenceMetricData BoltGraph::predict(
   auto metric_vals = metrics.getOutputFromInference();
   metric_vals["test_time"] = test_time;
 
-  return metric_vals;
+  return {std::move(metric_vals), std::move(output)};
 }
 
 template <typename BATCH_T>
 void BoltGraph::processInferenceBatch(BATCH_T& batch_inputs,
                                       const BoltBatch* batch_labels,
-                                      MetricAggregator& metrics,
-                                      bool compute_metrics) {
+                                      MetricAggregator& metrics) {
   setInputs(batch_inputs);
 
+  // Either we shouldn't track any metrics or there need to be labels
+  assert((metrics.getNumMetricsTracked() == 0) || (batch_labels != nullptr));
+
 #pragma omp parallel for default(none) \
-    shared(batch_inputs, batch_labels, metrics, compute_metrics)
+    shared(batch_inputs, batch_labels, metrics)
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
     // We set labels to nullptr so that they are not used in sampling during
     // inference.
     forward(vec_id, /*labels=*/nullptr);
 
-    if (compute_metrics) {
-      metrics.processSample(_output->getOutputVector(vec_id),
-                            (*batch_labels)[vec_id]);
-    }
+    const auto& output = _output->getOutputVector(vec_id);
+    const auto& labels = (*batch_labels)[vec_id];
+    metrics.processSample(output, labels);
   }
 }
 
