@@ -1,7 +1,14 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/vector.hpp>
 #include "ExecutionConfig.h"
 #include "Node.h"
+#include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/graph/nodes/TokenInput.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -15,9 +22,6 @@
 
 namespace thirdai::bolt {
 
-class Input;
-using InputPtr = std::shared_ptr<Input>;
-
 class BoltGraph {
  public:
   /*
@@ -27,8 +31,14 @@ class BoltGraph {
     to discover a reverse ordering in which to execute the layers.
    */
   BoltGraph(std::vector<InputPtr> inputs, NodePtr output)
+      : BoltGraph(std::move(inputs), /* token-inputs= */ {},
+                  std::move(output)) {}
+
+  BoltGraph(std::vector<InputPtr> inputs,
+            std::vector<TokenInputPtr> token_inputs, NodePtr output)
       : _output(std::move(output)),
         _inputs(std::move(inputs)),
+        _token_inputs(std::move(token_inputs)),
         _epoch_count(0),
         _batch_cnt(0) {}
 
@@ -61,13 +71,32 @@ class BoltGraph {
       // Other prediction parameters
       const PredictConfig& predict_config);
 
-  const std::vector<NodePtr>& getNodeTraversalOrder() const { return _nodes; }
+  std::vector<NodePtr> getNodeTraversalOrder() const {
+    std::vector<NodePtr> nodes;
+    nodes.insert(nodes.end(), _inputs.begin(), _inputs.end());
+    nodes.insert(nodes.end(), _token_inputs.begin(), _token_inputs.end());
+    nodes.insert(nodes.end(), _nodes.begin(), _nodes.end());
+
+    return nodes;
+  }
+
+  void freezeHashTables(bool insert_labels_if_not_found);
+
+  // This only saves the graph in the compiled state, that is any parameters and
+  // graph structure are preserved, but any state related to train or predict is
+  // discarded.
+  void save(const std::string& filename);
+
+  static std::unique_ptr<BoltGraph> load(const std::string& filename);
 
   std::string summarize(bool print, bool detailed) const;
 
   NodePtr getNodeByName(const std::string& node_name) const;
 
  private:
+  // Private constructor for cereal.
+  BoltGraph() {}
+
   template <typename BATCH_T>
   void processTrainingBatch(BATCH_T& batch_inputs,
                             const BoltBatch& batch_labels, float learning_rate,
@@ -78,11 +107,14 @@ class BoltGraph {
                              const BoltBatch* batch_labels,
                              MetricAggregator& metrics, bool compute_metrics);
 
+  template <typename BATCH_T>
+  void setInputs(BATCH_T& batch_inputs);
+
   // Computes the forward pass through the graph.
-  void forward(uint32_t batch_index, const BoltVector* labels);
+  void forward(uint32_t vec_index, const BoltVector* labels);
 
   // Computes the backward pass through the graph.
-  void backpropagate(uint32_t batch_index);
+  void backpropagate(uint32_t vec_index);
 
   void prepareToProcessBatches(uint32_t batch_size, bool use_sparsity);
 
@@ -111,7 +143,11 @@ class BoltGraph {
 
   void reconstructHashFunctions();
 
-  bool graphCompiled() const { return _compilation_state.has_value(); }
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
+
+  bool graphCompiled() const { return _loss != nullptr; }
 
   // List of nodes(layers) in the order in which they should be computed.
   std::vector<NodePtr> _nodes;
@@ -123,18 +159,17 @@ class BoltGraph {
   // layer.
   std::vector<InputPtr> _inputs;
 
+  // Token input layers. Function similarly to the input layers but are specific
+  // to nodes that require token inputs like the Embedding layer.
+  std::vector<TokenInputPtr> _token_inputs;
+
   // List of the sparse layers in the graph. This is so that we can do
   // things like enable sparse inference, update hash tables, or update hash
   // functions.
   std::vector<std::shared_ptr<FullyConnectedLayer>>
       _internal_fully_connected_layers;
 
-  struct CompilationState {
-    // The loss function the graph was compiled with.
-    std::shared_ptr<LossFunction> _loss;
-  };
-
-  std::optional<CompilationState> _compilation_state;
+  std::shared_ptr<LossFunction> _loss;
 
   uint32_t _epoch_count;
   uint32_t _batch_cnt;

@@ -9,9 +9,10 @@
 
 namespace thirdai::bolt::tests {
 
-static const uint32_t n_classes = 100, n_batches = 100, batch_size = 100;
-
-static dataset::DatasetWithLabels genDataset(bool noisy_dataset) {
+static dataset::DatasetWithLabels genDataset(uint32_t n_classes,
+                                             bool noisy_dataset,
+                                             uint32_t n_batches = 100,
+                                             uint32_t batch_size = 100) {
   std::mt19937 gen(892734);
   std::uniform_int_distribution<uint32_t> label_dist(0, n_classes - 1);
   std::normal_distribution<float> data_dist(0, noisy_dataset ? 1.0 : 0.1);

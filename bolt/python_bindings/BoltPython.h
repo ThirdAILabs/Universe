@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "ConversionUtils.h"
 #include <bolt/src/graph/Graph.h>
@@ -49,39 +51,6 @@ py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
                                uint32_t inference_dim, uint32_t* active_neurons,
                                float* activations, bool output_sparse,
                                bool alloc_success);
-
-class PyBoltGraph final : public BoltGraph {
- public:
-  // Inherit constructors
-  using BoltGraph::BoltGraph;
-
-  MetricData trainNumpy(const py::object& train_data_numpy,
-                        const py::object& train_labels_numpy,
-                        const TrainConfig& train_config, uint32_t batch_size) {
-    auto train_data =
-        convertPyObjectToBoltDataset(train_data_numpy, batch_size, false);
-
-    auto train_labels =
-        convertPyObjectToBoltDataset(train_labels_numpy, batch_size, true);
-
-    return BoltGraph::train(train_data.dataset, train_labels.dataset,
-                            train_config);
-  }
-
-  InferenceMetricData predictNumpy(const py::object& test_data_numpy,
-                                   const py::object& test_labels_numpy,
-                                   const PredictConfig& predict_config,
-                                   uint32_t batch_size) {
-    auto test_data =
-        convertPyObjectToBoltDataset(test_data_numpy, batch_size, false);
-
-    auto test_labels =
-        convertPyObjectToBoltDataset(test_labels_numpy, batch_size, true);
-
-    return BoltGraph::predict(test_data.dataset, test_labels.dataset,
-                              predict_config);
-  }
-};
 
 class PyNetwork final : public FullyConnectedNetwork {
  public:
