@@ -1,10 +1,8 @@
 from thirdai import bolt, dataset
 import numpy as np
-import sys
 import mlflow
 import os
 import toml
-
 
 
 class CookieMonster:
@@ -25,7 +23,7 @@ class CookieMonster:
         self.file_name = os.path.join(self.file_dir, "../benchmarks/config.toml")
         with open(self.file_name) as f:
             parsed_config = toml.load(f)
-        
+
         if self.mlflow_enabled:
             mlflow.set_tracking_uri(parsed_config["tracking"]["uri"])
             mlflow.set_experiment("Cookie Monster")
@@ -98,7 +96,6 @@ class CookieMonster:
                     if num_classes != self.output_layer.get_dim():
                         raise ValueError("Output dimension is incorrect")
 
-                    
                     epochs = config["epochs"]
                     learning_rate = config["learning_rate"]
 
@@ -109,28 +106,34 @@ class CookieMonster:
                         test_file, batch_size
                     )
 
-                    train_config = (bolt.graph.TrainConfig.make(learning_rate=learning_rate, epochs=1))
+                    train_config = bolt.graph.TrainConfig.make(
+                        learning_rate=learning_rate, epochs=1
+                    )
                     predict_config = (
                         bolt.graph.PredictConfig.make()
                         .with_metrics(["categorical_accuracy"])
                         .silence()
                     )
                     for i in range(epochs):
-                        self.model.train(
-                            train_x, train_y, train_config=train_config
-                        )
+                        self.model.train(train_x, train_y, train_config=train_config)
                         if verbose:
-                            metrics = self.model.predict(test_x, test_y, predict_config=predict_config)
+                            metrics = self.model.predict(
+                                test_x, test_y, predict_config=predict_config
+                            )
                             print(
                                 "Epoch: ",
-                                i+1,
+                                i + 1,
                                 " Accuracy: ",
                                 metrics["categorical_accuracy"],
-                                "\n"
+                                "\n",
                             )
 
-                    metrics = self.model.predict(test_x, test_y, predict_config=predict_config)
-                    print("Epoch: ", i+1, " Accuracy: ", metrics["categorical_accuracy"])
+                    metrics = self.model.predict(
+                        test_x, test_y, predict_config=predict_config
+                    )
+                    print(
+                        "Epoch: ", i + 1, " Accuracy: ", metrics["categorical_accuracy"]
+                    )
 
                 print("\n")
 
