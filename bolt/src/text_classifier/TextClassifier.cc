@@ -83,25 +83,29 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
   }
 }
 
-std::string TextClassifier::predict_on_sentence(const std::string& sentence) {
-  BoltVector vec = dataset::PairgramHasher::computePairgrams(
-      sentence, _model->getInputDim());
-  BoltVector output = BoltVector(_model->getOutputDim(), true);
-  if (_model->_states.empty()) {
-    throw std::invalid_argument(
-        "you may not trained the model. try training "
-        "the model first.");
-  }
-  _model->forward(0, vec, output, nullptr);
+uint32_t getBestIndex(const BoltVector& output) {
   float max_act = 0.0;
   uint32_t pred = 0;
   for (uint32_t i = 0; i < output.len; i++) {
     if (output.activations[i] > max_act) {
       max_act = output.activations[i];
-      pred = i;
+      if (output.isDense()) {
+        pred = i;
+      } else {
+        pred = output.active_neurons[i];
+      }
     }
   }
-  return _batch_processor->getClassName(pred);
+  return pred;
+}
+
+std::string TextClassifier::predictSentence(const std::string& sentence) {
+  BoltVector vec = dataset::PairgramHasher::computePairgrams(
+      sentence, _model->getInputDim());
+  BoltVector output = BoltVector(_model->getOutputDim(), true);
+  _model->initializeNetworkState(1, true);
+  _model->forward(0, vec, output, nullptr);
+  return _batch_processor->getClassName(getBestIndex(output));
 }
 
 void TextClassifier::predict(
@@ -120,20 +124,9 @@ void TextClassifier::predict(
       return;
     }
     for (uint32_t batch_id = 0; batch_id < batch_size; batch_id++) {
-      float max_act = 0.0;
-      uint32_t pred = 0;
-      for (uint32_t i = 0; i < outputs[batch_id].len; i++) {
-        if (outputs[batch_id].activations[i] > max_act) {
-          max_act = outputs[batch_id].activations[i];
-          if (outputs[batch_id].isDense()) {
-            pred = i;
-          } else {
-            pred = outputs[batch_id].active_neurons[i];
-          }
-        }
-      }
-
-      (*output_file) << _batch_processor->getClassName(pred) << std::endl;
+      (*output_file) << _batch_processor->getClassName(
+                            getBestIndex(outputs[batch_id]))
+                     << std::endl;
     }
   };
 

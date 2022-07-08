@@ -602,10 +602,9 @@ void createBoltSubmodule(py::module_& module) {
            " * train_file: string - The path to the training dataset to use.\n"
            " * epochs: Int - How many epochs to train for.\n"
            " * learning_rate: Float - The learning rate to use for training.\n")
-      .def("predict_on_sentence", &TextClassifier::predict_on_sentence,
+      .def("predict_single", &TextClassifier::predictSentence,
            py::arg("sentence"),
-           "Get the predicted class name, when sentence is given as input to a "
-           "trained text classifier.\n"
+           "Given a sentence, predict the output class. \n"
            "Arguments:\n"
            " * sentence: Sentence to predict on text classifier.\n")
       .def("predict", &TextClassifier::predict, py::arg("test_file"),
