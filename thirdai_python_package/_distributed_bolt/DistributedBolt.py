@@ -2,8 +2,8 @@ import ray
 import os
 import toml
 import subprocess
-from Worker import Worker
-from Supervisor import Supervisor
+from .Worker import Worker
+from .Supervisor import Supervisor
 import time as time
 
 class DistributedBolt:
@@ -14,7 +14,7 @@ class DistributedBolt:
         os.system('ray up setup.yaml')
         subprocess.run(["sh", "make_cluster.sh", " ".join(worker_nodes)])
         self.no_of_workers = len(worker_nodes)+1
-        runtime_env = {"working_dir": "/home/pratik/Universe/thirdai_python_package/_distributed_bolt", "pip": ["toml", "typing", "typing_extensions", 'psutil'], "env_vars": {"OMP_NUM_THREADS": "100"}}
+        runtime_env = {"working_dir": "/home/pratik/Universe/thirdai_python_package_tests", "pip": ["toml", "typing", "typing_extensions", 'psutil'], "env_vars": {"OMP_NUM_THREADS": "100"}}
         ray.init(address='auto', runtime_env=runtime_env)
         config = toml.load(config_filename)
         self.epochs = config["params"]["epochs"]

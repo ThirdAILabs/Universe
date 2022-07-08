@@ -1,7 +1,7 @@
 from thirdai._thirdai import bolt, dataset
 import numpy as np
 import ray
-from utils import create_fully_connected_layer_configs, load_dataset
+from .utils import create_fully_connected_layer_configs, load_dataset
 
 
 @ray.remote(num_cpus=40, max_restarts=1)
