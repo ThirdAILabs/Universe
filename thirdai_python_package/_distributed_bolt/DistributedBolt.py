@@ -14,7 +14,7 @@ class DistributedBolt:
         os.system('ray up setup.yaml')
         subprocess.run(["sh", "make_cluster.sh", " ".join(worker_nodes)])
         self.no_of_workers = len(worker_nodes)+1
-        runtime_env = {"working_dir": "/home/pratik/Universe/thirdai_python_package_tests", "pip": ["toml", "typing", "typing_extensions", 'psutil'], "env_vars": {"OMP_NUM_THREADS": "100"}}
+        runtime_env = {"working_dir": "/home/pratik/Universe/thirdai_python_package_tests/distributed_training_sample", "pip": ["toml", "typing", "typing_extensions", 'psutil'], "env_vars": {"OMP_NUM_THREADS": "100"}}
         ray.init(address='auto', runtime_env=runtime_env)
         config = toml.load(config_filename)
         self.epochs = config["params"]["epochs"]
@@ -23,7 +23,7 @@ class DistributedBolt:
         for i in range(len(config['layers'])):
             self.layers.append(config['layers'][i]['dim'])
         random_seed = int(time.time())%int(0xffffffff)
-        self.workers = [Worker.options(max_concurrency=2).remote(self.layers,config, random_seed, self.no_of_workers, id) for id in range(self.no_of_workers)]
+        self.workers = [Worker.options(max_concurrency=2).remote(self.layers,config, id+1, self.no_of_workers, id) for id in range(self.no_of_workers)]
         self.supervisor = Supervisor.remote(self.layers,self.workers,config)
         self.num_of_batches = ray.get(self.workers[0].num_of_batches.remote())
         for i in range(len(self.workers)):
