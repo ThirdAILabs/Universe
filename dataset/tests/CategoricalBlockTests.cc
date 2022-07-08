@@ -135,7 +135,7 @@ TEST_F(CategoricalBlockTest, ContiguousNumericIdWithGraph) {
   for (auto& vec : vecs) {
     auto entries = vectorEntries(vec);
     uint32_t entries_under_n_id = 0;
-    uint32_t current_id;
+    uint32_t current_id = 0;
     for (const auto& [idx, val] : entries) {
       if (idx < n_ids) {
         entries_under_n_id++;
@@ -179,7 +179,7 @@ TEST_F(CategoricalBlockTest, StringToUidMapWithGraph) {
   for (auto& vec : vecs) {
     auto entries = vectorEntries(vec);
     uint32_t entries_under_n_id = 0;
-    uint32_t current_id;
+    uint32_t current_id = 0;
     for (const auto& [idx, val] : entries) {
       ASSERT_LT(idx, block.featureDim());
       if (idx < n_ids) {

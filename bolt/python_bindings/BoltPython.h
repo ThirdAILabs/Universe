@@ -406,11 +406,13 @@ class PySequentialClassifier : public SequentialClassifier {
                          uint32_t period = 1,
                          const std::vector<std::string>& text = {},
                          const std::vector<py::tuple>& categorical = {},
-                         const std::vector<std::string>& trackable_qty = {})
+                         const std::vector<std::string>& trackable_qty = {},
+                         const std::vector<py::tuple>& trackable_cat = {})
       : SequentialClassifier(
             {toItem(item), toTimestamp(timestamp), toTarget(target),
              toTrackConfig(horizon, lookback, period), toText(text),
-             toCategoricals(categorical), toTrackables(trackable_qty)},
+             toCategoricals(categorical), toTrackableQtys(trackable_qty),
+             toTrackableCats(trackable_cat)},
             size) {}
 
  private:
@@ -488,12 +490,35 @@ class PySequentialClassifier : public SequentialClassifier {
     return {horizon, lookback, period};
   }
 
-  static std::vector<TrackableQuantity> toTrackables(
-      const std::vector<std::string>& trackable_names) {
+  static std::vector<TrackableQuantity> toTrackableQtys(
+      const std::vector<std::string>& trackable_qty_names) {
     std::vector<TrackableQuantity> trackables;
-    trackables.reserve(trackable_names.size());
-    for (const auto& name : trackable_names) {
+    trackables.reserve(trackable_qty_names.size());
+    for (const auto& name : trackable_qty_names) {
       trackables.push_back({/* col+name = */ name});
+    }
+    return trackables;
+  }
+
+  static std::vector<TrackableCategory> toTrackableCats(
+    const std::vector<py::tuple>& tuples
+  ) {
+    std::vector<TrackableCategory> trackables;
+    trackables.reserve(tuples.size());
+    for (const auto& tuple : tuples) {
+      if (tuple.size() != 3) {
+        std::stringstream error_ss;
+        error_ss
+            << "A TrackableCategory tuple must contains three elements: \n"
+               "(trackable_category_column: str, n_distinct_categories: int, track_last_n: int) \n"
+               "Found tuple "
+            << tuple;
+        throw std::invalid_argument(error_ss.str());
+      }
+
+      trackables.push_back({/* col_name = */ tuple[0].cast<std::string>(),
+                            /* n_distinct = */ tuple[1].cast<uint32_t>(),
+                            /* track_last_n = */ tuple[2].cast<uint32_t>()});
     }
     return trackables;
   }

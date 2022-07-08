@@ -155,7 +155,7 @@ class TrendBlock : public Block {
     mean /= _lookback;
   }
 
-  static void center(std::vector<float>& counts, uint32_t mean) {
+  static void center(std::vector<float>& counts, float mean) {
     for (auto& count : counts) {
       count -= mean;
     }

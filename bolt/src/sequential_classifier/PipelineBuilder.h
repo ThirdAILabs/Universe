@@ -3,6 +3,7 @@
 #include "Schema.h"
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
 #include <dataset/src/encodings/categorical/StringToUidMap.h>
+#include <dataset/src/encodings/categorical_history/CategoricalHistoryIndex.h>
 #include <dataset/src/encodings/count_history/CountHistoryIndex.h>
 #include <memory>
 #include <unordered_map>
@@ -18,6 +19,7 @@ struct PersistentPipelineStates {
   std::shared_ptr<dataset::StringToUidMap> target_id_map;
   std::vector<std::shared_ptr<dataset::StringToUidMap>> cat_attr_maps;
   std::vector<std::shared_ptr<dataset::CountHistoryIndex>> trackable_counts;
+  std::vector<std::shared_ptr<dataset::CategoricalHistoryIndex>> trackable_categories;
 };
 
 class PipelineBuilder {
@@ -47,6 +49,8 @@ class PipelineBuilder {
   void addCategoricalAttrFeats(Blocks& blocks);
 
   void addTrackableQtyFeats(Blocks& blocks, bool overwrite_index);
+  
+  void addTrackableCatFeats(Blocks& blocks);
 
   void addNonzeros(size_t nonzeros) { _est_nonzeros += nonzeros; }
 

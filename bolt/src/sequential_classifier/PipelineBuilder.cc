@@ -1,10 +1,12 @@
 #include <bolt/src/sequential_classifier/PipelineBuilder.h>
 #include <bolt/src/utils/AutoTuneUtils.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/CategoricalTracking.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/Trend.h>
 #include <dataset/src/encodings/categorical/StringToUidMap.h>
+#include <dataset/src/encodings/categorical_history/CategoricalHistoryIndex.h>
 #include <dataset/src/encodings/count_history/CountHistoryIndex.h>
 #include <memory>
 #include <vector>
@@ -49,7 +51,7 @@ Blocks PipelineBuilder::buildInputBlocks(bool overwrite_index) {
   addTextAttrFeats(blocks);
   addCategoricalAttrFeats(blocks);
   addTrackableQtyFeats(blocks, overwrite_index);
-
+  addTrackableCatFeats(blocks); // must be called after item id feats.
   return blocks;
 }
 
@@ -141,6 +143,31 @@ void PipelineBuilder::addTrackableQtyFeats(Blocks& blocks,
         item.graph, item.max_neighbors);
     blocks.push_back(trend_block);
     addNonzeros(trend_block->featureDim());
+  }
+}
+
+void PipelineBuilder::addTrackableCatFeats(Blocks& blocks) {
+  auto item = _schema.item;
+  auto config = _schema.tracking_config;
+  auto trackable_cats = _schema.trackable_categories;
+
+  for (uint32_t i = 0; i < trackable_cats.size(); i++) {
+    auto cat = trackable_cats[i];
+    if (i >= _states.trackable_categories.size()) {
+      _states.trackable_categories.push_back(
+          std::make_shared<dataset::CategoricalHistoryIndex>(
+              /* n_ids = */ item.n_distinct, /* n_categories = */ cat.n_distinct,
+              /* buffer_size = */ cat.track_last_n));
+    }
+    auto tracking_block = std::make_shared<dataset::CategoricalTrackingBlock>(
+        item.col_num, _schema.timestamp.col_num, cat.col_num,
+        config.horizon, config.lookback, 
+        _states.item_id_map, _states.trackable_categories[i],
+        item.graph, item.max_neighbors);
+    blocks.push_back(tracking_block);
+    
+    size_t nonzero_multiplier = item.max_neighbors > 0 ? 2 : 1;
+    addNonzeros(nonzero_multiplier * cat.track_last_n);
   }
 }
 

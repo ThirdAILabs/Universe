@@ -632,12 +632,14 @@ void createBoltSubmodule(py::module_& module) {
                     const py::tuple&, uint32_t, uint32_t, uint32_t,
                     const std::vector<std::string>&,
                     const std::vector<py::tuple>&,
-                    const std::vector<std::string>&>(),
+                    const std::vector<std::string>&,
+                    const std::vector<py::tuple>&>(),
            py::arg("size"), py::arg("item"), py::arg("timestamp"),
            py::arg("target"), py::arg("horizon"), py::arg("lookback"),
            py::arg("period") = 1, py::arg("text") = std::vector<std::string>(),
            py::arg("categorical") = std::vector<py::tuple>(),
-           py::arg("trackable_qty") = std::vector<std::string>())
+           py::arg("trackable_qty") = std::vector<std::string>(),
+           py::arg("trackable_cat") = std::vector<py::tuple>())
       .def("train", &PySequentialClassifier::train, py::arg("filename"),
            py::arg("epochs"), py::arg("learning_rate"),
            py::arg("overwrite_index") = false)
