@@ -20,12 +20,12 @@ class CategoricalEncoding {
   /**
    * True if the encoder produces dense features, False otherwise.
    */
-  virtual bool isDense() = 0;
+  virtual bool isDense() const = 0;
 
   /**
    * The dimension of the encoding.
    */
-  virtual uint32_t featureDim() = 0;
+  virtual uint32_t featureDim() const = 0;
 };
 
 }  // namespace thirdai::dataset

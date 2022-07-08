@@ -1,5 +1,5 @@
 from thirdai import bolt, dataset
-from utils import gen_training_data, get_simple_concat_model
+from ..utils import gen_training_data, get_simple_concat_model
 import pytest
 import numpy
 
@@ -32,7 +32,7 @@ def run_simple_test(
         n_classes=num_classes, n_samples=num_training_samples
     )
 
-    train_config = bolt.graph.TrainConfig.makeConfig(
+    train_config = bolt.graph.TrainConfig.make(
         learning_rate=learning_rate, epochs=num_training_epochs
     ).silence()
 
@@ -44,9 +44,7 @@ def run_simple_test(
     )
 
     predict_config = (
-        bolt.graph.PredictConfig.makeConfig()
-        .withMetrics(["categorical_accuracy"])
-        .silence()
+        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
     )
 
     metrics = model.predict_np(
