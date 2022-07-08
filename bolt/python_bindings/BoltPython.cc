@@ -642,7 +642,6 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("train_data"), py::arg("train_labels"),
            py::arg("batch_size") = 0, py::arg("rehash") = 0,
            py::arg("rebuild") = 0, py::arg("verbose") = true,
-           py::arg("random_seed") = time(nullptr),
            "Initializes the Distributed Training over a node\n"
            "Arguments:\n"
            " * train_data: BoltDataset - Training data. This can be one of "

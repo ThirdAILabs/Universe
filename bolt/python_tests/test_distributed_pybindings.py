@@ -14,7 +14,7 @@ from utils import (
 
 LEARNING_RATE = 0.0001
 
-# Constructs a bolt network for mnist with a sparse output layer in distributed setting.
+# Constructs a bolt network for mnist with a sparse output layer
 def build_sparse_output_layer_network_distributed():
     layers = [
         bolt.FullyConnected(dim=256, activation_function="ReLU"),
@@ -28,7 +28,7 @@ def build_sparse_output_layer_network_distributed():
     return network
 
 
-# Constructs a bolt network for mnist with a sparse output layer in distributed setting.
+# Constructs a bolt network for mnist with a sparse output layer
 def build_dense_output_layer_network_distributed():
     layers = [
         bolt.FullyConnected(dim=256, activation_function="ReLU"),

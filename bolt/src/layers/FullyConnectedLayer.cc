@@ -498,22 +498,16 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
 }
 
 inline void FullyConnectedLayer::initSparseDatastructures(
-    std::random_device& rd, uint32_t random_seed) {
+    std::random_device& rd) {
   _hasher = assignHashFunction(_sampling_config, _prev_dim);
 
   /*
    * Right now, we are making sure the hash seeds for all the nodes to be
    * same, hence passing the hash_seed in the distributed block.
    */
-  if (_is_distributed) {
-    _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
-        _sampling_config.num_tables, _sampling_config.reservoir_size,
-        1 << _sampling_config.range_pow, random_seed);
-  } else {
-    _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
-        _sampling_config.num_tables, _sampling_config.reservoir_size,
-        1 << _sampling_config.range_pow);
-  }
+  _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
+      _sampling_config.num_tables, _sampling_config.reservoir_size,
+      1 << _sampling_config.range_pow);
 
   /* Initializing hence, we need to force build the hash tables
    * Hence, force_build is true here in buildHashTablesImpl(force_build)
@@ -529,12 +523,7 @@ inline void FullyConnectedLayer::initSparseDatastructures(
    * using default_random_engine using the same shuffle_seed on every node in
    * the distributed block.
    */
-  if (_is_distributed) {
-    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(),
-                 std::default_random_engine(random_seed));
-  } else {
-    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
-  }
+  std::shuffle(_rand_neurons.begin(), _rand_neurons.end(), rd);
 }
 
 inline void FullyConnectedLayer::deinitSparseDatastructures() {
@@ -640,13 +629,7 @@ void FullyConnectedLayer::setShallowSave(bool shallow) {
   _shallow_save = shallow;
 }
 
-/*
- * Added the argument of hash_Seed and shuffle_seed to the set_sparsity
- * functions for making sure all the nodes in the distributed setting have the
- * same hash tables. Also, made sure that the setSparsity for usage other than
- * in Distributed setting remain unaffacccted to this change.
- */
-void FullyConnectedLayer::setSparsity(float sparsity, uint32_t random_seed) {
+void FullyConnectedLayer::setSparsity(float sparsity) {
   deinitSparseDatastructures();
   _sparsity = sparsity;
   // TODO(josh): Right now this is using the autotuning for DWTA even if this
@@ -655,7 +638,7 @@ void FullyConnectedLayer::setSparsity(float sparsity, uint32_t random_seed) {
       FullyConnectedLayerConfig(_dim, _sparsity, _act_func).sampling_config;
   _sparse_dim = _sparsity * _dim;
   std::random_device rd;
-  initSparseDatastructures(rd, random_seed);
+  initSparseDatastructures(rd);
 }
 
 void FullyConnectedLayer::initOptimizer() {

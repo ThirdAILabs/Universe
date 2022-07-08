@@ -354,8 +354,7 @@ class DistributedPyNetwork final : public DistributedModel {
 
   uint32_t initTrainSingleNode(const py::object& data, const py::object& labels,
                                uint32_t batch_size = 0, uint32_t rehash = 0,
-                               uint32_t rebuild = 0, bool verbose = false,
-                               uint32_t random_seed = time(nullptr)) {
+                               uint32_t rebuild = 0, bool verbose = false) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
@@ -365,7 +364,6 @@ class DistributedPyNetwork final : public DistributedModel {
 
     uint32_t num_of_batches = DistributedModel::initTrainSingleNode(
         train_data.dataset, train_labels.dataset, rehash, rebuild, verbose);
-    DistributedModel::setRandomSeed(random_seed);
 
     return num_of_batches;
   }
