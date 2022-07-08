@@ -198,13 +198,13 @@ inline uint32_t getSecondBestIndex(const float* activations, uint32_t dim) {
 }
 
 template <typename BATCH_T>
-inline std::pair<std::vector<float>, std::vector<uint32_t>>
+inline std::vector<std::vector<float> >
 Model<BATCH_T>::getInputGradients(
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& batch_input,
     const LossFunction& loss_fn, const std::vector<uint32_t>& required_labels) {
   uint64_t num_batches = batch_input->numBatches();
   if (!required_labels.empty() &&
-      !(required_labels.size() ==
+      (required_labels.size() !=
         num_batches * batch_input->at(0).getBatchSize())) {
     throw std::invalid_argument("number of labels does not match");
   }
@@ -212,16 +212,12 @@ Model<BATCH_T>::getInputGradients(
   // have a batch size larger than this so we can just set the batch size
   // here.
   initializeNetworkState(batch_input->at(0).getBatchSize(), true);
-  std::vector<float> concatenated_grad;
-  uint32_t total_count = 0;
-  std::vector<uint32_t> offset_values;
-  offset_values.push_back(0);
+  std::vector<std::vector<float> > concatenated_grad;
   for (uint64_t id = 0; id < num_batches; id++) {
     BoltBatch output = getOutputs(batch_input->at(id).getBatchSize(), true);
     for (uint32_t vec_id = 0; vec_id < batch_input->at(id).getBatchSize();
          vec_id++) {
-      total_count += batch_input->at(id)[vec_id].len;
-      offset_values.push_back((total_count));
+      std::vector<float> vec_grad;
       // Initializing the input gradients because they were not initialized
       // before. and assigning them to zero because new method gets some random
       // garbage value and gradient calculation uses += operator.
@@ -254,15 +250,16 @@ Model<BATCH_T>::getInputGradients(
       backpropagateInputForGradients(vec_id, batch_input->at(id),
                                      output[vec_id]);
       for (uint32_t i = 0; i < batch_input->at(id)[vec_id].len; i++) {
-        concatenated_grad.push_back(batch_input->at(id)[vec_id].gradients[i]);
+        vec_grad.push_back(batch_input->at(id)[vec_id].gradients[i]);
       }
       // de allocating the memory and pointing the gradients to nullptr to
       // prevent using invalid memory reference.
       delete[] batch_input->at(id)[vec_id].gradients;
       batch_input->at(id)[vec_id].gradients = nullptr;
+      concatenated_grad.push_back(vec_grad);
     }
   }
-  return std::make_pair(std::move(concatenated_grad), std::move(offset_values));
+  return concatenated_grad;
 }
 
 template <typename BATCH_T>

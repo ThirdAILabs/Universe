@@ -130,7 +130,7 @@ class Model {
 
                             MetricAggregator& metrics);
 
-  std::pair<std::vector<float>, std::vector<uint32_t>> getInputGradients(
+  std::vector<std::vector<float> > getInputGradients(
       std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& batch_input,
       const LossFunction& loss_fn,
       const std::vector<uint32_t>& required_labels);
