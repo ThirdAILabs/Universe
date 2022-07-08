@@ -174,6 +174,7 @@ file(
   bolt/src/networks/*.cc 
   bolt/src/utils/*.cc 
   bolt/src/text_classifier/*.cc
+  bolt/src/sequential_classifier/*.cc
 )
 
 file(

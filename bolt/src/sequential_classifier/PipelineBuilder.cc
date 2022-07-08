@@ -4,13 +4,15 @@
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/Trend.h>
+#include <dataset/src/encodings/categorical/StringToUidMap.h>
+#include <dataset/src/encodings/count_history/CountHistoryIndex.h>
+#include <memory>
+#include <vector>
 
 namespace thirdai::bolt {
 
-PipelineBuilder::PipelineBuilder(GivenSchema& schema,
-                                 SequentialClassifierConfig& config,
-                                 const char delimiter)
-    : _schema_processor(schema), _config(config), _delimiter(delimiter) {}
+PipelineBuilder::PipelineBuilder(Schema schema, const char delimiter)
+    : _schema(std::move(schema)), _delimiter(delimiter) {}
 
 std::shared_ptr<dataset::StreamingGenericDatasetLoader>
 PipelineBuilder::buildPipelineForFile(std::string& filename, bool shuffle,
@@ -20,10 +22,10 @@ PipelineBuilder::buildPipelineForFile(std::string& filename, bool shuffle,
   auto loader =
       std::make_shared<dataset::SimpleFileDataLoader>(filename, BATCH_SIZE);
   auto header = getHeader(*loader);
-  auto columns = _schema_processor.parseHeader(header, _delimiter);
+  _schema.fitToHeader(header, _delimiter);
 
-  auto input_blocks = buildInputBlocks(columns, overwrite_index);
-  auto label_blocks = buildLabelBlocks(columns);
+  auto input_blocks = buildInputBlocks(overwrite_index);
+  auto label_blocks = buildLabelBlocks();
   auto buffer_size = autotuneShuffleBufferSize();
 
   return std::make_shared<dataset::StreamingGenericDatasetLoader>(
@@ -35,30 +37,31 @@ PipelineBuilder::buildPipelineForFile(std::string& filename, bool shuffle,
 std::string PipelineBuilder::getHeader(dataset::DataLoader& loader) {
   auto header = loader.getHeader();
   if (!header) {
-    throw std::invalid_argument(
-        "[SequentialClassifier::train] The file has no header.");
+    throw std::invalid_argument("The file has no header.");
   }
   return *header;
 }
 
-Blocks PipelineBuilder::buildInputBlocks(const ColumnNumbers& columns,
-                                         bool overwrite_index) {
+Blocks PipelineBuilder::buildInputBlocks(bool overwrite_index) {
   std::vector<std::shared_ptr<dataset::Block>> blocks;
-  addDateFeats(columns, blocks);
-  addUserIdFeats(columns, blocks);
-  addItemIdFeats(columns, blocks);
-  addTextAttrFeats(columns, blocks);
-  addCategoricalAttrFeats(columns, blocks);
-  addUserTemporalFeats(columns, blocks, overwrite_index);
-  addItemTemporalFeats(columns, blocks, overwrite_index);
+  addDateFeats(blocks);
+  addItemIdFeats(blocks);
+  addTextAttrFeats(blocks);
+  addCategoricalAttrFeats(blocks);
+  addTrackableQtyFeats(blocks, overwrite_index);
 
   return blocks;
 }
 
-Blocks PipelineBuilder::buildLabelBlocks(const ColumnNumbers& columns) {
-  checkCategoricalMap(_states._target_id_map);
-  return {std::make_shared<dataset::CategoricalBlock>(
-      columns.at(SchemaKey::target), _states._target_id_map)};
+Blocks PipelineBuilder::buildLabelBlocks() {
+  auto target = _schema.target;
+  if (_states.target_id_map == nullptr) {
+    _states.target_id_map =
+        std::make_shared<dataset::StringToUidMap>(target.n_distinct);
+  }
+
+  return {std::make_shared<dataset::CategoricalBlock>(target.col_num,
+                                                      _states.target_id_map)};
 }
 
 size_t PipelineBuilder::autotuneShuffleBufferSize() const {
@@ -71,111 +74,74 @@ size_t PipelineBuilder::autotuneShuffleBufferSize() const {
   return 1000;
 }
 
-void PipelineBuilder::addDateFeats(const ColumnNumbers& columns,
-                                   Blocks& blocks) {
+void PipelineBuilder::addDateFeats(Blocks& blocks) {
   blocks.push_back(
-      std::make_shared<dataset::DateBlock>(columns.at(SchemaKey::timestamp)));
+      std::make_shared<dataset::DateBlock>(_schema.timestamp.col_num));
   addNonzeros(4);
 }
 
-void PipelineBuilder::addUserIdFeats(const ColumnNumbers& columns,
-                                     Blocks& blocks) {
-  if (columns.count(SchemaKey::user) == 0) {
-    return;
+void PipelineBuilder::addItemIdFeats(Blocks& blocks) {
+  auto item = _schema.item;
+  if (_states.item_id_map == nullptr) {
+    _states.item_id_map =
+        std::make_shared<dataset::StringToUidMap>(item.n_distinct);
   }
-  checkCategoricalMap(_states._user_id_map);
+
   blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
-      columns.at(SchemaKey::user), _states._user_id_map, _config._user_graph,
-      _config._user_max_neighbors));
+      item.col_num, _states.item_id_map, item.graph, item.max_neighbors));
   addNonzeros(1);
 }
 
-void PipelineBuilder::addItemIdFeats(const ColumnNumbers& columns,
-                                     Blocks& blocks) {
-  checkCategoricalMap(_states._item_id_map);
-  blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
-      columns.at(SchemaKey::user), _states._item_id_map, _config._item_graph,
-      _config._item_max_neighbors));
-  addNonzeros(1);
-}
-
-void PipelineBuilder::addTextAttrFeats(const ColumnNumbers& columns,
-                                       Blocks& blocks) {
-  if (columns.count(SchemaKey::text_attr) == 0) {
-    return;
+void PipelineBuilder::addTextAttrFeats(Blocks& blocks) {
+  auto text_attrs = _schema.text_attributes;
+  for (const auto& text : text_attrs) {
+    blocks.push_back(
+        std::make_shared<dataset::TextBlock>(text.col_num, /* dim = */ 100000));
+    addNonzeros(20);
   }
-  blocks.push_back(std::make_shared<dataset::TextBlock>(
-      columns.at(SchemaKey::text_attr), /* dim = */ 100000));
-  addNonzeros(100);
 }
 
-void PipelineBuilder::addCategoricalAttrFeats(const ColumnNumbers& columns,
-                                              Blocks& blocks) {
-  if (columns.count(SchemaKey::categorical_attr) == 0) {
-    return;
+void PipelineBuilder::addCategoricalAttrFeats(Blocks& blocks) {
+  auto cat_attrs = _schema.categorical_attributes;
+  for (uint32_t i = 0; i < cat_attrs.size(); i++) {
+    auto cat = cat_attrs[i];
+    if (i >= _states.cat_attr_maps.size()) {
+      _states.cat_attr_maps.push_back(
+          std::make_shared<dataset::StringToUidMap>(cat.n_distinct));
+    }
+    blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
+        cat.col_num, _states.cat_attr_maps[i]));
+    addNonzeros(1);
   }
-  checkCategoricalMap(_states._cat_attr_map);
-  blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
-      columns.at(SchemaKey::categorical_attr), _states._cat_attr_map));
-  addNonzeros(1);
 }
 
-void PipelineBuilder::addUserTemporalFeats(const ColumnNumbers& columns,
-                                           Blocks& blocks,
+void PipelineBuilder::addTrackableQtyFeats(Blocks& blocks,
                                            bool overwrite_index) {
-  if (columns.count(SchemaKey::user) == 0) {
-    return;
+  if (overwrite_index) {
+    _states.trackable_counts =
+        std::vector<std::shared_ptr<dataset::CountHistoryIndex>>();
   }
 
-  checkCountHistoryIndex(_states._user_history, overwrite_index);
+  auto item = _schema.item;
+  auto config = _schema.tracking_config;
+  auto trackable_qty = _schema.trackable_quantities;
 
-  auto [has_count_col, count_col] = countCol(columns);
-  auto trend_block = std::make_shared<dataset::TrendBlock>(
-      has_count_col, columns.at(SchemaKey::user),
-      columns.at(SchemaKey::timestamp), count_col, _config._horizon, lookback(),
-      _states._user_history);
-
-  blocks.push_back(trend_block);
-  addNonzeros(trend_block->featureDim());
-}
-
-void PipelineBuilder::addItemTemporalFeats(const ColumnNumbers& columns,
-                                           Blocks& blocks,
-                                           bool overwrite_index) {
-  checkCountHistoryIndex(_states._item_history, overwrite_index);
-
-  auto [has_count_col, count_col] = countCol(columns);
-  auto trend_block = std::make_shared<dataset::TrendBlock>(
-      has_count_col, columns.at(SchemaKey::item),
-      columns.at(SchemaKey::timestamp), count_col, _config._horizon, lookback(),
-      _states._item_history);
-
-  blocks.push_back(trend_block);
-  addNonzeros(trend_block->featureDim());
-}
-
-void PipelineBuilder::checkCategoricalMap(
-    std::shared_ptr<dataset::StringToUidMap>& map) {
-  if (map == nullptr) {
-    map = std::make_shared<dataset::StringToUidMap>(_config._n_users);
+  for (uint32_t i = 0; i < trackable_qty.size(); i++) {
+    auto qty = trackable_qty[i];
+    if (i >= _states.trackable_counts.size()) {
+      _states.trackable_counts.push_back(
+          std::make_shared<dataset::CountHistoryIndex>(
+              /* n_rows = */ 5, /* range_pow = */ 22,
+              /* lifetime = */ std::numeric_limits<uint32_t>::max(),
+              /* period = */ config.period));
+    }
+    auto trend_block = std::make_shared<dataset::TrendBlock>(
+        qty.has_col_num, item.col_num, _schema.timestamp.col_num, qty.col_num,
+        config.horizon, config.lookback, _states.trackable_counts[i],
+        item.graph, item.max_neighbors);
+    blocks.push_back(trend_block);
+    addNonzeros(trend_block->featureDim());
   }
-}
-
-void PipelineBuilder::checkCountHistoryIndex(
-    std::shared_ptr<dataset::CountHistoryIndex>& index, bool overwrite_index) {
-  if (index == nullptr || overwrite_index) {
-    index = std::make_shared<dataset::CountHistoryIndex>(
-        /* n_rows = */ 5, /* range_pow = */ 22,
-        /* lifetime = */ std::numeric_limits<uint32_t>::max());
-  }
-}
-
-std::pair<bool, size_t> PipelineBuilder::countCol(
-    const ColumnNumbers& columns) {
-  bool has_count_col = columns.count(SchemaKey::trackable_quantity) != 0;
-  size_t count_col =
-      has_count_col ? columns.at(SchemaKey::trackable_quantity) : 0;
-  return {has_count_col, count_col};
 }
 
 }  // namespace thirdai::bolt

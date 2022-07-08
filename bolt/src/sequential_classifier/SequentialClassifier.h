@@ -1,3 +1,5 @@
+#pragma once
+
 #include "PipelineBuilder.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
@@ -20,10 +22,10 @@ class SequentialClassifier {
   friend SequentialClassifierTests;
 
  public:
-  explicit SequentialClassifier(GivenSchema schema,
-                                SequentialClassifierConfig config,
+  explicit SequentialClassifier(Schema schema, std::string model_size,
                                 char delimiter = ',')
-      : _pipeline_builder(schema, config, delimiter), _config(config) {}
+      : _pipeline_builder(std::move(schema), delimiter),
+        _model_size(std::move(model_size)) {}
 
   void train(std::string filename, uint32_t epochs, float learning_rate,
              bool overwrite_index = false) {
@@ -33,8 +35,6 @@ class SequentialClassifier {
     if (!_network) {
       _network = buildNetwork(*pipeline);
     }
-
-    MeanSquaredError loss;
 
     if (!AutoTuneUtils::canLoadDatasetInMemory(filename)) {
       trainOnStream(filename, epochs, learning_rate, pipeline);
@@ -59,7 +59,7 @@ class SequentialClassifier {
           for (uint32_t batch_id = 0; batch_id < batch_size; batch_id++) {
             auto pred = getPrediction(outputs[batch_id]);
             (*output_file)
-                << _pipeline_builder._states._target_id_map->uidToClass(pred)
+                << _pipeline_builder._states.target_id_map->uidToClass(pred)
                 << std::endl;
           }
         };
@@ -86,7 +86,7 @@ class SequentialClassifier {
   FullyConnectedNetwork buildNetwork(
       dataset::StreamingGenericDatasetLoader& pipeline) const {
     auto hidden_dim = AutoTuneUtils::getHiddenLayerSize(
-        _config._model_size, pipeline.getLabelDim(), pipeline.getInputDim());
+        _model_size, pipeline.getLabelDim(), pipeline.getInputDim());
     auto hidden_sparsity = AutoTuneUtils::getHiddenLayerSparsity(hidden_dim);
 
     SequentialConfigList configs;
@@ -101,7 +101,7 @@ class SequentialClassifier {
   void trainOnStream(
       std::string& filename, uint32_t epochs, float learning_rate,
       std::shared_ptr<dataset::StreamingGenericDatasetLoader>& pipeline) {
-    MeanSquaredError loss;
+    CategoricalCrossEntropyLoss loss;
 
     for (uint32_t e = 0; e < epochs; e++) {
       _network->trainOnStream(pipeline, loss, learning_rate);
@@ -121,7 +121,7 @@ class SequentialClassifier {
   void trainInMemory(
       uint32_t epochs, float learning_rate,
       std::shared_ptr<dataset::StreamingGenericDatasetLoader>& pipeline) {
-    MeanSquaredError loss;
+    CategoricalCrossEntropyLoss loss;
 
     auto [train_data, train_labels] = pipeline->loadInMemory();
 
@@ -147,7 +147,7 @@ class SequentialClassifier {
   }
 
   PipelineBuilder _pipeline_builder;
-  SequentialClassifierConfig _config;
+  std::string _model_size;
   std::optional<FullyConnectedNetwork> _network;
 };
 

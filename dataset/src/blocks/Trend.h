@@ -4,6 +4,8 @@
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/encodings/count_history/CountHistoryIndex.h>
 #include <dataset/src/utils/TimeUtils.h>
+#include <sys/types.h>
+#include <cmath>
 #include <cstdlib>
 #include <memory>
 
@@ -17,7 +19,7 @@ class TrendBlock : public Block {
    * If has_count_col == false, count_col is ignored.
    */
   TrendBlock(bool has_count_col, size_t id_col, size_t timestamp_col,
-             size_t count_col, size_t horizon, size_t lookback,
+             size_t count_col, uint32_t horizon, uint32_t lookback,
              std::shared_ptr<CountHistoryIndex> index, GraphPtr graph = nullptr,
              size_t max_n_neighbors = 0)
       : _horizon(horizon),
@@ -31,7 +33,7 @@ class TrendBlock : public Block {
         _max_n_neighbors(max_n_neighbors) {
     if (_graph != nullptr && _max_n_neighbors == 0) {
       throw std::invalid_argument(
-          "[SequentialClassifier] Provided a graph but `max_n_neighbors` is "
+          "Provided a graph but `max_n_neighbors` is "
           "set to 0. This means "
           "graph information will not be used at all.");
     }
@@ -41,18 +43,19 @@ class TrendBlock : public Block {
   }
 
   TrendBlock(bool has_count_col, size_t id_col, size_t timestamp_col,
-             size_t count_col, size_t horizon, size_t lookback,
-             GraphPtr graph = nullptr, size_t max_n_neighbors = 0)
+             size_t count_col, uint32_t horizon, uint32_t lookback,
+             uint32_t period, GraphPtr graph = nullptr,
+             size_t max_n_neighbors = 0)
       : TrendBlock(has_count_col, id_col, timestamp_col, count_col, horizon,
                    lookback,
                    std::make_shared<CountHistoryIndex>(
                        /* n_rows = */ 5, /* range_pow = */ 22,
-                       lifetime(horizon, lookback)),
+                       lifetime(horizon, lookback), period),
                    std::move(graph), max_n_neighbors) {}
 
   uint32_t featureDim() const final {
     uint32_t multiplier = _max_n_neighbors + 1;
-    return (_lookback + 1) * multiplier;
+    return (_lookback)*multiplier;
   };
 
   bool isDense() const final { return _max_n_neighbors == 0; };
@@ -124,50 +127,57 @@ class TrendBlock : public Block {
   void addFeaturesForId(uint32_t id, uint32_t timestamp,
                         SegmentedFeatureVector& vec) {
     std::vector<float> counts(_lookback);
-    float sum = 0;
-    fillCountsAndSum(id, timestamp, counts, sum);
+    float mean = 0;
+    fillCountsAndMean(id, timestamp, counts, mean);
 
-    /*
-      Center and normalize by sum so sum is 0 and
-      values are always between -1 and 1.
-    */
-    float mean = sum / _lookback;
-    centerAndNormalize(counts, sum, mean);
+    if (_lookback > 1 && mean != 0) {
+      center(counts, mean);
+      l2Normalize(counts);
+    }
 
     for (const auto& count : counts) {
       vec.addDenseFeatureToSegment(count);
     }
-    vec.addDenseFeatureToSegment(mean);
   }
 
-  void fillCountsAndSum(uint32_t id, uint32_t timestamp,
-                        std::vector<float>& counts, float& sum) {
+  void fillCountsAndMean(uint32_t id, uint32_t timestamp,
+                        std::vector<float>& counts, float& mean) {
+    mean = 0;
     for (uint32_t i = 0; i < _lookback; i++) {
-      auto look_back = (_horizon + i) * SECONDS_IN_DAY;
+      auto look_back = (_horizon + i) * TimeUtils::SECONDS_IN_DAY;
       // Prevent overflow if given a date < 1970.
       auto query_timestamp = timestamp >= look_back ? timestamp - look_back : 0;
       auto query_result = _index->query(id, query_timestamp);
       assert(query_result >= 0);
       counts[i] = query_result;
-      sum += query_result;
+      mean += query_result;
+    }
+    mean /= _lookback;
+  }
+
+  static void center(std::vector<float>& counts, uint32_t mean) {
+    for (auto& count : counts) {
+      count -= mean;
     }
   }
 
-  static void centerAndNormalize(std::vector<float>& counts, float sum,
-                                 float mean) {
-    if (sum != 0) {
-      for (auto& count : counts) {
-        count = (count - mean) / sum;
-      }
+  static void l2Normalize(std::vector<float>& counts) {
+    float sum_sqr = 0;
+    for (const auto& count : counts) {
+      sum_sqr += count * count;
+    }
+    float l2_norm = std::sqrt(sum_sqr);
+    for (auto& count : counts) {
+      count /= l2_norm;
     }
   }
 
   static uint32_t lifetime(uint32_t horizon, uint32_t lookback) {
-    return (lookback + horizon) * SECONDS_IN_DAY;
+    return (lookback + horizon) * TimeUtils::SECONDS_IN_DAY;
   }
 
-  size_t _horizon;
-  size_t _lookback;
+  uint32_t _horizon;
+  uint32_t _lookback;
   bool _has_count_col;
   size_t _id_col;
   size_t _timestamp_col;

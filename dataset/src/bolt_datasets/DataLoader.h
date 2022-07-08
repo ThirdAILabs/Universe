@@ -44,6 +44,9 @@ class SimpleFileDataLoader final : public DataLoader {
     while (lines.size() < _target_batch_size && std::getline(_file, line)) {
       lines.push_back(std::move(line));
     }
+    if (lines.empty()) {
+      return std::nullopt;
+    }
     return std::make_optional(std::move(lines));
   }
 

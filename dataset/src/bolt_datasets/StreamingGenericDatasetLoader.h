@@ -80,7 +80,6 @@ class StreamingGenericDatasetLoader : public StreamingDataset<bolt::BoltBatch> {
     for (size_t i = 0; i < _buffer_size - 1; i++) {
       addNextBatchToBuffer();
     }
-    std::cout << "Shuffle buffer filled." << std::endl;
   }
 
   void addNextBatchToBuffer() {

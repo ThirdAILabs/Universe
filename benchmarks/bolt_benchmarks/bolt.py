@@ -228,6 +228,9 @@ def train_fcn(config: Dict[str, Any], mlflow_enabled: bool):
         if mlflow_enabled:
             mlflow.log_metrics(metrics)
 
+    if "save_for_inference" in config["params"].keys():
+        network.save_for_inference(config["params"]["save_for_inference"])
+
 
 def train_dlrm(config: Dict[str, Any], mlflow_enabled: bool):
     embedding_layer = create_embedding_layer_config(config["embedding_layer"])
