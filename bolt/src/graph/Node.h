@@ -271,6 +271,13 @@ class Node {
 
   virtual NodeState getState() const = 0;
 
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_name);
+  }
+
   std::optional<std::string> _name;
 };
 

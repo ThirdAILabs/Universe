@@ -107,18 +107,29 @@ target_link_libraries(
   gtest_main
 )
 
+add_executable(
+  categorical_multi_label_test
+  CategoricalMultiLabelTest.cc
+)
+
+target_link_libraries(
+  categorical_multi_label_test
+  PRIVATE
+  gtest_main
+  dataset_core_lib
+)
+
 # add_executable(
-#   global_frequency_test
-#   GlobalFreqTest.cc
+# global_frequency_test
+# GlobalFreqTest.cc
 # )
 
 # target_link_libraries(
-#   global_frequency_test
-#   PRIVATE
-#   global_frequency_lib
-#   gtest_main
+# global_frequency_test
+# PRIVATE
+# global_frequency_lib
+# gtest_main
 # )
-
 include(GoogleTest)
 gtest_discover_tests(svm_dataset_test)
 gtest_discover_tests(click_through_dataset_test)
@@ -129,4 +140,6 @@ gtest_discover_tests(categorical_block_test)
 gtest_discover_tests(text_block_test)
 gtest_discover_tests(block_batch_processor_test)
 gtest_discover_tests(generic_batch_processor_test)
+gtest_discover_tests(categorical_multi_label_test)
+
 # gtest_discover_tests(global_frequency_test)

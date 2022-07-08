@@ -5,13 +5,7 @@ pytestmark = [pytest.mark.integration]
 
 from thirdai import bolt
 import numpy as np
-from utils import (
-    train_network,
-    build_sparse_hidden_layer_classifier,
-    setup_module,
-    load_mnist,
-    load_mnist_labels,
-)
+from .utils import train_network, build_sparse_hidden_layer_classifier, setup_module, load_mnist, load_mnist_labels
 
 LEARNING_RATE = 0.0001
 
