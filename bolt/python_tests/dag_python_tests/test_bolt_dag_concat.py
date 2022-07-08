@@ -32,13 +32,16 @@ def run_simple_test(
         n_classes=num_classes, n_samples=num_training_samples
     )
 
-    train_config = bolt.graph.TrainConfig.make(
-        learning_rate=learning_rate, epochs=num_training_epochs
-    ).silence()
+    train_config = (
+        bolt.graph.TrainConfig.make(
+            learning_rate=learning_rate, epochs=num_training_epochs
+        )
+        .with_batch_size(batch_size)
+        .silence()
+    )
 
-    metrics = model.train_np(
+    metrics = model.train(
         train_data=train_data,
-        batch_size=batch_size,
         train_labels=train_labels,
         train_config=train_config,
     )

@@ -114,6 +114,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),
                   py::arg("epochs"))
       .def("with_metrics", &TrainConfig::withMetrics, py::arg("metrics"))
+      .def("with_batch_size", &TrainConfig::withBatchSize,
+           py::arg("batch_size"))
       .def("silence", &TrainConfig::silence)
       .def("with_rebuild_hash_tables", &TrainConfig::withRebuildHashTables,
            py::arg("rebuild_hash_tables"))
@@ -141,21 +143,34 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Compiles the graph for the given loss function. In this step the "
            "order in which to compute the layers is determined and various "
            "checks are preformed to ensure the model architecture is correct.")
-      .def("train", &BoltGraph::train<BoltBatch>, py::arg("train_data"),
-           py::arg("train_labels"), py::arg("train_config"),
-           "Trains the network on the given training data.\n"
-           "Arguments:\n"
-           " * train_data: BoltDataset - Training data. This is a BoltDataset "
-           "as loaded by thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * train_labels: BoltDataset - Training labels. This is a "
-           "BoltDataset as loaded by thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * train_config: TrainConfig - the additional training parameters. "
-           "See the TrainConfig documentation above.\n\n"
+      .def(
+          "train",
+          [](BoltGraph& model, const py::object& data, const py::object& labels,
+             const TrainConfig& train_config) {
+            auto train_data =
+                convertPyObjectToBoltDataset(data, train_config.batchSize(),
+                                             /* is_labels = */ false);
+            auto train_labels =
+                convertPyObjectToBoltDataset(labels, train_config.batchSize(),
+                                             /* is_labels = */ true);
+            return model.train(train_data.dataset, train_labels.dataset,
+                               train_config);
+          },
+          py::arg("train_data"), py::arg("train_labels"),
+          py::arg("train_config"),
+          "Trains the network on the given training data.\n"
+          "Arguments:\n"
+          " * train_data: BoltDataset - Training data. This is a BoltDataset "
+          "as loaded by thirdai.dataset.load_bolt_svm_dataset or "
+          "thirdai.dataset.load_bolt_csv_dataset.\n"
+          " * train_labels: BoltDataset - Training labels. This is a "
+          "BoltDataset as loaded by thirdai.dataset.load_bolt_svm_dataset or "
+          "thirdai.dataset.load_bolt_csv_dataset.\n"
+          " * train_config: TrainConfig - the additional training parameters. "
+          "See the TrainConfig documentation above.\n\n"
 
-           "Returns a mapping from metric names to an array their values for "
-           "every epoch.")
+          "Returns a mapping from metric names to an array their values for "
+          "every epoch.")
       .def(
           "predict",
           [](BoltGraph& model, const py::object& data, const py::object& labels,
@@ -166,7 +181,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
             BoltDatasetNumpyContext test_labels;
             if (!labels.is_none()) {
               test_labels = convertPyObjectToBoltDataset(
-                  labels, /* batch_size = */ 2048, true);
+                  labels, /* batch_size = */ 2048, /* is_labels = */ true);
             }
             auto [metrics, output] = model.predict(
                 test_data.dataset, test_labels.dataset, predict_config);
@@ -223,22 +238,6 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "details for each layer in the network.")
       // TODO(josh/nick): These are temporary until we have a better story
       // for converting numpy to BoltGraphs
-      .def(
-          "train_np",
-          [](BoltGraph& model, const py::object& train_data_numpy,
-             const py::object& train_labels_numpy,
-             const TrainConfig& train_config, uint32_t batch_size) {
-            auto train_data = convertPyObjectToBoltDataset(train_data_numpy,
-                                                           batch_size, false);
-
-            auto train_labels = convertPyObjectToBoltDataset(train_labels_numpy,
-                                                             batch_size, true);
-
-            return model.train(train_data.dataset, train_labels.dataset,
-                               train_config);
-          },
-          py::arg("train_data"), py::arg("train_labels"),
-          py::arg("train_config"), py::arg("batch_size"))
       .def("get_layer", &BoltGraph::getNodeByName, py::arg("layer_name"),
            "Looks up a layer (node) of the network by using the layer's "
            "assigned name. As such, must be called after compile. You can "

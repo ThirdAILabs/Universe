@@ -5,6 +5,7 @@
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <stdexcept>
 
 namespace thirdai::bolt::python {
 
@@ -168,15 +169,22 @@ inline BoltDatasetNumpyContext convertNumpyArrayToBoltDataset(
 }
 
 inline BoltDatasetNumpyContext convertPyObjectToBoltDataset(
-    const py::object& obj, uint32_t batch_size, bool is_labels) {
+    const py::object& obj, std::optional<uint32_t> batch_size, bool is_labels) {
   if (isBoltDataset(obj)) {
+    // TODO(josh): Add a check here asserting batch size is std::nullopt once
+    // we deprecate the old api
     return BoltDatasetNumpyContext(obj.cast<dataset::BoltDatasetPtr>());
   }
+  if (!batch_size) {
+    throw std::invalid_argument(
+        "You need to set a batch size if you are passing in numpy arrays for "
+        "training");
+  }
   if (isNumpyArray(obj)) {
-    return convertNumpyArrayToBoltDataset(obj, batch_size, is_labels);
+    return convertNumpyArrayToBoltDataset(obj, *batch_size, is_labels);
   }
   if (isTuple(obj)) {
-    return convertTupleToBoltDataset(obj, batch_size);
+    return convertTupleToBoltDataset(obj, *batch_size);
   }
 
   throw std::invalid_argument(

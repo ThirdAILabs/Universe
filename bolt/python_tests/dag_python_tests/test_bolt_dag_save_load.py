@@ -5,8 +5,12 @@ import pytest
 pytestmark = [pytest.mark.unit]
 
 
-def get_train_config(epochs):
-    return bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=epochs).silence()
+def get_train_config(epochs, batch_size):
+    return (
+        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=epochs)
+        .with_batch_size(batch_size)
+        .silence()
+    )
 
 
 def get_predict_config():
@@ -41,8 +45,8 @@ class ModelWithLayers:
         self.model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     def train(self, data, labels, epochs):
-        self.model.train_np(
-            data, labels, batch_size=100, train_config=get_train_config(epochs)
+        self.model.train(
+            data, labels, train_config=get_train_config(epochs, batch_size=100)
         )
 
     def predict(self, data, labels):
@@ -76,8 +80,8 @@ def test_save_load_dag():
     )
 
     # Verify accuarcy improves when training new model.
-    new_model.train_np(
-        data, labels, batch_size=100, train_config=get_train_config(epochs=2)
+    new_model.train(
+        data, labels, train_config=get_train_config(epochs=2, batch_size=100)
     )
     test_metrics3 = new_model.predict(
         data, labels, predict_config=get_predict_config()
