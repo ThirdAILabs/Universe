@@ -1,3 +1,5 @@
+#pragma once
+
 #include <dataset/src/blocks/BlockInterface.h>
 #include <optional>
 #include <sstream>
