@@ -13,12 +13,13 @@
 
 namespace thirdai::bolt {
 
-SequentialClassifierPipelineBuilder::SequentialClassifierPipelineBuilder(SequentialClassifierSchema schema, const char delimiter)
+SequentialClassifierPipelineBuilder::SequentialClassifierPipelineBuilder(
+    SequentialClassifierSchema schema, const char delimiter)
     : _schema(std::move(schema)), _delimiter(delimiter) {}
 
 std::shared_ptr<dataset::StreamingGenericDatasetLoader>
-SequentialClassifierPipelineBuilder::buildPipelineForFile(std::string& filename, bool shuffle,
-                                      bool overwrite_index) {
+SequentialClassifierPipelineBuilder::buildPipelineForFile(
+    std::string& filename, bool shuffle, bool overwrite_index) {
   _est_nonzeros = 0;
 
   auto loader =
@@ -36,7 +37,8 @@ SequentialClassifierPipelineBuilder::buildPipelineForFile(std::string& filename,
       /* has_header = */ false, _delimiter);
 }
 
-std::string SequentialClassifierPipelineBuilder::getHeader(dataset::DataLoader& loader) {
+std::string SequentialClassifierPipelineBuilder::getHeader(
+    dataset::DataLoader& loader) {
   auto header = loader.getHeader();
   if (!header) {
     throw std::invalid_argument("The file has no header.");
@@ -44,14 +46,15 @@ std::string SequentialClassifierPipelineBuilder::getHeader(dataset::DataLoader& 
   return *header;
 }
 
-Blocks SequentialClassifierPipelineBuilder::buildInputBlocks(bool overwrite_index) {
+Blocks SequentialClassifierPipelineBuilder::buildInputBlocks(
+    bool overwrite_index) {
   std::vector<std::shared_ptr<dataset::Block>> blocks;
   addDateFeats(blocks);
   addItemIdFeats(blocks);
   addTextAttrFeats(blocks);
   addCategoricalAttrFeats(blocks);
   addTrackableQtyFeats(blocks, overwrite_index);
-  addTrackableCatFeats(blocks); // must be called after item id feats.
+  addTrackableCatFeats(blocks);  // must be called after item id feats.
   return blocks;
 }
 
@@ -103,7 +106,8 @@ void SequentialClassifierPipelineBuilder::addTextAttrFeats(Blocks& blocks) {
   }
 }
 
-void SequentialClassifierPipelineBuilder::addCategoricalAttrFeats(Blocks& blocks) {
+void SequentialClassifierPipelineBuilder::addCategoricalAttrFeats(
+    Blocks& blocks) {
   auto cat_attrs = _schema.categorical_attributes;
   for (uint32_t i = 0; i < cat_attrs.size(); i++) {
     auto cat = cat_attrs[i];
@@ -117,8 +121,8 @@ void SequentialClassifierPipelineBuilder::addCategoricalAttrFeats(Blocks& blocks
   }
 }
 
-void SequentialClassifierPipelineBuilder::addTrackableQtyFeats(Blocks& blocks,
-                                           bool overwrite_index) {
+void SequentialClassifierPipelineBuilder::addTrackableQtyFeats(
+    Blocks& blocks, bool overwrite_index) {
   if (overwrite_index) {
     _states.trackable_counts =
         std::vector<std::shared_ptr<dataset::CountHistoryIndex>>();
@@ -156,16 +160,16 @@ void SequentialClassifierPipelineBuilder::addTrackableCatFeats(Blocks& blocks) {
     if (i >= _states.trackable_categories.size()) {
       _states.trackable_categories.push_back(
           std::make_shared<dataset::CategoricalHistoryIndex>(
-              /* n_ids = */ item.n_distinct, /* n_categories = */ cat.n_distinct,
+              /* n_ids = */ item.n_distinct,
+              /* n_categories = */ cat.n_distinct,
               /* buffer_size = */ cat.track_last_n));
     }
     auto tracking_block = std::make_shared<dataset::CategoricalTrackingBlock>(
-        item.col_num, _schema.timestamp.col_num, cat.col_num,
-        config.horizon, config.lookback, 
-        _states.item_id_map, _states.trackable_categories[i],
+        item.col_num, _schema.timestamp.col_num, cat.col_num, config.horizon,
+        config.lookback, _states.item_id_map, _states.trackable_categories[i],
         item.graph, item.max_neighbors);
     blocks.push_back(tracking_block);
-    
+
     size_t nonzero_multiplier = item.max_neighbors > 0 ? 2 : 1;
     addNonzeros(nonzero_multiplier * cat.track_last_n);
   }

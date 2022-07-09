@@ -23,8 +23,8 @@ class SequentialClassifier {
   friend SequentialClassifierTests;
 
  public:
-  explicit SequentialClassifier(SequentialClassifierSchema schema, std::string model_size,
-                                char delimiter = ',')
+  explicit SequentialClassifier(SequentialClassifierSchema schema,
+                                std::string model_size, char delimiter = ',')
       : _pipeline_builder(std::move(schema), delimiter),
         _model_size(std::move(model_size)) {}
 
@@ -128,8 +128,11 @@ class SequentialClassifier {
     auto start = std::chrono::high_resolution_clock::now();
     auto [train_data, train_labels] = pipeline->loadInMemory();
     auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
-    std::cout << "Loaded " << train_data->len() << " training samples into memory in " << duration << " seconds." << std::endl;
+    auto duration =
+        std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+    std::cout << "Loaded " << train_data->len()
+              << " training samples into memory in " << duration << " seconds."
+              << std::endl;
 
     _network->train(train_data, train_labels, loss, learning_rate, 1);
     _network->freezeHashTables();

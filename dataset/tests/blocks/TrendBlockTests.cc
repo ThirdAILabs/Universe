@@ -30,16 +30,15 @@ TEST_F(TrendBlockTests, CorrectOutputWindowSizeOneNoGraph) {
       /* timestamp_col = */ 1, /* count_col = */ 2,
       /* horizon = */ 0, /* lookback = */ 1, /* period = */ 7)};
 
-  StringMatrix mock_data {
-    {"id_1", "2022-01-01", "0.3"}, // Trivial
-    {"id_1", "2022-01-02", "0.5"}, // Check same period gets aggregated
-    {"id_1", "2022-01-08", "0.1"}, // Check counted as new period
-    {"id_2", "2022-01-08", "0.45"}, // Check handle multiple tracking id
+  StringMatrix mock_data{
+      {"id_1", "2022-01-01", "0.3"},   // Trivial
+      {"id_1", "2022-01-02", "0.5"},   // Check same period gets aggregated
+      {"id_1", "2022-01-08", "0.1"},   // Check counted as new period
+      {"id_2", "2022-01-08", "0.45"},  // Check handle multiple tracking id
   };
 
-  auto vecs =
-      makeSparseSegmentedVecs(mock_data, blocks);
-  
+  auto vecs = makeSparseSegmentedVecs(mock_data, blocks);
+
   auto vec_0_entries = vectorEntries(vecs[0]);
   ASSERT_EQ(vec_0_entries.size(), 1);
   std::cout << vec_0_entries.at(0);
@@ -59,9 +58,9 @@ TEST_F(TrendBlockTests, CorrectOutputWindowSizeOneNoGraph) {
 }
 
 TEST_F(TrendBlockTests, CorrectOutputWindowSizeOneWithGraph) {
-  Graph graph {
-    {"id_1", {"id_2"}},
-    {"id_2", {"id_1"}},
+  Graph graph{
+      {"id_1", {"id_2"}},
+      {"id_2", {"id_1"}},
   };
 
   std::vector<std::shared_ptr<Block>> blocks{std::make_shared<TrendBlock>(
@@ -70,16 +69,15 @@ TEST_F(TrendBlockTests, CorrectOutputWindowSizeOneWithGraph) {
       /* horizon = */ 0, /* lookback = */ 1, /* period = */ 7,
       std::make_shared<Graph>(std::move(graph)), /* max_n_neighbors = */ 1)};
 
-  StringMatrix mock_data {
-    {"id_1", "2022-01-01", "0.3"}, // Trivial
-    {"id_2", "2022-01-01", "0.35"}, // Check handle neighbor
-    {"id_3", "2022-01-01", "0.45"}, // Check handle not in graph
-    {"id_1", "2022-01-02", "0.5"}, // Check same period gets aggregated
+  StringMatrix mock_data{
+      {"id_1", "2022-01-01", "0.3"},   // Trivial
+      {"id_2", "2022-01-01", "0.35"},  // Check handle neighbor
+      {"id_3", "2022-01-01", "0.45"},  // Check handle not in graph
+      {"id_1", "2022-01-02", "0.5"},   // Check same period gets aggregated
   };
 
-  auto vecs =
-      makeSparseSegmentedVecs(mock_data, blocks);
-  
+  auto vecs = makeSparseSegmentedVecs(mock_data, blocks);
+
   auto vec_0_entries = vectorEntries(vecs[0]);
   ASSERT_EQ(vec_0_entries.size(), 2);
   std::cout << vec_0_entries.at(0);
@@ -107,19 +105,18 @@ TEST_F(TrendBlockTests, CorrectOutputLargerWindow) {
       /* timestamp_col = */ 1, /* count_col = */ 2,
       /* horizon = */ 0, /* lookback = */ 4, /* period = */ 1)};
 
-  StringMatrix mock_data {
-    {"id_1", "2022-01-01", "0.1"}, // Trivial
-    {"id_1", "2022-01-02", "0.2"}, // Check handle neighbor
-    {"id_1", "2022-01-03", "0.3"}, // Check handle not in graph
-    {"id_1", "2022-01-04", "0.4"}, // Check same period gets aggregated
+  StringMatrix mock_data{
+      {"id_1", "2022-01-01", "0.1"},  // Trivial
+      {"id_1", "2022-01-02", "0.2"},  // Check handle neighbor
+      {"id_1", "2022-01-03", "0.3"},  // Check handle not in graph
+      {"id_1", "2022-01-04", "0.4"},  // Check same period gets aggregated
   };
 
-  auto vecs =
-      makeSparseSegmentedVecs(mock_data, blocks);
-  
+  auto vecs = makeSparseSegmentedVecs(mock_data, blocks);
+
   auto vec_3_entries = vectorEntries(vecs[3]);
   ASSERT_EQ(vec_3_entries.size(), 4);
-  float l2_norm = std::sqrt(2 * (0.15*0.15 + 0.05* 0.05));
+  float l2_norm = std::sqrt(2 * (0.15 * 0.15 + 0.05 * 0.05));
   assertFloatEq(vec_3_entries.at(0), 0.15 / l2_norm);
   assertFloatEq(vec_3_entries.at(1), 0.05 / l2_norm);
   assertFloatEq(vec_3_entries.at(2), -0.05 / l2_norm);

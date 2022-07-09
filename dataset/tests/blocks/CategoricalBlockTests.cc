@@ -201,7 +201,8 @@ TEST_F(CategoricalBlockTest, StringToUidMapWithGraph) {
       ASSERT_LT(key, block.featureDim());
       if (key > n_ids) {
         ASSERT_EQ(val, 1.0);
-        auto class_name = map_encoding->uidToClass(key - (n_ids + 1)); // + 1 for out-of-vocab.
+        auto class_name = map_encoding->uidToClass(
+            key - (n_ids + 1));  // + 1 for out-of-vocab.
         ASSERT_TRUE(neighbor_exists[class_name]);
       }
     }

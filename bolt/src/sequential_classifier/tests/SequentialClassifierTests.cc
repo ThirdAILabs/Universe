@@ -1,5 +1,5 @@
-#include <bolt/src/sequential_classifier/SequentialClassifierPipelineBuilder.h>
 #include <bolt/src/sequential_classifier/SequentialClassifier.h>
+#include <bolt/src/sequential_classifier/SequentialClassifierPipelineBuilder.h>
 #include <gtest/gtest.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <cstddef>
@@ -50,7 +50,7 @@ class TrendGenerator {
         return "stagnant";
       default:
         throw std::invalid_argument(
-            "State is not increasing, decreasing, nor stagnant. Something is" 
+            "State is not increasing, decreasing, nor stagnant. Something is"
             "wrong.");
     }
   }
@@ -83,29 +83,29 @@ class SequentialClassifierTests : public testing::Test {
     uint32_t long_repetitions = 100;
     for (uint32_t cycle = 0; cycle < n_cycles; cycle++) {
       trend_gen.startIncreasing();
-      writeSamplesToFile(train_out, time_gen, trend_gen, n_items,
-                         "stagnant", short_repetitions);
-      writeSamplesToFile(train_out, time_gen, trend_gen, n_items,
-                         "increasing", long_repetitions);
+      writeSamplesToFile(train_out, time_gen, trend_gen, n_items, "stagnant",
+                         short_repetitions);
+      writeSamplesToFile(train_out, time_gen, trend_gen, n_items, "increasing",
+                         long_repetitions);
       trend_gen.startStagnating();
-      writeSamplesToFile(train_out, time_gen, trend_gen, n_items,
-                         "stagnant", short_repetitions);
-      writeSamplesToFile(train_out, time_gen, trend_gen, n_items,
-                         "stagnant", short_repetitions);
+      writeSamplesToFile(train_out, time_gen, trend_gen, n_items, "stagnant",
+                         short_repetitions);
+      writeSamplesToFile(train_out, time_gen, trend_gen, n_items, "stagnant",
+                         short_repetitions);
       trend_gen.startDecreasing();
-      writeSamplesToFile(train_out, time_gen, trend_gen, n_items,
-                         "stagnant", short_repetitions);
-      writeSamplesToFile(train_out, time_gen, trend_gen, n_items,
-                         "decreasing", long_repetitions);
+      writeSamplesToFile(train_out, time_gen, trend_gen, n_items, "stagnant",
+                         short_repetitions);
+      writeSamplesToFile(train_out, time_gen, trend_gen, n_items, "decreasing",
+                         long_repetitions);
       trend_gen.startStagnating();
-      writeSamplesToFile(train_out, time_gen, trend_gen, n_items,
-                         "stagnant", short_repetitions);
-      writeSamplesToFile(train_out, time_gen, trend_gen, n_items,
-                         "stagnant", short_repetitions);
+      writeSamplesToFile(train_out, time_gen, trend_gen, n_items, "stagnant",
+                         short_repetitions);
+      writeSamplesToFile(train_out, time_gen, trend_gen, n_items, "stagnant",
+                         short_repetitions);
     }
     trend_gen.startDecreasing();
-      writeSamplesToFile(train_out, time_gen, trend_gen, n_items,
-                         "decreasing", long_repetitions);
+    writeSamplesToFile(train_out, time_gen, trend_gen, n_items, "decreasing",
+                       long_repetitions);
     train_out.close();
 
     /*
@@ -161,13 +161,14 @@ TEST_F(SequentialClassifierTests, SimpleTrendClassification) {
   writeSimpleTrendClassificationDataset();
 
   SequentialClassifierSchema schema(
-    /* item = */ {/* col_name = */ item_col, /* n_distinct = */ 50000}, 
-    /* timestamp = */ {/* col_name = */ timestamp_col},
-    /* target = */ {/* col_name = */ target_col, /* n_distinct = */ 4},
-    /* tracking_config = */ {/* horizon = */ 0, /* lookback = */ 30, /* period = */ 1},
-    /* text_attrs = */ {}, /* cat_attrs = */ {}, /* trackable_qtys = */ {
-      {/* col_name = */ trackable_qty_col}
-      }, /* trackable_cats = */ {});
+      /* item = */ {/* col_name = */ item_col, /* n_distinct = */ 50000},
+      /* timestamp = */ {/* col_name = */ timestamp_col},
+      /* target = */ {/* col_name = */ target_col, /* n_distinct = */ 4},
+      /* tracking_config = */
+      {/* horizon = */ 0, /* lookback = */ 30, /* period = */ 1},
+      /* text_attrs = */ {}, /* cat_attrs = */ {},
+      /* trackable_qtys = */ {{/* col_name = */ trackable_qty_col}},
+      /* trackable_cats = */ {});
   SequentialClassifier seq_bolt(schema, "small");
 
   seq_bolt.train(simple_trend_train_dataset, /* epochs = */ 1,

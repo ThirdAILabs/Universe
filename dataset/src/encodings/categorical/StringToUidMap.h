@@ -21,16 +21,17 @@ class StringToUidMap : public CategoricalEncoding {
 
   bool isDense() const final { return false; }
 
-  uint32_t featureDim() const final { 
-    return _n_classes + 1; // +1 for out-of-vocab 
+  uint32_t featureDim() const final {
+    return _n_classes + 1;  // +1 for out-of-vocab
   }
 
-  uint32_t classToUid(std::string_view id) { 
+  uint32_t classToUid(std::string_view id) {
     std::string class_name(id);
-    
+
     //  As the map saturates, the critical section is accessed less and less.
     if (_class_to_uid.count(class_name) > 0) {
-      // Thread safe because we reserved memory for hash buckets and reject elements after a given threshold.
+      // Thread safe because we reserved memory for hash buckets and reject
+      // elements after a given threshold.
       return _class_to_uid.at(class_name);
     }
 
@@ -42,19 +43,18 @@ class StringToUidMap : public CategoricalEncoding {
     return uidForNewClass(class_name);
   }
 
-  std::string uidToClass(uint32_t uid) { 
-    return _uid_to_class[uid]; 
-  }
+  std::string uidToClass(uint32_t uid) { return _uid_to_class[uid]; }
 
   void warnTooManyElements() const {
     std::cout << "WARNING: expected " << _n_classes
-                  << " classes but found more. Clubbing extraneous classes to the same ID."
-                  << std::endl;
+              << " classes but found more. Clubbing extraneous classes to the "
+                 "same ID."
+              << std::endl;
   }
 
   uint32_t uidForNewClass(std::string& class_name) {
     uint32_t uid;
-#pragma omp critical(string_to_uid_map) 
+#pragma omp critical(string_to_uid_map)
     {
       if (_class_to_uid.count(class_name) > 0) {
         uid = _class_to_uid.at(class_name);
@@ -62,7 +62,8 @@ class StringToUidMap : public CategoricalEncoding {
         uid = _class_to_uid.size();
       }
       if (uid < _n_classes) {
-        // Only index elements within the reserved capacity so hash table memory doesn't get reallocated.
+        // Only index elements within the reserved capacity so hash table memory
+        // doesn't get reallocated.
         _class_to_uid[class_name] = uid;
         _uid_to_class[uid] = class_name;
       } else {

@@ -1,9 +1,9 @@
+#include "BlockTest.h"
 #include <gtest/gtest.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Date.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <dataset/src/utils/TimeUtils.h>
-#include "BlockTest.h"
 
 namespace thirdai::dataset {
 
@@ -21,12 +21,17 @@ class DateBlockTests : public BlockTest {
 
   static uint32_t dayOfWeekOffset() { return 0; }
   static uint32_t dayOfWeekDim() { return DateBlock::day_of_week_dim; }
-  static uint32_t monthOfYearOffset() { return dayOfWeekOffset() + dayOfWeekDim(); }
+  static uint32_t monthOfYearOffset() {
+    return dayOfWeekOffset() + dayOfWeekDim();
+  }
   static uint32_t monthOfYearDim() { return DateBlock::month_of_year_dim; }
-  static uint32_t weekOfMonthOffset() { return monthOfYearOffset() + monthOfYearDim(); }
+  static uint32_t weekOfMonthOffset() {
+    return monthOfYearOffset() + monthOfYearDim();
+  }
   static uint32_t weekOfMonthDim() { return DateBlock::week_of_month_dim; }
-  static uint32_t weekOfYearOffset() { return weekOfMonthOffset() + weekOfMonthDim(); }
-
+  static uint32_t weekOfYearOffset() {
+    return weekOfMonthOffset() + weekOfMonthDim();
+  }
 };
 
 TEST_F(DateBlockTests, CorrectOutput) {
@@ -105,4 +110,4 @@ TEST_F(DateBlockTests, CorrectOutput) {
   ASSERT_GE(week_of_year_changes, n_days / 7);
 }
 
-} // namespace thirdai::dataset
+}  // namespace thirdai::dataset

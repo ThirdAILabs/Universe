@@ -53,12 +53,13 @@ struct TextAttribute {
 
 struct SequentialClassifierSchema {
  public:
-  SequentialClassifierSchema(Item item, Timestamp timestamp, CategoricalAttribute target,
-         TrackingConfig tracking_config,
-         std::vector<TextAttribute> text_attrs = {},
-         std::vector<CategoricalAttribute> cat_attrs = {},
-         std::vector<TrackableQuantity> trackable_qtys = {},
-         std::vector<TrackableCategory> trackable_cats = {})
+  SequentialClassifierSchema(Item item, Timestamp timestamp,
+                             CategoricalAttribute target,
+                             TrackingConfig tracking_config,
+                             std::vector<TextAttribute> text_attrs = {},
+                             std::vector<CategoricalAttribute> cat_attrs = {},
+                             std::vector<TrackableQuantity> trackable_qtys = {},
+                             std::vector<TrackableCategory> trackable_cats = {})
       : item(std::move(item)),
         timestamp(std::move(timestamp)),
         target(std::move(target)),

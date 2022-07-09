@@ -141,7 +141,7 @@ class TrendBlock : public Block {
   }
 
   void fillCountsAndMean(uint32_t id, uint32_t timestamp,
-                        std::vector<float>& counts, float& mean) {
+                         std::vector<float>& counts, float& mean) {
     mean = 0;
     for (uint32_t i = 0; i < _lookback; i++) {
       auto look_back = (_horizon + i) * TimeUtils::SECONDS_IN_DAY;

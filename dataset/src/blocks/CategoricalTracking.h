@@ -11,8 +11,9 @@ namespace thirdai::dataset {
 
 class CategoricalTrackingBlock : public Block {
  public:
-  CategoricalTrackingBlock(size_t id_col, size_t timestamp_col, size_t category_col, 
-                           uint32_t horizon, uint32_t lookback,
+  CategoricalTrackingBlock(size_t id_col, size_t timestamp_col,
+                           size_t category_col, uint32_t horizon,
+                           uint32_t lookback,
                            std::shared_ptr<StringToUidMap> id_map,
                            std::shared_ptr<CategoricalHistoryIndex> index,
                            GraphPtr graph = nullptr, size_t max_n_neighbors = 0)
@@ -34,7 +35,7 @@ class CategoricalTrackingBlock : public Block {
   }
 
   void prepareForBatch(const std::vector<std::string_view>& first_row) final {
-    (void) first_row;
+    (void)first_row;
     _index->refresh();
   }
 
@@ -49,11 +50,11 @@ class CategoricalTrackingBlock : public Block {
 
  protected:
   void buildSegment(const std::vector<std::string_view>& input_row,
-                    SegmentedFeatureVector& vec) final {           
+                    SegmentedFeatureVector& vec) final {
     uint32_t tracking_id = _id_map->classToUid(input_row[_id_col]);
     auto timestamp = timestampFromInputRow(input_row);
     _index->index(tracking_id, timestamp, input_row[_category_col]);
-    
+
     uint32_t end_timestamp = timestamp - _horizon;
     uint32_t start_timestamp = end_timestamp - _lookback;
     encode(tracking_id, start_timestamp, end_timestamp, /* offset = */ 0, vec);
@@ -66,7 +67,7 @@ class CategoricalTrackingBlock : public Block {
            i++) {
         std::string_view neighbor_view(neighbors[i].data(),
                                        neighbors[i].size());
-        
+
         uint32_t nbr_id = _id_map->classToUid(neighbor_view);
         encode(nbr_id, start_timestamp, end_timestamp, offset, vec);
       }
@@ -88,25 +89,29 @@ class CategoricalTrackingBlock : public Block {
     return TimeUtils::timeToEpoch(&time, 0) / TimeUtils::SECONDS_IN_DAY;
   }
 
-  void encode(uint32_t tracking_id, uint32_t start_timestamp, uint32_t end_timestamp, uint32_t offset, SegmentedFeatureVector& vec) {
-    for (uint32_t i = _index->startIdx(tracking_id); i < _index->endIdx(tracking_id); i++) {
-      const auto cat_history = _index->view()[i];  
-      if (cat_history.timestamp <= end_timestamp && cat_history.timestamp > start_timestamp) {
+  void encode(uint32_t tracking_id, uint32_t start_timestamp,
+              uint32_t end_timestamp, uint32_t offset,
+              SegmentedFeatureVector& vec) {
+    for (uint32_t i = _index->startIdx(tracking_id);
+         i < _index->endIdx(tracking_id); i++) {
+      const auto cat_history = _index->view()[i];
+      if (cat_history.timestamp <= end_timestamp &&
+          cat_history.timestamp > start_timestamp) {
         vec.addSparseFeatureToSegment(cat_history.uid + offset, 1.0);
       }
     }
   }
 
   size_t _id_col;
-  size_t _timestamp_col; 
+  size_t _timestamp_col;
   size_t _category_col;
   uint32_t _expected_num_cols;
   uint32_t _horizon;
-  uint32_t _lookback; 
+  uint32_t _lookback;
   std::shared_ptr<StringToUidMap> _id_map;
   std::shared_ptr<CategoricalHistoryIndex> _index;
-  GraphPtr _graph; 
+  GraphPtr _graph;
   size_t _max_n_neighbors;
 };
 
-} // namespace thirdai::dataset
+}  // namespace thirdai::dataset

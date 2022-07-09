@@ -501,18 +501,17 @@ class PySequentialClassifier : public SequentialClassifier {
   }
 
   static std::vector<TrackableCategory> toTrackableCats(
-    const std::vector<py::tuple>& tuples
-  ) {
+      const std::vector<py::tuple>& tuples) {
     std::vector<TrackableCategory> trackables;
     trackables.reserve(tuples.size());
     for (const auto& tuple : tuples) {
       if (tuple.size() != 3) {
         std::stringstream error_ss;
-        error_ss
-            << "A TrackableCategory tuple must contains three elements: \n"
-               "(trackable_category_column: str, n_distinct_categories: int, track_last_n: int) \n"
-               "Found tuple "
-            << tuple;
+        error_ss << "A TrackableCategory tuple must contains three elements: \n"
+                    "(trackable_category_column: str, n_distinct_categories: "
+                    "int, track_last_n: int) \n"
+                    "Found tuple "
+                 << tuple;
         throw std::invalid_argument(error_ss.str());
       }
 

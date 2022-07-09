@@ -132,7 +132,6 @@ class Block {
    */
   virtual void buildSegment(const std::vector<std::string_view>& input_row,
                             SegmentedFeatureVector& vec) = 0;
-
 };
 
 using Graph = std::unordered_map<std::string, std::vector<std::string>>;

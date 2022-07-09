@@ -19,12 +19,14 @@ struct PersistentPipelineStates {
   std::shared_ptr<dataset::StringToUidMap> target_id_map;
   std::vector<std::shared_ptr<dataset::StringToUidMap>> cat_attr_maps;
   std::vector<std::shared_ptr<dataset::CountHistoryIndex>> trackable_counts;
-  std::vector<std::shared_ptr<dataset::CategoricalHistoryIndex>> trackable_categories;
+  std::vector<std::shared_ptr<dataset::CategoricalHistoryIndex>>
+      trackable_categories;
 };
 
 class SequentialClassifierPipelineBuilder {
  public:
-  SequentialClassifierPipelineBuilder(SequentialClassifierSchema schema, char delimiter);
+  SequentialClassifierPipelineBuilder(SequentialClassifierSchema schema,
+                                      char delimiter);
 
   std::shared_ptr<dataset::StreamingGenericDatasetLoader> buildPipelineForFile(
       std::string& filename, bool shuffle, bool overwrite_index);
@@ -49,7 +51,7 @@ class SequentialClassifierPipelineBuilder {
   void addCategoricalAttrFeats(Blocks& blocks);
 
   void addTrackableQtyFeats(Blocks& blocks, bool overwrite_index);
-  
+
   void addTrackableCatFeats(Blocks& blocks);
 
   void addNonzeros(size_t nonzeros) { _est_nonzeros += nonzeros; }
