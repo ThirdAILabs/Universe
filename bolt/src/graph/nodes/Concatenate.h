@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/vector.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
@@ -280,6 +283,9 @@ class ConcatenateNode final
   }
 
   struct GraphState {
+    // Constructor for cereal.
+    GraphState() {}
+
     // We have this constructor so clang tidy can check variable names
     GraphState(std::vector<NodePtr> inputs,
                std::vector<uint32_t> neuron_index_offsets,
@@ -305,7 +311,15 @@ class ConcatenateNode final
     // Also equals the last element of neuron_index_offsets. This is the dense
     // dimension of the output vector
     uint32_t concatenated_dense_dim;
+
+   private:
+    friend class cereal::access;
+    template <class Archive>
+    void serialize(Archive& archive) {
+      archive(inputs, neuron_index_offsets, concatenated_dense_dim);
+    }
   };
+
   struct BatchProcessingState {
     // We have this constructor so clang tidy can check variable names
     BatchProcessingState(std::vector<uint32_t> positional_offsets,
@@ -334,9 +348,17 @@ class ConcatenateNode final
     uint32_t num_nonzeros_in_concatenation;
   };
 
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Node>(this), _graph_state, _compiled);
+  }
+
   std::optional<GraphState> _graph_state;
   bool _compiled = false;
   std::optional<BatchProcessingState> _batch_processing_state;
 };
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::ConcatenateNode)

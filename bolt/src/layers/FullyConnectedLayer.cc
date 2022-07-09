@@ -623,23 +623,7 @@ void FullyConnectedLayer::removeOptimizer() {
 void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
                                             bool detailed) const {
   summary << "dim=" << _dim << ", sparsity=" << _sparsity << ", act_func=";
-  switch (_act_func) {
-    case ActivationFunction::ReLU:
-      summary << "ReLU";
-      break;
-    case ActivationFunction::Softmax:
-      summary << "Softmax";
-      break;
-    case ActivationFunction::Sigmoid:
-      summary << "Sigmoid";
-      break;
-    case ActivationFunction::Linear:
-      summary << "Linear";
-      break;
-    case ActivationFunction::Tanh:
-      summary << "Tanh";
-      break;
-  }
+  summary << activationFunctionToStr(_act_func);
 
   if (!detailed) {
     summary << "\n";

@@ -1,5 +1,10 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/vector.hpp>
 #include "ExecutionConfig.h"
 #include "Node.h"
 #include <bolt/src/graph/nodes/Input.h>
@@ -75,11 +80,23 @@ class BoltGraph {
     return nodes;
   }
 
+  void freezeHashTables(bool insert_labels_if_not_found);
+
+  // This only saves the graph in the compiled state, that is any parameters and
+  // graph structure are preserved, but any state related to train or predict is
+  // discarded.
+  void save(const std::string& filename);
+
+  static std::unique_ptr<BoltGraph> load(const std::string& filename);
+
   std::string summarize(bool print, bool detailed) const;
 
   NodePtr getNodeByName(const std::string& node_name) const;
 
  private:
+  // Private constructor for cereal.
+  BoltGraph() {}
+
   template <typename BATCH_T>
   void processTrainingBatch(BATCH_T& batch_inputs,
                             const BoltBatch& batch_labels, float learning_rate,
@@ -126,7 +143,11 @@ class BoltGraph {
 
   void reconstructHashFunctions();
 
-  bool graphCompiled() const { return _compilation_state.has_value(); }
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive);
+
+  bool graphCompiled() const { return _loss != nullptr; }
 
   // List of nodes(layers) in the order in which they should be computed.
   std::vector<NodePtr> _nodes;
@@ -148,12 +169,7 @@ class BoltGraph {
   std::vector<std::shared_ptr<FullyConnectedLayer>>
       _internal_fully_connected_layers;
 
-  struct CompilationState {
-    // The loss function the graph was compiled with.
-    std::shared_ptr<LossFunction> _loss;
-  };
-
-  std::optional<CompilationState> _compilation_state;
+  std::shared_ptr<LossFunction> _loss;
 
   uint32_t _epoch_count;
   uint32_t _batch_cnt;

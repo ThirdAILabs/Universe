@@ -5,12 +5,30 @@
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/SRP.h>
 #include <cctype>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
 namespace thirdai::bolt {
 
 enum class ActivationFunction { ReLU, Softmax, Linear, Tanh, Sigmoid };
+
+static std::string activationFunctionToStr(ActivationFunction act_func) {
+  switch (act_func) {
+    case ActivationFunction::ReLU:
+      return "ReLU";
+    case ActivationFunction::Softmax:
+      return "Softmax";
+    case ActivationFunction::Sigmoid:
+      return "Sigmoid";
+    case ActivationFunction::Linear:
+      return "Linear";
+    case ActivationFunction::Tanh:
+      return "Tanh";
+  }
+  throw std::logic_error(
+      "Invalid activation function passed to activationFunctionToStr.");
+}
 
 static ActivationFunction getActivationFunction(
     const std::string& act_func_name) {
