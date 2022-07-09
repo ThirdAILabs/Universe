@@ -1,4 +1,4 @@
-#include <bolt/src/sequential_classifier/PipelineBuilder.h>
+#include <bolt/src/sequential_classifier/SequentialClassifierPipelineBuilder.h>
 #include <bolt/src/utils/AutoTuneUtils.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/CategoricalTracking.h>
@@ -13,11 +13,11 @@
 
 namespace thirdai::bolt {
 
-PipelineBuilder::PipelineBuilder(Schema schema, const char delimiter)
+SequentialClassifierPipelineBuilder::SequentialClassifierPipelineBuilder(SequentialClassifierSchema schema, const char delimiter)
     : _schema(std::move(schema)), _delimiter(delimiter) {}
 
 std::shared_ptr<dataset::StreamingGenericDatasetLoader>
-PipelineBuilder::buildPipelineForFile(std::string& filename, bool shuffle,
+SequentialClassifierPipelineBuilder::buildPipelineForFile(std::string& filename, bool shuffle,
                                       bool overwrite_index) {
   _est_nonzeros = 0;
 
@@ -36,7 +36,7 @@ PipelineBuilder::buildPipelineForFile(std::string& filename, bool shuffle,
       /* has_header = */ false, _delimiter);
 }
 
-std::string PipelineBuilder::getHeader(dataset::DataLoader& loader) {
+std::string SequentialClassifierPipelineBuilder::getHeader(dataset::DataLoader& loader) {
   auto header = loader.getHeader();
   if (!header) {
     throw std::invalid_argument("The file has no header.");
@@ -44,7 +44,7 @@ std::string PipelineBuilder::getHeader(dataset::DataLoader& loader) {
   return *header;
 }
 
-Blocks PipelineBuilder::buildInputBlocks(bool overwrite_index) {
+Blocks SequentialClassifierPipelineBuilder::buildInputBlocks(bool overwrite_index) {
   std::vector<std::shared_ptr<dataset::Block>> blocks;
   addDateFeats(blocks);
   addItemIdFeats(blocks);
@@ -55,7 +55,7 @@ Blocks PipelineBuilder::buildInputBlocks(bool overwrite_index) {
   return blocks;
 }
 
-Blocks PipelineBuilder::buildLabelBlocks() {
+Blocks SequentialClassifierPipelineBuilder::buildLabelBlocks() {
   auto target = _schema.target;
   if (_states.target_id_map == nullptr) {
     _states.target_id_map =
@@ -66,7 +66,7 @@ Blocks PipelineBuilder::buildLabelBlocks() {
                                                       _states.target_id_map)};
 }
 
-size_t PipelineBuilder::autotuneShuffleBufferSize() const {
+size_t SequentialClassifierPipelineBuilder::autotuneShuffleBufferSize() const {
   auto batch_mem =
       BATCH_SIZE * _est_nonzeros * 8;  // 4 bytes for index, 4 bytes for value.
   if (auto ram = AutoTuneUtils::getSystemRam()) {
@@ -76,13 +76,13 @@ size_t PipelineBuilder::autotuneShuffleBufferSize() const {
   return 1000;
 }
 
-void PipelineBuilder::addDateFeats(Blocks& blocks) {
+void SequentialClassifierPipelineBuilder::addDateFeats(Blocks& blocks) {
   blocks.push_back(
       std::make_shared<dataset::DateBlock>(_schema.timestamp.col_num));
   addNonzeros(4);
 }
 
-void PipelineBuilder::addItemIdFeats(Blocks& blocks) {
+void SequentialClassifierPipelineBuilder::addItemIdFeats(Blocks& blocks) {
   auto item = _schema.item;
   if (_states.item_id_map == nullptr) {
     _states.item_id_map =
@@ -94,7 +94,7 @@ void PipelineBuilder::addItemIdFeats(Blocks& blocks) {
   addNonzeros(1);
 }
 
-void PipelineBuilder::addTextAttrFeats(Blocks& blocks) {
+void SequentialClassifierPipelineBuilder::addTextAttrFeats(Blocks& blocks) {
   auto text_attrs = _schema.text_attributes;
   for (const auto& text : text_attrs) {
     blocks.push_back(
@@ -103,7 +103,7 @@ void PipelineBuilder::addTextAttrFeats(Blocks& blocks) {
   }
 }
 
-void PipelineBuilder::addCategoricalAttrFeats(Blocks& blocks) {
+void SequentialClassifierPipelineBuilder::addCategoricalAttrFeats(Blocks& blocks) {
   auto cat_attrs = _schema.categorical_attributes;
   for (uint32_t i = 0; i < cat_attrs.size(); i++) {
     auto cat = cat_attrs[i];
@@ -117,7 +117,7 @@ void PipelineBuilder::addCategoricalAttrFeats(Blocks& blocks) {
   }
 }
 
-void PipelineBuilder::addTrackableQtyFeats(Blocks& blocks,
+void SequentialClassifierPipelineBuilder::addTrackableQtyFeats(Blocks& blocks,
                                            bool overwrite_index) {
   if (overwrite_index) {
     _states.trackable_counts =
@@ -146,7 +146,7 @@ void PipelineBuilder::addTrackableQtyFeats(Blocks& blocks,
   }
 }
 
-void PipelineBuilder::addTrackableCatFeats(Blocks& blocks) {
+void SequentialClassifierPipelineBuilder::addTrackableCatFeats(Blocks& blocks) {
   auto item = _schema.item;
   auto config = _schema.tracking_config;
   auto trackable_cats = _schema.trackable_categories;

@@ -9,8 +9,9 @@ namespace thirdai::dataset {
 class StringToUidMap : public CategoricalEncoding {
  public:
   explicit StringToUidMap(size_t n_classes)
-      : _uid_to_class(n_classes), _n_classes(n_classes) {
+      : _uid_to_class(n_classes + 1), _n_classes(n_classes) {
     _class_to_uid.reserve(n_classes);
+    _uid_to_class[n_classes] = "out-of-vocab";
   }
   void encodeCategory(std::string_view id, SegmentedFeatureVector& vec,
                       uint32_t offset) final {
@@ -21,7 +22,7 @@ class StringToUidMap : public CategoricalEncoding {
   bool isDense() const final { return false; }
 
   uint32_t featureDim() const final { 
-    return _n_classes; 
+    return _n_classes + 1; // +1 for out-of-vocab 
   }
 
   uint32_t classToUid(std::string_view id) { 
@@ -35,7 +36,7 @@ class StringToUidMap : public CategoricalEncoding {
 
     if (_class_to_uid.size() == _n_classes) {
       warnTooManyElements();
-      return _n_classes - 1;
+      return _n_classes;
     }
 
     return uidForNewClass(class_name);
@@ -66,7 +67,6 @@ class StringToUidMap : public CategoricalEncoding {
         _uid_to_class[uid] = class_name;
       } else {
         warnTooManyElements();
-        uid = _n_classes - 1;
       }
     }
     return uid;

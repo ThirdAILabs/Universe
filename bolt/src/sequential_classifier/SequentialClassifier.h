@@ -1,12 +1,13 @@
 #pragma once
 
-#include "PipelineBuilder.h"
+#include "SequentialClassifierPipelineBuilder.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <bolt/src/utils/AutoTuneUtils.h>
+#include <chrono>
 #include <cstddef>
 #include <memory>
 #include <optional>
@@ -22,7 +23,7 @@ class SequentialClassifier {
   friend SequentialClassifierTests;
 
  public:
-  explicit SequentialClassifier(Schema schema, std::string model_size,
+  explicit SequentialClassifier(SequentialClassifierSchema schema, std::string model_size,
                                 char delimiter = ',')
       : _pipeline_builder(std::move(schema), delimiter),
         _model_size(std::move(model_size)) {}
@@ -74,6 +75,7 @@ class SequentialClassifier {
     }
 
     std::vector<std::string> metrics{metric_name};
+
     auto res = _network->predictOnStream(
         pipeline, /* use_sparse_inference = */ true, metrics,
         classification_print_predictions_callback);
@@ -123,7 +125,11 @@ class SequentialClassifier {
       std::shared_ptr<dataset::StreamingGenericDatasetLoader>& pipeline) {
     CategoricalCrossEntropyLoss loss;
 
+    auto start = std::chrono::high_resolution_clock::now();
     auto [train_data, train_labels] = pipeline->loadInMemory();
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+    std::cout << "Loaded " << train_data->len() << " training samples into memory in " << duration << " seconds." << std::endl;
 
     _network->train(train_data, train_labels, loss, learning_rate, 1);
     _network->freezeHashTables();
@@ -146,7 +152,7 @@ class SequentialClassifier {
     return pred;
   }
 
-  PipelineBuilder _pipeline_builder;
+  SequentialClassifierPipelineBuilder _pipeline_builder;
   std::string _model_size;
   std::optional<FullyConnectedNetwork> _network;
 };

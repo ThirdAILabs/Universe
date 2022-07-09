@@ -51,9 +51,9 @@ struct TextAttribute {
   uint32_t col_num = 0;
 };
 
-struct Schema {
+struct SequentialClassifierSchema {
  public:
-  Schema(Item item, Timestamp timestamp, CategoricalAttribute target,
+  SequentialClassifierSchema(Item item, Timestamp timestamp, CategoricalAttribute target,
          TrackingConfig tracking_config,
          std::vector<TextAttribute> text_attrs = {},
          std::vector<CategoricalAttribute> cat_attrs = {},

@@ -44,12 +44,10 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     for (const auto& block : _input_blocks) {
       _expected_num_cols =
           std::max(block->expectedNumColumns(), _expected_num_cols);
-      block->use();
     }
     for (const auto& block : _label_blocks) {
       _expected_num_cols =
           std::max(block->expectedNumColumns(), _expected_num_cols);
-      block->use();
     }
   }
 

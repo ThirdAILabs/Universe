@@ -167,6 +167,9 @@ class TrendBlock : public Block {
       sum_sqr += count * count;
     }
     float l2_norm = std::sqrt(sum_sqr);
+    if (l2_norm == 0) {
+      return;
+    }
     for (auto& count : counts) {
       count /= l2_norm;
     }

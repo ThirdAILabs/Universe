@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Schema.h"
+#include "SequentialClassifierSchema.h"
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
 #include <dataset/src/encodings/categorical/StringToUidMap.h>
 #include <dataset/src/encodings/categorical_history/CategoricalHistoryIndex.h>
@@ -22,9 +22,9 @@ struct PersistentPipelineStates {
   std::vector<std::shared_ptr<dataset::CategoricalHistoryIndex>> trackable_categories;
 };
 
-class PipelineBuilder {
+class SequentialClassifierPipelineBuilder {
  public:
-  PipelineBuilder(Schema schema, char delimiter);
+  SequentialClassifierPipelineBuilder(SequentialClassifierSchema schema, char delimiter);
 
   std::shared_ptr<dataset::StreamingGenericDatasetLoader> buildPipelineForFile(
       std::string& filename, bool shuffle, bool overwrite_index);
@@ -54,7 +54,7 @@ class PipelineBuilder {
 
   void addNonzeros(size_t nonzeros) { _est_nonzeros += nonzeros; }
 
-  Schema _schema;
+  SequentialClassifierSchema _schema;
   size_t _est_nonzeros;
   char _delimiter;
 };
