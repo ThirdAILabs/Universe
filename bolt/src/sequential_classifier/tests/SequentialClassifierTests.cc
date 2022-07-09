@@ -77,7 +77,7 @@ class SequentialClassifierTests : public testing::Test {
 
     std::ofstream train_out(simple_trend_train_dataset);
     writeHeaderToFile(train_out);
-    uint32_t n_cycles = 30;
+    uint32_t n_cycles = 10;
     uint32_t n_items = 200;
     uint32_t short_repetitions = 30;
     uint32_t long_repetitions = 100;
@@ -165,7 +165,9 @@ TEST_F(SequentialClassifierTests, SimpleTrendClassification) {
     /* timestamp = */ {/* col_name = */ timestamp_col},
     /* target = */ {/* col_name = */ target_col, /* n_distinct = */ 4},
     /* tracking_config = */ {/* horizon = */ 0, /* lookback = */ 30, /* period = */ 1},
-    /* text_attrs = */ {}, /* cat_attrs = */ {}, /* trackable_qtys = */ {{/* col_name = */ trackable_qty_col}}, /* trackable_cats = */ {});
+    /* text_attrs = */ {}, /* cat_attrs = */ {}, /* trackable_qtys = */ {
+      {/* col_name = */ trackable_qty_col}
+      }, /* trackable_cats = */ {});
   SequentialClassifier seq_bolt(schema, "small");
 
   seq_bolt.train(simple_trend_train_dataset, /* epochs = */ 1,
@@ -173,7 +175,7 @@ TEST_F(SequentialClassifierTests, SimpleTrendClassification) {
   auto acc = seq_bolt.predict(simple_trend_test_dataset, "predictions.txt");
   ASSERT_GT(acc, 0.8);
 
-  // removeSimpleTrendClassificationDataset();
+  removeSimpleTrendClassificationDataset();
 }
 
 }  // namespace thirdai::bolt
