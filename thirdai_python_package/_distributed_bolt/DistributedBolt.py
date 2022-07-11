@@ -34,7 +34,7 @@ class DistributedBolt:
         for i in range(len(config['layers'])):
             self.layers.append(config['layers'][i]['dim'])
         random_seed = int(time.time())%int(0xffffffff)
-        self.workers = [Worker.options(max_concurrency=2).remote(self.layers,config, id+1, self.no_of_workers, id) for id in range(self.no_of_workers)]
+        self.workers = [Worker.remote(self.layers,config, id+1, self.no_of_workers, id) for id in range(self.no_of_workers)]
         self.supervisor = Supervisor.remote(self.layers,self.workers,config)
         self.num_of_batches = ray.get(self.workers[0].num_of_batches.remote())
         for i in range(len(self.workers)):

@@ -41,7 +41,6 @@ class Supervisor:
         gradient_computation_time = time.time() - start_gradient_computation
         start_getting_gradients = time.time()
         gradients_list = ray.get([self.workers[id].getCalculatedGradients.remote() for id in range(len(self.workers))])
-        gradients_list = ray.get(gradients_list)
         getting_gradient_time = time.time() - start_getting_gradients
         
         summing_and_averaging_gradients_start_time = time.time()
