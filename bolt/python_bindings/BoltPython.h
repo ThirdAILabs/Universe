@@ -434,7 +434,7 @@ class DistributedPyNetwork final : public DistributedModel {
                            ? DistributedModel::getDim(layer_index - 1)
                            : DistributedModel::getInputDim();
 
-    weightGradientDimensionCheck(new_weights_gradients, dim, prev_dim);
+    weightDimensionCheck(new_weights_gradients, dim, prev_dim, "gradient");
     DistributedModel::setWeightGradients(layer_index,
                                          new_weights_gradients.data());
   }
@@ -455,7 +455,7 @@ class DistributedPyNetwork final : public DistributedModel {
           new_biases_gradients) {
     int64_t dim = DistributedModel::getDim(layer_index);
 
-    biasGradientDimensionCheck(new_biases_gradients, dim);
+    biasDimensionCheck(new_biases_gradients, dim, "gradient");
     DistributedModel::setBiasesGradients(layer_index,
                                          new_biases_gradients.data());
   }
