@@ -71,17 +71,10 @@ class TimestampGenerator {
 
   std::string currentTimeString() {
     auto* tm = std::localtime(&_cur_timestamp);
-    std::stringstream ss;
-    ss << (1900 + tm->tm_year) << "-";
-    if (tm->tm_mon < 9) {
-      ss << "0";
-    }
-    ss << (tm->tm_mon + 1) << "-";
-    if (tm->tm_mday < 10) {
-      ss << "0";
-    }
-    ss << tm->tm_mday;
-    return ss.str();
+    std::string timestamp_str;
+    timestamp_str.resize(10);
+    std::strftime(timestamp_str.data(), 10, "%Y-%m-%d", tm);
+    return timestamp_str;
   }
 
  private:
