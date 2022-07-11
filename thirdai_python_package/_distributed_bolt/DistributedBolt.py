@@ -73,7 +73,7 @@ class DistributedBolt:
                     self.python_computation_time += summing_and_averaging_gradients_time
                     self.communication_time += getting_gradient_time + gradient_send_time
                     print(self.bolt_computation_time, self.python_computation_time, self.communication_time)
-                self.logging.info('Epoch No:'{0}', Bolt Computation Time:'{1}' Python Computation Time:'{2}' Communication Time:'{3}''.format( epoch, self.bolt_computation_time, self.python_computation_time, self.communication_time))
+                self.logging.info('Epoch No:%d, Bolt Computation Time:%lf Python Computation Time:%lf Communication Time:%lf', epoch, self.bolt_computation_time, self.python_computation_time, self.communication_time)
                 
     def predict(self):
         predict = []
