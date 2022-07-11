@@ -23,13 +23,11 @@ model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
 
 model.compile(bolt.CategoricalCrossEntropyLoss())
 
-train_x, train_y = dataset.MLMDataset.load(
-    filename=TRAIN_DATA, batch_size=BATCH_SIZE, pairgram_range=INPUT_DIM
-)
+mlm_loader = dataset.MLMDatasetLoader(pairgram_range=INPUT_DIM)
 
-test_x, test_y = dataset.MLMDataset.load(
-    filename=TEST_DATA, batch_size=BATCH_SIZE, pairgram_range=INPUT_DIM
-)
+train_x, train_y = mlm_loader.load(filename=TRAIN_DATA, batch_size=BATCH_SIZE)
+
+test_x, test_y = mlm_loader.load(filename=TEST_DATA, batch_size=BATCH_SIZE)
 
 train_config = (
     bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=1)

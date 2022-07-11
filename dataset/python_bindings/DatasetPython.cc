@@ -391,11 +391,14 @@ void createDatasetSubmodule(py::module_& module) {
       "embedding. "
       "Defaults to 100,000.");
 
-  py::class_<InMemoryDataset<MaskedSentenceBatch>,
+  py::class_<InMemoryDataset<MaskedSentenceBatch>,  // NOLINT
              std::shared_ptr<InMemoryDataset<MaskedSentenceBatch>>>(
-      dataset_submodule, "MLMDataset")
-      .def_static("load", &loadMLMDataset, py::arg("filename"),
-                  py::arg("batch_size"), py::arg("pairgram_range"));
+      dataset_submodule, "MLMDataset");
+
+  py::class_<MLMDatasetLoader>(dataset_submodule, "MLMDatasetLoader")
+      .def(py::init<uint32_t>(), py::arg("pairgram_range"))
+      .def("load", &MLMDatasetLoader::load, py::arg("filename"),
+                  py::arg("batch_size"));
 
   internal_dataset_submodule.def(
       "dense_bolt_dataset_matches_dense_matrix",
