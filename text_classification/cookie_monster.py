@@ -1,6 +1,6 @@
 from thirdai import bolt, dataset
 import numpy as np
-import mlflow
+# import mlflow
 import os
 import toml
 
@@ -10,6 +10,7 @@ class CookieMonster:
         self,
         input_dimension,
         hidden_dimension=2000,
+        output_dimension=2,
         hidden_sparsity=0.1,
         mlflow_enabled=True,
     ):
@@ -17,11 +18,13 @@ class CookieMonster:
         self.hidden_dim = hidden_dimension
         self.hidden_sparsity = hidden_sparsity
         self.mlflow_enabled = mlflow_enabled
-        self.construct(14)
+        self.construct(output_dimension)
 
-        self.file_dir = os.path.dirname(os.path.abspath(__file__))
-        self.file_name = os.path.join(self.file_dir, "../benchmarks/config.toml")
-        with open(self.file_name) as f:
+        self.config_file_dir = os.path.dirname(os.path.abspath(__file__))
+        self.config_file_name = os.path.join(
+            self.config_file_dir, "../benchmarks/config.toml"
+        )
+        with open(self.config_file_name) as f:
             parsed_config = toml.load(f)
 
         if self.mlflow_enabled:
@@ -50,10 +53,6 @@ class CookieMonster:
             return
         save_loc = "./hidden_layer_parameters"
         self.hidden_layer.save_parameters(save_loc)
-        del self.model
-        del self.hidden_layer
-        del self.input_layer
-        del self.output_layer
 
         self.construct(dimension)
         self.hidden_layer.load_parameters(save_loc)
