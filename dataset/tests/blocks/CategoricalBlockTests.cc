@@ -14,6 +14,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <random>
+#include <chrono>
 
 namespace thirdai::dataset {
 
@@ -221,29 +223,51 @@ TEST_F(CategoricalBlockTest, StringToUidMapParallel) {
     mock_data.push_back({class_name});
     mock_data.push_back({class_name});
     mock_data.push_back({class_name});
+    mock_data.push_back({class_name});
+    mock_data.push_back({class_name});
+    mock_data.push_back({class_name});
+    mock_data.push_back({class_name});
+    mock_data.push_back({class_name});
   }
+
+  std::shuffle(mock_data.begin(), mock_data.end(), std::default_random_engine(0));
 
   std::vector<SegmentedSparseFeatureVector> vecs(mock_data.size());
   auto map_encoding = std::make_shared<StringToUidMap>(n_classes);
   CategoricalBlock block(/* col = */ 0, map_encoding);
 
+  auto start = std::chrono::high_resolution_clock::now();
 #pragma omp parallel for default(none) shared(n_classes, block, mock_data, vecs)
   for (uint32_t i = 0; i < mock_data.size(); i++) {
     addVectorSegmentWithBlock(block, mock_data[i], vecs[i]);
   }
+  auto end = std::chrono::high_resolution_clock::now();
+  std::cout << "TOOK " << std::chrono::duration_cast<std::chrono::milliseconds>(
+                          end - start)
+                          .count() << " MILLISECONDS" << std::endl;
+
+  map_encoding->printMap();
 
   std::unordered_map<std::string, float> classes;
+  uint32_t i = 0;
+
   for (auto& vec : vecs) {
     auto entries = vectorEntries(vec);
     for (auto [k, v] : entries) {
+      // std::cout << "i " << i << " uid " << k << " class " << map_encoding->uidToClass(k) << " real_class " << mock_data[i][0] << std::endl;
       classes[map_encoding->uidToClass(k)] += v;
     }
+    i++;
   }
 
   for (uint32_t i = 0; i < n_classes; i++) {
+    if (i == 0) {
+      continue;
+    }
     std::stringstream class_ss;
-    class_ss << "class_" << i;
-    ASSERT_EQ(classes[class_ss.str()], 5.0);
+    // class_ss << "class_" << i;
+    std::cout << class_ss.str() << std::endl;
+    ASSERT_EQ(classes[class_ss.str()], 10.0);
   }
 }
 
