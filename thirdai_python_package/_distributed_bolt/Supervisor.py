@@ -40,8 +40,8 @@ class Supervisor:
         calculateGradients = ray.get([self.workers[id].calculateGradientsLinear.remote(self.batch_to_train(id, batch_no)) for id in range(len(self.workers))])
         gradient_computation_time = time.time() - start_gradient_computation
         start_getting_gradients = time.time()
-        gradient_list = ray.get([self.workers[id].getCalculatedGradients.remote() for id in range(len(self.workers))])
-        gradient_list = ray.get(gradient_list)
+        gradients_list = ray.get([self.workers[id].getCalculatedGradients.remote() for id in range(len(self.workers))])
+        gradients_list = ray.get(gradients_list)
         getting_gradient_time = time.time() - start_getting_gradients
         
         summing_and_averaging_gradients_start_time = time.time()

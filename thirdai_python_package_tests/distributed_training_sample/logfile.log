@@ -1,3 +1,7 @@
 2022-07-11 09:49:36,929 : INFO : DistributedBolt : Ray set up on head node completed.
 2022-07-11 09:49:36,929 : INFO : DistributedBolt : Starting the cluster Setup.
 2022-07-11 09:49:44,424 : INFO : DistributedBolt : Cluster has started.
+2022-07-11 09:55:19,729 : INFO : DistributedBolt : Ray set up on head node completed.
+2022-07-11 09:55:19,729 : INFO : DistributedBolt : Starting the cluster Setup.
+2022-07-11 09:55:26,704 : INFO : DistributedBolt : Cluster has started.
+2022-07-11 09:55:37,586 : INFO : DistributedBolt : Linear communication pattern is choosen
