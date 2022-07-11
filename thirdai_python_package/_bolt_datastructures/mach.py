@@ -75,6 +75,7 @@ class Mach:
             "hidden_layer_sparsity": self.hidden_layer_sparsity,
             "last_layer_dim": self.last_layer_dim,
             "last_layer_sparsity": self.last_layer_sparsity,
+            "seed_for_group_assigments":self.seed_for_group_assigments,
         }
 
         with open(folder + "/metadata_mach", "wb") as f:
@@ -121,6 +122,7 @@ class Mach:
             last_layer_dim=metadata["last_layer_dim"],
             last_layer_sparsity=metadata["last_layer_sparsity"],
             use_softmax=metadata["use_softmax"],
+            seed_for_group_assigments=metadata["seed_for_group_assigments"],
         )
 
         newMach.classifiers = []
