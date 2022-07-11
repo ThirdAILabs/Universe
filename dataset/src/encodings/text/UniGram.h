@@ -19,10 +19,7 @@ class UniGram : public TextEncoding {
 
   void encodeText(const std::string_view text,
                   SegmentedFeatureVector& vec) final {
-    // TODO(Geordie): Do we need to make lower case?
-    std::string lower_case_text = TextEncodingUtils::makeLowerCase(text);
-
-    std::vector<uint32_t> uni_grams;
+    std::vector<uint32_t> uni_grams = TextEncodingUtils::computeUnigrams(text);
 
     TextEncodingUtils::forEachWordHash(
         lower_case_text,

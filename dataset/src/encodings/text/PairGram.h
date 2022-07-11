@@ -20,6 +20,8 @@ class PairGram : public TextEncoding {
 
   void encodeText(const std::string_view text,
                   SegmentedFeatureVector& vec) final {
+    // TextEncodingUtils::calculatePairgrams(text);
+
     // TODO(Geordie): Do we need to make lower case?
     std::string lower_case_text = TextEncodingUtils::makeLowerCase(text);
 

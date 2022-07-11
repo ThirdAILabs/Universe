@@ -13,6 +13,42 @@ class TextEncodingUtils {
   static constexpr uint32_t HASH_SEED = 341;
   static constexpr uint32_t DEFAULT_TEXT_ENCODING_DIM = 100000;
 
+  static std::vector<uint32_t> computeUnigrams(
+      const std::string_view sentence) {
+    std::vector<uint32_t> unigram_hashes;
+    bool prev_is_space = true;
+    uint32_t start_of_word_offset;
+    for (uint32_t i = 0; i < sentence.size(); i++) {
+      if (prev_is_space && !std::isspace(sentence[i])) {
+        // If we go from a space to a non-space character then we are at the
+        // start of a word.
+        start_of_word_offset = i;
+        prev_is_space = false;
+      }
+      if (!prev_is_space && std::isspace(sentence[i])) {
+        // If we go from a non-space character to a space then we are at the end
+        // of a word.
+        uint32_t len = i - start_of_word_offset;
+
+        // Hash the word using the recorded start offset and the current index.
+        uint32_t hash = hashing::MurmurHash(
+            sentence.data() + start_of_word_offset, len, HASH_SEED);
+        unigram_hashes.push_back(hash);
+        prev_is_space = true;
+      }
+    }
+    if (!prev_is_space) {
+      // If we don't find a space at the end of the sentence, then there's a
+      // last word we need to hash.
+      uint32_t len = sentence.size() - start_of_word_offset;
+      uint32_t hash = hashing::MurmurHash(
+          sentence.data() + start_of_word_offset, len, HASH_SEED);
+      unigram_hashes.push_back(hash);
+    }
+
+    return unigram_hashes;
+  }
+
   /**
    * Deduplicates indices by summing values and adds features to the given
    * vector. All indices expected to correspond to the same value.
