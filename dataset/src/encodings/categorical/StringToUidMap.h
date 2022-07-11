@@ -1,10 +1,10 @@
 #pragma once
 
 #include "CategoricalEncodingInterface.h"
+#include <atomic>
+#include <iostream>
 #include <string>
 #include <unordered_map>
-#include <iostream>
-#include <atomic>
 
 namespace thirdai::dataset {
 
@@ -32,8 +32,8 @@ class StringToUidMap : public CategoricalEncoding {
 
     //  As the map saturates, the critical section is accessed less and less.
     if (_class_to_uid.count(class_name) > 0) {
-      // Addresses always valid because we reserved memory for hash buckets and reject
-      // elements after a given threshold.
+      // Addresses always valid because we reserved memory for hash buckets and
+      // reject elements after a given threshold.
       uint32_t a = _class_to_uid.at(class_name);
       while (_uid_to_class[a] != class_name) {
         a = _class_to_uid.at(class_name);
@@ -57,7 +57,7 @@ class StringToUidMap : public CategoricalEncoding {
                  "same ID."
               << std::endl;
   }
-  
+
   uint32_t uidForNewClass(std::string& class_name) {
     uint32_t uid = 0;
 #pragma omp critical(string_to_uid_map)
@@ -68,15 +68,14 @@ class StringToUidMap : public CategoricalEncoding {
         uid = _class_to_uid.size();
 
         if (uid < _n_classes) {
-          // Only index elements within the reserved capacity so hash table memory
-          // doesn't get reallocated.
+          // Only index elements within the reserved capacity so hash table
+          // memory doesn't get reallocated.
           _uid_to_class[uid] = class_name;
           _class_to_uid[std::move(class_name)] = uid;
         } else {
           warnTooManyElements();
         }
       }
-      
     }
     return uid;
   }

@@ -126,8 +126,7 @@ class TrendBlock : public Block {
   }
 
   uint32_t addFeaturesForId(uint32_t id, uint32_t timestamp,
-                        SegmentedFeatureVector& vec,
-                        uint32_t offset) {
+                            SegmentedFeatureVector& vec, uint32_t offset) {
     std::vector<float> counts(_lookback);
     float mean = 0;
     fillCountsAndMean(id, timestamp, counts, mean);
