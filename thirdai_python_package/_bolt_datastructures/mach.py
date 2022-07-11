@@ -154,31 +154,28 @@ class Mach:
         batch_size,
     ):
 
-        loss_func = (
-            bolt.CategoricalCrossEntropyLoss()
-            if self.use_softmax
-            else bolt.BinaryCrossEntropyLoss()
-        )
-
         for epoch in range(num_epochs):
             for classifier_id, classifier in enumerate(self.classifiers):
 
                 mapped_train_y = self.map_labels_to_groups(train_y, classifier_id)
 
+                train_config = bolt.graph.TrainConfig.make(
+                    learning_rate=learning_rate, epochs=num_epochs
+                ).with_batch_size(batch_size)
+
                 classifier.train(
                     train_data=train_x,
                     train_labels=mapped_train_y,
-                    loss_fn=loss_func,
-                    learning_rate=learning_rate,
-                    epochs=1,
-                    batch_size=batch_size,
-                    verbose=True,
+                    train_config=train_config,
                 )
 
     def query_slow(self, batch):
+        predict_config = bolt.graph.PredictConfig.make().return_activations()
         results = np.array(
             [
-                classifier.predict(batch, test_labels=None, verbose=False)[1]
+                classifier.predict(
+                    batch, test_labels=None, predict_config=predict_config
+                )[1]
                 for classifier in self.classifiers
             ]
         )
@@ -196,9 +193,12 @@ class Mach:
     # TODO(josh): Use better inference, this is equivalent to threshold = 1
     # TODO(josh): Allow returning top k instead of just top 1
     def query_fast(self, batch, num_groups_to_check_per_classifier=10):
+        predict_config = bolt.graph.PredictConfig.make().return_activations()
         results = np.array(
             [
-                classifier.predict(batch, test_labels=None, verbose=False)[1]
+                classifier.predict(
+                    batch, test_labels=None, predict_config=predict_config
+                )[1]
                 for classifier in self.classifiers
             ]
         )
@@ -239,22 +239,27 @@ class Mach:
         hidden_layer_dim,
         hidden_layer_sparsity,
     ):
-        last_layer_act_func = (
-            bolt.ActivationFunctions.Softmax
-            if use_softmax
-            else bolt.ActivationFunctions.Sigmoid
+        input_layer = bolt.graph.Input(dim=input_dim)
+
+        hidden_layer = bolt.graph.FullyConnected(
+            dim=hidden_layer_dim,
+            sparsity=hidden_layer_sparsity,
+            activation="relu",
+        )(input_layer)
+
+        output_layer = bolt.graph.FullyConnected(
+            dim=last_layer_dim,
+            sparsity=last_layer_sparsity,
+            activation=("softmax" if use_softmax else "sigmoid"),
+        )(hidden_layer)
+
+        loss_func = (
+            bolt.CategoricalCrossEntropyLoss()
+            if self.use_softmax
+            else bolt.BinaryCrossEntropyLoss()
         )
-        layers = [
-            bolt.FullyConnected(
-                dim=hidden_layer_dim,
-                sparsity=hidden_layer_sparsity,
-                activation_function=bolt.ActivationFunctions.ReLU,
-            ),
-            bolt.FullyConnected(
-                dim=last_layer_dim,
-                sparsity=last_layer_sparsity,
-                activation_function=last_layer_act_func,
-            ),
-        ]
-        network = bolt.Network(layers=layers, input_dim=input_dim)
-        return network
+
+        model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+        model.compile(loss=loss_func)
+
+        return model
