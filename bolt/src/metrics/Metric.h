@@ -238,22 +238,20 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
   std::atomic<float> _sum_of_truths;
 };
 
+/**
+ * The F-Measure is an error that takes into account both precision and recall. It is defined as the harmonic mean of precision and recall. The returned metric is in absolute terms; 1.0 is 100%.
+ */
 class FMeasure final : public Metric {
  public:
-  FMeasure() : _tp(0), _fp(0), _fn(0) {}
+  explicit FMeasure(float threshold = 0.8) : _threshold(threshold), _tp(0), _fp(0), _fn(0) {}
 
- private:
-  std::pair<uint32_t, uint32_t> computePrecisionAndRecall(const BoltVector& output, const BoltVector& labels, const float threshold) {
-    std::pair<uint32_t, uint32_t> metrics;
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
     std::vector<uint32_t> pos_predictions;
     std::vector<uint32_t> neg_predictions;
-    uint32_t tp;
-    uint32_t fp;
-    uint32_t fn;
 
     for (uint32_t i = 0; i < output.len; i++) {
       uint32_t pred = output.isDense() ? i : output.active_neurons[i];
-      if (output.activations[i] > threshold) {
+      if (output.activations[i] > _threshold) {
         pos_predictions.push_back(pred);
       } else {
         neg_predictions.push_back(pred);
@@ -270,14 +268,14 @@ class FMeasure final : public Metric {
     if (labels.isDense()) {
       for (uint32_t pos_pred : pos_predictions) {
         if (labels.activations[pos_pred] > 0) {
-          tp++;
+          _tp++;
         } else {
-          fp++;
+          _fp++;
         }
       }
       for (uint32_t neg_pred : neg_predictions) {
         if (labels.activations[neg_pred] > 0) {
-          fn++;
+          _fn++;
         }
       }
     } else {
@@ -285,23 +283,42 @@ class FMeasure final : public Metric {
       const uint32_t* label_end = labels.active_neurons + labels.len;
       for (uint32_t pos_pred : pos_predictions) {
         if (std::find(label_start, label_end, pos_pred) != label_end) {
-          tp++;
+          _tp++;
         } else {
-          fp++;
+          _fp++;
         }
       }
       for (uint32_t neg_pred : neg_predictions) {
         if (std::find(label_start, label_end, neg_pred) != label_end) {
-          fn++;
+          _fn++;
         }
       }
     }
-
-    metrics.first = static_cast<float>(tp) / (tp + fp);
-    metrics.second = static_cast<float>(tp) / (tp + fn);
-
-    return metrics;
   }
-}
+
+  double getMetricAndReset(bool verbose) final {
+    double prec = static_cast<double>(_tp) / (_tp + _fp);
+    double recall = static_cast<double>(_tp) / (_tp + _fn);
+    double f_measure = (2 * prec * recall) / (prec + recall);
+    if (verbose) {
+      std::cout << "F-Measure: " << f_measure << std::endl;
+    }
+    _tp = 0;
+    _fp = 0;
+    _fn = 0;
+    return f_measure;
+  }
+
+  static constexpr const char* name = "f_measure";
+
+  std::string getName() final { return name; }
+
+ private:
+  float _threshold;
+  std::atomic<uint32_t> _tp;
+  std::atomic<uint32_t> _fp;
+  std::atomic<uint32_t> _fn;
+
+};
 
 }  // namespace thirdai::bolt

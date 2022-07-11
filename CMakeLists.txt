@@ -174,6 +174,7 @@ file(
   bolt/src/networks/*.cc 
   bolt/src/utils/*.cc 
   bolt/src/text_classifier/*.cc
+  bolt/src/multi_label_text_classifier/*.cc
 )
 
 file(

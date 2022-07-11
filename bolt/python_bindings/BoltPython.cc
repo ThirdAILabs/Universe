@@ -6,6 +6,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <bolt/src/text_classifier/TextClassifier.h>
+#include <bolt/src/multi_label_text_classifier/MultiLabelTextClassifier.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -615,13 +616,46 @@ void createBoltSubmodule(py::module_& module) {
            " * filename: string - The path to the save location of the "
            "classifier.\n")
       .def_static(
-          "load", &TextClassifier::load, py::arg("filename"),
-          "Loads and builds a saved classifier from file.\n"
-          "Arguments:\n"
-          " * filename: string - The location of the saved classifier.\n");
-  
-  py::class_<>(bolt_submodule, "MultiLabelTextClassifier")
-      .def(py::init<const std::string&, uint32t>(), py::arg(""))
+           "load", &TextClassifier::load, py::arg("filename"),
+           "Loads and builds a saved classifier from file.\n"
+           "Arguments:\n"
+           " * filename: string - The location of the saved classifier.\n");
+
+  py::class_<MultiLabelTextClassifier>(bolt_submodule, "MultiLabelTextClassifier")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("input_dim"), py::arg("hidden_layer_dim"), py::arg("n_classes"), 
+           "Constructs a MultiLabelTextClassifier.\n"
+           "Arguments:\n"
+           " * input_dim: int - The input dimension to the model.\n"
+           " * hidden_layer_dim: int - The dimension of the hidden layer.\n"
+           " * n_classes: int - The output dimension (number of unique classes).\n")
+      .def("train", &MultiLabelTextClassifier::train, py::arg("train_file"), py::arg("epochs"), py::arg("learning_rate"),
+           "Trains the classifier on the given dataset.\n"
+           "Arguments:\n"
+           " * train_file: string - The path to the training dataset to use.\n"
+           " * epochs: Int - How many epochs to train for.\n"
+           " * learning_rate: Float - The learning rate to use for training.\n")
+      .def("predict", &MultiLabelTextClassifier::predict, py::arg("test_file"),
+           py::arg("output_file") = std::nullopt, py::arg("threshold") = 0.8,
+           "Runs the classifier on the specified test dataset and optionally "
+           "logs the prediction to a file.\n"
+           "Arguments:\n"
+           " * test_file: string - The path to the test dataset to use.\n"
+           " * output_file: string - Optional argument, if this is specified "
+           "then the classifier will output the name of the class/category of "
+           "each prediction this file with one prediction result on each "
+           "line.\n"
+           " * threshold: int - The activation threshold used to determine the prediction classes. By default, this value is 0.8.\n")
+      .def("save", &MultiLabelTextClassifier::save, py::arg("filename"),
+           "Saves the classifier to a file. The file path must not require any "
+           "folders to be created\n"
+           "Arguments:\n"
+           " * filename: string - The path to the save location of the "
+           "classifier.\n")
+      .def_static(
+           "load", &MultiLabelTextClassifier::load, py::arg("filename"),
+           "Loads and builds a saved classifier from file.\n"
+           "Arguments:\n"
+           " * filename: string - The location of the saved classifier.\n");
 
   py::class_<SentimentClassifier>(bolt_submodule, "SentimentClassifier")
       .def(py::init<const std::string&>(), py::arg("model_path"))

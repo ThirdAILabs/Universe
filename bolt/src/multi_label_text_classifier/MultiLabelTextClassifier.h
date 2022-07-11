@@ -7,6 +7,7 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/src/bolt_datasets/DataLoader.h>
 #include <dataset/src/bolt_datasets/StreamingDataset.h>
+#include <dataset/src/bolt_datasets/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/bolt_datasets/batch_processors/TextClassificationProcessor.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <memory>
@@ -15,12 +16,11 @@ namespace thirdai::bolt {
 
 class MultiLabelTextClassifier {
  public:
-  MultiLabelTextClassifier(const std::string& model_size, uint32_t n_classes);
+  MultiLabelTextClassifier(uint32_t input_dim, uint32_t hidden_layer_dim, uint32_t n_classes);
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate);
 
-  void predict(const std::string& filename,
-               const std::optional<std::string>& output_filename);
+  void predict(const std::string& filename, const std::optional<std::string>& output_filename, float threshold = 0.8);
 
   void save(const std::string& filename) {
     std::ofstream filestream =
@@ -33,16 +33,13 @@ class MultiLabelTextClassifier {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<TextClassifier> deserialize_into(new TextClassifier());
+    std::unique_ptr<MultiLabelTextClassifier> deserialize_into(new MultiLabelTextClassifier());
     iarchive(*deserialize_into);
     return deserialize_into;
   }
 
  private:
-  void trainOnStreamingDataset(dataset::StreamingDataset<BoltBatch>& dataset,
-                               const LossFunction& loss, float learning_rate);
-
-  std::shared_ptr<dataset::StreamingDataset<BoltBatch>> loadStreamingDataset(
+ std::shared_ptr<dataset::StreamingDataset<BoltBatch>> loadStreamingDataset(
       const std::string& filename, uint32_t batch_size = 256) {
     std::shared_ptr<dataset::DataLoader> data_loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
@@ -63,7 +60,7 @@ class MultiLabelTextClassifier {
   }
 
   std::unique_ptr<FullyConnectedNetwork> _model;
-  std::shared_ptr<dataset::TextClassificationProcessor> _batch_processor;
+  std::shared_ptr<dataset::GenericBatchProcessor> _batch_processor;
 };
 
 }  // namespace thirdai::bolt
