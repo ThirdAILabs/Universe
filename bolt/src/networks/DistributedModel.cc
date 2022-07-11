@@ -29,8 +29,8 @@ uint32_t DistributedModel::initTrainSingleNode(
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
-  initializeNetworkState(batch_size, false);
-  _outputs = getOutputs(batch_size, false);
+  initializeNetworkState(batch_size, true);
+  _outputs = getOutputs(batch_size, true);
 
   if (verbose) {
     std::cout << "Distributed Network initialization done on this Node"
