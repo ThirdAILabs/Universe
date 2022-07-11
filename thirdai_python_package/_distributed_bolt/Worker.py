@@ -7,7 +7,7 @@ import time
 
 @ray.remote(num_cpus=40, max_restarts=1)
 class Worker:
-    def __init__(self, layers, config, random_seed, total_nodes, id):
+    def __init__(self, layers, config, total_nodes, id):
         self.layers = layers
         self.bolt_layers = create_fully_connected_layer_configs(config["layers"])
         self.input_dim = config["dataset"]["input_dim"]
@@ -29,8 +29,7 @@ class Worker:
                     self.train_label,
                     rehash=self.rehash,
                     rebuild=self.rebuild,
-                    verbose=False,
-                    random_seed=random_seed)
+                    verbose=False)
         if config["params"]["loss_fn"].lower() == "categoricalcrossentropyloss":
             self.loss = bolt.CategoricalCrossEntropyLoss()
         elif config["params"]["loss_fn"].lower() == "meansquarederror":
