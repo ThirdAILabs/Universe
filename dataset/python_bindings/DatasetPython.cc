@@ -6,7 +6,9 @@
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/bolt_datasets/StreamingDataset.h>
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
+#include <dataset/src/bolt_datasets/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <dataset/src/encodings/text/CharKGram.h>
@@ -16,6 +18,7 @@
 #include <dataset/src/encodings/text/UniGram.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
+#include <pybind11/cast.h>
 #include <sys/types.h>
 #include <chrono>
 #include <limits>
@@ -387,6 +390,12 @@ void createDatasetSubmodule(py::module_& module) {
       " * dimensions: Int (positive) - (Optional) The dimension of each token "
       "embedding. "
       "Defaults to 100,000.");
+
+  py::class_<InMemoryDataset<MaskedSentenceBatch>,
+             std::shared_ptr<InMemoryDataset<MaskedSentenceBatch>>>(
+      dataset_submodule, "MLMDataset")
+      .def_static("load", &loadMLMDataset, py::arg("filename"),
+                  py::arg("batch_size"), py::arg("pairgram_range"));
 
   internal_dataset_submodule.def(
       "dense_bolt_dataset_matches_dense_matrix",
@@ -914,6 +923,24 @@ bool denseBoltDatasetsAreEqual(BoltDataset& dataset1, BoltDataset& dataset2) {
   }
 
   return true;
+}
+
+py::tuple loadMLMDataset(const std::string& filename, uint32_t batch_size,
+                         uint32_t pairgram_range) {
+  auto data_loader =
+      std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
+
+  auto batch_processor =
+      std::make_shared<thirdai::dataset::MaskedSentenceBatchProcessor>(
+          pairgram_range);
+
+  auto dataset =
+      std::make_shared<dataset::StreamingDataset<dataset::MaskedSentenceBatch>>(
+          data_loader, batch_processor);
+
+  auto [data, labels] = dataset->loadInMemory();
+
+  return py::make_tuple(py::cast(data), py::cast(labels));
 }
 
 }  // namespace thirdai::dataset::python

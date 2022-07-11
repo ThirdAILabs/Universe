@@ -145,4 +145,7 @@ class PyBlockBatchProcessor : public BlockBatchProcessor {
   }
 };
 
+py::tuple loadMLMDataset(const std::string& filename, uint32_t batch_size,
+                         uint32_t pairgram_range);
+
 }  // namespace thirdai::dataset::python

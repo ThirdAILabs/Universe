@@ -6,6 +6,7 @@
 #include <dataset/src/batch_types/MaskedSentenceBatch.h>
 #include <dataset/src/bolt_datasets/BatchProcessor.h>
 #include <random>
+#include <unordered_map>
 
 namespace thirdai::dataset {
 
@@ -21,13 +22,13 @@ class MaskedSentenceBatchProcessor final
   std::optional<BoltDataLabelPair<MaskedSentenceBatch>> createBatch(
       const std::vector<std::string>& rows) final {
     std::vector<bolt::BoltVector> vectors(rows.size());
-    std::vector<uint32_t> masked_indices(rows.size());
+    std::vector<std::vector<uint32_t>> masked_indices(rows.size());
     std::vector<bolt::BoltVector> labels(rows.size());
 
     for (uint32_t i = 0; i < rows.size(); i++) {  // NOLINT
       auto [vec, index, label] = processRow(rows[i]);
       vectors[i] = std::move(vec);
-      masked_indices[i] = index;
+      masked_indices[i] = {index};
       labels[i] = std::move(label);
     }
 
@@ -39,6 +40,10 @@ class MaskedSentenceBatchProcessor final
   bool expectsHeader() const final { return false; }
 
   void processHeader(const std::string& header) final { (void)header; }
+
+  const std::unordered_map<uint32_t, uint32_t>& getWordToIDMap() const {
+    return _word_hashes_to_ids;
+  }
 
  private:
   std::tuple<bolt::BoltVector, uint32_t, bolt::BoltVector> processRow(
@@ -56,11 +61,14 @@ class MaskedSentenceBatchProcessor final
     // in the sentence and we can simply do a single pass over it and compute
     // the hashes.
     uint32_t word_id;
-    if (_word_hashes_to_ids.count(masked_word_hash)) {
-      word_id = _word_hashes_to_ids.at(masked_word_hash);
-    } else {
-      word_id = _word_hashes_to_ids.size();
-      _word_hashes_to_ids[masked_word_hash] = word_id;
+#pragma omp critical
+    {
+      if (_word_hashes_to_ids.count(masked_word_hash)) {
+        word_id = _word_hashes_to_ids.at(masked_word_hash);
+      } else {
+        word_id = _word_hashes_to_ids.size();
+        _word_hashes_to_ids[masked_word_hash] = word_id;
+      }
     }
 
     bolt::BoltVector label(1, false, false);
