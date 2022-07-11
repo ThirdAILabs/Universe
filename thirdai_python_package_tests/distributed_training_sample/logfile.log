@@ -20,3 +20,9 @@
 2022-07-11 10:23:50,608 : INFO : DistributedBolt : Epoch No:0, Bolt Computation Time:2.757597 Python Computation Time:0.575822 Communication Time:10.685787
 2022-07-11 10:26:31,974 : INFO : DistributedBolt : Ray set up on head node completed.
 2022-07-11 10:26:31,974 : INFO : DistributedBolt : Starting the cluster Setup.
+2022-07-11 10:35:56,979 : INFO : DistributedBolt : Ray set up on head node completed.
+2022-07-11 10:35:56,980 : INFO : DistributedBolt : Starting the cluster Setup.
+2022-07-11 10:36:04,489 : INFO : DistributedBolt : Cluster has started.
+2022-07-11 10:36:04,891 : INFO : DistributedBolt : Ray Initialized on Head Node
+2022-07-11 10:36:15,976 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-11 10:36:30,677 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 2.781307, Python Computation Time: 0.615178, Communication Time: 10.812229

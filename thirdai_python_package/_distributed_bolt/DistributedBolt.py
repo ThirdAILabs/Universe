@@ -76,7 +76,7 @@ class DistributedBolt:
                     print(self.bolt_computation_time, self.python_computation_time, self.communication_time)
                 self.logging.info('Epoch No: %d, Bolt Computation Time: %lf, Python Computation Time: %lf, Communication Time: %lf', epoch, self.bolt_computation_time, self.python_computation_time, self.communication_time)
                 for i in range(len(self.workers)):
-                    self.logging.info('Accuracy on workers %d: %lf', i, self.workers[i].predict.remote())
+                    self.logging.info('Accuracy on workers %d: %lf', i, ray.get(self.workers[i].predict.remote()))
                 
                 
     def predict(self):
