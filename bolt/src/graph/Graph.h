@@ -6,6 +6,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include "ExecutionConfig.h"
+#include "InferenceOutputTracker.h"
 #include "Node.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
@@ -16,6 +17,7 @@
 #include <dataset/src/Dataset.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
@@ -63,7 +65,7 @@ class BoltGraph {
       const TrainConfig& train_config);
 
   template <typename BATCH_T>
-  InferenceMetricData predict(
+  InferenceResult predict(
       // Test dataset
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
       // Test labels
@@ -105,7 +107,7 @@ class BoltGraph {
   template <typename BATCH_T>
   void processInferenceBatch(BATCH_T& batch_inputs,
                              const BoltBatch* batch_labels,
-                             MetricAggregator& metrics, bool compute_metrics);
+                             MetricAggregator& metrics);
 
   template <typename BATCH_T>
   void setInputs(BATCH_T& batch_inputs);
@@ -125,6 +127,12 @@ class BoltGraph {
   void traverseGraph();
 
   std::unordered_map<NodePtr, int32_t> getSuccessorCounts() const;
+
+  template <typename BATCH_T>
+  void verifyCanPredict(
+      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
+      bool has_labels, bool returning_activations,
+      uint32_t num_metrics_tracked);
 
   template <typename BATCH_T>
   void verifyInputForGraph(
