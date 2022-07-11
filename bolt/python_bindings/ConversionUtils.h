@@ -209,6 +209,15 @@ inline py::tuple constructPythonInferenceTuple(
     return py::make_tuple(py_metric_data);
   }
 
+  // Here, we pass in the activation_handle object to the array constructor
+  // for the activation array, since it is a py::object that owns the memory
+  // pointed to by the raw activations pointer. This allows python to add an
+  // additional reference to the activation_handle object, which will keep
+  // the activation_handle py::object alive at least until the py::array goes
+  // out of scope (the python garbage collection may then delete the object, but
+  // not before). This results in a py::array where the memory is held by an
+  // existing different python object, while still guaranteeing the memory will
+  // remain valid for the lifetime of the py::array.
   py::array_t<float, py::array::c_style | py::array::forcecast>
       activations_array({num_samples, inference_dim},
                         {inference_dim * sizeof(float), sizeof(float)},
@@ -218,6 +227,8 @@ inline py::tuple constructPythonInferenceTuple(
     return py::make_tuple(py_metric_data, activations_array);
   }
 
+  // See comment above activations_array for the python memory reasons behind
+  // passing in active_neuron_handle
   py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
       active_neurons_array({num_samples, inference_dim},
                            {inference_dim * sizeof(uint32_t), sizeof(uint32_t)},

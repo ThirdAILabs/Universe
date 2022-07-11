@@ -129,7 +129,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("enable_sparse_inference", &PredictConfig::enableSparseInference)
       .def("with_metrics", &PredictConfig::withMetrics, py::arg("metrics"))
       .def("silence", &PredictConfig::silence)
-      .def("dont_return_activations", &PredictConfig::dontReturnActivations);
+      .def("return_activations", &PredictConfig::returnActivations);
 
   py::class_<BoltGraph>(graph_submodule, "Model")
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
@@ -219,9 +219,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
                 test_data.dataset, test_labels.dataset, predict_config);
 
             // We need to get these now because we are about to std::move output
-            const auto* activation_pointer =
+            const float* activation_pointer =
                 output.getNonowningActivationPointer();
-            const auto* active_neuron_pointer =
+            const uint32_t* active_neuron_pointer =
                 output.getNonowningActiveNeuronPointer();
             uint32_t num_nonzeros = output.numNonzerosInOutput();
 

@@ -16,7 +16,6 @@ def get_train_config(epochs, batch_size):
 def get_predict_config():
     return (
         bolt.graph.PredictConfig.make()
-        .dont_return_activations()
         .with_metrics(["categorical_accuracy"])
         .silence()
     )

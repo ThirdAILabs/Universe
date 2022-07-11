@@ -122,8 +122,8 @@ class PredictConfig {
     return *this;
   }
 
-  PredictConfig& dontReturnActivations() {
-    _return_activations = false;
+  PredictConfig& returnActivations() {
+    _return_activations = true;
     return *this;
   }
 
@@ -147,7 +147,7 @@ class PredictConfig {
       : _metric_names({}),
         _use_sparse_inference(false),
         _verbose(true),
-        _return_activations(true) {}
+        _return_activations(false) {}
 
   std::vector<std::string> _metric_names;
   bool _use_sparse_inference, _verbose, _return_activations;

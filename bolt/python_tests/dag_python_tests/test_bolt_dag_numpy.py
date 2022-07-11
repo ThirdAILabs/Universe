@@ -27,6 +27,7 @@ def build_train_and_predict(data, labels, num_classes, sparsity):
         bolt.graph.PredictConfig.make()
         .enable_sparse_inference()
         .with_metrics(["categorical_accuracy"])
+        .return_activations()
         .silence()
     )
     return model.predict(data, labels, predict_config)

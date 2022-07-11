@@ -6,6 +6,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include "ExecutionConfig.h"
+#include "InferenceOutputTracker.h"
 #include "Node.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
@@ -187,108 +188,6 @@ class BoltGraph {
 
   uint32_t _epoch_count;
   uint32_t _batch_cnt;
-};
-
-// This class is NOT thread safe
-class InferenceOutputTracker {
- public:
-  // Should only be called after the output_node has been prepared for batch
-  // processing
-  InferenceOutputTracker(const NodePtr& output_node,
-                         const PredictConfig& config,
-                         uint32_t total_num_samples)
-      : InferenceOutputTracker(
-            /* num_nonzeros_per_sample = */ output_node->getOutputVector(0).len,
-            /* num_samples = */ total_num_samples,
-            /* save_output  = */ config.shouldReturnActivations(),
-            /* output_sparse = */ !output_node->getOutputVector(0).isDense()) {}
-
-  InferenceOutputTracker(uint32_t num_nonzeros_per_sample, uint32_t num_samples,
-                         bool save_output, bool output_sparse)
-      : _num_nonzeros_per_sample(num_nonzeros_per_sample),
-        _num_samples(num_samples),
-        _current_vec_index(0),
-        _save_activations(save_output),
-        _save_active_neurons(output_sparse && save_output) {
-    // So the linteger won't complain in Release mode
-    (void)_num_samples;
-    uint64_t total_output_length = num_nonzeros_per_sample * num_samples;
-    try {
-      if (_save_activations) {
-        _activations = std::vector<float>(total_output_length);
-      } else {
-        _activations = std::nullopt;
-      }
-      if (_save_active_neurons) {
-        _active_neurons = std::vector<uint32_t>(total_output_length);
-      } else {
-        _active_neurons = std::nullopt;
-      }
-    } catch (std::bad_alloc& e) {
-      throw std::invalid_argument(
-          "Cannot allocate enough memory for inference output. Split the "
-          "dataset into smaller batches and perform inference on each one, or "
-          "change the PredictionConfig to do inference without getting the "
-          "result.");
-    }
-  }
-
-  void saveOutputBatch(const NodePtr& output_node, uint32_t batch_size) {
-    for (uint32_t vec_id_in_batch = 0; vec_id_in_batch < batch_size;
-         vec_id_in_batch++) {
-      const auto& current_output_vec =
-          output_node->getOutputVector(vec_id_in_batch);
-      assert(current_output_vec.len == _num_nonzeros_per_sample);
-      assert(_current_vec_index < _num_samples);
-
-      if (_save_activations) {
-        std::copy(
-            current_output_vec.activations,
-            current_output_vec.activations + _num_nonzeros_per_sample,
-            &(_activations->at(_num_nonzeros_per_sample * _current_vec_index)));
-      }
-
-      if (_save_active_neurons) {
-        assert(current_output_vec.active_neurons != nullptr);
-        std::copy(current_output_vec.active_neurons,
-                  current_output_vec.active_neurons + _num_nonzeros_per_sample,
-                  &(_active_neurons->at(_num_nonzeros_per_sample *
-                                        _current_vec_index)));
-      }
-
-      _current_vec_index++;
-    }
-  }
-
-  // Returns a (possibly null) pointer to the saved activation data.
-  // The pointer will be null if we did not save activations.
-  const float* getNonowningActivationPointer() const {
-    if (!_activations.has_value()) {
-      return nullptr;
-    }
-    return _activations->data();
-  }
-
-  // Returns a (possibly null) pointer to the saved active neuron data.
-  // The pointer will be null if we did not save activations or if the ouput
-  // was dense.
-  const uint32_t* getNonowningActiveNeuronPointer() const {
-    if (!_active_neurons.has_value()) {
-      return nullptr;
-    }
-    return _active_neurons->data();
-  }
-
-  uint32_t numNonzerosInOutput() const { return _num_nonzeros_per_sample; }
-
- private:
-  uint64_t _num_nonzeros_per_sample;
-  uint64_t _num_samples;
-  uint64_t _current_vec_index;
-  bool _save_activations;
-  bool _save_active_neurons;
-  std::optional<std::vector<float>> _activations;
-  std::optional<std::vector<uint32_t>> _active_neurons;
 };
 
 }  // namespace thirdai::bolt
