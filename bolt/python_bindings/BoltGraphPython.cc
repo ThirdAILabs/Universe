@@ -2,6 +2,7 @@
 #include "ConversionUtils.h"
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/InferenceGraph.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -131,7 +132,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("silence", &PredictConfig::silence)
       .def("return_activations", &PredictConfig::returnActivations);
 
-  py::class_<BoltGraph>(graph_submodule, "Model")
+  py::class_<BoltGraph, BoltGraphPtr>(graph_submodule, "Model")
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
            py::arg("output"),
            "Constructs a bolt model from a layer graph.\n"
@@ -204,45 +205,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "Returns a mapping from metric names to an array of their values for "
           "every epoch.")
       .def(
-          "predict",
-          [](BoltGraph& model, const py::object& data, const py::object& labels,
-             const PredictConfig& predict_config) {
-            auto test_data = convertPyObjectToBoltDataset(
-                data, /* batch_size = */ 2048, /* is_labels = */ false);
-
-            BoltDatasetNumpyContext test_labels;
-            if (!labels.is_none()) {
-              test_labels = convertPyObjectToBoltDataset(
-                  labels, /* batch_size = */ 2048, /* is_labels = */ true);
-            }
-            auto [metrics, output] = model.predict(
-                test_data.dataset, test_labels.dataset, predict_config);
-
-            // We need to get these now because we are about to std::move output
-            const float* activation_pointer =
-                output.getNonowningActivationPointer();
-            const uint32_t* active_neuron_pointer =
-                output.getNonowningActiveNeuronPointer();
-            uint32_t num_nonzeros = output.numNonzerosInOutput();
-
-            // At first, the InferenceOutput object owns the memory for the
-            // activation and active_neuron vectors. We want to use it as the
-            // owning object when we build the numpy array, but to do that we
-            // need to cast it to a py::object. Importantly, we need to use
-            // std::move to ensure that we are casting output itself to a python
-            // object, not a copy of it. See return_value_policy::automatic here
-            // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies
-            py::object output_handle = py::cast(std::move(output));
-
-            return constructPythonInferenceTuple(
-                py::cast(metrics), test_data.dataset->len(), num_nonzeros,
-                /* activations = */ activation_pointer,
-                /* active_neurons = */ active_neuron_pointer,
-                /* activation_handle = */ output_handle,
-                /* active_neuron_handle = */ output_handle);
-          },
-          py::arg("test_data"), py::arg("test_labels"),
-          py::arg("predict_config"),
+          "predict", &predictPythonWrapper<BoltGraph>, py::arg("test_data"),
+          py::arg("test_labels"), py::arg("predict_config"),
           "Predicts the output given the input vectors and evaluates the "
           "predictions based on the given metrics.\n"
           "Arguments:\n"
@@ -294,6 +258,81 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "determine which layer is which by printing a graph summary. "
            "Possible operations to perform on the returned object include "
            "setting layer sparsity, freezing weights, or saving to a file");
+
+  py::class_<InferenceBoltGraph>(graph_submodule, "InferenceModel")
+      .def(py::init<BoltGraphPtr>(), py::arg("graph"))
+      .def(
+          "predict", &predictPythonWrapper<InferenceBoltGraph>,
+          py::arg("test_data"), py::arg("test_labels"),
+          py::arg("predict_config"),
+          "Predicts the output given the input vectors and evaluates the "
+          "predictions based on the given metrics.\n"
+          "Arguments:\n"
+          " * test_data: PyObject - Test data, in the same one of 3 formats as "
+          "accepted by the train method (a BoltDataset, a dense numpy array, "
+          "or a tuple of dense numpy arrays representing a sparse dataset)\n"
+          " * test_labels: PyObject - Test labels, in the same format as "
+          "test_data. This can also additionally be passed as None, in which "
+          "case no metrics can be computed.\n"
+          " * predict_config: PredictConfig - the additional prediction "
+          "parameters. See the PredictConfig documentation above.\n\n"
+          "Returns a tuple, where the first element is a mapping from metric "
+          "names to their values. The second element, the output activation "
+          "matrix, is only present if dont_return_activations was not called. "
+          "The third element, the active neuron matrix, is only present if "
+          "we are returning activations AND the ouptut is sparse.")
+      .def("__str__",
+           [](const InferenceBoltGraph& model) {
+             return model.summarize(/* print = */ false,
+                                    /* detailed = */ false);
+           })
+      .def_static("load", &InferenceBoltGraph::load, py::arg("filename"));
+}
+
+template py::tuple predictPythonWrapper<BoltGraph>(
+    BoltGraph& model, const py::object& data, const py::object& labels,
+    const PredictConfig& predict_config);
+
+template py::tuple predictPythonWrapper<InferenceBoltGraph>(
+    InferenceBoltGraph& model, const py::object& data, const py::object& labels,
+    const PredictConfig& predict_config);
+
+template <typename MODEL_T>
+py::tuple predictPythonWrapper(MODEL_T& model, const py::object& data,
+                               const py::object& labels,
+                               const PredictConfig& predict_config) {
+  auto test_data = convertPyObjectToBoltDataset(data, /* batch_size = */ 2048,
+                                                /* is_labels = */ false);
+
+  BoltDatasetNumpyContext test_labels;
+  if (!labels.is_none()) {
+    test_labels = convertPyObjectToBoltDataset(labels, /* batch_size = */ 2048,
+                                               /* is_labels = */ true);
+  }
+  auto [metrics, output] =
+      model.predict(test_data.dataset, test_labels.dataset, predict_config);
+
+  // We need to get these now because we are about to std::move output
+  const float* activation_pointer = output.getNonowningActivationPointer();
+  const uint32_t* active_neuron_pointer =
+      output.getNonowningActiveNeuronPointer();
+  uint32_t num_nonzeros = output.numNonzerosInOutput();
+
+  // At first, the InferenceOutput object owns the memory for the
+  // activation and active_neuron vectors. We want to use it as the
+  // owning object when we build the numpy array, but to do that we
+  // need to cast it to a py::object. Importantly, we need to use
+  // std::move to ensure that we are casting output itself to a python
+  // object, not a copy of it. See return_value_policy::automatic here
+  // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies
+  py::object output_handle = py::cast(std::move(output));
+
+  return constructPythonInferenceTuple(
+      py::cast(metrics), test_data.dataset->len(), num_nonzeros,
+      /* activations = */ activation_pointer,
+      /* active_neurons = */ active_neuron_pointer,
+      /* activation_handle = */ output_handle,
+      /* active_neuron_handle = */ output_handle);
 }
 
 }  // namespace thirdai::bolt::python

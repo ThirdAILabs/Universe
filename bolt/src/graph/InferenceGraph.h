@@ -5,9 +5,9 @@
 
 namespace thirdai::bolt {
 
-class InferenceGraph {
+class InferenceBoltGraph {
  public:
-  explicit InferenceGraph(BoltGraphPtr graph) : _graph(std::move(graph)) {}
+  explicit InferenceBoltGraph(BoltGraphPtr graph) : _graph(std::move(graph)) {}
 
   template <typename BATCH_T>
   InferenceResult predict(
@@ -20,11 +20,12 @@ class InferenceGraph {
     return _graph->predict(test_data, test_labels, predict_config);
   }
 
-  static std::unique_ptr<InferenceGraph> load(const std::string& filename) {
+  static std::unique_ptr<InferenceBoltGraph> load(const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
     cereal::BinaryInputArchive iarchive(filestream);
-    std::unique_ptr<InferenceGraph> deserialize_into(new InferenceGraph());
+    std::unique_ptr<InferenceBoltGraph> deserialize_into(
+        new InferenceBoltGraph());
     iarchive(*deserialize_into);
     return deserialize_into;
   }
@@ -35,11 +36,11 @@ class InferenceGraph {
 
  private:
   // Private default constructor for cereal.
-  InferenceGraph() {}
+  InferenceBoltGraph() {}
 
   friend class cereal::access;
   template <typename Archive>
-  void archive(Archive archive) {
+  void serialize(Archive& archive) {
     archive(_graph);
   }
 

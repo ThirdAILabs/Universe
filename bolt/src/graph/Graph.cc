@@ -516,7 +516,7 @@ void BoltGraph::saveForInference(const std::string& filename) {
     node->removeOptimizer();
   }
 
-  InferenceGraph inference_model(shared_from_this());
+  InferenceBoltGraph inference_model(shared_from_this());
 
   std::ofstream filestream =
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);

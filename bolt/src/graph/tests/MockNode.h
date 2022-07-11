@@ -47,9 +47,11 @@ class MockNode : public Node {
 
   MOCK_METHOD(std::vector<NodePtr>, getPredecessorsImpl, (), (const override));
 
-  MOCK_METHOD(const std::string&, nameImpl, (), (const ovveride));
+  MOCK_METHOD(const std::string&, nameImpl, (), (const override));
 
-  MOCK_METHOD(NodeState, getState, (), (const ovveride));
+  MOCK_METHOD(NodeState, getState, (), (const override));
+
+  MOCK_METHOD(void, removeOptimizerImpl, (), (override));
 };
 
 class MockNodeWithOutput : public MockNode {
