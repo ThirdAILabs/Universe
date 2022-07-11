@@ -32,6 +32,9 @@ class CountMinSketch {
       auto count = _sketch[startOfRow(i) + indexInRow(i, x)];
       min = std::min(min, count);
     }
+    if (min == std::numeric_limits<float>::max()) {
+      return std::numeric_limits<float>::quiet_NaN();
+    }
     return min;
   }
 
