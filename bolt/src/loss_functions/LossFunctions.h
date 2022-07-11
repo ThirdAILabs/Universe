@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/layers/BoltVector.h>
 #include <algorithm>
 #include <memory>
@@ -39,14 +40,15 @@ class LossFunction {
     if (OUTPUT_DENSE && LABEL_DENSE) {
       assert(output.len == labels.len);
     }
-
-    // Loss functions are only used in training.
-    // If the label is sparse, the neurons of the network's final
-    // layer that correspond to the label's nonzero elements are
-    // automatically selected and activated during training.
-    // Thus, we don't have to consider the case where there are
-    // nonzeros in the label that correspond to inactive neurons in
-    // the output layer.
+    /*
+      Loss functions are only used in training.
+      If the label is sparse, the neurons of the network's final
+      layer that correspond to the label's nonzero elements are
+      automatically selected and activated during training.
+      Thus, we don't have to consider the case where there are
+      nonzeros in the label that correspond to inactive neurons in
+      the output layer.
+    */
     for (uint32_t i = 0; i < output.len; i++) {
       uint32_t active_neuron = OUTPUT_DENSE ? i : output.active_neurons[i];
       float label_val =
@@ -58,10 +60,18 @@ class LossFunction {
 
   virtual float elementLossGradient(float label, float activation,
                                     uint32_t batch_size) const = 0;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 class CategoricalCrossEntropyLoss final : public LossFunction {
  public:
+  CategoricalCrossEntropyLoss() {}
+
   static std::shared_ptr<CategoricalCrossEntropyLoss>
   makeCategoricalCrossEntropyLoss() {
     return std::make_shared<CategoricalCrossEntropyLoss>();
@@ -69,13 +79,21 @@ class CategoricalCrossEntropyLoss final : public LossFunction {
 
  private:
   float elementLossGradient(float label, float activation,
-                            uint32_t batch_size) const override {
+                            uint32_t batch_size) const final {
     return (label - activation) / batch_size;
+  }
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<LossFunction>(this));
   }
 };
 
 class BinaryCrossEntropyLoss final : public LossFunction {
  public:
+  BinaryCrossEntropyLoss() {}
+
   static std::shared_ptr<BinaryCrossEntropyLoss> makeBinaryCrossEntropyLoss() {
     return std::make_shared<BinaryCrossEntropyLoss>();
   }
@@ -110,10 +128,18 @@ class BinaryCrossEntropyLoss final : public LossFunction {
     */
     return (label - activation) / batch_size;
   }
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<LossFunction>(this));
+  }
 };
 
 class MeanSquaredError final : public LossFunction {
  public:
+  MeanSquaredError() {}
+
   static std::shared_ptr<MeanSquaredError> makeMeanSquaredError() {
     return std::make_shared<MeanSquaredError>();
   }
@@ -122,6 +148,12 @@ class MeanSquaredError final : public LossFunction {
   float elementLossGradient(float label, float activation,
                             uint32_t batch_size) const override {
     return 2 * (label - activation) / batch_size;
+  }
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<LossFunction>(this));
   }
 };
 
@@ -134,6 +166,8 @@ class MeanSquaredError final : public LossFunction {
  */
 class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
  public:
+  WeightedMeanAbsolutePercentageErrorLoss() {}
+
   static std::shared_ptr<WeightedMeanAbsolutePercentageErrorLoss>
   makeWeightedMeanAbsolutePercentageErrorLoss() {
     return std::make_shared<WeightedMeanAbsolutePercentageErrorLoss>();
@@ -144,6 +178,12 @@ class WeightedMeanAbsolutePercentageErrorLoss final : public LossFunction {
                             uint32_t batch_size) const override {
     auto direction = activation > label ? -1.0 : 1.0;
     return direction / batch_size;
+  }
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<LossFunction>(this));
   }
 };
 
@@ -175,3 +215,8 @@ static std::shared_ptr<LossFunction> getLossFunction(const std::string& name) {
 }
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::CategoricalCrossEntropyLoss)
+CEREAL_REGISTER_TYPE(thirdai::bolt::BinaryCrossEntropyLoss)
+CEREAL_REGISTER_TYPE(thirdai::bolt::MeanSquaredError)
+CEREAL_REGISTER_TYPE(thirdai::bolt::WeightedMeanAbsolutePercentageErrorLoss)

@@ -1,11 +1,16 @@
 #include "BoltPython.h"
+#include "BoltGraphPython.h"
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
+#include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <bolt/src/text_classifier/TextClassifier.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
 
@@ -16,16 +21,36 @@ void createBoltSubmodule(py::module_& module) {
 
 #if THIRDAI_EXPOSE_ALL
 #pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
-
   py::class_<thirdai::bolt::SamplingConfig>(
       bolt_submodule, "SamplingConfig",
       "SamplingConfig represents a layer's sampling hyperparameters.")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, std::string>(),
            py::arg("hashes_per_table"), py::arg("num_tables"),
            py::arg("range_pow"), py::arg("reservoir_size"),
-           "Builds a SamplingConfig object. range_pow must always be 3 * "
-           "hashes_per_table.")
-      .def(py::init<>(), "Builds a default SamplingConfig object.");
+           py::arg("hash_function") = "DWTA",
+           "Builds a SamplingConfig object. \n\n"
+           "Arguments:\n"
+           " * hashes_per_table: Int - number of hashes to be concatenated in "
+           "each table."
+           " * num_tables: Int - number of hash tables."
+           " * range_pow: Int - hash range as a power of 2. E.g. if hash range "
+           "is 8, range_pow = 3. "
+           " Note that the correct range_pow differs for each hash function. "
+           "For DWTA, range_pow = 3 * hashes_per_table."
+           " For SRP or FastSRP, range_pow = hashes_per_table."
+           " * reservoir_size: Int - maximum number of elements stored in each "
+           "hash bucket."
+           " * hash_function: Pass hash function as string (Optional) - The "
+           "hash function "
+           "used for sparse training and inference. One of DWTA, SRP, or "
+           "FastSRP. Defaults to DWTA.")
+      .def(py::init<>(), "Builds a default SamplingConfig object.")
+      .def_readonly("hashes_per_table", &SamplingConfig::hashes_per_table)
+      .def_readonly("num_tables", &SamplingConfig::num_tables)
+      .def_readonly("range_pow", &SamplingConfig::range_pow)
+      .def_readonly("reservoir_size", &SamplingConfig::reservoir_size)
+      .def_readonly("hash_function", &SamplingConfig::_hash_function);
+
 #endif
 
   py::enum_<ActivationFunction>(
@@ -55,29 +80,43 @@ void createBoltSubmodule(py::module_& module) {
                      "the corresponding enum.");
 
   // TODO(Geordie, Nicholas): put loss functions in its own submodule
-  py::class_<LossFunction>(bolt_submodule, "LossFunction",  // NOLINT
-                           "Base class for all loss functions");
 
-  py::class_<CategoricalCrossEntropyLoss, LossFunction>(
+  /*
+    The second template argument to py::class_ specifies the holder class,
+    which by default would be a std::unique_ptr.
+    See: https://pybind11.readthedocs.io/en/stable/advanced/smart_ptrs.html
+
+    The third template argument to py::class_ specifies the parent class if
+    there is a polymorphic relationship.
+    See: https://pybind11.readthedocs.io/en/stable/advanced/classes.html
+  */
+  py::class_<LossFunction, std::shared_ptr<LossFunction>>(  // NOLINT
+      bolt_submodule, "LossFunction", "Base class for all loss functions");
+
+  py::class_<CategoricalCrossEntropyLoss,
+             std::shared_ptr<CategoricalCrossEntropyLoss>, LossFunction>(
       bolt_submodule, "CategoricalCrossEntropyLoss",
       "A loss function for multi-class (one label per sample) classification "
       "tasks.")
       .def(py::init<>(), "Constructs a CategoricalCrossEntropyLoss object.");
 
-  py::class_<BinaryCrossEntropyLoss, LossFunction>(
+  py::class_<BinaryCrossEntropyLoss, std::shared_ptr<BinaryCrossEntropyLoss>,
+             LossFunction>(
       bolt_submodule, "BinaryCrossEntropyLoss",
       "A loss function for multi-label (multiple class labels per each sample) "
       "classification tasks.")
       .def(py::init<>(), "Constructs a BinaryCrossEntropyLoss object.");
 
-  py::class_<MeanSquaredError, LossFunction>(
+  py::class_<MeanSquaredError, std::shared_ptr<MeanSquaredError>, LossFunction>(
       bolt_submodule, "MeanSquaredError",
       "A loss function that minimizes mean squared error (MSE) for regression "
       "tasks. "
       "MSE = sum( (actual - prediction)^2 )")
       .def(py::init<>(), "Constructs a MeanSquaredError object.");
 
-  py::class_<WeightedMeanAbsolutePercentageErrorLoss, LossFunction>(
+  py::class_<WeightedMeanAbsolutePercentageErrorLoss,
+             std::shared_ptr<WeightedMeanAbsolutePercentageErrorLoss>,
+             LossFunction>(
       bolt_submodule, "WeightedMeanAbsolutePercentageError",
       "A loss function to minimize weighted mean absolute percentage error "
       "(WMAPE) "
@@ -143,7 +182,7 @@ void createBoltSubmodule(py::module_& module) {
            " * activation_function: String specifying the activation function "
            "to use, no restrictions on case - We support five activation "
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
-           " * load_factor: Float - The fraction of neurons to use during "
+           " * sparsity: Float - The fraction of neurons to use during "
            "sparse training "
            "and sparse inference. For example, sparsity=0.05 means the "
            "layer uses 5% of "
@@ -242,13 +281,12 @@ void createBoltSubmodule(py::module_& module) {
              network.buildNetworkSummary(summary);
              return summary.str();
            })
-      .def(
-          "summary", &PyNetwork::printSummary, py::arg("detailed") = false,
-          "Prints a summary of the network.\n"
-          "Arguments:\n"
-          " * detailed: boolean. Optional. When specified to \"True\", "
-          "summary will additionally print layer config details for each layer "
-          "in the network.")
+      .def("summary", &PyNetwork::printSummary, py::arg("detailed") = false,
+           "Prints a summary of the network.\n"
+           "Arguments:\n"
+           " * detailed: boolean. Optional. When specified to \"True\", "
+           "summary will additionally print sampling config details for each "
+           "layer in the network.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),
@@ -327,7 +365,8 @@ void createBoltSubmodule(py::module_& module) {
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
       .def("predict", &PyNetwork::predict, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("batch_size") = 0,
+           py::arg("test_labels"), py::arg("batch_size") = 2048,
+           py::arg("sparse_inference") = false,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -375,6 +414,9 @@ void createBoltSubmodule(py::module_& module) {
            "labels can be passed in as test_labels=None, in which case they "
            "will be ignored. If labels are not supplied then no metrics will "
            "be computed but activations will still be returned.\n"
+           " * sparse_inference: (Bool) - When this is true the model will use "
+           "sparsity in inference. This will lead to faster inference but can "
+           "cause a slight loss in accuracy. This option defaults to false.\n"
            " * metrics: List of str - Optional. The metrics to keep track of "
            "during training. "
            "See the section on metrics.\n"
@@ -388,12 +430,11 @@ void createBoltSubmodule(py::module_& module) {
            "their values "
            "and (1) output vectors (predictions) from the network in the form "
            "of a 2D Numpy matrix of floats.")
-      .def("enable_sparse_inference", &PyNetwork::enableSparseInference,
-           "Enables sparse inference. Freezes smart hash tables. Do not call "
-           "this method early on "
-           "in the training routine. It is recommended to call this method "
-           "right before the last training "
-           "epoch.")
+      .def("freeze_hash_tables", &PyNetwork::freezeHashTables,
+           "Freezes hash tables in the network. If you plan to use sparse "
+           "inference, you may get a significant performance improvement if "
+           "you call this one or two epochs before you finish training. "
+           "Otherwise you should not call this method.")
       .def("save_for_inference", &PyNetwork::saveForInference,
            py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
@@ -436,7 +477,22 @@ void createBoltSubmodule(py::module_& module) {
       .def("set_biases", &PyNetwork::setBiases, py::arg("layer_index"),
            py::arg("new_biases"),
            "Sets the bias array at the given layer index to the given 1D Numpy "
-           "array.");
+           "array.")
+      .def("set_layer_sparsity", &PyNetwork::setLayerSparsity,
+           py::arg("layer_index"), py::arg("sparsity"),
+           "Sets the sparsity of the layer at the given index. The 0th layer "
+           "is the first layer after the input layer. Note that this will "
+           "autotune the sampling config to work for the new sparsity.")
+      .def("get_layer_sparsity", &PyNetwork::getLayerSparsity,
+           py::arg("layer_index"),
+           "Gets the sparsity of the layer at the given index. The 0th layer "
+           "is the first layer after the input layer.")
+#if THIRDAI_EXPOSE_ALL
+      .def("get_sampling_config", &PyNetwork::getSamplingConfig,
+           py::arg("layer_index"),
+           "Returns the sampling config of the layer at layer_index.")
+#endif
+      ;
 
   py::class_<PyDLRM>(bolt_submodule, "DLRM",
                      "DLRM network with space-efficient embedding tables.")
@@ -501,7 +557,7 @@ void createBoltSubmodule(py::module_& module) {
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
       .def("predict", &PyDLRM::predict, py::arg("test_data"),
-           py::arg("test_labels"),
+           py::arg("test_labels"), py::arg("sparse_inference") = false,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -511,8 +567,10 @@ void createBoltSubmodule(py::module_& module) {
            " * test_data: ClickThroughDataset - Test data.\n"
            " * test_labels: BoltDataset - Testing labels.\n"
            " * metrics: List of str - Optional. The metrics to keep track of "
-           "during training. "
-           "See the section on metrics.\n"
+           "during training. See the section on metrics.\n"
+           " * sparse_inference: (Bool) - When this is true the model will use "
+           "sparsity in inference. This will lead to faster inference but can "
+           "cause a slight loss in accuracy. This option defaults to false.\n"
            " * verbose: Boolean - Optional. If set to False, only displays "
            "progress bar. "
            "If set to True, prints additional information such as metrics and "
@@ -561,6 +619,13 @@ void createBoltSubmodule(py::module_& module) {
           "Loads and builds a saved classifier from file.\n"
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
+
+  py::class_<SentimentClassifier>(bolt_submodule, "SentimentClassifier")
+      .def(py::init<const std::string&>(), py::arg("model_path"))
+      .def("predict_sentiment", &SentimentClassifier::predictSentiment,
+           py::arg("sentence"));
+
+  createBoltGraphSubmodule(bolt_submodule);
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {

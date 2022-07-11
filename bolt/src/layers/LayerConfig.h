@@ -2,8 +2,9 @@
 
 #include "LayerUtils.h"
 #include <cmath>
-#include <fstream>
+#include <exception>
 #include <iostream>
+#include <stdexcept>
 
 namespace thirdai::bolt {
 
@@ -33,6 +34,12 @@ struct SequentialLayerConfig {
 
  private:
   virtual void print(std::ostream& out) const = 0;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 using SequentialConfigList =
@@ -137,7 +144,8 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
     sampling_config = SamplingConfig(/* hashes_per_table = */ hashes_per_table,
                                      /* num_tables = */ num_tables,
                                      /* range_pow = */ range_pow,
-                                     /* reservoir_size = */ reservoir_size);
+                                     /* reservoir_size = */ reservoir_size,
+                                     /* _hash_function*/ "DWTA");
   }
 
   uint64_t getDim() const final { return dim; }
@@ -181,8 +189,20 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
       out << "hashes_per_table=" << sampling_config.hashes_per_table
           << ", num_tables=" << sampling_config.num_tables
           << ", range_pow=" << sampling_config.range_pow
-          << ", reservoir_size=" << sampling_config.reservoir_size << "}";
+          << ", reservoir_size=" << sampling_config.reservoir_size
+          << ", hash_function=" << getHashString(sampling_config._hash_function)
+          << "}";
     }
+  }
+
+  // Private constructor for cereal.
+  FullyConnectedLayerConfig() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<SequentialLayerConfig>(this), dim, sparsity,
+            act_func, sampling_config);
   }
 };
 
@@ -222,7 +242,7 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
       uint32_t k = rp / 3;
       uint32_t rs = (num_filters * 4) / (1 << rp);
       uint32_t l = sparsity < 0.1 ? 256 : 64;
-      sampling_config = SamplingConfig(k, l, rp, rs);
+      sampling_config = SamplingConfig(k, l, rp, rs, "DWTA");
     } else {
       sampling_config = SamplingConfig();
     }
@@ -262,7 +282,9 @@ struct ConvLayerConfig final : public SequentialLayerConfig {
       out << "hashes_per_table=" << sampling_config.hashes_per_table
           << ", num_tables=" << sampling_config.num_tables
           << ", range_pow=" << sampling_config.range_pow
-          << ", reservoir_size=" << sampling_config.reservoir_size << "}";
+          << ", reservoir_size=" << sampling_config.reservoir_size
+          << ", hash_function=" << getHashString(sampling_config._hash_function)
+          << "}";
     }
   }
 };
@@ -280,3 +302,5 @@ struct EmbeddingLayerConfig {
 };
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedLayerConfig)

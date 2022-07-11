@@ -2,6 +2,7 @@
 
 #include "CategoricalEncodingInterface.h"
 #include <dataset/src/blocks/BlockInterface.h>
+#include <charconv>
 
 namespace thirdai::dataset {
 
@@ -30,16 +31,16 @@ class ContiguousNumericId : public CategoricalEncoding {
    */
   explicit ContiguousNumericId(uint32_t dim) : _dim(dim) {}
 
-  void encodeCategory(const std::string& id,
+  void encodeCategory(const std::string_view id,
                       SegmentedFeatureVector& vec) final {
-    char* end;
-    uint32_t id_int = std::strtoul(id.c_str(), &end, 10);
+    uint32_t id_int{};
+    std::from_chars(id.data(), id.data() + id.size(), id_int);
     vec.addSparseFeatureToSegment(id_int % _dim, 1.0);
   };
 
-  bool isDense() final { return false; };
+  bool isDense() const final { return false; };
 
-  uint32_t featureDim() final { return _dim; };
+  uint32_t featureDim() const final { return _dim; };
 
  private:
   uint32_t _dim;

@@ -1,11 +1,15 @@
 #include "DatasetPython.h"
 #include <bolt/src/layers/BoltVector.h>
+#include <dataset/src/Dataset.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
+#include <dataset/src/encodings/text/CharKGram.h>
 #include <dataset/src/encodings/text/PairGram.h>
 #include <dataset/src/encodings/text/TextEncodingInterface.h>
 #include <dataset/src/encodings/text/TextEncodingUtils.h>
@@ -91,6 +95,18 @@ void createDatasetSubmodule(py::module_& module) {
       .def("feature_dim", &UniGram::featureDim,
            "The dimension of the encoding.");
 
+  py::class_<CharKGram, TextEncoding, std::shared_ptr<CharKGram>>(
+      text_encoding_submodule, "CharKGram",
+      "Encodes a sentence as a weighted set of character trigrams.")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("k"),
+           py::arg("dim") = TextEncodingUtils::DEFAULT_TEXT_ENCODING_DIM,
+           "Constructor. Accepts k (the number of characters in each token) "
+           "and dimension of the encoding.")
+      .def("is_dense", &CharKGram::isDense,
+           "Returns False since this is a sparse encoding.")
+      .def("feature_dim", &CharKGram::featureDim,
+           "The dimension of the encoding.");
+
   py::class_<CategoricalEncoding, std::shared_ptr<CategoricalEncoding>>(
       internal_dataset_submodule, "CategoricalEncoding",
       "Interface for categorical feature encoders.")
@@ -168,6 +184,16 @@ void createDatasetSubmodule(py::module_& module) {
       .def("is_dense", &CategoricalBlock::isDense,
            "True if the block produces dense features, False otherwise.");
 
+  py::class_<DenseArrayBlock, Block, std::shared_ptr<DenseArrayBlock>>(
+      block_submodule, "DenseArray",
+      "Parses a contiguous set of columns as a dense vector segment.")
+      .def(py::init<uint32_t, uint32_t>(), py::arg("start_col"), py::arg("dim"),
+           "Constructor")
+      .def("feature_dim", &DenseArrayBlock::featureDim,
+           "Returns the dimension of the vector encoding.")
+      .def("is_dense", &DenseArrayBlock::isDense,
+           "Returns true since this is a dense encoding.");
+
   py::class_<MockBlock, Block, std::shared_ptr<MockBlock>>(
       internal_dataset_submodule, "MockBlock",
       "Mock implementation of block abstract class for testing purposes.")
@@ -197,11 +223,12 @@ void createDatasetSubmodule(py::module_& module) {
           "as target vectors.\n"
           " * output_batch_size: Int (positive) - Size of batches in the "
           "produced dataset.\n"
-          " * est_num_elems: Int (Optional, positive) - Estimated number of "
-          "samples. This speeds up the loading process by allowing the data "
-          "loader to preallocate memory. If the actual number of samples "
-          "turns out to be greater than the estimate, then the loader will "
-          "automatically allocate more memory as needed.")
+          " * est_num_elems: Int (positive) - Estimated number of samples. "
+          "This "
+          "speeds up the loading process by allowing the data loader to "
+          "preallocate memory. If the actual number of samples turns out to be "
+          "greater than the estimate, then the loader will automatically "
+          "allocate more memory as needed.")
       .def("process_batch", &PyBlockBatchProcessor::processBatchPython,
            py::arg("row_batch"),
            "Consumes a batch of input samples and encodes them as vectors.\n\n"
@@ -222,6 +249,20 @@ void createDatasetSubmodule(py::module_& module) {
            " * shuffle_seed: Int (Optional) - The seed for the RNG for "
            "shuffling the "
            "dataset.");
+
+  py::class_<StreamingGenericDatasetLoader>(dataset_submodule, "DataPipeline")
+      .def(
+          py::init<std::string, std::vector<std::shared_ptr<Block>>,
+                   std::vector<std::shared_ptr<Block>>, uint32_t, bool, char>(),
+          py::arg("filename"), py::arg("input_blocks"), py::arg("label_blocks"),
+          py::arg("batch_size"), py::arg("has_header") = false,
+          py::arg("delimiter") = ',')
+      .def("next_batch", &StreamingGenericDatasetLoader::nextBatch)
+      .def("load_in_memory", &StreamingGenericDatasetLoader::loadInMemory)
+      .def("get_max_batch_size",
+           &StreamingGenericDatasetLoader::getMaxBatchSize)
+      .def("get_input_dim", &StreamingGenericDatasetLoader::getInputDim)
+      .def("get_label_dim", &StreamingGenericDatasetLoader::getLabelDim);
 
   dataset_submodule.def("load_svm_dataset", &loadSVMDataset,
                         py::arg("filename"), py::arg("batch_size"));
@@ -272,10 +313,26 @@ void createDatasetSubmodule(py::module_& module) {
       "Returns a tuple containing a ClickthroughDataset to store the data "
       "itself, and a BoltDataset storing the labels.");
 
-  // The no lint below is because clang tidy doesn't like instantiating an
-  // object without a name and never using it.
-  py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule,  // NOLINT
-                                          "BoltDataset");
+  py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule, "BoltDataset")
+      .def("get",
+           static_cast<bolt::BoltBatch& (BoltDataset::*)(uint32_t i)>(
+               &BoltDataset::at),
+           py::arg("i"), py::return_value_policy::reference)
+      .def("__getitem__",
+           static_cast<bolt::BoltBatch& (BoltDataset::*)(uint32_t i)>(
+               &BoltDataset::at),
+           py::arg("i"), py::return_value_policy::reference);
+
+  py::class_<bolt::BoltBatch>(dataset_submodule, "BoltBatch")
+      .def("size", &bolt::BoltBatch::getBatchSize)
+      .def("get",
+           static_cast<BoltVector& (bolt::BoltBatch::*)(size_t i)>(
+               &bolt::BoltBatch::operator[]),
+           py::arg("i"), py::return_value_policy::reference)
+      .def("__getitem__",
+           static_cast<BoltVector& (bolt::BoltBatch::*)(size_t i)>(
+               &bolt::BoltBatch::operator[]),
+           py::arg("i"), py::return_value_policy::reference);
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
@@ -721,9 +778,8 @@ BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
   return std::make_shared<BoltDataset>(std::move(batches), num_labels);
 }
 
-std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
-parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
-                           uint32_t dimension) {
+std::unordered_map<uint32_t, uint32_t> parseSentenceToUnigrams(
+    const std::string& sentence, uint32_t seed, uint32_t dimension) {
   std::stringstream ss(sentence);
   std::istream_iterator<std::string> begin(ss);
   std::istream_iterator<std::string> end;
@@ -741,6 +797,31 @@ parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
       idx_to_val_map[hash]++;
     }
   }
+
+  return idx_to_val_map;
+}
+
+BoltVector parseSentenceToBoltVector(const std::string& sentence, uint32_t seed,
+                                     uint32_t dimension) {
+  std::unordered_map<uint32_t, uint32_t> idx_to_val_map =
+      parseSentenceToUnigrams(sentence, seed, dimension);
+
+  BoltVector vec(idx_to_val_map.size(), false, false);
+  uint32_t i = 0;
+  for (auto [index, value] : idx_to_val_map) {
+    vec.active_neurons[i] = index;
+    vec.activations[i] = value;
+    i++;
+  }
+
+  return vec;
+}
+
+std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
+parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
+                           uint32_t dimension) {
+  std::unordered_map<uint32_t, uint32_t> idx_to_val_map =
+      parseSentenceToUnigrams(sentence, seed, dimension);
 
   auto result = py::array_t<uint32_t>(idx_to_val_map.size());
   py::buffer_info indx_buf = result.request();

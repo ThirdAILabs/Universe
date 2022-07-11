@@ -16,7 +16,6 @@ ConvLayer::ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
       _sparsity(config.sparsity),
       _act_func(config.act_func),
       _sampling_config(config.sampling_config),
-      _force_sparse_for_inference(false),
       _num_filters(config.num_filters),
       _num_sparse_filters(config.num_filters * config.sparsity),
       _num_patches(config.num_patches),
@@ -331,7 +330,7 @@ void ConvLayer::updateParameters(float lr, uint32_t iter, float B1, float B2,
 }
 
 void ConvLayer::reBuildHashFunction() {
-  if (_sparsity >= 1.0 || _force_sparse_for_inference) {
+  if (_sparsity >= 1.0) {
     return;
   }
   _hasher = std::make_unique<hashing::DWTAHashFunction>(
@@ -340,7 +339,7 @@ void ConvLayer::reBuildHashFunction() {
 }
 
 void ConvLayer::buildHashTables() {
-  if (_sparsity >= 1.0 || _force_sparse_for_inference) {
+  if (_sparsity >= 1.0) {
     return;
   }
   uint64_t num_tables = _hash_table->numTables();
@@ -355,21 +354,14 @@ void ConvLayer::buildHashTables() {
   _hash_table->insertSequential(_num_filters, 0, hashes.data());
 }
 
-void ConvLayer::shuffleRandNeurons() {
-  if (_sparsity < 1.0 && !_force_sparse_for_inference) {
-    std::shuffle(_rand_neurons.begin(), _rand_neurons.end(),
-                 std::random_device{});
-  }
-}
-
-float* ConvLayer::getWeights() {
+float* ConvLayer::getWeights() const {
   float* weights_copy = new float[_dim * _prev_dim];
   std::copy(_weights.begin(), _weights.end(), weights_copy);
 
   return weights_copy;
 }
 
-float* ConvLayer::getBiases() {
+float* ConvLayer::getBiases() const {
   float* biases_copy = new float[_dim];
   std::copy(_biases.begin(), _biases.end(), biases_copy);
 
@@ -382,7 +374,7 @@ void ConvLayer::setTrainable(bool trainable) {
       "setTrainable not implemented for ConvLayer");
 }
 
-bool ConvLayer::getTrainable() {
+bool ConvLayer::getTrainable() const {
   throw thirdai::exceptions::NotImplemented(
       "getTrainable not implemented for ConvLayer");
 }

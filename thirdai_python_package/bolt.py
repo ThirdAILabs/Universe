@@ -6,9 +6,13 @@ import thirdai._callbacks.callbacks
 from thirdai._callbacks import callbacks
 from thirdai._callbacks.callbacks import *
 
+import thirdai._bolt_datastructures
+from thirdai._bolt_datastructures import *
+
 __all__ = []
 __all__.extend(dir(thirdai._thirdai.bolt))
 __all__.extend(dir(thirdai._callbacks.callbacks))
+__all__.extend(dir(thirdai._bolt_datastructures))
 
 
 class Network(thirdai._thirdai.bolt.Network):
@@ -77,3 +81,4 @@ class Network(thirdai._thirdai.bolt.Network):
                 stop_flag, lr = callback.callback(epoch, lr, epoch_metrics)
 
         return training_history
+

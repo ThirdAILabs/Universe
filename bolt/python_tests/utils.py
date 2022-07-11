@@ -16,14 +16,17 @@ def build_sparse_hidden_layer_classifier(input_dim, sparse_dim, output_dim, spar
     return network
 
 
-# generates easy training data
-def gen_training_data(n_classes=10, n_samples=1000):
+# Generates easy training data: the ground truth function is f(x_i) = i, where
+# x_i is the one hot encoding of i. Thus the input and output dimension are both
+# n_classes. We randomize the order of the (x_i, i) example and label pairs
+# we return, and also add some normal noise to the examples.
+def gen_training_data(n_classes=10, n_samples=1000, noise_std=0.1):
     possible_one_hot_encodings = np.eye(n_classes)
     labels = np.random.choice(n_classes, size=n_samples)
     examples = possible_one_hot_encodings[labels]
-    noise = np.random.normal(0, 0.1, examples.shape)
+    noise = np.random.normal(0, noise_std, examples.shape)
     examples = examples + noise
-    return labels, examples, n_classes
+    return examples.astype("float32"), labels.astype("uint32")
 
 
 # training the model
@@ -43,22 +46,59 @@ def train_network(network, train_data, train_labels, epochs, learning_rate=0.000
     return times
 
 
-def get_categorical_acc(network, examples, labels, batch_size):
+def get_categorical_acc(network, examples, labels, batch_size=64):
     acc, _ = network.predict(
-        examples, labels, batch_size, ["categorical_accuracy"], verbose=False
+        examples, labels, batch_size, metrics=["categorical_accuracy"], verbose=False
     )
     return acc["categorical_accuracy"]
 
 
-# Returns a single layer (no hidden layer) bolt network with input_dim = output_dim and 50% sparsity.
-def gen_network(n_classes):
+# Returns a single layer (no hidden layer) bolt network with
+# input_dim = output_dim, 50% sparsity by default, and a Softmax activation
+# function.
+def gen_single_sparse_layer_network(n_classes, sparsity=0.5):
 
     layers = [
         bolt.FullyConnected(
             dim=n_classes,
-            sparsity=0.5,
+            sparsity=sparsity,
             activation_function="Softmax",
         ),
     ]
     network = bolt.Network(layers=layers, input_dim=n_classes)
     return network
+
+
+def get_simple_concat_model(
+    hidden_layer_top_dim,
+    hidden_layer_bottom_dim,
+    hidden_layer_top_sparsity,
+    hidden_layer_bottom_sparsity,
+    num_classes,
+):
+
+    input_layer = bolt.graph.Input(dim=num_classes)
+
+    hidden_layer_top = bolt.graph.FullyConnected(
+        dim=hidden_layer_top_dim,
+        sparsity=hidden_layer_top_sparsity,
+        activation="relu",
+    )(input_layer)
+
+    hidden_layer_bottom = bolt.graph.FullyConnected(
+        dim=hidden_layer_bottom_dim,
+        sparsity=hidden_layer_bottom_sparsity,
+        activation="relu",
+    )(input_layer)
+
+    concate_layer = bolt.graph.Concatenate()([hidden_layer_top, hidden_layer_bottom])
+
+    output_layer = bolt.graph.FullyConnected(dim=num_classes, activation="softmax")(
+        concate_layer
+    )
+
+    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+
+    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+
+    return model

@@ -25,14 +25,14 @@ TEST(MetricTest, CategoricalAccuracy) {
         BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 1.0, 0.0});
 
     // Check correct value is computed for each sample
-    single.processSample(a, l_a);
+    single.computeMetric(a, l_a);
     ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 1.0);
-    single.processSample(b, l_b);
+    single.computeMetric(b, l_b);
     ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.0);
 
     // Accumulate in overall metric
-    metric.processSample(a, l_a);
-    metric.processSample(b, l_b);
+    metric.computeMetric(a, l_a);
+    metric.computeMetric(b, l_b);
   }
 
   {  // Dense outputs, sparse labels
@@ -46,14 +46,14 @@ TEST(MetricTest, CategoricalAccuracy) {
         BoltVector::makeSparseVector({0, 1, 4, 5}, {1.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
-    single.processSample(a, l_a);
+    single.computeMetric(a, l_a);
     ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 1.0);
-    single.processSample(b, l_b);
+    single.computeMetric(b, l_b);
     ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.0);
 
     // Accumulate in overall metric
-    metric.processSample(a, l_a);
-    metric.processSample(b, l_b);
+    metric.computeMetric(a, l_a);
+    metric.computeMetric(b, l_b);
   }
 
   {  // Sparse outputs, dense labels
@@ -69,14 +69,14 @@ TEST(MetricTest, CategoricalAccuracy) {
         BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 1.0, 0.0});
 
     // Check correct value is computed for each sample
-    single.processSample(a, l_a);
+    single.computeMetric(a, l_a);
     ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 1.0);
-    single.processSample(b, l_b);
+    single.computeMetric(b, l_b);
     ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.0);
 
     // Accumulate in overall metric
-    metric.processSample(a, l_a);
-    metric.processSample(b, l_b);
+    metric.computeMetric(a, l_a);
+    metric.computeMetric(b, l_b);
   }
 
   {  // Sparse outputs, sparse labels
@@ -92,14 +92,14 @@ TEST(MetricTest, CategoricalAccuracy) {
         BoltVector::makeSparseVector({0, 1, 4, 5}, {1.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
-    single.processSample(a, l_a);
+    single.computeMetric(a, l_a);
     ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 1.0);
-    single.processSample(b, l_b);
+    single.computeMetric(b, l_b);
     ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.0);
 
     // Accumulate in overall metric
-    metric.processSample(a, l_a);
-    metric.processSample(b, l_b);
+    metric.computeMetric(a, l_a);
+    metric.computeMetric(b, l_b);
   }
 
   ASSERT_DOUBLE_EQ(metric.getMetricAndReset(false), 0.5);
@@ -135,14 +135,14 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorCorrectCalculation) {
         BoltVector::makeDenseVector({4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
-    single.processSample(dense_pred_1, dense_truth);
+    single.computeMetric(dense_pred_1, dense_truth);
     ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.5);
-    single.processSample(dense_pred_2, dense_truth);
+    single.computeMetric(dense_pred_2, dense_truth);
     ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.5);
 
     // Accumulate in overall metric
-    metric.processSample(dense_pred_1, dense_truth);
-    metric.processSample(dense_pred_2, dense_truth);
+    metric.computeMetric(dense_pred_1, dense_truth);
+    metric.computeMetric(dense_pred_2, dense_truth);
   }
 
   {  // Dense outputs, sparse labels
@@ -162,14 +162,14 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorCorrectCalculation) {
                                      {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
-    single.processSample(dense_pred_1, sparse_truth_same_nonzero_neurons);
+    single.computeMetric(dense_pred_1, sparse_truth_same_nonzero_neurons);
     ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.5);
-    single.processSample(dense_pred_2, sparse_truth_different_nonzero_neurons);
+    single.computeMetric(dense_pred_2, sparse_truth_different_nonzero_neurons);
     ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.5);
 
     // Accumulate in overall metric
-    metric.processSample(dense_pred_1, sparse_truth_same_nonzero_neurons);
-    metric.processSample(dense_pred_2, sparse_truth_different_nonzero_neurons);
+    metric.computeMetric(dense_pred_1, sparse_truth_same_nonzero_neurons);
+    metric.computeMetric(dense_pred_2, sparse_truth_different_nonzero_neurons);
   }
 
   {  // Sparse outputs, dense labels
@@ -189,14 +189,14 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorCorrectCalculation) {
             {4.0, 3.0, 0.0, 6.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0});
 
     // Check correct value is computed for each sample
-    single.processSample(sparse_pred_1, dense_truth_same_nonzero_neurons);
+    single.computeMetric(sparse_pred_1, dense_truth_same_nonzero_neurons);
     ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.5);
-    single.processSample(sparse_pred_2, dense_truth_different_nonzero_neurons);
+    single.computeMetric(sparse_pred_2, dense_truth_different_nonzero_neurons);
     ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.5);
 
     // Accumulate in overall metric
-    metric.processSample(sparse_pred_1, dense_truth_same_nonzero_neurons);
-    metric.processSample(sparse_pred_2, dense_truth_different_nonzero_neurons);
+    metric.computeMetric(sparse_pred_1, dense_truth_same_nonzero_neurons);
+    metric.computeMetric(sparse_pred_2, dense_truth_different_nonzero_neurons);
   }
 
   {  // Sparse outputs, sparse labels
@@ -216,14 +216,14 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorCorrectCalculation) {
                                      {4.0, 3.0, 6.0, 1.0, 1.0, 1.0});
 
     // Check correct value is computed for each sample
-    single.processSample(sparse_pred_1, sparse_truth_same_nonzero_neurons);
+    single.computeMetric(sparse_pred_1, sparse_truth_same_nonzero_neurons);
     ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.5);
-    single.processSample(sparse_pred_2, sparse_truth_different_nonzero_neurons);
+    single.computeMetric(sparse_pred_2, sparse_truth_different_nonzero_neurons);
     ASSERT_DOUBLE_EQ(single.getMetricAndReset(false), 0.5);
 
     // Accumulate in overall metric
-    metric.processSample(sparse_pred_1, sparse_truth_same_nonzero_neurons);
-    metric.processSample(sparse_pred_2, sparse_truth_different_nonzero_neurons);
+    metric.computeMetric(sparse_pred_1, sparse_truth_same_nonzero_neurons);
+    metric.computeMetric(sparse_pred_2, sparse_truth_different_nonzero_neurons);
   }
 
   ASSERT_DOUBLE_EQ(metric.getMetricAndReset(false), 0.5);
@@ -263,7 +263,7 @@ TEST(MetricTest, WeightedMeanAbsolutePercentageErrorParallel) {
     BoltVector pred = BoltVector::makeDenseVector({predictions[i]});
     BoltVector truth = BoltVector::makeDenseVector({truths[i]});
 
-    metric.processSample(pred, truth);
+    metric.computeMetric(pred, truth);
   }
 
   // When aggregating in parallel, the summing order is different

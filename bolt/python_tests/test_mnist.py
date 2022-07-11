@@ -6,7 +6,7 @@ pytestmark = [pytest.mark.integration]
 import os
 from thirdai import bolt, dataset
 import numpy as np
-from utils import train_network, build_sparse_hidden_layer_classifier
+from .utils import train_network, build_sparse_hidden_layer_classifier
 
 LEARNING_RATE = 0.0001
 
@@ -124,12 +124,16 @@ def test_mnist_sparse_inference():
 
     assert dense_predict["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
-    network.enable_sparse_inference()
+    network.freeze_hash_tables()
 
     train_network(network, train_x, train_y, epochs=1)
 
     sparse_predict, _ = network.predict(
-        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
+        test_x,
+        test_y,
+        sparse_inference=True,
+        metrics=["categorical_accuracy"],
+        verbose=False,
     )
 
     assert sparse_predict["categorical_accuracy"] >= SPARSE_INFERENCE_ACCURACY_THRESHOLD
@@ -159,12 +163,16 @@ def test_sparse_inference_with_sparse_output():
 
     assert dense_predict["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
-    network.enable_sparse_inference()
+    network.freeze_hash_tables()
 
     train_network(network, train_x, train_y, epochs=1)
 
     sparse_predict, active_neurons, activations = network.predict(
-        test_x, test_y, metrics=["categorical_accuracy"], verbose=False
+        test_x,
+        test_y,
+        sparse_inference=True,
+        metrics=["categorical_accuracy"],
+        verbose=False,
     )
 
     assert (
