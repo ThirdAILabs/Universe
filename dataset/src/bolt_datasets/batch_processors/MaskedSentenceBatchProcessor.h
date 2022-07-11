@@ -25,7 +25,9 @@ class MaskedSentenceBatchProcessor final
     std::vector<std::vector<uint32_t>> masked_indices(rows.size());
     std::vector<bolt::BoltVector> labels(rows.size());
 
-    for (uint32_t i = 0; i < rows.size(); i++) {  // NOLINT
+#pragma omp parallel for default(none) \
+    shared(rows, vectors, masked_indices, labels)
+    for (uint32_t i = 0; i < rows.size(); i++) {
       auto [vec, index, label] = processRow(rows[i]);
       vectors[i] = std::move(vec);
       masked_indices[i] = {index};

@@ -5,6 +5,7 @@
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <dataset/src/batch_types/MaskedSentenceBatch.h>
 
 namespace thirdai::bolt::python {
 
@@ -166,6 +167,12 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "parameters. See the PredictConfig documentation above.\n\n"
 
            "Returns a  a mapping from metric names to their values.")
+      .def("train", &BoltGraph::train<dataset::MaskedSentenceBatch>,
+           py::arg("train_data"), py::arg("train_labels"),
+           py::arg("train_config"))
+      .def("predict", &BoltGraph::predict<dataset::MaskedSentenceBatch>,
+           py::arg("test_data"), py::arg("test_labels"),
+           py::arg("predict_config"))
       .def("save", &BoltGraph::save, py::arg("filename"))
       .def_static("load", &BoltGraph::load, py::arg("filename"))
       .def("__str__",
