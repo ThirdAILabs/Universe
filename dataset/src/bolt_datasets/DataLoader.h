@@ -42,7 +42,7 @@ class SimpleFileDataLoader final : public DataLoader {
     std::vector<std::string> lines;
     std::string line;
     while (lines.size() < _target_batch_size && std::getline(_file, line)) {
-      if (line != "") {
+      if (!line.empty()) {
         lines.push_back(std::move(line));
       }
     }

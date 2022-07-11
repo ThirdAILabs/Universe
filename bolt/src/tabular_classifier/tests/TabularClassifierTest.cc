@@ -104,7 +104,7 @@ TEST_F(TabularClassifierTestFixture, TestEmptyColumns) {
  */
 TEST_F(TabularClassifierTestFixture, TestFailureOnNewTestLabel) {
   std::shared_ptr<bolt::TabularClassifier> tab_model =
-      std::make_shared<TabularClassifier>("small", 1);
+      std::make_shared<TabularClassifier>("small", 2);
   std::vector<std::string> train_contents = {"value1,label1", "value2,label2"};
   setTempFileContents(train_contents);
   std::vector<std::string> column_datatypes = {"categorical", "label"};

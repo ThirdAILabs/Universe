@@ -40,15 +40,15 @@ class TabularClassifier {
   }
 
  private:
-  void setTabularMetadata(const std::string& filename,
-                          std::vector<std::string>& column_datatypes,
-                          uint32_t batch_size = 256) {
+  std::shared_ptr<dataset::TabularMetadata> setTabularMetadata(
+      const std::string& filename, std::vector<std::string>& column_datatypes,
+      uint32_t batch_size = 256) {
     std::shared_ptr<dataset::DataLoader> data_loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
 
     std::shared_ptr<dataset::TabularMetadataProcessor> batch_processor =
-        std::make_shared<dataset::TabularMetadataProcessor>(column_datatypes,
-                                                            _n_classes);
+        std::make_shared<dataset::TabularMetadataProcessor>(
+            column_datatypes, _model->getOutputDim());
 
     // TabularMetadataProcessor inherets ComputeBatchProcessor so this doesn't
     // produce any vectors
@@ -56,7 +56,21 @@ class TabularClassifier {
                                                            batch_processor)
         ->loadInMemory();
 
-    _metadata = batch_processor->getMetadata();
+    return batch_processor->getMetadata();
+  }
+
+  std::shared_ptr<dataset::GenericBatchProcessor> makeTabularBatchProcessor() {
+    std::vector<std::shared_ptr<dataset::Block>> input_blocks = {
+        std::make_shared<dataset::TabularPairGram>(_metadata,
+                                                   _model->getInputDim())};
+    std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
+        std::make_shared<dataset::CategoricalBlock>(
+            _metadata->getLabelCol(), std::make_shared<dataset::UidMapEncoding>(
+                                          _metadata->getClassToIdMap()))};
+
+    return std::make_shared<dataset::GenericBatchProcessor>(
+        /* input_blocks */ input_blocks,
+        /* target_blocks */ target_blocks);
   }
 
   std::shared_ptr<dataset::StreamingDataset<BoltBatch>> loadStreamingDataset(
@@ -65,7 +79,8 @@ class TabularClassifier {
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
 
     std::vector<std::shared_ptr<dataset::Block>> input_blocks = {
-        std::make_shared<dataset::TabularPairGram>(_metadata, _input_dim)};
+        std::make_shared<dataset::TabularPairGram>(_metadata,
+                                                   _model->getInputDim())};
     std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
         std::make_shared<dataset::CategoricalBlock>(
             _metadata->getLabelCol(), std::make_shared<dataset::UidMapEncoding>(
@@ -87,13 +102,11 @@ class TabularClassifier {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_input_dim, _metadata, _model);
+    archive(_metadata, _model);
   }
 
-  uint32_t _input_dim;
-  uint32_t _n_classes;
   std::shared_ptr<dataset::TabularMetadata> _metadata;
-  std::unique_ptr<FullyConnectedNetwork> _model;
-};  // namespace thirdai::bolt
+  std::shared_ptr<FullyConnectedNetwork> _model;
+};
 
 }  // namespace thirdai::bolt

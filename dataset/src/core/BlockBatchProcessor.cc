@@ -163,6 +163,7 @@ bolt::BoltVector BlockBatchProcessor::makeVector(
     vec_ptr = std::make_shared<SegmentedSparseFeatureVector>();
   }
 
+  std::string block_exception_message;
   // Let each block encode the input sample and adds a new segment
   // containing this encoding to the vector.
   for (auto& block : blocks) {
@@ -170,9 +171,11 @@ bolt::BoltVector BlockBatchProcessor::makeVector(
     for (uint32_t i = 0; i < sample.size(); i++) {
       sample_view[i] = std::string_view(sample[i].c_str(), sample[i].size());
     }
-    block->addVectorSegment(sample_view, *vec_ptr);
+    block->addVectorSegment(sample_view, *vec_ptr, block_exception_message);
   }
-
+  if (!block_exception_message.empty()) {
+    throw std::invalid_argument(block_exception_message);
+  }
   return vec_ptr->toBoltVector();
 }
 }  // namespace thirdai::dataset

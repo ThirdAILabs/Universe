@@ -63,8 +63,8 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     std::atomic_bool found_error = false;
     std::string block_exception_message;
 
-#pragma omp parallel for default(none) \
-    shared(rows, batch_inputs, batch_labels, found_error)
+#pragma omp parallel for default(none) shared( \
+    rows, batch_inputs, batch_labels, found_error, block_exception_message)
     for (size_t i = 0; i < rows.size(); ++i) {
       auto columns = parseCsvRow(rows[i], _delimiter);
       if (columns.size() < _expected_num_cols) {
@@ -75,6 +75,10 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
                                    block_exception_message);
       batch_labels[i] = makeVector(columns, _label_blocks, _label_blocks_dense,
                                    block_exception_message);
+    }
+
+    if (!block_exception_message.empty()) {
+      throw std::invalid_argument(block_exception_message);
     }
 
     /*

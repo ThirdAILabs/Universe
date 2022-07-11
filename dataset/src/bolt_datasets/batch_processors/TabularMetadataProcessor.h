@@ -29,6 +29,8 @@ class TabularMetadata {
 
   uint32_t getLabelCol() const { return _label_col_index; }
 
+  std::vector<std::string> getClassIdToNames() { return _class_id_to_class; }
+
   std::unordered_map<std::string, uint32_t> getClassToIdMap() {
     return _class_to_class_id;
   }
@@ -36,7 +38,7 @@ class TabularMetadata {
   std::string getColBin(uint32_t col, const std::string& str_val,
                         std::string& block_exception_message) {
     // map empty values to their own bin
-    if (str_val == "") {
+    if (str_val.empty()) {
       return std::to_string(_num_non_empty_bins);
     }
     try {
@@ -51,6 +53,12 @@ class TabularMetadata {
       block_exception_message =
           "Could not process column " + std::to_string(col) +
           " as type 'numeric.' Received value: '" + str_val + ".'";
+
+      // Since we have set the block exception message above, the program will
+      // fail once all threads finish. Since we can't throw an exception within
+      // a pragma thread, we just have to keep the program running until then.
+      // Thus we return some arbitrary value to do that.
+      return "0";
     }
   }
 
@@ -88,8 +96,8 @@ class TabularMetadata {
             _class_id_to_class);
   }
 
-  uint32_t _num_non_empty_bins =
-      10;  // one additional bin is reserved for empty values
+  // one additional bin is reserved for empty values
+  uint32_t _num_non_empty_bins = 10;
   uint32_t _label_col_index;
   uint32_t _max_salt_len;
   std::vector<TabularDataType> _column_dtypes;

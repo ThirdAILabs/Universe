@@ -39,9 +39,7 @@ class TextClassificationProcessor final : public UnaryBoltBatchProcessor {
     }
   }
 
-  std::string getClassName(uint32_t class_id) const {
-    return _class_id_to_class.at(class_id);
-  }
+  std::vector<std::string> getClassIdToNames() { return _class_id_to_class; }
 
  protected:
   std::pair<bolt::BoltVector, bolt::BoltVector> processRow(
