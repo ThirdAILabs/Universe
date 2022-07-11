@@ -6,16 +6,16 @@
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <sys/types.h>
 #include <charconv>
+#include <chrono>
 #include <cstdlib>
 #include <limits>
 #include <map>
 #include <memory>
+#include <random>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <random>
-#include <chrono>
 
 namespace thirdai::dataset {
 
@@ -223,7 +223,8 @@ TEST_F(CategoricalBlockTest, StringToUidMapParallel) {
     }
   }
 
-  std::shuffle(mock_data.begin(), mock_data.end(), std::default_random_engine(0));
+  std::shuffle(mock_data.begin(), mock_data.end(),
+               std::default_random_engine(0));
 
   std::vector<SegmentedSparseFeatureVector> vecs(mock_data.size());
   auto map_encoding = std::make_shared<StringToUidMap>(n_classes);
@@ -235,9 +236,11 @@ TEST_F(CategoricalBlockTest, StringToUidMapParallel) {
     addVectorSegmentWithBlock(block, mock_data[i], vecs[i]);
   }
   auto end = std::chrono::high_resolution_clock::now();
-  std::cout << "TOOK " << std::chrono::duration_cast<std::chrono::milliseconds>(
-                          end - start)
-                          .count() << " MILLISECONDS" << std::endl;
+  std::cout << "TOOK "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(end -
+                                                                     start)
+                   .count()
+            << " MILLISECONDS" << std::endl;
 
   map_encoding->printMap();
 
