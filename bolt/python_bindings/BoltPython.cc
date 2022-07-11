@@ -1,4 +1,6 @@
 #include "BoltPython.h"
+#include <bolt/src/auto_classifiers/TabularClassifier.h>
+#include <bolt/src/auto_classifiers/TextClassifier.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -7,8 +9,6 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
-#include <bolt/src/tabular_classifier/TabularClassifier.h>
-#include <bolt/src/text_classifier/TextClassifier.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>

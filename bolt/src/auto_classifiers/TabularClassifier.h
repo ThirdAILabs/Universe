@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cereal/archives/binary.hpp>
+#include "AutoTuneUtils.h"
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/TabularBlocks.h>
@@ -13,14 +14,51 @@ namespace thirdai::bolt {
 
 class TabularClassifier {
  public:
-  TabularClassifier(const std::string& model_size, uint32_t n_classes);
+  TabularClassifier(const std::string& model_size, uint32_t n_classes) {
+    _model = AutoTuneUtils::createClassifierModel(/* input_dim */ 100000,
+                                                  /* n_classes */ n_classes,
+                                                  model_size);
+    _metadata = nullptr;
+  }
 
   void train(const std::string& filename,
              std::vector<std::string>& column_datatypes, uint32_t epochs,
-             float learning_rate);
+             float learning_rate) {
+    if (_metadata) {
+      std::cout << "Note: Metadata from the training dataset is used for "
+                   "predictions on future test data. Calling train(..) again "
+                   "resets this metadata."
+                << std::endl;
+    }
+    _metadata = setTabularMetadata(filename, column_datatypes);
+
+    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
+        makeTabularBatchProcessor();
+
+    AutoTuneUtils::train(
+        _model, filename,
+        std::static_pointer_cast<dataset::BatchProcessor<BoltBatch>>(
+            batch_processor),
+        /* epochs */ epochs,
+        /* learning_rate */ learning_rate);
+  }
 
   void predict(const std::string& filename,
-               const std::optional<std::string>& output_filename);
+               const std::optional<std::string>& output_filename) {
+    if (!_metadata) {
+      throw std::invalid_argument(
+          "Cannot call predict(..) without calling train(..) first.");
+    }
+
+    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
+        makeTabularBatchProcessor();
+
+    AutoTuneUtils::predict(
+        _model, filename,
+        std::static_pointer_cast<dataset::BatchProcessor<BoltBatch>>(
+            batch_processor),
+        output_filename, _metadata->getClassIdToNames());
+  }
 
   void save(const std::string& filename) {
     std::ofstream filestream =

@@ -1,4 +1,4 @@
-#include <bolt/src/tabular_classifier/TabularClassifier.h>
+#include <bolt/src/auto_classifiers/TabularClassifier.h>
 #include <gtest/gtest.h>
 
 namespace thirdai::bolt {
