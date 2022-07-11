@@ -37,6 +37,12 @@ class EmbeddingLayer {
 
   void buildLayerSummary(std::stringstream& summary) const;
 
+  void removeOptimizer() {
+    _gradients.clear();
+    _momentum.clear();
+    _velocity.clear();
+  }
+
   EmbeddingLayer(const EmbeddingLayer&) = delete;
   EmbeddingLayer(EmbeddingLayer&&) = delete;
   EmbeddingLayer& operator=(const EmbeddingLayer&) = delete;

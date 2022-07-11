@@ -3,6 +3,7 @@
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include "GraphPropertyChecks.h"
+#include "InferenceGraph.h"
 #include "nodes/FullyConnected.h"
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/Input.h>
@@ -503,6 +504,27 @@ void BoltGraph::save(const std::string& filename) {
       dataset::SafeFileIO::ofstream(filename, std::ios::binary);
   cereal::BinaryOutputArchive oarchive(filestream);
   oarchive(*this);
+}
+
+void BoltGraph::saveForInference(const std::string& filename) {
+  if (!graphCompiled()) {
+    throw exceptions::NodeStateMachineError(
+        "Cannot call saveForInference on a graph that is not compiled.");
+  }
+
+  for (auto& node : _nodes) {
+    node->removeOptimizer();
+  }
+
+  InferenceGraph inference_model(shared_from_this());
+
+  std::ofstream filestream =
+      dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+  cereal::BinaryOutputArchive oarchive(filestream);
+  oarchive(inference_model);
+
+  // TODO(Nicholas): either restore gradients after save or make sure model is
+  // invalidated.
 }
 
 std::unique_ptr<BoltGraph> BoltGraph::load(const std::string& filename) {

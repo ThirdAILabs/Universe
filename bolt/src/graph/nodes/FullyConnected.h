@@ -174,6 +174,8 @@ class FullyConnectedNode final
         "FullyConnectedNode is in an invalid internal state");
   }
 
+  void removeOptimizerImpl() final { _layer->removeOptimizer(); }
+
   // Private constructor for cereal. Must create dummy config since no default
   // constructor exists for layer config.
   FullyConnectedNode() : _config(/* dim= */ 0, ActivationFunction::Linear) {}

@@ -102,6 +102,8 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void setSparsity(float sparsity) final;
 
+  void removeOptimizer();
+
   ActivationFunction getActivationFunction() const { return _act_func; }
 
   const SamplingConfig& getSamplingConfig() const final {
@@ -176,8 +178,6 @@ class FullyConnectedLayer final : public SequentialLayer {
   }
 
   void initOptimizer();
-
-  void removeOptimizer();
 
   inline void updateSparseSparseWeightParameters(float lr, float B1, float B2,
                                                  float eps,

@@ -13,7 +13,7 @@ namespace thirdai::bolt {
  * node requires token input then it must take in a TokenInput node directly,
  * since no other node type will output tokens.
  */
-class TokenInput : public Node {
+class TokenInput final : public Node {
  public:
   TokenInput() : _tokens(nullptr), _compiled(false) {}
 
@@ -92,6 +92,8 @@ class TokenInput : public Node {
     throw exceptions::NodeStateMachineError(
         "TokenInputNode is in an invalid internal state");
   }
+
+  void removeOptimizerImpl() final {}
 
   dataset::BoltTokenBatch* _tokens;
   bool _compiled;

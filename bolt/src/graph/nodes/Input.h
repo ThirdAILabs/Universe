@@ -112,6 +112,8 @@ class Input final : public Node {
         "InputNode is in an invalid internal state");
   }
 
+  void removeOptimizerImpl() final {}
+
   void checkDimForInput(const BoltVector& vec) const {
     if (vec.isDense()) {
       if (vec.len != _expected_input_dim) {

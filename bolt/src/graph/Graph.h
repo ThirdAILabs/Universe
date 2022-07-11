@@ -25,7 +25,7 @@
 
 namespace thirdai::bolt {
 
-class BoltGraph {
+class BoltGraph : public std::enable_shared_from_this<BoltGraph> {
  public:
   /*
     The graph is constructed with a list of input layers, the order of these
@@ -93,6 +93,8 @@ class BoltGraph {
   // graph structure are preserved, but any state related to train or predict is
   // discarded.
   void save(const std::string& filename);
+
+  void saveForInference(const std::string& filename);
 
   static std::unique_ptr<BoltGraph> load(const std::string& filename);
 

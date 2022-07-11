@@ -122,6 +122,8 @@ class EmbeddingNode final : public Node {
     _embedding_layer->buildLayerSummary(summary);
   }
 
+  void removeOptimizerImpl() final { _embedding_layer->removeOptimizer(); }
+
   // This field will be a nullptr except for when the node is in the
   // PrepareForBatchProcessing state.
   std::shared_ptr<EmbeddingLayer> _embedding_layer;

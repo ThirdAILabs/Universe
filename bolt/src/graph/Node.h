@@ -229,6 +229,14 @@ class Node {
     return *_name;
   }
 
+  void removeOptimizer() {
+    if (getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "Can only call removeGradients when in compiled state.");
+    }
+    removeOptimizerImpl();
+  }
+
   virtual ~Node() = default;
 
  protected:
@@ -270,6 +278,8 @@ class Node {
   };
 
   virtual NodeState getState() const = 0;
+
+  virtual void removeOptimizerImpl() = 0;
 
  private:
   friend class cereal::access;

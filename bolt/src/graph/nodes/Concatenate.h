@@ -282,6 +282,8 @@ class ConcatenateNode final
         "ConcatenateNode is in an invalid internal state");
   }
 
+  void removeOptimizerImpl() final {}
+
   struct GraphState {
     // Constructor for cereal.
     GraphState() {}
