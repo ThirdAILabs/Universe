@@ -273,8 +273,11 @@ void BoltGraph::processInferenceBatch(BATCH_T& batch_inputs,
     forward(vec_id, /*labels=*/nullptr);
 
     const auto& output = _output->getOutputVector(vec_id);
-    const auto& labels = (*batch_labels)[vec_id];
-    metrics.processSample(output, labels);
+
+    if (batch_labels) {
+      const auto& labels = (*batch_labels)[vec_id];
+      metrics.processSample(output, labels);
+    }
   }
 }
 
