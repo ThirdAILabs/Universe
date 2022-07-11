@@ -13,6 +13,7 @@
 #include <memory>
 #include <optional>
 #include <regex>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -43,7 +44,7 @@ MultiLabelTextClassifier::MultiLabelTextClassifier(uint32_t input_dim, uint32_t 
   };
 
   _batch_processor =
-      std::make_shared<dataset::GenericBatchProcessor>(std::move(input_block), std::move(label_block), /* has_header= */ false, /* delimiter= */ ' ');
+      std::make_shared<dataset::GenericBatchProcessor>(std::move(input_block), std::move(label_block), /* has_header= */ false, /* delimiter= */ '\t');
 
   _model->freezeHashTables();
 }
@@ -101,8 +102,10 @@ void MultiLabelTextClassifier::predict(
     predictions, and can instead compute the predictions using the
     back_callback.
   */
+  std::stringstream metric;
+  metric << "f_measure(" << threshold << ")";
   _model->predictOnStream(dataset, /* use_sparse_inference= */ true,
-                          /* metric_names= */ {"f_measure"},
+                          /* metric_names= */ {metric.str()},
                           print_predictions_callback);
 
   if (output_file) {

@@ -258,13 +258,6 @@ class FMeasure final : public Metric {
       }
     }
 
-    if (pos_predictions.empty()) {
-      throw std::runtime_error(
-          "Unable to find a output activation larger than the minimum "
-          "threshold. This is likely due to an incorrect "
-          "activation function in the final layer.");
-    }
-
     if (labels.isDense()) {
       for (uint32_t pos_pred : pos_predictions) {
         if (labels.activations[pos_pred] > 0) {

@@ -27,7 +27,7 @@ class MetricAggregator {
             std::make_shared<WeightedMeanAbsolutePercentageError>());
       } else if (name == MeanSquaredErrorMetric::name) {
         _metrics.push_back(std::make_shared<MeanSquaredErrorMetric>());
-      } else if (std::regex_match(name, std::regex(R"(f_measure\(0\.\d+\))|(f_measure)"))) {
+      } else if (std::regex_match(name, std::regex("(f_measure\\(0\\.\\d+\\))|(f_measure)"))) {
         if (name.find('(') == std::string::npos) {
            _metrics.push_back(std::make_shared<FMeasure>());
         } else {
