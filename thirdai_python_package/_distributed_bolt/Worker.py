@@ -66,21 +66,19 @@ class Worker:
         return True
 
     def calculateGradientsLinear(self, batch_no):
-        # t1 = time.time()
+        t1 = time.time()
         self.network.calculateGradientSingleNode(batch_no, self.loss)
-        # print('Calcualate Gradient Time: %lf', time.time() - t1)
+        print('Calcualate Gradient Time: %lf', time.time() - t1)
         return True
     
     def getCalculatedGradients(self):
         w_gradients = []
         b_gradients = []
-        t1 = time.time()
         for layer in range(len(self.layers)-1):
             x = self.network.get_weights_gradients(layer)
             y = self.network.get_biases_gradients(layer)
             w_gradients.append(x)
             b_gradients.append(y)
-        getting_gradient_time = time.time() - getting_gradient_start_time
         return (w_gradients, b_gradients)
 
     def returnParams(self):
