@@ -61,9 +61,7 @@ class CategoricalBlock : public Block {
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
   std::pair<std::string, uint32_t> giveMessage() const final {
-    std::string temp;
-    // have to write the message
-    return std::make_pair(temp, _col);
+    return std::make_pair(std::string("From the CategoricalBlock"), _col);
   }
 
  protected:

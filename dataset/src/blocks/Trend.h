@@ -70,9 +70,7 @@ class TrendBlock : public Block {
   }
 
   std::pair<std::string, uint32_t> giveMessage() const final {
-    std::string temp;
-    // have to write the message
-    return std::make_pair(temp, _id_col);
+    return std::make_pair(std::string("From the TrendBlock"), _id_col);
   }
 
  protected:
