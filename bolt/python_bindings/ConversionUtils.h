@@ -80,7 +80,8 @@ inline void biasDimensionCheck(
     int64_t dim, const std::string& matrix_type = "") {
   if (new_biases.ndim() != 1) {
     std::stringstream err;
-    err << "Expected bias " << matrix_type << " matrix to have 1 dimension, received matrix "
+    err << "Expected bias " << matrix_type
+        << " matrix to have 1 dimension, received matrix "
            "with "
         << new_biases.ndim() << " dimensions.";
     throw std::invalid_argument(err.str());
@@ -99,16 +100,17 @@ inline void weightDimensionCheck(
     int64_t dim, int64_t prev_dim, const std::string& matrix_type = "") {
   if (new_weights.ndim() != 2) {
     std::stringstream err;
-    err << "Expected weight " << matrix_type << " matrix to have 2 dimensions, received matrix "
+    err << "Expected weight " << matrix_type
+        << " matrix to have 2 dimensions, received matrix "
            "with "
         << new_weights.ndim() << " dimensions.";
     throw std::invalid_argument(err.str());
   }
   if (new_weights.shape(0) != dim || new_weights.shape(1) != prev_dim) {
     std::stringstream err;
-    err << "Expected weight " << matrix_type << " matrix to have dim (" << dim << ", " << prev_dim
-        << ") received matrix with dim (" << new_weights.shape(0) << ", "
-        << new_weights.shape(1) << ").";
+    err << "Expected weight " << matrix_type << " matrix to have dim (" << dim
+        << ", " << prev_dim << ") received matrix with dim ("
+        << new_weights.shape(0) << ", " << new_weights.shape(1) << ").";
     throw std::invalid_argument(err.str());
   }
 }
