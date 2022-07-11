@@ -82,13 +82,14 @@ class TrendBlock : public Block {
     float count = countFromInputRow(input_row);
     _index->index(id, timestamp, count);
 
-    addFeaturesForId(id, timestamp, vec);
+    uint32_t offset = 0;
+    offset = addFeaturesForId(id, timestamp, vec, offset);
     if (_graph && _graph->count(id_str) > 0) {
       auto& neighbors = _graph->at(id_str);
       size_t included_nbrs = std::min(_max_n_neighbors, neighbors.size());
       for (size_t i = 0; i < included_nbrs; i++) {
         uint32_t neighbor_id = idHash(neighbors[i]);
-        addFeaturesForId(neighbor_id, timestamp, vec);
+        offset = addFeaturesForId(neighbor_id, timestamp, vec, offset);
       }
     }
   }
@@ -128,8 +129,9 @@ class TrendBlock : public Block {
     return count;
   }
 
-  void addFeaturesForId(uint32_t id, uint32_t timestamp,
-                        SegmentedFeatureVector& vec) {
+  uint32_t addFeaturesForId(uint32_t id, uint32_t timestamp,
+                        SegmentedFeatureVector& vec,
+                        uint32_t offset) {
     std::vector<float> counts(_lookback);
     float mean = 0;
     fillCountsAndMean(id, timestamp, counts, mean);
@@ -139,9 +141,14 @@ class TrendBlock : public Block {
       l2Normalize(counts);
     }
 
+    uint32_t idx = 0;
     for (const auto& count : counts) {
-      vec.addDenseFeatureToSegment(count);
+      if (!std::isnan(count)) {
+        vec.addSparseFeatureToSegment(offset + idx, count);
+      }
+      idx++;
     }
+    return offset + idx;
   }
 
   void fillCountsAndMean(uint32_t id, uint32_t timestamp,
@@ -152,9 +159,8 @@ class TrendBlock : public Block {
       // Prevent overflow if given a date < 1970.
       auto query_timestamp = timestamp >= look_back ? timestamp - look_back : 0;
       auto query_result = _index->query(id, query_timestamp);
-      assert(query_result >= 0);
       counts[i] = query_result;
-      mean += query_result;
+      mean += std::isnan(query_result) ? 0 : query_result;
     }
     mean /= _lookback;
   }
@@ -168,7 +174,7 @@ class TrendBlock : public Block {
   static void l2Normalize(std::vector<float>& counts) {
     float sum_sqr = 0;
     for (const auto& count : counts) {
-      sum_sqr += count * count;
+      sum_sqr += std::isnan(count) ? 0 : count * count;
     }
     float l2_norm = std::sqrt(sum_sqr);
     if (l2_norm == 0) {
