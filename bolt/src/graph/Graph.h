@@ -24,13 +24,6 @@
 
 namespace thirdai::bolt {
 
-// Forward declerations
-class InferenceOutputTracker;
-class BoltGraph;
-
-using InferenceResult = std::pair<InferenceMetricData, InferenceOutputTracker>;
-using BoltGraphPtr = std::shared_ptr<BoltGraph>;
-
 class BoltGraph {
  public:
   /*
@@ -189,5 +182,7 @@ class BoltGraph {
   uint32_t _epoch_count;
   uint32_t _batch_cnt;
 };
+
+using BoltGraphPtr = std::shared_ptr<BoltGraph>;
 
 }  // namespace thirdai::bolt

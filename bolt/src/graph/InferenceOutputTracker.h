@@ -107,4 +107,7 @@ class InferenceOutputTracker {
   std::optional<std::vector<float>> _activations;
   std::optional<std::vector<uint32_t>> _active_neurons;
 };
+
+using InferenceResult = std::pair<InferenceMetricData, InferenceOutputTracker>;
+
 }  // namespace thirdai::bolt
