@@ -144,6 +144,17 @@ class PyNetwork final : public FullyConnectedNetwork {
     return metrics;
   }
 
+  py::tuple getInputGradients(
+      const py::object& data, const LossFunction& loss_fn,
+      const std::vector<uint32_t>& required_labels = std::vector<uint32_t>(),
+      uint32_t batch_size = 256) {
+    auto analysis_data = convertPyObjectToBoltDataset(data, batch_size, false);
+    auto gradients = FullyConnectedNetwork::getInputGradients(
+        analysis_data.dataset, loss_fn, required_labels);
+
+    return py::cast(gradients);
+  }
+
   py::tuple predict(
       const py::object& data, const py::object& labels, uint32_t batch_size = 0,
       bool use_sparse_inference = false,

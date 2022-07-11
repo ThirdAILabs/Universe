@@ -176,6 +176,91 @@ inline void Model<BATCH_T>::updateSampling(uint32_t rehash_batch,
   }
 }
 
+inline uint32_t getSecondBestIndex(const float* activations, uint32_t dim) {
+  float first = std::numeric_limits<float>::min(),
+        second = std::numeric_limits<float>::min();
+  uint32_t max_id = 0, second_max_id = 0;
+  if (dim < 2) {
+    throw std::invalid_argument("The output dimension should be atleast 2.");
+  }
+  for (uint32_t i = 0; i < dim; i++) {
+    if (activations[i] > first) {
+      second = first;
+      second_max_id = max_id;
+      first = activations[i];
+      max_id = i;
+    } else if (activations[i] > second && activations[i] != first) {
+      second = activations[i];
+      second_max_id = i;
+    }
+  }
+  return second_max_id;
+}
+
+template <typename BATCH_T>
+inline std::vector<std::vector<float>> Model<BATCH_T>::getInputGradients(
+    std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& batch_input,
+    const LossFunction& loss_fn, const std::vector<uint32_t>& required_labels) {
+  uint64_t num_batches = batch_input->numBatches();
+  if (!required_labels.empty() &&
+      (required_labels.size() !=
+       num_batches * batch_input->at(0).getBatchSize())) {
+    throw std::invalid_argument("number of labels does not match");
+  }
+  // Because of how the datasets are read we know that all batches will not
+  // have a batch size larger than this so we can just set the batch size
+  // here.
+  initializeNetworkState(batch_input->at(0).getBatchSize(), true);
+  std::vector<std::vector<float>> concatenated_grad;
+  for (uint64_t id = 0; id < num_batches; id++) {
+    BoltBatch output = getOutputs(batch_input->at(id).getBatchSize(), true);
+    for (uint32_t vec_id = 0; vec_id < batch_input->at(id).getBatchSize();
+         vec_id++) {
+      std::vector<float> vec_grad;
+      // Initializing the input gradients because they were not initialized
+      // before. and assigning them to zero because new method gets some random
+      // garbage value and gradient calculation uses += operator.
+      batch_input->at(id)[vec_id].gradients =
+          new float[batch_input->at(id)[vec_id].len];
+      for (uint32_t i = 0; i < batch_input->at(id)[vec_id].len; i++) {
+        batch_input->at(id)[vec_id].gradients[i] = 0;
+      }
+      forward(vec_id, batch_input->at(id), output[vec_id], nullptr);
+      uint32_t required_index;
+      // we are taking the second best index to know which input features are
+      // important by observing input gradients, by flipping the predicted label
+      // as second best index.
+      if (required_labels.empty()) {
+        required_index =
+            getSecondBestIndex(output[vec_id].activations, getOutputDim());
+      } else {
+        required_index =
+            (required_labels[id * batch_input->at(id).getBatchSize() +
+                             vec_id] <= getOutputDim() - 1)
+                ? required_labels[id * batch_input->at(id).getBatchSize() +
+                                  vec_id]
+                : throw std::invalid_argument(
+                      "one of the label crossing the output dim");
+      }
+      BoltVector batch_label = BoltVector::makeSparseVector(
+          std::vector<uint32_t>{required_index}, std::vector<float>{1.0});
+      loss_fn.lossGradients(output[vec_id], batch_label,
+                            batch_input->at(id).getBatchSize());
+      backpropagateInputForGradients(vec_id, batch_input->at(id),
+                                     output[vec_id]);
+      for (uint32_t i = 0; i < batch_input->at(id)[vec_id].len; i++) {
+        vec_grad.push_back(batch_input->at(id)[vec_id].gradients[i]);
+      }
+      // de allocating the memory and pointing the gradients to nullptr to
+      // prevent using invalid memory reference.
+      delete[] batch_input->at(id)[vec_id].gradients;
+      batch_input->at(id)[vec_id].gradients = nullptr;
+      concatenated_grad.push_back(vec_grad);
+    }
+  }
+  return concatenated_grad;
+}
+
 template <typename BATCH_T>
 InferenceMetricData Model<BATCH_T>::predict(
     const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,

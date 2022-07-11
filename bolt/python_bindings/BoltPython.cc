@@ -294,6 +294,24 @@ void createBoltSubmodule(py::module_& module) {
            " * detailed: boolean. Optional. When specified to \"True\", "
            "summary will additionally print sampling config details for each "
            "layer in the network.")
+      .def("get_input_gradients", &PyNetwork::getInputGradients,
+           py::arg("input"), py::arg("loss_fn"),
+           py::arg("required_labels") = std::vector<uint32_t>(),
+           py::arg("batch_size") = 256,
+           "Get the values of input gradients when back propagated "
+           "with labels with second highest activation or with the required "
+           "label."
+           "Arguments:\n"
+           " * input: The input is same type as we give for train_data of "
+           "train method."
+           " * loss_fn: LossFunction - The loss function to minimize."
+           " * required_labels: expected labels for each input vector default "
+           "to empty vector"
+           " * batch_size: Batch size , default batch size is 256."
+           " Returns tuple (0) consisting of concatenated array of input "
+           "gradients and"
+           " (1) consisting of the offset values corresponding to input "
+           "vectors.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),
@@ -477,7 +495,8 @@ void createBoltSubmodule(py::module_& module) {
            "matrix does not match the layer's current weight matrix.")
       .def("ready_for_training", &PyNetwork::isReadyForTraining,
            "Returns False if the optimizer state is not initialized, True "
-           "otherwise. Call resume_training to initialize optimizer")
+           "otherwise. Call reinitialize_optimizer_for_training to initialize "
+           "optimizer")
       .def("get_biases", &PyNetwork::getBiases, py::arg("layer_index"),
            "Returns the bias array at the given layer index as a 1D Numpy "
            "array.")
