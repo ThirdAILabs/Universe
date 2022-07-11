@@ -2,6 +2,7 @@ enable_testing()
 
 add_subdirectory(string)
 add_subdirectory(bolt_dataset)
+add_subdirectory(blocks)
 
 add_executable(
   svm_dataset_test
@@ -62,41 +63,6 @@ target_link_libraries(
 )
 
 add_executable(
-  categorical_block_test
-  CategoricalBlockTests.cc
-)
-
-target_link_libraries(
-  categorical_block_test
-  PRIVATE
-  gtest_main
-)
-
-add_executable(
-  text_block_test
-  TextBlockTests.cc
-)
-
-target_link_libraries(
-  text_block_test
-  PRIVATE
-  gtest_main
-  hash_function_lib
-)
-
-add_executable(
-  trend_block_test
-  TrendBlockTests.cc
-)
-
-target_link_libraries(
-  trend_block_test
-  PRIVATE
-  gtest_main
-  hash_function_lib
-)
-
-add_executable(
   block_batch_processor_test
   BlockBatchProcessorTests.cc
 )
@@ -119,17 +85,17 @@ target_link_libraries(
   gtest_main
 )
 
-# add_executable(
-#   global_frequency_test
-#   GlobalFreqTest.cc
-# )
+add_executable(
+  categorical_multi_label_test
+  CategoricalMultiLabelTest.cc
+)
 
-# target_link_libraries(
-#   global_frequency_test
-#   PRIVATE
-#   global_frequency_lib
-#   gtest_main
-# )
+target_link_libraries(
+  categorical_multi_label_test
+  PRIVATE
+  gtest_main
+  dataset_core_lib
+)
 
 include(GoogleTest)
 gtest_discover_tests(svm_dataset_test)
@@ -137,9 +103,6 @@ gtest_discover_tests(click_through_dataset_test)
 gtest_discover_tests(vector_test)
 gtest_discover_tests(csv_dataset_test)
 gtest_discover_tests(segmented_feature_vectors_test)
-gtest_discover_tests(categorical_block_test)
-gtest_discover_tests(text_block_test)
-gtest_discover_tests(trend_block_test)
 gtest_discover_tests(block_batch_processor_test)
 gtest_discover_tests(generic_batch_processor_test)
-# gtest_discover_tests(global_frequency_test)
+gtest_discover_tests(categorical_multi_label_test)

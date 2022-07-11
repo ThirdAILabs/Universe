@@ -27,7 +27,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   friend class tests::FullyConnectedLayerTestFixture;
 
  public:
-  FullyConnectedLayer() {}
+  FullyConnectedLayer() : _shallow_save(false) {}
 
   FullyConnectedLayer(const FullyConnectedLayer&) = delete;
   FullyConnectedLayer(FullyConnectedLayer&&) = delete;
@@ -101,6 +101,8 @@ class FullyConnectedLayer final : public SequentialLayer {
   float getSparsity() const final { return _sparsity; }
 
   void setSparsity(float sparsity) final;
+
+  ActivationFunction getActivationFunction() const { return _act_func; }
 
   const SamplingConfig& getSamplingConfig() const final {
     return _sampling_config;

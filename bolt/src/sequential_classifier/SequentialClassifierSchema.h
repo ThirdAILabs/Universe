@@ -1,3 +1,5 @@
+#pragma once
+
 #include <dataset/src/blocks/BlockInterface.h>
 #include <optional>
 #include <sstream>
@@ -39,25 +41,35 @@ struct TrackableQuantity {
   uint32_t col_num = 0;
 };
 
+struct TrackableCategory {
+  std::string col_name;
+  uint32_t n_distinct;
+  uint32_t track_last_n;
+  uint32_t col_num = 0;
+};
+
 struct TextAttribute {
   std::string col_name;
   uint32_t col_num = 0;
 };
 
-struct Schema {
+struct SequentialClassifierSchema {
  public:
-  Schema(Item item, Timestamp timestamp, CategoricalAttribute target,
-         TrackingConfig tracking_config,
-         std::vector<TextAttribute> text_attrs = {},
-         std::vector<CategoricalAttribute> cat_attrs = {},
-         std::vector<TrackableQuantity> trackable_qtys = {})
+  SequentialClassifierSchema(Item item, Timestamp timestamp,
+                             CategoricalAttribute target,
+                             TrackingConfig tracking_config,
+                             std::vector<TextAttribute> text_attrs = {},
+                             std::vector<CategoricalAttribute> cat_attrs = {},
+                             std::vector<TrackableQuantity> trackable_qtys = {},
+                             std::vector<TrackableCategory> trackable_cats = {})
       : item(std::move(item)),
         timestamp(std::move(timestamp)),
         target(std::move(target)),
         tracking_config(tracking_config),
         text_attributes(std::move(text_attrs)),
         categorical_attributes(std::move(cat_attrs)),
-        trackable_quantities(std::move(trackable_qtys)) {}
+        trackable_quantities(std::move(trackable_qtys)),
+        trackable_categories(std::move(trackable_cats)) {}
 
   void fitToHeader(const std::string& header, char delimiter) {
     auto name_to_num = buildNameToNumMap(header, delimiter);
@@ -71,14 +83,17 @@ struct Schema {
     for (auto& cat : categorical_attributes) {
       setColNum(name_to_num, cat.col_name, cat.col_num);
     }
-    for (auto& track : trackable_quantities) {
-      if (track.col_name.empty()) {
-        track.has_col_num = false;
-        track.col_num = 0;
+    for (auto& track_qty : trackable_quantities) {
+      if (track_qty.col_name.empty()) {
+        track_qty.has_col_num = false;
+        track_qty.col_num = 0;
       } else {
-        track.has_col_num = true;
-        setColNum(name_to_num, track.col_name, track.col_num);
+        track_qty.has_col_num = true;
+        setColNum(name_to_num, track_qty.col_name, track_qty.col_num);
       }
+    }
+    for (auto& track_cat : trackable_categories) {
+      setColNum(name_to_num, track_cat.col_name, track_cat.col_num);
     }
   }
 
@@ -120,6 +135,7 @@ struct Schema {
   std::vector<CategoricalAttribute> categorical_attributes;
   std::vector<TrackableQuantity> trackable_quantities;
   std::unordered_map<uint32_t, std::string> num_to_name;
+  std::vector<TrackableCategory> trackable_categories;
 };
 
 }  // namespace thirdai::bolt

@@ -135,7 +135,7 @@ TEST_F(CategoricalBlockTest, ContiguousNumericIdWithGraph) {
   for (auto& vec : vecs) {
     auto entries = vectorEntries(vec);
     uint32_t entries_under_n_id = 0;
-    uint32_t current_id;
+    uint32_t current_id = 0;
     for (const auto& [idx, val] : entries) {
       if (idx < n_ids) {
         entries_under_n_id++;
@@ -179,7 +179,7 @@ TEST_F(CategoricalBlockTest, StringToUidMapWithGraph) {
   for (auto& vec : vecs) {
     auto entries = vectorEntries(vec);
     uint32_t entries_under_n_id = 0;
-    uint32_t current_id;
+    uint32_t current_id = 0;
     for (const auto& [idx, val] : entries) {
       ASSERT_LT(idx, block.featureDim());
       if (idx < n_ids) {
@@ -201,10 +201,49 @@ TEST_F(CategoricalBlockTest, StringToUidMapWithGraph) {
       ASSERT_LT(key, block.featureDim());
       if (key > n_ids) {
         ASSERT_EQ(val, 1.0);
-        auto class_name = map_encoding->uidToClass(key - n_ids);
+        auto class_name = map_encoding->uidToClass(
+            key - (n_ids + 1));  // + 1 for out-of-vocab.
         ASSERT_TRUE(neighbor_exists[class_name]);
       }
     }
+  }
+}
+
+TEST_F(CategoricalBlockTest, StringToUidMapParallel) {
+  std::vector<std::vector<std::string>> mock_data;
+  uint32_t n_classes = 500;
+  for (uint32_t i = 0; i < n_classes; i++) {
+    std::stringstream ss;
+    ss << "class_" << i;
+    std::string class_name = ss.str();
+    mock_data.push_back({class_name});
+    mock_data.push_back({class_name});
+    mock_data.push_back({class_name});
+    mock_data.push_back({class_name});
+    mock_data.push_back({class_name});
+  }
+
+  std::vector<SegmentedSparseFeatureVector> vecs(mock_data.size());
+  auto map_encoding = std::make_shared<StringToUidMap>(n_classes);
+  CategoricalBlock block(/* col = */ 0, map_encoding);
+
+#pragma omp parallel for default(none) shared(n_classes, block, mock_data, vecs)
+  for (uint32_t i = 0; i < mock_data.size(); i++) {
+    addVectorSegmentWithBlock(block, mock_data[i], vecs[i]);
+  }
+
+  std::unordered_map<std::string, float> classes;
+  for (auto& vec : vecs) {
+    auto entries = vectorEntries(vec);
+    for (auto [k, v] : entries) {
+      classes[map_encoding->uidToClass(k)] += v;
+    }
+  }
+
+  for (uint32_t i = 0; i < n_classes; i++) {
+    std::stringstream class_ss;
+    class_ss << "class_" << i;
+    ASSERT_EQ(classes[class_ss.str()], 5.0);
   }
 }
 

@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "ConversionUtils.h"
 #include <bolt/src/graph/Graph.h>
@@ -51,39 +53,6 @@ py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
                                uint32_t inference_dim, uint32_t* active_neurons,
                                float* activations, bool output_sparse,
                                bool alloc_success);
-
-class PyBoltGraph final : public BoltGraph {
- public:
-  // Inherit constructors
-  using BoltGraph::BoltGraph;
-
-  MetricData trainNumpy(const py::object& train_data_numpy,
-                        const py::object& train_labels_numpy,
-                        const TrainConfig& train_config, uint32_t batch_size) {
-    auto train_data =
-        convertPyObjectToBoltDataset(train_data_numpy, batch_size, false);
-
-    auto train_labels =
-        convertPyObjectToBoltDataset(train_labels_numpy, batch_size, true);
-
-    return BoltGraph::train(train_data.dataset, train_labels.dataset,
-                            train_config);
-  }
-
-  InferenceMetricData predictNumpy(const py::object& test_data_numpy,
-                                   const py::object& test_labels_numpy,
-                                   const PredictConfig& predict_config,
-                                   uint32_t batch_size) {
-    auto test_data =
-        convertPyObjectToBoltDataset(test_data_numpy, batch_size, false);
-
-    auto test_labels =
-        convertPyObjectToBoltDataset(test_labels_numpy, batch_size, true);
-
-    return BoltGraph::predict(test_data.dataset, test_labels.dataset,
-                              predict_config);
-  }
-};
 
 class PyNetwork final : public FullyConnectedNetwork {
  public:
@@ -417,11 +386,13 @@ class PySequentialClassifier : public SequentialClassifier {
                          uint32_t period = 1,
                          const std::vector<std::string>& text = {},
                          const std::vector<py::tuple>& categorical = {},
-                         const std::vector<std::string>& trackable_qty = {})
+                         const std::vector<std::string>& trackable_qty = {},
+                         const std::vector<py::tuple>& trackable_cat = {})
       : SequentialClassifier(
             {toItem(item), toTimestamp(timestamp), toTarget(target),
              toTrackConfig(horizon, lookback, period), toText(text),
-             toCategoricals(categorical), toTrackables(trackable_qty)},
+             toCategoricals(categorical), toTrackableQtys(trackable_qty),
+             toTrackableCats(trackable_cat)},
             size) {}
 
  private:
@@ -499,12 +470,34 @@ class PySequentialClassifier : public SequentialClassifier {
     return {horizon, lookback, period};
   }
 
-  static std::vector<TrackableQuantity> toTrackables(
-      const std::vector<std::string>& trackable_names) {
+  static std::vector<TrackableQuantity> toTrackableQtys(
+      const std::vector<std::string>& trackable_qty_names) {
     std::vector<TrackableQuantity> trackables;
-    trackables.reserve(trackable_names.size());
-    for (const auto& name : trackable_names) {
+    trackables.reserve(trackable_qty_names.size());
+    for (const auto& name : trackable_qty_names) {
       trackables.push_back({/* col+name = */ name});
+    }
+    return trackables;
+  }
+
+  static std::vector<TrackableCategory> toTrackableCats(
+      const std::vector<py::tuple>& tuples) {
+    std::vector<TrackableCategory> trackables;
+    trackables.reserve(tuples.size());
+    for (const auto& tuple : tuples) {
+      if (tuple.size() != 3) {
+        std::stringstream error_ss;
+        error_ss << "A TrackableCategory tuple must contains three elements: \n"
+                    "(trackable_category_column: str, n_distinct_categories: "
+                    "int, track_last_n: int) \n"
+                    "Found tuple "
+                 << tuple;
+        throw std::invalid_argument(error_ss.str());
+      }
+
+      trackables.push_back({/* col_name = */ tuple[0].cast<std::string>(),
+                            /* n_distinct = */ tuple[1].cast<uint32_t>(),
+                            /* track_last_n = */ tuple[2].cast<uint32_t>()});
     }
     return trackables;
   }

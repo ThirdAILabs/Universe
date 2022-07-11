@@ -1,8 +1,9 @@
 #pragma once
 
-#include "Schema.h"
+#include "SequentialClassifierSchema.h"
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
 #include <dataset/src/encodings/categorical/StringToUidMap.h>
+#include <dataset/src/encodings/categorical_history/CategoricalHistoryIndex.h>
 #include <dataset/src/encodings/count_history/CountHistoryIndex.h>
 #include <memory>
 #include <unordered_map>
@@ -18,11 +19,14 @@ struct PersistentPipelineStates {
   std::shared_ptr<dataset::StringToUidMap> target_id_map;
   std::vector<std::shared_ptr<dataset::StringToUidMap>> cat_attr_maps;
   std::vector<std::shared_ptr<dataset::CountHistoryIndex>> trackable_counts;
+  std::vector<std::shared_ptr<dataset::CategoricalHistoryIndex>>
+      trackable_categories;
 };
 
-class PipelineBuilder {
+class SequentialClassifierPipelineBuilder {
  public:
-  PipelineBuilder(Schema schema, char delimiter);
+  SequentialClassifierPipelineBuilder(SequentialClassifierSchema schema,
+                                      char delimiter);
 
   std::shared_ptr<dataset::StreamingGenericDatasetLoader> buildPipelineForFile(
       std::string& filename, bool shuffle, bool overwrite_index);
@@ -33,7 +37,7 @@ class PipelineBuilder {
 
   std::vector<uint32_t> offsets;
 
-  Schema _schema;
+  SequentialClassifierSchema _schema;
 
  private:
   static std::string getHeader(dataset::DataLoader& loader);
@@ -53,6 +57,8 @@ class PipelineBuilder {
   void addCategoricalAttrFeats(Blocks& blocks);
 
   void addTrackableQtyFeats(Blocks& blocks, bool overwrite_index);
+
+  void addTrackableCatFeats(Blocks& blocks);
 
   void addNonzeros(size_t nonzeros) { _est_nonzeros += nonzeros; }
 

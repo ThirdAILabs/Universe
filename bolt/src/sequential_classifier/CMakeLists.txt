@@ -1,6 +1,6 @@
 add_subdirectory(tests)
 
-add_library(sequential_classifier_lib PipelineBuilder.cc)
+add_library(sequential_classifier_lib SequentialClassifierPipelineBuilder.cc)
 target_link_libraries(
   sequential_classifier_lib
   PRIVATE

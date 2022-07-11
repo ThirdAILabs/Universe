@@ -38,9 +38,9 @@ class ContiguousNumericId : public CategoricalEncoding {
     vec.addSparseFeatureToSegment(id_int % _dim + offset, 1.0);
   };
 
-  bool isDense() final { return false; };
+  bool isDense() const final { return false; };
 
-  uint32_t featureDim() final { return _dim; };
+  uint32_t featureDim() const final { return _dim; };
 
  private:
   uint32_t _dim;

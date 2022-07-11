@@ -124,10 +124,6 @@ class Block {
     (void)first_row;
   }
 
-  void use() { _use_count++; }
-
-  size_t useCount() const { return _use_count; }
-
  protected:
   /**
    * Derived class-specific implementation of how input rows get
@@ -138,9 +134,6 @@ class Block {
    */
   virtual void buildSegment(const std::vector<std::string_view>& input_row,
                             SegmentedFeatureVector& vec) = 0;
-
- private:
-  size_t _use_count = 0;
 };
 
 using Graph = std::unordered_map<std::string, std::vector<std::string>>;

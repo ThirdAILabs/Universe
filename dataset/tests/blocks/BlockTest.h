@@ -1,3 +1,5 @@
+#pragma once
+
 #include <gtest/gtest.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <charconv>

@@ -5,7 +5,11 @@
 
 namespace thirdai::dataset {
 
+class DateBlockTests;
+
 class DateBlock : public Block {
+  friend DateBlockTests;
+
  public:
   explicit DateBlock(uint32_t col) : _col(col) {}
 
@@ -33,7 +37,7 @@ class DateBlock : public Block {
   void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) final {
     auto time = TimeUtils::timeStringToTimeObject(input_row[_col]);
-    auto epoch_time = TimeUtils::timeToEpoch(&time, /* utcdiff = */ 0);
+    uint32_t epoch_time = TimeUtils::timeToEpoch(&time, /* utcdiff = */ 0);
     uint32_t offset = 0;
 
     // Day of week

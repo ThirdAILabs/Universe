@@ -19,6 +19,8 @@
 
 namespace thirdai::bolt::tests {
 
+uint32_t n_classes = 100;
+
 static BoltGraph getSingleLayerModel() {
   auto input_layer = std::make_shared<Input>(n_classes);
   auto output_layer = std::make_shared<FullyConnectedNode>(
@@ -52,7 +54,8 @@ static PredictConfig getPredictConfig() {
 TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
   BoltGraph model = getSingleLayerModel();
 
-  auto data = genDataset(/* noisy_dataset= */ false);
+  auto data =
+      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
 
   model.train(data.data, data.labels, getTrainConfig(/* epochs= */ 5));
 
@@ -64,7 +67,7 @@ TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
 TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
   BoltGraph model = getSingleLayerModel();
 
-  auto data = genDataset(/* noisy_dataset= */ true);
+  auto data = genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
 
   model.train(data.data, data.labels, getTrainConfig(/* epochs= */ 5));
 
@@ -107,7 +110,8 @@ static void testSimpleDatasetMultiLayerModel(
     uint32_t epochs) {
   BoltGraph model = getMultiLayerModel(hidden_layer_act, output_layer_act);
 
-  auto data = genDataset(/* noisy_dataset= */ false);
+  auto data =
+      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
 
   auto train_metrics =
       model.train(data.data, data.labels, getTrainConfig(epochs));
@@ -139,7 +143,7 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
   BoltGraph model =
       getMultiLayerModel(ActivationFunction::ReLU, ActivationFunction::Softmax);
 
-  auto data = genDataset(/* noisy_dataset= */ true);
+  auto data = genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
 
   model.train(data.data, data.labels, getTrainConfig(/* epochs= */ 2));
 
