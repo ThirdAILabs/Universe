@@ -5,23 +5,23 @@ import subprocess
 from .Worker import Worker
 from .Supervisor import Supervisor
 import time as time
-from .util import initLogging
+from .utils import initLogging
 
 class DistributedBolt:
     def __init__(self, worker_nodes, config_filename):
-        logging = initLogging()
+        self.logging = initLogging()
         
         os.system("pip3 install --no-cache-dir ray[default]")
         os.system("export PATH=$PATH:/home/$USER/.local/bin")
         os.system("ray stop")
         os.system('ray up setup.yaml')
         
-        logging.info('Ray set up on head node completed.')
-        logging.info('Starting the cluster Setup.')
+        self.logging.info('Ray set up on head node completed.')
+        self.logging.info('Starting the cluster Setup.')
 
         subprocess.run(["sh", "make_cluster.sh", " ".join(worker_nodes)])
 
-        logging.info('Cluster has started.')
+        self.logging.info('Cluster has started.')
         self.no_of_workers = len(worker_nodes)+1
         current_working_directory = os.getcwd()
         runtime_env = {"working_dir": current_working_directory, "pip": ["toml", "typing", "typing_extensions", 'psutil'], "env_vars": {"OMP_NUM_THREADS": "100"}}
@@ -34,7 +34,7 @@ class DistributedBolt:
             self.layers.append(config['layers'][i]['dim'])
         random_seed = int(time.time())%int(0xffffffff)
         self.workers = [Worker.options(max_concurrency=2).remote(self.layers,config, id+1, self.no_of_workers, id) for id in range(self.no_of_workers)]
-        self.supervisor = Supervisor.remote(self.layers,self.workers,config, logging)
+        self.supervisor = Supervisor.remote(self.layers,self.workers,config)
         self.num_of_batches = ray.get(self.workers[0].num_of_batches.remote())
         for i in range(len(self.workers)):
             x = ray.get(self.workers[i].addSupervisor.remote(self.supervisor))
@@ -46,9 +46,9 @@ class DistributedBolt:
 
     def train(self, circular = True):
         if circular:
-            logging.info('Circular communication pattern is choosen')
+            self.logging.info('Circular communication pattern is choosen')
         else:
-            logging.info('Linear communication pattern is choosen')
+            self.logging.info('Linear communication pattern is choosen')
         if circular:
             for epoch in range(self.epochs):
                 for batch_no in range(int(self.num_of_batches/len(self.workers))):
@@ -73,7 +73,7 @@ class DistributedBolt:
                     self.python_computation_time += summing_and_averaging_gradients_start_time
                     self.communication_time += getting_gradient_time + gradient_send_time
                     print(self.bolt_computation_time, self.python_computation_time, self.communication_time)
-                logging.info('Epoch No:{i}, Bolt Computation Time:{k} Python Computation Time:{l} Communication Time:{m}',epoch,self.bolt_computation_time, self.python_computation_time, self.communication_time)
+                self.logging.info('Epoch No:{i}, Bolt Computation Time:{k} Python Computation Time:{l} Communication Time:{m}',epoch,self.bolt_computation_time, self.python_computation_time, self.communication_time)
                 
     def predict(self):
         predict = []

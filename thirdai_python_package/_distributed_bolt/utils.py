@@ -84,8 +84,8 @@ def create_fully_connected_layer_configs(
 
 def initLogging():
     # Logger Init
-    logging = logging.getLogger('DistributedBolt')
-    logging.setLevel(logging.INFO)
+    logger = logging.getLogger('DistributedBolt')
+    logger.setLevel(logging.INFO)
     file_handler = logging.FileHandler('logfile.log')
     formatter    = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(message)s')
     file_handler.setFormatter(formatter)

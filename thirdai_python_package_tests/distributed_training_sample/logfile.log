@@ -1,0 +1,3 @@
+2022-07-11 09:49:36,929 : INFO : DistributedBolt : Ray set up on head node completed.
+2022-07-11 09:49:36,929 : INFO : DistributedBolt : Starting the cluster Setup.
+2022-07-11 09:49:44,424 : INFO : DistributedBolt : Cluster has started.

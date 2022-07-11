@@ -6,12 +6,11 @@ import time
 
 @ray.remote(num_cpus=2, max_restarts=2)
 class Supervisor:
-    def __init__(self, layers, workers, config, logging):
+    def __init__(self, layers, workers, config):
         self.layers = layers
         self.workers = workers
         self.num_of_batches = ray.get(self.workers[0].num_of_batches.remote())
         self.weights_biases = ray.get(self.workers[0].returnParams.remote())
-        self.logging = 
     
 
     def batch_to_train(self, id, batch_no):
