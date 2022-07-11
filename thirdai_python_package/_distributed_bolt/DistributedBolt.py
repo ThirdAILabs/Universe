@@ -70,7 +70,7 @@ class DistributedBolt:
                     b = ray.get(self.supervisor.subworkUpdateParameters.remote(self.learning_rate))
                     update_parameters_time = time.time() - start_update_parameters_time
                     self.bolt_computation_time += gradient_computation_time + update_parameters_time
-                    self.python_computation_time += summing_and_averaging_gradients_start_time
+                    self.python_computation_time += summing_and_averaging_gradients_time
                     self.communication_time += getting_gradient_time + gradient_send_time
                     print(self.bolt_computation_time, self.python_computation_time, self.communication_time)
                 self.logging.info('Epoch No:{i}, Bolt Computation Time:{k} Python Computation Time:{l} Communication Time:{m}',epoch,self.bolt_computation_time, self.python_computation_time, self.communication_time)

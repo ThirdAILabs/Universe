@@ -108,16 +108,12 @@ class Worker:
         return True
 
     def receiveGradientsLinearCommunication(self):
-        getting_gradients_back_start_time = time.time()
         w_gradients_updated, b_gradients_updated = ray.get(self.supervisor.gradients_avg.remote())
-        getting_gradients_back_time = time.time() - getting_gradient_start_time
-        updating_gradients_start_time = time.time()
         for layer in range(len(w_gradients_updated)):
             self.network.set_weights_gradients(layer, w_gradients_updated[layer])
             self.network.set_biases_gradients(layer, b_gradients_updated[layer])
-        updating_gradients_time = time.time() - updating_gradients_start_time
-        return getting_gradients_back_time, updating_gradients_time
-
+        return True
+    
     def processRing(self, update_id, reduce = True, avg_gradients = False):
         local_update_id = (update_id + self.id - 1)%self.total_nodes
 
