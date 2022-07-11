@@ -11,6 +11,7 @@ class Worker:
         self.layers = layers
         self.bolt_layers = create_fully_connected_layer_configs(config["layers"])
         self.input_dim = config["dataset"]["input_dim"]
+        print(self.bolt_layers)
         self.network = bolt.DistributedNetwork(layers=self.bolt_layers, input_dim=self.input_dim)
         self.rehash = config["params"]["rehash"]
         self.rebuild = config["params"]["rebuild"]
@@ -65,9 +66,7 @@ class Worker:
         return True
 
     def calculateGradientsLinear(self, batch_no):
-        t1 = time.time()
         self.network.calculateGradientSingleNode(batch_no, self.loss)
-        print('Calcualate Gradient Time: %lf', time.time() - t1)
         return True
     
     def getCalculatedGradients(self):

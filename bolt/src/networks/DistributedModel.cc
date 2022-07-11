@@ -29,8 +29,8 @@ uint32_t DistributedModel::initTrainSingleNode(
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
-  initializeNetworkState(batch_size, false);
-  _outputs = getOutputs(batch_size, false);
+  initializeNetworkState(batch_size, true);
+  _outputs = getOutputs(batch_size, true);
 
   if (verbose) {
     std::cout << "Distributed Network initialization done on this Node"
@@ -41,6 +41,7 @@ uint32_t DistributedModel::initTrainSingleNode(
 
 void DistributedModel::calculateGradientSingleNode(
     uint32_t batch, const LossFunction& loss_fn) {
+  
   bolt::BoltBatch& batch_inputs = _train_data->at(batch);
 
   const BoltBatch& batch_labels = _train_labels->at(batch);
@@ -54,11 +55,12 @@ void DistributedModel::calculateGradientSingleNode(
                           batch_inputs.getBatchSize());
     backpropagate(vec_id, batch_inputs, _outputs[vec_id]);
   }
+
 }
 
 void DistributedModel::updateParametersSingleNode(float learning_rate) {
-  updateParameters(learning_rate, ++_batch_iter);
-  updateSampling(_rehash_batch, _rebuild_batch);
+  DistributedModel::updateParameters(learning_rate, ++_batch_iter);
+  DistributedModel::updateSampling(_rehash_batch, _rebuild_batch);
 }
 
 InferenceMetricData DistributedModel::predictSingleNode(
