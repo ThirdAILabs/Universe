@@ -2,6 +2,7 @@ from thirdai._thirdai import bolt, dataset
 import numpy as np
 import ray
 from .utils import create_fully_connected_layer_configs, load_dataset
+import time
 
 
 @ray.remote(num_cpus=40, max_restarts=1)
@@ -65,14 +66,21 @@ class Worker:
         return True
 
     def calculateGradientsLinear(self, batch_no):
+        gradient_computation_start_time = time.time()
         self.network.calculateGradientSingleNode(batch_no, self.loss)
+        gradient_computation_time = time.time() - gradient_computation_start_time
+        return True
+    
+    def getCalculatedGradients(self):
         w_gradients = []
         b_gradients = []
+        getting_gradient_start_time = time.time()
         for layer in range(len(self.layers)-1):
             x = self.network.get_weights_gradients(layer)
             y = self.network.get_biases_gradients(layer)
             w_gradients.append(x)
             b_gradients.append(y)
+        getting_gradient_time = time.time() - getting_gradient_start_time
         ray_gradient_object = ray.put((w_gradients, b_gradients))
         return ray_gradient_object
 
@@ -100,11 +108,15 @@ class Worker:
         return True
 
     def receiveGradientsLinearCommunication(self):
+        getting_gradients_back_start_time = time.time()
         w_gradients_updated, b_gradients_updated = ray.get(self.supervisor.gradients_avg.remote())
+        getting_gradients_back_time = time.time() - getting_gradient_start_time
+        updating_gradients_start_time = time.time()
         for layer in range(len(w_gradients_updated)):
             self.network.set_weights_gradients(layer, w_gradients_updated[layer])
             self.network.set_biases_gradients(layer, b_gradients_updated[layer])
-        return True
+        updating_gradients_time = time.time() - updating_gradients_start_time
+        return getting_gradients_back_time, updating_gradients_time
 
     def processRing(self, update_id, reduce = True, avg_gradients = False):
         local_update_id = (update_id + self.id - 1)%self.total_nodes
