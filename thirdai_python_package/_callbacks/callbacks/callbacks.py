@@ -14,27 +14,13 @@ class Callback:
         verbose (bool): False is silent, True displays a message if/when the callback takes effect.
     """
 
-    def __init__(self, metric, min_delta, baseline, verbose):
+    def __init__(self, metric, verbose):
         self._metric = metric
-        self._min_delta = min_delta
-        self._baseline = baseline
         self._verbose = verbose
 
     def getMetric(self):
         return self._metric
-
-    def getBaseline(self):
-        return self._baseline
-
-    def getMinDelta(self):
-        return self._min_delta
-
-    def setBaseline(self, baseline):
-        self._baseline = baseline
-
-    def setDefaultMinDelta(self):
-        self._min_delta = 0.001
-
+    
     def callback(self, epoch, lr, epoch_metrics):
         return False, lr
 
@@ -56,7 +42,9 @@ class CallbackWithPatience(Callback):
     """
 
     def __init__(self, metric, min_delta, baseline, patience, verbose):
-        super().__init__(metric, min_delta, baseline, verbose)
+        super().__init__(metric, verbose)
+        self._min_delta = min_delta
+        self._baseline = baseline
         self._patience = patience
         self._init_patience = patience
 
@@ -64,6 +52,18 @@ class CallbackWithPatience(Callback):
             self._patience = (
                 self._patience + 1
             )  # No baseline specified, increase initial patience to account for determining baseline
+    
+    def getBaseline(self):
+        return self._baseline
+
+    def getMinDelta(self):
+        return self._min_delta
+
+    def setBaseline(self, baseline):
+        self._baseline = baseline
+
+    def setDefaultMinDelta(self):
+        self._min_delta = 0.001
 
     def callback(self, epoch, lr, epoch_metrics):
         """Returns flag indicating if training should be stopped due to lack of improvement.
@@ -213,11 +213,9 @@ class LearningRateScheduler(Callback):
         self,
         schedule,
         metric="categorical_accuracy",
-        min_delta=None,
-        baseline=None,
         verbose=True,
     ):
-        super().__init__(metric, min_delta, baseline, verbose)
+        super().__init__(metric, verbose)
         self._schedule = schedule
 
     def callback(self, epoch, lr, epoch_metrics):
