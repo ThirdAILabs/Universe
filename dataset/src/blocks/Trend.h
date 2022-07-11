@@ -69,6 +69,12 @@ class TrendBlock : public Block {
     _index->handleLifetime(timestamp);
   }
 
+  std::pair<std::string, uint32_t> giveMessage() const final {
+    std::string temp;
+    // have to write the message
+    return std::make_pair(temp, _id_col);
+  }
+
  protected:
   void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) final {
@@ -141,7 +147,7 @@ class TrendBlock : public Block {
   }
 
   void fillCountsAndMean(uint32_t id, uint32_t timestamp,
-                        std::vector<float>& counts, float& mean) {
+                         std::vector<float>& counts, float& mean) {
     mean = 0;
     for (uint32_t i = 0; i < _lookback; i++) {
       auto look_back = (_horizon + i) * TimeUtils::SECONDS_IN_DAY;

@@ -20,6 +20,12 @@ class ContinuousBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _column + 1; };
 
+  std::pair<std::string, uint32_t> giveMessage() const final {
+    std::string temp;
+    // have to write the message
+    return std::make_pair(temp, _column);
+  }
+
  protected:
   void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) override {

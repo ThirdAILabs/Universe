@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string_view>
 #include <unordered_map>
+#include <utility>
 
 namespace thirdai::dataset {
 
@@ -58,6 +59,12 @@ class CategoricalBlock : public Block {
   bool isDense() const final { return _encoding->isDense(); };
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
+
+  std::pair<std::string, uint32_t> giveMessage() const final {
+    std::string temp;
+    // have to write the message
+    return std::make_pair(temp, _col);
+  }
 
  protected:
   void buildSegment(const std::vector<std::string_view>& input_row,

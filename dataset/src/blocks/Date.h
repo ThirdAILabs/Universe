@@ -18,6 +18,12 @@ class DateBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
+  std::pair<std::string, uint32_t> giveMessage() const final {
+    std::string temp;
+    // have to write the message
+    return std::make_pair(temp, _col);
+  }
+
  protected:
   static constexpr uint32_t day_of_week_dim = 7;
   static constexpr uint32_t month_of_year_dim = 12;

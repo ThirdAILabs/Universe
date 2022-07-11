@@ -31,6 +31,12 @@ class DenseArrayBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _start_col + _dim; };
 
+  std::pair<std::string, uint32_t> giveMessage() const final {
+    std::string temp;
+    // have to write the message
+    return std::make_pair(temp, _start_col);
+  }
+
  protected:
   void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) final {

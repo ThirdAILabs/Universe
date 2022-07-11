@@ -43,7 +43,9 @@ std::string PipelineBuilder::getHeader(dataset::DataLoader& loader) {
 }
 
 Blocks PipelineBuilder::buildInputBlocks(bool overwrite_index) {
-  std::vector<std::shared_ptr<dataset::Block>> blocks;
+  // std::vector<std::shared_ptr<dataset::Block>> blocks;
+  offsets.clear();
+  offsets.push_back(0);
   addDateFeats(blocks);
   addItemIdFeats(blocks);
   addTextAttrFeats(blocks);
@@ -77,6 +79,7 @@ size_t PipelineBuilder::autotuneShuffleBufferSize() const {
 void PipelineBuilder::addDateFeats(Blocks& blocks) {
   blocks.push_back(
       std::make_shared<dataset::DateBlock>(_schema.timestamp.col_num));
+  offsets.push_back(offsets.back() + blocks.back()->featureDim());
   addNonzeros(4);
 }
 
@@ -89,6 +92,7 @@ void PipelineBuilder::addItemIdFeats(Blocks& blocks) {
 
   blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
       item.col_num, _states.item_id_map, item.graph, item.max_neighbors));
+  offsets.push_back(offsets.back() + blocks.back()->featureDim());
   addNonzeros(1);
 }
 
@@ -97,6 +101,7 @@ void PipelineBuilder::addTextAttrFeats(Blocks& blocks) {
   for (const auto& text : text_attrs) {
     blocks.push_back(
         std::make_shared<dataset::TextBlock>(text.col_num, /* dim = */ 100000));
+    offsets.push_back(offsets.back() + blocks.back()->featureDim());
     addNonzeros(20);
   }
 }
@@ -111,6 +116,7 @@ void PipelineBuilder::addCategoricalAttrFeats(Blocks& blocks) {
     }
     blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
         cat.col_num, _states.cat_attr_maps[i]));
+    offsets.push_back(offsets.back() + blocks.back()->featureDim());
     addNonzeros(1);
   }
 }
@@ -140,6 +146,7 @@ void PipelineBuilder::addTrackableQtyFeats(Blocks& blocks,
         config.horizon, config.lookback, _states.trackable_counts[i],
         item.graph, item.max_neighbors);
     blocks.push_back(trend_block);
+    offsets.push_back(offsets.back() + blocks.back()->featureDim());
     addNonzeros(trend_block->featureDim());
   }
 }

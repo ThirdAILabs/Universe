@@ -29,6 +29,12 @@ class PipelineBuilder {
 
   PersistentPipelineStates _states;
 
+  std::vector<std::shared_ptr<dataset::Block>> blocks;
+
+  std::vector<uint32_t> offsets;
+
+  Schema _schema;
+
  private:
   static std::string getHeader(dataset::DataLoader& loader);
 
@@ -50,7 +56,6 @@ class PipelineBuilder {
 
   void addNonzeros(size_t nonzeros) { _est_nonzeros += nonzeros; }
 
-  Schema _schema;
   size_t _est_nonzeros;
   char _delimiter;
 };

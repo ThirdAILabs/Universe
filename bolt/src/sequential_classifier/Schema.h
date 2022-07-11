@@ -82,9 +82,10 @@ struct Schema {
     }
   }
 
-  static std::unordered_map<std::string, uint32_t> buildNameToNumMap(
+  std::unordered_map<std::string, uint32_t> buildNameToNumMap(
       const std::string& header, char delimiter) {
     std::unordered_map<std::string, uint32_t> name_to_num;
+    num_to_name.clear();
     uint32_t col = 0;
     size_t start = 0;
     size_t end = 0;
@@ -93,6 +94,7 @@ struct Schema {
       size_t len =
           end == std::string::npos ? header.size() - start : end - start;
       name_to_num[header.substr(start, len)] = col;
+      num_to_name[col] = header.substr(start, len);
       col++;
       start = end + 1;
     }
@@ -117,6 +119,7 @@ struct Schema {
   std::vector<TextAttribute> text_attributes;
   std::vector<CategoricalAttribute> categorical_attributes;
   std::vector<TrackableQuantity> trackable_quantities;
+  std::unordered_map<uint32_t, std::string> num_to_name;
 };
 
 }  // namespace thirdai::bolt

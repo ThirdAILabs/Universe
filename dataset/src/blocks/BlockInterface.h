@@ -112,6 +112,8 @@ class Block {
    */
   virtual bool isDense() const = 0;
 
+  virtual std::pair<std::string, uint32_t> giveMessage() const = 0;
+
   /**
    * Returns the minimum number of columns that the block expects
    * to see in each row of the dataset.
