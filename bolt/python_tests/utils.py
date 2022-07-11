@@ -1,35 +1,5 @@
-from thirdai import bolt, dataset
+from thirdai import bolt
 import numpy as np
-import os
-
-
-def setup_module():
-    if not os.path.exists("mnist"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
-        )
-        os.system("bzip2 -d mnist.bz2")
-
-    if not os.path.exists("mnist.t"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
-        )
-        os.system("bzip2 -d mnist.t.bz2")
-
-
-def load_mnist():
-    train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
-    test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
-    return train_x, train_y, test_x, test_y
-
-
-def load_mnist_labels():
-    labels = []
-    with open("mnist.t") as file:
-        for line in file.readlines():
-            label = int(line.split(" ")[0])
-            labels.append(label)
-    return np.array(labels)
 
 
 # Constructs a bolt network with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
@@ -96,23 +66,6 @@ def gen_single_sparse_layer_network(n_classes, sparsity=0.5):
         ),
     ]
     network = bolt.Network(layers=layers, input_dim=n_classes)
-    return network
-
-
-# APIs for testing the distributed network(similar to functions defined above but for Distributed APIs)
-# Constructs a bolt network with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
-def build_sparse_hidden_layer_classifier_distributed(
-    input_dim, sparse_dim, output_dim, sparsity
-):
-    layers = [
-        bolt.FullyConnected(
-            dim=sparse_dim,
-            sparsity=sparsity,
-            activation_function="ReLU",
-        ),
-        bolt.FullyConnected(dim=output_dim, activation_function="Softmax"),
-    ]
-    network = bolt.DistributedNetwork(layers=layers, input_dim=input_dim)
     return network
 
 

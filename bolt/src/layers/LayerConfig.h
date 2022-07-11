@@ -34,6 +34,12 @@ struct SequentialLayerConfig {
 
  private:
   virtual void print(std::ostream& out) const = 0;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 using SequentialConfigList =
@@ -188,6 +194,16 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
           << "}";
     }
   }
+
+  // Private constructor for cereal.
+  FullyConnectedLayerConfig() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<SequentialLayerConfig>(this), dim, sparsity,
+            act_func, sampling_config);
+  }
 };
 
 struct ConvLayerConfig final : public SequentialLayerConfig {
@@ -286,3 +302,5 @@ struct EmbeddingLayerConfig {
 };
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedLayerConfig)

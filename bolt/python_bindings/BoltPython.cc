@@ -1,9 +1,5 @@
 #include "BoltPython.h"
-#include <bolt/src/graph/Graph.h>
-#include <bolt/src/graph/Node.h>
-#include <bolt/src/graph/nodes/Concatenate.h>
-#include <bolt/src/graph/nodes/FullyConnected.h>
-#include <bolt/src/graph/nodes/Input.h>
+#include "BoltGraphPython.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
@@ -631,7 +627,7 @@ void createBoltSubmodule(py::module_& module) {
                         std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
                     uint64_t>(),
            py::arg("layers"), py::arg("input_dim"),
-           "Constructs a Distributed neural network.\n"
+           "Constructs a neural network for one node.\n"
            "Arguments:\n"
            " * layers: List of SequentialLayerConfig - Configurations for the "
            "sequence of "
@@ -642,47 +638,12 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("train_data"), py::arg("train_labels"),
            py::arg("batch_size") = 0, py::arg("rehash") = 0,
            py::arg("rebuild") = 0, py::arg("verbose") = true,
-           py::arg("random_seed") = time(nullptr),
            "Initializes the Distributed Training over a node\n"
            "Arguments:\n"
-           " * train_data: BoltDataset - Training data. This can be one of "
-           "three things. First it can be a BoltDataset as loaded by "
-           "thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset. It can be a dense numpy "
-           "array of float32 where each row in the array is interpreted as a "
-           "vector. Finally it can be a set of sparse vectors represented as "
-           "three numpy arrays (indices, values, offsets) where indices and "
-           "offsets are uint32 and values are float32. In this case indices is "
-           "a 1D array of all the nonzero indices concatenated, values is a 1D "
-           "array of all the nonzero values concatenated, and offsets are the "
-           "start positions in the indices and values array of each vector "
-           "plus one extra element at the end of the array representing the "
-           "total number of nonzeros. This is so that indices[offsets[i], "
-           "offsets[i + 1]] contains the indices of the ith vector and "
-           "values[offsets[i], offsets[i+1] contains the values of the ith "
-           "vector.For example if we have the vectors {0.0, 1.5, 0.0, 9.0} and "
-           "{0.0, 0.0, 0.0, 4.0} then the indices array is {1, 3, 3}, the "
-           "values array is {1.5, 9.0, 4.0} and the offsets array is {0, 2, "
-           "3}.\n"
-           " * train_labels: BoltDataset - Training labels. This can be one of "
-           "three things. First it can be a BoltDataset as loaded by "
-           "thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset. It can be a dense numpy "
-           "array of float32 where each row in the array is interpreted as a "
-           "label vector. Finally it can be a set of sparse vectors (each "
-           "vector is a label vector) represented as three numpy arrays "
-           "(indices, values, offsets) where indices and offsets are uint32 "
-           "and values are float32. In this case indices is a 1D array of all "
-           "the nonzero indices concatenated, values is a 1D array of all the "
-           "nonzero values concatenated, and offsets are the start positions "
-           "in the indices and values array of each vector plus one extra "
-           "element at the end of the array representing the total number of "
-           "nonzeros. This is so that indices[offsets[i], offsets[i + 1]] "
-           "contains the indices of the ith vector and values[offsets[i], "
-           "offsets[i+1] contains the values of the ith vector.For example if "
-           "we have the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, 0.0, 4.0} "
-           "then the indices array is {1, 3, 3}, the values array is {1.5, "
-           "9.0, 4.0} and the offsets array is {0, 2, 3}.\n"
+           "Trains the network on the given training data.\n"
+           "Arguments:\n"
+           " * train_data: BoltDataset - Training data.\n"
+           " * train_labels: BoltDataset - Training labels.\n"
            " * rehash: Int (positive) - Optional. Number of training samples "
            "before "
            "rehashing neurons. "
@@ -695,17 +656,18 @@ void createBoltSubmodule(py::module_& module) {
            "of rehashing.\n"
            " * rebuild: Int (positive) - Optional. Number of training samples "
            "before "
-           "rebuilding hash tables and generating new smart hash functions. "
-           "This is typically around 5 times the value of `rehash`."
-           "If not provided, BOLT will autotune this parameter.\n"
+           "rebuilding hash tables "
+           "and generating new smart hash functions. If not provided, BOLT "
+           "will autotune this parameter.\n"
+           " * metrics: List of str - Optional. The metrics to keep track of "
+           "during training. "
+           "See the section on metrics.\n"
            " * verbose: Boolean - Optional. If set to False, only displays "
-           "progress bar. "
-           "If set to True, prints additional information such as metrics and "
-           "epoch times. "
+           " some basic info "
+           "If set to True, prints additional information about training"
            "Set to True by default.\n\n"
-           "Assign the random seed to the network"
 
-           "Returns number of batch")
+           "Returns number of batches to be processed.")
       .def("calculateGradientSingleNode",
            &DistributedPyNetwork::calculateGradientSingleNode, py::arg("batch"),
            py::arg("loss_fn"),
@@ -737,53 +699,14 @@ void createBoltSubmodule(py::module_& module) {
            "Predicts the output given the input vectors and evaluates the "
            "predictions based on the given metrics.\n"
            "Arguments:\n"
-           " * test_data: BoltDataset - Test data. This can be one of "
-           "three things. First it can be a BoltDataset as loaded by "
-           "thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset. It can be a dense numpy "
-           "array of float32 where each row in the array is interpreted as a "
-           "vector. Finally it can be a set of sparse vectors represented as "
-           "three numpy arrays (indices, values, offsets) where indices and "
-           "offsets are uint32 and values are float32. In this case indices is "
-           "a 1D array of all the nonzero indices concatenated, values is a 1D "
-           "array of all the nonzero values concatenated, and offsets are the "
-           "start positions in the indices and values array of each vector "
-           "plus one extra element at the end of the array representing the "
-           "total number of nonzeros. This is so that indices[offsets[i], "
-           "offsets[i + 1]] contains the indices of the ith vector and "
-           "values[offsets[i], offsets[i+1] contains the values of the ith "
-           "vector.For example if we have the vectors {0.0, 1.5, 0.0, 9.0} and "
-           "{0.0, 0.0, 0.0, 4.0} then the indices array is {1, 3, 3}, the "
-           "values array is {1.5, 9.0, 4.0} and the offsets array is {0, 2, "
-           "3}.\n"
-           " * test_labels: BoltDataset - Test labels. This can be one of "
-           "four things. First it can be a BoltDataset as loaded by "
-           "thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset. It can be a dense numpy "
-           "array of float32 where each row in the array is interpreted as a "
-           "label vector. Finally it can be a set of sparse vectors (each "
-           "vector is a label vector) represented as three numpy arrays "
-           "(indices, values, offsets) where indices and offsets are uint32 "
-           "and values are float32. In this case indices is a 1D array of all "
-           "the nonzero indices concatenated, values is a 1D array of all the "
-           "nonzero values concatenated, and offsets are the start positions "
-           "in the indices and values array of each vector plus one extra "
-           "element at the end of the array representing the total number of "
-           "nonzeros. This is so that indices[offsets[i], offsets[i + 1]] "
-           "contains the indices of the ith vector and values[offsets[i], "
-           "offsets[i+1] contains the values of the ith vector.For example if "
-           "we have the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, 0.0, 4.0} "
-           "then the indices array is {1, 3, 3}, the values array is {1.5, "
-           "9.0, 4.0} and the offsets array is {0, 2, 3}. Finally, the test "
-           "labels can be passed in as test_labels=None, in which case they "
-           "will be ignored. If labels are not supplied then no metrics will "
-           "be computed but activations will still be returned.\n"
+           " * test_data: BoltDataset - Test data.\n"
+           " * test_labels: BoltDataset - Testing labels.\n"
+           " * batch_size: (Int) - Testing Batch Size.\n"
            " * sparse_inference: (Bool) - When this is true the model will use "
            "sparsity in inference. This will lead to faster inference but can "
-           "cause a slight loss in accuracy. This option defaults to false.\n"
            " * metrics: List of str - Optional. The metrics to keep track of "
-           "during training. "
-           "See the section on metrics.\n"
+           "during training. See the section on metrics.\n"
+           "cause a slight loss in accuracy. This option defaults to false.\n"
            " * verbose: Boolean - Optional. If set to False, only displays "
            "progress bar. "
            "If set to True, prints additional information such as metrics and "
@@ -840,189 +763,8 @@ void createBoltSubmodule(py::module_& module) {
       .def(py::init<const std::string&>(), py::arg("model_path"))
       .def("predict_sentiment", &SentimentClassifier::predictSentiment,
            py::arg("sentence"));
-  auto graph_submodule = bolt_submodule.def_submodule("graph");
 
-  py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
-
-  py::class_<FullyConnectedNode, std::shared_ptr<FullyConnectedNode>, Node>(
-      graph_submodule, "FullyConnected")
-      .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
-           py::arg("activation"),
-           "Constructs a dense FullyConnectedLayer object.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation: Enum specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-      .def(py::init<uint64_t, std::string>(), py::arg("dim"),
-           py::arg("activation"),
-           "Constructs a dense FullyConnectedLayer object.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation: String specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-      .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
-           py::arg("sparsity"), py::arg("activation"),
-           "Constructs a sparse FullyConnectedLayer object with sampling "
-           "parameters autotuned.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * sparsity: Float - What fraction of nuerons to activate during "
-           "training and sparse inference.\n"
-           " * activation: Enum specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-      .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
-           py::arg("sparsity"), py::arg("activation"),
-           "Constructs a sparse FullyConnectedLayer object with sampling "
-           "parameters autotuned.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * sparsity: Float - What fraction of nuerons to activate during "
-           "training and sparse inference.\n"
-           " * activation: String specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-#if THIRDAI_EXPOSE_ALL
-      .def(py::init<uint64_t, float, ActivationFunction, SamplingConfig>(),
-           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
-           py::arg("sampling_config"),
-           "Constructs a sparse FullyConnectedLayer object.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * sparsity: Float - What fraction of nuerons to activate during "
-           "training and sparse inference.\n"
-           " * activation: Enum specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
-           " * sampling_config (SamplingConfig) - Sampling config object to "
-           "initialize hash tables/functions.")
-      .def(py::init<uint64_t, float, std::string, SamplingConfig>(),
-           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
-           py::arg("sampling_config"),
-           "Constructs a sparse FullyConnectedLayer object.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * sparsity: Float - What fraction of nuerons to activate during "
-           "training and sparse inference.\n"
-           " * activation: String specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
-           " * sampling_config (SamplingConfig) - Sampling config object to "
-           "initialize hash tables/functions.")
-#endif
-      .def("__call__", &FullyConnectedNode::addPredecessor,
-           py::arg("prev_layer"),
-           "Tells the graph which layer should act as input to this fully "
-           "connected layer.")
-      .def("get_sparsity", &FullyConnectedNode::getSparsity);
-
-  py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
-      graph_submodule, "Concatenate")
-      .def(
-          py::init<>(),
-          "A layer that concatenates an arbitrary number of layers together.\n")
-      .def("__call__", &ConcatenateNode::setConcatenatedNodes,
-           py::arg("input_layers"),
-           "Tells the graph which layers will be concatenated. Must be at "
-           "least one node (although this is just an identity function, so "
-           "really should be at least two).");
-
-  py::class_<Input, InputPtr, Node>(graph_submodule, "Input")
-      .def(py::init<uint32_t>(), py::arg("dim"),
-           "Constructs an input layer node for the graph.");
-
-  py::class_<TrainConfig>(graph_submodule, "TrainConfig")
-      .def_static("makeConfig", &TrainConfig::makeConfig,
-                  py::arg("learning_rate"), py::arg("epochs"))
-      .def("withMetrics", &TrainConfig::withMetrics, py::arg("metrics"))
-      .def("silence", &TrainConfig::silence)
-      .def("withRebuildHashTables", &TrainConfig::withRebuildHashTables,
-           py::arg("rebuild_hash_tables"))
-      .def("withReconstructHashFunctions",
-           &TrainConfig::withReconstructHashFunctions,
-           py::arg("reconstruct_hash_functions"));
-
-  py::class_<PredictConfig>(graph_submodule, "PredictConfig")
-      .def_static("makeConfig", &PredictConfig::makeConfig)
-      .def("enableSparseInference", &PredictConfig::enableSparseInference)
-      .def("withMetrics", &PredictConfig::withMetrics, py::arg("metrics"))
-      .def("silence", &PredictConfig::silence);
-
-  py::class_<PyBoltGraph>(graph_submodule, "Model")
-      .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
-           py::arg("output"),
-           "Constructs a bolt model from a layer graph.\n"
-           "Arguments:\n"
-           " * inputs (List[Node]) - The input nodes to the graph. Note that "
-           "inputs are mapped to input layers by their index.\n"
-           " * output (Node) - The output node of the graph.")
-      .def("compile", &PyBoltGraph::compile, py::arg("loss"),
-           py::arg("print_when_done") = true,
-           "Compiles the graph for the given loss function. In this step the "
-           "order in which to compute the layers is determined and various "
-           "checks are preformed to ensure the model architecture is correct.")
-      .def("train", &PyBoltGraph::train<BoltBatch>, py::arg("train_data"),
-           py::arg("train_labels"), py::arg("train_config"),
-           "Trains the network on the given training data.\n"
-           "Arguments:\n"
-           " * train_data: BoltDataset - Training data. This is a BoltDataset "
-           "as loaded by thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * train_labels: BoltDataset - Training labels. This is a "
-           "BoltDataset as loaded by thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * train_config: TrainConfig - the additional training parameters. "
-           "See the TrainConfig documentation above.\n\n"
-
-           "Returns a mapping from metric names to an array their values for "
-           "every epoch.")
-      .def("predict", &PyBoltGraph::predict<BoltBatch>, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("predict_config"),
-           "Predicts the output given the input vectors and evaluates the "
-           "predictions based on the given metrics.\n"
-           "Arguments:\n"
-           " * test_data: BoltDataset - Test data. This is a BoltDataset as "
-           "loaded by thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * test_labels: BoltDataset - Test labels. This is a BoltDataset "
-           "as loaded by thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * predict_config: PredictConfig - the additional prediction "
-           "parameters. See the PredictConfig documentation above.\n\n"
-
-           "Returns a  a mapping from metric names to their values.")
-      .def("__str__",
-           [](const BoltGraph& model) {
-             return model.summarize(/* print = */ false,
-                                    /* detailed = */ false);
-           })
-      .def(
-          "summary", &BoltGraph::summarize, py::arg("print") = true,
-          py::arg("detailed") = false,
-          "Returns a summary of the network.\n"
-          "Arguments:\n"
-          " * print: boolean. Optional, default True. When specified to "
-          "\"True\", "
-          "summary will print the network summary in addition to returning it. "
-          "* detailed: boolean. Optional, default False. When specified to "
-          "\"True\", summary will additionally return/print sampling config "
-          "details for each layer in the network.")
-      // TODO(josh/nick): These are temporary until we have a better story
-      // for converting numpy to BoltGraphs
-      .def("train_np", &PyBoltGraph::trainNumpy, py::arg("train_data"),
-           py::arg("train_labels"), py::arg("train_config"),
-           py::arg("batch_size"))
-      .def("predict_np", &PyBoltGraph::predictNumpy, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("predict_config"),
-           py::arg("batch_size") = 256)
-      .def("get_layer", &PyBoltGraph::getNodeByName, py::arg("layer_name"),
-           "Looks up a layer (node) of the network by using the layer's "
-           "assigned name. As such, must be called after compile. You can "
-           "determine which layer is which by printing a graph summary. "
-           "Possible operations to perform on the returned object include "
-           "setting layer sparsity, freezing weights, or saving to a file");
+  createBoltGraphSubmodule(bolt_submodule);
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {

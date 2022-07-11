@@ -4,6 +4,7 @@
 #include <cereal/types/vector.hpp>
 #include "Model.h"
 #include <bolt/src/layers/BoltVector.h>
+#include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
@@ -23,24 +24,10 @@
 
 namespace thirdai::bolt {
 
-class DistributedModel : Model<bolt::BoltBatch> {
+class DistributedModel : public FullyConnectedNetwork {
  public:
-  enum GetType {
-    GET_WEIGHTS,
-    GET_BIASES,
-    GET_WEIGHT_GRADIENTS,
-    GET_BIASES_GRADIENTS
-  };
-
-  enum SetType {
-    SET_WEIGHTS,
-    SET_BIASES,
-    SET_WEIGHTS_GRADIENTS,
-    SET_BIASES_GRADIENTS
-  };
-
   DistributedModel(SequentialConfigList configs, uint64_t input_dim)
-      : DistributedNetwork(std::move(configs), input_dim, true),
+      : FullyConnectedNetwork(std::move(configs), input_dim, true),
         _batch_iter(0),
         _epoch_count(0),
         _rebuild_batch(0),
@@ -80,69 +67,30 @@ class DistributedModel : Model<bolt::BoltBatch> {
    */
   void updateParametersSingleNode(float learning_rate);
 
-  uint32_t getInferenceOutputDim(bool use_sparse_inference) const final;
-
-  void forward(uint32_t batch_index, const bolt::BoltBatch& inputs,
-               BoltVector& output, const BoltVector* labels) final {
-    DistributedNetwork.forward(batch_index, inputs, output, labels);
-  };
-
-  void backpropagate(uint32_t batch_index, bolt::BoltBatch& inputs,
-                     BoltVector& output) final {
-    DistributedNetwork.backpropagate(batch_index, inputs, output);
-  };
-
-  void updateParameters(float learning_rate, uint32_t iter) final {
-    DistributedNetwork.updateParameters(learning_rate, iter);
-  }
-
-  void initializeNetworkState(uint32_t batch_size, bool use_sparsity) final {
-    DistributedNetwork.initializeNetworkState(batch_size, use_sparsity);
-  };
-
-  BoltBatch getOutputs(uint32_t batch_size, bool use_sparsity) final {
-    return DistributedNetwork.getOutputs(batch_size, use_sparsity);
-  }
-
-  uint32_t getOutputDim() const final;
-
   uint32_t numLayers() const;
-
-  float* getLayerData(uint32_t layer_index, GetType type);
-
-  void setLayerData(uint32_t layer_index, const float* data, SetType type);
 
   uint32_t getDim(uint32_t layer_index) const;
 
   uint32_t getInputDim() const;
 
-  void reBuildHashFunctions() final {
-    DistributedNetwork.reBuildHashFunctions();
-  }
+  float* getWeights(uint32_t layer_index);
 
-  void buildHashTables() final { DistributedNetwork.buildHashTables(); }
-  void setShallow(bool shallow) final {
-    (void)shallow;
-    throw thirdai::exceptions::NotImplemented(
-        "Warning: setShallow not implemented for DLRM;");
-  }
+  float* getBiases(uint32_t layer_index);
 
-  void setShallowSave(bool shallow) final {
-    (void)shallow;
-    throw thirdai::exceptions::NotImplemented(
-        "Warning: setShallowSave not implemented for DLRM;");
-  }
+  float* getWeightsGradient(uint32_t layer_index);
 
-  bool anyLayerShallow() final { return false; }
+  float* getBiasesGradient(uint32_t layer_index);
 
-  void setRandomSeed(uint32_t random_seed) const;
+  void setWeights(uint32_t layer_index, const float* data);
 
-  void freezeHashTables() { DistributedNetwork.freezeHashTables(); }
+  void setBiases(uint32_t layer_index, const float* data);
+
+  void setWeightGradients(uint32_t layer_index, const float* data);
+
+  void setBiasesGradients(uint32_t layer_index, const float* data);
   // output  needed to be global variable because three
   // different function calls are using the same variable
   BoltBatch _outputs;
-
-  FullyConnectedNetwork DistributedNetwork;
 
  protected:
   uint32_t _batch_iter;

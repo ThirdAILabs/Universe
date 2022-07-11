@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "ConversionUtils.h"
 #include <bolt/src/graph/Graph.h>
@@ -50,39 +52,6 @@ py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
                                uint32_t inference_dim, uint32_t* active_neurons,
                                float* activations, bool output_sparse,
                                bool alloc_success);
-
-class PyBoltGraph final : public BoltGraph {
- public:
-  // Inherit constructors
-  using BoltGraph::BoltGraph;
-
-  MetricData trainNumpy(const py::object& train_data_numpy,
-                        const py::object& train_labels_numpy,
-                        const TrainConfig& train_config, uint32_t batch_size) {
-    auto train_data =
-        convertPyObjectToBoltDataset(train_data_numpy, batch_size, false);
-
-    auto train_labels =
-        convertPyObjectToBoltDataset(train_labels_numpy, batch_size, true);
-
-    return BoltGraph::train(train_data.dataset, train_labels.dataset,
-                            train_config);
-  }
-
-  InferenceMetricData predictNumpy(const py::object& test_data_numpy,
-                                   const py::object& test_labels_numpy,
-                                   const PredictConfig& predict_config,
-                                   uint32_t batch_size) {
-    auto test_data =
-        convertPyObjectToBoltDataset(test_data_numpy, batch_size, false);
-
-    auto test_labels =
-        convertPyObjectToBoltDataset(test_labels_numpy, batch_size, true);
-
-    return BoltGraph::predict(test_data.dataset, test_labels.dataset,
-                              predict_config);
-  }
-};
 
 class PyNetwork final : public FullyConnectedNetwork {
  public:
@@ -354,8 +323,7 @@ class DistributedPyNetwork final : public DistributedModel {
 
   uint32_t initTrainSingleNode(const py::object& data, const py::object& labels,
                                uint32_t batch_size = 0, uint32_t rehash = 0,
-                               uint32_t rebuild = 0, bool verbose = false,
-                               uint32_t random_seed = time(nullptr)) {
+                               uint32_t rebuild = 0, bool verbose = false) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
@@ -365,7 +333,6 @@ class DistributedPyNetwork final : public DistributedModel {
 
     uint32_t num_of_batches = DistributedModel::initTrainSingleNode(
         train_data.dataset, train_labels.dataset, rehash, rebuild, verbose);
-    DistributedModel::setRandomSeed(random_seed);
 
     return num_of_batches;
   }
@@ -429,7 +396,7 @@ class DistributedPyNetwork final : public DistributedModel {
       return py::none();
     }
 
-    float* mem = DistributedModel::getLayerData(layer_index, GET_WEIGHTS);
+    float* mem = DistributedModel::getWeights(layer_index);
 
     py::capsule free_when_done(
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
@@ -455,8 +422,7 @@ class DistributedPyNetwork final : public DistributedModel {
 
     weightDimensionCheck(new_weights, dim, prev_dim);
 
-    DistributedModel::setLayerData(layer_index, new_weights.data(),
-                                   SET_WEIGHTS);
+    DistributedModel::setWeights(layer_index, new_weights.data());
   }
 
   void setWeightGradients(
@@ -468,9 +434,9 @@ class DistributedPyNetwork final : public DistributedModel {
                            ? DistributedModel::getDim(layer_index - 1)
                            : DistributedModel::getInputDim();
 
-    weightGradientDimensionCheck(new_weights_gradients, dim, prev_dim);
-    DistributedModel::setLayerData(layer_index, new_weights_gradients.data(),
-                                   SET_WEIGHTS_GRADIENTS);
+    weightDimensionCheck(new_weights_gradients, dim, prev_dim, "gradient");
+    DistributedModel::setWeightGradients(layer_index,
+                                         new_weights_gradients.data());
   }
 
   void setBiases(
@@ -480,7 +446,7 @@ class DistributedPyNetwork final : public DistributedModel {
     int64_t dim = DistributedModel::getDim(layer_index);
     biasDimensionCheck(new_biases, dim);
 
-    DistributedModel::setLayerData(layer_index, new_biases.data(), SET_BIASES);
+    DistributedModel::setBiases(layer_index, new_biases.data());
   }
 
   void setBiasesGradients(
@@ -489,9 +455,9 @@ class DistributedPyNetwork final : public DistributedModel {
           new_biases_gradients) {
     int64_t dim = DistributedModel::getDim(layer_index);
 
-    biasGradientDimensionCheck(new_biases_gradients, dim);
-    DistributedModel::setLayerData(layer_index, new_biases_gradients.data(),
-                                   SET_BIASES_GRADIENTS);
+    biasDimensionCheck(new_biases_gradients, dim, "gradient");
+    DistributedModel::setBiasesGradients(layer_index,
+                                         new_biases_gradients.data());
   }
 
   py::array_t<float> getBiases(uint32_t layer_index) {
@@ -499,7 +465,7 @@ class DistributedPyNetwork final : public DistributedModel {
       return py::none();
     }
 
-    float* mem = DistributedModel::getLayerData(layer_index, GET_BIASES);
+    float* mem = DistributedModel::getBiases(layer_index);
 
     py::capsule free_when_done(
         mem, [](void* ptr) { delete static_cast<float*>(ptr); });
@@ -520,8 +486,7 @@ class DistributedPyNetwork final : public DistributedModel {
       return py::none();
     }
 
-    float* mem =
-        DistributedModel::getLayerData(layer_index, GET_BIASES_GRADIENTS);
+    float* mem = DistributedModel::getBiasesGradient(layer_index);
 
     size_t dim = DistributedModel::getDim(layer_index);
 
@@ -533,8 +498,7 @@ class DistributedPyNetwork final : public DistributedModel {
       return py::none();
     }
 
-    float* mem =
-        DistributedModel::getLayerData(layer_index, GET_WEIGHT_GRADIENTS);
+    float* mem = DistributedModel::getWeightsGradient(layer_index);
 
     size_t dim = DistributedModel::getDim(layer_index);
     size_t prev_dim = (layer_index > 0)

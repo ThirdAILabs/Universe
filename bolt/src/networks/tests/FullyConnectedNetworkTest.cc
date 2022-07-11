@@ -16,15 +16,16 @@
 
 namespace thirdai::bolt::tests {
 
-class FullyConnectedClassificationNetworkTestFixture : public testing::Test {};
+static constexpr uint32_t n_classes = 100;
 
-TEST_F(FullyConnectedClassificationNetworkTestFixture,
-       TrainSimpleDatasetSingleLayerNetwork) {
+TEST(FullyConnectedClassificationNetworkTest,
+     TrainSimpleDatasetSingleLayerNetwork) {
   FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
                                     n_classes, ActivationFunction::Softmax)},
                                 n_classes);
 
-  auto data = genDataset(false);
+  auto data =
+      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
 
   network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
                 /* learning_rate= */ 0.001, /* epochs= */ 5,
@@ -39,13 +40,13 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.98);
 }
 
-TEST_F(FullyConnectedClassificationNetworkTestFixture,
-       TrainNoisyDatasetSingleLayerNetwork) {
+TEST(FullyConnectedClassificationNetworkTest,
+     TrainNoisyDatasetSingleLayerNetwork) {
   FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
                                     n_classes, ActivationFunction::Softmax)},
                                 n_classes);
 
-  auto data = genDataset(true);
+  auto data = genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
 
   network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
                 /* learning_rate= */ 0.001, /* epochs= */ 5,
@@ -67,7 +68,8 @@ static void testSimpleDatasetMultiLayerNetworkActivation(
            n_classes, ActivationFunction::Softmax)},
       n_classes);
 
-  auto data = genDataset(false);
+  auto data =
+      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
 
   auto train_metrics =
       network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
@@ -87,25 +89,26 @@ static void testSimpleDatasetMultiLayerNetworkActivation(
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
 
-TEST_F(FullyConnectedClassificationNetworkTestFixture,
-       TrainSimpleDatasetMultiLayerNetwork) {
+TEST(FullyConnectedClassificationNetworkTest,
+     TrainSimpleDatasetMultiLayerNetwork) {
   testSimpleDatasetMultiLayerNetworkActivation(ActivationFunction::ReLU);
 }
 
-TEST_F(FullyConnectedClassificationNetworkTestFixture,
-       TrainSimpleDatasetMultiLayerNetworkTanh) {
+TEST(FullyConnectedClassificationNetworkTest,
+     TrainSimpleDatasetMultiLayerNetworkTanh) {
   testSimpleDatasetMultiLayerNetworkActivation(ActivationFunction::Tanh);
 }
 
-TEST_F(FullyConnectedClassificationNetworkTestFixture,
-       TrainSimpleDatasetMultiLayerNetworkSigmoid) {
+TEST(FullyConnectedClassificationNetworkTest,
+     TrainSimpleDatasetMultiLayerNetworkSigmoid) {
   FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
                                      10000, 0.1, ActivationFunction::ReLU),
                                  std::make_shared<FullyConnectedLayerConfig>(
                                      n_classes, ActivationFunction::Sigmoid)},
                                 n_classes);
 
-  auto data = genDataset(false);
+  auto data =
+      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
 
   auto train_metrics =
       network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
@@ -126,15 +129,15 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
 
-TEST_F(FullyConnectedClassificationNetworkTestFixture,
-       TrainNoisyDatasetMultiLayerNetwork) {
+TEST(FullyConnectedClassificationNetworkTest,
+     TrainNoisyDatasetMultiLayerNetwork) {
   FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
                                      10000, 0.1, ActivationFunction::ReLU),
                                  std::make_shared<FullyConnectedLayerConfig>(
                                      n_classes, ActivationFunction::Softmax)},
                                 n_classes);
 
-  auto data = genDataset(true);
+  auto data = genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
 
   network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
                 /* learning_rate= */ 0.001, /* epochs= */ 2,
@@ -149,8 +152,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
 }
 
-TEST_F(FullyConnectedClassificationNetworkTestFixture,
-       MultiLayerNetworkToString) {
+TEST(FullyConnectedClassificationNetworkTest, MultiLayerNetworkToString) {
   FullyConnectedNetwork network(
       {/* layer1= */ std::make_shared<FullyConnectedLayerConfig>(
            /* dim= */ 10000, /* sparsity= */ 0.1,
@@ -180,7 +182,7 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
 // below for more details on how this test works.
 class DummyDataLoader final : public dataset::DataLoader {
  public:
-  DummyDataLoader() : DataLoader(batch_size) {}
+  DummyDataLoader() : DataLoader(/* target_batch_size = */ 100) {}
 
   std::optional<std::vector<std::string>> nextBatch() final { return {{}}; }
 
@@ -249,7 +251,8 @@ std::shared_ptr<dataset::StreamingDataset<BoltBatch>> getMockStreamingDataset(
 void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
                                        uint32_t epochs, float acc_threshold) {
   for (uint32_t e = 0; e < epochs; e++) {
-    auto in_mem_data = genDataset(false);
+    auto in_mem_data =
+        genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
     auto stream_data = getMockStreamingDataset(std::move(in_mem_data));
 
     network.trainOnStream(stream_data, CategoricalCrossEntropyLoss(),
@@ -260,7 +263,8 @@ void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
                           /* verbose= */ false);
   }
 
-  auto in_mem_data = genDataset(false);
+  auto in_mem_data =
+      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
   auto stream_data = getMockStreamingDataset(std::move(in_mem_data));
 
   auto test_metrics =
@@ -271,8 +275,8 @@ void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
   ASSERT_GE(test_metrics["categorical_accuracy"], acc_threshold);
 }
 
-TEST_F(FullyConnectedClassificationNetworkTestFixture,
-       TrainSimpleDatasetSingleLayerNetworkStreamingData) {
+TEST(FullyConnectedClassificationNetworkTest,
+     TrainSimpleDatasetSingleLayerNetworkStreamingData) {
   FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
                                     n_classes, ActivationFunction::Softmax)},
                                 n_classes);
@@ -281,8 +285,8 @@ TEST_F(FullyConnectedClassificationNetworkTestFixture,
                                     /* acc_threshold= */ 0.98);
 }
 
-TEST_F(FullyConnectedClassificationNetworkTestFixture,
-       TrainSimpleDatasetMultiLayerNetworkStreamingData) {
+TEST(FullyConnectedClassificationNetworkTest,
+     TrainSimpleDatasetMultiLayerNetworkStreamingData) {
   FullyConnectedNetwork network(
       {std::make_shared<FullyConnectedLayerConfig>(
            /* dim=*/10000, /* sparsity= */ 0.1, ActivationFunction::ReLU),

@@ -24,10 +24,8 @@ uint32_t DistributedModel::initTrainSingleNode(
   _train_data = train_data;
   _train_labels = train_labels;
   uint32_t batch_size = _train_data->at(0).getBatchSize();
-  _rebuild_batch = DistributedNetwork.getRebuildBatch(rebuild, batch_size,
-                                                      train_data->len());
-  _rehash_batch =
-      DistributedNetwork.getRehashBatch(rehash, batch_size, train_data->len());
+  _rebuild_batch = getRebuildBatch(rebuild, batch_size, train_data->len());
+  _rehash_batch = getRehashBatch(rehash, batch_size, train_data->len());
 
   // Because of how the datasets are read we know that all batches will not have
   // a batch size larger than this so we can just set the batch size here.
@@ -50,23 +48,17 @@ void DistributedModel::calculateGradientSingleNode(
 #pragma omp parallel for default(none) \
     shared(batch_inputs, batch_labels, _outputs, loss_fn)
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
-    DistributedNetwork.forward(vec_id, batch_inputs, _outputs[vec_id],
-                               &batch_labels[vec_id]);
+    forward(vec_id, batch_inputs, _outputs[vec_id], &batch_labels[vec_id]);
 
     loss_fn.lossGradients(_outputs[vec_id], batch_labels[vec_id],
                           batch_inputs.getBatchSize());
-    DistributedNetwork.backpropagate(vec_id, batch_inputs, _outputs[vec_id]);
+    backpropagate(vec_id, batch_inputs, _outputs[vec_id]);
   }
 }
 
 void DistributedModel::updateParametersSingleNode(float learning_rate) {
-  DistributedNetwork.updateParameters(learning_rate, ++_batch_iter);
-  if (_batch_iter % _rebuild_batch == (_rebuild_batch - 1)) {
-    reBuildHashFunctions();
-    buildHashTables();
-  } else if (_batch_iter % _rehash_batch == (_rehash_batch - 1)) {
-    buildHashTables();
-  }
+  updateParameters(learning_rate, ++_batch_iter);
+  updateSampling(_rehash_batch, _rebuild_batch);
 }
 
 InferenceMetricData DistributedModel::predictSingleNode(
@@ -75,76 +67,50 @@ InferenceMetricData DistributedModel::predictSingleNode(
     float* output_activations, bool use_sparse_inference,
     const std::vector<std::string>& metric_names, bool verbose,
     uint32_t batch_limit) {
-  return DistributedNetwork.predict(test_data, labels, output_active_neurons,
-                                    output_activations, use_sparse_inference,
-                                    metric_names, verbose, batch_limit);
+  return predict(test_data, labels, output_active_neurons, output_activations,
+                 use_sparse_inference, metric_names, verbose, batch_limit);
 }
 
-uint32_t DistributedModel::getInferenceOutputDim(
-    bool use_sparse_inference) const {
-  return DistributedNetwork.getInferenceOutputDim(use_sparse_inference);
+uint32_t DistributedModel::numLayers() const { return _num_layers; }
+
+float* DistributedModel::getWeights(uint32_t layer_index) {
+  return _layers.at(layer_index)->getWeights();
 }
 
-uint32_t DistributedModel::getOutputDim() const {
-  return DistributedNetwork.getOutputDim();
+float* DistributedModel::getBiases(uint32_t layer_index) {
+  return _layers.at(layer_index)->getBiases();
 }
 
-uint32_t DistributedModel::numLayers() const {
-  return DistributedNetwork._num_layers;
+float* DistributedModel::getWeightsGradient(uint32_t layer_index) {
+  return _layers.at(layer_index)->getWeightsGradient();
 }
 
-float* DistributedModel::getLayerData(uint32_t layer_index, GetType type) {
-  switch (type) {
-    case GET_WEIGHTS:
-      return DistributedNetwork._layers[layer_index]->getWeights();
-      break;
-    case GET_BIASES:
-      return DistributedNetwork._layers[layer_index]->getBiases();
-      break;
-    case GET_WEIGHT_GRADIENTS:
-      return DistributedNetwork._layers[layer_index]->getWeightsGradient();
-      break;
-    case GET_BIASES_GRADIENTS:
-      return DistributedNetwork._layers[layer_index]->getBiasesGradient();
-      break;
-  }
-  throw std::invalid_argument("Wrong argument for getLayerData Function");
-  return NULL;
+float* DistributedModel::getBiasesGradient(uint32_t layer_index) {
+  return _layers.at(layer_index)->getBiasesGradient();
 }
 
-void DistributedModel::setLayerData(uint32_t layer_index, const float* set_data,
-                                    SetType type) {
-  switch (type) {
-    case SET_WEIGHTS:
-      DistributedNetwork._layers[layer_index]->setWeights(set_data);
-      break;
-    case SET_BIASES:
-      DistributedNetwork._layers[layer_index]->setBiases(set_data);
-      break;
-    case SET_WEIGHTS_GRADIENTS:
-      DistributedNetwork._layers[layer_index]->setWeightGradients(set_data);
-      break;
-    case SET_BIASES_GRADIENTS:
-      DistributedNetwork._layers[layer_index]->setBiasesGradients(set_data);
-      break;
-  }
+void DistributedModel::setWeights(uint32_t layer_index, const float* data) {
+  _layers.at(layer_index)->setWeights(data);
+}
+
+void DistributedModel::setBiases(uint32_t layer_index, const float* data) {
+  _layers.at(layer_index)->setBiases(data);
+}
+
+void DistributedModel::setWeightGradients(uint32_t layer_index,
+                                          const float* data) {
+  _layers.at(layer_index)->setWeightGradients(data);
+}
+
+void DistributedModel::setBiasesGradients(uint32_t layer_index,
+                                          const float* data) {
+  _layers.at(layer_index)->setBiasesGradients(data);
 }
 
 uint32_t DistributedModel::getDim(uint32_t layer_index) const {
-  return DistributedNetwork._layers.at(layer_index)->getDim();
+  return _layers.at(layer_index)->getDim();
 }
 
-uint32_t DistributedModel::getInputDim() const {
-  return DistributedNetwork._input_dim;
-}
-
-void DistributedModel::setRandomSeed(uint32_t random_seed) const {
-  for (uint32_t i = 0; i < DistributedNetwork._num_layers; i++) {
-    if (DistributedNetwork._layers[i]->getSparsity() < 1) {
-      DistributedNetwork._layers[i]->setSparsity(
-          DistributedNetwork._layers[i]->getSparsity(), random_seed);
-    }
-  }
-}
+uint32_t DistributedModel::getInputDim() const { return _input_dim; }
 
 }  // namespace thirdai::bolt

@@ -3,7 +3,7 @@ from thirdai import bolt
 import numpy as np
 import pytest
 
-from utils import gen_training_data
+from .utils import gen_training_data
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
