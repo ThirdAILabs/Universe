@@ -44,9 +44,10 @@ class Supervisor:
         getting_gradient_time = time.time() - start_getting_gradients
         
         summing_and_averaging_gradients_start_time = time.time()
+        
         self.w_gradients_avg = np.array([np.zeros((self.layers[layer_no+1], self.layers[layer_no])) for layer_no in range(len(self.layers)-1)])
         self.b_gradients_avg = np.array([np.zeros((self.layers[layer_no+1])) for layer_no in range(len(self.layers)-1)])
-
+        
         for w_gradients,b_gradients in gradients_list:
             self.w_gradients_avg += w_gradients
             self.b_gradients_avg += b_gradients
@@ -54,7 +55,7 @@ class Supervisor:
         
         self.w_gradients_avg = np.divide(self.w_gradients_avg, len(self.workers))
         self.b_gradients_avg = np.divide(self.b_gradients_avg, len(self.workers))
-
+        
         summing_and_averaging_gradients_time = time.time() - summing_and_averaging_gradients_start_time
         return gradient_computation_time, getting_gradient_time, summing_and_averaging_gradients_time
 
