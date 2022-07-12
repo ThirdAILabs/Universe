@@ -337,15 +337,6 @@ class DistributedPyNetwork final : public DistributedModel {
     return num_of_batches;
   }
 
-  void calculateGradientSingleNode(uint32_t batch,
-                                   const LossFunction& loss_fn) {
-    DistributedModel::calculateGradientSingleNode(batch, loss_fn);
-  }
-
-  void updateParametersSingleNode(float learning_rate) {
-    DistributedModel::updateParametersSingleNode(learning_rate);
-  }
-
   py::tuple predictSingleNode(
       const py::object& data, const py::object& labels, uint32_t batch_size = 0,
       bool use_sparse_inference = false,
@@ -509,6 +500,7 @@ class DistributedPyNetwork final : public DistributedModel {
                               {prev_dim * sizeof(float), sizeof(float)}, mem);
   }
 };
+
 class SentimentClassifier {
  public:
   explicit SentimentClassifier(const std::string& model_path) {
