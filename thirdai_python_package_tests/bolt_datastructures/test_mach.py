@@ -76,7 +76,8 @@ def get_recall(result, test_y, num_true_labels_per_sample):
     return recall
 
 
-def helper_for_testing_save_checkpoint(test_for_checkpoint):
+@pytest.mark.unit
+def test_mach_save_load():
     num_train = 10000
     num_test = 1000
     num_true_labels_per_sample = 10
@@ -106,12 +107,8 @@ def helper_for_testing_save_checkpoint(test_for_checkpoint):
         result_slow, test_y, num_true_labels_per_sample
     )
 
-    if test_for_checkpoint:
-        save_folder_name = "mach_checkpointed_for_test"
-        mach.checkpoint(save_folder_name)
-    else:
-        save_folder_name = "mach_saved_for_test"
-        mach.save_for_inference(save_folder_name)
+    save_folder_name = "mach_saved_for_test"
+    mach.save(save_folder_name)
 
     newMach = bolt.Mach.load(save_folder_name)
 
@@ -154,12 +151,3 @@ def test_mach_random_data():
     assert get_recall(result_fast, test_y, num_true_labels_per_sample) > 0.8
     assert get_recall(result_slow, test_y, num_true_labels_per_sample) > 0.8
 
-
-@pytest.mark.unit
-def test_checkpoint_mach():
-    helper_for_testing_save_checkpoint(test_for_checkpoint=True)
-
-
-@pytest.mark.unit
-def test_save_mach():
-    helper_for_testing_save_checkpoint(test_for_checkpoint=False)
