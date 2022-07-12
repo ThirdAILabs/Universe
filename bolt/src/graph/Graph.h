@@ -1,11 +1,13 @@
 #pragma once
 
+#include <wrappers/src/LicenseWrapper.h>
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
 #include "ExecutionConfig.h"
+#include "InferenceOutputTracker.h"
 #include "Node.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
@@ -16,6 +18,7 @@
 #include <dataset/src/Dataset.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
@@ -32,7 +35,9 @@ class BoltGraph {
    */
   BoltGraph(std::vector<InputPtr> inputs, NodePtr output)
       : BoltGraph(std::move(inputs), /* token-inputs= */ {},
-                  std::move(output)) {}
+                  std::move(output)) {
+    thirdai::licensing::LicenseWrapper::checkLicense();
+  }
 
   BoltGraph(std::vector<InputPtr> inputs,
             std::vector<TokenInputPtr> token_inputs, NodePtr output)
@@ -40,7 +45,9 @@ class BoltGraph {
         _inputs(std::move(inputs)),
         _token_inputs(std::move(token_inputs)),
         _epoch_count(0),
-        _batch_cnt(0) {}
+        _batch_cnt(0) {
+    thirdai::licensing::LicenseWrapper::checkLicense();
+  }
 
   /*
     When the layers are initially defined the only have information about their
@@ -63,7 +70,7 @@ class BoltGraph {
       const TrainConfig& train_config);
 
   template <typename BATCH_T>
-  InferenceMetricData predict(
+  InferenceResult predict(
       // Test dataset
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
       // Test labels
@@ -95,7 +102,7 @@ class BoltGraph {
 
  private:
   // Private constructor for cereal.
-  BoltGraph() {}
+  BoltGraph() { thirdai::licensing::LicenseWrapper::checkLicense(); }
 
   template <typename BATCH_T>
   void processTrainingBatch(BATCH_T& batch_inputs,
@@ -105,7 +112,7 @@ class BoltGraph {
   template <typename BATCH_T>
   void processInferenceBatch(BATCH_T& batch_inputs,
                              const BoltBatch* batch_labels,
-                             MetricAggregator& metrics, bool compute_metrics);
+                             MetricAggregator& metrics);
 
   template <typename BATCH_T>
   void setInputs(BATCH_T& batch_inputs);
@@ -125,6 +132,12 @@ class BoltGraph {
   void traverseGraph();
 
   std::unordered_map<NodePtr, int32_t> getSuccessorCounts() const;
+
+  template <typename BATCH_T>
+  void verifyCanPredict(
+      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
+      bool has_labels, bool returning_activations,
+      uint32_t num_metrics_tracked);
 
   template <typename BATCH_T>
   void verifyInputForGraph(
