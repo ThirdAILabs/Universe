@@ -3,6 +3,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
+#include "ProcessorUtils.h"
 #include <dataset/src/bolt_datasets/BatchProcessor.h>
 #include <dataset/src/bolt_datasets/batch_processors/PairgramHasher.h>
 #include <cmath>
@@ -208,7 +209,8 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
   void processHeader(const std::string& header) final { (void)header; }
 
   void processRow(const std::string& row) final {
-    std::vector<std::string_view> values = parseCsvRow(row, _delimiter);
+    std::vector<std::string_view> values =
+        ProcessorUtils::parseCsvRow(row, _delimiter);
     if (values.size() != _metadata->numColumns()) {
       throw std::invalid_argument("Csv format error. Expected " +
                                   std::to_string(_metadata->numColumns()) +

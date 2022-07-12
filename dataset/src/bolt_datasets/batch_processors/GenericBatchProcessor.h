@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ProcessorUtils.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/bolt_datasets/BatchProcessor.h>
@@ -66,7 +67,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
 #pragma omp parallel for default(none) shared( \
     rows, batch_inputs, batch_labels, found_error, block_exception_message)
     for (size_t i = 0; i < rows.size(); ++i) {
-      auto columns = parseCsvRow(rows[i], _delimiter);
+      auto columns = ProcessorUtils::parseCsvRow(rows[i], _delimiter);
       if (columns.size() < _expected_num_cols) {
         found_error = true;
         continue;
@@ -89,10 +90,10 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     */
     if (found_error) {
       for (const auto& row : rows) {
-        auto n_cols = parseCsvRow(row, _delimiter).size();
+        auto n_cols = ProcessorUtils::parseCsvRow(row, _delimiter).size();
         if (n_cols < _expected_num_cols) {
           std::stringstream error_ss;
-          error_ss << "[GenericBatchProcessor::parseCsvRow] Expected "
+          error_ss << "[ProcessorUtils::parseCsvRow] Expected "
                    << _expected_num_cols << " columns delimited by '"
                    << _delimiter << "' in each row of the dataset. Found row '"
                    << row << "' with number of columns = " << n_cols << ".";
