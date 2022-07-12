@@ -35,7 +35,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   FullyConnectedLayer& operator=(FullyConnectedLayer&&) = delete;
 
   FullyConnectedLayer(const FullyConnectedLayerConfig& config,
-                      uint64_t prev_dim);
+                      uint64_t prev_dim, bool is_distributed = false);
 
   void forward(const BoltVector& input, BoltVector& output,
                const BoltVector* labels) final;
@@ -91,6 +91,14 @@ class FullyConnectedLayer final : public SequentialLayer {
   void setWeights(const float* new_weights) final;
 
   void setBiases(const float* new_biases) final;
+
+  void setWeightGradients(const float* update_weight_gradient) final;
+
+  void setBiasesGradients(const float* update_bias_gradient) final;
+
+  float* getBiasesGradient() final;
+
+  float* getWeightsGradient() final;
 
   bool isShallow() const final { return _is_shallow; }
 
@@ -152,6 +160,10 @@ class FullyConnectedLayer final : public SequentialLayer {
   // This is only used if _this_is_dense == false
   std::vector<bool> _is_active;
 
+  // A flag to check whether the current network is running in the normal
+  // settings and distributed settings
+  bool _is_distributed;
+
   LSHSamplingMode _sampling_mode;
 
   static std::unique_ptr<hashing::HashFunction> assignHashFunction(
@@ -204,6 +216,7 @@ class FullyConnectedLayer final : public SequentialLayer {
                                    float B1_bias_corrected,
                                    float B2_bias_corrected);
   inline void cleanupWithinBatchVars();
+
   inline void initSparseDatastructures(std::random_device& rd);
   inline void deinitSparseDatastructures();
 

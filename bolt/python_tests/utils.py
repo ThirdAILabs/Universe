@@ -69,6 +69,24 @@ def gen_single_sparse_layer_network(n_classes, sparsity=0.5):
     return network
 
 
+# training the distributed network
+def train_network_distributed(
+    network, train_data, train_labels, epochs, learning_rate=0.0005
+):
+    batch_size = network.initTrainSingleNode(
+        train_data,
+        train_labels,
+        rehash=3000,
+        rebuild=10000,
+        verbose=True,
+        batch_size=64,
+    )
+    for i in range(epochs):
+        for j in range(batch_size):
+            network.calculateGradientSingleNode(j, bolt.CategoricalCrossEntropyLoss())
+            network.updateParametersSingleNode(learning_rate)
+
+
 def get_simple_concat_model(
     hidden_layer_top_dim,
     hidden_layer_bottom_dim,

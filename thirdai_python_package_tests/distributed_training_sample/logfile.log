@@ -1,0 +1,44 @@
+2022-07-11 16:45:12,839 : INFO : DistributedBolt : Ray set up on head node completed.
+2022-07-11 16:45:12,839 : INFO : DistributedBolt : Starting the cluster Setup.
+2022-07-11 16:45:12,845 : INFO : DistributedBolt : Cluster has started.
+2022-07-11 16:45:13,240 : INFO : DistributedBolt : Ray Initialized on Head Node
+2022-07-11 16:45:40,371 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-11 18:10:01,041 : INFO : DistributedBolt : Ray set up on head node completed.
+2022-07-11 18:10:01,042 : INFO : DistributedBolt : Starting the cluster Setup.
+2022-07-11 18:10:01,048 : INFO : DistributedBolt : Cluster has started.
+2022-07-11 18:10:01,439 : INFO : DistributedBolt : Ray Initialized on Head Node
+2022-07-11 18:10:28,833 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-11 18:12:18,338 : INFO : DistributedBolt : Ray set up on head node completed.
+2022-07-11 18:12:18,338 : INFO : DistributedBolt : Starting the cluster Setup.
+2022-07-11 18:12:18,344 : INFO : DistributedBolt : Cluster has started.
+2022-07-11 18:12:18,740 : INFO : DistributedBolt : Ray Initialized on Head Node
+2022-07-11 18:12:46,479 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-11 18:44:56,279 : INFO : DistributedBolt : Ray set up on head node completed.
+2022-07-11 18:44:56,279 : INFO : DistributedBolt : Starting the cluster Setup.
+2022-07-11 18:44:56,284 : INFO : DistributedBolt : Cluster has started.
+2022-07-11 18:44:56,684 : INFO : DistributedBolt : Ray Initialized on Head Node
+2022-07-11 18:45:23,623 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-11 18:46:14,858 : INFO : DistributedBolt : Ray set up on head node completed.
+2022-07-11 18:46:14,858 : INFO : DistributedBolt : Starting the cluster Setup.
+2022-07-11 18:46:14,864 : INFO : DistributedBolt : Cluster has started.
+2022-07-11 18:46:15,265 : INFO : DistributedBolt : Ray Initialized on Head Node
+2022-07-11 18:46:42,335 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-11 18:48:15,285 : INFO : DistributedBolt : Ray set up on head node completed.
+2022-07-11 18:48:15,286 : INFO : DistributedBolt : Starting the cluster Setup.
+2022-07-11 18:48:15,291 : INFO : DistributedBolt : Cluster has started.
+2022-07-11 18:48:15,691 : INFO : DistributedBolt : Ray Initialized on Head Node
+2022-07-11 18:48:43,547 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-11 19:00:30,263 : INFO : DistributedBolt : Ray set up on head node completed.
+2022-07-11 19:00:30,263 : INFO : DistributedBolt : Starting the cluster Setup.
+2022-07-11 19:00:36,776 : INFO : DistributedBolt : Cluster has started.
+2022-07-11 19:00:37,180 : INFO : DistributedBolt : Ray Initialized on Head Node
+2022-07-11 19:01:13,161 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-11 19:02:25,596 : INFO : DistributedBolt : Ray set up on head node completed.
+2022-07-11 19:02:25,596 : INFO : DistributedBolt : Starting the cluster Setup.
+2022-07-11 19:02:25,602 : INFO : DistributedBolt : Cluster has started.
+2022-07-11 19:02:25,994 : INFO : DistributedBolt : Ray Initialized on Head Node
+2022-07-11 19:03:38,468 : INFO : DistributedBolt : Ray set up on head node completed.
+2022-07-11 19:03:38,468 : INFO : DistributedBolt : Starting the cluster Setup.
+2022-07-11 19:03:38,474 : INFO : DistributedBolt : Cluster has started.
+2022-07-11 19:03:38,865 : INFO : DistributedBolt : Ray Initialized on Head Node
+2022-07-11 19:04:05,475 : INFO : DistributedBolt : Linear communication pattern is choosen

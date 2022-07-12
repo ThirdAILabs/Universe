@@ -4,6 +4,7 @@ __all__ = [
     "search",
     "dataset",
     "hashing",
+    "distributed_bolt",
     "set_thirdai_license_path",
     "set_global_num_threads",
 ]
@@ -13,6 +14,7 @@ import thirdai.bolt
 import thirdai.search
 import thirdai.dataset
 import thirdai.hashing
+import thirdai.distributed_bolt
 
 # Import the top level methods so they are available directly from thirdai
 # If the import fails it means this build doesn't expose these methods, so we
