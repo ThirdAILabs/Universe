@@ -23,23 +23,25 @@ def test_freeze_dag_hash_tables():
     data, labels = gen_training_data(n_classes=n_classes, n_samples=10000)
 
     # Train and predict before freezing hash tables.
-    train_config = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=2)
-    model.train_np(data, labels, train_config, batch_size=100)
+    train_config = bolt.graph.TrainConfig.make(
+        learning_rate=0.001, epochs=2
+    ).with_batch_size(100)
+    model.train(data, labels, train_config)
 
     predict_config = (
         bolt.graph.PredictConfig.make()
         .enable_sparse_inference()
         .with_metrics(["categorical_accuracy"])
     )
-    test_metrics1 = model.predict_np(data, labels, predict_config)
+    test_metrics1 = model.predict(data, labels, predict_config)[0]
 
     assert test_metrics1["categorical_accuracy"] >= 0.8
 
     # Freeze hash tables and train for 2 more epochs.
     model.freeze_hash_tables()
 
-    model.train_np(data, labels, train_config, batch_size=100)
+    model.train(data, labels, train_config)
 
-    test_metrics2 = model.predict_np(data, labels, predict_config)
+    test_metrics2 = model.predict(data, labels, predict_config)[0]
     assert test_metrics2["categorical_accuracy"] >= 0.9
     assert test_metrics2["categorical_accuracy"] > test_metrics1["categorical_accuracy"]

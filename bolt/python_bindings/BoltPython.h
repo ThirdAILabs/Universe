@@ -40,17 +40,9 @@ namespace thirdai::bolt::python {
 void createBoltSubmodule(py::module_& module);
 
 // Returns true on success and false on allocation failure.
-bool allocateActivations(uint64_t num_samples, uint64_t inference_dim,
+void allocateActivations(uint64_t num_samples, uint64_t inference_dim,
                          uint32_t** active_neurons, float** activations,
                          bool output_sparse);
-
-// Takes in the activations arrays (if they were allocated) and returns the
-// correct python tuple containing the activations (and active neurons if
-// sparse) and the metrics computed.
-py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
-                               uint32_t inference_dim, uint32_t* active_neurons,
-                               float* activations, bool output_sparse,
-                               bool alloc_success);
 
 class PyNetwork final : public FullyConnectedNetwork {
  public:
@@ -139,9 +131,8 @@ class PyNetwork final : public FullyConnectedNetwork {
     uint32_t* active_neurons = nullptr;
     float* activations = nullptr;
 
-    bool alloc_success =
-        allocateActivations(num_samples, inference_output_dim, &active_neurons,
-                            &activations, output_sparse);
+    allocateActivations(num_samples, inference_output_dim, &active_neurons,
+                        &activations, output_sparse);
 
     auto metric_data = FullyConnectedNetwork::predict(
         test_data.dataset, test_labels.dataset, active_neurons, activations,
@@ -149,9 +140,9 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     py::dict py_metric_data = py::cast(metric_data);
 
-    return constructNumpyArrays(std::move(py_metric_data), num_samples,
-                                inference_output_dim, active_neurons,
-                                activations, output_sparse, alloc_success);
+    return constructPythonInferenceTuple(std::move(py_metric_data), num_samples,
+                                         inference_output_dim, activations,
+                                         active_neurons);
   }
 
   void saveForInference(const std::string& filename) {
@@ -325,18 +316,17 @@ class PyDLRM final : public DLRM {
     uint32_t* active_neurons = nullptr;
     float* activations = nullptr;
 
-    bool alloc_success =
-        allocateActivations(num_samples, inference_output_dim, &active_neurons,
-                            &activations, output_sparse);
+    allocateActivations(num_samples, inference_output_dim, &active_neurons,
+                        &activations, output_sparse);
 
     auto metric_data =
         DLRM::predict(test_data, test_labels, active_neurons, activations,
                       use_sparse_inference, metrics, verbose, batch_limit);
     py::dict py_metric_data = py::cast(metric_data);
 
-    return constructNumpyArrays(std::move(py_metric_data), num_samples,
-                                inference_output_dim, active_neurons,
-                                activations, output_sparse, alloc_success);
+    return constructPythonInferenceTuple(std::move(py_metric_data), num_samples,
+                                         inference_output_dim, activations,
+                                         active_neurons);
   }
 };
 
