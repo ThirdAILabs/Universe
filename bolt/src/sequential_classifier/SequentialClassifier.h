@@ -71,7 +71,9 @@ class SequentialClassifier {
     return blocks[iter - offsets.begin() - 1];
   }
 
-  void explain(std::string filename, const LossFunction& loss_fn) {
+  std::vector<std::vector<std::pair<float, std::string>>> explain(
+      std::string filename,
+      const LossFunction& loss_fn = CategoricalCrossEntropyLoss()) {
     auto pipeline =
         _pipeline_builder.buildPipelineForFile(filename, /* shuffle = */
                                                false,
@@ -89,6 +91,7 @@ class SequentialClassifier {
     }
     sortGradients(temp);
     std::vector<std::shared_ptr<dataset::Block>> blocks;
+    std::vector<std::vector<std::string>> total_column_names;
     for (const auto& row : temp) {
       blocks.clear();
       for (const auto& col : row) {
@@ -96,13 +99,26 @@ class SequentialClassifier {
             getBlock(pipeline.second, _pipeline_builder.offsets, col.second));
       }
       auto messages = getMessagesFromBlocks(blocks);
+      std::vector<std::string> column_names;
       for (const auto& message : messages) {
         std::string col_name =
             _pipeline_builder._schema.num_to_name.at(message.second);
+        column_names.push_back(col_name);
         // std::cout << col_name << " : reason " << message.first << std::endl;
         // std::cout << col_name << " ";
       }
+      total_column_names.push_back(column_names);
     }
+    std::vector<std::vector<std::pair<float, std::string>>> result;
+    for (uint32_t i = 0; i < total_column_names.size(); i++) {
+      std::vector<std::pair<float, std::string>> res;
+      for (uint32_t j = 0; j < total_column_names[i].size(); j++) {
+        res.push_back(
+            std::make_pair(gradients[i][j], total_column_names[i][j]));
+      }
+      result.push_back(res);
+    }
+    return result;
   }
 
   float predict(
