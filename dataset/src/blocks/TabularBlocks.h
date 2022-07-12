@@ -35,18 +35,14 @@ class TabularPairGram : public Block {
       std::string str_val(input_row[col]);
       switch (_metadata->getColType(col)) {
         case TabularDataType::Numeric: {
-          std::string unique_bin =
-              _metadata->getColBin(col, str_val, block_exception_message) +
-              _metadata->getColSalt(col);
-          unigram_hashes.push_back(PairgramHasher::computeUnigram(
-              unique_bin.data(), unique_bin.size()));
+          uint32_t unigram = _metadata->getNumericHashValue(
+              col, str_val, block_exception_message);
+          unigram_hashes.push_back(unigram);
           break;
         }
         case TabularDataType::Categorical: {
-          // TODO(david) should we notify user of new categories in test data?
-          std::string unique_category = str_val + _metadata->getColSalt(col);
-          unigram_hashes.push_back(PairgramHasher::computeUnigram(
-              unique_category.data(), unique_category.size()));
+          uint32_t unigram = _metadata->getStringHashValue(str_val, col);
+          unigram_hashes.push_back(unigram);
           break;
         }
         case TabularDataType::Label:

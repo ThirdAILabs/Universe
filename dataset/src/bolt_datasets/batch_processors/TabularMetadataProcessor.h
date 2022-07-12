@@ -4,6 +4,7 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
 #include <dataset/src/bolt_datasets/BatchProcessor.h>
+#include <dataset/src/bolt_datasets/batch_processors/PairgramHasher.h>
 #include <cmath>
 #include <limits>
 
@@ -29,11 +30,11 @@ class TabularMetadata {
       : _num_non_empty_bins(10),
         _label_col_index(label_col_index),
         _max_salt_len(max_salt_len),
-        _column_dtypes(column_dtypes),
-        _col_to_max_val(col_to_max_val),
-        _col_to_min_val(col_to_min_val) {}
+        _column_dtypes(std::move(column_dtypes)),
+        _col_to_max_val(std::move(col_to_max_val)),
+        _col_to_min_val(std::move(col_to_min_val)) {}
 
-  void addClass(std::string class_name) {
+  void addClass(const std::string& class_name) {
     uint32_t label = numClasses();
     _class_to_class_id[class_name] = label;
     _class_id_to_class.push_back(class_name);
@@ -54,7 +55,7 @@ class TabularMetadata {
 
   uint32_t numClasses() const { return _class_id_to_class.size(); }
 
-  bool containsClassName(std::string str_value) const {
+  bool containsClassName(const std::string& str_value) const {
     return _class_to_class_id.count(str_value);
   }
 
@@ -66,20 +67,35 @@ class TabularMetadata {
     return _class_to_class_id;
   }
 
-  std::string getColBin(uint32_t col, const std::string& str_val,
-                        std::string& block_exception_message) {
+  uint32_t getStringHashValue(const std::string& str_val, uint32_t col) const {
+    std::string unique_category = str_val + getColSalt(col);
+    return PairgramHasher::computeUnigram(unique_category.data(),
+                                          unique_category.size());
+  }
+
+  uint32_t getNumericHashValue(uint32_t col, const std::string& str_val,
+                               std::string& block_exception_message) {
+    uint32_t bin = getColBin(col, str_val, block_exception_message);
+    uint64_t uniqueBin =
+        static_cast<uint64_t>(bin) << 32 | static_cast<uint64_t>(col);
+    const char* val_to_hash = reinterpret_cast<const char*>(&uniqueBin);
+    return PairgramHasher::computeUnigram(val_to_hash, /* len */ 8);
+  }
+
+  uint32_t getColBin(uint32_t col, const std::string& str_val,
+                     std::string& block_exception_message) {
     // map empty values to their own bin
     if (str_val.empty()) {
-      return std::to_string(_num_non_empty_bins);
+      return _num_non_empty_bins;
     }
     try {
       double value = std::stod(str_val);
       double binsize = getColBinsize(col);
       if (binsize == 0) {
-        return "0";
+        return 0;
       }
-      return std::to_string(static_cast<uint32_t>(
-          std::round((value - getColMin(col)) / getColBinsize(col))));
+      return static_cast<uint32_t>(
+          std::round((value - getColMin(col)) / getColBinsize(col)));
     } catch (std::invalid_argument& e) {
       block_exception_message =
           "Could not process column " + std::to_string(col) +
@@ -89,7 +105,7 @@ class TabularMetadata {
       // fail once all threads finish. Since we can't throw an exception within
       // a pragma thread, we just have to keep the program running until then.
       // Thus we return some arbitrary value to do that.
-      return "0";
+      return 0;
     }
   }
 
@@ -99,7 +115,7 @@ class TabularMetadata {
    * dependent on its column. By adding the column number padded to a fixed
    * length, we ensure this characteristic.
    */
-  std::string getColSalt(uint32_t col) {
+  std::string getColSalt(uint32_t col) const {
     std::string col_str = std::to_string(col);
     if (col_str.size() < _max_salt_len) {
       col_str.insert(0, _max_salt_len - col_str.size(), '0');
@@ -219,7 +235,7 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
   std::shared_ptr<TabularMetadata> getMetadata() { return _metadata; }
 
  private:
-  void processNumeric(std::string str_value, uint32_t col) {
+  void processNumeric(const std::string& str_value, uint32_t col) {
     // TODO(david) handle nan/inf/large number cases
 
     // we want to process empty values and put them in their own bin later, thus
@@ -237,7 +253,7 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
     }
   }
 
-  void processLabel(std::string str_value) {
+  void processLabel(const std::string& str_value) {
     if (!_metadata->containsClassName(str_value)) {
       if (_metadata->numClasses() == _n_classes) {
         throw std::invalid_argument(
