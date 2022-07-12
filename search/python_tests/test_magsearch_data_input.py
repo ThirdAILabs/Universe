@@ -37,7 +37,7 @@ def test_near_duplicate_numpy():
     index.add(dense_data=dataset, starting_index=0)
     results = index.query(queries, top_k=1)
     recall = sum([gt == result[0] for gt, result in zip(gts, results)]) / queries_size
-    assert recall == 1
+    assert recall > 0.99
 
 
 @pytest.mark.unit

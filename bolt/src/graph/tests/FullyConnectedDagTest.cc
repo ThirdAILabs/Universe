@@ -61,7 +61,7 @@ TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
 
   auto test_metrics = model.predict(data.data, data.labels, getPredictConfig());
 
-  ASSERT_GE(test_metrics["categorical_accuracy"], 0.98);
+  ASSERT_GE(test_metrics.first["categorical_accuracy"], 0.98);
 }
 
 TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
@@ -73,7 +73,7 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
 
   auto test_metrics = model.predict(data.data, data.labels, getPredictConfig());
 
-  ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
+  ASSERT_LE(test_metrics.first["categorical_accuracy"], 0.2);
 }
 
 static BoltGraph getMultiLayerModel(ActivationFunction hidden_layer_act,
@@ -121,7 +121,7 @@ static void testSimpleDatasetMultiLayerModel(
 
   auto test_metrics = model.predict(data.data, data.labels, getPredictConfig());
 
-  ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
+  ASSERT_GE(test_metrics.first["categorical_accuracy"], 0.99);
 }
 
 TEST(FullyConnectedDagTest, TrainSimpleDatasetMultiLayerNetworkRelu) {
@@ -149,7 +149,7 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
 
   auto test_metrics = model.predict(data.data, data.labels, getPredictConfig());
 
-  ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
+  ASSERT_LE(test_metrics.first["categorical_accuracy"], 0.2);
 }
 
 }  // namespace thirdai::bolt::tests
