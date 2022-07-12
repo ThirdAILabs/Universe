@@ -48,7 +48,7 @@ class ModelWithLayers {
     auto predict_config =
         PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
-    return model->predict(data.data, data.labels, predict_config);
+    return model->predict(data.data, data.labels, predict_config).first;
   }
 
   InputPtr input;
@@ -81,10 +81,10 @@ TEST(SaveLoadDAGTest, SaveAndLoadGraph) {
   auto test_metrics2 =
       new_model->predict(data.data, data.labels, predict_config);
 
-  ASSERT_GE(test_metrics2["categorical_accuracy"], 0.9);
+  ASSERT_GE(test_metrics2.first["categorical_accuracy"], 0.9);
 
   ASSERT_EQ(test_metrics1["categorical_accuracy"],
-            test_metrics2["categorical_accuracy"]);
+            test_metrics2.first["categorical_accuracy"]);
 
   ASSERT_FALSE(std::remove(save_loc.c_str()));
 }
