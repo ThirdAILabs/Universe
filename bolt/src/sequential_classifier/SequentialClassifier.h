@@ -114,7 +114,7 @@ class SequentialClassifier {
       std::vector<std::pair<float, std::string>> res;
       for (uint32_t j = 0; j < total_column_names[i].size(); j++) {
         res.push_back(
-            std::make_pair(gradients[i][j], total_column_names[i][j]));
+            std::make_pair(temp[i][j].first, total_column_names[i][j]));
       }
       result.push_back(res);
     }
