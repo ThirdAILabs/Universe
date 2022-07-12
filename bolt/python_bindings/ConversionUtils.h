@@ -80,6 +80,11 @@ inline bool isBoltDataset(const py::object& obj) {
       .equal(py::str("<class 'thirdai._thirdai.dataset.BoltDataset'>"));
 }
 
+inline bool isMLMDataset(const py::object& obj) {
+  return py::str(obj.get_type())
+      .equal(py::str("<class 'thirdai._thirdai.dataset.MLMDataset'>"));
+}
+
 inline bool isTuple(const py::object& obj) {
   return py::str(obj.get_type()).equal(py::str("<class 'tuple'>"));
 }

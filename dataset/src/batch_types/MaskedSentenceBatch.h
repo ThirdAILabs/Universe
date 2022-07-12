@@ -27,11 +27,7 @@ class MaskedSentenceBatch {
     return _input_vectors[i];
   }
 
-  uint32_t maskedIndex(size_t i) const { return _masked_positions[i].at(0); }
-
   bolt::BoltBatch* getVectors() { return &_input_vectors; }
-
-  BoltTokenBatch* getMaskedPositions() { return &_masked_positions; }
 
  private:
   bolt::BoltBatch _input_vectors;

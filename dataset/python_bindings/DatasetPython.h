@@ -148,6 +148,8 @@ class PyBlockBatchProcessor : public BlockBatchProcessor {
   }
 };
 
+using MLMDatasetPtr = std::shared_ptr<InMemoryDataset<MaskedSentenceBatch>>;
+
 class MLMDatasetLoader {
  public:
   explicit MLMDatasetLoader(uint32_t pairgram_range)
@@ -170,8 +172,5 @@ class MLMDatasetLoader {
  private:
   std::shared_ptr<MaskedSentenceBatchProcessor> _batch_processor;
 };
-
-py::tuple loadMLMDataset(const std::string& filename, uint32_t batch_size,
-                         uint32_t pairgram_range);
 
 }  // namespace thirdai::dataset::python
