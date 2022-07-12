@@ -18,20 +18,24 @@ class MaskedSentenceBatch {
   uint32_t getBatchSize() const { return _input_vectors.getBatchSize(); }
 
   const BoltVector& operator[](size_t i) const {
-    assert(i < _input_vectors.size());
+    assert(i < _input_vectors.getBatchSize());
     return _input_vectors[i];
   }
 
   BoltVector& operator[](size_t i) {
-    assert(i < _input_vectors.size());
+    assert(i < _input_vectors.getBatchSize());
     return _input_vectors[i];
   }
 
-  uint32_t maskedIndex(size_t i) const { return _masked_positions[i].at(0); }
+  // The BoltTokenBatch uses a vector of uint32_t for generalizability to
+  // multiple tokens. Here we know that there is only one masked index per
+  // vector so we can create a convenience method to simplify accessing it.
+  uint32_t maskedIndex(size_t i) {
+    assert(i < _input_vectors.getBatchSize());
+    return _masked_positions[i].at(0);
+  }
 
   bolt::BoltBatch* getVectors() { return &_input_vectors; }
-
-  BoltTokenBatch* getMaskedPositions() { return &_masked_positions; }
 
  private:
   bolt::BoltBatch _input_vectors;

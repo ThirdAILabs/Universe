@@ -2,6 +2,7 @@
 #include "ConversionUtils.h"
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -149,12 +150,18 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "train",
           [](BoltGraph& model, const py::object& data, const py::object& labels,
              const TrainConfig& train_config) {
-            auto train_data =
-                convertPyObjectToBoltDataset(data, train_config.batchSize(),
-                                             /* is_labels = */ false);
             auto train_labels =
                 convertPyObjectToBoltDataset(labels, train_config.batchSize(),
                                              /* is_labels = */ true);
+            if (isMLMDataset(data)) {
+              auto train_data = data.cast<dataset::python::MLMDatasetPtr>();
+
+              return model.train(train_data, train_labels.dataset,
+                                 train_config);
+            }
+            auto train_data =
+                convertPyObjectToBoltDataset(data, train_config.batchSize(),
+                                             /* is_labels = */ false);
             return model.train(train_data.dataset, train_labels.dataset,
                                train_config);
           },
@@ -208,16 +215,30 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "predict",
           [](BoltGraph& model, const py::object& data, const py::object& labels,
              const PredictConfig& predict_config) {
-            auto test_data = convertPyObjectToBoltDataset(
-                data, /* batch_size = */ 2048, /* is_labels = */ false);
-
             BoltDatasetNumpyContext test_labels;
             if (!labels.is_none()) {
               test_labels = convertPyObjectToBoltDataset(
                   labels, /* batch_size = */ 2048, /* is_labels = */ true);
             }
-            auto [metrics, output] = model.predict(
-                test_data.dataset, test_labels.dataset, predict_config);
+
+            std::optional<InferenceResult> result;
+            uint64_t test_data_len;
+            if (isMLMDataset(data)) {
+              auto test_data = data.cast<dataset::python::MLMDatasetPtr>();
+              test_data_len = test_data->len();
+
+              result =
+                  model.predict(test_data, test_labels.dataset, predict_config);
+            } else {
+              auto test_data = convertPyObjectToBoltDataset(
+                  data, /* batch_size = */ 2048, /* is_labels = */ false);
+              test_data_len = test_data.dataset->len();
+
+              result = model.predict(test_data.dataset, test_labels.dataset,
+                                     predict_config);
+            }
+
+            auto [metrics, output] = std::move(*result);
 
             // We need to get these now because we are about to std::move output
             const float* activation_pointer =
@@ -236,7 +257,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
             py::object output_handle = py::cast(std::move(output));
 
             return constructPythonInferenceTuple(
-                py::cast(metrics), test_data.dataset->len(), num_nonzeros,
+                py::cast(metrics), test_data_len, num_nonzeros,
                 /* activations = */ activation_pointer,
                 /* active_neurons = */ active_neuron_pointer,
                 /* activation_handle = */ output_handle,

@@ -194,7 +194,7 @@ template InferenceResult BoltGraph::predict(
     const std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&,
     const dataset::BoltDatasetPtr&, const PredictConfig&);
 
-template InferenceMetricData BoltGraph::predict(
+template InferenceResult BoltGraph::predict(
     const std::shared_ptr<
         dataset::InMemoryDataset<dataset::MaskedSentenceBatch>>&,
     const dataset::BoltDatasetPtr&, const PredictConfig&);
