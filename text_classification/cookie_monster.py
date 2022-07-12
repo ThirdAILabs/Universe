@@ -1,6 +1,7 @@
 from thirdai import bolt, dataset
 import numpy as np
 
+# Uncomment the following line when used on a machine with valid mlflow credentials
 # import mlflow
 import os
 import toml
@@ -57,6 +58,7 @@ class CookieMonster:
 
         self.construct(dimension)
         self.hidden_layer.load_parameters(save_loc)
+        os.remove(save_loc)
 
     def eat_corpus(
         self,
