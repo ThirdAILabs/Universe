@@ -204,10 +204,7 @@ class PyNetwork final : public FullyConnectedNetwork {
   }
 
   py::array_t<float> getWeights(uint32_t layer_index) {
-    if (layer_index >= _num_layers) {
-      return py::none();
-    }
-
+    layerIndexCheck(layer_index, _num_layers);
     float* mem = _layers[layer_index]->getWeights();
 
     py::capsule free_when_done(
@@ -250,9 +247,7 @@ class PyNetwork final : public FullyConnectedNetwork {
   }
 
   py::array_t<float> getBiases(uint32_t layer_index) {
-    if (layer_index >= _num_layers) {
-      return py::none();
-    }
+    layerIndexCheck(layer_index, _num_layers);
 
     float* mem = _layers[layer_index]->getBiases();
 
@@ -383,9 +378,7 @@ class DistributedPyNetwork final : public DistributedModel {
   }
 
   py::array_t<float> getWeights(uint32_t layer_index) {
-    if (layer_index >= DistributedModel::numLayers()) {
-      return py::none();
-    }
+    layerIndexCheck(layer_index, DistributedModel::numLayers());
 
     float* mem = DistributedModel::getWeights(layer_index);
 
@@ -452,9 +445,7 @@ class DistributedPyNetwork final : public DistributedModel {
   }
 
   py::array_t<float> getBiases(uint32_t layer_index) {
-    if (layer_index >= DistributedModel::numLayers()) {
-      return py::none();
-    }
+    layerIndexCheck(layer_index, DistributedModel::numLayers());
 
     float* mem = DistributedModel::getBiases(layer_index);
 
@@ -473,9 +464,7 @@ class DistributedPyNetwork final : public DistributedModel {
    * itself.
    */
   py::array_t<float> getBiasesGradients(uint32_t layer_index) {
-    if (layer_index >= DistributedModel::numLayers()) {
-      return py::none();
-    }
+    layerIndexCheck(layer_index, DistributedModel::numLayers());
 
     float* mem = DistributedModel::getBiasesGradient(layer_index);
 
@@ -485,9 +474,7 @@ class DistributedPyNetwork final : public DistributedModel {
   }
 
   py::array_t<float> getWeightsGradients(uint32_t layer_index) {
-    if (layer_index >= DistributedModel::numLayers()) {
-      return py::none();
-    }
+    layerIndexCheck(layer_index, DistributedModel::numLayers());
 
     float* mem = DistributedModel::getWeightsGradient(layer_index);
 
