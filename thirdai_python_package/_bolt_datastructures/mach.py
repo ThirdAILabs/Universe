@@ -27,9 +27,9 @@ class Mach:
         self.last_layer_dim = last_layer_dim
         self.last_layer_sparsity = last_layer_sparsity
         self.use_softmax = use_softmax
-
+        self.seed_for_group_assigments = seed_for_group_assigments
         # setting a random seed
-        np.random.seed(seed_for_group_assigments)
+        np.random.seed(self.seed_for_group_assigments)
 
         self.label_to_group = np.random.randint(
             0, last_layer_dim, size=(num_classifiers, max_label)
