@@ -27,7 +27,7 @@ def test_save_shallow_size():
 
     network.save(save_loc)
 
-    rough_model_size = ((input_dim+output_dim) * hidden_dim) * 16
+    rough_model_size = ((input_dim + output_dim) * hidden_dim) * 16
 
     assert 2 * os.path.getsize(save_loc) < rough_model_size
 

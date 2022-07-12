@@ -84,5 +84,9 @@ def test_text_classification_data_pipeline_with_pairgrams():
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_chartrigrams():
-    helper_for_text_classification_data_pipeline(text_encodings.CharKGram(3, 100_000), ",")
-    helper_for_text_classification_data_pipeline(text_encodings.CharKGram(3, 100_000), "\t")
+    helper_for_text_classification_data_pipeline(
+        text_encodings.CharKGram(3, 100_000), ","
+    )
+    helper_for_text_classification_data_pipeline(
+        text_encodings.CharKGram(3, 100_000), "\t"
+    )

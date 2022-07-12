@@ -150,4 +150,3 @@ def test_mach_random_data():
 
     assert get_recall(result_fast, test_y, num_true_labels_per_sample) > 0.8
     assert get_recall(result_slow, test_y, num_true_labels_per_sample) > 0.8
-
