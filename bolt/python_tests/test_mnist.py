@@ -169,7 +169,7 @@ def test_sparse_inference_with_sparse_output():
 
     train_network(network, train_x, train_y, epochs=1)
 
-    sparse_predict, active_neurons, activations = network.predict(
+    sparse_predict, activations, active_neurons = network.predict(
         test_x,
         test_y,
         sparse_inference=True,

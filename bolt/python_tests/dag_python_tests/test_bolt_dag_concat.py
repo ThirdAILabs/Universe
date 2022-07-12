@@ -32,13 +32,16 @@ def run_simple_test(
         n_classes=num_classes, n_samples=num_training_samples
     )
 
-    train_config = bolt.graph.TrainConfig.make(
-        learning_rate=learning_rate, epochs=num_training_epochs
-    ).silence()
+    train_config = (
+        bolt.graph.TrainConfig.make(
+            learning_rate=learning_rate, epochs=num_training_epochs
+        )
+        .with_batch_size(batch_size)
+        .silence()
+    )
 
-    metrics = model.train_np(
+    metrics = model.train(
         train_data=train_data,
-        batch_size=batch_size,
         train_labels=train_labels,
         train_config=train_config,
     )
@@ -47,13 +50,13 @@ def run_simple_test(
         bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
     )
 
-    metrics = model.predict_np(
+    metrics = model.predict(
         test_data=train_data,
         test_labels=train_labels,
         predict_config=predict_config,
     )
 
-    assert metrics["categorical_accuracy"] >= accuracy_threshold
+    assert metrics[0]["categorical_accuracy"] >= accuracy_threshold
 
 
 @pytest.mark.unit
@@ -90,3 +93,8 @@ def test_concat_sparse_dense_train():
         hidden_layer_bottom_sparsity=1,
         num_training_samples=10000,
     )
+
+
+test_concat_dense_train()
+test_concat_sparse_train()
+test_concat_sparse_dense_train()
