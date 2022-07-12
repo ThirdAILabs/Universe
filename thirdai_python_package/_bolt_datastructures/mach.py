@@ -75,6 +75,7 @@ class Mach:
             "hidden_layer_sparsity": self.hidden_layer_sparsity,
             "last_layer_dim": self.last_layer_dim,
             "last_layer_sparsity": self.last_layer_sparsity,
+            "seed_for_group_assigments": self.seed_for_group_assigments,
         }
 
         with open(folder + "/metadata_mach", "wb") as f:
@@ -96,7 +97,7 @@ class Mach:
     def save_for_inference(self, folder):
         self.save(folder, save_for_inference=True)
 
-    def load(folder):
+    def load(folder,seed=False):
 
         if not os.path.exists(folder):
             raise FileNotFoundError(f"The passed in path {folder} does not exist")
@@ -111,8 +112,20 @@ class Mach:
 
         with open(folder + "/metadata_mach", "rb") as f:
             metadata = pickle.load(f)
-
-        newMach = Mach(
+            
+        if seed:
+            newMach = Mach(
+                max_label=metadata["max_label"],
+                num_classifiers=metadata["num_classifiers"],
+                input_dim=metadata["input_dim"],
+                hidden_layer_dim=metadata["hidden_layer_dim"],
+                hidden_layer_sparsity=metadata["hidden_layer_sparsity"],
+                last_layer_dim=metadata["last_layer_dim"],
+                last_layer_sparsity=metadata["last_layer_sparsity"],
+                use_softmax=metadata["use_softmax"],
+            )
+        else:
+            newMach = Mach(
             max_label=metadata["max_label"],
             num_classifiers=metadata["num_classifiers"],
             input_dim=metadata["input_dim"],
@@ -121,6 +134,7 @@ class Mach:
             last_layer_dim=metadata["last_layer_dim"],
             last_layer_sparsity=metadata["last_layer_sparsity"],
             use_softmax=metadata["use_softmax"],
+            seed_for_group_assigments=metadata["seed_for_group_assigments"],
         )
 
         newMach.classifiers = []
@@ -192,6 +206,24 @@ class Mach:
                     ]
         return np.argmax(scores, axis=1)
 
+    def query_slow_act(self, batch):
+        results = np.array(
+            [
+                classifier.predict(batch, test_labels=None, verbose=False)[1]
+                for classifier in self.classifiers
+            ]
+        )
+        num_query_results = results.shape[1]
+        scores = np.zeros(shape=(num_query_results, self.max_label))
+        for vec_id in range(num_query_results):
+            for label in range(self.max_label):
+                for classifier_id in range(self.num_classifiers):
+                    scores[vec_id, label] += results[
+                        classifier_id, vec_id, self.label_to_group[classifier_id, label]
+                    ]
+        return scores
+        # return np.argmax(scores, axis=1)
+    
     # TODO(josh): Can implement in C++ for way more speed
     # TODO(josh): Use better inference, this is equivalent to threshold = 1
     # TODO(josh): Allow returning top k instead of just top 1
@@ -226,6 +258,39 @@ class Mach:
                     ]
 
         return np.argmax(scores, axis=1)
+    
+    def query_fast_act(self, batch, num_groups_to_check_per_classifier=10):
+        results = np.array(
+            [
+                classifier.predict(batch, test_labels=None, verbose=False)[1]
+                for classifier in self.classifiers
+            ]
+        )
+        top_m_groups = np.array(
+            [
+                self._top_k_indices(arr, num_groups_to_check_per_classifier)
+                for arr in results
+            ]
+        )
+        num_query_results = results.shape[1]
+
+        scores = np.zeros(shape=(num_query_results, self.max_label))
+        for vec_id in range(num_query_results):
+
+            label_set = set()
+            for classifier_id in range(self.num_classifiers):
+                for group in top_m_groups[classifier_id, vec_id]:
+                    for label in self.group_to_labels[classifier_id][group]:
+                        label_set.add(label)
+
+            for classifier_id in range(self.num_classifiers):
+                for label in label_set:
+                    scores[vec_id, label] += results[
+                        classifier_id, vec_id, self.label_to_group[classifier_id, label]
+                    ]
+
+        return scores
+        # return np.argmax(scores, axis=1)
 
     def _top_k_indices(self, numpy_array, top_k):
         return np.argpartition(numpy_array, -top_k, axis=1)[:, -top_k:]
