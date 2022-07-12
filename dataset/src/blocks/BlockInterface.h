@@ -96,6 +96,12 @@ class Block {
    * input_row: input sample; the sequence of strings to encoded.
    * vec: the vector to be concatenated with the vector
    *   encoding of input_row.
+   * block_exception_message: Since blocks can run in parallel in pragma
+   * threads, they can't throw their own exceptions. To throw an exception, the
+   * block should set the value of this block_exception_message to a non-empty,
+   * descriptive message about the error. Afterwards, the block should proceed
+   * with a non-failing operation with the expectation that the exception will
+   * be caught once the threads are closed.
    */
   void addVectorSegment(const std::vector<std::string_view>& input_row,
                         SegmentedFeatureVector& vec,

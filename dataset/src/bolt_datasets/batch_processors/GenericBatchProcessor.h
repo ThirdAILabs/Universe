@@ -108,7 +108,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
 
   bool expectsHeader() const final { return _expects_header; }
 
-  void processHeader(const std::string& header) override { (void)header; }
+  void processHeader(const std::string& header) final { (void)header; }
 
   uint32_t getInputDim() const { return sumBlockDims(_input_blocks); }
 
