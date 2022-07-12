@@ -1,21 +1,30 @@
 from thirdai import bolt
-from ..utils import gen_training_data
+# from ..utils import gen_training_data
 import pytest
+import numpy as np
 
 pytestmark = [pytest.mark.unit]
 
+
+def gen_training_data(n_classes=10, n_samples=1000, noise_std=0.1):
+    possible_one_hot_encodings = np.eye(n_classes)
+    labels = np.random.choice(n_classes, size=n_samples)
+    examples = possible_one_hot_encodings[labels]
+    noise = np.random.normal(0, noise_std, examples.shape)
+    examples = examples + noise
+    return examples.astype("float32"), labels.astype("uint32")
 
 def get_train_config(epochs, batch_size):
     return (
         bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=epochs)
         .with_batch_size(batch_size)
-        .silence()
+        # .silence()
     )
 
 
 def get_predict_config():
     return (
-        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
+        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"])
     )
 
 
