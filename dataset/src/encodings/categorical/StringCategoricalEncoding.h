@@ -10,18 +10,18 @@ namespace thirdai::dataset {
 /**
  * Maps string values to sparse ids as specified by the input map
  */
-class UidMapEncoding : public CategoricalEncoding {
+class StringCategoricalEncoding : public CategoricalEncoding {
  public:
-  explicit UidMapEncoding(
+  explicit StringCategoricalEncoding(
       std::unordered_map<std::string, uint32_t> encoding_map)
-      : _encoding_map(encoding_map) {}
+      : _encoding_map(std::move(encoding_map)) {}
 
   void encodeCategory(const std::string_view id, SegmentedFeatureVector& vec,
                       std::string& block_exception_message) final {
     std::string class_name(id);
     if (!_encoding_map.count(class_name)) {
-      block_exception_message = "Received unexpected class name: '" +
-                                class_name + "' in UidMapEncoding.";
+      block_exception_message =
+          "Received unexpected class name: '" + class_name + ".'";
       // Since we have set the block exception message above, the program will
       // fail once all threads finish. Since we can't throw an exception within
       // a pragma thread, we just have to keep the program running until then.

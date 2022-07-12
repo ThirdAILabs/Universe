@@ -25,7 +25,7 @@ namespace thirdai::bolt {
 
 class AutoTuneUtils {
  public:
-  static std::shared_ptr<FullyConnectedNetwork> createClassifierModel(
+  static std::shared_ptr<FullyConnectedNetwork> createNetwork(
       uint64_t input_dim, uint32_t n_classes, const std::string& model_size) {
     uint32_t hidden_layer_size =
         getHiddenLayerSize(model_size, n_classes, input_dim);

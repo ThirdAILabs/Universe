@@ -17,9 +17,9 @@ class TextClassifier {
  public:
   TextClassifier(const std::string& model_size, uint32_t n_classes) {
     uint32_t input_dim = 100000;
-    _model = AutoTuneUtils::createClassifierModel(/* input_dim */ input_dim,
-                                                  /* n_classes */ n_classes,
-                                                  model_size);
+    _model = AutoTuneUtils::createNetwork(
+        /* input_dim */ input_dim,
+        /* n_classes */ n_classes, model_size);
     _batch_processor =
         std::make_shared<dataset::TextClassificationProcessor>(input_dim);
   }

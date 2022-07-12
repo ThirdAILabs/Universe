@@ -32,9 +32,8 @@ class TabularPairGram : public Block {
                     std::string& block_exception_message) final {
     std::vector<uint32_t> unigram_hashes;
     for (uint32_t col = 0; col < input_row.size(); col++) {
-      uint32_t unigram;
       std::string str_val(input_row[col]);
-      switch (_metadata->getType(col)) {
+      switch (_metadata->getColType(col)) {
         case TabularDataType::Numeric: {
           std::string unique_bin =
               _metadata->getColBin(col, str_val, block_exception_message) +
@@ -53,7 +52,6 @@ class TabularPairGram : public Block {
         case TabularDataType::Label:
           break;
       }
-      unigram_hashes.push_back(unigram);
     }
 
     // TODO(david) optimize/benchmark pairgram computation?

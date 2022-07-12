@@ -16,16 +16,46 @@ enum class TabularDataType {
 };  // TODO(david) add datetime/text support
 
 class TabularMetadata {
-  friend class TabularMetadataProcessor;
-
  public:
-  TabularMetadata() {}
+  /**
+   * This object stores metadata about a Tabular Dataset like column type
+   * information, max/min values for numeric columns, etc.
+   */
+  TabularMetadata(uint32_t label_col_index,
+                  std::vector<TabularDataType> column_dtypes,
+                  std::unordered_map<uint32_t, double> col_to_max_val,
+                  std::unordered_map<uint32_t, double> col_to_min_val,
+                  uint32_t max_salt_len)
+      : _label_col_index(label_col_index),
+        _column_dtypes(column_dtypes),
+        _col_to_max_val(col_to_max_val),
+        _col_to_min_val(col_to_min_val),
+        _max_salt_len(max_salt_len) {}
+
+  void addClass(std::string class_name) {
+    uint32_t label = numClasses();
+    _class_to_class_id[class_name] = label;
+    _class_id_to_class.push_back(class_name);
+  }
+
+  void updateColMaxMin(uint32_t col, double val) {
+    if (_col_to_max_val[col] < val) {
+      _col_to_max_val[col] = val;
+    }
+    if (_col_to_min_val[col] > val) {
+      _col_to_min_val[col] = val;
+    }
+  }
 
   uint32_t numColumns() const { return _column_dtypes.size(); }
 
-  TabularDataType getType(uint32_t col) const { return _column_dtypes[col]; }
+  TabularDataType getColType(uint32_t col) const { return _column_dtypes[col]; }
 
   uint32_t numClasses() const { return _class_id_to_class.size(); }
+
+  bool containsClassName(std::string str_value) const {
+    return _class_to_class_id.count(str_value);
+  }
 
   uint32_t getLabelCol() const { return _label_col_index; }
 
@@ -109,39 +139,48 @@ class TabularMetadata {
 
 class TabularMetadataProcessor : public ComputeBatchProcessor {
  public:
-  explicit TabularMetadataProcessor(std::vector<std::string> column_datatypes,
+  explicit TabularMetadataProcessor(std::vector<std::string> given_column_types,
                                     uint32_t n_classes)
-      : _delimiter(','),
-        _n_classes(n_classes),
-        _metadata(std::make_shared<TabularMetadata>()) {
+      : _delimiter(','), _n_classes(n_classes) {
     bool found_label_column = false;
-    for (uint32_t col_idx = 0; col_idx < column_datatypes.size(); col_idx++) {
-      if (column_datatypes[col_idx] == "label" && found_label_column) {
+    uint32_t label_col_index;
+    std::vector<TabularDataType> column_dtypes;
+    std::unordered_map<uint32_t, double> col_to_max_val;
+    std::unordered_map<uint32_t, double> col_to_min_val;
+
+    for (uint32_t col_idx = 0; col_idx < given_column_types.size(); col_idx++) {
+      if (given_column_types[col_idx] == "label" && found_label_column) {
         throw std::invalid_argument(
             "Found multiple 'label' columns in dataset.");
       }
-      if (column_datatypes[col_idx] == "label") {
+
+      if (given_column_types[col_idx] == "label") {
         found_label_column = true;
-        _metadata->_label_col_index = col_idx;
-        _metadata->_column_dtypes.push_back(TabularDataType::Label);
-      } else if (column_datatypes[col_idx] == "categorical") {
-        _metadata->_column_dtypes.push_back(TabularDataType::Categorical);
-      } else if (column_datatypes[col_idx] == "numeric") {
-        _metadata->_column_dtypes.push_back(TabularDataType::Numeric);
-        _metadata->_col_to_max_val[col_idx] =
-            std::numeric_limits<double>::min();
-        _metadata->_col_to_min_val[col_idx] =
-            std::numeric_limits<double>::max();
+        label_col_index = col_idx;
+        column_dtypes.push_back(TabularDataType::Label);
+
+      } else if (given_column_types[col_idx] == "categorical") {
+        column_dtypes.push_back(TabularDataType::Categorical);
+
+      } else if (given_column_types[col_idx] == "numeric") {
+        column_dtypes.push_back(TabularDataType::Numeric);
+        col_to_max_val[col_idx] = std::numeric_limits<double>::min();
+        col_to_min_val[col_idx] = std::numeric_limits<double>::max();
+
       } else {
         throw std::invalid_argument(
-            "Received datatype '" + column_datatypes[col_idx] +
+            "Received datatype '" + given_column_types[col_idx] +
             "' expected one of 'label', 'categorical', or 'numeric'.");
       }
     }
     if (!found_label_column) {
       throw std::invalid_argument("Dataset does not contain a 'label' column.");
     }
-    _metadata->_max_salt_len = std::to_string(column_datatypes.size()).size();
+    uint32_t max_salt_len = std::to_string(given_column_types.size()).size();
+
+    _metadata = std::make_shared<TabularMetadata>(label_col_index,
+                                                  column_dtypes, col_to_max_val,
+                                                  col_to_min_val, max_salt_len);
   }
 
   bool expectsHeader() const final { return false; }
@@ -150,16 +189,15 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
 
   void processRow(const std::string& row) final {
     std::vector<std::string_view> values = parseCsvRow(row, _delimiter);
-    if (values.size() != _metadata->_column_dtypes.size()) {
-      throw std::invalid_argument(
-          "Csv format error. Expected " +
-          std::to_string(_metadata->_column_dtypes.size()) +
-          " columns but received " + std::to_string(values.size()) +
-          " columns.");
+    if (values.size() != _metadata->numColumns()) {
+      throw std::invalid_argument("Csv format error. Expected " +
+                                  std::to_string(_metadata->numColumns()) +
+                                  " columns but received " +
+                                  std::to_string(values.size()) + " columns.");
     }
-    for (uint32_t col = 0; col < _metadata->_column_dtypes.size(); col++) {
+    for (uint32_t col = 0; col < _metadata->numColumns(); col++) {
       std::string str_value(values[col]);
-      switch (_metadata->_column_dtypes[col]) {
+      switch (_metadata->getColType(col)) {
         case TabularDataType::Numeric: {
           processNumeric(str_value, col);
           break;
@@ -182,17 +220,12 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
 
     // we want to process empty values and put them in their own bin later, thus
     // we don't fail here
-    if (str_value == "") {
+    if (str_value.empty()) {
       return;
     }
     try {
       double val = std::stod(str_value);
-      if (_metadata->_col_to_max_val[col] < val) {
-        _metadata->_col_to_max_val[col] = val;
-      }
-      if (_metadata->_col_to_min_val[col] > val) {
-        _metadata->_col_to_min_val[col] = val;
-      }
+      _metadata->updateColMaxMin(col, val);
     } catch (std::invalid_argument& e) {
       throw std::invalid_argument(
           "Could not process column " + std::to_string(col) +
@@ -201,15 +234,13 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
   }
 
   void processLabel(std::string str_value) {
-    if (!_metadata->_class_to_class_id.count(str_value)) {
-      uint32_t label = _metadata->_class_id_to_class.size();
+    if (!_metadata->containsClassName(str_value)) {
       if (_metadata->numClasses() == _n_classes) {
         throw std::invalid_argument(
             "Expected " + std::to_string(_n_classes) +
             " classes but found an additional class: '" + str_value + ".'");
       }
-      _metadata->_class_to_class_id[str_value] = label;
-      _metadata->_class_id_to_class.push_back(str_value);
+      _metadata->addClass(str_value);
     }
   }
 

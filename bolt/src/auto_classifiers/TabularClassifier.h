@@ -7,7 +7,7 @@
 #include <dataset/src/blocks/TabularBlocks.h>
 #include <dataset/src/bolt_datasets/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/bolt_datasets/batch_processors/TabularMetadataProcessor.h>
-#include <dataset/src/encodings/categorical/UidMapEncoding.h>
+#include <dataset/src/encodings/categorical/StringCategoricalEncoding.h>
 #include <dataset/src/utils/SafeFileIO.h>
 
 namespace thirdai::bolt {
@@ -15,9 +15,9 @@ namespace thirdai::bolt {
 class TabularClassifier {
  public:
   TabularClassifier(const std::string& model_size, uint32_t n_classes) {
-    _model = AutoTuneUtils::createClassifierModel(/* input_dim */ 100000,
-                                                  /* n_classes */ n_classes,
-                                                  model_size);
+    _model =
+        AutoTuneUtils::createNetwork(/* input_dim */ 100000,
+                                     /* n_classes */ n_classes, model_size);
     _metadata = nullptr;
   }
 
@@ -30,7 +30,7 @@ class TabularClassifier {
                    "resets this metadata."
                 << std::endl;
     }
-    _metadata = setTabularMetadata(filename, column_datatypes);
+    _metadata = processTabularMetadata(filename, column_datatypes);
 
     std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
         makeTabularBatchProcessor();
@@ -78,7 +78,7 @@ class TabularClassifier {
   }
 
  private:
-  std::shared_ptr<dataset::TabularMetadata> setTabularMetadata(
+  std::shared_ptr<dataset::TabularMetadata> processTabularMetadata(
       const std::string& filename, std::vector<std::string>& column_datatypes,
       uint32_t batch_size = 256) {
     std::shared_ptr<dataset::DataLoader> data_loader =
@@ -103,34 +103,13 @@ class TabularClassifier {
                                                    _model->getInputDim())};
     std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
         std::make_shared<dataset::CategoricalBlock>(
-            _metadata->getLabelCol(), std::make_shared<dataset::UidMapEncoding>(
-                                          _metadata->getClassToIdMap()))};
+            _metadata->getLabelCol(),
+            std::make_shared<dataset::StringCategoricalEncoding>(
+                _metadata->getClassToIdMap()))};
 
     return std::make_shared<dataset::GenericBatchProcessor>(
         /* input_blocks */ input_blocks,
         /* target_blocks */ target_blocks);
-  }
-
-  std::shared_ptr<dataset::StreamingDataset<BoltBatch>> loadStreamingDataset(
-      const std::string& filename, uint32_t batch_size = 256) {
-    std::shared_ptr<dataset::DataLoader> data_loader =
-        std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
-
-    std::vector<std::shared_ptr<dataset::Block>> input_blocks = {
-        std::make_shared<dataset::TabularPairGram>(_metadata,
-                                                   _model->getInputDim())};
-    std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
-        std::make_shared<dataset::CategoricalBlock>(
-            _metadata->getLabelCol(), std::make_shared<dataset::UidMapEncoding>(
-                                          _metadata->getClassToIdMap()))};
-
-    std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
-        std::make_shared<dataset::GenericBatchProcessor>(
-            /* input_blocks */ input_blocks, /* target_blocks */ target_blocks);
-
-    auto dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
-        data_loader, batch_processor);
-    return dataset;
   }
 
   // Private constructor for cereal
