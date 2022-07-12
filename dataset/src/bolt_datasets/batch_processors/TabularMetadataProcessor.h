@@ -26,11 +26,12 @@ class TabularMetadata {
                   std::unordered_map<uint32_t, double> col_to_max_val,
                   std::unordered_map<uint32_t, double> col_to_min_val,
                   uint32_t max_salt_len)
-      : _label_col_index(label_col_index),
+      : _num_non_empty_bins(10),
+        _label_col_index(label_col_index),
+        _max_salt_len(max_salt_len),
         _column_dtypes(column_dtypes),
         _col_to_max_val(col_to_max_val),
-        _col_to_min_val(col_to_min_val),
-        _max_salt_len(max_salt_len) {}
+        _col_to_min_val(col_to_min_val) {}
 
   void addClass(std::string class_name) {
     uint32_t label = numClasses();
@@ -117,6 +118,9 @@ class TabularMetadata {
     return (_col_to_max_val[col] - _col_to_min_val[col]) / _num_non_empty_bins;
   }
 
+  // Private constructor for cereal
+  TabularMetadata() {}
+
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;
   template <class Archive>
@@ -127,7 +131,7 @@ class TabularMetadata {
   }
 
   // one additional bin is reserved for empty values
-  uint32_t _num_non_empty_bins = 10;
+  uint32_t _num_non_empty_bins;
   uint32_t _label_col_index;
   uint32_t _max_salt_len;
   std::vector<TabularDataType> _column_dtypes;
@@ -143,7 +147,7 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
                                     uint32_t n_classes)
       : _delimiter(','), _n_classes(n_classes) {
     bool found_label_column = false;
-    uint32_t label_col_index;
+    uint32_t label_col_index = 0;
     std::vector<TabularDataType> column_dtypes;
     std::unordered_map<uint32_t, double> col_to_max_val;
     std::unordered_map<uint32_t, double> col_to_min_val;
