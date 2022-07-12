@@ -115,13 +115,12 @@ inline void weightDimensionCheck(
   }
 }
 
-inline void layerIndexCheck(uint32_t layer_index,uint32_t num_layers){
+inline void layerIndexCheck(uint32_t layer_index, uint32_t num_layers) {
   if (layer_index >= num_layers) {
-      std::stringstream err;
-      err << "Expect layer_index<" << num_layers
-          << " got " << layer_index;
-      throw std::invalid_argument(err.str());
-    }
+    std::stringstream err;
+    err << "Expect layer_index<" << num_layers << ", got " << layer_index;
+    throw std::invalid_argument(err.str());
+  }
 }
 
 inline bool isBoltDataset(const py::object& obj) {
