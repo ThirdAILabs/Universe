@@ -18,7 +18,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
                                              uint32_t input_dim)
     : _input_dim(input_dim), _num_layers(configs.size()) {
   auto start = std::chrono::high_resolution_clock::now();
-
+  
   std::cout << "Initializing Bolt network..." << std::endl;
 
   for (uint32_t i = 0; i < _num_layers; i++) {

@@ -10,13 +10,14 @@
 #include <dataset/src/bolt_datasets/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/bolt_datasets/batch_processors/TextClassificationProcessor.h>
 #include <dataset/src/utils/SafeFileIO.h>
+#include <bolt/src/graph/Graph.h>
 #include <memory>
 
 namespace thirdai::bolt {
 
 class MultiLabelTextClassifier {
  public:
-  MultiLabelTextClassifier(uint32_t input_dim, uint32_t hidden_layer_dim, uint32_t n_classes);
+  explicit MultiLabelTextClassifier(uint32_t n_classes);
 
   void train(const std::string& filename, uint32_t epochs, float learning_rate);
 
@@ -59,7 +60,7 @@ class MultiLabelTextClassifier {
     archive(_model, _batch_processor);
   }
 
-  std::unique_ptr<FullyConnectedNetwork> _model;
+  std::shared_ptr<BoltGraph> _model;
   std::shared_ptr<dataset::GenericBatchProcessor> _batch_processor;
 };
 

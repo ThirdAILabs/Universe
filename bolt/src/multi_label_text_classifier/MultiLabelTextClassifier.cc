@@ -1,4 +1,5 @@
 #include "MultiLabelTextClassifier.h"
+#include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
@@ -7,6 +8,9 @@
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/encodings/categorical/CategoricalMultiLabel.h>
 #include <dataset/src/encodings/text/PairGram.h>
+#include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
+#include <bolt/src/graph/Graph.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <algorithm>
@@ -22,21 +26,27 @@ namespace thirdai::bolt {
 
   float getHiddenLayerSparsity(uint64_t layer_size);
 
-MultiLabelTextClassifier::MultiLabelTextClassifier(uint32_t input_dim, uint32_t hidden_layer_dim, uint32_t n_classes) {
+MultiLabelTextClassifier::MultiLabelTextClassifier(uint32_t n_classes) {
 
+  
+  uint32_t input_dim = 100000;
+  uint32_t hidden_layer_dim = 1024;
   float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_dim);
+  
+  auto input = std::make_shared<Input>(/* dim= */ input_dim);
 
-  SequentialConfigList configs = {
-      std::make_shared<FullyConnectedLayerConfig>(
-          hidden_layer_dim, hidden_layer_sparsity, ActivationFunction::ReLU),
-      std::make_shared<FullyConnectedLayerConfig>(n_classes,
-                                                  ActivationFunction::Sigmoid)};
+  auto hidden = std::make_shared<FullyConnectedNode>(/* dim= */ hidden_layer_dim, /* sparsity= */ hidden_layer_sparsity, /* activation= */ "relu");
+  hidden->addPredecessor(input);
 
-  _model =
-      std::make_unique<FullyConnectedNetwork>(std::move(configs), input_dim);
+  auto output = std::make_shared<FullyConnectedNode>(/* dim= */ n_classes, /* activation= */ "sigmoid");
+  output->addPredecessor(hidden);
+
+  _model = std::make_shared<BoltGraph>(/* inputs= */ std::vector<InputPtr>{input}, /* output= */ output);
+
+  _model->compile(std::make_shared<BinaryCrossEntropyLoss>(), /* print_when_done= */ false);
 
   std::vector<std::shared_ptr<dataset::Block>> input_block = {
-    std::make_shared<dataset::TextBlock>(/* col= */ 1,/* encoding= */std::make_shared<dataset::PairGram>(input_dim))
+    std::make_shared<dataset::TextBlock>(/* col= */ 1,/* encoding= */std::make_shared<dataset::PairGram>(100000))
   };
 
   std::vector<std::shared_ptr<dataset::Block>> label_block = {
@@ -46,7 +56,6 @@ MultiLabelTextClassifier::MultiLabelTextClassifier(uint32_t input_dim, uint32_t 
   _batch_processor =
       std::make_shared<dataset::GenericBatchProcessor>(std::move(input_block), std::move(label_block), /* has_header= */ false, /* delimiter= */ '\t');
 
-  _model->freezeHashTables();
 }
 
 void MultiLabelTextClassifier::train(const std::string& filename, uint32_t epochs,
@@ -58,9 +67,13 @@ void MultiLabelTextClassifier::train(const std::string& filename, uint32_t epoch
   // Assume Wayfair's data can fit in memory
   auto [train_data, train_labels] = dataset->loadInMemory();
 
-  _model->train(train_data, train_labels, loss, learning_rate, 1);
-  _model->freezeHashTables();
-  _model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
+  auto train_cfg = TrainConfig::makeConfig(/* learning_rate= */ learning_rate, /* epochs= */ 1);
+
+  _model->train(train_data, train_labels, train_cfg);
+  _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
+
+  train_cfg = TrainConfig::makeConfig(/* learning_rate= */ learning_rate, /* epochs= */ epochs-1);
+  _model->train(train_data, train_labels, train_cfg);
   
 }
 
@@ -75,38 +88,35 @@ void MultiLabelTextClassifier::predict(
     output_file = dataset::SafeFileIO::ofstream(*output_filename);
   }
 
-  auto print_predictions_callback = [&](const BoltBatch& outputs,
-                                        uint32_t batch_size) {
-    if (!output_file) {
-      return;
-    }
-    for (uint32_t batch_idx = 0; batch_idx < batch_size; batch_idx++) {
-      uint32_t pred = 0;
-      for (uint32_t i = 0; i < outputs[batch_idx].len; i++) {
-        if (outputs[batch_idx].activations[i] > threshold) {
-          if (outputs[batch_idx].isDense()) {
-            pred = i;
-          } else {
-            pred = outputs[batch_idx].active_neurons[i];
-          }
-          (*output_file) << pred << std::endl;
-        }
-      }
-    }
-  };
+  // auto print_predictions_callback = [&](const BoltBatch& outputs,
+  //                                       uint32_t batch_size) {
+  //   if (!output_file) {
+  //     return;
+  //   }
+  //   for (uint32_t batch_idx = 0; batch_idx < batch_size; batch_idx++) {
+  //     uint32_t pred = 0;
+  //     for (uint32_t i = 0; i < outputs[batch_idx].len; i++) {
+  //       if (outputs[batch_idx].activations[i] > threshold) {
+  //         if (outputs[batch_idx].isDense()) {
+  //           pred = i;
+  //         } else {
+  //           pred = outputs[batch_idx].active_neurons[i];
+  //         }
+  //         (*output_file) << pred;
+  //       }
+  //     }
+  //     (*output_file) << std::endl;
+  //   }
+  // };
 
-  /*
-    We are using predict with the stream directly because we only need a single
-    pass through the dataset, so this is more memory efficient–—we don't
-    have to worry about storing the activations in memory to compute the
-    predictions, and can instead compute the predictions using the
-    back_callback.
-  */
   std::stringstream metric;
   metric << "f_measure(" << threshold << ")";
-  _model->predictOnStream(dataset, /* use_sparse_inference= */ true,
-                          /* metric_names= */ {metric.str()},
-                          print_predictions_callback);
+
+  auto predict_cfg = PredictConfig::makeConfig().enableSparseInference().withMetrics({metric.str()});
+
+  auto [test_data, test_labels] = dataset->loadInMemory();
+
+  _model->predict(test_data, test_labels, predict_cfg);
 
   if (output_file) {
     output_file->close();

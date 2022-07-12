@@ -622,11 +622,9 @@ void createBoltSubmodule(py::module_& module) {
            " * filename: string - The location of the saved classifier.\n");
 
   py::class_<MultiLabelTextClassifier>(bolt_submodule, "MultiLabelTextClassifier")
-      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("input_dim"), py::arg("hidden_layer_dim"), py::arg("n_classes"), 
+      .def(py::init<uint32_t>(), py::arg("n_classes"), 
            "Constructs a MultiLabelTextClassifier.\n"
            "Arguments:\n"
-           " * input_dim: int - The input dimension to the model.\n"
-           " * hidden_layer_dim: int - The dimension of the hidden layer.\n"
            " * n_classes: int - The output dimension (number of unique classes).\n")
       .def("train", &MultiLabelTextClassifier::train, py::arg("train_file"), py::arg("epochs"), py::arg("learning_rate"),
            "Trains the classifier on the given dataset.\n"
