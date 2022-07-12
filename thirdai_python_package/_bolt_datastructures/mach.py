@@ -75,7 +75,7 @@ class Mach:
             "hidden_layer_sparsity": self.hidden_layer_sparsity,
             "last_layer_dim": self.last_layer_dim,
             "last_layer_sparsity": self.last_layer_sparsity,
-            "seed_for_group_assigments":self.seed_for_group_assigments,
+            "seed_for_group_assigments": self.seed_for_group_assigments,
         }
 
         with open(folder + "/metadata_mach", "wb") as f:

@@ -1,1 +1,0 @@
-from thirdai.search import EasyQA
