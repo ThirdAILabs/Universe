@@ -1,3 +1,4 @@
+#include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/sequential_classifier/SequentialClassifier.h>
 #include <bolt/src/sequential_classifier/SequentialClassifierPipelineBuilder.h>
 #include <gtest/gtest.h>
@@ -175,6 +176,30 @@ TEST_F(SequentialClassifierTests, SimpleTrendClassification) {
                  /* learning_rate = */ 0.0001);
   auto acc = seq_bolt.predict(simple_trend_test_dataset, "predictions.txt");
   ASSERT_GT(acc, 0.8);
+
+  removeSimpleTrendClassificationDataset();
+}
+
+TEST_F(SequentialClassifierTests, Explainability) {
+  writeSimpleTrendClassificationDataset();
+
+  SequentialClassifierSchema schema(
+      /* item = */ {/* col_name = */ item_col, /* n_distinct = */ 50000},
+      /* timestamp = */ {/* col_name = */ timestamp_col},
+      /* target = */ {/* col_name = */ target_col, /* n_distinct = */ 4},
+      /* tracking_config = */
+      {/* horizon = */ 0, /* lookback = */ 30, /* period = */ 1},
+      /* text_attrs = */ {}, /* cat_attrs = */ {},
+      /* trackable_qtys = */ {{/* col_name = */ trackable_qty_col}},
+      /* trackable_cats = */ {});
+  SequentialClassifier seq_bolt(schema, "small");
+
+  seq_bolt.train(simple_trend_train_dataset, /* epochs = */ 1,
+                 /* learning_rate = */ 0.0001);
+
+  seq_bolt.explain(simple_trend_test_dataset, CategoricalCrossEntropyLoss());
+
+  ASSERT_EQ(1.0, 1.0);
 
   removeSimpleTrendClassificationDataset();
 }

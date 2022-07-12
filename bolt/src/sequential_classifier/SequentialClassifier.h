@@ -32,8 +32,10 @@ class SequentialClassifier {
 
   void train(std::string filename, uint32_t epochs, float learning_rate,
              bool overwrite_index = false) {
-    auto pipeline = _pipeline_builder.buildPipelineForFile(
-        filename, /* shuffle = */ true, overwrite_index);
+    auto pipeline = _pipeline_builder
+                        .buildPipelineForFile(filename, /* shuffle = */ true,
+                                              overwrite_index)
+                        .first;
 
     if (!_network) {
       _network = buildNetwork(*pipeline);
@@ -49,16 +51,15 @@ class SequentialClassifier {
   static void sortGradients(
       std::vector<std::vector<std::pair<float, uint32_t>>>& gradients) {
     for (auto& gradient : gradients) {
-      sort(gradient.begin(), gradient.end());
+      sort(gradient.rbegin(), gradient.rend());
     }
   }
 
   static std::vector<std::pair<std::string, uint32_t>> getMessagesFromBlocks(
       const std::vector<std::shared_ptr<dataset::Block>>& blocks) {
-    std::vector<std::pair<std::string, uint32_t>> temp;
+    std::vector<std::pair<std::string, uint32_t>> temp(blocks.size());
     for (const auto& block : blocks) {
-      auto message = block->giveMessage();
-      temp.push_back(message);
+      temp.push_back(block->giveMessage());
     }
     return temp;
   }
@@ -67,7 +68,7 @@ class SequentialClassifier {
       std::vector<std::shared_ptr<dataset::Block>> blocks,
       std::vector<uint32_t> offsets, uint32_t index) {
     auto iter = std::upper_bound(offsets.begin(), offsets.end(), index);
-    return blocks[iter - offsets.begin()];
+    return blocks[iter - offsets.begin() - 1];
   }
 
   void explain(std::string filename, const LossFunction& loss_fn) {
@@ -76,34 +77,30 @@ class SequentialClassifier {
                                                false,
                                                /* overwrite_index = */
                                                false);
-    // now we got the input gradients.
-    auto gradients = _network->getInputGradientsFromStream(pipeline, loss_fn);
-    // pairing with the index so that after we still know in which index it is
-    // previously was.
+    auto gradients =
+        _network->getInputGradientsFromStream(pipeline.first, loss_fn);
     std::vector<std::vector<std::pair<float, uint32_t>>> temp;
-    for (uint32_t i = 0; i < gradients.size(); i++) {
-      for (uint32_t j = 0; j < gradients[i].size(); j++) {
-        temp[i].push_back(std::make_pair(gradients[i][j], j));
+    for (auto& gradient : gradients) {
+      std::vector<std::pair<float, uint32_t>> vec;
+      for (uint32_t j = 0; j < gradient.size(); j++) {
+        vec.push_back(std::make_pair(gradient[j], j));
       }
+      temp.push_back(vec);
     }
-    // sort the gradients for each vector in the vector of vector gradients.
     sortGradients(temp);
-
-    // now we have gradients sorted for each vec and have respective index also.
-    //  we stored offsets for each block and wrote a function to get the block
-    //  for given index.
     std::vector<std::shared_ptr<dataset::Block>> blocks;
     for (const auto& row : temp) {
       blocks.clear();
       for (const auto& col : row) {
-        blocks.push_back(getBlock(_pipeline_builder.blocks,
-                                  _pipeline_builder.offsets, col.second));
+        blocks.push_back(
+            getBlock(pipeline.second, _pipeline_builder.offsets, col.second));
       }
       auto messages = getMessagesFromBlocks(blocks);
       for (const auto& message : messages) {
         std::string col_name =
             _pipeline_builder._schema.num_to_name.at(message.second);
-        std::cout << col_name << " : reason " << message.first << std::endl;
+        // std::cout << col_name << " : reason " << message.first << std::endl;
+        // std::cout << col_name << " ";
       }
     }
   }
@@ -129,9 +126,10 @@ class SequentialClassifier {
           }
         };
 
-    auto pipeline =
-        _pipeline_builder.buildPipelineForFile(filename, /* shuffle = */ false,
-                                               /* overwrite_index = */ false);
+    auto pipeline = _pipeline_builder
+                        .buildPipelineForFile(filename, /* shuffle = */ false,
+                                              /* overwrite_index = */ false)
+                        .first;
     if (!_network) {
       throw std::runtime_error(
           "[SequentialClassifier::predict] Predict method called before "
@@ -178,9 +176,10 @@ class SequentialClassifier {
         rereading from the same file.
       */
 
-      pipeline =
-          _pipeline_builder.buildPipelineForFile(filename, /* shuffle = */ true,
-                                                 /* overwrite_index = */ true);
+      pipeline = _pipeline_builder
+                     .buildPipelineForFile(filename, /* shuffle = */ true,
+                                           /* overwrite_index = */ true)
+                     .first;
     }
   }
 

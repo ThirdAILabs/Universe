@@ -49,7 +49,8 @@ class CategoricalTrackingBlock : public Block {
   uint32_t expectedNumColumns() const final { return _expected_num_cols; };
 
   std::pair<std::string, uint32_t> giveMessage() const final {
-    return std::make_pair(std::string("From the CategoricalTrackingBlock"), _id_col);
+    return std::make_pair(std::string("From the CategoricalTrackingBlock"),
+                          _id_col);
   }
 
  protected:
