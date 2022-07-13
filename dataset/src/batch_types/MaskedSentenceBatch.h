@@ -15,6 +15,10 @@ class MaskedSentenceBatch {
       : _input_vectors(std::move(vectors)),
         _masked_positions(std::move(positions)) {}
 
+  MaskedSentenceBatch(bolt::BoltBatch&& vectors, BoltTokenBatch&& positions)
+      : _input_vectors(std::move(vectors)),
+        _masked_positions(std::move(positions)) {}
+
   uint32_t getBatchSize() const { return _input_vectors.getBatchSize(); }
 
   const BoltVector& operator[](size_t i) const {

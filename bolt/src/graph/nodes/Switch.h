@@ -8,11 +8,11 @@
 
 namespace thirdai::bolt {
 
-class SwitchLayerNode final
+class SwitchNode final
     : public Node,
-      public std::enable_shared_from_this<SwitchLayerNode> {
+      public std::enable_shared_from_this<SwitchNode> {
  public:
-  SwitchLayerNode(uint32_t dim, const std::string& activation,
+  SwitchNode(uint32_t dim, const std::string& activation,
                   uint32_t n_layers)
       : _layers_used(n_layers, false), _token_input(nullptr) {
     for (uint32_t i = 0; i < n_layers; i++) {
@@ -20,7 +20,7 @@ class SwitchLayerNode final
     }
   }
 
-  SwitchLayerNode(uint32_t dim, float sparsity, const std::string& activation,
+  SwitchNode(uint32_t dim, float sparsity, const std::string& activation,
                   uint32_t n_layers)
       : _layers_used(n_layers, false), _token_input(nullptr) {
     for (uint32_t i = 0; i < n_layers; i++) {
@@ -33,7 +33,7 @@ class SwitchLayerNode final
 
   bool isInputNode() const final { return false; }
 
-  std::shared_ptr<SwitchLayerNode> addPredecessors(NodePtr predecessor,
+  std::shared_ptr<SwitchNode> addPredecessors(NodePtr predecessor,
                                                    TokenInputPtr token_input) {
     for (auto& layer : _layers) {
       layer->addPredecessor(std::move(predecessor));

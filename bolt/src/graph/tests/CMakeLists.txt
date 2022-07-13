@@ -59,6 +59,14 @@ target_link_libraries(
   gtest_main
 )
 
+add_executable(switch_node_test SwitchNodeTest.cc)
+target_link_libraries(
+  switch_node_test
+  PRIVATE
+  bolt_graph_lib
+  gtest_main
+)
+
 include(GoogleTest)
 gtest_discover_tests(concatenated_node_test)
 gtest_discover_tests(fully_connected_dag_test)
