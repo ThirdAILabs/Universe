@@ -2,6 +2,7 @@
 
 #include "ExecutionConfig.h"
 #include "Node.h"
+#include <bolt/src/layers/BoltVector.h>
 
 namespace thirdai::bolt {
 
@@ -69,6 +70,14 @@ class InferenceOutputTracker {
 
       _current_vec_index++;
     }
+  }
+
+  BoltVector getOutputVector(uint32_t vec_id) {
+    return BoltVector(_active_neurons->data(), _activations->data() + vec_id * _num_nonzeros_per_sample, nullptr, _num_nonzeros_per_sample);
+  }
+
+  uint32_t getNumSavedVectors() const {
+      return _num_samples;
   }
 
   // Returns a (possibly null) pointer to the saved activation data.
