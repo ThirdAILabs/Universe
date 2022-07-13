@@ -89,7 +89,7 @@ TEST(EmbeddingNodeTest, SimpleTokenDataset) {
 
   auto test_metrics = model.predict(data, labels, predict_config);
 
-  ASSERT_GT(test_metrics["categorical_accuracy"], 0.9);
+  ASSERT_GT(test_metrics.first["categorical_accuracy"], 0.9);
 }
 
 }  // namespace thirdai::bolt::tests
