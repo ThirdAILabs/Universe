@@ -6,6 +6,8 @@
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/graph/nodes/Switch.h>
+#include <bolt/src/graph/nodes/TokenInput.h>
 
 namespace thirdai::bolt::python {
 
@@ -107,9 +109,22 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "least one node (although this is just an identity function, so "
            "really should be at least two).");
 
+  py::class_<SwitchLayerNode, std::shared_ptr<SwitchLayerNode>, Node>(
+      graph_submodule, "SwitchLayer")
+      .def(py::init<uint32_t, const std::string&, uint32_t>(), py::arg("dim"),
+           py::arg("activation"), py::arg("n_layers"))
+      .def(py::init<uint32_t, float, const std::string&, uint32_t>(),
+           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
+           py::arg("n_layers"))
+      .def("__call__", &SwitchLayerNode::addPredecessors, py::arg("prev_layer"),
+           py::arg("token_input"));
+
   py::class_<Input, InputPtr, Node>(graph_submodule, "Input")
       .def(py::init<uint32_t>(), py::arg("dim"),
            "Constructs an input layer node for the graph.");
+
+  py::class_<TokenInput, TokenInputPtr, Node>(graph_submodule, "TokenInput")
+      .def(py::init<>());
 
   py::class_<TrainConfig>(graph_submodule, "TrainConfig")
       .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),

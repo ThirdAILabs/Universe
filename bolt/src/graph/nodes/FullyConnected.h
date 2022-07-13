@@ -17,9 +17,13 @@
 
 namespace thirdai::bolt {
 
+class SwitchLayerNode;
+
 class FullyConnectedNode final
     : public Node,
       public std::enable_shared_from_this<FullyConnectedNode> {
+  friend class SwitchLayerNode;
+
  public:
   // This pattern means that any valid constructor for a
   // FullyConnectedLayerConfig can be used to initialize the
