@@ -1,55 +1,88 @@
 import ray
 import os
 import toml
-import subprocess
+import textwrap
 from .Worker import Worker
 from .Supervisor import Supervisor
 import time as time
 from .utils import initLogging
+from typing import Tuple, Any, Optional, Dict, List
 
 class DistributedBolt:
-    def __init__(self, worker_nodes, config_filename):
+    """
+        Implements all the user level Distributed Bolt APIs to the users.
+        Args: 
+            worker_nodes: Number of workers to start training on.
+                This number should be less than equal to the number of nodes(including the head node) training 
+                is started.
+            config_filename: The name of the config file which is going to be used for training. 
+    """
+    def __init__(
+        self, 
+        worker_nodes: int, 
+        config_filename: str
+        ):
+
         self.logging = initLogging()
+        self.logging.info('Training has started!')
         
-        os.system("pip3 install --no-cache-dir ray[default]")
-        os.system("export PATH=$PATH:/home/$USER/.local/bin")
-        os.system("ray stop")
-        os.system('ray up setup.yaml')
-        
-        self.logging.info('Ray set up on head node completed.')
-        self.logging.info('Starting the cluster Setup.')
+        self.no_of_workers = worker_nodes
 
-        subprocess.run(["sh", "make_cluster.sh", " ".join(worker_nodes)])
-
-        self.logging.info('Cluster has started.')
-        self.no_of_workers = len(worker_nodes)+1
         current_working_directory = os.getcwd()
         runtime_env = {"working_dir": current_working_directory, "pip": ["toml", "typing", "typing_extensions", 'psutil'], "env_vars": {"OMP_NUM_THREADS": "100"}}
+        
+        
         ray.init(address='auto', runtime_env=runtime_env)
-        self.logging.info('Ray Initialized on Head Node')
+        
+        if not ray.is_initialized():
+            raise Exception(textwrap.dedent("""
+                Some issue with cluster setup. Ray is not getting initialized.
+                Make sure to have ray cluster online before calling
+                Distributed Bolt.
+            """))
+        
+        self.logging.info('Ray Initialized')
+        
         config = toml.load(config_filename)
+
         self.epochs = config["params"]["epochs"]
         self.learning_rate = config["params"]["learning_rate"]
         self.layers = [config["dataset"]["input_dim"]]
+        
         for i in range(len(config['layers'])):
             self.layers.append(config['layers'][i]['dim'])
+        
         self.workers = [Worker.options(max_concurrency=2).remote(self.layers,config, self.no_of_workers, id) for id in range(self.no_of_workers)]
-        self.supervisor = Supervisor.remote(self.layers,self.workers,config)
+        self.supervisor = Supervisor.remote(self.layers,self.workers)
+        
         self.num_of_batches = ray.get(self.workers[0].num_of_batches.remote())
+        
         for i in range(len(self.workers)):
             x = ray.get(self.workers[i].addSupervisor.remote(self.supervisor))
             y = ray.get(self.workers[i].addFriend.remote(self.workers[(i-1)%(len(self.workers))]))
+        
         updateWeightsAndBiases = ray.get([self.workers[id+1].receiveParams.remote() for id in range(len(self.workers)-1)])
+        
+        
         self.bolt_computation_time = 0
         self.python_computation_time = 0
         self.communication_time = 0
 
-    def train(self, circular = True):
+
+
+    def train(
+        self, 
+        circular: Optional[bool] = False
+        ) -> None:
+        """
+            Trains the network using the communication type choosen.
+            Args:
+                circular: True, if circular communication is required.
+                        False, if linear ccommunication is required.
+        """
+        
         if circular:
             self.logging.info('Circular communication pattern is choosen')
-        else:
-            self.logging.info('Linear communication pattern is choosen')
-        if circular:
             for epoch in range(self.epochs):
                 for batch_no in range(int(self.num_of_batches/len(self.workers))):
                     if batch_no%5==0:
@@ -58,6 +91,7 @@ class DistributedBolt:
                     x = ray.get([self.workers[i].receiveGradientsCircularCommunication.remote() for i in range(len(self.workers))])
                     b = ray.get(self.supervisor.subworkUpdateParameters.remote(self.learning_rate))
         else:
+            self.logging.info('Linear communication pattern is choosen')
             for epoch in range(self.epochs):
                 for batch_no in range(int(self.num_of_batches/len(self.workers))):
                     if batch_no%5==0:
@@ -78,11 +112,15 @@ class DistributedBolt:
                     self.logging.info('Accuracy on workers %d: %lf', i, ray.get(self.workers[i].predict.remote()))
                 
                 
-    def predict(self):
-        predict = []
-        for w in self.workers:
-            predict.append(ray.get(w.predict.remote()))
-        return predict
+    def predict(
+        self
+        ):
+        """
+            Calls network.predict() on one of worker on head node and returns the predictions.
+        """  
+
+        assert len(self.workers) > 0, 'No workers are initialized now.'
+        return (ray.get(self.workers[0].predict.remote()))
 
     
 

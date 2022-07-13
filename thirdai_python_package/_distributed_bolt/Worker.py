@@ -3,19 +3,41 @@ import numpy as np
 import ray
 from .utils import create_fully_connected_layer_configs, load_dataset
 import time
+from typing import Tuple, Any, Optional, Dict, List
 
 
-@ray.remote(num_cpus=40, max_restarts=1)
+@ray.remote(num_cpus=20, max_restarts=1)
 class Worker:
-    def __init__(self, layers, config, total_nodes, id):
+    """
+        This is a ray remote class(Actor). Read about them here. 
+        (https://docs.ray.io/en/latest/ray-core/actors.html)
+        
+        Worker is a ray actor which implements all the lower level 
+        functionalities between the Distributed Bolt APIs and
+        Bolt native code.
+
+        Args:
+            layers: List of layer dimensions
+            config: configuration file for setting up the network
+            total_nodes: total number of nodes
+            id: id of this particular worker
+    """
+
+    def __init__(self, 
+        layers: List, 
+        config, 
+        total_nodes: int, 
+        id: int
+    ):
         self.layers = layers
         self.bolt_layers = create_fully_connected_layer_configs(config["layers"])
         self.input_dim = config["dataset"]["input_dim"]
-        print(self.bolt_layers)
         self.network = bolt.DistributedNetwork(layers=self.bolt_layers, input_dim=self.input_dim)
         self.rehash = config["params"]["rehash"]
         self.rebuild = config["params"]["rebuild"]
         use_sparse_inference = "sparse_inference_epoch" in config["params"].keys()
+
+
         if use_sparse_inference:
             sparse_inference_epoch = config["params"]["sparse_inference_epoch"]
         else:
@@ -24,37 +46,86 @@ class Worker:
         data = load_dataset(config, total_nodes)
         if data is None:
             raise ValueError("Unable to load a dataset. Please check the config")
-        self.train_data, self.train_label, self.test_data, self.test_label = data
-        self.num_of_batches = self.network.initTrainSingleNode(
-                    self.train_data, 
-                    self.train_label,
-                    rehash=self.rehash,
-                    rebuild=self.rebuild,
-                    verbose=False)
+        
+        
         if config["params"]["loss_fn"].lower() == "categoricalcrossentropyloss":
             self.loss = bolt.CategoricalCrossEntropyLoss()
         elif config["params"]["loss_fn"].lower() == "meansquarederror":
             self.loss = bolt.MeanSquaredError()
         else:
             print("'{}' is not a valid loss function".format(config["params"]["loss_fn"]))
+
+        
+        self.train_data, self.train_label, self.test_data, self.test_label = data
+        
+        self.num_of_batches = self.network.initTrainSingleNode(
+                    self.train_data, 
+                    self.train_label,
+                    rehash=self.rehash,
+                    rebuild=self.rebuild,
+                    verbose=False)
+        
         
         self.total_nodes = total_nodes
         self.id = id
 
 
-    def addSupervisor(self, supervisor):
+    def addSupervisor(
+        self, 
+        supervisor
+    ):
+        """
+
+            This function assigns each of the worker their supervisor
+        """
         self.supervisor = supervisor
         
 
-    def addFriend(self, friend):
+    def addFriend(
+        self, 
+        friend
+    ):
+        """
+
+            This function is only needed for circular way of communication.
+            This function assigns each of the worker their friend to which
+            they will be communicating their gradients. Look at this link:
+            https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce/ 
+        """
         self.friend = friend
 
-    def calculateGradientsCircular(self, batch_no):
+    def calculateGradientsCircular(
+        self, 
+        batch_no: int
+    ):
+        """
+
+            This function is called only when the mode of 
+            communication is circular.
+
+
+            This functions calls the API 'calculateGradientSingleNode',
+            which calculates the gradients for the network managed by
+            this particular worker. The calculateGradientSingleNode
+            calculates the gradient for the particular training batch 
+            with batch no. batch_no and with loss function specified
+            in the config.
+
+            This function also defines the partition size which defines the
+            size of block of gradients which are communicated between a worker 
+            and its friend.
+
+            Args:
+                batch_no: training batch to calculate gradients on.
+ 
+        """
         self.network.calculateGradientSingleNode(batch_no, self.loss)
+
         w_gradients = []
         b_gradients = []
         self.w_partitions = []
         self.b_partitions = []
+
         for layer in range(len(self.layers)-1):
             x = self.network.get_weights_gradients(layer)
             y = self.network.get_biases_gradients(layer)
@@ -62,14 +133,44 @@ class Worker:
             b_gradients.append(y)
             self.w_partitions.append(int(len(x)/self.total_nodes))
             self.b_partitions.append(int(len(y)/self.total_nodes))
+
+        
         self.w_gradients, self.b_gradients = w_gradients, b_gradients
+        
         return True
 
-    def calculateGradientsLinear(self, batch_no):
+    def calculateGradientsLinear(self, 
+        batch_no: int
+    ):
+        """
+            This function is called only when the mode of communication is
+            linear.
+
+            This functions calls the API 'calculateGradientSingleNode',
+            which calculates the gradients for the network managed by
+            this particular worker. The calculateGradientSingleNode
+            calculates the gradient for the particular training batch 
+            with batch no. batch_no and with loss function specified
+            in the config.
+
+            Args:
+                batch_no: training batch to calculate gradients on.
+        """
         self.network.calculateGradientSingleNode(batch_no, self.loss)
         return True
     
-    def getCalculatedGradients(self):
+    def getCalculatedGradients(
+        self
+    ):
+        """
+            This function is called only when the mode of communication
+            is Linear.
+
+            This function is called by the supervisor to compute the 
+            averages of the calculated gradients. This functions
+            calls 'get_weights_gradient' and 'get_biases_gradients' functions
+            inside bolt to take the gradients and return them to supervisor.
+        """
         w_gradients = []
         b_gradients = []
         for layer in range(len(self.layers)-1):
@@ -79,7 +180,17 @@ class Worker:
             b_gradients.append(y)
         return (w_gradients, b_gradients)
 
-    def returnParams(self):
+    def returnParams(
+        self
+    ):
+        """
+
+            This function will only be called for worker having its id 0.
+            The supervisor will call this function to get the initial random 
+            weights from worker with id 0 and then send those weights to all
+            the workers.
+
+        """
         weights = []
         biases = []
         for layer in range(len(self.layers)-1):
@@ -89,27 +200,86 @@ class Worker:
             biases.append(y)
         return weights, biases
 
-    def receiveParams(self):
+    def receiveParams(
+        self
+    ):
+        """
+
+            This function is called by supervisor to all the workers whose id 
+            is not equal to 0. This function gets the initialized random weight
+            ans biases from worker with id = 0. and sets the weight on all
+            the other workers.
+
+        """
         weights, biases = ray.get(self.supervisor.weights_biases.remote())
         for layer in range(len(weights)):
             self.network.set_weights(layer, weights[layer])
             self.network.set_biases(layer, biases[layer])
         return True
 
-    def receiveGradientsCircularCommunication(self):
+    def receiveGradientsCircularCommunication(
+        self
+    ):
+        """
+
+            This function is called only when the communication pattern choosen
+            is circular.
+
+            This function is called by the supervisor to make set the updated 
+            gradients to the network.
+
+        """
         for layer in range(len(self.w_gradients)):
             self.network.set_weights_gradients(layer, self.w_gradients[layer])
             self.network.set_biases_gradients(layer, self.b_gradients[layer])
         return True
 
-    def receiveGradientsLinearCommunication(self):
+    def receiveGradientsLinearCommunication(
+        self
+    ):
+        """
+
+            This function is called only when the communication pattern choosen
+            is linear.
+
+            This function is called by the supervisor to first, get the updated gradients 
+            from the supervisor and then set those updated gradients to the network.
+            
+        """
         w_gradients_updated, b_gradients_updated = ray.get(self.supervisor.gradients_avg.remote())
         for layer in range(len(w_gradients_updated)):
             self.network.set_weights_gradients(layer, w_gradients_updated[layer])
             self.network.set_biases_gradients(layer, b_gradients_updated[layer])
         return True
     
-    def processRing(self, update_id, reduce = True, avg_gradients = False):
+    def processRing(
+        self,
+        update_id: int, 
+        reduce: Optional[bool] = True, 
+        avg_gradients: Optional[bool] = False):
+        """
+
+            This function contains the main code for the circular ring communication
+            pattern. 
+            
+            The function first calculates the partition index range on which it will 
+            work, then get the graidnets on that range from its friend worker and sums
+            it to the partition the partition the current worker.
+
+            Here Each of the node communicates the partitioned gradients with 
+            their friend nodes, and those friend node communicate with their friends 
+            and the communication there by happens in a circle.  
+
+
+            Args:
+                update_id: This id is use to calculate the partition to work on.
+                reduce: This bool determines whether we need to reduce or gather
+                    True: redue, Flase: Gather
+                avg_gradients: This bool determines whether we will average the 
+                    gradients, or not. True: do averaging(i.e., divide by total_nodes), 
+                    False: Do nothing
+
+        """
         local_update_id = (update_id + self.id - 1)%self.total_nodes
 
 
@@ -148,7 +318,19 @@ class Worker:
 
     
 
-    def receiveArrayPartitions(self, update_id):
+    def receiveArrayPartitions(self, 
+        update_id: int
+    ):
+        """
+            This function will only be get called for circular ring communication
+            pattern.
+
+            This function returns the array partition to the worker it is called by. 
+
+
+            Args:
+                update_id: This id is use to calculate the partition to work on.
+        """
         local_update_id = (update_id + self.id)%self.total_nodes
         
         w_gradient_subarray = []
@@ -177,17 +359,40 @@ class Worker:
 
     
 
-    def updateParameters(self, learning_rate):
+    def updateParameters(
+        self, 
+        learning_rate: float
+    ):
+        """
+
+            This function calls updateParameter function inside bolt, which
+            inherently updates the entire network.
+
+            Args:
+                learning_rate: the learning rate for updating the parameters
+        """
         self.network.updateParametersSingleNode(learning_rate)
         return True
         
     
-    def num_of_batches(self):
+    def num_of_batches(
+        self
+    ):
+        """
+
+            This function returns the total number of batches the workers have.
+        """
         return self.num_of_batches
 
-    def predict(self):
-        acc, _ = self.network.predictSingleNode(
+    def predict(
+        self
+    ):
+        """
+            This function calls the predict function(predictSingleNode) to return the 
+            prediction from the network manges by this single worker.
+        """
+        acc= self.network.predictSingleNode(
             self.test_data, self.test_label, self.num_of_batches, False, ["categorical_accuracy"], verbose=False
         )
-        return acc["categorical_accuracy"]
+        return acc
     

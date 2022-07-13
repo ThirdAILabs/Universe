@@ -366,19 +366,18 @@ class DistributedPyNetwork final : public DistributedModel {
     uint32_t* active_neurons = nullptr;
     float* activations = nullptr;
 
-    bool alloc_success =
-        allocateActivations(num_samples, inference_output_dim, &active_neurons,
-                            &activations, output_sparse);
+    allocateActivations(num_samples, inference_output_dim, &active_neurons,
+                        &activations, output_sparse);
 
-    auto metric_data = DistributedModel::predictSingleNode(
+    auto metric_data = FullyConnectedNetwork::predict(
         test_data.dataset, test_labels.dataset, active_neurons, activations,
         use_sparse_inference, metrics, verbose, batch_limit);
 
     py::dict py_metric_data = py::cast(metric_data);
 
-    return constructNumpyArrays(std::move(py_metric_data), num_samples,
-                                inference_output_dim, active_neurons,
-                                activations, output_sparse, alloc_success);
+    return constructPythonInferenceTuple(std::move(py_metric_data), num_samples,
+                                         inference_output_dim, activations,
+                                         active_neurons);
   }
 
   py::array_t<float> getWeights(uint32_t layer_index) {

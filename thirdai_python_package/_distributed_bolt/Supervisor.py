@@ -1,22 +1,76 @@
 import numpy as np
 import ray
 import time
+from typing import Tuple, Any, Optional, Dict, List
 
 
 
 @ray.remote(num_cpus=2, max_restarts=2)
 class Supervisor:
-    def __init__(self, layers, workers, config):
+    """
+        This is a ray remote class(Actor). Read about them here. 
+        (https://docs.ray.io/en/latest/ray-core/actors.html)
+
+        Supervisor is a ray actor which implements higher level 
+        abstraction on worker nodes. It controls training on 
+        each of the node(which batch number to train) and communication
+        between the worker nodes.
+        
+        
+        Args:
+            layers: List of layer dimensions.
+            workers: List of workers(including the worker on head node) running on different nodes.
+    """
+    def __init__(
+        self, 
+        layers: List, 
+        workers: List
+    ):
         self.layers = layers
         self.workers = workers
         self.num_of_batches = ray.get(self.workers[0].num_of_batches.remote())
         self.weights_biases = ray.get(self.workers[0].returnParams.remote())
     
 
-    def batch_to_train(self, id, batch_no):
+    def batch_to_train(
+        self, 
+        id: int, 
+        batch_no: int
+    ) -> int:
+        """
+            For each worker, this function assigns them the batch number they 
+            need to train the network on.
+
+            In the current implementation, we are loading all the training 
+            data into each of the worker nodes, and then giving each of them
+            separate ranges of batches to train on.
+
+            So, if self.num_of_batch = 100 and len(self.workers) = 5
+            we will be assigning batch number 0-19 to worker 1,
+            20-39 to worker 2, 40-59 to worker 3....
+
+            Args:
+                id: worker id
+                batch_no: batch number for the particular worker with worker id (id). 
+        """
         return int(self.num_of_batches/len(self.workers))*id + batch_no
 
-    def subworkCircularCommunication(self, batch_no):
+    def subworkCircularCommunication(
+        self, 
+        batch_no: int
+    ):
+        """
+
+            This function first call the workers to compute the gradients on their network 
+            and then implements Baidu's All Ring All Reduce algorithm for communication.
+            Read more about that here: 
+            https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce/.
+            
+
+
+            Args:
+                batch_no: batch number for the particular worker with worker id (id).
+        """
         updates = ray.get([self.workers[id].calculateGradientsCircular.remote(self.batch_to_train(id, batch_no)) for id in range(len(self.workers))])
 
         # First Run
@@ -35,7 +89,21 @@ class Supervisor:
             update_id -= 1
         return True
 
-    def subworkLinearCommunication(self, batch_no):
+    def subworkLinearCommunication(
+        self, 
+        batch_no: int
+    ):
+        """
+            This function implements the linear way of communicating between the node.
+            In this way of communication, each of the worker calculates their gradients, 
+            send their gradients to the supervisor and the supervisor sums the gradients, 
+            averages it and and send the gradients back to the workers.
+
+
+
+            Args:
+                batch_no: batch number for the particular worker with worker id (id).
+        """
         start_gradient_computation = time.time()
         calculateGradients = ray.get([self.workers[id].calculateGradientsLinear.remote(self.batch_to_train(id, batch_no)) for id in range(len(self.workers))])
         gradient_computation_time = time.time() - start_gradient_computation
@@ -60,16 +128,39 @@ class Supervisor:
         return gradient_computation_time, getting_gradient_time, summing_and_averaging_gradients_time
 
     
-    def gradients_avg(self):
+    def gradients_avg(
+        self
+    ):
+        """
+            This function is called by the workers to get the gradients back from supervisor.
+            Calling this function returns the averaged gradients which is already calculated 
+            by the supervisor.
+        """
         return self.w_gradients_avg, self.b_gradients_avg
 
     
-    def subworkUpdateParameters(self, learning_rate):
+    def subworkUpdateParameters(
+        self,
+        learning_rate: float
+    ):
+        """
+
+            This function calls every worker to update their parameters(weight and biases) with the
+            updated gradients(which they receive from the supervisor)
+
+            Args:
+                learning_rate: learning_rate for the training
+        """
         check_update_parameter = ray.get([w.updateParameters.remote(learning_rate) for w in self.workers])
         return True
 
     
-    def check_weights(self):
+    def check_weights(
+        self
+    ):
+        """
+            This is a debug function to see whether the parameters are set accurately or not.
+        """
         weights_0, biases_0 = ray.get(self.workers[0].returnParams.remote())
         weights_1, biases_1 = ray.get(self.workers[1].returnParams.remote())
         print('weights 0: ', weights_0)
@@ -78,6 +169,13 @@ class Supervisor:
         print('biases 1: ', biases_1)
 
 
-    def weights_biases(self):
+    def weights_biases(
+        self
+    ):
+        """
+
+            This function is called by all the workers(other than worker with id = 0), here 
+            all the workers get the same initialized weights and bias as that of worker with id 0 
+        """
         return self.weights_biases
 

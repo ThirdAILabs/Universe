@@ -3,9 +3,12 @@ from typing import Tuple, Any, Optional, Dict, List
 import toml
 import os
 import logging
+import sys
  
 
 def find_full_filepath(filename: str) -> str:
+    """
+    """
     data_path_file = ("./dataset_paths.toml")
     prefix_table = toml.load(data_path_file)
     for prefix in prefix_table["prefixes"]:
@@ -28,6 +31,8 @@ def load_dataset(
             dataset.BoltDataset,  # test_y
         ]
     ]:
+    """
+    """
     train_filename = find_full_filepath(config["dataset"]["train_data"])
     test_filename = find_full_filepath(config["dataset"]["test_data"])
     batch_size = int(config["params"]["batch_size"]/total_nodes)
@@ -51,6 +56,8 @@ def load_dataset(
 def create_fully_connected_layer_configs(
     configs: List[Dict[str, Any]]
 ) -> List[bolt.FullyConnected]:
+    """
+    """
     layers = []
     for config in configs:
 
@@ -83,6 +90,8 @@ def create_fully_connected_layer_configs(
 
 
 def initLogging():
+    """
+    """
     # Logger Init
     logger = logging.getLogger('DistributedBolt')
     logger.setLevel(logging.INFO)
