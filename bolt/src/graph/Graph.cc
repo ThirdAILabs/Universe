@@ -313,9 +313,16 @@ void BoltGraph::setInputs(dataset::BoltTokenBatch& batch_inputs) {
 // in which BATCH_T is equivalent to BoltTokenBatch.
 template <>
 void BoltGraph::setInputs(dataset::MaskedSentenceBatch& batch_inputs) {
-  // If we are using a BoltTokenBatch then there is only one token input. This
-  // is checked in the verifyInputForGraph() function.
+  // If we are using a MaskedSentenceBatch then there is only one input and 0 or
+  // 1 token inputs for the masked indices. This is checked in the
+  // verifyInputForGraph() function.
   _inputs[0]->setInputs(batch_inputs.getVectors());
+
+  // We have a conditional here because for some MLM tasks we use the masked
+  // indices and for some we don't.
+  if (!_token_inputs.empty()) {
+    _token_inputs[0]->setTokenInputs(batch_inputs.getMaskedIndices());
+  }
 }
 
 void BoltGraph::forward(uint32_t vec_index, const BoltVector* labels) {

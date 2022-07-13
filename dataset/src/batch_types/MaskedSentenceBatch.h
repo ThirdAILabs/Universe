@@ -37,6 +37,8 @@ class MaskedSentenceBatch {
 
   bolt::BoltBatch* getVectors() { return &_input_vectors; }
 
+  BoltTokenBatch* getMaskedIndices() { return &_masked_positions; }
+
  private:
   bolt::BoltBatch _input_vectors;
   BoltTokenBatch _masked_positions;
