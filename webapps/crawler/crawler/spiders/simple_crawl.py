@@ -129,7 +129,7 @@ class MySpider(scrapy.Spider):
         elif self.parse_htmls:
             print(f"parsing HTMLs from the folder: {self.html_output_folder}")
             print(f"parsing HTMLs to the folder: {self.parse_html_folder}")
-            parseFolder(self.html_output_folder, self.parse_html_folder)
+            parseFolder(self.html_output_folder, self.parse_html_folder,tags=self.tags_to_scrape)
         # time.sleep(150)
 
     def fetch_htmls(self, response):
@@ -205,7 +205,7 @@ class MySpider(scrapy.Spider):
                     f.write(response.body)
 
         if self.parse_dynamic or self.parse_htmls:
-            text = parseText(response, tags=["title", "a", "p"])
+            text = parseText(response, tags=self.tags_to_scrape)
             if self.parse_dynamic:
                 yield text
 
