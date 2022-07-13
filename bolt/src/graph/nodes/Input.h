@@ -29,10 +29,11 @@ class Input final : public Node {
   // will be stored as a field so it can be used in future method calls. It is
   // only valid until the next time cleanupAfterBatchProcessing is called.
   void setInputs(BoltBatch* inputs) {
-    for (uint32_t i = 0; i < inputs->getBatchSize(); i++) {
-      checkDimForInput((*inputs)[i]);
-    }
-
+    assert(inputs != nullptr);
+    inputs->verifyExpectedDimension(
+        /* expected_dimension = */ _expected_input_dim,
+        /* origin_string = */
+        "We found an Input BoltVector larger than the expected input dim");
     _input_batch = inputs;
   }
 

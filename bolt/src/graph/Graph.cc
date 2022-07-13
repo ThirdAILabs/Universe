@@ -170,7 +170,10 @@ void BoltGraph::processTrainingBatch(BATCH_T& batch_inputs,
                                      MetricAggregator& metrics) {
   assert(graphCompiled());
   setInputs(batch_inputs);
-  verifyLabels(batch_labels);
+  batch_labels.verifyExpectedDimension(
+      /* expected_dimension = */ _output->outputDim(),
+      /* origin_string = */
+      "Passed in label BoltVector is larger than the output dim");
 
 #pragma omp parallel for default(none) \
     shared(batch_inputs, batch_labels, metrics)
@@ -342,36 +345,6 @@ void BoltGraph::setInputs(dataset::MaskedSentenceBatch& batch_inputs) {
   // If we are using a BoltTokenBatch then there is only one token input. This
   // is checked in the verifyInputForGraph() function.
   _inputs[0]->setInputs(batch_inputs.getVectors());
-}
-
-void BoltGraph::verifyLabels(const BoltBatch& batch_labels) {
-  uint32_t output_dim = _output->outputDim();
-  for (uint32_t vec_id = 0; vec_id < batch_labels.getBatchSize(); vec_id++) {
-    const BoltVector& label_vector = batch_labels[vec_id];
-    uint32_t label_vec_length = label_vector.len;
-    if (label_vector.isDense()) {
-      if (label_vec_length != output_dim) {
-        throw std::invalid_argument(
-            "A dense label vector must have the same dimension as the output "
-            "layer, but found a label vector with dimension " +
-            std::to_string(label_vec_length) +
-            " (the output dimension of this model is " +
-            std::to_string(output_dim) + ").");
-      }
-    } else {
-      for (uint32_t i = 0; i < label_vec_length; i++) {
-        if (label_vector.active_neurons[i] > output_dim) {
-          throw std::invalid_argument(
-              "A sparse label vector must not have any active neuron greater "
-              "than the output dim, but found a label vector with an active "
-              "neuron of " +
-              std::to_string(label_vector.active_neurons[i]) +
-              " (the output dimension of this model is " +
-              std::to_string(output_dim) + ").");
-        }
-      }
-    }
-  }
 }
 
 void BoltGraph::forward(uint32_t vec_index, const BoltVector* labels) {

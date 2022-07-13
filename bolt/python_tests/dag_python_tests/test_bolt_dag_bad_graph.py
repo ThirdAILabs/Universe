@@ -50,7 +50,7 @@ def test_bad_dense_input_dim():
         labels = np.random.rand(num_train, input_and_output_dim).astype("float32")
         with pytest.raises(
             ValueError,
-            match=f"Received dense BoltVector with dimension={bad_dim} in input layer with dimension={input_and_output_dim}",
+            match=f".*Received dense BoltVector with dimension={bad_dim}, but was supposed to have dimension={input_and_output_dim}.*",
         ):
             model.train(data, labels, train_config)
 
@@ -63,7 +63,7 @@ def test_bad_dense_input_dim():
         labels = np.random.rand(num_train, input_and_output_dim).astype("float32")
         with pytest.raises(
             ValueError,
-            match=f"Received dense BoltVector with dimension={bad_dim} in input layer with dimension={input_and_output_dim}",
+            match=f".*Received dense BoltVector with dimension={bad_dim}, but was supposed to have dimension={input_and_output_dim}.*",
         ):
             model.predict(data, labels, predict_config)
 
@@ -109,7 +109,7 @@ def test_bad_label_dim_dense():
         data = np.random.rand(num_train, input_and_output_dim).astype("float32")
         with pytest.raises(
             ValueError,
-            match=f".*found a label vector with dimension {bad_dim}.*output dimension of this model is {input_and_output_dim}.*",
+            match=f".*Received dense BoltVector with dimension={bad_dim}, but was supposed to have dimension={input_and_output_dim}.*",
         ):
             model.train(data, labels, train_config)
 

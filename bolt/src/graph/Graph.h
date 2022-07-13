@@ -117,8 +117,6 @@ class BoltGraph {
   template <typename BATCH_T>
   void setInputs(BATCH_T& batch_inputs);
 
-  void verifyLabels(const BoltBatch& batch_labels);
-
   // Computes the forward pass through the graph.
   void forward(uint32_t vec_index, const BoltVector* labels);
 
