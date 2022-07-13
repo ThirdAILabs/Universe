@@ -23,7 +23,9 @@ output_layer = bolt.graph.FullyConnected(
     dim=VOCAB_SIZE, sparsity=0.005, activation="softmax"
 )(hidden_layer)
 
-model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+model = bolt.graph.Model(
+    inputs=[input_layer], token_inputs=[token_input], output=output_layer
+)
 
 model.compile(bolt.CategoricalCrossEntropyLoss())
 
