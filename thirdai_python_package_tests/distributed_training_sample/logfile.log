@@ -136,3 +136,6 @@
 2022-07-13 05:30:47,265 : INFO : DistributedBolt : Epoch No: 3, Bolt Computation Time: 876.653723, Python Computation Time: 4436.063260, Communication Time: 2534.844163
 2022-07-13 05:31:30,554 : INFO : DistributedBolt : Accuracy on workers 0: 0.274600
 2022-07-13 05:32:12,805 : INFO : DistributedBolt : Accuracy on workers 1: 0.274600
+2022-07-13 13:17:49,984 : INFO : DistributedBolt : Training has started!
+2022-07-13 13:17:50,374 : INFO : DistributedBolt : Ray Initialized
+2022-07-13 13:18:15,728 : INFO : DistributedBolt : Linear communication pattern is choosen
