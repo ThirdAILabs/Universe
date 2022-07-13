@@ -75,32 +75,34 @@ class TabularMetadata {
   }
 
   uint32_t getNumericHashValue(uint32_t col, const std::string& str_val,
-                               std::string& block_exception_message) {
-    uint32_t bin = getColBin(col, str_val, block_exception_message);
+                               std::exception_ptr exception_ptr) {
+    uint32_t bin = getColBin(col, str_val, exception_ptr);
     uint64_t uniqueBin =
         static_cast<uint64_t>(bin) << 32 | static_cast<uint64_t>(col);
     const char* val_to_hash = reinterpret_cast<const char*>(&uniqueBin);
     return PairgramHasher::computeUnigram(val_to_hash, /* len */ 8);
   }
 
+ private:
+  double getColMin(uint32_t col) { return _col_to_min_val[col]; }
+
+  double getColBinsize(uint32_t col) {
+    return (_col_to_max_val[col] - _col_to_min_val[col]) / _num_non_empty_bins;
+  }
+
   uint32_t getColBin(uint32_t col, const std::string& str_val,
-                     std::string& block_exception_message) {
+                     std::exception_ptr exception_ptr) {
     // map empty values to their own bin
     if (str_val.empty()) {
       return _num_non_empty_bins;
     }
+    double value;
     try {
-      double value = std::stod(str_val);
-      double binsize = getColBinsize(col);
-      if (binsize == 0) {
-        return 0;
-      }
-      return static_cast<uint32_t>(
-          std::round((value - getColMin(col)) / getColBinsize(col)));
+      value = std::stod(str_val);
     } catch (std::invalid_argument& e) {
-      block_exception_message =
+      exception_ptr = std::make_exception_ptr(std::invalid_argument(
           "Could not process column " + std::to_string(col) +
-          " as type 'numeric.' Received value: '" + str_val + ".'";
+          " as type 'numeric.' Received value: '" + str_val + ".'"));
 
       // Since we have set the block exception message above, the program will
       // fail once all threads finish. Since we can't throw an exception within
@@ -108,6 +110,12 @@ class TabularMetadata {
       // Thus we return some arbitrary value to do that.
       return 0;
     }
+    double binsize = getColBinsize(col);
+    if (binsize == 0) {
+      return 0;
+    }
+    return static_cast<uint32_t>(
+        std::round((value - getColMin(col)) / getColBinsize(col)));
   }
 
   /**
@@ -122,17 +130,6 @@ class TabularMetadata {
       col_str.insert(0, _max_salt_len - col_str.size(), '0');
     }
     return col_str;
-  }
-
-  std::string getClassName(uint32_t class_id) {
-    return _class_id_to_class.at(class_id);
-  }
-
- private:
-  double getColMin(uint32_t col) { return _col_to_min_val[col]; }
-
-  double getColBinsize(uint32_t col) {
-    return (_col_to_max_val[col] - _col_to_min_val[col]) / _num_non_empty_bins;
   }
 
   // Private constructor for cereal

@@ -32,8 +32,8 @@ class ContiguousNumericId : public CategoricalEncoding {
   explicit ContiguousNumericId(uint32_t dim) : _dim(dim) {}
 
   void encodeCategory(const std::string_view id, SegmentedFeatureVector& vec,
-                      std::string& block_exception_message) final {
-    (void)block_exception_message;
+                      std::exception_ptr exception_ptr) final {
+    (void)exception_ptr;
     uint32_t id_int{};
     std::from_chars(id.data(), id.data() + id.size(), id_int);
     vec.addSparseFeatureToSegment(id_int % _dim, 1.0);

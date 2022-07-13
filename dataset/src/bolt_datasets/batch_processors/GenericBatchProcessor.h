@@ -62,10 +62,10 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
       an error inside an OpenMP structured block has undefined behavior.
     */
     std::atomic_bool found_error = false;
-    std::string block_exception_message;
+    std::exception_ptr exception_ptr;
 
-#pragma omp parallel for default(none) shared( \
-    rows, batch_inputs, batch_labels, found_error, block_exception_message)
+#pragma omp parallel for default(none) \
+    shared(rows, batch_inputs, batch_labels, found_error, exception_ptr)
     for (size_t i = 0; i < rows.size(); ++i) {
       auto columns = ProcessorUtils::parseCsvRow(rows[i], _delimiter);
       if (columns.size() < _expected_num_cols) {
@@ -73,13 +73,13 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
         continue;
       }
       batch_inputs[i] = makeVector(columns, _input_blocks, _input_blocks_dense,
-                                   block_exception_message);
+                                   exception_ptr);
       batch_labels[i] = makeVector(columns, _label_blocks, _label_blocks_dense,
-                                   block_exception_message);
+                                   exception_ptr);
     }
 
-    if (!block_exception_message.empty()) {
-      throw std::invalid_argument(block_exception_message);
+    if (exception_ptr) {
+      std::rethrow_exception(exception_ptr);
     }
 
     /*
@@ -121,7 +121,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
   static bolt::BoltVector makeVector(
       std::vector<std::string_view>& sample,
       std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense,
-      std::string& block_exception_message) {
+      std::exception_ptr exception_ptr) {
     std::shared_ptr<SegmentedFeatureVector> vec_ptr;
 
     // Dense vector if all blocks produce dense features, sparse vector
@@ -135,7 +135,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     // Let each block encode the input sample and adds a new segment
     // containing this encoding to the vector.
     for (auto& block : blocks) {
-      block->addVectorSegment(sample, *vec_ptr, block_exception_message);
+      block->addVectorSegment(sample, *vec_ptr, exception_ptr);
     }
     return vec_ptr->toBoltVector();
   }

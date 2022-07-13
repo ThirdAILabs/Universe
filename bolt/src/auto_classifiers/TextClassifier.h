@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cereal/archives/binary.hpp>
-#include "AutoTuneUtils.h"
+#include "AutoClassifierUtils.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
@@ -17,7 +17,7 @@ class TextClassifier {
  public:
   TextClassifier(const std::string& model_size, uint32_t n_classes) {
     uint32_t input_dim = 100000;
-    _model = AutoTuneUtils::createNetwork(
+    _model = AutoClassifierUtils::createNetwork(
         /* input_dim */ input_dim,
         /* n_classes */ n_classes, model_size);
     _batch_processor =
@@ -26,7 +26,7 @@ class TextClassifier {
 
   void train(const std::string& filename, uint32_t epochs,
              float learning_rate) {
-    AutoTuneUtils::train(
+    AutoClassifierUtils::train(
         _model, filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch>>(
             _batch_processor),
@@ -36,7 +36,7 @@ class TextClassifier {
 
   void predict(const std::string& filename,
                const std::optional<std::string>& output_filename) {
-    AutoTuneUtils::predict(
+    AutoClassifierUtils::predict(
         _model, filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch>>(
             _batch_processor),

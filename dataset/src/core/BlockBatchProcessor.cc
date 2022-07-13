@@ -63,15 +63,20 @@ void BlockBatchProcessor::processBatch(
     }
   }
 
-#pragma omp parallel for default(none) shared(batch, initial_num_elems)
+  std::exception_ptr exception_ptr;
+#pragma omp parallel for default(none) \
+    shared(batch, initial_num_elems, exception_ptr)
   for (size_t i = 0; i < batch.size(); ++i) {
     _input_vectors[initial_num_elems + i] =
-        makeVector(batch[i], _input_blocks, _input_blocks_dense);
+        makeVector(batch[i], _input_blocks, _input_blocks_dense, exception_ptr);
 
     if (_target_vectors) {
-      _target_vectors->at(initial_num_elems + i) =
-          makeVector(batch[i], _target_blocks, _target_blocks_dense);
+      _target_vectors->at(initial_num_elems + i) = makeVector(
+          batch[i], _target_blocks, _target_blocks_dense, exception_ptr);
     }
+  }
+  if (exception_ptr) {
+    std::rethrow_exception(exception_ptr);
   }
 }
 
@@ -152,7 +157,8 @@ std::vector<uint32_t> BlockBatchProcessor::makeFinalPositions(
 
 bolt::BoltVector BlockBatchProcessor::makeVector(
     std::vector<std::string>& sample,
-    std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
+    std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense,
+    std::exception_ptr exception_ptr) {
   std::shared_ptr<SegmentedFeatureVector> vec_ptr;
 
   // Dense vector if all blocks produce dense features, sparse vector
@@ -163,7 +169,6 @@ bolt::BoltVector BlockBatchProcessor::makeVector(
     vec_ptr = std::make_shared<SegmentedSparseFeatureVector>();
   }
 
-  std::string block_exception_message;
   // Let each block encode the input sample and adds a new segment
   // containing this encoding to the vector.
   for (auto& block : blocks) {
@@ -171,10 +176,7 @@ bolt::BoltVector BlockBatchProcessor::makeVector(
     for (uint32_t i = 0; i < sample.size(); i++) {
       sample_view[i] = std::string_view(sample[i].c_str(), sample[i].size());
     }
-    block->addVectorSegment(sample_view, *vec_ptr, block_exception_message);
-  }
-  if (!block_exception_message.empty()) {
-    throw std::invalid_argument(block_exception_message);
+    block->addVectorSegment(sample_view, *vec_ptr, exception_ptr);
   }
   return vec_ptr->toBoltVector();
 }

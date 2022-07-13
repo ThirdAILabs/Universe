@@ -17,15 +17,15 @@ class StringCategoricalEncoding : public CategoricalEncoding {
       : _encoding_map(std::move(encoding_map)) {}
 
   void encodeCategory(const std::string_view id, SegmentedFeatureVector& vec,
-                      std::string& block_exception_message) final {
+                      std::exception_ptr exception_ptr) final {
     std::string class_name(id);
     if (!_encoding_map.count(class_name)) {
-      block_exception_message =
-          "Received unexpected class name: '" + class_name + ".'";
+      exception_ptr = std::make_exception_ptr(std::invalid_argument(
+          "Received unexpected class name: '" + class_name + ".'"));
       // Since we have set the block exception message above, the program will
       // fail once all threads finish. Since we can't throw an exception within
       // a pragma thread, we just have to keep the program running until then.
-      // Thus we return some arbitrary value to do that.
+      // Thus we just perform some arbitrary non-failing operation.
       vec.addSparseFeatureToSegment(_encoding_map.begin()->second, 1.0);
     } else {
       vec.addSparseFeatureToSegment(_encoding_map[class_name], 1.0);

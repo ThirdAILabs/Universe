@@ -23,7 +23,7 @@
 
 namespace thirdai::bolt {
 
-class AutoTuneUtils {
+class AutoClassifierUtils {
  public:
   static std::shared_ptr<FullyConnectedNetwork> createNetwork(
       uint64_t input_dim, uint32_t n_classes, const std::string& model_size) {

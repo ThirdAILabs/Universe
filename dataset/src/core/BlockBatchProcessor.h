@@ -49,7 +49,8 @@ class BlockBatchProcessor {
    */
   static bolt::BoltVector makeVector(
       std::vector<std::string>& sample,
-      std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense);
+      std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense,
+      std::exception_ptr exception_ptr);
 
   uint32_t _batch_size;
   bool _input_blocks_dense;

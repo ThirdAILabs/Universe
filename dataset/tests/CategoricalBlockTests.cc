@@ -56,13 +56,13 @@ class CategoricalBlockTest : public testing::Test {
    */
   static void addVectorSegmentWithBlock(
       CategoricalBlock& block, const std::vector<std::string>& input_row,
-      SegmentedSparseFeatureVector& vec, std::string& block_exception_message) {
+      SegmentedSparseFeatureVector& vec, std::exception_ptr exception_ptr) {
     std::vector<std::string_view> input_row_view(input_row.size());
     for (uint32_t i = 0; i < input_row.size(); i++) {
       input_row_view[i] =
           std::string_view(input_row[i].c_str(), input_row[i].size());
     }
-    block.addVectorSegment(input_row_view, vec, block_exception_message);
+    block.addVectorSegment(input_row_view, vec, exception_ptr);
   }
 
   /**
@@ -94,16 +94,16 @@ TEST_F(CategoricalBlockTest, ProducesCorrectVectorsDifferentColumns) {
   auto input_matrix = generate_input_matrix(int_matrix);
 
   // Encode the input matrix
-  std::string block_exception_message;
+  std::exception_ptr exception_ptr;
   for (const auto& row : input_matrix) {
     SegmentedSparseFeatureVector vec;
     for (auto& block : blocks) {
-      addVectorSegmentWithBlock(block, row, vec, block_exception_message);
+      addVectorSegmentWithBlock(block, row, vec, exception_ptr);
     }
     vecs.push_back(std::move(vec));
   }
-  if (!block_exception_message.empty()) {
-    throw std::invalid_argument(block_exception_message);
+  if (exception_ptr) {
+    std::rethrow_exception(exception_ptr);
   }
 
   // Check that encoded features match.

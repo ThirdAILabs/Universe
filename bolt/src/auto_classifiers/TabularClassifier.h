@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cereal/archives/binary.hpp>
-#include "AutoTuneUtils.h"
+#include "AutoClassifierUtils.h"
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/TabularBlocks.h>
@@ -14,11 +14,11 @@ namespace thirdai::bolt {
 
 class TabularClassifier {
  public:
-  TabularClassifier(const std::string& model_size, uint32_t n_classes) {
-    _model =
-        AutoTuneUtils::createNetwork(/* input_dim */ 100000,
-                                     /* n_classes */ n_classes, model_size);
-    _metadata = nullptr;
+  TabularClassifier(const std::string& model_size, uint32_t n_classes)
+      : _metadata(nullptr) {
+    _model = AutoClassifierUtils::createNetwork(/* input_dim */ 100000,
+                                                /* n_classes */ n_classes,
+                                                model_size);
   }
 
   void train(const std::string& filename,
@@ -35,7 +35,7 @@ class TabularClassifier {
     std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
         makeTabularBatchProcessor();
 
-    AutoTuneUtils::train(
+    AutoClassifierUtils::train(
         _model, filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch>>(
             batch_processor),
@@ -53,7 +53,7 @@ class TabularClassifier {
     std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
         makeTabularBatchProcessor();
 
-    AutoTuneUtils::predict(
+    AutoClassifierUtils::predict(
         _model, filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch>>(
             batch_processor),
