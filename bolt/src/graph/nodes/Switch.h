@@ -8,12 +8,10 @@
 
 namespace thirdai::bolt {
 
-class SwitchNode final
-    : public Node,
-      public std::enable_shared_from_this<SwitchNode> {
+class SwitchNode final : public Node,
+                         public std::enable_shared_from_this<SwitchNode> {
  public:
-  SwitchNode(uint32_t dim, const std::string& activation,
-                  uint32_t n_layers)
+  SwitchNode(uint32_t dim, const std::string& activation, uint32_t n_layers)
       : _layers_used(n_layers, false), _token_input(nullptr) {
     for (uint32_t i = 0; i < n_layers; i++) {
       _layers.push_back(std::make_shared<FullyConnectedNode>(dim, activation));
@@ -21,7 +19,7 @@ class SwitchNode final
   }
 
   SwitchNode(uint32_t dim, float sparsity, const std::string& activation,
-                  uint32_t n_layers)
+             uint32_t n_layers)
       : _layers_used(n_layers, false), _token_input(nullptr) {
     for (uint32_t i = 0; i < n_layers; i++) {
       _layers.push_back(
@@ -29,14 +27,19 @@ class SwitchNode final
     }
   }
 
-  uint32_t outputDim() const final { return _layers.at(0)->outputDim(); }
+  uint32_t outputDim() const final {
+    std::cout << "outputDim() start" << std::endl;
+    auto dim = _layers.at(0)->outputDim();
+    std::cout << "outputDim() end" << std::endl;
+    return dim;
+  }
 
   bool isInputNode() const final { return false; }
 
-  std::shared_ptr<SwitchNode> addPredecessors(NodePtr predecessor,
-                                                   TokenInputPtr token_input) {
+  std::shared_ptr<SwitchNode> addPredecessors(NodePtr predecessor, // NOLINT
+                                              TokenInputPtr token_input) {
     for (auto& layer : _layers) {
-      layer->addPredecessor(std::move(predecessor));
+      layer->addPredecessor(predecessor);
     }
 
     _token_input = std::move(token_input);
@@ -46,9 +49,11 @@ class SwitchNode final
 
  private:
   void compileImpl() final {
+    std::cout << "compileImpl() start" << std::endl;
     for (auto& layer : _layers) {
       layer->compileImpl();
     }
+    std::cout << "compileImpl() end" << std::endl;
   }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
@@ -110,13 +115,13 @@ class SwitchNode final
 
   std::string type() const final { return "switch"; }
 
-  std::vector<NodePtr> getPredecessorsImpl() const final { return {}; }
-
-  NodeState getState() const final {
-    _layers.at(0)->getState();
-    throw exceptions::NodeStateMachineError(
-        "SwitchLayerNode is in an invalid internal state");
+  std::vector<NodePtr> getPredecessorsImpl() const final {
+    auto predecessors = _layers[0]->getPredecessors();
+    predecessors.push_back(_token_input);
+    return predecessors;
   }
+
+  NodeState getState() const final { return _layers.at(0)->getState(); }
 
   uint32_t getActiveLayer(uint32_t vec_index) {
     return _token_input->getTokens(vec_index).at(0);

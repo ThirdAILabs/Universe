@@ -62,6 +62,8 @@ TEST(SwitchNodeTest, TrainsOnSimpleClassificationDataset) {
   BoltGraph model(/* inputs= */ {input}, /* token_inputs= */ {token_input},
                   /* output= */ output);
 
+  model.compile(std::make_shared<CategoricalCrossEntropyLoss>());
+
   auto train_cfg = TrainConfig::makeConfig(/* learning_rate= */ 0.001, 5);
 
   model.train(data, labels, train_cfg);
@@ -69,7 +71,9 @@ TEST(SwitchNodeTest, TrainsOnSimpleClassificationDataset) {
   auto predict_cfg =
       PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
-  model.predict(data, labels, predict_cfg);
+  auto result = model.predict(data, labels, predict_cfg);
+
+  ASSERT_GE(result.first["categorical_accuracy"], 0.95);
 }
 
 }  // namespace thirdai::bolt::tests
