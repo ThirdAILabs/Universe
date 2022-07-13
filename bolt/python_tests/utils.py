@@ -2,7 +2,8 @@ from thirdai import bolt
 import numpy as np
 
 
-# Constructs a bolt network with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
+# Constructs a bolt network with a sparse hidden layer. The parameters dim and sparsity
+# are for this sparse hidden layer.
 def build_sparse_hidden_layer_classifier(input_dim, sparse_dim, output_dim, sparsity):
     layers = [
         bolt.FullyConnected(
@@ -67,6 +68,23 @@ def gen_single_sparse_layer_network(n_classes, sparsity=0.5):
     ]
     network = bolt.Network(layers=layers, input_dim=n_classes)
     return network
+
+
+def build_simple_graph_model(input_dim, output_dim, num_classes, sparsity):
+    input_layer = bolt.graph.Input(dim=num_classes)
+    hidden_layer = bolt.graph.FullyConnected(
+        dim=input_dim, sparsity=sparsity, activation="relu"
+    )(input_layer)
+
+    output_layer = bolt.graph.FullyConnected(dim=output_dim, activation="softmax")(
+        hidden_layer
+    )
+
+    model = bolt.graph.Model(inputs=[input_layer], output=output_layer).compile(
+        loss=bolt.CategoricalCrossEntropyLoss()
+    )
+
+    return model
 
 
 def get_simple_concat_model(

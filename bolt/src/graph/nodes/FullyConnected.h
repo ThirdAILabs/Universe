@@ -5,6 +5,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/graph/Graph.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <exceptions/src/Exceptions.h>
@@ -26,7 +27,7 @@ class FullyConnectedNode final
   // FullyConnectedLayerNode, and that the args are directly forwarded to the
   // constructor for the config.
   template <typename... Args>
-  explicit FullyConnectedNode(Args&&... args)
+  explicit FullyConnectedNode(Args&&... args) 
       : _layer(nullptr),
         _config(std::forward<Args>(args)...),
         _predecessor(nullptr) {}
@@ -42,11 +43,21 @@ class FullyConnectedNode final
     return shared_from_this();
   }
 
-  uint32_t outputDim() const final { return _config.dim; }
+  uint32_t outputDim() const final { 
+    if (getState() == NodeState::Compiled) {
+      return _layer->getDim();
+    }
+    return _config->dim; 
+  }
 
   bool isInputNode() const final { return false; }
 
-  ActivationFunction getActivationFunction() const { return _config.act_func; }
+  ActivationFunction getActivationFunction() const { 
+    if (getState() ==  NodeState::Compiled) {
+      return _layer->getActivationFunction();
+    }
+    return _config->act_func; 
+  }
 
   void saveParameters(const std::string& filename) const {
     std::ofstream filestream =
@@ -96,13 +107,35 @@ class FullyConnectedNode final
     _layer = loaded_parameters;
   }
 
-  float getSparsity() { return _config.getSparsity(); }
+  float getSparsity() { 
+    if (getState() == NodeState::Compiled) {
+      return _layer->getSparsity();
+    }
+    return _config->getSparsity(); 
+    
+  }
+
+  void setNodeSparsity(float sparsity) {
+    if (getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+        "FullyConnectedNode must be in a compiled state"
+      );
+    }
+    _layer->setSparsity(sparsity);
+    
+  }
 
  private:
   void compileImpl() final {
     _layer = std::make_shared<FullyConnectedLayer>(_config,
                                                    _predecessor->outputDim());
+    _config = std::nullopt;
   }
+
+  // FullyConnectedLayerConfig getConfig() {
+  //   // return _config;
+  //   return _layer->getSamplingConfig();
+  // }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
   getInternalFullyConnectedLayersImpl() const final {
@@ -185,7 +218,7 @@ class FullyConnectedNode final
   }
 
   std::shared_ptr<FullyConnectedLayer> _layer;
-  FullyConnectedLayerConfig _config;
+  std::optional<FullyConnectedLayerConfig> _config;
   std::optional<BoltBatch> _outputs;
 
   NodePtr _predecessor;
