@@ -58,7 +58,7 @@ class Mach:
         for classifiers in self.classifiers:
             classifiers.freeze_hash_tables()
 
-    def save(self, folder, save_for_inference):
+    def save(self, folder):
 
         if not os.path.exists(folder):
             os.mkdir(folder)
@@ -82,20 +82,9 @@ class Mach:
             pickle.dump(metadata, f)
 
         for classifiers_id in range(self.num_classifiers):
-            if save_for_inference:
-                self.classifiers[classifiers_id].save_for_inference(
-                    f"{folder}/classifier_{classifiers_id}"
-                )
-            else:
-                self.classifiers[classifiers_id].checkpoint(
-                    f"{folder}/classifier_{classifiers_id}"
-                )
-
-    def checkpoint(self, folder):
-        self.save(folder, save_for_inference=False)
-
-    def save_for_inference(self, folder):
-        self.save(folder, save_for_inference=True)
+            self.classifiers[classifiers_id].save(
+                f"{folder}/classifier_{classifiers_id}"
+            )
 
     def load(folder):
 
