@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wrappers/src/LicenseWrapper.h>
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
@@ -34,7 +35,9 @@ class BoltGraph {
    */
   BoltGraph(std::vector<InputPtr> inputs, NodePtr output)
       : BoltGraph(std::move(inputs), /* token-inputs= */ {},
-                  std::move(output)) {}
+                  std::move(output)) {
+    thirdai::licensing::LicenseWrapper::checkLicense();
+  }
 
   BoltGraph(std::vector<InputPtr> inputs,
             std::vector<TokenInputPtr> token_inputs, NodePtr output)
@@ -42,7 +45,9 @@ class BoltGraph {
         _inputs(std::move(inputs)),
         _token_inputs(std::move(token_inputs)),
         _epoch_count(0),
-        _batch_cnt(0) {}
+        _batch_cnt(0) {
+    thirdai::licensing::LicenseWrapper::checkLicense();
+  }
 
   /*
     When the layers are initially defined the only have information about their
@@ -97,7 +102,7 @@ class BoltGraph {
 
  private:
   // Private constructor for cereal.
-  BoltGraph() {}
+  BoltGraph() { thirdai::licensing::LicenseWrapper::checkLicense(); }
 
   template <typename BATCH_T>
   void processTrainingBatch(BATCH_T& batch_inputs,

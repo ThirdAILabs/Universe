@@ -6,6 +6,7 @@
 #include <dataset/src/bolt_datasets/batch_processors/PairgramHasher.h>
 #include <dataset/src/bolt_datasets/batch_processors/TextClassificationProcessor.h>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace thirdai::dataset::tests {
 
@@ -173,7 +174,10 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatch) {
   uint32_t unknown_hash =
       hashing::MurmurHash("[UNK]", 5, PairgramHasher::HASH_SEED);
 
-  std::unordered_map<uint32_t, uint32_t> words_to_ids;
+  const std::unordered_map<uint32_t, uint32_t>& words_to_ids =
+      processor.getWordToIDMap();
+
+  std::unordered_set<uint32_t> masked_word_hashes;
 
   for (uint32_t i = 0; i < 4; i++) {
     auto unigrams = unigram_hashes(words[i]);
@@ -187,14 +191,21 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatch) {
 
     checkPairgramVector(batch->first[i], pairgrams);
 
-    if (words_to_ids.count(masked_word_hash)) {
-      ASSERT_EQ(batch->second[i].active_neurons[0],
-                words_to_ids.at(masked_word_hash));
-    } else {
-      ASSERT_EQ(batch->second[i].active_neurons[0], words_to_ids.size());
-      words_to_ids[masked_word_hash] = words_to_ids.size();
-    }
+    uint32_t label = batch->second[i].active_neurons[0];
+    ASSERT_EQ(label, words_to_ids.at(masked_word_hash));
+
+    masked_word_hashes.insert(masked_word_hash);
   }
+
+  // Verify that we have the correct number of tokens of masked words.
+  ASSERT_EQ(words_to_ids.size(), masked_word_hashes.size());
+
+  // Check that word ids are distinct.
+  std::unordered_set<uint32_t> masked_word_ids;
+  for (const auto& [k, v] : words_to_ids) {
+    masked_word_ids.insert(v);
+  }
+  ASSERT_EQ(words_to_ids.size(), masked_word_ids.size());
 }
 
 }  // namespace thirdai::dataset::tests
