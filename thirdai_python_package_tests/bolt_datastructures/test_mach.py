@@ -119,8 +119,6 @@ def test_mach_save_load():
         newMach.query_slow(test_x), test_y, num_true_labels_per_sample
     )
 
-    print(recall_fast_before_save)
-
     shutil.rmtree(save_folder_name)
 
 
