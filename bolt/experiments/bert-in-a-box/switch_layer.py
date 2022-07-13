@@ -13,10 +13,11 @@ BATCH_SIZE = 2048
 VOCAB_SIZE = 30224
 
 input_layer = bolt.graph.Input(dim=INPUT_DIM)
+token_input = bolt.graph.TokenInput()
 
 hidden_layer = bolt.graph.Switch(
     dim=200, activation="relu", n_layers=MAX_TOKENS_PER_SENTENCE
-)(input_layer)
+)(input_layer, token_input)
 
 output_layer = bolt.graph.FullyConnected(
     dim=VOCAB_SIZE, sparsity=0.005, activation="softmax"
