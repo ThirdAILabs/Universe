@@ -12,9 +12,9 @@
 
 namespace thirdai::bolt::tests {
 
-static uint32_t n_classes = 100;
-static uint32_t n_switch_layers = 10;
-static uint32_t seed = 9824;
+static constexpr uint32_t n_classes = 100;
+static constexpr uint32_t n_switch_layers = 10;
+static constexpr uint32_t seed = 9824;
 
 auto getMLMDataset() {
   auto [data, labels] = genDataset(n_classes, /* noisy_dataset= */ false);
