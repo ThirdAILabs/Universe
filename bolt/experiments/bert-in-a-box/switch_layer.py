@@ -8,12 +8,15 @@ if len(sys.argv) != 2:
 TRAIN_DATA = sys.argv[1]
 TEST_DATA = "/share/data/BERT/sentences_tokenized_shuffled_trimmed_test_100k.txt"
 INPUT_DIM = 100000
+MAX_TOKENS_PER_SENTENCE = 100
 BATCH_SIZE = 2048
 VOCAB_SIZE = 30224
 
 input_layer = bolt.graph.Input(dim=INPUT_DIM)
 
-hidden_layer = bolt.graph.Switch(dim=200, activation="relu")(input_layer)
+hidden_layer = bolt.graph.Switch(
+    dim=200, activation="relu", n_layers=MAX_TOKENS_PER_SENTENCE
+)(input_layer)
 
 output_layer = bolt.graph.FullyConnected(
     dim=VOCAB_SIZE, sparsity=0.005, activation="softmax"
