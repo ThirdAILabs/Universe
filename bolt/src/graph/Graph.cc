@@ -10,6 +10,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
+#include <dataset/src/batch_types/MaskedSentenceBatch.h>
 #include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <chrono>
@@ -56,11 +57,15 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 
 template MetricData BoltGraph::train(
     std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>&,
-    const dataset::BoltDatasetPtr&, const TrainConfig& train_config);
+    const dataset::BoltDatasetPtr&, const TrainConfig&);
 
 template MetricData BoltGraph::train(
     std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&,
-    const dataset::BoltDatasetPtr&, const TrainConfig& train_config);
+    const dataset::BoltDatasetPtr&, const TrainConfig&);
+
+template MetricData BoltGraph::train(
+    std::shared_ptr<dataset::InMemoryDataset<dataset::MaskedSentenceBatch>>&,
+    const dataset::BoltDatasetPtr&, const TrainConfig&);
 
 template <typename BATCH_T>
 MetricData BoltGraph::train(
@@ -189,6 +194,11 @@ template InferenceResult BoltGraph::predict(
     const std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&,
     const dataset::BoltDatasetPtr&, const PredictConfig&);
 
+template InferenceResult BoltGraph::predict(
+    const std::shared_ptr<
+        dataset::InMemoryDataset<dataset::MaskedSentenceBatch>>&,
+    const dataset::BoltDatasetPtr&, const PredictConfig&);
+
 template <typename BATCH_T>
 InferenceResult BoltGraph::predict(
     // Test dataset
@@ -297,6 +307,15 @@ void BoltGraph::setInputs(dataset::BoltTokenBatch& batch_inputs) {
   // If we are using a BoltTokenBatch then there is only one token input. This
   // is checked in the verifyInputForGraph() function.
   _token_inputs[0]->setTokenInputs(&batch_inputs);
+}
+
+// This syntax means that we are implmenting the function for the specific case
+// in which BATCH_T is equivalent to BoltTokenBatch.
+template <>
+void BoltGraph::setInputs(dataset::MaskedSentenceBatch& batch_inputs) {
+  // If we are using a BoltTokenBatch then there is only one token input. This
+  // is checked in the verifyInputForGraph() function.
+  _inputs[0]->setInputs(batch_inputs.getVectors());
 }
 
 void BoltGraph::forward(uint32_t vec_index, const BoltVector* labels) {
@@ -437,18 +456,26 @@ template <typename BATCH_T>
 void BoltGraph::verifyInputForGraph(
     const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset) {
   (void)dataset;
-  if (std::is_same<BATCH_T, BoltBatch>::value && _inputs.size() != 1 &&
-      !_token_inputs.empty()) {
+  if (std::is_same<BATCH_T, BoltBatch>::value &&
+      (_inputs.size() != 1 || !_token_inputs.empty())) {
     throw exceptions::GraphCompilationFailure(
         "Only graphs with a single input layer can take in a dataset with "
         "batch type BoltBatch.");
   }
 
   if (std::is_same<BATCH_T, dataset::BoltTokenBatch>::value &&
-      !_inputs.empty() && _token_inputs.size() != 1) {
+      (!_inputs.empty() || _token_inputs.size() != 1)) {
     throw exceptions::GraphCompilationFailure(
         "Only graphs with a single token input layer can take in a dataset "
         "with batch type BoltTokenBatch.");
+  }
+
+  if (std::is_same<BATCH_T, dataset::MaskedSentenceBatch>::value &&
+      (_inputs.size() != 1 || _token_inputs.size() > 1)) {
+    throw exceptions::GraphCompilationFailure(
+        "Only graphs with a single input layer and optionally one token input "
+        "layer can take in a dataset "
+        "with batch type MaskedSentenceBatch.");
   }
 }
 

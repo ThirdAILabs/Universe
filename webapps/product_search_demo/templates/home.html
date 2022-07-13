@@ -157,16 +157,19 @@
     }
 
     #product-item {
-      padding: 4px 10px;
-      margin-bottom: 10px;
-      border: 2px solid rgba(34, 78, 135, 0.35);
+      max-width: 80%;
+      padding: 10px 13px;
+      margin-left: auto;
+      margin-right: auto;
+      margin-bottom: 20px;
       border-radius: 10px;
       color: rgb(218, 218, 219);
+      line-height: 1.4;
       background-color: rgba(34, 78, 135, 0.35);
     }
 
     #query-time {
-      margin-top: 5px;
+      margin-top: 25px;
       text-align: center;
       color: rgb(218, 218, 219);
     }
@@ -198,7 +201,6 @@
       </form>
     </div>
 
-    <h2 id="results-title">Query Results:</h2>
     <p id="query-time">{{ time }}</p>
     <div>
       {% for item in products %}
@@ -211,8 +213,4 @@
     </div>
 
   </main>
-
-  <footer class="footer">
-    <span>&copy; 2022 ThirdAI</span>
-  </footer>
 </body>
