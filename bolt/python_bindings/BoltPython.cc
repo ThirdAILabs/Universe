@@ -13,6 +13,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 
 namespace thirdai::bolt::python {
 
@@ -435,26 +436,12 @@ void createBoltSubmodule(py::module_& module) {
            "inference, you may get a significant performance improvement if "
            "you call this one or two epochs before you finish training. "
            "Otherwise you should not call this method.")
-      .def("save_for_inference", &PyNetwork::saveForInference,
-           py::arg("filename"),
+      .def("save", &PyNetwork::save, py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
-           "folders to be created. Saves only essential parameters for "
-           "inference, e.g. not the optimizer state")
+           "folders to be created. Saves only weights and biases, not momentum "
+           "and velocity.")
       .def_static("load", &PyNetwork::load, py::arg("filename"),
                   "Loads and builds a saved network from file.")
-      .def("checkpoint", &PyNetwork::checkpoint, py::arg("filename"),
-           "Saves the network to a file. The file path must not require any "
-           "folders to be created. Saves all the paramters needed for "
-           "tranining. "
-           "This will throw an error if the model has been trimmed for "
-           "inference.")
-      .def("trim_for_inference", &PyNetwork::trimForInference,
-           "Removes all parameters that are not essential for inference, "
-           "shrinking the model")
-      .def("reinitialize_optimizer_for_training",
-           &PyNetwork::reinitOptimizerForTraining,
-           "If the model previously was trimmed for inference, this will "
-           "reinitialize the optimizer state, allowing training again.")
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "
            "matrix.")
@@ -468,9 +455,6 @@ void createBoltSubmodule(py::module_& module) {
            "Sets the weight matrix at the given layer index to the given 2D "
            "Numpy matrix. Throws an error if the dimension of the given weight "
            "matrix does not match the layer's current weight matrix.")
-      .def("ready_for_training", &PyNetwork::isReadyForTraining,
-           "Returns False if the optimizer state is not initialized, True "
-           "otherwise. Call resume_training to initialize optimizer")
       .def("get_biases", &PyNetwork::getBiases, py::arg("layer_index"),
            "Returns the bias array at the given layer index as a 1D Numpy "
            "array.")
@@ -637,7 +621,7 @@ void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
             << std::endl;
 }
 
-bool allocateActivations(uint64_t num_samples, uint64_t inference_dim,
+void allocateActivations(uint64_t num_samples, uint64_t inference_dim,
                          uint32_t** active_neurons, float** activations,
                          bool output_sparse) {
   // We use a uint64_t here in case there is overflow when we multiply the two
@@ -647,51 +631,15 @@ bool allocateActivations(uint64_t num_samples, uint64_t inference_dim,
   uint64_t total_size = num_samples * inference_dim;
   if (total_size > std::numeric_limits<uint32_t>::max()) {
     printMemoryWarning(num_samples, inference_dim);
-    return false;
   }
   try {
     if (output_sparse) {
       *active_neurons = new uint32_t[total_size];
     }
     *activations = new float[total_size];
-    return true;
   } catch (std::bad_alloc& e) {
     printMemoryWarning(num_samples, inference_dim);
-    return false;
   }
-}
-
-py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
-                               uint32_t inference_dim, uint32_t* active_neurons,
-                               float* activations, bool output_sparse,
-                               bool alloc_success) {
-  if (!alloc_success) {
-    return py::make_tuple(py_metric_data, py::none());
-  }
-
-  // Deallocates the memory for the array since we are allocating it ourselves.
-  py::capsule free_when_done_activations(
-      activations, [](void* ptr) { delete static_cast<float*>(ptr); });
-
-  py::array_t<float, py::array::c_style | py::array::forcecast>
-      activations_array({num_samples, inference_dim},
-                        {inference_dim * sizeof(float), sizeof(float)},
-                        activations, free_when_done_activations);
-
-  if (!output_sparse) {
-    return py::make_tuple(py_metric_data, activations_array);
-  }
-
-  // Deallocates the memory for the array since we are allocating it ourselves.
-  py::capsule free_when_done_active_neurons(
-      active_neurons, [](void* ptr) { delete static_cast<uint32_t*>(ptr); });
-
-  py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
-      active_neurons_array({num_samples, inference_dim},
-                           {inference_dim * sizeof(uint32_t), sizeof(uint32_t)},
-                           active_neurons, free_when_done_active_neurons);
-  return py::make_tuple(py_metric_data, active_neurons_array,
-                        activations_array);
 }
 
 }  // namespace thirdai::bolt::python

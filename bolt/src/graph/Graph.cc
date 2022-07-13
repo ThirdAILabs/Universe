@@ -10,6 +10,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
+#include <dataset/src/batch_types/MaskedSentenceBatch.h>
 #include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <chrono>
@@ -56,11 +57,15 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
 
 template MetricData BoltGraph::train(
     std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>&,
-    const dataset::BoltDatasetPtr&, const TrainConfig& train_config);
+    const dataset::BoltDatasetPtr&, const TrainConfig&);
 
 template MetricData BoltGraph::train(
     std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&,
-    const dataset::BoltDatasetPtr&, const TrainConfig& train_config);
+    const dataset::BoltDatasetPtr&, const TrainConfig&);
+
+template MetricData BoltGraph::train(
+    std::shared_ptr<dataset::InMemoryDataset<dataset::MaskedSentenceBatch>>&,
+    const dataset::BoltDatasetPtr&, const TrainConfig&);
 
 template <typename BATCH_T>
 MetricData BoltGraph::train(
@@ -181,35 +186,37 @@ void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
   }
 }
 
-template InferenceMetricData BoltGraph::predict(
+template InferenceResult BoltGraph::predict(
     const std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>&,
     const dataset::BoltDatasetPtr&, const PredictConfig&);
 
-template InferenceMetricData BoltGraph::predict(
+template InferenceResult BoltGraph::predict(
     const std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&,
     const dataset::BoltDatasetPtr&, const PredictConfig&);
 
+template InferenceResult BoltGraph::predict(
+    const std::shared_ptr<
+        dataset::InMemoryDataset<dataset::MaskedSentenceBatch>>&,
+    const dataset::BoltDatasetPtr&, const PredictConfig&);
+
 template <typename BATCH_T>
-InferenceMetricData BoltGraph::predict(
+InferenceResult BoltGraph::predict(
     // Test dataset
     const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
     // Test labels
     const dataset::BoltDatasetPtr& test_labels,
     // Other prediction parameters
     const PredictConfig& predict_config) {
-  verifyInputForGraph(test_data);
+  bool has_labels = (test_labels != nullptr);
+  MetricAggregator metrics = predict_config.getMetricAggregator();
 
-  if (!graphCompiled()) {
-    throw std::logic_error("Graph must be compiled before inference");
-  }
-
-  bool compute_metrics = test_labels != nullptr;
+  verifyCanPredict(
+      test_data, /* has_labels = */ has_labels,
+      /* returning_activations = */ predict_config.shouldReturnActivations(),
+      /* num_metrics_tracked = */ metrics.getNumMetricsTracked());
 
   uint32_t max_batch_size = test_data->at(0).getBatchSize();
-
   uint64_t num_test_batches = test_data->numBatches();
-
-  MetricAggregator metrics = predict_config.getMetricAggregator();
 
   /*
    Because of how the datasets are read we know that all batches will not have
@@ -220,6 +227,9 @@ InferenceMetricData BoltGraph::predict(
   prepareToProcessBatches(max_batch_size,
                           predict_config.sparseInferenceEnabled());
 
+  InferenceOutputTracker outputTracker(
+      _output, predict_config, /* total_num_samples = */ test_data->len());
+
   ProgressBar bar(num_test_batches, predict_config.verbose());
 
   auto test_start = std::chrono::high_resolution_clock::now();
@@ -227,11 +237,13 @@ InferenceMetricData BoltGraph::predict(
     BATCH_T& inputs = test_data->at(batch);
 
     const BoltBatch* batch_labels =
-        compute_metrics ? &(*test_labels)[batch] : nullptr;
+        has_labels ? &(*test_labels)[batch] : nullptr;
 
-    processInferenceBatch(inputs, batch_labels, metrics, compute_metrics);
+    processInferenceBatch(inputs, batch_labels, metrics);
 
     bar.increment();
+
+    outputTracker.saveOutputBatch(_output, inputs.getBatchSize());
   }
 
   cleanupAfterBatchProcessing();
@@ -251,26 +263,30 @@ InferenceMetricData BoltGraph::predict(
   auto metric_vals = metrics.getOutputFromInference();
   metric_vals["test_time"] = test_time;
 
-  return metric_vals;
+  return {std::move(metric_vals), std::move(outputTracker)};
 }
 
 template <typename BATCH_T>
 void BoltGraph::processInferenceBatch(BATCH_T& batch_inputs,
                                       const BoltBatch* batch_labels,
-                                      MetricAggregator& metrics,
-                                      bool compute_metrics) {
+                                      MetricAggregator& metrics) {
   setInputs(batch_inputs);
 
+  // Either we shouldn't track any metrics or there need to be labels
+  assert((metrics.getNumMetricsTracked() == 0) || (batch_labels != nullptr));
+
 #pragma omp parallel for default(none) \
-    shared(batch_inputs, batch_labels, metrics, compute_metrics)
+    shared(batch_inputs, batch_labels, metrics)
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
     // We set labels to nullptr so that they are not used in sampling during
     // inference.
     forward(vec_id, /*labels=*/nullptr);
 
-    if (compute_metrics) {
-      metrics.processSample(_output->getOutputVector(vec_id),
-                            (*batch_labels)[vec_id]);
+    const auto& output = _output->getOutputVector(vec_id);
+
+    if (batch_labels) {
+      const auto& labels = (*batch_labels)[vec_id];
+      metrics.processSample(output, labels);
     }
   }
 }
@@ -291,6 +307,15 @@ void BoltGraph::setInputs(dataset::BoltTokenBatch& batch_inputs) {
   // If we are using a BoltTokenBatch then there is only one token input. This
   // is checked in the verifyInputForGraph() function.
   _token_inputs[0]->setTokenInputs(&batch_inputs);
+}
+
+// This syntax means that we are implmenting the function for the specific case
+// in which BATCH_T is equivalent to BoltTokenBatch.
+template <>
+void BoltGraph::setInputs(dataset::MaskedSentenceBatch& batch_inputs) {
+  // If we are using a BoltTokenBatch then there is only one token input. This
+  // is checked in the verifyInputForGraph() function.
+  _inputs[0]->setInputs(batch_inputs.getVectors());
 }
 
 void BoltGraph::forward(uint32_t vec_index, const BoltVector* labels) {
@@ -408,21 +433,49 @@ std::unordered_map<NodePtr, int32_t> BoltGraph::getSuccessorCounts() const {
 }
 
 template <typename BATCH_T>
+void BoltGraph::verifyCanPredict(
+    const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
+    bool has_labels, bool returning_activations, uint32_t num_metrics_tracked) {
+  verifyInputForGraph(test_data);
+
+  if (!graphCompiled()) {
+    throw std::logic_error("Graph must be compiled before inference");
+  }
+
+  if (!has_labels && num_metrics_tracked != 0) {
+    throw std::invalid_argument("Cannot track accuracy metrics without labels");
+  }
+  if (!returning_activations && num_metrics_tracked == 0) {
+    throw std::invalid_argument(
+        "Doing inference without returning activations and no metrics is a "
+        "NOOP");
+  }
+}
+
+template <typename BATCH_T>
 void BoltGraph::verifyInputForGraph(
     const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset) {
   (void)dataset;
-  if (std::is_same<BATCH_T, BoltBatch>::value && _inputs.size() != 1 &&
-      !_token_inputs.empty()) {
+  if (std::is_same<BATCH_T, BoltBatch>::value &&
+      (_inputs.size() != 1 || !_token_inputs.empty())) {
     throw exceptions::GraphCompilationFailure(
         "Only graphs with a single input layer can take in a dataset with "
         "batch type BoltBatch.");
   }
 
   if (std::is_same<BATCH_T, dataset::BoltTokenBatch>::value &&
-      !_inputs.empty() && _token_inputs.size() != 1) {
+      (!_inputs.empty() || _token_inputs.size() != 1)) {
     throw exceptions::GraphCompilationFailure(
         "Only graphs with a single token input layer can take in a dataset "
         "with batch type BoltTokenBatch.");
+  }
+
+  if (std::is_same<BATCH_T, dataset::MaskedSentenceBatch>::value &&
+      (_inputs.size() != 1 || _token_inputs.size() > 1)) {
+    throw exceptions::GraphCompilationFailure(
+        "Only graphs with a single input layer and optionally one token input "
+        "layer can take in a dataset "
+        "with batch type MaskedSentenceBatch.");
   }
 }
 
