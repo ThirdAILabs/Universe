@@ -239,6 +239,13 @@ class FullyConnectedLayer final : public SequentialLayer {
             _biases, _sampling_config, _hasher, _hash_table, _rand_neurons,
             _sampling_mode, _prev_is_active, _is_active);
 
+    /**
+     * Here we init the optimizer so that any calls to train in the network are
+     * safe. If we need to reduce memory usage for smaller machines we can use
+     * the removeOptimizer() method to remove these parameters. This will also
+     * likely require adding an additional node state for uninitialized
+     * optimizers so that we have memory safety.
+     */
     initOptimizer();
   }
 

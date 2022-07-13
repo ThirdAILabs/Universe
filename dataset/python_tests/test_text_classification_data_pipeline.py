@@ -1,6 +1,4 @@
-from pyrsistent import v
 import pytest
-import random
 import os
 from thirdai.dataset import DataPipeline
 from thirdai.dataset import blocks

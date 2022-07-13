@@ -12,7 +12,7 @@ import os
 from thirdai import bolt
 
 
-# asserts that the size of the save_for_inference model is lower than checkpoint
+# Asserts that the size of the saved model is lower than the full model size with the optimizer
 def test_save_shallow_size():
     input_dim = 784
     hidden_dim = 10000
@@ -27,15 +27,16 @@ def test_save_shallow_size():
 
     network.save(save_loc)
 
-    rough_model_size = ((input_dim + output_dim) * hidden_dim) * 16
+    # The 16 comes from 4 types of parameters (weights, graidents, momentum, velocity) and 4 bytes per parameter.
+    rough_model_size_with_optimizer = ((input_dim + output_dim) * hidden_dim) * 16
 
-    assert 2 * os.path.getsize(save_loc) < rough_model_size
+    assert 2 * os.path.getsize(save_loc) < rough_model_size_with_optimizer
 
     os.remove(save_loc)
 
 
-# Asserts that the trimmed model and checkpointed model gives the same accuracy
-def test_same_accuracy_save_shallow():
+# Asserts that the saved model and original model gives the same accuracy
+def test_same_accuracy_after_save():
     examples, labels = gen_training_data(n_classes=100, n_samples=1000)
     network = gen_single_sparse_layer_network(n_classes=100)
     train_network(network, examples, labels, 5)
@@ -55,7 +56,7 @@ def test_same_accuracy_save_shallow():
 
 
 # Checks that both trimmed and checkpointed model gains accuracy after training
-def test_accuracy_gain_save_shallow():
+def test_accuracy_gain_after_save():
     examples, labels = gen_training_data(n_classes=100, n_samples=1000)
     network = gen_single_sparse_layer_network(n_classes=100)
     train_network(network, examples, labels, 2)
