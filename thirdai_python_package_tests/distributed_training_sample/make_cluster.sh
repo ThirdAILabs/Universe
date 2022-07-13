@@ -2,7 +2,7 @@
 
 
 for i in $1; do
-    scp start_ray_on_nodes.sh $USER@192.168.1.$i:/home/$USER
-    ssh 192.168.1.$i './start_ray_on_nodes.sh'
-    ssh 192.168.1.$i 'rm start_ray_on_nodes.sh'
+    scp start_ray_on_nodes.sh $USER@$i:/home/$USER
+    ssh $i './start_ray_on_nodes.sh' $2
+    ssh $i 'rm start_ray_on_nodes.sh' $2
 done
