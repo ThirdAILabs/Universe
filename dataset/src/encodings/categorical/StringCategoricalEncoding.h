@@ -17,12 +17,12 @@ class StringCategoricalEncoding : public CategoricalEncoding {
       : _encoding_map(std::move(encoding_map)) {}
 
   void encodeCategory(const std::string_view id, SegmentedFeatureVector& vec,
-                      std::exception_ptr exception_ptr) final {
+                      std::exception_ptr& exception_ptr) final {
     std::string class_name(id);
     if (!_encoding_map.count(class_name)) {
       exception_ptr = std::make_exception_ptr(std::invalid_argument(
           "Received unexpected class name: '" + class_name + ".'"));
-      // Since we have set the block exception message above, the program will
+      // Since we have set the block exception above, the program will
       // fail once all threads finish. Since we can't throw an exception within
       // a pragma thread, we just have to keep the program running until then.
       // Thus we just perform some arbitrary non-failing operation.
@@ -32,9 +32,9 @@ class StringCategoricalEncoding : public CategoricalEncoding {
     }
   };
 
-  bool isDense() final { return false; };
+  bool isDense() const final { return false; };
 
-  uint32_t featureDim() final { return _encoding_map.size(); };
+  uint32_t featureDim() const final { return _encoding_map.size(); };
 
  private:
   std::unordered_map<std::string, uint32_t> _encoding_map;

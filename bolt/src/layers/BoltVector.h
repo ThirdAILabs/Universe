@@ -59,16 +59,34 @@ struct BoltVector {
   static BoltVector makeSparseVector(const std::vector<uint32_t>& indices,
                                      const std::vector<float>& values) {
     assert(indices.size() == values.size());
-    BoltVector vec(indices.size(), false, false);
+    BoltVector vec(indices.size(), /* is_dense = */ false,
+                   /* has_gradient = */ false);
     std::copy(indices.begin(), indices.end(), vec.active_neurons);
     std::copy(values.begin(), values.end(), vec.activations);
     return vec;
   }
 
   static BoltVector makeDenseVector(const std::vector<float>& values) {
-    BoltVector vec(values.size(), true, false);
+    BoltVector vec(values.size(), /* is_dense = */ true,
+                   /* has_gradient = */ false);
     std::copy(values.begin(), values.end(), vec.activations);
     return vec;
+  }
+
+  static BoltVector makeSparseVectorWithGradients(
+      const std::vector<uint32_t>& indices, const std::vector<float>& values) {
+    auto vector = makeSparseVector(indices, values);
+    vector.gradients = new float[values.size()];
+    std::fill(vector.gradients, vector.gradients + vector.len, 0);
+    return vector;
+  }
+
+  static BoltVector makeDenseVectorWithGradients(
+      const std::vector<float>& values) {
+    auto vector = makeDenseVector(values);
+    vector.gradients = new float[vector.len];
+    std::fill(vector.gradients, vector.gradients + vector.len, 0);
+    return vector;
   }
 
   // TODO(nicholas): delete copy constructor/assignment and make load dataset
@@ -179,6 +197,13 @@ struct BoltVector {
     return findSparseActiveNeuron(active_neuron);
   }
 
+  FoundActiveNeuron findActiveNeuronNoTemplate(uint32_t active_neuron) const {
+    if (isDense()) {
+      return {active_neuron, activations[active_neuron]};
+    }
+    return findSparseActiveNeuron(active_neuron);
+  }
+
   constexpr bool isDense() const { return this->active_neurons == nullptr; }
 
   std::string toString() const {
@@ -265,6 +290,39 @@ class BoltBatch {
   }
 
   uint32_t getBatchSize() const { return _vectors.size(); }
+
+  /*
+   * Throws an exception if the vector is not of the passed in
+   * expected_dimension (for a sparse vector this just means none of the
+   * active neurons are too large). "origin_string" should be a descriptive
+   * string that tells the user where the error comes from if it is thrown, e.g.
+   * something like "Passed in BoltVector too large for Input".
+   */
+  void verifyExpectedDimension(uint32_t expected_dimension,
+                               const std::string& origin_string) const {
+    for (const BoltVector& vec : _vectors) {
+      if (vec.isDense()) {
+        if (vec.len != expected_dimension) {
+          throw std::invalid_argument(
+              origin_string + ": Received dense BoltVector with dimension=" +
+              std::to_string(vec.len) +
+              ", but was supposed to have dimension=" +
+              std::to_string(expected_dimension));
+        }
+      } else {
+        for (uint32_t i = 0; i < vec.len; i++) {
+          uint32_t active_neuron = vec.active_neurons[i];
+          if (active_neuron >= expected_dimension) {
+            throw std::invalid_argument(
+                origin_string +
+                ": Received sparse BoltVector with active_neuron=" +
+                std::to_string(active_neuron) + " but was supposed to have=" +
+                std::to_string(expected_dimension));
+          }
+        }
+      }
+    }
+  }
 
   BoltBatch(const BoltBatch& other) = delete;
 

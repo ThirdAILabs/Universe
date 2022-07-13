@@ -34,7 +34,7 @@ class DenseArrayBlock : public Block {
  protected:
   void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec,
-                    std::exception_ptr exception_ptr) final {
+                    std::exception_ptr& exception_ptr) final {
     (void)exception_ptr;
     for (uint32_t i = _start_col; i < _start_col + _dim; i++) {
       char* end;

@@ -24,7 +24,7 @@ class MockBlock : public Block {
  protected:
   void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec,
-                    std::exception_ptr exception_ptr) override {
+                    std::exception_ptr& exception_ptr) override {
     (void)exception_ptr;
     auto val_str = input_row.at(_column);
     char* end;

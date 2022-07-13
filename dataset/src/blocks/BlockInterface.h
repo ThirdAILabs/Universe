@@ -104,7 +104,7 @@ class Block {
    */
   void addVectorSegment(const std::vector<std::string_view>& input_row,
                         SegmentedFeatureVector& vec,
-                        std::exception_ptr exception_ptr) {
+                        std::exception_ptr& exception_ptr) {
     vec.addFeatureSegment(featureDim());
     buildSegment(input_row, vec, exception_ptr);
   }
@@ -135,7 +135,7 @@ class Block {
    */
   virtual void buildSegment(const std::vector<std::string_view>& input_row,
                             SegmentedFeatureVector& vec,
-                            std::exception_ptr exception_ptr) = 0;
+                            std::exception_ptr& exception_ptr) = 0;
 };
 
 }  // namespace thirdai::dataset

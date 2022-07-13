@@ -121,7 +121,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
   static bolt::BoltVector makeVector(
       std::vector<std::string_view>& sample,
       std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense,
-      std::exception_ptr exception_ptr) {
+      std::exception_ptr& exception_ptr) {
     std::shared_ptr<SegmentedFeatureVector> vec_ptr;
 
     // Dense vector if all blocks produce dense features, sparse vector

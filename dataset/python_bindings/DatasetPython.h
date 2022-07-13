@@ -5,6 +5,8 @@
 #include <dataset/src/batch_types/DenseBatch.h>
 #include <dataset/src/batch_types/SparseBatch.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/bolt_datasets/StreamingDataset.h>
+#include <dataset/src/bolt_datasets/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/core/BlockBatchProcessor.h>
 #include <pybind11/cast.h>
 #include <pybind11/gil.h>
@@ -12,6 +14,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
+#include <memory>
 
 namespace py = pybind11;
 
@@ -101,6 +104,9 @@ std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
 parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
                            uint32_t dimension);
 
+bolt::BoltVector parseSentenceToBoltVector(const std::string& sentence,
+                                           uint32_t seed, uint32_t dimension);
+
 /**
  * Checks whether the given bolt dataset and dense 2d matrix
  * have the same values. For testing purposes only.
@@ -140,6 +146,31 @@ class PyBlockBatchProcessor : public BlockBatchProcessor {
     py::gil_scoped_release release;
     processBatch(batch);
   }
+};
+
+using MLMDatasetPtr = std::shared_ptr<InMemoryDataset<MaskedSentenceBatch>>;
+
+class MLMDatasetLoader {
+ public:
+  explicit MLMDatasetLoader(uint32_t pairgram_range)
+      : _batch_processor(
+            std::make_shared<MaskedSentenceBatchProcessor>(pairgram_range)) {}
+
+  py::tuple load(const std::string& filename, uint32_t batch_size) {
+    auto data_loader =
+        std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
+
+    auto dataset = std::make_shared<
+        dataset::StreamingDataset<dataset::MaskedSentenceBatch>>(
+        data_loader, _batch_processor);
+
+    auto [data, labels] = dataset->loadInMemory();
+
+    return py::make_tuple(py::cast(data), py::cast(labels));
+  }
+
+ private:
+  std::shared_ptr<MaskedSentenceBatchProcessor> _batch_processor;
 };
 
 }  // namespace thirdai::dataset::python

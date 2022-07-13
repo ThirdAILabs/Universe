@@ -47,7 +47,7 @@ class CategoricalBlock : public Block {
  protected:
   void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec,
-                    std::exception_ptr exception_ptr) final {
+                    std::exception_ptr& exception_ptr) final {
     _encoding->encodeCategory(input_row.at(_col), vec, exception_ptr);
   }
 

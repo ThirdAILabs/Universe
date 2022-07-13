@@ -3,7 +3,7 @@ from thirdai import bolt
 import numpy as np
 import pytest
 
-from utils import gen_training_data
+from .utils import gen_training_data
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -133,7 +133,7 @@ def test_read_easy_mock_data():
     """
     Generates easy mock dataset as a numpy array and asserts that BOLT performs well.
     """
-    labels, examples, n_classes = gen_training_data(n_classes=10, n_samples=1000)
+    examples, labels = gen_training_data(n_classes=10, n_samples=1000)
     acc = train_simple_bolt_model(examples, labels)
     assert acc > 0.8
 
@@ -186,8 +186,8 @@ def test_easy_sparse_layer():
     """
     Generates easy mock dataset as a numpy array and asserts that BOLT performs well trained with a sparse output.
     """
-    labels, examples, n_classes = gen_training_data(n_classes=100, n_samples=10000)
-    acc = train_simple_bolt_model(examples, labels, sparsity=0.1, n_classes=n_classes)
+    examples, labels = gen_training_data(n_classes=100, n_samples=10000)
+    acc = train_simple_bolt_model(examples, labels, sparsity=0.1, n_classes=100)
     assert acc > 0.8
 
 

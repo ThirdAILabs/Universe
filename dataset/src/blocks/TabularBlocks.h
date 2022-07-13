@@ -29,7 +29,7 @@ class TabularPairGram : public Block {
   // columns to pairgram together.
   void buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec,
-                    std::exception_ptr exception_ptr) final {
+                    std::exception_ptr& exception_ptr) final {
     std::vector<uint32_t> unigram_hashes;
     for (uint32_t col = 0; col < input_row.size(); col++) {
       std::string str_val(input_row[col]);

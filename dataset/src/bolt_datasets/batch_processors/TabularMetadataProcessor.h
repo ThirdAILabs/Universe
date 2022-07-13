@@ -75,7 +75,7 @@ class TabularMetadata {
   }
 
   uint32_t getNumericHashValue(uint32_t col, const std::string& str_val,
-                               std::exception_ptr exception_ptr) {
+                               std::exception_ptr& exception_ptr) {
     uint32_t bin = getColBin(col, str_val, exception_ptr);
     uint64_t uniqueBin =
         static_cast<uint64_t>(bin) << 32 | static_cast<uint64_t>(col);
@@ -91,7 +91,7 @@ class TabularMetadata {
   }
 
   uint32_t getColBin(uint32_t col, const std::string& str_val,
-                     std::exception_ptr exception_ptr) {
+                     std::exception_ptr& exception_ptr) {
     // map empty values to their own bin
     if (str_val.empty()) {
       return _num_non_empty_bins;
@@ -104,7 +104,7 @@ class TabularMetadata {
           "Could not process column " + std::to_string(col) +
           " as type 'numeric.' Received value: '" + str_val + ".'"));
 
-      // Since we have set the block exception message above, the program will
+      // Since we have set the block exception above, the program will
       // fail once all threads finish. Since we can't throw an exception within
       // a pragma thread, we just have to keep the program running until then.
       // Thus we return some arbitrary value to do that.

@@ -209,6 +209,7 @@ file (
 pybind11_add_module(_thirdai 
   python_bindings/thirdai.cc 
   bolt/python_bindings/BoltPython.cc
+  bolt/python_bindings/BoltGraphPython.cc
   dataset/python_bindings/DatasetPython.cc
   search/python_bindings/SearchPython.cc
   hashing/python_bindings/HashingPython.cc

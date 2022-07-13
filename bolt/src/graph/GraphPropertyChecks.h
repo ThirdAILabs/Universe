@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Node.h"
+#include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -16,10 +17,17 @@ class GraphPropertyChecks {
     }
   }
 
+  static void verifyOutputIsNotConcatLayer(const NodePtr& output) {
+    if (dynamic_cast<ConcatenateNode*>(output.get())) {
+      throw exceptions::GraphCompilationFailure(
+          "Output node cannot be a Concatenate node.");
+    }
+  }
+
   static void verifySoftmaxIsUsedWithCategoricalCrossEntropy(
       const NodePtr& output, const std::shared_ptr<LossFunction>& loss) {
-    FullyConnectedLayerNode* fc_output =
-        dynamic_cast<FullyConnectedLayerNode*>(output.get());
+    FullyConnectedNode* fc_output =
+        dynamic_cast<FullyConnectedNode*>(output.get());
 
     if (fc_output != nullptr) {
       bool is_categorical_cross_entropy =
@@ -37,8 +45,8 @@ class GraphPropertyChecks {
 
   static void verifySigmoidIsUsedWithBinaryCrossEntropy(
       const NodePtr& output, const std::shared_ptr<LossFunction>& loss) {
-    FullyConnectedLayerNode* fc_output =
-        dynamic_cast<FullyConnectedLayerNode*>(output.get());
+    FullyConnectedNode* fc_output =
+        dynamic_cast<FullyConnectedNode*>(output.get());
 
     if (fc_output != nullptr) {
       bool is_binary_cross_entropy =

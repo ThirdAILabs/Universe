@@ -158,7 +158,7 @@ std::vector<uint32_t> BlockBatchProcessor::makeFinalPositions(
 bolt::BoltVector BlockBatchProcessor::makeVector(
     std::vector<std::string>& sample,
     std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense,
-    std::exception_ptr exception_ptr) {
+    std::exception_ptr& exception_ptr) {
   std::shared_ptr<SegmentedFeatureVector> vec_ptr;
 
   // Dense vector if all blocks produce dense features, sparse vector
