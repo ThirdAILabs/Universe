@@ -27,12 +27,7 @@ class SwitchNode final : public Node,
     }
   }
 
-  uint32_t outputDim() const final {
-    std::cout << "outputDim() start" << std::endl;
-    auto dim = _layers.at(0)->outputDim();
-    std::cout << "outputDim() end" << std::endl;
-    return dim;
-  }
+  uint32_t outputDim() const final { return _layers.at(0)->outputDim(); }
 
   bool isInputNode() const final { return false; }
 
@@ -49,11 +44,9 @@ class SwitchNode final : public Node,
 
  private:
   void compileImpl() final {
-    std::cout << "compileImpl() start" << std::endl;
     for (auto& layer : _layers) {
       layer->compileImpl();
     }
-    std::cout << "compileImpl() end" << std::endl;
   }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>

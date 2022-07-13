@@ -156,6 +156,14 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            " * inputs (List[Node]) - The input nodes to the graph. Note that "
            "inputs are mapped to input layers by their index.\n"
            " * output (Node) - The output node of the graph.")
+      .def(py::init<std::vector<InputPtr>, std::vector<TokenInputPtr>,
+                    NodePtr>(),
+           py::arg("inputs"), py::arg("token_inputs"), py::arg("output"),
+           "Constructs a bolt model from a layer graph.\n"
+           "Arguments:\n"
+           " * inputs (List[Node]) - The input nodes to the graph. Note that "
+           "inputs are mapped to input layers by their index.\n"
+           " * output (Node) - The output node of the graph.")
       .def("compile", &BoltGraph::compile, py::arg("loss"),
            py::arg("print_when_done") = true,
            "Compiles the graph for the given loss function. In this step the "
