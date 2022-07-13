@@ -153,7 +153,7 @@ class Mach:
                 mapped_train_y = self.map_labels_to_groups(train_y, classifier_id)
 
                 train_config = bolt.graph.TrainConfig.make(
-                    learning_rate=learning_rate, epochs=num_epochs
+                    learning_rate=learning_rate, epochs=1
                 ).with_batch_size(batch_size)
 
                 classifier.train(
