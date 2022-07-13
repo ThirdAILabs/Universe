@@ -27,9 +27,14 @@ def test_save_shallow_size():
 
     network.save(save_loc)
 
-    # The 16 comes from 4 types of parameters (weights, graidents, momentum, velocity) and 4 bytes per parameter.
+    # The 16 comes from 4 types of parameters (weights, graidents, momentum, velocity) and
+    # 4 bytes per parameter.
     rough_model_size_with_optimizer = ((input_dim + output_dim) * hidden_dim) * 16
 
+    # The model is dense so there are no hash tables. Since we are only saving the weights, not the
+    # gradients, momentum, and velocity, the size should theoretically be 4x smaller. However there
+    # will be other small structures that use some memory that are being saved, so we assert that the
+    # saved file is 2x smaller than the estimated size of the model to give it some tolerence.
     assert 2 * os.path.getsize(save_loc) < rough_model_size_with_optimizer
 
     os.remove(save_loc)
