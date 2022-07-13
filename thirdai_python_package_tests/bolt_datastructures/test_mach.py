@@ -29,12 +29,12 @@ def generate_random_easy_sparse(output_dim, num_true_labels_per_example, num_exa
 
 
 def build_and_train_mach(
-    num_train,
-    num_true_labels_per_sample,
-    input_and_output_dim,
-    learning_rate,
-    batch_size,
-    num_epochs,
+    num_train=10000,
+    num_true_labels_per_sample=10,
+    input_and_output_dim=1000,
+    learning_rate=0.001,
+    batch_size=512,
+    num_epochs=5,
 ):
 
     train_x, train_y = generate_random_easy_sparse(
@@ -78,10 +78,10 @@ def get_recall(result, test_y, num_true_labels_per_sample):
 
 @pytest.mark.unit
 def test_mach_save_load():
-    num_train = 1000
-    num_test = 1000
+    num_train = 100
+    num_test = 100
     num_true_labels_per_sample = 10
-    input_and_output_dim = 1000
+    input_and_output_dim = 100
 
     mach = build_and_train_mach(
         num_train=num_train,
@@ -119,13 +119,15 @@ def test_mach_save_load():
         newMach.query_slow(test_x), test_y, num_true_labels_per_sample
     )
 
+    print(recall_fast_before_save)
+
     shutil.rmtree(save_folder_name)
 
 
 @pytest.mark.unit
 def test_mach_random_data():
 
-    num_train = 1000
+    num_train = 10000
     num_test = 1000
     num_true_labels_per_sample = 10
     input_and_output_dim = 1000

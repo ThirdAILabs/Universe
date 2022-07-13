@@ -120,7 +120,9 @@ class Mach:
                 raise Exception(
                     f"Could not find the {i}th classifier for the mach model inside the folder {folder}"
                 )
-            newMach.classifiers.append(bolt.Network.load(folder + f"/classifier_{i}"))
+            newMach.classifiers.append(
+                bolt.graph.Model.load(folder + f"/classifier_{i}")
+            )
 
         return newMach
 
