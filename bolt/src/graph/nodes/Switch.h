@@ -101,7 +101,9 @@ class SwitchNode final : public Node,
   }
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final {
-    summary << name() << " (SwitchLayer) : ";
+    summary << _layers.at(0)->getPredecessorsImpl().at(0)->name();
+    summary << " -> " << name() << " (SwitchLayer): n_layers=";
+    summary << _layers.size() << ", ";
     _layers.at(0)->getInternalFullyConnectedLayers().at(0)->buildLayerSummary(
         summary, detailed);
   }
