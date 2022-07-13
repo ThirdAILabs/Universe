@@ -489,6 +489,7 @@ void BoltGraph::freezeHashTables(bool insert_labels_if_not_found) {
   }
 }
 
+template void BoltGraph::serialize(cereal::BinaryOutputArchive& archive);
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {
   archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
