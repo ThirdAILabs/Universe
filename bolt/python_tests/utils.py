@@ -80,9 +80,8 @@ def build_simple_graph_model(input_dim, output_dim, num_classes, sparsity):
         hidden_layer
     )
 
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer).compile(
-        loss=bolt.CategoricalCrossEntropyLoss()
-    )
+    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     return model
 
