@@ -111,8 +111,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "least one node (although this is just an identity function, so "
            "really should be at least two).");
 
-  py::class_<SwitchNode, std::shared_ptr<SwitchNode>, Node>(
-      graph_submodule, "Switch")
+  py::class_<SwitchNode, std::shared_ptr<SwitchNode>, Node>(graph_submodule,
+                                                            "Switch")
       .def(py::init<uint32_t, const std::string&, uint32_t>(), py::arg("dim"),
            py::arg("activation"), py::arg("n_layers"))
       .def(py::init<uint32_t, float, const std::string&, uint32_t>(),

@@ -36,7 +36,7 @@ class SwitchNode final : public Node,
 
   bool isInputNode() const final { return false; }
 
-  std::shared_ptr<SwitchNode> addPredecessors(NodePtr predecessor, // NOLINT
+  std::shared_ptr<SwitchNode> addPredecessors(NodePtr predecessor,  // NOLINT
                                               TokenInputPtr token_input) {
     for (auto& layer : _layers) {
       layer->addPredecessor(predecessor);
