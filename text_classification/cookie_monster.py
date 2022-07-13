@@ -60,6 +60,17 @@ class CookieMonster:
         self.hidden_layer.load_parameters(save_loc)
         os.remove(save_loc)
 
+    def load_data(self, instruction, file, batch_size):
+        if instruction == "mlm":
+            mlm_loader = dataset.MLMDatasetLoader(self.input_dimension)
+            data, label = mlm_loader.load_dataset(file, batch_size)
+            return data, label
+        elif instruction == "svm":
+            data, label = dataset.load_bolt_svm_dataset(file, batch_size)
+            return data, label
+        else:
+            raise ValueError("Invalid instruction. Supported instructions are \"mlm\" and \"svm\"")
+
     def eat_corpus(
         self,
         path_to_config_directory,
@@ -101,12 +112,8 @@ class CookieMonster:
                     epochs = config["epochs"]
                     learning_rate = config["learning_rate"]
 
-                    train_x, train_y = dataset.load_bolt_svm_dataset(
-                        train_file, batch_size
-                    )
-                    test_x, test_y = dataset.load_bolt_svm_dataset(
-                        test_file, batch_size
-                    )
+                    train_x, train_y = self.load_data("svm", train_file, batch_size)
+                    test_x, test_y = self.load_data("svm", test_file, batch_size)
 
                     train_config = bolt.graph.TrainConfig.make(
                         learning_rate=learning_rate, epochs=1
