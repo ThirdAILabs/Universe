@@ -83,29 +83,16 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
   }
 }
 
-uint32_t getPrediction(const BoltVector& output) {
-  float max_act = 0.0;
-  uint32_t pred = 0;
-  for (uint32_t i = 0; i < output.len; i++) {
-    if (output.activations[i] > max_act) {
-      max_act = output.activations[i];
-      if (output.isDense()) {
-        pred = i;
-      } else {
-        pred = output.active_neurons[i];
-      }
-    }
-  }
-  return pred;
-}
-
 std::string TextClassifier::predictSingle(const std::string& sentence) {
-  BoltVector vec = dataset::PairgramHasher::computePairgrams(
-      sentence, _model->getInputDim());
-  BoltVector output = BoltVector(_model->getOutputDim(), true);
-  _model->initializeNetworkState(1, true);
-  _model->forward(0, vec, output, nullptr);
-  return _batch_processor->getClassName(getPrediction(output));
+  BoltVector pairgrams_vec = dataset::PairgramHasher::computePairgrams(
+      /*sentence = */ sentence, /*output_range = */ _model->getInputDim());
+  BoltVector output =
+      BoltVector(/*l = */ _model->getOutputDim(), /*is_dense = */ true);
+  _model->initializeNetworkState(/*batch_size = */ 1, /*use_sparsity = */ true);
+  _model->forward(/*batch_index = */ 0, /*input = */ pairgrams_vec, output,
+                  /*labels = */ nullptr);
+  return _batch_processor->getClassName(
+      /*class_id = */ output.getIdWithHighestActivation());
 }
 
 void TextClassifier::predict(
@@ -124,9 +111,10 @@ void TextClassifier::predict(
       return;
     }
     for (uint32_t batch_id = 0; batch_id < batch_size; batch_id++) {
-      (*output_file) << _batch_processor->getClassName(
-                            getPrediction(outputs[batch_id]))
-                     << std::endl;
+      (*output_file)
+          << _batch_processor->getClassName(
+                 /*class_id = */ outputs[batch_id].getIdWithHighestActivation())
+          << std::endl;
     }
   };
 

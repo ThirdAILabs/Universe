@@ -41,6 +41,18 @@ def download_clinc_dataset():
     return (clinc_dataset["train"].features["intent"].num_classes, labels)
 
 
+def trim(sentence):
+    i = len(sentence) - 1
+    while i > 0 and (sentence[i] == '"'):
+        sentence = sentence[:-1]
+        i = i - 1
+
+    j = 0
+    while j < len(sentence) and (sentence[j] == '"'):
+        sentence = sentence[1:]
+    return sentence
+
+
 def remove_files():
     os.remove(TRAIN_FILE)
     os.remove(TEST_FILE)
@@ -48,14 +60,10 @@ def remove_files():
 
 
 def compute_accuracy(test_labels, predictions):
-    correct = 0
-    total = len(predictions)
     assert len(predictions) == len(test_labels)
-    for i in range(len(predictions)):
-        if predictions[i] == test_labels[i]:
-            correct += 1
-
-    return correct / total
+    return sum(
+        (label == predict) for (label, predict) in zip(test_labels, predictions)
+    ) / len(predictions)
 
 
 def test_text_classifier_clinc_dataset():
@@ -89,7 +97,11 @@ def test_text_classifier_predict_single():
     predictions = []
 
     for i in range(len(test_set) - 1):
-        predicted = classifier.predict_single(test_set[i + 1][1:-2].split('","')[0])
+        """
+        we are taking i+1 because first row is a header in test file and split it with ','
+        because its a csv file and taking the sentence which is present at first index.
+        """
+        predicted = classifier.predict_single(trim(test_set[i + 1].split(",")[0]))
         predictions.append(predicted)
 
     acc = compute_accuracy(test_labels, predictions)
