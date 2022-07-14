@@ -29,7 +29,6 @@ class Supervisor:
         self.layers = layers
         self.workers = workers
         self.num_of_batches = ray.get(self.workers[0].num_of_batches.remote())
-        self.weights_biases = ray.get(self.workers[0].returnParams.remote())
     
 
     def batch_to_train(
@@ -177,5 +176,7 @@ class Supervisor:
             This function is called by all the workers(other than worker with id = 0), here 
             all the workers get the same initialized weights and bias as that of worker with id 0 
         """
+        print('Updating weights & bias parameters after every epochs')
+        self.weights_biases = ray.get(self.workers[0].returnParams.remote())
         return self.weights_biases
 
