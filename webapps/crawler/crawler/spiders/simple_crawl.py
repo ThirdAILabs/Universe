@@ -138,7 +138,7 @@ class MySpider(scrapy.Spider):
             any(word in response.request.url for word in self.skipwords)
             or response.status != 200
             or response.meta["depth"] > self.max_depth
-            or len(self.crawled_urls) == self.max_pages
+            or len(self.crawled_urls) >= self.max_pages
         ):
             return
 
