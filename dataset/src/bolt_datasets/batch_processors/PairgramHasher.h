@@ -19,17 +19,8 @@ class PairgramHasher {
 
   static bolt::BoltVector computePairgramsFromUnigrams(
       const std::vector<uint32_t>& unigram_hashes, uint32_t output_range) {
-    std::unordered_map<uint32_t, uint32_t> pairgram_hashes;
-
-    // Merge all ordered pairs of unigram hashes.
-    for (uint32_t token = 0; token < unigram_hashes.size(); token++) {
-      for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
-        uint32_t combined_hash = hashing::HashUtils::combineHashes(
-            unigram_hashes[prev_token], unigram_hashes[token]);
-        combined_hash = combined_hash % output_range;
-        pairgram_hashes[combined_hash]++;
-      }
-    }
+    std::unordered_map<uint32_t, uint32_t> pairgram_hashes =
+        computeRawPairgramsFromUnigrams(unigram_hashes, output_range);
 
     // Construct bolt vector from unique nonzeros.
     bolt::BoltVector data_vec(pairgram_hashes.size(), false, false);
@@ -41,6 +32,22 @@ class PairgramHasher {
     }
 
     return data_vec;
+  }
+
+  static std::unordered_map<uint32_t, uint32_t> computeRawPairgramsFromUnigrams(
+      const std::vector<uint32_t>& unigram_hashes, uint32_t output_range) {
+    std::unordered_map<uint32_t, uint32_t> pairgram_hashes;
+
+    // Merge all ordered pairs of unigram hashes.
+    for (uint32_t token = 0; token < unigram_hashes.size(); token++) {
+      for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
+        uint32_t combined_hash = hashing::HashUtils::combineHashes(
+            unigram_hashes[prev_token], unigram_hashes[token]);
+        combined_hash = combined_hash % output_range;
+        pairgram_hashes[combined_hash]++;
+      }
+    }
+    return pairgram_hashes;
   }
 
   static std::vector<uint32_t> computeUnigrams(std::string_view sentence) {
@@ -60,8 +67,8 @@ class PairgramHasher {
         uint32_t len = i - start_of_word_offset;
 
         // Hash the word using the recorded start offset and the current index.
-        uint32_t hash = hashing::MurmurHash(
-            sentence.data() + start_of_word_offset, len, HASH_SEED);
+        uint32_t hash =
+            computeUnigram(sentence.data() + start_of_word_offset, len);
         unigram_hashes.push_back(hash);
         prev_is_space = true;
       }
@@ -70,12 +77,16 @@ class PairgramHasher {
       // If we don't find a space at the end of the sentence, then there's a
       // last word we need to hash.
       uint32_t len = sentence.size() - start_of_word_offset;
-      uint32_t hash = hashing::MurmurHash(
-          sentence.data() + start_of_word_offset, len, HASH_SEED);
+      uint32_t hash =
+          computeUnigram(sentence.data() + start_of_word_offset, len);
       unigram_hashes.push_back(hash);
     }
 
     return unigram_hashes;
+  }
+
+  static uint32_t computeUnigram(const char* key, uint32_t len) {
+    return hashing::MurmurHash(key, len, HASH_SEED);
   }
 
   static constexpr uint32_t HASH_SEED = 3829;
