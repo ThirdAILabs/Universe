@@ -11,7 +11,7 @@ import pickle
 
 class MySpider(scrapy.Spider):
 
-    # name of the spider. call scrapy crawl quotes -o metadata.jl
+    # name of the spider. call scrapy crawl simple_crawl -o metadata.jl
 
     name = "simple_crawl"
 
