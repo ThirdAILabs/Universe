@@ -661,6 +661,7 @@ void createBoltSubmodule(py::module_& module) {
       .def("predict", &PySequentialClassifier::predict, py::arg("filename"),
            py::arg("output_filename") = std::nullopt)
       .def("explain", &PySequentialClassifier::explain, py::arg("filename"),
+           py::arg("label_id") = 0, py::arg("label_given") = false,
            py::arg("loss_fn") = CategoricalCrossEntropyLoss());
 
   py::class_<SentimentClassifier>(bolt_submodule, "SentimentClassifier")

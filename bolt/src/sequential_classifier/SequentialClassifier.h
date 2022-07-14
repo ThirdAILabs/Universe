@@ -72,15 +72,15 @@ class SequentialClassifier {
   }
 
   std::vector<std::vector<std::pair<float, std::string>>> explain(
-      std::string filename,
+      std::string filename, uint32_t label_id = 0, bool label_given = false,
       const LossFunction& loss_fn = CategoricalCrossEntropyLoss()) {
     auto pipeline =
         _pipeline_builder.buildPipelineForFile(filename, /* shuffle = */
                                                false,
                                                /* overwrite_index = */
                                                false);
-    auto gradients =
-        _network->getInputGradientsFromStream(pipeline.first, loss_fn);
+    auto gradients = _network->getInputGradientsFromStream(pipeline.first,
+                                                           loss_fn, label_id, label_given);
     std::vector<std::vector<std::pair<float, uint32_t>>> temp;
     for (auto& gradient : gradients) {
       std::vector<std::pair<float, uint32_t>> vec;

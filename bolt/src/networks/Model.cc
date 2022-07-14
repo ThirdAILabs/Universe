@@ -270,13 +270,17 @@ template <typename BATCH_T>
 inline std::vector<std::vector<float>>
 Model<BATCH_T>::getInputGradientsFromStream(
     const std::shared_ptr<dataset::StreamingDataset<BATCH_T>> test_data,
-    const LossFunction& loss_fn) {
+    const LossFunction& loss_fn, uint32_t label_id, bool label_given) {
   uint32_t batch_size = test_data->getMaxBatchSize();
   std::vector<std::vector<float>> concatenated_grad;
   BoltBatch output = getOutputs(batch_size, true);
+  std::vector<uint32_t> temp;
+  if (label_given) {
+    temp.resize(batch_size, label_id);
+  }
   while (auto batch = test_data->nextBatch()) {
-    getInputGradientsForBatch(batch->first, output, loss_fn, 0,
-                              std::vector<uint32_t>(), concatenated_grad);
+    getInputGradientsForBatch(batch->first, output, loss_fn, 0, temp,
+                              concatenated_grad);
   }
   return concatenated_grad;
 }

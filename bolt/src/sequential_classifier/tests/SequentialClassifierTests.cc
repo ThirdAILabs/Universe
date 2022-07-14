@@ -197,8 +197,7 @@ TEST_F(SequentialClassifierTests, Explainability) {
   seq_bolt.train(simple_trend_train_dataset, /* epochs = */ 1,
                  /* learning_rate = */ 0.0001);
 
-  auto temp = seq_bolt.explain(simple_trend_test_dataset,
-                               CategoricalCrossEntropyLoss());
+  auto temp = seq_bolt.explain(simple_trend_test_dataset);
 
   for (auto& i : temp[0]) {
     std::cout << i.first << " " << i.second;

@@ -142,7 +142,7 @@ class Model {
 
   std::vector<std::vector<float>> getInputGradientsFromStream(
       std::shared_ptr<dataset::StreamingDataset<BATCH_T>> test_data,
-      const LossFunction& loss_fn);
+      const LossFunction& loss_fn, uint32_t label_id, bool label_given);
 
   void processTestBatch(const BATCH_T& batch_inputs, BoltBatch& outputs,
                         const BoltBatch* batch_labels,
