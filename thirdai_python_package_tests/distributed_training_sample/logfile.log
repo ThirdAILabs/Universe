@@ -146,3 +146,84 @@
 2022-07-14 05:20:32,598 : INFO : DistributedBolt : Ray Initialized
 2022-07-14 05:31:34,084 : INFO : DistributedBolt : Training has started!
 2022-07-14 05:31:34,492 : INFO : DistributedBolt : Ray Initialized
+2022-07-14 05:52:25,954 : INFO : DistributedBolt : Training has started!
+2022-07-14 05:52:26,336 : INFO : DistributedBolt : Ray Initialized
+2022-07-14 05:52:52,387 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-14 05:53:03,488 : INFO : DistributedBolt : 0 processed!, Total Batches: 239
+2022-07-14 06:40:55,204 : INFO : DistributedBolt : Training has started!
+2022-07-14 06:40:55,595 : INFO : DistributedBolt : Ray Initialized
+2022-07-14 06:41:19,663 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-14 06:41:29,948 : INFO : DistributedBolt : 0 processed!, Total Batches: 479
+2022-07-14 06:43:38,413 : INFO : DistributedBolt : 5 processed!, Total Batches: 479
+2022-07-14 07:04:48,233 : INFO : DistributedBolt : Training has started!
+2022-07-14 07:04:48,631 : INFO : DistributedBolt : Ray Initialized
+2022-07-14 07:05:14,401 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-14 07:05:25,820 : INFO : DistributedBolt : 0 processed!, Total Batches: 479
+2022-07-14 07:07:34,622 : INFO : DistributedBolt : 5 processed!, Total Batches: 479
+2022-07-14 07:09:43,489 : INFO : DistributedBolt : 10 processed!, Total Batches: 479
+2022-07-14 07:11:50,489 : INFO : DistributedBolt : 15 processed!, Total Batches: 479
+2022-07-14 07:13:56,997 : INFO : DistributedBolt : 20 processed!, Total Batches: 479
+2022-07-14 07:16:02,901 : INFO : DistributedBolt : 25 processed!, Total Batches: 479
+2022-07-14 07:18:09,174 : INFO : DistributedBolt : 30 processed!, Total Batches: 479
+2022-07-14 07:20:17,057 : INFO : DistributedBolt : 35 processed!, Total Batches: 479
+2022-07-14 07:22:24,496 : INFO : DistributedBolt : 40 processed!, Total Batches: 479
+2022-07-14 07:24:31,484 : INFO : DistributedBolt : 45 processed!, Total Batches: 479
+2022-07-14 07:26:37,734 : INFO : DistributedBolt : 50 processed!, Total Batches: 479
+2022-07-14 07:28:44,993 : INFO : DistributedBolt : 55 processed!, Total Batches: 479
+2022-07-14 07:30:51,400 : INFO : DistributedBolt : 60 processed!, Total Batches: 479
+2022-07-14 07:32:58,664 : INFO : DistributedBolt : 65 processed!, Total Batches: 479
+2022-07-14 07:35:05,853 : INFO : DistributedBolt : 70 processed!, Total Batches: 479
+2022-07-14 07:37:12,473 : INFO : DistributedBolt : 75 processed!, Total Batches: 479
+2022-07-14 07:39:18,468 : INFO : DistributedBolt : 80 processed!, Total Batches: 479
+2022-07-14 07:41:25,009 : INFO : DistributedBolt : 85 processed!, Total Batches: 479
+2022-07-14 07:43:30,833 : INFO : DistributedBolt : 90 processed!, Total Batches: 479
+2022-07-14 07:45:37,257 : INFO : DistributedBolt : 95 processed!, Total Batches: 479
+2022-07-14 07:47:43,157 : INFO : DistributedBolt : 100 processed!, Total Batches: 479
+2022-07-14 07:49:50,378 : INFO : DistributedBolt : 105 processed!, Total Batches: 479
+2022-07-14 07:51:57,762 : INFO : DistributedBolt : 110 processed!, Total Batches: 479
+2022-07-14 07:54:05,405 : INFO : DistributedBolt : 115 processed!, Total Batches: 479
+2022-07-14 07:56:12,403 : INFO : DistributedBolt : 120 processed!, Total Batches: 479
+2022-07-14 07:58:18,277 : INFO : DistributedBolt : 125 processed!, Total Batches: 479
+2022-07-14 08:00:25,019 : INFO : DistributedBolt : 130 processed!, Total Batches: 479
+2022-07-14 08:02:31,761 : INFO : DistributedBolt : 135 processed!, Total Batches: 479
+2022-07-14 08:04:37,417 : INFO : DistributedBolt : 140 processed!, Total Batches: 479
+2022-07-14 08:06:43,280 : INFO : DistributedBolt : 145 processed!, Total Batches: 479
+2022-07-14 08:08:50,021 : INFO : DistributedBolt : 150 processed!, Total Batches: 479
+2022-07-14 08:10:56,486 : INFO : DistributedBolt : 155 processed!, Total Batches: 479
+2022-07-14 08:13:02,845 : INFO : DistributedBolt : 160 processed!, Total Batches: 479
+2022-07-14 08:15:09,435 : INFO : DistributedBolt : 165 processed!, Total Batches: 479
+2022-07-14 08:17:16,325 : INFO : DistributedBolt : 170 processed!, Total Batches: 479
+2022-07-14 08:19:23,113 : INFO : DistributedBolt : 175 processed!, Total Batches: 479
+2022-07-14 08:21:29,484 : INFO : DistributedBolt : 180 processed!, Total Batches: 479
+2022-07-14 08:23:36,937 : INFO : DistributedBolt : 185 processed!, Total Batches: 479
+2022-07-14 08:25:43,837 : INFO : DistributedBolt : 190 processed!, Total Batches: 479
+2022-07-14 08:27:50,595 : INFO : DistributedBolt : 195 processed!, Total Batches: 479
+2022-07-14 08:29:58,469 : INFO : DistributedBolt : 200 processed!, Total Batches: 479
+2022-07-14 08:32:05,567 : INFO : DistributedBolt : 205 processed!, Total Batches: 479
+2022-07-14 08:34:13,529 : INFO : DistributedBolt : 210 processed!, Total Batches: 479
+2022-07-14 08:36:19,902 : INFO : DistributedBolt : 215 processed!, Total Batches: 479
+2022-07-14 08:38:27,478 : INFO : DistributedBolt : 220 processed!, Total Batches: 479
+2022-07-14 08:40:34,257 : INFO : DistributedBolt : 225 processed!, Total Batches: 479
+2022-07-14 08:42:41,325 : INFO : DistributedBolt : 230 processed!, Total Batches: 479
+2022-07-14 08:44:47,113 : INFO : DistributedBolt : 235 processed!, Total Batches: 479
+2022-07-14 08:46:53,888 : INFO : DistributedBolt : 240 processed!, Total Batches: 479
+2022-07-14 08:49:00,355 : INFO : DistributedBolt : 245 processed!, Total Batches: 479
+2022-07-14 08:51:05,890 : INFO : DistributedBolt : 250 processed!, Total Batches: 479
+2022-07-14 08:53:12,565 : INFO : DistributedBolt : 255 processed!, Total Batches: 479
+2022-07-14 08:55:18,800 : INFO : DistributedBolt : 260 processed!, Total Batches: 479
+2022-07-14 08:57:25,145 : INFO : DistributedBolt : 265 processed!, Total Batches: 479
+2022-07-14 08:59:30,843 : INFO : DistributedBolt : 270 processed!, Total Batches: 479
+2022-07-14 09:01:37,536 : INFO : DistributedBolt : 275 processed!, Total Batches: 479
+2022-07-14 09:03:43,860 : INFO : DistributedBolt : 280 processed!, Total Batches: 479
+2022-07-14 09:05:50,260 : INFO : DistributedBolt : 285 processed!, Total Batches: 479
+2022-07-14 09:07:58,100 : INFO : DistributedBolt : 290 processed!, Total Batches: 479
+2022-07-14 09:10:04,476 : INFO : DistributedBolt : 295 processed!, Total Batches: 479
+2022-07-14 09:12:12,035 : INFO : DistributedBolt : 300 processed!, Total Batches: 479
+2022-07-14 09:14:18,111 : INFO : DistributedBolt : 305 processed!, Total Batches: 479
+2022-07-14 09:16:25,004 : INFO : DistributedBolt : 310 processed!, Total Batches: 479
+2022-07-14 09:18:31,416 : INFO : DistributedBolt : 315 processed!, Total Batches: 479
+2022-07-14 09:20:37,371 : INFO : DistributedBolt : 320 processed!, Total Batches: 479
+2022-07-14 09:22:44,009 : INFO : DistributedBolt : 325 processed!, Total Batches: 479
+2022-07-14 09:24:50,803 : INFO : DistributedBolt : 330 processed!, Total Batches: 479
+2022-07-14 09:26:57,877 : INFO : DistributedBolt : 335 processed!, Total Batches: 479
+2022-07-14 09:29:04,876 : INFO : DistributedBolt : 340 processed!, Total Batches: 479
