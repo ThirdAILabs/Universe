@@ -1,4 +1,8 @@
 For running the distributed bolt, first we need to start a ray cluster
+
+First install all the required module by running the following command:
+        - Run the command: python3 install_required_module.py
+
 For starting the ray cluster:
         - Run the command: python3 start_cluster.py <head_node_ip> <worker_node_ip_1> <worker_node_ip_2> ...
 

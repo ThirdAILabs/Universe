@@ -65,7 +65,7 @@ def start_cluster(
 
     print('Starting Ray Cluster')
     
-    if not os.path.isdir('/tmp/ray')
+    if not os.path.isdir('/tmp/ray'):
         print('Ray have not been initialised on this node before.')
         ray.init()
     
