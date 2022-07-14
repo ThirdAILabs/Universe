@@ -51,7 +51,7 @@ args["start_urls"] = [
 ]
 
 
-# !! if you are being banned from sites, you may want to modify custom_settings in quotes_spider.py
+# !! if you are being banned from sites, you may want to modify custom_settings in simple_crawl.py
 # TO-DO
 args["AUTOTHROTTLE_ENABLED"] = True
 args["CONCURRENT_REQUESTS_PER_DOMAIN"] = 1
