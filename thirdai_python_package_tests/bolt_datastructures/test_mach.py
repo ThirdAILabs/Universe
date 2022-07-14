@@ -98,8 +98,8 @@ def test_mach_save_load():
         num_examples=num_test,
     )
 
-    result_fast = mach.query_fast(test_x)
-    result_slow = mach.query_slow(test_x)
+    result_fast, _ = mach.query_fast(test_x)
+    result_slow, _ = mach.query_slow(test_x)
     recall_fast_before_save = get_recall(
         result_fast, test_y, num_true_labels_per_sample
     )
@@ -113,10 +113,10 @@ def test_mach_save_load():
     newMach = bolt.Mach.load(save_folder_name)
 
     assert recall_fast_before_save == get_recall(
-        newMach.query_fast(test_x), test_y, num_true_labels_per_sample
+        newMach.query_fast(test_x)[0], test_y, num_true_labels_per_sample
     )
     assert recall_slow_before_save == get_recall(
-        newMach.query_slow(test_x), test_y, num_true_labels_per_sample
+        newMach.query_slow(test_x)[0], test_y, num_true_labels_per_sample
     )
 
     shutil.rmtree(save_folder_name)
@@ -145,8 +145,8 @@ def test_mach_random_data():
         num_examples=num_test,
     )
 
-    result_fast = mach.query_fast(test_x)
-    result_slow = mach.query_slow(test_x)
+    result_fast, _ = mach.query_fast(test_x)
+    result_slow, _ = mach.query_slow(test_x)
 
     assert get_recall(result_fast, test_y, num_true_labels_per_sample) > 0.8
     assert get_recall(result_slow, test_y, num_true_labels_per_sample) > 0.8

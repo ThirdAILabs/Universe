@@ -152,9 +152,11 @@ class Mach:
 
                 mapped_train_y = self.map_labels_to_groups(train_y, classifier_id)
 
-                train_config = bolt.graph.TrainConfig.make(
-                    learning_rate=learning_rate, epochs=1
-                ).with_batch_size(batch_size)
+                train_config = (
+                    bolt.graph.TrainConfig.make(learning_rate=learning_rate, epochs=1)
+                    .with_batch_size(batch_size)
+                    .silence()
+                )
 
                 classifier.train(
                     train_data=train_x,
@@ -162,8 +164,10 @@ class Mach:
                     train_config=train_config,
                 )
 
+    # Returns a tuple of (best_labels, label_scores). best_labels is
+    # of shape (batch.size, 1) and label_scores is of shape (batch.size, num_labels)
     def query_slow(self, batch):
-        predict_config = bolt.graph.PredictConfig.make().return_activations()
+        predict_config = bolt.graph.PredictConfig.make().return_activations().silence()
         results = np.array(
             [
                 classifier.predict(
@@ -180,11 +184,13 @@ class Mach:
                     scores[vec_id, label] += results[
                         classifier_id, vec_id, self.label_to_group[classifier_id, label]
                     ]
-        return np.argmax(scores, axis=1)
+        return np.argmax(scores, axis=1), scores
 
     # TODO(josh): Can implement in C++ for way more speed
     # TODO(josh): Use better inference, this is equivalent to threshold = 1
     # TODO(josh): Allow returning top k instead of just top 1
+    # Returns a tuple of (best_labels, label_scores). best_labels is
+    # of shape (batch.size, 1) and label_scores is of shape (batch.size, num_labels)
     def query_fast(self, batch, num_groups_to_check_per_classifier=10):
         predict_config = bolt.graph.PredictConfig.make().return_activations()
         results = np.array(
@@ -218,7 +224,7 @@ class Mach:
                         classifier_id, vec_id, self.label_to_group[classifier_id, label]
                     ]
 
-        return np.argmax(scores, axis=1)
+        return np.argmax(scores, axis=1), scores
 
     def _top_k_indices(self, numpy_array, top_k):
         return np.argpartition(numpy_array, -top_k, axis=1)[:, -top_k:]
