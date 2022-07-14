@@ -36,4 +36,4 @@ jobs:
         run: bin/docker-build.sh
 
       - name: Build Package and Run Benchmark
-        run: docker run --privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --rm --mount type=bind,source=/share/data,target=/data --mount type=bind,source=${PWD},target=/Universe thirdai/universe_dev_build /bin/bash -c "python3 /Universe/bin/build.py; python3 /Universe/bin/benchmark_bolt.py -l /Universe/benchmarks/bolt_benchmarks/configs/amazon_polarity.txt /Universe/benchmarks/bolt_benchmarks/configs/amzn670k.txt criteo_dlrm.txt"   
+        run: docker run --privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --rm --mount type=bind,source=/share/data,target=/data --mount type=bind,source=${PWD},target=/Universe thirdai/universe_dev_build /bin/bash -c "python3 /Universe/bin/build.py; python3 /Universe/bin/benchmark_bolt.py -l /Universe/benchmarks/bolt_benchmarks/configs/amazon_polarity.txt /Universe/benchmarks/bolt_benchmarks/configs/amzn670k.txt /Universe/benchmarks/bolt_benchmarks/configs/criteo_dlrm.txt"   
