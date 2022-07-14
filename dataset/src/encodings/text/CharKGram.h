@@ -29,9 +29,9 @@ class CharKGram : public TextEncoding {
 
     // TODO(Geordie): Do we need to pad start and end of text by k-1 characters?
     for (uint32_t offset = 0; offset < text.size() - (_k - 1); offset++) {
-      uint32_t k_gram_hash = hashing::MurmurHash(&text.at(offset), _k,
-                                                 TextEncodingUtils::HASH_SEED) %
-                             _dim;
+      uint32_t k_gram_hash =
+          TextEncodingUtils::computeUnigram(&lower_case_text.at(offset), _k) %
+          _dim;
       char_k_grams.push_back(k_gram_hash);
     }
 
@@ -40,8 +40,11 @@ class CharKGram : public TextEncoding {
       number of entries in the sparse vector, which can in turn make BOLT
       run faster.
     */
-    TextEncodingUtils::sumRepeatedIndices(/* indices = */ char_k_grams,
-                                          /* value = */ 1.0, /* vec = */ vec);
+    TextEncodingUtils::sumRepeatedIndices(
+        /* indices = */ char_k_grams,
+        /* value = */ 1.0, [&](uint32_t index, float value) {
+          vec.addSparseFeatureToSegment(index, value);
+        });
   }
 
   uint32_t featureDim() final { return _dim; }

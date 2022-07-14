@@ -20,25 +20,7 @@ class PairGram : public TextEncoding {
 
   void encodeText(const std::string_view text,
                   SegmentedFeatureVector& vec) final {
-    // TextEncodingUtils::calculatePairgrams(text);
-
-    // TODO(Geordie): Do we need to make lower case?
-    std::string lower_case_text = TextEncodingUtils::makeLowerCase(text);
-
-    std::vector<uint32_t> seen_unigram_hashes;
-    std::vector<uint32_t> pair_grams;
-
-    TextEncodingUtils::forEachWordHash(
-        lower_case_text, [&](uint32_t word_hash) {
-          addPairGrams(seen_unigram_hashes, word_hash, pair_grams);
-        });
-
-    // Deduplication helps to reduce number of entries in the sparse
-    // vector but has huge overheads. May want to remove in a future iteration.
-    // We do this instead of using a map because at this scale, sorting and
-    // deduplicating is still faster than map's O(1) insertions. Additionally,
-    // iterating over a map is slow
-    TextEncodingUtils::sumRepeatedIndices(pair_grams, 1.0, vec);
+    TextEncodingUtils::computePairgrams(text, _dim, vec);
   }
 
   uint32_t featureDim() final { return _dim; }
@@ -46,21 +28,6 @@ class PairGram : public TextEncoding {
   bool isDense() final { return false; }
 
  private:
-  inline void addPairGrams(std::vector<uint32_t>& prev_unigram_hashes,
-                           uint32_t word_hash,
-                           std::vector<uint32_t>& pair_grams) const {
-    // Add new unigram here because same-word pairgrams also help.
-    prev_unigram_hashes.push_back(word_hash);
-
-    // Create ordered pairgrams by pairing with all previous words (including
-    // this one). Combine the hashes of the unigrams that make up the pairgram.
-    for (const auto& prev_word_hash : prev_unigram_hashes) {
-      uint32_t pair_gram =
-          hashing::HashUtils::combineHashes(prev_word_hash, word_hash) % _dim;
-      pair_grams.push_back(pair_gram);
-    }
-  }
-
   uint32_t _dim;
 };
 

@@ -789,65 +789,26 @@ BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
   return std::make_shared<BoltDataset>(std::move(batches), num_labels);
 }
 
-std::unordered_map<uint32_t, uint32_t> parseSentenceToUnigrams(
-    const std::string& sentence, uint32_t seed, uint32_t dimension) {
-  std::stringstream ss(sentence);
-  std::istream_iterator<std::string> begin(ss);
-  std::istream_iterator<std::string> end;
-  std::vector<std::string> tokens(begin, end);
-
-  std::unordered_map<uint32_t, uint32_t> idx_to_val_map;
-
-  for (auto& s : tokens) {
-    const char* cstr = s.c_str();
-    uint32_t hash =
-        thirdai::hashing::MurmurHash(cstr, s.length(), seed) % dimension;
-    if (idx_to_val_map.find(hash) == idx_to_val_map.end()) {
-      idx_to_val_map[hash] = 1;
-    } else {
-      idx_to_val_map[hash]++;
-    }
-  }
-
-  return idx_to_val_map;
-}
-
-BoltVector parseSentenceToBoltVector(const std::string& sentence, uint32_t seed,
-                                     uint32_t dimension) {
-  std::unordered_map<uint32_t, uint32_t> idx_to_val_map =
-      parseSentenceToUnigrams(sentence, seed, dimension);
-
-  BoltVector vec(idx_to_val_map.size(), false, false);
-  uint32_t i = 0;
-  for (auto [index, value] : idx_to_val_map) {
-    vec.active_neurons[i] = index;
-    vec.activations[i] = value;
-    i++;
-  }
-
-  return vec;
-}
-
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
-parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
-                           uint32_t dimension) {
-  std::unordered_map<uint32_t, uint32_t> idx_to_val_map =
-      parseSentenceToUnigrams(sentence, seed, dimension);
+parseSentenceToSparseArray(const std::string& sentence, uint32_t dimension) {
+  std::vector<uint32_t> unigrams =
+      TextEncodingUtils::computeRawUnigramsWithRange(sentence, dimension);
 
-  auto result = py::array_t<uint32_t>(idx_to_val_map.size());
+  auto result = py::array_t<uint32_t>(unigrams.size());
   py::buffer_info indx_buf = result.request();
   uint32_t* indx_ptr = static_cast<uint32_t*>(indx_buf.ptr);
 
-  auto result_2 = py::array_t<uint32_t>(idx_to_val_map.size());
+  auto result_2 = py::array_t<uint32_t>(unigrams.size());
   py::buffer_info val_buf = result_2.request();
   uint32_t* val_ptr = static_cast<uint32_t*>(val_buf.ptr);
 
   int i = 0;
-  for (auto kv : idx_to_val_map) {
-    indx_ptr[i] = kv.first;
-    val_ptr[i] = kv.second;
-    i += 1;
-  }
+  TextEncodingUtils::sumRepeatedIndices(unigrams, 1.0,
+                                        [&](uint32_t index, float value) {
+                                          indx_ptr[i] = index;
+                                          val_ptr[i] = value;
+                                          i += 1;
+                                        });
 
   return std::make_tuple(result, result_2);
 }

@@ -19,16 +19,7 @@ class UniGram : public TextEncoding {
 
   void encodeText(const std::string_view text,
                   SegmentedFeatureVector& vec) final {
-    std::vector<uint32_t> uni_grams =
-        TextEncodingUtils::computeUnigrams(text, _dim);
-
-    // Deduplication adds an overhead of around 10% but helps to reduce
-    // number of entries in the sparse vector, which can in turn make BOLT
-    // run faster.
-    // We do this instead of using a map because at this scale, sorting and
-    // deduplicating is still faster than map's O(1) insertions. Additionally,
-    // iterating over a map is slow
-    TextEncodingUtils::sumRepeatedIndices(uni_grams, 1.0, vec);
+    TextEncodingUtils::computeUnigrams(text, _dim, vec);
   }
 
   uint32_t featureDim() final { return _dim; }

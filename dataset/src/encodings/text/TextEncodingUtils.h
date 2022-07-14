@@ -14,8 +14,151 @@ class TextEncodingUtils {
   static constexpr uint32_t HASH_SEED = 341;
   static constexpr uint32_t DEFAULT_TEXT_ENCODING_DIM = 100000;
 
+  static uint32_t computeUnigram(const char* key, uint32_t len) {
+    return hashing::MurmurHash(key, len, HASH_SEED);
+  }
+
   /**
-   * Parses through a sentence and applied a function to each word.
+   * Computes raw unigrams without modding to an output range.
+   */
+  static std::vector<uint32_t> computeRawUnigrams(
+      const std::string_view sentence) {
+    std::vector<uint32_t> unigrams;
+    forEachWordHash(sentence,
+                    [&](uint32_t word_hash) { unigrams.push_back(word_hash); });
+    return unigrams;
+  }
+
+  /**
+   * Computes raw unigrams modding to an output range.
+   */
+  static std::vector<uint32_t> computeRawUnigramsWithRange(
+      const std::string_view sentence, uint32_t output_range) {
+    std::vector<uint32_t> unigrams;
+    forEachWordHash(sentence, [&](uint32_t word_hash) {
+      unigrams.push_back(word_hash % output_range);
+    });
+    return unigrams;
+  }
+
+  /**
+   * Adds unigrams to SegmentedFeatureVector
+   */
+  static void computeUnigrams(const std::string_view sentence,
+                              uint32_t output_range,
+                              SegmentedFeatureVector& vec) {
+    std::vector<uint32_t> unigrams =
+        computeRawUnigramsWithRange(sentence, output_range);
+    sumRepeatedIndices(unigrams, /* value */ 1.0,
+                       [&](uint32_t index, float value) {
+                         vec.addSparseFeatureToSegment(index, value);
+                       });
+  }
+
+  static bolt::BoltVector computeUnigrams(const std::string_view sentence,
+                                          uint32_t output_range) {
+    std::vector<uint32_t> unigrams =
+        computeRawUnigramsWithRange(sentence, output_range);
+
+    uint32_t index = 0;
+    bolt::BoltVector data_vec(unigrams.size(), false, false);
+
+    sumRepeatedIndices(unigrams, /* value */ 1.0,
+                       [&](uint32_t pairgram, float value) {
+                         data_vec.active_neurons[index] = pairgram;
+                         data_vec.activations[index] = value;
+                         index++;
+                       });
+    return data_vec;
+  }
+
+  /**
+   * Computes pairgrams from unigrams
+   */
+  static std::vector<uint32_t> computeRawPairgramsFromUnigrams(
+      std::vector<uint32_t> unigram_hashes, uint32_t output_range) {
+    std::vector<uint32_t> pairgram_hashes;
+
+    // Merge all ordered pairs of unigram hashes.
+    for (uint32_t token = 0; token < unigram_hashes.size(); token++) {
+      for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
+        uint32_t combined_hash = hashing::HashUtils::combineHashes(
+            unigram_hashes[prev_token], unigram_hashes[token]);
+        combined_hash = combined_hash % output_range;
+        pairgram_hashes.push_back(combined_hash);
+      }
+    }
+    return pairgram_hashes;
+  }
+
+  /**
+   * Compute raw pairgrams modded to a certain range.
+   */
+  static std::vector<uint32_t> computeRawPairgrams(std::string_view sentence,
+                                                   uint32_t output_range) {
+    std::vector<uint32_t> unigram_hashes = computeRawUnigrams(sentence);
+
+    return computeRawPairgramsFromUnigrams(unigram_hashes, output_range);
+  }
+
+  /**
+   * Computes pairgrams into a BoltVector
+   */
+  static bolt::BoltVector computePairgrams(std::string_view sentence,
+                                           uint32_t output_range) {
+    std::vector<uint32_t> pairgrams =
+        computeRawPairgrams(sentence, output_range);
+
+    uint32_t index = 0;
+    bolt::BoltVector data_vec(pairgrams.size(), false, false);
+
+    sumRepeatedIndices(pairgrams, /* value */ 1.0,
+                       [&](uint32_t pairgram, float value) {
+                         data_vec.active_neurons[index] = pairgram;
+                         data_vec.activations[index] = value;
+                         index++;
+                       });
+
+    return data_vec;
+  }
+
+  /**
+   * Pairgrams from Unigrams into a BoltVector
+   */
+  static bolt::BoltVector computePairgramsFromUnigrams(
+      std::vector<uint32_t>& unigrams, uint32_t output_range) {
+    std::vector<uint32_t> pairgrams =
+        computeRawPairgramsFromUnigrams(unigrams, output_range);
+
+    uint32_t index = 0;
+    bolt::BoltVector data_vec(pairgrams.size(), false, false);
+
+    sumRepeatedIndices(pairgrams, /* value */ 1.0,
+                       [&](uint32_t pairgram, float value) {
+                         data_vec.active_neurons[index] = pairgram;
+                         data_vec.activations[index] = value;
+                         index++;
+                       });
+    return data_vec;
+  }
+
+  /**
+   * Computes pairgrams into a SegmentedFeatureVector
+   */
+  static void computePairgrams(std::string_view sentence, uint32_t output_range,
+                               SegmentedFeatureVector& vec) {
+    std::vector<uint32_t> pairgrams =
+        computeRawPairgrams(sentence, output_range);
+
+    sumRepeatedIndices(pairgrams, /* value */ 1.0,
+                       [&](uint32_t pairgram, float value) {
+                         vec.addSparseFeatureToSegment(pairgram, value);
+                       });
+  }
+
+  /**
+   * Parses through a sentence and applies a function to the hash of each
+   * word.
    */
   template <typename WORD_PROCESSOR_T>
   inline static void forEachWordHash(const std::string_view sentence,
@@ -54,127 +197,17 @@ class TextEncodingUtils {
     }
   }
 
-  static uint32_t computeUnigram(const char* key, uint32_t len) {
-    return hashing::MurmurHash(key, len, HASH_SEED);
-  }
-
-  static std::vector<uint32_t> computeUnigrams(const std::string_view sentence,
-                                               uint32_t output_range) {
-    std::vector<uint32_t> unigrams;
-    forEachWordHash(sentence, [&](uint32_t word_hash) {
-      unigrams.push_back(word_hash % output_range);
-    });
-    return unigrams;
-  }
-
-  static std::vector<uint32_t> computeUnigrams(
-      const std::string_view sentence) {
-    std::vector<uint32_t> unigrams;
-    forEachWordHash(sentence,
-                    [&](uint32_t word_hash) { unigrams.push_back(word_hash); });
-    return unigrams;
-  }
-
-  static std::unordered_map<uint32_t, uint32_t> computePairgramsWithMap(
-      std::string_view sentence, uint32_t output_range) {
-    std::vector<uint32_t> unigram_hashes = computeUnigrams(sentence);
-
-    std::unordered_map<uint32_t, uint32_t> pairgram_hashes;
-
-    // Merge all ordered pairs of unigram hashes.
-    for (uint32_t token = 0; token < unigram_hashes.size(); token++) {
-      for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
-        uint32_t combined_hash = hashing::HashUtils::combineHashes(
-            unigram_hashes[prev_token], unigram_hashes[token]);
-        combined_hash = combined_hash % output_range;
-        pairgram_hashes[combined_hash]++;
-      }
-    }
-    return pairgram_hashes;
-  }
-
-  static std::vector<uint32_t> computePairgramsWithVector(
-      std::string_view sentence, uint32_t output_range) {
-    std::vector<uint32_t> unigram_hashes = computeUnigrams(sentence);
-
-    std::vector<uint32_t> pairgram_hashes;
-
-    // Merge all ordered pairs of unigram hashes.
-    for (uint32_t token = 0; token < unigram_hashes.size(); token++) {
-      for (uint32_t prev_token = 0; prev_token <= token; prev_token++) {
-        uint32_t combined_hash = hashing::HashUtils::combineHashes(
-            unigram_hashes[prev_token], unigram_hashes[token]);
-        combined_hash = combined_hash % output_range;
-        pairgram_hashes.push_back(combined_hash);
-      }
-    }
-    return pairgram_hashes;
-  }
-
   /**
-   * Version1: pairgrams with a vector and no deduplicating
+   * Sorts the given indices and deduplicates them by adding value for each
+   * instance of that index. Applies a lambda to the resulting idx, value pair.
    */
-  static bolt::BoltVector computePairgramsVersion1(std::string_view sentence,
-                                                   uint32_t output_range) {
-    std::vector<uint32_t> pairgrams =
-        computePairgramsWithVector(sentence, output_range);
+  template <typename INDEX_VAL_PROCESSOR>
+  static void sumRepeatedIndices(std::vector<uint32_t>& indices, float value,
+                                 INDEX_VAL_PROCESSOR idx_val_processor) {
+    static_assert(
+        std::is_convertible<INDEX_VAL_PROCESSOR,
+                            std::function<void(uint32_t, float)>>::value);
 
-    // Construct bolt vector from unique nonzeros.
-    bolt::BoltVector data_vec(pairgrams.size(), false, false);
-    uint32_t index = 0;
-    for (auto pairgram : pairgrams) {
-      data_vec.active_neurons[index] = pairgram;
-      data_vec.activations[index] = 1.0;
-      index++;
-    }
-
-    return data_vec;
-  }
-
-  /**
-   * Version2: pairgrams with a vector and sorting/deduplicating
-   */
-  static bolt::BoltVector computePairgramsVersion2(std::string_view sentence,
-                                                   uint32_t output_range) {
-    std::vector<uint32_t> pairgrams =
-        computePairgramsWithVector(sentence, output_range);
-
-    std::vector<uint32_t> pairgrams = sortAndDeduplicate(pairgrams);
-
-    // Construct bolt vector from unique nonzeros.
-    bolt::BoltVector data_vec(pairgrams.size(), false, false);
-    uint32_t index = 0;
-    for (auto pairgram : pairgrams) {
-      data_vec.active_neurons[index] = pairgram;
-      data_vec.activations[index] = 1.0;
-      index++;
-    }
-
-    return data_vec;
-  }
-
-  /**
-   * Version3: pairgrams with a map
-   */
-  static bolt::BoltVector computePairgramsVersion3(std::string_view sentence,
-                                                   uint32_t output_range) {
-    std::unordered_map<uint32_t, uint32_t> pairgrams =
-        computePairgramsWithMap(sentence, output_range);
-
-    // Construct bolt vector from unique nonzeros.
-    bolt::BoltVector data_vec(pairgrams.size(), false, false);
-    uint32_t index = 0;
-    for (auto& entry : pairgrams) {
-      data_vec.active_neurons[index] = entry.first;
-      data_vec.activations[index] = entry.second;
-      index++;
-    }
-
-    return data_vec;
-  }
-
-  static std::vector<uint32_t> sortAndDeduplicate(
-      std::vector<uint32_t>& indices, float value = 1.0) {
     std::sort(indices.begin(), indices.end());
 
     std::vector<uint32_t> new_indices;
@@ -192,7 +225,7 @@ class TextEncodingUtils {
       val += value;
 
       if (idx != next_idx) {
-        new_indices.push_back(idx);
+        idx_val_processor(idx, val);
         val = 0.0;  // Reset val since next idx is different.
       }
     }
@@ -203,45 +236,7 @@ class TextEncodingUtils {
      */
     if (i == indices.size() - 1) {
       val += value;
-      new_indices.push_back(indices.back());
-    }
-  }
-
-  /**
-   * Deduplicates indices by summing values and adds features to the given
-   * vector. All indices expected to correspond to the same value.
-   */
-  inline static void sumRepeatedIndices(std::vector<uint32_t>& indices,
-                                        float value,
-                                        SegmentedFeatureVector& vec) {
-    // Put equivalent indices next to each other.
-    std::sort(indices.begin(), indices.end());
-
-    /**
-     * If current index is the same as the next index, keep accumulating
-     * val. Otherwise, add sparse feature at the current index with the
-     * accumulated value and reset val.
-     */
-    float val = 0.0;
-    uint32_t i = 0;
-    for (; i < indices.size() - 1; ++i) {
-      uint32_t idx = indices[i];
-      uint32_t next_idx = indices[i + 1];
-      val += value;
-
-      if (idx != next_idx) {
-        vec.addSparseFeatureToSegment(idx, val);
-        val = 0.0;  // Reset val since next idx is different.
-      }
-    }
-
-    /**
-     * If we're looking at the last element, the next element is clearly
-     * "different", so we add a sparse feature accordingly.
-     */
-    if (i == indices.size() - 1) {
-      val += value;
-      vec.addSparseFeatureToSegment(indices.back(), val);
+      idx_val_processor(indices.back(), val);
     }
   }
 
