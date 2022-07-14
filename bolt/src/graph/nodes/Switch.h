@@ -71,12 +71,12 @@ class SwitchNode final : public Node,
 
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
     uint32_t active_layer = getActiveLayer(vec_index);
-    _layers_used[active_layer] = true;
     _layers.at(active_layer)->forward(vec_index, labels);
   }
 
   void backpropagateImpl(uint32_t vec_index) final {
     uint32_t active_layer = getActiveLayer(vec_index);
+    _layers_used[active_layer] = true;
     _layers.at(active_layer)->backpropagate(vec_index);
   }
 
