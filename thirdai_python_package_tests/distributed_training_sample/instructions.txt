@@ -22,6 +22,6 @@ Once cluster is started to start training
 Look at train_distributed_amzn670k.py for sample code.
 
 IMPORTANT
-1. head_node_ip should be the same ip of machine the script is running
+1. head_node_ip should be the first input of ray cluster
 2. Make sure you have the Distributed_Bolt_V1 branch is built on everynode(head node and worker node) you are running.
-3. Set up password less ssh between nodes
+3. Set up password less ssh between nodes(for easier usage)

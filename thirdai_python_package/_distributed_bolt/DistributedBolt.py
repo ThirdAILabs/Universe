@@ -84,7 +84,7 @@ class DistributedBolt:
                 updateWeightsAndBiases = ray.get([self.workers[id+1].receiveParams.remote() for id in range(len(self.workers)-1)])
                 for batch_no in range(int(self.num_of_batches/len(self.workers))):
                     if batch_no%5==0:
-                        print(batch_no, ' processed!')
+                        self.logging.info(str(batch_no) + ' processed!, Total Batches: ' + str(int(self.num_of_batches/len(self.workers))))
                     a = ray.get(self.supervisor.subworkCircularCommunication.remote(batch_no))
                     x = ray.get([self.workers[i].receiveGradientsCircularCommunication.remote() for i in range(len(self.workers))])
                     b = ray.get(self.supervisor.subworkUpdateParameters.remote(self.learning_rate))
@@ -94,7 +94,7 @@ class DistributedBolt:
                 updateWeightsAndBiases = ray.get([self.workers[id+1].receiveParams.remote() for id in range(len(self.workers)-1)])
                 for batch_no in range(int(self.num_of_batches/len(self.workers))):
                     if batch_no%5==0:
-                        self.logging.info(batch_no, ' processed!')
+                        self.logging.info(str(batch_no) + ' processed!, Total Batches: ' + str(int(self.num_of_batches/len(self.workers))))
                     gradient_computation_time, getting_gradient_time, summing_and_averaging_gradients_time = ray.get(self.supervisor.subworkLinearCommunication.remote(batch_no))
                     start_gradients_send_time = time.time() 
                     x = ray.get([w.receiveGradientsLinearCommunication.remote() for w in self.workers])
@@ -105,8 +105,7 @@ class DistributedBolt:
                     self.bolt_computation_time += gradient_computation_time + update_parameters_time
                     self.python_computation_time += summing_and_averaging_gradients_time
                     self.communication_time += getting_gradient_time + gradient_send_time
-                    self.logging.info(self.bolt_computation_time, self.python_computation_time, self.communication_time)
-                self.logging.info('Epoch No: %d, Bolt Computation Time: %lf, Python Computation Time: %lf, Communication Time: %lf', epoch, self.bolt_computation_time, self.python_computation_time, self.communication_time)
+                self.logging.info('Epoch No: ' + str(epoch) + ', Bolt Computation Time: ' + str(self.bolt_computation_time) + ', Python Computation Time: ' + str(self.python_computation_time) + ', Communication Time: ' + str(self.communication_time))
                 for i in range(len(self.workers)):
                     acc, _ = ray.get(self.workers[i].predict.remote())
                     self.logging.info('Accuracy on workers %d: %lf', i, acc["categorical_accuracy"])

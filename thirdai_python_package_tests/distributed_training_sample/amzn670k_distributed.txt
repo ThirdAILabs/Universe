@@ -1,8 +1,8 @@
 job = "Amazon670k Product Recommendation Distributed Training"
 
 [dataset]
-train_data = "amazon-670k/train_shuffled_noHeader.txt"
-test_data = "amazon-670k/test_shuffled_noHeader_sampled.txt"
+train_data = "/share/data/amazon-670k/train_shuffled_noHeader.txt"
+test_data = "/share/data/amazon-670k/test_shuffled_noHeader_sampled.txt"
 format = "svm"
 input_dim = 135909
 max_test_batches = 20

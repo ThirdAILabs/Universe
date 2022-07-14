@@ -229,3 +229,15 @@
 2022-07-14 09:29:04,876 : INFO : DistributedBolt : 340 processed!, Total Batches: 479
 2022-07-14 09:31:11,409 : INFO : DistributedBolt : 345 processed!, Total Batches: 479
 2022-07-14 09:33:18,344 : INFO : DistributedBolt : 350 processed!, Total Batches: 479
+2022-07-14 10:15:37,389 : INFO : DistributedBolt : Training has started!
+2022-07-14 10:17:43,251 : INFO : DistributedBolt : Training has started!
+2022-07-14 10:17:43,654 : INFO : DistributedBolt : Ray Initialized
+2022-07-14 10:18:09,132 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-14 10:24:42,167 : INFO : DistributedBolt : Training has started!
+2022-07-14 10:24:42,555 : INFO : DistributedBolt : Ray Initialized
+2022-07-14 10:25:07,528 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-14 10:25:07,528 : INFO : DistributedBolt : 0 processed!, Total Batches: 479
+2022-07-14 10:25:24,874 : INFO : DistributedBolt : 5 processed!, Total Batches: 479
+2022-07-14 10:25:40,910 : INFO : DistributedBolt : 10 processed!, Total Batches: 479
+2022-07-14 10:25:56,656 : INFO : DistributedBolt : 15 processed!, Total Batches: 479
+2022-07-14 10:26:12,521 : INFO : DistributedBolt : 20 processed!, Total Batches: 479

@@ -6,20 +6,6 @@ import logging
 import sys
  
 
-def find_full_filepath(filename: str) -> str:
-    """
-    """
-    data_path_file = ("./dataset_paths.toml")
-    prefix_table = toml.load(data_path_file)
-    for prefix in prefix_table["prefixes"]:
-        if os.path.exists(prefix + filename):
-            return prefix + filename
-    print(
-        "Could not find file '"
-        + filename
-        + "' on any filepaths. Add correct path to 'Universe/dataset_paths.toml'"
-    )
-    sys.exit(1)
 
 def load_dataset(
     config: Dict[str, Any]
@@ -32,9 +18,11 @@ def load_dataset(
         ]
     ]:
     """
+
+        Returns datasets as boltdatasets
     """
-    train_filename = find_full_filepath(config["dataset"]["train_data"])
-    test_filename = find_full_filepath(config["dataset"]["test_data"])
+    train_filename = config["dataset"]["train_data"]
+    test_filename = config["dataset"]["test_data"]
     batch_size = int(config["params"]["batch_size"]/total_nodes)
     if config["dataset"]["format"].lower() == "svm":
         train_x, train_y = dataset.load_bolt_svm_dataset(train_filename, batch_size)
@@ -57,6 +45,8 @@ def create_fully_connected_layer_configs(
     configs: List[Dict[str, Any]]
 ) -> List[bolt.FullyConnected]:
     """
+
+        Returns Bolt's Fully Connected Network
     """
     layers = []
     for config in configs:
@@ -91,6 +81,7 @@ def create_fully_connected_layer_configs(
 
 def initLogging():
     """
+        Initializes logging
     """
     # Logger Init
     logger = logging.getLogger('DistributedBolt')
