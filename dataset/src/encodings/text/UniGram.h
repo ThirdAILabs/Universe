@@ -19,11 +19,8 @@ class UniGram : public TextEncoding {
 
   void encodeText(const std::string_view text,
                   SegmentedFeatureVector& vec) final {
-    std::vector<uint32_t> uni_grams = TextEncodingUtils::computeUnigrams(text);
-
-    TextEncodingUtils::forEachWordHash(
-        lower_case_text,
-        [&](uint32_t word_hash) { uni_grams.push_back(word_hash % _dim); });
+    std::vector<uint32_t> uni_grams =
+        TextEncodingUtils::computeUnigrams(text, _dim);
 
     // Deduplication adds an overhead of around 10% but helps to reduce
     // number of entries in the sparse vector, which can in turn make BOLT
