@@ -34,11 +34,11 @@ class StringToUidMap : public CategoricalEncoding {
     if (_class_to_uid.count(class_name) > 0) {
       // Addresses always valid because we reserved memory for hash buckets and
       // reject elements after a given threshold.
-      uint32_t a = _class_to_uid.at(class_name);
-      while (_uid_to_class[a] != class_name) {
-        a = _class_to_uid.at(class_name);
+      uint32_t uid = _class_to_uid.at(class_name);
+      while (_uid_to_class[uid] != class_name) {
+        uid = _class_to_uid.at(class_name);
       }
-      return a;
+      return uid;
     }
 
     if (_class_to_uid.size() == _n_classes) {
