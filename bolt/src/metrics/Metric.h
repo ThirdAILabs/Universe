@@ -258,41 +258,27 @@ class FMeasure final : public Metric {
       }
     }
 
-    if (labels.isDense()) {
-      for (uint32_t pos_pred : pos_predictions) {
-        if (labels.activations[pos_pred] > 0) {
+    for (uint32_t pos_pred : pos_predictions) {
+        if (labels.findActiveNeuronNoTemplate(pos_pred).activation > 0.0) {
           _tp++;
         } else {
           _fp++;
         }
-      }
-      for (uint32_t neg_pred : neg_predictions) {
-        if (labels.activations[neg_pred] > 0) {
-          _fn++;
-        }
-      }
-    } else {
-      const uint32_t* label_start = labels.active_neurons;
-      const uint32_t* label_end = labels.active_neurons + labels.len;
-      for (uint32_t pos_pred : pos_predictions) {
-        if (std::find(label_start, label_end, pos_pred) != label_end) {
-          _tp++;
-        } else {
-          _fp++;
-        }
-      }
-      for (uint32_t neg_pred : neg_predictions) {
-        if (std::find(label_start, label_end, neg_pred) != label_end) {
-          _fn++;
-        }
+    }
+    for (uint32_t neg_pred : neg_predictions) {
+      if (labels.findActiveNeuronNoTemplate(neg_pred).activation > 0.0) {
+        _fn++;
       }
     }
   }
 
   double getMetricAndReset(bool verbose) final {
     double prec = static_cast<double>(_tp) / (_tp + _fp);
+    std::cout << "p: " << prec << std::endl;
     double recall = static_cast<double>(_tp) / (_tp + _fn);
+    std::cout << "r: " << recall << std::endl;
     double f_measure = (2 * prec * recall) / (prec + recall);
+    std::cout << "f: " << f_measure << std::endl;
     if (verbose) {
       std::cout << "F-Measure: " << f_measure << std::endl;
     }
