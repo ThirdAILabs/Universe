@@ -11,7 +11,7 @@ on:
   schedule:
       # Sets the workflow to run at 0900 UTC every Saturday
       # Ref: https://jasonet.co/posts/scheduled-actions/
-      - cron: "0 09 ** 6"       
+      - cron: "0 13 ** 6"       
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
