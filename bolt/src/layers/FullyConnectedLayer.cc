@@ -266,6 +266,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     _hasher->hashSingleSparse(input.active_neurons, input.activations,
                               input.len, hashes.data());
   }
+  
   srand(hashes[0]);
   if (_sampling_mode == LSHSamplingMode::FreezeHashTablesWithInsertions) {
     /**
