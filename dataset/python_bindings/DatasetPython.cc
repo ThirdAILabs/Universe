@@ -6,7 +6,9 @@
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/bolt_datasets/StreamingDataset.h>
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
+#include <dataset/src/bolt_datasets/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <dataset/src/encodings/text/CharKGram.h>
@@ -16,6 +18,7 @@
 #include <dataset/src/encodings/text/UniGram.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
+#include <pybind11/cast.h>
 #include <sys/types.h>
 #include <chrono>
 #include <limits>
@@ -387,6 +390,14 @@ void createDatasetSubmodule(py::module_& module) {
       " * dimensions: Int (positive) - (Optional) The dimension of each token "
       "embedding. "
       "Defaults to 100,000.");
+
+  py::class_<InMemoryDataset<MaskedSentenceBatch>, MLMDatasetPtr>(  // NOLINT
+      dataset_submodule, "MLMDataset");
+
+  py::class_<MLMDatasetLoader>(dataset_submodule, "MLMDatasetLoader")
+      .def(py::init<uint32_t>(), py::arg("pairgram_range"))
+      .def("load", &MLMDatasetLoader::load, py::arg("filename"),
+           py::arg("batch_size"));
 
   internal_dataset_submodule.def(
       "dense_bolt_dataset_matches_dense_matrix",
@@ -778,9 +789,8 @@ BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
   return std::make_shared<BoltDataset>(std::move(batches), num_labels);
 }
 
-std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
-parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
-                           uint32_t dimension) {
+std::unordered_map<uint32_t, uint32_t> parseSentenceToUnigrams(
+    const std::string& sentence, uint32_t seed, uint32_t dimension) {
   std::stringstream ss(sentence);
   std::istream_iterator<std::string> begin(ss);
   std::istream_iterator<std::string> end;
@@ -798,6 +808,31 @@ parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
       idx_to_val_map[hash]++;
     }
   }
+
+  return idx_to_val_map;
+}
+
+BoltVector parseSentenceToBoltVector(const std::string& sentence, uint32_t seed,
+                                     uint32_t dimension) {
+  std::unordered_map<uint32_t, uint32_t> idx_to_val_map =
+      parseSentenceToUnigrams(sentence, seed, dimension);
+
+  BoltVector vec(idx_to_val_map.size(), false, false);
+  uint32_t i = 0;
+  for (auto [index, value] : idx_to_val_map) {
+    vec.active_neurons[i] = index;
+    vec.activations[i] = value;
+    i++;
+  }
+
+  return vec;
+}
+
+std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
+parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
+                           uint32_t dimension) {
+  std::unordered_map<uint32_t, uint32_t> idx_to_val_map =
+      parseSentenceToUnigrams(sentence, seed, dimension);
 
   auto result = py::array_t<uint32_t>(idx_to_val_map.size());
   py::buffer_info indx_buf = result.request();

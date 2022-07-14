@@ -1,12 +1,10 @@
 #include "BoltPython.h"
-#include <bolt/src/graph/Graph.h>
-#include <bolt/src/graph/Node.h>
-#include <bolt/src/graph/nodes/FullyConnected.h>
-#include <bolt/src/graph/nodes/Input.h>
+#include "BoltGraphPython.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
+#include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <bolt/src/text_classifier/TextClassifier.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
@@ -15,6 +13,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 
 namespace thirdai::bolt::python {
 
@@ -283,13 +282,12 @@ void createBoltSubmodule(py::module_& module) {
              network.buildNetworkSummary(summary);
              return summary.str();
            })
-      .def(
-          "summary", &PyNetwork::printSummary, py::arg("detailed") = false,
-          "Prints a summary of the network.\n"
-          "Arguments:\n"
-          " * detailed: boolean. Optional. When specified to \"True\", "
-          "summary will additionally print layer config details for each layer "
-          "in the network.")
+      .def("summary", &PyNetwork::printSummary, py::arg("detailed") = false,
+           "Prints a summary of the network.\n"
+           "Arguments:\n"
+           " * detailed: boolean. Optional. When specified to \"True\", "
+           "summary will additionally print sampling config details for each "
+           "layer in the network.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"),
@@ -438,26 +436,12 @@ void createBoltSubmodule(py::module_& module) {
            "inference, you may get a significant performance improvement if "
            "you call this one or two epochs before you finish training. "
            "Otherwise you should not call this method.")
-      .def("save_for_inference", &PyNetwork::saveForInference,
-           py::arg("filename"),
+      .def("save", &PyNetwork::save, py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
-           "folders to be created. Saves only essential parameters for "
-           "inference, e.g. not the optimizer state")
+           "folders to be created. Saves only weights and biases, not momentum "
+           "and velocity.")
       .def_static("load", &PyNetwork::load, py::arg("filename"),
                   "Loads and builds a saved network from file.")
-      .def("checkpoint", &PyNetwork::checkpoint, py::arg("filename"),
-           "Saves the network to a file. The file path must not require any "
-           "folders to be created. Saves all the paramters needed for "
-           "tranining. "
-           "This will throw an error if the model has been trimmed for "
-           "inference.")
-      .def("trim_for_inference", &PyNetwork::trimForInference,
-           "Removes all parameters that are not essential for inference, "
-           "shrinking the model")
-      .def("reinitialize_optimizer_for_training",
-           &PyNetwork::reinitOptimizerForTraining,
-           "If the model previously was trimmed for inference, this will "
-           "reinitialize the optimizer state, allowing training again.")
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "
            "matrix.")
@@ -471,9 +455,6 @@ void createBoltSubmodule(py::module_& module) {
            "Sets the weight matrix at the given layer index to the given 2D "
            "Numpy matrix. Throws an error if the dimension of the given weight "
            "matrix does not match the layer's current weight matrix.")
-      .def("ready_for_training", &PyNetwork::isReadyForTraining,
-           "Returns False if the optimizer state is not initialized, True "
-           "otherwise. Call resume_training to initialize optimizer")
       .def("get_biases", &PyNetwork::getBiases, py::arg("layer_index"),
            "Returns the bias array at the given layer index as a 1D Numpy "
            "array.")
@@ -623,146 +604,12 @@ void createBoltSubmodule(py::module_& module) {
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
 
-  auto graph_submodule = bolt_submodule.def_submodule("graph");
+  py::class_<SentimentClassifier>(bolt_submodule, "SentimentClassifier")
+      .def(py::init<const std::string&>(), py::arg("model_path"))
+      .def("predict_sentiment", &SentimentClassifier::predictSentiment,
+           py::arg("sentence"));
 
-  py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
-
-  py::class_<FullyConnectedLayerNode, std::shared_ptr<FullyConnectedLayerNode>,
-             Node>(graph_submodule, "FullyConnected")
-      .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
-           py::arg("activation"),
-           "Constructs a dense FullyConnectedLayer object.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation: Enum specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-      .def(py::init<uint64_t, std::string>(), py::arg("dim"),
-           py::arg("activation"),
-           "Constructs a dense FullyConnectedLayer object.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation: String specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-      .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
-           py::arg("sparsity"), py::arg("activation"),
-           "Constructs a sparse FullyConnectedLayer object with sampling "
-           "parameters autotuned.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * sparsity: Float - What fraction of nuerons to activate during "
-           "training and sparse inference.\n"
-           " * activation: Enum specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-      .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
-           py::arg("sparsity"), py::arg("activation"),
-           "Constructs a sparse FullyConnectedLayer object with sampling "
-           "parameters autotuned.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * sparsity: Float - What fraction of nuerons to activate during "
-           "training and sparse inference.\n"
-           " * activation: String specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-#if THIRDAI_EXPOSE_ALL
-      .def(py::init<uint64_t, float, ActivationFunction, SamplingConfig>(),
-           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
-           py::arg("sampling_config"),
-           "Constructs a sparse FullyConnectedLayer object.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * sparsity: Float - What fraction of nuerons to activate during "
-           "training and sparse inference.\n"
-           " * activation: Enum specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
-           " * sampling_config (SamplingConfig) - Sampling config object to "
-           "initialize hash tables/functions.")
-      .def(py::init<uint64_t, float, std::string, SamplingConfig>(),
-           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
-           py::arg("sampling_config"),
-           "Constructs a sparse FullyConnectedLayer object.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * sparsity: Float - What fraction of nuerons to activate during "
-           "training and sparse inference.\n"
-           " * activation: String specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
-           " * sampling_config (SamplingConfig) - Sampling config object to "
-           "initialize hash tables/functions.")
-#endif
-      .def("__call__", &FullyConnectedLayerNode::addPredecessor,
-           py::arg("prev_layer"),
-           "Tells the graph which layer should act as input to this fully "
-           "connected layer.");
-
-  py::class_<Input, InputPtr, Node>(graph_submodule, "Input")
-      .def(py::init<uint32_t>(), py::arg("dim"),
-           "Constructs an input layer node for the graph.");
-
-  py::class_<TrainConfig>(graph_submodule, "TrainConfig")
-      .def_static("makeConfig", &TrainConfig::makeConfig,
-                  py::arg("learning_rate"), py::arg("epochs"))
-      .def("withMetrics", &TrainConfig::withMetrics, py::arg("metrics"))
-      .def("silence", &TrainConfig::silence)
-      .def("withRebuildHashTables", &TrainConfig::withRebuildHashTables,
-           py::arg("rebuild_hash_tables"))
-      .def("withReconstructHashFunctions",
-           &TrainConfig::withReconstructHashFunctions,
-           py::arg("reconstruct_hash_functions"));
-
-  py::class_<PredictConfig>(graph_submodule, "PredictConfig")
-      .def_static("makeConfig", &PredictConfig::makeConfig)
-      .def("enableSparseInference", &PredictConfig::enableSparseInference)
-      .def("withMetrics", &PredictConfig::withMetrics, py::arg("metrics"))
-      .def("silence", &PredictConfig::silence);
-
-  py::class_<BoltGraph>(graph_submodule, "Model")
-      .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
-           py::arg("output"),
-           "Constructs a bolt model from a layer graph.\n"
-           "Arguments:\n"
-           " * inputs (List[Node]) - The input nodes to the graph. Note that "
-           "inputs are mapped to input layers by their index.\n"
-           " * output (Node) - The output node of the graph.")
-      .def("compile", &BoltGraph::compile, py::arg("loss"),
-           "Compiles the graph for the given loss function. In this step the "
-           "order in which to compute the layers is determined and various "
-           "checks are preformed to ensure the model architecture is correct.")
-      .def("train", &BoltGraph::train<BoltBatch>, py::arg("train_data"),
-           py::arg("train_labels"), py::arg("train_config"),
-           "Trains the network on the given training data.\n"
-           "Arguments:\n"
-           " * train_data: BoltDataset - Training data. This is a BoltDataset "
-           "as loaded by thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * train_labels: BoltDataset - Training labels. This is a "
-           "BoltDataset as loaded by thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * train_config: TrainConfig - the additional training parameters. "
-           "See the TrainConfig documentation above.\n\n"
-
-           "Returns a mapping from metric names to an array their values for "
-           "every epoch.")
-      .def("predict", &BoltGraph::predict<BoltBatch>, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("predict_config"),
-           "Predicts the output given the input vectors and evaluates the "
-           "predictions based on the given metrics.\n"
-           "Arguments:\n"
-           " * test_data: BoltDataset - Test data. This is a BoltDataset as "
-           "loaded by thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * test_labels: BoltDataset - Test labels. This is a BoltDataset "
-           "as loaded by thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * predict_config: PredictConfig - the additional prediction "
-           "parameters. See the PredictConfig documentation above.\n\n"
-
-           "Returns a  a mapping from metric names to their values.");
+  createBoltGraphSubmodule(bolt_submodule);
 }
 
 void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
@@ -774,7 +621,7 @@ void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
             << std::endl;
 }
 
-bool allocateActivations(uint64_t num_samples, uint64_t inference_dim,
+void allocateActivations(uint64_t num_samples, uint64_t inference_dim,
                          uint32_t** active_neurons, float** activations,
                          bool output_sparse) {
   // We use a uint64_t here in case there is overflow when we multiply the two
@@ -784,51 +631,15 @@ bool allocateActivations(uint64_t num_samples, uint64_t inference_dim,
   uint64_t total_size = num_samples * inference_dim;
   if (total_size > std::numeric_limits<uint32_t>::max()) {
     printMemoryWarning(num_samples, inference_dim);
-    return false;
   }
   try {
     if (output_sparse) {
       *active_neurons = new uint32_t[total_size];
     }
     *activations = new float[total_size];
-    return true;
   } catch (std::bad_alloc& e) {
     printMemoryWarning(num_samples, inference_dim);
-    return false;
   }
-}
-
-py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
-                               uint32_t inference_dim, uint32_t* active_neurons,
-                               float* activations, bool output_sparse,
-                               bool alloc_success) {
-  if (!alloc_success) {
-    return py::make_tuple(py_metric_data, py::none());
-  }
-
-  // Deallocates the memory for the array since we are allocating it ourselves.
-  py::capsule free_when_done_activations(
-      activations, [](void* ptr) { delete static_cast<float*>(ptr); });
-
-  py::array_t<float, py::array::c_style | py::array::forcecast>
-      activations_array({num_samples, inference_dim},
-                        {inference_dim * sizeof(float), sizeof(float)},
-                        activations, free_when_done_activations);
-
-  if (!output_sparse) {
-    return py::make_tuple(py_metric_data, activations_array);
-  }
-
-  // Deallocates the memory for the array since we are allocating it ourselves.
-  py::capsule free_when_done_active_neurons(
-      active_neurons, [](void* ptr) { delete static_cast<uint32_t*>(ptr); });
-
-  py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
-      active_neurons_array({num_samples, inference_dim},
-                           {inference_dim * sizeof(uint32_t), sizeof(uint32_t)},
-                           active_neurons, free_when_done_active_neurons);
-  return py::make_tuple(py_metric_data, active_neurons_array,
-                        activations_array);
 }
 
 }  // namespace thirdai::bolt::python
