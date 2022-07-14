@@ -4,6 +4,7 @@ import sys
 import textwrap
 import yaml
 import getpass
+import ray
 
 def init_cluster_config():
 
@@ -47,23 +48,27 @@ def start_cluster(
             """))
         yaml.dump(config, file)
     
+
     system_path = os.environ['PATH']
     install_environment_locations = system_path.split(':')
-    cmd = ['which', 'ray']
-    output = subprocess.Popen( cmd, stdout=subprocess.PIPE ).communicate()[0]
-    required_installation_path = output[:len(output)-5].decode("utf-8")  #removing '/ray/' from PATH/ray/
+    required_installation_path = '/home/' + user + '/.local/bin'
 
     if required_installation_path not in install_environment_locations:
         print(required_installation_path + ' not in System PATH')
         print('Updating PATH for ray')
+        os.environ['PATH'] = required_installation_path + ':' + system_path
         os.system("export PATH=$PATH:/home/$USER/.local/bin")
         updated_system_path = os.environ['PATH']
         print('$PATH updated to', updated_system_path)
     else:
         print('Ray module already in system path.')
 
-
     print('Starting Ray Cluster')
+    
+    if not os.path.isdir('/tmp/ray')
+        print('Ray have not been initialised on this node before.')
+        ray.init()
+    
     os.system("ray stop")
     os.system('ray up setup.yaml')
     os.system('rm setup.yaml')

@@ -241,3 +241,7 @@
 2022-07-14 10:25:40,910 : INFO : DistributedBolt : 10 processed!, Total Batches: 479
 2022-07-14 10:25:56,656 : INFO : DistributedBolt : 15 processed!, Total Batches: 479
 2022-07-14 10:26:12,521 : INFO : DistributedBolt : 20 processed!, Total Batches: 479
+2022-07-14 11:40:40,922 : INFO : DistributedBolt : Training has started!
+2022-07-14 11:40:41,313 : INFO : DistributedBolt : Ray Initialized
+2022-07-14 11:41:07,613 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-14 11:41:07,613 : INFO : DistributedBolt : 0 processed!, Total Batches: 479
