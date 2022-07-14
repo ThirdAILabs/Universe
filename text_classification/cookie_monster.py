@@ -62,14 +62,15 @@ class CookieMonster:
 
     def load_data(self, instruction, file, batch_size):
         if instruction == "mlm":
+            # TODO: Check file format
             mlm_loader = dataset.MLMDatasetLoader(self.input_dimension)
             data, label = mlm_loader.load_dataset(file, batch_size)
             return data, label
-        elif instruction == "svm":
+        elif instruction == "classification":
             data, label = dataset.load_bolt_svm_dataset(file, batch_size)
             return data, label
         else:
-            raise ValueError("Invalid instruction. Supported instructions are \"mlm\" and \"svm\"")
+            raise ValueError("Invalid instruction. Supported instructions are \"mlm\" and \"classification\"")
 
     def eat_corpus(
         self,
@@ -79,7 +80,7 @@ class CookieMonster:
     ):
         """
         Given a directory containing only .txt config files, this function trains each dataset with the parameters specified in each config file.
-        Each config file must contain the following parameters: train_file, test_file, num_classes, batch_size, epochs, learning_rate.
+        Each config file must contain the following parameters: train_file, test_file, num_classes, batch_size, epochs, learning_rate, task.
         """
         if self.mlflow_enabled and evaluate:
             mlflow.start_run(run_name="evaluation_run")
@@ -104,6 +105,7 @@ class CookieMonster:
                     test_file = config["test_file"]
                     num_classes = config["num_classes"]
                     batch_size = config["batch_size"]
+                    task = config["task"]
 
                     self.set_output_dimension(num_classes)
                     if num_classes != self.output_layer.get_dim():
@@ -112,8 +114,8 @@ class CookieMonster:
                     epochs = config["epochs"]
                     learning_rate = config["learning_rate"]
 
-                    train_x, train_y = self.load_data("svm", train_file, batch_size)
-                    test_x, test_y = self.load_data("svm", test_file, batch_size)
+                    train_x, train_y = self.load_data(task, train_file, batch_size)
+                    test_x, test_y = self.load_data(task, test_file, batch_size)
 
                     train_config = bolt.graph.TrainConfig.make(
                         learning_rate=learning_rate, epochs=1
