@@ -4,8 +4,8 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
-#include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <dataset/src/utils/SafeFileIO.h>
@@ -28,7 +28,7 @@ class FullyConnectedNode final
   // FullyConnectedLayerNode, and that the args are directly forwarded to the
   // constructor for the config.
   template <typename... Args>
-  explicit FullyConnectedNode(Args&&... args) 
+  explicit FullyConnectedNode(Args&&... args)
       : _layer(nullptr),
         _config(FullyConnectedLayerConfig(std::forward<Args>(args)...)),
         _predecessor(nullptr) {}
@@ -44,20 +44,20 @@ class FullyConnectedNode final
     return shared_from_this();
   }
 
-  uint32_t outputDim() const final { 
+  uint32_t outputDim() const final {
     if (getState() == NodeState::Compiled) {
       return _layer->getDim();
     }
-    return _config.value().dim; 
+    return _config.value().dim;
   }
 
   bool isInputNode() const final { return false; }
 
-  ActivationFunction getActivationFunction() const { 
-    if (getState() ==  NodeState::Compiled) {
+  ActivationFunction getActivationFunction() const {
+    if (getState() == NodeState::Compiled && _layer) {
       return _layer->getActivationFunction();
     }
-    return _config.value().act_func; 
+    return _config.value().act_func;
   }
 
   void saveParameters(const std::string& filename) const {
@@ -108,22 +108,19 @@ class FullyConnectedNode final
     _layer = loaded_parameters;
   }
 
-  float getSparsity() { 
+  float getSparsity() {
     if (getState() == NodeState::Compiled) {
       return _layer->getSparsity();
     }
-    return _config.value().getSparsity(); 
-    
+    return _config.value().getSparsity();
   }
 
   void setNodeSparsity(float sparsity) {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-        "FullyConnectedNode must be in a compiled state"
-      );
+          "FullyConnectedNode must be in a compiled state");
     }
     _layer->setSparsity(sparsity);
-    
   }
 
  private:
@@ -206,14 +203,18 @@ class FullyConnectedNode final
 
   // Private constructor for cereal. Must create dummy config since no default
   // constructor exists for layer config.
-  FullyConnectedNode() : _config(FullyConnectedLayerConfig(/* dim= */ 0, ActivationFunction::Linear)) {}
+  FullyConnectedNode()
+      : _config(FullyConnectedLayerConfig(/* dim= */ 0,
+                                          ActivationFunction::Linear)) {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Node>(this), _layer, _config.value(), _predecessor);
+    archive(cereal::base_class<Node>(this), _layer, _config,
+            _predecessor);
   }
-
+  // One of _layer and _config will always be nullptr/nullopt while the 
+  // other will contain data
   std::shared_ptr<FullyConnectedLayer> _layer;
   std::optional<FullyConnectedLayerConfig> _config;
   std::optional<BoltBatch> _outputs;

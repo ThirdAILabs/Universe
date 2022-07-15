@@ -69,23 +69,6 @@ def gen_single_sparse_layer_network(n_classes, sparsity=0.5):
     network = bolt.Network(layers=layers, input_dim=n_classes)
     return network
 
-
-def build_simple_graph_model(input_dim, output_dim, num_classes, sparsity):
-    input_layer = bolt.graph.Input(dim=num_classes)
-    hidden_layer = bolt.graph.FullyConnected(
-        dim=input_dim, sparsity=sparsity, activation="relu"
-    )(input_layer)
-
-    output_layer = bolt.graph.FullyConnected(dim=output_dim, activation="softmax")(
-        hidden_layer
-    )
-
-    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
-    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
-
-    return model
-
-
 def get_simple_concat_model(
     hidden_layer_top_dim,
     hidden_layer_bottom_dim,
