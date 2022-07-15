@@ -2,7 +2,7 @@ from thirdai import bolt
 import pytest
 import os
 import pandas as pd
-from utils import remove_files, compute_accuracy
+from .utils import remove_files, compute_accuracy
 
 CENSUS_INCOME_BASE_DOWNLOAD_URL = (
     "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/"

@@ -3,7 +3,7 @@ import pytest
 import datasets
 import random
 import os
-from utils import remove_files, compute_accuracy
+from .utils import remove_files, compute_accuracy
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
