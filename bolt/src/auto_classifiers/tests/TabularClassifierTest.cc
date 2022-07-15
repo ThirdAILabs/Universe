@@ -13,7 +13,7 @@ class TabularClassifierTestFixture : public testing::Test {
 
   void setTempFileContents(std::vector<std::string>& lines) {
     std::ofstream file = dataset::SafeFileIO::ofstream(TEMP_FILENAME);
-    for (auto line : lines) {
+    for (auto& line : lines) {
       file << line << "\n";
     }
     file.close();
