@@ -42,6 +42,10 @@ def download_clinc_dataset():
 
 
 def trim(sentence):
+    """
+    we are removing quotes from start and end of sentence,
+    because thats how we are trimming the sentence in our cpp code.
+    """
     i = len(sentence) - 1
     while i > 0 and (sentence[i] == '"'):
         sentence = sentence[:-1]

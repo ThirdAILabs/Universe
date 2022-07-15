@@ -290,10 +290,9 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
   } else {
     _hash_table->queryBySet(hashes.data(), active_set);
   }
-  // making the first value in hashes as random number , because
-  // rand() is not thread safe, and this will be random for different inputs but
-  // for an input it will be deterministic.
   if (active_set.size() < _sparse_dim) {
+    // here we use hashes[0] as our random number because rand() is not thread
+    // safe and we want to have deterministic outcomes
     uint32_t rand_offset = (hashes[0]) % _dim;
     while (active_set.size() < _sparse_dim) {
       active_set.insert(_rand_neurons[rand_offset++]);
