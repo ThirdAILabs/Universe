@@ -118,6 +118,6 @@ def compute_accuracy(test_labels, pred_file):
 
     assert len(predictions) == len(test_labels)
     return sum(
-        (prediction[:-1] == answer)
+        (prediction == answer)
         for (prediction, answer) in zip(predictions, test_labels)
     ) / len(predictions)
