@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "ConversionUtils.h"
 #include <bolt/src/graph/Graph.h>
@@ -38,50 +40,9 @@ namespace thirdai::bolt::python {
 void createBoltSubmodule(py::module_& module);
 
 // Returns true on success and false on allocation failure.
-bool allocateActivations(uint64_t num_samples, uint64_t inference_dim,
+void allocateActivations(uint64_t num_samples, uint64_t inference_dim,
                          uint32_t** active_neurons, float** activations,
                          bool output_sparse);
-
-// Takes in the activations arrays (if they were allocated) and returns the
-// correct python tuple containing the activations (and active neurons if
-// sparse) and the metrics computed.
-py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
-                               uint32_t inference_dim, uint32_t* active_neurons,
-                               float* activations, bool output_sparse,
-                               bool alloc_success);
-
-class PyBoltGraph final : public BoltGraph {
- public:
-  // Inherit constructors
-  using BoltGraph::BoltGraph;
-
-  MetricData trainNumpy(const py::object& train_data_numpy,
-                        const py::object& train_labels_numpy,
-                        const TrainConfig& train_config, uint32_t batch_size) {
-    auto train_data =
-        convertPyObjectToBoltDataset(train_data_numpy, batch_size, false);
-
-    auto train_labels =
-        convertPyObjectToBoltDataset(train_labels_numpy, batch_size, true);
-
-    return BoltGraph::train(train_data.dataset, train_labels.dataset,
-                            train_config);
-  }
-
-  InferenceMetricData predictNumpy(const py::object& test_data_numpy,
-                                   const py::object& test_labels_numpy,
-                                   const PredictConfig& predict_config,
-                                   uint32_t batch_size) {
-    auto test_data =
-        convertPyObjectToBoltDataset(test_data_numpy, batch_size, false);
-
-    auto test_labels =
-        convertPyObjectToBoltDataset(test_labels_numpy, batch_size, true);
-
-    return BoltGraph::predict(test_data.dataset, test_labels.dataset,
-                              predict_config);
-  }
-};
 
 class PyNetwork final : public FullyConnectedNetwork {
  public:
@@ -181,9 +142,8 @@ class PyNetwork final : public FullyConnectedNetwork {
     uint32_t* active_neurons = nullptr;
     float* activations = nullptr;
 
-    bool alloc_success =
-        allocateActivations(num_samples, inference_output_dim, &active_neurons,
-                            &activations, output_sparse);
+    allocateActivations(num_samples, inference_output_dim, &active_neurons,
+                        &activations, output_sparse);
 
     auto metric_data = FullyConnectedNetwork::predict(
         test_data.dataset, test_labels.dataset, active_neurons, activations,
@@ -191,49 +151,20 @@ class PyNetwork final : public FullyConnectedNetwork {
 
     py::dict py_metric_data = py::cast(metric_data);
 
-    return constructNumpyArrays(std::move(py_metric_data), num_samples,
-                                inference_output_dim, active_neurons,
-                                activations, output_sparse, alloc_success);
-  }
-
-  void saveForInference(const std::string& filename) {
-    this->save(filename, /* shallow= */ true);
+    return constructPythonInferenceTuple(std::move(py_metric_data), num_samples,
+                                         inference_output_dim, activations,
+                                         active_neurons);
   }
 
   /**
    * To save without optimizer, shallow=true
    */
-  void save(const std::string& filename, bool shallow) {
+  void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
-    this->setShallowSave(shallow);
     oarchive(*this);
   }
-
-  void checkpoint(const std::string& filename) {
-    if (this->anyLayerShallow()) {
-      throw std::logic_error("Trying to checkpoint a model with no optimizer");
-    }
-    this->save(filename, /* shallow= */ false);
-  }
-
-  /**
-   * Removes the optimizer state for the network by setting layers to shallow
-   */
-  void trimForInference() { this->setShallow(true); }
-
-  /**
-   * If any of the layer is shallow, that is without an optimzier, reinitiliaze
-   * optimizer for that layer to 0.
-   */
-  void reinitOptimizerForTraining() { this->setShallow(false); }
-
-  /**
-   * If any layer in the model is shallow i.e, has uninitialized optimizer,
-   * return false
-   */
-  bool isReadyForTraining() { return !this->anyLayerShallow(); }
 
   static std::unique_ptr<PyNetwork> load(const std::string& filename) {
     std::ifstream filestream =
@@ -367,18 +298,17 @@ class PyDLRM final : public DLRM {
     uint32_t* active_neurons = nullptr;
     float* activations = nullptr;
 
-    bool alloc_success =
-        allocateActivations(num_samples, inference_output_dim, &active_neurons,
-                            &activations, output_sparse);
+    allocateActivations(num_samples, inference_output_dim, &active_neurons,
+                        &activations, output_sparse);
 
     auto metric_data =
         DLRM::predict(test_data, test_labels, active_neurons, activations,
                       use_sparse_inference, metrics, verbose, batch_limit);
     py::dict py_metric_data = py::cast(metric_data);
 
-    return constructNumpyArrays(std::move(py_metric_data), num_samples,
-                                inference_output_dim, active_neurons,
-                                activations, output_sparse, alloc_success);
+    return constructPythonInferenceTuple(std::move(py_metric_data), num_samples,
+                                         inference_output_dim, activations,
+                                         active_neurons);
   }
 };
 

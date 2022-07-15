@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cereal/types/polymorphic.hpp>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <exceptions/src/Exceptions.h>
@@ -28,10 +29,11 @@ class Input final : public Node {
   // will be stored as a field so it can be used in future method calls. It is
   // only valid until the next time cleanupAfterBatchProcessing is called.
   void setInputs(BoltBatch* inputs) {
-    for (uint32_t i = 0; i < inputs->getBatchSize(); i++) {
-      checkDimForInput((*inputs)[i]);
-    }
-
+    assert(inputs != nullptr);
+    inputs->verifyExpectedDimension(
+        /* expected_dimension = */ _expected_input_dim,
+        /* origin_string = */
+        "We found an Input BoltVector larger than the expected input dim");
     _input_batch = inputs;
   }
 
@@ -108,7 +110,7 @@ class Input final : public Node {
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
-        "Node is in an invalid internal state");
+        "InputNode is in an invalid internal state");
   }
 
   void checkDimForInput(const BoltVector& vec) const {
@@ -133,9 +135,22 @@ class Input final : public Node {
     }
   }
 
+  // Private constructor for cereal.
+  Input() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Node>(this), _compiled, _expected_input_dim);
+  }
+
   bool _compiled;
   BoltBatch* _input_batch;
   uint32_t _expected_input_dim;
 };
 
+using InputPtr = std::shared_ptr<Input>;
+
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::Input)

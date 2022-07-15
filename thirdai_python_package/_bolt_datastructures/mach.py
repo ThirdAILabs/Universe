@@ -27,9 +27,9 @@ class Mach:
         self.last_layer_dim = last_layer_dim
         self.last_layer_sparsity = last_layer_sparsity
         self.use_softmax = use_softmax
-
+        self.seed_for_group_assigments = seed_for_group_assigments
         # setting a random seed
-        np.random.seed(seed_for_group_assigments)
+        np.random.seed(self.seed_for_group_assigments)
 
         self.label_to_group = np.random.randint(
             0, last_layer_dim, size=(num_classifiers, max_label)
@@ -58,7 +58,7 @@ class Mach:
         for classifiers in self.classifiers:
             classifiers.freeze_hash_tables()
 
-    def save(self, folder, save_for_inference):
+    def save(self, folder):
 
         if not os.path.exists(folder):
             os.mkdir(folder)
@@ -75,26 +75,16 @@ class Mach:
             "hidden_layer_sparsity": self.hidden_layer_sparsity,
             "last_layer_dim": self.last_layer_dim,
             "last_layer_sparsity": self.last_layer_sparsity,
+            "seed_for_group_assigments": self.seed_for_group_assigments,
         }
 
         with open(folder + "/metadata_mach", "wb") as f:
             pickle.dump(metadata, f)
 
         for classifiers_id in range(self.num_classifiers):
-            if save_for_inference:
-                self.classifiers[classifiers_id].save_for_inference(
-                    f"{folder}/classifier_{classifiers_id}"
-                )
-            else:
-                self.classifiers[classifiers_id].checkpoint(
-                    f"{folder}/classifier_{classifiers_id}"
-                )
-
-    def checkpoint(self, folder):
-        self.save(folder, save_for_inference=False)
-
-    def save_for_inference(self, folder):
-        self.save(folder, save_for_inference=True)
+            self.classifiers[classifiers_id].save(
+                f"{folder}/classifier_{classifiers_id}"
+            )
 
     def load(folder):
 
@@ -121,6 +111,7 @@ class Mach:
             last_layer_dim=metadata["last_layer_dim"],
             last_layer_sparsity=metadata["last_layer_sparsity"],
             use_softmax=metadata["use_softmax"],
+            seed_for_group_assigments=metadata["seed_for_group_assigments"],
         )
 
         newMach.classifiers = []
