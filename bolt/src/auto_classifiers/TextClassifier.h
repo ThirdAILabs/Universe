@@ -43,6 +43,19 @@ class TextClassifier {
         output_filename, _batch_processor->getClassIdToNames());
   }
 
+  std::string predictSingle(const std::string& sentence) {
+    BoltVector pairgrams_vec = dataset::PairgramHasher::computePairgrams(
+        /*sentence = */ sentence, /*output_range = */ _model->getInputDim());
+    BoltVector output =
+        BoltVector(/*l = */ _model->getOutputDim(), /*is_dense = */ true);
+    _model->initializeNetworkState(/*batch_size = */ 1,
+                                   /*use_sparsity = */ true);
+    _model->forward(/*batch_index = */ 0, /*input = */ pairgrams_vec, output,
+                    /*labels = */ nullptr);
+    return _batch_processor->getClassName(
+        /*class_id = */ output.getIdWithHighestActivation());
+  }
+
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
