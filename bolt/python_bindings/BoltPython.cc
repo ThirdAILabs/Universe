@@ -471,7 +471,6 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("layer_index"),
            "Gets the sparsity of the layer at the given index. The 0th layer "
            "is the first layer after the input layer.")
-      .def("get_node_sparsity", &PyNetwork::)
 #if THIRDAI_EXPOSE_ALL
       .def("get_sampling_config", &PyNetwork::getSamplingConfig,
            py::arg("layer_index"),
