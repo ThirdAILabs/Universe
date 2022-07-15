@@ -32,10 +32,9 @@ class DenseArrayBlock : public Block {
   uint32_t expectedNumColumns() const final { return _start_col + _dim; };
 
  protected:
-  void buildSegment(const std::vector<std::string_view>& input_row,
-                    SegmentedFeatureVector& vec,
-                    std::exception_ptr& exception_ptr) final {
-    (void)exception_ptr;
+  std::exception_ptr buildSegment(
+      const std::vector<std::string_view>& input_row,
+      SegmentedFeatureVector& vec) final {
     for (uint32_t i = _start_col; i < _start_col + _dim; i++) {
       char* end;
       float value = std::strtof(input_row.at(i).data(), &end);
@@ -51,6 +50,7 @@ class DenseArrayBlock : public Block {
       }
       vec.addDenseFeatureToSegment(value);
     }
+    return nullptr;
   }
 
  private:

@@ -62,17 +62,13 @@ class TextBlockTest : public testing::Test {
 
   static std::vector<SegmentedSparseFeatureVector> makeSegmentedVecs(
       SentenceMatrix& matrix, std::vector<TextBlock>& blocks) {
-    std::exception_ptr exception_ptr;
     std::vector<SegmentedSparseFeatureVector> vecs;
     for (const auto& row : matrix) {
       SegmentedSparseFeatureVector vec;
       for (auto& block : blocks) {
-        extendVectorWithBlock(block, row, vec, exception_ptr);
+        extendVectorWithBlock(block, row, vec);
       }
       vecs.push_back(std::move(vec));
-    }
-    if (exception_ptr) {
-      std::rethrow_exception(exception_ptr);
     }
     return vecs;
   }
@@ -83,14 +79,15 @@ class TextBlockTest : public testing::Test {
    */
   static void extendVectorWithBlock(TextBlock& block,
                                     const std::vector<std::string>& input_row,
-                                    SegmentedSparseFeatureVector& vec,
-                                    std::exception_ptr& exception_ptr) {
+                                    SegmentedSparseFeatureVector& vec) {
     std::vector<std::string_view> input_row_view(input_row.size());
     for (uint32_t i = 0; i < input_row.size(); i++) {
       input_row_view[i] =
           std::string_view(input_row[i].c_str(), input_row[i].size());
     }
-    block.addVectorSegment(input_row_view, vec, exception_ptr);
+    if (auto err = block.addVectorSegment(input_row_view, vec)) {
+      std::rethrow_exception(err);
+    }
   }
 
   /**

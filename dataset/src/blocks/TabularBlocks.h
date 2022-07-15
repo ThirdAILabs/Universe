@@ -3,9 +3,9 @@
 #include "BlockInterface.h"
 #include <dataset/src/bolt_datasets/batch_processors/PairgramHasher.h>
 #include <dataset/src/bolt_datasets/batch_processors/TabularMetadataProcessor.h>
+#include <exception>
 
 namespace thirdai::dataset {
-
 /**
  * Given some metadata about a tabular dataset, assign unique categories to
  * columns and compute pairgrams of the categories.
@@ -24,19 +24,22 @@ class TabularPairGram : public Block {
 
  protected:
   // TODO(david) We should always include all unigrams but if the number of
-  // columns is too large, this processing time becomes slow. One idea is to cap
-  // the number of pairgrams at a certain threshold by selecting random pairs of
-  // columns to pairgram together.
-  void buildSegment(const std::vector<std::string_view>& input_row,
-                    SegmentedFeatureVector& vec,
-                    std::exception_ptr& exception_ptr) final {
+  // columns is too large, this processing time becomes slow. One idea is to
+  // cap the number of pairgrams at a certain threshold by selecting random
+  // pairs of columns to pairgram together.
+  std::exception_ptr buildSegment(
+      const std::vector<std::string_view>& input_row,
+      SegmentedFeatureVector& vec) final {
     std::vector<uint32_t> unigram_hashes;
     for (uint32_t col = 0; col < input_row.size(); col++) {
       std::string str_val(input_row[col]);
       switch (_metadata->getColType(col)) {
         case TabularDataType::Numeric: {
-          uint32_t unigram =
-              _metadata->getNumericHashValue(col, str_val, exception_ptr);
+          std::exception_ptr err;
+          uint32_t unigram = _metadata->getNumericHashValue(col, str_val, err);
+          if (err) {
+            return err;
+          }
           unigram_hashes.push_back(unigram);
           break;
         }
@@ -57,6 +60,8 @@ class TabularPairGram : public Block {
     for (auto& entry : pairgram_hashes) {
       vec.addSparseFeatureToSegment(entry.first, 1.0);
     }
+
+    return nullptr;
   }
 
  private:

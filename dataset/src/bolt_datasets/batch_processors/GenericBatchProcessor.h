@@ -61,25 +61,31 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
       We do this instead of throwing an error directly because throwing
       an error inside an OpenMP structured block has undefined behavior.
     */
-    std::atomic_bool found_error = false;
-    std::exception_ptr exception_ptr;
+    std::atomic_bool num_columns_error = false;
+    std::exception_ptr block_err;
 
 #pragma omp parallel for default(none) \
-    shared(rows, batch_inputs, batch_labels, found_error, exception_ptr)
+    shared(rows, batch_inputs, batch_labels, num_columns_error, block_err)
     for (size_t i = 0; i < rows.size(); ++i) {
       auto columns = ProcessorUtils::parseCsvRow(rows[i], _delimiter);
       if (columns.size() < _expected_num_cols) {
-        found_error = true;
+        num_columns_error = true;
         continue;
       }
-      batch_inputs[i] = makeVector(columns, _input_blocks, _input_blocks_dense,
-                                   exception_ptr);
-      batch_labels[i] = makeVector(columns, _label_blocks, _label_blocks_dense,
-                                   exception_ptr);
+      if (auto err = makeVector(columns, batch_inputs[i], _input_blocks,
+                                _input_blocks_dense)) {
+#pragma omp critical
+        block_err = err;
+      }
+      if (auto err = makeVector(columns, batch_labels[i], _label_blocks,
+                                _label_blocks_dense)) {
+#pragma omp critical
+        block_err = err;
+      }
     }
 
-    if (exception_ptr) {
-      std::rethrow_exception(exception_ptr);
+    if (block_err) {
+      std::rethrow_exception(block_err);
     }
 
     /*
@@ -88,7 +94,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
       erroneous row. It's alright to have sequential execution
       here since the program is about to terminate anyway.
     */
-    if (found_error) {
+    if (num_columns_error) {
       for (const auto& row : rows) {
         auto n_cols = ProcessorUtils::parseCsvRow(row, _delimiter).size();
         if (n_cols < _expected_num_cols) {
@@ -118,10 +124,9 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
   /**
    * Encodes a sample as a BoltVector according to the given blocks.
    */
-  static bolt::BoltVector makeVector(
-      std::vector<std::string_view>& sample,
-      std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense,
-      std::exception_ptr& exception_ptr) {
+  static std::exception_ptr makeVector(
+      std::vector<std::string_view>& sample, bolt::BoltVector& vector,
+      std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
     std::shared_ptr<SegmentedFeatureVector> vec_ptr;
 
     // Dense vector if all blocks produce dense features, sparse vector
@@ -135,9 +140,12 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     // Let each block encode the input sample and adds a new segment
     // containing this encoding to the vector.
     for (auto& block : blocks) {
-      block->addVectorSegment(sample, *vec_ptr, exception_ptr);
+      if (auto err = block->addVectorSegment(sample, *vec_ptr)) {
+        return err;
+      }
     }
-    return vec_ptr->toBoltVector();
+    vector = vec_ptr->toBoltVector();
+    return nullptr;
   }
 
   static uint32_t sumBlockDims(

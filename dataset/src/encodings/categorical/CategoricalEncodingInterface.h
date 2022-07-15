@@ -14,8 +14,8 @@ class CategoricalEncoding {
    * Conceptually, encodes an categorical feature represented by an ID
    * as a vector and adds a segment containing this encoding to the vector.
    */
-  virtual void encodeCategory(std::string_view id, SegmentedFeatureVector& vec,
-                              std::exception_ptr& exception_ptr) = 0;
+  virtual std::exception_ptr encodeCategory(std::string_view id,
+                                            SegmentedFeatureVector& vec) = 0;
 
   /**
    * True if the encoder produces dense features, False otherwise.
