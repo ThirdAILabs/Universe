@@ -267,7 +267,6 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                               input.len, hashes.data());
   }
 
-  srand(hashes[0]);
   if (_sampling_mode == LSHSamplingMode::FreezeHashTablesWithInsertions) {
     /**
      * QueryBySet just returns a set of the elements in the given buckets of the
@@ -291,9 +290,11 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
   } else {
     _hash_table->queryBySet(hashes.data(), active_set);
   }
-
+  // making the first value in hashes as random number , because
+  // rand() is not thread safe, and this will be random for different inputs but
+  // for an input it will be deterministic.
   if (active_set.size() < _sparse_dim) {
-    uint32_t rand_offset = rand() % _dim;
+    uint32_t rand_offset = (hashes[0]) % _dim;
     while (active_set.size() < _sparse_dim) {
       active_set.insert(_rand_neurons[rand_offset++]);
       rand_offset = rand_offset % _dim;

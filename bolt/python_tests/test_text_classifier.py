@@ -75,9 +75,11 @@ def test_text_classifier_clinc_dataset():
     classifier.predict(test_file=TEST_FILE, output_file=PREDICTION_FILE)
 
     with open(PREDICTION_FILE) as pred:
-        predict = pred.readlines()
+        pred_lines = pred.readlines()
 
-    predictions = [x[:-1] for x in predict]
+    predictions = [x[:-1] for x in pred_lines]
+
+    remove_files()
 
     acc = compute_accuracy(test_labels, predictions)
 
@@ -91,22 +93,23 @@ def test_text_classifier_predict_single():
 
     classifier.train(train_file=TRAIN_FILE, epochs=5, learning_rate=0.01)
 
+    classifier.predict(test_file=TEST_FILE, output_file=PREDICTION_FILE)
+
     with open(TEST_FILE) as test:
         test_set = test.readlines()
 
-    predictions = []
+    with open(PREDICTION_FILE) as pred:
+        expected_predictions = pred.readlines()
 
     for i in range(len(test_set) - 1):
         """
-        we are taking i+1 because first row is a header in test file and split it with ','
-        because its a csv file and taking the sentence which is present at first index.
+        we are taking i+1 because first row is a header in test file and
+        split it with '","' because its how the sentence and label seperated uniquely
+        in file and taking the sentence which is present at first index.
         """
-        predicted = classifier.predict_single(trim(test_set[i + 1].split(",")[0]))
-        predictions.append(predicted)
-
-    acc = compute_accuracy(test_labels, predictions)
-
-    print("Computed Accuracy: ", acc)
-    assert acc > 0.7
+        actual_prediction = classifier.predict_single(
+            trim(test_set[i + 1].split('","')[0])
+        )
+        assert actual_prediction == expected_predictions[i][:-1]
 
     remove_files()
