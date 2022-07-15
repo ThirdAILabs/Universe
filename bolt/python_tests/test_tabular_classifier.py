@@ -2,6 +2,7 @@ from thirdai import bolt
 import pytest
 import os
 import pandas as pd
+from utils import remove_files, compute_accuracy
 
 CENSUS_INCOME_BASE_DOWNLOAD_URL = (
     "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/"
@@ -55,14 +56,11 @@ def compute_accuracy(test_labels, pred_file):
     with open(pred_file) as pred:
         predictions = pred.readlines()
 
-    correct = 0
-    total = 0
-    for (prediction, answer) in zip(predictions, test_labels):
-        if prediction[:-1] == answer:
-            correct += 1
-        total += 1
-
-    return correct / total
+    assert len(predictions) == len(test_labels)
+    return sum(
+        (prediction[:-1] == answer)
+        for (prediction, answer) in zip(predictions, test_labels)
+    ) / len(predictions)
 
 
 @pytest.mark.integration
@@ -85,4 +83,4 @@ def test_tabular_classifier_census_income_dataset():
     print("Computed Accuracy: ", acc)
     assert acc > 0.79
 
-    remove_files()
+    remove_files([TRAIN_FILE, TEST_FILE, PREDICTION_FILE])

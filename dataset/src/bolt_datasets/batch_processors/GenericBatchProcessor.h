@@ -61,7 +61,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
       We do this instead of throwing an error directly because throwing
       an error inside an OpenMP structured block has undefined behavior.
     */
-    std::atomic_bool num_columns_error = false;
+    std::exception_ptr num_columns_error;
     std::exception_ptr block_err;
 
 #pragma omp parallel for default(none) \
@@ -69,7 +69,15 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     for (size_t i = 0; i < rows.size(); ++i) {
       auto columns = ProcessorUtils::parseCsvRow(rows[i], _delimiter);
       if (columns.size() < _expected_num_cols) {
-        num_columns_error = true;
+        std::stringstream error_ss;
+        error_ss << "[ProcessorUtils::parseCsvRow] Expected "
+                 << _expected_num_cols << " columns delimited by '"
+                 << _delimiter << "' in each row of the dataset. Found row '"
+                 << rows[i] << "' with number of columns = " << columns.size()
+                 << ".";
+#pragma omp critical
+        num_columns_error =
+            std::make_exception_ptr(std::invalid_argument(error_ss.str()));
         continue;
       }
       if (auto err = makeVector(columns, batch_inputs[i], _input_blocks,
@@ -88,24 +96,8 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
       std::rethrow_exception(block_err);
     }
 
-    /*
-      Throw error here instead of in the OpenMP parallel block.
-      We sequentially iterate through each row to find the first
-      erroneous row. It's alright to have sequential execution
-      here since the program is about to terminate anyway.
-    */
     if (num_columns_error) {
-      for (const auto& row : rows) {
-        auto n_cols = ProcessorUtils::parseCsvRow(row, _delimiter).size();
-        if (n_cols < _expected_num_cols) {
-          std::stringstream error_ss;
-          error_ss << "[ProcessorUtils::parseCsvRow] Expected "
-                   << _expected_num_cols << " columns delimited by '"
-                   << _delimiter << "' in each row of the dataset. Found row '"
-                   << row << "' with number of columns = " << n_cols << ".";
-          throw std::invalid_argument(error_ss.str());
-        }
-      }
+      std::rethrow_exception(num_columns_error);
     }
 
     return std::make_pair(bolt::BoltBatch(std::move(batch_inputs)),

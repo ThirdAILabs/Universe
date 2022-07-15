@@ -1,5 +1,6 @@
 from thirdai import bolt
 import numpy as np
+import os
 
 
 # Constructs a bolt network with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
@@ -102,3 +103,19 @@ def get_simple_concat_model(
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     return model
+
+
+def remove_files(files):
+    for file in files:
+        os.remove(file)
+
+
+def compute_accuracy(test_labels, pred_file):
+    with open(pred_file) as pred:
+        predictions = pred.readlines()
+
+    assert len(predictions) == len(test_labels)
+    return sum(
+        (prediction[:-1] == answer)
+        for (prediction, answer) in zip(predictions, test_labels)
+    ) / len(predictions)

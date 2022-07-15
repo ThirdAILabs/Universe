@@ -3,7 +3,7 @@ import pytest
 import datasets
 import random
 import os
-
+from utils import remove_files, compute_accuracy
 
 TRAIN_FILE = "./clinc_train.csv"
 TEST_FILE = "./clinc_test.csv"
@@ -40,27 +40,6 @@ def download_clinc_dataset():
     return (clinc_dataset["train"].features["intent"].num_classes, labels)
 
 
-def remove_files():
-    os.remove(TRAIN_FILE)
-    os.remove(TEST_FILE)
-    os.remove(PREDICTION_FILE)
-
-
-def compute_accuracy(test_labels, pred_file):
-    with open(pred_file) as pred:
-        predictions = pred.readlines()
-
-    correct = 0
-    total = 0
-    assert len(predictions) == len(test_labels)
-    for (prediction, answer) in zip(predictions, test_labels):
-        if prediction[:-1] == answer:
-            correct += 1
-        total += 1
-
-    return correct / total
-
-
 @pytest.mark.integration
 @pytest.mark.release
 def test_text_classifier_clinc_dataset():
@@ -76,4 +55,4 @@ def test_text_classifier_clinc_dataset():
     print("Computed Accuracy: ", acc)
     assert acc > 0.7
 
-    remove_files()
+    remove_files([TRAIN_FILE, TEST_FILE, PREDICTION_FILE])

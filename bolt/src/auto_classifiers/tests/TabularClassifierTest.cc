@@ -11,7 +11,7 @@ class TabularClassifierTestFixture : public testing::Test {
 
   void TearDown() override { std::remove(TEMP_FILENAME.c_str()); }
 
-  void setTempFileContents(std::vector<std::string>& lines) {
+  void static setTempFileContents(std::vector<std::string>& lines) {
     std::ofstream file = dataset::SafeFileIO::ofstream(TEMP_FILENAME);
     for (const auto& line : lines) {
       file << line << "\n";
