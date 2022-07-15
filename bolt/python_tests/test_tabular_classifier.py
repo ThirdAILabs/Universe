@@ -46,23 +46,6 @@ def download_census_income_dataset():
     return n_classes, column_datatypes, test_labels
 
 
-def remove_files():
-    os.remove(TRAIN_FILE)
-    os.remove(TEST_FILE)
-    os.remove(PREDICTION_FILE)
-
-
-def compute_accuracy(test_labels, pred_file):
-    with open(pred_file) as pred:
-        predictions = pred.readlines()
-
-    assert len(predictions) == len(test_labels)
-    return sum(
-        (prediction[:-1] == answer)
-        for (prediction, answer) in zip(predictions, test_labels)
-    ) / len(predictions)
-
-
 @pytest.mark.integration
 @pytest.mark.release
 def test_tabular_classifier_census_income_dataset():
