@@ -599,7 +599,6 @@ float* FullyConnectedLayer::getBiasesGradient() { return _b_gradient.data(); }
 
 float* FullyConnectedLayer::getWeightsGradient() { return _w_gradient.data(); }
 
-
 void FullyConnectedLayer::setSparsity(float sparsity) {
   deinitSparseDatastructures();
   _sparsity = sparsity;

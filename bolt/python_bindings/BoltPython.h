@@ -45,9 +45,9 @@ void allocateActivations(uint64_t num_samples, uint64_t inference_dim,
                          uint32_t** active_neurons, float** activations,
                          bool output_sparse);
 
-inline void redirectCoutToPython(){
-    py::scoped_ostream_redirect stream(
-        std::cout, py::module_::import("sys").attr("stdout"));
+inline void redirectCoutToPython() {
+  py::scoped_ostream_redirect stream(std::cout,
+                                     py::module_::import("sys").attr("stdout"));
 }
 
 class PyNetwork final : public FullyConnectedNetwork {
@@ -196,7 +196,8 @@ class PyNetwork final : public FullyConnectedNetwork {
     uint64_t prev_dim =
         (layer_index > 0) ? _layers.at(layer_index - 1)->getDim() : _input_dim;
 
-    weightDimensionCheck(new_weights, dim, prev_dim, /* matrix type */ "weight matrix");
+    weightDimensionCheck(new_weights, dim, prev_dim,
+                         /* matrix type */ "weight matrix");
 
     _layers.at(layer_index)->setWeights(new_weights.data());
   }
@@ -363,10 +364,11 @@ class DistributedPyNetwork final : public DistributedModel {
           new_weights) {
     uint64_t dim = DistributedModel::getDim(layer_index);
     uint64_t prev_dim = (layer_index > 0)
-                           ? DistributedModel::getDim(layer_index - 1)
-                           : DistributedModel::getInputDim();
+                            ? DistributedModel::getDim(layer_index - 1)
+                            : DistributedModel::getInputDim();
 
-    weightDimensionCheck(new_weights, dim, prev_dim, /* matrix type*/ "weight matrix");
+    weightDimensionCheck(new_weights, dim, prev_dim,
+                         /* matrix type*/ "weight matrix");
 
     DistributedModel::setWeights(layer_index, new_weights.data());
   }
@@ -377,10 +379,11 @@ class DistributedPyNetwork final : public DistributedModel {
           new_weights_gradients) {
     uint64_t dim = DistributedModel::getDim(layer_index);
     uint64_t prev_dim = (layer_index > 0)
-                           ? DistributedModel::getDim(layer_index - 1)
-                           : DistributedModel::getInputDim();
+                            ? DistributedModel::getDim(layer_index - 1)
+                            : DistributedModel::getInputDim();
 
-    weightDimensionCheck(new_weights_gradients, dim, prev_dim, /* matrix_type */ "weight gradient matrix");
+    weightDimensionCheck(new_weights_gradients, dim, prev_dim,
+                         /* matrix_type */ "weight gradient matrix");
     DistributedModel::setWeightGradients(layer_index,
                                          new_weights_gradients.data());
   }
@@ -401,7 +404,8 @@ class DistributedPyNetwork final : public DistributedModel {
           new_biases_gradients) {
     uint64_t dim = DistributedModel::getDim(layer_index);
 
-    biasDimensionCheck(new_biases_gradients, dim, /* matrix_type */ "bias gradient matrix");
+    biasDimensionCheck(new_biases_gradients, dim,
+                       /* matrix_type */ "bias gradient matrix");
     DistributedModel::setBiasesGradients(layer_index,
                                          new_biases_gradients.data());
   }

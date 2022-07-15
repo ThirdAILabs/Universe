@@ -100,7 +100,6 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   float* getWeightsGradient() final;
 
-
   float getSparsity() const final { return _sparsity; }
 
   void setSparsity(float sparsity) final;

@@ -109,9 +109,9 @@ inline void weightDimensionCheck(
   }
   if (new_weights.shape(0) != dim || new_weights.shape(1) != prev_dim) {
     std::stringstream err;
-    err << "Expected " << matrix_type << " to have dim (" << dim
-        << ", " << prev_dim << ") received matrix with dim ("
-        << new_weights.shape(0) << ", " << new_weights.shape(1) << ").";
+    err << "Expected " << matrix_type << " to have dim (" << dim << ", "
+        << prev_dim << ") received matrix with dim (" << new_weights.shape(0)
+        << ", " << new_weights.shape(1) << ").";
     throw std::invalid_argument(err.str());
   }
 }
