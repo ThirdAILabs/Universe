@@ -107,7 +107,7 @@ class FullyConnectedNode final
     _layer = loaded_parameters;
   }
 
-  float getSparsity() {
+  float getNodeSparsity() {
     if (_config) {
       return _config.value().getSparsity();
     }
@@ -120,6 +120,10 @@ class FullyConnectedNode final
           "FullyConnectedNode must be already compiled");
     }
     _layer->setSparsity(sparsity);    
+  }
+
+  const SamplingConfig& getSamplingConfig() const {
+    return _layer->getSamplingConfig();
   }
 
  private:
