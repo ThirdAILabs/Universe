@@ -379,14 +379,12 @@ void createDatasetSubmodule(py::module_& module) {
       "a BoltDataset storing the labels.");
 
   dataset_submodule.def(
-      "bolt_tokenizer", &parseSentenceToSparseArray, py::arg("sentence"),
+      "bolt_tokenizer", &parseSentenceToUnigramsPython, py::arg("sentence"),
       py::arg("dimension") = 100000,
       "Utility that turns a sentence into a sequence of token embeddings. To "
       "be used for text classification tasks.\n"
       "Arguments:\n"
       " * sentence: String - Sentence to be tokenized.\n"
-      " * seed: Int - (Optional) The tokenizer uses a random number generator "
-      "that needs to be seeded. Defaults to 0.\n"
       " * dimensions: Int (positive) - (Optional) The dimension of each token "
       "embedding. "
       "Defaults to 100,000.");
@@ -790,25 +788,31 @@ BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
 }
 
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
-parseSentenceToSparseArray(const std::string& sentence, uint32_t dimension) {
+parseSentenceToUnigramsPython(const std::string& sentence, uint32_t dimension) {
   std::vector<uint32_t> unigrams =
       TextEncodingUtils::computeRawUnigramsWithRange(sentence, dimension);
 
-  auto result = py::array_t<uint32_t>(unigrams.size());
+  std::vector<uint32_t> indices;
+  std::vector<uint32_t> values;
+  TextEncodingUtils::sumRepeatedIndices(unigrams, 1.0,
+                                        [&](uint32_t index, float value) {
+                                          indices.push_back(index);
+                                          values.push_back(value);
+                                        });
+
+  auto result = py::array_t<uint32_t>(indices.size());
   py::buffer_info indx_buf = result.request();
   uint32_t* indx_ptr = static_cast<uint32_t*>(indx_buf.ptr);
 
-  auto result_2 = py::array_t<uint32_t>(unigrams.size());
+  auto result_2 = py::array_t<uint32_t>(values.size());
   py::buffer_info val_buf = result_2.request();
   uint32_t* val_ptr = static_cast<uint32_t*>(val_buf.ptr);
 
-  int i = 0;
-  TextEncodingUtils::sumRepeatedIndices(unigrams, 1.0,
-                                        [&](uint32_t index, float value) {
-                                          indx_ptr[i] = index;
-                                          val_ptr[i] = value;
-                                          i += 1;
-                                        });
+  assert(indices.size() == values.size());
+  for (uint32_t i = 0; i < indices.size(); i++) {
+    indx_ptr[i] = indices[i];
+    val_ptr[i] = values[i];
+  }
 
   return std::make_tuple(result, result_2);
 }
