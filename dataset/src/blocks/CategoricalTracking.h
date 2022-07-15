@@ -12,7 +12,7 @@ namespace thirdai::dataset {
 class CategoricalTrackingBlock : public Block {
  public:
   CategoricalTrackingBlock(size_t id_col, size_t timestamp_col,
-                           size_t category_col, uint32_t horizon,
+                           size_t category_col, uint32_t lookahead,
                            uint32_t lookback,
                            std::shared_ptr<StringToUidMap> id_map,
                            std::shared_ptr<CategoricalHistoryIndex> index,
@@ -20,7 +20,7 @@ class CategoricalTrackingBlock : public Block {
       : _id_col(id_col),
         _timestamp_col(timestamp_col),
         _category_col(category_col),
-        _horizon(horizon),
+        _lookahead(lookahead),
         _lookback(lookback),
         _id_map(std::move(id_map)),
         _index(std::move(index)),
@@ -55,7 +55,7 @@ class CategoricalTrackingBlock : public Block {
     auto timestamp = timestampFromInputRow(input_row);
     _index->index(tracking_id, timestamp, input_row[_category_col]);
 
-    uint32_t end_timestamp = timestamp - _horizon;
+    uint32_t end_timestamp = timestamp - _lookahead;
     uint32_t start_timestamp = end_timestamp - _lookback;
     encode(tracking_id, start_timestamp, end_timestamp, /* offset = */ 0, vec);
 
@@ -106,7 +106,7 @@ class CategoricalTrackingBlock : public Block {
   size_t _timestamp_col;
   size_t _category_col;
   uint32_t _expected_num_cols;
-  uint32_t _horizon;
+  uint32_t _lookahead;
   uint32_t _lookback;
   std::shared_ptr<StringToUidMap> _id_map;
   std::shared_ptr<CategoricalHistoryIndex> _index;

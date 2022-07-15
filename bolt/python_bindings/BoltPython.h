@@ -371,7 +371,7 @@ class PySequentialClassifier : public SequentialClassifier {
  public:
   PySequentialClassifier(const std::string& size, const py::tuple& item,
                          const std::string& timestamp, const py::tuple& target,
-                         uint32_t horizon, uint32_t lookback,
+                         uint32_t lookahead, uint32_t lookback,
                          uint32_t period = 1,
                          const std::vector<std::string>& text = {},
                          const std::vector<py::tuple>& categorical = {},
@@ -379,7 +379,7 @@ class PySequentialClassifier : public SequentialClassifier {
                          const std::vector<py::tuple>& trackable_cat = {})
       : SequentialClassifier(
             {toItem(item), toTimestamp(timestamp), toTarget(target),
-             toTrackConfig(horizon, lookback, period), toText(text),
+             toTrackConfig(lookahead, lookback, period), toText(text),
              toCategoricals(categorical), toTrackableQtys(trackable_qty),
              toTrackableCats(trackable_cat)},
             size) {}
@@ -454,9 +454,9 @@ class PySequentialClassifier : public SequentialClassifier {
     return {/* col_name = */ timestamp};
   }
 
-  static TrackingConfig toTrackConfig(uint32_t horizon, uint32_t lookback,
+  static TrackingConfig toTrackConfig(uint32_t lookahead, uint32_t lookback,
                                       uint32_t period) {
-    return {horizon, lookback, period};
+    return {lookahead, lookback, period};
   }
 
   static std::vector<TrackableQuantity> toTrackableQtys(

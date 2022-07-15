@@ -205,7 +205,7 @@ void createDatasetSubmodule(py::module_& module) {
       .def(py::init<bool, size_t, size_t, size_t, uint32_t, uint32_t,
                     uint32_t>(),
            py::arg("has_count_col"), py::arg("id_col"),
-           py::arg("timestamp_col"), py::arg("count_col"), py::arg("horizon"),
+           py::arg("timestamp_col"), py::arg("count_col"), py::arg("lookahead"),
            py::arg("lookback"), py::arg("period"))
       .def("feature_dim", &TrendBlock::featureDim,
            "Returns the dimension of the vector encoding; equal to lookback.")
