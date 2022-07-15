@@ -27,7 +27,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   friend class tests::FullyConnectedLayerTestFixture;
 
  public:
-  FullyConnectedLayer() : _shallow_save(false) {}
+  FullyConnectedLayer() {}
 
   FullyConnectedLayer(const FullyConnectedLayer&) = delete;
   FullyConnectedLayer(FullyConnectedLayer&&) = delete;
@@ -100,11 +100,6 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   float* getWeightsGradient() final;
 
-  bool isShallow() const final { return _is_shallow; }
-
-  void setShallow(bool shallow) final;
-
-  void setShallowSave(bool shallow) final;
 
   float getSparsity() const final { return _sparsity; }
 
@@ -124,8 +119,7 @@ class FullyConnectedLayer final : public SequentialLayer {
  private:
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
-  bool _is_shallow, _shallow_save;
-  bool _trainable, _force_build;
+  bool _trainable;
   ActivationFunction _act_func;
 
   std::vector<float> _weights;
@@ -243,18 +237,9 @@ class FullyConnectedLayer final : public SequentialLayer {
    */
   template <class Archive>
   void save(Archive& archive) const {
-    if (_is_shallow || _shallow_save) {
-      archive(true);
-      archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-              _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
-              _hash_table, _rand_neurons, _sampling_mode);
-    } else {
-      archive(false);
-      archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-              _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
-              _hash_table, _rand_neurons, _sampling_mode, _w_gradient,
-              _w_momentum, _w_velocity, _b_gradient, _b_momentum, _b_velocity);
-    }
+    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+            _biases, _sampling_config, _hasher, _hash_table, _rand_neurons,
+            _sampling_mode, _prev_is_active, _is_active);
   }
 
   /**
@@ -264,17 +249,18 @@ class FullyConnectedLayer final : public SequentialLayer {
    */
   template <class Archive>
   void load(Archive& archive) {
-    archive(_is_shallow);
-    if (_is_shallow) {
-      archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-              _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
-              _hash_table, _rand_neurons, _sampling_mode);
-    } else {
-      archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
-              _biases, _sampling_config, _prev_is_active, _is_active, _hasher,
-              _hash_table, _rand_neurons, _sampling_mode, _w_gradient,
-              _w_momentum, _w_velocity, _b_gradient, _b_momentum, _b_velocity);
-    }
+    archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
+            _biases, _sampling_config, _hasher, _hash_table, _rand_neurons,
+            _sampling_mode, _prev_is_active, _is_active);
+
+    /**
+     * Here we init the optimizer so that any calls to train in the network are
+     * safe. If we need to reduce memory usage for smaller machines we can use
+     * the removeOptimizer() method to remove these parameters. This will also
+     * likely require adding an additional node state for uninitialized
+     * optimizers so that we have memory safety.
+     */
+    initOptimizer();
   }
 
   /**

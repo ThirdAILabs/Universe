@@ -73,23 +73,6 @@ class ConvLayer final : public SequentialLayer {
 
   float* getWeightsGradient() final;
 
-  bool isShallow() const final {
-    throw thirdai::exceptions::NotImplemented(
-        "Error: isShallow not implemented for DLRM;");
-    return false;
-  }
-
-  void setShallow(bool shallow) final {
-    (void)shallow;
-    throw thirdai::exceptions::NotImplemented(
-        "Error: setShallow not implemented for DLRM;");
-  }
-
-  void setShallowSave(bool shallow) final {
-    (void)shallow;
-    throw thirdai::exceptions::NotImplemented(
-        "Error: setShallowSave not implemented for DLRM;");
-  }
 
   float getSparsity() const final { return _sparsity; }
 

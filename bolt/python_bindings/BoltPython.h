@@ -45,6 +45,11 @@ void allocateActivations(uint64_t num_samples, uint64_t inference_dim,
                          uint32_t** active_neurons, float** activations,
                          bool output_sparse);
 
+inline void redirectCoutToPython(){
+    py::scoped_ostream_redirect stream(
+        std::cout, py::module_::import("sys").attr("stdout"));
+}
+
 class PyNetwork final : public FullyConnectedNetwork {
  public:
   PyNetwork(SequentialConfigList configs, uint64_t input_dim)
@@ -57,8 +62,7 @@ class PyNetwork final : public FullyConnectedNetwork {
                    const std::vector<std::string>& metric_names = {},
                    bool verbose = false) {
     // Redirect to python output.
-    py::scoped_ostream_redirect stream(
-        std::cout, py::module_::import("sys").attr("stdout"));
+    redirectCoutToPython();
     auto train_data = convertPyObjectToBoltDataset(data, batch_size, false);
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
@@ -110,8 +114,7 @@ class PyNetwork final : public FullyConnectedNetwork {
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
     // Redirect to python output.
-    py::scoped_ostream_redirect stream(
-        std::cout, py::module_::import("sys").attr("stdout"));
+    redirectCoutToPython();
 
     auto test_data = convertPyObjectToBoltDataset(data, batch_size, false);
 
@@ -146,44 +149,15 @@ class PyNetwork final : public FullyConnectedNetwork {
                                          active_neurons);
   }
 
-  void saveForInference(const std::string& filename) {
-    this->save(filename, /* shallow= */ true);
-  }
-
   /**
    * To save without optimizer, shallow=true
    */
-  void save(const std::string& filename, bool shallow) {
+  void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
-    this->setShallowSave(shallow);
     oarchive(*this);
   }
-
-  void checkpoint(const std::string& filename) {
-    if (this->anyLayerShallow()) {
-      throw std::logic_error("Trying to checkpoint a model with no optimizer");
-    }
-    this->save(filename, /* shallow= */ false);
-  }
-
-  /**
-   * Removes the optimizer state for the network by setting layers to shallow
-   */
-  void trimForInference() { this->setShallow(true); }
-
-  /**
-   * If any of the layer is shallow, that is without an optimzier, reinitiliaze
-   * optimizer for that layer to 0.
-   */
-  void reinitOptimizerForTraining() { this->setShallow(false); }
-
-  /**
-   * If any layer in the model is shallow i.e, has uninitialized optimizer,
-   * return false
-   */
-  bool isReadyForTraining() { return !this->anyLayerShallow(); }
 
   static std::unique_ptr<PyNetwork> load(const std::string& filename) {
     std::ifstream filestream =
@@ -218,11 +192,11 @@ class PyNetwork final : public FullyConnectedNetwork {
       uint32_t layer_index,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_weights) {
-    int64_t dim = _layers.at(layer_index)->getDim();
-    int64_t prev_dim =
+    uint64_t dim = _layers.at(layer_index)->getDim();
+    uint64_t prev_dim =
         (layer_index > 0) ? _layers.at(layer_index - 1)->getDim() : _input_dim;
 
-    weightDimensionCheck(new_weights, dim, prev_dim);
+    weightDimensionCheck(new_weights, dim, prev_dim, /* matrix type */ "weight matrix");
 
     _layers.at(layer_index)->setWeights(new_weights.data());
   }
@@ -231,9 +205,9 @@ class PyNetwork final : public FullyConnectedNetwork {
       uint32_t layer_index,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_biases) {
-    int64_t dim = _layers.at(layer_index)->getDim();
+    uint64_t dim = _layers.at(layer_index)->getDim();
 
-    biasDimensionCheck(new_biases, dim);
+    biasDimensionCheck(new_biases, dim, /* matrix type */ "bias matrix");
     _layers.at(layer_index)->setBiases(new_biases.data());
   }
 
@@ -310,8 +284,8 @@ class DistributedPyNetwork final : public DistributedModel {
                                uint32_t batch_size = 0, uint32_t rehash = 0,
                                uint32_t rebuild = 0, bool verbose = false) {
     // Redirect to python output.
-    py::scoped_ostream_redirect stream(
-        std::cout, py::module_::import("sys").attr("stdout"));
+    redirectCoutToPython();
+
     auto train_data = convertPyObjectToBoltDataset(data, batch_size, false);
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
@@ -328,8 +302,7 @@ class DistributedPyNetwork final : public DistributedModel {
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
     // Redirect to python output.
-    py::scoped_ostream_redirect stream(
-        std::cout, py::module_::import("sys").attr("stdout"));
+    redirectCoutToPython();
 
     auto test_data = convertPyObjectToBoltDataset(data, batch_size, false);
 
@@ -388,12 +361,12 @@ class DistributedPyNetwork final : public DistributedModel {
       uint32_t layer_index,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_weights) {
-    int64_t dim = DistributedModel::getDim(layer_index);
-    int64_t prev_dim = (layer_index > 0)
+    uint64_t dim = DistributedModel::getDim(layer_index);
+    uint64_t prev_dim = (layer_index > 0)
                            ? DistributedModel::getDim(layer_index - 1)
                            : DistributedModel::getInputDim();
 
-    weightDimensionCheck(new_weights, dim, prev_dim);
+    weightDimensionCheck(new_weights, dim, prev_dim, /* matrix type*/ "weight matrix");
 
     DistributedModel::setWeights(layer_index, new_weights.data());
   }
@@ -402,12 +375,12 @@ class DistributedPyNetwork final : public DistributedModel {
       uint32_t layer_index,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_weights_gradients) {
-    int64_t dim = DistributedModel::getDim(layer_index);
-    int64_t prev_dim = (layer_index > 0)
+    uint64_t dim = DistributedModel::getDim(layer_index);
+    uint64_t prev_dim = (layer_index > 0)
                            ? DistributedModel::getDim(layer_index - 1)
                            : DistributedModel::getInputDim();
 
-    weightDimensionCheck(new_weights_gradients, dim, prev_dim, "gradient");
+    weightDimensionCheck(new_weights_gradients, dim, prev_dim, /* matrix_type */ "weight gradient matrix");
     DistributedModel::setWeightGradients(layer_index,
                                          new_weights_gradients.data());
   }
@@ -416,8 +389,8 @@ class DistributedPyNetwork final : public DistributedModel {
       uint32_t layer_index,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_biases) {
-    int64_t dim = DistributedModel::getDim(layer_index);
-    biasDimensionCheck(new_biases, dim);
+    uint64_t dim = DistributedModel::getDim(layer_index);
+    biasDimensionCheck(new_biases, dim, /* matrix type */ "bias matrix");
 
     DistributedModel::setBiases(layer_index, new_biases.data());
   }
@@ -426,9 +399,9 @@ class DistributedPyNetwork final : public DistributedModel {
       uint32_t layer_index,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           new_biases_gradients) {
-    int64_t dim = DistributedModel::getDim(layer_index);
+    uint64_t dim = DistributedModel::getDim(layer_index);
 
-    biasDimensionCheck(new_biases_gradients, dim, "gradient");
+    biasDimensionCheck(new_biases_gradients, dim, /* matrix_type */ "bias gradient matrix");
     DistributedModel::setBiasesGradients(layer_index,
                                          new_biases_gradients.data());
   }

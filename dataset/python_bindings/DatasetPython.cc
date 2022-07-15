@@ -6,7 +6,9 @@
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/bolt_datasets/StreamingDataset.h>
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
+#include <dataset/src/bolt_datasets/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <dataset/src/encodings/text/CharKGram.h>
@@ -16,6 +18,7 @@
 #include <dataset/src/encodings/text/UniGram.h>
 #include <dataset/tests/MockBlock.h>
 #include <pybind11/buffer_info.h>
+#include <pybind11/cast.h>
 #include <sys/types.h>
 #include <chrono>
 #include <limits>
@@ -387,6 +390,14 @@ void createDatasetSubmodule(py::module_& module) {
       " * dimensions: Int (positive) - (Optional) The dimension of each token "
       "embedding. "
       "Defaults to 100,000.");
+
+  py::class_<InMemoryDataset<MaskedSentenceBatch>, MLMDatasetPtr>(  // NOLINT
+      dataset_submodule, "MLMDataset");
+
+  py::class_<MLMDatasetLoader>(dataset_submodule, "MLMDatasetLoader")
+      .def(py::init<uint32_t>(), py::arg("pairgram_range"))
+      .def("load", &MLMDatasetLoader::load, py::arg("filename"),
+           py::arg("batch_size"));
 
   internal_dataset_submodule.def(
       "dense_bolt_dataset_matches_dense_matrix",

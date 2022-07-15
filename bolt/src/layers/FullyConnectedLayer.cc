@@ -17,8 +17,6 @@ FullyConnectedLayer::FullyConnectedLayer(
       _prev_dim(prev_dim),
       _sparse_dim(config.sparsity * config.dim),
       _sparsity(config.sparsity),
-      _is_shallow(false),
-      _shallow_save(false),
 
       // trainable parameter not present in config file
       // TODO(Shubh) : should we add a trainable parameter to the config file?
@@ -601,23 +599,6 @@ float* FullyConnectedLayer::getBiasesGradient() { return _b_gradient.data(); }
 
 float* FullyConnectedLayer::getWeightsGradient() { return _w_gradient.data(); }
 
-void FullyConnectedLayer::setShallow(bool shallow) {
-  /**
-   * Initialize optimizer only when layer is currently shallow and shallow is
-   * false. Remove optimizer only if the layer is currently non-shallow but
-   * shallow is true
-   */
-  if (!_is_shallow && shallow) {
-    this->removeOptimizer();
-  } else if (_is_shallow && !shallow) {
-    this->initOptimizer();
-  }
-  _is_shallow = shallow;
-}
-
-void FullyConnectedLayer::setShallowSave(bool shallow) {
-  _shallow_save = shallow;
-}
 
 void FullyConnectedLayer::setSparsity(float sparsity) {
   deinitSparseDatastructures();
