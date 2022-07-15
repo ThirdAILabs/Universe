@@ -42,7 +42,7 @@ class CharKGram : public TextEncoding {
     */
     TextEncodingUtils::sumRepeatedIndices(
         /* indices = */ char_k_grams,
-        /* value = */ 1.0, [&](uint32_t index, float value) {
+        /* base_value = */ 1.0, [&](uint32_t index, float value) {
           vec.addSparseFeatureToSegment(index, value);
         });
   }

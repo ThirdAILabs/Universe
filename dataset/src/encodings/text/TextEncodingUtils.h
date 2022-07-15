@@ -43,7 +43,7 @@ class TextEncodingUtils {
     std::vector<uint32_t> indices;
     std::vector<float> values;
 
-    sumRepeatedIndices(unigrams, /* value */ 1.0,
+    sumRepeatedIndices(unigrams, /* base_value */ 1.0,
                        [&](uint32_t unigram, float value) {
                          indices.push_back(unigram);
                          values.push_back(value);
@@ -68,9 +68,6 @@ class TextEncodingUtils {
     return pairgram_hashes;
   }
 
-  /**
-   * Compute raw pairgrams modded to a certain range.
-   */
   static std::vector<uint32_t> computeRawPairgrams(std::string_view sentence,
                                                    uint32_t output_range) {
     std::vector<uint32_t> unigram_hashes = computeRawUnigrams(sentence);
@@ -78,9 +75,6 @@ class TextEncodingUtils {
     return computeRawPairgramsFromUnigrams(unigram_hashes, output_range);
   }
 
-  /**
-   * Computes pairgrams into a BoltVector
-   */
   static bolt::BoltVector computePairgrams(std::string_view sentence,
                                            uint32_t output_range) {
     std::vector<uint32_t> pairgrams =
@@ -89,7 +83,7 @@ class TextEncodingUtils {
     std::vector<uint32_t> indices;
     std::vector<float> values;
 
-    sumRepeatedIndices(pairgrams, /* value */ 1.0,
+    sumRepeatedIndices(pairgrams, /* base_value */ 1.0,
                        [&](uint32_t pairgram, float value) {
                          indices.push_back(pairgram);
                          values.push_back(value);
@@ -103,16 +97,16 @@ class TextEncodingUtils {
     std::vector<uint32_t> pairgrams =
         computeRawPairgramsFromUnigrams(unigrams, output_range);
 
-    uint32_t index = 0;
-    bolt::BoltVector data_vec(pairgrams.size(), false, false);
+    std::vector<uint32_t> indices;
+    std::vector<float> values;
 
-    sumRepeatedIndices(pairgrams, /* value */ 1.0,
+    sumRepeatedIndices(pairgrams, /* base_value */ 1.0,
                        [&](uint32_t pairgram, float value) {
-                         data_vec.active_neurons[index] = pairgram;
-                         data_vec.activations[index] = value;
-                         index++;
+                         indices.push_back(pairgram);
+                         values.push_back(value);
                        });
-    return data_vec;
+
+    return bolt::BoltVector::makeSparseVector(indices, values);
   }
 
   /**
@@ -161,7 +155,8 @@ class TextEncodingUtils {
    * instance of that index. Applies a lambda to the resulting idx, value pair.
    */
   template <typename INDEX_VAL_PROCESSOR>
-  static void sumRepeatedIndices(std::vector<uint32_t>& indices, float value,
+  static void sumRepeatedIndices(std::vector<uint32_t>& indices,
+                                 float base_value,
                                  INDEX_VAL_PROCESSOR idx_val_processor) {
     static_assert(
         std::is_convertible<INDEX_VAL_PROCESSOR,
@@ -174,14 +169,14 @@ class TextEncodingUtils {
     /**
      * If current index is the same as the next index, keep accumulating
      * val. Otherwise, add sparse feature at the current index with the
-     * accumulated value and reset val.
+     * accumulated base_value and reset val.
      */
     float val = 0.0;
     uint32_t i = 0;
     for (; i < indices.size() - 1; ++i) {
       uint32_t idx = indices[i];
       uint32_t next_idx = indices[i + 1];
-      val += value;
+      val += base_value;
 
       if (idx != next_idx) {
         idx_val_processor(idx, val);
@@ -194,7 +189,7 @@ class TextEncodingUtils {
      * "different", so we add a sparse feature accordingly.
      */
     if (i == indices.size() - 1) {
-      val += value;
+      val += base_value;
       idx_val_processor(indices.back(), val);
     }
   }

@@ -24,7 +24,7 @@ class PairGram : public TextEncoding {
         TextEncodingUtils::computeRawPairgrams(text, _dim);
 
     TextEncodingUtils::sumRepeatedIndices(
-        pairgrams, /* value */ 1.0, [&](uint32_t pairgram, float value) {
+        pairgrams, /* base_value */ 1.0, [&](uint32_t pairgram, float value) {
           vec.addSparseFeatureToSegment(pairgram, value);
         });
   }
