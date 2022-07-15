@@ -380,7 +380,7 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def(
       "bolt_tokenizer", &parseSentenceToSparseArray, py::arg("sentence"),
-      py::arg("seed") = 0, py::arg("dimension") = 100000,
+      py::arg("dimension") = 100000,
       "Utility that turns a sentence into a sequence of token embeddings. To "
       "be used for text classification tasks.\n"
       "Arguments:\n"
