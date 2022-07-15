@@ -66,12 +66,7 @@ def test_text_classifier_clinc_dataset():
 
     classifier.predict(test_file=TEST_FILE, output_file=PREDICTION_FILE)
 
-    with open(PREDICTION_FILE) as pred:
-        pred_lines = pred.readlines()
-
-    predictions = [x[:-1] for x in pred_lines]
-
-    acc = compute_accuracy(test_labels, predictions)
+    acc = compute_accuracy(test_labels, PREDICTION_FILE)
 
     print("Computed Accuracy: ", acc)
     assert acc > 0.7
