@@ -19,7 +19,13 @@ class UniGram : public TextEncoding {
 
   void encodeText(const std::string_view text,
                   SegmentedFeatureVector& vec) final {
-    TextEncodingUtils::computeUnigrams(text, _dim, vec);
+    std::vector<uint32_t> unigrams =
+        TextEncodingUtils::computeRawUnigramsWithRange(text, _dim);
+
+    TextEncodingUtils::sumRepeatedIndices(
+        unigrams, /* value */ 1.0, [&](uint32_t unigram, float value) {
+          vec.addSparseFeatureToSegment(unigram, value);
+        });
   }
 
   uint32_t featureDim() final { return _dim; }

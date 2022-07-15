@@ -20,7 +20,13 @@ class PairGram : public TextEncoding {
 
   void encodeText(const std::string_view text,
                   SegmentedFeatureVector& vec) final {
-    TextEncodingUtils::computePairgrams(text, _dim, vec);
+    std::vector<uint32_t> pairgrams =
+        TextEncodingUtils::computeRawPairgrams(text, _dim);
+
+    TextEncodingUtils::sumRepeatedIndices(
+        pairgrams, /* value */ 1.0, [&](uint32_t pairgram, float value) {
+          vec.addSparseFeatureToSegment(pairgram, value);
+        });
   }
 
   uint32_t featureDim() final { return _dim; }

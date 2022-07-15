@@ -18,9 +18,6 @@ class TextEncodingUtils {
     return hashing::MurmurHash(key, len, HASH_SEED);
   }
 
-  /**
-   * Computes raw unigrams without modding to an output range.
-   */
   static std::vector<uint32_t> computeRawUnigrams(
       const std::string_view sentence) {
     std::vector<uint32_t> unigrams;
@@ -29,9 +26,6 @@ class TextEncodingUtils {
     return unigrams;
   }
 
-  /**
-   * Computes raw unigrams modding to an output range.
-   */
   static std::vector<uint32_t> computeRawUnigramsWithRange(
       const std::string_view sentence, uint32_t output_range) {
     std::vector<uint32_t> unigrams;
@@ -41,35 +35,21 @@ class TextEncodingUtils {
     return unigrams;
   }
 
-  /**
-   * Adds unigrams to SegmentedFeatureVector
-   */
-  static void computeUnigrams(const std::string_view sentence,
-                              uint32_t output_range,
-                              SegmentedFeatureVector& vec) {
-    std::vector<uint32_t> unigrams =
-        computeRawUnigramsWithRange(sentence, output_range);
-    sumRepeatedIndices(unigrams, /* value */ 1.0,
-                       [&](uint32_t index, float value) {
-                         vec.addSparseFeatureToSegment(index, value);
-                       });
-  }
-
   static bolt::BoltVector computeUnigrams(const std::string_view sentence,
                                           uint32_t output_range) {
     std::vector<uint32_t> unigrams =
         computeRawUnigramsWithRange(sentence, output_range);
 
-    uint32_t index = 0;
-    bolt::BoltVector data_vec(unigrams.size(), false, false);
+    std::vector<uint32_t> indices;
+    std::vector<float> values;
 
     sumRepeatedIndices(unigrams, /* value */ 1.0,
-                       [&](uint32_t pairgram, float value) {
-                         data_vec.active_neurons[index] = pairgram;
-                         data_vec.activations[index] = value;
-                         index++;
+                       [&](uint32_t unigram, float value) {
+                         indices.push_back(unigram);
+                         values.push_back(value);
                        });
-    return data_vec;
+
+    return bolt::BoltVector::makeSparseVector(indices, values);
   }
 
   /**
@@ -109,17 +89,16 @@ class TextEncodingUtils {
     std::vector<uint32_t> pairgrams =
         computeRawPairgrams(sentence, output_range);
 
-    uint32_t index = 0;
-    bolt::BoltVector data_vec(pairgrams.size(), false, false);
+    std::vector<uint32_t> indices;
+    std::vector<float> values;
 
     sumRepeatedIndices(pairgrams, /* value */ 1.0,
                        [&](uint32_t pairgram, float value) {
-                         data_vec.active_neurons[index] = pairgram;
-                         data_vec.activations[index] = value;
-                         index++;
+                         indices.push_back(pairgram);
+                         values.push_back(value);
                        });
 
-    return data_vec;
+    return bolt::BoltVector::makeSparseVector(indices, values);
   }
 
   /**
