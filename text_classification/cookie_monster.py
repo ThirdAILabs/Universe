@@ -4,7 +4,6 @@ import numpy as np
 # Uncomment the following line when used on a machine with valid mlflow credentials
 # import mlflow
 import os
-import toml
 
 
 class CookieMonster:
@@ -16,6 +15,8 @@ class CookieMonster:
         hidden_sparsity=0.1,
         mlflow_enabled=True,
     ):
+        import toml
+
         self.input_dimension = input_dimension
         self.hidden_dim = hidden_dimension
         self.hidden_sparsity = hidden_sparsity
@@ -70,6 +71,8 @@ class CookieMonster:
         Given a directory containing only .txt config files, this function trains each dataset with the parameters specified in each config file.
         Each config file must contain the following parameters: train_file, test_file, num_classes, batch_size, epochs, learning_rate.
         """
+        import toml
+
         if self.mlflow_enabled and evaluate:
             mlflow.start_run(run_name="evaluation_run")
 
@@ -126,7 +129,7 @@ class CookieMonster:
                                 "Epoch: ",
                                 i + 1,
                                 " Accuracy: ",
-                                metrics["categorical_accuracy"],
+                                metrics[0]["categorical_accuracy"],
                                 "\n",
                             )
 
@@ -134,7 +137,10 @@ class CookieMonster:
                         test_x, test_y, predict_config=predict_config
                     )
                     print(
-                        "Epoch: ", i + 1, " Accuracy: ", metrics["categorical_accuracy"]
+                        "Epoch: ",
+                        i + 1,
+                        " Accuracy: ",
+                        metrics[0]["categorical_accuracy"],
                     )
 
                 print("\n")

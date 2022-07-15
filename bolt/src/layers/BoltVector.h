@@ -56,6 +56,22 @@ struct BoltVector {
     }
   }
 
+  uint32_t getIdWithHighestActivation() const {
+    float max_act = activations[0];
+    uint32_t id = 0;
+    for (uint32_t i = 1; i < len; i++) {
+      if (activations[i] > max_act) {
+        max_act = activations[i];
+        if (isDense()) {
+          id = i;
+        } else {
+          id = active_neurons[i];
+        }
+      }
+    }
+    return id;
+  }
+
   static BoltVector makeSparseVector(const std::vector<uint32_t>& indices,
                                      const std::vector<float>& values) {
     assert(indices.size() == values.size());
