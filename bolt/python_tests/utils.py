@@ -109,9 +109,9 @@ def get_simple_concat_model(
 
     concate_layer = bolt.graph.Concatenate()([hidden_layer_top, hidden_layer_bottom])
 
-    output_layer = bolt.graph.FullyConnected(
-        dim=num_classes, activation="softmax", sparsity=1
-    )(concate_layer)
+    output_layer = bolt.graph.FullyConnected(dim=num_classes, activation="softmax")(
+        concate_layer
+    )
 
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
 

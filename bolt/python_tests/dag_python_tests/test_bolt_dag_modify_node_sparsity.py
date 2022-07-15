@@ -1,9 +1,6 @@
 from ..utils import (
     gen_training_data,
-    train_network,
     get_simple_concat_model,
-    build_sparse_hidden_layer_classifier,
-    gen_single_sparse_layer_network,
     gen_single_sparse_node,
 )
 from thirdai import bolt
@@ -25,6 +22,9 @@ def test_switch_dense_to_sparse():
     """
     dataset_dim = 100
     train_data, train_labels = gen_training_data(n_classes=dataset_dim, n_samples=10000)
+
+    # This model (initially) has a dense output.
+    # The output node's name is "fc_3"
     model = get_simple_concat_model(
         num_classes=100,
         hidden_layer_top_dim=100,
@@ -32,22 +32,14 @@ def test_switch_dense_to_sparse():
         hidden_layer_top_sparsity=1,
         hidden_layer_bottom_sparsity=1,
     )
-    train_config = (
-        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=1)
-        .with_batch_size(64)
-        .silence()
-    )
-    dense_metrics = model.train(
-        train_data=train_data,
-        train_labels=train_labels,
-        train_config=train_config,
-    )
+
     dense_predict_config = (
         bolt.graph.PredictConfig.make()
         .with_metrics(["categorical_accuracy"])
         .silence()
         .return_activations()
     )
+
     dense_metrics = model.predict(
         test_data=train_data,
         test_labels=train_labels,
@@ -55,28 +47,16 @@ def test_switch_dense_to_sparse():
     )
 
     model.get_layer("fc_3").set_sparsity(sparsity=0.25)
+    sparse_predict_config = dense_predict_config.enable_sparse_inference()
 
-    sparse_metrics = model.train(
-        train_data=train_data,
-        train_labels=train_labels,
-        train_config=train_config,
-    )
-    sparse_predict_config = (
-        bolt.graph.PredictConfig.make()
-        .with_metrics(["categorical_accuracy"])
-        .silence()
-        .enable_sparse_inference()
-        .return_activations()
-    )
     sparse_metrics = model.predict(
         test_data=train_data,
         test_labels=train_labels,
         predict_config=sparse_predict_config,
     )
 
-    assert len(dense_metrics) ==  2
-    assert len(sparse_metrics) ==  3
-
+    assert len(dense_metrics) == 2
+    assert len(sparse_metrics) == 3
 
 
 @pytest.mark.release
@@ -113,6 +93,7 @@ def test_decrease_and_increase_sparsity_sampling_config():
     sampling config parameters. Due to the way we autotune, only the number of
     tables should change if we change the sparsity.
     """
+    # This model has a single node whose name is "fc_1"
     model = gen_single_sparse_node(num_classes=1000, sparsity=0.5)
     layer = model.get_layer("fc_1")
 

@@ -53,10 +53,10 @@ class FullyConnectedNode final
   bool isInputNode() const final { return false; }
 
   ActivationFunction getActivationFunction() const {
-    if (getState() == NodeState::Compiled && _layer) {
-      return _layer->getActivationFunction();
+    if (_config) {
+      return _config.value().act_func;
     }
-    return _config.value().act_func;
+    return _layer->getActivationFunction();
   }
 
   void saveParameters(const std::string& filename) const {
@@ -119,7 +119,7 @@ class FullyConnectedNode final
       throw exceptions::NodeStateMachineError(
           "FullyConnectedNode must be already compiled");
     }
-    _layer->setSparsity(sparsity);    
+    _layer->setSparsity(sparsity);
   }
 
   const SamplingConfig& getSamplingConfig() const {

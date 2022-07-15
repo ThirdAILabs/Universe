@@ -51,7 +51,7 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
   ActivationFunction act_func;
   SamplingConfig sampling_config;
 
-  // Public constructor for cereal.
+  // Public constructor - it should only be called by cereal
   FullyConnectedLayerConfig() {}
 
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
