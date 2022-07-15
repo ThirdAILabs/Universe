@@ -30,8 +30,8 @@ TEST_F(TabularClassifierTestFixture, TestPredictBeforeTrain) {
   std::vector<std::string> contents = {"value1,label1", "value3,label2"};
   setTempFileContents(contents);
 
-  ASSERT_THROW(tab_model->predict(TEMP_FILENAME, std::nullopt),
-               std::invalid_argument);
+  ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
+      tab_model->predict(TEMP_FILENAME, std::nullopt), std::invalid_argument);
 }
 
 /**
@@ -44,8 +44,9 @@ TEST_F(TabularClassifierTestFixture, TestProvidedColumnsMatchCsvColumns) {
   std::vector<std::string> contents = {"value1,label1", "value3,label2"};
   setTempFileContents(contents);
   std::vector<std::string> column_datatypes = {"label"};
-  ASSERT_THROW(tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
-               std::invalid_argument);
+  ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
+      tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
+      std::invalid_argument);
 }
 
 /**
@@ -62,8 +63,8 @@ TEST_F(TabularClassifierTestFixture, TestTrainVSTestColumns) {
 
   std::vector<std::string> test_contents2 = {"value1", "value3,label2"};
   setTempFileContents(test_contents2);
-  ASSERT_THROW(tab_model->predict(TEMP_FILENAME, std::nullopt),
-               std::invalid_argument);
+  ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
+      tab_model->predict(TEMP_FILENAME, std::nullopt), std::invalid_argument);
 }
 
 /**
@@ -76,8 +77,9 @@ TEST_F(TabularClassifierTestFixture, TestIncorrectNumericColumn) {
   std::vector<std::string> contents = {"value1,label1", "value3,label2"};
   setTempFileContents(contents);
   std::vector<std::string> column_datatypes = {"numeric", "label"};
-  ASSERT_THROW(tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
-               std::invalid_argument);
+  ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
+      tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
+      std::invalid_argument);
 }
 
 /**
@@ -93,9 +95,11 @@ TEST_F(TabularClassifierTestFixture, TestEmptyColumns) {
   std::vector<std::string> column_datatypes = {"categorical", "numeric",
                                                "categorical", "label"};
 
-  ASSERT_NO_THROW(tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01));
+  ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
+      tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01));
 
-  ASSERT_NO_THROW(tab_model->predict(TEMP_FILENAME, std::nullopt));
+  ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
+      tab_model->predict(TEMP_FILENAME, std::nullopt));
 }
 
 /**
@@ -112,8 +116,8 @@ TEST_F(TabularClassifierTestFixture, TestFailureOnNewTestLabel) {
 
   std::vector<std::string> test_contents1 = {"value1,label1", "value2,label99"};
   setTempFileContents(test_contents1);
-  ASSERT_THROW(tab_model->predict(TEMP_FILENAME, std::nullopt),
-               std::invalid_argument);
+  ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
+      tab_model->predict(TEMP_FILENAME, std::nullopt), std::invalid_argument);
 }
 
 /**
@@ -126,8 +130,9 @@ TEST_F(TabularClassifierTestFixture, TestTooManyLabels) {
   std::vector<std::string> train_contents = {"value1,label1", "value2,label2"};
   setTempFileContents(train_contents);
   std::vector<std::string> column_datatypes = {"categorical", "label"};
-  ASSERT_THROW(tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
-               std::invalid_argument);
+  ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
+      tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
+      std::invalid_argument);
 }
 
 /**
@@ -140,8 +145,9 @@ TEST_F(TabularClassifierTestFixture, TestNoLabelDatatype) {
   std::vector<std::string> train_contents = {"value1,label1", "value2,label2"};
   setTempFileContents(train_contents);
   std::vector<std::string> column_datatypes = {"categorical", "numeric"};
-  ASSERT_THROW(tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
-               std::invalid_argument);
+  ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
+      tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
+      std::invalid_argument);
 }
 
 /**
@@ -154,8 +160,9 @@ TEST_F(TabularClassifierTestFixture, TestFailureOnTwoLabelColumns) {
   std::vector<std::string> train_contents = {"value1,label1", "value2,label2"};
   setTempFileContents(train_contents);
   std::vector<std::string> column_datatypes = {"label", "label"};
-  ASSERT_THROW(tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
-               std::invalid_argument);
+  ASSERT_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_THROW
+      tab_model->train(TEMP_FILENAME, column_datatypes, 1, 0.01),
+      std::invalid_argument);
 }
 
 }  // namespace thirdai::bolt
