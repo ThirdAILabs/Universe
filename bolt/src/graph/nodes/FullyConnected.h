@@ -4,7 +4,6 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
-#include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
@@ -210,10 +209,9 @@ class FullyConnectedNode final
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(cereal::base_class<Node>(this), _layer, _config,
-            _predecessor);
+    archive(cereal::base_class<Node>(this), _layer, _config, _predecessor);
   }
-  // One of _layer and _config will always be nullptr/nullopt while the 
+  // One of _layer and _config will always be nullptr/nullopt while the
   // other will contain data
   std::shared_ptr<FullyConnectedLayer> _layer;
   std::optional<FullyConnectedLayerConfig> _config;

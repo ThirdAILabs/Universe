@@ -98,7 +98,6 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
       return;
     }
 
-
     // The number of items in the table is equal to the number of neurons in
     // this layer, which is stored in the "dim" variable. By analyzing the
     // hash table, we find that
@@ -156,8 +155,6 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
 
   float getSparsity() const final { return sparsity; }
 
-  
-
   ActivationFunction getActFunc() const final { return act_func; }
 
  private:
@@ -200,8 +197,6 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
           << "}";
     }
   }
-
-
 
   friend class cereal::access;
   template <class Archive>
