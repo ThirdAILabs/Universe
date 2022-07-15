@@ -12,22 +12,6 @@ import pytest
 pytestmark = [pytest.mark.unit]
 
 
-def predict_train_one_epoch_predict(network, test_data, test_labels, sparse_inference):
-    """
-    Does a forward pass through the network with the test data, runs an epoch
-    of training, then does another forward pass. Returns a tuple of the
-    prediction before the epoch of training and the prediction after.
-    """
-    prediction_before = network.predict(
-        test_data=test_data, test_labels=None, sparse_inference=sparse_inference
-    )[1:]
-    train_network(network, train_data=test_data, train_labels=test_labels, epochs=1)
-    prediction_after = network.predict(
-        test_data=test_data, test_labels=None, sparse_inference=sparse_inference
-    )[1:]
-    return prediction_before, prediction_after
-
-
 @pytest.mark.release
 def test_switch_dense_to_sparse():
     """
@@ -53,46 +37,45 @@ def test_switch_dense_to_sparse():
         .with_batch_size(64)
         .silence()
     )
-    metrics = model.train(
+    dense_metrics = model.train(
         train_data=train_data,
         train_labels=train_labels,
         train_config=train_config,
     )
-    model.get_layer("fc_3").set_sparsity(sparsity=0.25)
-    predict_config = (
+    dense_predict_config = (
         bolt.graph.PredictConfig.make()
         .with_metrics(["categorical_accuracy"])
         .silence()
-        .enable_sparse_inference()
+        .return_activations()
     )
-    metrics = model.predict(
+    dense_metrics = model.predict(
         test_data=train_data,
         test_labels=train_labels,
-        predict_config=predict_config,
+        predict_config=dense_predict_config,
     )
 
     model.get_layer("fc_3").set_sparsity(sparsity=0.25)
 
-    new_metrics = model.train(
+    sparse_metrics = model.train(
         train_data=train_data,
         train_labels=train_labels,
         train_config=train_config,
     )
-    new_pred_config = (
+    sparse_predict_config = (
         bolt.graph.PredictConfig.make()
         .with_metrics(["categorical_accuracy"])
         .silence()
         .enable_sparse_inference()
         .return_activations()
     )
-    new_metrics = model.predict(
+    sparse_metrics = model.predict(
         test_data=train_data,
         test_labels=train_labels,
-        predict_config=new_pred_config,
+        predict_config=sparse_predict_config,
     )
 
-    assert len(new_metrics) ==  3
-    assert len(metrics) ==  1
+    assert len(dense_metrics) ==  2
+    assert len(sparse_metrics) ==  3
 
 
 
