@@ -115,7 +115,7 @@ def compute_accuracy(test_labels, pred_file):
         pred_lines = pred.readlines()
 
     predictions = [x[:-1] for x in pred_lines]
-    
+
     assert len(predictions) == len(test_labels)
     return sum(
         (prediction[:-1] == answer)
