@@ -143,6 +143,11 @@ class BoltGraph {
   void verifyInputForGraph(
       const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset);
 
+  template <typename BATCH_T>
+  void verifyDataLabelCorrespondance(
+      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset,
+      const dataset::BoltDatasetPtr& train_labels);
+
   void verifyGraphProperties();
 
   void updateSampling(uint32_t rebuild_hash_tables_batch,

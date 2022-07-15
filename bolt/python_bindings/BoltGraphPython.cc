@@ -98,7 +98,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("filename"))
       .def("get_sparsity", &FullyConnectedNode::getSparsity)
       .def("set_sparsity", &FullyConnectedNode::setNodeSparsity,
-           py::arg("sparsity"));
+           py::arg("sparsity"))
+      .def("get_dim", &FullyConnectedNode::outputDim);
+
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
       graph_submodule, "Concatenate")
       .def(

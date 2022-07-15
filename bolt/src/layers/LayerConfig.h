@@ -51,6 +51,9 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
   ActivationFunction act_func;
   SamplingConfig sampling_config;
 
+  // Public constructor for cereal.
+  FullyConnectedLayerConfig() {}
+
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
                             const std::string& _act_func,
                             SamplingConfig _config)
@@ -94,6 +97,7 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
     if (sparsity == 1.0) {
       return;
     }
+
 
     // The number of items in the table is equal to the number of neurons in
     // this layer, which is stored in the "dim" variable. By analyzing the
@@ -152,6 +156,8 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
 
   float getSparsity() const final { return sparsity; }
 
+  
+
   ActivationFunction getActFunc() const final { return act_func; }
 
  private:
@@ -195,8 +201,7 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
     }
   }
 
-  // Private constructor for cereal.
-  FullyConnectedLayerConfig() {}
+
 
   friend class cereal::access;
   template <class Archive>

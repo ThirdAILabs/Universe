@@ -2,7 +2,6 @@ from ..utils import (
     gen_training_data,
     train_network,
     get_simple_concat_model,
-    gen_single_sparse_node,
     build_sparse_hidden_layer_classifier,
     gen_single_sparse_layer_network
 )
@@ -62,7 +61,6 @@ def test_switch_dense_to_sparse():
         train_labels=train_labels,
         train_config=train_config,
     )
-    assert 1 == 1
 
     # model.get_layer("fc_3").set_sparsity(sparsity=0.5)
 
