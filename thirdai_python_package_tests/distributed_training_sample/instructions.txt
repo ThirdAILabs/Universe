@@ -1,11 +1,22 @@
 For running the distributed bolt, first we need to start a ray cluster
 
-First install all the required module by running the following command:
+First install all the required module by running the following command(to be done on all the node):
+        - Have the reuored bolt module built on those node 
         - Run the command: python3 install_required_module.py
-
-For starting the ray cluster:
-        - Run the command: python3 start_cluster.py <head_node_ip> <worker_node_ip_1> <worker_node_ip_2> ...
-
+        - Check if ray path is included in system path by printing (run 'echo $PATH' on terminal)
+                Ray's default path is /home/$USER/.local/bin
+                If not included, run the command: export PATH=$PATH:/home/$USER/.local/bin
+        
+Automatic Cluster Initialization:
+        For starting the ray cluster automatically:
+                - Run the command: python3 start_cluster.py <head_node_ip> <worker_node_ip_1> <worker_node_ip_2> ...
+                
+                
+Manual Cluster Initialization:
+        For starting ray cluster manually:
+                - On head node, run the command 'ray start --head --port=6379'
+                - On worker nodes, run the command 'ray start --address=<head_node_ip>:6379'
+               
 
 To check whether cluster have started run command on terminal 'ray status'
         - If the number of cpus id equal to (no. of ips)* 48 => cluster is setup

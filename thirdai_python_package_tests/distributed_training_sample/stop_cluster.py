@@ -49,32 +49,17 @@ def start_cluster(
         yaml.dump(config, file)
     
 
-    system_path = os.environ['PATH']
-    install_environment_locations = system_path.split(':')
-    required_installation_path = '/home/' + user + '/.local/bin'
-
-    if required_installation_path not in install_environment_locations:
-        print(required_installation_path + ' not in System PATH')
-        current_path = os.environ['PATH']
-        print('Current Path: ', current_path)
-        print("Run the command: export PATH=$PATH:/home/$USER/.local/bin")
-    else:
-        print('Ray module already in system path.')
-
-    print('Starting Ray Cluster')
+    print('Stopping Ray Cluster')
     
-    if not os.path.isdir('/tmp/ray'):
-        print('It look like ray is never used here before!')
-        ray.init()
     
     os.system('ray stop')
-    os.system('ray up setup.yaml')
+    os.system('ray down setup.yaml')
     os.system('rm setup.yaml')
 
-    connect_address = nodes_ips[0] + ":6379"
-    subprocess.run(["sh", "make_cluster.sh", " ".join(nodes_ips[1:len(nodes_ips)]), connect_address])
+    subprocess.run(["sh", "destroy_cluster.sh", " ".join(nodes_ips[1:len(nodes_ips)])])
 
 if __name__ == "__main__":
+    print('Make sure to pass all the nodes on the cluster!')
     total_nodes = len(sys.argv) - 1
 
     if total_nodes == 0:
