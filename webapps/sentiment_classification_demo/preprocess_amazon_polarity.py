@@ -32,9 +32,7 @@ def preprocess_amazon_polarity(input_file, output_dim, output_file, has_header=T
             sentence = re.sub(non_word_or_whitespace, "", line[0])
             sentence = sentence.lower()
             # BOLT TOKENIZER START
-            tup = thirdai.dataset.bolt_tokenizer(
-                sentence, dimension=output_dim
-            )
+            tup = thirdai.dataset.bolt_tokenizer(sentence, dimension=output_dim)
             for idx, val in zip(tup[0], tup[1]):
                 fw.write(str(idx) + ":" + str(val) + " ")
             # BOLT TOKENIZER END
