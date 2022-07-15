@@ -44,10 +44,10 @@ class FullyConnectedNode final
   }
 
   uint32_t outputDim() const final {
-    if (getState() == NodeState::Compiled) {
-      return _layer->getDim();
+    if (_config) {
+      return _config.value().getDim();
     }
-    return _config.value().dim;
+    return _layer->getDim();
   }
 
   bool isInputNode() const final { return false; }
@@ -108,18 +108,18 @@ class FullyConnectedNode final
   }
 
   float getSparsity() {
-    if (getState() == NodeState::Compiled) {
-      return _layer->getSparsity();
+    if (_config) {
+      return _config.value().getSparsity();
     }
-    return _config.value().getSparsity();
+    return _layer->getSparsity();
   }
 
   void setNodeSparsity(float sparsity) {
-    if (getState() != NodeState::Compiled) {
+    if (_config) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state");
+          "FullyConnectedNode must be already compiled");
     }
-    _layer->setSparsity(sparsity);
+    _layer->setSparsity(sparsity);    
   }
 
  private:
