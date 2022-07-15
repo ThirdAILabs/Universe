@@ -35,17 +35,6 @@ class DistributedModel : public FullyConnectedNetwork {
         _train_data(nullptr),
         _train_labels(nullptr) {}
 
-  // This function is inherently calling predict in model.h
-  // So, see model.h for more info
-  InferenceMetricData predictSingleNode(
-      const std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>&
-          test_data,
-      const dataset::BoltDatasetPtr& test_labels,
-      uint32_t* output_active_neurons, float* output_activations,
-      bool use_sparse_inference = false,
-      const std::vector<std::string>& metric_names = {}, bool verbose = true,
-      uint32_t batch_limit = std::numeric_limits<uint32_t>::max());
-
   // Distributed Functions
   uint32_t initTrainSingleNode(
       std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,

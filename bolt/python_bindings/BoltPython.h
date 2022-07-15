@@ -329,7 +329,7 @@ class DistributedPyNetwork final : public DistributedModel {
     allocateActivations(num_samples, inference_output_dim, &active_neurons,
                         &activations, output_sparse);
 
-    auto metric_data = FullyConnectedNetwork::predict(
+    auto metric_data = DistributedModel::predict(
         test_data.dataset, test_labels.dataset, active_neurons, activations,
         use_sparse_inference, metrics, verbose, batch_limit);
 
