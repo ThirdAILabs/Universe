@@ -52,9 +52,6 @@ class TextEncodingUtils {
     return bolt::BoltVector::makeSparseVector(indices, values);
   }
 
-  /**
-   * Computes pairgrams from unigrams
-   */
   static std::vector<uint32_t> computeRawPairgramsFromUnigrams(
       std::vector<uint32_t> unigram_hashes, uint32_t output_range) {
     std::vector<uint32_t> pairgram_hashes;
@@ -101,9 +98,6 @@ class TextEncodingUtils {
     return bolt::BoltVector::makeSparseVector(indices, values);
   }
 
-  /**
-   * Pairgrams from Unigrams into a BoltVector
-   */
   static bolt::BoltVector computePairgramsFromUnigrams(
       std::vector<uint32_t>& unigrams, uint32_t output_range) {
     std::vector<uint32_t> pairgrams =
@@ -119,20 +113,6 @@ class TextEncodingUtils {
                          index++;
                        });
     return data_vec;
-  }
-
-  /**
-   * Computes pairgrams into a SegmentedFeatureVector
-   */
-  static void computePairgrams(std::string_view sentence, uint32_t output_range,
-                               SegmentedFeatureVector& vec) {
-    std::vector<uint32_t> pairgrams =
-        computeRawPairgrams(sentence, output_range);
-
-    sumRepeatedIndices(pairgrams, /* value */ 1.0,
-                       [&](uint32_t pairgram, float value) {
-                         vec.addSparseFeatureToSegment(pairgram, value);
-                       });
   }
 
   /**
