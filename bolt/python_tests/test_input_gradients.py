@@ -53,8 +53,11 @@ def test_input_gradients():
     x1 = np.array([[1, 0, 0, 0], [1, 1, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]]).astype(
         "float32"
     )
-    grad1 = network.get_input_gradients(x1, bolt.CategoricalCrossEntropyLoss())
+    grad1 = network.get_input_gradients(x1, bolt.CategoricalCrossEntropyLoss(), False)
     grad2 = network.get_input_gradients(
-        x1, bolt.CategoricalCrossEntropyLoss(), np.array([1, 3, 3, 3]).astype("uint32")
+        x1,
+        bolt.CategoricalCrossEntropyLoss(),
+        False,
+        np.array([1, 3, 3, 3]).astype("uint32"),
     )
     assert grad1 == grad2

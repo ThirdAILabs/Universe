@@ -104,12 +104,12 @@ class PyNetwork final : public FullyConnectedNetwork {
   }
 
   py::tuple getInputGradients(
-      const py::object& data, const LossFunction& loss_fn,
+      const py::object& data, const LossFunction& loss_fn, bool first = true,
       const std::vector<uint32_t>& required_labels = std::vector<uint32_t>(),
       uint32_t batch_size = 256) {
     auto analysis_data = convertPyObjectToBoltDataset(data, batch_size, false);
     auto gradients = FullyConnectedNetwork::getInputGradients(
-        analysis_data.dataset, loss_fn, required_labels);
+        analysis_data.dataset, loss_fn, first, required_labels);
 
     return py::cast(gradients);
   }

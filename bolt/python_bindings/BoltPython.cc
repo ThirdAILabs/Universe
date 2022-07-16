@@ -289,7 +289,7 @@ void createBoltSubmodule(py::module_& module) {
            "summary will additionally print sampling config details for each "
            "layer in the network.")
       .def("get_input_gradients", &PyNetwork::getInputGradients,
-           py::arg("input"), py::arg("loss_fn"),
+           py::arg("input"), py::arg("loss_fn"), py::arg("first") = true,
            py::arg("required_labels") = std::vector<uint32_t>(),
            py::arg("batch_size") = 256,
            "Get the values of input gradients when back propagated "
@@ -299,6 +299,8 @@ void createBoltSubmodule(py::module_& module) {
            " * input: The input is same type as we give for train_data of "
            "train method."
            " * loss_fn: LossFunction - The loss function to minimize."
+           " * first: Boolean, if set to True, gives gradients correspond to "
+           "highest activation"
            " * required_labels: expected labels for each input vector default "
            "to empty vector"
            " * batch_size: Batch size , default batch size is 256."

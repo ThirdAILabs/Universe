@@ -192,7 +192,8 @@ inline uint32_t getSecondBestIndex(const float* activations, uint32_t dim) {
 template <typename BATCH_T>
 inline std::vector<std::vector<float>> Model<BATCH_T>::getInputGradients(
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& batch_input,
-    const LossFunction& loss_fn, const std::vector<uint32_t>& required_labels) {
+    const LossFunction& loss_fn, bool first,
+    const std::vector<uint32_t>& required_labels) {
   uint64_t num_batches = batch_input->numBatches();
   if (!required_labels.empty() &&
       (required_labels.size() !=
@@ -222,17 +223,21 @@ inline std::vector<std::vector<float>> Model<BATCH_T>::getInputGradients(
       // we are taking the second best index to know which input features are
       // important by observing input gradients, by flipping the predicted label
       // as second best index.
-      if (required_labels.empty()) {
-        required_index =
-            getSecondBestIndex(output[vec_id].activations, getOutputDim());
+      if (first) {
+        required_index = output[vec_id].getIdWithHighestActivation();
       } else {
-        required_index =
-            (required_labels[id * batch_input->at(id).getBatchSize() +
-                             vec_id] <= getOutputDim() - 1)
-                ? required_labels[id * batch_input->at(id).getBatchSize() +
-                                  vec_id]
-                : throw std::invalid_argument(
-                      "one of the label crossing the output dim");
+        if (required_labels.empty()) {
+          required_index =
+              getSecondBestIndex(output[vec_id].activations, getOutputDim());
+        } else {
+          required_index =
+              (required_labels[id * batch_input->at(id).getBatchSize() +
+                               vec_id] <= getOutputDim() - 1)
+                  ? required_labels[id * batch_input->at(id).getBatchSize() +
+                                    vec_id]
+                  : throw std::invalid_argument(
+                        "one of the label crossing the output dim");
+        }
       }
       BoltVector batch_label = BoltVector::makeSparseVector(
           std::vector<uint32_t>{required_index}, std::vector<float>{1.0});
