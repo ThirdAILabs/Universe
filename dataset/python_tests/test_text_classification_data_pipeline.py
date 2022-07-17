@@ -1,5 +1,4 @@
 import pytest
-import random
 import os
 from thirdai.dataset import DataPipeline
 from thirdai.dataset import blocks
@@ -19,7 +18,7 @@ def generate_text_classification_dataset(filename, delim):
                 f.write(f"2{delim}neutral stuff\n")
 
 
-def run_text_classification_data_pipeline_test(text_encoding, delim):
+def helper_for_text_classification_data_pipeline(text_encoding, delim):
     file = "test_text_classification.csv"
     generate_text_classification_dataset(file, delim)
     pipeline = DataPipeline(
@@ -71,21 +70,21 @@ def run_text_classification_data_pipeline_test(text_encoding, delim):
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_unigrams():
-    run_text_classification_data_pipeline_test(text_encodings.UniGram(100_000), ",")
-    run_text_classification_data_pipeline_test(text_encodings.UniGram(100_000), "\t")
+    helper_for_text_classification_data_pipeline(text_encodings.UniGram(100_000), ",")
+    helper_for_text_classification_data_pipeline(text_encodings.UniGram(100_000), "\t")
 
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_pairgrams():
-    run_text_classification_data_pipeline_test(text_encodings.PairGram(100_000), ",")
-    run_text_classification_data_pipeline_test(text_encodings.PairGram(100_000), "\t")
+    helper_for_text_classification_data_pipeline(text_encodings.PairGram(100_000), ",")
+    helper_for_text_classification_data_pipeline(text_encodings.PairGram(100_000), "\t")
 
 
 @pytest.mark.integration
 def test_text_classification_data_pipeline_with_chartrigrams():
-    run_text_classification_data_pipeline_test(
+    helper_for_text_classification_data_pipeline(
         text_encodings.CharKGram(3, 100_000), ","
     )
-    run_text_classification_data_pipeline_test(
+    helper_for_text_classification_data_pipeline(
         text_encodings.CharKGram(3, 100_000), "\t"
     )

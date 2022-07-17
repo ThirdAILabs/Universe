@@ -64,6 +64,18 @@ void TextClassifier::train(const std::string& filename, uint32_t epochs,
   }
 }
 
+std::string TextClassifier::predictSingle(const std::string& sentence) {
+  BoltVector pairgrams_vec = dataset::PairgramHasher::computePairgrams(
+      /*sentence = */ sentence, /*output_range = */ _model->getInputDim());
+  BoltVector output =
+      BoltVector(/*l = */ _model->getOutputDim(), /*is_dense = */ true);
+  _model->initializeNetworkState(/*batch_size = */ 1, /*use_sparsity = */ true);
+  _model->forward(/*batch_index = */ 0, /*input = */ pairgrams_vec, output,
+                  /*labels = */ nullptr);
+  return _batch_processor->getClassName(
+      /*class_id = */ output.getIdWithHighestActivation());
+}
+
 void TextClassifier::predict(
     const std::string& filename,
     const std::optional<std::string>& output_filename) {
@@ -80,20 +92,10 @@ void TextClassifier::predict(
       return;
     }
     for (uint32_t batch_id = 0; batch_id < batch_size; batch_id++) {
-      float max_act = 0.0;
-      uint32_t pred = 0;
-      for (uint32_t i = 0; i < outputs[batch_id].len; i++) {
-        if (outputs[batch_id].activations[i] > max_act) {
-          max_act = outputs[batch_id].activations[i];
-          if (outputs[batch_id].isDense()) {
-            pred = i;
-          } else {
-            pred = outputs[batch_id].active_neurons[i];
-          }
-        }
-      }
-
-      (*output_file) << _batch_processor->getClassName(pred) << std::endl;
+      (*output_file)
+          << _batch_processor->getClassName(
+                 /*class_id = */ outputs[batch_id].getIdWithHighestActivation())
+          << std::endl;
     }
   };
 

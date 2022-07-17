@@ -25,6 +25,7 @@ class SentimentClassifier;
 
 class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   friend class DLRM;
+  friend class TextClassifier;
   friend class python::SentimentClassifier;
 
  public:
@@ -96,26 +97,6 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
       return _layers.back()->getSparseDim();
     }
     return _layers.back()->getDim();
-  }
-
-  bool anyLayerShallow() final {
-    bool shallow = false;
-    for (uint32_t i = 0; i < _num_layers; i++) {
-      shallow |= _layers[i]->isShallow();
-    }
-    return shallow;
-  }
-
-  void setShallow(bool shallow) final {
-    for (uint32_t i = 0; i < _num_layers; i++) {
-      _layers[i]->setShallow(shallow);
-    }
-  }
-
-  void setShallowSave(bool shallow) final {
-    for (uint32_t i = 0; i < _num_layers; i++) {
-      _layers[i]->setShallowSave(shallow);
-    }
   }
 
   uint32_t getInputDim() const { return _layers.front()->getInputDim(); }

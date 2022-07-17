@@ -37,14 +37,6 @@ MetricData Model<BATCH_T>::train(
 
   MetricAggregator metrics(metric_names, verbose);
 
-  // if any layer is shallow, call enable training to set the optimizer state
-  // before training
-  if (anyLayerShallow()) {
-    throw std::logic_error(
-        "Call reinitialize_optimizer_for_training before training to "
-        "initialize optimizer state");
-  }
-
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
     if (verbose) {
       std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;

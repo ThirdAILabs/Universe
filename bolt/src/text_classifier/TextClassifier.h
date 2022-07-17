@@ -22,6 +22,8 @@ class TextClassifier {
   void predict(const std::string& filename,
                const std::optional<std::string>& output_filename);
 
+  std::string predictSingle(const std::string& sentence);
+
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);

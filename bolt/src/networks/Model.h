@@ -190,24 +190,6 @@ class Model {
 
   virtual ~Model() = default;
 
-  /**
-   * shallow layer: Layer without optimizer state
-   * setShallow sets the layer to shallow or non-shallow, ie, it can remove or
-   * initialize the optimizer respectively
-   * Only called for trimming the model or for resuming training.
-   */
-  virtual void setShallow(bool shallow) = 0;
-
-  /**
-   * setShallowSave sets whether layer should be saved shallowly, ie, whether
-   * layers should be saved with or without the optimizer state
-   * Called right before saving the model so that archive method knows whether
-   * or not to store the optimizer state.
-   */
-  virtual void setShallowSave(bool shallow) = 0;
-
-  virtual bool anyLayerShallow() = 0;
-
  protected:
   uint32_t getRehashBatch(uint32_t rehash, uint32_t batch_size,
                           uint32_t data_len);
@@ -228,7 +210,7 @@ class Model {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_epoch_count, _batch_iter);
+    archive(_epoch_count);
   }
 };
 

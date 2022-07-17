@@ -56,6 +56,22 @@ struct BoltVector {
     }
   }
 
+  uint32_t getIdWithHighestActivation() const {
+    float max_act = activations[0];
+    uint32_t id = 0;
+    for (uint32_t i = 1; i < len; i++) {
+      if (activations[i] > max_act) {
+        max_act = activations[i];
+        if (isDense()) {
+          id = i;
+        } else {
+          id = active_neurons[i];
+        }
+      }
+    }
+    return id;
+  }
+
   static BoltVector makeSparseVector(const std::vector<uint32_t>& indices,
                                      const std::vector<float>& values) {
     assert(indices.size() == values.size());
@@ -290,6 +306,39 @@ class BoltBatch {
   }
 
   uint32_t getBatchSize() const { return _vectors.size(); }
+
+  /*
+   * Throws an exception if the vector is not of the passed in
+   * expected_dimension (for a sparse vector this just means none of the
+   * active neurons are too large). "origin_string" should be a descriptive
+   * string that tells the user where the error comes from if it is thrown, e.g.
+   * something like "Passed in BoltVector too large for Input".
+   */
+  void verifyExpectedDimension(uint32_t expected_dimension,
+                               const std::string& origin_string) const {
+    for (const BoltVector& vec : _vectors) {
+      if (vec.isDense()) {
+        if (vec.len != expected_dimension) {
+          throw std::invalid_argument(
+              origin_string + ": Received dense BoltVector with dimension=" +
+              std::to_string(vec.len) +
+              ", but was supposed to have dimension=" +
+              std::to_string(expected_dimension));
+        }
+      } else {
+        for (uint32_t i = 0; i < vec.len; i++) {
+          uint32_t active_neuron = vec.active_neurons[i];
+          if (active_neuron >= expected_dimension) {
+            throw std::invalid_argument(
+                origin_string +
+                ": Received sparse BoltVector with active_neuron=" +
+                std::to_string(active_neuron) + " but was supposed to have=" +
+                std::to_string(expected_dimension));
+          }
+        }
+      }
+    }
+  }
 
   BoltBatch(const BoltBatch& other) = delete;
 
