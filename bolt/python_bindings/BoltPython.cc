@@ -614,7 +614,6 @@ void createBoltSubmodule(py::module_& module) {
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
 
-<<<<<<< HEAD
   py::class_<DistributedPyNetwork>(
       bolt_submodule, "DistributedNetwork",
       "Fully connected Distributed neural network.")
@@ -753,7 +752,6 @@ void createBoltSubmodule(py::module_& module) {
            "inference, you may get a significant performance improvement if "
            "you call this one or two epochs before you finish training. "
            "Otherwise you should not call this method.");
-=======
   py::class_<TabularClassifier>(bolt_submodule, "TabularClassifier")
       .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
            py::arg("n_classes"),
@@ -799,7 +797,6 @@ void createBoltSubmodule(py::module_& module) {
           "Loads and builds a saved classifier from file.\n"
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
->>>>>>> 8c7e0928507d439b9e8deec34f5d4012b334bdb7
 
   py::class_<SentimentClassifier>(bolt_submodule, "SentimentClassifier")
       .def(py::init<const std::string&>(), py::arg("model_path"))
