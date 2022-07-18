@@ -2,11 +2,14 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/Dataset.h>
+#include <dataset/src/batch_types/BoltTokenBatch.h>
 
 namespace thirdai::dataset {
 
 using BoltDataset = InMemoryDataset<bolt::BoltBatch>;
 using BoltDatasetPtr = std::shared_ptr<BoltDataset>;
+using BoltTokenDataset = InMemoryDataset<BoltTokenBatch>;
+using BoltTokenDatasetPtr = std::shared_ptr<BoltTokenDataset>;
 
 class DatasetWithLabels {
  public:

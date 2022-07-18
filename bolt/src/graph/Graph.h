@@ -6,6 +6,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
+#include "DatasetContext.h"
 #include "ExecutionConfig.h"
 #include "InferenceOutputTracker.h"
 #include "Node.h"
@@ -16,6 +17,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <dataset/src/Dataset.h>
+#include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <memory>
 #include <optional>
@@ -60,22 +62,16 @@ class BoltGraph {
   */
   void compile(std::shared_ptr<LossFunction> loss, bool print_when_done = true);
 
-  template <typename BATCH_T>
   MetricData train(
-      // Train dataset
-      std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
-      // Train labels
+      const std::vector<dataset::BoltDatasetPtr>& train_data,
+      const std::vector<dataset::BoltTokenDatasetPtr>& train_tokens,
       const dataset::BoltDatasetPtr& train_labels,
-      // Other train parameters
       const TrainConfig& train_config);
 
-  template <typename BATCH_T>
   InferenceResult predict(
-      // Test dataset
-      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
-      // Test labels
+      const std::vector<dataset::BoltDatasetPtr>& test_data,
+      const std::vector<dataset::BoltTokenDatasetPtr>& test_tokens,
       const dataset::BoltDatasetPtr& test_labels,
-      // Other prediction parameters
       const PredictConfig& predict_config);
 
   std::vector<NodePtr> getNodeTraversalOrder() const {
@@ -104,14 +100,10 @@ class BoltGraph {
   // Private constructor for cereal.
   BoltGraph() { thirdai::licensing::LicenseWrapper::checkLicense(); }
 
-  template <typename BATCH_T>
-  void processTrainingBatch(BATCH_T& batch_inputs,
-                            const BoltBatch& batch_labels, float learning_rate,
+  void processTrainingBatch(const BoltBatch& batch_labels, float learning_rate,
                             MetricAggregator& metrics);
 
-  template <typename BATCH_T>
-  void processInferenceBatch(BATCH_T& batch_inputs,
-                             const BoltBatch* batch_labels,
+  void processInferenceBatch(const BoltBatch* batch_labels,
                              MetricAggregator& metrics);
 
   template <typename BATCH_T>
@@ -133,20 +125,13 @@ class BoltGraph {
 
   std::unordered_map<NodePtr, int32_t> getSuccessorCounts() const;
 
-  template <typename BATCH_T>
-  void verifyCanPredict(
-      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
-      bool has_labels, bool returning_activations,
-      uint32_t num_metrics_tracked);
+  void verifyCanTrain(const DatasetContext& train_context);
 
-  template <typename BATCH_T>
-  void verifyInputForGraph(
-      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset);
+  void verifyCanPredict(const DatasetContext& predict_context, bool has_labels,
+                        bool returning_activations,
+                        uint32_t num_metrics_tracked);
 
-  template <typename BATCH_T>
-  void verifyDataLabelCorrespondance(
-      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset,
-      const dataset::BoltDatasetPtr& train_labels);
+  void verifyInputForGraph(const DatasetContext& context);
 
   void verifyGraphProperties();
 

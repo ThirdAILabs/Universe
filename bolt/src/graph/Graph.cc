@@ -57,44 +57,26 @@ void BoltGraph::compile(std::shared_ptr<LossFunction> loss,
   }
 }
 
-template MetricData BoltGraph::train(
-    std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>&,
-    const dataset::BoltDatasetPtr&, const TrainConfig&);
-
-template MetricData BoltGraph::train(
-    std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&,
-    const dataset::BoltDatasetPtr&, const TrainConfig&);
-
-template MetricData BoltGraph::train(
-    std::shared_ptr<dataset::InMemoryDataset<dataset::MaskedSentenceBatch>>&,
-    const dataset::BoltDatasetPtr&, const TrainConfig&);
-
-template <typename BATCH_T>
 MetricData BoltGraph::train(
-    std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
+    const std::vector<dataset::BoltDatasetPtr>& train_data,
+    const std::vector<dataset::BoltTokenDatasetPtr>& train_tokens,
     const dataset::BoltDatasetPtr& train_labels,
     const TrainConfig& train_config) {
-  verifyInputForGraph(train_data);
-  verifyDataLabelCorrespondance(train_data, train_labels);
   if (!graphCompiled()) {
     throw std::logic_error("Graph must be compiled before training");
   }
 
-  // TODO(Nicholas): Switch to batch_size property in dataset.
-  uint32_t max_batch_size = train_data->at(0).getBatchSize();
-  if (max_batch_size == 0) {
-    throw std::invalid_argument("Batch size must be greater than 0");
-  }
+  DatasetContext train_context(train_data, train_tokens, train_labels);
+
+  verifyCanTrain(train_context);
 
   uint32_t rebuild_hash_tables_batch =
-      train_config.getRebuildHashTablesBatchInterval(max_batch_size,
-                                                     train_data->len());
+      train_config.getRebuildHashTablesBatchInterval(train_context.batchSize(),
+                                                     train_context.len());
 
   uint32_t reconstruct_hash_functions_batch =
-      train_config.getReconstructHashFunctionsBatchInterval(max_batch_size,
-                                                            train_data->len());
-
-  uint64_t num_train_batches = train_data->numBatches();
+      train_config.getReconstructHashFunctionsBatchInterval(
+          train_context.batchSize(), train_context.len());
 
   /*
     Because of how the datasets are read we know that all batches will not have
@@ -102,7 +84,7 @@ MetricData BoltGraph::train(
     datastructures to store the activations for every batch during training so
     we need this to be able to support the largest batch size.
    */
-  prepareToProcessBatches(max_batch_size, /* use_sparsity=*/true);
+  prepareToProcessBatches(train_context.batchSize(), /* use_sparsity=*/true);
 
   std::vector<double> time_per_epoch;
 
@@ -116,15 +98,12 @@ MetricData BoltGraph::train(
       if (train_config.verbose()) {
         std::cout << "\nEpoch " << (_epoch_count + 1) << ':' << std::endl;
       }
-      ProgressBar bar(num_train_batches, train_config.verbose());
+      ProgressBar bar(train_context.numBatches(), train_config.verbose());
       auto train_start = std::chrono::high_resolution_clock::now();
 
-      for (uint32_t batch = 0; batch < num_train_batches; batch++) {
-        BATCH_T& batch_inputs = train_data->at(batch);
-
-        const BoltBatch& batch_labels = train_labels->at(batch);
-
-        processTrainingBatch(batch_inputs, batch_labels,
+      for (uint32_t batch_idx = 0; batch_idx < train_context.numBatches();
+           batch_idx++) {
+        processTrainingBatch(batch_idx, batch_labels,
                              train_config.learningRate(), metrics);
 
         updateSampling(
@@ -163,25 +142,21 @@ MetricData BoltGraph::train(
   return metric_data;
 }
 
-template <typename BATCH_T>
-void BoltGraph::processTrainingBatch(BATCH_T& batch_inputs,
-                                     const BoltBatch& batch_labels,
+void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
                                      float learning_rate,
                                      MetricAggregator& metrics) {
   assert(graphCompiled());
-  setInputs(batch_inputs);
   batch_labels.verifyExpectedDimension(
       /* expected_dimension = */ _output->outputDim(),
       /* origin_string = */
       "Passed in label BoltVector is larger than the output dim");
 
-#pragma omp parallel for default(none) \
-    shared(batch_inputs, batch_labels, metrics)
-  for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
+#pragma omp parallel for default(none) shared(batch_labels, metrics)
+  for (uint32_t vec_id = 0; vec_id < batch_labels.getBatchSize(); vec_id++) {
     forward(vec_id, &batch_labels[vec_id]);
 
     _loss->lossGradients(_output->getOutputVector(vec_id), batch_labels[vec_id],
-                         batch_inputs.getBatchSize());
+                         batch_labels.getBatchSize());
 
     backpropagate(vec_id);
 
@@ -203,20 +178,6 @@ void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
   }
 }
 
-template InferenceResult BoltGraph::predict(
-    const std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>&,
-    const dataset::BoltDatasetPtr&, const PredictConfig&);
-
-template InferenceResult BoltGraph::predict(
-    const std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&,
-    const dataset::BoltDatasetPtr&, const PredictConfig&);
-
-template InferenceResult BoltGraph::predict(
-    const std::shared_ptr<
-        dataset::InMemoryDataset<dataset::MaskedSentenceBatch>>&,
-    const dataset::BoltDatasetPtr&, const PredictConfig&);
-
-template <typename BATCH_T>
 InferenceResult BoltGraph::predict(
     // Test dataset
     const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
@@ -259,11 +220,6 @@ InferenceResult BoltGraph::predict(
   // automatically delete the training state
   try {
     for (uint32_t batch = 0; batch < num_test_batches; batch++) {
-      BATCH_T& inputs = test_data->at(batch);
-
-      const BoltBatch* batch_labels =
-          has_labels ? &(*test_labels)[batch] : nullptr;
-
       processInferenceBatch(inputs, batch_labels, metrics);
 
       bar.increment();
@@ -295,18 +251,13 @@ InferenceResult BoltGraph::predict(
   return {std::move(metric_vals), std::move(outputTracker)};
 }
 
-template <typename BATCH_T>
-void BoltGraph::processInferenceBatch(BATCH_T& batch_inputs,
-                                      const BoltBatch* batch_labels,
+void BoltGraph::processInferenceBatch(const BoltBatch* batch_labels,
                                       MetricAggregator& metrics) {
-  setInputs(batch_inputs);
-
   // Either we shouldn't track any metrics or there need to be labels
   assert((metrics.getNumMetricsTracked() == 0) || (batch_labels != nullptr));
 
-#pragma omp parallel for default(none) \
-    shared(batch_inputs, batch_labels, metrics)
-  for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
+#pragma omp parallel for default(none) shared(batch_labels, metrics)
+  for (uint32_t vec_id = 0; vec_id < batch_labels.getBatchSize(); vec_id++) {
     // We set labels to nullptr so that they are not used in sampling during
     // inference.
     forward(vec_id, /*labels=*/nullptr);
@@ -461,12 +412,21 @@ std::unordered_map<NodePtr, int32_t> BoltGraph::getSuccessorCounts() const {
   return num_successors;
 }
 
-template <typename BATCH_T>
-void BoltGraph::verifyCanPredict(
-    const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
-    bool has_labels, bool returning_activations, uint32_t num_metrics_tracked) {
-  verifyInputForGraph(test_data);
+void BoltGraph::verifyCanTrain(const DatasetContext& train_context) {
+  if (!graphCompiled()) {
+    throw std::logic_error("Graph must be compiled before training");
+  }
 
+  if (!train_context.labels()) {
+    throw std::invalid_argument("Must pass in labels for training.");
+  }
+
+  verifyInputForGraph(train_context);
+}
+
+void BoltGraph::verifyCanPredict(const DatasetContext& predict_context,
+                                 bool has_labels, bool returning_activations,
+                                 uint32_t num_metrics_tracked) {
   if (!graphCompiled()) {
     throw std::logic_error("Graph must be compiled before inference");
   }
@@ -479,60 +439,22 @@ void BoltGraph::verifyCanPredict(
         "Doing inference without returning activations and no metrics is a "
         "NOOP");
   }
+
+  verifyInputForGraph(predict_context);
 }
 
-template <typename BATCH_T>
-void BoltGraph::verifyInputForGraph(
-    const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset) {
-  (void)dataset;
-  if (std::is_same<BATCH_T, BoltBatch>::value &&
-      (_inputs.size() != 1 || !_token_inputs.empty())) {
-    throw exceptions::GraphCompilationFailure(
-        "Only graphs with a single input layer can take in a dataset with "
-        "batch type BoltBatch.");
-  }
-
-  if (std::is_same<BATCH_T, dataset::BoltTokenBatch>::value &&
-      (!_inputs.empty() || _token_inputs.size() != 1)) {
-    throw exceptions::GraphCompilationFailure(
-        "Only graphs with a single token input layer can take in a dataset "
-        "with batch type BoltTokenBatch.");
-  }
-
-  if (std::is_same<BATCH_T, dataset::MaskedSentenceBatch>::value &&
-      (_inputs.size() != 1 || _token_inputs.size() > 1)) {
-    throw exceptions::GraphCompilationFailure(
-        "Only graphs with a single input layer and optionally one token input "
-        "layer can take in a dataset "
-        "with batch type MaskedSentenceBatch.");
-  }
-}
-
-template <typename BATCH_T>
-void BoltGraph::verifyDataLabelCorrespondance(
-    const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset,
-    const dataset::BoltDatasetPtr& labels) {
-  if (dataset->numBatches() != labels->numBatches()) {
+void BoltGraph::verifyInputForGraph(const DatasetContext& context) {
+  if (context.numVectorDatasets() != _inputs.size()) {
     throw std::invalid_argument(
-        "The passed in dataset and labels must have the same number of "
-        "batches, but found " +
-        std::to_string(dataset->numBatches()) + " batchs in the dataset and " +
-        std::to_string(labels->numBatches()) + " batches in the labels.");
+        "Wrong number of dataset inputs, expected " +
+        std::to_string(_inputs.size()) + " but received " +
+        std::to_string(context.numVectorDatasets()) + ".");
   }
-  if (dataset->len() != labels->len()) {
-    throw std::invalid_argument(
-        "The passed in dataset and labels must have the same number of "
-        "total examples, but found " +
-        std::to_string(dataset->len()) + " total examples in the dataset, " +
-        std::to_string(labels->len()) + " total examples in the labels.");
-  }
-  if (dataset->at(0).getBatchSize() != labels->at(0).getBatchSize()) {
-    throw std::invalid_argument(
-        "The passed in dataset and labels must have the same batch size, "
-        "but found " +
-        std::to_string(dataset->at(0).getBatchSize()) +
-        " dataset batch size, " + std::to_string(labels->at(0).getBatchSize()) +
-        " labels batch size.");
+  if (context.numTokenDatasets() != _token_inputs.size()) {
+    throw std::invalid_argument("Wrong number of token inputs, expected " +
+                                std::to_string(_token_inputs.size()) +
+                                " but received " +
+                                std::to_string(_inputs.size()) + ".");
   }
 }
 
