@@ -22,8 +22,9 @@ class MockBlock : public Block {
   uint32_t expectedNumColumns() const final { return _column + 1; };
 
  protected:
-  void buildSegment(const std::vector<std::string_view>& input_row,
-                    SegmentedFeatureVector& vec) override {
+  std::exception_ptr buildSegment(
+      const std::vector<std::string_view>& input_row,
+      SegmentedFeatureVector& vec) override {
     auto val_str = input_row.at(_column);
     char* end;
     float val = std::strtof(val_str.data(), &end);
@@ -33,6 +34,7 @@ class MockBlock : public Block {
     } else {
       vec.addSparseFeatureToSegment(0, val);
     }
+    return nullptr;
   };
 
  private:

@@ -62,7 +62,9 @@ class CategoricalBlockTest : public testing::Test {
       input_row_view[i] =
           std::string_view(input_row[i].c_str(), input_row[i].size());
     }
-    block.addVectorSegment(input_row_view, vec);
+    if (auto err = block.addVectorSegment(input_row_view, vec)) {
+      std::rethrow_exception(err);
+    }
   }
 
   /**
