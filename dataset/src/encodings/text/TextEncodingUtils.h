@@ -172,8 +172,9 @@ class TextEncodingUtils {
   }
 
   /**
-   * Sorts the given indices and deduplicates them by adding value for each
-   * instance of that index. Applies a lambda to the resulting idx, value pair.
+   * Sorts the given indices and deduplicates them by adding base_value for each
+   * instance of that index. Applies a lambda to the resulting idx, summed_value
+   * pair.
    */
   template <typename INDEX_VAL_PROCESSOR>
   static void sumRepeatedIndices(std::vector<uint32_t>& indices,
@@ -189,19 +190,19 @@ class TextEncodingUtils {
 
     /**
      * If current index is the same as the next index, keep accumulating
-     * val. Otherwise, add sparse feature at the current index with the
-     * accumulated base_value and reset val.
+     * summed_val. Otherwise, add sparse feature at the current index with the
+     * accumulated base_value and reset summed_val.
      */
-    float val = 0.0;
+    float summed_val = 0.0;
     uint32_t i = 0;
     for (; i < indices.size() - 1; ++i) {
       uint32_t idx = indices[i];
       uint32_t next_idx = indices[i + 1];
-      val += base_value;
+      summed_val += base_value;
 
       if (idx != next_idx) {
-        idx_val_processor(idx, val);
-        val = 0.0;  // Reset val since next idx is different.
+        idx_val_processor(idx, summed_val);
+        summed_val = 0.0;  // Reset summed_val since next idx is different.
       }
     }
 
@@ -210,8 +211,8 @@ class TextEncodingUtils {
      * "different", so we add a sparse feature accordingly.
      */
     if (i == indices.size() - 1) {
-      val += base_value;
-      idx_val_processor(indices.back(), val);
+      summed_val += base_value;
+      idx_val_processor(indices.back(), summed_val);
     }
   }
 
