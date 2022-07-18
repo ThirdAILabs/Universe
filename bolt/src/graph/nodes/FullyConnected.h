@@ -44,7 +44,9 @@ class FullyConnectedNode final
   }
 
   uint32_t outputDim() const final {
-    if (_config) {
+    NodeState node_state = getState();
+    if (node_state == NodeState::Constructed ||
+        node_state == NodeState::PredecessorsSet) {
       return _config.value().getDim();
     }
     return _layer->getDim();
@@ -206,9 +208,7 @@ class FullyConnectedNode final
 
   // Private constructor for cereal. Must create dummy config since no default
   // constructor exists for layer config.
-  FullyConnectedNode()
-      : _config(FullyConnectedLayerConfig(/* dim= */ 0,
-                                          ActivationFunction::Linear)) {}
+  FullyConnectedNode() : _config(std::nullopt) {}
 
   friend class cereal::access;
   template <class Archive>
