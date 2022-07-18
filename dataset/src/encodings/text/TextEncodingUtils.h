@@ -9,6 +9,10 @@
 
 namespace thirdai::dataset {
 
+/**
+ * This class should be the source of all text encodings in the codebase to
+ * ensure no mismatches in hashes or implementations.
+ */
 class TextEncodingUtils {
  public:
   static constexpr uint32_t HASH_SEED = 341;
