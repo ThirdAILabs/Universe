@@ -18,6 +18,9 @@ class TextEncodingUtils {
     return hashing::MurmurHash(key, len, HASH_SEED);
   }
 
+  /**
+   * Unigrams in a vector with possible repeated indices
+   */
   static std::vector<uint32_t> computeRawUnigrams(
       const std::string_view sentence) {
     std::vector<uint32_t> unigrams;
@@ -26,6 +29,9 @@ class TextEncodingUtils {
     return unigrams;
   }
 
+  /**
+   * Unigrams in a vector with possible repeated indices (modded to a range)
+   */
   static std::vector<uint32_t> computeRawUnigramsWithRange(
       const std::string_view sentence, uint32_t output_range) {
     std::vector<uint32_t> unigrams;
@@ -35,6 +41,9 @@ class TextEncodingUtils {
     return unigrams;
   }
 
+  /**
+   * Unigrams in a BoltVector with possible repeated indices summed up
+   */
   static bolt::BoltVector computeUnigrams(const std::string_view sentence,
                                           uint32_t output_range) {
     std::vector<uint32_t> unigrams =
@@ -52,6 +61,9 @@ class TextEncodingUtils {
     return bolt::BoltVector::makeSparseVector(indices, values);
   }
 
+  /**
+   * Pairgrams in a vector with possible repeated indices
+   */
   static std::vector<uint32_t> computeRawPairgramsFromUnigrams(
       std::vector<uint32_t> unigram_hashes, uint32_t output_range) {
     std::vector<uint32_t> pairgram_hashes;
@@ -68,6 +80,9 @@ class TextEncodingUtils {
     return pairgram_hashes;
   }
 
+  /**
+   * Pairgrams in a vector with possible repeated indices
+   */
   static std::vector<uint32_t> computeRawPairgrams(std::string_view sentence,
                                                    uint32_t output_range) {
     std::vector<uint32_t> unigram_hashes = computeRawUnigrams(sentence);
@@ -75,6 +90,9 @@ class TextEncodingUtils {
     return computeRawPairgramsFromUnigrams(unigram_hashes, output_range);
   }
 
+  /**
+   * Pairgrams in a BoltVector with possible repeated indices summed up
+   */
   static bolt::BoltVector computePairgrams(std::string_view sentence,
                                            uint32_t output_range) {
     std::vector<uint32_t> pairgrams =
@@ -92,6 +110,9 @@ class TextEncodingUtils {
     return bolt::BoltVector::makeSparseVector(indices, values);
   }
 
+  /**
+   * Pairgrams in a BoltVector with possible repeated indices summed up
+   */
   static bolt::BoltVector computePairgramsFromUnigrams(
       std::vector<uint32_t>& unigrams, uint32_t output_range) {
     std::vector<uint32_t> pairgrams =
