@@ -6,10 +6,10 @@ from subprocess import DEVNULL, PIPE
 import sys
 import pytest
 
-# pytestmark = [pytest.mark.unit, pytest.mark.release]
+pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 
-def ctrl_c_functionality():
+def test_ctrl_c_functionality():
     # windows could not pass the test,hence running only on linux and darwin
     if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
         # started a subprocesss to run a file to which SIGINT needed to be sent
