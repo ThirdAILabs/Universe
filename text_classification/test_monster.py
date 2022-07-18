@@ -40,6 +40,3 @@ def test_train():
     )
     model.eat_corpus("test_dir", False, True)
     model.evaluate("test_dir")
-
-
-test_train()
