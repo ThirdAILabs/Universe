@@ -85,7 +85,7 @@ def train_network_distributed(
     for epoch_num in range(epochs):
         for batch_num in range(batch_size):
             network.calculateGradientSingleNode(
-                batch_no, bolt.CategoricalCrossEntropyLoss()
+                batch_num, bolt.CategoricalCrossEntropyLoss()
             )
             network.updateParametersSingleNode(learning_rate)
 
