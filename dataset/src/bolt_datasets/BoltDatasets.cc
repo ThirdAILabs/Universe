@@ -39,6 +39,9 @@ DatasetWithLabels loadBoltSvmDataset(const std::string& filename,
 
     len += data_vecs.size();
 
+    if (data_vecs.empty()) {
+      continue;
+    }
     data_batches.push_back(bolt::BoltBatch(std::move(data_vecs)));
     label_batches.push_back(bolt::BoltBatch(std::move(label_vecs)));
   }
@@ -49,8 +52,8 @@ DatasetWithLabels loadBoltSvmDataset(const std::string& filename,
       << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
       << " seconds" << std::endl;
 
-  return DatasetWithLabels(BoltDataset(std::move(data_batches), len),
-                           BoltDataset(std::move(label_batches), len));
+  return DatasetWithLabels(BoltDataset(std::move(data_batches)),
+                           BoltDataset(std::move(label_batches)));
 }
 
 DatasetWithLabels loadBoltCsvDataset(const std::string& filename,
@@ -90,8 +93,8 @@ DatasetWithLabels loadBoltCsvDataset(const std::string& filename,
       << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
       << " seconds" << std::endl;
 
-  return DatasetWithLabels(BoltDataset(std::move(data_batches), len),
-                           BoltDataset(std::move(label_batches), len));
+  return DatasetWithLabels(BoltDataset(std::move(data_batches)),
+                           BoltDataset(std::move(label_batches)));
 }
 
 ClickThroughDatasetWithLabels loadClickThroughDataset(
@@ -126,8 +129,8 @@ ClickThroughDatasetWithLabels loadClickThroughDataset(
       << " seconds" << std::endl;
 
   return ClickThroughDatasetWithLabels(
-      InMemoryDataset<ClickThroughBatch>(std::move(data_batches), len),
-      BoltDataset(std::move(label_batches), len));
+      InMemoryDataset<ClickThroughBatch>(std::move(data_batches)),
+      BoltDataset(std::move(label_batches)));
 }
 
 }  // namespace thirdai::dataset

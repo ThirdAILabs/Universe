@@ -89,10 +89,12 @@ class TabularClassifier {
             column_datatypes, _model->getOutputDim());
 
     // TabularMetadataProcessor inherets ComputeBatchProcessor so this doesn't
-    // produce any vectors
-    std::make_shared<dataset::StreamingDataset<BoltBatch>>(data_loader,
-                                                           batch_processor)
-        ->loadInMemory();
+    // produce any vectors, we are just using it to iterate over the dataset.
+    auto compute_dataset =
+        std::make_shared<dataset::StreamingDataset<BoltBatch>>(data_loader,
+                                                               batch_processor);
+    while (compute_dataset->nextBatch()) {
+    }
 
     return batch_processor->getMetadata();
   }

@@ -154,16 +154,10 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
             auto train_labels =
                 convertPyObjectToBoltDataset(labels, train_config.batchSize(),
                                              /* is_labels = */ true);
-            if (isMLMDataset(data)) {
-              auto train_data = data.cast<dataset::python::MLMDatasetPtr>();
-
-              return model.train(train_data, train_labels.dataset,
-                                 train_config);
-            }
             auto train_data =
                 convertPyObjectToBoltDataset(data, train_config.batchSize(),
                                              /* is_labels = */ false);
-            return model.train(train_data.dataset, train_labels.dataset,
+            return model.train({train_data.dataset}, {}, train_labels.dataset,
                                train_config);
           },
           py::arg("train_data"), py::arg("train_labels"),
@@ -224,22 +218,13 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 
             std::optional<InferenceResult> result;
             uint64_t test_data_len;
-            if (isMLMDataset(data)) {
-              auto test_data = data.cast<dataset::python::MLMDatasetPtr>();
-              test_data_len = test_data->len();
 
-              result =
-                  model.predict(test_data, test_labels.dataset, predict_config);
-            } else {
-              auto test_data = convertPyObjectToBoltDataset(
-                  data, /* batch_size = */ 2048, /* is_labels = */ false);
-              test_data_len = test_data.dataset->len();
+            auto test_data = convertPyObjectToBoltDataset(
+                data, /* batch_size = */ 2048, /* is_labels = */ false);
+            test_data_len = test_data.dataset->len();
 
-              result = model.predict(test_data.dataset, test_labels.dataset,
-                                     predict_config);
-            }
-
-            auto [metrics, output] = std::move(*result);
+            auto [metrics, output] = model.predict(
+                {test_data.dataset}, {}, test_labels.dataset, predict_config);
 
             // We need to get these now because we are about to std::move output
             const float* activation_pointer =

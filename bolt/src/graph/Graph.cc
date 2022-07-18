@@ -62,10 +62,6 @@ MetricData BoltGraph::train(
     const std::vector<dataset::BoltTokenDatasetPtr>& train_tokens,
     const dataset::BoltDatasetPtr& train_labels,
     const TrainConfig& train_config) {
-  if (!graphCompiled()) {
-    throw std::logic_error("Graph must be compiled before training");
-  }
-
   DatasetContext train_context(train_data, train_tokens, train_labels);
 
   verifyCanTrain(train_context);
@@ -103,8 +99,11 @@ MetricData BoltGraph::train(
 
       for (uint32_t batch_idx = 0; batch_idx < train_context.numBatches();
            batch_idx++) {
-        processTrainingBatch(batch_idx, batch_labels,
-                             train_config.learningRate(), metrics);
+        train_context.setInputs(batch_idx, _inputs, _token_inputs);
+
+        const BoltBatch& batch_labels = train_context.labels()->at(batch_idx);
+        processTrainingBatch(batch_labels, train_config.learningRate(),
+                             metrics);
 
         updateSampling(
             /* rebuild_hash_tables_batch= */ rebuild_hash_tables_batch,
@@ -122,7 +121,7 @@ MetricData BoltGraph::train(
       time_per_epoch.push_back(static_cast<double>(epoch_time));
       if (train_config.verbose()) {
         std::cout << std::endl
-                  << "Processed " << num_train_batches
+                  << "Processed " << train_context.numBatches()
                   << " training batches in " << epoch_time << " seconds"
                   << std::endl;
       }
@@ -179,25 +178,20 @@ void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
 }
 
 InferenceResult BoltGraph::predict(
-    // Test dataset
-    const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
-    // Test labels
+    const std::vector<dataset::BoltDatasetPtr>& test_data,
+    const std::vector<dataset::BoltTokenDatasetPtr>& test_tokens,
     const dataset::BoltDatasetPtr& test_labels,
-    // Other prediction parameters
     const PredictConfig& predict_config) {
+  DatasetContext predict_context(test_data, test_tokens, test_labels);
+
   bool has_labels = (test_labels != nullptr);
-  if (has_labels) {
-    verifyDataLabelCorrespondance(test_data, test_labels);
-  }
+
   MetricAggregator metrics = predict_config.getMetricAggregator();
 
   verifyCanPredict(
-      test_data, /* has_labels = */ has_labels,
+      predict_context, has_labels,
       /* returning_activations = */ predict_config.shouldReturnActivations(),
       /* num_metrics_tracked = */ metrics.getNumMetricsTracked());
-
-  uint32_t max_batch_size = test_data->at(0).getBatchSize();
-  uint64_t num_test_batches = test_data->numBatches();
 
   /*
    Because of how the datasets are read we know that all batches will not have
@@ -205,13 +199,13 @@ InferenceResult BoltGraph::predict(
    datastructures to store the activations for every batch during training so
    we need this to be able to support the largest batch size.
   */
-  prepareToProcessBatches(max_batch_size,
+  prepareToProcessBatches(predict_context.batchSize(),
                           predict_config.sparseInferenceEnabled());
 
   InferenceOutputTracker outputTracker(
-      _output, predict_config, /* total_num_samples = */ test_data->len());
+      _output, predict_config, /* total_num_samples = */ predict_context.len());
 
-  ProgressBar bar(num_test_batches, predict_config.verbose());
+  ProgressBar bar(predict_context.numBatches(), predict_config.verbose());
 
   auto test_start = std::chrono::high_resolution_clock::now();
 
@@ -219,12 +213,19 @@ InferenceResult BoltGraph::predict(
   // some sort of RAII training context object whose destructor will
   // automatically delete the training state
   try {
-    for (uint32_t batch = 0; batch < num_test_batches; batch++) {
-      processInferenceBatch(inputs, batch_labels, metrics);
+    for (uint32_t batch_idx = 0; batch_idx < predict_context.numBatches();
+         batch_idx++) {
+      predict_context.setInputs(batch_idx, _inputs, _token_inputs);
+
+      uint64_t batch_size = predict_context.batchSize(batch_idx);
+      const BoltBatch* batch_labels =
+          has_labels ? &predict_context.labels()->at(batch_idx) : nullptr;
+
+      processInferenceBatch(batch_size, batch_labels, metrics);
 
       bar.increment();
 
-      outputTracker.saveOutputBatch(_output, inputs.getBatchSize());
+      outputTracker.saveOutputBatch(_output, batch_size);
     }
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
@@ -240,8 +241,9 @@ InferenceResult BoltGraph::predict(
 
   if (predict_config.verbose()) {
     std::cout << std::endl
-              << "Processed " << num_test_batches << " test batches in "
-              << test_time << " milliseconds" << std::endl;
+              << "Processed " << predict_context.numBatches()
+              << " test batches in " << test_time << " milliseconds"
+              << std::endl;
   }
 
   metrics.logAndReset();
@@ -251,13 +253,14 @@ InferenceResult BoltGraph::predict(
   return {std::move(metric_vals), std::move(outputTracker)};
 }
 
-void BoltGraph::processInferenceBatch(const BoltBatch* batch_labels,
+void BoltGraph::processInferenceBatch(uint64_t batch_size,
+                                      const BoltBatch* batch_labels,
                                       MetricAggregator& metrics) {
   // Either we shouldn't track any metrics or there need to be labels
   assert((metrics.getNumMetricsTracked() == 0) || (batch_labels != nullptr));
 
-#pragma omp parallel for default(none) shared(batch_labels, metrics)
-  for (uint32_t vec_id = 0; vec_id < batch_labels.getBatchSize(); vec_id++) {
+#pragma omp parallel for default(none) shared(batch_size, batch_labels, metrics)
+  for (uint32_t vec_id = 0; vec_id < batch_size; vec_id++) {
     // We set labels to nullptr so that they are not used in sampling during
     // inference.
     forward(vec_id, /*labels=*/nullptr);
@@ -450,6 +453,7 @@ void BoltGraph::verifyInputForGraph(const DatasetContext& context) {
         std::to_string(_inputs.size()) + " but received " +
         std::to_string(context.numVectorDatasets()) + ".");
   }
+
   if (context.numTokenDatasets() != _token_inputs.size()) {
     throw std::invalid_argument("Wrong number of token inputs, expected " +
                                 std::to_string(_token_inputs.size()) +

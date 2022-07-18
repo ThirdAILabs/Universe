@@ -103,7 +103,7 @@ class BoltGraph {
   void processTrainingBatch(const BoltBatch& batch_labels, float learning_rate,
                             MetricAggregator& metrics);
 
-  void processInferenceBatch(const BoltBatch* batch_labels,
+  void processInferenceBatch(uint64_t batch_size, const BoltBatch* batch_labels,
                              MetricAggregator& metrics);
 
   template <typename BATCH_T>

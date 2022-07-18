@@ -180,7 +180,7 @@ InferenceMetricData Model<BATCH_T>::predict(
 
   uint32_t batch_size = test_data->at(0).getBatchSize();
 
-  uint64_t num_test_batches = std::min(test_data->numBatches(), batch_limit);
+  uint64_t num_test_batches = std::min<uint64_t>(test_data->numBatches(), batch_limit);
 
   uint64_t inference_output_dim = getInferenceOutputDim(use_sparse_inference);
 

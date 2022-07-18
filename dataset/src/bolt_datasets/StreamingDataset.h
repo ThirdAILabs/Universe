@@ -63,8 +63,8 @@ class StreamingDataset {
         << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
         << " seconds" << std::endl;
 
-    return {std::make_shared<InMemoryDataset<BATCH_T>>(std::move(data), len),
-            std::make_shared<BoltDataset>(std::move(labels), len)};
+    return {std::make_shared<InMemoryDataset<BATCH_T>>(std::move(data)),
+            std::make_shared<BoltDataset>(std::move(labels))};
   }
 
   uint32_t getMaxBatchSize() const { return _data_loader->getMaxBatchSize(); }

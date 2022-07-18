@@ -38,8 +38,8 @@ static dataset::DatasetWithLabels genDataset(uint32_t n_classes,
   }
 
   return dataset::DatasetWithLabels(
-      dataset::BoltDataset(std::move(data_batches), n_batches * batch_size),
-      dataset::BoltDataset(std::move(label_batches), n_batches * batch_size));
+      dataset::BoltDataset(std::move(data_batches)),
+      dataset::BoltDataset(std::move(label_batches)));
 }
 
 }  // namespace thirdai::bolt::tests

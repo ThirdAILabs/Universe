@@ -16,7 +16,7 @@ def setup_module():
             "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
         )
         os.system("bzip2 -d mnist.bz2")
-
+ 
     if not os.path.exists("mnist.t"):
         os.system(
             "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"

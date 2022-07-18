@@ -126,12 +126,12 @@ def test_label_train_num_example_mismatch():
 
     with pytest.raises(
         ValueError,
-        match=f".*found {num_examples} total examples in the dataset, {num_labels} total examples in the labels.*",
+        match=f".*found {num_labels} samples in one dataset and {num_examples} samples in another.*",
     ):
         model.train(data, labels, train_config)
 
     with pytest.raises(
         ValueError,
-        match=f".*found {num_examples} total examples in the dataset, {num_labels} total examples in the labels.*",
+        match=f".*found {num_labels} samples in one dataset and {num_examples} samples in another.*",
     ):
         model.predict(data, labels, predict_config)

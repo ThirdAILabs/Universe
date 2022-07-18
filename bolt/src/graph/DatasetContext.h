@@ -2,6 +2,7 @@
 
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
+#include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <algorithm>
@@ -34,15 +35,29 @@ class DatasetContext {
     verifyBatchSizes(_all_dag_datasets);
   }
 
-  uint32_t batchSize() const { return _all_dag_datasets.front()->batchSize(); }
+  void setInputs(uint64_t batch_idx, const std::vector<InputPtr>& inputs,
+                 const std::vector<TokenInputPtr>& token_inputs) {
+    for (uint32_t i = 0; i < inputs.size(); i++) {
+      inputs[i]->setInputs(&_data[i]->at(batch_idx));
+    }
+    for (uint32_t i = 0; i < token_inputs.size(); i++) {
+      token_inputs[i]->setTokenInputs(&_tokens[i]->at(batch_idx));
+    }
+  }
+
+  uint64_t batchSize() const { return _all_dag_datasets.front()->batchSize(); }
+
+  uint64_t batchSize(uint64_t batch_idx) const {
+    return _all_dag_datasets.front()->batchSize(batch_idx);
+  }
 
   uint64_t len() const { return _all_dag_datasets.front()->batchSize(); }
 
-  uint64_t numBatches() const {return _all_dag_datasets.front().numBatches()}
-
-  uint64_t numVectorDatasets() const {
-    return _data.size();
+  uint64_t numBatches() const {
+    return _all_dag_datasets.front()->numBatches();
   }
+
+  uint64_t numVectorDatasets() const { return _data.size(); }
 
   uint64_t numTokenDatasets() const { return _tokens.size(); }
 

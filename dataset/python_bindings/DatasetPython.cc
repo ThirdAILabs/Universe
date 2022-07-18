@@ -267,13 +267,6 @@ void createDatasetSubmodule(py::module_& module) {
       .def("get_input_dim", &StreamingGenericDatasetLoader::getInputDim)
       .def("get_label_dim", &StreamingGenericDatasetLoader::getLabelDim);
 
-  dataset_submodule.def("load_svm_dataset", &loadSVMDataset,
-                        py::arg("filename"), py::arg("batch_size"));
-
-  dataset_submodule.def("load_csv_dataset", &loadCSVDataset,
-                        py::arg("filename"), py::arg("batch_size"),
-                        py::arg("delimiter") = ",");
-
   dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
                         py::arg("indices"), py::arg("values"));
 
@@ -420,38 +413,6 @@ void createDatasetSubmodule(py::module_& module) {
       py::arg("dataset1"), py::arg("dataset2"),
       "Checks whether the given bolt datasets have the same values. "
       "For testing purposes only.");
-}
-
-InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
-                                            uint32_t batch_size) {
-  auto start = std::chrono::high_resolution_clock::now();
-  InMemoryDataset<SparseBatch> data(filename, batch_size,
-                                    thirdai::dataset::SvmSparseBatchFactory{});
-  auto end = std::chrono::high_resolution_clock::now();
-
-  std::cout
-      << "Read " << data.len() << " vectors from " << filename << " in "
-      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds" << std::endl;
-
-  return data;
-}
-
-InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
-                                           uint32_t batch_size,
-                                           std::string delimiter) {
-  auto start = std::chrono::high_resolution_clock::now();
-  InMemoryDataset<DenseBatch> data(
-      filename, batch_size,
-      thirdai::dataset::CsvDenseBatchFactory(delimiter.at(0)));
-  auto end = std::chrono::high_resolution_clock::now();
-
-  std::cout
-      << "Read " << data.len() << " vectors in "
-      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds" << std::endl;
-
-  return data;
 }
 
 py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
@@ -611,7 +572,7 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
                          starting_id + start_vec_idx);
   }
 
-  return InMemoryDataset(std::move(batches), num_examples);
+  return InMemoryDataset(std::move(batches));
 }
 
 BoltDatasetPtr denseBoltDatasetFromNumpy(
@@ -652,7 +613,7 @@ BoltDatasetPtr denseBoltDatasetFromNumpy(
     batches.emplace_back(std::move(batch_vectors));
   }
 
-  return std::make_shared<BoltDataset>(std::move(batches), num_examples);
+  return std::make_shared<BoltDataset>(std::move(batches));
 }
 
 InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
@@ -721,7 +682,7 @@ InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
                          starting_id + start_vec_idx);
   }
 
-  return InMemoryDataset(std::move(batches), num_examples);
+  return InMemoryDataset(std::move(batches));
 }
 
 BoltDatasetPtr sparseBoltDatasetFromNumpy(const NumpyArray<uint32_t>& indices,
@@ -757,7 +718,7 @@ BoltDatasetPtr sparseBoltDatasetFromNumpy(const NumpyArray<uint32_t>& indices,
     batches.emplace_back(std::move(batch_vectors));
   }
 
-  return std::make_shared<BoltDataset>(std::move(batches), num_examples);
+  return std::make_shared<BoltDataset>(std::move(batches));
 }
 
 BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
@@ -786,7 +747,7 @@ BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
     batches.emplace_back(std::move(batch_labels));
   }
 
-  return std::make_shared<BoltDataset>(std::move(batches), num_labels);
+  return std::make_shared<BoltDataset>(std::move(batches));
 }
 
 std::unordered_map<uint32_t, uint32_t> parseSentenceToUnigrams(

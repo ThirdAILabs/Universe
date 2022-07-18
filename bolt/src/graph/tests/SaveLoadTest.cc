@@ -41,14 +41,14 @@ class ModelWithLayers {
     auto train_config = TrainConfig::makeConfig(/* learning_rate= */ 0.001,
                                                 /* epochs= */ epochs);
 
-    model->train(data.data, data.labels, train_config);
+    model->train({data.data}, {}, data.labels, train_config);
   }
 
   InferenceMetricData predict(dataset::DatasetWithLabels& data) const {
     auto predict_config =
         PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
-    return model->predict(data.data, data.labels, predict_config).first;
+    return model->predict({data.data}, {}, data.labels, predict_config).first;
   }
 
   InputPtr input;
@@ -79,7 +79,7 @@ TEST(SaveLoadDAGTest, SaveAndLoadGraph) {
   auto predict_config =
       PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
   auto test_metrics2 =
-      new_model->predict(data.data, data.labels, predict_config);
+      new_model->predict({data.data}, {}, data.labels, predict_config);
 
   ASSERT_GE(test_metrics2.first["categorical_accuracy"], 0.9);
 

@@ -21,6 +21,8 @@ class DatasetBase {
 
   virtual uint64_t batchSize() const = 0;
 
+  virtual uint64_t batchSize(uint64_t batch_idx) const = 0;
+
   virtual uint64_t numBatches() const = 0;
 };
 
@@ -36,7 +38,7 @@ class InMemoryDataset final : public DatasetBase {
   // the class. Otherwise c++ will copy this.
   explicit InMemoryDataset(std::vector<BATCH_T>&& batches)
       : _batches(std::move(batches)) {
-    if (batches.empty()) {
+    if (_batches.empty()) {
       throw std::invalid_argument(
           "Must pass in at least one batch to the dataset constructor but "
           "found 0.");
@@ -88,6 +90,10 @@ class InMemoryDataset final : public DatasetBase {
   // The last batch size can be less than this (but only if there is more than
   // 1 batch)
   uint64_t batchSize() const final { return _batch_size; }
+
+  uint64_t batchSize(uint64_t batch_idx) const final {
+    return _batches[batch_idx].getBatchSize();
+  }
 
  private:
   std::vector<BATCH_T> _batches;
