@@ -63,16 +63,6 @@ void DistributedModel::updateParametersSingleNode(float learning_rate) {
   DistributedModel::updateSampling(_rehash_batch, _rebuild_batch);
 }
 
-InferenceMetricData DistributedModel::predictSingleNode(
-    const std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& test_data,
-    const dataset::BoltDatasetPtr& labels, uint32_t* output_active_neurons,
-    float* output_activations, bool use_sparse_inference,
-    const std::vector<std::string>& metric_names, bool verbose,
-    uint32_t batch_limit) {
-  return predict(test_data, labels, output_active_neurons, output_activations,
-                 use_sparse_inference, metric_names, verbose, batch_limit);
-}
-
 uint32_t DistributedModel::numLayers() const { return _num_layers; }
 
 float* DistributedModel::getWeights(uint32_t layer_index) {

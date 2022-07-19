@@ -93,8 +93,3 @@ def test_concat_sparse_dense_train():
         hidden_layer_bottom_sparsity=1,
         num_training_samples=10000,
     )
-
-
-test_concat_dense_train()
-test_concat_sparse_train()
-test_concat_sparse_dense_train()

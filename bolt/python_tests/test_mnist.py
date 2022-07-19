@@ -195,11 +195,19 @@ def test_sparse_inference_with_sparse_output():
 
 
 def set_get_weights(network, untrained_network):
-    untrained_network.set_weights(0, network.get_weights(0))
-    untrained_network.set_weights(1, network.get_weights(1))
+    untrained_network.set_weights(
+        layer_index=0, new_weights=network.get_weights(layer_index=0)
+    )
+    untrained_network.set_weights(
+        layer_index=1, new_weights=network.get_weights(layer_index=1)
+    )
 
-    untrained_network.set_biases(0, network.get_biases(0))
-    untrained_network.set_biases(1, network.get_biases(1))
+    untrained_network.set_biases(
+        layer_index=0, new_biases=network.get_biases(layer_index=0)
+    )
+    untrained_network.set_biases(
+        layer_index=1, new_biases=network.get_biases(layer_index=1)
+    )
 
 
 def test_get_set_weights():
@@ -286,17 +294,39 @@ def test_get_set_weights_biases_gradients():
         batch_size=64,
     )
 
-    untrained_network.set_weights(0, network.get_weights(0))
-    untrained_network.set_biases(0, network.get_biases(0))
-    untrained_network.set_weights(1, network.get_weights(1))
-    untrained_network.set_biases(1, network.get_biases(1))
+    untrained_network.set_weights(
+        layer_index=0, new_weights=network.get_weights(layer_index=0)
+    )
+    untrained_network.set_biases(
+        layer_index=0, new_biases=network.get_biases(layer_index=0)
+    )
+    untrained_network.set_weights(
+        layer_index=1, new_weights=network.get_weights(layer_index=1)
+    )
+    untrained_network.set_biases(
+        layer_index=1, new_biases=network.get_biases(layer_index=1)
+    )
 
-    for j in range(num_of_batch):
-        network.calculateGradientSingleNode(j, bolt.CategoricalCrossEntropyLoss())
-        untrained_network.set_weights_gradients(0, network.get_weights_gradients(0))
-        untrained_network.set_biases_gradients(0, network.get_biases_gradients(0))
-        untrained_network.set_weights_gradients(1, network.get_weights_gradients(1))
-        untrained_network.set_biases_gradients(1, network.get_biases_gradients(1))
+    for batch_num in range(num_of_batch):
+        network.calculateGradientSingleNode(
+            batch=batch_num, loss_fn=bolt.CategoricalCrossEntropyLoss()
+        )
+        untrained_network.set_weights_gradients(
+            layer_index=0,
+            new_weights_gradients=network.get_weights_gradients(layer_index=0),
+        )
+        untrained_network.set_biases_gradients(
+            layer_index=0,
+            new_biases_gradients=network.get_biases_gradients(layer_index=0),
+        )
+        untrained_network.set_weights_gradients(
+            layer_index=1,
+            new_weights_gradients=network.get_weights_gradients(layer_index=1),
+        )
+        untrained_network.set_biases_gradients(
+            layer_index=1,
+            new_biases_gradients=network.get_biases_gradients(layer_index=1),
+        )
         untrained_network.updateParametersSingleNode(learning_rate)
         network.updateParametersSingleNode(learning_rate)
 

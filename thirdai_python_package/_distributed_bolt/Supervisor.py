@@ -115,14 +115,22 @@ class Supervisor:
         self.w_gradients_avg = np.array([np.zeros((self.layers[layer_no+1], self.layers[layer_no])) for layer_no in range(len(self.layers)-1)])
         self.b_gradients_avg = np.array([np.zeros((self.layers[layer_no+1])) for layer_no in range(len(self.layers)-1)])
         
+        node_id = 0
         for w_gradients,b_gradients in gradients_list:
+            print('weights on node:', node_id, " weights: ", self.w_gradients_avg)
+            print('biases on node:', node_id, "biases: ", self.b_gradients_avg)
             self.w_gradients_avg += w_gradients
             self.b_gradients_avg += b_gradients
+            node_id+=1
         
         
         self.w_gradients_avg = np.divide(self.w_gradients_avg, len(self.workers))
         self.b_gradients_avg = np.divide(self.b_gradients_avg, len(self.workers))
         
+
+        print('weights: ', self.w_gradients_avg)
+        print('biases: ', self.b_gradients_avg)
+
         summing_and_averaging_gradients_time = time.time() - summing_and_averaging_gradients_start_time
         return gradient_computation_time, getting_gradient_time, summing_and_averaging_gradients_time
 

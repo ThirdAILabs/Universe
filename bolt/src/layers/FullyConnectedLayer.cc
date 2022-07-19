@@ -17,8 +17,6 @@ FullyConnectedLayer::FullyConnectedLayer(
       _prev_dim(prev_dim),
       _sparse_dim(config.sparsity * config.dim),
       _sparsity(config.sparsity),
-      _is_shallow(false),
-      _shallow_save(false),
 
       // trainable parameter not present in config file
       // TODO(Shubh) : should we add a trainable parameter to the config file?
@@ -292,9 +290,10 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
   } else {
     _hash_table->queryBySet(hashes.data(), active_set);
   }
-
   if (active_set.size() < _sparse_dim) {
-    uint32_t rand_offset = rand() % _dim;
+    // here we use hashes[0] as our random number because rand() is not thread
+    // safe and we want to have deterministic outcomes
+    uint32_t rand_offset = (hashes[0]) % _dim;
     while (active_set.size() < _sparse_dim) {
       active_set.insert(_rand_neurons[rand_offset++]);
       rand_offset = rand_offset % _dim;
@@ -444,7 +443,7 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-    if (!_this_is_dense && !_is_active[cur_neuron]) {
+    if ((!_is_distributed) && (!_this_is_dense && !_is_active[cur_neuron])) {
       continue;
     }
 
@@ -600,24 +599,6 @@ void FullyConnectedLayer::setBiasesGradients(
 float* FullyConnectedLayer::getBiasesGradient() { return _b_gradient.data(); }
 
 float* FullyConnectedLayer::getWeightsGradient() { return _w_gradient.data(); }
-
-void FullyConnectedLayer::setShallow(bool shallow) {
-  /**
-   * Initialize optimizer only when layer is currently shallow and shallow is
-   * false. Remove optimizer only if the layer is currently non-shallow but
-   * shallow is true
-   */
-  if (!_is_shallow && shallow) {
-    this->removeOptimizer();
-  } else if (_is_shallow && !shallow) {
-    this->initOptimizer();
-  }
-  _is_shallow = shallow;
-}
-
-void FullyConnectedLayer::setShallowSave(bool shallow) {
-  _shallow_save = shallow;
-}
 
 void FullyConnectedLayer::setSparsity(float sparsity) {
   deinitSparseDatastructures();
