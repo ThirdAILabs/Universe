@@ -239,11 +239,12 @@ TEST(MetricTest, FMeasure) {
   FMeasure single;
 
   {  // Dense outputs, dense labels
-
+    //                                          tp: 1, fp: 2, fn: 1
+    //                         thresholded_neurons: 0, 3, 4
     BoltVector a = BoltVector::makeDenseVector({1.0, 0.2, 0.0, 1.0, 0.9, 0.0, 0.5, 0.0});
     BoltVector l_a =
         BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0});
-
+    //                                          tp: 2, fp: 1, fn: 1
     BoltVector b = BoltVector::makeDenseVector({1.0, 0.0, 0.1, 0.9, 1.0, 0.0, 0.0, 0.6});
     BoltVector l_b =
         BoltVector::makeDenseVector({1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0});
@@ -260,8 +261,6 @@ TEST(MetricTest, FMeasure) {
   }
 
   {  // Dense outputs, sparse labels
-
-    
     BoltVector a = BoltVector::makeDenseVector({0.2, 0.2, 0.0, 0.9, 0.0, 1.0, 0.1, 0.0});
     BoltVector l_a =
         BoltVector::makeSparseVector({3, 4, 7}, {1.0, 1.0, 1.0});
@@ -282,7 +281,6 @@ TEST(MetricTest, FMeasure) {
   }
 
   {  // Sparse outputs, dense labels
-  std::cout << "sparse | dense" << std::endl;
     BoltVector a =
         BoltVector::makeSparseVector({0, 3, 5}, {0.1, 0.9, 1.0});
     BoltVector l_a =
@@ -305,7 +303,6 @@ TEST(MetricTest, FMeasure) {
   }
 
   {  // Sparse outputs, sparse labels
-
     BoltVector a =
         BoltVector::makeSparseVector({0, 2, 3, 4, 7}, {0.9, 0.2, 1.0, 0.9, 0.6});
     BoltVector l_a =
@@ -327,7 +324,7 @@ TEST(MetricTest, FMeasure) {
     metric.computeMetric(b, l_b);
   }
 
-  ASSERT_DOUBLE_EQ(metric.getMetricAndReset(false), 12.0 / 19);
+  ASSERT_DOUBLE_EQ(metric.getMetricAndReset(false), 0.6);
 }
 
 

@@ -115,20 +115,11 @@ void MultiLabelTextClassifier::predict(
   auto [_, predict_output] = _model->predict(test_data, test_labels, predict_cfg);
   for (uint32_t vec_id = 0; vec_id < predict_output.getNumSavedVectors(); vec_id++) {
     BoltVector v = predict_output.getOutputVector(vec_id);
-    uint32_t pred_count = 0;
-    for (uint32_t i = 0; i < v.len; i++) {
-      if (v.activations[i] > threshold) {
-        uint32_t pred = 0;
-        if (v.isDense()) {
-          pred = i;
-        } else {
-          pred = v.active_neurons[i];
-        }
-        if (pred_count > 0) {
-          (*output_file) << ',';
-        }
-        (*output_file) << pred;
-        pred_count++;
+    auto predictions = v.getThresholdedNeurons(/* activation_threshold = */ threshold, /* return_at_least_one = */ false, /* max_count_to_return = */ 4);
+    for (uint32_t i = 0; i < predictions.size(); i++) {
+      (*output_file) << predictions.at(i);
+      if (i != predictions.size() - 1) {
+        (*output_file) << ",";
       }
     }
     (*output_file) << std::endl;
