@@ -1,4 +1,5 @@
 #include "BoltNetworkTestUtils.h"
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
@@ -204,13 +205,14 @@ class DummyDataLoader final : public dataset::DataLoader {
   called is sufficient to construct a streaming dataset, in addition to the
   DummDataLoader defined above.
 */
-class MockBatchProcessor final : public dataset::BatchProcessor<BoltBatch> {
+class MockBatchProcessor final
+    : public dataset::BatchProcessor<BoltBatch, BoltBatch> {
  public:
   MockBatchProcessor(dataset::BoltDatasetPtr data,
                      dataset::BoltDatasetPtr labels)
       : _data(std::move(data)), _labels(std::move(labels)), _batch_counter(0) {}
 
-  std::optional<dataset::BoltDataLabelPair<BoltBatch>> createBatch(
+  std::optional<std::tuple<BoltBatch, BoltBatch>> createBatch(
       const std::vector<std::string>& rows) final {
     (void)rows;
 
@@ -236,16 +238,17 @@ class MockBatchProcessor final : public dataset::BatchProcessor<BoltBatch> {
   uint32_t _batch_counter;
 };
 
-std::shared_ptr<dataset::StreamingDataset<BoltBatch>> getMockStreamingDataset(
-    dataset::DatasetWithLabels&& dataset) {
+std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
+getMockStreamingDataset(dataset::DatasetWithLabels&& dataset) {
   std::shared_ptr<dataset::DataLoader> mock_loader =
       std::make_shared<DummyDataLoader>();
 
-  std::shared_ptr<dataset::BatchProcessor<BoltBatch>> mock_processor =
-      std::make_shared<MockBatchProcessor>(dataset.data, dataset.labels);
+  std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>
+      mock_processor =
+          std::make_shared<MockBatchProcessor>(dataset.data, dataset.labels);
 
-  return std::make_shared<dataset::StreamingDataset<BoltBatch>>(mock_loader,
-                                                                mock_processor);
+  return std::make_shared<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
+      mock_loader, mock_processor);
 }
 
 void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,

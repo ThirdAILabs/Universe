@@ -12,7 +12,8 @@
 
 namespace thirdai::dataset {
 
-class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
+class GenericBatchProcessor
+    : public BatchProcessor<bolt::BoltBatch, bolt::BoltBatch> {
  public:
   GenericBatchProcessor(std::vector<std::shared_ptr<Block>> input_blocks,
                         std::vector<std::shared_ptr<Block>> label_blocks,
@@ -51,7 +52,7 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     }
   }
 
-  std::optional<BoltDataLabelPair<bolt::BoltBatch>> createBatch(
+  std::optional<std::tuple<bolt::BoltBatch, bolt::BoltBatch>> createBatch(
       const std::vector<std::string>& rows) final {
     std::vector<bolt::BoltVector> batch_inputs(rows.size());
     std::vector<bolt::BoltVector> batch_labels(rows.size());
@@ -100,8 +101,8 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
       std::rethrow_exception(num_columns_error);
     }
 
-    return std::make_pair(bolt::BoltBatch(std::move(batch_inputs)),
-                          bolt::BoltBatch(std::move(batch_labels)));
+    return std::make_tuple(bolt::BoltBatch(std::move(batch_inputs)),
+                           bolt::BoltBatch(std::move(batch_labels)));
   }
 
   bool expectsHeader() const final { return _expects_header; }

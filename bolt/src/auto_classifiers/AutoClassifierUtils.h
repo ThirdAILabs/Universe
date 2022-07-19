@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/src/bolt_datasets/BatchProcessor.h>
 #include <sys/stat.h>
@@ -41,23 +42,26 @@ class AutoClassifierUtils {
                                                    input_dim);
   }
 
-  static std::shared_ptr<dataset::StreamingDataset<BoltBatch>>
+  static std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
   loadStreamingDataset(
       const std::string& filename,
-      std::shared_ptr<dataset::BatchProcessor<BoltBatch>> batch_processor,
+      std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>
+          batch_processor,
       uint32_t batch_size = 256) {
     std::shared_ptr<dataset::DataLoader> data_loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
 
-    auto dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
-        data_loader, batch_processor);
+    auto dataset =
+        std::make_shared<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
+            data_loader, batch_processor);
     return dataset;
   }
 
   static void train(
       std::shared_ptr<FullyConnectedNetwork>& model,
       const std::string& filename,
-      std::shared_ptr<dataset::BatchProcessor<BoltBatch>> batch_processor,
+      std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>
+          batch_processor,
       uint32_t epochs, float learning_rate) {
     auto dataset = loadStreamingDataset(filename, batch_processor);
 
@@ -84,7 +88,8 @@ class AutoClassifierUtils {
   static void predict(
       std::shared_ptr<FullyConnectedNetwork>& model,
       const std::string& filename,
-      std::shared_ptr<dataset::BatchProcessor<BoltBatch>> batch_processor,
+      std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>
+          batch_processor,
       const std::optional<std::string>& output_filename,
       const std::vector<std::string>& class_id_to_class_name) {
     auto dataset = loadStreamingDataset(filename, std::move(batch_processor));

@@ -24,21 +24,25 @@ std::vector<std::string> makeCsvRows(std::vector<std::vector<float>>& matrix) {
 
 void checkMatrixAndProcessedBatchEquality(
     std::vector<std::vector<float>>& matrix,
-    std::optional<BoltDataLabelPair<bolt::BoltBatch>>& processed,
+    std::optional<std::tuple<bolt::BoltBatch, bolt::BoltBatch>>& processed,
     bool expect_input_dense, bool expect_label_dense) {
   for (uint32_t i = 0; i < matrix.size(); i++) {
     for (uint32_t j = 0; j < matrix[i].size(); j++) {
-      ASSERT_EQ(expect_input_dense, processed->first[i].isDense());
-      ASSERT_EQ(expect_label_dense, processed->second[i].isDense());
+      ASSERT_EQ(expect_input_dense,
+                std::get<0>(processed.value())[i].isDense());
+      ASSERT_EQ(expect_label_dense,
+                std::get<1>(processed.value())[i].isDense());
 
-      ASSERT_FLOAT_EQ(matrix[i][j], processed->first[i].activations[j]);
-      ASSERT_FLOAT_EQ(matrix[i][j], processed->second[i].activations[j]);
+      ASSERT_FLOAT_EQ(matrix[i][j],
+                      std::get<0>(processed.value())[i].activations[j]);
+      ASSERT_FLOAT_EQ(matrix[i][j],
+                      std::get<1>(processed.value())[i].activations[j]);
 
-      if (!processed->first[i].isDense()) {
-        ASSERT_EQ(processed->first[i].active_neurons[j], j);
+      if (!std::get<0>(processed.value())[i].isDense()) {
+        ASSERT_EQ(std::get<0>(processed.value())[i].active_neurons[j], j);
       }
-      if (!processed->second[i].isDense()) {
-        ASSERT_EQ(processed->second[i].active_neurons[j], j);
+      if (!std::get<1>(processed.value())[i].isDense()) {
+        ASSERT_EQ(std::get<1>(processed.value())[i].active_neurons[j], j);
       }
     }
   }

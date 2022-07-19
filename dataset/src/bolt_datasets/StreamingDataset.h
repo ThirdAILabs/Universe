@@ -8,14 +8,15 @@
 #include <chrono>
 #include <optional>
 #include <stdexcept>
+#include <vector>
 
 namespace thirdai::dataset {
 
-template <typename BATCH_T>
+template <typename... BATCH_Ts>
 class StreamingDataset {
  public:
   StreamingDataset(std::shared_ptr<DataLoader> data_loader,
-                   std::shared_ptr<BatchProcessor<BATCH_T>> batch_processor)
+                   std::shared_ptr<BatchProcessor<BATCH_Ts...>> batch_processor)
       : _data_loader(std::move(data_loader)),
         _batch_processor(std::move(batch_processor)) {
     // Different formats of data may or may not contain headers. Thus we
@@ -31,7 +32,7 @@ class StreamingDataset {
     }
   }
 
-  std::optional<BoltDataLabelPair<BATCH_T>> nextBatch() {
+  std::optional<std::tuple<BATCH_Ts...>> nextBatch() {
     auto rows = _data_loader->nextBatch();
     if (!rows) {
       return std::nullopt;
@@ -41,19 +42,23 @@ class StreamingDataset {
     return batch;
   }
 
-  std::pair<std::shared_ptr<InMemoryDataset<BATCH_T>>, BoltDatasetPtr>
-  loadInMemory() {
-    std::vector<BATCH_T> data;
-    std::vector<bolt::BoltBatch> labels;
+  std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> loadInMemory() {
+    std::tuple<std::vector<BATCH_Ts>...> datasets;
 
     uint64_t len = 0;
 
     auto start = std::chrono::high_resolution_clock::now();
 
-    while (auto batch = nextBatch()) {
-      len += batch->first.getBatchSize();
-      data.push_back(std::move(batch->first));
-      labels.push_back(std::move(batch->second));
+    while (std::optional<std::tuple<BATCH_Ts...>> batch = nextBatch()) {
+      len += std::get<0>(batch.value()).getBatchSize();
+
+      std::apply(
+          [&](auto&... lists) {
+            std::apply(
+                [&](auto&... vals) { (lists.push_back(std::move(vals)), ...); },
+                batch.value());
+          },
+          datasets);
     }
 
     auto end = std::chrono::high_resolution_clock::now();
@@ -63,15 +68,23 @@ class StreamingDataset {
         << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
         << " seconds" << std::endl;
 
-    return {std::make_shared<InMemoryDataset<BATCH_T>>(std::move(data)),
-            std::make_shared<BoltDataset>(std::move(labels))};
+    std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> dataset_ptrs =
+        std::apply(
+            [&](auto&... batch_lists) {
+              return std::make_tuple(
+                  std::make_shared<InMemoryDataset<BATCH_Ts>>(
+                      std::move(batch_lists))...);
+            },
+            datasets);
+
+    return dataset_ptrs;
   }
 
   uint32_t getMaxBatchSize() const { return _data_loader->getMaxBatchSize(); }
 
  private:
   std::shared_ptr<DataLoader> _data_loader;
-  std::shared_ptr<BatchProcessor<BATCH_T>> _batch_processor;
+  std::shared_ptr<BatchProcessor<BATCH_Ts...>> _batch_processor;
 };
 
 }  // namespace thirdai::dataset

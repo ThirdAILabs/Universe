@@ -153,13 +153,14 @@ class MLMDatasetLoader {
     auto data_loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
 
-    auto dataset = std::make_shared<
-        dataset::StreamingDataset<dataset::MaskedSentenceBatch>>(
+    auto dataset = std::make_shared<dataset::StreamingDataset<
+        bolt::BoltBatch, thirdai::dataset::BoltTokenBatch, bolt::BoltBatch>>(
         data_loader, _batch_processor);
 
-    auto [data, labels] = dataset->loadInMemory();
+    auto [data, masked_indices, labels] = dataset->loadInMemory();
 
-    return py::make_tuple(py::cast(data), py::cast(labels));
+    return py::make_tuple(py::cast(data), py::cast(masked_indices),
+                          py::cast(labels));
   }
 
  private:
