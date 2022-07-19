@@ -17,5 +17,5 @@ model = CookieMonster(
     hidden_sparsity=0.1,
     mlflow_enabled=True,
 )
-model.eat_corpus(TRAIN_DIR, True, True)
+model.eat_corpus(TRAIN_DIR, False, True)
 model.evaluate(TEST_DIR)

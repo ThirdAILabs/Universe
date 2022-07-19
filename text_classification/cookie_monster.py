@@ -1,8 +1,9 @@
 from thirdai import bolt, dataset
+from thirdai.dataset import DataPipeline, blocks, text_encodings
 import numpy as np
 
 # Uncomment the following line when used on a machine with valid mlflow credentials
-# import mlflow
+import mlflow
 import os
 
 
@@ -61,14 +62,23 @@ class CookieMonster:
         self.hidden_layer.load_parameters(save_loc)
         os.remove(save_loc)
 
-    def load_data(self, instruction, file, batch_size):
+    def load_data(self, instruction, file, batch_size, label_dim):
         if instruction == "mlm":
             # TODO: Check file format
             mlm_loader = dataset.MLMDatasetLoader(self.input_dimension)
             data, label = mlm_loader.load(file, batch_size)
             return data, label
         elif instruction == "classification":
-            data, label = dataset.load_bolt_svm_dataset(file, batch_size)
+            pipeline = DataPipeline(
+                file,
+                batch_size=batch_size,
+                input_blocks=[
+                    blocks.Text(1, text_encodings.PairGram(self.input_dimension))
+                ],
+                label_blocks=[blocks.Categorical(0, label_dim)],
+                delimiter=",",
+            )
+            data, label = pipeline.load_in_memory()
             return data, label
         else:
             raise ValueError(
@@ -119,8 +129,12 @@ class CookieMonster:
                     epochs = config["epochs"]
                     learning_rate = config["learning_rate"]
 
-                    train_x, train_y = self.load_data(task, train_file, batch_size)
-                    test_x, test_y = self.load_data(task, test_file, batch_size)
+                    train_x, train_y = self.load_data(
+                        task, train_file, batch_size, num_classes
+                    )
+                    test_x, test_y = self.load_data(
+                        task, test_file, batch_size, num_classes
+                    )
 
                     train_config = bolt.graph.TrainConfig.make(
                         learning_rate=learning_rate, epochs=1

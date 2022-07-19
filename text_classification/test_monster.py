@@ -7,18 +7,6 @@ pytestmark = [pytest.mark.unit]
 
 
 def setup_module():
-    if not os.path.exists("mnist"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
-        )
-        os.system("bzip2 -d mnist.bz2")
-
-    if not os.path.exists("mnist.t"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
-        )
-        os.system("bzip2 -d mnist.t.bz2")
-
     with open("string.txt", "w") as f:
         f.write("This is a test sentence\n")
         f.write("To train the model on mlm tasks\n")
