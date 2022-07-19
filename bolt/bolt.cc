@@ -241,9 +241,9 @@ void trainFCN(toml::table& config) {
 
   bolt::FullyConnectedNetwork network(layers, input_dim);
 
-  if (dataset_format == "svm") {
-    std::cerr << "Invalid dataset format '" << dataset_format
-              << "'. Use 'svm'" << std::endl;
+  if (dataset_format != "svm") {
+    std::cerr << "Invalid dataset format '" << dataset_format << "'. Use 'svm'"
+              << std::endl;
     exit(1);
   }
 

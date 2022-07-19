@@ -50,7 +50,6 @@ class InferenceOutputTracker {
       const auto& current_output_vec =
           output_node->getOutputVector(vec_id_in_batch);
       assert(current_output_vec.len == _num_nonzeros_per_sample);
-      std::cout << _current_vec_index << ", " << _num_samples << std::endl;
       assert(_current_vec_index < _num_samples);
 
       if (activationsSaved()) {

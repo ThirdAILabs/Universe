@@ -21,7 +21,7 @@ class StreamingGenericDatasetLoader {
                   _processor) {}
 
   std::optional<std::tuple<bolt::BoltBatch, bolt::BoltBatch>> nextBatch() {
-    return _streamer.nextBatch();
+    return _streamer.nextBatchTuple();
   }
 
   std::tuple<std::shared_ptr<InMemoryDataset<bolt::BoltBatch>>,

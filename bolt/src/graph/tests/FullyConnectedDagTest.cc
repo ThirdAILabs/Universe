@@ -57,10 +57,12 @@ TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
   auto data =
       genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
 
-  model.train({data.data}, {}, data.labels, getTrainConfig(/* epochs= */ 5));
+  model.train(/* train_data= */ {data.data}, /* train_tokens= */ {},
+              data.labels, getTrainConfig(/* epochs= */ 5));
 
   auto test_metrics =
-      model.predict({data.data}, {}, data.labels, getPredictConfig());
+      model.predict(/* test_data= */ {data.data}, /* test_tokens= */ {},
+                    data.labels, getPredictConfig());
 
   ASSERT_GE(test_metrics.first["categorical_accuracy"], 0.98);
 }
@@ -70,10 +72,12 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
 
   auto data = genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
 
-  model.train({data.data}, {}, data.labels, getTrainConfig(/* epochs= */ 5));
+  model.train(/* train_data= */ {data.data}, /* train_tokens= */ {},
+              data.labels, getTrainConfig(/* epochs= */ 5));
 
   auto test_metrics =
-      model.predict({data.data}, {}, data.labels, getPredictConfig());
+      model.predict(/* test_data= */ {data.data}, /* test_tokens= */ {},
+                    data.labels, getPredictConfig());
 
   ASSERT_LE(test_metrics.first["categorical_accuracy"], 0.2);
 }
@@ -116,13 +120,15 @@ static void testSimpleDatasetMultiLayerModel(
       genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
 
   auto train_metrics =
-      model.train({data.data}, {}, data.labels, getTrainConfig(epochs));
+      model.train(/* train_data= */ {data.data}, /* train_tokens= */ {},
+                  data.labels, getTrainConfig(epochs));
 
   ASSERT_LT(train_metrics.at("mean_squared_error").back(),
             train_metrics.at("mean_squared_error").front());
 
   auto test_metrics =
-      model.predict({data.data}, {}, data.labels, getPredictConfig());
+      model.predict(/* test_data= */ {data.data}, /* test_tokens= */ {},
+                    data.labels, getPredictConfig());
 
   ASSERT_GE(test_metrics.first["categorical_accuracy"], 0.99);
 }
@@ -148,10 +154,12 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
 
   auto data = genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
 
-  model.train({data.data}, {}, data.labels, getTrainConfig(/* epochs= */ 2));
+  model.train(/* train_data= */ {data.data}, /* train_tokens= */ {},
+              data.labels, getTrainConfig(/* epochs= */ 2));
 
   auto test_metrics =
-      model.predict({data.data}, {}, data.labels, getPredictConfig());
+      model.predict(/* test_data= */ {data.data}, /* test_tokens= */ {},
+                    data.labels, getPredictConfig());
 
   ASSERT_LE(test_metrics.first["categorical_accuracy"], 0.2);
 }

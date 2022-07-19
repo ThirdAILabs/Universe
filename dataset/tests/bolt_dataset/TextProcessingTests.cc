@@ -105,10 +105,8 @@ void testCreateBatchArbitraryLabels(
 
   auto batch = processor.createBatch(rows);
 
-  ASSERT_TRUE(batch.has_value());
-
-  const bolt::BoltBatch& data = std::get<0>(batch.value());
-  const bolt::BoltBatch& labels = std::get<1>(batch.value());
+  const bolt::BoltBatch& data = std::get<0>(batch);
+  const bolt::BoltBatch& labels = std::get<1>(batch);
 
   ASSERT_EQ(data.getBatchSize(), 4);
   ASSERT_EQ(labels.getBatchSize(), 4);
@@ -169,7 +167,7 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatch) {
 
   dataset::MaskedSentenceBatchProcessor processor(RANGE);
 
-  auto [data, masked_indices, labels] = processor.createBatch(rows).value();
+  auto [data, masked_indices, labels] = processor.createBatch(rows);
 
   uint32_t unknown_hash =
       hashing::MurmurHash("[UNK]", 5, PairgramHasher::HASH_SEED);

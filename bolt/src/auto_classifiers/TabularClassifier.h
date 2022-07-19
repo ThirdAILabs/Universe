@@ -94,7 +94,7 @@ class TabularClassifier {
     auto compute_dataset =
         std::make_shared<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
             data_loader, batch_processor);
-    while (compute_dataset->nextBatch()) {
+    while (compute_dataset->nextBatchTuple()) {
     }
 
     return batch_processor->getMetadata();

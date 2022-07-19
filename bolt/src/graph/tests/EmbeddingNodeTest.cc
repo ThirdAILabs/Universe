@@ -82,12 +82,14 @@ TEST(EmbeddingNodeTest, SimpleTokenDataset) {
                                      .withMetrics({"categorical_accuracy"})
                                      .silence();
 
-  auto train_metrics = model.train({}, {data}, labels, train_config);
+  auto train_metrics = model.train(
+      /* train_data= */ {}, /* train_tokens= */ {data}, labels, train_config);
 
   ASSERT_GT(train_metrics["mean_squared_error"].front(),
             train_metrics["mean_squared_error"].back());
 
-  auto test_metrics = model.predict({}, {data}, labels, predict_config);
+  auto test_metrics = model.predict(
+      /* test_data= */ {}, /* test_tokens= */ {data}, labels, predict_config);
 
   ASSERT_GT(test_metrics.first["categorical_accuracy"], 0.9);
 }

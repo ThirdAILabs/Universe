@@ -19,6 +19,7 @@
 #include <dataset/src/Dataset.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>

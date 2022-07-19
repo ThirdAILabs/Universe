@@ -32,28 +32,27 @@ class StreamingDataset {
     }
   }
 
-  std::optional<std::tuple<BATCH_Ts...>> nextBatch() {
+  std::optional<std::tuple<BATCH_Ts...>> nextBatchTuple() {
     auto rows = _data_loader->nextBatch();
     if (!rows) {
       return std::nullopt;
     }
-    auto batch = _batch_processor->createBatch(*rows);
 
-    return batch;
+    return _batch_processor->createBatch(*rows);
   }
 
   // This function maps the tuple of batches returned by nextBatch() into a
   // tuple of datasets where each dataset contains a list of batches of the type
   // corresponding to that element of the tuple.
   std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> loadInMemory() {
-    std::tuple<std::vector<BATCH_Ts>...> datasets;
+    std::tuple<std::vector<BATCH_Ts>...> batch_lists;
 
     uint64_t len = 0;
 
     auto start = std::chrono::high_resolution_clock::now();
 
-    while (std::optional<std::tuple<BATCH_Ts...>> batch = nextBatch()) {
-      len += std::get<0>(batch.value()).getBatchSize();
+    while (auto batch_tuple = nextBatchTuple()) {
+      len += std::get<0>(batch_tuple.value()).getBatchSize();
 
       /**
        * std::apply allows for a tuple to be applied to function that accepts a
@@ -69,9 +68,9 @@ class StreamingDataset {
           [&](auto&... lists) {
             std::apply(
                 [&](auto&... vals) { (lists.push_back(std::move(vals)), ...); },
-                batch.value());
+                batch_tuple.value());
           },
-          datasets);
+          batch_lists);
     }
 
     auto end = std::chrono::high_resolution_clock::now();
@@ -90,7 +89,7 @@ class StreamingDataset {
                   std::make_shared<InMemoryDataset<BATCH_Ts>>(
                       std::move(batch_lists))...);
             },
-            datasets);
+            batch_lists);
 
     return dataset_ptrs;
   }

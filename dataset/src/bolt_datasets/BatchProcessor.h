@@ -11,7 +11,7 @@ namespace thirdai::dataset {
 template <typename... BATCH_Ts>
 class BatchProcessor {
  public:
-  virtual std::optional<std::tuple<BATCH_Ts...>> createBatch(
+  virtual std::tuple<BATCH_Ts...> createBatch(
       const std::vector<std::string>& rows) = 0;
 
   virtual bool expectsHeader() const = 0;
@@ -35,7 +35,7 @@ class BatchProcessor {
 class UnaryBoltBatchProcessor
     : public BatchProcessor<bolt::BoltBatch, bolt::BoltBatch> {
  public:
-  std::optional<std::tuple<bolt::BoltBatch, bolt::BoltBatch>> createBatch(
+  std::tuple<bolt::BoltBatch, bolt::BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     std::vector<bolt::BoltVector> _data_vecs =
         std::vector<bolt::BoltVector>(rows.size());
@@ -78,7 +78,7 @@ class UnaryBoltBatchProcessor
 class ComputeBatchProcessor
     : public BatchProcessor<bolt::BoltBatch, bolt::BoltBatch> {
  public:
-  std::optional<std::tuple<bolt::BoltBatch, bolt::BoltBatch>> createBatch(
+  std::tuple<bolt::BoltBatch, bolt::BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     // TODO(david) enable parallel by making metadata calculation thread safe
     // #pragma omp parallel for default(none) shared(rows)

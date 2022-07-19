@@ -153,8 +153,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "train",
           [](BoltGraph& model, const py::object& data, const py::object& labels,
              const TrainConfig& train_config) {
-            return dagTrainPythonWrapper(model, data, nullptr, labels,
-                                         train_config);
+            return dagTrainPythonWrapper(model, data, /* token_data= */ nullptr,
+                                         labels, train_config);
           },
           py::arg("train_data"), py::arg("train_labels"),
           py::arg("train_config"))
@@ -210,8 +210,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "predict",
           [](BoltGraph& model, const py::object& data, const py::object& labels,
              const PredictConfig& predict_config) {
-            return dagPredictPythonWrapper(model, data, nullptr, labels,
-                                           predict_config);
+            return dagPredictPythonWrapper(
+                model, data, /* token_data= */ nullptr, labels, predict_config);
           },
           py::arg("test_data"), py::arg("test_labels"),
           py::arg("predict_config"))

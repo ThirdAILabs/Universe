@@ -97,7 +97,7 @@ MetricData BoltGraph::train(
       ProgressBar bar(train_context.numBatches(), train_config.verbose());
       auto train_start = std::chrono::high_resolution_clock::now();
 
-      for (uint32_t batch_idx = 0; batch_idx < train_context.numBatches();
+      for (uint64_t batch_idx = 0; batch_idx < train_context.numBatches();
            batch_idx++) {
         train_context.setInputs(batch_idx, _inputs, _token_inputs);
 
@@ -151,7 +151,7 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
       "Passed in label BoltVector is larger than the output dim");
 
 #pragma omp parallel for default(none) shared(batch_labels, metrics)
-  for (uint32_t vec_id = 0; vec_id < batch_labels.getBatchSize(); vec_id++) {
+  for (uint64_t vec_id = 0; vec_id < batch_labels.getBatchSize(); vec_id++) {
     forward(vec_id, &batch_labels[vec_id]);
 
     _loss->lossGradients(_output->getOutputVector(vec_id), batch_labels[vec_id],
@@ -213,7 +213,7 @@ InferenceResult BoltGraph::predict(
   // some sort of RAII training context object whose destructor will
   // automatically delete the training state
   try {
-    for (uint32_t batch_idx = 0; batch_idx < predict_context.numBatches();
+    for (uint64_t batch_idx = 0; batch_idx < predict_context.numBatches();
          batch_idx++) {
       predict_context.setInputs(batch_idx, _inputs, _token_inputs);
 
@@ -260,7 +260,7 @@ void BoltGraph::processInferenceBatch(uint64_t batch_size,
   assert((metrics.getNumMetricsTracked() == 0) || (batch_labels != nullptr));
 
 #pragma omp parallel for default(none) shared(batch_size, batch_labels, metrics)
-  for (uint32_t vec_id = 0; vec_id < batch_size; vec_id++) {
+  for (uint64_t vec_id = 0; vec_id < batch_size; vec_id++) {
     // We set labels to nullptr so that they are not used in sampling during
     // inference.
     forward(vec_id, /*labels=*/nullptr);

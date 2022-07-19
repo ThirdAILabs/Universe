@@ -20,8 +20,8 @@ class MaskedSentenceBatchProcessor final
             hashing::MurmurHash("[UNK]", 5, PairgramHasher::HASH_SEED)),
         _rand(723204) {}
 
-  std::optional<std::tuple<bolt::BoltBatch, BoltTokenBatch, bolt::BoltBatch>>
-  createBatch(const std::vector<std::string>& rows) final {
+  std::tuple<bolt::BoltBatch, BoltTokenBatch, bolt::BoltBatch> createBatch(
+      const std::vector<std::string>& rows) final {
     std::vector<bolt::BoltVector> vectors(rows.size());
     std::vector<std::vector<uint32_t>> masked_indices(rows.size());
     std::vector<bolt::BoltVector> labels(rows.size());

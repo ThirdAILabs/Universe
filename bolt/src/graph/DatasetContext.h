@@ -11,6 +11,13 @@
 
 namespace thirdai::bolt {
 
+/**
+ * This class stores information about the datasets passed into train or
+ * predict. This is to provide a simple interface to interact with the datasets,
+ * and also performs checks that they all have the same lenght, batch size, etc.
+ * Finally it provides methods for obtaining the length and batch size of the
+ * datasets once they are verified to be correct.
+ */
 class DatasetContext {
  public:
   DatasetContext(std::vector<dataset::BoltDatasetPtr> data,

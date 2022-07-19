@@ -101,7 +101,7 @@ MetricData Model<BATCH_T>::trainOnStream(
   auto train_start = std::chrono::high_resolution_clock::now();
 
   uint32_t batch_count = 0;
-  while (auto batch = train_data->nextBatch()) {
+  while (auto batch = train_data->nextBatchTuple()) {
     processTrainingBatch(
         /* batch_inputs=*/std::get<0>(batch.value()), /* outputs= */ outputs,
         /* batch_labels= */ std::get<1>(batch.value()), /* loss_fn= */ loss_fn,
@@ -264,7 +264,7 @@ InferenceMetricData Model<BATCH_T>::predictOnStream(
 
   auto test_start = std::chrono::high_resolution_clock::now();
 
-  while (auto batch = test_data->nextBatch()) {
+  while (auto batch = test_data->nextBatchTuple()) {
     processTestBatch(
         std::get<0>(batch.value()), outputs, &std::get<1>(batch.value()),
         /* output_active_neurons=*/nullptr,

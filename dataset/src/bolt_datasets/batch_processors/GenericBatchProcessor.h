@@ -52,7 +52,7 @@ class GenericBatchProcessor
     }
   }
 
-  std::optional<std::tuple<bolt::BoltBatch, bolt::BoltBatch>> createBatch(
+  std::tuple<bolt::BoltBatch, bolt::BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     std::vector<bolt::BoltVector> batch_inputs(rows.size());
     std::vector<bolt::BoltVector> batch_labels(rows.size());

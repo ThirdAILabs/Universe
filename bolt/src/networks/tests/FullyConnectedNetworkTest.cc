@@ -183,13 +183,25 @@ TEST(FullyConnectedClassificationNetworkTest, MultiLayerNetworkToString) {
 // below for more details on how this test works.
 class DummyDataLoader final : public dataset::DataLoader {
  public:
-  DummyDataLoader() : DataLoader(/* target_batch_size = */ 100) {}
+  explicit DummyDataLoader(uint32_t max_batches)
+      : DataLoader(/* target_batch_size = */ 100),
+        _batch_counter(0),
+        _max_batches(max_batches) {}
 
-  std::optional<std::vector<std::string>> nextBatch() final { return {{}}; }
+  std::optional<std::vector<std::string>> nextBatch() final {
+    if (_batch_counter >= _max_batches) {
+      return std::nullopt;
+    }
+    _batch_counter++;
+    return {{}};
+  }
 
   std::optional<std::string> getHeader() final { return ""; }
 
   std::string resourceName() const final { return ""; }
+
+ private:
+  uint32_t _batch_counter, _max_batches;
 };
 
 /*
@@ -212,13 +224,9 @@ class MockBatchProcessor final
                      dataset::BoltDatasetPtr labels)
       : _data(std::move(data)), _labels(std::move(labels)), _batch_counter(0) {}
 
-  std::optional<std::tuple<BoltBatch, BoltBatch>> createBatch(
+  std::tuple<BoltBatch, BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     (void)rows;
-
-    if (_batch_counter >= _data->numBatches()) {
-      return std::nullopt;
-    }
 
     std::pair<BoltBatch, BoltBatch> batch_pair = {
         std::move(_data->at(_batch_counter)),
@@ -241,7 +249,7 @@ class MockBatchProcessor final
 std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
 getMockStreamingDataset(dataset::DatasetWithLabels&& dataset) {
   std::shared_ptr<dataset::DataLoader> mock_loader =
-      std::make_shared<DummyDataLoader>();
+      std::make_shared<DummyDataLoader>(dataset.data->numBatches());
 
   std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>
       mock_processor =
