@@ -28,8 +28,6 @@ class DistributedModel : public FullyConnectedNetwork {
  public:
   DistributedModel(SequentialConfigList configs, uint64_t input_dim)
       : FullyConnectedNetwork(std::move(configs), input_dim, true),
-        _batch_iter(0),
-        _epoch_count(0),
         _rebuild_batch(0),
         _rehash_batch(0),
         _train_data(nullptr),
@@ -81,11 +79,8 @@ class DistributedModel : public FullyConnectedNetwork {
   // different function calls are using the same variable
   BoltBatch _outputs;
 
- protected:
-  uint32_t _batch_iter;
 
  private:
-  uint32_t _epoch_count;
   uint32_t _rebuild_batch;
   uint32_t _rehash_batch;
   std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>> _train_data;
