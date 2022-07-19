@@ -357,21 +357,6 @@ void createDatasetSubmodule(py::module_& module) {
       "a BoltDataset storing the labels.");
 
   dataset_submodule.def(
-      "load_bolt_csv_dataset", &loadBoltCsvDatasetWrapper, py::arg("filename"),
-      py::arg("batch_size"), py::arg("delimiter") = ",",
-      "Loads a BoltDataset from a CSV file. Each line in the "
-      "input file consists of a categorical label (integer) followed by the "
-      "elements of the input vector (float). These numbers are separated by a "
-      "delimiter."
-      "Arguments:\n"
-      " * filename: String - Path to input file.\n"
-      " * batch_size: Int (positive) - Size of each batch in the dataset.\n"
-      " * delimiter: Char - Delimiter that separates the numbers in each CSV "
-      "line. Defaults to ','\n\n"
-      "Returns a tuple containing a BoltDataset to store the data itself, and "
-      "a BoltDataset storing the labels.");
-
-  dataset_submodule.def(
       "bolt_tokenizer", &parseSentenceToSparseArray, py::arg("sentence"),
       py::arg("seed") = 0, py::arg("dimension") = 100000,
       "Utility that turns a sentence into a sequence of token embeddings. To "
@@ -418,14 +403,9 @@ void createDatasetSubmodule(py::module_& module) {
 py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
                                     uint32_t batch_size,
                                     bool softmax_for_multiclass) {
-  auto res = loadBoltSvmDataset(filename, batch_size, softmax_for_multiclass);
-  return py::make_tuple(std::move(res.data), std::move(res.labels));
-}
-
-py::tuple loadBoltCsvDatasetWrapper(const std::string& filename,
-                                    uint32_t batch_size, char delimiter) {
-  auto res = loadBoltCsvDataset(filename, batch_size, delimiter);
-  return py::make_tuple(std::move(res.data), std::move(res.labels));
+  auto [data, labels] =
+      loadBoltSvmDataset(filename, batch_size, softmax_for_multiclass);
+  return py::make_tuple(std::move(data), std::move(labels));
 }
 
 py::tuple loadClickThroughDatasetWrapper(const std::string& filename,

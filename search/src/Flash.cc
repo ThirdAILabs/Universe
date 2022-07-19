@@ -48,24 +48,6 @@ void Flash<LABEL_T>::addDataset(dataset::InMemoryDataset<BATCH_T>& dataset) {
   }
 }
 
-template void Flash<uint32_t>::addDataset<dataset::SparseBatch>(
-    dataset::StreamedDataset<dataset::SparseBatch>&);
-template void Flash<uint64_t>::addDataset<dataset::SparseBatch>(
-    dataset::StreamedDataset<dataset::SparseBatch>&);
-
-template void Flash<uint32_t>::addDataset<dataset::DenseBatch>(
-    dataset::StreamedDataset<dataset::DenseBatch>&);
-template void Flash<uint64_t>::addDataset<dataset::DenseBatch>(
-    dataset::StreamedDataset<dataset::DenseBatch>&);
-
-template <typename LABEL_T>
-template <typename BATCH_T>
-void Flash<LABEL_T>::addDataset(dataset::StreamedDataset<BATCH_T>& dataset) {
-  while (auto batch = dataset.nextBatch()) {
-    addBatch(*batch);
-  }
-}
-
 template void Flash<uint32_t>::addBatch<dataset::SparseBatch>(
     const dataset::SparseBatch&);
 template void Flash<uint64_t>::addBatch<dataset::SparseBatch>(

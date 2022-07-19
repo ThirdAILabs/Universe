@@ -1,7 +1,6 @@
 #include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/src/Dataset.h>
-#include <dataset/src/Factory.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <chrono>
 #include <filesystem>
@@ -242,33 +241,16 @@ void trainFCN(toml::table& config) {
 
   bolt::FullyConnectedNetwork network(layers, input_dim);
 
-  dataset::DatasetWithLabels train;
-  dataset::DatasetWithLabels test;
-
   if (dataset_format == "svm") {
-    train = dataset::loadBoltSvmDataset(train_filename, batch_size);
-    test = dataset::loadBoltSvmDataset(test_filename, batch_size);
-  } else if (dataset_format == "csv") {
-    std::string delimiter = getStrValue(dataset_table, "delimter", true, ",");
-    if (delimiter.size() != 1) {
-      std::cerr << "Invalid config file format: csv delimiter should be single "
-                   "character."
-                << std::endl;
-      exit(1);
-    }
-    char csv_delimiter = delimiter[0];
-    train =
-        dataset::loadBoltCsvDataset(train_filename, batch_size, csv_delimiter);
-    test =
-        dataset::loadBoltCsvDataset(test_filename, batch_size, csv_delimiter);
-  } else {
     std::cerr << "Invalid dataset format '" << dataset_format
-              << "'. Use 'svm' or 'csv'" << std::endl;
+              << "'. Use 'svm'" << std::endl;
     exit(1);
   }
 
-  auto [train_data, train_labels] = train;
-  auto [test_data, test_labels] = test;
+  auto [train_data, train_labels] =
+      dataset::loadBoltSvmDataset(train_filename, batch_size);
+  auto [test_data, test_labels] =
+      dataset::loadBoltSvmDataset(test_filename, batch_size);
 
   for (uint32_t e = 0; e < epochs; e++) {
     if (e == sparse_inference_epoch) {

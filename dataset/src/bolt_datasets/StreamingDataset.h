@@ -42,6 +42,9 @@ class StreamingDataset {
     return batch;
   }
 
+  // This function maps the tuple of batches returned by nextBatch() into a
+  // tuple of datasets where each dataset contains a list of batches of the type
+  // corresponding to that element of the tuple.
   std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> loadInMemory() {
     std::tuple<std::vector<BATCH_Ts>...> datasets;
 
@@ -52,6 +55,16 @@ class StreamingDataset {
     while (std::optional<std::tuple<BATCH_Ts...>> batch = nextBatch()) {
       len += std::get<0>(batch.value()).getBatchSize();
 
+      /**
+       * std::apply allows for a tuple to be applied to function that accepts a
+       * variadic template argument. We use this here to pass the tuple of
+       * vectors that we accumulate the batches in along with the tuple
+       * containing the next batches into a variadic template function that
+       * calls vector.push_back(...).
+       *
+       * Helpful stack overflow post about doing this:
+       * https://stackoverflow.com/questions/53305395/how-to-create-a-tuple-of-vectors-of-type-deduced-from-a-variadic-template-in-c
+       */
       std::apply(
           [&](auto&... lists) {
             std::apply(
@@ -68,6 +81,8 @@ class StreamingDataset {
         << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
         << " seconds" << std::endl;
 
+    // We use std::apply again here to call a function acception a variadic
+    // template that maps each vector of batches to an InMemoryDataset.
     std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> dataset_ptrs =
         std::apply(
             [&](auto&... batch_lists) {
@@ -81,6 +96,18 @@ class StreamingDataset {
   }
 
   uint32_t getMaxBatchSize() const { return _data_loader->getMaxBatchSize(); }
+
+  static std::shared_ptr<StreamingDataset<BATCH_Ts...>> loadDatasetFromFile(
+      const std::string& filename, uint32_t batch_size,
+      std::shared_ptr<BatchProcessor<BATCH_Ts...>> batch_processor) {
+    auto data_loader =
+        std::make_shared<SimpleFileDataLoader>(filename, batch_size);
+
+    auto dataset = std::make_shared<StreamingDataset<BATCH_Ts...>>(
+        std::move(data_loader), std::move(batch_processor));
+
+    return dataset;
+  }
 
  private:
   std::shared_ptr<DataLoader> _data_loader;

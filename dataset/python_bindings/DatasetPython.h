@@ -29,9 +29,6 @@ py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
                                     uint32_t batch_size,
                                     bool softmax_for_multiclass = true);
 
-py::tuple loadBoltCsvDatasetWrapper(const std::string& filename,
-                                    uint32_t batch_size, char delimiter);
-
 py::tuple loadClickThroughDatasetWrapper(const std::string& filename,
                                          uint32_t batch_size,
                                          uint32_t num_dense_features,

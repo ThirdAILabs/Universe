@@ -23,12 +23,9 @@ class DatasetWithLabels {
         labels(std::make_shared<BoltDataset>(std::move(_labels))) {}
 };
 
-DatasetWithLabels loadBoltSvmDataset(const std::string& filename,
-                                     uint32_t batch_size,
-                                     bool softmax_for_multiclass = true);
-
-DatasetWithLabels loadBoltCsvDataset(const std::string& filename,
-                                     uint32_t batch_size, char delimiter);
+std::tuple<BoltDatasetPtr, BoltDatasetPtr> loadBoltSvmDataset(
+    const std::string& filename, uint32_t batch_size,
+    bool softmax_for_multiclass = true);
 
 using ClickThroughDataset = InMemoryDataset<ClickThroughBatch>;
 using ClickThroughDatasetPtr = std::shared_ptr<ClickThroughDataset>;
