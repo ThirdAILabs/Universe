@@ -45,19 +45,33 @@ def set_network_weights_and_biases(network):
 @pytest.mark.unit
 def test_input_gradients():
     """
-    assert that the input gradients are same when required labels are not passed
-    and when required labels passed as second best labels ,{1,3,3,3} are second best labels.
+    checking the gradients are highest for the label
+    mentioned in labels array for most of the cases.
     """
     network = build_network()
     set_network_weights_and_biases(network)
-    x1 = np.array([[1, 0, 0, 0], [1, 1, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]]).astype(
-        "float32"
-    )
-    grad1 = network.get_input_gradients(x1, bolt.CategoricalCrossEntropyLoss(), False)
-    grad2 = network.get_input_gradients(
+    x1 = np.array(
+        [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+            [1, 1, 0, 0],
+            [1, 0, 1, 0],
+            [0, 1, 0, 1],
+        ]
+    ).astype("float32")
+    labels = np.array([0, 1, 2, 3, 1, 2, 1]).astype("uint32")
+    gradients = network.get_input_gradients(
         x1,
         bolt.CategoricalCrossEntropyLoss(),
-        False,
-        np.array([1, 3, 3, 3]).astype("uint32"),
+        required_labels=labels,
     )
-    assert grad1 == grad2
+    max_times = 0
+    for i in range(len(gradients)):
+        abs_list = list(map(abs, gradients[i]))
+        index = abs_list.index(max(abs_list))
+        if index == labels[i]:
+            max_times += 1
+
+    assert (max_times / len(labels)) > 0.7

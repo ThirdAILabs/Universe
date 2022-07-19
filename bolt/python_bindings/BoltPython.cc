@@ -297,21 +297,22 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("input"), py::arg("loss_fn"), py::arg("first") = true,
            py::arg("required_labels") = std::vector<uint32_t>(),
            py::arg("batch_size") = 256,
-           "Get the values of input gradients when back propagated "
-           "with labels with second highest activation or with the required "
-           "label."
+           "Get the values of input gradients when back propagate "
+           "labels with the highest activation or second highest "
+           "activation or with the required label."
            "Arguments:\n"
            " * input: The input is same type as we give for train_data of "
            "train method."
            " * loss_fn: LossFunction - The loss function to minimize."
            " * first: Boolean, if set to True, gives gradients correspond to "
-           "highest activation"
+           "highest activation, Otherwise gives gradients corresponds to "
+           "second highest activation."
            " * required_labels: expected labels for each input vector default "
-           "to empty vector"
+           "to empty vector, if required_labels is empty then only function "
+           "takes look at the first parameter , otherwise gives gradients "
+           "corresponds to those labels."
            " * batch_size: Batch size , default batch size is 256."
-           " Returns tuple (0) consisting of concatenated array of input "
-           "gradients and"
-           " (1) consisting of the offset values corresponding to input "
+           " Returns list of lists of gradients corresponds to the input "
            "vectors.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),

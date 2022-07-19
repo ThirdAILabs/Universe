@@ -220,31 +220,33 @@ inline std::vector<std::vector<float>> Model<BATCH_T>::getInputGradients(
       }
       forward(vec_id, batch_input->at(id), output[vec_id], nullptr);
       uint32_t required_index;
-      // we are taking the second best index to know which input features are
-      // important by observing input gradients, by flipping the predicted label
-      // as second best index.
-      if (first) {
-        required_index = output[vec_id].getIdWithHighestActivation();
+      // we are taking the second best index to know how change in input vector
+      // values affects the prediction to flip to second highest activation. And
+      // required_labels is essential because for some of the cases we know the
+      // correct output labels, and best index is used to explain the
+      // prediction.
+      if (required_labels.empty()) {
+        required_index = first ? output[vec_id].getIdWithHighestActivation()
+                               : getSecondBestIndex(output[vec_id].activations,
+                                                    getOutputDim());
       } else {
-        if (required_labels.empty()) {
-          required_index =
-              getSecondBestIndex(output[vec_id].activations, getOutputDim());
-        } else {
-          required_index =
-              (required_labels[id * batch_input->at(id).getBatchSize() +
-                               vec_id] <= getOutputDim() - 1)
-                  ? required_labels[id * batch_input->at(id).getBatchSize() +
-                                    vec_id]
-                  : throw std::invalid_argument(
-                        "one of the label crossing the output dim");
-        }
+        required_index =
+            (required_labels[id * batch_input->at(id).getBatchSize() +
+                             vec_id] <= getOutputDim() - 1)
+                ? required_labels[id * batch_input->at(id).getBatchSize() +
+                                  vec_id]
+                : throw std::invalid_argument(
+                      "one of the label crossing the output dim");
       }
       BoltVector batch_label = BoltVector::makeSparseVector(
           std::vector<uint32_t>{required_index}, std::vector<float>{1.0});
+
       loss_fn.lossGradients(output[vec_id], batch_label,
                             batch_input->at(id).getBatchSize());
+
       backpropagateInputForGradients(vec_id, batch_input->at(id),
                                      output[vec_id]);
+
       for (uint32_t i = 0; i < batch_input->at(id)[vec_id].len; i++) {
         vec_grad.push_back(batch_input->at(id)[vec_id].gradients[i]);
       }
