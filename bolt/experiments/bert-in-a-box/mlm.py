@@ -25,9 +25,13 @@ model.compile(bolt.CategoricalCrossEntropyLoss())
 
 mlm_loader = dataset.MLMDatasetLoader(pairgram_range=INPUT_DIM)
 
-train_data, train_tokens, train_labels = mlm_loader.load(filename=TRAIN_DATA, batch_size=BATCH_SIZE)
+train_data, train_tokens, train_labels = mlm_loader.load(
+    filename=TRAIN_DATA, batch_size=BATCH_SIZE
+)
 
-test_data, test_tokens, test_labels = mlm_loader.load(filename=TEST_DATA, batch_size=BATCH_SIZE)
+test_data, test_tokens, test_labels = mlm_loader.load(
+    filename=TEST_DATA, batch_size=BATCH_SIZE
+)
 
 train_config = (
     bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=1)
