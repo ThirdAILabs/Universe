@@ -135,7 +135,7 @@ class SequentialClassifier {
             return;
           }
           for (uint32_t batch_id = 0; batch_id < batch_size; batch_id++) {
-            auto pred = getPrediction(outputs[batch_id]);
+            auto pred = outputs[batch_id].getIdWithHighestActivation();
             (*output_file)
                 << _pipeline_builder._states.target_id_map->uidToClass(pred)
                 << std::endl;
@@ -216,22 +216,6 @@ class SequentialClassifier {
     _network->train(train_data, train_labels, loss, learning_rate, 1);
     _network->freezeHashTables();
     _network->train(train_data, train_labels, loss, learning_rate, epochs - 1);
-  }
-
-  static uint32_t getPrediction(const BoltVector& output) {
-    float max_act = 0.0;
-    uint32_t pred = 0;
-    for (uint32_t i = 0; i < output.len; i++) {
-      if (output.activations[i] > max_act) {
-        max_act = output.activations[i];
-        if (output.isDense()) {
-          pred = i;
-        } else {
-          pred = output.active_neurons[i];
-        }
-      }
-    }
-    return pred;
   }
 
   SequentialClassifierPipelineBuilder _pipeline_builder;
