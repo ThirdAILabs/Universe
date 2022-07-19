@@ -32,7 +32,7 @@ std::shared_ptr<FullyConnectedNetwork> AutoClassifierUtils::createNetwork(
 std::shared_ptr<dataset::StreamingDataset<BoltBatch>>
 AutoClassifierUtils::loadStreamingDataset(
     const std::string& filename,
-    std::shared_ptr<dataset::BatchProcessor<BoltBatch>> batch_processor,
+    const std::shared_ptr<dataset::BatchProcessor<BoltBatch>>& batch_processor,
     uint32_t batch_size) {
   std::shared_ptr<dataset::DataLoader> data_loader =
       std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
@@ -44,7 +44,7 @@ AutoClassifierUtils::loadStreamingDataset(
 
 void AutoClassifierUtils::train(
     std::shared_ptr<FullyConnectedNetwork>& model, const std::string& filename,
-    std::shared_ptr<dataset::BatchProcessor<BoltBatch>> batch_processor,
+    const std::shared_ptr<dataset::BatchProcessor<BoltBatch>>& batch_processor,
     uint32_t epochs, float learning_rate) {
   auto dataset = loadStreamingDataset(filename, batch_processor);
 
@@ -70,7 +70,7 @@ void AutoClassifierUtils::train(
 
 void AutoClassifierUtils::predict(
     std::shared_ptr<FullyConnectedNetwork>& model, const std::string& filename,
-    std::shared_ptr<dataset::BatchProcessor<BoltBatch>> batch_processor,
+    const std::shared_ptr<dataset::BatchProcessor<BoltBatch>>& batch_processor,
     const std::optional<std::string>& output_filename,
     const std::vector<std::string>& class_id_to_class_name) {
   auto dataset = loadStreamingDataset(filename, std::move(batch_processor));
