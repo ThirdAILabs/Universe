@@ -136,24 +136,19 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "not match the node's current weight matrix.")
       .def(
           "get_weights",
-          [] (FullyConnectedNode& node) {
-               float* mem = node.getNodeWeights();
+          [](FullyConnectedNode& node) {
+            float* mem = node.getNodeWeights();
 
-               py::capsule free_when_done(
-                    mem, [](void* ptr) { delete static_cast<float*>(ptr); }
-               );
-               size_t dim = node.outputDim();
-               size_t prev_dim = node.getPredecessors()[0]->outputDim();
+            py::capsule free_when_done(
+                mem, [](void* ptr) { delete static_cast<float*>(ptr); });
+            size_t dim = node.outputDim();
+            size_t prev_dim = node.getPredecessors()[0]->outputDim();
 
-               return py::array_t<float>(
-                    {dim, prev_dim},
-                    {prev_dim * sizeof(float), sizeof(float)},
-                    mem,
-                    free_when_done
-               );
-
-          }, 
-           "Returns the weight matrix for the node as a 2D Numpy array.");
+            return py::array_t<float>({dim, prev_dim},
+                                      {prev_dim * sizeof(float), sizeof(float)},
+                                      mem, free_when_done);
+          },
+          "Returns the weight matrix for the node as a 2D Numpy array.");
 
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
       graph_submodule, "Concatenate")

@@ -135,7 +135,7 @@ class FullyConnectedNode final
   float* getNodeWeights() {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be already compiled");
+          "FullyConnectedNode must be in a compiled state");
     }
     return _layer->getWeights();
   }
@@ -143,7 +143,7 @@ class FullyConnectedNode final
   void setNodeWeights(const float* new_weights) {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be already compiled");
+          "FullyConnectedNode must be in a compiled state");
     }
     _layer->setWeights(new_weights);
   }

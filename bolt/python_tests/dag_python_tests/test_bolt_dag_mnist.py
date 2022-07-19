@@ -1,6 +1,7 @@
 from ..test_mnist import ACCURACY_THRESHOLD, load_mnist
 from thirdai import bolt
 import os
+import math
 import pytest
 
 # Add an integration test marker for all tests in this file
@@ -68,7 +69,7 @@ def test_bolt_dag_on_mnist():
 
 # Builds a DAG-based model for MNIST with a sparse output layer
 def build_sparse_output_layer_model(sparsity=0.5):
-    input_layer = bolt.graph.Input(dim=256)
+    input_layer = bolt.graph.Input(dim=784)
     hidden_layer = bolt.graph.FullyConnected(dim=256, activation="relu")(input_layer)
     output_layer = bolt.graph.FullyConnected(
         dim=10, sparsity=sparsity, activation="softmax"
@@ -79,7 +80,14 @@ def build_sparse_output_layer_model(sparsity=0.5):
 
     return model
 
+
 def test_get_set_weight():
+    """
+    Tests that we can set and get weights for a specific node in the graph.
+    This test ensures that substituting trained weights in a model with
+    untrained weights result in a comparable performance in accuracy for
+    the two models.
+    """
 
     train_x, train_y, test_x, test_y = load_mnist()
     model = build_sparse_output_layer_model(sparsity=0.4)
@@ -90,19 +98,32 @@ def test_get_set_weight():
         .silence()
     )
     model.train(train_data=train_x, train_labels=train_y, train_config=train_config)
-    # predict_config = (
-    #     bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
-    # )
-    # metrics = model.predict(
-    #     test_data=train_x, test_labels=train_y, predict_config=predict_config
-    # )
-    # assert metrics[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
+    predict_config = (
+        bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
+    )
+    trained_model_metrics = model.predict(
+        test_data=test_x, test_labels=test_y, predict_config=predict_config
+    )
+    assert trained_model_metrics[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
-    # untrained_model = build_sparse_output_layer_model(sparsity=0.4)
+    untrained_model = build_sparse_output_layer_model(sparsity=0.4)
 
-    # hidden_layer = untrained_model.get_layer("fc_1")
-    # output_layer = untrained_model.get_layer("fc_2")
+    hidden_layer = model.get_layer("fc_1")
+    output_layer = model.get_layer("fc_2")
 
-    # hidden_layer_weights = hidden_layer.get_weights()
-    # output_layer_weights = output_layer.get_weights()
+    hidden_layer_weights = hidden_layer.get_weights()
+    output_layer_weights = output_layer.get_weights()
 
+    untrained_model.get_layer("fc_1").set_weights(hidden_layer_weights)
+    untrained_model.get_layer("fc_2").set_weights(output_layer_weights)
+
+    untrained_model_metrics = untrained_model.predict(
+        test_data=test_x, test_labels=test_y, predict_config=predict_config
+    )
+
+    # Checks that the accuracies are the same up to a threshold=0.001
+    assert math.isclose(
+        untrained_model_metrics[0]["categorical_accuracy"],
+        trained_model_metrics[0]["categorical_accuracy"],
+        rel_tol=0.001,
+    )
