@@ -43,8 +43,8 @@ class TabularClassifier {
         /* learning_rate */ learning_rate);
   }
 
-  void predict(const std::string& filename,
-               const std::optional<std::string>& output_filename) {
+  double predict(const std::string& filename,
+                 const std::optional<std::string>& output_filename) {
     if (!_metadata) {
       throw std::invalid_argument(
           "Cannot call predict(..) without calling train(..) first.");
@@ -53,7 +53,7 @@ class TabularClassifier {
     std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
         makeTabularBatchProcessor();
 
-    AutoClassifierUtils::predict(
+    return AutoClassifierUtils::predict(
         _model, filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch>>(
             batch_processor),

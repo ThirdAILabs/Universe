@@ -68,7 +68,7 @@ void AutoClassifierUtils::train(
   }
 }
 
-void AutoClassifierUtils::predict(
+double AutoClassifierUtils::predict(
     std::shared_ptr<FullyConnectedNetwork>& model, const std::string& filename,
     const std::shared_ptr<dataset::BatchProcessor<BoltBatch>>& batch_processor,
     const std::optional<std::string>& output_filename,
@@ -98,13 +98,14 @@ void AutoClassifierUtils::predict(
     predictions, and can instead compute the predictions using the
     back_callback.
   */
-  model->predictOnStream(dataset, /* use_sparse_inference= */ true,
-                         /* metric_names= */ {"categorical_accuracy"},
-                         print_predictions_callback);
+  InferenceMetricData metric_data = model->predictOnStream(
+      dataset, /* use_sparse_inference= */ true,
+      /* metric_names= */ {"categorical_accuracy"}, print_predictions_callback);
 
   if (output_file) {
     output_file->close();
   }
+  return metric_data["categorical_accuracy"];
 }
 
 uint32_t AutoClassifierUtils::getHiddenLayerSize(const std::string& model_size,

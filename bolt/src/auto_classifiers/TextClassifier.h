@@ -34,9 +34,9 @@ class TextClassifier {
         /* learning_rate */ learning_rate);
   }
 
-  void predict(const std::string& filename,
-               const std::optional<std::string>& output_filename) {
-    AutoClassifierUtils::predict(
+  double predict(const std::string& filename,
+                 const std::optional<std::string>& output_filename) {
+    return AutoClassifierUtils::predict(
         _model, filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch>>(
             _batch_processor),
