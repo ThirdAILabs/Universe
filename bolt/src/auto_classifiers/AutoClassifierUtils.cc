@@ -73,7 +73,7 @@ void AutoClassifierUtils::predict(
     const std::shared_ptr<dataset::BatchProcessor<BoltBatch>>& batch_processor,
     const std::optional<std::string>& output_filename,
     const std::vector<std::string>& class_id_to_class_name) {
-  auto dataset = loadStreamingDataset(filename, std::move(batch_processor));
+  auto dataset = loadStreamingDataset(filename, batch_processor);
 
   std::optional<std::ofstream> output_file;
   if (output_filename) {
