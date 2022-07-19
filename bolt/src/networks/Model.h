@@ -133,14 +133,14 @@ class Model {
   void getInputGradientsForBatch(
       BATCH_T& batch_input, BoltBatch& output, const LossFunction& loss_fn,
       uint32_t batch_id, const std::vector<uint32_t>& required_labels,
-      std::vector<std::vector<float>>& concatenated_grad);
+      std::vector<std::vector<float>>& concatenated_grad, bool want_ratios = false, std::vector<std::vector<float>>& ratios = std::vector<std::vector<float>>().operator=(std::vector<std::vector<float>>()));
 
   std::vector<std::vector<float>> getInputGradients(
       std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& batch_input,
       const LossFunction& loss_fn,
       const std::vector<uint32_t>& required_labels);
 
-  std::vector<std::vector<float>> getInputGradientsFromStream(
+  std::pair<std::vector<std::vector<float>>,std::vector<std::vector<float>>> getInputGradientsFromStream(
       std::shared_ptr<dataset::StreamingDataset<BATCH_T>> test_data,
       const LossFunction& loss_fn, uint32_t label_id, bool label_given);
 

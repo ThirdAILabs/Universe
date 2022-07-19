@@ -50,14 +50,16 @@ class SequentialClassifier {
 
   static void sortGradients(
       std::vector<std::vector<std::pair<float, uint32_t>>>& gradients) {
+    auto func=[](std::pair<float, uint32_t> i, std::pair<float, uint32_t> j) { return abs(i.first) > abs(j.first); };
     for (auto& gradient : gradients) {
-      sort(gradient.rbegin(), gradient.rend());
+      sort(gradient.begin(), gradient.end(), func);
     }
   }
 
   static std::vector<std::pair<std::string, uint32_t>> getMessagesFromBlocks(
       const std::vector<std::shared_ptr<dataset::Block>>& blocks) {
-    std::vector<std::pair<std::string, uint32_t>> temp(blocks.size());
+    std::vector<std::pair<std::string, uint32_t>> temp;
+    temp.clear();
     for (const auto& block : blocks) {
       temp.push_back(block->giveMessage());
     }
@@ -71,7 +73,7 @@ class SequentialClassifier {
     return blocks[iter - offsets.begin() - 1];
   }
 
-  std::vector<std::vector<std::pair<float, std::string>>> explain(
+  std::vector<std::vector<std::tuple<float, std::string, float>>> explain(
       std::string filename, uint32_t label_id = 0, bool label_given = false,
       const LossFunction& loss_fn = CategoricalCrossEntropyLoss()) {
     auto pipeline =
@@ -82,7 +84,8 @@ class SequentialClassifier {
     auto gradients = _network->getInputGradientsFromStream(pipeline.first,
                                                            loss_fn, label_id, label_given);
     std::vector<std::vector<std::pair<float, uint32_t>>> temp;
-    for (auto& gradient : gradients) {
+    //sorting based on ratios.
+    for (auto& gradient : gradients.second) {
       std::vector<std::pair<float, uint32_t>> vec;
       for (uint32_t j = 0; j < gradient.size(); j++) {
         vec.push_back(std::make_pair(gradient[j], j));
@@ -109,12 +112,22 @@ class SequentialClassifier {
       }
       total_column_names.push_back(column_names);
     }
-    std::vector<std::vector<std::pair<float, std::string>>> result;
+    // auto ret = gradients.second;
+    // for(auto r:ret) {
+    //   std::cout<<"the size "<<r.size()<<std::endl;
+    //   for(auto tr:r) {
+    //     std::cout<<tr<<" ";
+    //   }
+    //   std::cout<<std::endl;
+    // }
+    // std::cout<<"this is done"<<std::endl;
+    std::vector<std::vector<std::tuple<float, std::string, float>>> result;
     for (uint32_t i = 0; i < total_column_names.size(); i++) {
-      std::vector<std::pair<float, std::string>> res;
+      std::vector<std::tuple<float, std::string, float>> res;
       for (uint32_t j = 0; j < total_column_names[i].size(); j++) {
+        auto k = temp[i][j].second;
         res.push_back(
-            std::make_pair(temp[i][j].first, total_column_names[i][j]));
+            std::make_tuple(temp[i][j].first, total_column_names[i][j],gradients.first[i][k]));
       }
       result.push_back(res);
     }

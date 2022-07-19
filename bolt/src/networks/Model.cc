@@ -193,9 +193,9 @@ template <typename BATCH_T>
 inline void Model<BATCH_T>::getInputGradientsForBatch(
     BATCH_T& batch_input, BoltBatch& output, const LossFunction& loss_fn,
     uint32_t batch_id, const std::vector<uint32_t>& required_labels,
-    std::vector<std::vector<float>>& concatenated_grad) {
+    std::vector<std::vector<float>>& concatenated_grad, bool want_ratios, std::vector<std::vector<float>>& ratios) {
   for (uint32_t vec_id = 0; vec_id < batch_input.getBatchSize(); vec_id++) {
-    std::vector<float> vec_grad;
+    std::vector<float> vec_grad,ratio_grad;
     // Initializing the input gradients because they were not initialized
     // before. and assigning them to zero because new method gets some random
     // garbage value and gradient calculation uses += operator.
@@ -226,6 +226,12 @@ inline void Model<BATCH_T>::getInputGradientsForBatch(
     backpropagateInputForGradients(vec_id, batch_input, output[vec_id]);
     for (uint32_t i = 0; i < batch_input[vec_id].len; i++) {
       vec_grad.push_back(batch_input[vec_id].gradients[i]);
+    }
+    if(want_ratios) {
+    for (uint32_t i = 0; i < batch_input[vec_id].len; i++) {
+    ratio_grad.push_back((batch_input[vec_id].gradients[i])/batch_input[vec_id].activations[i]);
+    }
+    ratios.push_back(ratio_grad);
     }
     // de allocating the memory and pointing the gradients to nullptr to
     // prevent using invalid memory reference.
@@ -259,12 +265,12 @@ inline std::vector<std::vector<float>> Model<BATCH_T>::getInputGradients(
 }
 
 template <typename BATCH_T>
-inline std::vector<std::vector<float>>
+inline std::pair<std::vector<std::vector<float>>,std::vector<std::vector<float>>>
 Model<BATCH_T>::getInputGradientsFromStream(
     const std::shared_ptr<dataset::StreamingDataset<BATCH_T>> test_data,
     const LossFunction& loss_fn, uint32_t label_id, bool label_given) {
   uint32_t batch_size = test_data->getMaxBatchSize();
-  std::vector<std::vector<float>> concatenated_grad;
+  std::vector<std::vector<float>> concatenated_grad,ratios;
   BoltBatch output = getOutputs(batch_size, true);
   std::vector<uint32_t> temp;
   if (label_given) {
@@ -272,9 +278,9 @@ Model<BATCH_T>::getInputGradientsFromStream(
   }
   while (auto batch = test_data->nextBatch()) {
     getInputGradientsForBatch(batch->first, output, loss_fn, 0, temp,
-                              concatenated_grad);
+                              concatenated_grad,true,ratios);
   }
-  return concatenated_grad;
+  return std::make_pair(concatenated_grad,ratios);
 }
 
 template <typename BATCH_T>
