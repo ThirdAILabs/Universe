@@ -1,5 +1,5 @@
-train_file="string_classification.txt"
-test_file="string_mlm.txt"
+train_file="string_classification.csv"
+test_file="string_classification.csv"
 num_classes=12
 epochs=3
 learning_rate=0.01

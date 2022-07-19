@@ -10,9 +10,9 @@ def setup_module():
     with open("string_mlm.txt", "w") as f:
         f.write("This is a test sentence\n")
         f.write("To train the model on mlm tasks\n")
-    with open("string_classification.txt", "w") as f:
-        f.write("This is a test sentence\n")
-        f.write("To train the model on classification tasks\n")
+    with open("string_classification.csv", "w") as f:
+        f.write("0,This is a positive sentence\n")
+        f.write("1,To train the model on classification tasks\n")
 
 
 def test_new_dimension():
