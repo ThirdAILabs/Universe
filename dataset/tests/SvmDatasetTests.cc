@@ -127,9 +127,11 @@ class SvmDatasetTestFixture : public ::testing::Test {
 //     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
 //       ASSERT_EQ(batch.id(v), vec_count);
 
-//       ASSERT_EQ(batch.labels(v).size(), _vectors.at(vec_count).labels.size());
-//       for (uint32_t i = 0; i < batch.labels(v).size(); i++) {
-//         ASSERT_EQ(batch.labels(v).at(i), _vectors.at(vec_count).labels.at(i));
+//       ASSERT_EQ(batch.labels(v).size(),
+//       _vectors.at(vec_count).labels.size()); for (uint32_t i = 0; i <
+//       batch.labels(v).size(); i++) {
+//         ASSERT_EQ(batch.labels(v).at(i),
+//         _vectors.at(vec_count).labels.at(i));
 //       }
 
 //       ASSERT_EQ(batch[v].length(), _vectors[vec_count].values.size());

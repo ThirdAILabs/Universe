@@ -138,9 +138,9 @@ BlockBatchProcessor::exportInMemoryDataset(bool shuffle,
   }
 
   return {std::make_shared<BoltDataset>(std::move(input_batches)),
-          target_batches ? std::make_shared<BoltDataset>(
-                               std::move(target_batches.value()))
-                         : nullptr};
+          target_batches
+              ? std::make_shared<BoltDataset>(std::move(target_batches.value()))
+              : nullptr};
 }
 
 std::vector<uint32_t> BlockBatchProcessor::makeFinalPositions(

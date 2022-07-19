@@ -156,7 +156,8 @@ TEST_F(CsvDatasetTestFixture, StreamedDatasetTest) {
 }
 
 // TEST_F(CsvDatasetTestFixture, EmptyValuesTest) {
-//   std::vector<std::pair<std::string, std::vector<float>>> entries_and_expected{
+//   std::vector<std::pair<std::string, std::vector<float>>>
+//   entries_and_expected{
 //       {"5,,,", {0, 0, 0}},
 //       {"5,,5,5", {0, 5, 5}},
 //   };
@@ -166,7 +167,8 @@ TEST_F(CsvDatasetTestFixture, StreamedDatasetTest) {
 //                                         CsvDenseBatchFactory(','));
 //     ASSERT_EQ(dataset.len(), 1);
 //     for (uint32_t i = 0; i < dataset.at(0).at(0).dim(); ++i) {
-//       ASSERT_EQ(dataset.at(0).at(0)._values[i], entry_expected_pair.second[i]);
+//       ASSERT_EQ(dataset.at(0).at(0)._values[i],
+//       entry_expected_pair.second[i]);
 //     }
 //     deleteTestFile();
 //   }
@@ -175,7 +177,8 @@ TEST_F(CsvDatasetTestFixture, StreamedDatasetTest) {
 // TEST_F(CsvDatasetTestFixture, ErroneousFilesTest) {
 //   std::vector<std::pair<std::string, std::string>> entries_and_errors{
 //       {",5",
-//        "Invalid dataset file: Found a line that doesn't start with a label."},
+//        "Invalid dataset file: Found a line that doesn't start with a
+//        label."},
 //       {"5", "Invalid dataset file: The line only contains a label."},
 //       {"5.0.5,5,2", "Invalid dataset file: Found invalid character: ."},
 //       {"5a5", "Invalid dataset file: Found invalid character: a"},
