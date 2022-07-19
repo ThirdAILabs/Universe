@@ -1,0 +1,7 @@
+train_file="string_classification.txt"
+test_file="string_mlm.txt"
+num_classes=12
+epochs=3
+learning_rate=0.01
+batch_size=32
+task="classification"

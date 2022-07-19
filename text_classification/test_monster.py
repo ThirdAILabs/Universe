@@ -7,9 +7,12 @@ pytestmark = [pytest.mark.unit]
 
 
 def setup_module():
-    with open("string.txt", "w") as f:
+    with open("string_mlm.txt", "w") as f:
         f.write("This is a test sentence\n")
         f.write("To train the model on mlm tasks\n")
+    with open("string_classification.txt", "w") as f:
+        f.write("This is a test sentence\n")
+        f.write("To train the model on classification tasks\n")
 
 
 def test_new_dimension():
