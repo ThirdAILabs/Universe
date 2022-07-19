@@ -55,7 +55,9 @@ class FullyConnectedNode final
   bool isInputNode() const final { return false; }
 
   ActivationFunction getActivationFunction() const {
-    if (_config) {
+    NodeState node_state = getState();
+    if (node_state == NodeState::Constructed ||
+        node_state == NodeState::PredecessorsSet) {
       return _config.value().act_func;
     }
     return _layer->getActivationFunction();
@@ -110,14 +112,16 @@ class FullyConnectedNode final
   }
 
   float getNodeSparsity() {
-    if (_config) {
+    NodeState node_state = getState();
+    if (node_state == NodeState::Constructed ||
+        node_state == NodeState::PredecessorsSet) {
       return _config.value().getSparsity();
     }
     return _layer->getSparsity();
   }
 
   void setNodeSparsity(float sparsity) {
-    if (_config) {
+    if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
           "FullyConnectedNode must be already compiled");
     }
