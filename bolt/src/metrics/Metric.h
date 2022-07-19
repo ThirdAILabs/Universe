@@ -1,7 +1,6 @@
 #pragma once
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/MetricHelpers.h>
-#include <_types/_uint32_t.h>
 #include <mach/mach_types.h>
 #include <sys/types.h>
 #include <algorithm>
