@@ -1,4 +1,4 @@
-from ..test_mnist import load_mnist
+from ..test_mnist import ACCURACY_THRESHOLD, load_mnist
 from thirdai import bolt
 import os
 import pytest
@@ -64,3 +64,45 @@ def test_bolt_dag_on_mnist():
     )
 
     assert metrics[0]["categorical_accuracy"] >= 0.9
+
+
+# Builds a DAG-based model for MNIST with a sparse output layer
+def build_sparse_output_layer_model(sparsity=0.5):
+    input_layer = bolt.graph.Input(dim=256)
+    hidden_layer = bolt.graph.FullyConnected(dim=256, activation="relu")(input_layer)
+    output_layer = bolt.graph.FullyConnected(
+        dim=10, sparsity=sparsity, activation="softmax"
+    )(hidden_layer)
+
+    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+
+    return model
+
+def test_get_set_weight():
+
+    train_x, train_y, test_x, test_y = load_mnist()
+    model = build_sparse_output_layer_model(sparsity=0.4)
+
+    train_config = (
+        bolt.graph.TrainConfig.make(learning_rate=LEARNING_RATE, epochs=10)
+        .with_batch_size(64)
+        .silence()
+    )
+    model.train(train_data=train_x, train_labels=train_y, train_config=train_config)
+    # predict_config = (
+    #     bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
+    # )
+    # metrics = model.predict(
+    #     test_data=train_x, test_labels=train_y, predict_config=predict_config
+    # )
+    # assert metrics[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
+
+    # untrained_model = build_sparse_output_layer_model(sparsity=0.4)
+
+    # hidden_layer = untrained_model.get_layer("fc_1")
+    # output_layer = untrained_model.get_layer("fc_2")
+
+    # hidden_layer_weights = hidden_layer.get_weights()
+    # output_layer_weights = output_layer.get_weights()
+

@@ -101,7 +101,59 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("get_sparsity", &FullyConnectedNode::getNodeSparsity)
       .def("set_sparsity", &FullyConnectedNode::setNodeSparsity,
            py::arg("sparsity"))
-      .def("get_dim", &FullyConnectedNode::outputDim);
+      .def("get_dim", &FullyConnectedNode::outputDim)
+      .def(
+          "set_weights",
+          [](FullyConnectedNode& node,
+             const py::array_t<float, py::array::c_style |
+                                          py::array::forcecast>& new_weights) {
+            uint32_t dim = node.outputDim();
+            uint32_t prev_node_dim = node.getPredecessors()[0]->outputDim();
+
+            int new_weights_dim = new_weights.ndim();
+            if (new_weights_dim != 2) {
+              std::stringstream error;
+              error << "Expected weight matrix to have 2 dimensions, received "
+                       "matrix "
+                       "with "
+                    << new_weights_dim << " dimensions.";
+              throw std::invalid_argument(error.str());
+            }
+            if (new_weights.shape(0) != dim ||
+                new_weights.shape(1) != prev_node_dim) {
+              std::stringstream error;
+              error << "Expected weight matrix to have dim (" << dim << ", "
+                    << prev_node_dim << ") received matrix with dim ("
+                    << new_weights.shape(0) << ", " << new_weights.shape(1)
+                    << ").";
+              throw std::invalid_argument(error.str());
+            }
+            return node.setNodeWeights(new_weights.data());
+          },
+          py::arg("new_weights"),
+          "Sets the weight matrix for the node to the given Numpy 2D array."
+          "Throws an error if the dimension of the given weight matrix does"
+          "not match the node's current weight matrix.")
+      .def(
+          "get_weights",
+          [] (FullyConnectedNode& node) {
+               float* mem = node.getNodeWeights();
+
+               py::capsule free_when_done(
+                    mem, [](void* ptr) { delete static_cast<float*>(ptr); }
+               );
+               size_t dim = node.outputDim();
+               size_t prev_dim = node.getPredecessors()[0]->outputDim();
+
+               return py::array_t<float>(
+                    {dim, prev_dim},
+                    {prev_dim * sizeof(float), sizeof(float)},
+                    mem,
+                    free_when_done
+               );
+
+          }, 
+           "Returns the weight matrix for the node as a 2D Numpy array.");
 
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
       graph_submodule, "Concatenate")
