@@ -9,7 +9,8 @@ import sys
 
 def load_dataset(
     config: Dict[str, Any]
-    , total_nodes) -> Optional[
+    , total_nodes
+    , id) -> Optional[
         Tuple[
             dataset.BoltDataset,  # train_x
             dataset.BoltDataset,  # train_y
@@ -21,7 +22,8 @@ def load_dataset(
 
         Returns datasets as boltdatasets
     """
-    train_filename = config["dataset"]["train_data"]
+    
+    train_filename = config["dataset"]["train_data"][id]
     test_filename = config["dataset"]["test_data"]
     batch_size = int(config["params"]["batch_size"]/total_nodes)
     if config["dataset"]["format"].lower() == "svm":

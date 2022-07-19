@@ -161,9 +161,11 @@ template <typename BATCH_T>
 inline void Model<BATCH_T>::updateSampling(uint32_t rehash_batch,
                                            uint32_t rebuild_batch) {
   if (checkBatchInterval(rebuild_batch)) {
+    std::cout << "reBuildHashFunctions" << std::endl;
     reBuildHashFunctions();
     buildHashTables();
   } else if (checkBatchInterval(rehash_batch)) {
+    std::cout << "rebuildHashTables" << std::endl;
     buildHashTables();
   }
 }

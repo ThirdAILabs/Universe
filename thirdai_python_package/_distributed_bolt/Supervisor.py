@@ -31,29 +31,6 @@ class Supervisor:
         self.num_of_batches = ray.get(self.workers[0].num_of_batches.remote())
     
 
-    def batch_to_train(
-        self, 
-        id: int, 
-        batch_no: int
-    ) -> int:
-        """
-            For each worker, this function assigns them the batch number they 
-            need to train the network on.
-
-            In the current implementation, we are loading all the training 
-            data into each of the worker nodes, and then giving each of them
-            separate ranges of batches to train on.
-
-            So, if self.num_of_batch = 100 and len(self.workers) = 5
-            we will be assigning batch number 0-19 to worker 1,
-            20-39 to worker 2, 40-59 to worker 3....
-
-            Args:
-                id: worker id
-                batch_no: batch number for the particular worker with worker id (id). 
-        """
-        return int(self.num_of_batches/len(self.workers))*id + batch_no
-
     def subworkCircularCommunication(
         self, 
         batch_no: int
@@ -70,7 +47,7 @@ class Supervisor:
             Args:
                 batch_no: batch number for the particular worker with worker id (id).
         """
-        updates = ray.get([self.workers[id].calculateGradientsCircular.remote(self.batch_to_train(id, batch_no)) for id in range(len(self.workers))])
+        updates = ray.get([self.workers[id].calculateGradientsCircular.remote(batch_no) for id in range(len(self.workers))])
 
         # First Run
         update_id = 0
@@ -104,7 +81,7 @@ class Supervisor:
                 batch_no: batch number for the particular worker with worker id (id).
         """
         start_gradient_computation = time.time()
-        calculateGradients = ray.get([self.workers[id].calculateGradientsLinear.remote(self.batch_to_train(id, batch_no)) for id in range(len(self.workers))])
+        calculateGradients = ray.get([self.workers[id].calculateGradientsLinear.remote(batch_no) for id in range(len(self.workers))])
         gradient_computation_time = time.time() - start_gradient_computation
         start_getting_gradients = time.time()
         gradients_list = ray.get([self.workers[id].getCalculatedGradients.remote() for id in range(len(self.workers))])
@@ -117,8 +94,6 @@ class Supervisor:
         
         node_id = 0
         for w_gradients,b_gradients in gradients_list:
-            print('weights on node:', node_id, " weights: ", self.w_gradients_avg)
-            print('biases on node:', node_id, "biases: ", self.b_gradients_avg)
             self.w_gradients_avg += w_gradients
             self.b_gradients_avg += b_gradients
             node_id+=1
@@ -127,10 +102,6 @@ class Supervisor:
         self.w_gradients_avg = np.divide(self.w_gradients_avg, len(self.workers))
         self.b_gradients_avg = np.divide(self.b_gradients_avg, len(self.workers))
         
-
-        print('weights: ', self.w_gradients_avg)
-        print('biases: ', self.b_gradients_avg)
-
         summing_and_averaging_gradients_time = time.time() - summing_and_averaging_gradients_start_time
         return gradient_computation_time, getting_gradient_time, summing_and_averaging_gradients_time
 

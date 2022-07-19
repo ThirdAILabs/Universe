@@ -6,7 +6,7 @@ import time
 from typing import Tuple, Any, Optional, Dict, List
 
 
-@ray.remote(num_cpus=40, max_restarts=1)
+@ray.remote(num_cpus=20, max_restarts=1)
 class Worker:
     """
         This is a ray remote class(Actor). Read about them here. 
@@ -42,8 +42,10 @@ class Worker:
             sparse_inference_epoch = config["params"]["sparse_inference_epoch"]
         else:
             sparse_inference_epoch = None
+        if len(config["dataset"]["train_data"]) != total_nodes:
+            raise ValueError("Give n trainging examples for n nodes.")
 
-        data = load_dataset(config, total_nodes)
+        data = load_dataset(config, total_nodes, id)
         if data is None:
             raise ValueError("Unable to load a dataset. Please check the config")
         

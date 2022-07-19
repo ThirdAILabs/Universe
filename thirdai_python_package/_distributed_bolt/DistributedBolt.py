@@ -55,7 +55,7 @@ class DistributedBolt:
         self.workers = [Worker.options(max_concurrency=2).remote(self.layers,config, self.no_of_workers, id) for id in range(self.no_of_workers)]
         self.supervisor = Supervisor.remote(self.layers,self.workers)
         
-        self.num_of_batches = ray.get(self.workers[0].num_of_batches.remote())
+        self.num_of_batches = min(ray.get([self.workers[i].num_of_batches.remote() for i in range(self.no_of_workers)]))
         
         for i in range(len(self.workers)):
             x = ray.get(self.workers[i].addSupervisor.remote(self.supervisor))
@@ -84,17 +84,17 @@ class DistributedBolt:
                 updateWeightsAndBiases = ray.get([self.workers[id+1].receiveParams.remote() for id in range(len(self.workers)-1)])
                 for batch_no in range(int(self.num_of_batches/len(self.workers))):
                     if batch_no%5==0:
-                        self.logging.info(str(batch_no) + ' processed!, Total Batches: ' + str(int(self.num_of_batches/len(self.workers))))
+                        self.logging.info(str(batch_no) + ' processed!, Total Batches: ' + str(self.num_of_batches))
                     a = ray.get(self.supervisor.subworkCircularCommunication.remote(batch_no))
                     x = ray.get([self.workers[i].receiveGradientsCircularCommunication.remote() for i in range(len(self.workers))])
                     b = ray.get(self.supervisor.subworkUpdateParameters.remote(self.learning_rate))
         else:
             self.logging.info('Linear communication pattern is choosen')
+            updateWeightsAndBiases = ray.get([self.workers[id+1].receiveParams.remote() for id in range(len(self.workers)-1)])
             for epoch in range(self.epochs):
-                updateWeightsAndBiases = ray.get([self.workers[id+1].receiveParams.remote() for id in range(len(self.workers)-1)])
-                for batch_no in range(int(self.num_of_batches/len(self.workers))):
+                for batch_no in range(self.num_of_batches):
                     if batch_no%5==0:
-                        self.logging.info(str(batch_no) + ' processed!, Total Batches: ' + str(int(self.num_of_batches/len(self.workers))))
+                        self.logging.info(str(batch_no) + ' processed!, Total Batches: ' + str(self.num_of_batches))
                     gradient_computation_time, getting_gradient_time, summing_and_averaging_gradients_time = ray.get(self.supervisor.subworkLinearCommunication.remote(batch_no))
                     start_gradients_send_time = time.time() 
                     x = ray.get([w.receiveGradientsLinearCommunication.remote() for w in self.workers])
