@@ -443,7 +443,7 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-    if ((!_is_distributed) &&  (!_this_is_dense && !_is_active[cur_neuron])) {
+    if ((!_is_distributed) && (!_this_is_dense && !_is_active[cur_neuron])) {
       continue;
     }
 
