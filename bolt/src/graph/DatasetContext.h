@@ -51,7 +51,7 @@ class DatasetContext {
     return _all_dag_datasets.front()->batchSize(batch_idx);
   }
 
-  uint64_t len() const { return _all_dag_datasets.front()->batchSize(); }
+  uint64_t len() const { return _all_dag_datasets.front()->len(); }
 
   uint64_t numBatches() const {
     return _all_dag_datasets.front()->numBatches();
