@@ -1,7 +1,0 @@
-train_file="mnist"
-test_file="mnist.t"
-num_classes=10
-epochs=1
-learning_rate=0.01
-batch_size=256
-task="classification"
