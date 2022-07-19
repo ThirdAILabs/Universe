@@ -132,6 +132,14 @@ class FullyConnectedNode final
     return _layer->getSamplingConfig();
   }
 
+  float* getNodeBiases() {
+    if (getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state");
+    }
+    return _layer->getBiases();
+  }
+
   float* getNodeWeights() {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
@@ -146,6 +154,14 @@ class FullyConnectedNode final
           "FullyConnectedNode must be in a compiled state");
     }
     _layer->setWeights(new_weights);
+  }
+
+  void setNodeBiases(const float* new_biases) {
+    if (getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state");
+    }
+    _layer->setBiases(new_biases);
   }
 
  private:

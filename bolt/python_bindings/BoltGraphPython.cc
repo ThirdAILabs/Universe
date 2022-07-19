@@ -128,12 +128,12 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
                     << ").";
               throw std::invalid_argument(error.str());
             }
-            return node.setNodeWeights(new_weights.data());
+            node.setNodeWeights(new_weights.data());
           },
           py::arg("new_weights"),
           "Sets the weight matrix for the node to the given Numpy 2D array."
           "Throws an error if the dimension of the given weight matrix does"
-          "not match the node's current weight matrix.")
+          "not match that of the node's current weight matrix.")
       .def(
           "get_weights",
           [](FullyConnectedNode& node) {
@@ -148,7 +148,46 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
                                       {prev_dim * sizeof(float), sizeof(float)},
                                       mem, free_when_done);
           },
-          "Returns the weight matrix for the node as a 2D Numpy array.");
+          "Returns the weight matrix for the node as a 2D Numpy array.")
+      .def(
+          "get_biases",
+          [](FullyConnectedNode& node) {
+            float* mem = node.getNodeBiases();
+
+            py::capsule free_when_done(
+                mem, [](void* ptr) { delete static_cast<float*>(ptr); });
+            size_t dim = node.outputDim();
+
+            return py::array_t<float>({dim}, {sizeof(float)}, mem,
+                                      free_when_done);
+          },
+          "Returns the bias array for the given node as a 1D Numpy array.")
+      .def(
+          "set_biases",
+          [](FullyConnectedNode& node,
+             const py::array_t<float, py::array::c_style | py::array::forcecast>&
+                 new_biases) {
+            uint32_t dim = node.outputDim();
+            if (new_biases.ndim() != 1) {
+              std::stringstream error;
+              error << "Expected weight matrix to have 1 dimension, received "
+                       "matrix "
+                       "with "
+                    << new_biases.ndim() << " dimensions.";
+              throw std::invalid_argument(error.str());
+            }
+
+            if (new_biases.shape(0) != dim) {
+              std::stringstream error;
+              error << "Expected weight matrix to have dim " << dim
+                    << " received matrix with dim " << new_biases.shape(0)
+                    << ".";
+              throw std::invalid_argument(error.str());
+            }
+
+            node.setNodeBiases(new_biases.data());
+          },
+          "Sets the bias array to the given 1D Numpy array for the given node");
 
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
       graph_submodule, "Concatenate")

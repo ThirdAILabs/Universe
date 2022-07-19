@@ -84,9 +84,8 @@ def build_sparse_output_layer_model(sparsity=0.5):
 def test_get_set_weight():
     """
     Tests that we can set and get weights for a specific node in the graph.
-    This test ensures that substituting trained weights in a model with
-    untrained weights result in a comparable performance in accuracy for
-    the two models.
+    This test ensures that substituting untrained weights with trained weights 
+    from the same model configuration results in comparable accuracy performances. 
     """
 
     train_x, train_y, test_x, test_y = load_mnist()
