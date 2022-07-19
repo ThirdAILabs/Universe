@@ -192,7 +192,7 @@ inline uint32_t getSecondBestIndex(const float* activations, uint32_t dim) {
 template <typename BATCH_T>
 inline std::vector<std::vector<float>> Model<BATCH_T>::getInputGradients(
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& batch_input,
-    const LossFunction& loss_fn, bool first,
+    const LossFunction& loss_fn, bool best_index,
     const std::vector<uint32_t>& required_labels) {
   uint64_t num_batches = batch_input->numBatches();
   if (!required_labels.empty() &&
@@ -226,9 +226,10 @@ inline std::vector<std::vector<float>> Model<BATCH_T>::getInputGradients(
       // correct output labels, and best index is used to explain the
       // prediction.
       if (required_labels.empty()) {
-        required_index = first ? output[vec_id].getIdWithHighestActivation()
-                               : getSecondBestIndex(output[vec_id].activations,
-                                                    getOutputDim());
+        required_index = best_index
+                             ? output[vec_id].getIdWithHighestActivation()
+                             : getSecondBestIndex(output[vec_id].activations,
+                                                  getOutputDim());
       } else {
         required_index =
             (required_labels[id * batch_input->at(id).getBatchSize() +

@@ -45,8 +45,11 @@ def set_network_weights_and_biases(network):
 @pytest.mark.unit
 def test_input_gradients():
     """
-    checking the gradients are highest for the label
-    mentioned in labels array for most of the cases.
+    checking the gradients are highest for the label mentioned in labels array
+    for most of the cases. for "[1,0,0,0]" these type of inputs, we expect gradients
+    to be max for non-zero index, and for [1,1,0,0] the label mentioned '1' but for
+    [1,0,0,0] label mentioned '0' so the second index element has most influence over
+    the input to flip the label, so expected to have high gradient.
     """
     network = build_network()
     set_network_weights_and_biases(network)
@@ -68,10 +71,13 @@ def test_input_gradients():
         required_labels=labels,
     )
     max_times = 0
-    for i in range(len(gradients)):
-        abs_list = list(map(abs, gradients[i]))
-        index = abs_list.index(max(abs_list))
-        if index == labels[i]:
-            max_times += 1
+    total = 0
+    for k in range(5):
+        total += len(gradients)
+        for i in range(len(gradients)):
+            abs_list = list(map(abs, gradients[i]))
+            index = abs_list.index(max(abs_list))
+            if index == labels[i]:
+                max_times += 1
 
-    assert (max_times / len(labels)) > 0.7
+    assert (max_times / total) > 0.7
