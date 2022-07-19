@@ -1,12 +1,13 @@
 #pragma once
-
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/MetricHelpers.h>
 #include <_types/_uint32_t.h>
+#include <mach/mach_types.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <atomic>
 #include <iomanip>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -246,43 +247,19 @@ class FMeasure final : public Metric {
   explicit FMeasure(float threshold = 0.8) : _threshold(threshold), _tp(0), _fp(0), _fn(0) {}
 
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
-    std::vector<uint32_t> pos_predictions;
-    std::vector<uint32_t> neg_predictions;
-
-    for (uint32_t i = 0; i < output.len; i++) {
-      uint32_t pred = output.isDense() ? i : output.active_neurons[i];
-      if (output.activations[i] > _threshold) {
-        pos_predictions.push_back(pred);
+    auto predictions = output.getThresholdedNeurons(/* activation_threshold = */ _threshold, /* return_at_least_one = */ false, /* max_count_to_return = */ 4);
+    for (uint32_t pred : predictions) {
+      if (labels.findActiveNeuronNoTemplate(pred).activation > 0) {
+        _tp++;
       } else {
-        neg_predictions.push_back(pred);
+        _fp++;
       }
     }
 
-    if (labels.isDense()) {
-      for (uint32_t pos_pred : pos_predictions) {
-        if (labels.activations[pos_pred] > 0) {
-          _tp++;
-        } else {
-          _fp++;
-        }
-      }
-      for (uint32_t neg_pred : neg_predictions) {
-        if (labels.activations[neg_pred] > 0) {
-          _fn++;
-        }
-      }
-    } else {
-      const uint32_t* label_start = labels.active_neurons;
-      const uint32_t* label_end = labels.active_neurons + labels.len;
-      for (uint32_t pos_pred : pos_predictions) {
-        if (std::find(label_start, label_end, pos_pred) != label_end) {
-          _tp++;
-        } else {
-          _fp++;
-        }
-      }
-      for (uint32_t neg_pred : neg_predictions) {
-        if (std::find(label_start, label_end, neg_pred) != label_end) {
+    for (uint32_t i = 0; i < labels.len; i++) {
+      uint32_t label_idx = labels.isDense() ? i : labels.active_neurons[i];
+      if (labels.findActiveNeuronNoTemplate(label_idx).activation > 0) {
+        if (std::find(predictions.begin(), predictions.end(), label_idx) == predictions.end()) {
           _fn++;
         }
       }

@@ -55,7 +55,7 @@ MultiLabelTextClassifier::MultiLabelTextClassifier(uint32_t n_classes) {
   auto hidden = std::make_shared<FullyConnectedNode>(/* dim= */ hidden_layer_dim, /* sparsity= */ hidden_layer_sparsity, /* activation= */ "relu");
   hidden->addPredecessor(input);
 
-  auto output = std::make_shared<FullyConnectedNode>(/* dim= */ n_classes, /* activation= */ "sigmoid");
+  auto output = std::make_shared<FullyConnectedNode>(/* dim= */ n_classes, /* sparsity= */ 0.1, /* activation= */ "sigmoid");
   output->addPredecessor(hidden);
 
   _model = std::make_shared<BoltGraph>(/* inputs= */ std::vector<InputPtr>{input}, /* output= */ output);
@@ -113,16 +113,13 @@ void MultiLabelTextClassifier::predict(
   auto [test_data, test_labels] = dataset->loadInMemory();
 
   auto [_, predict_output] = _model->predict(test_data, test_labels, predict_cfg);
-  
   for (uint32_t vec_id = 0; vec_id < predict_output.getNumSavedVectors(); vec_id++) {
     BoltVector v = predict_output.getOutputVector(vec_id);
-    for (uint32_t i = 0; i < v.len; i++) {
-      if (v.activations[i] > threshold) {
-        if (v.isDense()) {
-          (*output_file) << i;
-        } else {
-          (*output_file) << v.active_neurons[i];
-        }
+    auto predictions = v.getThresholdedNeurons(/* activation_threshold = */ threshold, /* return_at_least_one = */ false, /* max_count_to_return = */ 4);
+    for (uint32_t i = 0; i < predictions.size(); i++) {
+      (*output_file) << predictions.at(i);
+      if (i != predictions.size() - 1) {
+        (*output_file) << ",";
       }
     }
     (*output_file) << std::endl;
