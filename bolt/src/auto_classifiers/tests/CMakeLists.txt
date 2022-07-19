@@ -4,6 +4,7 @@ add_executable(bolt_tabular_classifier_test TabularClassifierTest.cc)
 target_link_libraries(
   bolt_tabular_classifier_test
   PRIVATE
+  auto_classifier_lib
   bolt_network_lib
   gtest_main
 )
