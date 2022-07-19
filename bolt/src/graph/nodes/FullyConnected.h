@@ -47,7 +47,7 @@ class FullyConnectedNode final
     NodeState node_state = getState();
     if (node_state == NodeState::Constructed ||
         node_state == NodeState::PredecessorsSet) {
-      return _config.value().getDim();
+      return _config->getDim();
     }
     return _layer->getDim();
   }
@@ -58,7 +58,7 @@ class FullyConnectedNode final
     NodeState node_state = getState();
     if (node_state == NodeState::Constructed ||
         node_state == NodeState::PredecessorsSet) {
-      return _config.value().act_func;
+      return _config->act_func;
     }
     return _layer->getActivationFunction();
   }
@@ -115,7 +115,7 @@ class FullyConnectedNode final
     NodeState node_state = getState();
     if (node_state == NodeState::Constructed ||
         node_state == NodeState::PredecessorsSet) {
-      return _config.value().getSparsity();
+      return _config->getSparsity();
     }
     return _layer->getSparsity();
   }
@@ -123,7 +123,7 @@ class FullyConnectedNode final
   void setNodeSparsity(float sparsity) {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be already compiled");
+          "FullyConnectedNode must be in a compiled state");
     }
     _layer->setSparsity(sparsity);
   }
