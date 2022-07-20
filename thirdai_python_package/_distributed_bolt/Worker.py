@@ -172,6 +172,8 @@ class Worker:
     
     
     def getDragonGradients(self,compression_density):
+        print(f"calculating the dragon gradients for the workerid {self.id}")
+        start=time.time()
         w_sparse_grad=[]
         b_sparse_grad=[]
 
@@ -215,7 +217,7 @@ class Worker:
             
             w_sparse_grad.append((indices_x,vals_x))
             b_sparse_grad.append((indices_y,vals_y))
-        
+        print(f"done calculating the dragon gradients for the workerid {self.id} in time {time.time()-start}")
         return (w_sparse_grad,b_sparse_grad)
 
 

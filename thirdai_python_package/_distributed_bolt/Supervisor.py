@@ -68,11 +68,15 @@ class Supervisor:
     def dragon_compression(self,batch_no,compression_density=0.10):
 
         start_gradient_computation = time.time()
+        print("starting the gradient calculation")
         calculateGradients = ray.get([self.workers[id].calculateGradientsLinear.remote(batch_no,compression="DRAGON",compression_density=compression_density) for id in range(len(self.workers))])
+        print(f"gradient calculation ended in time {time.time()-start_gradient_computation}")
         gradient_computation_time = time.time() - start_gradient_computation
         start_getting_gradients = time.time()
+        print("starting to get the gradients")
         gradients_list = ray.get([self.workers[id].getCalculatedGradients.remote() for id in range(len(self.workers))])
         getting_gradient_time = time.time() - start_getting_gradients
+        print(f"got the gradients ended in ")
         
         summing_and_averaging_gradients_start_time = time.time()
 
@@ -106,13 +110,16 @@ class Supervisor:
         
 
         start_gradient_computation = time.time()
+        print("starting the gradient calculation")
         calculateGradients = ray.get([self.workers[id].calculateGradientsLinear.remote(batch_no) for id in range(len(self.workers))])
+        print(f"gradient calculation ended in time {time.time()-start_gradient_computation}")
         gradient_computation_time = time.time() - start_gradient_computation
         start_getting_gradients = time.time()
+        print("starting to get the gradients")
         gradients_list = ray.get([self.workers[id].getCalculatedGradients.remote() for id in range(len(self.workers))])
         getting_gradient_time = time.time() - start_getting_gradients
-        
-        summing_and_averaging_gradients_start_time = time.time()
+        print(f"getting the gradients ended in ")
+        summing_and_averaging_gradients_start_time = time.time(getting_gradient_time)
         
         self.w_gradients_avg = np.array([np.zeros((self.layers[layer_no+1], self.layers[layer_no])) for layer_no in range(len(self.layers)-1)])
         self.b_gradients_avg = np.array([np.zeros((self.layers[layer_no+1])) for layer_no in range(len(self.layers)-1)])
