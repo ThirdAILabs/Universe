@@ -174,7 +174,7 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatch) {
   auto batch = processor.createBatch(rows);
 
   uint32_t unknown_hash =
-      TextEncodingUtils::computeUnigram(/* key */ "[UNK]", /* len */ 5);
+      TextEncodingUtils::computeUnigram(/* key= */ "[UNK]", /* len= */ 5);
 
   const std::unordered_map<uint32_t, uint32_t>& words_to_ids =
       processor.getWordToIDMap();

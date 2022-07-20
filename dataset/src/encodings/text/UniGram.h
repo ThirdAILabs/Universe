@@ -23,7 +23,7 @@ class UniGram : public TextEncoding {
         TextEncodingUtils::computeRawUnigramsWithRange(text, _dim);
 
     TextEncodingUtils::sumRepeatedIndices(
-        unigrams, /* base_value */ 1.0, [&](uint32_t unigram, float value) {
+        unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {
           vec.addSparseFeatureToSegment(unigram, value);
         });
   }

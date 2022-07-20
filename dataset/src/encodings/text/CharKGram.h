@@ -31,7 +31,7 @@ class CharKGram : public TextEncoding {
     for (uint32_t offset = 0; offset < text.size() - (_k - 1); offset++) {
       uint32_t k_gram_hash =
           TextEncodingUtils::computeUnigram(
-              /* key */ &lower_case_text.at(offset), /* len */ _k) %
+              /* key= */ &lower_case_text.at(offset), /* len= */ _k) %
           _dim;
       char_k_grams.push_back(k_gram_hash);
     }

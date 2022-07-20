@@ -794,7 +794,7 @@ parseSentenceToUnigramsPython(const std::string& sentence, uint32_t dimension) {
 
   std::vector<uint32_t> indices;
   std::vector<uint32_t> values;
-  TextEncodingUtils::sumRepeatedIndices(unigrams, /* base_value */ 1.0,
+  TextEncodingUtils::sumRepeatedIndices(unigrams, /* base_value= */ 1.0,
                                         [&](uint32_t index, float value) {
                                           indices.push_back(index);
                                           values.push_back(value);

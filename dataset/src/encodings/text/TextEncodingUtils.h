@@ -56,7 +56,7 @@ class TextEncodingUtils {
     std::vector<uint32_t> indices;
     std::vector<float> values;
 
-    sumRepeatedIndices(unigrams, /* base_value */ 1.0,
+    sumRepeatedIndices(unigrams, /* base_value= */ 1.0,
                        [&](uint32_t unigram, float value) {
                          indices.push_back(unigram);
                          values.push_back(value);
@@ -105,7 +105,7 @@ class TextEncodingUtils {
     std::vector<uint32_t> indices;
     std::vector<float> values;
 
-    sumRepeatedIndices(pairgrams, /* base_value */ 1.0,
+    sumRepeatedIndices(pairgrams, /* base_value= */ 1.0,
                        [&](uint32_t pairgram, float value) {
                          indices.push_back(pairgram);
                          values.push_back(value);
@@ -125,7 +125,7 @@ class TextEncodingUtils {
     std::vector<uint32_t> indices;
     std::vector<float> values;
 
-    sumRepeatedIndices(pairgrams, /* base_value */ 1.0,
+    sumRepeatedIndices(pairgrams, /* base_value= */ 1.0,
                        [&](uint32_t pairgram, float value) {
                          indices.push_back(pairgram);
                          values.push_back(value);

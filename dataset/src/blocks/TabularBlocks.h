@@ -57,11 +57,11 @@ class TabularPairGram : public Block {
         TextEncodingUtils::computeRawPairgramsFromUnigrams(unigram_hashes,
                                                            _output_range);
 
-    TextEncodingUtils::sumRepeatedIndices(pairgram_hashes, /* base_value */ 1.0,
-                                          [&](uint32_t pairgram, float value) {
-                                            vec.addSparseFeatureToSegment(
-                                                pairgram, value);
-                                          });
+    TextEncodingUtils::sumRepeatedIndices(
+        pairgram_hashes, /* base_value= */ 1.0,
+        [&](uint32_t pairgram, float value) {
+          vec.addSparseFeatureToSegment(pairgram, value);
+        });
 
     return nullptr;
   }
