@@ -41,9 +41,9 @@ using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 template <typename BATCH_T>
 class NumpyDataset : public InMemoryDataset<BATCH_T> {
  public:
-  NumpyDataset(std::vector<bolt::BoltBatch>&& batches,
+  NumpyDataset(std::vector<BATCH_T>&& batches,
                std::vector<py::buffer_info>&& owning_objects)
-      : InMemoryDataset<bolt::BoltBatch>(std::move(batches)),
+      : InMemoryDataset<BATCH_T>(std::move(batches)),
         _owning_objects(std::move(owning_objects)) {}
 
  private:
@@ -182,10 +182,15 @@ numpyTokensToBoltDataset(const NumpyArray<uint32_t>& tokens,
     batches.emplace_back(std::move(current_token_batch));
   }
 
+  // Since we only do copies we don't need to worry about owning objects
+  std::vector<py::buffer_info> owning_objects = {};
+
   if constexpr (CONVERT_TO_VECTORS) {
-    return std::make_shared<BoltDataset>(std::move(batches));
+    return std::make_shared<WrappedNumpyVectors>(std::move(batches),
+                                                 std::move(owning_objects));
   } else {
-    return std::make_shared<BoltTokenDataset>(std::move(batches));
+    return std::make_shared<WrappedNumpyTokens>(std::move(batches),
+                                                std::move(owning_objects));
   }
 }
 

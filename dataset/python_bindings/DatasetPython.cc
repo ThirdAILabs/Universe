@@ -318,7 +318,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__getitem__",
            static_cast<bolt::BoltBatch& (BoltDataset::*)(uint32_t i)>(
                &BoltDataset::at),
-           py::arg("i"), py::return_value_policy::reference);
+           py::arg("i"), py::return_value_policy::reference)
+      .def("__len__", &BoltDataset::numBatches);
 
   py::class_<BoltTokenDataset, BoltTokenDatasetPtr>(  // NOLINT
       dataset_submodule, "BoltTokenDataset");
@@ -330,6 +331,8 @@ void createDatasetSubmodule(py::module_& module) {
              std::shared_ptr<numpy::WrappedNumpyTokens>, BoltTokenDataset>(
       dataset_submodule, "WrappedNumpyTokens");
 
+  // TODO(josh): Add __iter__ method so we can do foreach loops in pthon and c++
+  // TODO(josh): This segfaults if the user passes in an index that is too large
   py::class_<bolt::BoltBatch>(dataset_submodule, "BoltBatch")
       .def("size", &bolt::BoltBatch::getBatchSize)
       .def("get",
@@ -339,7 +342,8 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__getitem__",
            static_cast<BoltVector& (bolt::BoltBatch::*)(size_t i)>(
                &bolt::BoltBatch::operator[]),
-           py::arg("i"), py::return_value_policy::reference);
+           py::arg("i"), py::return_value_policy::reference)
+      .def("__len__", &bolt::BoltBatch::getBatchSize);
 
   dataset_submodule.def(
       "load_bolt_svm_dataset", &loadBoltSvmDatasetWrapper, py::arg("filename"),
@@ -368,14 +372,16 @@ void createDatasetSubmodule(py::module_& module) {
       "a BoltDataset storing the labels.");
 
   dataset_submodule.def("from_numpy", &numpy::numpyToBoltVectorDataset,
-                        py::arg("data"), py::arg("batch_size") = 256);
+                        py::keep_alive<0, 1>(), py::arg("data"),
+                        py::arg("batch_size") = 256);
 
   dataset_submodule.def("tokens_from_numpy", &numpy::numpyToBoltTokenDataset,
-                        py::arg("data"), py::arg("batch_size") = 256);
+                        py::keep_alive<0, 1>(), py::arg("data"),
+                        py::arg("batch_size") = 256);
 
   dataset_submodule.def(
       "bolt_tokenizer", &parseSentenceToUnigramsPython, py::arg("sentence"),
-      py::arg("seed") = 0, py::arg("dimension") = 100000,
+      py::arg("dimension") = 100000,
       "Utility that turns a sentence into a sequence of token embeddings. To "
       "be used for text classification tasks.\n"
       "Arguments:\n"
