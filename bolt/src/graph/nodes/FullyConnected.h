@@ -158,12 +158,13 @@ class FullyConnectedNode final
     return this;
   }
 
-  void setNodeBiases(const float* new_biases) {
+  FullyConnectedNode* setNodeBiases(const float* new_biases) {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
           "FullyConnectedNode must be in a compiled state");
     }
     _layer->setBiases(new_biases);
+    return this;
   }
 
  private:

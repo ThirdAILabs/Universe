@@ -192,7 +192,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
              const py::array_t<float, py::array::c_style |
                                           py::array::forcecast>& new_biases) {
             checkNumpyArrayDimensions(node, new_biases, "set_biases");
-            node.setNodeBiases(new_biases.data());
+            return node.setNodeBiases(new_biases.data());
           },
           py::arg("new_biases"),
           "Sets the bias array to the given 1D Numpy array for the given node");
