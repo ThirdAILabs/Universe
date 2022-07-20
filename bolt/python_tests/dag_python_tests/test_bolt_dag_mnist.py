@@ -86,20 +86,18 @@ def build_sparse_output_layer_model(num_classes, sparsity=0.5):
 
 
 def test_get_set_weights():
+    """
+    Tests that we can set and get weights for a specific node in the graph.
+    This test ensures that substituting untrained weights with trained weights
+    from the same model configuration results in comparable accuracy performances.
+    """
     dataset_dim = 100
     train_data, train_labels = gen_training_data(n_classes=dataset_dim, n_samples=10000)
 
-    # This model (initially) has a dense output.
-    # The output node's name is "fc_3"
-    model = get_simple_concat_model(
-        num_classes=100,
-        hidden_layer_top_dim=100,
-        hidden_layer_bottom_dim=100,
-        hidden_layer_top_sparsity=0.1,
-        hidden_layer_bottom_sparsity=0.1,
-    )
+    model = build_sparse_output_layer_model(num_classes=dataset_dim, sparsity=0.4)
+
     train_config = (
-        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=5)
+        bolt.graph.TrainConfig.make(learning_rate=LEARNING_RATE, epochs=5)
         .with_batch_size(64)
         .silence()
     )
@@ -116,28 +114,25 @@ def test_get_set_weights():
         predict_config=predict_config,
     )
 
-    assert metrics[0]["categorical_accuracy"] >= 0.8
-
-    untrained_model = get_simple_concat_model(
-        num_classes=100,
-        hidden_layer_top_dim=100,
-        hidden_layer_bottom_dim=100,
-        hidden_layer_top_sparsity=0.1,
-        hidden_layer_bottom_sparsity=0.1
+    untrained_model = build_sparse_output_layer_model(
+        num_classes=dataset_dim, sparsity=0.4
     )
 
-    # Get the weights for the last layer "fc_3"
-    concat_layer = model.get_layer("fc_3")
-    concat_layer_weights = concat_layer.get_weights()
-    concat_layer_biases = concat_layer.get_biases()
+    hidden_layer = model.get_layer("fc_1")
+    output_layer = model.get_layer("fc_2")
 
-    untrained_model.get_layer("fc_3").set_weights(new_weights=concat_layer_weights)
-    untrained_model.get_layer("fc_3").set_biases(new_biases=concat_layer_biases)
+    hidden_layer_weights = hidden_layer.get_weights()
+    hidden_layer_biases = hidden_layer.get_biases()
+    output_layer_weights = output_layer.get_weights()
+    output_layer_biases = output_layer.get_biases()
+
+    untrained_model.get_layer("fc_1").set_weights(new_weights=hidden_layer_weights)
+    untrained_model.get_layer("fc_1").set_biases(new_biases=hidden_layer_biases)
+    untrained_model.get_layer("fc_2").set_weights(new_weights=output_layer_weights)
+    untrained_model.get_layer("fc_2").set_biases(new_biases=output_layer_biases)
 
     untrained_model_metrics = untrained_model.predict(
-        test_data=train_data,
-        test_labels=train_labels,
-        predict_config=predict_config
+        test_data=train_data, test_labels=train_labels, predict_config=predict_config
     )
 
     assert math.isclose(
@@ -145,5 +140,3 @@ def test_get_set_weights():
         metrics[0]["categorical_accuracy"],
         rel_tol=0.001,
     )
-
-

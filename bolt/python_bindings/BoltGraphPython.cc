@@ -11,6 +11,50 @@
 
 namespace thirdai::bolt::python {
 
+void checkNumpyArrayDimensions(
+    FullyConnectedNode& node,
+    const py::array_t<float, py::array::c_style | py::array::forcecast>&
+        numpy_array,
+    const std::string& method) {
+  // Checks that the dimensions of the given numpy array matches the
+  // expected dimensions for both weights and biases at a given layer
+
+  uint32_t dim = node.outputDim();
+  uint32_t prev_node_dim = node.getPredecessors()[0]->outputDim();
+
+  int array_dim = numpy_array.ndim();
+  bool set_weights = method == "set_weights";
+  int expected_dim = set_weights ? 2 : 1;
+
+  if (array_dim != expected_dim) {
+    throw std::invalid_argument(
+        std::stringstream("Expected weight matrix to have " +
+                          std::to_string(expected_dim) +
+                          "dimensions, received "
+                          "matrix with " +
+                          std::to_string(array_dim) + " dimensions.")
+            .str());
+  }
+
+  if (numpy_array.shape(0) != dim ||
+      (set_weights && numpy_array.shape(1) != prev_node_dim)) {
+    set_weights
+        ? throw std::invalid_argument(
+              std::stringstream("Expected weight matrix to have dim (" +
+                                std::to_string(prev_node_dim) +
+                                "), recieved matrix with dim (" +
+                                std::to_string(numpy_array.shape(0)) + ", " +
+                                std::to_string(numpy_array.shape(1)) + ").")
+                  .str())
+        : throw std::invalid_argument(
+              std::stringstream("Expected weight matrix to have dim " +
+                                std::to_string(dim) +
+                                ", received matrix with dim " +
+                                std::to_string(numpy_array.shape(0)) + ".")
+                  .str());
+  }
+}
+
 void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 
@@ -107,28 +151,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           [](FullyConnectedNode& node,
              const py::array_t<float, py::array::c_style |
                                           py::array::forcecast>& new_weights) {
-            uint32_t dim = node.outputDim();
-            uint32_t prev_node_dim = node.getPredecessors()[0]->outputDim();
-
-            int new_weights_dim = new_weights.ndim();
-            if (new_weights_dim != 2) {
-              std::stringstream error(
-                  "Expected weight matrix to have 2 dimensions, received "
-                  "matrix with " +
-                  std::to_string(new_weights_dim) + " dimensions.");
-              throw std::invalid_argument(error.str());
-            }
-            if (new_weights.shape(0) != dim ||
-                new_weights.shape(1) != prev_node_dim) {
-              std::stringstream error(
-                  "Expected weight matrix to have dim (" +
-                  std::to_string(prev_node_dim) +
-                  "), recieved matrix with dim (" +
-                  std::to_string(new_weights.shape(0)) + ", " +
-                  std::to_string(new_weights.shape(1)) + ").");
-
-              throw std::invalid_argument(error.str());
-            }
+            checkNumpyArrayDimensions(node, new_weights, "set_weights");
             node.setNodeWeights(new_weights.data());
           },
           py::arg("new_weights"),
@@ -168,25 +191,10 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           [](FullyConnectedNode& node,
              const py::array_t<float, py::array::c_style |
                                           py::array::forcecast>& new_biases) {
-            uint32_t dim = node.outputDim();
-            if (new_biases.ndim() != 1) {
-              std::stringstream error(
-                  "Expected weight matrix to have 1 dimension, received matrix "
-                  "with " +
-                  std::to_string(new_biases.ndim()) + " dimensions.");
-              throw std::invalid_argument(error.str());
-            }
-
-            if (new_biases.shape(0) != dim) {
-              std::stringstream error(
-                  "Expected weight matrix to have dim " + std::to_string(dim) +
-                  ", received matrix with dim " +
-                  std::to_string(new_biases.shape(0)) + ".");
-              throw std::invalid_argument(error.str());
-            }
-
+            checkNumpyArrayDimensions(node, new_biases, "set_biases");
             node.setNodeBiases(new_biases.data());
           },
+          py::arg("new_biases"),
           "Sets the bias array to the given 1D Numpy array for the given node");
 
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
