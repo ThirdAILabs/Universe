@@ -6,7 +6,6 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/Dataset.h>
 #include <chrono>
-#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -41,19 +40,6 @@ class StreamingDataset {
     }
 
     return _batch_processor->createBatch(*rows);
-  }
-
-  template <typename T>
-  static std::shared_ptr<InMemoryDataset<T>> createDataset(
-      std::vector<T>&& batches) {
-    // return std::make_shared<InMemoryDataset<T>>(std::move(batches));
-    (void)batches;
-    return nullptr;
-  }
-
-  static std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...>
-  convertToDataset(std::vector<BATCH_Ts>&... batch_lists) {
-    return std::make_tuple(createDataset(std::move(batch_lists))...);
   }
 
   // This function maps the tuple of batches returned by nextBatch() into a
@@ -100,7 +86,18 @@ class StreamingDataset {
     // We use std::apply again here to call a function acception a variadic
     // template that maps each vector of batches to an InMemoryDataset.
     std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> dataset_ptrs =
-        std::apply(convertToDataset, batch_lists);
+        std::apply(
+            [](auto&... batch_lists_arg) {
+              // We use a no-lint here because clang tidy thinks there's a
+              // memory leak here when we create the shared_ptr. There are
+              // discussions on stack overflow/github about similar issues being
+              // false positives and our ASAN unit tests that use this function
+              // detect no memory leaks.
+              return std::make_tuple(
+                  std::make_shared<InMemoryDataset<BATCH_Ts>>(  // NOLINT
+                      std::move(batch_lists_arg))...);
+            },
+            batch_lists);
 
     return dataset_ptrs;
   }
