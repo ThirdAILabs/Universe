@@ -147,13 +147,12 @@ void SequentialClassifierPipelineBuilder::addTrackableQtyFeats(
       _states.trackable_counts.push_back(
           std::make_shared<dataset::CountHistoryIndex>(
               /* n_rows = */ 5, /* range_pow = */ 22,
-              /* lifetime = */ std::numeric_limits<uint32_t>::max(),
-              /* period = */ config.period));
+              /* lifetime = */ std::numeric_limits<uint32_t>::max()));
     }
     auto trend_block = std::make_shared<dataset::TrendBlock>(
         qty.has_col_num, item.col_num, _schema.timestamp.col_num, qty.col_num,
-        config.horizon, config.lookback, _states.trackable_counts[i],
-        item.graph, item.max_neighbors);
+        config.lookahead, config.lookback, config.period,
+        _states.trackable_counts[i], item.graph, item.max_neighbors);
     blocks.push_back(trend_block);
     offsets.push_back(offsets.back() + blocks.back()->featureDim());
     addNonzeros(trend_block->featureDim());
@@ -175,7 +174,7 @@ void SequentialClassifierPipelineBuilder::addTrackableCatFeats(Blocks& blocks) {
               /* buffer_size = */ cat.track_last_n));
     }
     auto tracking_block = std::make_shared<dataset::CategoricalTrackingBlock>(
-        item.col_num, _schema.timestamp.col_num, cat.col_num, config.horizon,
+        item.col_num, _schema.timestamp.col_num, cat.col_num, config.lookahead,
         config.lookback, _states.item_id_map, _states.trackable_categories[i],
         item.graph, item.max_neighbors);
     blocks.push_back(tracking_block);

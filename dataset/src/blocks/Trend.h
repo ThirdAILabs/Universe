@@ -19,11 +19,12 @@ class TrendBlock : public Block {
    * If has_count_col == false, count_col is ignored.
    */
   TrendBlock(bool has_count_col, size_t id_col, size_t timestamp_col,
-             size_t count_col, uint32_t horizon, uint32_t lookback,
-             std::shared_ptr<CountHistoryIndex> index, GraphPtr graph = nullptr,
-             size_t max_n_neighbors = 0)
-      : _horizon(horizon),
-        _lookback(lookback),
+             size_t count_col, uint32_t lookahead, uint32_t lookback,
+             uint32_t period, std::shared_ptr<CountHistoryIndex> index,
+             GraphPtr graph = nullptr, size_t max_n_neighbors = 0)
+      : _lookahead_periods(lookahead / period),
+        _lookback_periods(lookback / period),
+        _period_seconds(period * TimeUtils::SECONDS_IN_DAY),
         _has_count_col(has_count_col),
         _id_col(id_col),
         _timestamp_col(timestamp_col),
@@ -39,23 +40,22 @@ class TrendBlock : public Block {
     }
 
     _expected_num_cols = expectedNumCols();
-    _index->setTimestampLifetime(lifetime(horizon, lookback));
+    _index->setTimestampLifetime(_lookahead_periods + _lookback_periods);
   }
 
   TrendBlock(bool has_count_col, size_t id_col, size_t timestamp_col,
-             size_t count_col, uint32_t horizon, uint32_t lookback,
+             size_t count_col, uint32_t lookahead, uint32_t lookback,
              uint32_t period, GraphPtr graph = nullptr,
              size_t max_n_neighbors = 0)
-      : TrendBlock(has_count_col, id_col, timestamp_col, count_col, horizon,
-                   lookback,
+      : TrendBlock(has_count_col, id_col, timestamp_col, count_col, lookahead,
+                   lookback, period,
                    std::make_shared<CountHistoryIndex>(
-                       /* n_rows = */ 5, /* range_pow = */ 22,
-                       lifetime(horizon, lookback), period),
+                       /* n_rows = */ 5, /* range_pow = */ 22),
                    std::move(graph), max_n_neighbors) {}
 
   uint32_t featureDim() const final {
     uint32_t multiplier = _max_n_neighbors + 1;
-    return (_lookback)*multiplier;
+    return (_lookback_periods)*multiplier;
   };
 
   bool isDense() const final { return _max_n_neighbors == 0; };
@@ -63,9 +63,7 @@ class TrendBlock : public Block {
   uint32_t expectedNumColumns() const final { return _expected_num_cols; };
 
   void prepareForBatch(const std::vector<std::string_view>& first_row) final {
-    std::tm time = TimeUtils::timeStringToTimeObject(first_row[_timestamp_col]);
-    // TODO(Geordie) should timestamp be uint64_t?
-    uint32_t timestamp = TimeUtils::timeToEpoch(&time, 0);
+    uint32_t timestamp = timestampFromInputRow(first_row);
     _index->handleLifetime(timestamp);
   }
 
@@ -115,7 +113,7 @@ class TrendBlock : public Block {
   uint32_t timestampFromInputRow(
       const std::vector<std::string_view>& input_row) const {
     std::tm time = TimeUtils::timeStringToTimeObject(input_row[_timestamp_col]);
-    return TimeUtils::timeToEpoch(&time, 0);
+    return TimeUtils::timeToEpoch(&time, 0) / _period_seconds;
   }
 
   float countFromInputRow(
@@ -131,11 +129,11 @@ class TrendBlock : public Block {
 
   uint32_t addFeaturesForId(uint32_t id, uint32_t timestamp,
                             SegmentedFeatureVector& vec, uint32_t offset) {
-    std::vector<float> counts(_lookback);
+    std::vector<float> counts(_lookback_periods);
     float mean = 0;
     fillCountsAndMean(id, timestamp, counts, mean);
 
-    if (_lookback > 1 && mean != 0) {
+    if (_lookback_periods > 1 && mean != 0) {
       center(counts, mean);
       l2Normalize(counts);
     }
@@ -153,15 +151,15 @@ class TrendBlock : public Block {
   void fillCountsAndMean(uint32_t id, uint32_t timestamp,
                          std::vector<float>& counts, float& mean) {
     mean = 0;
-    for (uint32_t i = 0; i < _lookback; i++) {
-      auto look_back = (_horizon + i) * TimeUtils::SECONDS_IN_DAY;
+    for (uint32_t i = 0; i < _lookback_periods; i++) {
+      auto look_back = _lookahead_periods + i;
       // Prevent overflow if given a date < 1970.
       auto query_timestamp = timestamp >= look_back ? timestamp - look_back : 0;
       auto query_result = _index->query(id, query_timestamp);
       counts[i] = query_result;
       mean += std::isnan(query_result) ? 0 : query_result;
     }
-    mean /= _lookback;
+    mean /= _lookback_periods;
   }
 
   static void center(std::vector<float>& counts, float mean) {
@@ -184,12 +182,9 @@ class TrendBlock : public Block {
     }
   }
 
-  static uint32_t lifetime(uint32_t horizon, uint32_t lookback) {
-    return (lookback + horizon) * TimeUtils::SECONDS_IN_DAY;
-  }
-
-  uint32_t _horizon;
-  uint32_t _lookback;
+  uint32_t _lookahead_periods;
+  uint32_t _lookback_periods;
+  uint32_t _period_seconds;
   bool _has_count_col;
   size_t _id_col;
   size_t _timestamp_col;

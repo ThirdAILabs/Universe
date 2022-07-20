@@ -638,7 +638,7 @@ void createBoltSubmodule(py::module_& module) {
               const std::vector<std::string>&, const std::vector<py::tuple>&,
               const std::vector<std::string>&, const std::vector<py::tuple>&>(),
           py::arg("size"), py::arg("item"), py::arg("timestamp"),
-          py::arg("target"), py::arg("horizon"), py::arg("lookback"),
+          py::arg("target"), py::arg("lookahead"), py::arg("lookback"),
           py::arg("period") = 1, py::arg("text") = std::vector<std::string>(),
           py::arg("categorical") = std::vector<py::tuple>(),
           py::arg("trackable_qty") = std::vector<std::string>(),

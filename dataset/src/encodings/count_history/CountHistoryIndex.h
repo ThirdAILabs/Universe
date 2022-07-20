@@ -1,31 +1,21 @@
 #pragma once
 
 #include <dataset/src/encodings/count_history/CountMinSketch.h>
-#include <dataset/src/utils/TimeUtils.h>
 #include <atomic>
+#include <limits>
 #include <stdexcept>
 
 namespace thirdai::dataset {
 
 class CountHistoryIndex {
  public:
-  CountHistoryIndex(uint32_t n_rows, uint32_t range_pow, uint32_t lifetime,
-                    uint32_t period = 1)
+  CountHistoryIndex(uint32_t n_rows, uint32_t range_pow,
+                    uint32_t lifetime = std::numeric_limits<uint32_t>::max())
       : _recent(std::make_unique<CountMinSketch>(n_rows, range_pow)),
         _old(std::make_unique<CountMinSketch>(n_rows, range_pow)),
         _timestamp_lifetime(lifetime),
         _start_timestamp(0),
         _index_lifetime(indexLifetime(range_pow)),
-        _period(period),
-        _n_indexed(0) {}
-
-  CountHistoryIndex(uint32_t n_rows, uint32_t range_pow, uint32_t period = 1)
-      : _recent(std::make_unique<CountMinSketch>(n_rows, range_pow)),
-        _old(std::make_unique<CountMinSketch>(n_rows, range_pow)),
-        _timestamp_lifetime(0),
-        _start_timestamp(0),
-        _index_lifetime(indexLifetime(range_pow)),
-        _period(period),
         _n_indexed(0) {}
 
   void setTimestampLifetime(uint32_t lifetime) {
@@ -33,14 +23,12 @@ class CountHistoryIndex {
   }
 
   void index(uint32_t id, uint32_t timestamp, float inc = 1.0) {
-    auto cms_time = timestampToCmsTime(timestamp);
-    addToSketches(pack(id, cms_time), inc);
+    addToSketches(pack(id, timestamp), inc);
     _n_indexed++;
   }
 
   float query(uint32_t id, uint32_t timestamp) {
-    auto cms_time = timestampToCmsTime(timestamp);
-    return querySketches(pack(id, cms_time));
+    return querySketches(pack(id, timestamp));
   }
 
   void handleLifetime(uint32_t timestamp) {
@@ -59,10 +47,6 @@ class CountHistoryIndex {
  private:
   static uint32_t indexLifetime(uint32_t range_pow) {
     return 1 << (range_pow - std::min(range_pow, static_cast<uint32_t>(10)));
-  }
-
-  uint32_t timestampToCmsTime(uint32_t timestamp) const {
-    return timestamp / (TimeUtils::SECONDS_IN_DAY * _period);
   }
 
   static uint64_t pack(uint32_t id, uint32_t timestamp) {
@@ -101,7 +85,6 @@ class CountHistoryIndex {
   uint32_t _timestamp_lifetime;
   uint32_t _start_timestamp;
   uint32_t _index_lifetime;
-  uint32_t _period;
   std::atomic_uint32_t _n_indexed;
 };
 }  // namespace thirdai::dataset

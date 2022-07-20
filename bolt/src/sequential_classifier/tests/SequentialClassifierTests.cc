@@ -166,7 +166,7 @@ TEST_F(SequentialClassifierTests, SimpleTrendClassification) {
       /* timestamp = */ {/* col_name = */ timestamp_col},
       /* target = */ {/* col_name = */ target_col, /* n_distinct = */ 4},
       /* tracking_config = */
-      {/* horizon = */ 0, /* lookback = */ 30, /* period = */ 1},
+      {/* lookahead = */ 0, /* lookback = */ 30, /* period = */ 1},
       /* text_attrs = */ {}, /* cat_attrs = */ {},
       /* trackable_qtys = */ {{/* col_name = */ trackable_qty_col}},
       /* trackable_cats = */ {});

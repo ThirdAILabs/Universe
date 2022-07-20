@@ -30,7 +30,7 @@ struct Timestamp {
 };
 
 struct TrackingConfig {
-  uint32_t horizon;
+  uint32_t lookahead;
   uint32_t lookback;
   uint32_t period = 1;
 };

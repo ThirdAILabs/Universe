@@ -18,7 +18,7 @@ def test_sequential_classifier_api():
         item=("item_col", 50),
         timestamp="timestamp_col",
         target=("target_col", 50),
-        horizon=0,  # num days to predict ahead
+        lookahead=0,  # num days to predict ahead
         lookback=10,  # num days to look back
         # Optional:
         period=1,  # expected num days between each record; period for clubbing data points together
