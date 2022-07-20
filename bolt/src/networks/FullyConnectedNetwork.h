@@ -51,7 +51,8 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
 
   void getInputGradientsForBatch(
       BoltBatch& batch_input, BoltBatch& output, const LossFunction& loss_fn,
-      uint32_t batch_id, const std::vector<uint32_t>& required_labels,
+      bool best_index, uint32_t batch_id,
+      const std::vector<uint32_t>& required_labels,
       std::vector<std::vector<float>>& concatenated_grad,
       bool want_ratios = false,
       std::vector<std::vector<float>>& ratios =
@@ -60,13 +61,14 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
 
   std::vector<std::vector<float>> getInputGradients(
       std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>& batch_input,
-      const LossFunction& loss_fn,
+      const LossFunction& loss_fn, bool best_index,
       const std::vector<uint32_t>& required_labels);
 
   std::pair<std::vector<std::vector<float>>, std::vector<std::vector<float>>>
   getInputGradientsFromStream(
-      std::shared_ptr<dataset::StreamingDataset<BoltBatch>> test_data,
-      const LossFunction& loss_fn, uint32_t label_id, bool label_given);
+      const std::shared_ptr<dataset::StreamingDataset<BoltBatch>>& test_data,
+      const LossFunction& loss_fn, bool best_index, uint32_t label_id,
+      bool label_given);
 
   void updateParameters(float learning_rate, uint32_t iter) final {
     for (auto& layer : _layers) {

@@ -146,26 +146,29 @@ inline uint32_t getSecondBestIndex(const float* activations, uint32_t dim) {
 
 void FullyConnectedNetwork::getInputGradientsForBatch(
     BoltBatch& batch_input, BoltBatch& output, const LossFunction& loss_fn,
-    uint32_t batch_id, const std::vector<uint32_t>& required_labels,
+    bool best_index, uint32_t batch_id,
+    const std::vector<uint32_t>& required_labels,
     std::vector<std::vector<float>>& concatenated_grad, bool want_ratios,
     std::vector<std::vector<float>>& ratios) {
   for (uint32_t vec_id = 0; vec_id < batch_input.getBatchSize(); vec_id++) {
-    std::vector<float> vec_grad, ratio_grad;
-    // Initializing the input gradients because they were not initialized
-    // before. and assigning them to zero because new method gets some random
-    // garbage value and gradient calculation uses += operator.
-    batch_input[vec_id].gradients = new float[batch_input[vec_id].len];
-    for (uint32_t i = 0; i < batch_input[vec_id].len; i++) {
-      batch_input[vec_id].gradients[i] = 0;
-    }
+    std::vector<float> vec_grad(batch_input[vec_id].len, 0.0), ratio_grad;
+    // Assigning the vec_grad data() to gradients so that we dont have to
+    // worry about initializing and then freeing the memory.
+    batch_input[vec_id].gradients = vec_grad.data();
     forward(vec_id, batch_input, output[vec_id], nullptr);
     uint32_t required_index;
-    // we are taking the second best index to know which input features are
-    // important by observing input gradients, by flipping the predicted label
-    // as second best index.
+    /*
+     we are taking the second best index to know how change in input vector
+     values affects the prediction to flip to second highest activation. And
+     required_labels is essential because for some of the cases we know the
+     correct output labels, and best index is used to explain the
+     prediction.
+     */
     if (required_labels.empty()) {
       required_index =
-          getSecondBestIndex(output[vec_id].activations, getOutputDim());
+          best_index
+              ? output[vec_id].getIdWithHighestActivation()
+              : getSecondBestIndex(output[vec_id].activations, getOutputDim());
     } else {
       required_index =
           (required_labels[batch_id * batch_input.getBatchSize() + vec_id] <=
@@ -179,9 +182,6 @@ void FullyConnectedNetwork::getInputGradientsForBatch(
     loss_fn.lossGradients(output[vec_id], batch_label,
                           batch_input.getBatchSize());
     backpropagateInputForGradients(vec_id, batch_input, output[vec_id]);
-    for (uint32_t i = 0; i < batch_input[vec_id].len; i++) {
-      vec_grad.push_back(batch_input[vec_id].gradients[i]);
-    }
     if (want_ratios) {
       for (uint32_t i = 0; i < batch_input[vec_id].len; i++) {
         ratio_grad.push_back((batch_input[vec_id].gradients[i]) /
@@ -189,9 +189,8 @@ void FullyConnectedNetwork::getInputGradientsForBatch(
       }
       ratios.push_back(ratio_grad);
     }
-    // de allocating the memory and pointing the gradients to nullptr to
+    // pointing the gradients to nullptr to
     // prevent using invalid memory reference.
-    delete[] batch_input[vec_id].gradients;
     batch_input[vec_id].gradients = nullptr;
     concatenated_grad.push_back(vec_grad);
   }
@@ -199,7 +198,8 @@ void FullyConnectedNetwork::getInputGradientsForBatch(
 
 std::vector<std::vector<float>> FullyConnectedNetwork::getInputGradients(
     std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>& batch_input,
-    const LossFunction& loss_fn, const std::vector<uint32_t>& required_labels) {
+    const LossFunction& loss_fn, bool best_index,
+    const std::vector<uint32_t>& required_labels) {
   uint64_t num_batches = batch_input->numBatches();
   if (!required_labels.empty() &&
       (required_labels.size() !=
@@ -213,16 +213,17 @@ std::vector<std::vector<float>> FullyConnectedNetwork::getInputGradients(
   std::vector<std::vector<float>> concatenated_grad;
   for (uint64_t id = 0; id < num_batches; id++) {
     BoltBatch output = getOutputs(batch_input->at(id).getBatchSize(), true);
-    getInputGradientsForBatch(batch_input->at(id), output, loss_fn, id,
-                              required_labels, concatenated_grad);
+    getInputGradientsForBatch(batch_input->at(id), output, loss_fn, best_index,
+                              id, required_labels, concatenated_grad);
   }
   return concatenated_grad;
 }
 
 std::pair<std::vector<std::vector<float>>, std::vector<std::vector<float>>>
 FullyConnectedNetwork::getInputGradientsFromStream(
-    const std::shared_ptr<dataset::StreamingDataset<BoltBatch>> test_data,
-    const LossFunction& loss_fn, uint32_t label_id, bool label_given) {
+    const std::shared_ptr<dataset::StreamingDataset<BoltBatch>>& test_data,
+    const LossFunction& loss_fn, bool best_index, uint32_t label_id,
+    bool label_given) {
   uint32_t batch_size = test_data->getMaxBatchSize();
   std::vector<std::vector<float>> concatenated_grad, ratios;
   BoltBatch output = getOutputs(batch_size, true);
@@ -231,8 +232,8 @@ FullyConnectedNetwork::getInputGradientsFromStream(
     temp.resize(batch_size, label_id);
   }
   while (auto batch = test_data->nextBatch()) {
-    getInputGradientsForBatch(batch->first, output, loss_fn, 0, temp,
-                              concatenated_grad, true, ratios);
+    getInputGradientsForBatch(batch->first, output, loss_fn, best_index, 0,
+                              temp, concatenated_grad, true, ratios);
   }
   return std::make_pair(concatenated_grad, ratios);
 }

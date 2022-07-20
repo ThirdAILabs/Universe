@@ -50,8 +50,9 @@ class SequentialClassifier {
 
   static void sortGradients(
       std::vector<std::vector<std::pair<float, uint32_t>>>& gradients) {
-    auto func = [](std::pair<float, uint32_t> i, std::pair<float, uint32_t> j) {
-      return abs(i.first) > abs(j.first);
+    auto func = [](std::pair<float, uint32_t> pair1,
+                   std::pair<float, uint32_t> pair2) {
+      return abs(pair1.first) > abs(pair2.first);
     };
     for (auto& gradient : gradients) {
       sort(gradient.begin(), gradient.end(), func);
@@ -84,7 +85,7 @@ class SequentialClassifier {
                                                /* overwrite_index = */
                                                false);
     auto gradients = _network->getInputGradientsFromStream(
-        pipeline.first, loss_fn, label_id, label_given);
+        pipeline.first, loss_fn, false, label_id, label_given);
     std::vector<std::vector<std::pair<float, uint32_t>>> temp;
     // sorting based on ratios.
     for (auto& gradient : gradients.second) {
