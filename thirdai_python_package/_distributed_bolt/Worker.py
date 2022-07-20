@@ -192,7 +192,7 @@ class Worker:
             for i in [0]*3:
 
                 sampled_x=np.random.choice(x.shape[0],min(x.shape[0],10000),replace=False)
-                sampled_y=np.random.choice(y.shape[0],min(x.shape[0],10000),replace=False)
+                sampled_y=np.random.choice(y.shape[0],min(y.shape[0],10000),replace=False)
 
                 thresh_x+=self.approximate_topk(x[sampled_x],compression_density)/3
                 thresh_y+=self.approximate_topk(y[sampled_y],compression_density)/3
