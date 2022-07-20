@@ -86,10 +86,10 @@ class StreamingDataset {
     // template that maps each vector of batches to an InMemoryDataset.
     std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> dataset_ptrs =
         std::apply(
-            [&](auto&... batch_lists) {
+            [&](auto&... batch_lists_arg) {
               return std::make_tuple(
                   std::make_shared<InMemoryDataset<BATCH_Ts>>(
-                      std::move(batch_lists))...);
+                      std::move(batch_lists_arg))...);
             },
             batch_lists);
 
