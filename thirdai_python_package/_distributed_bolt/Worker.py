@@ -298,6 +298,7 @@ class Worker:
     def receiveDragonGradients(self):
         w_sparse_grads,b_sparse_grads=ray.get(self.supervisor.sparse_grads.remote())
         print(f"type of w_sparse_grads{type(w_sparse_grads)} and length {len(w_sparse_grads)}")
+        print(f"worker id {self.id}, layer_no {layer}, {w_sparse_grads}")
         for layer in range(len(self.layers)-1):
             
             shape=(self.layers[layer],self.layers[layer+1])
