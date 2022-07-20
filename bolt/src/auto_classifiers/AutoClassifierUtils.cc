@@ -64,11 +64,19 @@ void AutoClassifierUtils::train(
     }
 
   } else {
-    auto [train_data, train_labels] = dataset->loadInMemory();
+    /**
+     * We use a no-lint here because clang tidy thinks there's a memory leak
+     * here when we create the shared_ptr in loadInMemory() There are
+     * discussions on stack overflow/github about similar issues being false
+     * positives and our ASAN unit tests that use this function detect no memory
+     * leaks.
+     */
+    auto [train_data, train_labels] = dataset->loadInMemory();  // NOLINT
 
-    model->train(train_data, train_labels, loss, learning_rate, 1);
+    model->train(train_data, train_labels, loss, learning_rate, 1);  // NOLINT
     model->freezeHashTables();
-    model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
+    model->train(train_data, train_labels, loss, learning_rate,  // NOLINT
+                 epochs - 1);
   }
 }
 

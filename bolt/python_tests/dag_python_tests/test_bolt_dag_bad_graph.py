@@ -34,6 +34,7 @@ def get_simple_predict_config():
         bolt.graph.PredictConfig.make().silence().with_metrics(["mean_squared_error"])
     )
 
+
 def get_random_dense_bolt_dataset(rows, cols):
     return dataset.from_numpy(np.random.rand(rows, cols).astype("float32"))
 

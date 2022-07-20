@@ -367,23 +367,19 @@ void createDatasetSubmodule(py::module_& module) {
       "Returns a tuple containing a BoltDataset to store the data itself, and "
       "a BoltDataset storing the labels.");
 
-  dataset_submodule.def("from_numpy",
-                        &numpy::numpyToBoltVectorDataset, py::arg("data"),
-                        py::arg("batch_size") = 256);
+  dataset_submodule.def("from_numpy", &numpy::numpyToBoltVectorDataset,
+                        py::arg("data"), py::arg("batch_size") = 256);
 
-  dataset_submodule.def("tokens_from_numpy",
-                        &numpy::numpyToBoltTokenDataset, py::arg("data"),
-                        py::arg("batch_size") = 256);
+  dataset_submodule.def("tokens_from_numpy", &numpy::numpyToBoltTokenDataset,
+                        py::arg("data"), py::arg("batch_size") = 256);
 
   dataset_submodule.def(
-      "bolt_tokenizer", &parseSentenceToSparseArray, py::arg("sentence"),
+      "bolt_tokenizer", &parseSentenceToUnigramsPython, py::arg("sentence"),
       py::arg("seed") = 0, py::arg("dimension") = 100000,
       "Utility that turns a sentence into a sequence of token embeddings. To "
       "be used for text classification tasks.\n"
       "Arguments:\n"
       " * sentence: String - Sentence to be tokenized.\n"
-      " * seed: Int - (Optional) The tokenizer uses a random number generator "
-      "that needs to be seeded. Defaults to 0.\n"
       " * dimensions: Int (positive) - (Optional) The dimension of each token "
       "embedding. "
       "Defaults to 100,000.");
@@ -751,64 +747,31 @@ BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
   return std::make_shared<BoltDataset>(std::move(batches));
 }
 
-std::unordered_map<uint32_t, uint32_t> parseSentenceToUnigrams(
-    const std::string& sentence, uint32_t seed, uint32_t dimension) {
-  std::stringstream ss(sentence);
-  std::istream_iterator<std::string> begin(ss);
-  std::istream_iterator<std::string> end;
-  std::vector<std::string> tokens(begin, end);
-
-  std::unordered_map<uint32_t, uint32_t> idx_to_val_map;
-
-  for (auto& s : tokens) {
-    const char* cstr = s.c_str();
-    uint32_t hash =
-        thirdai::hashing::MurmurHash(cstr, s.length(), seed) % dimension;
-    if (idx_to_val_map.find(hash) == idx_to_val_map.end()) {
-      idx_to_val_map[hash] = 1;
-    } else {
-      idx_to_val_map[hash]++;
-    }
-  }
-
-  return idx_to_val_map;
-}
-
-BoltVector parseSentenceToBoltVector(const std::string& sentence, uint32_t seed,
-                                     uint32_t dimension) {
-  std::unordered_map<uint32_t, uint32_t> idx_to_val_map =
-      parseSentenceToUnigrams(sentence, seed, dimension);
-
-  BoltVector vec(idx_to_val_map.size(), false, false);
-  uint32_t i = 0;
-  for (auto [index, value] : idx_to_val_map) {
-    vec.active_neurons[i] = index;
-    vec.activations[i] = value;
-    i++;
-  }
-
-  return vec;
-}
-
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
-parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
-                           uint32_t dimension) {
-  std::unordered_map<uint32_t, uint32_t> idx_to_val_map =
-      parseSentenceToUnigrams(sentence, seed, dimension);
+parseSentenceToUnigramsPython(const std::string& sentence, uint32_t dimension) {
+  std::vector<uint32_t> unigrams =
+      TextEncodingUtils::computeRawUnigramsWithRange(sentence, dimension);
 
-  auto result = py::array_t<uint32_t>(idx_to_val_map.size());
+  std::vector<uint32_t> indices;
+  std::vector<uint32_t> values;
+  TextEncodingUtils::sumRepeatedIndices(unigrams, /* base_value= */ 1.0,
+                                        [&](uint32_t index, float value) {
+                                          indices.push_back(index);
+                                          values.push_back(value);
+                                        });
+
+  auto result = py::array_t<uint32_t>(indices.size());
   py::buffer_info indx_buf = result.request();
   uint32_t* indx_ptr = static_cast<uint32_t*>(indx_buf.ptr);
 
-  auto result_2 = py::array_t<uint32_t>(idx_to_val_map.size());
+  auto result_2 = py::array_t<uint32_t>(values.size());
   py::buffer_info val_buf = result_2.request();
   uint32_t* val_ptr = static_cast<uint32_t*>(val_buf.ptr);
 
-  int i = 0;
-  for (auto kv : idx_to_val_map) {
-    indx_ptr[i] = kv.first;
-    val_ptr[i] = kv.second;
-    i += 1;
+  assert(indices.size() == values.size());
+  for (uint32_t i = 0; i < indices.size(); i++) {
+    indx_ptr[i] = indices[i];
+    val_ptr[i] = values[i];
   }
 
   return std::make_tuple(result, result_2);

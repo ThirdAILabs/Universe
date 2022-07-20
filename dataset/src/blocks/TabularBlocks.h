@@ -1,8 +1,8 @@
 #pragma once
 
 #include "BlockInterface.h"
-#include <dataset/src/bolt_datasets/batch_processors/PairgramHasher.h>
 #include <dataset/src/bolt_datasets/batch_processors/TabularMetadataProcessor.h>
+#include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <exception>
 
 namespace thirdai::dataset {
@@ -53,13 +53,15 @@ class TabularPairGram : public Block {
       }
     }
 
-    // TODO(david) optimize/benchmark pairgram computation?
-    std::unordered_map<uint32_t, uint32_t> pairgram_hashes =
-        PairgramHasher::computeRawPairgramsFromUnigrams(unigram_hashes,
-                                                        _output_range);
-    for (auto& entry : pairgram_hashes) {
-      vec.addSparseFeatureToSegment(entry.first, 1.0);
-    }
+    std::vector<uint32_t> pairgram_hashes =
+        TextEncodingUtils::computeRawPairgramsFromUnigrams(unigram_hashes,
+                                                           _output_range);
+
+    TextEncodingUtils::sumRepeatedIndices(
+        pairgram_hashes, /* base_value= */ 1.0,
+        [&](uint32_t pairgram, float value) {
+          vec.addSparseFeatureToSegment(pairgram, value);
+        });
 
     return nullptr;
   }

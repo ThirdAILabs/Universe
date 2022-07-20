@@ -132,8 +132,10 @@ inline BoltDatasetPtr denseNumpyToBoltVectorDataset(
 }
 
 template <bool CONVERT_TO_VECTORS>
-inline std::conditional_t<CONVERT_TO_VECTORS, BoltDatasetPtr, BoltTokenDatasetPtr> numpyTokensToBoltDataset(
-    const NumpyArray<uint32_t>& tokens, uint32_t batch_size) {
+inline std::conditional_t<CONVERT_TO_VECTORS, BoltDatasetPtr,
+                          BoltTokenDatasetPtr>
+numpyTokensToBoltDataset(const NumpyArray<uint32_t>& tokens,
+                         uint32_t batch_size) {
   const py::buffer_info tokens_buf = tokens.request();
 
   auto shape = tokens_buf.shape;
@@ -207,10 +209,9 @@ inline BoltDatasetPtr numpyToBoltVectorDataset(const py::object& data,
 
 inline BoltTokenDatasetPtr numpyToBoltTokenDataset(const py::object& data,
                                                    uint32_t batch_size) {
-
   if (isNumpyArray(data) && checkNumpyDtypeUint32(data)) {
-      return numpyTokensToBoltDataset<false>(data.cast<NumpyArray<uint32_t>>(),
-                                            batch_size);
+    return numpyTokensToBoltDataset<false>(data.cast<NumpyArray<uint32_t>>(),
+                                           batch_size);
   }
 
   throw std::invalid_argument(

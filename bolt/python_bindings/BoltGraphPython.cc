@@ -153,8 +153,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Compiles the graph for the given loss function. In this step the "
            "order in which to compute the layers is determined and various "
            "checks are preformed to ensure the model architecture is correct.")
-     // Helper method that covers the common case of training based off of a
-     // single BoltBatch dataset
+      // Helper method that covers the common case of training based off of a
+      // single BoltBatch dataset
       .def(
           "train",
           [](BoltGraph& model, const dataset::BoltDatasetPtr& data,
@@ -213,8 +213,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "See the TrainConfig documentation above.\n\n"
           "Returns a mapping from metric names to an array of their values for "
           "every epoch.")
-     // Helper method that covers the common case of inference based off of a
-     // single BoltBatch dataset
+      // Helper method that covers the common case of inference based off of a
+      // single BoltBatch dataset
       .def(
           "predict",
           [](BoltGraph& model, const dataset::BoltDatasetPtr& data,
