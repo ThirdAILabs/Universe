@@ -65,12 +65,10 @@ void AutoClassifierUtils::train(
 
   } else {
     auto [train_data, train_labels] = dataset->loadInMemory();
-
-    (void)train_data;
-    (void)train_labels;
-    // model->train(train_data, train_labels, loss, learning_rate, 1);
-    // model->freezeHashTables();
-    // model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
+    
+    model->train(train_data, train_labels, loss, learning_rate, 1);
+    model->freezeHashTables();
+    model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
   }
 }
 
