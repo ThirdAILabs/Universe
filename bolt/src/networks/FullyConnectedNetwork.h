@@ -143,10 +143,6 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   std::vector<BoltBatch> _states;
   uint32_t _num_layers;
 
-  // Added a flag here, to find whether the network
-  // is running on a serial system or distributed system
-  bool _is_distributed;
-
  private:
   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
   friend class cereal::access;

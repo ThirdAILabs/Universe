@@ -34,7 +34,7 @@ class DistributedModel : public FullyConnectedNetwork {
         _train_labels(nullptr) {}
 
   // Distributed Functions
-  uint32_t initTrainSingleNode(
+  uint32_t prepareNodeForDistributedTraining(
       std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
       const dataset::BoltDatasetPtr& train_labels, uint32_t rehash,
       uint32_t rebuild, bool verbose);
@@ -44,7 +44,8 @@ class DistributedModel : public FullyConnectedNetwork {
    * particular batch(provided using batch_no) and for a particular
    * loss_function.
    */
-  void calculateGradientSingleNode(uint32_t batch, const LossFunction& loss_fn);
+  void calculateGradientSingleNode(uint32_t batch_idx,
+                                   const LossFunction& loss_fn);
 
   /*
    * This function updates the parameters for the neural network
@@ -75,12 +76,14 @@ class DistributedModel : public FullyConnectedNetwork {
   void setWeightGradients(uint32_t layer_index, const float* data);
 
   void setBiasesGradients(uint32_t layer_index, const float* data);
-  // output  needed to be global variable because three
-  // different function calls are using the same variable
-  BoltBatch _outputs;
-
 
  private:
+  /*
+   outputs here, holds the activations values for output layer,
+   between initialization and calculating gradients
+  */
+  BoltBatch _outputs;
+
   uint32_t _rebuild_batch;
   uint32_t _rehash_batch;
   std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>> _train_data;

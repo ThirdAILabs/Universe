@@ -1,4 +1,4 @@
-from thirdai import bolt
+from thirdai import bolt, dataset
 import numpy as np
 import os
 
@@ -70,11 +70,10 @@ def gen_single_sparse_layer_network(n_classes, sparsity=0.5):
     return network
 
 
-# training the distributed network
-def train_network_distributed(
+def train_single_node_distributed_network(
     network, train_data, train_labels, epochs, learning_rate=0.0005
 ):
-    batch_size = network.initTrainSingleNode(
+    batch_size = network.prepareNodeForDistributedTraining(
         train_data,
         train_labels,
         rehash=3000,
@@ -88,6 +87,8 @@ def train_network_distributed(
                 batch_num, bolt.CategoricalCrossEntropyLoss()
             )
             network.updateParametersSingleNode(learning_rate)
+
+
 # Returns a model with a single node
 # input_dim=output_dim, 50% sparsity by default, and a softmax
 # activation
@@ -139,6 +140,68 @@ def get_simple_concat_model(
     return model
 
 
+def copy_two_layer_network_parameters(network, untrained_network):
+    untrained_network.set_weights(
+        layer_index=0, new_weights=network.get_weights(layer_index=0)
+    )
+    untrained_network.set_weights(
+        layer_index=1, new_weights=network.get_weights(layer_index=1)
+    )
+
+    untrained_network.set_biases(
+        layer_index=0, new_biases=network.get_biases(layer_index=0)
+    )
+    untrained_network.set_biases(
+        layer_index=1, new_biases=network.get_biases(layer_index=1)
+    )
+
+
+# Constructs a bolt network for mnist with a sparse output layer.
+def build_sparse_output_layer_network(distributed=False):
+    layers = [
+        bolt.FullyConnected(dim=256, activation_function="ReLU"),
+        bolt.FullyConnected(
+            dim=10,
+            sparsity=0.4,
+            activation_function="Softmax",
+        ),
+    ]
+    if distributed:
+        network = bolt.DistributedNetwork(layers=layers, input_dim=784)
+    else:
+        network = bolt.Network(layers=layers, input_dim=784)
+    return network
+
+
+def load_mnist():
+    train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
+    test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
+    return train_x, train_y, test_x, test_y
+
+
+def setup_module():
+    if not os.path.exists("mnist"):
+        os.system(
+            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
+        )
+        os.system("bzip2 -d mnist.bz2")
+
+    if not os.path.exists("mnist.t"):
+        os.system(
+            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
+        )
+        os.system("bzip2 -d mnist.t.bz2")
+
+
+def load_mnist_labels():
+    labels = []
+    with open("mnist.t") as file:
+        for line in file.readlines():
+            label = int(line.split(" ")[0])
+            labels.append(label)
+    return np.array(labels)
+
+
 def remove_files(files):
     for file in files:
         os.remove(file)
@@ -154,3 +217,18 @@ def compute_accuracy(test_labels, pred_file):
     return sum(
         (prediction == answer) for (prediction, answer) in zip(predictions, test_labels)
     ) / len(predictions)
+
+
+def check_categorical_accuracies(acc, activations):
+
+    assert acc["categorical_accuracy"] >= 0.94  # ACCURACY_THRESHOLD
+
+    # This last check is just to make sure that the accuracy computed in c++ matches
+    # what we can compute here using the returned activations. This verifies that the
+    # returned activations match and that the metrics are computed correctly.
+    predictions = np.argmax(activations, axis=1)
+
+    labels = load_mnist_labels()
+    acc_computed = np.mean(predictions == labels)
+
+    assert acc_computed == acc["categorical_accuracy"]

@@ -17,7 +17,7 @@ namespace thirdai::bolt {
  * is called. It initializes the network, output array and return
  * number of batches available for training.
  */
-uint32_t DistributedModel::initTrainSingleNode(
+uint32_t DistributedModel::prepareNodeForDistributedTraining(
     std::shared_ptr<dataset::InMemoryDataset<bolt::BoltBatch>>& train_data,
     const dataset::BoltDatasetPtr& train_labels, uint32_t rehash,
     uint32_t rebuild, bool verbose) {
@@ -40,10 +40,10 @@ uint32_t DistributedModel::initTrainSingleNode(
 }
 
 void DistributedModel::calculateGradientSingleNode(
-    uint32_t batch, const LossFunction& loss_fn) {
-  bolt::BoltBatch& batch_inputs = _train_data->at(batch);
+    uint32_t batch_idx, const LossFunction& loss_fn) {
+  bolt::BoltBatch& batch_inputs = _train_data->at(batch_idx);
 
-  const BoltBatch& batch_labels = _train_labels->at(batch);
+  const BoltBatch& batch_labels = _train_labels->at(batch_idx);
 
 #pragma omp parallel for default(none) \
     shared(batch_inputs, batch_labels, _outputs, loss_fn)

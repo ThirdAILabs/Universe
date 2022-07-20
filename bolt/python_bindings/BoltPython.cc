@@ -628,7 +628,8 @@ void createBoltSubmodule(py::module_& module) {
            "layers in the neural network.\n"
            " * input_dim: Int (positive) - Dimension of input vectors in the "
            "dataset.")
-      .def("initTrainSingleNode", &DistributedPyNetwork::initTrainSingleNode,
+      .def("prepareNodeForDistributedTraining",
+           &DistributedPyNetwork::prepareNodeForDistributedTraining,
            py::arg("train_data"), py::arg("train_labels"),
            py::arg("batch_size") = 0, py::arg("rehash") = 0,
            py::arg("rebuild") = 0, py::arg("verbose") = true,
@@ -663,8 +664,8 @@ void createBoltSubmodule(py::module_& module) {
 
            "Returns number of batches to be processed.")
       .def("calculateGradientSingleNode",
-           &DistributedPyNetwork::calculateGradientSingleNode, py::arg("batch"),
-           py::arg("loss_fn"),
+           &DistributedPyNetwork::calculateGradientSingleNode,
+           py::arg("batch_idx"), py::arg("loss_fn"),
            "Calculates the gradient for the network on the given training "
            "batch.\n"
            "Arguments:\n"

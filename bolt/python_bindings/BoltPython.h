@@ -281,9 +281,9 @@ class DistributedPyNetwork final : public DistributedModel {
   DistributedPyNetwork(SequentialConfigList configs, uint64_t input_dim)
       : DistributedModel(std::move(configs), input_dim) {}
 
-  uint32_t initTrainSingleNode(const py::object& data, const py::object& labels,
-                               uint32_t batch_size = 0, uint32_t rehash = 0,
-                               uint32_t rebuild = 0, bool verbose = false) {
+  uint32_t prepareNodeForDistributedTraining(
+      const py::object& data, const py::object& labels, uint32_t batch_size = 0,
+      uint32_t rehash = 0, uint32_t rebuild = 0, bool verbose = false) {
     // Redirect to python output.
     redirectCoutToPython();
 
@@ -291,8 +291,9 @@ class DistributedPyNetwork final : public DistributedModel {
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
 
-    uint32_t num_of_batches = DistributedModel::initTrainSingleNode(
-        train_data.dataset, train_labels.dataset, rehash, rebuild, verbose);
+    uint32_t num_of_batches =
+        DistributedModel::prepareNodeForDistributedTraining(
+            train_data.dataset, train_labels.dataset, rehash, rebuild, verbose);
 
     return num_of_batches;
   }
@@ -429,6 +430,11 @@ class DistributedPyNetwork final : public DistributedModel {
    * vector(due to vector.data()) and would be freed by the destructor of vector
    * itself.
    */
+
+  // TODO(pratik): Rather than just passing vector.data(),
+  // we should create the array with a py::object generated from a
+  // py::cast(this)
+
   py::array_t<float> getBiasesGradients(uint32_t layer_index) {
     layerIndexCheck(layer_index, DistributedModel::numLayers());
 
