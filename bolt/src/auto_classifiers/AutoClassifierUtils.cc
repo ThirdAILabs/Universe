@@ -68,7 +68,7 @@ void AutoClassifierUtils::train(
 
     model->train(train_data, train_labels, loss, learning_rate, 1);
     model->freezeHashTables();
-    model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
+    // model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
   }
 }
 
