@@ -152,7 +152,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
              const py::array_t<float, py::array::c_style |
                                           py::array::forcecast>& new_weights) {
             checkNumpyArrayDimensions(node, new_weights, "set_weights");
-            node.setNodeWeights(new_weights.data());
+            return node.setNodeWeights(new_weights.data());
           },
           py::arg("new_weights"),
           "Sets the weight matrix for the node to the given Numpy 2D array."

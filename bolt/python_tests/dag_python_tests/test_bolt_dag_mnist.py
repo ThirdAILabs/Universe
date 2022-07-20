@@ -126,10 +126,13 @@ def test_get_set_weights():
     output_layer_weights = output_layer.get_weights()
     output_layer_biases = output_layer.get_biases()
 
-    untrained_model.get_layer("fc_1").set_weights(new_weights=hidden_layer_weights)
-    untrained_model.get_layer("fc_1").set_biases(new_biases=hidden_layer_biases)
-    untrained_model.get_layer("fc_2").set_weights(new_weights=output_layer_weights)
-    untrained_model.get_layer("fc_2").set_biases(new_biases=output_layer_biases)
+    untrained_model.get_layer("fc_1").set_weights(
+        new_weights=hidden_layer_weights
+    ).set_biases(new_biases=hidden_layer_biases)
+
+    untrained_model.get_layer("fc_2").set_weights(
+        new_weights=output_layer_weights
+    ).set_biases(new_biases=output_layer_biases)
 
     untrained_model_metrics = untrained_model.predict(
         test_data=train_data, test_labels=train_labels, predict_config=predict_config
