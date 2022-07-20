@@ -44,7 +44,7 @@ class TextClassifier {
   }
 
   std::string predictSingle(const std::string& sentence) {
-    BoltVector pairgrams_vec = dataset::PairgramHasher::computePairgrams(
+    BoltVector pairgrams_vec = dataset::TextEncodingUtils::computePairgrams(
         /*sentence = */ sentence, /*output_range = */ _model->getInputDim());
     BoltVector output =
         BoltVector(/*l = */ _model->getOutputDim(), /*is_dense = */ true);
