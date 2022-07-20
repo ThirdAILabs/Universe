@@ -312,7 +312,7 @@ class Worker:
             for node_biases in b_sparse_grads:
                 np.add.at(b_gradient,node_biases[layer][0],node_biases[layer][1])
             
-            self.network.set_weights_gradients(layer, w_gradient.reshape(shape[0],shape[1]))
+            self.network.set_weights_gradients(layer, w_gradient.reshape(shape[1],shape[0]))
             self.network.set_biases_gradients(layer, b_gradient)
         
         return True
