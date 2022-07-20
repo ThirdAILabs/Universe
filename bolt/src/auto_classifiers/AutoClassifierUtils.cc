@@ -1,17 +1,4 @@
-#include "TextClassifier.h"
-#include <bolt/src/layers/BoltVector.h>
-#include <bolt/src/layers/LayerConfig.h>
-#include <bolt/src/layers/LayerUtils.h>
-#include <bolt/src/loss_functions/LossFunctions.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <algorithm>
-#include <memory>
-#include <optional>
-#include <regex>
-#include <stdexcept>
-#include <string>
-#include <thread>
+#include "AutoClassifierUtils.h"
 
 #if defined __linux
 #include <sys/sysinfo.h>
@@ -27,17 +14,8 @@
 
 namespace thirdai::bolt {
 
-// Autotuning helper functions
-static uint32_t getHiddenLayerSize(const std::string& model_size,
-                                   uint64_t n_classes, uint64_t input_dim);
-static float getHiddenLayerSparsity(uint64_t layer_size);
-static std::optional<uint64_t> getSystemRam();
-static uint64_t getMemoryBudget(const std::string& model_size);
-static bool canLoadDatasetInMemory(const std::string& filename);
-
-TextClassifier::TextClassifier(const std::string& model_size,
-                               uint32_t n_classes) {
-  uint32_t input_dim = 100000;
+std::shared_ptr<FullyConnectedNetwork> AutoClassifierUtils::createNetwork(
+    uint64_t input_dim, uint32_t n_classes, const std::string& model_size) {
   uint32_t hidden_layer_size =
       getHiddenLayerSize(model_size, n_classes, input_dim);
 
@@ -48,44 +26,54 @@ TextClassifier::TextClassifier(const std::string& model_size,
           hidden_layer_size, hidden_layer_sparsity, ActivationFunction::ReLU),
       std::make_shared<FullyConnectedLayerConfig>(n_classes,
                                                   ActivationFunction::Softmax)};
-
-  _model =
-      std::make_unique<FullyConnectedNetwork>(std::move(configs), input_dim);
-
-  _batch_processor =
-      std::make_shared<dataset::TextClassificationProcessor>(input_dim);
-
-  _model->freezeHashTables();
+  return std::make_shared<FullyConnectedNetwork>(std::move(configs), input_dim);
 }
 
-void TextClassifier::train(const std::string& filename, uint32_t epochs,
-                           float learning_rate) {
-  auto dataset = loadStreamingDataset(filename);
+std::shared_ptr<dataset::StreamingDataset<BoltBatch>>
+AutoClassifierUtils::loadStreamingDataset(
+    const std::string& filename,
+    const std::shared_ptr<dataset::BatchProcessor<BoltBatch>>& batch_processor,
+    uint32_t batch_size) {
+  std::shared_ptr<dataset::DataLoader> data_loader =
+      std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
+
+  auto dataset = std::make_shared<dataset::StreamingDataset<BoltBatch>>(
+      data_loader, batch_processor);
+  return dataset;
+}
+
+void AutoClassifierUtils::train(
+    std::shared_ptr<FullyConnectedNetwork>& model, const std::string& filename,
+    const std::shared_ptr<dataset::BatchProcessor<BoltBatch>>& batch_processor,
+    uint32_t epochs, float learning_rate) {
+  auto dataset = loadStreamingDataset(filename, batch_processor);
 
   CategoricalCrossEntropyLoss loss;
 
   if (!canLoadDatasetInMemory(filename)) {
     for (uint32_t e = 0; e < epochs; e++) {
       // Train on streaming dataset
-      _model->trainOnStream(dataset, loss, learning_rate);
+      model->trainOnStream(dataset, loss, learning_rate);
 
       // Create new stream for next epoch with new data loader.
-      dataset = loadStreamingDataset(filename);
+      dataset = loadStreamingDataset(filename, batch_processor);
     }
 
   } else {
     auto [train_data, train_labels] = dataset->loadInMemory();
 
-    _model->train(train_data, train_labels, loss, learning_rate, 1);
-    _model->freezeHashTables();
-    _model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
+    model->train(train_data, train_labels, loss, learning_rate, 1);
+    model->freezeHashTables();
+    model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
   }
 }
 
-void TextClassifier::predict(
-    const std::string& filename,
-    const std::optional<std::string>& output_filename) {
-  auto dataset = loadStreamingDataset(filename);
+void AutoClassifierUtils::predict(
+    std::shared_ptr<FullyConnectedNetwork>& model, const std::string& filename,
+    const std::shared_ptr<dataset::BatchProcessor<BoltBatch>>& batch_processor,
+    const std::optional<std::string>& output_filename,
+    const std::vector<std::string>& class_id_to_class_name) {
+  auto dataset = loadStreamingDataset(filename, batch_processor);
 
   std::optional<std::ofstream> output_file;
   if (output_filename) {
@@ -98,41 +86,30 @@ void TextClassifier::predict(
       return;
     }
     for (uint32_t batch_id = 0; batch_id < batch_size; batch_id++) {
-      float max_act = 0.0;
-      uint32_t pred = 0;
-      for (uint32_t i = 0; i < outputs[batch_id].len; i++) {
-        if (outputs[batch_id].activations[i] > max_act) {
-          max_act = outputs[batch_id].activations[i];
-          if (outputs[batch_id].isDense()) {
-            pred = i;
-          } else {
-            pred = outputs[batch_id].active_neurons[i];
-          }
-        }
-      }
-
-      (*output_file) << _batch_processor->getClassName(pred) << std::endl;
+      uint32_t class_id = outputs[batch_id].getIdWithHighestActivation();
+      (*output_file) << class_id_to_class_name[class_id] << std::endl;
     }
   };
 
   /*
-    We are using predict with the stream directly because we only need a single
-    pass through the dataset, so this is more memory efficient, and we don't
-    have to worry about storing the activations in memory to compute the
+    We are using predict with the stream directly because we only need a
+    single pass through the dataset, so this is more memory efficient, and we
+    don't have to worry about storing the activations in memory to compute the
     predictions, and can instead compute the predictions using the
     back_callback.
   */
-  _model->predictOnStream(dataset, /* use_sparse_inference= */ true,
-                          /* metric_names= */ {"categorical_accuracy"},
-                          print_predictions_callback);
+  model->predictOnStream(dataset, /* use_sparse_inference= */ true,
+                         /* metric_names= */ {"categorical_accuracy"},
+                         print_predictions_callback);
 
   if (output_file) {
     output_file->close();
   }
 }
 
-uint32_t getHiddenLayerSize(const std::string& model_size, uint64_t n_classes,
-                            uint64_t input_dim) {
+uint32_t AutoClassifierUtils::getHiddenLayerSize(const std::string& model_size,
+                                                 uint64_t n_classes,
+                                                 uint64_t input_dim) {
   /*
     Estimated num parameters = (input_dim + n_classes) * hidden_dim
 
@@ -152,9 +129,25 @@ uint32_t getHiddenLayerSize(const std::string& model_size, uint64_t n_classes,
   return hidden_layer_size;
 }
 
+float AutoClassifierUtils::getHiddenLayerSparsity(uint64_t layer_size) {
+  if (layer_size < 1000) {
+    return 0.2;
+  }
+  if (layer_size < 4000) {
+    return 0.1;
+  }
+  if (layer_size < 10000) {
+    return 0.05;
+  }
+  if (layer_size < 30000) {
+    return 0.01;
+  }
+  return 0.005;
+}
+
 static constexpr uint64_t ONE_GB = 1 << 30;
 
-uint64_t getMemoryBudget(const std::string& model_size) {
+uint64_t AutoClassifierUtils::getMemoryBudget(const std::string& model_size) {
   std::regex small_re("[Ss]mall");
   std::regex medium_re("[Mm]edium");
   std::regex large_re("[Ll]arge");
@@ -171,20 +164,20 @@ uint64_t getMemoryBudget(const std::string& model_size) {
   // If unable to find system RAM assume max ram is 8Gb
   uint64_t system_ram = getSystemRam().value_or(8 * ONE_GB);
 
-  // For small models we use either 1Gb of 1/16th of the total RAM, whichever is
-  // smaller.
+  // For small models we use either 1Gb of 1/16th of the total RAM, whichever
+  // is smaller.
   if (std::regex_search(model_size, small_re)) {
     return std::min<uint64_t>(system_ram / 16, ONE_GB);
   }
 
-  // For medium models we use either 2Gb of 1/8th of the total RAM, whichever is
-  // smaller.
+  // For medium models we use either 2Gb of 1/8th of the total RAM, whichever
+  // is smaller.
   if (std::regex_search(model_size, medium_re)) {
     return std::min<uint64_t>(system_ram / 8, 2 * ONE_GB);
   }
 
-  // For large models we use either 4Gb of 1/4th of the total RAM, whichever is
-  // smaller.
+  // For large models we use either 4Gb of 1/4th of the total RAM, whichever
+  // is smaller.
   if (std::regex_search(model_size, large_re)) {
     return std::min<uint64_t>(system_ram / 4, 4 * ONE_GB);
   }
@@ -203,27 +196,12 @@ uint64_t getMemoryBudget(const std::string& model_size) {
   }
 
   throw std::invalid_argument(
-      "'model_size' parameter must be either 'small', 'medium', 'large', or a "
+      "'model_size' parameter must be either 'small', 'medium', 'large', or "
+      "a "
       "gigabyte size of the model, i.e. 5Gb");
 }
 
-float getHiddenLayerSparsity(uint64_t layer_size) {
-  if (layer_size < 1000) {
-    return 0.2;
-  }
-  if (layer_size < 4000) {
-    return 0.1;
-  }
-  if (layer_size < 10000) {
-    return 0.05;
-  }
-  if (layer_size < 30000) {
-    return 0.01;
-  }
-  return 0.005;
-}
-
-std::optional<uint64_t> getSystemRam() {
+std::optional<uint64_t> AutoClassifierUtils::getSystemRam() {
 #if defined __linux__
   // https://stackoverflow.com/questions/349889/how-do-you-determine-the-amount-of-linux-system-ram-in-c
   struct sysinfo mem_info;
@@ -249,7 +227,7 @@ std::optional<uint64_t> getSystemRam() {
   return std::nullopt;
 }
 
-bool canLoadDatasetInMemory(const std::string& filename) {
+bool AutoClassifierUtils::canLoadDatasetInMemory(const std::string& filename) {
   auto total_ram = getSystemRam().value();
 
 #if defined(__APPLE__) || defined(__linux__)

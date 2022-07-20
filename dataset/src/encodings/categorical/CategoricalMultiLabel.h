@@ -12,18 +12,21 @@ class CategoricalMultiLabel final : public CategoricalEncoding {
   explicit CategoricalMultiLabel(uint32_t max_label, char delimiter = ',')
       : _max_label(max_label), _delimiter(delimiter) {}
 
-  void encodeCategory(std::string_view labels,
-                      SegmentedFeatureVector& vec) final {
+  std::exception_ptr encodeCategory(std::string_view labels,
+                                    SegmentedFeatureVector& vec) final {
     const char* start = labels.data();
     char* end;
     do {
       uint32_t label = std::strtoul(start, &end, 10);
-      // TODO(Nicholas, Geordie): It would be nice if we could throw an
-      // exception here if the label is out of range, but right now its unsafe
-      // because exceptions in openmp is undefined.
+      if (label > _max_label) {
+        return std::make_exception_ptr(
+            std::invalid_argument("Received label " + std::to_string(label) +
+                                  " larger than max_label"));
+      }
       vec.addSparseFeatureToSegment(label, 1.0);
       start = end;
     } while ((*start++) == _delimiter);
+    return nullptr;
   }
 
   bool isDense() const final { return false; }
