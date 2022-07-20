@@ -1,4 +1,5 @@
 from ..test_mnist import ACCURACY_THRESHOLD, load_mnist
+from ..utils import gen_training_data, get_simple_concat_model
 from thirdai import bolt
 import os
 import math
@@ -9,6 +10,7 @@ pytestmark = [pytest.mark.integration]
 
 
 LEARNING_RATE = 0.0001
+BATCH_SIZE = 64
 
 
 def setup_module():
@@ -68,11 +70,13 @@ def test_bolt_dag_on_mnist():
 
 
 # Builds a DAG-based model for MNIST with a sparse output layer
-def build_sparse_output_layer_model(sparsity=0.5):
-    input_layer = bolt.graph.Input(dim=784)
-    hidden_layer = bolt.graph.FullyConnected(dim=256, activation="relu")(input_layer)
+def build_sparse_output_layer_model(num_classes, sparsity=0.5):
+    input_layer = bolt.graph.Input(dim=num_classes)
+    hidden_layer = bolt.graph.FullyConnected(dim=num_classes, activation="relu")(
+        input_layer
+    )
     output_layer = bolt.graph.FullyConnected(
-        dim=10, sparsity=sparsity, activation="softmax"
+        dim=100, sparsity=sparsity, activation="softmax"
     )(hidden_layer)
 
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
@@ -81,48 +85,65 @@ def build_sparse_output_layer_model(sparsity=0.5):
     return model
 
 
-def test_get_set_weight():
-    """
-    Tests that we can set and get weights for a specific node in the graph.
-    This test ensures that substituting untrained weights with trained weights 
-    from the same model configuration results in comparable accuracy performances. 
-    """
+def test_get_set_weights():
+    dataset_dim = 100
+    train_data, train_labels = gen_training_data(n_classes=dataset_dim, n_samples=10000)
 
-    train_x, train_y, test_x, test_y = load_mnist()
-    model = build_sparse_output_layer_model(sparsity=0.4)
-
+    # This model (initially) has a dense output.
+    # The output node's name is "fc_3"
+    model = get_simple_concat_model(
+        num_classes=100,
+        hidden_layer_top_dim=100,
+        hidden_layer_bottom_dim=100,
+        hidden_layer_top_sparsity=0.1,
+        hidden_layer_bottom_sparsity=0.1,
+    )
     train_config = (
-        bolt.graph.TrainConfig.make(learning_rate=LEARNING_RATE, epochs=10)
+        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=5)
         .with_batch_size(64)
         .silence()
     )
-    model.train(train_data=train_x, train_labels=train_y, train_config=train_config)
+    model.train(
+        train_data=train_data, train_labels=train_labels, train_config=train_config
+    )
     predict_config = (
         bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"]).silence()
     )
-    trained_model_metrics = model.predict(
-        test_data=test_x, test_labels=test_y, predict_config=predict_config
+
+    metrics = model.predict(
+        test_data=train_data,
+        test_labels=train_labels,
+        predict_config=predict_config,
     )
-    assert trained_model_metrics[0]["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
-    untrained_model = build_sparse_output_layer_model(sparsity=0.4)
+    assert metrics[0]["categorical_accuracy"] >= 0.8
 
-    hidden_layer = model.get_layer("fc_1")
-    output_layer = model.get_layer("fc_2")
+    untrained_model = get_simple_concat_model(
+        num_classes=100,
+        hidden_layer_top_dim=100,
+        hidden_layer_bottom_dim=100,
+        hidden_layer_top_sparsity=0.1,
+        hidden_layer_bottom_sparsity=0.1
+    )
 
-    hidden_layer_weights = hidden_layer.get_weights()
-    output_layer_weights = output_layer.get_weights()
+    # Get the weights for the last layer "fc_3"
+    concat_layer = model.get_layer("fc_3")
+    concat_layer_weights = concat_layer.get_weights()
+    concat_layer_biases = concat_layer.get_biases()
 
-    untrained_model.get_layer("fc_1").set_weights(hidden_layer_weights)
-    untrained_model.get_layer("fc_2").set_weights(output_layer_weights)
+    untrained_model.get_layer("fc_3").set_weights(new_weights=concat_layer_weights)
+    untrained_model.get_layer("fc_3").set_biases(new_biases=concat_layer_biases)
 
     untrained_model_metrics = untrained_model.predict(
-        test_data=test_x, test_labels=test_y, predict_config=predict_config
+        test_data=train_data,
+        test_labels=train_labels,
+        predict_config=predict_config
     )
 
-    # Checks that the accuracies are the same up to a threshold=0.001
     assert math.isclose(
         untrained_model_metrics[0]["categorical_accuracy"],
-        trained_model_metrics[0]["categorical_accuracy"],
+        metrics[0]["categorical_accuracy"],
         rel_tol=0.001,
     )
+
+

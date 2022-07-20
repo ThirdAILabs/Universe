@@ -112,20 +112,21 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 
             int new_weights_dim = new_weights.ndim();
             if (new_weights_dim != 2) {
-              std::stringstream error;
-              error << "Expected weight matrix to have 2 dimensions, received "
-                       "matrix "
-                       "with "
-                    << new_weights_dim << " dimensions.";
+              std::stringstream error(
+                  "Expected weight matrix to have 2 dimensions, received "
+                  "matrix with " +
+                  std::to_string(new_weights_dim) + " dimensions.");
               throw std::invalid_argument(error.str());
             }
             if (new_weights.shape(0) != dim ||
                 new_weights.shape(1) != prev_node_dim) {
-              std::stringstream error;
-              error << "Expected weight matrix to have dim (" << dim << ", "
-                    << prev_node_dim << ") received matrix with dim ("
-                    << new_weights.shape(0) << ", " << new_weights.shape(1)
-                    << ").";
+              std::stringstream error(
+                  "Expected weight matrix to have dim (" +
+                  std::to_string(prev_node_dim) +
+                  "), recieved matrix with dim (" +
+                  std::to_string(new_weights.shape(0)) + ", " +
+                  std::to_string(new_weights.shape(1)) + ").");
+
               throw std::invalid_argument(error.str());
             }
             node.setNodeWeights(new_weights.data());
@@ -165,23 +166,22 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def(
           "set_biases",
           [](FullyConnectedNode& node,
-             const py::array_t<float, py::array::c_style | py::array::forcecast>&
-                 new_biases) {
+             const py::array_t<float, py::array::c_style |
+                                          py::array::forcecast>& new_biases) {
             uint32_t dim = node.outputDim();
             if (new_biases.ndim() != 1) {
-              std::stringstream error;
-              error << "Expected weight matrix to have 1 dimension, received "
-                       "matrix "
-                       "with "
-                    << new_biases.ndim() << " dimensions.";
+              std::stringstream error(
+                  "Expected weight matrix to have 1 dimension, received matrix "
+                  "with " +
+                  std::to_string(new_biases.ndim()) + " dimensions.");
               throw std::invalid_argument(error.str());
             }
 
             if (new_biases.shape(0) != dim) {
-              std::stringstream error;
-              error << "Expected weight matrix to have dim " << dim
-                    << " received matrix with dim " << new_biases.shape(0)
-                    << ".";
+              std::stringstream error(
+                  "Expected weight matrix to have dim " + std::to_string(dim) +
+                  ", received matrix with dim " +
+                  std::to_string(new_biases.shape(0)) + ".");
               throw std::invalid_argument(error.str());
             }
 
