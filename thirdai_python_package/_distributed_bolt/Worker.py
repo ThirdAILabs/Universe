@@ -186,37 +186,30 @@ class Worker:
             m_x=int(compression_density*x.shape[0])
             m_y=int(compression_density*y.shape[0])
 
+            m_x=10
+            m_y=10
+            
             thresh_x=0
             thresh_y=0
 
             for i in [0]*3:
 
-                sampled_x=np.random.choice(x.shape[0],min(x.shape[0],10000),replace=False)
-                sampled_y=np.random.choice(y.shape[0],min(y.shape[0],10000),replace=False)
+                sampled_x=np.random.choice(x.shape[0],min(x.shape[0],10),replace=False)
+                sampled_y=np.random.choice(y.shape[0],min(y.shape[0],10),replace=False)
 
                 thresh_x+=self.approximate_topk(x[sampled_x],compression_density)/3
                 thresh_y+=self.approximate_topk(y[sampled_y],compression_density)/3
 
         
-            indices_x=np.zeros(m_x).astype(int)
-            indices_y=np.zeros(m_y).astype(int)
-            vals_x=np.zeros(m_x)
-            vals_y=np.zeros(m_y)
+            indices_x=np.where(x>thresh_x).astype(int)[:m_x]
+            indices_y=np.where(y>thresh_y).astype(int)[:m_y]
 
-            for index in range(x.shape[0]):
-                if x[index]>thresh_x:
-                    j=hash(index)%(m_x)
-                    indices_x[j]=index
-                    vals_x=x[index]
-            
-            for index in range(y.shape[0]):
-                if y[index]>thresh_y:
-                    j=hash(index)%(m_y)
-                    indices_y[j]=index
-                    vals_y=y[index]
-            
+            vals_x=x[indices_x]
+            vals_y=y[indices_y]
+
             w_sparse_grad.append((indices_x,vals_x))
             b_sparse_grad.append((indices_y,vals_y))
+        print(f"worker id {self.id}, layer_no {layer}, {w_sparse_grad}")
         print(f"done calculating the dragon gradients for the workerid {self.id} in time {time.time()-start}")
         return (w_sparse_grad,b_sparse_grad)
 
@@ -236,7 +229,7 @@ class Worker:
             inside bolt to take the gradients and return them to supervisor.
         """
         if compression is not None and compression =="DRAGON":
-            return (self.w_sparse_grad,self.b_sparse_grad)
+            return self.w_sparse_grad,self.b_sparse_grad
 
         w_gradients = []
         b_gradients = []
@@ -304,14 +297,15 @@ class Worker:
 
     def receiveDragonGradients(self):
         w_sparse_grads,b_sparse_grads=ray.get(self.supervisor.sparse_grads.remote())
-        
+        print(f"type of w_sparse_grads{type(w_sparse_grads)} and length {len(w_sparse_grads)}")
         for layer in range(len(self.layers)-1):
-
+            
             shape=(self.layers[layer],self.layers[layer+1])
             w_gradient=np.zeros(shape[0]*shape[1])
             b_gradient=np.zeros(shape[1])
-
+            
             for node_weights in w_sparse_grads:
+                print(f"worker id {self.id}, layer_no {layer}, node_weights: {type(node_weights)}, node_weights_layer: {type(node_weights[layer])} ")
                 np.add.at(w_gradient,node_weights[layer][0],node_weights[layer][1])
             for node_biases in b_sparse_grads:
                 np.add.at(b_gradient,node_biases[layer][0],node_biases[layer][1])
