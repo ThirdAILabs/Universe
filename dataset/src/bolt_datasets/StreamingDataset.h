@@ -65,7 +65,7 @@ class StreamingDataset {
        * https://stackoverflow.com/questions/53305395/how-to-create-a-tuple-of-vectors-of-type-deduced-from-a-variadic-template-in-c
        */
       std::apply(
-          [](auto&... batch_lists_arg) {
+          [&batch_tuple](auto&... batch_lists_arg) {
             std::apply(
                 [&](auto&... batch_tuple_arg) {
                   (batch_lists_arg.push_back(std::move(batch_tuple_arg)), ...);
