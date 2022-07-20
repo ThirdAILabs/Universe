@@ -200,7 +200,8 @@ TEST_F(SequentialClassifierTests, Explainability) {
   auto temp = seq_bolt.explain(simple_trend_test_dataset);
 
   for (auto& i : temp[0]) {
-    std::cout << std::get<0>(i) << " " << std::get<1>(i) <<" "<< std::get<2>(i);
+    std::cout << std::get<0>(i) << " " << std::get<1>(i) << " "
+              << std::get<2>(i);
   }
   std::cout << std::endl;
 

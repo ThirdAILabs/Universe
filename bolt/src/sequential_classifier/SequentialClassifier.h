@@ -50,7 +50,9 @@ class SequentialClassifier {
 
   static void sortGradients(
       std::vector<std::vector<std::pair<float, uint32_t>>>& gradients) {
-    auto func=[](std::pair<float, uint32_t> i, std::pair<float, uint32_t> j) { return abs(i.first) > abs(j.first); };
+    auto func = [](std::pair<float, uint32_t> i, std::pair<float, uint32_t> j) {
+      return abs(i.first) > abs(j.first);
+    };
     for (auto& gradient : gradients) {
       sort(gradient.begin(), gradient.end(), func);
     }
@@ -81,10 +83,10 @@ class SequentialClassifier {
                                                false,
                                                /* overwrite_index = */
                                                false);
-    auto gradients = _network->getInputGradientsFromStream(pipeline.first,
-                                                           loss_fn, label_id, label_given);
+    auto gradients = _network->getInputGradientsFromStream(
+        pipeline.first, loss_fn, label_id, label_given);
     std::vector<std::vector<std::pair<float, uint32_t>>> temp;
-    //sorting based on ratios.
+    // sorting based on ratios.
     for (auto& gradient : gradients.second) {
       std::vector<std::pair<float, uint32_t>> vec;
       for (uint32_t j = 0; j < gradient.size(); j++) {
@@ -117,8 +119,8 @@ class SequentialClassifier {
       std::vector<std::tuple<float, std::string, float>> res;
       for (uint32_t j = 0; j < total_column_names[i].size(); j++) {
         auto k = temp[i][j].second;
-        res.push_back(
-            std::make_tuple(temp[i][j].first, total_column_names[i][j],gradients.first[i][k]));
+        res.push_back(std::make_tuple(
+            temp[i][j].first, total_column_names[i][j], gradients.first[i][k]));
       }
       result.push_back(res);
     }
