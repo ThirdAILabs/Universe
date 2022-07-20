@@ -24,9 +24,7 @@ TEST(CategoricalMultiLabelTest, TestLabelParsing) {
 
   auto batch = batch_processor.createBatch(rows);
 
-  EXPECT_TRUE(batch.has_value());
-
-  auto [data, labels] = std::move(*batch);
+  auto [data, labels] = std::move(batch);
 
   std::vector<std::vector<uint32_t>> expected_labels = {
       {4, 90, 77, 121, 143, 118, 100},

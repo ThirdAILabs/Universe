@@ -48,8 +48,8 @@ class DLRMTestFixture : public testing::Test {
 
     return dataset::ClickThroughDatasetWithLabels(
         dataset::InMemoryDataset<dataset::ClickThroughBatch>(
-            std::move(data_batches), n_batches * batch_size),
-        dataset::BoltDataset(std::move(label_batches), n_batches * batch_size));
+            std::move(data_batches)),
+        dataset::BoltDataset(std::move(label_batches)));
   }
 };
 
