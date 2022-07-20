@@ -65,7 +65,7 @@ class StreamingDataset {
        * https://stackoverflow.com/questions/53305395/how-to-create-a-tuple-of-vectors-of-type-deduced-from-a-variadic-template-in-c
        */
       std::apply(
-          [&](auto&... batch_lists_arg) {
+          [](auto&... batch_lists_arg) {
             std::apply(
                 [&](auto&... batch_tuple_arg) {
                   (batch_lists_arg.push_back(std::move(batch_tuple_arg)), ...);
@@ -86,7 +86,7 @@ class StreamingDataset {
     // template that maps each vector of batches to an InMemoryDataset.
     std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> dataset_ptrs =
         std::apply(
-            [&](auto&... batch_lists_arg) {
+            [](auto&... batch_lists_arg) {
               return std::make_tuple(
                   std::make_shared<InMemoryDataset<BATCH_Ts>>(
                       std::move(batch_lists_arg))...);
