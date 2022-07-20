@@ -90,8 +90,7 @@ class StreamingDataset {
 
     // We use std::apply again here to call a function acception a variadic
     // template that maps each vector of batches to an InMemoryDataset.
-    std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> dataset_ptrs =
-        std::apply(convertToDataset, batch_lists);
+    std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> dataset_ptrs;
 
     return dataset_ptrs;
   }
