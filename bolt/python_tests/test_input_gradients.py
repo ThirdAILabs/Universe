@@ -64,7 +64,7 @@ def assert_ratio(network, x1, labels):
             index = abs_list.index(max(abs_list))
             if index == labels[i]:
                 max_times += 1
-    assert (max_times/total) > 0.5
+    assert (max_times / total) > 0.5
 
 
 @pytest.mark.unit
@@ -89,7 +89,7 @@ def test_input_gradients_sample_data():
         ]
     ).astype("float32")
     labels = np.array([0, 1, 2, 3, 1, 2, 1]).astype("uint32")
-    assert_ratio(network,x1,labels)
+    assert_ratio(network, x1, labels)
 
 
 @pytest.mark.unit
@@ -99,4 +99,4 @@ def test_input_gradients_random_data():
     """
     network = initialize_network()
     x1, labels = gen_training_data(4, 5000)
-    assert_ratio(network,x1,labels)
+    assert_ratio(network, x1, labels)
