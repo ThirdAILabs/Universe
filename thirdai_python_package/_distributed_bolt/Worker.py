@@ -4,7 +4,7 @@ import ray
 from .utils import create_fully_connected_layer_configs, load_dataset
 import time
 from typing import Tuple, Any, Optional, Dict, List
-
+import time
 
 @ray.remote(num_cpus=40, max_restarts=1)
 class Worker:
@@ -29,6 +29,7 @@ class Worker:
         total_nodes: int, 
         id: int
     ):
+        print('Worker Started')
         self.layers = layers
         self.bolt_layers = create_fully_connected_layer_configs(config["layers"])
         self.input_dim = config["dataset"]["input_dim"]
@@ -48,8 +49,7 @@ class Worker:
         data = load_dataset(config, total_nodes, id)
         if data is None:
             raise ValueError("Unable to load a dataset. Please check the config")
-        
-        
+
         if config["params"]["loss_fn"].lower() == "categoricalcrossentropyloss":
             self.loss = bolt.CategoricalCrossEntropyLoss()
         elif config["params"]["loss_fn"].lower() == "meansquarederror":
@@ -142,7 +142,9 @@ class Worker:
         return True
 
     def calculateGradientsLinear(self, 
-        batch_no: int
+        batch_no: int,
+        compression=None,
+        compression_density=0.1
     ):
         """
             This function is called only when the mode of communication is
@@ -159,10 +161,68 @@ class Worker:
                 batch_no: training batch to calculate gradients on.
         """
         self.network.calculateGradientSingleNode(batch_no, self.loss)
+        if compression=="DRAGON":
+            self.w_sparse_grad,self.b_sparse_grad= self.getDragonGradients(compression_density=compression_density)
         return True
     
+    def approximate_topk(weights,top_frac):
+        n=int(top_frac*weights.shape[0])
+        vals=np.partition(weights,n)[-n:]
+        return np.min(vals)
+    
+    
+    def getDragonGradients(self,compression_density):
+        w_sparse_grad=[]
+        b_sparse_grad=[]
+
+        for layer in range(len(self.layers)-1):
+            x = self.network.get_weights_gradients(layer)
+            y = self.network.get_biases_gradients(layer)
+            x=np.ravel(x)
+            y=np.ravel(y)
+
+            m_x=int(compression_density*x.shape[0])
+            m_y=int(compression_density*y.shape[0])
+
+            thresh_x=0
+            thresh_y=0
+
+            for i in [0]*3:
+
+                sampled_x=np.random.choice(x.shape[0],int(x.shape[0]*0.01),replace=False)
+                sampled_y=np.random.choice(y.shape[0],int(y.shape[0]*0.01),replace=False)
+
+                thresh_x+=self.approximate_topk(x[sampled_x],compression_density)/3
+                thresh_y+=self.approximate_topk(y[sampled_y],compression_density)/3
+
+        
+            indices_x=np.zeros(m_x)
+            indices_y=np.zeros(m_y)
+            vals_x=np.zeros(m_x)
+            vals_y=np.zeros(m_y)
+
+            for index in range(x.shape[0]):
+                if x[index]>thresh_x:
+                    j=hash(index)%(m_x)
+                    indices_x[j]=index
+                    vals_x=x[index]
+            
+            for index in range(y.shape[0]):
+                if y[index]>thresh_y:
+                    j=hash(index)%(m_y)
+                    indices_y[j]=index
+                    vals_y=y[index]
+            
+            w_sparse_grad.append((indices_x,vals_x))
+            b_sparse_grad.append((indices_y,vals_y))
+        
+        return (w_sparse_grad,b_sparse_grad)
+
+
+
     def getCalculatedGradients(
-        self
+        self,
+        compression=None,compression_density=0.1
     ):
         """
             This function is called only when the mode of communication
@@ -173,6 +233,9 @@ class Worker:
             calls 'get_weights_gradient' and 'get_biases_gradients' functions
             inside bolt to take the gradients and return them to supervisor.
         """
+        if compression is not None and compression =="DRAGON":
+            return (self.w_sparse_grad,self.b_sparse_grad)
+
         w_gradients = []
         b_gradients = []
         for layer in range(len(self.layers)-1):
@@ -236,8 +299,30 @@ class Worker:
             self.network.set_biases_gradients(layer, self.b_gradients[layer])
         return True
 
+
+    def receiveDragonGradients(self):
+        w_sparse_grads,b_sparse_grads=ray.get(self.supervisor.sparse_grads.remote())
+        
+        for layer in range(len(self.layers)-1):
+
+            shape=(self.layers[layer],self.layers[layer+1])
+            w_gradient=np.zeros(shape[0]*shape[1])
+            b_gradient=np.zeros(shape[1])
+
+            for node_weights in w_sparse_grads:
+                np.add.at(w_gradient,node_weights[layer][0],node_weights[layer][1])
+            for node_biases in b_sparse_grads:
+                np.add.at(b_gradient,node_biases[layer][0],node_biases[layer][1])
+            
+            self.network.set_weights_gradients(layer, w_gradient)
+            self.network.set_biases_gradients(layer, b_gradient)
+        
+        return True
+
+
     def receiveGradientsLinearCommunication(
-        self
+        self,
+        compression=None
     ):
         """
 
@@ -248,6 +333,10 @@ class Worker:
             from the supervisor and then set those updated gradients to the network.
             
         """
+
+        if compression=="DRAGON":
+            self.receiveDragonGradients()
+        
         w_gradients_updated, b_gradients_updated = ray.get(self.supervisor.gradients_avg.remote())
         for layer in range(len(w_gradients_updated)):
             self.network.set_weights_gradients(layer, w_gradients_updated[layer])

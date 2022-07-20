@@ -64,10 +64,29 @@ class Supervisor:
             blocking_run = ray.get([w.processRing.remote(update_id, reduce=False) for w in self.workers])
             update_id -= 1
         return True
+    
+    def dragon_compression(self,batch_no,compression_density=0.10):
+
+        start_gradient_computation = time.time()
+        calculateGradients = ray.get([self.workers[id].calculateGradientsLinear.remote(batch_no,compression="DRAGON",compression_density=compression_density) for id in range(len(self.workers))])
+        gradient_computation_time = time.time() - start_gradient_computation
+        start_getting_gradients = time.time()
+        gradients_list = ray.get([self.workers[id].getCalculatedGradients.remote() for id in range(len(self.workers))])
+        getting_gradient_time = time.time() - start_getting_gradients
+        
+        summing_and_averaging_gradients_start_time = time.time()
+
+        self.w_sparse_grads=[grads[0] for grads in gradients_list]
+        self.b_sparse_grads=[grads[1] for grads in gradients_list]
+
+        summing_and_averaging_gradients_time = time.time() - summing_and_averaging_gradients_start_time
+        return gradient_computation_time, getting_gradient_time, summing_and_averaging_gradients_time
 
     def subworkLinearCommunication(
         self, 
-        batch_no: int
+        batch_no: int,
+        compression= None,
+        compression_density=0.1
     ):
         """
             This function implements the linear way of communicating between the node.
@@ -80,6 +99,12 @@ class Supervisor:
             Args:
                 batch_no: batch number for the particular worker with worker id (id).
         """
+
+        if compression is not None:
+            if compression =="DRAGON":
+                return self.dragon_compression(batch_no,compression_density)
+        
+
         start_gradient_computation = time.time()
         calculateGradients = ray.get([self.workers[id].calculateGradientsLinear.remote(batch_no) for id in range(len(self.workers))])
         gradient_computation_time = time.time() - start_gradient_computation
@@ -116,6 +141,10 @@ class Supervisor:
         """
         return self.w_gradients_avg, self.b_gradients_avg
 
+    def sparse_grads(
+        self
+    ):
+        return self.w_sparse_grads,self.b_sparse_grads 
     
     def subworkUpdateParameters(
         self,
