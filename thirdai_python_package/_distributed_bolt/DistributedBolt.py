@@ -72,7 +72,9 @@ class DistributedBolt:
 
     def train(
         self, 
-        circular: Optional[bool] = False
+        circular: Optional[bool] = False,
+        compression=None,
+        compression_density=0.1
         ) -> None:
         """
             Trains the network using the communication type choosen.
@@ -80,6 +82,11 @@ class DistributedBolt:
                 circular: True, if circular communication is required.
                         False, if linear ccommunication is required.
         """
+
+        if compression is None:
+            self.logging.info("Compression is None")
+        else:
+            self.logging.info(f"Compression is {compression} with the density {compression_density}")
         
         if circular:
             self.logging.info('Circular communication pattern is choosen')
@@ -98,9 +105,9 @@ class DistributedBolt:
                 for batch_no in range(self.num_of_batches):
                     if batch_no%5==0:
                         self.logging.info(str(batch_no) + ' processed!, Total Batches: ' + str(self.num_of_batches))
-                    gradient_computation_time, getting_gradient_time, summing_and_averaging_gradients_time = ray.get(self.supervisor.subworkLinearCommunication.remote(batch_no,compression= None,compression_density=0.1))
+                    gradient_computation_time, getting_gradient_time, summing_and_averaging_gradients_time = ray.get(self.supervisor.subworkLinearCommunication.remote(batch_no,compression= compression,compression_density=compression_density))
                     start_gradients_send_time = time.time() 
-                    x = ray.get([w.receiveGradientsLinearCommunication.remote(compression=None) for w in self.workers])
+                    x = ray.get([w.receiveGradientsLinearCommunication.remote(compression=compression) for w in self.workers])
                     gradient_send_time = time.time() - start_gradients_send_time
                     start_update_parameters_time = time.time()
                     b = ray.get(self.supervisor.subworkUpdateParameters.remote(self.learning_rate))
