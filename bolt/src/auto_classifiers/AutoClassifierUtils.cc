@@ -66,9 +66,9 @@ void AutoClassifierUtils::train(
   } else {
     auto [train_data, train_labels] = dataset->loadInMemory(); // NOLINT
 
-    model->train(train_data, train_labels, loss, learning_rate, 1);
+    model->train(train_data, train_labels, loss, learning_rate, 1); // NOLINT
     model->freezeHashTables();
-    model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
+    model->train(train_data, train_labels, loss, learning_rate, epochs - 1); // NOLINT
   }
 }
 
