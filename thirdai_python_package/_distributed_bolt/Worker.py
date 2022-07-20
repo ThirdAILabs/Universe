@@ -334,6 +334,7 @@ class Worker:
 
         if compression=="DRAGON":
             self.receiveDragonGradients()
+            return True
         
         w_gradients_updated, b_gradients_updated = ray.get(self.supervisor.gradients_avg.remote())
         for layer in range(len(w_gradients_updated)):
