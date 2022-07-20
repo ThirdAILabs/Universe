@@ -1,6 +1,7 @@
 from thirdai import bolt
 import numpy as np
 import pytest
+from .utils import gen_training_data
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -42,29 +43,13 @@ def set_network_weights_and_biases(network):
     network.set_biases(1, b2)
 
 
-@pytest.mark.unit
-def test_input_gradients():
-    """
-    checking the gradients are highest for the label mentioned in labels array
-    for most of the cases. for "[1,0,0,0]" these type of inputs, we expect gradients
-    to be max for non-zero index, and for [1,1,0,0] the label mentioned '1' but for
-    [1,0,0,0] label mentioned '0' so the second index element has most influence over
-    the input to flip the label, so expected to have high gradient.
-    """
+def initialize_network():
     network = build_network()
     set_network_weights_and_biases(network)
-    x1 = np.array(
-        [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 0, 1],
-            [1, 1, 0, 0],
-            [1, 0, 1, 0],
-            [0, 1, 0, 1],
-        ]
-    ).astype("float32")
-    labels = np.array([0, 1, 2, 3, 1, 2, 1]).astype("uint32")
+    return network
+
+
+def assert_ratio(network, x1, labels):
     gradients = network.get_input_gradients(
         x1,
         bolt.CategoricalCrossEntropyLoss(),
@@ -79,5 +64,39 @@ def test_input_gradients():
             index = abs_list.index(max(abs_list))
             if index == labels[i]:
                 max_times += 1
+    assert (max_times/total) > 0.5
 
-    assert (max_times / total) > 0.7
+
+@pytest.mark.unit
+def test_input_gradients_sample_data():
+    """
+    checking the gradients are highest for the label mentioned in labels array
+    for most of the cases. for "[1,0,0,0]" these type of inputs, we expect gradients
+    to be max for non-zero index, and for [1,1,0,0] the label mentioned '1' but for
+    [1,0,0,0] label mentioned '0' so the second index element has most influence over
+    the input to flip the label, so expected to have high gradient.
+    """
+    network = initialize_network()
+    x1 = np.array(
+        [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+            [1, 1, 0, 0],
+            [1, 0, 1, 0],
+            [0, 1, 0, 1],
+        ]
+    ).astype("float32")
+    labels = np.array([0, 1, 2, 3, 1, 2, 1]).astype("uint32")
+    assert_ratio(network,x1,labels)
+
+
+@pytest.mark.unit
+def test_input_gradients_random_data():
+    """
+    we check the same thing as above but for bigger and random dataset.
+    """
+    network = initialize_network()
+    x1, labels = gen_training_data(4, 5000)
+    assert_ratio(network,x1,labels)

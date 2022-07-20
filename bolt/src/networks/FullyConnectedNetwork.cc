@@ -91,6 +91,93 @@ void FullyConnectedNetwork::forward(uint32_t batch_index,
   }
 }
 
+uint32_t getSecondBestIndex(const float* activations, uint32_t dim) {
+  float first = std::numeric_limits<float>::min(),
+        second = std::numeric_limits<float>::min();
+  uint32_t max_id = 0, second_max_id = 0;
+  if (dim < 2) {
+    throw std::invalid_argument("The output dimension should be atleast 2.");
+  }
+  for (uint32_t i = 0; i < dim; i++) {
+    if (activations[i] > first) {
+      second = first;
+      second_max_id = max_id;
+      first = activations[i];
+      max_id = i;
+    } else if (activations[i] > second && activations[i] != first) {
+      second = activations[i];
+      second_max_id = i;
+    }
+  }
+  return second_max_id;
+}
+
+std::vector<std::vector<float>> FullyConnectedNetwork::getInputGradients(
+    std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>& batch_input,
+    const LossFunction& loss_fn, bool best_index,
+    const std::vector<uint32_t>& required_labels) {
+  uint64_t num_batches = batch_input->numBatches();
+  if (!required_labels.empty() &&
+      (required_labels.size() != batch_input->len())) {
+    throw std::invalid_argument("number of labels does not match");
+  }
+  // Because of how the datasets are read we know that all batches will not
+  // have a batch size larger than this so we can just set the batch size
+  // here.
+  initializeNetworkState(batch_input->at(0).getBatchSize(), true);
+  std::vector<std::vector<float>> batch_input_grad;
+  for (uint64_t batch_id = 0; batch_id < num_batches; batch_id++) {
+    BoltBatch output =
+        getOutputs(batch_input->at(batch_id).getBatchSize(), true);
+    for (uint32_t vec_id = 0; vec_id < batch_input->at(batch_id).getBatchSize();
+         vec_id++) {
+      std::vector<float> vec_grad(batch_input->at(batch_id)[vec_id].len, 0.0);
+      // Assigning the vec_grad data() to gradients so that we dont have to
+      // worry about initializing and then freeing the memory.
+      batch_input->at(batch_id)[vec_id].gradients = vec_grad.data();
+      forward(vec_id, batch_input->at(batch_id), output[vec_id], nullptr);
+      uint32_t required_index;
+      /*
+      we are taking the second best index to know how change in input vector
+      values affects the prediction to flip to second highest activation. And
+      required_labels is essential because for some of the cases we know the
+      correct output labels, and best index is used to explain the
+      prediction.
+      */
+      if (required_labels.empty()) {
+        required_index = best_index
+                             ? output[vec_id].getIdWithHighestActivation()
+                             : getSecondBestIndex(output[vec_id].activations,
+                                                  getOutputDim());
+      } else {
+        required_index =
+            (required_labels[batch_id *
+                                 batch_input->at(batch_id).getBatchSize() +
+                             vec_id] <= getOutputDim() - 1)
+                ? required_labels[batch_id *
+                                      batch_input->at(batch_id).getBatchSize() +
+                                  vec_id]
+                : throw std::invalid_argument(
+                      "one of the label crossing the output dim");
+      }
+      BoltVector batch_label = BoltVector::makeSparseVector(
+          std::vector<uint32_t>{required_index}, std::vector<float>{1.0});
+
+      loss_fn.lossGradients(output[vec_id], batch_label,
+                            batch_input->at(batch_id).getBatchSize());
+
+      backpropagateInputForGradients(vec_id, batch_input->at(batch_id),
+                                     output[vec_id]);
+
+      // pointing the gradients to nullptr to
+      // prevent using invalid memory reference.
+      batch_input->at(batch_id)[vec_id].gradients = nullptr;
+      batch_input_grad.push_back(vec_grad);
+    }
+  }
+  return batch_input_grad;
+}
+
 template void FullyConnectedNetwork::backpropagate<true>(uint32_t, BoltVector&,
                                                          BoltVector&);
 template void FullyConnectedNetwork::backpropagate<false>(uint32_t, BoltVector&,

@@ -310,7 +310,7 @@ void createBoltSubmodule(py::module_& module) {
            "second highest activation."
            " * required_labels: expected labels for each input vector default "
            "to empty vector, if required_labels is empty then only function "
-           "takes look at the first parameter , otherwise gives gradients "
+           "takes look at the best_index parameter , otherwise gives gradients "
            "corresponds to those labels."
            " * batch_size: Batch size , default batch size is 256."
            " Returns list of lists of gradients corresponds to the input "
