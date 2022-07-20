@@ -74,14 +74,16 @@ class Supervisor:
         gradient_computation_time = time.time() - start_gradient_computation
         start_getting_gradients = time.time()
         print("starting to get the gradients")
-        gradients_list = ray.get([self.workers[id].getCalculatedGradients.remote() for id in range(len(self.workers))])
+        gradients_list = ray.get([self.workers[id].getCalculatedGradients.remote(compression="DRAGON") for id in range(len(self.workers))])
         getting_gradient_time = time.time() - start_getting_gradients
-        print(f"got the gradients ended in ")
+        print(f"got the gradients ended in {getting_gradient_time} ")
         
         summing_and_averaging_gradients_start_time = time.time()
         print(f"supervisor gradients_list {gradients_list}")
+
         self.w_sparse_grads=[grads[0] for grads in gradients_list]
         self.b_sparse_grads=[grads[1] for grads in gradients_list]
+
         print(f"supervisor sparse weight grads {self.w_sparse_grads}")
         print(f"supervisor sparse bias grads {self.b_sparse_grads}")
         summing_and_averaging_gradients_time = time.time() - summing_and_averaging_gradients_start_time

@@ -163,6 +163,7 @@ class Worker:
         self.network.calculateGradientSingleNode(batch_no, self.loss)
         if compression=="DRAGON":
             self.w_sparse_grad,self.b_sparse_grad= self.getDragonGradients(compression_density=compression_density)
+            print(f"worker id {self.id} after calculate gradients {self.w_sparse_grad}")
         return True
     
     def approximate_topk(self,weights,top_frac):
