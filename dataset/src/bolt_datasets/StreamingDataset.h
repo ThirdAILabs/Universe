@@ -41,6 +41,12 @@ class StreamingDataset {
     return _batch_processor->createBatch(*rows);
   }
 
+  static std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...>
+  convertToDataset(std::vector<BATCH_Ts>&... batch_lists) {
+    return std::make_tuple(
+        std::make_shared<InMemoryDataset<BATCH_Ts>>(std::move(batch_lists))...);
+  }
+
   // This function maps the tuple of batches returned by nextBatch() into a
   // tuple of datasets where each dataset contains a list of batches of the type
   // corresponding to that element of the tuple.
@@ -85,13 +91,7 @@ class StreamingDataset {
     // We use std::apply again here to call a function acception a variadic
     // template that maps each vector of batches to an InMemoryDataset.
     std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> dataset_ptrs =
-        std::apply(
-            [](auto&... batch_lists_arg) {
-              return std::make_tuple(
-                  std::make_shared<InMemoryDataset<BATCH_Ts>>(
-                      std::move(batch_lists_arg))...);
-            },
-            batch_lists);
+        std::apply(convertToDataset, batch_lists);
 
     return dataset_ptrs;
   }
