@@ -79,10 +79,11 @@ class Supervisor:
         print(f"got the gradients ended in ")
         
         summing_and_averaging_gradients_start_time = time.time()
-
+        print(f"supervisor gradients_list {gradients_list}")
         self.w_sparse_grads=[grads[0] for grads in gradients_list]
         self.b_sparse_grads=[grads[1] for grads in gradients_list]
-
+        print(f"supervisor sparse weight grads {self.w_sparse_grads}")
+        print(f"supervisor sparse bias grads {self.b_sparse_grads}")
         summing_and_averaging_gradients_time = time.time() - summing_and_averaging_gradients_start_time
         return gradient_computation_time, getting_gradient_time, summing_and_averaging_gradients_time
 

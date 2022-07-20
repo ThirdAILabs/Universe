@@ -82,3 +82,9 @@
 2022-07-20 11:53:42,129 : INFO : DistributedBolt : Compression is DRAGON with the density 0.1
 2022-07-20 11:53:42,129 : INFO : DistributedBolt : Linear communication pattern is choosen
 2022-07-20 11:53:51,888 : INFO : DistributedBolt : 0 processed!, Total Batches: 3
+2022-07-20 11:56:30,030 : INFO : DistributedBolt : Training has started!
+2022-07-20 11:56:30,401 : INFO : DistributedBolt : Ray Initialized
+2022-07-20 11:56:30,403 : INFO : DistributedBolt : Config Done
+2022-07-20 11:56:39,021 : INFO : DistributedBolt : Compression is DRAGON with the density 0.1
+2022-07-20 11:56:39,021 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-20 11:56:48,556 : INFO : DistributedBolt : 0 processed!, Total Batches: 3
