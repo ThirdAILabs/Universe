@@ -1,7 +1,6 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <gtest/gtest.h>
-#include <dataset/src/Dataset.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/Datasets.h>
 #include <algorithm>
 #include <cstddef>
 #include <cstdio>
@@ -148,9 +147,9 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
   }
 
   void runClickThroughDatasetTest(bool sparse_labels) {
-    auto dataset =
-        loadClickThroughDataset(_filename, _batch_size, getNumDenseFeatures(),
-                                getNumCategoricalFeatures(), sparse_labels);
+    auto dataset = ClickThroughDatasetLoader::loadDataset(
+        _filename, _batch_size, getNumDenseFeatures(),
+        getNumCategoricalFeatures(), sparse_labels);
 
     uint32_t vec_count = 0;
     for (const auto& batch : *dataset.data) {

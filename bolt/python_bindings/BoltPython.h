@@ -12,7 +12,6 @@
 #include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/python_bindings/DatasetPython.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>

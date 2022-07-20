@@ -1,9 +1,8 @@
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
-#include <dataset/src/bolt_datasets/StreamingDataset.h>
-#include <dataset/src/bolt_datasets/batch_processors/MaskedSentenceBatchProcessor.h>
-#include <dataset/src/bolt_datasets/batch_processors/TextClassificationProcessor.h>
+#include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
+#include <dataset/src/batch_processors/TextClassificationProcessor.h>
 #include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <unordered_map>
 #include <unordered_set>

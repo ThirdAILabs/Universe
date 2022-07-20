@@ -1,7 +1,6 @@
 #pragma once
 
 #include <dataset/src/Vectors.h>
-#include <dataset/src/parsers/CsvParser.h>
 #include <cassert>
 #include <exception>
 #include <fstream>

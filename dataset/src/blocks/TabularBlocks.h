@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BlockInterface.h"
-#include <dataset/src/bolt_datasets/batch_processors/TabularMetadataProcessor.h>
+#include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <exception>
 

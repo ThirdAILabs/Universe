@@ -1,10 +1,9 @@
 #pragma once
 
 #include "BatchProcessor.h"
-#include "BoltDatasets.h"
 #include "DataLoader.h"
 #include <bolt/src/layers/BoltVector.h>
-#include <dataset/src/Dataset.h>
+#include <dataset/src/InMemoryDataset.h>
 #include <chrono>
 #include <memory>
 #include <optional>

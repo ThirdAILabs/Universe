@@ -8,7 +8,6 @@ add_executable(
 target_link_libraries(
   text_processing_tests
   PRIVATE
-  bolt_datasets_lib
   hash_function_lib
   gtest_main
 )

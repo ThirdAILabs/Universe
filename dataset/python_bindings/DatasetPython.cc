@@ -1,14 +1,10 @@
 #include "DatasetPython.h"
-#include <bolt/src/layers/BoltVector.h>
-#include <dataset/src/Dataset.h>
+#include <dataset/src/StreamingGenericDatasetLoader.h>
+#include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <dataset/src/bolt_datasets/StreamingDataset.h>
-#include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
-#include <dataset/src/bolt_datasets/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <dataset/src/encodings/text/CharKGram.h>
@@ -401,8 +397,8 @@ void createDatasetSubmodule(py::module_& module) {
 py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
                                     uint32_t batch_size,
                                     bool softmax_for_multiclass) {
-  auto [data, labels] =
-      loadBoltSvmDataset(filename, batch_size, softmax_for_multiclass);
+  auto [data, labels] = SvmDatasetLoader::loadDataset(filename, batch_size,
+                                                      softmax_for_multiclass);
   return py::make_tuple(std::move(data), std::move(labels));
 }
 
@@ -411,8 +407,9 @@ py::tuple loadClickThroughDatasetWrapper(const std::string& filename,
                                          uint32_t num_dense_features,
                                          uint32_t num_categorical_features,
                                          bool sparse_labels) {
-  auto res = loadClickThroughDataset(filename, batch_size, num_dense_features,
-                                     num_categorical_features, sparse_labels);
+  auto res = ClickThroughDatasetLoader::loadDataset(
+      filename, batch_size, num_dense_features, num_categorical_features,
+      sparse_labels);
   return py::make_tuple(std::move(res.data), std::move(res.labels));
 }
 

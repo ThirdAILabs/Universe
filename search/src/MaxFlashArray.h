@@ -6,7 +6,7 @@
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/HashTable.h>
-#include <dataset/src/Dataset.h>
+#include <dataset/src/InMemoryDataset.h>
 #include <memory>
 #include <utility>
 

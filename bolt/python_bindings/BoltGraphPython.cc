@@ -7,7 +7,6 @@
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
-#include <dataset/src/Dataset.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <dataset/src/batch_types/MaskedSentenceBatch.h>
 

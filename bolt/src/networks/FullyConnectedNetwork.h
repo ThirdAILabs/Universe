@@ -6,7 +6,6 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SequentialLayer.h>
-#include <dataset/src/Dataset.h>
 #include <cmath>
 #include <iostream>
 #include <limits>

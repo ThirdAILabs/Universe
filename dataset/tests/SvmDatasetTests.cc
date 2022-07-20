@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
-#include <dataset/src/Dataset.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/Datasets.h>
 #include <algorithm>
 #include <cstddef>
 #include <cstdio>
@@ -116,7 +115,7 @@ class SvmDatasetTestFixture : public ::testing::Test {
 };
 
 TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
-  auto [data, labels] = loadBoltSvmDataset(_filename, _batch_size);
+  auto [data, labels] = SvmDatasetLoader::loadDataset(_filename, _batch_size);
 
   // Check data vectors are correct.
   uint32_t vec_count = 0;

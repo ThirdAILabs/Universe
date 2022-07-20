@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <dataset/src/Dataset.h>
 #include <dataset/src/Vectors.h>
 
 namespace thirdai::dataset {

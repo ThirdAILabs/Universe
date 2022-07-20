@@ -1,7 +1,6 @@
 #include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <dataset/src/Dataset.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/Datasets.h>
 #include <chrono>
 #include <filesystem>
 #include <iostream>
@@ -248,9 +247,9 @@ void trainFCN(toml::table& config) {
   }
 
   auto [train_data, train_labels] =
-      dataset::loadBoltSvmDataset(train_filename, batch_size);
+      dataset::SvmDatasetLoader::loadDataset(train_filename, batch_size);
   auto [test_data, test_labels] =
-      dataset::loadBoltSvmDataset(test_filename, batch_size);
+      dataset::SvmDatasetLoader::loadDataset(test_filename, batch_size);
 
   for (uint32_t e = 0; e < epochs; e++) {
     if (e == sparse_inference_epoch) {
@@ -308,13 +307,15 @@ void trainDLRM(toml::table& config) {
 
   bolt::DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, dense_features);
 
-  auto [train_data, train_labels] = dataset::loadClickThroughDataset(
-      train_filename, batch_size, dense_features, categorical_features,
-      top_mlp.back()->getDim() > 1);
+  auto [train_data, train_labels] =
+      dataset::ClickThroughDatasetLoader::loadDataset(
+          train_filename, batch_size, dense_features, categorical_features,
+          top_mlp.back()->getDim() > 1);
 
-  auto [test_data, test_labels] = dataset::loadClickThroughDataset(
-      test_filename, batch_size, dense_features, categorical_features,
-      top_mlp.back()->getDim() > 1);
+  auto [test_data, test_labels] =
+      dataset::ClickThroughDatasetLoader::loadDataset(
+          test_filename, batch_size, dense_features, categorical_features,
+          top_mlp.back()->getDim() > 1);
 
   for (uint32_t e = 0; e < epochs; e++) {
     dlrm.train(train_data, train_labels, *loss_fn, learning_rate, 1, rehash,

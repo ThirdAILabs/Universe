@@ -2,7 +2,7 @@
 
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/HashTable.h>
-#include <dataset/src/Dataset.h>
+#include <dataset/src/InMemoryDataset.h>
 
 namespace thirdai::search {
 

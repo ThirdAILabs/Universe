@@ -2,7 +2,6 @@
 #include <hashing/tests/CosineSim.h>
 #include <hashing/tests/DenseVectorUtils.h>
 #include <gtest/gtest.h>
-#include <dataset/src/Dataset.h>
 #include <search/src/Flash.h>
 #include <algorithm>
 #include <iostream>

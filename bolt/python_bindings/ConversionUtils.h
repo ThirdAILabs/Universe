@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dataset/python_bindings/DatasetPython.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/Datasets.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
