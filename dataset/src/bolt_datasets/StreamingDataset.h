@@ -6,6 +6,7 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/Dataset.h>
 #include <chrono>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <vector>
@@ -41,10 +42,15 @@ class StreamingDataset {
     return _batch_processor->createBatch(*rows);
   }
 
+  template <typename T>
+  static std::shared_ptr<InMemoryDataset<T>> createDataset(
+      std::vector<T>&& batches) {
+    return std::make_shared<InMemoryDataset<T>>(std::move(batches));
+  }
+
   static std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...>
   convertToDataset(std::vector<BATCH_Ts>&... batch_lists) {
-    return std::make_tuple(
-        std::make_shared<InMemoryDataset<BATCH_Ts>>(std::move(batch_lists))...);
+    return std::make_tuple(createDataset(std::move(batch_lists))...);
   }
 
   // This function maps the tuple of batches returned by nextBatch() into a
