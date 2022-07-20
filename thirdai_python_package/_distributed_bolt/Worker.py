@@ -165,7 +165,7 @@ class Worker:
             self.w_sparse_grad,self.b_sparse_grad= self.getDragonGradients(compression_density=compression_density)
         return True
     
-    def approximate_topk(weights,top_frac):
+    def approximate_topk(self,weights,top_frac):
         n=int(top_frac*weights.shape[0])
         vals=np.partition(weights,n)[-n:]
         return np.min(vals)
