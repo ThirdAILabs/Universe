@@ -112,15 +112,6 @@ class SequentialClassifier {
       }
       total_column_names.push_back(column_names);
     }
-    // auto ret = gradients.second;
-    // for(auto r:ret) {
-    //   std::cout<<"the size "<<r.size()<<std::endl;
-    //   for(auto tr:r) {
-    //     std::cout<<tr<<" ";
-    //   }
-    //   std::cout<<std::endl;
-    // }
-    // std::cout<<"this is done"<<std::endl;
     std::vector<std::vector<std::tuple<float, std::string, float>>> result;
     for (uint32_t i = 0; i < total_column_names.size(); i++) {
       std::vector<std::tuple<float, std::string, float>> res;
