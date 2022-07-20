@@ -45,11 +45,6 @@ void allocateActivations(uint64_t num_samples, uint64_t inference_dim,
                          uint32_t** active_neurons, float** activations,
                          bool output_sparse);
 
-inline void redirectCoutToPython() {
-  py::scoped_ostream_redirect stream(std::cout,
-                                     py::module_::import("sys").attr("stdout"));
-}
-
 class PyNetwork final : public FullyConnectedNetwork {
  public:
   PyNetwork(SequentialConfigList configs, uint64_t input_dim)
@@ -62,7 +57,8 @@ class PyNetwork final : public FullyConnectedNetwork {
                    const std::vector<std::string>& metric_names = {},
                    bool verbose = false) {
     // Redirect to python output.
-    redirectCoutToPython();
+    py::scoped_ostream_redirect stream(
+        std::cout, py::module_::import("sys").attr("stdout"));
     auto train_data = convertPyObjectToBoltDataset(data, batch_size, false);
 
     auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
@@ -114,7 +110,8 @@ class PyNetwork final : public FullyConnectedNetwork {
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
     // Redirect to python output.
-    redirectCoutToPython();
+    py::scoped_ostream_redirect stream(
+        std::cout, py::module_::import("sys").attr("stdout"));
 
     auto test_data = convertPyObjectToBoltDataset(data, batch_size, false);
 
@@ -285,7 +282,8 @@ class DistributedPyNetwork final : public DistributedModel {
       const py::object& data, const py::object& labels, uint32_t batch_size = 0,
       uint32_t rehash = 0, uint32_t rebuild = 0, bool verbose = false) {
     // Redirect to python output.
-    redirectCoutToPython();
+    py::scoped_ostream_redirect stream(
+        std::cout, py::module_::import("sys").attr("stdout"));
 
     auto train_data = convertPyObjectToBoltDataset(data, batch_size, false);
 
@@ -304,7 +302,8 @@ class DistributedPyNetwork final : public DistributedModel {
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
     // Redirect to python output.
-    redirectCoutToPython();
+    py::scoped_ostream_redirect stream(
+        std::cout, py::module_::import("sys").attr("stdout"));
 
     auto test_data = convertPyObjectToBoltDataset(data, batch_size, false);
 
