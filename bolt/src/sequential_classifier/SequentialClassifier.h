@@ -7,14 +7,12 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <bolt/src/utils/AutoTuneUtils.h>
-#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -48,6 +46,7 @@ class SequentialClassifier {
     }
   }
 
+  //sort the given gradients based on absolute value of first.
   static void sortGradients(
       std::vector<std::vector<std::pair<float, uint32_t>>>& gradients) {
     auto func = [](std::pair<float, uint32_t> pair1,
@@ -59,6 +58,7 @@ class SequentialClassifier {
     }
   }
 
+  // given set of blocks get messages from blocks by calling their method.
   static std::vector<std::pair<std::string, uint32_t>> getMessagesFromBlocks(
       const std::vector<std::shared_ptr<dataset::Block>>& blocks) {
     std::vector<std::pair<std::string, uint32_t>> temp;
@@ -69,6 +69,7 @@ class SequentialClassifier {
     return temp;
   }
 
+  // given an index, get the corresponding block it belongs.
   static std::shared_ptr<dataset::Block> getBlock(
       std::vector<std::shared_ptr<dataset::Block>> blocks,
       std::vector<uint32_t> offsets, uint32_t index) {
@@ -84,6 +85,7 @@ class SequentialClassifier {
                                                false,
                                                /* overwrite_index = */
                                                false);
+    //gradients is a pair , first is gradients and second is ratios(gradient/base val)
     auto gradients = _network->getInputGradientsFromStream(
         pipeline.first, loss_fn, false, label_id, label_given);
     std::vector<std::vector<std::pair<float, uint32_t>>> temp;
@@ -98,14 +100,18 @@ class SequentialClassifier {
     sortGradients(temp);
     std::vector<std::shared_ptr<dataset::Block>> blocks;
     std::vector<std::vector<std::string>> total_column_names;
+    //for every vector in input.
     for (const auto& row : temp) {
       blocks.clear();
+      //for every value in that input vector get the block corresponds to it.
       for (const auto& col : row) {
         blocks.push_back(
             getBlock(pipeline.second, _pipeline_builder.offsets, col.second));
       }
+      //from that blocks get messgaes.
       auto messages = getMessagesFromBlocks(blocks);
       std::vector<std::string> column_names;
+      // so for each message get the column name corresponds to column num
       for (const auto& message : messages) {
         std::string col_name =
             _pipeline_builder._schema.num_to_name.at(message.second);
@@ -115,6 +121,7 @@ class SequentialClassifier {
       }
       total_column_names.push_back(column_names);
     }
+    // make a tuple out of ratios and column names and corresponding gradients.
     std::vector<std::vector<std::tuple<float, std::string, float>>> result;
     for (uint32_t i = 0; i < total_column_names.size(); i++) {
       std::vector<std::tuple<float, std::string, float>> res;
