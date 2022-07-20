@@ -86,13 +86,13 @@ class StreamingDataset {
     /** We use std::apply again here to call a function acception a variadic
      * template that maps each vector of batches to an InMemoryDataset.
      * We use a no-lint here because clang tidy thinks there's a
-     *  memory leak here when we create the shared_ptr. There are
+     * memory leak here when we create the shared_ptr. There are
      * discussions on stack overflow/github about similar issues being
      * false positives and our ASAN unit tests that use this function
      * detect no memory leaks.
      */
     std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> dataset_ptrs =
-        std::apply(  // NOLINT
+        std::apply(
             [](auto&... batch_lists_arg) {
               return std::make_tuple(
                   std::make_shared<InMemoryDataset<BATCH_Ts>>(
