@@ -1,5 +1,5 @@
 from thirdai import bolt
-from ..utils import gen_training_data
+from ..utils import gen_numpy_training_data
 import pytest
 
 pytestmark = [pytest.mark.unit]
@@ -53,7 +53,7 @@ class ModelWithLayers:
 def test_save_load_dag():
     n_classes = 100
 
-    data, labels = gen_training_data(n_classes=n_classes, n_samples=10000)
+    data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
 
     model = ModelWithLayers(n_classes=n_classes)
 
@@ -90,7 +90,7 @@ def test_save_load_dag():
 def test_save_fully_connected_layer_parameters():
     n_classes = 100
 
-    data, labels = gen_training_data(n_classes=n_classes, n_samples=10000)
+    data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
 
     model = ModelWithLayers(n_classes=n_classes)
 

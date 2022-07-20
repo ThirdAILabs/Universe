@@ -29,7 +29,7 @@ using DatasetBasePtr = std::shared_ptr<DatasetBase>;
 using DatasetBaseList = std::vector<DatasetBasePtr>;
 
 template <typename BATCH_T>
-class InMemoryDataset final : public DatasetBase {
+class InMemoryDataset : public DatasetBase {
  public:
   // Take r-value reference for batches to force a move. len is the total number
   // of elements in the dataset. We move into _batches to make sure that once

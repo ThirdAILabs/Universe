@@ -6,6 +6,7 @@
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/bolt_datasets/NumpyDataset.h>
 #include <dataset/src/bolt_datasets/StreamingDataset.h>
 #include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
 #include <dataset/src/bolt_datasets/batch_processors/MaskedSentenceBatchProcessor.h>
@@ -319,6 +320,16 @@ void createDatasetSubmodule(py::module_& module) {
                &BoltDataset::at),
            py::arg("i"), py::return_value_policy::reference);
 
+  py::class_<BoltTokenDataset, BoltTokenDatasetPtr>(  // NOLINT
+      dataset_submodule, "BoltTokenDataset");
+
+  py::class_<numpy::WrappedNumpyVectors,  // NOLINT
+             std::shared_ptr<numpy::WrappedNumpyVectors>, BoltDataset>(
+      dataset_submodule, "WrappedNumpyVectors");
+  py::class_<numpy::WrappedNumpyTokens,  // NOLINT
+             std::shared_ptr<numpy::WrappedNumpyTokens>, BoltTokenDataset>(
+      dataset_submodule, "WrappedNumpyTokens");
+
   py::class_<bolt::BoltBatch>(dataset_submodule, "BoltBatch")
       .def("size", &bolt::BoltBatch::getBatchSize)
       .def("get",
@@ -355,6 +366,14 @@ void createDatasetSubmodule(py::module_& module) {
       "dataset is single label, then this argument has no effect.\n\n"
       "Returns a tuple containing a BoltDataset to store the data itself, and "
       "a BoltDataset storing the labels.");
+
+  dataset_submodule.def("from_numpy",
+                        &numpy::numpyToBoltVectorDataset, py::arg("data"),
+                        py::arg("batch_size") = 256);
+
+  dataset_submodule.def("tokens_from_numpy",
+                        &numpy::numpyToBoltTokenDataset, py::arg("data"),
+                        py::arg("batch_size") = 256);
 
   dataset_submodule.def(
       "bolt_tokenizer", &parseSentenceToSparseArray, py::arg("sentence"),
@@ -555,6 +574,7 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
   return InMemoryDataset(std::move(batches));
 }
 
+// Delete this
 BoltDatasetPtr denseBoltDatasetFromNumpy(
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
         examples,
@@ -596,6 +616,7 @@ BoltDatasetPtr denseBoltDatasetFromNumpy(
   return std::make_shared<BoltDataset>(std::move(batches));
 }
 
+// Delete this
 InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
     const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
         x_idxs,

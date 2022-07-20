@@ -1,5 +1,5 @@
 from thirdai import bolt, dataset
-from ..utils import gen_training_data, get_simple_concat_model
+from ..utils import gen_numpy_training_data, get_simple_concat_model
 import pytest
 import numpy
 
@@ -28,7 +28,7 @@ def run_simple_test(
         hidden_layer_bottom_sparsity=hidden_layer_bottom_sparsity,
     )
 
-    train_data, train_labels = gen_training_data(
+    train_data, train_labels = gen_numpy_training_data(
         n_classes=num_classes, n_samples=num_training_samples
     )
 

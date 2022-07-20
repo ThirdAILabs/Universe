@@ -153,17 +153,20 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Compiles the graph for the given loss function. In this step the "
            "order in which to compute the layers is determined and various "
            "checks are preformed to ensure the model architecture is correct.")
+     // Helper method that covers the common case of training based off of a
+     // single BoltBatch dataset
       .def(
           "train",
-          [](BoltGraph& model, const py::object& data, const py::object& labels,
+          [](BoltGraph& model, const dataset::BoltDatasetPtr& data,
+             const dataset::BoltDatasetPtr& labels,
              const TrainConfig& train_config) {
-            return dagTrainPythonWrapper(model, data, /* token_data= */ nullptr,
-                                         labels, train_config);
+            return model.train({data}, /* train_tokens = */ {}, labels,
+                               train_config);
           },
           py::arg("train_data"), py::arg("train_labels"),
           py::arg("train_config"))
       .def(
-          "train", &dagTrainPythonWrapper, py::arg("train_data"),
+          "train", &BoltGraph::train, py::arg("train_data"),
           py::arg("train_labels"), py::arg("train_tokens"),
           py::arg("train_config"),
           "Trains the network on the given training data.\n"
@@ -210,12 +213,15 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "See the TrainConfig documentation above.\n\n"
           "Returns a mapping from metric names to an array of their values for "
           "every epoch.")
+     // Helper method that covers the common case of inference based off of a
+     // single BoltBatch dataset
       .def(
           "predict",
-          [](BoltGraph& model, const py::object& data, const py::object& labels,
+          [](BoltGraph& model, const dataset::BoltDatasetPtr& data,
+             const dataset::BoltDatasetPtr& labels,
              const PredictConfig& predict_config) {
-            return dagPredictPythonWrapper(
-                model, data, /* token_data= */ nullptr, labels, predict_config);
+            return dagPredictPythonWrapper(model, {data}, /* tokens = */ {},
+                                           labels, predict_config);
           },
           py::arg("test_data"), py::arg("test_labels"),
           py::arg("predict_config"))
@@ -276,59 +282,19 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "setting layer sparsity, freezing weights, or saving to a file");
 }
 
-MetricData dagTrainPythonWrapper(
-    BoltGraph& model, const py::object& data,
-    const std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&
-        token_data,
-    const py::object& labels, const TrainConfig& train_config) {
-  auto train_labels =
-      convertPyObjectToBoltDataset(labels, train_config.batchSize(),
-                                   /* is_labels = */ true);
-  auto train_data = convertPyObjectToBoltDataset(data, train_config.batchSize(),
-                                                 /* is_labels = */ false);
-
-  std::vector<
-      std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>>
-      token_inputs;
-  if (token_data != nullptr) {
-    token_inputs = {token_data};
-  }
-  return model.train({train_data.dataset}, token_inputs, train_labels.dataset,
-                     train_config);
-}
-
-py::tuple dagPredictPythonWrapper(
-    BoltGraph& model, const py::object& data,
-    const std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&
-        token_data,
-    const py::object& labels, const PredictConfig& predict_config) {
-  BoltDatasetNumpyContext test_labels;
-  if (!labels.is_none()) {
-    test_labels = convertPyObjectToBoltDataset(labels, /* batch_size = */ 2048,
-                                               /* is_labels = */ true);
-  }
-
-  std::optional<InferenceResult> result;
-  uint64_t test_data_len;
-
-  auto test_data = convertPyObjectToBoltDataset(data, /* batch_size = */ 2048,
-                                                /* is_labels = */ false);
-  test_data_len = test_data.dataset->len();
-
-  std::vector<
-      std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>>
-      token_inputs;
-  if (token_data != nullptr) {
-    token_inputs = {token_data};
-  }
-  auto [metrics, output] = model.predict({test_data.dataset}, token_inputs,
-                                         test_labels.dataset, predict_config);
+py::tuple dagPredictPythonWrapper(BoltGraph& model,
+                                  const dataset::BoltDatasetList& data,
+                                  const dataset::BoltTokenDatasetList& tokens,
+                                  const dataset::BoltDatasetPtr& labels,
+                                  const PredictConfig& predict_config) {
+  auto [metrics, output] = model.predict(data, tokens, labels, predict_config);
 
   // We need to get these now because we are about to std::move output
   const float* activation_pointer = output.getNonowningActivationPointer();
   const uint32_t* active_neuron_pointer =
       output.getNonowningActiveNeuronPointer();
   uint32_t num_nonzeros = output.numNonzerosInOutput();
+  uint64_t dataset_len = output.numSamples();
 
   // At first, the InferenceOutput object owns the memory for the
   // activation and active_neuron vectors. We want to use it as the
@@ -340,7 +306,7 @@ py::tuple dagPredictPythonWrapper(
   py::object output_handle = py::cast(std::move(output));
 
   return constructPythonInferenceTuple(
-      py::cast(metrics), test_data_len, num_nonzeros,
+      py::cast(metrics), dataset_len, num_nonzeros,
       /* activations = */ activation_pointer,
       /* active_neurons = */ active_neuron_pointer,
       /* activation_handle = */ output_handle,
