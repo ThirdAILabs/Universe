@@ -188,7 +188,7 @@ class Worker:
 
             m_x=10
             m_y=10
-            
+
             thresh_x=0
             thresh_y=0
 
@@ -201,8 +201,8 @@ class Worker:
                 thresh_y+=self.approximate_topk(y[sampled_y],compression_density)/3
 
         
-            indices_x=np.where(x>thresh_x).astype(int)[:m_x]
-            indices_y=np.where(y>thresh_y).astype(int)[:m_y]
+            indices_x=np.where(x>thresh_x)[0].astype(int)[:m_x]
+            indices_y=np.where(y>thresh_y)[0].astype(int)[:m_y]
 
             vals_x=x[indices_x]
             vals_y=y[indices_y]
