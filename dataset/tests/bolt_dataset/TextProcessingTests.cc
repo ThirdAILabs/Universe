@@ -3,8 +3,8 @@
 #include <gtest/gtest.h>
 #include <dataset/src/bolt_datasets/StreamingDataset.h>
 #include <dataset/src/bolt_datasets/batch_processors/MaskedSentenceBatchProcessor.h>
-#include <dataset/src/bolt_datasets/batch_processors/PairgramHasher.h>
 #include <dataset/src/bolt_datasets/batch_processors/TextClassificationProcessor.h>
+#include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -16,8 +16,8 @@ std::vector<uint32_t> unigram_hashes(const std::vector<std::string>& words) {
   std::vector<uint32_t> hashes;
   hashes.reserve(words.size());
   for (const auto& word : words) {
-    hashes.push_back(hashing::MurmurHash(word.data(), word.size(),
-                                         PairgramHasher::HASH_SEED));
+    hashes.push_back(
+        TextEncodingUtils::computeUnigram(word.data(), word.size()));
   }
   return hashes;
 }
@@ -41,12 +41,13 @@ std::unordered_map<uint32_t, uint32_t> pairgram_hashes(
   return pairgrams;
 }
 
-TEST(PairgramHasher, TestComputeUnigrams) {
+TEST(TextEncodingUtilsProcessing, TestComputeUnigrams) {
   std::string sentence = "the red dog ran up the hill";
   std::vector<std::string> words = {"the", "red", "dog", "ran",
                                     "up",  "the", "hill"};
 
-  std::vector<uint32_t> hashes = PairgramHasher::computeUnigrams(sentence);
+  std::vector<uint32_t> hashes =
+      TextEncodingUtils::computeRawUnigrams(sentence);
 
   std::vector<uint32_t> expected_hashes = unigram_hashes(words);
 
@@ -86,12 +87,13 @@ void checkPairgramVector(const bolt::BoltVector& vector,
   ASSERT_EQ(pairgrams.size(), 0);
 }
 
-TEST(PairgramHasher, TestComputePairgrams) {
+TEST(TextEncodingUtilsProcessing, TestComputePairgrams) {
   std::string sentence = "the red dog ran up the hill";
   std::vector<std::string> words = {"the", "red", "dog", "ran",
                                     "up",  "the", "hill"};
 
-  bolt::BoltVector vector = PairgramHasher::computePairgrams(sentence, RANGE);
+  bolt::BoltVector vector =
+      TextEncodingUtils::computePairgrams(sentence, RANGE);
 
   checkPairgramVector(vector, words);
 }
@@ -172,7 +174,7 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatch) {
   auto batch = processor.createBatch(rows);
 
   uint32_t unknown_hash =
-      hashing::MurmurHash("[UNK]", 5, PairgramHasher::HASH_SEED);
+      TextEncodingUtils::computeUnigram(/* key= */ "[UNK]", /* len= */ 5);
 
   const std::unordered_map<uint32_t, uint32_t>& words_to_ids =
       processor.getWordToIDMap();

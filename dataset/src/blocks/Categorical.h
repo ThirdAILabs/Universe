@@ -45,9 +45,10 @@ class CategoricalBlock : public Block {
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
  protected:
-  void buildSegment(const std::vector<std::string_view>& input_row,
-                    SegmentedFeatureVector& vec) final {
-    _encoding->encodeCategory(input_row.at(_col), vec);
+  std::exception_ptr buildSegment(
+      const std::vector<std::string_view>& input_row,
+      SegmentedFeatureVector& vec) final {
+    return _encoding->encodeCategory(input_row.at(_col), vec);
   }
 
  private:

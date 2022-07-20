@@ -87,6 +87,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sampling_config (SamplingConfig) - Sampling config object to "
            "initialize hash tables/functions.")
+      .def("get_sampling_config", &FullyConnectedNode::getSamplingConfig,
+           "Returns the sampling config of the node.")
 #endif
       .def("__call__", &FullyConnectedNode::addPredecessor,
            py::arg("prev_layer"),
@@ -96,7 +98,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("filename"))
       .def("load_parameters", &FullyConnectedNode::loadParameters,
            py::arg("filename"))
-      .def("get_sparsity", &FullyConnectedNode::getSparsity)
+      .def("get_sparsity", &FullyConnectedNode::getNodeSparsity)
+      .def("set_sparsity", &FullyConnectedNode::setNodeSparsity,
+           py::arg("sparsity"))
       .def("get_dim", &FullyConnectedNode::outputDim);
 
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(

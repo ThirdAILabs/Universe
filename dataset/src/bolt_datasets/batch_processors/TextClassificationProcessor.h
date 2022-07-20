@@ -4,11 +4,11 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
-#include "PairgramHasher.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <hashing/src/HashUtils.h>
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/bolt_datasets/BatchProcessor.h>
+#include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <cctype>
 #include <stdexcept>
 #include <string>
@@ -43,6 +43,8 @@ class TextClassificationProcessor final : public UnaryBoltBatchProcessor {
     return _class_id_to_class.at(class_id);
   }
 
+  std::vector<std::string> getClassIdToNames() { return _class_id_to_class; }
+
  protected:
   std::pair<bolt::BoltVector, bolt::BoltVector> processRow(
       const std::string& row) final {
@@ -52,12 +54,12 @@ class TextClassificationProcessor final : public UnaryBoltBatchProcessor {
     if (_label_on_right) {
       bolt::BoltVector label_vec = getLabel(rhs);
       bolt::BoltVector data_vec =
-          PairgramHasher::computePairgrams(lhs, _output_range);
+          TextEncodingUtils::computePairgrams(lhs, _output_range);
       return std::make_pair(std::move(data_vec), std::move(label_vec));
     }
     bolt::BoltVector label_vec = getLabel(lhs);
     bolt::BoltVector data_vec =
-        PairgramHasher::computePairgrams(rhs, _output_range);
+        TextEncodingUtils::computePairgrams(rhs, _output_range);
     return std::make_pair(std::move(data_vec), std::move(label_vec));
   }
 
