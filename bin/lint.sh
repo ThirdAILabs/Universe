@@ -26,7 +26,7 @@ declare -i NUM_FAILED=0
 # Note this will break if a filename has a new line in it
 # See http://mywiki.wooledge.org/BashFAQ/024 for why we have to do return the
 # NUM_FAILED within the pipe (it's a subshell)
-find . -type f -name "*AutoClassifierUtils.cc" \
+find . -type f -name "*.cc" \
   -not -path "./deps/*" -not -path "./build/*" | 
 { 
   while read fname; do 

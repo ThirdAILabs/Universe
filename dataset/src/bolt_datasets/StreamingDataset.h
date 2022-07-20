@@ -83,14 +83,8 @@ class StreamingDataset {
         << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
         << " seconds" << std::endl;
 
-    /** We use std::apply again here to call a function acception a variadic
-     * template that maps each vector of batches to an InMemoryDataset.
-     * We use a no-lint here because clang tidy thinks there's a
-     * memory leak here when we create the shared_ptr. There are
-     * discussions on stack overflow/github about similar issues being
-     * false positives and our ASAN unit tests that use this function
-     * detect no memory leaks.
-     */
+    // We use std::apply again here to call a function acception a variadic
+    // template that maps each vector of batches to an InMemoryDataset.
     std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> dataset_ptrs =
         std::apply(
             [](auto&... batch_lists_arg) {
