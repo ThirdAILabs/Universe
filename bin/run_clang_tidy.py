@@ -41,6 +41,7 @@ def main():
 
     args = parser.parse_args()
 
+    files_to_lint = []
     if args.file.endswith(".cc"):
         files_to_lint = [args.file]
     elif args.file.endswith(".h"):
