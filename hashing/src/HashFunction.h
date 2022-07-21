@@ -2,6 +2,7 @@
 
 #include <cereal/types/polymorphic.hpp>
 #include "HashUtils.h"
+#include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/batch_types/DenseBatch.h>
 #include <dataset/src/batch_types/SparseBatch.h>
 
@@ -53,6 +54,25 @@ class HashFunction {
     std::vector<uint32_t> result(_num_tables * batch.getBatchSize());
     hashBatchParallel(batch, result.data());
     return result;
+  }
+
+  std::vector<uint32_t> hashBatchParallel(const bolt::BoltBatch& batch) const {
+    std::vector<uint32_t> result(_num_tables * batch.getBatchSize());
+    hashBatchParallel(batch, result.data());
+    return result;
+  }
+
+  void hashBatchParallel(const bolt::BoltBatch& batch, uint32_t* output) const {
+#pragma omp parallel for default(none) shared(batch, output)
+    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+      if (batch[v].isDense()) {
+        hashSingleDense(batch[v].activations, batch[v].len,
+                        output + v * _num_tables);
+      } else {
+        hashSingleSparse(batch[v].active_neurons, batch[v].activations,
+                         batch[v].len, output + v * _num_tables);
+      }
+    }
   }
 
   void hashSparseParallel(uint64_t num_vectors, const uint32_t* const* indices,

@@ -35,21 +35,6 @@ py::tuple loadClickThroughDatasetWrapper(const std::string& filename,
                                          uint32_t num_categorical_features,
                                          bool sparse_labels);
 
-// https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=numpy#arrays
-// for explanation of why we do py::array::c_style and py::array::forcecast.
-// Ensures array is an array of floats in dense row major order.
-SparseBatch wrapNumpyIntoSparseData(
-    const std::vector<py::array_t<
-        float, py::array::c_style | py::array::forcecast>>& sparse_values,
-    const std::vector<
-        py::array_t<uint32_t, py::array::c_style | py::array::forcecast>>&
-        sparse_indices,
-    uint64_t starting_id);
-
-DenseBatch wrapNumpyIntoDenseBatch(
-    const py::array_t<float, py::array::c_style | py::array::forcecast>& data,
-    uint64_t starting_id);
-
 InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
         examples,

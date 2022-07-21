@@ -130,7 +130,7 @@ template <bool CONVERT_TO_VECTORS>
 inline std::conditional_t<CONVERT_TO_VECTORS, BoltDatasetPtr,
                           BoltTokenDatasetPtr>
 numpyTokensToBoltDataset(const NumpyArray<uint32_t>& tokens,
-                         uint32_t batch_size) {
+                         uint64_t batch_size) {
   const py::buffer_info tokens_buf = tokens.request();
 
   auto shape = tokens_buf.shape;
@@ -157,7 +157,7 @@ numpyTokensToBoltDataset(const NumpyArray<uint32_t>& tokens,
 
     uint64_t start_vector = batch_idx * batch_size;
     uint64_t end_vector =
-        std::min<uint32_t>(num_vectors, start_vector + batch_size);
+        std::min<uint64_t>(num_vectors, start_vector + batch_size);
 
     for (uint64_t vector_id = start_vector; vector_id < end_vector;
          vector_id++) {
@@ -191,7 +191,7 @@ numpyTokensToBoltDataset(const NumpyArray<uint32_t>& tokens,
 
 inline BoltDatasetPtr numpyArraysToSparseBoltDataset(
     const NumpyArray<uint32_t>& indices, const NumpyArray<float>& values,
-    const NumpyArray<uint32_t>& offsets, uint32_t batch_size) {
+    const NumpyArray<uint32_t>& offsets, uint64_t batch_size) {
   uint64_t num_examples = static_cast<uint64_t>(offsets.shape(0) - 1);
 
   uint32_t* indices_raw_data = const_cast<uint32_t*>(indices.data());
@@ -203,7 +203,7 @@ inline BoltDatasetPtr numpyArraysToSparseBoltDataset(
   uint64_t num_batches = (num_examples + batch_size - 1) / batch_size;
   std::vector<bolt::BoltBatch> batches;
 
-  for (uint32_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
+  for (uint64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     std::vector<bolt::BoltVector> batch_vectors;
 
     uint64_t start_vec_idx = batch_idx * batch_size;
@@ -228,7 +228,7 @@ inline BoltDatasetPtr numpyArraysToSparseBoltDataset(
 }
 
 inline BoltDatasetPtr tupleToSparseBoltDataset(const py::object& obj,
-                                               uint32_t batch_size) {
+                                               uint64_t batch_size) {
   py::tuple tup = obj.cast<py::tuple>();
   if (tup.size() != 3) {
     throw std::invalid_argument(
@@ -268,27 +268,16 @@ inline BoltDatasetPtr tupleToSparseBoltDataset(const py::object& obj,
   return numpyArraysToSparseBoltDataset(indices, values, offsets, batch_size);
 }
 
-inline uint32_t getBatchSize(
-    const std::optional<uint32_t>& optional_batch_size) {
-  if (optional_batch_size) {
-    if (optional_batch_size.value() == 0) {
-      throw std::invalid_argument(
-          "Passed in batch size was 0, but must be greater than 0");
-    }
-    return optional_batch_size.value();
+inline void verifyBatchSize(uint64_t batch_size) {
+  if (batch_size == 0) {
+    throw std::invalid_argument(
+        "Passed in batch size was 0, but must be greater than 0");
   }
-
-  std::cout
-      << "WARNING: Using default batch size of 64. You should probably specify "
-         "a batch size if you plan to use this dataset for training."
-      << std::endl;
-  return 64;
 }
 
-inline BoltDatasetPtr numpyToBoltVectorDataset(
-    const py::object& data,
-    const std::optional<uint32_t>& optional_batch_size) {
-  uint32_t batch_size = getBatchSize(optional_batch_size);
+inline BoltDatasetPtr numpyToBoltVectorDataset(const py::object& data,
+                                               uint64_t batch_size) {
+  verifyBatchSize(batch_size);
   if (isNumpyArray(data)) {
     if (checkNumpyDtypeFloat32(data)) {
       return denseNumpyToBoltVectorDataset(data.cast<NumpyArray<float>>(),
@@ -310,10 +299,9 @@ inline BoltDatasetPtr numpyToBoltVectorDataset(
       py::str(data.get_type()).cast<std::string>());
 }
 
-inline BoltTokenDatasetPtr numpyToBoltTokenDataset(
-    const py::object& data,
-    const std::optional<uint32_t>& optional_batch_size) {
-  uint32_t batch_size = getBatchSize(optional_batch_size);
+inline BoltTokenDatasetPtr numpyToBoltTokenDataset(const py::object& data,
+                                                   uint64_t batch_size) {
+  verifyBatchSize(batch_size);
   if (isNumpyArray(data) && checkNumpyDtypeUint32(data)) {
     return numpyTokensToBoltDataset<false>(data.cast<NumpyArray<uint32_t>>(),
                                            batch_size);
