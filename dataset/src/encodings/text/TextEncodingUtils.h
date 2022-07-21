@@ -188,6 +188,10 @@ class TextEncodingUtils {
         std::is_convertible<INDEX_VAL_PROCESSOR,
                             std::function<void(uint32_t, float)>>::value);
 
+    if (indices.empty()) {
+      return;
+    }
+
     std::sort(indices.begin(), indices.end());
 
     std::vector<uint32_t> new_indices;
