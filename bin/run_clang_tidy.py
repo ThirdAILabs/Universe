@@ -39,9 +39,9 @@ def main():
         help="Only run on the files that differ from main, i.e. changed on the given branch.",
     )
 
-    print("Args.file = " + args.file)
 
     args = parser.parse_args()
+    print("Args.file = " + args.file)
 
     files_to_lint = []
     if args.file.endswith(".cc"):
