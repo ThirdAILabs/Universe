@@ -10,7 +10,7 @@ def get_changed_files():
     os.system("pwd")
 
     result = subprocess.run(
-        ["git", "diff", "main", "--name-only"], stdout=subprocess.PIPE
+        ["git", "diff", "origin/main", "--name-only"], stdout=subprocess.PIPE
     )
 
     files = []
