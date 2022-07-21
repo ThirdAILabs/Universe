@@ -163,7 +163,7 @@ class Worker:
         self.network.calculateGradientSingleNode(batch_no, self.loss)
         if compression=="DRAGON":
             self.w_sparse_grad,self.b_sparse_grad= self.getDragonGradients(compression_density=compression_density)
-            print(f"worker id {self.id} after calculate gradients {self.w_sparse_grad}")
+            # print(f"worker id {self.id} after calculate gradients {self.w_sparse_grad}")
         return True
     
     def approximate_topk(self,weights,top_frac):
@@ -173,7 +173,7 @@ class Worker:
     
     
     def getDragonGradients(self,compression_density):
-        print(f"calculating the dragon gradients for the workerid {self.id}")
+        # print(f"calculating the dragon gradients for the workerid {self.id}")
         start=time.time()
         w_sparse_grad=[]
         b_sparse_grad=[]
@@ -210,8 +210,8 @@ class Worker:
 
             w_sparse_grad.append((indices_x,vals_x))
             b_sparse_grad.append((indices_y,vals_y))
-        print(f"worker id {self.id}, layer_no {layer}, {w_sparse_grad}")
-        print(f"done calculating the dragon gradients for the workerid {self.id} in time {time.time()-start}")
+        # print(f"worker id {self.id}, layer_no {layer}, {w_sparse_grad}")
+        # print(f"done calculating the dragon gradients for the workerid {self.id} in time {time.time()-start}")
         return (w_sparse_grad,b_sparse_grad)
 
 
@@ -298,8 +298,8 @@ class Worker:
 
     def receiveDragonGradients(self):
         w_sparse_grads,b_sparse_grads=ray.get(self.supervisor.sparse_grads.remote())
-        print(f"type of w_sparse_grads{type(w_sparse_grads)} and length {len(w_sparse_grads)}")
-        print(f"worker id {self.id}, {w_sparse_grads}")
+        # print(f"type of w_sparse_grads{type(w_sparse_grads)} and length {len(w_sparse_grads)}")
+        # print(f"worker id {self.id}, {w_sparse_grads}")
         for layer in range(len(self.layers)-1):
             
             shape=(self.layers[layer],self.layers[layer+1])
@@ -307,7 +307,7 @@ class Worker:
             b_gradient=np.zeros(shape[1])
             
             for node_weights in w_sparse_grads:
-                print(f"worker id {self.id}, layer_no {layer}, node_weights: {type(node_weights)}, node_weights_layer: {type(node_weights[layer])} ")
+                # print(f"worker id {self.id}, layer_no {layer}, node_weights: {type(node_weights)}, node_weights_layer: {type(node_weights[layer])} ")
                 np.add.at(w_gradient,node_weights[layer][0],node_weights[layer][1])
             for node_biases in b_sparse_grads:
                 np.add.at(b_gradient,node_biases[layer][0],node_biases[layer][1])
