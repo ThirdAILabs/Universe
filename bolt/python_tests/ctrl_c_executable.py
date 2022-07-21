@@ -3,7 +3,7 @@
 # to run the unit test required to test ctrl+c event
 
 
-from thirdai import bolt
+from thirdai import bolt, dataset
 import numpy as np
 
 
@@ -28,7 +28,9 @@ def get_random_dataset_as_numpy(no_of_training_examples):
         train_data.reshape((no_of_training_examples, dimension_of_input))
     )
     train_labels = np.uint32(train_labels)
-    return train_data, train_labels
+    return dataset.from_numpy(train_data, batch_size=64), dataset.from_numpy(
+        train_labels, batch_size=64
+    )
 
 
 def train_using_random_numpy():
