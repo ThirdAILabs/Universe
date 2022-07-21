@@ -27,8 +27,12 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
           
-      - name: Run clang-tidy linting on all files
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v23.2
+
+      - name: Run clang tidy on all changed files
         run: |
-          bin/lint.sh
-        env:
-          GH_TOKEN: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            bin/run_clang_tidy.py -f file
+          done

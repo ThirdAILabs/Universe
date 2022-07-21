@@ -2,32 +2,23 @@
 
 import argparse
 import os
-import subprocess
 import glob
 
-
-def get_changed_files():
-    os.system("gh pr view --json files")
-
-    result = subprocess.run(
-        ["git", "diff", "--name-only", "origin/main", "origin/${GITHUB_HEAD_REF}"], stdout=subprocess.PIPE
-    )
-
-    files = []
-    for file in result.stdout.splitlines():
-        filename = file.decode("utf-8")
-        if filename.endswith(".cc") or filename.endswith(".h"):
-            files.append(filename)
-    return files
+def file_includes_header(header, filename):
+    with open(filename) as file:
+        for line in file.readlines():
+            if header in line:
+                return True
+    return False
 
 
-def get_all_cpp_files():
+def get_all_cpp_files_including_header(header):
     files = []
     for file in glob.glob("**/*.cc", recursive=True):
-        if not file.startswith("deps"):
+        if not file.startswith("deps") and file_includes_header(header, file):
             files.append(file)
     for file in glob.glob("**/*.h", recursive=True):
-        if not file.startswith("deps"):
+        if not file.startswith("deps") and file_includes_header(header, file):
             files.append(file)
     return files
 
@@ -41,34 +32,38 @@ def main():
     )
 
     parser.add_argument(
-        "--changed_files_only",
-        action="store_true",
+        "-f",
+        "--file",
+        type=str,
+        required=True,
         help="Only run on the files that differ from main, i.e. changed on the given branch.",
     )
 
     args = parser.parse_args()
 
-    if args.changed_files_only:
-        files_to_lint = get_changed_files()
-    else:
-        files_to_lint = get_all_cpp_files()
+    if args.file.endswith(".cc"):
+        files_to_lint = [args.file]
+    elif args.file.endswith(".h"):
+        files_to_lint = get_all_cpp_files_including_header(args.file)
+        files_to_lint.append(args.file)
 
+    files_passed = []
     files_failed = []
     for file in files_to_lint:
-        print(f"Running clang tidy on {file}...")
+        print(f"Running clang-tidy on {file}...")
         exit_code = os.system(f"clang-tidy {file}")
-        if exit_code != 0:
+        if exit_code == 0:
+            files_passed.append(file)
+        else:
             files_failed.append(file)
-        print("\n")
+        print("Done.\n")
 
-    if len(files_failed):
-        print("The following files have lint errors:")
-        for file in files_failed:
-            print(f"\t'{file}'")
-        exit(1)
-    else:
-        print("All files passed.")
-        exit(0)
+    print("The following files passed clang-tidy:")
+    for file in files_passed:
+        print(f"\t'{file}'")
+    print("\nThe following files failed clang-tidy:")
+    for file in files_failed:
+        print(f"\t'{file}'")
 
 
 if __name__ == "__main__":
