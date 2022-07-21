@@ -56,7 +56,7 @@ def train_network(network, train_data, train_labels, epochs, learning_rate=0.000
 
 
 def get_categorical_acc(network, examples, labels, batch_size=64):
-    acc, _ = network.predict(
+    acc, *_ = network.predict(
         examples, labels, batch_size, metrics=["categorical_accuracy"], verbose=False
     )
     return acc["categorical_accuracy"]

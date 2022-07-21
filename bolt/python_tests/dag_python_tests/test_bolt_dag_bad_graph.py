@@ -32,7 +32,9 @@ def get_simple_predict_config():
 
 
 def get_random_dense_bolt_dataset(rows, cols):
-    return dataset.from_numpy(np.random.rand(rows, cols).astype("float32"))
+    return dataset.from_numpy(
+        np.random.rand(rows, cols).astype("float32"), batch_size=64
+    )
 
 
 # This test also checks that if we have an exception during training we can

@@ -49,14 +49,14 @@ FullyConnectedLayer::FullyConnectedLayer(
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
                                   const BoltVector* labels) {
   if (output.active_neurons == nullptr) {
-    if (input.len == _prev_dim) {
+    if (input.isDense()) {
       // TODO(Nicholas): Re-implement this case with dense matrix library
       forwardImpl<true, true>(input, output, labels);
     } else {
       forwardImpl<true, false>(input, output, labels);
     }
   } else {
-    if (input.len == _prev_dim) {
+    if (input.isDense()) {
       forwardImpl<false, true>(input, output, labels);
     } else {
       forwardImpl<false, false>(input, output, labels);
@@ -68,11 +68,11 @@ template <bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::forwardImpl(const BoltVector& input,
                                       BoltVector& output,
                                       const BoltVector* labels) {
-  assert((input.len < _prev_dim && !PREV_DENSE) ||
+  assert((input.len <= _prev_dim && !PREV_DENSE) ||
          (input.len == _prev_dim && PREV_DENSE));
   assert((input.active_neurons == nullptr && PREV_DENSE) ||
          (input.active_neurons != nullptr && !PREV_DENSE));
-  assert((output.len < _dim && !DENSE) || (output.len == _dim && DENSE));
+  assert((output.len <= _dim && !DENSE) || (output.len == _dim && DENSE));
   assert((output.active_neurons == nullptr && DENSE) ||
          (output.active_neurons != nullptr && !DENSE));
   assert(labels == nullptr || labels->len > 0);
@@ -172,13 +172,13 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
 
 void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
   if (output.active_neurons == nullptr) {
-    if (input.len == _prev_dim) {
+    if (input.isDense()) {
       backpropagateImpl<false, true, true>(input, output);
     } else {
       backpropagateImpl<false, true, false>(input, output);
     }
   } else {
-    if (input.len == _prev_dim) {
+    if (input.isDense()) {
       backpropagateImpl<false, false, true>(input, output);
     } else {
       backpropagateImpl<false, false, false>(input, output);
@@ -189,13 +189,13 @@ void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
 void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
                                                   BoltVector& output) {
   if (output.active_neurons == nullptr) {
-    if (input.len == _prev_dim) {
+    if (input.isDense()) {
       backpropagateImpl<true, true, true>(input, output);
     } else {
       backpropagateImpl<true, true, false>(input, output);
     }
   } else {
-    if (input.len == _prev_dim) {
+    if (input.isDense()) {
       backpropagateImpl<true, false, true>(input, output);
     } else {
       backpropagateImpl<true, false, false>(input, output);
@@ -206,11 +206,11 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
 template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
                                             BoltVector& output) {
-  assert((input.len < _prev_dim && !PREV_DENSE) ||
+  assert((input.len <= _prev_dim && !PREV_DENSE) ||
          (input.len == _prev_dim && PREV_DENSE));
   assert((input.active_neurons == nullptr && PREV_DENSE) ||
          (input.active_neurons != nullptr && !PREV_DENSE));
-  assert((output.len < _dim && !DENSE) || (output.len == _dim && DENSE));
+  assert((output.len <= _dim && !DENSE) || (output.len == _dim && DENSE));
   assert((output.active_neurons == nullptr && DENSE) ||
          (output.active_neurons != nullptr && !DENSE));
 

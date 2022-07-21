@@ -27,7 +27,7 @@ namespace thirdai::search {
 // silently truncates. This should be fixed with a dynamic tiny table size,
 // but for now I think we should keep this a silent error. If we threw an
 // error existing scripts would fail, and printing out a warning is inelegant
-// (we may print out thousands of warnings). 
+// (we may print out thousands of warnings).
 /**
  * Represents a service that allows document addition, removal, and queries.
  * For now, can represent at most 2^32 - 1 documents.
