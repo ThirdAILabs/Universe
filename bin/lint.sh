@@ -17,4 +17,4 @@ fi
 # cd to Universe
 cd $BASEDIR/../
 
-bin/run_clang_tidy.py -changed_files_only
+bin/run_clang_tidy.py --changed_files_only
