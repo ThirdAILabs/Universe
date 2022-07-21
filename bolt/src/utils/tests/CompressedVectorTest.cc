@@ -14,8 +14,7 @@ float reconstruction_error(
 
   size_t num_elements = large_vector.size();
   for (size_t i = 0; i < num_elements; i++) {
-    float diff =
-        static_cast<float>(compressed_vector[i] - compressed_vector[i]);
+    float diff = static_cast<float>(large_vector[i] - compressed_vector[i]);
     error += diff * diff;  // Squared error.
   }
 
@@ -29,7 +28,7 @@ void runReconstructionTest() {
   const uint64_t block_size = 64;
 
   // Because we love the answer to life, universe and everything.
-  const size_t seed = 42;
+  const uint32_t seed = 42;
 
   std::vector<uint64_t> uncompressed_vector(uncompressed_size);
 

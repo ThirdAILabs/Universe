@@ -18,29 +18,29 @@ template <class ELEMENT_TYPE>
 class CompressedVector {
  public:
   // Create a new CompressedVector.
-  CompressedVector(uint64_t physical_size, uint64_t block_size, uint64_t seed)
+  CompressedVector(uint64_t physical_size, uint64_t block_size, uint32_t seed)
       : _physical_vector(physical_size, 0),
         _block_size(block_size),
         _seed(seed) {}
 
   // Create a new CompressedVector from a pre-existing vector.
   CompressedVector(const std::vector<ELEMENT_TYPE>& input,
-                   uint64_t physical_size, uint64_t block_size, uint64_t seed)
+                   uint64_t physical_size, uint64_t block_size, uint32_t seed)
       : _physical_vector(physical_size), _block_size(block_size), _seed(seed) {
     // Do we have BOLT_ASSERT yet?
     assert(physical_size < input.size());
 
-    for (size_t i = 0; i < input.size(); i += _block_size) {
+    for (uint64_t i = 0; i < input.size(); i += _block_size) {
       // Find the location the first element of the block hashes into.
       // effective_size is required as we are hashing blocks and we don't want
       // out of bounds access.
-      size_t effective_size = _physical_vector.size() - _block_size;
-      size_t block_begin = _hash_function(i) % effective_size;
+      uint64_t effective_size = _physical_vector.size() - _block_size;
+      uint64_t block_begin = _hash_function(i) % effective_size;
 
       // Having found the hash, we store all elements in the block within the
       // respective offset.
-      for (size_t j = i; j < i + _block_size; j++) {
-        size_t offset = j - i;
+      for (uint64_t j = i; j < i + _block_size; j++) {
+        uint64_t offset = j - i;
 
         // Add the input value to the hash-location.
         _physical_vector[block_begin + offset] += input[j];
@@ -60,14 +60,14 @@ class CompressedVector {
   CompressedVector& operator+=(const CompressedVector& input);
 
   // non-const accessor.
-  ELEMENT_TYPE& operator[](size_t i) {
-    size_t idx = _find_index_in_physical_vector(i);
+  ELEMENT_TYPE& operator[](uint64_t i) {
+    uint64_t idx = _find_index_in_physical_vector(i);
     return _physical_vector[idx];
   }
 
   // Const accessor to an element.
-  const ELEMENT_TYPE& operator[](size_t i) const {
-    size_t idx = _find_index_in_physical_vector(i);
+  const ELEMENT_TYPE& operator[](uint64_t i) const {
+    uint64_t idx = _find_index_in_physical_vector(i);
     return _physical_vector[idx];
   }
 
@@ -78,26 +78,25 @@ class CompressedVector {
                                                // the compressed elements.
   uint64_t _block_size;  // Blocks of elements to use in compressed hashing for
                          // cache friendliness.
-  uint64_t _seed;        // For consistency *and* pseudorandomness.
+  uint32_t _seed;        // For consistency *and* pseudorandomness.
 
-  // Convenience function to hash into a size_t using MurmurHash.
+  // Convenience function to hash into a uint64_t using MurmurHash.
   // Might be worthwhile to skip this function if only used in one place.
-  inline size_t _hash_function(size_t value) const {
+  inline uint32_t _hash_function(uint64_t value) const {
     char* addr = reinterpret_cast<char*>(&value);
     uint32_t hash_value =
-        thirdai::hashing::MurmurHash(addr, sizeof(size_t), _seed);
-
-    return static_cast<size_t>(hash_value);
+        thirdai::hashing::MurmurHash(addr, sizeof(uint64_t), _seed);
+    return hash_value;
   }
 
-  size_t _find_index_in_physical_vector(size_t i) const {
+  uint64_t _find_index_in_physical_vector(uint64_t i) const {
     // The following involves the mod operation and is slow.
     // We will have to do bit arithmetic somewhere.
     // TODO(jerin): Come back here and make more efficient.
-    size_t offset = i % _block_size;
-    size_t i_begin = i - offset;
+    uint64_t offset = i % _block_size;
+    uint64_t i_begin = i - offset;
 
-    size_t block_begin = _hash_function(i_begin);
+    uint64_t block_begin = _hash_function(i_begin);
     return block_begin + offset;
   }
 };
