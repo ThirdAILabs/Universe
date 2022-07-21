@@ -22,13 +22,12 @@
 namespace thirdai::search {
 
 // TODO(josh): This class is NOT currently safe to call concurrently.
-// TODO(josh): Right now this only has support for dense input and documents
+// TODO(josh): Right now this only has support for documents
 // with a max of 256 embeddings. If there are more than 256 embeddings, it
 // silently truncates. This should be fixed with a dynamic tiny table size,
 // but for now I think we should keep this a silent error. If we threw an
 // error existing scripts would fail, and printing out a warning is inelegant
-// (we may print out thousands of warnings). Note that the dense condition
-// is ensured since we only accept DenseBatch.
+// (we may print out thousands of warnings). 
 /**
  * Represents a service that allows document addition, removal, and queries.
  * For now, can represent at most 2^32 - 1 documents.

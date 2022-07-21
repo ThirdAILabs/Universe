@@ -1,8 +1,6 @@
 #pragma once
 
 #include "batch_types/ClickThroughBatch.h"
-#include "batch_types/DenseBatch.h"
-#include "batch_types/SparseBatch.h"
 #include "utils/SafeFileIO.h"
 #include <cstdint>
 #include <memory>

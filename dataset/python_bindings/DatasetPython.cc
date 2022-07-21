@@ -54,16 +54,6 @@ void createDatasetSubmodule(py::module_& module) {
       .def("__str__", &BoltVector::toString)
       .def("__repr__", &BoltVector::toString);
 
-  // The no lint below is because clang tidy doesn't like instantiating an
-  // object without a name and never using it.
-  py::class_<InMemoryDataset<SparseBatch>>(dataset_submodule,  // NOLINT
-                                           "InMemorySparseDataset");
-
-  // The no lint below is because clang tidy doesn't like instantiating an
-  // object without a name and never using it.
-  py::class_<InMemoryDataset<DenseBatch>>(dataset_submodule,  // NOLINT
-                                          "InMemoryDenseDataset");
-
   py::class_<TextEncoding, std::shared_ptr<TextEncoding>>(
       internal_dataset_submodule, "TextEncoding",
       "Interface for text encoders.")

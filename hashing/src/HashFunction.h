@@ -3,8 +3,6 @@
 #include <cereal/types/polymorphic.hpp>
 #include "HashUtils.h"
 #include <bolt/src/layers/BoltVector.h>
-#include <dataset/src/batch_types/DenseBatch.h>
-#include <dataset/src/batch_types/SparseBatch.h>
 
 namespace thirdai::hashing {
 
@@ -24,38 +22,6 @@ class HashFunction {
    * the hashes from the first vector, all of the hashes from the second, and
    * so on.
    */
-  void hashBatchParallel(const dataset::SparseBatch& batch,
-                         uint32_t* output) const {
-#pragma omp parallel for default(none) shared(batch, output)
-    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      hashSingleSparse(batch[v]._indices, batch[v]._values, batch[v].length(),
-                       output + v * _num_tables);
-    }
-  }
-
-  std::vector<uint32_t> hashBatchParallel(
-      const dataset::SparseBatch& batch) const {
-    std::vector<uint32_t> result(_num_tables * batch.getBatchSize());
-    hashBatchParallel(batch, result.data());
-    return result;
-  }
-
-  void hashBatchParallel(const dataset::DenseBatch& batch,
-                         uint32_t* output) const {
-#pragma omp parallel for default(none) shared(batch, output)
-    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      hashSingleDense(batch[v]._values, batch[v].dim(),
-                      output + v * _num_tables);
-    }
-  }
-
-  std::vector<uint32_t> hashBatchParallel(
-      const dataset::DenseBatch& batch) const {
-    std::vector<uint32_t> result(_num_tables * batch.getBatchSize());
-    hashBatchParallel(batch, result.data());
-    return result;
-  }
-
   std::vector<uint32_t> hashBatchParallel(const bolt::BoltBatch& batch) const {
     std::vector<uint32_t> result(_num_tables * batch.getBatchSize());
     hashBatchParallel(batch, result.data());
@@ -91,22 +57,6 @@ class HashFunction {
 #pragma omp parallel for default(none) shared(num_vectors, values, output, dim)
     for (uint32_t v = 0; v < num_vectors; v++) {
       hashSingleDense(values[v], dim, output + v * _num_tables);
-    }
-  }
-
-  void hashBatchSerial(const dataset::SparseBatch& batch,
-                       uint32_t* output) const {
-    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      hashSingleSparse(batch[v]._indices, batch[v]._values, batch[v].length(),
-                       output + v * _num_tables);
-    }
-  }
-
-  void hashBatchSerial(const dataset::DenseBatch& batch,
-                       uint32_t* output) const {
-    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      hashSingleDense(batch[v]._values, batch[v].dim(),
-                      output + v * _num_tables);
     }
   }
 
