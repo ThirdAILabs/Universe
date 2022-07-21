@@ -26,7 +26,9 @@ jobs:
         with:           
           submodules: 'recursive'
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-          
+      - name: Generate compilation database
+        run: |
+          bin/generate_compile_commands.sh
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v23.2

@@ -43,12 +43,14 @@ def main():
     args = parser.parse_args()
     print("Args.file = " + args.file)
 
-    files_to_lint = []
     if args.file.endswith(".cc"):
         files_to_lint = [args.file]
     elif args.file.endswith(".h"):
+        header = args.file.split('/')[-1]
         files_to_lint = get_all_cpp_files_including_header(args.file)
         files_to_lint.append(args.file)
+    else:
+        exit(0)
 
     files_passed = []
     files_failed = []
@@ -68,6 +70,8 @@ def main():
     for file in files_failed:
         print(f"\t'{file}'")
 
+    if len(files_failed) > 0:
+        exit(1)
 
 if __name__ == "__main__":
     main()
