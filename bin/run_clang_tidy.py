@@ -7,7 +7,7 @@ import glob
 
 
 def get_changed_files():
-    os.system("pwd")
+    os.system("gh pr view --json files")
 
     result = subprocess.run(
         ["git", "diff", "--name-only", "origin/main", "origin/${GITHUB_HEAD_REF}"], stdout=subprocess.PIPE
