@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from thirdai._thirdai import bolt
+from thirdai._thirdai import bolt, dataset
 import os
 import pickle
 
@@ -129,7 +129,7 @@ class Mach:
     def map_labels_to_groups(self, labels, classifier_id):
         if len(labels) != 3:
             raise ValueError(
-                "Labels need to be in a sparse format (indices, values, offsets)"
+                "Labels need to be in a sparse numpy format (indices, values, offsets)"
             )
         labels_as_list = list(labels)
         group_mapper = np.vectorize(
@@ -138,19 +138,14 @@ class Mach:
         labels_as_list[0] = group_mapper(labels_as_list[0]).astype("uint32")
         return tuple(labels_as_list)
 
-    def train(
-        self,
-        train_x,
-        train_y,
-        learning_rate,
-        num_epochs,
-        batch_size,
-    ):
+    def train(self, train_x_np, train_y_np, learning_rate, num_epochs, batch_size):
+        train_x = dataset.from_numpy(train_x_np, batch_size)
 
         for epoch in range(num_epochs):
             for classifier_id, classifier in enumerate(self.classifiers):
 
-                mapped_train_y = self.map_labels_to_groups(train_y, classifier_id)
+                mapped_train_y = self.map_labels_to_groups(train_y_np, classifier_id)
+                mapped_train_y = dataset.from_numpy(mapped_train_y, batch_size)
 
                 train_config = bolt.graph.TrainConfig.make(
                     learning_rate=learning_rate, epochs=1
@@ -164,12 +159,14 @@ class Mach:
 
     # Returns a tuple of (best_labels, label_scores). best_labels is
     # of shape (batch.size, 1) and label_scores is of shape (batch.size, num_labels)
-    def query_slow(self, batch):
+    def query_slow(self, batch_np):
         predict_config = bolt.graph.PredictConfig.make().return_activations().silence()
         results = np.array(
             [
                 classifier.predict(
-                    batch, test_labels=None, predict_config=predict_config
+                    dataset.from_numpy(batch_np, batch_size=len(batch_np)),
+                    test_labels=None,
+                    predict_config=predict_config,
                 )[1]
                 for classifier in self.classifiers
             ]
@@ -189,12 +186,14 @@ class Mach:
     # TODO(josh): Allow returning top k instead of just top 1
     # Returns a tuple of (best_labels, label_scores). best_labels is
     # of shape (batch.size, 1) and label_scores is of shape (batch.size, num_labels)
-    def query_fast(self, batch, num_groups_to_check_per_classifier=10):
+    def query_fast(self, batch_np, num_groups_to_check_per_classifier=10):
         predict_config = bolt.graph.PredictConfig.make().return_activations()
         results = np.array(
             [
                 classifier.predict(
-                    batch, test_labels=None, predict_config=predict_config
+                    dataset.from_numpy(batch_np, batch_size=len(batch_np)),
+                    test_labels=None,
+                    predict_config=predict_config,
                 )[1]
                 for classifier in self.classifiers
             ]
