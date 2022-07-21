@@ -31,4 +31,4 @@ jobs:
         run: |
           bin/lint.sh
         env:
-          GH: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
+          GH_TOKEN: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
