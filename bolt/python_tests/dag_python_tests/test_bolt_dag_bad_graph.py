@@ -22,11 +22,7 @@ def get_good_model(input_and_output_dim):
 
 
 def get_simple_train_config():
-    return (
-        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=3)
-        .with_batch_size(64)
-        .silence()
-    )
+    return bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=3).silence()
 
 
 def get_simple_predict_config():

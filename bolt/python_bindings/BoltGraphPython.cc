@@ -124,8 +124,6 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),
                   py::arg("epochs"))
       .def("with_metrics", &TrainConfig::withMetrics, py::arg("metrics"))
-      .def("with_batch_size", &TrainConfig::withBatchSize,
-           py::arg("batch_size"))
       .def("silence", &TrainConfig::silence)
       .def("with_rebuild_hash_tables", &TrainConfig::withRebuildHashTables,
            py::arg("rebuild_hash_tables"))

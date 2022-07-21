@@ -8,8 +8,8 @@ pytestmark = [pytest.mark.unit]
 
 
 def build_train_and_predict(data_np, labels_np, num_classes, sparsity):
-    data = dataset.from_numpy(data_np)
-    labels = dataset.from_numpy(labels_np)
+    data = dataset.from_numpy(data_np, batch_size=64)
+    labels = dataset.from_numpy(labels_np, batch_size=64)
 
     input_layer = bolt.graph.Input(dim=num_classes)
     output_layer = bolt.graph.FullyConnected(
@@ -18,11 +18,7 @@ def build_train_and_predict(data_np, labels_np, num_classes, sparsity):
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
     model.compile(bolt.CategoricalCrossEntropyLoss())
 
-    train_config = (
-        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=3)
-        .with_batch_size(64)
-        .silence()
-    )
+    train_config = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=3).silence()
     model.train(data, labels, train_config)
 
     predict_config = (

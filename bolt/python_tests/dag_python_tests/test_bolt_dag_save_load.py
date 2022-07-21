@@ -6,11 +6,7 @@ pytestmark = [pytest.mark.unit]
 
 
 def get_train_config(epochs, batch_size):
-    return (
-        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=epochs)
-        .with_batch_size(batch_size)
-        .silence()
-    )
+    return bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=epochs).silence()
 
 
 def get_predict_config():

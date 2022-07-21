@@ -29,16 +29,14 @@ def run_simple_test(
     )
 
     train_data, train_labels = gen_numpy_training_data(
-        n_classes=num_classes, n_samples=num_training_samples
+        n_classes=num_classes,
+        n_samples=num_training_samples,
+        batch_size_for_conversion=64,
     )
 
-    train_config = (
-        bolt.graph.TrainConfig.make(
-            learning_rate=learning_rate, epochs=num_training_epochs
-        )
-        .with_batch_size(batch_size)
-        .silence()
-    )
+    train_config = bolt.graph.TrainConfig.make(
+        learning_rate=learning_rate, epochs=num_training_epochs
+    ).silence()
 
     metrics = model.train(
         train_data=train_data,
