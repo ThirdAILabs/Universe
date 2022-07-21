@@ -4,5 +4,6 @@ add_subdirectory(graph)
 add_subdirectory(loss_functions)
 add_subdirectory(metrics)
 add_subdirectory(auto_classifiers)
+add_subdirectory(utils)
 
 enable_testing()
