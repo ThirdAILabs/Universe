@@ -7,8 +7,11 @@ import glob
 
 
 def get_changed_files():
+    os.system("pwd")
+
     result = subprocess.run(
-        ["git", "diff", "main", "--name-only"], stdout=subprocess.PIPE)
+        ["git", "diff", "main", "--name-only"], stdout=subprocess.PIPE
+    )
 
     files = []
     for file in result.stdout.splitlines():
@@ -34,12 +37,13 @@ def main():
     os.chdir(bin_directory + "/../")
 
     parser = argparse.ArgumentParser(
-        description="Runs clang tidy on C++ code in Universe")
+        description="Runs clang tidy on C++ code in Universe"
+    )
 
     parser.add_argument(
         "--changed_files_only",
         action="store_true",
-        help="Only run on the files that differ from main, i.e. changed on the given branch."
+        help="Only run on the files that differ from main, i.e. changed on the given branch.",
     )
 
     args = parser.parse_args()

@@ -29,5 +29,4 @@ jobs:
           
       - name: Run clang-tidy linting on all files
         run: |
-          docker build -t lint_image -f docker/develop/Dockerfile .  
-          docker run --privileged --mount type=bind,source=${PWD},target=/src lint_image src/bin/lint.sh
+          bin/lint.sh
