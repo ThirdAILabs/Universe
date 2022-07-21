@@ -106,3 +106,14 @@
 2022-07-20 12:28:01,045 : INFO : DistributedBolt : Compression is DRAGON with the density 0.1
 2022-07-20 12:28:01,045 : INFO : DistributedBolt : Linear communication pattern is choosen
 2022-07-20 12:28:10,537 : INFO : DistributedBolt : 0 processed!, Total Batches: 3
+2022-07-20 12:31:51,233 : INFO : DistributedBolt : Training has started!
+2022-07-20 12:31:51,606 : INFO : DistributedBolt : Ray Initialized
+2022-07-20 12:31:51,607 : INFO : DistributedBolt : Config Done
+2022-07-20 12:32:00,847 : INFO : DistributedBolt : Compression is DRAGON with the density 0.1
+2022-07-20 12:32:00,847 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-20 12:32:10,657 : INFO : DistributedBolt : 0 processed!, Total Batches: 3
+2022-07-20 12:32:40,527 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 28.60357666015625, Python Computation Time: 0.009868860244750977, Communication Time: 1.2491908073425293
+2022-07-20 12:33:09,598 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 56.74809432029724, Python Computation Time: 0.017380714416503906, Communication Time: 2.1657536029815674
+2022-07-20 12:33:36,995 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 83.29744672775269, Python Computation Time: 0.01839470863342285, Communication Time: 3.009608745574951
+2022-07-20 12:34:20,854 : INFO : DistributedBolt : Accuracy on workers 0: 0.000000
+2022-07-20 12:36:59,270 : INFO : DistributedBolt : Accuracy on workers 1: 0.000000

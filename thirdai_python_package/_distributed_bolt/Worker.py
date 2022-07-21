@@ -187,19 +187,19 @@ class Worker:
             m_x=int(compression_density*x.shape[0])
             m_y=int(compression_density*y.shape[0])
 
-            m_x=10
-            m_y=10
+            # m_x=10
+            # m_y=10
 
             thresh_x=0
             thresh_y=0
 
-            for i in [0]*3:
+            for i in [0]*1:
 
-                sampled_x=np.random.choice(x.shape[0],min(x.shape[0],10),replace=False)
-                sampled_y=np.random.choice(y.shape[0],min(y.shape[0],10),replace=False)
+                sampled_x=np.random.choice(x.shape[0],min(x.shape[0],m_x),replace=False)
+                sampled_y=np.random.choice(y.shape[0],min(y.shape[0],m_y),replace=False)
 
-                thresh_x+=self.approximate_topk(x[sampled_x],compression_density)/3
-                thresh_y+=self.approximate_topk(y[sampled_y],compression_density)/3
+                thresh_x+=self.approximate_topk(x[sampled_x],compression_density)
+                thresh_y+=self.approximate_topk(y[sampled_y],compression_density)
 
         
             indices_x=np.where(x>thresh_x)[0].astype(int)[:m_x]
