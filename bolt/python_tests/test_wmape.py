@@ -29,7 +29,6 @@ def train_bolt_with_wmape(
         network.train(
             train_data=(x_idxs, x_vals, x_offsets),
             train_labels=(y_idxs, y_vals, y_offsets),
-            batch_size=batch_size,
             loss_fn=bolt.WeightedMeanAbsolutePercentageError(),
             learning_rate=learning_rate,
             epochs=1,
@@ -39,7 +38,6 @@ def train_bolt_with_wmape(
             test_data=(x_idxs, x_vals, x_offsets),
             test_labels=(y_idxs, y_vals, y_offsets),
             sparse_inference=True,
-            batch_size=batch_size,
             metrics=["weighted_mean_absolute_percentage_error"],
             verbose=False,
         )

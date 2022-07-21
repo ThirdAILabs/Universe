@@ -50,7 +50,6 @@ def train_using_random_numpy():
     network.train(
         train_data=train_data,
         train_labels=train_labels,
-        batch_size=10,
         loss_fn=bolt.MeanSquaredError(),
         learning_rate=0.0001,
         epochs=10000000,  # Making sure the program doesnot terminates

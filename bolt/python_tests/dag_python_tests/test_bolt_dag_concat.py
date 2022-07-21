@@ -31,7 +31,7 @@ def run_simple_test(
     train_data, train_labels = gen_numpy_training_data(
         n_classes=num_classes,
         n_samples=num_training_samples,
-        batch_size_for_conversion=64,
+        batch_size_for_conversion=batch_size,
     )
 
     train_config = bolt.graph.TrainConfig.make(

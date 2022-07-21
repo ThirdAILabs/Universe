@@ -51,7 +51,6 @@ def train_network(network, train_data, train_labels, epochs, learning_rate=0.000
         rebuild=10000,
         metrics=[],
         verbose=False,
-        batch_size=64,
     )
     return times
 
