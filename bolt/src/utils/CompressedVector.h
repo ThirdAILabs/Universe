@@ -1,0 +1,99 @@
+#pragma once
+
+#include "hashing/src/MurmurHash.h"
+#include <cstddef>
+#include <vector>
+
+namespace thirdai::bolt {
+
+// A CompressedVector attempts to compress a large vector into a smaller one by
+// means of sketching.
+//
+// The input vector is partitioned into blocks. The blocks are hashed to
+// continuous locations in memory in a compressed vector.
+//
+// TODO(jerin): Write-up the math, guarantees.
+template <class ELEMENT_TYPE>
+class CompressedVector {
+ public:
+  // Create a new CompressedVector.
+  CompressedVector(uint64_t physical_size, uint64_t block_size, uint64_t seed)
+      : _physical_vector(physical_size, 0),
+        _block_size(block_size),
+        _seed(seed) {}
+
+  // Create a new CompressedVector from a pre-existing vector.
+  CompressedVector(const std::vector<ELEMENT_TYPE>& input,
+                   uint64_t physical_size, uint64_t block_size, uint64_t seed)
+      : _physical_vector(physical_size), _block_size(block_size), _seed(seed) {
+    // Do we have BOLT_ASSERT yet?
+    assert(physical_size < input.size());
+
+    for (size_t i = 0; i < input.size(); i += _block_size) {
+      // Find the location the first element of the block hashes into.
+      size_t effective_size = _physical_vector.size() - _block_size;
+      size_t block_begin = _hash_function(i) % effective_size;
+
+      // Having found the hash, we store all elements in the block within the
+      // respective offset.
+      for (size_t j = i; j < i + _block_size; j++) {
+        size_t offset = j - i;
+
+        // Add the input value to the hash-location.
+
+        _physical_vector[block_begin + offset] += input[j];
+        // TODO(jerin): What happens if overflow? We are using sum to store
+        // multiple elements, which could overflow the element's type.
+      }
+    }
+  }
+
+  // Add a non-compressed vector to this CompressedVector.
+  CompressedVector operator+(const std::vector<ELEMENT_TYPE>& input) const;
+  CompressedVector& operator+=(const std::vector<ELEMENT_TYPE>& input);
+
+  // Add two compressed vectors.
+  CompressedVector operator+(const CompressedVector& input) const;
+  CompressedVector& operator+=(const CompressedVector& input);
+
+  // non-const accessor.
+  ELEMENT_TYPE& operator[](size_t i) { return _unsafe_get(i); }
+
+  // Const accessor to an element.
+  const ELEMENT_TYPE& operator[](size_t i) const {
+    const ELEMENT_TYPE& const_address = _unsafe_get(i);
+    return const_address;
+  }
+
+  // Iterators for pseudo-view on the bigger vector.
+
+ private:
+  uint64_t _seed;        // For consistency *and* pseudorandomness.
+  uint64_t _block_size;  // Blocks of elements to use in compressed hashing for
+                         // cache friendliness.
+  std::vector<ELEMENT_TYPE> _physical_vector;  // Underlying vector which stores
+                                               // the compressed elements.
+
+  // Convenience function to hash into a size_t using MurmurHash.
+  // Might be worthwhile to skip this function if only used in one place.
+  inline size_t _hash_function(size_t value) {
+    uint8_t* addr = reinterpret_cast<uint32_t*>(&value);
+    uint32_t hash_value =
+        thirdai::hashing::MurmurHash(addr, sizeof(size_t), _seed);
+
+    return static_cast<size_t>(hash_value);
+  }
+
+  ELEMENT_TYPE& _unsafe_get(size_t i) {
+    // The following involves the mod operation and is slow.
+    // We will have to do bit arithmetic somewhere.
+    // TODO(jerin): Come back here and make more efficient.
+    size_t offset = i % _block_size;
+    size_t i_begin = i - offset;
+
+    size_t block_begin = _hash_function(i_begin);
+    return _physical_vector[block_begin + offset];
+  }
+};
+
+}  // namespace thirdai::bolt
