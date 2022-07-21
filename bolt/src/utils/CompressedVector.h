@@ -3,7 +3,6 @@
 #include "hashing/src/MurmurHash.h"
 #include <cassert>
 #include <cstddef>
-#include <iostream>
 #include <vector>
 
 namespace thirdai::bolt {
