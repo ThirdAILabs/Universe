@@ -65,6 +65,14 @@ class ConvLayer final : public SequentialLayer {
 
   void setBiases(const float* new_biases) final;
 
+  void setWeightGradients(const float* update_weight_gradient) final;
+
+  void setBiasesGradients(const float* update_bias_gradient) final;
+
+  float* getBiasesGradient() final;
+
+  float* getWeightsGradient() final;
+
   float getSparsity() const final { return _sparsity; }
 
   void setSparsity(float sparsity) final {

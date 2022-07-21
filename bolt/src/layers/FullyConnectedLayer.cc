@@ -11,7 +11,8 @@
 namespace thirdai::bolt {
 
 FullyConnectedLayer::FullyConnectedLayer(
-    const FullyConnectedLayerConfig& config, uint64_t prev_dim)
+    const FullyConnectedLayerConfig& config, uint64_t prev_dim,
+    bool is_distributed)
     : _dim(config.dim),
       _prev_dim(prev_dim),
       _sparse_dim(config.sparsity * config.dim),
@@ -33,6 +34,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _sampling_config(config.sampling_config),
       _prev_is_active(_prev_dim, false),
       _is_active(config.dim, false),
+      _is_distributed(is_distributed),
       _sampling_mode(LSHSamplingMode::Default) {
   std::random_device rd;
   std::default_random_engine eng(rd());
@@ -328,7 +330,20 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
   }
 
   // continue if trainable layer
-  if (!_prev_is_dense && !_this_is_dense) {
+  /*
+   * In distributed setting, as of now the updates are dense as we
+   * are averaging the gradient over multiple training examples.
+   *
+   * //NOLINT because, clang was producing error as same function is
+   * being called in two different if-else blocks. However, the content
+   * inside the _is_distributed block might change with time. Hence,
+   * was thinking of having different blocks. It also make is visually
+   * more clear.
+   */
+  if (_is_distributed) {  // NOLINT
+    updateDenseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
+                                     B2_bias_corrected);
+  } else if (!_prev_is_dense && !_this_is_dense) {
     updateSparseSparseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
                                        B2_bias_corrected);
   } else if (!_prev_is_dense && _this_is_dense) {
@@ -428,7 +443,7 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-    if (!_this_is_dense && !_is_active[cur_neuron]) {
+    if ((!_is_distributed) && (!_this_is_dense && !_is_active[cur_neuron])) {
       continue;
     }
 
@@ -568,6 +583,22 @@ void FullyConnectedLayer::setWeights(const float* new_weights) {
 void FullyConnectedLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
+
+void FullyConnectedLayer::setWeightGradients(
+    const float* update_weight_gradient) {
+  std::copy(update_weight_gradient, update_weight_gradient + _dim * _prev_dim,
+            _w_gradient.begin());
+}
+
+void FullyConnectedLayer::setBiasesGradients(
+    const float* update_bias_gradient) {
+  std::copy(update_bias_gradient, update_bias_gradient + _dim,
+            _b_gradient.begin());
+}
+
+float* FullyConnectedLayer::getBiasesGradient() { return _b_gradient.data(); }
+
+float* FullyConnectedLayer::getWeightsGradient() { return _w_gradient.data(); }
 
 void FullyConnectedLayer::setSparsity(float sparsity) {
   deinitSparseDatastructures();
