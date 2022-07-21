@@ -3,6 +3,7 @@
 #include "hashing/src/MurmurHash.h"
 #include <cassert>
 #include <cstddef>
+#include <iostream>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -26,9 +27,12 @@ class CompressedVector {
   // Create a new CompressedVector from a pre-existing vector.
   CompressedVector(const std::vector<ELEMENT_TYPE>& input,
                    uint64_t physical_size, uint64_t block_size, uint32_t seed)
-      : _physical_vector(physical_size), _block_size(block_size), _seed(seed) {
+      : _physical_vector(physical_size, 0),
+        _block_size(block_size),
+        _seed(seed) {
     // Do we have BOLT_ASSERT yet?
     assert(physical_size < input.size());
+    assert(physical_size > block_size);
 
     for (uint64_t i = 0; i < input.size(); i += _block_size) {
       // Find the location the first element of the block hashes into.
@@ -41,9 +45,10 @@ class CompressedVector {
       // respective offset.
       for (uint64_t j = i; j < i + _block_size; j++) {
         uint64_t offset = j - i;
+        uint64_t index = block_begin + offset;
 
         // Add the input value to the hash-location.
-        _physical_vector[block_begin + offset] += input[j];
+        _physical_vector[index] += input[j];
 
         // TODO(jerin): What happens if overflow? We are using sum to store
         // multiple elements, which could overflow the element's type.
@@ -96,8 +101,11 @@ class CompressedVector {
     uint64_t offset = i % _block_size;
     uint64_t i_begin = i - offset;
 
-    uint64_t block_begin = _hash_function(i_begin);
-    return block_begin + offset;
+    uint64_t effective_size = _physical_vector.size() - _block_size;
+    uint64_t block_begin = _hash_function(i_begin) % effective_size;
+    uint64_t index = block_begin + offset;
+    return index;
+    ;
   }
 };
 

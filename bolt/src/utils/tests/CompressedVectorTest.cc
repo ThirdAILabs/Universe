@@ -11,11 +11,11 @@ float reconstruction_error(
     const CompressedVector<ELEMENT_TYPE>& compressed_vector,
     const std::vector<ELEMENT_TYPE>& large_vector) {
   float error = 0;
-
   size_t num_elements = large_vector.size();
   for (size_t i = 0; i < num_elements; i++) {
     float diff = static_cast<float>(large_vector[i] - compressed_vector[i]);
     error += diff * diff;  // Squared error.
+    std::cout << "Error: " << error << std::endl;
   }
 
   error = error / static_cast<float>(num_elements);
@@ -23,8 +23,8 @@ float reconstruction_error(
 }
 
 void runReconstructionTest() {
-  const uint64_t uncompressed_size = 100000;
-  const uint64_t compressed_size = 100;
+  const uint64_t uncompressed_size = 1 << 24;
+  const uint64_t compressed_size = 1 << 8;
   const uint64_t block_size = 64;
 
   // Because we love the answer to life, universe and everything.
