@@ -41,7 +41,6 @@ def main():
 
 
     args = parser.parse_args()
-    print("Args.file = " + args.file)
 
     if args.file.endswith(".cc"):
         files_to_lint = [args.file]
@@ -55,15 +54,13 @@ def main():
     files_passed = []
     files_failed = []
     for file in files_to_lint:
-        print(f"Running clang-tidy on {file}...")
         exit_code = os.system(f"clang-tidy {file}")
         if exit_code == 0:
             files_passed.append(file)
         else:
             files_failed.append(file)
-        print("Done.\n")
 
-    print("The following files passed clang-tidy:")
+    print("\nThe following files passed clang-tidy:")
     for file in files_passed:
         print(f"\t'{file}'")
     print("\nThe following files failed clang-tidy:")

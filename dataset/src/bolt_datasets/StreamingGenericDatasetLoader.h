@@ -17,7 +17,8 @@ class StreamingGenericDatasetLoader {
       : _processor(std::make_shared<GenericBatchProcessor>(
             std::move(input_blocks), std::move(label_blocks), has_header,
             delimiter)),
-        _streamer(std::make_shared<SimpleFileDataLoader>(filename, batch_size),
+        _streamer(std::make_shared<SimpleFileDataLoader>(std::move(filename),
+                                                         batch_size),
                   _processor) {}
 
   std::optional<std::tuple<bolt::BoltBatch, bolt::BoltBatch>> nextBatch() {
