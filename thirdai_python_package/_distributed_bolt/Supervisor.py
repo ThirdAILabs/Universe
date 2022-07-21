@@ -122,7 +122,7 @@ class Supervisor:
         gradients_list = ray.get([self.workers[id].getCalculatedGradients.remote() for id in range(len(self.workers))])
         getting_gradient_time = time.time() - start_getting_gradients
         # print(f"getting the gradients ended in ")
-        summing_and_averaging_gradients_start_time = time.time(getting_gradient_time)
+        summing_and_averaging_gradients_start_time = time.time()
         
         self.w_gradients_avg = np.array([np.zeros((self.layers[layer_no+1], self.layers[layer_no])) for layer_no in range(len(self.layers)-1)])
         self.b_gradients_avg = np.array([np.zeros((self.layers[layer_no+1])) for layer_no in range(len(self.layers)-1)])
