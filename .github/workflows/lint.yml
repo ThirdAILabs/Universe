@@ -34,5 +34,5 @@ jobs:
       - name: Run clang tidy on all changed files
         run: |
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
-            bin/run_clang_tidy.py -f file
+            bin/run_clang_tidy.py -f $file
           done
