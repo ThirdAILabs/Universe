@@ -103,7 +103,7 @@ class PyNetwork final : public FullyConnectedNetwork {
     return metrics;
   }
 
-  py::list getInputGradients(
+  py::tuple getInputGradients(
       const py::object& data, const LossFunction& loss_fn,
       bool best_index = true,
       const std::vector<uint32_t>& required_labels = std::vector<uint32_t>(),

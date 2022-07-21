@@ -112,7 +112,8 @@ uint32_t getSecondBestIndex(const float* activations, uint32_t dim) {
   return second_max_id;
 }
 
-std::vector<std::vector<float>> FullyConnectedNetwork::getInputGradients(
+std::pair<std::vector<std::vector<float>>, std::vector<std::vector<uint32_t>>>
+FullyConnectedNetwork::getInputGradients(
     std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>& batch_input,
     const LossFunction& loss_fn, bool best_index,
     const std::vector<uint32_t>& required_labels) {
@@ -126,6 +127,7 @@ std::vector<std::vector<float>> FullyConnectedNetwork::getInputGradients(
   // here.
   initializeNetworkState(batch_input->at(0).getBatchSize(), true);
   std::vector<std::vector<float>> batch_input_grad;
+  std::vector<std::vector<uint32_t>> batch_input_indices;
   for (uint64_t batch_id = 0; batch_id < num_batches; batch_id++) {
     BoltBatch output =
         getOutputs(batch_input->at(batch_id).getBatchSize(), true);
@@ -136,6 +138,13 @@ std::vector<std::vector<float>> FullyConnectedNetwork::getInputGradients(
       // worry about initializing and then freeing the memory.
       batch_input->at(batch_id)[vec_id].gradients = vec_grad.data();
       forward(vec_id, batch_input->at(batch_id), output[vec_id], nullptr);
+      std::vector<uint32_t> vec_indices;
+      if (!batch_input->at(batch_id)[vec_id].isDense()) {
+        vec_indices.assign(batch_input->at(batch_id)[vec_id].active_neurons,
+                           batch_input->at(batch_id)[vec_id].active_neurons +
+                               batch_input->at(batch_id)[vec_id].len);
+      }
+      batch_input_indices.push_back(vec_indices);
       uint32_t required_index;
       /*
       we are taking the second best index to know how change in input vector
@@ -175,7 +184,7 @@ std::vector<std::vector<float>> FullyConnectedNetwork::getInputGradients(
       batch_input_grad.push_back(vec_grad);
     }
   }
-  return batch_input_grad;
+  return std::make_pair(batch_input_grad, batch_input_indices);
 }
 
 template void FullyConnectedNetwork::backpropagate<true>(uint32_t, BoltVector&,

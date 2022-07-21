@@ -54,7 +54,7 @@ def assert_ratio(network, x1, labels):
     checking the gradients are highest for the label mentioned in labels array
     for most of the cases.
     """
-    gradients = network.get_input_gradients(
+    gradients, indices = network.get_input_gradients(
         x1,
         bolt.CategoricalCrossEntropyLoss(),
         required_labels=labels,
@@ -66,7 +66,7 @@ def assert_ratio(network, x1, labels):
         index = abs_list.index(max(abs_list))
         if index == labels[i]:
             max_times += 1
-    assert (max_times / total) > 0.5
+    assert (max_times / total) > 0.7
 
 
 @pytest.mark.unit
@@ -99,5 +99,13 @@ def test_input_gradients_random_data():
     we check the same thing as above but for bigger and random dataset.
     """
     network = initialize_network()
-    x1, labels = gen_training_data(4, 5000)
+    x1, labels = gen_training_data(4, 24000, 0.05)
+    times = network.train(
+        x1,
+        labels,
+        bolt.CategoricalCrossEntropyLoss(),
+        learning_rate=0.001,
+        epochs=5,
+        batch_size=256,
+    )
     assert_ratio(network, x1, labels)
