@@ -111,13 +111,13 @@ def test_input_gradients():
             modified_vectors.append(vec)
         modified_vectors = np.array(modified_vectors)
         _, vecs_act = network.predict(modified_vectors, None)
-        difference = [
-            np.array(vec_act) - np.array(act[input_num]) for vec_act in vecs_act
+        act_difference_at_label_one = [
+            np.array(vec_act[1]) - np.array(act[input_num][1]) for vec_act in vecs_act
         ]
-        activation_difference = [diff[1] for diff in difference]
         assert (
             np.array_equal(
-                np.argsort(activation_difference), np.argsort(gradients[input_num])
+                np.argsort(act_difference_at_label_one),
+                np.argsort(gradients[input_num]),
             )
             == True
         )
