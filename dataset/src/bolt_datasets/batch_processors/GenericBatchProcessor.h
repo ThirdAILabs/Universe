@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ProcessorUtils.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/bolt_datasets/BatchProcessor.h>
@@ -60,38 +61,46 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
       We do this instead of throwing an error directly because throwing
       an error inside an OpenMP structured block has undefined behavior.
     */
-    std::atomic_bool found_error = false;
+    std::exception_ptr num_columns_error;
+    std::exception_ptr block_err;
 
 #pragma omp parallel for default(none) \
-    shared(rows, batch_inputs, batch_labels, found_error)
+    shared(rows, batch_inputs, batch_labels, num_columns_error, block_err)
     for (size_t i = 0; i < rows.size(); ++i) {
-      auto columns = parseCsvRow(rows[i]);
+      auto columns = ProcessorUtils::parseCsvRow(rows[i], _delimiter);
       if (columns.size() < _expected_num_cols) {
-        found_error = true;
+        std::stringstream error_ss;
+        error_ss << "[ProcessorUtils::parseCsvRow] Expected "
+                 << _expected_num_cols << " columns delimited by '"
+                 << _delimiter << "' in each row of the dataset. Found row '"
+                 << rows[i] << "' with number of columns = " << columns.size()
+                 << ".";
+#pragma omp critical
+        num_columns_error =
+            std::make_exception_ptr(std::invalid_argument(error_ss.str()));
         continue;
       }
-      batch_inputs[i] = makeVector(columns, _input_blocks, _input_blocks_dense);
-      batch_labels[i] = makeVector(columns, _label_blocks, _label_blocks_dense);
+      if (auto err = makeVector(columns, batch_inputs[i], _input_blocks,
+                                _input_blocks_dense)) {
+#pragma omp critical
+        block_err = err;
+      }
+      if (auto err = makeVector(columns, batch_labels[i], _label_blocks,
+                                _label_blocks_dense)) {
+#pragma omp critical
+        block_err = err;
+      }
     }
 
-    /*
-      Throw error here instead of in the OpenMP parallel block.
-      We sequentially iterate through each row to find the first
-      erroneous row. It's alright to have sequential execution
-      here since the program is about to terminate anyway.
-    */
-    if (found_error) {
-      for (const auto& row : rows) {
-        auto n_cols = parseCsvRow(row).size();
-        if (n_cols < _expected_num_cols) {
-          std::stringstream error_ss;
-          error_ss << "[GenericBatchProcessor::parseCsvRow] Expected "
-                   << _expected_num_cols << " columns delimited by '"
-                   << _delimiter << "' in each row of the dataset. Found row '"
-                   << row << "' with number of columns = " << n_cols << ".";
-          throw std::invalid_argument(error_ss.str());
-        }
+    if (block_err) {
+      for (auto row : rows) {
+        std::cout << row << std::endl;
       }
+      std::rethrow_exception(block_err);
+    }
+
+    if (num_columns_error) {
+      std::rethrow_exception(num_columns_error);
     }
 
     return std::make_pair(bolt::BoltBatch(std::move(batch_inputs)),
@@ -107,24 +116,11 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
   uint32_t getLabelDim() const { return sumBlockDims(_label_blocks); }
 
  private:
-  std::vector<std::string_view> parseCsvRow(const std::string& row) const {
-    std::vector<std::string_view> parsed;
-    size_t start = 0;
-    size_t end = 0;
-    while (end != std::string::npos) {
-      end = row.find(_delimiter, start);
-      size_t len = end == std::string::npos ? row.size() - start : end - start;
-      parsed.push_back(std::string_view(row.data() + start, len));
-      start = end + 1;
-    }
-    return parsed;
-  }
-
   /**
    * Encodes a sample as a BoltVector according to the given blocks.
    */
-  static bolt::BoltVector makeVector(
-      std::vector<std::string_view>& sample,
+  static std::exception_ptr makeVector(
+      std::vector<std::string_view>& sample, bolt::BoltVector& vector,
       std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
     std::shared_ptr<SegmentedFeatureVector> vec_ptr;
 
@@ -139,9 +135,12 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     // Let each block encode the input sample and adds a new segment
     // containing this encoding to the vector.
     for (auto& block : blocks) {
-      block->addVectorSegment(sample, *vec_ptr);
+      if (auto err = block->addVectorSegment(sample, *vec_ptr)) {
+        return err;
+      }
     }
-    return vec_ptr->toBoltVector();
+    vector = vec_ptr->toBoltVector();
+    return nullptr;
   }
 
   static uint32_t sumBlockDims(

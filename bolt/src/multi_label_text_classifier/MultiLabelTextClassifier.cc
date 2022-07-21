@@ -4,7 +4,6 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
-#include <_types/_uint32_t.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/encodings/categorical/CategoricalMultiLabel.h>
@@ -87,7 +86,7 @@ void MultiLabelTextClassifier::train(const std::string& filename, uint32_t epoch
   auto train_cfg = TrainConfig::makeConfig(/* learning_rate= */ learning_rate, /* epochs= */ 1);
 
   _model->train(train_data, train_labels, train_cfg);
-  _model->freezeHashTables(/* insert_labels_if_not_found= */ true);
+  //_model->freezeHashTables(/* insert_labels_if_not_found= */ true);
 
   train_cfg = TrainConfig::makeConfig(/* learning_rate= */ learning_rate, /* epochs= */ epochs-1);
   _model->train(train_data, train_labels, train_cfg);
@@ -108,14 +107,14 @@ void MultiLabelTextClassifier::predict(
   std::stringstream metric;
   metric << "f_measure(" << threshold << ")";
 
-  PredictConfig predict_cfg = PredictConfig::makeConfig().enableSparseInference().withMetrics({metric.str()}).returnActivations();
+  PredictConfig predict_cfg = PredictConfig::makeConfig().withMetrics({metric.str()}).returnActivations();
 
   auto [test_data, test_labels] = dataset->loadInMemory();
 
   auto [_, predict_output] = _model->predict(test_data, test_labels, predict_cfg);
   for (uint32_t vec_id = 0; vec_id < predict_output.getNumSavedVectors(); vec_id++) {
     BoltVector v = predict_output.getOutputVector(vec_id);
-    auto predictions = v.getThresholdedNeurons(/* activation_threshold = */ threshold, /* return_at_least_one = */ false, /* max_count_to_return = */ 4);
+    auto predictions = v.getThresholdedNeurons(/* activation_threshold = */ threshold, /* return_at_least_one = */ true, /* max_count_to_return = */ 4);
     for (uint32_t i = 0; i < predictions.size(); i++) {
       (*output_file) << predictions.at(i);
       if (i != predictions.size() - 1) {

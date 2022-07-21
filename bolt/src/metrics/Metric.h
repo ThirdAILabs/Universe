@@ -1,8 +1,6 @@
 #pragma once
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/MetricHelpers.h>
-#include <_types/_uint32_t.h>
-#include <mach/mach_types.h>
 #include <sys/types.h>
 #include <algorithm>
 #include <atomic>
@@ -247,7 +245,7 @@ class FMeasure final : public Metric {
   explicit FMeasure(float threshold = 0.8) : _threshold(threshold), _tp(0), _fp(0), _fn(0) {}
 
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
-    auto predictions = output.getThresholdedNeurons(/* activation_threshold = */ _threshold, /* return_at_least_one = */ false, /* max_count_to_return = */ 4);
+    auto predictions = output.getThresholdedNeurons(/* activation_threshold = */ _threshold, /* return_at_least_one = */ true, /* max_count_to_return = */ 4);
     for (uint32_t pred : predictions) {
       if (labels.findActiveNeuronNoTemplate(pred).activation > 0) {
         _tp++;
