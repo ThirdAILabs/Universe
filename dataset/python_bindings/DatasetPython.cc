@@ -23,7 +23,6 @@
 #include <sys/types.h>
 #include <chrono>
 #include <limits>
-#include <optional>
 #include <type_traits>
 #include <unordered_map>
 
