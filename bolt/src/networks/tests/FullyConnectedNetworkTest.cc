@@ -1,4 +1,5 @@
 #include "BoltNetworkTestUtils.h"
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
@@ -182,13 +183,25 @@ TEST(FullyConnectedClassificationNetworkTest, MultiLayerNetworkToString) {
 // below for more details on how this test works.
 class DummyDataLoader final : public dataset::DataLoader {
  public:
-  DummyDataLoader() : DataLoader(/* target_batch_size = */ 100) {}
+  explicit DummyDataLoader(uint32_t max_batches)
+      : DataLoader(/* target_batch_size = */ 100),
+        _batch_counter(0),
+        _max_batches(max_batches) {}
 
-  std::optional<std::vector<std::string>> nextBatch() final { return {{}}; }
+  std::optional<std::vector<std::string>> nextBatch() final {
+    if (_batch_counter >= _max_batches) {
+      return std::nullopt;
+    }
+    _batch_counter++;
+    return {{}};
+  }
 
   std::optional<std::string> getHeader() final { return ""; }
 
   std::string resourceName() const final { return ""; }
+
+ private:
+  uint32_t _batch_counter, _max_batches;
 };
 
 /*
@@ -204,19 +217,16 @@ class DummyDataLoader final : public dataset::DataLoader {
   called is sufficient to construct a streaming dataset, in addition to the
   DummDataLoader defined above.
 */
-class MockBatchProcessor final : public dataset::BatchProcessor<BoltBatch> {
+class MockBatchProcessor final
+    : public dataset::BatchProcessor<BoltBatch, BoltBatch> {
  public:
   MockBatchProcessor(dataset::BoltDatasetPtr data,
                      dataset::BoltDatasetPtr labels)
       : _data(std::move(data)), _labels(std::move(labels)), _batch_counter(0) {}
 
-  std::optional<dataset::BoltDataLabelPair<BoltBatch>> createBatch(
+  std::tuple<BoltBatch, BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     (void)rows;
-
-    if (_batch_counter >= _data->numBatches()) {
-      return std::nullopt;
-    }
 
     std::pair<BoltBatch, BoltBatch> batch_pair = {
         std::move(_data->at(_batch_counter)),
@@ -236,16 +246,17 @@ class MockBatchProcessor final : public dataset::BatchProcessor<BoltBatch> {
   uint32_t _batch_counter;
 };
 
-std::shared_ptr<dataset::StreamingDataset<BoltBatch>> getMockStreamingDataset(
-    dataset::DatasetWithLabels&& dataset) {
+std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
+getMockStreamingDataset(dataset::DatasetWithLabels&& dataset) {
   std::shared_ptr<dataset::DataLoader> mock_loader =
-      std::make_shared<DummyDataLoader>();
+      std::make_shared<DummyDataLoader>(dataset.data->numBatches());
 
-  std::shared_ptr<dataset::BatchProcessor<BoltBatch>> mock_processor =
-      std::make_shared<MockBatchProcessor>(dataset.data, dataset.labels);
+  std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>
+      mock_processor =
+          std::make_shared<MockBatchProcessor>(dataset.data, dataset.labels);
 
-  return std::make_shared<dataset::StreamingDataset<BoltBatch>>(mock_loader,
-                                                                mock_processor);
+  return std::make_shared<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
+      mock_loader, mock_processor);
 }
 
 void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,

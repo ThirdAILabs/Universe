@@ -25,19 +25,9 @@ using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
 void createDatasetSubmodule(py::module_& module);
 
-InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
-                                            uint32_t batch_size);
-
-InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
-                                           uint32_t batch_size,
-                                           std::string delimiter);
-
 py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
                                     uint32_t batch_size,
                                     bool softmax_for_multiclass = true);
-
-py::tuple loadBoltCsvDatasetWrapper(const std::string& filename,
-                                    uint32_t batch_size, char delimiter);
 
 py::tuple loadClickThroughDatasetWrapper(const std::string& filename,
                                          uint32_t batch_size,
@@ -101,11 +91,7 @@ BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
  * values.
  */
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
-parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
-                           uint32_t dimension);
-
-bolt::BoltVector parseSentenceToBoltVector(const std::string& sentence,
-                                           uint32_t seed, uint32_t dimension);
+parseSentenceToUnigramsPython(const std::string& sentence, uint32_t dimension);
 
 /**
  * Checks whether the given bolt dataset and dense 2d matrix
@@ -160,13 +146,14 @@ class MLMDatasetLoader {
     auto data_loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
 
-    auto dataset = std::make_shared<
-        dataset::StreamingDataset<dataset::MaskedSentenceBatch>>(
+    auto dataset = std::make_shared<dataset::StreamingDataset<
+        bolt::BoltBatch, thirdai::dataset::BoltTokenBatch, bolt::BoltBatch>>(
         data_loader, _batch_processor);
 
-    auto [data, labels] = dataset->loadInMemory();
+    auto [data, masked_indices, labels] = dataset->loadInMemory();
 
-    return py::make_tuple(py::cast(data), py::cast(labels));
+    return py::make_tuple(py::cast(data), py::cast(masked_indices),
+                          py::cast(labels));
   }
 
  private:

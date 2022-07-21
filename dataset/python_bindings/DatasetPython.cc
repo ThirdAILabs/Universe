@@ -267,13 +267,6 @@ void createDatasetSubmodule(py::module_& module) {
       .def("get_input_dim", &StreamingGenericDatasetLoader::getInputDim)
       .def("get_label_dim", &StreamingGenericDatasetLoader::getLabelDim);
 
-  dataset_submodule.def("load_svm_dataset", &loadSVMDataset,
-                        py::arg("filename"), py::arg("batch_size"));
-
-  dataset_submodule.def("load_csv_dataset", &loadCSVDataset,
-                        py::arg("filename"), py::arg("batch_size"),
-                        py::arg("delimiter") = ",");
-
   dataset_submodule.def("make_sparse_vector", &BoltVector::makeSparseVector,
                         py::arg("indices"), py::arg("values"));
 
@@ -364,29 +357,12 @@ void createDatasetSubmodule(py::module_& module) {
       "a BoltDataset storing the labels.");
 
   dataset_submodule.def(
-      "load_bolt_csv_dataset", &loadBoltCsvDatasetWrapper, py::arg("filename"),
-      py::arg("batch_size"), py::arg("delimiter") = ",",
-      "Loads a BoltDataset from a CSV file. Each line in the "
-      "input file consists of a categorical label (integer) followed by the "
-      "elements of the input vector (float). These numbers are separated by a "
-      "delimiter."
-      "Arguments:\n"
-      " * filename: String - Path to input file.\n"
-      " * batch_size: Int (positive) - Size of each batch in the dataset.\n"
-      " * delimiter: Char - Delimiter that separates the numbers in each CSV "
-      "line. Defaults to ','\n\n"
-      "Returns a tuple containing a BoltDataset to store the data itself, and "
-      "a BoltDataset storing the labels.");
-
-  dataset_submodule.def(
-      "bolt_tokenizer", &parseSentenceToSparseArray, py::arg("sentence"),
-      py::arg("seed") = 0, py::arg("dimension") = 100000,
+      "bolt_tokenizer", &parseSentenceToUnigramsPython, py::arg("sentence"),
+      py::arg("dimension") = 100000,
       "Utility that turns a sentence into a sequence of token embeddings. To "
       "be used for text classification tasks.\n"
       "Arguments:\n"
       " * sentence: String - Sentence to be tokenized.\n"
-      " * seed: Int - (Optional) The tokenizer uses a random number generator "
-      "that needs to be seeded. Defaults to 0.\n"
       " * dimensions: Int (positive) - (Optional) The dimension of each token "
       "embedding. "
       "Defaults to 100,000.");
@@ -422,49 +398,12 @@ void createDatasetSubmodule(py::module_& module) {
       "For testing purposes only.");
 }
 
-InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
-                                            uint32_t batch_size) {
-  auto start = std::chrono::high_resolution_clock::now();
-  InMemoryDataset<SparseBatch> data(filename, batch_size,
-                                    thirdai::dataset::SvmSparseBatchFactory{});
-  auto end = std::chrono::high_resolution_clock::now();
-
-  std::cout
-      << "Read " << data.len() << " vectors from " << filename << " in "
-      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds" << std::endl;
-
-  return data;
-}
-
-InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
-                                           uint32_t batch_size,
-                                           std::string delimiter) {
-  auto start = std::chrono::high_resolution_clock::now();
-  InMemoryDataset<DenseBatch> data(
-      filename, batch_size,
-      thirdai::dataset::CsvDenseBatchFactory(delimiter.at(0)));
-  auto end = std::chrono::high_resolution_clock::now();
-
-  std::cout
-      << "Read " << data.len() << " vectors in "
-      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds" << std::endl;
-
-  return data;
-}
-
 py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
                                     uint32_t batch_size,
                                     bool softmax_for_multiclass) {
-  auto res = loadBoltSvmDataset(filename, batch_size, softmax_for_multiclass);
-  return py::make_tuple(std::move(res.data), std::move(res.labels));
-}
-
-py::tuple loadBoltCsvDatasetWrapper(const std::string& filename,
-                                    uint32_t batch_size, char delimiter) {
-  auto res = loadBoltCsvDataset(filename, batch_size, delimiter);
-  return py::make_tuple(std::move(res.data), std::move(res.labels));
+  auto [data, labels] =
+      loadBoltSvmDataset(filename, batch_size, softmax_for_multiclass);
+  return py::make_tuple(std::move(data), std::move(labels));
 }
 
 py::tuple loadClickThroughDatasetWrapper(const std::string& filename,
@@ -611,7 +550,7 @@ InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
                          starting_id + start_vec_idx);
   }
 
-  return InMemoryDataset(std::move(batches), num_examples);
+  return InMemoryDataset(std::move(batches));
 }
 
 BoltDatasetPtr denseBoltDatasetFromNumpy(
@@ -652,7 +591,7 @@ BoltDatasetPtr denseBoltDatasetFromNumpy(
     batches.emplace_back(std::move(batch_vectors));
   }
 
-  return std::make_shared<BoltDataset>(std::move(batches), num_examples);
+  return std::make_shared<BoltDataset>(std::move(batches));
 }
 
 InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
@@ -721,7 +660,7 @@ InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
                          starting_id + start_vec_idx);
   }
 
-  return InMemoryDataset(std::move(batches), num_examples);
+  return InMemoryDataset(std::move(batches));
 }
 
 BoltDatasetPtr sparseBoltDatasetFromNumpy(const NumpyArray<uint32_t>& indices,
@@ -757,7 +696,7 @@ BoltDatasetPtr sparseBoltDatasetFromNumpy(const NumpyArray<uint32_t>& indices,
     batches.emplace_back(std::move(batch_vectors));
   }
 
-  return std::make_shared<BoltDataset>(std::move(batches), num_examples);
+  return std::make_shared<BoltDataset>(std::move(batches));
 }
 
 BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
@@ -786,67 +725,34 @@ BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
     batches.emplace_back(std::move(batch_labels));
   }
 
-  return std::make_shared<BoltDataset>(std::move(batches), num_labels);
-}
-
-std::unordered_map<uint32_t, uint32_t> parseSentenceToUnigrams(
-    const std::string& sentence, uint32_t seed, uint32_t dimension) {
-  std::stringstream ss(sentence);
-  std::istream_iterator<std::string> begin(ss);
-  std::istream_iterator<std::string> end;
-  std::vector<std::string> tokens(begin, end);
-
-  std::unordered_map<uint32_t, uint32_t> idx_to_val_map;
-
-  for (auto& s : tokens) {
-    const char* cstr = s.c_str();
-    uint32_t hash =
-        thirdai::hashing::MurmurHash(cstr, s.length(), seed) % dimension;
-    if (idx_to_val_map.find(hash) == idx_to_val_map.end()) {
-      idx_to_val_map[hash] = 1;
-    } else {
-      idx_to_val_map[hash]++;
-    }
-  }
-
-  return idx_to_val_map;
-}
-
-BoltVector parseSentenceToBoltVector(const std::string& sentence, uint32_t seed,
-                                     uint32_t dimension) {
-  std::unordered_map<uint32_t, uint32_t> idx_to_val_map =
-      parseSentenceToUnigrams(sentence, seed, dimension);
-
-  BoltVector vec(idx_to_val_map.size(), false, false);
-  uint32_t i = 0;
-  for (auto [index, value] : idx_to_val_map) {
-    vec.active_neurons[i] = index;
-    vec.activations[i] = value;
-    i++;
-  }
-
-  return vec;
+  return std::make_shared<BoltDataset>(std::move(batches));
 }
 
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>
-parseSentenceToSparseArray(const std::string& sentence, uint32_t seed,
-                           uint32_t dimension) {
-  std::unordered_map<uint32_t, uint32_t> idx_to_val_map =
-      parseSentenceToUnigrams(sentence, seed, dimension);
+parseSentenceToUnigramsPython(const std::string& sentence, uint32_t dimension) {
+  std::vector<uint32_t> unigrams =
+      TextEncodingUtils::computeRawUnigramsWithRange(sentence, dimension);
 
-  auto result = py::array_t<uint32_t>(idx_to_val_map.size());
+  std::vector<uint32_t> indices;
+  std::vector<uint32_t> values;
+  TextEncodingUtils::sumRepeatedIndices(unigrams, /* base_value= */ 1.0,
+                                        [&](uint32_t index, float value) {
+                                          indices.push_back(index);
+                                          values.push_back(value);
+                                        });
+
+  auto result = py::array_t<uint32_t>(indices.size());
   py::buffer_info indx_buf = result.request();
   uint32_t* indx_ptr = static_cast<uint32_t*>(indx_buf.ptr);
 
-  auto result_2 = py::array_t<uint32_t>(idx_to_val_map.size());
+  auto result_2 = py::array_t<uint32_t>(values.size());
   py::buffer_info val_buf = result_2.request();
   uint32_t* val_ptr = static_cast<uint32_t*>(val_buf.ptr);
 
-  int i = 0;
-  for (auto kv : idx_to_val_map) {
-    indx_ptr[i] = kv.first;
-    val_ptr[i] = kv.second;
-    i += 1;
+  assert(indices.size() == values.size());
+  for (uint32_t i = 0; i < indices.size(); i++) {
+    indx_ptr[i] = indices[i];
+    val_ptr[i] = values[i];
   }
 
   return std::make_tuple(result, result_2);

@@ -5,7 +5,7 @@
 #include <cereal/types/vector.hpp>
 #include "ProcessorUtils.h"
 #include <dataset/src/bolt_datasets/BatchProcessor.h>
-#include <dataset/src/bolt_datasets/batch_processors/PairgramHasher.h>
+#include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <cmath>
 #include <limits>
 
@@ -70,8 +70,8 @@ class TabularMetadata {
 
   uint32_t getStringHashValue(const std::string& str_val, uint32_t col) const {
     std::string unique_category = str_val + getColSalt(col);
-    return PairgramHasher::computeUnigram(unique_category.data(),
-                                          unique_category.size());
+    return TextEncodingUtils::computeUnigram(unique_category.data(),
+                                             unique_category.size());
   }
 
   uint32_t getNumericHashValue(uint32_t col, const std::string& str_val,
@@ -80,7 +80,7 @@ class TabularMetadata {
     uint64_t uniqueBin =
         static_cast<uint64_t>(bin) << 32 | static_cast<uint64_t>(col);
     const char* val_to_hash = reinterpret_cast<const char*>(&uniqueBin);
-    return PairgramHasher::computeUnigram(val_to_hash, /* len */ 8);
+    return TextEncodingUtils::computeUnigram(val_to_hash, /* len */ 8);
   }
 
  private:
