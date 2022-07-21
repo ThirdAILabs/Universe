@@ -123,7 +123,7 @@ void MultiLabelTextClassifier::predict(
     }
     (*output_file) << std::endl;
   }
-
+  
   if (output_file) {
     output_file->close();
   }

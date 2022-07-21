@@ -93,9 +93,6 @@ class GenericBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
     }
 
     if (block_err) {
-      for (auto row : rows) {
-        std::cout << row << std::endl;
-      }
       std::rethrow_exception(block_err);
     }
 

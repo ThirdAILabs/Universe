@@ -73,7 +73,10 @@ class InferenceOutputTracker {
   }
 
   BoltVector getOutputVector(uint32_t vec_id) {
-    return BoltVector(_active_neurons->data() + vec_id * _num_nonzeros_per_sample, _activations->data() + vec_id * _num_nonzeros_per_sample, nullptr, _num_nonzeros_per_sample);
+    if (activeNeuronsSaved()) {
+     return BoltVector(_active_neurons->data() + vec_id * _num_nonzeros_per_sample, _activations->data() + vec_id * _num_nonzeros_per_sample, nullptr, _num_nonzeros_per_sample); 
+    }
+    return BoltVector(/* an = */ nullptr,  /* activations = */ _activations->data() + vec_id * _num_nonzeros_per_sample, /* gradients = */ nullptr, /* len = */ _num_nonzeros_per_sample);
   }
 
   uint32_t getNumSavedVectors() const {
