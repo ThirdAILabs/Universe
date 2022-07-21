@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <chrono>
 #include <limits>
+#include <optional>
 #include <type_traits>
 #include <unordered_map>
 
@@ -373,11 +374,11 @@ void createDatasetSubmodule(py::module_& module) {
 
   dataset_submodule.def("from_numpy", &numpy::numpyToBoltVectorDataset,
                         py::keep_alive<0, 1>(), py::arg("data"),
-                        py::arg("batch_size") = 256);
+                        py::arg("batch_size") = std::nullopt);
 
   dataset_submodule.def("tokens_from_numpy", &numpy::numpyToBoltTokenDataset,
                         py::keep_alive<0, 1>(), py::arg("data"),
-                        py::arg("batch_size") = 256);
+                        py::arg("batch_size") = std::nullopt);
 
   dataset_submodule.def(
       "bolt_tokenizer", &parseSentenceToUnigramsPython, py::arg("sentence"),

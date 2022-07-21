@@ -42,15 +42,13 @@ template <typename BATCH_T>
 class NumpyDataset : public InMemoryDataset<BATCH_T> {
  public:
   NumpyDataset(std::vector<BATCH_T>&& batches,
-               std::vector<py::buffer_info>&& owning_objects)
+               std::vector<py::object>&& objects_to_keep_alive)
       : InMemoryDataset<BATCH_T>(std::move(batches)),
-        _owning_objects(std::move(owning_objects)) {}
+        _objects_to_keep_alive(std::move(objects_to_keep_alive)) {}
 
  private:
-  // Not sure if this will work, might need to save NumpyArray objects?
-  // Or just use call info
   // Try without to make sure we get an error
-  std::vector<py::buffer_info> _owning_objects;
+  std::vector<py::object> _objects_to_keep_alive;
 };
 
 inline void printCopyError(const py::str& dtype_recv,
@@ -122,13 +120,10 @@ inline BoltDatasetPtr denseNumpyToBoltVectorDataset(
     batches.emplace_back(std::move(batch_vectors));
   }
 
-  // py::buffer_info has its copy constructor and assignment deleted, and I
-  // found this was the only way to build the vector without an error
-  std::vector<py::buffer_info> owning_objects = {};
-  owning_objects.push_back(examples.request());
+  std::vector<py::object> objects_to_keep_alive = {examples};
 
-  return std::make_shared<WrappedNumpyVectors>(std::move(batches),
-                                               std::move(owning_objects));
+  return std::make_shared<WrappedNumpyVectors>(
+      std::move(batches), std::move(objects_to_keep_alive));
 }
 
 template <bool CONVERT_TO_VECTORS>
@@ -183,19 +178,117 @@ numpyTokensToBoltDataset(const NumpyArray<uint32_t>& tokens,
   }
 
   // Since we only do copies we don't need to worry about owning objects
-  std::vector<py::buffer_info> owning_objects = {};
+  std::vector<py::object> objects_to_keep_alive = {};
 
   if constexpr (CONVERT_TO_VECTORS) {
-    return std::make_shared<WrappedNumpyVectors>(std::move(batches),
-                                                 std::move(owning_objects));
+    return std::make_shared<WrappedNumpyVectors>(
+        std::move(batches), std::move(objects_to_keep_alive));
   } else {
-    return std::make_shared<WrappedNumpyTokens>(std::move(batches),
-                                                std::move(owning_objects));
+    return std::make_shared<WrappedNumpyTokens>(
+        std::move(batches), std::move(objects_to_keep_alive));
   }
 }
 
-inline BoltDatasetPtr numpyToBoltVectorDataset(const py::object& data,
+inline BoltDatasetPtr numpyArraysToSparseBoltDataset(
+    const NumpyArray<uint32_t>& indices, const NumpyArray<float>& values,
+    const NumpyArray<uint32_t>& offsets, uint32_t batch_size) {
+  uint64_t num_examples = static_cast<uint64_t>(offsets.shape(0) - 1);
+
+  uint32_t* indices_raw_data = const_cast<uint32_t*>(indices.data());
+  float* values_raw_data = const_cast<float*>(values.data());
+  uint32_t* offsets_raw_data = const_cast<uint32_t*>(offsets.data());
+
+  // Build batches
+
+  uint64_t num_batches = (num_examples + batch_size - 1) / batch_size;
+  std::vector<bolt::BoltBatch> batches;
+
+  for (uint32_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
+    std::vector<bolt::BoltVector> batch_vectors;
+
+    uint64_t start_vec_idx = batch_idx * batch_size;
+    uint64_t end_vec_idx = std::min(start_vec_idx + batch_size, num_examples);
+    for (uint64_t vec_idx = start_vec_idx; vec_idx < end_vec_idx; ++vec_idx) {
+      // owns_data = false because we don't want the numpy array to be deleted
+      // if this batch (and thus the underlying vectors) get deleted
+      auto vector_length =
+          offsets_raw_data[vec_idx + 1] - offsets_raw_data[vec_idx];
+      batch_vectors.emplace_back(indices_raw_data + offsets_raw_data[vec_idx],
+                                 values_raw_data + offsets_raw_data[vec_idx],
+                                 nullptr, vector_length);
+    }
+
+    batches.emplace_back(std::move(batch_vectors));
+  }
+
+  std::vector<py::object> objects_to_keep_alive = {indices, values, offsets};
+
+  return std::make_shared<WrappedNumpyVectors>(
+      std::move(batches), std::move(objects_to_keep_alive));
+}
+
+inline BoltDatasetPtr tupleToSparseBoltDataset(const py::object& obj,
                                                uint32_t batch_size) {
+  py::tuple tup = obj.cast<py::tuple>();
+  if (tup.size() != 3) {
+    throw std::invalid_argument(
+        "If passing in a tuple to specify a sparse dataset, "
+        "you must pass in a tuple of 3 arrays (indices, values, offsets), "
+        "but you passed in a tuple of length: " +
+        std::to_string(tup.size()));
+  }
+
+  if (!isNumpyArray(tup[0]) || !isNumpyArray(tup[1]) || !isNumpyArray(tup[2])) {
+    throw std::invalid_argument(
+        "If passing in a tuple to specify a sparse dataset, the tuple must be "
+        "of 3 numpy arrays (indices, values, offsets), but you passed in a "
+        "non numpy array for one of the tuple elements.");
+  }
+
+  if (!checkNumpyDtypeUint32(tup[0])) {
+    throw std::invalid_argument(
+        "The first element of a tuple for conversion must be a uint32 numpy "
+        "array");
+  }
+  if (!checkNumpyDtypeFloat32(tup[1])) {
+    throw std::invalid_argument(
+        "The second element of a tuple for conversion must be a float32 numpy "
+        "array");
+  }
+  if (!checkNumpyDtypeUint32(tup[2])) {
+    throw std::invalid_argument(
+        "The third element of a tuple for conversion must be a uint32 numpy "
+        "array");
+  }
+
+  NumpyArray<uint32_t> indices = tup[0].cast<NumpyArray<uint32_t>>();
+  NumpyArray<float> values = tup[1].cast<NumpyArray<float>>();
+  NumpyArray<uint32_t> offsets = tup[2].cast<NumpyArray<uint32_t>>();
+
+  return numpyArraysToSparseBoltDataset(indices, values, offsets, batch_size);
+}
+
+inline uint32_t getBatchSize(
+    const std::optional<uint32_t>& optional_batch_size) {
+  if (optional_batch_size) {
+    if (optional_batch_size.value() == 0) {
+      throw std::invalid_argument(
+          "Passed in batch size was 0, but must be greater than 0");
+    }
+    return optional_batch_size.value();
+  }
+
+  std::cout
+      << "WARNING: Using default batch size of 64. You should probably specify "
+         "a batch size if you plan to use this dataset for training."
+      << std::endl;
+  return 64;
+}
+
+inline BoltDatasetPtr numpyToBoltVectorDataset(
+    const py::object& data,
+    const std::optional<uint32_t>& optional_batch_size) {
+  uint32_t batch_size = getBatchSize(optional_batch_size);
   if (isNumpyArray(data)) {
     if (checkNumpyDtypeFloat32(data)) {
       return denseNumpyToBoltVectorDataset(data.cast<NumpyArray<float>>(),
@@ -207,13 +300,20 @@ inline BoltDatasetPtr numpyToBoltVectorDataset(const py::object& data,
     }
   }
 
+  if (isTuple(data)) {
+    return tupleToSparseBoltDataset(data, batch_size);
+  }
+
   throw std::invalid_argument(
-      "Expected a numpy array of type uint32 or float32, received " +
+      "Expected a tuple of numpy arrays, a numpy array of type uint32, or "
+      "float32, but instead received an object of type " +
       py::str(data.get_type()).cast<std::string>());
 }
 
-inline BoltTokenDatasetPtr numpyToBoltTokenDataset(const py::object& data,
-                                                   uint32_t batch_size) {
+inline BoltTokenDatasetPtr numpyToBoltTokenDataset(
+    const py::object& data,
+    const std::optional<uint32_t>& optional_batch_size) {
+  uint32_t batch_size = getBatchSize(optional_batch_size);
   if (isNumpyArray(data) && checkNumpyDtypeUint32(data)) {
     return numpyTokensToBoltDataset<false>(data.cast<NumpyArray<uint32_t>>(),
                                            batch_size);
