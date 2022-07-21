@@ -48,7 +48,7 @@ FullyConnectedLayer::FullyConnectedLayer(
 
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
                                   const BoltVector* labels) {
-  if (output.active_neurons == nullptr) {
+  if (output.isDense()) {
     if (input.isDense()) {
       // TODO(Nicholas): Re-implement this case with dense matrix library
       forwardImpl<true, true>(input, output, labels);
@@ -171,7 +171,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
 }
 
 void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
-  if (output.active_neurons == nullptr) {
+  if (output.isDense()) {
     if (input.isDense()) {
       backpropagateImpl<false, true, true>(input, output);
     } else {
@@ -188,7 +188,7 @@ void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
 
 void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
                                                   BoltVector& output) {
-  if (output.active_neurons == nullptr) {
+  if (output.isDense()) {
     if (input.isDense()) {
       backpropagateImpl<true, true, true>(input, output);
     } else {

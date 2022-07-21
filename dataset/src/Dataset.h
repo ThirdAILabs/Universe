@@ -68,13 +68,13 @@ class InMemoryDataset : public DatasetBase {
     _len = _batch_size * (_batches.size() - 1) + last_batch_size;
   }
 
-  const BATCH_T& operator[](uint32_t i) const { return _batches[i]; }
+  const BATCH_T& operator[](uint64_t i) const { return _batches[i]; }
 
-  BATCH_T& operator[](uint32_t i) { return _batches[i]; }
+  BATCH_T& operator[](uint64_t i) { return _batches[i]; }
 
-  const BATCH_T& at(uint32_t i) const { return _batches.at(i); }
+  const BATCH_T& at(uint64_t i) const { return _batches.at(i); }
 
-  BATCH_T& at(uint32_t i) { return _batches.at(i); }
+  BATCH_T& at(uint64_t i) { return _batches.at(i); }
 
   auto begin() const { return _batches.begin(); }
 

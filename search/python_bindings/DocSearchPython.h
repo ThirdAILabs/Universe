@@ -34,7 +34,7 @@ class PyDocSearch final : public DocSearch {
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           embeddings) {
     auto single_batch_dataset = dataset::numpy::numpyToBoltVectorDataset(
-        embeddings, /* batch_size = */ UINT64_MAX);
+        embeddings, /* batch_size = */ std::numeric_limits<uint64_t>::max());
     return DocSearch::addDocument(single_batch_dataset->at(0), doc_id,
                                   doc_text);
   }
@@ -45,7 +45,7 @@ class PyDocSearch final : public DocSearch {
           embeddings,
       const std::vector<uint32_t>& doc_centroid_ids) {
     auto single_batch_dataset = dataset::numpy::numpyToBoltVectorDataset(
-        embeddings, /* batch_size = */ UINT64_MAX);
+        embeddings, /* batch_size = */ std::numeric_limits<uint64_t>::max());
     return DocSearch::addDocumentWithCentroids(
         single_batch_dataset->at(0), doc_centroid_ids, doc_id, doc_text);
   }
@@ -63,7 +63,7 @@ class PyDocSearch final : public DocSearch {
           embeddings,
       uint32_t top_k, uint32_t num_to_rerank) {
     auto single_batch_dataset = dataset::numpy::numpyToBoltVectorDataset(
-        embeddings, /* batch_size = */ UINT64_MAX);
+        embeddings, /* batch_size = */ std::numeric_limits<uint64_t>::max());
     std::vector<std::pair<std::string, std::string>> result =
         DocSearch::query(single_batch_dataset->at(0), top_k, num_to_rerank);
     return py::cast(std::move(result));
@@ -75,7 +75,7 @@ class PyDocSearch final : public DocSearch {
       const std::vector<uint32_t>& query_centroid_ids, uint32_t top_k,
       uint32_t num_to_rerank) {
     auto single_batch_dataset = dataset::numpy::numpyToBoltVectorDataset(
-        embeddings, /* batch_size = */ UINT64_MAX);
+        embeddings, /* batch_size = */ std::numeric_limits<uint64_t>::max());
     std::vector<std::pair<std::string, std::string>> result =
         DocSearch::queryWithCentroids(single_batch_dataset->at(0),
                                       query_centroid_ids, top_k, num_to_rerank);

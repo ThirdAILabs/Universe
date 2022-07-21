@@ -41,9 +41,7 @@ std::vector<bolt::BoltVector> createRandomVectors(
   for (uint32_t i = 0; i < num_vectors; i++) {
     bolt::BoltVector vec(/* l = */ dim, /* is_dense = */ true,
                          /* has_gradient = */ false);
-    for (uint32_t d = 0; d < dim; d++) {
-      vec.activations[d] = distribution(generator);
-    }
+    std::generate(vec.activations, vec.activations + dim, distribution);
     result.push_back(std::move(vec));
   }
   return result;

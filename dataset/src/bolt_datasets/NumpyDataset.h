@@ -37,7 +37,7 @@ using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
  * objects until this object is deleted.
  */
 template <typename BATCH_T>
-class NumpyDataset : public InMemoryDataset<BATCH_T> {
+class NumpyDataset final : public InMemoryDataset<BATCH_T> {
  public:
   NumpyDataset(std::vector<BATCH_T>&& batches,
                std::vector<py::object>&& objects_to_keep_alive)
@@ -45,7 +45,6 @@ class NumpyDataset : public InMemoryDataset<BATCH_T> {
         _objects_to_keep_alive(std::move(objects_to_keep_alive)) {}
 
  private:
-  // Try without to make sure we get an error
   std::vector<py::object> _objects_to_keep_alive;
 };
 
@@ -57,12 +56,12 @@ inline bool isNumpyArray(const py::object& obj) {
   return py::str(obj.get_type()).equal(py::str("<class 'numpy.ndarray'>"));
 }
 
-inline py::str getDtype(const py::object& obj) {
+inline py::str getNumpyDtype(const py::object& obj) {
   return py::str(obj.attr("dtype"));
 }
 
 inline bool checkNumpyDtype(const py::object& obj, const std::string& type) {
-  return getDtype(obj).equal(py::str(type));
+  return getNumpyDtype(obj).equal(py::str(type));
 }
 
 inline bool isNumpyUint32(const py::object& obj) {
@@ -296,6 +295,11 @@ inline BoltDatasetPtr numpyToBoltVectorDataset(const py::object& data,
       return numpyTokensToBoltDataset<true>(data.cast<NumpyArray<uint32_t>>(),
                                             batch_size);
     }
+
+    throw std::invalid_argument(
+        "Expected a numpy array of type uint32 or float32 but instead recieved "
+        "a numpy array of type " +
+        getNumpyDtype(data).cast<std::string>());
   }
 
   if (isTuple(data)) {
@@ -303,21 +307,27 @@ inline BoltDatasetPtr numpyToBoltVectorDataset(const py::object& data,
   }
 
   throw std::invalid_argument(
-      "Expected a tuple of numpy arrays, a numpy array of type uint32, or "
-      "float32, but instead received an object of type " +
+      "Expected a numpy array or a tuple of numpy arrays, but instead received "
+      "an object of type " +
       py::str(data.get_type()).cast<std::string>());
 }
 
 inline BoltTokenDatasetPtr numpyToBoltTokenDataset(const py::object& data,
                                                    uint64_t batch_size) {
   verifyBatchSize(batch_size);
-  if (isNumpyArray(data) && isNumpyUint32(data)) {
-    return numpyTokensToBoltDataset<false>(data.cast<NumpyArray<uint32_t>>(),
-                                           batch_size);
+  if (isNumpyArray(data)) {
+    if (isNumpyUint32(data)) {
+      return numpyTokensToBoltDataset<false>(data.cast<NumpyArray<uint32_t>>(),
+                                             batch_size);
+    }
+    throw std::invalid_argument(
+        "Expected a numpy array of type uint32 but instead recieved a numpy "
+        "array of type " +
+        getNumpyDtype(data).cast<std::string>());
   }
 
   throw std::invalid_argument(
-      "Expected a numpy array of type uint32, received " +
+      "Expected a numpy array, but instead received an object of type " +
       py::str(data.get_type()).cast<std::string>());
 }
 

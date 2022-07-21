@@ -44,11 +44,6 @@ def helper_for_text_classification_data_pipeline(text_encoding, delim):
 
     network = bolt.Network(layers=layers, input_dim=pipeline.get_input_dim())
 
-    if isinstance(data, np.ndarray):
-        data = dataset.from_numpy(data, batch_size=256)
-    if isinstance(labels, np.ndarray):
-        labels = dataset.from_numpy(labels, batch_size=256)
-
     learning_rate = 0.001
     epochs = 1
     for i in range(epochs):
