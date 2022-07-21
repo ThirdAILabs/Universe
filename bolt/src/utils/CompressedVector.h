@@ -1,6 +1,7 @@
 #pragma once
 
 #include "hashing/src/MurmurHash.h"
+#include <cassert>
 #include <cstddef>
 #include <vector>
 
@@ -31,6 +32,8 @@ class CompressedVector {
 
     for (size_t i = 0; i < input.size(); i += _block_size) {
       // Find the location the first element of the block hashes into.
+      // effective_size is required as we are hashing blocks and we don't want
+      // out of bounds access.
       size_t effective_size = _physical_vector.size() - _block_size;
       size_t block_begin = _hash_function(i) % effective_size;
 
@@ -40,8 +43,8 @@ class CompressedVector {
         size_t offset = j - i;
 
         // Add the input value to the hash-location.
-
         _physical_vector[block_begin + offset] += input[j];
+
         // TODO(jerin): What happens if overflow? We are using sum to store
         // multiple elements, which could overflow the element's type.
       }
@@ -57,34 +60,37 @@ class CompressedVector {
   CompressedVector& operator+=(const CompressedVector& input);
 
   // non-const accessor.
-  ELEMENT_TYPE& operator[](size_t i) { return _unsafe_get(i); }
+  ELEMENT_TYPE& operator[](size_t i) {
+    size_t idx = _find_index_in_physical_vector(i);
+    return _physical_vector[idx];
+  }
 
   // Const accessor to an element.
   const ELEMENT_TYPE& operator[](size_t i) const {
-    const ELEMENT_TYPE& const_address = _unsafe_get(i);
-    return const_address;
+    size_t idx = _find_index_in_physical_vector(i);
+    return _physical_vector[idx];
   }
 
   // Iterators for pseudo-view on the bigger vector.
 
  private:
-  uint64_t _seed;        // For consistency *and* pseudorandomness.
-  uint64_t _block_size;  // Blocks of elements to use in compressed hashing for
-                         // cache friendliness.
   std::vector<ELEMENT_TYPE> _physical_vector;  // Underlying vector which stores
                                                // the compressed elements.
+  uint64_t _block_size;  // Blocks of elements to use in compressed hashing for
+                         // cache friendliness.
+  uint64_t _seed;        // For consistency *and* pseudorandomness.
 
   // Convenience function to hash into a size_t using MurmurHash.
   // Might be worthwhile to skip this function if only used in one place.
-  inline size_t _hash_function(size_t value) {
-    uint8_t* addr = reinterpret_cast<uint32_t*>(&value);
+  inline size_t _hash_function(size_t value) const {
+    char* addr = reinterpret_cast<char*>(&value);
     uint32_t hash_value =
         thirdai::hashing::MurmurHash(addr, sizeof(size_t), _seed);
 
     return static_cast<size_t>(hash_value);
   }
 
-  ELEMENT_TYPE& _unsafe_get(size_t i) {
+  size_t _find_index_in_physical_vector(size_t i) const {
     // The following involves the mod operation and is slow.
     // We will have to do bit arithmetic somewhere.
     // TODO(jerin): Come back here and make more efficient.
@@ -92,7 +98,7 @@ class CompressedVector {
     size_t i_begin = i - offset;
 
     size_t block_begin = _hash_function(i_begin);
-    return _physical_vector[block_begin + offset];
+    return block_begin + offset;
   }
 };
 
