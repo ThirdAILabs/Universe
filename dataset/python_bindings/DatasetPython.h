@@ -18,9 +18,6 @@ namespace py = pybind11;
 
 namespace thirdai::dataset::python {
 
-template <typename T>
-using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
-
 void createDatasetSubmodule(py::module_& module);
 
 py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,

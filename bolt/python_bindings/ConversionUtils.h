@@ -9,8 +9,6 @@
 
 namespace thirdai::bolt::python {
 
-using thirdai::dataset::python::NumpyArray;
-
 // Takes in the activations arrays (if they were allocated) and returns the
 // python tuple containing the metrics computed, along with the activations
 // and active neurons if those are not nullptrs. Note that just the

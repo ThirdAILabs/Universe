@@ -27,16 +27,14 @@ using WrappedNumpyTokens = NumpyDataset<BoltTokenBatch>;
 template <typename T>
 using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
-// TODO(josh): rewrite this comment
-/*
- * The purpose of this class is to make sure that a BoltDataset constructed
- * from a numpy array is memory safe by ensuring that the numpy arrays it is
- * constructed from cannot go out of scope while the dataset is in scope. This
- * problem arrises because if the numpy arrays passed in are not uint32 or
- * float32 then when we cast to that array type a copy will occur. This
- * resulting copy of the array will be a local copy, and thus when the method
- * constructing the dataset returns, the copy will go out of scope and the
- * dataset will be invalidated. This solves that issue.
+/**
+ * This class is an InMemoryDataset that is backed by numpy arrays. The
+ * batches that are passed into the constructor are assumed to be shallow
+ * objects on top of memory owned by the py::objects in the vector
+ * objects_to_keep_alive. This class does NOT manager the memory of those
+ * py::objects manually. Instead, merely having a copy of the py::objects
+ * increments the reference counter and prevents python from deleting those
+ * objects until this object is deleted.
  */
 template <typename BATCH_T>
 class NumpyDataset : public InMemoryDataset<BATCH_T> {
@@ -50,15 +48,6 @@ class NumpyDataset : public InMemoryDataset<BATCH_T> {
   // Try without to make sure we get an error
   std::vector<py::object> _objects_to_keep_alive;
 };
-
-inline void printCopyError(const py::str& dtype_recv,
-                           const std::string& dtype_expected) {
-  std::stringstream stream;
-  stream << "Error: array has dtype=" << dtype_recv << " but " << dtype_expected
-         << " was expected. Try specifying the dtype of the array or use "
-            ".astype(...).";
-  throw std::invalid_argument(stream.str());
-}
 
 inline bool isTuple(const py::object& obj) {
   return py::str(obj.get_type()).equal(py::str("<class 'tuple'>"));
@@ -76,11 +65,11 @@ inline bool checkNumpyDtype(const py::object& obj, const std::string& type) {
   return getDtype(obj).equal(py::str(type));
 }
 
-inline bool checkNumpyDtypeUint32(const py::object& obj) {
+inline bool isNumpyUint32(const py::object& obj) {
   return checkNumpyDtype(obj, "uint32");
 }
 
-inline bool checkNumpyDtypeFloat32(const py::object& obj) {
+inline bool isNumpyFloat32(const py::object& obj) {
   return checkNumpyDtype(obj, "float32");
 }
 
@@ -126,6 +115,22 @@ inline BoltDatasetPtr denseNumpyToBoltVectorDataset(
       std::move(batches), std::move(objects_to_keep_alive));
 }
 
+/**
+ * This is some C++ magic. Basically we want two slightly different methods
+ * that do basically the same thing: convert a numpy array of uint32 to an
+ * InMemoryDataset. The difference is that sometimes we want a BoltDatasetPtr
+ * and the activations to be filled with 1s, and sometimes we want a
+ * BoltTokenDatasetPtr (which doesn't have activations). There is only a few
+ * lines different in each case, but it proved difficult to factor out into
+ * helper methods. Instead, what we've done is add a CONVERT_TO_VECTORS template
+ * arg, and depending on whether this is true or false we do slightly different
+ * things in the method. We use 2 c++ magic template metaprogramming tricks for
+ * this: constexpr, which allows us to evaluate branches of an if at compile
+ * time (so each side of the if can have code that only works with 1 value of
+ * CONVERT_TO_VECTORS), and std::conditional_t, which allows us to have a
+ * variable with a type dependent on the value of CONVERT_TO_VECTORS.
+ *
+ */
 template <bool CONVERT_TO_VECTORS>
 inline std::conditional_t<CONVERT_TO_VECTORS, BoltDatasetPtr,
                           BoltTokenDatasetPtr>
@@ -189,6 +194,39 @@ numpyTokensToBoltDataset(const NumpyArray<uint32_t>& tokens,
   }
 }
 
+inline void verifySparseNumpyTuple(const py::tuple& tup) {
+  if (tup.size() != 3) {
+    throw std::invalid_argument(
+        "If passing in a tuple to specify a sparse dataset, "
+        "you must pass in a tuple of 3 arrays (indices, values, offsets), "
+        "but you passed in a tuple of length: " +
+        std::to_string(tup.size()));
+  }
+
+  if (!isNumpyArray(tup[0]) || !isNumpyArray(tup[1]) || !isNumpyArray(tup[2])) {
+    throw std::invalid_argument(
+        "If passing in a tuple to specify a sparse dataset, the tuple must be "
+        "of 3 numpy arrays (indices, values, offsets), but you passed in a "
+        "non numpy array for one of the tuple elements.");
+  }
+
+  if (!isNumpyUint32(tup[0])) {
+    throw std::invalid_argument(
+        "The first element of a tuple for conversion must be a uint32 numpy "
+        "array");
+  }
+  if (!isNumpyFloat32(tup[1])) {
+    throw std::invalid_argument(
+        "The second element of a tuple for conversion must be a float32 numpy "
+        "array");
+  }
+  if (!isNumpyUint32(tup[2])) {
+    throw std::invalid_argument(
+        "The third element of a tuple for conversion must be a uint32 numpy "
+        "array");
+  }
+}
+
 inline BoltDatasetPtr numpyArraysToSparseBoltDataset(
     const NumpyArray<uint32_t>& indices, const NumpyArray<float>& values,
     const NumpyArray<uint32_t>& offsets, uint64_t batch_size) {
@@ -230,36 +268,7 @@ inline BoltDatasetPtr numpyArraysToSparseBoltDataset(
 inline BoltDatasetPtr tupleToSparseBoltDataset(const py::object& obj,
                                                uint64_t batch_size) {
   py::tuple tup = obj.cast<py::tuple>();
-  if (tup.size() != 3) {
-    throw std::invalid_argument(
-        "If passing in a tuple to specify a sparse dataset, "
-        "you must pass in a tuple of 3 arrays (indices, values, offsets), "
-        "but you passed in a tuple of length: " +
-        std::to_string(tup.size()));
-  }
-
-  if (!isNumpyArray(tup[0]) || !isNumpyArray(tup[1]) || !isNumpyArray(tup[2])) {
-    throw std::invalid_argument(
-        "If passing in a tuple to specify a sparse dataset, the tuple must be "
-        "of 3 numpy arrays (indices, values, offsets), but you passed in a "
-        "non numpy array for one of the tuple elements.");
-  }
-
-  if (!checkNumpyDtypeUint32(tup[0])) {
-    throw std::invalid_argument(
-        "The first element of a tuple for conversion must be a uint32 numpy "
-        "array");
-  }
-  if (!checkNumpyDtypeFloat32(tup[1])) {
-    throw std::invalid_argument(
-        "The second element of a tuple for conversion must be a float32 numpy "
-        "array");
-  }
-  if (!checkNumpyDtypeUint32(tup[2])) {
-    throw std::invalid_argument(
-        "The third element of a tuple for conversion must be a uint32 numpy "
-        "array");
-  }
+  verifySparseNumpyTuple(tup);
 
   NumpyArray<uint32_t> indices = tup[0].cast<NumpyArray<uint32_t>>();
   NumpyArray<float> values = tup[1].cast<NumpyArray<float>>();
@@ -279,11 +288,11 @@ inline BoltDatasetPtr numpyToBoltVectorDataset(const py::object& data,
                                                uint64_t batch_size) {
   verifyBatchSize(batch_size);
   if (isNumpyArray(data)) {
-    if (checkNumpyDtypeFloat32(data)) {
+    if (isNumpyFloat32(data)) {
       return denseNumpyToBoltVectorDataset(data.cast<NumpyArray<float>>(),
                                            batch_size);
     }
-    if (checkNumpyDtypeUint32(data)) {
+    if (isNumpyUint32(data)) {
       return numpyTokensToBoltDataset<true>(data.cast<NumpyArray<uint32_t>>(),
                                             batch_size);
     }
@@ -302,7 +311,7 @@ inline BoltDatasetPtr numpyToBoltVectorDataset(const py::object& data,
 inline BoltTokenDatasetPtr numpyToBoltTokenDataset(const py::object& data,
                                                    uint64_t batch_size) {
   verifyBatchSize(batch_size);
-  if (isNumpyArray(data) && checkNumpyDtypeUint32(data)) {
+  if (isNumpyArray(data) && isNumpyUint32(data)) {
     return numpyTokensToBoltDataset<false>(data.cast<NumpyArray<uint32_t>>(),
                                            batch_size);
   }

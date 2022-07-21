@@ -4,7 +4,7 @@ import numpy as np
 
 def generate_dense_bolt_dataset_from_numpy(rows, cols):
     test_numpy = np.tile(np.arange(0, cols), (rows, 1)).astype("float32")
-    return dataset.from_numpy(test_numpy)
+    return dataset.from_numpy(test_numpy, batch_size=64)
 
 
 def check_dense_bolt_dataset(np_dataset, cols):
