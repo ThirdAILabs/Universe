@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <iostream>
@@ -7,7 +8,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <algorithm>
 
 namespace thirdai::hashing {
 
