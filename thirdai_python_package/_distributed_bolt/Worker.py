@@ -6,7 +6,7 @@ import time
 from typing import Tuple, Any, Optional, Dict, List
 
 
-@ray.remote(num_cpus=20, max_restarts=1)
+@ray.remote(num_cpus=40, max_restarts=1)
 class Worker:
     """
         This is a ray remote class(Actor). Read about them here. 
@@ -60,7 +60,7 @@ class Worker:
         
         self.train_data, self.train_label, self.test_data, self.test_label = data
         
-        self.num_of_batches = self.network.initTrainSingleNode(
+        self.num_of_batches = self.network.prepareNodeForDistributedTraining(
                     self.train_data, 
                     self.train_label,
                     rehash=self.rehash,
