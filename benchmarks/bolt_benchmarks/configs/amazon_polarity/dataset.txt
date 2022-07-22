@@ -1,10 +1,12 @@
-[[dataset]]
+dataset_identifier = "amazon_polarity"
+
+[[datasets]]
 format = "svm"
 type_list = ["train_data", "train_labels"]
 path = "amazon_polarity/svm_train.txt"
 batch_size = 256
 
-[[dataset]]
+[[datasets]]
 format = "svm"
 type_list = ["test_data", "test_labels"]
 path = "amazon_polarity/svm_test.txt"

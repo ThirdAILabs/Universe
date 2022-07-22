@@ -15,7 +15,8 @@ def start_mlflow(model_config, dataset_config, experiment_config, mlflow_args):
     if not mlflow_args.disable_mlflow:
         experiment_name = experiment_config["experiment_identifier"]
         dataset_name = dataset_config["dataset_identifier"]
-        start_mlflow_helper(experiment_name, mlflow_args.run_name, dataset_name)
+        model_name = model_config["model_identifier"]
+        start_mlflow_helper(experiment_name, mlflow_args.run_name, dataset_name, model_name)
         log_machine_info()
         for config in [model_config, dataset_config, experiment_config]:
             log_config_info(config)
@@ -24,7 +25,7 @@ def start_mlflow(model_config, dataset_config, experiment_config, mlflow_args):
                 mlflow.log_artifact(config)
 
 
-def start_mlflow_helper(experiment_name, run_name, dataset):
+def start_mlflow_helper(experiment_name, run_name, dataset, model_name):
     file_dir = os.path.dirname(os.path.abspath(__file__))
     file_name = os.path.join(file_dir, "../config.toml")
     with open(file_name) as f:
@@ -34,7 +35,7 @@ def start_mlflow_helper(experiment_name, run_name, dataset):
     mlflow.set_experiment(experiment_name)
     mlflow.start_run(
         run_name=run_name,
-        tags={"dataset": dataset},
+        tags={"dataset": dataset, "model": model_name},
     )
 
 

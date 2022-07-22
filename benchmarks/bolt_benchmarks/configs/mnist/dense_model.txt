@@ -1,0 +1,29 @@
+model_identifier = "mnist_dense"
+
+loss_fn = "CategoricalCrossEntropyLoss"
+
+[[nodes]]
+type = "Input"
+name = "first"
+dim = 784
+
+[[nodes]]
+type = "FullyConnected"
+name = "second"
+pred = "first"
+dim = 512
+activation = 'ReLU'
+
+[[nodes]]
+type = "FullyConnected"
+name = "third"
+pred = "second"
+dim = 256
+activation = 'ReLU'
+
+[[nodes]]
+type = "FullyConnected"
+name = "fourth"
+pred = "third"
+dim = 10
+activation = 'Softmax'

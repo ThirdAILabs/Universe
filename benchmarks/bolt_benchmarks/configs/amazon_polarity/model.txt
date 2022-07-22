@@ -1,3 +1,5 @@
+model_identifier = "polarity_dense_hidden"
+
 loss_fn = "CategoricalCrossEntropyLoss"
 
 [[nodes]]

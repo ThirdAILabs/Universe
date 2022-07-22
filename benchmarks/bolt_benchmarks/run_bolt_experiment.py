@@ -142,14 +142,14 @@ def load_all_datasets(dataset_config):
         "test_labels": [],
     }
 
-    for single_dataset_config in dataset_config:
+    for single_dataset_config in dataset_config["datasets"]:
         format = single_dataset_config["format"]
         dataset_types = single_dataset_config["type_list"]
 
         if format == "svm":
-            loaded_datasets = load_svm_dataset(dataset_config)
+            loaded_datasets = load_svm_dataset(single_dataset_config)
         elif format == "click":
-            loaded_datasets = load_clickthrough_dataset(dataset_config)
+            loaded_datasets = load_clickthrough_dataset(single_dataset_config)
         else:
             raise ValueError(f"{format} is an unrecognized dataformat")
 
@@ -157,7 +157,7 @@ def load_all_datasets(dataset_config):
             raise ValueError(
                 f"The number of datasets loaded {len(loaded_datasets)} did "
                 f"not match the number of dataset types {len(dataset_types)}"
-                "for the following config: \n {single_dataset_config}"
+                f"for the following config: \n {single_dataset_config}"
             )
 
         for dataset_type, dataset in zip(dataset_types, loaded_datasets):
@@ -180,20 +180,22 @@ def load_all_datasets(dataset_config):
     return result
 
 
-# Because of how our experiment works, we always set num_epochs=1
+# Because of how our experiment works, we always set num_epochs=1 and return
+# num_epochs as the first element of a 2 item tuple (the second element is
+# the train_config)
 def load_train_config(experiment_config):
-    train_config = bolt.graph.TrainConfig(
+    train_config = bolt.graph.TrainConfig.make(
         epochs=1, learning_rate=experiment_config["learning_rate"]
     ).with_metrics(experiment_config["train_metrics"])
     if "rehash" in experiment_config.keys():
         train_config.with_reconstruct_hash_functions(experiment_config["rehash"])
     if "rebuild" in experiment_config.keys():
         train_config.with_rebuild_hash_tables(experiment_config["rebuild"])
-    return train_config
+    return experiment_config["epochs"], train_config
 
 
 def load_predict_config(experiment_config):
-    predict_config = bolt.graph.PredictConfig().with_metrics(
+    predict_config = bolt.graph.PredictConfig.make().with_metrics(
         experiment_config["test_metrics"]
     )
     if "max_test_batches" in experiment_config.keys():
@@ -237,7 +239,7 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
 
         train_metrics = model.train(
             train_data=datasets["train_data"],
-            train_tokens=datasets["train_token_data"],
+            train_tokens=datasets["train_tokens"],
             train_labels=datasets["train_labels"],
             train_config=train_config,
         )
@@ -245,9 +247,9 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
             log_single_epoch_training_metrics(train_metrics)
 
         predict_metrics = model.predict(
-            test_data=datasets["train_data"],
-            test_tokens=datasets["train_token_data"],
-            test_labels=datasets["train_labels"],
+            test_data=datasets["test_data"],
+            test_tokens=datasets["test_tokens"],
+            test_labels=datasets["test_labels"],
             predict_config=predict_config,
         )
         if use_mlflow:
@@ -265,8 +267,8 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
         if use_mlflow:
             log_prediction_metrics(predict_metrics)
 
-    if "save" in experiment_config["params"].keys():
-        model.save(experiment_config["params"]["save"])
+    if "save" in experiment_config.keys():
+        model.save(experiment_config["save"])
 
 
 def build_arg_parser():
@@ -277,7 +279,7 @@ def build_arg_parser():
     parser.add_argument(
         "config_folder",
         type=str,
-        help="Path to a config folder containing a dataset.txt, an experiment.txt, and a model.txt.",
+        help="Path to a config folder containing the dataset, experiment, and model configs.",
     )
     parser.add_argument(
         "--disable_mlflow",
@@ -295,6 +297,25 @@ def build_arg_parser():
         type=str,
         help="The name of the run to use in mlflow. If mlflow is enabled this is required.",
     )
+    parser.add_argument(
+        "--dataset_config_path",
+        default="dataset.txt",
+        type=str,
+        help="Relative path to the dataset config in the config_folder"
+    )
+    parser.add_argument(
+        "--experiment_config_path",
+        default="experiment.txt",
+        type=str,
+        help="Relative path to the experiment config in the config_folder"
+    )
+    parser.add_argument(
+        "--model_config_path",
+        default="model.txt",
+        type=str,
+        help="Relative path to the model config in the config_folder"
+    )
+
 
     return parser
 
@@ -306,9 +327,9 @@ def main():
     verify_mlflow_args(parser, mlflow_args=args)
 
     config_folder = Path(args.config_folder)
-    model_config_filename = config_folder / "model.txt"
-    dataset_config_filename = config_folder / "dataset.txt"
-    experiment_config_filename = config_folder / "experiment.txt"
+    model_config_filename = config_folder / args.model_config_path
+    dataset_config_filename = config_folder / args.dataset_config_path
+    experiment_config_filename = config_folder / args.experiment_config_path
     model_config = toml.load(model_config_filename)
     dataset_config = toml.load(dataset_config_filename)
     experiment_config = toml.load(experiment_config_filename)
