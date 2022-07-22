@@ -7,6 +7,7 @@ import os
 
 VOCAB_SIZE = 30224
 
+
 class CookieMonster:
     def __init__(
         self,
@@ -54,9 +55,9 @@ class CookieMonster:
 
     def set_output_dimension(self, dimension, task):
         if task == "mlm":
-            dim=VOCAB_SIZE
+            dim = VOCAB_SIZE
         elif task == "classification":
-            dim=dimension
+            dim = dimension
         else:
             raise ValueError(
                 'Invalid instruction. Supported instructions are "mlm" and "classification"'
@@ -72,36 +73,41 @@ class CookieMonster:
         mlm_loader = dataset.MLMDatasetLoader(self.input_dimension)
         data, tokens, labels = mlm_loader.load(file, batch_size)
         return data, tokens, labels
-    
+
     def load_classification_data(self, file, batch_size, label_dim):
         pipeline = DataPipeline(
-                file,
-                batch_size=batch_size,
-                input_blocks=[
-                    blocks.Text(1, text_encodings.PairGram(self.input_dimension))
-                ],
-                label_blocks=[blocks.Categorical(0, label_dim)],
-                delimiter=",",
-            )
+            file,
+            batch_size=batch_size,
+            input_blocks=[
+                blocks.Text(1, text_encodings.PairGram(self.input_dimension))
+            ],
+            label_blocks=[blocks.Categorical(0, label_dim)],
+            delimiter=",",
+        )
         data, labels = pipeline.load_in_memory()
         return data, labels
-    
-    def train_with_task(self, task, train_data, train_tokens, train_labels, train_config):
+
+    def train_with_task(
+        self, task, train_data, train_tokens, train_labels, train_config
+    ):
         if task == "mlm":
-            assert(train_tokens is not None)
+            assert train_tokens is not None
             self.model.train(train_data, train_tokens, train_labels, train_config)
         else:
-            assert(train_tokens is None)
+            assert train_tokens is None
             self.model.train(train_data, train_labels, train_config)
 
-    def predict_with_task(self, task, test_data, test_tokens, test_labels, predict_config):
-        if task== "mlm":
-            assert(test_tokens is not None)
-            return self.model.predict(test_data, test_tokens, test_labels, predict_config)
+    def predict_with_task(
+        self, task, test_data, test_tokens, test_labels, predict_config
+    ):
+        if task == "mlm":
+            assert test_tokens is not None
+            return self.model.predict(
+                test_data, test_tokens, test_labels, predict_config
+            )
         else:
-            assert(test_tokens is None)
+            assert test_tokens is None
             return self.model.predict(test_data, test_labels, predict_config)
-    
 
     def eat_corpus(
         self,
@@ -177,10 +183,20 @@ class CookieMonster:
                         )
 
                     for i in range(epochs):
-                        self.train_with_task(task, train_data, train_tokens, train_labels, train_config=train_config)
+                        self.train_with_task(
+                            task,
+                            train_data,
+                            train_tokens,
+                            train_labels,
+                            train_config=train_config,
+                        )
                         if verbose:
                             metrics = self.predict_with_task(
-                                task, test_data, test_tokens, test_labels, predict_config=predict_config
+                                task,
+                                test_data,
+                                test_tokens,
+                                test_labels,
+                                predict_config=predict_config,
                             )
                             print(
                                 "Epoch: ",
@@ -191,7 +207,11 @@ class CookieMonster:
                             )
 
                     metrics = self.predict_with_task(
-                        task, test_data, test_tokens, test_labels, predict_config=predict_config
+                        task,
+                        test_data,
+                        test_tokens,
+                        test_labels,
+                        predict_config=predict_config,
                     )
                     print(
                         "Epoch: ",
