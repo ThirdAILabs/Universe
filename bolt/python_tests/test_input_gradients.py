@@ -1,6 +1,7 @@
 from thirdai import bolt
 import numpy as np
 import pytest
+import itertools
 from .utils import gen_training_data
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
@@ -49,40 +50,6 @@ def initialize_network():
     return network
 
 
-def assert_ratio(network, x1, labels):
-    """
-    checking the gradients are highest for the label mentioned in labels array
-    for most of the cases.
-    """
-    gradients, indices = network.get_input_gradients(
-        x1,
-        bolt.CategoricalCrossEntropyLoss(),
-        required_labels=labels,
-    )
-    max_times = 0
-    total = len(gradients)
-    for i in range(total):
-        abs_list = list(map(abs, gradients[i]))
-        index = abs_list.index(max(abs_list))
-        if index == labels[i]:
-            max_times += 1
-    assert (max_times / total) > 0.7
-
-
-def get_vector(k=-1):
-    x1 = np.array(
-        [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 0, 1],
-        ]
-    ).astype("float32")
-    if k == -1:
-        return x1
-    return x1[k]
-
-
 @pytest.mark.unit
 def test_input_gradients():
     """
@@ -93,7 +60,14 @@ def test_input_gradients():
     should also be in same order, when we add small EPS at each position seperately.
     """
     network = initialize_network()
-    inputs = get_vector()
+    inputs = np.array(
+        [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ]
+    ).astype("float32")
     gradients, indices = network.get_input_gradients(
         inputs,
         bolt.CategoricalCrossEntropyLoss(),
@@ -106,7 +80,11 @@ def test_input_gradients():
     for input_num in range(len(inputs)):
         modified_vectors = []
         for i in range(len(inputs[input_num])):
-            vec = get_vector(input_num)
+            """
+            We are making a copy because in python assign operation makes two variables to point
+            to same address space, and we only want to modify one and keep the other same.
+            """
+            vec = np.array(inputs[input_num])
             vec[i] = vec[i] + 0.001
             modified_vectors.append(vec)
         modified_vectors = np.array(modified_vectors)
@@ -114,29 +92,44 @@ def test_input_gradients():
         act_difference_at_label_one = [
             np.array(vec_act[1]) - np.array(act[input_num][1]) for vec_act in vecs_act
         ]
-        assert (
-            np.array_equal(
-                np.argsort(act_difference_at_label_one),
-                np.argsort(gradients[input_num]),
-            )
-            == True
+        assert np.array_equal(
+            np.argsort(act_difference_at_label_one),
+            np.argsort(gradients[input_num]),
         )
 
 
 @pytest.mark.unit
-def test_input_gradients_random_data():
+def test_return_indices_for_sparse_and_dense_inputs():
     """
-    for "[1,0,0,0]" when these type of vectors given as input and output,
-    we expect gradients to be max for non-zero index.
+    For Dense inputs we should not return indices but for sparse inputs we should return sparse indices.
     """
-    network = initialize_network()
-    inputs, labels = gen_training_data(4, 24000, 0.05)
-    times = network.train(
-        inputs,
-        labels,
-        bolt.CategoricalCrossEntropyLoss(),
-        learning_rate=0.001,
-        epochs=5,
-        batch_size=256,
+    dense_inputs = np.array(
+        [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ]
+    ).astype("float32")
+    sparse_inputs = (
+        np.array([0, 0, 1, 3, 0, 1, 0, 1, 2, 3]).astype("uint32"),
+        np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]).astype("float32"),
+        np.array([0, 1, 4, 6, 10]).astype("uint32"),
     )
-    assert_ratio(network, inputs, labels)
+    network = initialize_network()
+    _, dense_inputs_indices = network.get_input_gradients(
+        dense_inputs, bolt.CategoricalCrossEntropyLoss()
+    )
+    assert not (dense_inputs_indices)
+    _, sparse_inputs_indices = network.get_input_gradients(
+        sparse_inputs, bolt.CategoricalCrossEntropyLoss()
+    )
+    combined_sparse_indices = np.array(
+        [
+            index
+            for sparse_input_indices in sparse_inputs_indices
+            for index in sparse_input_indices
+        ]
+    )
+
+    assert combined_sparse_indices.all() == (sparse_inputs[0]).all()

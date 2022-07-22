@@ -49,9 +49,10 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     backpropagate<false>(batch_index, input[batch_index], output);
   };
 
-  std::pair<std::vector<std::vector<float>>, std::vector<std::vector<uint32_t>>>
+  std::pair<std::vector<std::vector<float>>,
+            std::optional<std::vector<std::vector<uint32_t>>>>
   getInputGradients(
-      std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>& batch_input,
+      std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>& input_dataset,
       const LossFunction& loss_fn, bool best_index,
       const std::vector<uint32_t>& required_labels);
 
