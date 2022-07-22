@@ -5,6 +5,7 @@ from thirdai.dataset import DataPipeline, blocks, text_encodings
 # import mlflow
 import os
 
+VOCAB_SIZE = 30224
 
 class CookieMonster:
     def __init__(
@@ -51,23 +52,29 @@ class CookieMonster:
 
         self.model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
-    def set_output_dimension(self, dimension):
-        if self.output_layer.get_dim() == dimension:
-            return
+    def set_output_dimension(self, dimension, task):
+        if task == "mlm":
+            dim=VOCAB_SIZE
+        elif task == "classification":
+            dim=dimension
+        else:
+            raise ValueError(
+                'Invalid instruction. Supported instructions are "mlm" and "classification"'
+            )
         save_loc = "./hidden_layer_parameters"
         self.hidden_layer.save_parameters(save_loc)
 
-        self.construct(dimension)
+        self.construct(dim)
         self.hidden_layer.load_parameters(save_loc)
         os.remove(save_loc)
 
-    def load_data(self, instruction, file, batch_size, label_dim):
-        if instruction == "mlm":
-            # TODO: Check file format
-            mlm_loader = dataset.MLMDatasetLoader(self.input_dimension)
-            data, label = mlm_loader.load(file, batch_size)
-        elif instruction == "classification":
-            pipeline = DataPipeline(
+    def load_mlm_data(self, file, batch_size):
+        mlm_loader = dataset.MLMDatasetLoader(self.input_dimension)
+        data, tokens, labels = mlm_loader.load(file, batch_size)
+        return data, tokens, labels
+    
+    def load_classification_data(self, file, batch_size, label_dim):
+        pipeline = DataPipeline(
                 file,
                 batch_size=batch_size,
                 input_blocks=[
@@ -76,12 +83,25 @@ class CookieMonster:
                 label_blocks=[blocks.Categorical(0, label_dim)],
                 delimiter=",",
             )
-            data, label = pipeline.load_in_memory()
+        data, labels = pipeline.load_in_memory()
+        return data, labels
+    
+    def train_with_task(self, task, train_data, train_tokens, train_labels, train_config):
+        if task == "mlm":
+            assert(train_tokens is not None)
+            self.model.train(train_data, train_tokens, train_labels, train_config)
         else:
-            raise ValueError(
-                'Invalid instruction. Supported instructions are "mlm" and "classification"'
-            )
-        return data, label
+            assert(train_tokens is None)
+            self.model.train(train_data, train_labels, train_config)
+
+    def predict_with_task(self, task, test_data, test_tokens, test_labels, predict_config):
+        if task== "mlm":
+            assert(test_tokens is not None)
+            return self.model.predict(test_data, test_tokens, test_labels, predict_config)
+        else:
+            assert(test_tokens is None)
+            return self.model.predict(test_data, test_labels, predict_config)
+    
 
     def eat_corpus(
         self,
@@ -120,19 +140,12 @@ class CookieMonster:
                     batch_size = config["batch_size"]
                     task = config["task"]
 
-                    self.set_output_dimension(num_classes)
+                    self.set_output_dimension(num_classes, task)
                     if num_classes != self.output_layer.get_dim():
                         raise ValueError("Output dimension is incorrect")
 
                     epochs = config["epochs"]
                     learning_rate = config["learning_rate"]
-
-                    train_x, train_y = self.load_data(
-                        task, train_file, batch_size, num_classes
-                    )
-                    test_x, test_y = self.load_data(
-                        task, test_file, batch_size, num_classes
-                    )
 
                     train_config = bolt.graph.TrainConfig.make(
                         learning_rate=learning_rate, epochs=1
@@ -142,11 +155,32 @@ class CookieMonster:
                         .with_metrics(["categorical_accuracy"])
                         .silence()
                     )
+                    if task == "mlm":
+                        train_data, train_tokens, train_labels = self.load_mlm_data(
+                            train_file, batch_size
+                        )
+                        test_data, test_tokens, test_labels = self.load_mlm_data(
+                            test_file, batch_size
+                        )
+                    elif task == "classification":
+                        train_data, train_labels = self.load_classification_data(
+                            train_file, batch_size, num_classes
+                        )
+                        test_data, test_labels = self.load_classification_data(
+                            test_file, batch_size, num_classes
+                        )
+                        train_tokens = None
+                        test_tokens = None
+                    else:
+                        raise ValueError(
+                            'Invalid instruction. Supported instructions are "mlm" and "classification"'
+                        )
+
                     for i in range(epochs):
-                        self.model.train(train_x, train_y, train_config=train_config)
+                        self.train_with_task(task, train_data, train_tokens, train_labels, train_config=train_config)
                         if verbose:
-                            metrics = self.model.predict(
-                                test_x, test_y, predict_config=predict_config
+                            metrics = self.predict_with_task(
+                                task, test_data, test_tokens, test_labels, predict_config=predict_config
                             )
                             print(
                                 "Epoch: ",
@@ -156,8 +190,8 @@ class CookieMonster:
                                 "\n",
                             )
 
-                    metrics = self.model.predict(
-                        test_x, test_y, predict_config=predict_config
+                    metrics = self.predict_with_task(
+                        task, test_data, test_tokens, test_labels, predict_config=predict_config
                     )
                     print(
                         "Epoch: ",

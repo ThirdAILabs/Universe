@@ -1,8 +1,8 @@
+from click import command
 from ..cookie_monster import *
 import argparse
 
 INPUT_DIM = 100000
-VOCAB_SIZE = 30224
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--train_dir", type=str, required=True)
@@ -17,7 +17,7 @@ def construct_monster(output_dim):
     model = CookieMonster(
         INPUT_DIM, hidden_dimension=2000, hidden_sparsity=0.1, mlflow_enabled=False
     )
-    model.set_output_dimension(output_dim)
+    model.set_output_dimension(output_dim, args.command)
     return model
 
 

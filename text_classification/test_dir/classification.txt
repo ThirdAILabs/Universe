@@ -1,6 +1,6 @@
 train_file="string_classification.csv"
 test_file="string_classification.csv"
-num_classes=12
+num_classes=2
 epochs=3
 learning_rate=0.01
 batch_size=32
