@@ -2,8 +2,6 @@
 
 #include <hashing/src/MurmurHash.h>
 #include <dataset/src/Dataset.h>
-#include <dataset/src/batch_types/DenseBatch.h>
-#include <dataset/src/batch_types/SparseBatch.h>
 #include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/bolt_datasets/StreamingDataset.h>
 #include <dataset/src/bolt_datasets/batch_processors/MaskedSentenceBatchProcessor.h>
@@ -20,77 +18,17 @@ namespace py = pybind11;
 
 namespace thirdai::dataset::python {
 
-template <typename T>
-using NumpyArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
-
 void createDatasetSubmodule(py::module_& module);
-
-InMemoryDataset<SparseBatch> loadSVMDataset(const std::string& filename,
-                                            uint32_t batch_size);
-
-InMemoryDataset<DenseBatch> loadCSVDataset(const std::string& filename,
-                                           uint32_t batch_size,
-                                           std::string delimiter);
 
 py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
                                     uint32_t batch_size,
                                     bool softmax_for_multiclass = true);
-
-py::tuple loadBoltCsvDatasetWrapper(const std::string& filename,
-                                    uint32_t batch_size, char delimiter);
 
 py::tuple loadClickThroughDatasetWrapper(const std::string& filename,
                                          uint32_t batch_size,
                                          uint32_t num_dense_features,
                                          uint32_t num_categorical_features,
                                          bool sparse_labels);
-
-// https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=numpy#arrays
-// for explanation of why we do py::array::c_style and py::array::forcecast.
-// Ensures array is an array of floats in dense row major order.
-SparseBatch wrapNumpyIntoSparseData(
-    const std::vector<py::array_t<
-        float, py::array::c_style | py::array::forcecast>>& sparse_values,
-    const std::vector<
-        py::array_t<uint32_t, py::array::c_style | py::array::forcecast>>&
-        sparse_indices,
-    uint64_t starting_id);
-
-DenseBatch wrapNumpyIntoDenseBatch(
-    const py::array_t<float, py::array::c_style | py::array::forcecast>& data,
-    uint64_t starting_id);
-
-InMemoryDataset<DenseBatch> denseInMemoryDatasetFromNumpy(
-    const py::array_t<float, py::array::c_style | py::array::forcecast>&
-        examples,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        labels,
-    uint32_t batch_size, uint64_t starting_id);
-
-InMemoryDataset<SparseBatch> sparseInMemoryDatasetFromNumpy(
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        x_idxs,
-    const py::array_t<float, py::array::c_style | py::array::forcecast>& x_vals,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        x_offsets,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        y_idxs,
-    const py::array_t<uint32_t, py::array::c_style | py::array::forcecast>&
-        y_offsets,
-    uint32_t batch_size, uint64_t starting_id);
-
-BoltDatasetPtr denseBoltDatasetFromNumpy(
-    const py::array_t<float, py::array::c_style | py::array::forcecast>&
-        examples,
-    uint32_t batch_size);
-
-BoltDatasetPtr sparseBoltDatasetFromNumpy(const NumpyArray<uint32_t>& indices,
-                                          const NumpyArray<float>& values,
-                                          const NumpyArray<uint32_t>& offsets,
-                                          uint32_t batch_size);
-
-BoltDatasetPtr categoricalLabelsFromNumpy(const NumpyArray<uint32_t>& labels,
-                                          uint32_t batch_size);
 
 /*
  * This function takes a single sentence, and parses it into an sparse
@@ -156,13 +94,14 @@ class MLMDatasetLoader {
     auto data_loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
 
-    auto dataset = std::make_shared<
-        dataset::StreamingDataset<dataset::MaskedSentenceBatch>>(
+    auto dataset = std::make_shared<dataset::StreamingDataset<
+        bolt::BoltBatch, thirdai::dataset::BoltTokenBatch, bolt::BoltBatch>>(
         data_loader, _batch_processor);
 
-    auto [data, labels] = dataset->loadInMemory();
+    auto [data, masked_indices, labels] = dataset->loadInMemory();
 
-    return py::make_tuple(py::cast(data), py::cast(labels));
+    return py::make_tuple(py::cast(data), py::cast(masked_indices),
+                          py::cast(labels));
   }
 
  private:

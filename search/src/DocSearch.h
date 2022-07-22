@@ -8,10 +8,10 @@
 #include <cereal/types/vector.hpp>
 #include "MaxFlashArray.h"
 #include "Utils.h"
+#include <bolt/src/layers/BoltVector.h>
 #include <hashing/src/FastSRP.h>
 #include <Eigen/src/Core/util/Constants.h>
 #include <dataset/src/Vectors.h>
-#include <dataset/src/batch_types/DenseBatch.h>
 #include <exceptions/src/Exceptions.h>
 #include <optional>
 #include <queue>
@@ -22,13 +22,12 @@
 namespace thirdai::search {
 
 // TODO(josh): This class is NOT currently safe to call concurrently.
-// TODO(josh): Right now this only has support for dense input and documents
+// TODO(josh): Right now this only has support for documents
 // with a max of 256 embeddings. If there are more than 256 embeddings, it
 // silently truncates. This should be fixed with a dynamic tiny table size,
 // but for now I think we should keep this a silent error. If we threw an
 // error existing scripts would fail, and printing out a warning is inelegant
-// (we may print out thousands of warnings). Note that the dense condition
-// is ensured since we only accept DenseBatch.
+// (we may print out thousands of warnings).
 /**
  * Represents a service that allows document addition, removal, and queries.
  * For now, can represent at most 2^32 - 1 documents.
@@ -93,15 +92,15 @@ class DocSearch {
 
   // Returns true if this is a new document, false if this was an old document
   // and we updated it.
-  bool addDocument(const dataset::DenseBatch& embeddings,
-                   const std::string& doc_id, const std::string& doc_text) {
+  bool addDocument(const bolt::BoltBatch& embeddings, const std::string& doc_id,
+                   const std::string& doc_text) {
     std::vector<uint32_t> centroid_ids = getNearestCentroids(embeddings, 1);
     return addDocumentWithCentroids(embeddings, centroid_ids, doc_id, doc_text);
   }
 
   // Returns true if this is a new document, false if this was an old document
   // and we updated it.
-  bool addDocumentWithCentroids(const dataset::DenseBatch& embeddings,
+  bool addDocumentWithCentroids(const bolt::BoltBatch& embeddings,
                                 const std::vector<uint32_t>& centroid_ids,
                                 const std::string& doc_id,
                                 const std::string& doc_text) {
@@ -155,7 +154,7 @@ class DocSearch {
   }
 
   std::vector<std::pair<std::string, std::string>> query(
-      const dataset::DenseBatch& embeddings, uint32_t top_k,
+      const bolt::BoltBatch& embeddings, uint32_t top_k,
       uint32_t num_to_rerank) const {
     std::vector<uint32_t> centroid_ids =
         getNearestCentroids(embeddings, _nprobe_query);
@@ -163,7 +162,7 @@ class DocSearch {
   }
 
   std::vector<std::pair<std::string, std::string>> queryWithCentroids(
-      const dataset::DenseBatch& embeddings,
+      const bolt::BoltBatch& embeddings,
       const std::vector<uint32_t>& centroid_ids, uint32_t top_k,
       uint32_t num_to_rerank) const {
     if (embeddings.getBatchSize() == 0) {
@@ -178,12 +177,16 @@ class DocSearch {
           "The passed in top_k must be <= the passed in num_to_rerank");
     }
     for (uint32_t i = 0; i < embeddings.getBatchSize(); i++) {
-      if (embeddings.at(i).dim() != _dense_dim) {
-        throw std::invalid_argument("Vector " + std::to_string(i) +
+      if (embeddings[i].len != _dense_dim) {
+        throw std::invalid_argument("Embedding " + std::to_string(i) +
                                     " has dimension " + std::to_string(i) +
                                     " but should have dimension equal to the "
                                     "original passed in dense dimension, " +
                                     std::to_string(_dense_dim));
+      }
+      if (!embeddings[i].isDense()) {
+        throw std::invalid_argument("Embedding " + std::to_string(i) +
+                                    " is sparse but should be dense");
       }
     }
 
@@ -238,12 +241,12 @@ class DocSearch {
 
   // Finds the nearest nprobe centroids for each vector in the batch and
   // then concatenates all of the centroid ids across the batch.
-  std::vector<uint32_t> getNearestCentroids(const dataset::DenseBatch& batch,
+  std::vector<uint32_t> getNearestCentroids(const bolt::BoltBatch& batch,
                                             uint32_t nprobe) const {
     Eigen::MatrixXf eigen_batch(batch.getBatchSize(), _dense_dim);
     for (uint32_t i = 0; i < batch.getBatchSize(); i++) {
       for (uint32_t d = 0; d < _dense_dim; d++) {
-        eigen_batch(i, d) = batch.at(i).at(d);
+        eigen_batch(i, d) = batch[i].activations[d];
       }
     }
 
@@ -316,7 +319,7 @@ class DocSearch {
   // This method returns a permutation of the input internal_ids_to_rerank
   // sorted in descending order by the approximated score of that document.
   std::vector<uint32_t> rankDocuments(
-      const dataset::DenseBatch& query_embeddings,
+      const bolt::BoltBatch& query_embeddings,
       const std::vector<uint32_t>& internal_ids_to_rerank) const {
     // This returns a vector of scores, where the ith score is the score of
     // the document with the internal_id at internal_ids_to_rerank[i]

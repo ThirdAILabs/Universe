@@ -1,97 +1,29 @@
 #include "BoltDatasets.h"
+#include "DataLoader.h"
+#include "StreamingDataset.h"
 #include <dataset/src/batch_types/ClickThroughBatch.h>
+#include <dataset/src/bolt_datasets/batch_processors/SvmBatchProcessor.h>
 #include <dataset/src/parsers/ClickThroughParser.h>
 #include <dataset/src/parsers/CsvParser.h>
-#include <dataset/src/parsers/SvmParser.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <chrono>
 #include <fstream>
+#include <limits>
+#include <memory>
 
 namespace thirdai::dataset {
 
-DatasetWithLabels loadBoltSvmDataset(const std::string& filename,
-                                     uint32_t batch_size,
-                                     bool softmax_for_multiclass) {
-  std::cout << "Loading Bolt SVM dataset from '" << filename << "' ..."
-            << std::endl;
-  auto start = std::chrono::high_resolution_clock::now();
+std::tuple<BoltDatasetPtr, BoltDatasetPtr> loadBoltSvmDataset(
+    const std::string& filename, uint32_t batch_size,
+    bool softmax_for_multiclass) {
+  auto batch_processor =
+      std::make_shared<SvmBatchProcessor>(softmax_for_multiclass);
 
-  std::ifstream file = dataset::SafeFileIO::ifstream(filename);
+  auto dataset =
+      StreamingDataset<bolt::BoltBatch, bolt::BoltBatch>::loadDatasetFromFile(
+          filename, batch_size, batch_processor);
 
-  SvmParser<bolt::BoltVector, bolt::BoltVector> parser(
-      bolt::BoltVector::makeSparseVector,
-      [softmax_for_multiclass](
-          const std::vector<uint32_t>& labels) -> bolt::BoltVector {
-        float label_vals = softmax_for_multiclass ? 1.0 / labels.size() : 1.0;
-        return bolt::BoltVector::makeSparseVector(
-            labels, std::vector<float>(labels.size(), label_vals));
-      });
-
-  uint32_t len = 0;
-
-  std::vector<bolt::BoltBatch> data_batches;
-  std::vector<bolt::BoltBatch> label_batches;
-  while (!file.eof()) {
-    std::vector<bolt::BoltVector> data_vecs;
-    std::vector<bolt::BoltVector> label_vecs;
-
-    parser.parseBatch(batch_size, file, data_vecs, label_vecs);
-
-    len += data_vecs.size();
-
-    data_batches.push_back(bolt::BoltBatch(std::move(data_vecs)));
-    label_batches.push_back(bolt::BoltBatch(std::move(label_vecs)));
-  }
-
-  auto end = std::chrono::high_resolution_clock::now();
-  std::cout
-      << " -> Read " << len << " vectors from '" << filename << "' in "
-      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds" << std::endl;
-
-  return DatasetWithLabels(BoltDataset(std::move(data_batches), len),
-                           BoltDataset(std::move(label_batches), len));
-}
-
-DatasetWithLabels loadBoltCsvDataset(const std::string& filename,
-                                     uint32_t batch_size, char delimiter) {
-  std::cout << "Loading Bolt CSV dataset from '" << filename << "' ..."
-            << std::endl;
-  auto start = std::chrono::high_resolution_clock::now();
-
-  std::ifstream file = dataset::SafeFileIO::ifstream(filename);
-
-  CsvParser<bolt::BoltVector, bolt::BoltVector> parser(
-      bolt::BoltVector::makeDenseVector,
-      [](uint32_t label) -> bolt::BoltVector {
-        return bolt::BoltVector::makeSparseVector({label}, {1.0});
-      },
-      delimiter);
-
-  uint32_t len = 0;
-
-  std::vector<bolt::BoltBatch> data_batches;
-  std::vector<bolt::BoltBatch> label_batches;
-  while (!file.eof()) {
-    std::vector<bolt::BoltVector> data_vecs;
-    std::vector<bolt::BoltVector> label_vecs;
-
-    parser.parseBatch(batch_size, file, data_vecs, label_vecs);
-
-    len += data_vecs.size();
-
-    data_batches.push_back(bolt::BoltBatch(std::move(data_vecs)));
-    label_batches.push_back(bolt::BoltBatch(std::move(label_vecs)));
-  }
-
-  auto end = std::chrono::high_resolution_clock::now();
-  std::cout
-      << " -> Read " << len << " vectors from '" << filename << "' in "
-      << std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-      << " seconds" << std::endl;
-
-  return DatasetWithLabels(BoltDataset(std::move(data_batches), len),
-                           BoltDataset(std::move(label_batches), len));
+  return dataset->loadInMemory();
 }
 
 ClickThroughDatasetWithLabels loadClickThroughDataset(
@@ -126,8 +58,8 @@ ClickThroughDatasetWithLabels loadClickThroughDataset(
       << " seconds" << std::endl;
 
   return ClickThroughDatasetWithLabels(
-      InMemoryDataset<ClickThroughBatch>(std::move(data_batches), len),
-      BoltDataset(std::move(label_batches), len));
+      InMemoryDataset<ClickThroughBatch>(std::move(data_batches)),
+      BoltDataset(std::move(label_batches)));
 }
 
 }  // namespace thirdai::dataset

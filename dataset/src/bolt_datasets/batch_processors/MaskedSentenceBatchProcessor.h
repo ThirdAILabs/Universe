@@ -2,6 +2,7 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <hashing/src/MurmurHash.h>
+#include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <dataset/src/batch_types/MaskedSentenceBatch.h>
 #include <dataset/src/bolt_datasets/BatchProcessor.h>
 #include <dataset/src/encodings/text/TextEncodingUtils.h>
@@ -11,7 +12,7 @@
 namespace thirdai::dataset {
 
 class MaskedSentenceBatchProcessor final
-    : public BatchProcessor<MaskedSentenceBatch> {
+    : public BatchProcessor<bolt::BoltBatch, BoltTokenBatch, bolt::BoltBatch> {
  public:
   explicit MaskedSentenceBatchProcessor(uint32_t output_range)
       : _output_range(output_range),
@@ -19,7 +20,7 @@ class MaskedSentenceBatchProcessor final
             /* key= */ "[UNK]", /* len= */ 5)),
         _rand(723204) {}
 
-  std::optional<BoltDataLabelPair<MaskedSentenceBatch>> createBatch(
+  std::tuple<bolt::BoltBatch, BoltTokenBatch, bolt::BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     std::vector<bolt::BoltVector> vectors(rows.size());
     std::vector<std::vector<uint32_t>> masked_indices(rows.size());
@@ -34,9 +35,9 @@ class MaskedSentenceBatchProcessor final
       labels[i] = std::move(label);
     }
 
-    return std::make_pair(
-        MaskedSentenceBatch(std::move(vectors), std::move(masked_indices)),
-        bolt::BoltBatch(std::move(labels)));
+    return std::make_tuple(bolt::BoltBatch(std::move(vectors)),
+                           BoltTokenBatch(std::move(masked_indices)),
+                           bolt::BoltBatch(std::move(labels)));
   }
 
   bool expectsHeader() const final { return false; }

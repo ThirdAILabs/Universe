@@ -80,15 +80,6 @@ def load_dataset(
         train_x, train_y = dataset.load_bolt_svm_dataset(train_filename, batch_size)
         test_x, test_y = dataset.load_bolt_svm_dataset(test_filename, batch_size)
         return train_x, train_y, test_x, test_y
-    elif config["dataset"]["format"].lower() == "csv":
-        delimiter = config["dataset"].get("delimeter", ",")
-        train_x, train_y = dataset.load_bolt_csv_dataset(
-            train_filename, batch_size, delimiter
-        )
-        test_x, test_y = dataset.load_bolt_csv_dataset(
-            test_filename, batch_size, delimiter
-        )
-        return train_x, train_y, test_x, test_y
     else:
         print("Invalid dataset format specified")
         return None

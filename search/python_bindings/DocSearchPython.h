@@ -3,13 +3,14 @@
 #include <cereal/archives/binary.hpp>
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/HashFunction.h>
-#include <dataset/python_bindings/DatasetPython.h>
+#include <dataset/src/bolt_datasets/NumpyDataset.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <search/src/DocSearch.h>
 #include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <memory>
 
@@ -17,7 +18,7 @@ namespace py = pybind11;
 
 namespace thirdai::search::python {
 
-using thirdai::dataset::python::wrapNumpyIntoDenseBatch;
+void createSearchSubmodule(py::module_& module);
 
 // TODO(josh): Make uint8_t configurable, will currently cut off all documents
 // at 256 embeddings
@@ -32,8 +33,10 @@ class PyDocSearch final : public DocSearch {
       const std::string& doc_id, const std::string& doc_text,
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           embeddings) {
-    return DocSearch::addDocument(wrapNumpyIntoDenseBatch(embeddings, 0),
-                                  doc_id, doc_text);
+    auto single_batch_dataset = dataset::numpy::numpyToBoltVectorDataset(
+        embeddings, /* batch_size = */ std::numeric_limits<uint64_t>::max());
+    return DocSearch::addDocument(single_batch_dataset->at(0), doc_id,
+                                  doc_text);
   }
 
   bool addDocumentWithCentroids(
@@ -41,9 +44,10 @@ class PyDocSearch final : public DocSearch {
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           embeddings,
       const std::vector<uint32_t>& doc_centroid_ids) {
+    auto single_batch_dataset = dataset::numpy::numpyToBoltVectorDataset(
+        embeddings, /* batch_size = */ std::numeric_limits<uint64_t>::max());
     return DocSearch::addDocumentWithCentroids(
-        wrapNumpyIntoDenseBatch(embeddings, 0), doc_centroid_ids, doc_id,
-        doc_text);
+        single_batch_dataset->at(0), doc_centroid_ids, doc_id, doc_text);
   }
 
   bool deleteDocument(const std::string& doc_id) {
@@ -58,8 +62,10 @@ class PyDocSearch final : public DocSearch {
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           embeddings,
       uint32_t top_k, uint32_t num_to_rerank) {
-    std::vector<std::pair<std::string, std::string>> result = DocSearch::query(
-        wrapNumpyIntoDenseBatch(embeddings, 0), top_k, num_to_rerank);
+    auto single_batch_dataset = dataset::numpy::numpyToBoltVectorDataset(
+        embeddings, /* batch_size = */ std::numeric_limits<uint64_t>::max());
+    std::vector<std::pair<std::string, std::string>> result =
+        DocSearch::query(single_batch_dataset->at(0), top_k, num_to_rerank);
     return py::cast(std::move(result));
   }
 
@@ -68,8 +74,10 @@ class PyDocSearch final : public DocSearch {
           embeddings,
       const std::vector<uint32_t>& query_centroid_ids, uint32_t top_k,
       uint32_t num_to_rerank) {
+    auto single_batch_dataset = dataset::numpy::numpyToBoltVectorDataset(
+        embeddings, /* batch_size = */ std::numeric_limits<uint64_t>::max());
     std::vector<std::pair<std::string, std::string>> result =
-        DocSearch::queryWithCentroids(wrapNumpyIntoDenseBatch(embeddings, 0),
+        DocSearch::queryWithCentroids(single_batch_dataset->at(0),
                                       query_centroid_ids, top_k, num_to_rerank);
     return py::cast(std::move(result));
   }
