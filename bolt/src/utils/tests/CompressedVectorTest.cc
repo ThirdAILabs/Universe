@@ -7,7 +7,7 @@
 namespace thirdai::bolt::tests {
 
 template <class ELEMENT_TYPE>
-float reconstruction_error(
+float single_vector_reconstruction_error(
     const CompressedVector<ELEMENT_TYPE>& compressed_vector,
     const std::vector<ELEMENT_TYPE>& large_vector) {
   float error = 0;
@@ -15,41 +15,45 @@ float reconstruction_error(
   for (size_t i = 0; i < num_elements; i++) {
     float diff = static_cast<float>(large_vector[i] - compressed_vector.get(i));
     error += diff * diff;  // Squared error.
-    std::cout << "Error: " << error << std::endl;
   }
 
-  error = error / static_cast<float>(num_elements);
+  error = sqrt(error) / static_cast<float>(num_elements);
   return error;
 }
 
 void runReconstructionTest() {
-  const uint64_t uncompressed_size = 1 << 24;
-  const uint64_t compressed_size = 1 << 8;
+  const uint64_t uncompressed_size = (int)(5e6);
   const uint64_t block_size = 64;
 
   // Because we love the answer to life, universe and everything.
   const uint32_t seed = 42;
-
   using ElementType = float;
-  std::vector<ElementType> uncompressed_vector(uncompressed_size);
 
-  // Random number generator. Reuse the seed.
-  std::mt19937_64 gen64(seed);
-  std::normal_distribution<> normal_distribution{/*mean=*/
-                                                 0, /*variance=*/2};
+  for (uint64_t compressed_size = 10000; compressed_size <= uncompressed_size;
+       compressed_size += 10000) {
+    std::vector<ElementType> uncompressed_vector(uncompressed_size);
 
-  auto generator = [&gen64, &normal_distribution]() {
-    return normal_distribution(gen64);
-  };
+    // Random number generator. Reuse the seed.
+    std::mt19937_64 gen64(seed);
+    std::normal_distribution<> normal_distribution{/*mean=*/0, /*variance=*/4};
+    std::uniform_real_distribution<> uniform_real_distribution{-100, 100};
+    auto generator = [&gen64, &normal_distribution,
+                      &uniform_real_distribution]() {
+      return normal_distribution(gen64);
+      // return uniform_real_distribution(gen64);
+    };
 
-  std::generate(uncompressed_vector.begin(), uncompressed_vector.end(),
-                generator);
+    std::generate(uncompressed_vector.begin(), uncompressed_vector.end(),
+                  generator);
 
-  CompressedVector<ElementType> compressed_vector(
-      uncompressed_vector, compressed_size, block_size, seed);
+    CompressedVector<ElementType> compressed_vector(
+        uncompressed_vector, compressed_size, block_size, seed);
 
-  float error = reconstruction_error(compressed_vector, uncompressed_vector);
-  std::cout << "Reconstruction error: " << error << std::endl;
+    float error = single_vector_reconstruction_error(compressed_vector,
+                                                     uncompressed_vector);
+    std::cout << "Reconstruction error@compressed_size(" << compressed_size
+              << "): " << error << std::endl;
+  }
 }
 
 }  // namespace thirdai::bolt::tests
