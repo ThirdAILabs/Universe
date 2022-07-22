@@ -260,13 +260,8 @@ void createDatasetSubmodule(py::module_& module) {
   dataset_submodule.def("make_dense_vector", &BoltVector::makeDenseVector,
                         py::arg("values"));
 
-  // The no lint below is because clang tidy doesn't like instantiating an
-  // object without a name and never using it.
-  py::class_<ClickThroughDataset, ClickThroughDatasetPtr>(  // NOLINT
-      dataset_submodule, "ClickThroughDataset");
-
   dataset_submodule.def(
-      "load_click_through_dataset", &loadClickThroughDatasetWrapper,
+      "load_click_through_dataset", &ClickThroughDatasetLoader::loadDataset,
       py::arg("filename"), py::arg("batch_size"),
       py::arg("num_numerical_features"), py::arg("num_categorical_features"),
       py::arg("categorical_labels"),
@@ -415,17 +410,6 @@ py::tuple loadBoltSvmDatasetWrapper(const std::string& filename,
   auto [data, labels] = SvmDatasetLoader::loadDataset(filename, batch_size,
                                                       softmax_for_multiclass);
   return py::make_tuple(std::move(data), std::move(labels));
-}
-
-py::tuple loadClickThroughDatasetWrapper(const std::string& filename,
-                                         uint32_t batch_size,
-                                         uint32_t num_dense_features,
-                                         uint32_t num_categorical_features,
-                                         bool sparse_labels) {
-  auto res = ClickThroughDatasetLoader::loadDataset(
-      filename, batch_size, num_dense_features, num_categorical_features,
-      sparse_labels);
-  return py::make_tuple(std::move(res.data), std::move(res.labels));
 }
 
 std::tuple<py::array_t<uint32_t>, py::array_t<uint32_t>>

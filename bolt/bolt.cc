@@ -267,67 +267,6 @@ void trainFCN(toml::table& config) {
   }
 }
 
-void trainDLRM(toml::table& config) {
-  auto embedding_layer = createEmbeddingLayerConfig(config);
-  auto bottom_mlp =
-      createFullyConnectedLayerConfigs(config["bottom_mlp_layers"]);
-  auto top_mlp = createFullyConnectedLayerConfigs(config["top_mlp_layers"]);
-
-  if (!config.contains("dataset") || !config["dataset"].is_table()) {
-    std::cerr << "Invalid config file format: expected table for dataset info."
-              << std::endl;
-    exit(1);
-  }
-  auto* dataset_table = config["dataset"].as_table();
-  uint32_t dense_features = getIntValue(dataset_table, "dense_features");
-  uint32_t categorical_features =
-      getIntValue(dataset_table, "categorical_features");
-  std::string train_filename =
-      findFullFilepath(getStrValue(dataset_table, "train_data"));
-  std::string test_filename =
-      findFullFilepath(getStrValue(dataset_table, "test_data"));
-
-  if (!config.contains("params") || !config["params"].is_table()) {
-    std::cerr << "Invalid config file format: expected table for parameters."
-              << std::endl;
-    exit(1);
-  }
-  auto* param_table = config["params"].as_table();
-  uint32_t batch_size = getIntValue(param_table, "batch_size");
-  float learning_rate = getFloatValue(param_table, "learning_rate");
-  uint32_t epochs = getIntValue(param_table, "epochs");
-  uint32_t rehash = getIntValue(param_table, "rehash");
-  uint32_t rebuild = getIntValue(param_table, "rebuild");
-
-  auto train_metrics = getMetrics(param_table, "train_metrics");
-  auto test_metrics = getMetrics(param_table, "test_metrics");
-
-  auto loss_fn =
-      thirdai::bolt::getLossFunction(getStrValue(param_table, "loss_fn"));
-
-  bolt::DLRM dlrm(embedding_layer, bottom_mlp, top_mlp, dense_features);
-
-  auto [train_data, train_labels] =
-      dataset::ClickThroughDatasetLoader::loadDataset(
-          train_filename, batch_size, dense_features, categorical_features,
-          top_mlp.back()->getDim() > 1);
-
-  auto [test_data, test_labels] =
-      dataset::ClickThroughDatasetLoader::loadDataset(
-          test_filename, batch_size, dense_features, categorical_features,
-          top_mlp.back()->getDim() > 1);
-
-  for (uint32_t e = 0; e < epochs; e++) {
-    dlrm.train(train_data, train_labels, *loss_fn, learning_rate, 1, rehash,
-               rebuild, train_metrics);
-    dlrm.predict(test_data, test_labels,
-                 /* output_active_neurons= */
-                 nullptr,
-                 /* output_activations= */ nullptr,
-                 /* use_sparse_inference= */ false, test_metrics);
-  }
-}
-
 int main(int argc, const char** argv) {
   if (argc != 2) {
     std::cerr << "Invalid args, usage: ./bolt <config file>" << std::endl;
@@ -339,9 +278,6 @@ int main(int argc, const char** argv) {
 
     if (table.contains("layers")) {
       trainFCN(table);
-    } else if (table.contains("bottom_mlp_layers") &&
-               table.contains("top_mlp_layers")) {
-      trainDLRM(table);
     }
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
