@@ -3,24 +3,77 @@ import pytest
 
 pytestmark = [pytest.mark.integration]
 
-from thirdai import bolt
+from thirdai import bolt, dataset
 import numpy as np
+import os
 
 from .utils import (
     train_network,
     build_sparse_hidden_layer_classifier,
     copy_two_layer_network_parameters,
-    build_sparse_output_layer_network,
-    load_mnist,
-    setup_module,
-    load_mnist_labels,
-    check_categorical_accuracies,
 )
 
 LEARNING_RATE = 0.0001
 ACCURACY_THRESHOLD = 0.94
 SPARSE_INFERENCE_ACCURACY_THRESHOLD = 0.9
 SPARSE_INFERENCE_SPARSE_OUTPUT_ACCURACY_THRESHOLD = 0.35
+
+# Constructs a bolt network for mnist with a sparse output layer.
+def build_sparse_output_layer_network():
+    layers = [
+        bolt.FullyConnected(dim=256, activation_function="ReLU"),
+        bolt.FullyConnected(
+            dim=10,
+            sparsity=0.4,
+            activation_function="Softmax",
+        ),
+    ]
+    network = bolt.Network(layers=layers, input_dim=784)
+    return network
+
+
+def check_categorical_accuracies(acc, activations, accuracy_threshold):
+
+    assert acc["categorical_accuracy"] >= accuracy_threshold  # ACCURACY_THRESHOLD
+
+    # This last check is just to make sure that the accuracy computed in c++ matches
+    # what we can compute here using the returned activations. This verifies that the
+    # returned activations match and that the metrics are computed correctly.
+    predictions = np.argmax(activations, axis=1)
+
+    labels = load_mnist_labels()
+    acc_computed = np.mean(predictions == labels)
+
+    assert acc_computed == acc["categorical_accuracy"]
+
+def load_mnist():
+    train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
+    test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
+    return train_x, train_y, test_x, test_y
+
+
+def setup_module():
+    if not os.path.exists("mnist"):
+        os.system(
+            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
+        )
+        os.system("bzip2 -d mnist.bz2")
+
+    if not os.path.exists("mnist.t"):
+        os.system(
+            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
+        )
+        os.system("bzip2 -d mnist.t.bz2")
+
+
+def load_mnist_labels():
+    labels = []
+    with open("mnist.t") as file:
+        for line in file.readlines():
+            label = int(line.split(" ")[0])
+            labels.append(label)
+    return np.array(labels)
+
 
 
 def test_mnist_sparse_output_layer():
@@ -34,7 +87,7 @@ def test_mnist_sparse_output_layer():
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
-    check_categorical_accuracies(acc, activations)
+    check_categorical_accuracies(acc, activations, ACCURACY_THRESHOLD)
 
 
 def test_mnist_sparse_hidden_layer():
@@ -50,7 +103,7 @@ def test_mnist_sparse_hidden_layer():
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
-    check_categorical_accuracies(acc, activations)
+    check_categorical_accuracies(acc, activations, ACCURACY_THRESHOLD)
 
 
 def test_mnist_sparse_inference():

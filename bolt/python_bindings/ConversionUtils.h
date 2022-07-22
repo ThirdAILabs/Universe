@@ -77,7 +77,7 @@ inline void printCopyWarning(const std::string& array_name,
 
 inline void biasDimensionCheck(
     const py::array_t<float, py::array::c_style | py::array::forcecast>& biases,
-    ssize_t dim, const std::string& matrix_type) {
+    uint32_t dim, const std::string& matrix_type) {
   if (biases.ndim() != 1) {
     std::stringstream err;
     err << "Expected " << matrix_type
@@ -97,7 +97,7 @@ inline void biasDimensionCheck(
 inline void weightDimensionCheck(
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
         new_weights,
-    ssize_t dim, ssize_t prev_dim, const std::string& matrix_type = "") {
+    uint32_t dim, uint32_t prev_dim, const std::string& matrix_type = "") {
   if (new_weights.ndim() != 2) {
     std::stringstream err;
     err << "Expected " << matrix_type

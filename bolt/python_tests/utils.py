@@ -1,6 +1,6 @@
-from thirdai import bolt, dataset
+from thirdai import bolt
 import numpy as np
-import os
+
 
 
 # Constructs a bolt network with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
@@ -79,7 +79,7 @@ def train_single_node_distributed_network(
         rehash=3000,
         rebuild=10000,
         verbose=True,
-        batch_size=64,
+        batch_size=10,
     )
     for epoch_num in range(epochs):
         for batch_num in range(batch_size):
@@ -156,52 +156,6 @@ def copy_two_layer_network_parameters(network, untrained_network):
     )
 
 
-# Constructs a bolt network for mnist with a sparse output layer.
-def build_sparse_output_layer_network(distributed=False):
-    layers = [
-        bolt.FullyConnected(dim=256, activation_function="ReLU"),
-        bolt.FullyConnected(
-            dim=10,
-            sparsity=0.4,
-            activation_function="Softmax",
-        ),
-    ]
-    if distributed:
-        network = bolt.DistributedNetwork(layers=layers, input_dim=784)
-    else:
-        network = bolt.Network(layers=layers, input_dim=784)
-    return network
-
-
-def load_mnist():
-    train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
-    test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
-    return train_x, train_y, test_x, test_y
-
-
-def setup_module():
-    if not os.path.exists("mnist"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
-        )
-        os.system("bzip2 -d mnist.bz2")
-
-    if not os.path.exists("mnist.t"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
-        )
-        os.system("bzip2 -d mnist.t.bz2")
-
-
-def load_mnist_labels():
-    labels = []
-    with open("mnist.t") as file:
-        for line in file.readlines():
-            label = int(line.split(" ")[0])
-            labels.append(label)
-    return np.array(labels)
-
-
 def remove_files(files):
     for file in files:
         os.remove(file)
@@ -219,16 +173,3 @@ def compute_accuracy(test_labels, pred_file):
     ) / len(predictions)
 
 
-def check_categorical_accuracies(acc, activations):
-
-    assert acc["categorical_accuracy"] >= 0.94  # ACCURACY_THRESHOLD
-
-    # This last check is just to make sure that the accuracy computed in c++ matches
-    # what we can compute here using the returned activations. This verifies that the
-    # returned activations match and that the metrics are computed correctly.
-    predictions = np.argmax(activations, axis=1)
-
-    labels = load_mnist_labels()
-    acc_computed = np.mean(predictions == labels)
-
-    assert acc_computed == acc["categorical_accuracy"]

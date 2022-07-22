@@ -5,16 +5,32 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 from thirdai import bolt, dataset
 import numpy as np
-from .test_mnist import ACCURACY_THRESHOLD as ACCURACY_THRESHOLD_MNIST
+
 
 from .utils import (
     train_single_node_distributed_network,
     copy_two_layer_network_parameters,
-    build_sparse_output_layer_network,
-    load_mnist,
-    setup_module,
-    check_categorical_accuracies,
+    gen_training_data,
 )
+
+ACCURACY_THRESHOLD = 0.8
+
+def build_simple_bolt_network(sparsity=1, n_classes=10):
+    layers = [
+        bolt.FullyConnected(
+            dim=50,
+            sparsity=1,
+            activation_function=bolt.ActivationFunctions.ReLU,
+        ),
+        bolt.FullyConnected(
+            dim=n_classes,
+            sparsity=sparsity,
+            activation_function=bolt.ActivationFunctions.Softmax,
+        )
+    ]
+    network = bolt.DistributedNetwork(layers=layers, input_dim=n_classes)
+    return network
+
 
 
 def train_multiple_networks_same_gradients(
@@ -53,37 +69,39 @@ def train_multiple_networks_same_gradients(
     )
 
     assert (
-        new_acc["categorical_accuracy"] > ACCURACY_THRESHOLD_MNIST
+        new_acc["categorical_accuracy"] > ACCURACY_THRESHOLD
         and new_acc["categorical_accuracy"] == old_acc["categorical_accuracy"]
     )
 
 
-def test_mnist_sparse_output_layer_distributed():
-    network = build_sparse_output_layer_network(True)
+def test_simple_bolt_network_distributed():
+    network = build_simple_bolt_network()
 
-    train_x, train_y, test_x, test_y = load_mnist()
+    train_x, train_y = gen_training_data()
+    test_x, test_y = gen_training_data(n_samples=100)
 
     train_single_node_distributed_network(network, train_x, train_y, epochs=10)
 
     acc, activations = network.predictSingleNode(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
-    check_categorical_accuracies(acc, activations)
+    assert acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
 
 def test_get_set_weights_distributed():
 
-    network = build_sparse_output_layer_network(True)
-    train_x, train_y, test_x, test_y = load_mnist()
+    network = build_simple_bolt_network()
+    train_x, train_y = gen_training_data()
+    test_x, test_y = gen_training_data(n_samples=100)
 
     train_single_node_distributed_network(network, train_x, train_y, epochs=10)
 
     original_acc, _ = network.predictSingleNode(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
-    assert original_acc["categorical_accuracy"] >= ACCURACY_THRESHOLD_MNIST
+    assert original_acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
-    untrained_network = build_sparse_output_layer_network(True)
+    untrained_network = build_simple_bolt_network()
 
     copy_two_layer_network_parameters(network, untrained_network)
 
@@ -95,18 +113,25 @@ def test_get_set_weights_distributed():
 
 def test_basic_gradient_sharing():
 
-    network = build_sparse_output_layer_network(True)
-    train_x, train_y, test_x, test_y = load_mnist()
+    network = build_simple_bolt_network()
+
+    train_x, train_y = gen_training_data()
+    test_x, test_y = gen_training_data(n_samples=100)
+
     num_of_batches = network.prepareNodeForDistributedTraining(
         train_x,
         train_y,
         rehash=3000,
         rebuild=10000,
         verbose=False,
-        batch_size=64,
+        batch_size=10,
     )
 
-    untrained_network = build_sparse_output_layer_network(True)
+    train_x, train_y = gen_training_data()
+    test_x, test_y = gen_training_data(n_samples=100)
+
+
+    untrained_network = build_simple_bolt_network()
 
     num_of_batches = untrained_network.prepareNodeForDistributedTraining(
         train_x,
@@ -114,7 +139,7 @@ def test_basic_gradient_sharing():
         rehash=3000,
         rebuild=10000,
         verbose=False,
-        batch_size=64,
+        batch_size=10,
     )
 
     untrained_network.set_weights(
