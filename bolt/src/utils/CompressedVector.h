@@ -14,21 +14,29 @@ namespace thirdai::bolt {
 // continuous locations in memory in a compressed vector.
 //
 // TODO(jerin): Write-up the math, guarantees.
+// TODO(jerin): Remove mod operations with equivalent bit-operations, asserting
+//              power of two.
+// TODO(jerin): Hash Distribution check. Uniform enough?
+
 template <class ELEMENT_TYPE>
 class CompressedVector {
  public:
   // Create a new CompressedVector.
-  CompressedVector(uint64_t physical_size, uint64_t block_size, uint32_t seed)
+  CompressedVector(uint64_t physical_size, uint64_t block_size, uint32_t seed,
+                   bool use_sign_bit = true)
       : _physical_vector(physical_size, 0),
         _block_size(block_size),
-        _seed(seed) {}
+        _seed(seed),
+        _use_sign_bit(use_sign_bit) {}
 
   // Create a new CompressedVector from a pre-existing vector.
   CompressedVector(const std::vector<ELEMENT_TYPE>& input,
-                   uint64_t physical_size, uint64_t block_size, uint32_t seed)
+                   uint64_t physical_size, uint64_t block_size, uint32_t seed,
+                   bool use_sign_bit = true)
       : _physical_vector(physical_size, 0),
         _block_size(block_size),
-        _seed(seed) {
+        _seed(seed),
+        _use_sign_bit(use_sign_bit) {
     // Do we have BOLT_ASSERT yet?
     assert(physical_size <= input.size());
     assert(physical_size > block_size);
@@ -45,15 +53,19 @@ class CompressedVector {
       for (uint64_t j = i; j < i + _block_size; j++) {
         uint64_t offset = j - i;
         uint64_t index = block_begin + offset;
-        uint64_t sign_bit = _hash_function(j) % 2;
 
-        // Add the input value multiplied by sign bit to the index at
-        // _physical_vector.
-
-        if (sign_bit) {
+        if (not _use_sign_bit) {
           _physical_vector[index] += input[j];
         } else {
-          _physical_vector[index] -= input[j];
+          uint64_t sign_bit = _hash_function(j) % 2;
+
+          // Add the input value multiplied by sign bit to the index at
+          // _physical_vector.
+          if (sign_bit) {
+            _physical_vector[index] += input[j];
+          } else {
+            _physical_vector[index] -= input[j];
+          }
         }
 
         // TODO(jerin): What happens if overflow? We are using sum to store
@@ -73,8 +85,14 @@ class CompressedVector {
   // non-const accessor.
   ELEMENT_TYPE get(uint64_t i) const {
     uint64_t idx = _find_index_in_physical_vector(i);
-    uint64_t sign_bit = _hash_function(i) % 2;
-    return sign_bit ? _physical_vector[idx] : -1 * _physical_vector[idx];
+    ELEMENT_TYPE value = _physical_vector[idx];
+
+    if (_use_sign_bit) {
+      uint64_t sign_bit = _hash_function(i) % 2;
+      value = sign_bit ? value : -1 * value;
+    }
+
+    return value;
   }
 
   // Iterators for pseudo-view on the bigger vector.
@@ -82,9 +100,12 @@ class CompressedVector {
  private:
   std::vector<ELEMENT_TYPE> _physical_vector;  // Underlying vector which stores
                                                // the compressed elements.
-  uint64_t _block_size;  // Blocks of elements to use in compressed hashing for
-                         // cache friendliness.
+  uint64_t _block_size;  // Blocks of elements to use in compressed hashing
+                         // for cache friendliness.
   uint32_t _seed;        // For consistency *and* pseudorandomness.
+
+  bool _use_sign_bit;  // Whether to use a sign-bit in hashing to get an
+                       // unbiased estimator.
 
   // Convenience function to hash into a uint64_t using MurmurHash.
   // Might be worthwhile to skip this function if only used in one place.

@@ -39,15 +39,16 @@ void runReconstructionTest() {
     std::uniform_real_distribution<> uniform_real_distribution{-100, 100};
     auto generator = [&gen64, &normal_distribution,
                       &uniform_real_distribution]() {
-      return normal_distribution(gen64);
-      // return uniform_real_distribution(gen64);
+      // return normal_distribution(gen64);
+      return uniform_real_distribution(gen64);
     };
 
     std::generate(uncompressed_vector.begin(), uncompressed_vector.end(),
                   generator);
 
     CompressedVector<ElementType> compressed_vector(
-        uncompressed_vector, compressed_size, block_size, seed);
+        uncompressed_vector, compressed_size, block_size, seed,
+        /*use_sign_bit=*/false);
 
     float error = single_vector_reconstruction_error(compressed_vector,
                                                      uncompressed_vector);
