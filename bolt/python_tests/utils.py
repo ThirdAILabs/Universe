@@ -1,5 +1,6 @@
 from thirdai import bolt
 import numpy as np
+import os
 
 
 # Constructs a bolt network with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
