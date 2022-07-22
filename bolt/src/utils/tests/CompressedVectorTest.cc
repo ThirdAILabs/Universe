@@ -60,5 +60,7 @@ void runReconstructionTest() {
 }  // namespace thirdai::bolt::tests
 
 TEST(CompressedVectorTests, Mega) {
+  // This is not really a "test" test at the moment. @jerin-thirdai is using the
+  // test to generate a binary that can be used as a driver to prototype.
   thirdai::bolt::tests::runReconstructionTest();
 }
