@@ -67,10 +67,10 @@ def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
     bolt_test_file = dataset_base_filename + "/Test.csv"
 
     start = time.time()
-    
+
     prediction_file = "predictions.csv"
 
-    # rather than saving/loading the model that performs the best on the validation set, 
+    # rather than saving/loading the model that performs the best on the validation set,
     # call predict(..) on the test set after every new best epoch and record that accuracy to report
     best_test_accuracy = 0
     # stop training after this many total dips in successive validation accuracy
@@ -85,7 +85,7 @@ def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
         val_accuracy = compute_accuracy_with_file(yvalid, prediction_file)
         if val_accuracy < last_accuracy:
             num_bad_epochs -= 1
-        elif val_accuracy > max_val_acc:   
+        elif val_accuracy > max_val_acc:
             max_val_acc = val_accuracy
             tc.predict(bolt_test_file, prediction_file)
             best_test_accuracy = compute_accuracy_with_file(ytest, prediction_file)
@@ -94,7 +94,7 @@ def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
 
         if num_bad_epochs == 0:
             break
-        
+
     end = time.time()
 
     start_inference = time.time()
@@ -102,7 +102,10 @@ def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
     end_inference = time.time()
     inference_time = (end_inference - start_inference) / len(ytest)
 
-    log_message(f"BOLT Accuracy: {best_test_accuracy}, Total Training Time: {end - start}, Single Inference Time: {inference_time}\n", out_file)
+    log_message(
+        f"BOLT Accuracy: {best_test_accuracy}, Total Training Time: {end - start}, Single Inference Time: {inference_time}\n",
+        out_file,
+    )
 
 
 def train_xgboost(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file):
@@ -115,7 +118,13 @@ def train_xgboost(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file):
     start_training = time.time()
 
     model = XGBClassifier(use_label_encoder=False, max_depth=6, learning_rate=0.3)
-    model.fit(xtrain, ytrain, eval_set=[(xvalid, yvalid)], early_stopping_rounds=20, verbose=True)
+    model.fit(
+        xtrain,
+        ytrain,
+        eval_set=[(xvalid, yvalid)],
+        early_stopping_rounds=20,
+        verbose=True,
+    )
 
     end_training = time.time()
 
@@ -124,9 +133,11 @@ def train_xgboost(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file):
     end_inference = time.time()
     inference_time = (end_inference - start_inference) / len(predictions)
 
+    log_message(
+        f"XGBoost Accuracy: {accuracy(predictions, ytest)}, Total Training Time: {end_training - start_training}, Single Inference Time: {inference_time}\n",
+        out_file,
+    )
 
-    log_message(f"XGBoost Accuracy: {accuracy(predictions, ytest)}, Total Training Time: {end_training - start_training}, Single Inference Time: {inference_time}\n", out_file)
-    
 
 def train_tabnet(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file):
     map_categories_to_integers([xtrain, xtest, xvalid])
@@ -138,7 +149,7 @@ def train_tabnet(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file):
     start_training = time.time()
 
     model = TabNetClassifier()
-    model.fit(xtrain, ytrain, eval_set=[(xvalid, yvalid)], patience=3) 
+    model.fit(xtrain, ytrain, eval_set=[(xvalid, yvalid)], patience=3)
 
     end_training = time.time()
 
@@ -147,29 +158,34 @@ def train_tabnet(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file):
     end_inference = time.time()
     inference_time = (end_inference - start_inference) / len(predictions)
 
-    log_message(f"TabNet Accuracy: {accuracy(predictions, ytest)}, Total Training Time: {end_training - start_training}, Single Inference Time: {inference_time}\n", out_file)
+    log_message(
+        f"TabNet Accuracy: {accuracy(predictions, ytest)}, Total Training Time: {end_training - start_training}, Single Inference Time: {inference_time}\n",
+        out_file,
+    )
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Experiment with the Tabular Auto-Classifier")
+    parser = argparse.ArgumentParser(
+        description="Experiment with the Tabular Auto-Classifier"
+    )
     parser.add_argument(
-    "--run_heavy_tests",
-    action="store_true",
-    default=False,
-    help="Includes large datasets in the experiment (several hours long). Otherwise runs on small datasets only (a few minutes only).",
-)
+        "--run_heavy_tests",
+        action="store_true",
+        default=False,
+        help="Includes large datasets in the experiment (several hours long). Otherwise runs on small datasets only (a few minutes only).",
+    )
     args = parser.parse_args()
 
     datasets = [
-        "CensusIncome", 
+        "CensusIncome",
         "ChurnModeling",
         "EyeMovements",
-        "PokerHandInduction", 
+        "PokerHandInduction",
     ]
     large_datasets = [
-        "OttoGroupProductClassificationChallenge", 
-        "BNPParibasCardifClaimsManagement", 
-        "ForestCoverType", 
+        "OttoGroupProductClassificationChallenge",
+        "BNPParibasCardifClaimsManagement",
+        "ForestCoverType",
         # "HiggsBoson", # this one takes fairly long so test at your own discretion
     ]
 
@@ -179,15 +195,21 @@ def main():
     base_dir = "/share/data/tabular_benchmarks/"
     out_file = open("tabular_classifier_results.txt", "w")
     for dataset_name in datasets:
-        xtrain, ytrain, xvalid, yvalid, xtest, ytest, dtypes = prep_data(base_dir + dataset_name)
+        xtrain, ytrain, xvalid, yvalid, xtest, ytest, dtypes = prep_data(
+            base_dir + dataset_name
+        )
 
-        log_message(f"\nTraining on dataset: {dataset_name} with {xtrain.shape[0]} rows, {xtrain.shape[1]} features, and {ytrain.nunique()} categories\n", out_file)
+        log_message(
+            f"\nTraining on dataset: {dataset_name} with {xtrain.shape[0]} rows, {xtrain.shape[1]} features, and {ytrain.nunique()} categories\n",
+            out_file,
+        )
 
         train_bolt(dtypes, ytrain, yvalid, ytest, base_dir + dataset_name, out_file)
         train_xgboost(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)
         train_tabnet(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)
 
     out_file.close()
+
 
 if __name__ == "__main__":
     main()
