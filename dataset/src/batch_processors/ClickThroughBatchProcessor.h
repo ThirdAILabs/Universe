@@ -43,9 +43,10 @@ class ClickThroughBatchProcessor final
  private:
   std::tuple<bolt::BoltVector, std::vector<uint32_t>, bolt::BoltVector>
   processRow(const std::string& row) {
-    auto cols = ProcessorUtils::parseCsvRow(row, /* delimiter= */ '\t');
+    auto cols = ProcessorUtils::parseCsvRow(row, /* delimiter= */ ' ');
 
-    if (cols.size() != _expected_num_cols) {
+    if (cols.size() <= _num_dense_features + 1) {
+      std::cout << "BAD ROW= " << row << std::endl;
       throw std::invalid_argument(
           "Expected " + std::to_string(_expected_num_cols) +
           " columns in click through dataset received line with " +
@@ -67,7 +68,7 @@ class ClickThroughBatchProcessor final
     }
 
     std::vector<uint32_t> categorical_features;
-    for (; feature_idx < _expected_num_cols; feature_idx++) {
+    for (; feature_idx < cols.size(); feature_idx++) {
       if (cols[feature_idx].empty()) {
         categorical_features.push_back(0);
         continue;
