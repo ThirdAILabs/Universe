@@ -107,8 +107,8 @@ class CompressedVector {
   bool _use_sign_bit;  // Whether to use a sign-bit in hashing to get an
                        // unbiased estimator.
 
-  // Convenience function to hash into a uint64_t using MurmurHash.
-  // Might be worthwhile to skip this function if only used in one place.
+  // Convenience function to hash into a uint32_t using MurmurHash using saved
+  // seed value.
   inline uint32_t _hash_function(uint64_t value) const {
     char* addr = reinterpret_cast<char*>(&value);
     uint32_t hash_value =
@@ -127,7 +127,6 @@ class CompressedVector {
     uint64_t block_begin = _hash_function(i_begin) % effective_size;
     uint64_t index = block_begin + offset;
     return index;
-    ;
   }
 };
 
