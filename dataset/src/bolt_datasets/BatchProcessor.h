@@ -8,13 +8,10 @@
 
 namespace thirdai::dataset {
 
-template <typename BATCH_T>
-using BoltDataLabelPair = std::pair<BATCH_T, bolt::BoltBatch>;
-
-template <typename BATCH_T>
+template <typename... BATCH_Ts>
 class BatchProcessor {
  public:
-  virtual std::optional<BoltDataLabelPair<BATCH_T>> createBatch(
+  virtual std::tuple<BATCH_Ts...> createBatch(
       const std::vector<std::string>& rows) = 0;
 
   virtual bool expectsHeader() const = 0;
@@ -35,9 +32,10 @@ class BatchProcessor {
   }
 };
 
-class UnaryBoltBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
+class UnaryBoltBatchProcessor
+    : public BatchProcessor<bolt::BoltBatch, bolt::BoltBatch> {
  public:
-  std::optional<BoltDataLabelPair<bolt::BoltBatch>> createBatch(
+  std::tuple<bolt::BoltBatch, bolt::BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     std::vector<bolt::BoltVector> _data_vecs =
         std::vector<bolt::BoltVector>(rows.size());
@@ -52,8 +50,8 @@ class UnaryBoltBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
       _label_vecs[row_id] = std::move(p.second);
     }
 
-    return std::make_pair(bolt::BoltBatch(std::move(_data_vecs)),
-                          bolt::BoltBatch(std::move(_label_vecs)));
+    return std::make_tuple(bolt::BoltBatch(std::move(_data_vecs)),
+                           bolt::BoltBatch(std::move(_label_vecs)));
   }
 
  protected:
@@ -77,9 +75,10 @@ class UnaryBoltBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
  * This BatchProcessor provides an interface to compute metadata about a dataset
  * in a streaming fashion without creating BoltVectors
  */
-class ComputeBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
+class ComputeBatchProcessor
+    : public BatchProcessor<bolt::BoltBatch, bolt::BoltBatch> {
  public:
-  std::optional<BoltDataLabelPair<bolt::BoltBatch>> createBatch(
+  std::tuple<bolt::BoltBatch, bolt::BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     // TODO(david) enable parallel by making metadata calculation thread safe
     // #pragma omp parallel for default(none) shared(rows)
@@ -87,7 +86,7 @@ class ComputeBatchProcessor : public BatchProcessor<bolt::BoltBatch> {
       processRow(row);
     }
 
-    return std::make_pair(bolt::BoltBatch(), bolt::BoltBatch());
+    return std::make_tuple(bolt::BoltBatch(), bolt::BoltBatch());
   }
 
  protected:

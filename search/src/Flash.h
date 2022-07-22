@@ -38,9 +38,6 @@ class Flash {
   template <typename BATCH_T>
   void addDataset(dataset::InMemoryDataset<BATCH_T>& dataset);
 
-  template <typename BATCH_T>
-  void addDataset(dataset::StreamedDataset<BATCH_T>& dataset);
-
   /** Insert this batch into the Flash data structure. */
   template <typename BATCH_T>
   void addBatch(const BATCH_T& batch);

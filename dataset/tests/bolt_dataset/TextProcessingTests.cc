@@ -3,8 +3,8 @@
 #include <gtest/gtest.h>
 #include <dataset/src/bolt_datasets/StreamingDataset.h>
 #include <dataset/src/bolt_datasets/batch_processors/MaskedSentenceBatchProcessor.h>
-#include <dataset/src/bolt_datasets/batch_processors/PairgramHasher.h>
 #include <dataset/src/bolt_datasets/batch_processors/TextClassificationProcessor.h>
+#include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -16,8 +16,8 @@ std::vector<uint32_t> unigram_hashes(const std::vector<std::string>& words) {
   std::vector<uint32_t> hashes;
   hashes.reserve(words.size());
   for (const auto& word : words) {
-    hashes.push_back(hashing::MurmurHash(word.data(), word.size(),
-                                         PairgramHasher::HASH_SEED));
+    hashes.push_back(
+        TextEncodingUtils::computeUnigram(word.data(), word.size()));
   }
   return hashes;
 }
@@ -41,12 +41,13 @@ std::unordered_map<uint32_t, uint32_t> pairgram_hashes(
   return pairgrams;
 }
 
-TEST(PairgramHasher, TestComputeUnigrams) {
+TEST(TextEncodingUtilsProcessing, TestComputeUnigrams) {
   std::string sentence = "the red dog ran up the hill";
   std::vector<std::string> words = {"the", "red", "dog", "ran",
                                     "up",  "the", "hill"};
 
-  std::vector<uint32_t> hashes = PairgramHasher::computeUnigrams(sentence);
+  std::vector<uint32_t> hashes =
+      TextEncodingUtils::computeRawUnigrams(sentence);
 
   std::vector<uint32_t> expected_hashes = unigram_hashes(words);
 
@@ -86,12 +87,13 @@ void checkPairgramVector(const bolt::BoltVector& vector,
   ASSERT_EQ(pairgrams.size(), 0);
 }
 
-TEST(PairgramHasher, TestComputePairgrams) {
+TEST(TextEncodingUtilsProcessing, TestComputePairgrams) {
   std::string sentence = "the red dog ran up the hill";
   std::vector<std::string> words = {"the", "red", "dog", "ran",
                                     "up",  "the", "hill"};
 
-  bolt::BoltVector vector = PairgramHasher::computePairgrams(sentence, RANGE);
+  bolt::BoltVector vector =
+      TextEncodingUtils::computePairgrams(sentence, RANGE);
 
   checkPairgramVector(vector, words);
 }
@@ -105,10 +107,8 @@ void testCreateBatchArbitraryLabels(
 
   auto batch = processor.createBatch(rows);
 
-  ASSERT_TRUE(batch.has_value());
-
-  const bolt::BoltBatch& data = batch->first;
-  const bolt::BoltBatch& labels = batch->second;
+  const bolt::BoltBatch& data = std::get<0>(batch);
+  const bolt::BoltBatch& labels = std::get<1>(batch);
 
   ASSERT_EQ(data.getBatchSize(), 4);
   ASSERT_EQ(labels.getBatchSize(), 4);
@@ -169,29 +169,31 @@ TEST(MaskedSentenceBatchProcessor, TestCreateBatch) {
 
   dataset::MaskedSentenceBatchProcessor processor(RANGE);
 
-  auto batch = processor.createBatch(rows);
+  auto [data, masked_indices, labels] = processor.createBatch(rows);
 
   uint32_t unknown_hash =
-      hashing::MurmurHash("[UNK]", 5, PairgramHasher::HASH_SEED);
+      TextEncodingUtils::computeUnigram(/* key= */ "[UNK]", /* len= */ 5);
 
   const std::unordered_map<uint32_t, uint32_t>& words_to_ids =
       processor.getWordToIDMap();
 
   std::unordered_set<uint32_t> masked_word_hashes;
 
+  EXPECT_EQ(data.getBatchSize(), 4);
+  EXPECT_EQ(masked_indices.getBatchSize(), 4);
+  EXPECT_EQ(labels.getBatchSize(), 4);
+
   for (uint32_t i = 0; i < 4; i++) {
     auto unigrams = unigram_hashes(words[i]);
-    uint32_t masked_word_hash = unigrams[batch->first.maskedIndex(i)];
-    unigrams[batch->first.maskedIndex(i)] = unknown_hash;
+    uint32_t masked_index = masked_indices[i].at(0);
+    uint32_t masked_word_hash = unigrams[masked_index];
+    unigrams[masked_index] = unknown_hash;
 
     auto pairgrams = pairgram_hashes(unigrams, RANGE);
 
-    EXPECT_EQ(batch->first.getBatchSize(), 4);
-    EXPECT_EQ(batch->second.getBatchSize(), 4);
+    checkPairgramVector(data[i], pairgrams);
 
-    checkPairgramVector(batch->first[i], pairgrams);
-
-    uint32_t label = batch->second[i].active_neurons[0];
+    uint32_t label = labels[i].active_neurons[0];
     ASSERT_EQ(label, words_to_ids.at(masked_word_hash));
 
     masked_word_hashes.insert(masked_word_hash);

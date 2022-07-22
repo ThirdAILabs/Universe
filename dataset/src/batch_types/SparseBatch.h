@@ -1,8 +1,6 @@
 #pragma once
 
-#include <dataset/src/Factory.h>
 #include <dataset/src/Vectors.h>
-#include <dataset/src/parsers/SvmParser.h>
 #include <algorithm>
 #include <cassert>
 #include <fstream>
@@ -49,38 +47,6 @@ class SparseBatch {
   uint32_t _batch_size;
   std::vector<std::vector<uint32_t>> _labels;
   uint64_t _start_id;
-};
-
-class SvmSparseBatchFactory : public Factory<SparseBatch> {
- private:
-  SvmParser<SparseVector, std::vector<uint32_t>> _parser;
-
- public:
-  // We can use the SVM parser with takes in functions that construct the
-  // desired vector/label format (in this case SparseVector and a regular
-  // vector) from vectors of indices and values and the labels.
-  SvmSparseBatchFactory()
-      : _parser(
-            [](const std::vector<uint32_t>& indices,
-               const std::vector<float>& values) -> SparseVector {
-              SparseVector vec(indices.size());
-              std::copy(indices.begin(), indices.end(), vec._indices);
-              std::copy(values.begin(), values.end(), vec._values);
-              return vec;
-            },
-            [](const std::vector<uint32_t>& labels) -> std::vector<uint32_t> {
-              return labels;
-            }) {}
-
-  SparseBatch parse(std::ifstream& file, uint32_t target_batch_size,
-                    uint64_t start_id) override {
-    std::vector<SparseVector> vectors;
-    std::vector<std::vector<uint32_t>> labels;
-
-    _parser.parseBatch(target_batch_size, file, vectors, labels);
-
-    return SparseBatch(std::move(vectors), std::move(labels), start_id);
-  }
 };
 
 }  // namespace thirdai::dataset
