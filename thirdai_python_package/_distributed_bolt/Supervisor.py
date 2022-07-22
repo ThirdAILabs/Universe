@@ -153,7 +153,9 @@ class Supervisor:
             This function is called by all the workers(other than worker with id = 0), here 
             all the workers get the same initialized weights and bias as that of worker with id 0 
         """
-        print('Updating weights & bias parameters after every epochs')
+        
+        self.logging.info('Updating weights & bias parameters across nodes')
+
         self.weights_biases = ray.get(self.workers[0].returnParams.remote())
         return self.weights_biases
 
