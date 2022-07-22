@@ -43,3 +43,6 @@ wheelhouse
 # Data files
 *.svm
 *.csv
+
+#log files
+*.log
