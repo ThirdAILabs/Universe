@@ -41,7 +41,7 @@ class MultiLabelTextClassifier {
 
  private:
  std::shared_ptr<dataset::StreamingDataset<BoltBatch>> loadStreamingDataset(
-      const std::string& filename, uint32_t batch_size = 256) {
+      const std::string& filename, uint32_t batch_size = 2048) {
         (void) batch_size;
     std::shared_ptr<dataset::DataLoader> data_loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, 32); // TODO: change batch size to MUCH larger

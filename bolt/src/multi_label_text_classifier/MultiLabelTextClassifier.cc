@@ -59,7 +59,7 @@ MultiLabelTextClassifier::MultiLabelTextClassifier(uint32_t n_classes) {
 
   _model = std::make_shared<BoltGraph>(/* inputs= */ std::vector<InputPtr>{input}, /* output= */ output);
 
-  _model->compile(std::make_shared<BinaryCrossEntropyLoss>(), /* print_when_done= */ false);
+  _model->compile(std::make_shared<BinaryCrossEntropyLoss>(), /* print_when_done= */ true);
 
   std::vector<std::shared_ptr<dataset::Block>> input_block = {
     std::make_shared<dataset::TextBlock>(/* col= */ 1,/* encoding= */std::make_shared<dataset::PairGram>(100000))
