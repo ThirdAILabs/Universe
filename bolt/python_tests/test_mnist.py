@@ -46,6 +46,7 @@ def check_categorical_accuracies(acc, activations, accuracy_threshold):
 
     assert acc_computed == acc["categorical_accuracy"]
 
+
 def load_mnist():
     train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
     test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
@@ -73,7 +74,6 @@ def load_mnist_labels():
             label = int(line.split(" ")[0])
             labels.append(label)
     return np.array(labels)
-
 
 
 def test_mnist_sparse_output_layer():
