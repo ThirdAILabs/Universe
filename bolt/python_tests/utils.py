@@ -70,7 +70,6 @@ def gen_single_sparse_layer_network(n_classes, sparsity=0.5):
     return network
 
 
-<<<<<<< HEAD
 # Returns a model with a single node
 # input_dim=output_dim, 50% sparsity by default, and a softmax
 # activation
@@ -85,7 +84,6 @@ def gen_single_sparse_node(num_classes, sparsity=0.5):
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     return model
-=======
 # training the distributed network
 def train_network_distributed(
     network, train_data, train_labels, epochs, learning_rate=0.0005
@@ -104,7 +102,6 @@ def train_network_distributed(
                 batch_num, bolt.CategoricalCrossEntropyLoss()
             )
             network.updateParametersSingleNode(learning_rate)
->>>>>>> 6c79f83a2823d97a1d91ad72f4a3c3c9c9cb8d82
 
 
 def get_simple_concat_model(
