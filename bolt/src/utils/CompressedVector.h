@@ -30,7 +30,7 @@ class CompressedVector {
         _block_size(block_size),
         _seed(seed) {
     // Do we have BOLT_ASSERT yet?
-    assert(physical_size < input.size());
+    assert(physical_size <= input.size());
     assert(physical_size > block_size);
 
     for (uint64_t i = 0; i < input.size(); i += _block_size) {
