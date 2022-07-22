@@ -5,8 +5,10 @@
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
+#include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/graph/nodes/TokenInput.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <dataset/src/batch_types/MaskedSentenceBatch.h>
@@ -116,9 +118,22 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "least one node (although this is just an identity function, so "
            "really should be at least two).");
 
+  // TODO(Nick): flesh this out more when adding DLRM
+  py::class_<EmbeddingNode, EmbeddingNodePointer, Node>(graph_submodule,
+                                                        "Embedding")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(),
+           py::arg("num_embedding_lookups"), py::arg("lookup_size"),
+           py::arg("log_embedding_block_size"),
+           "Constructs an embedding node for the graph.")
+      .def("__call__", &EmbeddingNode::addInput, py::arg("token_input_layer"),
+           "Tells the graph which token input to use for this Embedding Node.");
+
   py::class_<Input, InputPtr, Node>(graph_submodule, "Input")
       .def(py::init<uint32_t>(), py::arg("dim"),
            "Constructs an input layer node for the graph.");
+
+  py::class_<TokenInput, TokenInputPtr, Node>(graph_submodule, "TokenInput")
+      .def(py::init<>(), "Constructs a token input layer node for the graph.");
 
   py::class_<TrainConfig>(graph_submodule, "TrainConfig")
       .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),
@@ -146,6 +161,18 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            " * inputs (List[Node]) - The input nodes to the graph. Note that "
            "inputs are mapped to input layers by their index.\n"
            " * output (Node) - The output node of the graph.")
+      .def(py::init<std::vector<InputPtr>, std::vector<TokenInputPtr>,
+                    NodePtr>(),
+           py::arg("inputs"), py::arg("token_inputs"), py::arg("output"),
+           "Constructs a bolt model from a layer graph.\n"
+           "Arguments:\n"
+           " * inputs (List[InputNode]) - The input nodes to the graph. Note "
+           "that "
+           "inputs are mapped to input layers by their index.\n"
+           " * inputs (List[TokenInput]) - The token input nodes to the graph. "
+           "Note that "
+           "token inputs are mapped to token input layers by their index.\n"
+           " * output (Node) - The output node of the graph.")
       .def("compile", &BoltGraph::compile, py::arg("loss"),
            py::arg("print_when_done") = true,
            "Compiles the graph for the given loss function. In this step the "
@@ -165,7 +192,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           py::arg("train_config"))
       .def(
           "train", &BoltGraph::train, py::arg("train_data"),
-          py::arg("train_labels"), py::arg("train_tokens"),
+          py::arg("train_tokens"), py::arg("train_labels"),
           py::arg("train_config"),
           "Trains the network on the given training data.\n"
           "Arguments:\n"
