@@ -42,12 +42,12 @@ def construct_node(node_config):
     node_type = node_config["type"]
     if node_type == "Input":
         return bolt.graph.Input(dim=node_config["dim"])
-    if node_type == "TokenInput":
-        return bolt.graph.TokenInput()
     if node_type == "Concatenate":
         return bolt.graph.Concatenate()
     if node_type == "FullyConnected":
         return construct_fully_connected_node(node_config)
+    if node_type == "TokenInput" or node_type == "Embedding":
+        raise ValueError("Tokens and Embedding nodes not added quite yet")
     raise ValueError(f"{node_type} is not a valid node type.")
 
 
@@ -117,18 +117,7 @@ def load_svm_dataset(dataset_config):
 
 
 def load_clickthrough_dataset(dataset_config):
-    batch_size = dataset_config["batch_size"]
-    dataset_path = find_full_filepath(dataset_config["path"])
-    num_numerical_features = dataset_config["num_numerical_features"]
-    num_categorical_features = dataset_config["num_categorical_features"]
-    categorical_labels = dataset_config["categorical_labels"]
-    return dataset.load_click_through_dataset(
-        dataset_path,
-        batch_size,
-        num_numerical_features,
-        num_categorical_features,
-        categorical_labels,
-    )
+    raise ValueError("Clickthrough loading not quite added yet")
 
 
 # Returns a map from
@@ -303,21 +292,20 @@ def build_arg_parser():
         "--dataset_config_path",
         default="dataset.txt",
         type=str,
-        help="Relative path to the dataset config in the config_folder"
+        help="Relative path to the dataset config in the config_folder",
     )
     parser.add_argument(
         "--experiment_config_path",
         default="experiment.txt",
         type=str,
-        help="Relative path to the experiment config in the config_folder"
+        help="Relative path to the experiment config in the config_folder",
     )
     parser.add_argument(
         "--model_config_path",
         default="model.txt",
         type=str,
-        help="Relative path to the model config in the config_folder"
+        help="Relative path to the model config in the config_folder",
     )
-
 
     return parser
 

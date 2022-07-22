@@ -16,7 +16,9 @@ def start_mlflow(model_config, dataset_config, experiment_config, mlflow_args):
         experiment_name = experiment_config["experiment_identifier"]
         dataset_name = dataset_config["dataset_identifier"]
         model_name = model_config["model_identifier"]
-        start_mlflow_helper(experiment_name, mlflow_args.run_name, dataset_name, model_name)
+        start_mlflow_helper(
+            experiment_name, mlflow_args.run_name, dataset_name, model_name
+        )
         log_machine_info()
         for config in [model_config, dataset_config, experiment_config]:
             log_config_info(config)
