@@ -13,7 +13,7 @@ float reconstruction_error(
   float error = 0;
   size_t num_elements = large_vector.size();
   for (size_t i = 0; i < num_elements; i++) {
-    float diff = static_cast<float>(large_vector[i] - compressed_vector[i]);
+    float diff = static_cast<float>(large_vector[i] - compressed_vector.get(i));
     error += diff * diff;  // Squared error.
     std::cout << "Error: " << error << std::endl;
   }

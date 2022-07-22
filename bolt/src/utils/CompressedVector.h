@@ -45,9 +45,16 @@ class CompressedVector {
       for (uint64_t j = i; j < i + _block_size; j++) {
         uint64_t offset = j - i;
         uint64_t index = block_begin + offset;
+        uint64_t sign_bit = _hash_function(j) % 2;
 
-        // Add the input value to the hash-location.
-        _physical_vector[index] += input[j];
+        // Add the input value multiplied by sign bit to the index at
+        // _physical_vector.
+
+        if (sign_bit) {
+          _physical_vector[index] += input[j];
+        } else {
+          _physical_vector[index] -= input[j];
+        }
 
         // TODO(jerin): What happens if overflow? We are using sum to store
         // multiple elements, which could overflow the element's type.
@@ -64,15 +71,10 @@ class CompressedVector {
   CompressedVector& operator+=(const CompressedVector& input);
 
   // non-const accessor.
-  ELEMENT_TYPE& operator[](uint64_t i) {
+  ELEMENT_TYPE get(uint64_t i) const {
     uint64_t idx = _find_index_in_physical_vector(i);
-    return _physical_vector[idx];
-  }
-
-  // Const accessor to an element.
-  const ELEMENT_TYPE& operator[](uint64_t i) const {
-    uint64_t idx = _find_index_in_physical_vector(i);
-    return _physical_vector[idx];
+    uint64_t sign_bit = _hash_function(i) % 2;
+    return sign_bit ? _physical_vector[idx] : -1 * _physical_vector[idx];
   }
 
   // Iterators for pseudo-view on the bigger vector.
