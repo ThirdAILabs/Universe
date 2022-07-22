@@ -45,6 +45,10 @@ def log_single_epoch_training_metrics(metrics):
     mlflow.log_metrics(mlflow_metrics)
 
 
+def log_prediction_metrics(metrics):
+    mlflow.log_metrics(metrics[0])
+
+
 def verify_mlflow_args(parser, mlflow_args):
     if not mlflow_args.disable_mlflow and not mlflow_args.run_name:
         parser.print_usage()

@@ -6,6 +6,7 @@ from utils import (
     verify_mlflow_args,
     find_full_filepath,
     log_single_epoch_training_metrics,
+    log_prediction_metrics,
 )
 from thirdai import bolt, dataset
 
@@ -181,15 +182,46 @@ def load_all_datasets(dataset_config):
 
 # Because of how our experiment works, we always set num_epochs=1
 def load_train_config(experiment_config):
-    pass
+    train_config = bolt.graph.TrainConfig(
+        epochs=1, learning_rate=experiment_config["learning_rate"]
+    ).with_metrics(experiment_config["train_metrics"])
+    if "rehash" in experiment_config.keys():
+        train_config.with_reconstruct_hash_functions(experiment_config["rehash"])
+    if "rebuild" in experiment_config.keys():
+        train_config.with_rebuild_hash_tables(experiment_config["rebuild"])
+    return train_config
 
 
 def load_predict_config(experiment_config):
-    pass
+    predict_config = bolt.graph.PredictConfig().with_metrics(
+        experiment_config["test_metrics"]
+    )
+    if "max_test_batches" in experiment_config.keys():
+        predict_config.with_max_test_batches(experiment_config["max_test_batches"])
+    return predict_config
 
 
-def should_freeze_hash_tables(experiment_config, current_epoch):
-    pass
+def freeze_hash_table_if_needed(model, experiment_config, current_epoch):
+    should_freeze_hash_tables = (
+        "freeze_hash_tables_epoch" in experiment_config.keys()
+        and current_epoch == experiment_config["freeze_hash_tables_epoch"]
+    )
+    if should_freeze_hash_tables:
+        print(f"Freezing hash tables at beginning of epoch {current_epoch}")
+        model.freeze_hash_tables()
+
+
+def switch_to_sparse_inference_if_needed(
+    predict_config, experiment_config, current_epoch
+):
+    use_sparse_inference = (
+        "sparse_inference_epoch" in experiment_config.keys()
+        and current_epoch >= experiment_config["sparse_inference_epoch"]
+    )
+    if use_sparse_inference:
+        print(f"Switching to sparse inference on epoch {current_epoch}")
+        predict_config.enable_sparse_inference()
+    return use_sparse_inference
 
 
 def run_experiment(model, datasets, experiment_config, use_mlflow):
@@ -198,9 +230,10 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
 
     for epoch_num in range(num_epochs):
 
-        if should_freeze_hash_tables(experiment_config, epoch_num):
-            print(f"Freezing hash tables at beginning of epoch {epoch_num}")
-            model.freeze_hash_tables()
+        freeze_hash_table_if_needed(model, experiment_config, epoch_num)
+        switch_to_sparse_inference_if_needed(
+            predict_config, experiment_config, epoch_num
+        )
 
         train_metrics = model.train(
             train_data=datasets["train_data"],
@@ -209,50 +242,31 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
             train_config=train_config,
         )
         if use_mlflow:
-            log_single_epoch_training_metrics(metrics)
+            log_single_epoch_training_metrics(train_metrics)
 
-        use_sparse_inference = should_use_sparse_inference(config=config, epoch=e)
-        if use_sparse_inference:
-            print("Using Sparse Inference.")
-        if max_test_batches is None:
-            # Use keyword arguments to skip batch_size parameter.
-            metrics, _ = network.predict(
-                test_data=test_x,
-                test_labels=test_y,
-                sparse_inference=use_sparse_inference,
-                metrics=test_metrics,
-            )
-            if mlflow_enabled:
-                mlflow.log_metrics(metrics)
-        else:
-            # Use keyword arguments to skip batch_size parameter.
-            metrics, _ = network.predict(
-                test_data=test_x,
-                test_labels=test_y,
-                sparse_inference=use_sparse_inference,
-                metrics=test_metrics,
-                verbose=True,
-                batch_limit=max_test_batches,
-            )
-            if mlflow_enabled:
-                mlflow.log_metrics(metrics)
-    if not max_test_batches is None:
-        # If we limited the number of test batches during training we run on the whole test set at the end.
-        # Use keyword arguments to skip batch_size parameter.
-        use_sparse_inference = should_use_sparse_inference(config=config, epoch=e)
-        if use_sparse_inference:
-            print("Using Sparse Inference.")
-        metrics, _ = network.predict(
-            test_data=test_x,
-            test_labels=test_y,
-            sparse_inference=use_sparse_inference,
-            metrics=test_metrics,
+        predict_metrics = model.predict(
+            test_data=datasets["train_data"],
+            test_tokens=datasets["train_token_data"],
+            test_labels=datasets["train_labels"],
+            predict_config=predict_config,
         )
-        if mlflow_enabled:
-            mlflow.log_metrics(metrics)
+        if use_mlflow:
+            log_prediction_metrics(predict_metrics)
 
-    if "save_for_inference" in config["params"].keys():
-        network.save_for_inference(config["params"]["save_for_inference"])
+    # If we limited the number of test batches during training we want to run on the whole test set at the end.
+    if "max_test_batches" in experiment_config.keys():
+        predict_config.with_max_test_batches(2**64)
+        predict_metrics = model.predict(
+            test_data=datasets["train_data"],
+            test_tokens=datasets["train_token_data"],
+            test_labels=datasets["train_labels"],
+            predict_config=predict_config,
+        )
+        if use_mlflow:
+            log_prediction_metrics(predict_metrics)
+
+    if "save" in experiment_config["params"].keys():
+        model.save(experiment_config["params"]["save"])
 
 
 def build_arg_parser():

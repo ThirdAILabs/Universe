@@ -130,6 +130,11 @@ class PredictConfig {
     return *this;
   }
 
+  PredictConfig& withMaxTestBatches(uint64_t max_test_batches) {
+    _max_test_batches = max_test_batches;
+    return *this;
+  }
+
   bool sparseInferenceEnabled() const { return _use_sparse_inference; }
 
   MetricAggregator getMetricAggregator() const {
@@ -140,15 +145,24 @@ class PredictConfig {
 
   constexpr bool shouldReturnActivations() const { return _return_activations; }
 
+  constexpr uint64_t maxTestBatches() const {
+    if (_max_test_batches.has_value()) {
+      return _max_test_batches.value();
+    }
+    return std::numeric_limits<uint64_t>::max();
+  }
+
  private:
   PredictConfig()
       : _metric_names({}),
         _use_sparse_inference(false),
         _verbose(true),
-        _return_activations(false) {}
+        _return_activations(false),
+        _max_test_batches(std::nullopt) {}
 
   std::vector<std::string> _metric_names;
   bool _use_sparse_inference, _verbose, _return_activations;
+  std::optional<uint64_t> _max_test_batches;
 };
 
 }  // namespace thirdai::bolt

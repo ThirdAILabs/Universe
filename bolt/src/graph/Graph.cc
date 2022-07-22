@@ -213,7 +213,9 @@ InferenceResult BoltGraph::predict(
   // some sort of RAII training context object whose destructor will
   // automatically delete the training state
   try {
-    for (uint64_t batch_idx = 0; batch_idx < predict_context.numBatches();
+    for (uint64_t batch_idx = 0;
+         batch_idx < std::min(predict_context.numBatches(),
+                              predict_config.maxTestBatches());
          batch_idx++) {
       predict_context.setInputs(batch_idx, _inputs, _token_inputs);
 
