@@ -13,9 +13,11 @@ namespace thirdai::dataset {
 
 using BoltDataset = InMemoryDataset<bolt::BoltBatch>;
 using BoltDatasetPtr = std::shared_ptr<BoltDataset>;
+using BoltDatasetList = std::vector<BoltDatasetPtr>;
 
 using BoltTokenDataset = InMemoryDataset<BoltTokenBatch>;
 using BoltTokenDatasetPtr = std::shared_ptr<BoltTokenDataset>;
+using BoltTokenDatasetList = std::vector<BoltTokenDatasetPtr>;
 
 struct SvmDatasetLoader {
   static std::tuple<BoltDatasetPtr, BoltDatasetPtr> loadDataset(
