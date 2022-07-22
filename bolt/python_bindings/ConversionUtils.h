@@ -76,21 +76,20 @@ inline void printCopyWarning(const std::string& array_name,
 }
 
 inline void biasDimensionCheck(
-    const py::array_t<float, py::array::c_style | py::array::forcecast>&
-        new_biases,
-    int64_t dim, const std::string& matrix_type) {
-  if (new_biases.ndim() != 1) {
+    const py::array_t<float, py::array::c_style | py::array::forcecast>& biases,
+    uint32_t dim, const std::string& matrix_type) {
+  if (biases.ndim() != 1) {
     std::stringstream err;
     err << "Expected " << matrix_type
         << " to have 1 dimension, received matrix "
            "with "
-        << new_biases.ndim() << " dimensions.";
+        << biases.ndim() << " dimensions.";
     throw std::invalid_argument(err.str());
   }
-  if (new_biases.shape(0) != dim) {
+  if (biases.shape(0) != dim) {
     std::stringstream err;
     err << "Expected " << matrix_type << " to have dim " << dim
-        << " received matrix with dim " << new_biases.shape(0) << ".";
+        << " received matrix with dim " << biases.shape(0) << ".";
     throw std::invalid_argument(err.str());
   }
 }
@@ -98,7 +97,7 @@ inline void biasDimensionCheck(
 inline void weightDimensionCheck(
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
         new_weights,
-    int64_t dim, int64_t prev_dim, const std::string& matrix_type = "") {
+    uint32_t dim, uint32_t prev_dim, const std::string& matrix_type = "") {
   if (new_weights.ndim() != 2) {
     std::stringstream err;
     err << "Expected " << matrix_type
@@ -119,7 +118,7 @@ inline void weightDimensionCheck(
 inline void layerIndexCheck(uint32_t layer_index, uint32_t num_layers) {
   if (layer_index >= num_layers) {
     std::stringstream err;
-    err << "Expect layer_index<" << num_layers << ", got " << layer_index;
+    err << "Expect layer_index " << num_layers << ", got " << layer_index;
     throw std::invalid_argument(err.str());
   }
 }

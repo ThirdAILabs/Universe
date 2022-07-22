@@ -70,6 +70,25 @@ def gen_single_sparse_layer_network(n_classes, sparsity=0.5):
     return network
 
 
+def train_single_node_distributed_network(
+    network, train_data, train_labels, epochs, learning_rate=0.0005
+):
+    batch_size = network.prepareNodeForDistributedTraining(
+        train_data,
+        train_labels,
+        rehash=3000,
+        rebuild=10000,
+        verbose=True,
+        batch_size=10,
+    )
+    for epoch_num in range(epochs):
+        for batch_num in range(batch_size):
+            network.calculateGradientSingleNode(
+                batch_num, bolt.CategoricalCrossEntropyLoss()
+            )
+            network.updateParametersSingleNode(learning_rate)
+
+
 # Returns a model with a single node
 # input_dim=output_dim, 50% sparsity by default, and a softmax
 # activation
@@ -84,24 +103,6 @@ def gen_single_sparse_node(num_classes, sparsity=0.5):
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     return model
-# training the distributed network
-def train_network_distributed(
-    network, train_data, train_labels, epochs, learning_rate=0.0005
-):
-    batch_size = network.initTrainSingleNode(
-        train_data,
-        train_labels,
-        rehash=3000,
-        rebuild=10000,
-        verbose=True,
-        batch_size=64,
-    )
-    for epoch_num in range(epochs):
-        for batch_num in range(batch_size):
-            network.calculateGradientSingleNode(
-                batch_num, bolt.CategoricalCrossEntropyLoss()
-            )
-            network.updateParametersSingleNode(learning_rate)
 
 
 def get_simple_concat_model(
@@ -137,6 +138,22 @@ def get_simple_concat_model(
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     return model
+
+
+def copy_two_layer_network_parameters(network, untrained_network):
+    untrained_network.set_weights(
+        layer_index=0, new_weights=network.get_weights(layer_index=0)
+    )
+    untrained_network.set_weights(
+        layer_index=1, new_weights=network.get_weights(layer_index=1)
+    )
+
+    untrained_network.set_biases(
+        layer_index=0, new_biases=network.get_biases(layer_index=0)
+    )
+    untrained_network.set_biases(
+        layer_index=1, new_biases=network.get_biases(layer_index=1)
+    )
 
 
 def remove_files(files):
