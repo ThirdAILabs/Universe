@@ -1,3 +1,5 @@
+# TODO(josh): Migrate this to new benchmarking dag script
+
 job = "Mach: Amazon670k"
 
 [dataset]

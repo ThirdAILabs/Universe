@@ -1,4 +1,4 @@
-model_identifier = "mnist_dense_hidden"
+model_identifier = "mnist_sparse_hidden"
 
 loss_fn = "CategoricalCrossEntropyLoss"
 
@@ -11,19 +11,14 @@ dim = 784
 type = "FullyConnected"
 name = "second"
 pred = "first"
-dim = 512
+dim = 20000
 activation = 'ReLU'
+sparsity = 0.01
+use_default_sampling = true
 
 [[nodes]]
 type = "FullyConnected"
 name = "third"
 pred = "second"
-dim = 256
-activation = 'ReLU'
-
-[[nodes]]
-type = "FullyConnected"
-name = "fourth"
-pred = "third"
 dim = 10
 activation = 'Softmax'

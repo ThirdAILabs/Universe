@@ -1,15 +1,6 @@
 job = "Amazon Polarity"
 
-[[dataset]]
-format = "svm"
-names = ["train_data", "train_labels"]
-path = "amazon_polarity/svm_train.txt"
-
-[[dataset]]
-format = "svm"
-names = ["train_data", "train_labels"]
-path = "amazon_polarity/svm_train.txt"
-
+[dataset]
 train_data = "amazon_polarity/svm_train.txt"
 test_data = "amazon_polarity/svm_test.txt"
 format = "svm"
