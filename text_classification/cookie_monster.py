@@ -1,6 +1,5 @@
 from thirdai import bolt, dataset
 from thirdai.dataset import DataPipeline, blocks, text_encodings
-import numpy as np
 
 # Uncomment the following line when used on a machine with valid mlflow credentials
 # import mlflow
@@ -67,7 +66,6 @@ class CookieMonster:
             # TODO: Check file format
             mlm_loader = dataset.MLMDatasetLoader(self.input_dimension)
             data, label = mlm_loader.load(file, batch_size)
-            return data, label
         elif instruction == "classification":
             pipeline = DataPipeline(
                 file,
@@ -79,11 +77,11 @@ class CookieMonster:
                 delimiter=",",
             )
             data, label = pipeline.load_in_memory()
-            return data, label
         else:
             raise ValueError(
                 'Invalid instruction. Supported instructions are "mlm" and "classification"'
             )
+        return data, label
 
     def eat_corpus(
         self,

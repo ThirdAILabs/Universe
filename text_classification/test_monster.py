@@ -1,7 +1,5 @@
 from cookie_monster import *
 import pytest
-import sys
-
 
 pytestmark = [pytest.mark.unit]
 
