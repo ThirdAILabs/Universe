@@ -36,10 +36,10 @@ struct SvmDatasetLoader {
 struct ClickThroughDatasetLoader {
   static std::tuple<BoltDatasetPtr, BoltTokenDatasetPtr, BoltDatasetPtr>
   loadDataset(const std::string& filename, uint32_t batch_size,
-              uint32_t num_dense_features, uint32_t num_categorical_features,
-              bool sparse_label_encoding = true) {
+              uint32_t num_dense_features, uint32_t max_categorical_features,
+              char delimiter) {
     auto batch_processor = std::make_shared<ClickThroughBatchProcessor>(
-        num_dense_features, num_categorical_features, sparse_label_encoding);
+        num_dense_features, max_categorical_features, delimiter);
 
     auto dataset =
         StreamingDataset<bolt::BoltBatch, BoltTokenBatch,

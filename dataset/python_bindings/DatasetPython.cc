@@ -263,8 +263,8 @@ void createDatasetSubmodule(py::module_& module) {
   dataset_submodule.def(
       "load_click_through_dataset", &ClickThroughDatasetLoader::loadDataset,
       py::arg("filename"), py::arg("batch_size"),
-      py::arg("num_numerical_features"), py::arg("num_categorical_features"),
-      py::arg("spare_label_encoding") = true,
+      py::arg("num_numerical_features"), py::arg("max_categorical_features"),
+      py::arg("delimiter") = '\t',
       "Loads a Clickthrough dataset from a file. To be used with DLRM. \n"
       "Each line of the input file should follow this format:\n"
       "```\n"
@@ -280,16 +280,10 @@ void createDatasetSubmodule(py::module_& module) {
       " * batch_size: Int (positive) - Size of each batch in the dataset.\n"
       " * num_numerical_features: Int (positive) - Number of expected "
       "numerical features in each dataset.\n"
-      " * num_categorical_features: Int (positive) - Number of expected "
-      "categorical features in each dataset.\n"
-      " * categorical_labels: Boolean - True if the labels are categorical "
-      "(i.e. a label of 1 means the sample "
-      "belongs to category 1), False if the labels are numerical (i.e. a label "
-      "of 1 means the sample corresponds "
-      "with the value of 1 on the real number line).\n"
-      "Each line of the input file should follow this format:\n\n"
-      "Returns a tuple containing a ClickthroughDataset to store the data "
-      "itself, and a BoltDataset storing the labels.");
+      " * max_categorical_features: Int (positive) - Maximum number of "
+      "expected categorical features in each dataset.\n"
+      "Returns a tuple containing a BoltDataset, BoltTokenDataset to store the "
+      "dense and categorical features, and a BoltDataset storing the labels.");
 
   py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule, "BoltDataset")
       // We need to explicitly static cast these methods because there are

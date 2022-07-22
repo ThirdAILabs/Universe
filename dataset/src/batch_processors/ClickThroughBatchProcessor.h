@@ -11,11 +11,11 @@ class ClickThroughBatchProcessor final
     : public BatchProcessor<bolt::BoltBatch, BoltTokenBatch, bolt::BoltBatch> {
  public:
   ClickThroughBatchProcessor(uint32_t num_dense_features,
-                             uint32_t num_categorical_features,
-                             bool sparse_label_encoding = true)
+                             uint32_t max_categorical_features,
+                             char delimiter = '\t')
       : _num_dense_features(num_dense_features),
-        _expected_num_cols(num_dense_features + num_categorical_features + 1),
-        _sparse_label_encoding(sparse_label_encoding) {}
+        _expected_num_cols(num_dense_features + max_categorical_features + 1),
+        _delimiter(delimiter) {}
 
   std::tuple<bolt::BoltBatch, BoltTokenBatch, bolt::BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
@@ -42,14 +42,13 @@ class ClickThroughBatchProcessor final
 
  private:
   std::tuple<bolt::BoltVector, std::vector<uint32_t>, bolt::BoltVector>
-  processRow(const std::string& row) {
-    auto cols = ProcessorUtils::parseCsvRow(row, /* delimiter= */ ' ');
+  processRow(const std::string& row) const {
+    auto cols = ProcessorUtils::parseCsvRow(row, _delimiter);
 
     if (cols.size() <= _num_dense_features + 1) {
-      std::cout << "BAD ROW= " << row << std::endl;
       throw std::invalid_argument(
-          "Expected " + std::to_string(_expected_num_cols) +
-          " columns in click through dataset received line with " +
+          "Expected at least " + std::to_string(_expected_num_cols) +
+          " columns in click through dataset, received line with " +
           std::to_string(cols.size()) + " columns.");
     }
 
@@ -83,22 +82,17 @@ class ClickThroughBatchProcessor final
             std::move(categorical_features), std::move(label)};
   }
 
-  bolt::BoltVector getLabelVector(const std::string_view& label_str) const {
+  static bolt::BoltVector getLabelVector(const std::string_view& label_str) {
     char* end;
     uint32_t label = std::strtol(label_str.data(), &end, 10);
-    if (_sparse_label_encoding) {
-      bolt::BoltVector label_vec(1, false, false);
-      label_vec.active_neurons[0] = label;
-      label_vec.activations[0] = 1.0;
-      return label_vec;
-    }
-    bolt::BoltVector label_vec(1, true, false);
-    label_vec.activations[0] = label;
+    bolt::BoltVector label_vec(1, false, false);
+    label_vec.active_neurons[0] = label;
+    label_vec.activations[0] = 1.0;
     return label_vec;
   }
 
   uint32_t _num_dense_features, _expected_num_cols;
-  bool _sparse_label_encoding;
+  char _delimiter;
 };
 
 }  // namespace thirdai::dataset
