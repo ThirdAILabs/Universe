@@ -30,13 +30,22 @@ void runReconstructionTest() {
   // Because we love the answer to life, universe and everything.
   const uint32_t seed = 42;
 
-  std::vector<uint64_t> uncompressed_vector(uncompressed_size);
+  using ElementType = float;
+  std::vector<ElementType> uncompressed_vector(uncompressed_size);
 
   // Random number generator. Reuse the seed.
   std::mt19937_64 gen64(seed);
-  std::generate(uncompressed_vector.begin(), uncompressed_vector.end(), gen64);
+  std::normal_distribution<> normal_distribution{/*mean=*/
+                                                 0, /*variance=*/2};
 
-  CompressedVector<uint64_t> compressed_vector(
+  auto generator = [&gen64, &normal_distribution]() {
+    return normal_distribution(gen64);
+  };
+
+  std::generate(uncompressed_vector.begin(), uncompressed_vector.end(),
+                generator);
+
+  CompressedVector<ElementType> compressed_vector(
       uncompressed_vector, compressed_size, block_size, seed);
 
   float error = reconstruction_error(compressed_vector, uncompressed_vector);
