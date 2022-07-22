@@ -138,6 +138,6 @@ class EmbeddingNode final : public Node,
   TokenInputPtr _token_input;
 };
 
-using EmbeddingNodePointer = std::shared_ptr<EmbeddingNode>;
+using EmbeddingNodePtr = std::shared_ptr<EmbeddingNode>;
 
 }  // namespace thirdai::bolt

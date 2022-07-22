@@ -119,8 +119,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "really should be at least two).");
 
   // TODO(Nick): flesh this out more when adding DLRM
-  py::class_<EmbeddingNode, EmbeddingNodePointer, Node>(graph_submodule,
-                                                        "Embedding")
+  py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(graph_submodule,
+                                                    "Embedding")
       .def(py::init<uint32_t, uint32_t, uint32_t>(),
            py::arg("num_embedding_lookups"), py::arg("lookup_size"),
            py::arg("log_embedding_block_size"),
