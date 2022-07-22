@@ -1,7 +1,7 @@
 For running the distributed bolt, first we need to start a ray cluster
 
 First install all the required module by running the following command(to be done on all the node):
-        - Have the reuored bolt module built on those node 
+        - Have the Distributed bolt module built on those node 
         - Run the command: python3 install_required_module.py
         - Check if ray path is included in system path by printing (run 'echo $PATH' on terminal)
                 Ray's default path is /home/$USER/.local/bin

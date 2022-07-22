@@ -1,7 +1,7 @@
 from thirdai._thirdai import bolt, dataset
 import numpy as np
 import ray
-from .utils import create_fully_connected_layer_configs, load_dataset
+from .utils import create_fully_connected_layer_configs, load_dataset, initLogging
 import time
 from typing import Tuple, Any, Optional, Dict, List
 
@@ -70,6 +70,7 @@ class Worker:
         
         self.total_nodes = total_nodes
         self.id = id
+        self.logging = initLogging('Worker.log')
 
 
     def addSupervisor(

@@ -81,14 +81,16 @@ def create_fully_connected_layer_configs(
     return layers
 
 
-def initLogging():
+def initLogging(
+    logger_file: str
+):
     """
         Initializes logging
     """
     # Logger Init
     logger = logging.getLogger('DistributedBolt')
     logger.setLevel(logging.INFO)
-    file_handler = logging.FileHandler('logfile.log')
+    file_handler = logging.FileHandler(logger_file)
     formatter    = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(message)s')
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)

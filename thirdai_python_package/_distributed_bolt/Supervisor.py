@@ -2,6 +2,7 @@ import numpy as np
 import ray
 import time
 from typing import Tuple, Any, Optional, Dict, List
+from .utils import initLogging
 
 
 
@@ -29,6 +30,7 @@ class Supervisor:
         self.layers = layers
         self.workers = workers
         self.num_of_batches = ray.get(self.workers[0].num_of_batches.remote())
+        self.logging = initLogging('Supervisor.log')
     
 
     def subworkCircularCommunication(
@@ -141,10 +143,6 @@ class Supervisor:
         """
         weights_0, biases_0 = ray.get(self.workers[0].returnParams.remote())
         weights_1, biases_1 = ray.get(self.workers[1].returnParams.remote())
-        print('weights 0: ', weights_0)
-        print('weights 1: ', weights_1)
-        print('biases 0: ', biases_0)
-        print('biases 1: ', biases_1)
 
 
     def weights_biases(
