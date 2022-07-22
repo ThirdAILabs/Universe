@@ -1,0 +1,22 @@
+loss_fn = "CategoricalCrossEntropyLoss"
+
+[[nodes]]
+type = "Input"
+name = "first"
+dim = 135909
+
+[[nodes]]
+type = "FullyConnected"
+name = "second"
+pred = "first"
+dim = 256
+activation = "ReLU"
+
+[[nodes]]
+type = "FullyConnected"
+name = "third"
+pred = "second"
+dim = 670091
+activation = 'Softmax'
+sparsity = 0.005
+use_default_sampling = true

@@ -11,7 +11,20 @@ from typing import Any, Dict
 from sklearn.datasets import load_svmlight_file
 
 
-def start_mlflow(experiment_name, run_name, dataset):
+def start_mlflow(model_config, dataset_config, experiment_config, mlflow_args):
+    if not mlflow_args.disable_mlflow:
+        experiment_name = experiment_config["experiment_identifier"]
+        dataset_name = dataset_config["dataset_identifier"]
+        start_mlflow_helper(experiment_name, mlflow_args.run_name, dataset_name)
+        log_machine_info()
+        for config in [model_config, dataset_config, experiment_config]:
+            log_config_info(config)
+            # TODO(vihan): Get the credential authentication working in github actions
+            if mlflow_args.upload_artifacts:
+                mlflow.log_artifact(config)
+
+
+def start_mlflow_helper(experiment_name, run_name, dataset):
     file_dir = os.path.dirname(os.path.abspath(__file__))
     file_name = os.path.join(file_dir, "../config.toml")
     with open(file_name) as f:
@@ -23,6 +36,19 @@ def start_mlflow(experiment_name, run_name, dataset):
         run_name=run_name,
         tags={"dataset": dataset},
     )
+
+
+def log_single_epoch_training_metrics(metrics):
+    # Since metrics is the result of training a single epoch, we can greatly
+    #  simplify the logging:
+    mlflow_metrics = {k: v[0] for k, v in metrics.items()}
+    mlflow.log_metrics(mlflow_metrics)
+
+
+def verify_mlflow_args(parser, mlflow_args):
+    if not mlflow_args.disable_mlflow and not mlflow_args.run_name:
+        parser.print_usage()
+        raise ValueError("Error: --run_name is required when using mlflow logging.")
 
 
 def log_machine_info():

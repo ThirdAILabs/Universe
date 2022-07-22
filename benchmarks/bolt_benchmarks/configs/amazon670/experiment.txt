@@ -1,0 +1,11 @@
+experiment_identifier = "Amazon Polarity"
+
+[params]
+
+train_metrics = []
+train_epochs = 5
+rehash = 6400
+rebuild = 128000
+learning_rate = 0.0001
+
+test_metrics = ["categorical_accuracy"]
