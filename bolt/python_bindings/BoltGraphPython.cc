@@ -11,7 +11,6 @@
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
-#include <dataset/src/batch_types/MaskedSentenceBatch.h>
 
 namespace thirdai::bolt::python {
 

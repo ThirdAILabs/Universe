@@ -7,8 +7,6 @@
 #include <dataset/src/batch_processors/ClickThroughBatchProcessor.h>
 #include <dataset/src/batch_processors/SvmBatchProcessor.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
-#include <dataset/src/batch_types/ClickThroughBatch.h>
-#include <dataset/src/parsers/ClickThroughParser.h>
 
 namespace thirdai::dataset {
 

@@ -74,8 +74,6 @@ class PyBlockBatchProcessor : public BlockBatchProcessor {
   }
 };
 
-using MLMDatasetPtr = std::shared_ptr<InMemoryDataset<MaskedSentenceBatch>>;
-
 class MLMDatasetLoader {
  public:
   explicit MLMDatasetLoader(uint32_t pairgram_range)

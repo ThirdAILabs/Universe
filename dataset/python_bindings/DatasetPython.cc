@@ -373,9 +373,6 @@ void createDatasetSubmodule(py::module_& module) {
       "embedding. "
       "Defaults to 100,000.");
 
-  py::class_<InMemoryDataset<MaskedSentenceBatch>, MLMDatasetPtr>(  // NOLINT
-      dataset_submodule, "MLMDataset");
-
   py::class_<MLMDatasetLoader>(dataset_submodule, "MLMDatasetLoader")
       .def(py::init<uint32_t>(), py::arg("pairgram_range"))
       .def("load", &MLMDatasetLoader::load, py::arg("filename"),

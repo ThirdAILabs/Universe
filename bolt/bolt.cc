@@ -1,4 +1,3 @@
-#include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/src/Datasets.h>
 #include <chrono>
