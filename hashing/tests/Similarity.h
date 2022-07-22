@@ -14,14 +14,14 @@
 namespace thirdai::hashing {
 
 struct SparseVecPair {
-  dataset::SparseVector v1;
-  dataset::SparseVector v2;
+  SparseVector v1;
+  SparseVector v2;
   float sim;
 };
 
 struct DenseVecPair {
-  dataset::DenseVector v1;
-  dataset::DenseVector v2;
+  DenseVector v1;
+  DenseVector v2;
   float sim;
 };
 
@@ -53,12 +53,10 @@ class Similarity {
                                                uint32_t dim) = 0;
 
   /** Returns the similarity of the two dense input vectors. */
-  virtual float getSim(const dataset::DenseVector& v1,
-                       dataset::DenseVector& v2) = 0;
+  virtual float getSim(const DenseVector& v1, DenseVector& v2) = 0;
 
   /** Returns the similarity of the two sparse input vectors. */
-  virtual float getSim(const dataset::SparseVector& v1,
-                       const dataset::SparseVector& v2) = 0;
+  virtual float getSim(const SparseVector& v1, const SparseVector& v2) = 0;
 };
 
 }  // namespace thirdai::hashing
