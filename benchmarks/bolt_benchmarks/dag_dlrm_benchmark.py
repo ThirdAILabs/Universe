@@ -13,19 +13,20 @@ def get_labels(dataset: str):
 
 
 input_layer = bolt.graph.Input(dim=15)
-hidden_layer = bolt.graph.FullyConnected(
+hidden_layer1 = bolt.graph.FullyConnected(
     dim=1000, sparsity=0.2, activation="relu")(input_layer)
+hidden_layer2 = bolt.graph.FullyConnected(dim=100, activation="relu")(hidden_layer1)
 
 token_input = bolt.graph.TokenInput()
 embedding_layer = bolt.graph.Embedding(
     num_embedding_lookups=8, lookup_size=16, log_embedding_block_size=10)(token_input)
 
-concat = bolt.graph.Concatenate()([hidden_layer, embedding_layer])
+concat = bolt.graph.Concatenate()([hidden_layer2, embedding_layer])
 
-hidden_layer2 = bolt.graph.FullyConnected(
+hidden_layer3 = bolt.graph.FullyConnected(
     dim=1000, sparsity=0.2, activation="relu")(concat)
 output_layer = bolt.graph.FullyConnected(
-    dim=2, activation="softmax")(hidden_layer2)
+    dim=2, activation="softmax")(hidden_layer3)
 
 
 model = bolt.graph.Model(inputs=[input_layer], token_inputs=[
