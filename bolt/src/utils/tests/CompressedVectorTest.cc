@@ -17,13 +17,13 @@ float single_vector_reconstruction_error(
     error += diff * diff;  // Squared error.
   }
 
-  error = sqrt(error) / static_cast<float>(num_elements);
+  error = sqrtf(error) / static_cast<float>(num_elements);
   return error;
 }
 
 void runReconstructionTest() {
-  const uint64_t uncompressed_size = (int)(5e6);
-  const uint64_t block_size = 64;
+  const uint64_t uncompressed_size = static_cast<uint64_t>(5e6);
+  const uint64_t block_size = 16;
 
   // Because we love the answer to life, universe and everything.
   const uint32_t seed = 42;
