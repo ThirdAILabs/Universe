@@ -115,7 +115,6 @@ class SvmDatasetTestFixture : public ::testing::Test {
 };
 
 TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
-  // NOLINTNEXTLINE
   auto [data, labels] = SvmDatasetLoader::loadDataset(_filename, _batch_size);
 
   // Check data vectors are correct.
