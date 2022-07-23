@@ -17,6 +17,8 @@ fi
 # cd to Universe
 cd $BASEDIR/../
 
+clang-tidy --version
+
 # See https://stackoverflow.com/questions/1000370/add-collect-exit-codes-in-bash
 declare -i NUM_FAILED=0
 
