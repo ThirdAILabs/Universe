@@ -1,3 +1,5 @@
+#pragma once
+
 #include "BatchProcessor.h"
 #include "Datasets.h"
 #include "InMemoryDataset.h"

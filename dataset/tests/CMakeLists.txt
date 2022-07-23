@@ -1,7 +1,5 @@
 enable_testing()
 
-add_subdirectory(bolt_dataset)
-
 add_executable(
   svm_dataset_test
   SvmDatasetTests.cc
