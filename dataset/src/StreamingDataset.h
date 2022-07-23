@@ -87,7 +87,7 @@ class StreamingDataset {
     std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> dataset_ptrs =
         std::apply(
             [](auto&... batch_lists_arg) {
-              return std::make_tuple(std::shared_ptr<InMemoryDataset<BATCH_Ts>>(
+              return std::make_tuple(std::unique_ptr<InMemoryDataset<BATCH_Ts>>(
                   new InMemoryDataset<BATCH_Ts>(
                       std::move(batch_lists_arg)))...);
             },
