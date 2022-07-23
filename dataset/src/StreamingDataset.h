@@ -93,7 +93,7 @@ class StreamingDataset {
             },
             batch_lists);
 
-    return dataset_ptrs;
+    return std::move(dataset_ptrs);
   }
 
   uint32_t getMaxBatchSize() const { return _data_loader->getMaxBatchSize(); }
