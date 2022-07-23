@@ -28,8 +28,10 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
       - name: Update clang-tidy 
         run: | 
+          clang-tidy --version
           sudo apt-get update -y
           sudo apt-get install -y clang-tidy
+          clang-tidy --version
           
       - name: Run clang-tidy linting on all files
         run: |
