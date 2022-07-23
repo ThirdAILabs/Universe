@@ -33,7 +33,15 @@ find . -type f -name "*SvmDatasetTests.cc" \
 { 
   while read fname; do 
     echo $fname 
-    clang-tidy --quiet $fname -- --std=c++17
+    clang-tidy --header-filter="^(?:(?!:deps).)*$" \
+               --quiet -p compile_commands.json $fname -- --std=c++17 \
+               -I. \
+               -Ideps/pybind11/include \
+               -Ideps/cereal/include \
+               -Ideps/tomlplusplus/include/toml++ \
+               -Ideps/eigen \
+               -Ideps/googletest/googletest/include \
+               -Ideps/googletest/googlemock/include 
     NUM_FAILED+=$?
   done
 
