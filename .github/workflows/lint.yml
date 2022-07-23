@@ -25,14 +25,7 @@ jobs:
       - uses: actions/checkout@v2
         with:           
           submodules: 'recursive'
-          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}
-      - name: Update clang-tidy 
-        run: | 
-          clang-tidy --version
-          sudo apt update
-          sudo apt install llvm-13
-          clang-tidy --version
-          
+          token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}          
       - name: Run clang-tidy linting on all files
         run: |
           bin/lint.sh
