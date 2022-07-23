@@ -128,10 +128,11 @@ TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
   // Check data vectors are correct.
   uint32_t vec_count = 0;
   for (const auto& batch : *data) {
-    ASSERT_TRUE(batch.getBatchSize() == _batch_size ||
-                batch.getBatchSize() == _num_vectors % _batch_size);
+    uint32_t batch_size = batch.getBatchSize();  // NOLINT (same reason)
+    ASSERT_TRUE(batch_size == _batch_size ||
+                batch_size == _num_vectors % _batch_size);
 
-    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+    for (uint32_t v = 0; v < batch_size; v++) {
       ASSERT_EQ(batch[v].len, _vectors[vec_count].values.size());
       for (uint32_t i = 0; i < batch[v].len; i++) {
         ASSERT_EQ(batch[v].active_neurons[i],
