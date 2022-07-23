@@ -3,6 +3,7 @@
 #include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <gtest/gtest.h>
+#include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/batch_types/ClickThroughBatch.h>
 #include <algorithm>
 #include <random>

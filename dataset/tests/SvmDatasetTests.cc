@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <dataset/src/Datasets.h>
+#include <dataset/src/DatasetLoaders.h>
 #include <algorithm>
 #include <cstddef>
 #include <cstdio>
@@ -115,6 +115,14 @@ class SvmDatasetTestFixture : public ::testing::Test {
 };
 
 TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
+  /**
+   * We use a no-lint here because clang tidy thinks there's a memory leak
+   * here when we create the shared_ptr in loadInMemory() There are
+   * discussions on stack overflow/github about similar issues being false
+   * positives and our ASAN unit tests that use this function detect no memory
+   * leaks.
+   */
+  // NOLINTNEXTLINE
   auto [data, labels] = SvmDatasetLoader::loadDataset(_filename, _batch_size);
 
   // Check data vectors are correct.
