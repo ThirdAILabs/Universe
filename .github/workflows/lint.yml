@@ -28,4 +28,5 @@ jobs:
           token: ${{ secrets.CICD_REPO_ACCESS_TOKEN }}          
       - name: Run clang-tidy linting on all files
         run: |
-          bin/lint.sh
+          docker build -t lint_image -f docker/develop/Dockerfile .  
+          docker run --privileged --mount type=bind,source=${PWD},target=/src lint_image src/bin/lint.sh
