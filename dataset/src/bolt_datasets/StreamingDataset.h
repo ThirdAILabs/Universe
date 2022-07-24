@@ -47,7 +47,8 @@ class StreamingDataset {
   template <typename BATCH_T>
   std::shared_ptr<InMemoryDataset<BATCH_T>> makeDatasetPtr(
       std::vector<BATCH_T>&& batch_list) {
-    return std::make_shared<InMemoryDataset<BATCH_T>>(std::move(batch_list));
+    (void)batch_list;
+    return std::make_shared<InMemoryDataset<BATCH_T>>({});
   }
 
   template <size_t... INDICES>
@@ -55,7 +56,7 @@ class StreamingDataset {
       std::tuple<std::vector<BATCH_Ts>...>& batch_lists,
       std::index_sequence<INDICES...> /* unamed, but clang-tidy complains */) {
     return std::make_tuple(
-        makeDatasetPtr(std::move(std::get<INDICES>({batch_lists})))...);
+        makeDatasetPtr(std::move(std::get<INDICES>(batch_lists)))...);
   }
 
   // This function maps the tuple of batches returned by nextBatch() into a
