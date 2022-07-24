@@ -47,8 +47,7 @@ class StreamingDataset {
   template <typename BATCH_T>
   std::shared_ptr<InMemoryDataset<BATCH_T>> makeDatasetPtr(
       std::vector<BATCH_T>&& batch_list) {
-    (void)batch_list;
-    return std::make_shared<InMemoryDataset<BATCH_T>>({});
+    return std::make_shared<InMemoryDataset<BATCH_T>>(std::move(batch_list));
   }
 
   template <size_t... INDICES>
