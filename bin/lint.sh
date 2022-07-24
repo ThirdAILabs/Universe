@@ -31,7 +31,7 @@ find . -type f -name "*AutoClassifierUtils.cc" \
 { 
   while read fname; do 
     echo $fname 
-    $(brew --prefix llvm@13)/bin/clang-tidy $fname
+    clang-tidy $fname
     NUM_FAILED+=$?
   done
 
