@@ -129,7 +129,7 @@ TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
   uint32_t vec_count = 0;
   for (const auto& batch : *data) {
     uint32_t batch_size = batch.getBatchSize();  // NOLINT (same reason)
-    ASSERT_TRUE(batch_size == _batch_size ||
+    ASSERT_TRUE(batch_size == _batch_size || // NOLINT
                 batch_size == _num_vectors % _batch_size);
 
     for (uint32_t v = 0; v < batch_size; v++) {
