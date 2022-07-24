@@ -30,7 +30,7 @@ jobs:
       - name: Install clang-tidy 13
         run: |
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-          brew install llvm 
+          brew install llvm@13
           $(brew --prefix llvm)/bin/clang-tidy --version
       - name: Run clang-tidy linting on all files
         run: |
