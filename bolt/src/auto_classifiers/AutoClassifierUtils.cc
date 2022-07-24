@@ -71,12 +71,11 @@ void AutoClassifierUtils::train(
      * positives and our ASAN unit tests that use this function detect no memory
      * leaks.
      */
-    auto [train_data, train_labels] = dataset->loadInMemory();  // NOLINT
+    auto [train_data, train_labels] = dataset->loadInMemory();
 
-    model->train(train_data, train_labels, loss, learning_rate, 1);  // NOLINT
+    model->train(train_data, train_labels, loss, learning_rate, 1);
     model->freezeHashTables();
-    model->train(train_data, train_labels, loss, learning_rate,  // NOLINT
-                 epochs - 1);
+    model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
   }
 }
 

@@ -9,6 +9,8 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 namespace thirdai::dataset {
@@ -42,9 +44,23 @@ class StreamingDataset {
     return _batch_processor->createBatch(*rows);
   }
 
+  template <typename BATCH_T>
+  std::shared_ptr<InMemoryDataset<BATCH_T>> makeDatasetPtr(
+      std::vector<BATCH_T>&& batch_list) {
+    return std::make_shared<InMemoryDataset<BATCH_T>>(std::move(batch_list));
+  }
+
+  template <size_t... INDICES>
+  std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> callMakePtr(
+      std::tuple<std::vector<BATCH_Ts>...>& batch_lists,
+      std::index_sequence<INDICES...> /* unamed, but clang-tidy complains */) {
+    return std::make_tuple(
+        makeDatasetPtr(std::move(std::get<INDICES>(batch_lists)))...);
+  }
+
   // This function maps the tuple of batches returned by nextBatch() into a
-  // tuple of datasets where each dataset contains a list of batches of the type
-  // corresponding to that element of the tuple.
+  // tuple of datasets where each dataset contains a list of batches of the
+  // type corresponding to that element of the tuple.
   std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> loadInMemory() {
     std::tuple<std::vector<BATCH_Ts>...> batch_lists;
 
@@ -85,14 +101,19 @@ class StreamingDataset {
 
     // We use std::apply again here to call a function acception a variadic
     // template that maps each vector of batches to an InMemoryDataset.
+    // std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> dataset_ptrs =
+    //     std::apply(
+    //         [](auto&... batch_lists_arg) {
+    //           return std::make_tuple(
+    //               std::make_shared<InMemoryDataset<BATCH_Ts>>(
+    //                   std::move(batch_lists_arg))...);
+    //         },
+    //         batch_lists);
+
     std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> dataset_ptrs =
-        std::apply(
-            [](auto&... batch_lists_arg) {
-              return std::make_tuple(
-                  std::make_shared<InMemoryDataset<BATCH_Ts>>(
-                      std::move(batch_lists_arg))...);
-            },
-            batch_lists);
+        callMakePtr(batch_lists,
+                    std::make_index_sequence<
+                        std::tuple_size_v<std::tuple<BATCH_Ts...>>>());
 
     return dataset_ptrs;
   }
