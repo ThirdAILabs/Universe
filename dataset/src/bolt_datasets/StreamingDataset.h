@@ -54,8 +54,8 @@ class StreamingDataset {
   std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> callMakePtr(
       std::tuple<std::vector<BATCH_Ts>...>& batch_lists,
       std::index_sequence<INDICES...> /* unamed, but clang-tidy complains */) {
-    return std::make_tuple(
-        makeDatasetPtr(std::move(std::get<INDICES>(batch_lists)))...);
+    (void)batch_lists;
+    return std::make_tuple(makeDatasetPtr(std::move(std::get<INDICES>({})))...);
   }
 
   // This function maps the tuple of batches returned by nextBatch() into a
