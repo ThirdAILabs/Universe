@@ -11,7 +11,9 @@ namespace thirdai::bolt {
 // means of sketching.
 //
 // The input vector is partitioned into blocks. The blocks are hashed to
-// continuous locations in memory in a compressed vector.
+// continuous locations in memory in a compressed vector. Hashing blocks into
+// continuous places is expected to improve speed by taking advantage of cache
+// line optimizations and predicatable data access patterns.
 //
 // TODO(jerin): Write-up the math, guarantees.
 // TODO(jerin): Remove mod operations with equivalent bit-operations, asserting
