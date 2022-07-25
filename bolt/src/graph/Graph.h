@@ -17,6 +17,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -72,6 +73,13 @@ class BoltGraph {
       const dataset::BoltDatasetPtr& test_labels,
       const PredictConfig& predict_config);
 
+  std::pair<std::vector<std::vector<float>>,
+            std::optional<std::vector<std::vector<uint32_t>>>>
+  getInputGradients(
+      const std::vector<dataset::BoltDatasetPtr>& input_data,
+      const std::vector<dataset::BoltTokenDatasetPtr>& input_tokens,
+      bool best_index, const std::vector<uint32_t>& required_labels);
+
   std::vector<NodePtr> getNodeTraversalOrder() const {
     std::vector<NodePtr> nodes;
     nodes.insert(nodes.end(), _inputs.begin(), _inputs.end());
@@ -124,6 +132,11 @@ class BoltGraph {
   std::unordered_map<NodePtr, int32_t> getSuccessorCounts() const;
 
   void verifyCanTrain(const DatasetContext& train_context);
+
+  void verifyCanGetInputGradients(const DatasetContext& input_gradients_context,
+                                  uint32_t required_labels_size,
+                                  uint32_t input_data_len, bool best_index,
+                                  uint32_t num_output_nonzeros);
 
   void verifyCanPredict(const DatasetContext& predict_context, bool has_labels,
                         bool returning_activations,

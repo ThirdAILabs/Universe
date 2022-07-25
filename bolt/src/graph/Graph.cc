@@ -4,6 +4,7 @@
 #include <cereal/types/vector.hpp>
 #include "GraphPropertyChecks.h"
 #include "nodes/FullyConnected.h"
+#include <bolt/src/graph/DatasetContext.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/BoltVector.h>
@@ -15,6 +16,7 @@
 #include <algorithm>
 #include <chrono>
 #include <csignal>
+#include <cstddef>
 #include <exception>
 #include <optional>
 #include <ostream>
@@ -174,6 +176,40 @@ void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
     rebuildHashTables();
   } else if (checkBatchInterval(rebuild_hash_tables_batch)) {
     rebuildHashTables();
+  }
+}
+
+std::pair<std::vector<std::vector<float>>,
+          std::optional<std::vector<std::vector<uint32_t>>>>
+BoltGraph::getInputGradients(
+    const std::vector<dataset::BoltDatasetPtr>& input_data,
+    const std::vector<dataset::BoltTokenDatasetPtr>& input_tokens,
+    bool best_index, const std::vector<uint32_t>& required_labels) {
+  DatasetContext input_gradients_context(input_data, input_tokens, nullptr);
+  uint32_t input_data_len = 0;
+  for (const auto& input : input_data) {
+    input_data_len += input->len();
+  }
+  for (const auto& token_input : input_tokens) {
+    input_data_len += token_input->len();
+  }
+  verifyCanGetInputGradients(input_gradients_context, required_labels.size(),
+                             input_data_len, best_index,
+                             _output->numNonzerosInOutput());
+
+  prepareToProcessBatches(input_gradients_context.batchSize(),
+                          /* use_sparsity=*/true);
+
+  std::vector<std::vector<float>> input_dataset_grad;
+  std::vector<std::vector<uint32_t>> input_dataset_indices;
+
+  for (uint64_t batch_idx = 0; batch_idx < input_gradients_context.numBatches();
+       batch_idx++) {
+    input_gradients_context.setInputs(batch_idx, _inputs, _token_inputs);
+    for (uint32_t vec_id = 0;
+         vec_id < input_gradients_context.batchSize(batch_idx); vec_id++) {
+        
+    }
   }
 }
 
@@ -425,6 +461,28 @@ void BoltGraph::verifyCanTrain(const DatasetContext& train_context) {
   }
 
   verifyInputForGraph(train_context);
+}
+
+void BoltGraph::verifyCanGetInputGradients(
+    const DatasetContext& input_gradients_context,
+    uint32_t required_labels_size, uint32_t input_data_len, bool best_index,
+    uint32_t num_output_nonzeros) {
+  if (!graphCompiled()) {
+    throw std::logic_error(
+        "Graph must be compiled before getting input gradients");
+  }
+  if ((required_labels_size != 0) && (required_labels_size != input_data_len)) {
+    throw std::invalid_argument("Length of required_labels " +
+                                std::to_string(required_labels_size) +
+                                "does not match length of provided dataset." +
+                                std::to_string(input_data_len));
+  }
+  if (!best_index && num_output_nonzeros < 2) {
+    throw std::invalid_argument(
+        "The sparse output dimension should be atleast 2 to call "
+        "getSecondBestIndex.");
+  }
+  verifyInputForGraph(input_gradients_context);
 }
 
 void BoltGraph::verifyCanPredict(const DatasetContext& predict_context,
