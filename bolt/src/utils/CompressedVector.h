@@ -46,7 +46,7 @@ class CompressedVector {
       // effective_size is required as we are hashing blocks and we don't want
       // out of bounds access.
       uint64_t effective_size = _physical_vector.size() - _block_size;
-      uint64_t block_begin = _hash_function(i) % effective_size;
+      uint64_t block_begin = hashFunction(i) % effective_size;
 
       // Having found the hash, we store all elements in the block within the
       // respective offset.
@@ -57,7 +57,7 @@ class CompressedVector {
         if (not _use_sign_bit) {
           _physical_vector[index] += input[j];
         } else {
-          uint64_t sign_bit = _hash_function(j) % 2;
+          uint64_t sign_bit = hashFunction(j) % 2;
 
           // Add the input value multiplied by sign bit to the index at
           // _physical_vector.
@@ -84,11 +84,11 @@ class CompressedVector {
 
   // non-const accessor.
   ELEMENT_TYPE get(uint64_t i) const {
-    uint64_t idx = _find_index_in_physical_vector(i);
+    uint64_t idx = findIndexInPhysicalVector(i);
     ELEMENT_TYPE value = _physical_vector[idx];
 
     if (_use_sign_bit) {
-      uint64_t sign_bit = _hash_function(i) % 2;
+      uint64_t sign_bit = hashFunction(i) % 2;
       value = sign_bit ? value : -1 * value;
     }
 
@@ -109,14 +109,14 @@ class CompressedVector {
 
   // Convenience function to hash into a uint32_t using MurmurHash using saved
   // seed value.
-  inline uint32_t _hash_function(uint64_t value) const {
+  inline uint32_t hashFunction(uint64_t value) const {
     char* addr = reinterpret_cast<char*>(&value);
     uint32_t hash_value =
         thirdai::hashing::MurmurHash(addr, sizeof(uint64_t), _seed);
     return hash_value;
   }
 
-  uint64_t _find_index_in_physical_vector(uint64_t i) const {
+  uint64_t findIndexInPhysicalVector(uint64_t i) const {
     // The following involves the mod operation and is slow.
     // We will have to do bit arithmetic somewhere.
     // TODO(jerin): Come back here and make more efficient.
@@ -124,7 +124,7 @@ class CompressedVector {
     uint64_t i_begin = i - offset;
 
     uint64_t effective_size = _physical_vector.size() - _block_size;
-    uint64_t block_begin = _hash_function(i_begin) % effective_size;
+    uint64_t block_begin = hashFunction(i_begin) % effective_size;
     uint64_t index = block_begin + offset;
     return index;
   }
