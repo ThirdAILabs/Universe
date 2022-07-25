@@ -119,15 +119,21 @@ def load_all_datasets(dataset_config):
                 )
             result[dataset_type].append(dataset)
 
-    for label_name in ["train_labels", "test_labels"]:
-        if len(result[label_name]) > 1:
-            raise ValueError(
-                f"Must pass in 0 or 1 label datasets, but found {len(result[label_name])} {label_name}s"
-            )
-        if len(result[label_name]) == 1:
-            result[label_name] = result[label_name][0]
-        else:
-            result[label_name] = None
+    if len(result["train_labels"]) != 1:
+        raise ValueError(
+            f"Must have 1 train label dataset but found {len(result['train_labels'])} train_labels."
+        ) 
+    result["train_labels"] = result["train_labels"][0]
+
+    if len(result["test_labels"]) == 1:
+        result["test_labels"] = result["test_labels"][0]
+    elif len(result["test_labels"]) == 0:
+        result["test_labels"] = None
+    else:
+        raise ValueError(
+            f"Must have 0 or 1 test label datasets but found {len(result['test_labels'])} test_labels."
+        )
+
 
     return result
 
