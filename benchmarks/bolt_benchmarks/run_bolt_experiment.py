@@ -1,10 +1,7 @@
 # TODO(josh): Add back mach benchmark
 
 import argparse
-from sklearn.metrics import roc_auc_score
-from multiprocessing.sharedctypes import Value
 import toml
-from pathlib import Path
 from utils import (
     start_mlflow,
     verify_mlflow_args,
@@ -14,7 +11,6 @@ from utils import (
     config_get,
 )
 from thirdai import bolt, dataset
-import numpy as np
 
 
 def main():
@@ -249,6 +245,7 @@ def load_click_through_dataset(dataset_config):
         delimiter=config_get(dataset_config, "delimiter")
     )
 
+
 # Because of how our experiment works, we always set num_epochs=1 and return
 # num_epochs as the first element of a 2 item tuple (the second element is
 # the train_config)
@@ -290,7 +287,6 @@ def switch_to_sparse_inference_if_needed(
     if use_sparse_inference:
         print(f"Switching to sparse inference on epoch {current_epoch}")
         predict_config.enable_sparse_inference()
-    return use_sparse_inference
 
 
 def build_arg_parser():
