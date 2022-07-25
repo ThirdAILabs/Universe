@@ -1,9 +1,7 @@
 # TODO(josh): Add back mach benchmark
 
 import argparse
-from multiprocessing.sharedctypes import Value
 import toml
-from pathlib import Path
 from utils import (
     start_mlflow,
     verify_mlflow_args,
@@ -271,7 +269,6 @@ def switch_to_sparse_inference_if_needed(
     if use_sparse_inference:
         print(f"Switching to sparse inference on epoch {current_epoch}")
         predict_config.enable_sparse_inference()
-    return use_sparse_inference
 
 
 def build_arg_parser():
