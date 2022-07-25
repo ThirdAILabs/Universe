@@ -6,7 +6,6 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <gtest/gtest.h>
-#include <dataset/src/Dataset.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <algorithm>
 #include <numeric>

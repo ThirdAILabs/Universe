@@ -1,5 +1,5 @@
 from ..utils import (
-    gen_training_data,
+    gen_numpy_training_data,
     get_simple_concat_model,
     gen_single_sparse_node,
 )
@@ -21,7 +21,9 @@ def test_switch_dense_to_sparse():
     return both the activations and the indices of those activations.
     """
     dataset_dim = 100
-    train_data, train_labels = gen_training_data(n_classes=dataset_dim, n_samples=10000)
+    train_data, train_labels = gen_numpy_training_data(
+        n_classes=dataset_dim, n_samples=10000
+    )
 
     # This model (initially) has a dense output.
     # The output node's name is "fc_3"

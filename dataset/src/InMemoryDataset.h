@@ -1,8 +1,6 @@
 #pragma once
 
 #include "batch_types/ClickThroughBatch.h"
-#include "batch_types/DenseBatch.h"
-#include "batch_types/SparseBatch.h"
 #include "utils/SafeFileIO.h"
 #include <cstdint>
 #include <memory>
@@ -29,7 +27,7 @@ using DatasetBasePtr = std::shared_ptr<DatasetBase>;
 using DatasetBaseList = std::vector<DatasetBasePtr>;
 
 template <typename BATCH_T>
-class InMemoryDataset final : public DatasetBase {
+class InMemoryDataset : public DatasetBase {
  public:
   // Take r-value reference for batches to force a move. len is the total number
   // of elements in the dataset. We move into _batches to make sure that once
@@ -70,13 +68,13 @@ class InMemoryDataset final : public DatasetBase {
     _len = _batch_size * (_batches.size() - 1) + last_batch_size;
   }
 
-  const BATCH_T& operator[](uint32_t i) const { return _batches[i]; }
+  const BATCH_T& operator[](uint64_t i) const { return _batches[i]; }
 
-  BATCH_T& operator[](uint32_t i) { return _batches[i]; }
+  BATCH_T& operator[](uint64_t i) { return _batches[i]; }
 
-  const BATCH_T& at(uint32_t i) const { return _batches.at(i); }
+  const BATCH_T& at(uint64_t i) const { return _batches.at(i); }
 
-  BATCH_T& at(uint32_t i) { return _batches.at(i); }
+  BATCH_T& at(uint64_t i) { return _batches.at(i); }
 
   auto begin() const { return _batches.begin(); }
 

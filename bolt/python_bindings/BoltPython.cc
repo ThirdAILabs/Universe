@@ -317,8 +317,7 @@ void createBoltSubmodule(py::module_& module) {
            "vectors.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
-           py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("batch_size") = 0, py::arg("rehash") = 0,
+           py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
            py::arg("rebuild") = 0,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
@@ -393,8 +392,7 @@ void createBoltSubmodule(py::module_& module) {
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
       .def("predict", &PyNetwork::predict, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("batch_size") = 2048,
-           py::arg("sparse_inference") = false,
+           py::arg("test_labels"), py::arg("sparse_inference") = false,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),

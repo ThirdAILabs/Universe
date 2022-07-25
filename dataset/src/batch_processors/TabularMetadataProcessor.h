@@ -4,7 +4,7 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
 #include "ProcessorUtils.h"
-#include <dataset/src/bolt_datasets/BatchProcessor.h>
+#include <dataset/src/BatchProcessor.h>
 #include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <cmath>
 #include <limits>
