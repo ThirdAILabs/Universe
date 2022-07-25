@@ -151,9 +151,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("enable_sparse_inference", &PredictConfig::enableSparseInference)
       .def("with_metrics", &PredictConfig::withMetrics, py::arg("metrics"))
       .def("silence", &PredictConfig::silence)
-      .def("return_activations", &PredictConfig::returnActivations)
-      .def("with_max_test_batches", &PredictConfig::withMaxTestBatches,
-           py::arg("max_test_batches"));
+      .def("return_activations", &PredictConfig::returnActivations);
 
   py::class_<BoltGraph>(graph_submodule, "Model")
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
