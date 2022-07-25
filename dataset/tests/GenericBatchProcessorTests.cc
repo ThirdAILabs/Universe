@@ -1,7 +1,7 @@
 #include "BatchProcessorTestUtils.h"
 #include "MockBlock.h"
 #include <gtest/gtest.h>
-#include <dataset/src/bolt_datasets/batch_processors/GenericBatchProcessor.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <sstream>
 #include <string>
 

@@ -1,10 +1,8 @@
 #pragma once
 
 #include <hashing/src/MurmurHash.h>
-#include <dataset/src/Dataset.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <dataset/src/bolt_datasets/StreamingDataset.h>
-#include <dataset/src/bolt_datasets/batch_processors/MaskedSentenceBatchProcessor.h>
+#include <dataset/src/Datasets.h>
+#include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/core/BlockBatchProcessor.h>
 #include <pybind11/cast.h>
 #include <pybind11/gil.h>

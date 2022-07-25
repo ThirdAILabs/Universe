@@ -6,9 +6,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <dataset/src/bolt_datasets/DataLoader.h>
-#include <dataset/src/bolt_datasets/StreamingDataset.h>
-#include <dataset/src/bolt_datasets/batch_processors/TextClassificationProcessor.h>
+#include <dataset/src/batch_processors/TextClassificationProcessor.h>
 #include <dataset/src/utils/SafeFileIO.h>
 
 namespace thirdai::bolt {
