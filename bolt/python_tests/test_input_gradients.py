@@ -1,8 +1,6 @@
 from thirdai import bolt
 import numpy as np
 import pytest
-import itertools
-from .utils import gen_training_data
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
