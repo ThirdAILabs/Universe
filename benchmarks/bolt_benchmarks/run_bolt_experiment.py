@@ -122,7 +122,7 @@ def load_all_datasets(dataset_config):
     if len(result["train_labels"]) != 1:
         raise ValueError(
             f"Must have 1 train label dataset but found {len(result['train_labels'])} train_labels."
-        ) 
+        )
     result["train_labels"] = result["train_labels"][0]
 
     if len(result["test_labels"]) == 1:
@@ -166,7 +166,7 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
         if use_mlflow:
             log_prediction_metrics(predict_metrics)
 
-        # TODO(Nick): Should we compute auc for criteo? 
+        # TODO(Nick): Should we compute auc for criteo?
 
     if "save" in experiment_config.keys():
         model.save(config_get(experiment_config, "save"))
@@ -195,17 +195,19 @@ def construct_fully_connected_node(fc_config):
             hash_function=fc_config.get("hash_function", "DWTA"),
         ),
     )
-    
+
+
 def construct_embedding_node(embedding_config):
     num_embedding_lookups = config_get(embedding_config, "num_embedding_lookups")
     lookup_size = config_get(embedding_config, "lookup_size")
     log_embedding_block_size = config_get(embedding_config, "log_embedding_block_size")
-    
+
     return bolt.graph.Embedding(
         num_embedding_lookups=num_embedding_lookups,
         lookup_size=lookup_size,
-        log_embedding_block_size=log_embedding_block_size
+        log_embedding_block_size=log_embedding_block_size,
     )
+
 
 def construct_node(node_config):
     node_type = config_get(node_config, "type")
@@ -249,7 +251,7 @@ def load_click_through_dataset(dataset_config):
         batch_size=config_get(dataset_config, "batch_size"),
         num_numerical_features=config_get(dataset_config, "num_numerical_features"),
         max_categorical_features=config_get(dataset_config, "max_categorical_features"),
-        delimiter=config_get(dataset_config, "delimiter")
+        delimiter=config_get(dataset_config, "delimiter"),
     )
 
 
@@ -273,6 +275,7 @@ def load_predict_config(experiment_config):
     return bolt.graph.PredictConfig.make().with_metrics(
         config_get(experiment_config, "test_metrics")
     )
+
 
 def freeze_hash_table_if_needed(model, experiment_config, current_epoch):
     should_freeze_hash_tables = (
