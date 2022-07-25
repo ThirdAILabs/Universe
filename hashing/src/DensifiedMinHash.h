@@ -21,7 +21,7 @@ class DensifiedMinHash final : public HashFunction {
 
   std::unique_ptr<HashFunction> copyWithNewSeeds() const final {
     return std::make_unique<DensifiedMinHash>(
-         /* hashes_per_table= */ _hashes_per_table,
+        /* hashes_per_table= */ _hashes_per_table,
         /* num_tables= */ _num_tables,
         /* range= */ _range);
   }

@@ -37,9 +37,7 @@ def helper_for_text_classification_data_pipeline(text_encoding, delim):
             sparsity=0.1,
             activation_function="relu",
         ),
-        bolt.FullyConnected(
-            dim=3, activation_function="softmax"
-        ),
+        bolt.FullyConnected(dim=3, activation_function="softmax"),
     ]
 
     network = bolt.Network(layers=layers, input_dim=pipeline.get_input_dim())

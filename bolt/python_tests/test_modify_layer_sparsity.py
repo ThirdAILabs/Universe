@@ -94,4 +94,3 @@ def test_decrease_and_increase_sparsity():
     # 0.25 is 2^-2, so we can assert exact equality without math.isclose
     classifier.set_layer_sparsity(layer_index=0, sparsity=0.25)
     assert classifier.get_layer_sparsity(layer_index=0) == 0.25
-

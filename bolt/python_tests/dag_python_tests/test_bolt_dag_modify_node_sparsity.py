@@ -85,4 +85,3 @@ def test_decrease_and_increase_sparsity():
 
     assert hidden_layer_bottom.get_sparsity() == 0.5
     assert hidden_layer_top.get_sparsity() == 0.25
-
