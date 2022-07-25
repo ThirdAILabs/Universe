@@ -92,22 +92,18 @@ class CookieMonster:
     ):
         if task == "mlm":
             assert train_tokens is not None
-            self.model.train(train_data, train_tokens, train_labels, train_config)
         else:
             assert train_tokens is None
-            self.model.train(train_data, train_labels, train_config)
+        self.model.train(train_data, train_labels, train_config)
 
     def predict_with_task(
         self, task, test_data, test_tokens, test_labels, predict_config
     ):
         if task == "mlm":
             assert test_tokens is not None
-            return self.model.predict(
-                test_data, test_tokens, test_labels, predict_config
-            )
         else:
             assert test_tokens is None
-            return self.model.predict(test_data, test_labels, predict_config)
+        return self.model.predict(test_data, test_labels, predict_config)
 
     def eat_corpus(
         self,
