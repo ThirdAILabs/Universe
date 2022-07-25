@@ -36,12 +36,12 @@ void runReconstructionTest() {
 
     // Random number generator. Reuse the seed.
     std::mt19937_64 gen64(seed);
-    std::normal_distribution<> normal_distribution{/*mean=*/0, /*variance=*/4};
+    std::normal_distribution<> normal_distribution{/*mean=*/0, /*variance=*/10};
     std::uniform_real_distribution<> uniform_real_distribution{-100, 100};
     auto generator = [&gen64, &normal_distribution,
                       &uniform_real_distribution]() {
-      // return normal_distribution(gen64);
-      return uniform_real_distribution(gen64);
+      return normal_distribution(gen64);
+      // return uniform_real_distribution(gen64);
     };
 
     std::generate(uncompressed_vector.begin(), uncompressed_vector.end(),

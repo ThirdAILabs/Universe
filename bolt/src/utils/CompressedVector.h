@@ -1,6 +1,7 @@
 #pragma once
 
 #include "hashing/src/MurmurHash.h"
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <vector>
@@ -26,6 +27,9 @@ static constexpr uint64_t kDefaultSeed = 42;
 template <class ELEMENT_TYPE>
 class CompressedVector {
  public:
+  // For cereal, but why?
+  CompressedVector() {}
+
   // Create a new CompressedVector.
   CompressedVector(uint64_t physical_size, ELEMENT_TYPE default_value = 0,
                    uint64_t block_size = kDefaultBlockSize,
@@ -87,6 +91,8 @@ class CompressedVector {
   CompressedVector operator+(const CompressedVector& input) const;
   CompressedVector& operator+=(const CompressedVector& input);
 
+  ELEMENT_TYPE operator[](uint64_t index) { return get(index); }
+
   // non-const accessor.
   ELEMENT_TYPE get(uint64_t i) const {
     uint64_t idx = findIndexInPhysicalVector(i);
@@ -99,6 +105,27 @@ class CompressedVector {
 
     return value;
   }
+
+  // Set a value at an index.
+  void set(uint64_t i, ELEMENT_TYPE value) {
+    uint64_t idx = findIndexInPhysicalVector(i);
+    ELEMENT_TYPE& current_value = _physical_vector[idx];
+
+    if (_use_sign_bit) {
+      uint64_t sign_bit = hashFunction(i) % 2;
+      current_value += sign_bit ? value : -1 * value;
+    } else {
+      current_value += value;
+    }
+  }
+
+  void assign(uint64_t size, ELEMENT_TYPE value) {
+    (void)size;
+    std::fill(_physical_vector.data(),
+              _physical_vector.data() + _physical_vector.size(), value);
+  }
+
+  void clear() { _physical_vector.clear(); }
 
   // Iterators for pseudo-view on the bigger vector.
 
