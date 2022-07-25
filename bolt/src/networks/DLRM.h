@@ -5,7 +5,6 @@
 #include <bolt/src/layers/EmbeddingLayer.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <dataset/src/Dataset.h>
 #include <dataset/src/batch_types/ClickThroughBatch.h>
 #include <exceptions/src/Exceptions.h>
 #include <stdexcept>

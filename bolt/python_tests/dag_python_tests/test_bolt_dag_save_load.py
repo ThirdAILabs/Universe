@@ -1,16 +1,12 @@
 from thirdai import bolt
-from ..utils import gen_training_data
+from ..utils import gen_numpy_training_data
 import pytest
 
 pytestmark = [pytest.mark.unit]
 
 
 def get_train_config(epochs, batch_size):
-    return (
-        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=epochs)
-        .with_batch_size(batch_size)
-        .silence()
-    )
+    return bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=epochs).silence()
 
 
 def get_predict_config():
@@ -53,7 +49,7 @@ class ModelWithLayers:
 def test_save_load_dag():
     n_classes = 100
 
-    data, labels = gen_training_data(n_classes=n_classes, n_samples=10000)
+    data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
 
     model = ModelWithLayers(n_classes=n_classes)
 
@@ -90,7 +86,7 @@ def test_save_load_dag():
 def test_save_fully_connected_layer_parameters():
     n_classes = 100
 
-    data, labels = gen_training_data(n_classes=n_classes, n_samples=10000)
+    data, labels = gen_numpy_training_data(n_classes=n_classes, n_samples=10000)
 
     model = ModelWithLayers(n_classes=n_classes)
 

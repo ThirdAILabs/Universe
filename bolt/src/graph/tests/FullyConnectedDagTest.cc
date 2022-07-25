@@ -6,11 +6,6 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/networks/tests/BoltNetworkTestUtils.h>
 #include <gtest/gtest.h>
-#include <dataset/src/Dataset.h>
-#include <dataset/src/bolt_datasets/BatchProcessor.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <dataset/src/bolt_datasets/DataLoader.h>
-#include <dataset/src/bolt_datasets/StreamingDataset.h>
 #include <algorithm>
 #include <optional>
 #include <random>
@@ -54,12 +49,15 @@ static PredictConfig getPredictConfig() {
 TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
   BoltGraph model = getSingleLayerModel();
 
-  auto data =
+  auto [data, labels] =
       genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
 
-  model.train(data.data, data.labels, getTrainConfig(/* epochs= */ 5));
+  model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
+              getTrainConfig(/* epochs= */ 5));
 
-  auto test_metrics = model.predict(data.data, data.labels, getPredictConfig());
+  auto test_metrics =
+      model.predict(/* test_data= */ {data}, /* test_tokens= */ {}, labels,
+                    getPredictConfig());
 
   ASSERT_GE(test_metrics.first["categorical_accuracy"], 0.98);
 }
@@ -67,11 +65,15 @@ TEST(FullyConnectedDagTest, TrainSimpleDatasetSingleLayerNetwork) {
 TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
   BoltGraph model = getSingleLayerModel();
 
-  auto data = genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
+  auto [data, labels] =
+      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
 
-  model.train(data.data, data.labels, getTrainConfig(/* epochs= */ 5));
+  model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
+              getTrainConfig(/* epochs= */ 5));
 
-  auto test_metrics = model.predict(data.data, data.labels, getPredictConfig());
+  auto test_metrics =
+      model.predict(/* test_data= */ {data}, /* test_tokens= */ {}, labels,
+                    getPredictConfig());
 
   ASSERT_LE(test_metrics.first["categorical_accuracy"], 0.2);
 }
@@ -110,16 +112,19 @@ static void testSimpleDatasetMultiLayerModel(
     uint32_t epochs) {
   BoltGraph model = getMultiLayerModel(hidden_layer_act, output_layer_act);
 
-  auto data =
+  auto [data, labels] =
       genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
 
   auto train_metrics =
-      model.train(data.data, data.labels, getTrainConfig(epochs));
+      model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
+                  getTrainConfig(epochs));
 
   ASSERT_LT(train_metrics.at("mean_squared_error").back(),
             train_metrics.at("mean_squared_error").front());
 
-  auto test_metrics = model.predict(data.data, data.labels, getPredictConfig());
+  auto test_metrics =
+      model.predict(/* test_data= */ {data}, /* test_tokens= */ {}, labels,
+                    getPredictConfig());
 
   ASSERT_GE(test_metrics.first["categorical_accuracy"], 0.99);
 }
@@ -143,11 +148,15 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
   BoltGraph model =
       getMultiLayerModel(ActivationFunction::ReLU, ActivationFunction::Softmax);
 
-  auto data = genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
+  auto [data, labels] =
+      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
 
-  model.train(data.data, data.labels, getTrainConfig(/* epochs= */ 2));
+  model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
+              getTrainConfig(/* epochs= */ 2));
 
-  auto test_metrics = model.predict(data.data, data.labels, getPredictConfig());
+  auto test_metrics =
+      model.predict(/* test_data= */ {data}, /* test_tokens= */ {}, labels,
+                    getPredictConfig());
 
   ASSERT_LE(test_metrics.first["categorical_accuracy"], 0.2);
 }

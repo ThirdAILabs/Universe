@@ -1,6 +1,5 @@
 #include "BlockBatchProcessor.h"
 #include <bolt/src/layers/BoltVector.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <sys/types.h>
 #include <algorithm>
@@ -137,10 +136,10 @@ BlockBatchProcessor::exportInMemoryDataset(bool shuffle,
     _target_vectors = std::vector<bolt::BoltVector>();
   }
 
-  return {std::make_shared<BoltDataset>(std::move(input_batches), n_exported),
-          target_batches ? std::make_shared<BoltDataset>(
-                               std::move(target_batches.value()), n_exported)
-                         : nullptr};
+  return {std::make_shared<BoltDataset>(std::move(input_batches)),
+          target_batches
+              ? std::make_shared<BoltDataset>(std::move(target_batches.value()))
+              : nullptr};
 }
 
 std::vector<uint32_t> BlockBatchProcessor::makeFinalPositions(

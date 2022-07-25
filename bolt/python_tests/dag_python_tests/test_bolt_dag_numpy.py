@@ -1,13 +1,15 @@
-from thirdai import bolt
+from thirdai import bolt, dataset
 import numpy as np
 import pytest
 
-from ..utils import gen_training_data
+from ..utils import gen_numpy_training_data
 
 pytestmark = [pytest.mark.unit]
 
 
-def build_train_and_predict(data, labels, num_classes, sparsity):
+def build_train_and_predict(data_np, labels_np, num_classes, sparsity):
+    data = dataset.from_numpy(data_np, batch_size=64)
+    labels = dataset.from_numpy(labels_np, batch_size=64)
 
     input_layer = bolt.graph.Input(dim=num_classes)
     output_layer = bolt.graph.FullyConnected(
@@ -16,11 +18,7 @@ def build_train_and_predict(data, labels, num_classes, sparsity):
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
     model.compile(bolt.CategoricalCrossEntropyLoss())
 
-    train_config = (
-        bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=3)
-        .with_batch_size(64)
-        .silence()
-    )
+    train_config = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=3).silence()
     model.train(data, labels, train_config)
 
     predict_config = (
@@ -37,7 +35,9 @@ def test_dense_numpy_output():
     num_classes = 100
     num_samples = 1000
 
-    data, labels = gen_training_data(n_classes=num_classes, n_samples=num_samples)
+    data, labels = gen_numpy_training_data(
+        n_classes=num_classes, n_samples=num_samples, convert_to_bolt_dataset=False
+    )
     metrics, activations = build_train_and_predict(
         data, labels, num_classes, sparsity=1
     )
@@ -55,9 +55,11 @@ def test_sparse_numpy_output():
     sparsity = 0.1
     num_samples = 1000
 
-    data, labels = gen_training_data(n_classes=num_classes, n_samples=num_samples)
+    data_np, labels_np = gen_numpy_training_data(
+        n_classes=num_classes, n_samples=num_samples, convert_to_bolt_dataset=False
+    )
     metrics, activations, active_neurons = build_train_and_predict(
-        data, labels, num_classes, sparsity=sparsity
+        data_np, labels_np, num_classes, sparsity=sparsity
     )
 
     assert activations.shape == (num_samples, num_classes * sparsity)
@@ -68,6 +70,6 @@ def test_sparse_numpy_output():
     top_neurons_returned = active_neurons[
         np.arange(len(active_neurons)), np.argmax(activations, axis=1)
     ]
-    accuracy_computed = np.mean(top_neurons_returned == labels)
+    accuracy_computed = np.mean(top_neurons_returned == labels_np)
 
     assert accuracy_returned == accuracy_computed
