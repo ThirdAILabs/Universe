@@ -11,20 +11,24 @@
 
 namespace thirdai::bolt::python {
 
+/*
+  Checks that the dimensions of the given numpy array match the expected
+  dimensions for both weighs and biases at a given layer.
+  The input vector contains the expected dimensions for the
+  array, the output dimensions for a specific node and (optionally)
+  the output dimensions of the predecessor to that node.
+ */
 void checkNumpyArrayDimensions(
-    FullyConnectedNode& node,
+    const std::vector<uint32_t>& dimensions,
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
-        numpy_array,
-    const std::string& method) {
-  // Checks that the dimensions of the given numpy array matches the
-  // expected dimensions for both weights and biases at a given layer
+        numpy_array) {
+  bool set_weights = dimensions.size() == 3;
+  uint32_t expected_dim = dimensions[0];
+  uint32_t dim = dimensions[1];
+  std::optional<uint32_t> prev_node_dim =
+      set_weights ? std::make_optional<uint32_t>(dimensions[2]) : std::nullopt;
 
-  uint32_t dim = node.outputDim();
-  uint32_t prev_node_dim = node.getPredecessors()[0]->outputDim();
-
-  int array_dim = numpy_array.ndim();
-  bool set_weights = method == "set_weights";
-  int expected_dim = set_weights ? 2 : 1;
+  uint32_t array_dim = numpy_array.ndim();
 
   if (array_dim != expected_dim) {
     throw std::invalid_argument(
@@ -41,7 +45,7 @@ void checkNumpyArrayDimensions(
     set_weights
         ? throw std::invalid_argument(
               std::stringstream("Expected weight matrix to have dim (" +
-                                std::to_string(prev_node_dim) +
+                                std::to_string(prev_node_dim.value()) +
                                 "), recieved matrix with dim (" +
                                 std::to_string(numpy_array.shape(0)) + ", " +
                                 std::to_string(numpy_array.shape(1)) + ").")
@@ -151,7 +155,13 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           [](FullyConnectedNode& node,
              const py::array_t<float, py::array::c_style |
                                           py::array::forcecast>& new_weights) {
-            checkNumpyArrayDimensions(node, new_weights, "set_weights");
+            uint32_t dim = node.outputDim();
+            uint32_t prev_node_dim = node.getPredecessors()[0]->outputDim();
+            uint32_t expected_dim = 2;
+            const std::vector<uint32_t> dimensions = {expected_dim, dim,
+                                                      prev_node_dim};
+
+            checkNumpyArrayDimensions(dimensions, new_weights);
             return node.setNodeWeights(new_weights.data());
           },
           py::arg("new_weights"),
@@ -191,7 +201,11 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           [](FullyConnectedNode& node,
              const py::array_t<float, py::array::c_style |
                                           py::array::forcecast>& new_biases) {
-            checkNumpyArrayDimensions(node, new_biases, "set_biases");
+            uint32_t dim = node.outputDim();
+            uint32_t expected_dim = 2;
+            const std::vector<uint32_t> dimensions = {expected_dim, dim};
+
+            checkNumpyArrayDimensions(dimensions, new_biases);
             return node.setNodeBiases(new_biases.data());
           },
           py::arg("new_biases"),
