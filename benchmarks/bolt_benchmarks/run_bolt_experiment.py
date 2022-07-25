@@ -166,6 +166,8 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
         if use_mlflow:
             log_prediction_metrics(predict_metrics)
 
+        # TODO(Nick): Should we compute auc for criteo? 
+
     if "save" in experiment_config.keys():
         model.save(config_get(experiment_config, "save"))
 
