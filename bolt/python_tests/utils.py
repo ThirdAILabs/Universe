@@ -2,7 +2,6 @@ from thirdai import bolt
 import numpy as np
 
 
-
 # Constructs a bolt network with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
 def build_sparse_hidden_layer_classifier(input_dim, sparse_dim, output_dim, sparsity):
     layers = [
@@ -171,5 +170,3 @@ def compute_accuracy(test_labels, pred_file):
     return sum(
         (prediction == answer) for (prediction, answer) in zip(predictions, test_labels)
     ) / len(predictions)
-
-

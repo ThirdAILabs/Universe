@@ -15,6 +15,7 @@ from .utils import (
 
 ACCURACY_THRESHOLD = 0.8
 
+
 def build_simple_bolt_network(sparsity=1, n_classes=10):
     layers = [
         bolt.FullyConnected(
@@ -26,11 +27,10 @@ def build_simple_bolt_network(sparsity=1, n_classes=10):
             dim=n_classes,
             sparsity=sparsity,
             activation_function=bolt.ActivationFunctions.Softmax,
-        )
+        ),
     ]
     network = bolt.DistributedNetwork(layers=layers, input_dim=n_classes)
     return network
-
 
 
 def train_multiple_networks_same_gradients(
@@ -74,7 +74,7 @@ def train_multiple_networks_same_gradients(
     )
 
 
-def test_simple_bolt_network_distributed():
+def test_simple_bolt_network_single_node():
     network = build_simple_bolt_network()
 
     train_x, train_y = gen_training_data()
@@ -88,7 +88,7 @@ def test_simple_bolt_network_distributed():
     assert acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
 
-def test_get_set_weights_distributed():
+def test_get_set_weights_single_node():
 
     network = build_simple_bolt_network()
     train_x, train_y = gen_training_data()
@@ -129,7 +129,6 @@ def test_basic_gradient_sharing():
 
     train_x, train_y = gen_training_data()
     test_x, test_y = gen_training_data(n_samples=100)
-
 
     untrained_network = build_simple_bolt_network()
 

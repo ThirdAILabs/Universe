@@ -77,7 +77,7 @@ inline void printCopyWarning(const std::string& array_name,
 
 inline void biasDimensionCheck(
     const py::array_t<float, py::array::c_style | py::array::forcecast>& biases,
-    uint32_t dim, const std::string& matrix_type) {
+    uint64_t dim, const std::string& matrix_type) {
   if (biases.ndim() != 1) {
     std::stringstream err;
     err << "Expected " << matrix_type
@@ -86,7 +86,7 @@ inline void biasDimensionCheck(
         << biases.ndim() << " dimensions.";
     throw std::invalid_argument(err.str());
   }
-  if (biases.shape(0) != dim) {
+  if (biases.shape(0) != static_cast<uint32_t>(dim)) {
     std::stringstream err;
     err << "Expected " << matrix_type << " to have dim " << dim
         << " received matrix with dim " << biases.shape(0) << ".";
@@ -97,7 +97,7 @@ inline void biasDimensionCheck(
 inline void weightDimensionCheck(
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
         new_weights,
-    uint32_t dim, uint32_t prev_dim, const std::string& matrix_type = "") {
+    uint64_t dim, uint64_t prev_dim, const std::string& matrix_type = "") {
   if (new_weights.ndim() != 2) {
     std::stringstream err;
     err << "Expected " << matrix_type
@@ -106,7 +106,8 @@ inline void weightDimensionCheck(
         << new_weights.ndim() << " dimensions.";
     throw std::invalid_argument(err.str());
   }
-  if (new_weights.shape(0) != dim || new_weights.shape(1) != prev_dim) {
+  if (new_weights.shape(0) != static_cast<uint32_t>(dim) ||
+      new_weights.shape(1) != static_cast<uint32_t>(prev_dim)) {
     std::stringstream err;
     err << "Expected " << matrix_type << " to have dim (" << dim << ", "
         << prev_dim << ") received matrix with dim (" << new_weights.shape(0)

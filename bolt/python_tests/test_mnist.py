@@ -32,7 +32,9 @@ def build_sparse_output_layer_network():
     return network
 
 
-def check_categorical_accuracies(acc, activations, accuracy_threshold):
+def check_categorical_accuracies(
+    returned_metrics, returned_activations, accuracy_threshold
+):
 
     assert acc["categorical_accuracy"] >= accuracy_threshold  # ACCURACY_THRESHOLD
 
@@ -45,6 +47,7 @@ def check_categorical_accuracies(acc, activations, accuracy_threshold):
     acc_computed = np.mean(predictions == labels)
 
     assert acc_computed == acc["categorical_accuracy"]
+
 
 def load_mnist():
     train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
@@ -73,7 +76,6 @@ def load_mnist_labels():
             label = int(line.split(" ")[0])
             labels.append(label)
     return np.array(labels)
-
 
 
 def test_mnist_sparse_output_layer():
