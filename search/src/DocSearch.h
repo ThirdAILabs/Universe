@@ -11,7 +11,6 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <hashing/src/FastSRP.h>
 #include <Eigen/src/Core/util/Constants.h>
-#include <dataset/src/Vectors.h>
 #include <exceptions/src/Exceptions.h>
 #include <optional>
 #include <queue>

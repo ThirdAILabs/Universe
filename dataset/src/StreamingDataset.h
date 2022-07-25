@@ -69,7 +69,7 @@ class StreamingDataset {
           [&batch_tuple](auto&... batch_lists_arg) {
             std::apply(
                 [&](auto&... batch_tuple_arg) {
-                  (batch_lists_arg.push_back(std::move(batch_tuple_arg)), ...);
+                  (..., batch_lists_arg.push_back(std::move(batch_tuple_arg)));
                 },
                 batch_tuple.value());
           },

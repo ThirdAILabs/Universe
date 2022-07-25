@@ -2,7 +2,6 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <hashing/src/FastSRP.h>
 #include <gtest/gtest.h>
-#include <dataset/src/Vectors.h>
 #include <search/src/MaxFlashArray.h>
 #include <memory>
 #include <numeric>

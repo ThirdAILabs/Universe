@@ -1,4 +1,5 @@
 #include "DatasetPython.h"
+#include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/NumpyDataset.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
