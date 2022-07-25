@@ -1,7 +1,7 @@
 job = "Amazon670k Product Recommendation Distributed Training"
 
 [dataset]
-train_data = ["/share/pratik/xaa.txt"]
+train_data = ["/share/data/amazon-670k/train_shuffled_noHeader.txt"]
 test_data = "/share/data/amazon-670k/test_shuffled_noHeader_sampled.txt"
 format = "svm"
 input_dim = 135909
@@ -13,7 +13,7 @@ train_metrics = []
 test_metrics = ["categorical_accuracy"]
 learning_rate = 0.0001
 epochs = 3
-batch_size = 2048
+batch_size = 4096
 rehash = 6400
 rebuild = 128000
 
