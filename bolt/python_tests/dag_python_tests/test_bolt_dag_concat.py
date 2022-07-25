@@ -1,5 +1,5 @@
 from thirdai import bolt, dataset
-from ..utils import gen_training_data, get_simple_concat_model
+from ..utils import gen_numpy_training_data, get_simple_concat_model
 import pytest
 import numpy
 
@@ -28,17 +28,15 @@ def run_simple_test(
         hidden_layer_bottom_sparsity=hidden_layer_bottom_sparsity,
     )
 
-    train_data, train_labels = gen_training_data(
-        n_classes=num_classes, n_samples=num_training_samples
+    train_data, train_labels = gen_numpy_training_data(
+        n_classes=num_classes,
+        n_samples=num_training_samples,
+        batch_size_for_conversion=batch_size,
     )
 
-    train_config = (
-        bolt.graph.TrainConfig.make(
-            learning_rate=learning_rate, epochs=num_training_epochs
-        )
-        .with_batch_size(batch_size)
-        .silence()
-    )
+    train_config = bolt.graph.TrainConfig.make(
+        learning_rate=learning_rate, epochs=num_training_epochs
+    ).silence()
 
     metrics = model.train(
         train_data=train_data,
@@ -93,8 +91,3 @@ def test_concat_sparse_dense_train():
         hidden_layer_bottom_sparsity=1,
         num_training_samples=10000,
     )
-
-
-test_concat_dense_train()
-test_concat_sparse_train()
-test_concat_sparse_dense_train()

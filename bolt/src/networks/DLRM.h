@@ -5,7 +5,6 @@
 #include <bolt/src/layers/EmbeddingLayer.h>
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <dataset/src/Dataset.h>
 #include <dataset/src/batch_types/ClickThroughBatch.h>
 #include <exceptions/src/Exceptions.h>
 #include <stdexcept>
@@ -49,20 +48,6 @@ class DLRM : public Model<dataset::ClickThroughBatch> {
     _bottom_mlp.buildHashTables();
     _top_mlp.buildHashTables();
   }
-
-  void setShallow(bool shallow) final {
-    (void)shallow;
-    throw thirdai::exceptions::NotImplemented(
-        "Warning: setShallow not implemented for DLRM;");
-  }
-
-  void setShallowSave(bool shallow) final {
-    (void)shallow;
-    throw thirdai::exceptions::NotImplemented(
-        "Warning: setShallowSave not implemented for DLRM;");
-  }
-
-  bool anyLayerShallow() final { return false; }
 
   BoltBatch getOutputs(uint32_t batch_size, bool use_sparsity) final {
     return _top_mlp.getOutputs(batch_size, use_sparsity);

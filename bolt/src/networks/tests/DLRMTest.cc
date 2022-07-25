@@ -3,9 +3,8 @@
 #include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <gtest/gtest.h>
-#include <dataset/src/Dataset.h>
+#include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/batch_types/ClickThroughBatch.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <algorithm>
 #include <random>
 #include <vector>
@@ -48,8 +47,8 @@ class DLRMTestFixture : public testing::Test {
 
     return dataset::ClickThroughDatasetWithLabels(
         dataset::InMemoryDataset<dataset::ClickThroughBatch>(
-            std::move(data_batches), n_batches * batch_size),
-        dataset::BoltDataset(std::move(label_batches), n_batches * batch_size));
+            std::move(data_batches)),
+        dataset::BoltDataset(std::move(label_batches)));
   }
 };
 

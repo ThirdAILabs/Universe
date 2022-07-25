@@ -6,8 +6,7 @@
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <bolt/src/networks/tests/BoltNetworkTestUtils.h>
 #include <gtest/gtest.h>
-#include <dataset/src/batch_types/BoltTokenBatch.h>
-#include <dataset/src/batch_types/MaskedSentenceBatch.h>
+#include <dataset/src/Datasets.h>
 #include <random>
 
 namespace thirdai::bolt::tests {
@@ -17,35 +16,34 @@ static constexpr uint32_t n_switch_layers = 10;
 static constexpr uint32_t seed = 9824;
 
 auto getMLMDataset() {
-  auto [data, labels] = genDataset(n_classes, /* noisy_dataset= */ false);
+  auto [vector_data, labels] =
+      genDataset(n_classes, /* noisy_dataset= */ false);
 
-  std::vector<dataset::MaskedSentenceBatch> batches;
+  std::vector<dataset::BoltTokenBatch> token_batches;
 
   std::uniform_int_distribution<uint32_t> int_dist(0, n_switch_layers - 1);
   std::mt19937 rand(seed);
 
-  for (uint32_t batch_index = 0; batch_index < data->numBatches();
+  for (uint32_t batch_index = 0; batch_index < vector_data->numBatches();
        batch_index++) {
     std::vector<std::vector<uint32_t>> masked_indices;
-    BoltBatch& vec_batch = data->at(batch_index);
 
-    for (uint32_t i = 0; i < vec_batch.getBatchSize(); i++) {
+    for (uint32_t i = 0; i < vector_data->batchSize(batch_index); i++) {
       masked_indices.push_back({int_dist(rand)});
     }
 
-    batches.emplace_back(std::move(vec_batch),
-                         dataset::BoltTokenBatch(std::move(masked_indices)));
+    token_batches.emplace_back(
+        dataset::BoltTokenBatch(std::move(masked_indices)));
   }
 
-  auto dataset =
-      std::make_shared<dataset::InMemoryDataset<dataset::MaskedSentenceBatch>>(
-          std::move(batches), labels->len());
+  auto masked_indices_dataset =
+      std::make_shared<dataset::BoltTokenDataset>(std::move(token_batches));
 
-  return std::make_pair(dataset, labels);
+  return std::make_tuple(vector_data, masked_indices_dataset, labels);
 }
 
 TEST(SwitchNodeTest, TrainsOnSimpleClassificationDataset) {
-  auto [data, labels] = getMLMDataset();
+  auto [data, tokens, labels] = getMLMDataset();
 
   auto input = std::make_shared<Input>(/* dim= */ n_classes);
   auto token_input = std::make_shared<TokenInput>();
@@ -66,12 +64,12 @@ TEST(SwitchNodeTest, TrainsOnSimpleClassificationDataset) {
 
   auto train_cfg = TrainConfig::makeConfig(/* learning_rate= */ 0.001, 5);
 
-  model.train(data, labels, train_cfg);
+  model.train({data}, {tokens}, labels, train_cfg);
 
   auto predict_cfg =
       PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
-  auto result = model.predict(data, labels, predict_cfg);
+  auto result = model.predict({data}, {tokens}, labels, predict_cfg);
 
   ASSERT_GE(result.first["categorical_accuracy"], 0.95);
 }

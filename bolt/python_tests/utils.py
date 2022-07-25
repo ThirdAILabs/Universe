@@ -1,5 +1,6 @@
-from thirdai import bolt
+from thirdai import bolt, dataset
 import numpy as np
+import os
 
 
 # Constructs a bolt network with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
@@ -20,13 +21,22 @@ def build_sparse_hidden_layer_classifier(input_dim, sparse_dim, output_dim, spar
 # x_i is the one hot encoding of i. Thus the input and output dimension are both
 # n_classes. We randomize the order of the (x_i, i) example and label pairs
 # we return, and also add some normal noise to the examples.
-def gen_training_data(n_classes=10, n_samples=1000, noise_std=0.1):
+def gen_numpy_training_data(
+    n_classes=10,
+    n_samples=1000,
+    noise_std=0.1,
+    convert_to_bolt_dataset=True,
+    batch_size_for_conversion=64,
+):
     possible_one_hot_encodings = np.eye(n_classes)
-    labels = np.random.choice(n_classes, size=n_samples)
+    labels = np.random.choice(n_classes, size=n_samples).astype("uint32")
     examples = possible_one_hot_encodings[labels]
     noise = np.random.normal(0, noise_std, examples.shape)
-    examples = examples + noise
-    return examples.astype("float32"), labels.astype("uint32")
+    examples = (examples + noise).astype("float32")
+    if convert_to_bolt_dataset:
+        examples = dataset.from_numpy(examples, batch_size=batch_size_for_conversion)
+        labels = dataset.from_numpy(labels, batch_size=batch_size_for_conversion)
+    return examples, labels
 
 
 # training the model
@@ -41,13 +51,12 @@ def train_network(network, train_data, train_labels, epochs, learning_rate=0.000
         rebuild=10000,
         metrics=[],
         verbose=False,
-        batch_size=64,
     )
     return times
 
 
 def get_categorical_acc(network, examples, labels, batch_size=64):
-    acc, _ = network.predict(
+    acc, *_ = network.predict(
         examples, labels, batch_size, metrics=["categorical_accuracy"], verbose=False
     )
     return acc["categorical_accuracy"]
@@ -67,6 +76,22 @@ def gen_single_sparse_layer_network(n_classes, sparsity=0.5):
     ]
     network = bolt.Network(layers=layers, input_dim=n_classes)
     return network
+
+
+# Returns a model with a single node
+# input_dim=output_dim, 50% sparsity by default, and a softmax
+# activation
+def gen_single_sparse_node(num_classes, sparsity=0.5):
+    input_layer = bolt.graph.Input(dim=num_classes)
+
+    output_layer = bolt.graph.FullyConnected(
+        dim=num_classes, sparsity=sparsity, activation="softmax"
+    )(input_layer)
+
+    model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
+    model.compile(loss=bolt.CategoricalCrossEntropyLoss())
+
+    return model
 
 
 def get_simple_concat_model(
@@ -102,3 +127,20 @@ def get_simple_concat_model(
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     return model
+
+
+def remove_files(files):
+    for file in files:
+        os.remove(file)
+
+
+def compute_accuracy(test_labels, pred_file):
+    with open(pred_file) as pred:
+        pred_lines = pred.readlines()
+
+    predictions = [x[:-1] for x in pred_lines]
+
+    assert len(predictions) == len(test_labels)
+    return sum(
+        (prediction == answer) for (prediction, answer) in zip(predictions, test_labels)
+    ) / len(predictions)

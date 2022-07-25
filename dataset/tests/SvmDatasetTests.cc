@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
-#include <dataset/src/Dataset.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/DatasetLoaders.h>
 #include <algorithm>
 #include <cstddef>
 #include <cstdio>
@@ -115,79 +114,25 @@ class SvmDatasetTestFixture : public ::testing::Test {
   static const int32_t _val_range = 1000;
 };
 
-TEST_F(SvmDatasetTestFixture, InMemoryDatasetTest) {
-  InMemoryDataset<SparseBatch> dataset(_filename, _batch_size,
-                                       SvmSparseBatchFactory{});
-
-  uint32_t vec_count = 0;
-  for (const auto& batch : dataset) {
-    ASSERT_TRUE(batch.getBatchSize() == _batch_size ||
-                batch.getBatchSize() == _num_vectors % _batch_size);
-
-    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      ASSERT_EQ(batch.id(v), vec_count);
-
-      ASSERT_EQ(batch.labels(v).size(), _vectors.at(vec_count).labels.size());
-      for (uint32_t i = 0; i < batch.labels(v).size(); i++) {
-        ASSERT_EQ(batch.labels(v).at(i), _vectors.at(vec_count).labels.at(i));
-      }
-
-      ASSERT_EQ(batch[v].length(), _vectors[vec_count].values.size());
-      for (uint32_t i = 0; i < batch[v].length(); i++) {
-        ASSERT_EQ(batch.at(v)._indices[i],
-                  _vectors.at(vec_count).values.at(i).first);
-        ASSERT_EQ(batch.at(v)._values[i],
-                  _vectors.at(vec_count).values.at(i).second);
-      }
-
-      vec_count++;
-    }
-  }
-  ASSERT_EQ(vec_count, _num_vectors);
-}
-
-TEST_F(SvmDatasetTestFixture, StreamedDatasetTest) {
-  StreamedDataset<SparseBatch> dataset(
-      _filename, _batch_size, std::make_unique<SvmSparseBatchFactory>());
-
-  uint32_t vec_count = 0;
-  while (auto batch_opt = dataset.nextBatch()) {
-    const SparseBatch& batch = *batch_opt;
-    ASSERT_TRUE(batch.getBatchSize() == _batch_size ||
-                batch.getBatchSize() == _num_vectors % _batch_size);
-
-    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
-      ASSERT_EQ(batch.id(v), vec_count);
-
-      ASSERT_EQ(batch.labels(v).size(), _vectors.at(vec_count).labels.size());
-      for (uint32_t i = 0; i < batch.labels(v).size(); i++) {
-        ASSERT_EQ(batch.labels(v).at(i), _vectors.at(vec_count).labels.at(i));
-      }
-
-      ASSERT_EQ(batch[v].length(), _vectors[vec_count].values.size());
-      for (uint32_t i = 0; i < batch[v].length(); i++) {
-        ASSERT_EQ(batch.at(v)._indices[i],
-                  _vectors.at(vec_count).values.at(i).first);
-        ASSERT_EQ(batch.at(v)._values[i],
-                  _vectors.at(vec_count).values.at(i).second);
-      }
-
-      vec_count++;
-    }
-  }
-  ASSERT_EQ(vec_count, _num_vectors);
-}
-
 TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
-  auto dataset = loadBoltSvmDataset(_filename, _batch_size);
+  /**
+   * We use a no-lint here because clang tidy thinks there's a memory leak
+   * here when we create the shared_ptr in loadInMemory() There are
+   * discussions on stack overflow/github about similar issues being false
+   * positives and our ASAN unit tests that use this function detect no memory
+   * leaks.
+   */
+  // NOLINTNEXTLINE
+  auto [data, labels] = SvmDatasetLoader::loadDataset(_filename, _batch_size);
 
   // Check data vectors are correct.
   uint32_t vec_count = 0;
-  for (const auto& batch : *dataset.data) {
-    ASSERT_TRUE(batch.getBatchSize() == _batch_size ||
-                batch.getBatchSize() == _num_vectors % _batch_size);
+  for (const auto& batch : *data) {
+    uint32_t batch_size = batch.getBatchSize();  // NOLINT (same reason)
+    ASSERT_TRUE(batch_size == _batch_size ||     // NOLINT (same reason)
+                batch_size == _num_vectors % _batch_size);
 
-    for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
+    for (uint32_t v = 0; v < batch_size; v++) {
       ASSERT_EQ(batch[v].len, _vectors[vec_count].values.size());
       for (uint32_t i = 0; i < batch[v].len; i++) {
         ASSERT_EQ(batch[v].active_neurons[i],
@@ -203,7 +148,7 @@ TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
 
   // Check labels are correct.
   uint32_t label_count = 0;
-  for (const auto& batch : *dataset.labels) {
+  for (const auto& batch : *labels) {
     ASSERT_TRUE(batch.getBatchSize() == _batch_size ||
                 batch.getBatchSize() == _num_vectors % _batch_size);
 

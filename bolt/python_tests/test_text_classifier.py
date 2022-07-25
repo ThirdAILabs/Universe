@@ -3,7 +3,9 @@ import pytest
 import datasets
 import random
 import os
+from .utils import remove_files, compute_accuracy
 
+pytestmark = [pytest.mark.integration, pytest.mark.release]
 
 TRAIN_FILE = "./clinc_train.csv"
 TEST_FILE = "./clinc_test.csv"
@@ -40,29 +42,22 @@ def download_clinc_dataset():
     return (clinc_dataset["train"].features["intent"].num_classes, labels)
 
 
-def remove_files():
-    os.remove(TRAIN_FILE)
-    os.remove(TEST_FILE)
-    os.remove(PREDICTION_FILE)
+def trim(sentence):
+    """
+    we are removing quotes from start and end of sentence,
+    because thats how we are trimming the sentence in our cpp code.
+    """
+    i = len(sentence) - 1
+    while i > 0 and (sentence[i] == '"'):
+        sentence = sentence[:-1]
+        i = i - 1
+
+    j = 0
+    while j < len(sentence) and (sentence[j] == '"'):
+        sentence = sentence[1:]
+    return sentence
 
 
-def compute_accuracy(test_labels, pred_file):
-    with open(pred_file) as pred:
-        predictions = pred.readlines()
-
-    correct = 0
-    total = 0
-    assert len(predictions) == len(test_labels)
-    for (prediction, answer) in zip(predictions, test_labels):
-        if prediction[:-1] == answer:
-            correct += 1
-        total += 1
-
-    return correct / total
-
-
-@pytest.mark.integration
-@pytest.mark.release
 def test_text_classifier_clinc_dataset():
     (n_classes, test_labels) = download_clinc_dataset()
     classifier = bolt.TextClassifier(model_size="1Gb", n_classes=n_classes)
@@ -76,4 +71,32 @@ def test_text_classifier_clinc_dataset():
     print("Computed Accuracy: ", acc)
     assert acc > 0.7
 
-    remove_files()
+    remove_files([TRAIN_FILE, TEST_FILE, PREDICTION_FILE])
+
+
+def test_text_classifier_predict_single():
+    (n_classes, test_labels) = download_clinc_dataset()
+    classifier = bolt.TextClassifier(model_size="1Gb", n_classes=n_classes)
+
+    classifier.train(train_file=TRAIN_FILE, epochs=5, learning_rate=0.01)
+
+    classifier.predict(test_file=TEST_FILE, output_file=PREDICTION_FILE)
+
+    with open(TEST_FILE) as test:
+        test_set = test.readlines()
+
+    with open(PREDICTION_FILE) as pred:
+        expected_predictions = pred.readlines()
+
+    for i in range(len(test_set) - 1):
+        """
+        we are taking i+1 because first row is a header in test file and
+        split it with '","' because its how the sentence and label seperated uniquely
+        in file and taking the sentence which is present at first index.
+        """
+        actual_prediction = classifier.predict_single(
+            trim(test_set[i + 1].split('","')[0])
+        )
+        assert actual_prediction == expected_predictions[i][:-1]
+
+    remove_files([TRAIN_FILE, TEST_FILE, PREDICTION_FILE])
