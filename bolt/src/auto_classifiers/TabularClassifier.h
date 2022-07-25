@@ -2,8 +2,7 @@
 
 #include <cereal/archives/binary.hpp>
 #include "AutoClassifierUtils.h"
-#include <bolt/src/layers/BoltVector.h>
-#include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <bolt/src/graph/Graph.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
@@ -16,9 +15,9 @@ namespace thirdai::bolt {
 class TabularClassifier {
  public:
   TabularClassifier(const std::string& model_size, uint32_t n_classes)
-      : _metadata(nullptr) {
-    _model = AutoClassifierUtils::createNetwork(/* input_dim */ 100000,
-                                                /* n_classes */ n_classes,
+      : _input_dim(100000), _n_classes(n_classes), _metadata(nullptr) {
+    _model = AutoClassifierUtils::createNetwork(/* input_dim */ _input_dim,
+                                                /* n_classes */ _n_classes,
                                                 model_size);
   }
 
@@ -40,8 +39,8 @@ class TabularClassifier {
         _model, filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             batch_processor),
-        /* epochs */ epochs,
-        /* learning_rate */ learning_rate);
+        /* epochs= */ epochs,
+        /* learning_rate= */ learning_rate);
   }
 
   void predict(const std::string& filename,
@@ -86,8 +85,8 @@ class TabularClassifier {
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
 
     std::shared_ptr<dataset::TabularMetadataProcessor> batch_processor =
-        std::make_shared<dataset::TabularMetadataProcessor>(
-            column_datatypes, _model->getOutputDim());
+        std::make_shared<dataset::TabularMetadataProcessor>(column_datatypes,
+                                                            _n_classes);
 
     // TabularMetadataProcessor inherets ComputeBatchProcessor so this doesn't
     // produce any vectors, we are just using it to iterate over the dataset.
@@ -102,8 +101,7 @@ class TabularClassifier {
 
   std::shared_ptr<dataset::GenericBatchProcessor> makeTabularBatchProcessor() {
     std::vector<std::shared_ptr<dataset::Block>> input_blocks = {
-        std::make_shared<dataset::TabularPairGram>(_metadata,
-                                                   _model->getInputDim())};
+        std::make_shared<dataset::TabularPairGram>(_metadata, _input_dim)};
     std::vector<std::shared_ptr<dataset::Block>> target_blocks = {
         std::make_shared<dataset::CategoricalBlock>(
             _metadata->getLabelCol(),
@@ -111,8 +109,8 @@ class TabularClassifier {
                 _metadata->getClassToIdMap()))};
 
     return std::make_shared<dataset::GenericBatchProcessor>(
-        /* input_blocks */ input_blocks,
-        /* target_blocks */ target_blocks);
+        /* input_blocks= */ input_blocks,
+        /* target_blocks= */ target_blocks);
   }
 
   // Private constructor for cereal
@@ -122,11 +120,13 @@ class TabularClassifier {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_metadata, _model);
+    archive(_input_dim, _n_classes, _metadata, _model);
   }
 
+  uint32_t _input_dim;
+  uint32_t _n_classes;
   std::shared_ptr<dataset::TabularMetadata> _metadata;
-  std::shared_ptr<FullyConnectedNetwork> _model;
+  std::shared_ptr<BoltGraph> _model;
 };
 
 }  // namespace thirdai::bolt

@@ -15,19 +15,32 @@
 
 namespace thirdai::bolt {
 
-std::shared_ptr<FullyConnectedNetwork> AutoClassifierUtils::createNetwork(
+std::shared_ptr<BoltGraph> AutoClassifierUtils::createNetwork(
     uint64_t input_dim, uint32_t n_classes, const std::string& model_size) {
   uint32_t hidden_layer_size =
       getHiddenLayerSize(model_size, n_classes, input_dim);
 
   float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_size);
 
-  SequentialConfigList configs = {
-      std::make_shared<FullyConnectedLayerConfig>(
-          hidden_layer_size, hidden_layer_sparsity, ActivationFunction::ReLU),
-      std::make_shared<FullyConnectedLayerConfig>(n_classes,
-                                                  ActivationFunction::Softmax)};
-  return std::make_shared<FullyConnectedNetwork>(std::move(configs), input_dim);
+  auto input_layer = std::make_shared<Input>(input_dim);
+
+  auto hidden_layer = std::make_shared<FullyConnectedNode>(
+      /* dim= */ hidden_layer_size, /* sparsity= */ hidden_layer_sparsity,
+      /* activation= */ ActivationFunction::ReLU);
+
+  hidden_layer->addPredecessor(input_layer);
+
+  auto output_layer = std::make_shared<FullyConnectedNode>(
+      /* dim= */ n_classes, /* activation= */ ActivationFunction::Softmax);
+
+  output_layer->addPredecessor(hidden_layer);
+
+  std::shared_ptr<BoltGraph> model = std::make_shared<BoltGraph>(
+      std::vector<InputPtr>{input_layer}, output_layer);
+
+  model->compile(std::make_shared<CategoricalCrossEntropyLoss>());
+
+  return model;
 }
 
 std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
@@ -46,42 +59,27 @@ AutoClassifierUtils::loadStreamingDataset(
 }
 
 void AutoClassifierUtils::train(
-    std::shared_ptr<FullyConnectedNetwork>& model, const std::string& filename,
+    std::shared_ptr<BoltGraph>& model, const std::string& filename,
     const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
         batch_processor,
     uint32_t epochs, float learning_rate) {
   auto dataset = loadStreamingDataset(filename, batch_processor);
 
-  CategoricalCrossEntropyLoss loss;
+  auto [train_data, train_labels] = dataset->loadInMemory();
 
-  if (!canLoadDatasetInMemory(filename)) {
-    for (uint32_t e = 0; e < epochs; e++) {
-      // Train on streaming dataset
-      model->trainOnStream(dataset, loss, learning_rate);
+  TrainConfig config =
+      TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
+                              /* epochs= */ epochs)
+          // .withMetrics({"categorical_accuracy"}) // TODO DO WE NEED THIS?
+          .silence();
 
-      // Create new stream for next epoch with new data loader.
-      dataset = loadStreamingDataset(filename, batch_processor);
-    }
+  model->train({train_data}, {}, train_labels, config);
 
-  } else {
-    /**
-     * We use a no-lint here because clang tidy thinks there's a memory leak
-     * here when we create the shared_ptr in loadInMemory() There are
-     * discussions on stack overflow/github about similar issues being false
-     * positives and our ASAN unit tests that use this function detect no memory
-     * leaks.
-     */
-    auto [train_data, train_labels] = dataset->loadInMemory();  // NOLINT
-
-    model->train(train_data, train_labels, loss, learning_rate, 1);  // NOLINT
-    model->freezeHashTables();
-    model->train(train_data, train_labels, loss, learning_rate,  // NOLINT
-                 epochs - 1);
-  }
+  // TODO DO WE NEED THE FREEZE HASH TABLES THING?
 }
 
 void AutoClassifierUtils::predict(
-    std::shared_ptr<FullyConnectedNetwork>& model, const std::string& filename,
+    std::shared_ptr<BoltGraph>& model, const std::string& filename,
     const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
         batch_processor,
     const std::optional<std::string>& output_filename,
@@ -104,16 +102,14 @@ void AutoClassifierUtils::predict(
     }
   };
 
-  /*
-    We are using predict with the stream directly because we only need a
-    single pass through the dataset, so this is more memory efficient, and we
-    don't have to worry about storing the activations in memory to compute the
-    predictions, and can instead compute the predictions using the
-    back_callback.
-  */
-  model->predictOnStream(dataset, /* use_sparse_inference= */ true,
-                         /* metric_names= */ {"categorical_accuracy"},
-                         print_predictions_callback);
+  auto [test_data, test_labels] = dataset->loadInMemory();
+
+  PredictConfig config = PredictConfig::makeConfig()
+                             .enableSparseInference()
+                             .withMetrics({"categorical_accuracy"})
+                             .silence();
+
+  model->predict({test_data}, {}, test_labels, config);
 
   if (output_file) {
     output_file->close();
