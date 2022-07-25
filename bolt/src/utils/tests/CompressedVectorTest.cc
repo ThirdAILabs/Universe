@@ -17,7 +17,7 @@ float single_vector_reconstruction_error(
     error += diff * diff;  // Squared error.
   }
 
-  error = sqrtf(error) / static_cast<float>(num_elements);
+  error = std::sqrtf(error) / static_cast<float>(num_elements);
   return error;
 }
 
