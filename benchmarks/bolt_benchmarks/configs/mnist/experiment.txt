@@ -1,8 +1,0 @@
-experiment_identifier = "Mnist"
-
-train_metrics = []
-learning_rate = 0.0001
-epochs = 2
-rehash = 3000
-rebuild = 10000
-test_metrics = ["categorical_accuracy"]

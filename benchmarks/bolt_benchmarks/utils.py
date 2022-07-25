@@ -11,20 +11,17 @@ from typing import Any, Dict
 from sklearn.datasets import load_svmlight_file
 
 
-def start_mlflow(model_config, dataset_config, experiment_config, mlflow_args):
+def start_mlflow(config, mlflow_args):
     if not mlflow_args.disable_mlflow:
-        experiment_name = experiment_config["experiment_identifier"]
-        dataset_name = dataset_config["dataset_identifier"]
-        model_name = model_config["model_identifier"]
+        experiment_name = config["experiment_identifier"]
+        dataset_name = config["dataset_identifier"]
+        model_name = config["model_identifier"]
         start_mlflow_helper(
             experiment_name, mlflow_args.run_name, dataset_name, model_name
         )
         log_machine_info()
-        for config in [model_config, dataset_config, experiment_config]:
-            log_config_info(config)
-            # TODO(vihan): Get the credential authentication working in github actions
-            if mlflow_args.upload_artifacts:
-                mlflow.log_artifact(config)
+        if mlflow_args.upload_artifacts:
+            mlflow.log_artifact(config)
 
 
 def start_mlflow_helper(experiment_name, run_name, dataset, model_name):
@@ -56,6 +53,14 @@ def verify_mlflow_args(parser, mlflow_args):
     if not mlflow_args.disable_mlflow and not mlflow_args.run_name:
         parser.print_usage()
         raise ValueError("Error: --run_name is required when using mlflow logging.")
+
+
+def config_get(config, field):
+    if field not in config:
+        raise ValueError(
+            f'The field "{field}" was expected to be in "{config}" but was not found.'
+        )
+    return config[field]
 
 
 def log_machine_info():

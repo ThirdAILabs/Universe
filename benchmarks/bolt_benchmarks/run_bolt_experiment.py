@@ -1,6 +1,7 @@
 # TODO(josh): Add back mach benchmark
 
 import argparse
+from multiprocessing.sharedctypes import Value
 import toml
 from pathlib import Path
 from utils import (
@@ -9,6 +10,7 @@ from utils import (
     find_full_filepath,
     log_single_epoch_training_metrics,
     log_prediction_metrics,
+    config_get,
 )
 from thirdai import bolt, dataset
 
@@ -19,31 +21,29 @@ def main():
 
     verify_mlflow_args(parser, mlflow_args=args)
 
-    config_folder = Path(args.config_folder)
-    model_config_filename = config_folder / args.model_config_path
-    dataset_config_filename = config_folder / args.dataset_config_path
-    experiment_config_filename = config_folder / args.experiment_config_path
-    model_config = toml.load(model_config_filename)
-    dataset_config = toml.load(dataset_config_filename)
-    experiment_config = toml.load(experiment_config_filename)
+    config = toml.load(args.config_path)
 
-    model = load_and_compile_model(model_config)
-    datasets = load_all_datasets(dataset_config)
-    start_mlflow(model_config, dataset_config, experiment_config, mlflow_args=args)
-    run_experiment(
-        model, datasets, experiment_config, use_mlflow=not args.disable_mlflow
-    )
+    model = load_and_compile_model(config)
+    datasets = load_all_datasets(config)
+    start_mlflow(config, mlflow_args=args)
+    run_experiment(model, datasets, config, use_mlflow=not args.disable_mlflow)
 
 
 def load_and_compile_model(model_config):
     name_to_node = {}
+
+    def get_node_by_name(node_name):
+        if node_name in name_to_node:
+            return name_to_node[node_name]
+        raise ValueError(f"{node_name} not found in previously defined nodes")
+
     nodes_with_no_successor = set()
     token_inputs = []
     inputs = []
-    for node_config in model_config["nodes"]:
+    for node_config in config_get(model_config, "nodes"):
         node = construct_node(node_config)
-        node_name = node_config["name"]
-        node_type = node_config["type"]
+        node_name = config_get(node_config, "name")
+        node_type = config_get(node_config, "type")
 
         if node_type == "Input":
             inputs.append(node)
@@ -51,12 +51,12 @@ def load_and_compile_model(model_config):
             token_inputs.append(node)
         elif "pred" in node_config:
             pred_name = node_config["pred"]
-            pred_node = name_to_node[pred_name]
+            pred_node = get_node_by_name(pred_name)
             nodes_with_no_successor.remove(pred_name)
             node(pred_node)
         elif "preds" in node_config:
             pred_names = node_config["preds"]
-            pred_nodes = [name_to_node[pred_name] for pred_name in pred_names]
+            pred_nodes = [get_node_by_name(pred_name) for pred_name in pred_names]
             for pred_name in pred_names:
                 nodes_with_no_successor.remove(pred_name)
             node(pred_nodes)
@@ -95,9 +95,10 @@ def load_all_datasets(dataset_config):
         "test_labels": [],
     }
 
-    for single_dataset_config in dataset_config["datasets"]:
-        format = single_dataset_config["format"]
-        dataset_types = single_dataset_config["type_list"]
+    all_dataset_configs = config_get(dataset_config, "datasets")
+    for single_dataset_config in all_dataset_configs:
+        format = config_get(single_dataset_config, "format")
+        dataset_types = config_get(single_dataset_config, "type_list")
 
         if format == "svm":
             loaded_datasets = load_svm_dataset(single_dataset_config)
@@ -162,20 +163,8 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
         if use_mlflow:
             log_prediction_metrics(predict_metrics)
 
-    # If we limited the number of test batches during training we want to run on the whole test set at the end.
-    if "max_test_batches" in experiment_config.keys():
-        predict_config.with_max_test_batches(2**64)
-        predict_metrics = model.predict(
-            test_data=datasets["train_data"],
-            test_tokens=datasets["train_token_data"],
-            test_labels=datasets["train_labels"],
-            predict_config=predict_config,
-        )
-        if use_mlflow:
-            log_prediction_metrics(predict_metrics)
-
     if "save" in experiment_config.keys():
-        model.save(experiment_config["save"])
+        model.save(config_get(experiment_config, "save"))
 
 
 def construct_fully_connected_node(fc_config):
@@ -184,29 +173,29 @@ def construct_fully_connected_node(fc_config):
 
     if use_default_sampling or sparsity == 1:
         return bolt.graph.FullyConnected(
-            dim=fc_config["dim"],
+            dim=config_get(fc_config, "dim"),
             sparsity=sparsity,
-            activation=fc_config["activation"],
+            activation=config_get(fc_config, "activation"),
         )
 
     return bolt.graph.FullyConnected(
-        dim=fc_config["dim"],
+        dim=config_get(fc_config, "dim"),
         sparsity=sparsity,
-        activation_function=fc_config["activation"],
+        activation_function=config_get(fc_config, "activation"),
         sampling_config=bolt.SamplingConfig(
-            hashes_per_table=fc_config["hashes_per_table"],
-            num_tables=fc_config["num_tables"],
-            range_pow=fc_config["range_pow"],
-            reservoir_size=fc_config["reservoir_size"],
+            hashes_per_table=config_get(fc_config, "hashes_per_table"),
+            num_tables=config_get(fc_config, "num_tables"),
+            range_pow=config_get(fc_config, "range_pow"),
+            reservoir_size=config_get(fc_config, "reservoir_size"),
             hash_function=fc_config.get("hash_function", "DWTA"),
         ),
     )
 
 
 def construct_node(node_config):
-    node_type = node_config["type"]
+    node_type = config_get(node_config, "type")
     if node_type == "Input":
-        return bolt.graph.Input(dim=node_config["dim"])
+        return bolt.graph.Input(dim=config_get(node_config, "dim"))
     if node_type == "Concatenate":
         return bolt.graph.Concatenate()
     if node_type == "FullyConnected":
@@ -217,7 +206,7 @@ def construct_node(node_config):
 
 
 def get_loss(model_config):
-    loss_string = model_config["loss_fn"]
+    loss_string = config_get(model_config, "loss_fn")
     # TODO(josh/nick): Add an option to pass in the loss function as string to compile
     # TODO(josh): Consider moving to python 3.10 so we have the match pattern
     if loss_string.lower() == "categoricalcrossentropyloss":
@@ -230,8 +219,10 @@ def get_loss(model_config):
 
 
 def load_svm_dataset(dataset_config):
-    dataset_path = find_full_filepath(dataset_config["path"])
-    return dataset.load_bolt_svm_dataset(dataset_path, dataset_config["batch_size"])
+    dataset_path = find_full_filepath(config_get(dataset_config, "path"))
+    return dataset.load_bolt_svm_dataset(
+        dataset_path, batch_size=config_get(dataset_config, "batch_size")
+    )
 
 
 def load_clickthrough_dataset(dataset_config):
@@ -243,22 +234,21 @@ def load_clickthrough_dataset(dataset_config):
 # the train_config)
 def load_train_config(experiment_config):
     train_config = bolt.graph.TrainConfig.make(
-        epochs=1, learning_rate=experiment_config["learning_rate"]
-    ).with_metrics(experiment_config["train_metrics"])
-    if "rehash" in experiment_config.keys():
-        train_config.with_reconstruct_hash_functions(experiment_config["rehash"])
-    if "rebuild" in experiment_config.keys():
-        train_config.with_rebuild_hash_tables(experiment_config["rebuild"])
-    return experiment_config["epochs"], train_config
+        epochs=1, learning_rate=config_get(experiment_config, "learning_rate")
+    ).with_metrics(config_get(experiment_config, "train_metrics"))
+    if "reconstruct_hash_functions" in experiment_config.keys():
+        train_config.with_reconstruct_hash_functions(
+            experiment_config["reconstruct_hash_functions"]
+        )
+    if "rebuild_hash_tables" in experiment_config.keys():
+        train_config.with_rebuild_hash_tables(experiment_config["rebuild_hash_tables"])
+    return config_get(experiment_config, "epochs"), train_config
 
 
 def load_predict_config(experiment_config):
-    predict_config = bolt.graph.PredictConfig.make().with_metrics(
-        experiment_config["test_metrics"]
+    return bolt.graph.PredictConfig.make().with_metrics(
+        config_get(experiment_config, "test_metrics")
     )
-    if "max_test_batches" in experiment_config.keys():
-        predict_config.with_max_test_batches(experiment_config["max_test_batches"])
-    return predict_config
 
 
 def freeze_hash_table_if_needed(model, experiment_config, current_epoch):
@@ -290,9 +280,9 @@ def build_arg_parser():
     )
 
     parser.add_argument(
-        "config_folder",
+        "config_path",
         type=str,
-        help="Path to a config folder containing the dataset, experiment, and model configs.",
+        help="Path to a config file containing the dataset, experiment, and model configs.",
     )
     parser.add_argument(
         "--disable_mlflow",
@@ -310,25 +300,6 @@ def build_arg_parser():
         type=str,
         help="The name of the run to use in mlflow. If mlflow is enabled this is required.",
     )
-    parser.add_argument(
-        "--dataset_config_path",
-        default="dataset.txt",
-        type=str,
-        help="Relative path to the dataset config in the config_folder",
-    )
-    parser.add_argument(
-        "--experiment_config_path",
-        default="experiment.txt",
-        type=str,
-        help="Relative path to the experiment config in the config_folder",
-    )
-    parser.add_argument(
-        "--model_config_path",
-        default="model.txt",
-        type=str,
-        help="Relative path to the model config in the config_folder",
-    )
-
     return parser
 
 
