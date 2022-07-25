@@ -56,7 +56,7 @@ class CompressedVector {
         if (not _use_sign_bit) {
           _physical_vector[index] += input[j];
         } else {
-          uint64_t sign_bit = hashFunction(j) % 2;
+          bool sign_bit = hashFunction(j) % 2;
 
           // Add the input value multiplied by sign bit to the index at
           // _physical_vector.
