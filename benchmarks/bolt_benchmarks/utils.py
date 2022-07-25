@@ -21,7 +21,7 @@ def start_mlflow(config, mlflow_args):
         )
         log_machine_info()
         if mlflow_args.upload_artifacts:
-            mlflow.log_artifact(config)
+            mlflow.log_artifact(mlflow_args.config_path)
 
 
 def start_mlflow_helper(experiment_name, run_name, dataset, model_name):
