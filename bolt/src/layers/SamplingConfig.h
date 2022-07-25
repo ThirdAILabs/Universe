@@ -2,9 +2,11 @@
 
 #include <cereal/types/base_class.hpp>
 #include <hashing/src/DWTA.h>
+#include <hashing/src/FastSRP.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <cmath>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 
@@ -138,6 +140,33 @@ class DWTASamplingConfig final : public SamplingConfig {
     archive(cereal::base_class<SamplingConfig>(this), _num_tables,
             _hashes_per_table, _reservoir_size);
   }
+};
+
+class FastSRPSamplingConfig final : public SamplingConfig {
+ public:
+  FastSRPSamplingConfig(uint32_t num_tables, uint32_t hashes_per_table,
+                        uint32_t reservoir_size)
+      : _num_tables(num_tables),
+        _hashes_per_table(hashes_per_table),
+        _reservoir_size(reservoir_size) {}
+
+  std::unique_ptr<hashing::HashFunction> getHashFunction(
+      uint32_t input_dim) const final {
+    return std::make_unique<hashing::FastSRP>(
+        /* input_dim= */ input_dim, /* hashes_per_table= */ _hashes_per_table,
+        /* num_tables= */ _num_tables);
+  }
+
+  std::unique_ptr<hashtable::SampledHashTable<uint32_t>> getHashTable()
+      const final {
+    return std::make_unique<hashtable::SampledHashTable<uint32_t>>(
+        /* num_tables= */ _num_tables,
+        /* reservoir_size= */ _reservoir_size,
+        /* range= */ 1 << _hashes_per_table);
+  }
+
+ private:
+  uint32_t _num_tables, _hashes_per_table, _reservoir_size;
 };
 
 }  // namespace thirdai::bolt
