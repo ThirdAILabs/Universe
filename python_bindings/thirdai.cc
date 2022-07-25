@@ -2,7 +2,7 @@
 #include <bolt/python_bindings/BoltPython.h>
 #include <hashing/python_bindings/HashingPython.h>
 #include <dataset/python_bindings/DatasetPython.h>
-#include <search/python_bindings/FlashPython.h>
+#include <search/python_bindings/DocSearchPython.h>
 
 // Pybind11 library
 #include <pybind11/cast.h>
