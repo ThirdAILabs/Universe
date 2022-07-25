@@ -199,8 +199,13 @@ class Worker:
                 thresh_y+=self.approximate_topk(y[sampled_y],compression_density)/num_samples
 
         
-            indices_x=np.random.shuffle(np.where(x>thresh_x)[0].astype(int))[:m_x]
-            indices_y=np.random.shuffle(np.where(y>thresh_y)[0].astype(int))[:m_y]
+            indices_x=np.where(x>thresh_x)[0].astype(int)
+            indices_y=np.where(y>thresh_y)[0].astype(int)
+            np.random.shuffle(indices_x)
+            np.random.shuffle(indices_y)
+
+            indices_x=indices_x[:m_x]
+            indices_y=indices_y[:m_y]
 
             vals_x=x[indices_x]
             vals_y=y[indices_y]
