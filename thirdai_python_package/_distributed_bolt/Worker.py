@@ -192,8 +192,8 @@ class Worker:
             num_samples=2
             for i in range(num_samples):
 
-                sampled_x=np.random.choice(x.shape[0],min(x.shape[0],10000))
-                sampled_y=np.random.choice(y.shape[0],min(y.shape[0],10000))
+                sampled_x=np.random.choice(x.shape[0],min(x.shape[0],100000))
+                sampled_y=np.random.choice(y.shape[0],min(y.shape[0],100000))
 
                 thresh_x+=self.approximate_topk(x[sampled_x],compression_density)/num_samples
                 thresh_y+=self.approximate_topk(y[sampled_y],compression_density)/num_samples
