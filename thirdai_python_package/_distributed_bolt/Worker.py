@@ -292,7 +292,9 @@ class Worker:
 
 
     def receiveDragonGradients(self):
-        num_workers=len((self.supervisor.workers))
+        
+        num_workers=ray.get(self.supervisor.num_workers.remote())
+
         w_sparse_grads,b_sparse_grads=ray.get(self.supervisor.sparse_grads.remote())
         for layer in range(len(self.layers)-1):
             

@@ -144,6 +144,9 @@ class Supervisor:
     ):
         return self.w_sparse_grads,self.b_sparse_grads 
     
+    def num_workers(self):
+        return len(self.workers)
+    
     def subworkUpdateParameters(
         self,
         learning_rate: float
