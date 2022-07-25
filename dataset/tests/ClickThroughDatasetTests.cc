@@ -104,22 +104,16 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
   std::uniform_int_distribution<uint32_t> _categorical_feature_dist;
 
   void verifyLabelBatch(const bolt::BoltBatch& labels,
-                        uint32_t label_count_base, bool sparse_labels) {
+                        uint32_t label_count_base) {
     ASSERT_TRUE(labels.getBatchSize() == _batch_size ||
                 labels.getBatchSize() == _num_vectors % _batch_size);
 
     for (uint32_t v = 0; v < labels.getBatchSize(); v++) {
       // Check labels are correct.
       ASSERT_EQ(labels[v].len, 1);
-      if (sparse_labels) {
-        ASSERT_EQ(labels[v].active_neurons[0],
-                  _vectors.at(label_count_base + v).label);
-        ASSERT_EQ(labels[v].activations[0], 1.0);
-      } else {
-        ASSERT_EQ(labels[v].active_neurons, nullptr);
-        ASSERT_EQ(labels[v].activations[0],
-                  _vectors.at(label_count_base + v).label);
-      }
+      ASSERT_EQ(labels[v].active_neurons[0],
+                _vectors.at(label_count_base + v).label);
+      ASSERT_EQ(labels[v].activations[0], 1.0);
     }
   }
 
@@ -152,34 +146,6 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
     }
   }
 
-  void runClickThroughDatasetTest(bool sparse_labels) {
-    auto [dense_inputs, tokens, labels] =
-        ClickThroughDatasetLoader::loadDataset(
-            _filename, _batch_size, getNumDenseFeatures(),
-            getNumCategoricalFeatures(), sparse_labels);
-
-    uint32_t label_count = 0;
-    for (const auto& batch : *labels) {
-      verifyLabelBatch(batch, label_count, sparse_labels);
-      label_count += batch.getBatchSize();
-    }
-    ASSERT_EQ(label_count, _num_vectors);
-
-    uint32_t vec_count = 0;
-    for (const auto& dense_input : *dense_inputs) {
-      verifyDenseInputBatch(dense_input, vec_count);
-      vec_count += dense_input.getBatchSize();
-    }
-    ASSERT_EQ(vec_count, _num_vectors);
-
-    uint32_t token_count = 0;
-    for (const auto& token_input : *tokens) {
-      verifyTokenBatch(token_input, token_count);
-      token_count += token_input.getBatchSize();
-    }
-    ASSERT_EQ(token_count, _num_vectors);
-  }
-
  private:
   static const uint32_t _num_classes = 10, _num_dense_features = 7,
                         _num_categorical_features = 4,
@@ -189,11 +155,31 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
 };
 
 TEST_F(ClickThroughDatasetTestFixture, InMemoryDatasetTestSparseLabel) {
-  runClickThroughDatasetTest(/* sparse_labels= */ true);
-}
+  auto [dense_inputs, tokens, labels] = ClickThroughDatasetLoader::loadDataset(
+      _filename, _batch_size, /* num_dense_features= */ getNumDenseFeatures(),
+      /* max_categorical_features= */ getNumCategoricalFeatures(),
+      /* delimiter= */ '\t');
 
-TEST_F(ClickThroughDatasetTestFixture, InMemoryDatasetTestDenseLabel) {
-  runClickThroughDatasetTest(/* sparse_labels= */ false);
+  uint32_t label_count = 0;
+  for (const auto& batch : *labels) {
+    verifyLabelBatch(batch, label_count);
+    label_count += batch.getBatchSize();
+  }
+  ASSERT_EQ(label_count, _num_vectors);
+
+  uint32_t vec_count = 0;
+  for (const auto& dense_input : *dense_inputs) {
+    verifyDenseInputBatch(dense_input, vec_count);
+    vec_count += dense_input.getBatchSize();
+  }
+  ASSERT_EQ(vec_count, _num_vectors);
+
+  uint32_t token_count = 0;
+  for (const auto& token_input : *tokens) {
+    verifyTokenBatch(token_input, token_count);
+    token_count += token_input.getBatchSize();
+  }
+  ASSERT_EQ(token_count, _num_vectors);
 }
 
 }  // namespace thirdai::dataset

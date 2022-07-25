@@ -1,3 +1,5 @@
+#pragma once
+
 #include "ProcessorUtils.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>
