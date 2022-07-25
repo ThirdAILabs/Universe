@@ -86,24 +86,3 @@ def test_decrease_and_increase_sparsity():
     assert hidden_layer_bottom.get_sparsity() == 0.5
     assert hidden_layer_top.get_sparsity() == 0.25
 
-
-# This is not a release test because the sampling config isn't exposed in a
-# release build.
-def test_decrease_and_increase_sparsity_sampling_config():
-    """
-    Tests that changing the sparsity of an already sparse node changes the
-    sampling config parameters. Due to the way we autotune, only the number of
-    tables should change if we change the sparsity.
-    """
-    # This model has a single node whose name is "fc_1"
-    model = gen_single_sparse_node(num_classes=1000, sparsity=0.5)
-    layer = model.get_layer("fc_1")
-
-    sampling_config = layer.get_sampling_config()
-    num_tables_high_sparsity = sampling_config.num_tables
-
-    layer.set_sparsity(sparsity=0.1)
-    sampling_config = layer.get_sampling_config()
-    num_tables_low_sparsity = sampling_config.num_tables
-
-    assert num_tables_low_sparsity < num_tables_high_sparsity

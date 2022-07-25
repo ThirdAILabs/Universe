@@ -167,8 +167,19 @@ class FastSRPSamplingConfig final : public SamplingConfig {
 
  private:
   uint32_t _num_tables, _hashes_per_table, _reservoir_size;
+
+  // Private constructor for cereal.
+  FastSRPSamplingConfig() {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<SamplingConfig>(this), _num_tables,
+            _hashes_per_table, _reservoir_size);
+  }
 };
 
 }  // namespace thirdai::bolt
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::DWTASamplingConfig)
+CEREAL_REGISTER_TYPE(thirdai::bolt::FastSRPSamplingConfig)

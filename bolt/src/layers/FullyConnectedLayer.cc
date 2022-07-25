@@ -570,13 +570,16 @@ void FullyConnectedLayer::setBiases(const float* new_biases) {
 void FullyConnectedLayer::setSparsity(float sparsity) {
   deinitSparseDatastructures();
   _sparsity = sparsity;
-  // TODO(josh): Right now this is using the autotuning for DWTA even if this
-  // hash function isn't DWTA. Add autotuning for other hash function types.
-  auto sampling_config = DWTASamplingConfig::autotune(_dim, _sparsity);
+
   _sparse_dim = _sparsity * _dim;
 
-  std::random_device rd;
-  initSparseDatastructures(sampling_config, rd);
+  // TODO(josh): Right now this is using the autotuning for DWTA even if this
+  // hash function isn't DWTA. Add autotuning for other hash function types.
+  if (_sparsity < 1.0) {
+    auto sampling_config = DWTASamplingConfig::autotune(_dim, _sparsity);
+    std::random_device rd;
+    initSparseDatastructures(sampling_config, rd);
+  }
 }
 
 void FullyConnectedLayer::initOptimizer() {

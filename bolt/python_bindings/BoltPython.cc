@@ -26,34 +26,27 @@ void createBoltSubmodule(py::module_& module) {
   auto bolt_submodule = module.def_submodule("bolt");
 
 #if THIRDAI_EXPOSE_ALL
-#pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
-  //   py::class_<thirdai::bolt::SamplingConfig>(
-  //       bolt_submodule, "SamplingConfig",
-  //       "SamplingConfig represents a layer's sampling hyperparameters.")
-  //       .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, std::string>(),
-  //            py::arg("hashes_per_table"), py::arg("num_tables"),
-  //            py::arg("range_pow"), py::arg("reservoir_size"),
-  //            py::arg("hash_function") = "DWTA",
-  //            "Builds a SamplingConfig object. \n\n"
-  //            "Arguments:\n"
-  //            " * hashes_per_table: Int - number of hashes to be concatenated
-  //            in " "each table." " * num_tables: Int - number of hash tables."
-  //            " * range_pow: Int - hash range as a power of 2. E.g. if hash
-  //            range " "is 8, range_pow = 3. " " Note that the correct
-  //            range_pow differs for each hash function. " "For DWTA, range_pow
-  //            = 3 * hashes_per_table." " For SRP or FastSRP, range_pow =
-  //            hashes_per_table." " * reservoir_size: Int - maximum number of
-  //            elements stored in each " "hash bucket." " * hash_function: Pass
-  //            hash function as string (Optional) - The " "hash function "
-  //            "used for sparse training and inference. One of DWTA, SRP, or "
-  //            "FastSRP. Defaults to DWTA.")
-  //       .def(py::init<>(), "Builds a default SamplingConfig object.");
+#pragma message("THIRDAI_EXPOSE_ALL is defined")                 // NOLINT
+  py::class_<thirdai::bolt::SamplingConfig, SamplingConfigPtr>(  // NOLINT
+      bolt_submodule, "SamplingConfig");
 
+  py::class_<thirdai::bolt::DWTASamplingConfig,
+             std::shared_ptr<DWTASamplingConfig>, SamplingConfig>(
+      bolt_submodule, "DWTASamplingConfig")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
+           py::arg("hashes_per_table"), py::arg("reservoir_size"));
+
+  py::class_<thirdai::bolt::FastSRPSamplingConfig,
+             std::shared_ptr<FastSRPSamplingConfig>, SamplingConfig>(
+      bolt_submodule, "FastSRPSamplingConfig")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
+           py::arg("hashes_per_table"), py::arg("reservoir_size"));
 #endif
 
   py::enum_<ActivationFunction>(
       bolt_submodule, "ActivationFunctions",
-      "An enum of all available activation functions. To use it, pass it to "
+      "An enum of all available activation functions. To use it, pass "
+      "it to "
       "the 'activation_function' parameter of a LayerConfig object.")
       .value("ReLU", ActivationFunction::ReLU,
              "Rectified Linear Units (ReLU) activation function; "
@@ -221,7 +214,7 @@ void createBoltSubmodule(py::module_& module) {
            " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
            " * num_patches: Int (positive) - Number of patches.");
 
- py::class_<thirdai::bolt::EmbeddingLayerConfig>(
+  py::class_<thirdai::bolt::EmbeddingLayerConfig>(
       bolt_submodule, "Embedding",
       "Defines a space-efficient embedding table lookup layer.")
       .def(py::init<uint32_t, uint32_t, uint32_t>(),

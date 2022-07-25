@@ -40,10 +40,10 @@ def train_using_random_numpy():
     )
     layers = [
         bolt.FullyConnected(
-            dim=100, sparsity=0.2, activation_function=bolt.ActivationFunctions.ReLU
+            dim=100, sparsity=0.2, activation_function="relu"
         ),
         bolt.FullyConnected(
-            dim=5, sparsity=1.0, activation_function=bolt.ActivationFunctions.Softmax
+            dim=5, sparsity=1.0, activation_function="softmax"
         ),
     ]
 
