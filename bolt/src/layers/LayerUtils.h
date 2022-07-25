@@ -118,34 +118,34 @@ inline std::string getHashString(HashFunctionEnum hash_function) {
   }
 }
 
-struct SamplingConfig {
-  uint32_t hashes_per_table, num_tables, range_pow, reservoir_size;
-  HashFunctionEnum _hash_function;
+// struct SamplingConfig {
+//   uint32_t hashes_per_table, num_tables, range_pow, reservoir_size;
+//   HashFunctionEnum _hash_function;
 
-  SamplingConfig()
-      : hashes_per_table(0),
-        num_tables(0),
-        range_pow(0),
-        reservoir_size(0),
-        _hash_function(HashFunctionEnum::DWTA) {}
+//   SamplingConfig()
+//       : hashes_per_table(0),
+//         num_tables(0),
+//         range_pow(0),
+//         reservoir_size(0),
+//         _hash_function(HashFunctionEnum::DWTA) {}
 
-  SamplingConfig(uint32_t hashes_per_table, uint32_t num_tables,
-                 uint32_t range_pow, uint32_t reservoir_size,
-                 const std::string& hash_function = "DWTA")
-      : hashes_per_table(hashes_per_table),
-        num_tables(num_tables),
-        range_pow(range_pow),
-        reservoir_size(reservoir_size),
-        _hash_function(getHashFunction(hash_function)) {}
+//   SamplingConfig(uint32_t hashes_per_table, uint32_t num_tables,
+//                  uint32_t range_pow, uint32_t reservoir_size,
+//                  const std::string& hash_function = "DWTA")
+//       : hashes_per_table(hashes_per_table),
+//         num_tables(num_tables),
+//         range_pow(range_pow),
+//         reservoir_size(reservoir_size),
+//         _hash_function(getHashFunction(hash_function)) {}
 
- private:
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(hashes_per_table, num_tables, range_pow, reservoir_size,
-            _hash_function);
-  }
-};
+//  private:
+//   // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+//   friend class cereal::access;
+//   template <class Archive>
+//   void serialize(Archive& archive) {
+//     archive(hashes_per_table, num_tables, range_pow, reservoir_size,
+//             _hash_function);
+//   }
+// };
 
 }  // namespace thirdai::bolt

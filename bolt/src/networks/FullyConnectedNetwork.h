@@ -113,11 +113,6 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     return _layers.at(layer_index)->getSparsity();
   }
 
-  const SamplingConfig& getSamplingConfig(uint32_t layer_index) {
-    checkLayerIndex(layer_index);
-    return _layers.at(layer_index)->getSamplingConfig();
-  }
-
  private:
   void forward(uint32_t batch_index, const BoltVector& input,
                BoltVector& output, const BoltVector* labels);

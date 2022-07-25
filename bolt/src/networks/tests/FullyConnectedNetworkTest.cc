@@ -16,9 +16,9 @@ static constexpr uint32_t n_classes = 100;
 
 TEST(FullyConnectedClassificationNetworkTest,
      TrainSimpleDatasetSingleLayerNetwork) {
-  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
-                                    n_classes, ActivationFunction::Softmax)},
-                                n_classes);
+  FullyConnectedNetwork network(
+      {std::make_shared<FullyConnectedLayerConfig>(n_classes, "softmax")},
+      n_classes);
 
   auto [data, labels] =
       genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
@@ -38,9 +38,9 @@ TEST(FullyConnectedClassificationNetworkTest,
 
 TEST(FullyConnectedClassificationNetworkTest,
      TrainNoisyDatasetSingleLayerNetwork) {
-  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
-                                    n_classes, ActivationFunction::Softmax)},
-                                n_classes);
+  FullyConnectedNetwork network(
+      {std::make_shared<FullyConnectedLayerConfig>(n_classes, "softmax")},
+      n_classes);
 
   auto [data, labels] =
       genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
@@ -58,11 +58,10 @@ TEST(FullyConnectedClassificationNetworkTest,
 }
 
 static void testSimpleDatasetMultiLayerNetworkActivation(
-    ActivationFunction act) {
+    const std::string& act) {
   FullyConnectedNetwork network(
       {std::make_shared<FullyConnectedLayerConfig>(10000, 0.1, act),
-       std::make_shared<FullyConnectedLayerConfig>(
-           n_classes, ActivationFunction::Softmax)},
+       std::make_shared<FullyConnectedLayerConfig>(n_classes, "softmax")},
       n_classes);
 
   auto [data, labels] =
@@ -88,21 +87,20 @@ static void testSimpleDatasetMultiLayerNetworkActivation(
 
 TEST(FullyConnectedClassificationNetworkTest,
      TrainSimpleDatasetMultiLayerNetwork) {
-  testSimpleDatasetMultiLayerNetworkActivation(ActivationFunction::ReLU);
+  testSimpleDatasetMultiLayerNetworkActivation("relu");
 }
 
 TEST(FullyConnectedClassificationNetworkTest,
      TrainSimpleDatasetMultiLayerNetworkTanh) {
-  testSimpleDatasetMultiLayerNetworkActivation(ActivationFunction::Tanh);
+  testSimpleDatasetMultiLayerNetworkActivation("tanh");
 }
 
 TEST(FullyConnectedClassificationNetworkTest,
      TrainSimpleDatasetMultiLayerNetworkSigmoid) {
-  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
-                                     10000, 0.1, ActivationFunction::ReLU),
-                                 std::make_shared<FullyConnectedLayerConfig>(
-                                     n_classes, ActivationFunction::Sigmoid)},
-                                n_classes);
+  FullyConnectedNetwork network(
+      {std::make_shared<FullyConnectedLayerConfig>(10000, 0.1, "relu"),
+       std::make_shared<FullyConnectedLayerConfig>(n_classes, "sigmoid")},
+      n_classes);
 
   auto [data, labels] =
       genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
@@ -128,11 +126,10 @@ TEST(FullyConnectedClassificationNetworkTest,
 
 TEST(FullyConnectedClassificationNetworkTest,
      TrainNoisyDatasetMultiLayerNetwork) {
-  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
-                                     10000, 0.1, ActivationFunction::ReLU),
-                                 std::make_shared<FullyConnectedLayerConfig>(
-                                     n_classes, ActivationFunction::Softmax)},
-                                n_classes);
+  FullyConnectedNetwork network(
+      {std::make_shared<FullyConnectedLayerConfig>(10000, 0.1, "relu"),
+       std::make_shared<FullyConnectedLayerConfig>(n_classes, "softmax")},
+      n_classes);
 
   auto [data, labels] =
       genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
@@ -154,9 +151,9 @@ TEST(FullyConnectedClassificationNetworkTest, MultiLayerNetworkToString) {
   FullyConnectedNetwork network(
       {/* layer1= */ std::make_shared<FullyConnectedLayerConfig>(
            /* dim= */ 10000, /* sparsity= */ 0.1,
-           /* act_func= */ ActivationFunction::ReLU),
+           /* act_func= */ "relu"),
        /* layer2= */ std::make_shared<FullyConnectedLayerConfig>(
-           /* dim= */ n_classes, /* act_func= */ ActivationFunction::Softmax)},
+           /* dim= */ n_classes, /* act_func= */ "softmax")},
       /* input_dim= */ n_classes);
 
   std::stringstream summary;
@@ -285,9 +282,9 @@ void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
 
 TEST(FullyConnectedClassificationNetworkTest,
      TrainSimpleDatasetSingleLayerNetworkStreamingData) {
-  FullyConnectedNetwork network({std::make_shared<FullyConnectedLayerConfig>(
-                                    n_classes, ActivationFunction::Softmax)},
-                                n_classes);
+  FullyConnectedNetwork network(
+      {std::make_shared<FullyConnectedLayerConfig>(n_classes, "softmax")},
+      n_classes);
 
   testFullyConnectedNetworkOnStream(network, /* epochs= */ 5,
                                     /* acc_threshold= */ 0.98);
@@ -297,9 +294,8 @@ TEST(FullyConnectedClassificationNetworkTest,
      TrainSimpleDatasetMultiLayerNetworkStreamingData) {
   FullyConnectedNetwork network(
       {std::make_shared<FullyConnectedLayerConfig>(
-           /* dim=*/10000, /* sparsity= */ 0.1, ActivationFunction::ReLU),
-       std::make_shared<FullyConnectedLayerConfig>(
-           n_classes, ActivationFunction::Softmax)},
+           /* dim=*/10000, /* sparsity= */ 0.1, "relu"),
+       std::make_shared<FullyConnectedLayerConfig>(n_classes, "softmax")},
       n_classes);
 
   testFullyConnectedNetworkOnStream(network, /* epochs= */ 2,

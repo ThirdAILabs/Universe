@@ -53,8 +53,6 @@ class SequentialLayer {
 
   virtual void setSparsity(float sparsity) = 0;
 
-  virtual const SamplingConfig& getSamplingConfig() const = 0;
-
   virtual void buildLayerSummary(std::stringstream& summary,
                                  bool detailed) const {
     (void)detailed;

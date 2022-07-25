@@ -39,6 +39,13 @@ class DWTAHashFunction final : public HashFunction {
   void hashSingleDense(const float* values, uint32_t dim,
                        uint32_t* output) const override;
 
+  std::unique_ptr<HashFunction> copyWithNewSeeds() const final {
+    return std::make_unique<DWTAHashFunction>(
+        /* input_dim= */ _dim, /* hashes_per_table= */ _hashes_per_table,
+        /* num_tables= */ _num_tables,
+        /* range_pow= */ _log_binsize * _hashes_per_table);
+  }
+
   ~DWTAHashFunction() = default;
 };
 

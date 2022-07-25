@@ -86,6 +86,8 @@ class HashFunction {
 
   inline uint32_t range() const { return _range; }
 
+  virtual std::unique_ptr<HashFunction> copyWithNewSeeds() const = 0;
+
   virtual ~HashFunction() = default;
 
  protected:

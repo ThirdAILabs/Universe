@@ -63,7 +63,7 @@ TEST(EmbeddingNodeTest, SimpleTokenDataset) {
 
   auto fully_connected_layer = std::make_shared<FullyConnectedNode>(
       /* dim= */ 2,
-      /* activation= */ ActivationFunction::Softmax);
+      /* activation= */ "softmax");
   fully_connected_layer->addPredecessor(embedding_layer);
 
   BoltGraph model(/* inputs= */ {}, /* token_inputs= */ {token_input},

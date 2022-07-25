@@ -27,35 +27,27 @@ void createBoltSubmodule(py::module_& module) {
 
 #if THIRDAI_EXPOSE_ALL
 #pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
-  py::class_<thirdai::bolt::SamplingConfig>(
-      bolt_submodule, "SamplingConfig",
-      "SamplingConfig represents a layer's sampling hyperparameters.")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, std::string>(),
-           py::arg("hashes_per_table"), py::arg("num_tables"),
-           py::arg("range_pow"), py::arg("reservoir_size"),
-           py::arg("hash_function") = "DWTA",
-           "Builds a SamplingConfig object. \n\n"
-           "Arguments:\n"
-           " * hashes_per_table: Int - number of hashes to be concatenated in "
-           "each table."
-           " * num_tables: Int - number of hash tables."
-           " * range_pow: Int - hash range as a power of 2. E.g. if hash range "
-           "is 8, range_pow = 3. "
-           " Note that the correct range_pow differs for each hash function. "
-           "For DWTA, range_pow = 3 * hashes_per_table."
-           " For SRP or FastSRP, range_pow = hashes_per_table."
-           " * reservoir_size: Int - maximum number of elements stored in each "
-           "hash bucket."
-           " * hash_function: Pass hash function as string (Optional) - The "
-           "hash function "
-           "used for sparse training and inference. One of DWTA, SRP, or "
-           "FastSRP. Defaults to DWTA.")
-      .def(py::init<>(), "Builds a default SamplingConfig object.")
-      .def_readonly("hashes_per_table", &SamplingConfig::hashes_per_table)
-      .def_readonly("num_tables", &SamplingConfig::num_tables)
-      .def_readonly("range_pow", &SamplingConfig::range_pow)
-      .def_readonly("reservoir_size", &SamplingConfig::reservoir_size)
-      .def_readonly("hash_function", &SamplingConfig::_hash_function);
+  //   py::class_<thirdai::bolt::SamplingConfig>(
+  //       bolt_submodule, "SamplingConfig",
+  //       "SamplingConfig represents a layer's sampling hyperparameters.")
+  //       .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, std::string>(),
+  //            py::arg("hashes_per_table"), py::arg("num_tables"),
+  //            py::arg("range_pow"), py::arg("reservoir_size"),
+  //            py::arg("hash_function") = "DWTA",
+  //            "Builds a SamplingConfig object. \n\n"
+  //            "Arguments:\n"
+  //            " * hashes_per_table: Int - number of hashes to be concatenated
+  //            in " "each table." " * num_tables: Int - number of hash tables."
+  //            " * range_pow: Int - hash range as a power of 2. E.g. if hash
+  //            range " "is 8, range_pow = 3. " " Note that the correct
+  //            range_pow differs for each hash function. " "For DWTA, range_pow
+  //            = 3 * hashes_per_table." " For SRP or FastSRP, range_pow =
+  //            hashes_per_table." " * reservoir_size: Int - maximum number of
+  //            elements stored in each " "hash bucket." " * hash_function: Pass
+  //            hash function as string (Optional) - The " "hash function "
+  //            "used for sparse training and inference. One of DWTA, SRP, or "
+  //            "FastSRP. Defaults to DWTA.")
+  //       .def(py::init<>(), "Builds a default SamplingConfig object.");
 
 #endif
 
@@ -140,8 +132,8 @@ void createBoltSubmodule(py::module_& module) {
              thirdai::bolt::SequentialLayerConfig>(
       bolt_submodule, "FullyConnected", "Defines a fully-connected layer.\n")
 #if THIRDAI_EXPOSE_ALL
-      .def(py::init<uint64_t, float, ActivationFunction,
-                    thirdai::bolt::SamplingConfig>(),
+      .def(py::init<uint64_t, float, std::string,
+                    thirdai::bolt::SamplingConfigPtr>(),
            py::arg("dim"), py::arg("sparsity"), py::arg("activation_function"),
            py::arg("sampling_config"),
            "Constructs the FullyConnectedLayerConfig object.\n"
@@ -157,29 +149,6 @@ void createBoltSubmodule(py::module_& module) {
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sampling_config: SamplingConfig - Sampling configuration.")
 #endif
-      .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
-           py::arg("activation_function"),
-           "Constructs a FullyConnectedLayerConfig object.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: ActivationFunctions enum - We support five "
-           "activation functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
-           "Also accepts `getActivationFunction(function_name), e.g. "
-           "`getActivationFunction('ReLU')`")
-      .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
-           py::arg("sparsity"), py::arg("activation_function"),
-           "Constructs a FullyConnectedLayerConfig object.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: ActivationFunctions enum - We support five "
-           "activation functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
-           " * sparsity: Float - The fraction of neurons to use during "
-           "sparse training "
-           "and sparse inference. For example, sparsity=0.05 means the "
-           "layer uses 5% of "
-           "its neurons when processing an individual sample.\n"
-           "Also accepts `getActivationFunction(function_name), e.g. "
-           "`getActivationFunction('ReLU')`")
       .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
            py::arg("sparsity"), py::arg("activation_function"),
            "Constructs a FullyConnectedLayerConfig object.\n"
@@ -211,7 +180,7 @@ void createBoltSubmodule(py::module_& module) {
       "Defines a 2D convolutional layer that convolves over "
       "non-overlapping patches.")
       .def(py::init<uint64_t, float, ActivationFunction,
-                    thirdai::bolt::SamplingConfig,
+                    thirdai::bolt::SamplingConfigPtr,
                     std::pair<uint32_t, uint32_t>, uint32_t>(),
            py::arg("num_filters"), py::arg("sparsity"),
            py::arg("activation_function"), py::arg("sampling_config"),
@@ -251,7 +220,8 @@ void createBoltSubmodule(py::module_& module) {
            "`getActivationFunction('ReLU')`\n"
            " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
            " * num_patches: Int (positive) - Number of patches.");
-  py::class_<thirdai::bolt::EmbeddingLayerConfig>(
+
+ py::class_<thirdai::bolt::EmbeddingLayerConfig>(
       bolt_submodule, "Embedding",
       "Defines a space-efficient embedding table lookup layer.")
       .def(py::init<uint32_t, uint32_t, uint32_t>(),
@@ -473,13 +443,7 @@ void createBoltSubmodule(py::module_& module) {
       .def("get_layer_sparsity", &PyNetwork::getLayerSparsity,
            py::arg("layer_index"),
            "Gets the sparsity of the layer at the given index. The 0th layer "
-           "is the first layer after the input layer.")
-#if THIRDAI_EXPOSE_ALL
-      .def("get_sampling_config", &PyNetwork::getSamplingConfig,
-           py::arg("layer_index"),
-           "Returns the sampling config of the layer at layer_index.")
-#endif
-      ;
+           "is the first layer after the input layer.");
 
   py::class_<TextClassifier>(bolt_submodule, "TextClassifier")
       .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),

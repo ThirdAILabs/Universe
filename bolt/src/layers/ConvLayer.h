@@ -78,10 +78,6 @@ class ConvLayer final : public SequentialLayer {
         "Cannot currently set the sparsity of a convolutional layer.");
   }
 
-  const SamplingConfig& getSamplingConfig() const final {
-    return _sampling_config;
-  }
-
  private:
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output);
@@ -119,8 +115,7 @@ class ConvLayer final : public SequentialLayer {
 
   std::vector<bool> _is_active;
 
-  SamplingConfig _sampling_config;
-  std::unique_ptr<hashing::DWTAHashFunction> _hasher;
+  std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
   std::vector<uint32_t> _rand_neurons;
 
@@ -140,7 +135,7 @@ class ConvLayer final : public SequentialLayer {
   void serialize(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
             _w_gradient, _w_momentum, _w_velocity, _biases, _b_gradient,
-            _b_momentum, _b_velocity, _is_active, _sampling_config, _hasher,
+            _b_momentum, _b_velocity, _is_active, _hasher,
             _hash_table, _rand_neurons, _patch_dim, _sparse_patch_dim,
             _num_patches, _num_filters, _num_sparse_filters, _prev_num_filters,
             _prev_num_sparse_filters, _kernel_size, _in_to_out, _out_to_in);
