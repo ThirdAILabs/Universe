@@ -1,5 +1,6 @@
 #include <bolt/src/utils/CompressedVector.h>
 #include <gtest/gtest.h>
+#include <cmath>
 #include <functional>
 #include <iostream>
 #include <random>
@@ -17,7 +18,7 @@ float single_vector_reconstruction_error(
     error += diff * diff;  // Squared error.
   }
 
-  error = std::sqrtf(error) / static_cast<float>(num_elements);
+  error = std::sqrt(error) / static_cast<float>(num_elements);
   return error;
 }
 
