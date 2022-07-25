@@ -296,7 +296,6 @@ void createBoltSubmodule(py::module_& module) {
       .def("get_input_gradients", &PyNetwork::getInputGradients,
            py::arg("input"), py::arg("loss_fn"), py::arg("best_index") = true,
            py::arg("required_labels") = std::vector<uint32_t>(),
-           py::arg("batch_size") = 256,
            "Get the values of input gradients when back propagate "
            "labels with the highest activation or second highest "
            "activation or with the required label."
@@ -312,9 +311,10 @@ void createBoltSubmodule(py::module_& module) {
            "to empty vector, if required_labels is empty then only function "
            "takes look at the best_index parameter , otherwise gives gradients "
            "corresponds to those labels."
-           " * batch_size: Batch size , default batch size is 256."
-           " Returns list of lists of gradients corresponds to the input "
-           "vectors.")
+           " Returns a tuple consists of (0) list of lists of gradients "
+           "corresponds to the input vectors."
+           " and (1) optional, it only returns the corresponding indices for "
+           "sparse inputs.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,

@@ -1,6 +1,7 @@
-from thirdai import bolt
+from thirdai import bolt, dataset
 import numpy as np
 import pytest
+from .utils import gen_numpy_training_data
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -58,40 +59,37 @@ def test_input_gradients():
     should also be in same order, when we add small EPS at each position seperately.
     """
     network = initialize_network()
-    inputs = np.array(
-        [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 0, 1],
-        ]
-    ).astype("float32")
+    numpy_inputs, labels = gen_numpy_training_data(4, convert_to_bolt_dataset=False)
+    inputs = dataset.from_numpy(numpy_inputs, batch_size=256)
     gradients, indices = network.get_input_gradients(
         inputs,
         bolt.CategoricalCrossEntropyLoss(),
-        required_labels=np.array([1, 1, 1, 1]).astype("uint32"),
+        required_labels=labels,
     )
     _, act = network.predict(inputs, None)
     """
     For every vector in input,we modify the vector at every position(by adding EPS), and we check the above assertion.
     """
-    for input_num in range(len(inputs)):
-        modified_vectors = []
-        for i in range(len(inputs[input_num])):
+    for input_num in range(len(numpy_inputs)):
+        modified_numpy_vectors = []
+        for i in range(len(numpy_inputs[input_num])):
             """
             We are making a copy because in python assign operation makes two variables to point
             to same address space, and we only want to modify one and keep the other same.
             """
-            vec = np.array(inputs[input_num])
+            vec = np.array(numpy_inputs[input_num])
             vec[i] = vec[i] + 0.001
-            modified_vectors.append(vec)
-        modified_vectors = np.array(modified_vectors)
+            modified_numpy_vectors.append(vec)
+        modified_numpy_vectors = np.array(modified_numpy_vectors)
+        modified_vectors = dataset.from_numpy(modified_numpy_vectors, batch_size=4)
         _, vecs_act = network.predict(modified_vectors, None)
-        act_difference_at_label_one = [
-            np.array(vec_act[1]) - np.array(act[input_num][1]) for vec_act in vecs_act
+        act_difference_at_required_label = [
+            np.array(vec_act[labels[input_num]])
+            - np.array(act[input_num][labels[input_num]])
+            for vec_act in vecs_act
         ]
         assert np.array_equal(
-            np.argsort(act_difference_at_label_one),
+            np.argsort(act_difference_at_required_label),
             np.argsort(gradients[input_num]),
         )
 
@@ -101,7 +99,7 @@ def test_return_indices_for_sparse_and_dense_inputs():
     """
     For Dense inputs we should not return indices but for sparse inputs we should return sparse indices.
     """
-    dense_inputs = np.array(
+    dense_numpy_inputs = np.array(
         [
             [1, 0, 0, 0],
             [0, 1, 0, 0],
@@ -109,11 +107,13 @@ def test_return_indices_for_sparse_and_dense_inputs():
             [0, 0, 0, 1],
         ]
     ).astype("float32")
-    sparse_inputs = (
+    sparse_numpy_inputs = (
         np.array([0, 0, 1, 3, 0, 1, 0, 1, 2, 3]).astype("uint32"),
         np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]).astype("float32"),
         np.array([0, 1, 4, 6, 10]).astype("uint32"),
     )
+    dense_inputs = dataset.from_numpy(dense_numpy_inputs, batch_size=4)
+    sparse_inputs = dataset.from_numpy(sparse_numpy_inputs, batch_size=4)
     network = initialize_network()
     _, dense_inputs_indices = network.get_input_gradients(
         dense_inputs, bolt.CategoricalCrossEntropyLoss()
@@ -130,4 +130,4 @@ def test_return_indices_for_sparse_and_dense_inputs():
         ]
     )
 
-    assert combined_sparse_indices.all() == (sparse_inputs[0]).all()
+    assert combined_sparse_indices.all() == (sparse_numpy_inputs[0]).all()
