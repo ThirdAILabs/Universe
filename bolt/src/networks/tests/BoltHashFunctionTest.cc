@@ -3,8 +3,6 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <gtest/gtest.h>
-#include <dataset/src/Dataset.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <algorithm>
 #include <optional>
 #include <random>
@@ -29,32 +27,32 @@ static void testSimpleDatasetHashFunction(const std::string& hash_function) {
            n_classes, ActivationFunction::Softmax)},
       n_classes);
 
-  auto data =
+  auto [data, labels] =
       genDataset(/* n_classes= */ n_classes, /* noisy_dataset = */ false);
 
   // train the network for two epochs
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+  network.train(data, labels, CategoricalCrossEntropyLoss(),
                 /*learning_rate = */ 0.001, /*epochs = */ 2,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
-  auto first_test_metrics = network.predict(
-      data.data, data.labels, /* output_active_neurons= */ nullptr,
-      /* output_activations= */ nullptr,
-      /* use_sparse_inference= */ false,
-      /* metric_names= */ {"categorical_accuracy"},
-      /* verbose= */ false);
+  auto first_test_metrics =
+      network.predict(data, labels, /* output_active_neurons= */ nullptr,
+                      /* output_activations= */ nullptr,
+                      /* use_sparse_inference= */ false,
+                      /* metric_names= */ {"categorical_accuracy"},
+                      /* verbose= */ false);
 
   // train the network for 5 epochs
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+  network.train(data, labels, CategoricalCrossEntropyLoss(),
                 /*learning_rate = */ 0.001, /*epochs = */ 5,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
-  auto second_test_metrics = network.predict(
-      data.data, data.labels, /* output_active_neurons= */ nullptr,
-      /* output_activations= */ nullptr,
-      /* use_sparse_inference= */ false,
-      /* metric_names= */ {"categorical_accuracy"},
-      /* verbose= */ false);
+  auto second_test_metrics =
+      network.predict(data, labels, /* output_active_neurons= */ nullptr,
+                      /* output_activations= */ nullptr,
+                      /* use_sparse_inference= */ false,
+                      /* metric_names= */ {"categorical_accuracy"},
+                      /* verbose= */ false);
 
   // assert that the accuracy improves.
   ASSERT_GE(second_test_metrics["categorical_accuracy"],

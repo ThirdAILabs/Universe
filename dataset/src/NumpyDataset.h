@@ -1,8 +1,8 @@
 #pragma once
 
-#include "BoltDatasets.h"
+#include "InMemoryDataset.h"
 #include <bolt/src/layers/BoltVector.h>
-#include <dataset/src/Dataset.h>
+#include <dataset/src/Datasets.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>

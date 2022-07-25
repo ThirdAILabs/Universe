@@ -1,4 +1,4 @@
-experiment_identifier = "Amazon 670k"
+experiment_identifier = "Amazon670k Product Recommendation"
 model_identifier = "amazon670_dense_hidden"
 dataset_identifier = "amazon_670k"
 

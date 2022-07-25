@@ -300,6 +300,11 @@ def build_arg_parser():
         type=str,
         help="The name of the run to use in mlflow. If mlflow is enabled this is required.",
     )
+    parser.add_argument(
+        "--upload_artifacts",
+        action="store_true",
+        help="Whether to upload artifacts to mlflow.",
+    )
     return parser
 
 
