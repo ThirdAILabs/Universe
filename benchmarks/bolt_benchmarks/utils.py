@@ -94,6 +94,9 @@ def log_config_info(config):
 
 
 def find_full_filepath(filename: str) -> str:
+    if (os.path.exists(filename)):
+        return filename
+
     data_path_file = (
         os.path.dirname(os.path.abspath(__file__)) + "/../../dataset_paths.toml"
     )

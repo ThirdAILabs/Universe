@@ -1,6 +1,7 @@
 # TODO(josh): Add back mach benchmark
 
 import argparse
+from sklearn.metrics import roc_auc_score
 from multiprocessing.sharedctypes import Value
 import toml
 from pathlib import Path
@@ -13,6 +14,7 @@ from utils import (
     config_get,
 )
 from thirdai import bolt, dataset
+import numpy as np
 
 
 def main():
@@ -103,7 +105,7 @@ def load_all_datasets(dataset_config):
         if format == "svm":
             loaded_datasets = load_svm_dataset(single_dataset_config)
         elif format == "click":
-            loaded_datasets = load_clickthrough_dataset(single_dataset_config)
+            loaded_datasets = load_click_through_dataset(single_dataset_config)
         else:
             raise ValueError(f"{format} is an unrecognized dataformat")
 
@@ -190,7 +192,17 @@ def construct_fully_connected_node(fc_config):
             hash_function=fc_config.get("hash_function", "DWTA"),
         ),
     )
-
+    
+def construct_embedding_node(embedding_config):
+    num_embedding_lookups = config_get(embedding_config, "num_embedding_lookups")
+    lookup_size = config_get(embedding_config, "lookup_size")
+    log_embedding_block_size = config_get(embedding_config, "log_embedding_block_size")
+    
+    return bolt.graph.Embedding(
+        num_embedding_lookups=num_embedding_lookups,
+        lookup_size=lookup_size,
+        log_embedding_block_size=log_embedding_block_size
+    )
 
 def construct_node(node_config):
     node_type = config_get(node_config, "type")
@@ -200,8 +212,10 @@ def construct_node(node_config):
         return bolt.graph.Concatenate()
     if node_type == "FullyConnected":
         return construct_fully_connected_node(node_config)
-    if node_type == "TokenInput" or node_type == "Embedding":
-        raise ValueError("Tokens and Embedding nodes not added quite yet")
+    if node_type == "TokenInput":
+        return bolt.graph.TokenInput()
+    if node_type == "Embedding":
+        return construct_embedding_node(node_config)
     raise ValueError(f"{node_type} is not a valid node type.")
 
 
@@ -225,9 +239,15 @@ def load_svm_dataset(dataset_config):
     )
 
 
-def load_clickthrough_dataset(dataset_config):
-    raise ValueError("Clickthrough loading not quite added yet")
-
+def load_click_through_dataset(dataset_config):
+    dataset_path = find_full_filepath(config_get(dataset_config, "path"))
+    return dataset.load_click_through_dataset(
+        filename=dataset_path,
+        batch_size=config_get(dataset_config, "batch_size"),
+        num_numerical_features=config_get(dataset_config, "num_numerical_features"),
+        max_categorical_features=config_get(dataset_config, "max_categorical_features"),
+        delimiter=config_get(dataset_config, "delimiter")
+    )
 
 # Because of how our experiment works, we always set num_epochs=1 and return
 # num_epochs as the first element of a 2 item tuple (the second element is
@@ -249,7 +269,6 @@ def load_predict_config(experiment_config):
     return bolt.graph.PredictConfig.make().with_metrics(
         config_get(experiment_config, "test_metrics")
     )
-
 
 def freeze_hash_table_if_needed(model, experiment_config, current_epoch):
     should_freeze_hash_tables = (
