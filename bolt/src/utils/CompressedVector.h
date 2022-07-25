@@ -33,10 +33,7 @@ class CompressedVector {
   CompressedVector(const std::vector<ELEMENT_TYPE>& input,
                    uint64_t physical_size, uint64_t block_size, uint32_t seed,
                    bool use_sign_bit = true)
-      : _physical_vector(physical_size, 0),
-        _block_size(block_size),
-        _seed(seed),
-        _use_sign_bit(use_sign_bit) {
+      : CompressedVector(physical_size, block_size, seed, use_sign_bit) {
     // Do we have BOLT_ASSERT yet?
     assert(physical_size <= input.size());
     assert(physical_size > block_size);
