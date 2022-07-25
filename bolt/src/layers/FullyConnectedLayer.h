@@ -7,6 +7,7 @@
 #include "LayerConfig.h"
 #include "LayerUtils.h"
 #include "SequentialLayer.h"
+#include "bolt/src/utils/CompressedVector.h"
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>
 #include <cstdint>
@@ -130,13 +131,18 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   std::vector<float> _weights;
   std::vector<float> _w_gradient;
-  std::vector<float> _w_momentum;
-  std::vector<float> _w_velocity;
+
+  using AdamParamsType = CompressedVector<float>;
+  // using AdamParamsType = std::vector<float>;
+
+  AdamParamsType _w_momentum;
+  AdamParamsType _w_velocity;
 
   std::vector<float> _biases;
   std::vector<float> _b_gradient;
-  std::vector<float> _b_momentum;
-  std::vector<float> _b_velocity;
+
+  AdamParamsType _b_momentum;
+  AdamParamsType _b_velocity;
 
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
