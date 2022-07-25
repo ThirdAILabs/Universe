@@ -1348,3 +1348,9 @@
 2022-07-25 05:35:01,518 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 541.5273094177246, Python Computation Time: 0.014159202575683594, Communication Time: 2960.578620672226
 2022-07-25 05:35:26,980 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 545.0725870132446, Python Computation Time: 0.014278173446655273, Communication Time: 2982.4921219348907
 2022-07-25 05:35:26,980 : INFO : DistributedBolt : 135 processed!, Total Batches: 240
+2022-07-25 05:45:17,307 : INFO : DistributedBolt : Training has started!
+2022-07-25 05:45:17,690 : INFO : DistributedBolt : Ray Initialized
+2022-07-25 05:45:17,692 : INFO : DistributedBolt : Config Done
+2022-07-25 05:45:29,898 : INFO : DistributedBolt : Compression is DRAGON with the density 0.1
+2022-07-25 05:45:29,898 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-25 05:45:39,504 : INFO : DistributedBolt : 0 processed!, Total Batches: 240
