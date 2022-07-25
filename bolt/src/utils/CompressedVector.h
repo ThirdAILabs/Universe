@@ -7,6 +7,9 @@
 
 namespace thirdai::bolt {
 
+static constexpr uint64_t kDefaultBlockSize = 64;
+static constexpr uint64_t kDefaultSeed = 42;
+
 // A CompressedVector attempts to compress a large vector into a smaller one by
 // means of sketching.
 //
@@ -24,9 +27,10 @@ template <class ELEMENT_TYPE>
 class CompressedVector {
  public:
   // Create a new CompressedVector.
-  CompressedVector(uint64_t physical_size, uint64_t block_size, uint32_t seed,
-                   bool use_sign_bit = true)
-      : _physical_vector(physical_size + block_size, 0),
+  CompressedVector(uint64_t physical_size, ELEMENT_TYPE default_value = 0,
+                   uint64_t block_size = kDefaultBlockSize,
+                   uint32_t seed = kDefaultSeed, bool use_sign_bit = true)
+      : _physical_vector(physical_size + block_size, default_value),
         _block_size(block_size),
         _seed(seed),
         _use_sign_bit(use_sign_bit),
@@ -34,9 +38,10 @@ class CompressedVector {
 
   // Create a new CompressedVector from a pre-existing vector.
   CompressedVector(const std::vector<ELEMENT_TYPE>& input,
-                   uint64_t physical_size, uint64_t block_size, uint32_t seed,
-                   bool use_sign_bit = true)
-      : CompressedVector(physical_size, block_size, seed, use_sign_bit) {
+                   uint64_t physical_size,
+                   uint64_t block_size = kDefaultBlockSize,
+                   uint32_t seed = kDefaultSeed, bool use_sign_bit = true)
+      : CompressedVector(physical_size, 0, block_size, seed, use_sign_bit) {
     // Do we have BOLT_ASSERT yet?
     assert(physical_size <= input.size());
     assert(physical_size > block_size);
