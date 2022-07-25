@@ -20,7 +20,7 @@ def start_mlflow(config, mlflow_args):
             experiment_name, mlflow_args.run_name, dataset_name, model_name
         )
         log_machine_info()
-        if mlflow_args.upload_artifacts:
+        if not mlflow_args.disable_upload_artifacts:
             mlflow.log_artifact(mlflow_args.config_path)
 
 
@@ -38,17 +38,6 @@ def start_mlflow_helper(experiment_name, run_name, dataset, model_name):
     )
 
 
-<<<<<<< HEAD
-def log_single_epoch_training_metrics(metrics):
-    # Since metrics is the result of training a single epoch, we can greatly
-    #  simplify the logging:
-    mlflow_metrics = {k: v[0] for k, v in metrics.items()}
-    mlflow.log_metrics(mlflow_metrics)
-
-
-def log_prediction_metrics(metrics):
-    mlflow.log_metrics(metrics[0])
-=======
 def log_single_epoch_training_metrics(train_output):
     # Since train_output is the result of training a single epoch,
     # we can greatly simplify the logging:
@@ -59,7 +48,6 @@ def log_single_epoch_training_metrics(train_output):
 def log_prediction_metrics(inference_output):
     # The metrics data is the first element of the inference output tuple
     mlflow.log_metrics(inference_output[0])
->>>>>>> a726e12b144afd1d934a4816a68cc17e2219d69d
 
 
 def verify_mlflow_args(parser, mlflow_args):

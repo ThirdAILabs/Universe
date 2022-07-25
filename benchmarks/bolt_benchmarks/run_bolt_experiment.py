@@ -216,14 +216,14 @@ def construct_node(node_config):
 
 
 def get_loss(model_config):
-    loss_string = config_get(model_config, "loss_fn")
+    loss_string = config_get(model_config, "loss_fn").lower()
     # TODO(josh/nick): Add an option to pass in the loss function as string to compile
     # TODO(josh): Consider moving to python 3.10 so we have the match pattern
-    if loss_string.lower() == "categoricalcrossentropyloss":
+    if loss_string == "categoricalcrossentropyloss" or loss_string == "cce":
         return bolt.CategoricalCrossEntropyLoss()
-    if loss_string.lower() == "binarycrossentropyloss":
+    if loss_string == "binarycrossentropyloss" or loss_string == "bce":
         return bolt.BinaryCrossEntropyLoss()
-    if loss_string.lower() == "meansquarederror":
+    if loss_string == "meansquarederror" or loss_string == "mse":
         return bolt.MeanSquaredError()
     raise ValueError(f"{loss_string} is not a valid loss function.")
 
@@ -314,11 +314,6 @@ def build_arg_parser():
         default="",
         type=str,
         help="The name of the run to use in mlflow. If mlflow is enabled this is required.",
-    )
-    parser.add_argument(
-        "--upload_artifacts",
-        action="store_true",
-        help="Whether to upload artifacts to mlflow.",
     )
     return parser
 
