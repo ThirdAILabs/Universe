@@ -3,8 +3,7 @@
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <bolt/src/layers/BoltVector.h>
-#include <dataset/src/Dataset.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/Datasets.h>
 #include <algorithm>
 #include <memory>
 #include <stdexcept>

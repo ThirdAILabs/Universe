@@ -3,7 +3,7 @@
 #include <cereal/archives/binary.hpp>
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/HashFunction.h>
-#include <dataset/src/bolt_datasets/NumpyDataset.h>
+#include <dataset/src/NumpyDataset.h>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>

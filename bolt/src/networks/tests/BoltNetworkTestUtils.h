@@ -1,7 +1,6 @@
 #pragma once
 
-#include <dataset/src/Dataset.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/Datasets.h>
 #include <algorithm>
 #include <optional>
 #include <random>
@@ -9,10 +8,9 @@
 
 namespace thirdai::bolt::tests {
 
-static dataset::DatasetWithLabels genDataset(uint32_t n_classes,
-                                             bool noisy_dataset,
-                                             uint32_t n_batches = 100,
-                                             uint32_t batch_size = 100) {
+static std::tuple<dataset::BoltDatasetPtr, dataset::BoltDatasetPtr> genDataset(
+    uint32_t n_classes, bool noisy_dataset, uint32_t n_batches = 100,
+    uint32_t batch_size = 100) {
   std::mt19937 gen(892734);
   std::uniform_int_distribution<uint32_t> label_dist(0, n_classes - 1);
   std::normal_distribution<float> data_dist(0, noisy_dataset ? 1.0 : 0.1);
@@ -37,9 +35,9 @@ static dataset::DatasetWithLabels genDataset(uint32_t n_classes,
     label_batches.push_back(bolt::BoltBatch(std::move(labels)));
   }
 
-  return dataset::DatasetWithLabels(
-      dataset::BoltDataset(std::move(data_batches)),
-      dataset::BoltDataset(std::move(label_batches)));
+  return std::make_tuple(
+      std::make_shared<dataset::BoltDataset>(std::move(data_batches)),
+      std::make_shared<dataset::BoltDataset>(std::move(label_batches)));
 }
 
 }  // namespace thirdai::bolt::tests

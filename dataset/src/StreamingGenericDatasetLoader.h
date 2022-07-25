@@ -3,7 +3,7 @@
 #include "DataLoader.h"
 #include "StreamingDataset.h"
 #include <bolt/src/layers/BoltVector.h>
-#include <dataset/src/bolt_datasets/batch_processors/GenericBatchProcessor.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <memory>
 
 namespace thirdai::dataset {

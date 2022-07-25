@@ -2,8 +2,8 @@
 
 #include "ProcessorUtils.h"
 #include <bolt/src/layers/BoltVector.h>
+#include <dataset/src/BatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/bolt_datasets/BatchProcessor.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
 #include <atomic>
