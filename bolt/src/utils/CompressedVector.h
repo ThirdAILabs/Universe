@@ -26,10 +26,11 @@ class CompressedVector {
   // Create a new CompressedVector.
   CompressedVector(uint64_t physical_size, uint64_t block_size, uint32_t seed,
                    bool use_sign_bit = true)
-      : _physical_vector(physical_size, 0),
+      : _physical_vector(physical_size + block_size, 0),
         _block_size(block_size),
         _seed(seed),
-        _use_sign_bit(use_sign_bit) {}
+        _use_sign_bit(use_sign_bit),
+        _truncated_size(physical_size) {}
 
   // Create a new CompressedVector from a pre-existing vector.
   CompressedVector(const std::vector<ELEMENT_TYPE>& input,
@@ -42,10 +43,10 @@ class CompressedVector {
 
     for (uint64_t i = 0; i < input.size(); i += _block_size) {
       // Find the location the first element of the block hashes into.
-      // effective_size is required as we are hashing blocks and we don't want
-      // out of bounds access.
-      uint64_t effective_size = _physical_vector.size() - _block_size;
-      uint64_t block_begin = hashFunction(i) % effective_size;
+      // Hashing is truncated by truncated_size to avoid out of bounds access in
+      // the nested loop below.
+
+      uint64_t block_begin = hashFunction(i) % _truncated_size;
 
       // Having found the hash, we store all elements in the block within the
       // respective offset.
@@ -106,6 +107,8 @@ class CompressedVector {
   bool _use_sign_bit;  // Whether to use a sign-bit in hashing to get an
                        // unbiased estimator.
 
+  uint64_t _truncated_size;  // For purposes of hashing.
+
   // Convenience function to hash into a uint32_t using MurmurHash using saved
   // seed value.
   inline uint32_t hashFunction(uint64_t value) const {
@@ -122,8 +125,7 @@ class CompressedVector {
     uint64_t offset = i % _block_size;
     uint64_t i_begin = i - offset;
 
-    uint64_t effective_size = _physical_vector.size() - _block_size;
-    uint64_t block_begin = hashFunction(i_begin) % effective_size;
+    uint64_t block_begin = hashFunction(i_begin) % _truncated_size;
     uint64_t index = block_begin + offset;
     return index;
   }
