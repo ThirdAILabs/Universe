@@ -189,13 +189,14 @@ class Worker:
             thresh_x=0
             thresh_y=0
 
-            for i in [0]*2:
+            num_samples=2
+            for i in range(num_samples):
 
                 sampled_x=np.random.choice(x.shape[0],min(x.shape[0],10000))
                 sampled_y=np.random.choice(y.shape[0],min(y.shape[0],10000))
 
-                thresh_x+=self.approximate_topk(x[sampled_x],compression_density)
-                thresh_y+=self.approximate_topk(y[sampled_y],compression_density)
+                thresh_x+=self.approximate_topk(x[sampled_x],compression_density)/num_samples
+                thresh_y+=self.approximate_topk(y[sampled_y],compression_density)/num_samples
 
         
             indices_x=np.where(x>thresh_x)[0].astype(int)[:m_x]
@@ -292,7 +293,7 @@ class Worker:
 
 
     def receiveDragonGradients(self):
-        
+
         num_workers=ray.get(self.supervisor.num_workers.remote())
 
         w_sparse_grads,b_sparse_grads=ray.get(self.supervisor.sparse_grads.remote())
