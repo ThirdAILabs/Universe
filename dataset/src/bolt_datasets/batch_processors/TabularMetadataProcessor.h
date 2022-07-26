@@ -28,7 +28,7 @@ class TabularMetadata {
                   std::unordered_map<uint32_t, double> col_to_max_val,
                   std::unordered_map<uint32_t, double> col_to_min_val,
                   uint32_t max_salt_len)
-      : _num_non_empty_bins(25),
+      : _num_non_empty_bins(10),
         _label_col_index(label_col_index),
         _max_salt_len(max_salt_len),
         _column_dtypes(std::move(column_dtypes)),
