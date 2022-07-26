@@ -37,7 +37,10 @@ class SwitchNode final : public Node,
     }
   }
 
-  uint32_t outputDim() const final { return _layers.at(0)->outputDim(); }
+  uint32_t outputDim() const final {
+    // All layers are constructed identically so we can use _layers[0] here.
+    return _layers.at(0)->outputDim();
+  }
 
   bool isInputNode() const final { return false; }
 
@@ -55,6 +58,9 @@ class SwitchNode final : public Node,
  private:
   void compileImpl() final {
     for (auto& layer : _layers) {
+      // We use compile impl because the state is checked when compile() is
+      // called on the switch node and we don't want to name each individual
+      // sub-layer.
       layer->compileImpl();
     }
   }
@@ -63,6 +69,7 @@ class SwitchNode final : public Node,
   getInternalFullyConnectedLayersImpl() const final {
     std::vector<std::shared_ptr<FullyConnectedLayer>> fc_layers;
     for (const auto& layer : _layers) {
+      // Each layer only has one internal FullyConnectedLayer.
       fc_layers.push_back(layer->getInternalFullyConnectedLayers().at(0));
     }
     return fc_layers;
@@ -76,6 +83,7 @@ class SwitchNode final : public Node,
   }
 
   uint32_t numNonzerosInOutputImpl() const final {
+    // All layers are constructed identically so we can use _layers[0] here.
     return _layers.at(0)->numNonzerosInOutput();
   }
 
@@ -121,14 +129,21 @@ class SwitchNode final : public Node,
   std::string type() const final { return "switch"; }
 
   std::vector<NodePtr> getPredecessorsImpl() const final {
-    auto predecessors = _layers[0]->getPredecessors();
+    // All layers are constructed identically so we can use _layers[0] here.
+    auto predecessors = _layers.at(0)->getPredecessors();
     predecessors.push_back(_token_input);
     return predecessors;
   }
 
-  NodeState getState() const final { return _layers.at(0)->getState(); }
+  NodeState getState() const final {
+    // All layers are constructed identically and all method are called on all
+    // layers, so we can use _layers[0] here.
+    return _layers.at(0)->getState();
+  }
 
   uint32_t getActiveLayer(uint32_t vec_index) {
+    // There will only be one token indicating which layer to use.
+    assert(_token_input->getTokens(vec_index).size() == 1);
     return _token_input->getTokens(vec_index).at(0);
   }
 

@@ -15,7 +15,7 @@ static constexpr uint32_t n_classes = 100;
 static constexpr uint32_t n_switch_layers = 10;
 static constexpr uint32_t seed = 9824;
 
-auto getMLMDataset() {
+auto generateSwitchDataset() {
   auto [vector_data, labels] =
       genDataset(n_classes, /* noisy_dataset= */ false);
 
@@ -43,7 +43,7 @@ auto getMLMDataset() {
 }
 
 TEST(SwitchNodeTest, TrainsOnSimpleClassificationDataset) {
-  auto [data, tokens, labels] = getMLMDataset();
+  auto [train_data, train_tokens, train_labels] = generateSwitchDataset();
 
   auto input = std::make_shared<Input>(/* dim= */ n_classes);
   auto token_input = std::make_shared<TokenInput>();
@@ -64,12 +64,15 @@ TEST(SwitchNodeTest, TrainsOnSimpleClassificationDataset) {
 
   auto train_cfg = TrainConfig::makeConfig(/* learning_rate= */ 0.001, 5);
 
-  model.train({data}, {tokens}, labels, train_cfg);
+  model.train({train_data}, {train_tokens}, train_labels, train_cfg);
+
+  auto [test_data, test_tokens, test_labels] = generateSwitchDataset();
 
   auto predict_cfg =
       PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
-  auto result = model.predict({data}, {tokens}, labels, predict_cfg);
+  auto result =
+      model.predict({test_data}, {test_tokens}, test_labels, predict_cfg);
 
   ASSERT_GE(result.first["categorical_accuracy"], 0.95);
 }
