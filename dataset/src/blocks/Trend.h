@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <memory>
+#include <sstream>
 
 namespace thirdai::dataset {
 
@@ -32,11 +33,18 @@ class TrendBlock : public Block {
         _index(std::move(index)),
         _graph(std::move(graph)),
         _max_n_neighbors(max_n_neighbors) {
+    
     if (_graph != nullptr && _max_n_neighbors == 0) {
       throw std::invalid_argument(
           "Provided a graph but `max_n_neighbors` is "
           "set to 0. This means "
           "graph information will not be used at all.");
+    }
+
+    if (lookback % period != 0 || lookahead % period != 0) {
+      std::stringstream error_ss;
+      error_ss << "lookback and lookahead arguments must be a multiple of period (lookback = " << lookback << ", lookahead = " << lookahead << ", period = " << period << ").";
+      throw std::invalid_argument(error_ss.str());
     }
 
     _expected_num_cols = expectedNumCols();
@@ -138,6 +146,7 @@ class TrendBlock : public Block {
 
     uint32_t idx = 0;
     for (const auto& count : counts) {
+
       if (!std::isnan(count)) {
         vec.addSparseFeatureToSegment(offset + idx, count);
       }
