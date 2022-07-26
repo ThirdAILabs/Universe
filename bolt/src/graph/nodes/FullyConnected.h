@@ -22,14 +22,23 @@ class FullyConnectedNode final
     : public Node,
       public std::enable_shared_from_this<FullyConnectedNode> {
  public:
-  // This pattern means that any valid constructor for a
-  // FullyConnectedLayerConfig can be used to initialize the
-  // FullyConnectedLayerNode, and that the args are directly forwarded to the
-  // constructor for the config.
-  template <typename... Args>
-  explicit FullyConnectedNode(Args&&... args)
+  FullyConnectedNode(uint64_t dim, const std::string& activation)
       : _layer(nullptr),
-        _config(FullyConnectedLayerConfig(std::forward<Args>(args)...)),
+        _config(FullyConnectedLayerConfig(dim, activation)),
+        _predecessor(nullptr) {}
+
+  FullyConnectedNode(uint64_t dim, float sparsity,
+                     const std::string& activation)
+      : _layer(nullptr),
+        _config(FullyConnectedLayerConfig(dim, sparsity, activation)),
+        _predecessor(nullptr) {}
+
+  FullyConnectedNode(uint64_t dim, float sparsity,
+                     const std::string& activation,
+                     SamplingConfigPtr sampling_config)
+      : _layer(nullptr),
+        _config(FullyConnectedLayerConfig(dim, sparsity, activation,
+                                          std::move(sampling_config))),
         _predecessor(nullptr) {}
 
   std::shared_ptr<FullyConnectedNode> addPredecessor(NodePtr node) {
@@ -58,7 +67,7 @@ class FullyConnectedNode final
     NodeState node_state = getState();
     if (node_state == NodeState::Constructed ||
         node_state == NodeState::PredecessorsSet) {
-      return _config->act_func;
+      return _config->getActFunc();
     }
     return _layer->getActivationFunction();
   }
@@ -126,10 +135,6 @@ class FullyConnectedNode final
           "FullyConnectedNode must be in a compiled state");
     }
     _layer->setSparsity(sparsity);
-  }
-
-  const SamplingConfig& getSamplingConfig() const {
-    return _layer->getSamplingConfig();
   }
 
  private:

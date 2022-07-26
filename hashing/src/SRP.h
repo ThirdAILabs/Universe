@@ -6,7 +6,7 @@
 
 namespace thirdai::hashing {
 
-class SparseRandomProjection : public HashFunction {
+class SparseRandomProjection final : public HashFunction {
  private:
   const uint32_t _srps_per_table, _total_num_srps, _dim, _sample_size;
   int16_t* _random_bits;
@@ -21,6 +21,14 @@ class SparseRandomProjection : public HashFunction {
 
   void hashSingleDense(const float* values, uint32_t dim,
                        uint32_t* output) const override;
+
+  std::unique_ptr<HashFunction> copyWithNewSeeds() const final {
+    return std::make_unique<SparseRandomProjection>(
+        /* input_dim= */ _dim, /* srps_per_table= */ _srps_per_table,
+        /* num_tables= */ _num_tables);
+  }
+
+  std::string getName() const final { return "SRP"; }
 
   ~SparseRandomProjection();
 };

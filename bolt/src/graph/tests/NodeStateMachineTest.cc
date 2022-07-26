@@ -183,7 +183,7 @@ class FullyConnectedStateMachineTest final : public NodeStateMachineTest {
 
 TEST(NodeStateMachineTest, FullyConnectedStateMachine) {
   auto fully_connected_node = std::make_shared<FullyConnectedNode>(
-      /* dim= */ 10, /* activation= */ ActivationFunction::ReLU);
+      /* dim= */ 10, /* activation= */ "relu");
 
   FullyConnectedStateMachineTest test(fully_connected_node);
 

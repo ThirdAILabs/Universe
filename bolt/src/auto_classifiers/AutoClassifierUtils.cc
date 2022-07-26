@@ -24,9 +24,8 @@ std::shared_ptr<FullyConnectedNetwork> AutoClassifierUtils::createNetwork(
 
   SequentialConfigList configs = {
       std::make_shared<FullyConnectedLayerConfig>(
-          hidden_layer_size, hidden_layer_sparsity, ActivationFunction::ReLU),
-      std::make_shared<FullyConnectedLayerConfig>(n_classes,
-                                                  ActivationFunction::Softmax)};
+          hidden_layer_size, hidden_layer_sparsity, "relu"),
+      std::make_shared<FullyConnectedLayerConfig>(n_classes, "softmax")};
   return std::make_shared<FullyConnectedNetwork>(std::move(configs), input_dim);
 }
 
