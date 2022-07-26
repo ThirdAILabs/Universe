@@ -108,7 +108,7 @@ def test_get_set_weights_single_node():
     assert new_acc["categorical_accuracy"] == original_acc["categorical_accuracy"]
 
 
-def test_basic_gradient_sharing():
+def test_get_set_weights_single_node():
 
     network = build_simple_bolt_network()
 
