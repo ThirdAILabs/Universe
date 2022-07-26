@@ -203,13 +203,24 @@ BoltGraph::getInputGradients(
   std::vector<std::vector<float>> input_dataset_grad;
   std::vector<std::vector<uint32_t>> input_dataset_indices;
 
+  try{
   for (uint64_t batch_idx = 0; batch_idx < input_gradients_context.numBatches();
        batch_idx++) {
     input_gradients_context.setInputs(batch_idx, _inputs, _token_inputs);
     for (uint32_t vec_id = 0;
          vec_id < input_gradients_context.batchSize(batch_idx); vec_id++) {
-        
+        std::vector<float> vec_grad;
+        // have to ensure that input has gradients not pointing to nullptr and assign vec_grad data to it.
+        // based on required_index is there or not and get the labels and also forward pass correctly,
+        //loss function
+        // backprop it to input.
+        // get the gradients and indices and return it.
     }
+  }
+  }
+  catch (const std::exception& e) {
+    cleanupAfterBatchProcessing();
+    throw;
   }
 }
 
