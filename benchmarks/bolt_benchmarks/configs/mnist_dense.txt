@@ -1,29 +1,52 @@
-job = "mnist dense layers"
+experiment_identifier = "Mnist"
+dataset_identifier = "mnist"
+model_identifier = "mnist_dense_hidden"
 
-[dataset]
-train_data = "mnist/mnist"
-test_data = "mnist/mnist.t"
-format = "svm"
-input_dim = 784
 
-[params]
-loss_fn = "CategoricalCrossEntropyLoss"
 train_metrics = []
-test_metrics = ["categorical_accuracy"]
 learning_rate = 0.0001
 epochs = 2
-batch_size = 250
-rehash = 10000000
-rebuild = 10000000
+reconstruct_hash_functions = 3000
+rebuild_hash_tables = 10000
+loss_fn = "CategoricalCrossEntropyLoss"
+test_metrics = ["categorical_accuracy"]
 
-[[layers]]
+
+[[datasets]]
+format = "svm"
+path = "mnist/mnist"
+type_list = ["train_data", "train_labels"]
+batch_size = 250
+
+[[datasets]]
+format = "svm"
+path = "mnist/mnist.t"
+type_list = ["test_data", "test_labels"]
+batch_size = 250
+
+
+[[nodes]]
+type = "Input"
+name = "first"
+dim = 784
+
+[[nodes]]
+type = "FullyConnected"
+name = "second"
+pred = "first"
 dim = 512
 activation = 'ReLU'
 
-[[layers]]
+[[nodes]]
+type = "FullyConnected"
+name = "third"
+pred = "second"
 dim = 256
 activation = 'ReLU'
 
-[[layers]]
+[[nodes]]
+type = "FullyConnected"
+name = "fourth"
+pred = "third"
 dim = 10
 activation = 'Softmax'

@@ -12,7 +12,6 @@
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
-#include <dataset/src/batch_types/MaskedSentenceBatch.h>
 
 namespace thirdai::bolt::python {
 
@@ -25,8 +24,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
                                      "InferenceOutput");
 
-  py::class_<FullyConnectedNode, std::shared_ptr<FullyConnectedNode>, Node>(
-      graph_submodule, "FullyConnected")
+  py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(graph_submodule,
+                                                              "FullyConnected")
       .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
            py::arg("activation"),
            "Constructs a dense FullyConnectedLayer object.\n"
@@ -135,7 +134,14 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def(py::init<uint32_t, uint32_t, uint32_t>(),
            py::arg("num_embedding_lookups"), py::arg("lookup_size"),
            py::arg("log_embedding_block_size"),
-           "Constructs an embedding node for the graph.")
+           "Constructs an Embedding layer that can be used in the graph.\n"
+           "Arguments:\n"
+           " * num_embedding_lookups: Int (positive) - The number of embedding "
+           "lookups to perform for each token.\n"
+           " * lookup_size: Int (positive) - How many consutive values to "
+           "select as part of the embedding for each embedding lookup.\n"
+           " * log_embedding_block_size: Int (positive) The log base 2 of the "
+           "total size of the embedding block.\n")
       .def("__call__", &EmbeddingNode::addInput, py::arg("token_input_layer"),
            "Tells the graph which token input to use for this Embedding Node.");
 

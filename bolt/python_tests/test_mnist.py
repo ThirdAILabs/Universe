@@ -3,12 +3,58 @@ import pytest
 
 pytestmark = [pytest.mark.integration]
 
-import os
 from thirdai import bolt, dataset
 import numpy as np
-from .utils import train_network, build_sparse_hidden_layer_classifier
+import os
+
+from .utils import (
+    train_network,
+    build_sparse_hidden_layer_classifier,
+    copy_two_layer_network_parameters,
+)
 
 LEARNING_RATE = 0.0001
+ACCURACY_THRESHOLD = 0.94
+SPARSE_INFERENCE_ACCURACY_THRESHOLD = 0.9
+SPARSE_INFERENCE_SPARSE_OUTPUT_ACCURACY_THRESHOLD = 0.35
+
+# Constructs a bolt network for mnist with a sparse output layer.
+def build_sparse_output_layer_network():
+    layers = [
+        bolt.FullyConnected(dim=256, activation_function="ReLU"),
+        bolt.FullyConnected(
+            dim=10,
+            sparsity=0.4,
+            activation_function="Softmax",
+        ),
+    ]
+    network = bolt.Network(layers=layers, input_dim=784)
+    return network
+
+
+def check_categorical_accuracies(
+    returned_metrics, returned_activations, accuracy_threshold
+):
+
+    assert (
+        returned_metrics["categorical_accuracy"] >= accuracy_threshold
+    )  # ACCURACY_THRESHOLD
+
+    # This last check is just to make sure that the accuracy computed in c++ matches
+    # what we can compute here using the returned activations. This verifies that the
+    # returned activations match and that the metrics are computed correctly.
+    predictions = np.argmax(returned_activations, axis=1)
+
+    labels = load_mnist_labels()
+    acc_computed = np.mean(predictions == labels)
+
+    assert acc_computed == returned_metrics["categorical_accuracy"]
+
+
+def load_mnist():
+    train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
+    test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
+    return train_x, train_y, test_x, test_y
 
 
 def setup_module():
@@ -34,31 +80,6 @@ def load_mnist_labels():
     return np.array(labels)
 
 
-# Constructs a bolt network for mnist with a sparse output layer.
-def build_sparse_output_layer_network():
-    layers = [
-        bolt.FullyConnected(dim=256, activation_function="ReLU"),
-        bolt.FullyConnected(
-            dim=10,
-            sparsity=0.4,
-            activation_function="Softmax",
-        ),
-    ]
-    network = bolt.Network(layers=layers, input_dim=784)
-    return network
-
-
-def load_mnist():
-    train_x, train_y = dataset.load_bolt_svm_dataset("mnist", 250)
-    test_x, test_y = dataset.load_bolt_svm_dataset("mnist.t", 250)
-    return train_x, train_y, test_x, test_y
-
-
-ACCURACY_THRESHOLD = 0.94
-SPARSE_INFERENCE_ACCURACY_THRESHOLD = 0.9
-SPARSE_INFERENCE_SPARSE_OUTPUT_ACCURACY_THRESHOLD = 0.35
-
-
 def test_mnist_sparse_output_layer():
     network = build_sparse_output_layer_network()
 
@@ -70,17 +91,7 @@ def test_mnist_sparse_output_layer():
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
-
-    # This last check is just to make sure that the accuracy computed in c++ matches
-    # what we can compute here using the returned activations. This verifies that the
-    # returned activations match and that the metrics are computed correctly.
-    predictions = np.argmax(activations, axis=1)
-
-    labels = load_mnist_labels()
-    acc_computed = np.mean(predictions == labels)
-
-    assert acc_computed == acc["categorical_accuracy"]
+    check_categorical_accuracies(acc, activations, ACCURACY_THRESHOLD)
 
 
 def test_mnist_sparse_hidden_layer():
@@ -96,17 +107,7 @@ def test_mnist_sparse_hidden_layer():
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
-
-    # This last check is just to make sure that the accuracy computed in c++ matches
-    # what we can compute here using the returned activations. This verifies that the
-    # returned activations match and that the metrics are computed correctly.
-    predictions = np.argmax(activations, axis=1)
-
-    labels = load_mnist_labels()
-    acc_computed = np.mean(predictions == labels)
-
-    assert acc_computed == acc["categorical_accuracy"]
+    check_categorical_accuracies(acc, activations, ACCURACY_THRESHOLD)
 
 
 def test_mnist_sparse_inference():
@@ -207,11 +208,7 @@ def test_get_set_weights():
 
     untrained_network = build_sparse_output_layer_network()
 
-    untrained_network.set_weights(0, network.get_weights(0))
-    untrained_network.set_weights(1, network.get_weights(1))
-
-    untrained_network.set_biases(0, network.get_biases(0))
-    untrained_network.set_biases(1, network.get_biases(1))
+    copy_two_layer_network_parameters(network, untrained_network)
 
     new_acc, _ = untrained_network.predict(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
