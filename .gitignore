@@ -66,3 +66,6 @@ tags
 [._]*.un~
 
 # -- End vim .gitignore
+
+#Ignore the log files
+.log
