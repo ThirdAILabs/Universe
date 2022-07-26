@@ -74,7 +74,7 @@ def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
     # call predict(..) on the test set after every new best epoch and record that accuracy to report
     best_test_accuracy = 0
     # stop training after this many total dips in successive validation accuracy
-    num_bad_epochs = 0
+    num_bad_epochs = 3
     max_val_acc = 0
     last_accuracy = 0
     tc = bolt.TabularClassifier("medium", ytrain.nunique())
@@ -82,13 +82,17 @@ def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
     for e in range(max_epochs):
         tc.train(bolt_train_file, dtypes, epochs=1, learning_rate=0.01)
         tc.predict(bolt_valid_file, prediction_file)
-        val_accuracy = compute_accuracy_with_file([str(x) for x in yvalid], prediction_file)
+        val_accuracy = compute_accuracy_with_file(
+            [str(x) for x in yvalid], prediction_file
+        )
         if val_accuracy < last_accuracy:
             num_bad_epochs -= 1
         elif val_accuracy > max_val_acc:
             max_val_acc = val_accuracy
             tc.predict(bolt_test_file, prediction_file)
-            best_test_accuracy = compute_accuracy_with_file([str(x) for x in ytest], prediction_file)
+            best_test_accuracy = compute_accuracy_with_file(
+                [str(x) for x in ytest], prediction_file
+            )
 
         last_accuracy = val_accuracy
 
