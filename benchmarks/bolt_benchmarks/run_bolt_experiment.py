@@ -306,9 +306,9 @@ def load_mlm_datasets(dataset_config, return_tokens):
 
     batch_size = config_get(dataset_config, "batch_size")
 
-    train_data = mlm_loader.load_dataset(filename=train_path, batch_size=batch_size)
+    train_data = mlm_loader.load(filename=train_path, batch_size=batch_size)
 
-    test_data = mlm_loader.load_dataset(filename=test_path, batch_size=batch_size)
+    test_data = mlm_loader.load(filename=test_path, batch_size=batch_size)
 
     if return_tokens:
         return train_data + test_data
