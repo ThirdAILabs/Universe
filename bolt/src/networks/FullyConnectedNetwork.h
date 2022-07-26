@@ -28,7 +28,8 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   friend class python::SentimentClassifier;
 
  public:
-  FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim);
+  FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim,
+                        bool is_distributed = false);
 
   void initializeNetworkState(uint32_t batch_size, bool use_sparsity) final;
 
