@@ -161,7 +161,7 @@ class FullyConnectedNode final
 
   void backpropagateImpl(uint32_t vec_index) final {
     // TODO(Nicholas, Josh): Change to avoid having this check
-    if (_predecessor->isInputNode()) {
+    if (!_predecessor->getOutputVector(vec_index).gradients) {
       _layer->backpropagateInputLayer(_predecessor->getOutputVector(vec_index),
                                       this->getOutputVectorImpl(vec_index));
     } else {
