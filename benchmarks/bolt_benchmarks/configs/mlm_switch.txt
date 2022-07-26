@@ -3,7 +3,6 @@ model_identifier = "mlm_switch"
 dataset_identifier = "wiki_10M"
 
 
-train_metrics = []
 epochs = 10
 reconstruct_hash_functions = 10000
 rebuild_hash_tables = 100000
