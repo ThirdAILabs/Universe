@@ -1,10 +1,9 @@
 #pragma once
 
 #include "BatchProcessor.h"
-#include "BoltDatasets.h"
 #include "DataLoader.h"
 #include <bolt/src/layers/BoltVector.h>
-#include <dataset/src/Dataset.h>
+#include <dataset/src/InMemoryDataset.h>
 #include <chrono>
 #include <memory>
 #include <optional>
@@ -85,7 +84,7 @@ class StreamingDataset {
           [&batch_tuple](auto&... batch_lists_arg) {
             std::apply(
                 [&](auto&... batch_tuple_arg) {
-                  (batch_lists_arg.push_back(std::move(batch_tuple_arg)), ...);
+                  (..., batch_lists_arg.push_back(std::move(batch_tuple_arg)));
                 },
                 batch_tuple.value());
           },

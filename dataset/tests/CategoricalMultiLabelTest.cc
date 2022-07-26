@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_types/MaskedSentenceBatch.h>
 #include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/bolt_datasets/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/encodings/categorical/CategoricalMultiLabel.h>
 
 namespace thirdai::dataset {

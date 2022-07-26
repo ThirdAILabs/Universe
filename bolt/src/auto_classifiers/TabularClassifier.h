@@ -4,10 +4,10 @@
 #include "AutoClassifierUtils.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
+#include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/TabularBlocks.h>
-#include <dataset/src/bolt_datasets/batch_processors/GenericBatchProcessor.h>
-#include <dataset/src/bolt_datasets/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/encodings/categorical/StringCategoricalEncoding.h>
 #include <dataset/src/utils/SafeFileIO.h>
 
