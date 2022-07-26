@@ -88,7 +88,7 @@ class ClickThroughBatchProcessor final
   static bolt::BoltVector getLabelVector(const std::string_view& label_str) {
     char* end;
     uint32_t label = std::strtol(label_str.data(), &end, 10);
-    bolt::BoltVector label_vec(1, /* is_dense= */ false,
+    bolt::BoltVector label_vec(/* l= */ 1, /* is_dense= */ false,
                                /* has_gradient= */ false);
     label_vec.active_neurons[0] = label;
     label_vec.activations[0] = 1.0;

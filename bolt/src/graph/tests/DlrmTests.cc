@@ -108,16 +108,18 @@ float runDlrmTest(bool dense_features_are_noise,
                   bool categorical_features_are_noise) {
   auto model = getModel();
 
-  auto [train_data, train_tokens, train_labels] = generateDlrmDataset(
-      dense_features_are_noise, categorical_features_are_noise, 4297);
+  auto [train_data, train_tokens, train_labels] =
+      generateDlrmDataset(dense_features_are_noise,
+                          categorical_features_are_noise, /* seed= */ 4597);
 
   auto train_cfg =
       TrainConfig::makeConfig(/* learning_rate= */ 0.001, /* epochs= */ 2);
 
   model.train({train_data}, {train_tokens}, train_labels, train_cfg);
 
-  auto [test_data, test_tokens, test_labels] = generateDlrmDataset(
-      dense_features_are_noise, categorical_features_are_noise, 2471);
+  auto [test_data, test_tokens, test_labels] =
+      generateDlrmDataset(dense_features_are_noise,
+                          categorical_features_are_noise, /* seed= */ 2631);
 
   auto predict_cfg =
       PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
