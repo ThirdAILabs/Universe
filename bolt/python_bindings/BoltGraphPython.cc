@@ -1,10 +1,17 @@
 #include "BoltGraphPython.h"
 #include "ConversionUtils.h"
+#include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
+#include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/graph/nodes/TokenInput.h>
+#include <dataset/src/Datasets.h>
+#include <dataset/src/batch_types/BoltTokenBatch.h>
+#include <dataset/src/batch_types/MaskedSentenceBatch.h>
 
 namespace thirdai::bolt::python {
 
@@ -12,6 +19,10 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 
   py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
+
+  // Needed so python can know that InferenceOutput objects can own memory
+  py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
+                                     "InferenceOutput");
 
   py::class_<FullyConnectedNode, std::shared_ptr<FullyConnectedNode>, Node>(
       graph_submodule, "FullyConnected")
@@ -80,6 +91,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sampling_config (SamplingConfig) - Sampling config object to "
            "initialize hash tables/functions.")
+      .def("get_sampling_config", &FullyConnectedNode::getSamplingConfig,
+           "Returns the sampling config of the node.")
 #endif
       .def("__call__", &FullyConnectedNode::addPredecessor,
            py::arg("prev_layer"),
@@ -89,7 +102,10 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("filename"))
       .def("load_parameters", &FullyConnectedNode::loadParameters,
            py::arg("filename"))
-      .def("get_sparsity", &FullyConnectedNode::getSparsity);
+      .def("get_sparsity", &FullyConnectedNode::getNodeSparsity)
+      .def("set_sparsity", &FullyConnectedNode::setNodeSparsity,
+           py::arg("sparsity"))
+      .def("get_dim", &FullyConnectedNode::outputDim);
 
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
       graph_submodule, "Concatenate")
@@ -102,9 +118,22 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "least one node (although this is just an identity function, so "
            "really should be at least two).");
 
+  // TODO(Nick): flesh this out more when adding DLRM
+  py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(graph_submodule,
+                                                    "Embedding")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(),
+           py::arg("num_embedding_lookups"), py::arg("lookup_size"),
+           py::arg("log_embedding_block_size"),
+           "Constructs an embedding node for the graph.")
+      .def("__call__", &EmbeddingNode::addInput, py::arg("token_input_layer"),
+           "Tells the graph which token input to use for this Embedding Node.");
+
   py::class_<Input, InputPtr, Node>(graph_submodule, "Input")
       .def(py::init<uint32_t>(), py::arg("dim"),
            "Constructs an input layer node for the graph.");
+
+  py::class_<TokenInput, TokenInputPtr, Node>(graph_submodule, "TokenInput")
+      .def(py::init<>(), "Constructs a token input layer node for the graph.");
 
   py::class_<TrainConfig>(graph_submodule, "TrainConfig")
       .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),
@@ -121,7 +150,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def_static("make", &PredictConfig::makeConfig)
       .def("enable_sparse_inference", &PredictConfig::enableSparseInference)
       .def("with_metrics", &PredictConfig::withMetrics, py::arg("metrics"))
-      .def("silence", &PredictConfig::silence);
+      .def("silence", &PredictConfig::silence)
+      .def("return_activations", &PredictConfig::returnActivations);
 
   py::class_<BoltGraph>(graph_submodule, "Model")
       .def(py::init<std::vector<InputPtr>, NodePtr>(), py::arg("inputs"),
@@ -131,41 +161,115 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            " * inputs (List[Node]) - The input nodes to the graph. Note that "
            "inputs are mapped to input layers by their index.\n"
            " * output (Node) - The output node of the graph.")
+      .def(py::init<std::vector<InputPtr>, std::vector<TokenInputPtr>,
+                    NodePtr>(),
+           py::arg("inputs"), py::arg("token_inputs"), py::arg("output"),
+           "Constructs a bolt model from a layer graph.\n"
+           "Arguments:\n"
+           " * inputs (List[InputNode]) - The input nodes to the graph. Note "
+           "that "
+           "inputs are mapped to input layers by their index.\n"
+           " * inputs (List[TokenInput]) - The token input nodes to the graph. "
+           "Note that "
+           "token inputs are mapped to token input layers by their index.\n"
+           " * output (Node) - The output node of the graph.")
       .def("compile", &BoltGraph::compile, py::arg("loss"),
            py::arg("print_when_done") = true,
            "Compiles the graph for the given loss function. In this step the "
            "order in which to compute the layers is determined and various "
            "checks are preformed to ensure the model architecture is correct.")
-      .def("train", &BoltGraph::train<BoltBatch>, py::arg("train_data"),
-           py::arg("train_labels"), py::arg("train_config"),
-           "Trains the network on the given training data.\n"
-           "Arguments:\n"
-           " * train_data: BoltDataset - Training data. This is a BoltDataset "
-           "as loaded by thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * train_labels: BoltDataset - Training labels. This is a "
-           "BoltDataset as loaded by thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * train_config: TrainConfig - the additional training parameters. "
-           "See the TrainConfig documentation above.\n\n"
-
-           "Returns a mapping from metric names to an array their values for "
-           "every epoch.")
-      .def("predict", &BoltGraph::predict<BoltBatch>, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("predict_config"),
-           "Predicts the output given the input vectors and evaluates the "
-           "predictions based on the given metrics.\n"
-           "Arguments:\n"
-           " * test_data: BoltDataset - Test data. This is a BoltDataset as "
-           "loaded by thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * test_labels: BoltDataset - Test labels. This is a BoltDataset "
-           "as loaded by thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset.\n"
-           " * predict_config: PredictConfig - the additional prediction "
-           "parameters. See the PredictConfig documentation above.\n\n"
-
-           "Returns a  a mapping from metric names to their values.")
+      // Helper method that covers the common case of training based off of a
+      // single BoltBatch dataset
+      .def(
+          "train",
+          [](BoltGraph& model, const dataset::BoltDatasetPtr& data,
+             const dataset::BoltDatasetPtr& labels,
+             const TrainConfig& train_config) {
+            return model.train({data}, /* train_tokens = */ {}, labels,
+                               train_config);
+          },
+          py::arg("train_data"), py::arg("train_labels"),
+          py::arg("train_config"))
+      .def(
+          "train", &BoltGraph::train, py::arg("train_data"),
+          py::arg("train_tokens"), py::arg("train_labels"),
+          py::arg("train_config"),
+          "Trains the network on the given training data.\n"
+          "Arguments:\n"
+          " * train_data: PyObject - Training data. This can be one of "
+          "three things. First, it can be a BoltDataset as loaded by "
+          "thirdai.dataset.load_bolt_svm_dataset or "
+          "thirdai.dataset.load_bolt_csv_dataset. Second, it can be a dense "
+          "numpy array of float32 where each row in the array is interpreted "
+          "as a vector. Thid, it can be a sparse dataset represented by a "
+          " tuple of three numpy arrays (indices, values, offsets), where "
+          "indices and offsets are uint32 and values are float32. In this case "
+          "indices is a 1D array of all the nonzero indices concatenated, "
+          "values is a 1D array of all the nonzero values concatenated, and "
+          "offsets are the start positions in the indices and values array of "
+          "each vector plus one extra element at the end of the array "
+          "representing the total number of nonzeros. This is so that "
+          "indices[offsets[i], offsets[i + 1]] contains the indices of the ith "
+          "vector and values[offsets[i], offsets[i+1] contains the values of "
+          "the ith vector. For example, if we have the vectors "
+          "{0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, 0.0, 4.0}, then the indices "
+          "array is {1, 3, 3}, the values array is {1.5, 9.0, 4.0} and the "
+          "offsets array is {0, 2, 3}.\n"
+          " * train_labels: PyObject - Training labels. This can be one of "
+          "three things. First it can be a BoltDataset as loaded by "
+          "thirdai.dataset.load_bolt_svm_dataset or "
+          "thirdai.dataset.load_bolt_csv_dataset. Second, it can be a dense "
+          "numpy array of float32 where each row in the array is interpreted "
+          "as a label vector. Thid, it can be a set of sparse vectors (each "
+          "vector is a label vector) represented as three numpy arrays "
+          "(indices, values, offsets) where indices and offsets are uint32 "
+          "and values are float32. In this case indices is a 1D array of all "
+          "the nonzero indices concatenated, values is a 1D array of all the "
+          "nonzero values concatenated, and offsets are the start positions "
+          "in the indices and values array of each vector plus one extra "
+          "element at the end of the array representing the total number of "
+          "nonzeros. This is so that indices[offsets[i], offsets[i + 1]] "
+          "contains the indices of the ith vector and values[offsets[i], "
+          "offsets[i+1] contains the values of the ith vector. For example, if "
+          "we have the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, 0.0, 4.0}, "
+          "then the indices array is {1, 3, 3}, the values array is {1.5, "
+          "9.0, 4.0}, and the offsets array is {0, 2, 3}.\n"
+          " * train_config: TrainConfig - the additional training parameters. "
+          "See the TrainConfig documentation above.\n\n"
+          "Returns a mapping from metric names to an array of their values for "
+          "every epoch.")
+      // Helper method that covers the common case of inference based off of a
+      // single BoltBatch dataset
+      .def(
+          "predict",
+          [](BoltGraph& model, const dataset::BoltDatasetPtr& data,
+             const dataset::BoltDatasetPtr& labels,
+             const PredictConfig& predict_config) {
+            return dagPredictPythonWrapper(model, {data}, /* tokens = */ {},
+                                           labels, predict_config);
+          },
+          py::arg("test_data"), py::arg("test_labels"),
+          py::arg("predict_config"))
+      .def(
+          "predict", &dagPredictPythonWrapper, py::arg("test_data"),
+          py::arg("test_tokens"), py::arg("test_labels"),
+          py::arg("predict_config"),
+          "Predicts the output given the input vectors and evaluates the "
+          "predictions based on the given metrics.\n"
+          "Arguments:\n"
+          " * test_data: PyObject - Test data, in the same one of 3 formats as "
+          "accepted by the train method (a BoltDataset, a dense numpy array, "
+          "or a tuple of dense numpy arrays representing a sparse dataset)\n"
+          " * test_labels: PyObject - Test labels, in the same format as "
+          "test_data. This can also additionally be passed as None, in which "
+          "case no metrics can be computed.\n"
+          " * predict_config: PredictConfig - the additional prediction "
+          "parameters. See the PredictConfig documentation above.\n\n"
+          "Returns a tuple, where the first element is a mapping from metric "
+          "names to their values. The second element, the output activation "
+          "matrix, is only present if dont_return_activations was not called. "
+          "The third element, the active neuron matrix, is only present if "
+          "we are returning activations AND the ouptut is sparse.")
       .def("save", &BoltGraph::save, py::arg("filename"))
       .def_static("load", &BoltGraph::load, py::arg("filename"))
       .def("__str__",
@@ -195,45 +299,43 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "details for each layer in the network.")
       // TODO(josh/nick): These are temporary until we have a better story
       // for converting numpy to BoltGraphs
-      .def(
-          "train_np",
-          [](BoltGraph& model, const py::object& train_data_numpy,
-             const py::object& train_labels_numpy,
-             const TrainConfig& train_config, uint32_t batch_size) {
-            auto train_data = convertPyObjectToBoltDataset(train_data_numpy,
-                                                           batch_size, false);
-
-            auto train_labels = convertPyObjectToBoltDataset(train_labels_numpy,
-                                                             batch_size, true);
-
-            return model.train(train_data.dataset, train_labels.dataset,
-                               train_config);
-          },
-          py::arg("train_data"), py::arg("train_labels"),
-          py::arg("train_config"), py::arg("batch_size"))
-
-      .def(
-          "predict_np",
-          [](BoltGraph& model, const py::object& test_data_numpy,
-             const py::object& test_labels_numpy,
-             const PredictConfig& predict_config, uint32_t batch_size) {
-            auto test_data = convertPyObjectToBoltDataset(test_data_numpy,
-                                                          batch_size, false);
-
-            auto test_labels = convertPyObjectToBoltDataset(test_labels_numpy,
-                                                            batch_size, true);
-
-            return model.predict(test_data.dataset, test_labels.dataset,
-                                 predict_config);
-          },
-          py::arg("test_data"), py::arg("test_labels"),
-          py::arg("predict_config"), py::arg("batch_size") = 256)
       .def("get_layer", &BoltGraph::getNodeByName, py::arg("layer_name"),
            "Looks up a layer (node) of the network by using the layer's "
            "assigned name. As such, must be called after compile. You can "
            "determine which layer is which by printing a graph summary. "
            "Possible operations to perform on the returned object include "
            "setting layer sparsity, freezing weights, or saving to a file");
+}
+
+py::tuple dagPredictPythonWrapper(BoltGraph& model,
+                                  const dataset::BoltDatasetList& data,
+                                  const dataset::BoltTokenDatasetList& tokens,
+                                  const dataset::BoltDatasetPtr& labels,
+                                  const PredictConfig& predict_config) {
+  auto [metrics, output] = model.predict(data, tokens, labels, predict_config);
+
+  // We need to get these now because we are about to std::move output
+  const float* activation_pointer = output.getNonowningActivationPointer();
+  const uint32_t* active_neuron_pointer =
+      output.getNonowningActiveNeuronPointer();
+  uint32_t num_nonzeros = output.numNonzerosInOutput();
+  uint64_t dataset_len = output.numSamples();
+
+  // At first, the InferenceOutput object owns the memory for the
+  // activation and active_neuron vectors. We want to use it as the
+  // owning object when we build the numpy array, but to do that we
+  // need to cast it to a py::object. Importantly, we need to use
+  // std::move to ensure that we are casting output itself to a python
+  // object, not a copy of it. See return_value_policy::automatic here
+  // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies
+  py::object output_handle = py::cast(std::move(output));
+
+  return constructPythonInferenceTuple(
+      py::cast(metrics), dataset_len, num_nonzeros,
+      /* activations = */ activation_pointer,
+      /* active_neurons = */ active_neuron_pointer,
+      /* activation_handle = */ output_handle,
+      /* active_neuron_handle = */ output_handle);
 }
 
 }  // namespace thirdai::bolt::python

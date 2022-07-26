@@ -1,12 +1,17 @@
 #include "BoltPython.h"
 #include "BoltGraphPython.h"
+#include <bolt/src/auto_classifiers/TabularClassifier.h>
+#include <bolt/src/auto_classifiers/TextClassifier.h>
+#include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/Node.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
+#include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <bolt/src/sequential_classifier/SequentialClassifier.h>
-#include <bolt/src/text_classifier/TextClassifier.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
@@ -16,6 +21,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace thirdai::bolt::python {
 
@@ -292,8 +298,7 @@ void createBoltSubmodule(py::module_& module) {
            "layer in the network.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
-           py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("batch_size") = 0, py::arg("rehash") = 0,
+           py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
            py::arg("rebuild") = 0,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
@@ -368,8 +373,7 @@ void createBoltSubmodule(py::module_& module) {
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
       .def("predict", &PyNetwork::predict, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("batch_size") = 2048,
-           py::arg("sparse_inference") = false,
+           py::arg("test_labels"), py::arg("sparse_inference") = false,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -438,26 +442,12 @@ void createBoltSubmodule(py::module_& module) {
            "inference, you may get a significant performance improvement if "
            "you call this one or two epochs before you finish training. "
            "Otherwise you should not call this method.")
-      .def("save_for_inference", &PyNetwork::saveForInference,
-           py::arg("filename"),
+      .def("save", &PyNetwork::save, py::arg("filename"),
            "Saves the network to a file. The file path must not require any "
-           "folders to be created. Saves only essential parameters for "
-           "inference, e.g. not the optimizer state")
+           "folders to be created. Saves only weights and biases, not momentum "
+           "and velocity.")
       .def_static("load", &PyNetwork::load, py::arg("filename"),
                   "Loads and builds a saved network from file.")
-      .def("checkpoint", &PyNetwork::checkpoint, py::arg("filename"),
-           "Saves the network to a file. The file path must not require any "
-           "folders to be created. Saves all the paramters needed for "
-           "tranining. "
-           "This will throw an error if the model has been trimmed for "
-           "inference.")
-      .def("trim_for_inference", &PyNetwork::trimForInference,
-           "Removes all parameters that are not essential for inference, "
-           "shrinking the model")
-      .def("reinitialize_optimizer_for_training",
-           &PyNetwork::reinitOptimizerForTraining,
-           "If the model previously was trimmed for inference, this will "
-           "reinitialize the optimizer state, allowing training again.")
       .def("get_weights", &PyNetwork::getWeights, py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "
            "matrix.")
@@ -471,9 +461,6 @@ void createBoltSubmodule(py::module_& module) {
            "Sets the weight matrix at the given layer index to the given 2D "
            "Numpy matrix. Throws an error if the dimension of the given weight "
            "matrix does not match the layer's current weight matrix.")
-      .def("ready_for_training", &PyNetwork::isReadyForTraining,
-           "Returns False if the optimizer state is not initialized, True "
-           "otherwise. Call resume_training to initialize optimizer")
       .def("get_biases", &PyNetwork::getBiases, py::arg("layer_index"),
            "Returns the bias array at the given layer index as a 1D Numpy "
            "array.")
@@ -601,6 +588,11 @@ void createBoltSubmodule(py::module_& module) {
            " * train_file: string - The path to the training dataset to use.\n"
            " * epochs: Int - How many epochs to train for.\n"
            " * learning_rate: Float - The learning rate to use for training.\n")
+      .def("predict_single", &TextClassifier::predictSingle,
+           py::arg("sentence"),
+           "Given a sentence, predict the output class. \n"
+           "Arguments:\n"
+           " * sentence: Sentence to predict on text classifier.\n")
       .def("predict", &TextClassifier::predict, py::arg("test_file"),
            py::arg("output_file") = std::nullopt,
            "Runs the classifier on the specified test dataset and optionally "
@@ -642,6 +634,52 @@ void createBoltSubmodule(py::module_& module) {
       .def("predict", &PySequentialClassifier::predict, py::arg("filename"),
            py::arg("output_filename") = std::nullopt);
 
+  py::class_<TabularClassifier>(bolt_submodule, "TabularClassifier")
+      .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
+           py::arg("n_classes"),
+           "Constructs a TabularClassifier with autotuning.\n"
+           "Arguments:\n"
+           " * model_size: string - Either 'small', 'medium', 'large', or a "
+           "size in Gb for the model, for example '6Gb' or '6 Gb'.\n"
+           " * n_classes: int - How many classes or categories are in the "
+           "labels of the dataset.\n")
+      .def("train", &TabularClassifier::train, py::arg("train_file"),
+           py::arg("column_datatypes"), py::arg("epochs"),
+           py::arg("learning_rate"),
+           "Trains the classifier on the given dataset.\n"
+           "Arguments:\n"
+           " * train_file: string - The path to the training dataset to use. "
+           "Data is assumed to be in CSV format with ',' delimiter and no "
+           "header. \n"
+           " * column_datatypes: List of str - How to interpret data types of "
+           "columns"
+           " in the dataset. One of 'numeric', 'categorical', 'label'\n"
+           " * epochs: Int - How many epochs to train for.\n"
+           " * learning_rate: Float - The learning rate to use for training.\n")
+      .def(
+          "predict", &TabularClassifier::predict, py::arg("test_file"),
+          py::arg("output_file") = std::nullopt,
+          "Runs the classifier on the specified test dataset and optionally "
+          "logs the prediction to a file.\n"
+          "Arguments:\n"
+          " * test_file: string - The path to the test dataset to use. Data is "
+          "assumed to be in CSV format with ',' delimiter and no header. \n"
+          " * output_file: string - Optional argument, if this is specified "
+          "then the classifier will output the name of the class/category of "
+          "each prediction this file with one prediction result on each "
+          "line.\n")
+      .def("save", &TabularClassifier::save, py::arg("filename"),
+           "Saves the classifier to a file. The file path must not require any "
+           "folders to be created\n"
+           "Arguments:\n"
+           " * filename: string - The path to the save location of the "
+           "classifier.\n")
+      .def_static(
+          "load", &TabularClassifier::load, py::arg("filename"),
+          "Loads and builds a saved classifier from file.\n"
+          "Arguments:\n"
+          " * filename: string - The location of the saved classifier.\n");
+
   py::class_<SentimentClassifier>(bolt_submodule, "SentimentClassifier")
       .def(py::init<const std::string&>(), py::arg("model_path"))
       .def("predict_sentiment", &SentimentClassifier::predictSentiment,
@@ -659,7 +697,7 @@ void printMemoryWarning(uint64_t num_samples, uint64_t inference_dim) {
             << std::endl;
 }
 
-bool allocateActivations(uint64_t num_samples, uint64_t inference_dim,
+void allocateActivations(uint64_t num_samples, uint64_t inference_dim,
                          uint32_t** active_neurons, float** activations,
                          bool output_sparse) {
   // We use a uint64_t here in case there is overflow when we multiply the two
@@ -669,51 +707,15 @@ bool allocateActivations(uint64_t num_samples, uint64_t inference_dim,
   uint64_t total_size = num_samples * inference_dim;
   if (total_size > std::numeric_limits<uint32_t>::max()) {
     printMemoryWarning(num_samples, inference_dim);
-    return false;
   }
   try {
     if (output_sparse) {
       *active_neurons = new uint32_t[total_size];
     }
     *activations = new float[total_size];
-    return true;
   } catch (std::bad_alloc& e) {
     printMemoryWarning(num_samples, inference_dim);
-    return false;
   }
-}
-
-py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
-                               uint32_t inference_dim, uint32_t* active_neurons,
-                               float* activations, bool output_sparse,
-                               bool alloc_success) {
-  if (!alloc_success) {
-    return py::make_tuple(py_metric_data, py::none());
-  }
-
-  // Deallocates the memory for the array since we are allocating it ourselves.
-  py::capsule free_when_done_activations(
-      activations, [](void* ptr) { delete static_cast<float*>(ptr); });
-
-  py::array_t<float, py::array::c_style | py::array::forcecast>
-      activations_array({num_samples, inference_dim},
-                        {inference_dim * sizeof(float), sizeof(float)},
-                        activations, free_when_done_activations);
-
-  if (!output_sparse) {
-    return py::make_tuple(py_metric_data, activations_array);
-  }
-
-  // Deallocates the memory for the array since we are allocating it ourselves.
-  py::capsule free_when_done_active_neurons(
-      active_neurons, [](void* ptr) { delete static_cast<uint32_t*>(ptr); });
-
-  py::array_t<uint32_t, py::array::c_style | py::array::forcecast>
-      active_neurons_array({num_samples, inference_dim},
-                           {inference_dim * sizeof(uint32_t), sizeof(uint32_t)},
-                           active_neurons, free_when_done_active_neurons);
-  return py::make_tuple(py_metric_data, active_neurons_array,
-                        activations_array);
 }
 
 }  // namespace thirdai::bolt::python

@@ -51,6 +51,9 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
   ActivationFunction act_func;
   SamplingConfig sampling_config;
 
+  // Public constructor - it should only be called by cereal
+  FullyConnectedLayerConfig() {}
+
   FullyConnectedLayerConfig(uint64_t _dim, float _sparsity,
                             const std::string& _act_func,
                             SamplingConfig _config)
@@ -194,9 +197,6 @@ struct FullyConnectedLayerConfig final : public SequentialLayerConfig {
           << "}";
     }
   }
-
-  // Private constructor for cereal.
-  FullyConnectedLayerConfig() {}
 
   friend class cereal::access;
   template <class Archive>

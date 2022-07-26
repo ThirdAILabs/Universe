@@ -1,11 +1,14 @@
 #pragma once
 
+#include <wrappers/src/LicenseWrapper.h>
 #include <cereal/access.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
+#include "DatasetContext.h"
 #include "ExecutionConfig.h"
+#include "InferenceOutputTracker.h"
 #include "Node.h"
 #include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
@@ -13,9 +16,9 @@
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
-#include <dataset/src/Dataset.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
@@ -32,7 +35,9 @@ class BoltGraph {
    */
   BoltGraph(std::vector<InputPtr> inputs, NodePtr output)
       : BoltGraph(std::move(inputs), /* token-inputs= */ {},
-                  std::move(output)) {}
+                  std::move(output)) {
+    thirdai::licensing::LicenseWrapper::checkLicense();
+  }
 
   BoltGraph(std::vector<InputPtr> inputs,
             std::vector<TokenInputPtr> token_inputs, NodePtr output)
@@ -40,7 +45,9 @@ class BoltGraph {
         _inputs(std::move(inputs)),
         _token_inputs(std::move(token_inputs)),
         _epoch_count(0),
-        _batch_cnt(0) {}
+        _batch_cnt(0) {
+    thirdai::licensing::LicenseWrapper::checkLicense();
+  }
 
   /*
     When the layers are initially defined the only have information about their
@@ -53,22 +60,16 @@ class BoltGraph {
   */
   void compile(std::shared_ptr<LossFunction> loss, bool print_when_done = true);
 
-  template <typename BATCH_T>
   MetricData train(
-      // Train dataset
-      std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
-      // Train labels
+      const std::vector<dataset::BoltDatasetPtr>& train_data,
+      const std::vector<dataset::BoltTokenDatasetPtr>& train_tokens,
       const dataset::BoltDatasetPtr& train_labels,
-      // Other train parameters
       const TrainConfig& train_config);
 
-  template <typename BATCH_T>
-  InferenceMetricData predict(
-      // Test dataset
-      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
-      // Test labels
+  InferenceResult predict(
+      const std::vector<dataset::BoltDatasetPtr>& test_data,
+      const std::vector<dataset::BoltTokenDatasetPtr>& test_tokens,
       const dataset::BoltDatasetPtr& test_labels,
-      // Other prediction parameters
       const PredictConfig& predict_config);
 
   std::vector<NodePtr> getNodeTraversalOrder() const {
@@ -95,17 +96,13 @@ class BoltGraph {
 
  private:
   // Private constructor for cereal.
-  BoltGraph() {}
+  BoltGraph() { thirdai::licensing::LicenseWrapper::checkLicense(); }
 
-  template <typename BATCH_T>
-  void processTrainingBatch(BATCH_T& batch_inputs,
-                            const BoltBatch& batch_labels, float learning_rate,
+  void processTrainingBatch(const BoltBatch& batch_labels, float learning_rate,
                             MetricAggregator& metrics);
 
-  template <typename BATCH_T>
-  void processInferenceBatch(BATCH_T& batch_inputs,
-                             const BoltBatch* batch_labels,
-                             MetricAggregator& metrics, bool compute_metrics);
+  void processInferenceBatch(uint64_t batch_size, const BoltBatch* batch_labels,
+                             MetricAggregator& metrics);
 
   template <typename BATCH_T>
   void setInputs(BATCH_T& batch_inputs);
@@ -126,9 +123,13 @@ class BoltGraph {
 
   std::unordered_map<NodePtr, int32_t> getSuccessorCounts() const;
 
-  template <typename BATCH_T>
-  void verifyInputForGraph(
-      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset);
+  void verifyCanTrain(const DatasetContext& train_context);
+
+  void verifyCanPredict(const DatasetContext& predict_context, bool has_labels,
+                        bool returning_activations,
+                        uint32_t num_metrics_tracked);
+
+  void verifyInputForGraph(const DatasetContext& context);
 
   void verifyGraphProperties();
 

@@ -60,7 +60,7 @@ class CategoricalBlock : public Block {
   uint32_t expectedNumColumns() const final { return _col + 1; };
 
  protected:
-  void buildSegment(const std::vector<std::string_view>& input_row,
+  std::exception_ptr buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) final {
     _encoding->encodeCategory(input_row.at(_col), vec, /* offset = */ 0);
     std::string id(input_row[_col]);
@@ -70,10 +70,14 @@ class CategoricalBlock : public Block {
            i++) {
         std::string_view neighbor_view(neighbors[i].data(),
                                        neighbors[i].size());
-        _encoding->encodeCategory(neighbor_view, vec,
-                                  /* offset = */ _encoding->featureDim());
+        
+        if (auto err = _encoding->encodeCategory(neighbor_view, vec,
+                                  /* offset = */ _encoding->featureDim())) {
+          return err;
+        }
       }
     }
+    return nullptr;
   }
 
  private:

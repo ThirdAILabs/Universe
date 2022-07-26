@@ -1,4 +1,5 @@
 #include "Model.h"
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/utils/ProgressBar.h>
 #include <dataset/src/batch_types/ClickThroughBatch.h>
@@ -36,14 +37,6 @@ MetricData Model<BATCH_T>::train(
   std::vector<double> time_per_epoch;
 
   MetricAggregator metrics(metric_names, verbose);
-
-  // if any layer is shallow, call enable training to set the optimizer state
-  // before training
-  if (anyLayerShallow()) {
-    throw std::logic_error(
-        "Call reinitialize_optimizer_for_training before training to "
-        "initialize optimizer state");
-  }
 
   for (uint32_t epoch = 0; epoch < epochs; epoch++) {
     if (verbose) {
@@ -90,7 +83,7 @@ MetricData Model<BATCH_T>::train(
 
 template <typename BATCH_T>
 MetricData Model<BATCH_T>::trainOnStream(
-    std::shared_ptr<dataset::StreamingDataset<BATCH_T>> train_data,
+    std::shared_ptr<dataset::StreamingDataset<BATCH_T, BoltBatch>> train_data,
     const LossFunction& loss_fn, float learning_rate, uint32_t rehash_batch,
     uint32_t rebuild_batch, const std::vector<std::string>& metric_names,
     uint32_t metric_log_batch_interval, bool verbose) {
@@ -108,10 +101,10 @@ MetricData Model<BATCH_T>::trainOnStream(
   auto train_start = std::chrono::high_resolution_clock::now();
 
   uint32_t batch_count = 0;
-  while (auto batch = train_data->nextBatch()) {
+  while (auto batch = train_data->nextBatchTuple()) {
     processTrainingBatch(
-        /* batch_inputs=*/batch->first, /* outputs= */ outputs,
-        /* batch_labels= */ batch->second, /* loss_fn= */ loss_fn,
+        /* batch_inputs=*/std::get<0>(batch.value()), /* outputs= */ outputs,
+        /* batch_labels= */ std::get<1>(batch.value()), /* loss_fn= */ loss_fn,
         /* learning_rate= */ learning_rate, /* metrics= */ metrics);
 
     updateSampling(/* rehash_batch */ rehash_batch,
@@ -188,7 +181,8 @@ InferenceMetricData Model<BATCH_T>::predict(
 
   uint32_t batch_size = test_data->at(0).getBatchSize();
 
-  uint64_t num_test_batches = std::min(test_data->numBatches(), batch_limit);
+  uint64_t num_test_batches =
+      std::min<uint64_t>(test_data->numBatches(), batch_limit);
 
   uint64_t inference_output_dim = getInferenceOutputDim(use_sparse_inference);
 
@@ -247,7 +241,8 @@ InferenceMetricData Model<BATCH_T>::predict(
 
 template <typename BATCH_T>
 InferenceMetricData Model<BATCH_T>::predictOnStream(
-    const std::shared_ptr<dataset::StreamingDataset<BATCH_T>> test_data,
+    const std::shared_ptr<dataset::StreamingDataset<BATCH_T, BoltBatch>>
+        test_data,
     bool use_sparse_inference, const std::vector<std::string>& metric_names,
     std::optional<std::function<void(const bolt::BoltBatch&, uint32_t)>>
         batch_callback,
@@ -269,15 +264,16 @@ InferenceMetricData Model<BATCH_T>::predictOnStream(
 
   auto test_start = std::chrono::high_resolution_clock::now();
 
-  while (auto batch = test_data->nextBatch()) {
-    processTestBatch(batch->first, outputs, &batch->second,
-                     /* output_active_neurons=*/nullptr,
-                     /* output_activations=*/nullptr, inference_output_dim,
-                     metrics,
-                     /* compute_metrics= */ true);
+  while (auto batch = test_data->nextBatchTuple()) {
+    processTestBatch(
+        std::get<0>(batch.value()), outputs, &std::get<1>(batch.value()),
+        /* output_active_neurons=*/nullptr,
+        /* output_activations=*/nullptr, inference_output_dim, metrics,
+        /* compute_metrics= */ true);
 
     if (batch_callback) {
-      batch_callback.value()(outputs, batch->first.getBatchSize());
+      batch_callback.value()(outputs,
+                             std::get<0>(batch.value()).getBatchSize());
     }
   }
 

@@ -31,11 +31,12 @@ class ContiguousNumericId : public CategoricalEncoding {
    */
   explicit ContiguousNumericId(uint32_t dim) : _dim(dim) {}
 
-  void encodeCategory(const std::string_view id, SegmentedFeatureVector& vec,
+  std::exception_ptr encodeCategory(const std::string_view id, SegmentedFeatureVector& vec,
                       uint32_t offset) final {
     uint32_t id_int{};
     std::from_chars(id.data(), id.data() + id.size(), id_int);
     vec.addSparseFeatureToSegment(id_int % _dim + offset, 1.0);
+    return nullptr;
   };
 
   bool isDense() const final { return false; };

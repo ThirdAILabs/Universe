@@ -14,7 +14,7 @@
 #include <bolt/src/sequential_classifier/SequentialClassifier.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
@@ -42,35 +42,24 @@ namespace thirdai::bolt::python {
 void createBoltSubmodule(py::module_& module);
 
 // Returns true on success and false on allocation failure.
-bool allocateActivations(uint64_t num_samples, uint64_t inference_dim,
+void allocateActivations(uint64_t num_samples, uint64_t inference_dim,
                          uint32_t** active_neurons, float** activations,
                          bool output_sparse);
-
-// Takes in the activations arrays (if they were allocated) and returns the
-// correct python tuple containing the activations (and active neurons if
-// sparse) and the metrics computed.
-py::tuple constructNumpyArrays(py::dict&& py_metric_data, uint32_t num_samples,
-                               uint32_t inference_dim, uint32_t* active_neurons,
-                               float* activations, bool output_sparse,
-                               bool alloc_success);
 
 class PyNetwork final : public FullyConnectedNetwork {
  public:
   PyNetwork(SequentialConfigList configs, uint64_t input_dim)
       : FullyConnectedNetwork(std::move(configs), input_dim) {}
 
-  MetricData train(const py::object& data, const py::object& labels,
+  MetricData train(dataset::BoltDatasetPtr& data,
+                   const dataset::BoltDatasetPtr& labels,
                    const LossFunction& loss_fn, float learning_rate,
-                   uint32_t epochs, uint32_t batch_size = 0,
-                   uint32_t rehash = 0, uint32_t rebuild = 0,
+                   uint32_t epochs, uint32_t rehash = 0, uint32_t rebuild = 0,
                    const std::vector<std::string>& metric_names = {},
                    bool verbose = false) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
-    auto train_data = convertPyObjectToBoltDataset(data, batch_size, false);
-
-    auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
 
 /**Overriding the SIG_INT exception handler to exit the program once
  * CTRL+C is pressed by the user to interrupt the execution of any long
@@ -100,8 +89,8 @@ class PyNetwork final : public FullyConnectedNetwork {
      */
 
     MetricData metrics = FullyConnectedNetwork::train(
-        train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
-        epochs, rehash, rebuild, metric_names, verbose);
+        data, labels, loss_fn, learning_rate, epochs, rehash, rebuild,
+        metric_names, verbose);
 
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -114,22 +103,15 @@ class PyNetwork final : public FullyConnectedNetwork {
   }
 
   py::tuple predict(
-      const py::object& data, const py::object& labels, uint32_t batch_size = 0,
-      bool use_sparse_inference = false,
+      const dataset::BoltDatasetPtr& data,
+      const dataset::BoltDatasetPtr& labels, bool use_sparse_inference = false,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
 
-    auto test_data = convertPyObjectToBoltDataset(data, batch_size, false);
-
-    BoltDatasetNumpyContext test_labels;
-    if (!labels.is_none()) {
-      test_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
-    }
-
-    uint32_t num_samples = test_data.dataset->len();
+    uint32_t num_samples = data->len();
 
     uint64_t inference_output_dim = getInferenceOutputDim(use_sparse_inference);
     bool output_sparse = inference_output_dim < getOutputDim();
@@ -141,59 +123,29 @@ class PyNetwork final : public FullyConnectedNetwork {
     uint32_t* active_neurons = nullptr;
     float* activations = nullptr;
 
-    bool alloc_success =
-        allocateActivations(num_samples, inference_output_dim, &active_neurons,
-                            &activations, output_sparse);
+    allocateActivations(num_samples, inference_output_dim, &active_neurons,
+                        &activations, output_sparse);
 
     auto metric_data = FullyConnectedNetwork::predict(
-        test_data.dataset, test_labels.dataset, active_neurons, activations,
-        use_sparse_inference, metrics, verbose, batch_limit);
+        data, labels, active_neurons, activations, use_sparse_inference,
+        metrics, verbose, batch_limit);
 
     py::dict py_metric_data = py::cast(metric_data);
 
-    return constructNumpyArrays(std::move(py_metric_data), num_samples,
-                                inference_output_dim, active_neurons,
-                                activations, output_sparse, alloc_success);
-  }
-
-  void saveForInference(const std::string& filename) {
-    this->save(filename, /* shallow= */ true);
+    return constructPythonInferenceTuple(std::move(py_metric_data), num_samples,
+                                         inference_output_dim, activations,
+                                         active_neurons);
   }
 
   /**
    * To save without optimizer, shallow=true
    */
-  void save(const std::string& filename, bool shallow) {
+  void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
-    this->setShallowSave(shallow);
     oarchive(*this);
   }
-
-  void checkpoint(const std::string& filename) {
-    if (this->anyLayerShallow()) {
-      throw std::logic_error("Trying to checkpoint a model with no optimizer");
-    }
-    this->save(filename, /* shallow= */ false);
-  }
-
-  /**
-   * Removes the optimizer state for the network by setting layers to shallow
-   */
-  void trimForInference() { this->setShallow(true); }
-
-  /**
-   * If any of the layer is shallow, that is without an optimzier, reinitiliaze
-   * optimizer for that layer to 0.
-   */
-  void reinitOptimizerForTraining() { this->setShallow(false); }
-
-  /**
-   * If any layer in the model is shallow i.e, has uninitialized optimizer,
-   * return false
-   */
-  bool isReadyForTraining() { return !this->anyLayerShallow(); }
 
   static std::unique_ptr<PyNetwork> load(const std::string& filename) {
     std::ifstream filestream =
@@ -327,18 +279,17 @@ class PyDLRM final : public DLRM {
     uint32_t* active_neurons = nullptr;
     float* activations = nullptr;
 
-    bool alloc_success =
-        allocateActivations(num_samples, inference_output_dim, &active_neurons,
-                            &activations, output_sparse);
+    allocateActivations(num_samples, inference_output_dim, &active_neurons,
+                        &activations, output_sparse);
 
     auto metric_data =
         DLRM::predict(test_data, test_labels, active_neurons, activations,
                       use_sparse_inference, metrics, verbose, batch_limit);
     py::dict py_metric_data = py::cast(metric_data);
 
-    return constructNumpyArrays(std::move(py_metric_data), num_samples,
-                                inference_output_dim, active_neurons,
-                                activations, output_sparse, alloc_success);
+    return constructPythonInferenceTuple(std::move(py_metric_data), num_samples,
+                                         inference_output_dim, activations,
+                                         active_neurons);
   }
 };
 
@@ -356,8 +307,8 @@ class SentimentClassifier {
   }
 
   float predictSentiment(const std::string& sentence) {
-    BoltVector vec = dataset::python::parseSentenceToBoltVector(
-        sentence, /* seed= */ 341, _model->getInputDim());
+    BoltVector vec = dataset::TextEncodingUtils::computeUnigrams(
+        sentence, _model->getInputDim());
     _model->forward(0, vec, _output, /* labels= */ nullptr);
     return _output.activations[1];
   }

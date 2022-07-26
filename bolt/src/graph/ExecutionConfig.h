@@ -23,6 +23,11 @@ class TrainConfig {
     return *this;
   }
 
+  TrainConfig& withBatchSize(uint32_t batch_size) {
+    _batch_size = batch_size;
+    return *this;
+  }
+
   TrainConfig silence() {
     _verbose = false;
     return *this;
@@ -87,6 +92,7 @@ class TrainConfig {
         _learning_rate(learning_rate),
         _metric_names({}),
         _verbose(true),
+        _batch_size({}),
         _rebuild_hash_tables(std::nullopt),
         _reconstruct_hash_functions(std::nullopt) {}
 
@@ -94,6 +100,7 @@ class TrainConfig {
   float _learning_rate;
   std::vector<std::string> _metric_names;
   bool _verbose;
+  std::optional<uint32_t> _batch_size;
 
   std::optional<uint32_t> _rebuild_hash_tables;
   std::optional<uint32_t> _reconstruct_hash_functions;
@@ -113,6 +120,11 @@ class PredictConfig {
     return *this;
   }
 
+  PredictConfig& returnActivations() {
+    _return_activations = true;
+    return *this;
+  }
+
   PredictConfig& silence() {
     _verbose = false;
     return *this;
@@ -126,13 +138,17 @@ class PredictConfig {
 
   constexpr bool verbose() const { return _verbose; }
 
+  constexpr bool shouldReturnActivations() const { return _return_activations; }
+
  private:
   PredictConfig()
-      : _use_sparse_inference(false), _metric_names({}), _verbose(true) {}
+      : _metric_names({}),
+        _use_sparse_inference(false),
+        _verbose(true),
+        _return_activations(false) {}
 
-  bool _use_sparse_inference;
   std::vector<std::string> _metric_names;
-  bool _verbose;
+  bool _use_sparse_inference, _verbose, _return_activations;
 };
 
 }  // namespace thirdai::bolt

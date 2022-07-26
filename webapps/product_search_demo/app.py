@@ -23,7 +23,7 @@ def home():
 
 
 @app.route("/", methods=["POST"])
-def predict_sentiment():
+def query_products():
     query_text = request.form["query"]
 
     start = time.time()
