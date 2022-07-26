@@ -48,8 +48,14 @@ def prep_data(data_dir, dtypes):
     valid_label_col = valid_data.columns[label_col_index]
     test_label_col = test_data.columns[label_col_index]
 
-    xtrain, ytrain = train_data.drop(train_label_col, axis=1), train_data[train_label_col]
-    xvalid, yvalid = valid_data.drop(valid_label_col, axis=1), valid_data[valid_label_col]
+    xtrain, ytrain = (
+        train_data.drop(train_label_col, axis=1),
+        train_data[train_label_col],
+    )
+    xvalid, yvalid = (
+        valid_data.drop(valid_label_col, axis=1),
+        valid_data[valid_label_col],
+    )
     xtest, ytest = test_data.drop(test_label_col, axis=1), test_data[test_label_col]
 
     return xtrain, ytrain, xvalid, yvalid, xtest, ytest
@@ -202,9 +208,7 @@ def main():
     for dataset_name in datasets:
         data_dir = base_dir + dataset_name
         dtypes = getColDatatypes(data_dir)
-        xtrain, ytrain, xvalid, yvalid, xtest, ytest = prep_data(
-            data_dir, dtypes
-        )
+        xtrain, ytrain, xvalid, yvalid, xtest, ytest = prep_data(data_dir, dtypes)
 
         log_message(
             f"\nTraining on dataset: {dataset_name} with {xtrain.shape[0]} rows, {xtrain.shape[1]} features, and {ytrain.nunique()} categories\n",
