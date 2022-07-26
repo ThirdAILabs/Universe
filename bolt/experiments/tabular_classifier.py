@@ -70,8 +70,6 @@ def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
 
     prediction_file = "predictions.csv"
 
-    print(type(ytest))
-
     # rather than saving/loading the model that performs the best on the validation set,
     # call predict(..) on the test set after every new best epoch and record that accuracy to report
     best_test_accuracy = 0
@@ -179,10 +177,10 @@ def main():
     args = parser.parse_args()
 
     datasets = [
-        # "CensusIncome",
+        "CensusIncome",
         "ChurnModeling",
-        # "EyeMovements",
-        # "PokerHandInduction",
+        "EyeMovements",
+        "PokerHandInduction",
     ]
     large_datasets = [
         "OttoGroupProductClassificationChallenge",
@@ -207,8 +205,8 @@ def main():
         )
 
         train_bolt(dtypes, ytrain, yvalid, ytest, base_dir + dataset_name, out_file)
-        # train_xgboost(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)
-        # train_tabnet(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)
+        train_xgboost(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)
+        train_tabnet(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)
 
     out_file.close()
 
