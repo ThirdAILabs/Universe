@@ -268,13 +268,12 @@ class DistributedPyNetwork final : public DistributedModel {
   DistributedPyNetwork(SequentialConfigList configs, uint64_t input_dim)
       : DistributedModel(std::move(configs), input_dim) {}
 
-  uint32_t prepareNodeForDistributedTraining(dataset::BoltDatasetPtr& data,
-                   const dataset::BoltDatasetPtr& labels,
+  uint32_t prepareNodeForDistributedTraining(
+      dataset::BoltDatasetPtr& data, const dataset::BoltDatasetPtr& labels,
       uint32_t rehash = 0, uint32_t rebuild = 0, bool verbose = false) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
-
 
     uint32_t num_of_batches =
         DistributedModel::prepareNodeForDistributedTraining(
@@ -285,8 +284,7 @@ class DistributedPyNetwork final : public DistributedModel {
 
   py::tuple predictSingleNode(
       const dataset::BoltDatasetPtr& data,
-      const dataset::BoltDatasetPtr& labels,
-      bool use_sparse_inference = false,
+      const dataset::BoltDatasetPtr& labels, bool use_sparse_inference = false,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
     // Redirect to python output.
@@ -311,8 +309,8 @@ class DistributedPyNetwork final : public DistributedModel {
                         &activations, output_sparse);
 
     auto metric_data = DistributedModel::predict(
-        data, labels, active_neurons, activations,
-        use_sparse_inference, metrics, verbose, batch_limit);
+        data, labels, active_neurons, activations, use_sparse_inference,
+        metrics, verbose, batch_limit);
 
     py::dict py_metric_data = py::cast(metric_data);
 

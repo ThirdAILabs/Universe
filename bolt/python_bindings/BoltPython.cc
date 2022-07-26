@@ -629,8 +629,8 @@ void createBoltSubmodule(py::module_& module) {
       .def("prepareNodeForDistributedTraining",
            &DistributedPyNetwork::prepareNodeForDistributedTraining,
            py::arg("train_data"), py::arg("train_labels"),
-          py::arg("rehash") = 0,
-           py::arg("rebuild") = 0, py::arg("verbose") = true,
+           py::arg("rehash") = 0, py::arg("rebuild") = 0,
+           py::arg("verbose") = true,
            "Initializes the Distributed Training over a node\n"
            "Arguments:\n"
            "Trains the network on the given training data.\n"

@@ -9,8 +9,6 @@
 
 namespace thirdai::bolt::python {
 
-
-
 inline void printCopyWarning(const std::string& array_name,
                              const py::str& dtype_recv,
                              const std::string& dtype_expected) {
