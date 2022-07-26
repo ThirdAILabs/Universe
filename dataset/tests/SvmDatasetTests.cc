@@ -122,14 +122,13 @@ TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
    * positives and our ASAN unit tests that use this function detect no memory
    * leaks.
    */
-  // NOLINTNEXTLINE
   auto [data, labels] = SvmDatasetLoader::loadDataset(_filename, _batch_size);
 
   // Check data vectors are correct.
   uint32_t vec_count = 0;
   for (const auto& batch : *data) {
-    uint32_t batch_size = batch.getBatchSize();  // NOLINT (same reason)
-    ASSERT_TRUE(batch_size == _batch_size ||     // NOLINT (same reason)
+    uint32_t batch_size = batch.getBatchSize();
+    ASSERT_TRUE(batch_size == _batch_size ||
                 batch_size == _num_vectors % _batch_size);
 
     for (uint32_t v = 0; v < batch_size; v++) {
@@ -165,6 +164,9 @@ TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
     }
   }
   ASSERT_EQ(label_count, _num_vectors);
+
+  ASSERT_EQ(data.use_count(), 1);
+  ASSERT_EQ(labels.use_count(), 1);
 }
 
 }  // namespace thirdai::dataset
