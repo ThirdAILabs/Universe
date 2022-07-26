@@ -387,6 +387,20 @@ void ConvLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
+void ConvLayer::setWeightGradients(const float* update_weight_gradient) {
+  std::copy(update_weight_gradient, update_weight_gradient + _dim * _prev_dim,
+            _w_gradient.begin());
+}
+
+void ConvLayer::setBiasesGradients(const float* update_bias_gradient) {
+  std::copy(update_bias_gradient, update_bias_gradient + _dim,
+            _b_gradient.begin());
+}
+
+float* ConvLayer::getBiasesGradient() { return _b_gradient.data(); }
+
+float* ConvLayer::getWeightsGradient() { return _w_gradient.data(); }
+
 // this function is only called from constructor
 void ConvLayer::buildPatchMaps(std::pair<uint32_t, uint32_t> next_kernel_size) {
   /** TODO(David): btw this will be factored out soon into an N-tower model and
