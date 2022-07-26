@@ -1,16 +1,19 @@
 #include "MultiLabelTextClassifier.h"
 #include <bolt/src/graph/ExecutionConfig.h>
+#include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
+#include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
-#include <dataset/src/blocks/Text.h>
+#include <hashing/src/DWTA.h>
+#include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/blocks/Categorical.h>
+#include <dataset/src/blocks/Text.h>
+#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/encodings/categorical/CategoricalMultiLabel.h>
 #include <dataset/src/encodings/text/PairGram.h>
-#include <bolt/src/graph/nodes/Input.h>
-#include <bolt/src/graph/nodes/FullyConnected.h>
-#include <bolt/src/graph/Graph.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <algorithm>
@@ -44,60 +47,68 @@ static uint64_t getMemoryBudget(const std::string& model_size);
 static bool canLoadDatasetInMemory(const std::string& filename);
 
 MultiLabelTextClassifier::MultiLabelTextClassifier(uint32_t n_classes) {
-
   uint32_t input_dim = 100000;
   uint32_t hidden_layer_dim = 1024;
-  float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_dim);
-  
+  //float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_dim);
+
   auto input = std::make_shared<Input>(/* dim= */ input_dim);
 
-  auto hidden = std::make_shared<FullyConnectedNode>(/* dim= */ hidden_layer_dim, /* sparsity= */ hidden_layer_sparsity, /* activation= */ "relu");
+  auto hidden = std::make_shared<FullyConnectedNode>(
+      /* dim= */ hidden_layer_dim, /* sparsity= */ 1.0,
+      /* activation= */ "relu");
   hidden->addPredecessor(input);
 
-  auto output = std::make_shared<FullyConnectedNode>(/* dim= */ n_classes, /* sparsity= */ 0.1, /* activation= */ "sigmoid");
+  SamplingConfig output_config = SamplingConfig(/* hashes_per_table = */ 4, /* num_tables = */ 64, /* range_pow = */ 12, /* resevoir_size = */ 64);
+
+  auto output = std::make_shared<FullyConnectedNode>(/* dim= */ n_classes, /* sparsity= */ 0.1, /* activation= */ "sigmoid", /* sampling_config = */ output_config);
   output->addPredecessor(hidden);
 
-  _model = std::make_shared<BoltGraph>(/* inputs= */ std::vector<InputPtr>{input}, /* output= */ output);
+  _model = std::make_shared<BoltGraph>(
+      /* inputs= */ std::vector<InputPtr>{input}, /* output= */ output);
 
-  _model->compile(std::make_shared<BinaryCrossEntropyLoss>(), /* print_when_done= */ true);
+  _model->compile(std::make_shared<BinaryCrossEntropyLoss>(),
+                  /* print_when_done= */ true);
 
   std::vector<std::shared_ptr<dataset::Block>> input_block = {
-    std::make_shared<dataset::TextBlock>(/* col= */ 1,/* encoding= */std::make_shared<dataset::PairGram>(100000))
-  };
+      std::make_shared<dataset::TextBlock>(
+          /* col= */ 1,
+          /* encoding= */ std::make_shared<dataset::PairGram>(100000))};
 
   std::vector<std::shared_ptr<dataset::Block>> label_block = {
-    std::make_shared<dataset::CategoricalBlock>(/* col= */ 0, /* encoding= */ std::make_shared<dataset::CategoricalMultiLabel>(n_classes))
-  };
+      std::make_shared<dataset::CategoricalBlock>(
+          /* col= */ 0,
+          /* encoding= */ std::make_shared<dataset::CategoricalMultiLabel>(
+              n_classes))};
 
-  _batch_processor =
-      std::make_shared<dataset::GenericBatchProcessor>(std::move(input_block), std::move(label_block), /* has_header= */ false, /* delimiter= */ '\t');
-
+  _batch_processor = std::make_shared<dataset::GenericBatchProcessor>(
+      std::move(input_block), std::move(label_block), /* has_header= */ false,
+      /* delimiter= */ '\t');
 }
 
-void MultiLabelTextClassifier::train(const std::string& filename, uint32_t epochs,
-                           float learning_rate) {
+void MultiLabelTextClassifier::train(const std::string& filename,
+                                     uint32_t epochs, float learning_rate) {
   auto dataset = loadStreamingDataset(filename);
+  // auto dataset = dataset::loadBoltSvmDataset(
+  //     filename, 2048);  // loadStreamingDataset(filename);
 
   BinaryCrossEntropyLoss loss;
 
   // Assume Wayfair's data can fit in memory
   auto [train_data, train_labels] = dataset->loadInMemory();
+  // auto train_data = dataset.data;
+  // auto train_labels = dataset.labels;
 
-  auto train_cfg = TrainConfig::makeConfig(/* learning_rate= */ learning_rate, /* epochs= */ 1);
+  auto train_cfg = TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
+                                           /* epochs= */ epochs);
 
   _model->train(train_data, train_labels, train_cfg);
-  //_model->freezeHashTables(/* insert_labels_if_not_found= */ true);
-
-  train_cfg = TrainConfig::makeConfig(/* learning_rate= */ learning_rate, /* epochs= */ epochs-1);
-  _model->train(train_data, train_labels, train_cfg);
-  
 }
 
 void MultiLabelTextClassifier::predict(
     const std::string& filename,
-    const std::optional<std::string>& output_filename,
-    const float threshold) {
+    const std::optional<std::string>& output_filename, const float threshold) {
   auto dataset = loadStreamingDataset(filename);
+  //auto dataset = dataset::loadBoltSvmDataset(filename, 2048);  // loadStreamingDataset(filename);
 
   std::optional<std::ofstream> output_file;
   if (output_filename) {
@@ -107,14 +118,22 @@ void MultiLabelTextClassifier::predict(
   std::stringstream metric;
   metric << "f_measure(" << threshold << ")";
 
-  PredictConfig predict_cfg = PredictConfig::makeConfig().withMetrics({metric.str()}).returnActivations();
+  PredictConfig predict_cfg = PredictConfig::makeConfig()
+                                  .withMetrics({metric.str()})
+                                  .returnActivations();
 
   auto [test_data, test_labels] = dataset->loadInMemory();
+  // auto test_data = dataset.data;
+  // auto test_labels = dataset.labels;
 
-  auto [_, predict_output] = _model->predict(test_data, test_labels, predict_cfg);
-  for (uint32_t vec_id = 0; vec_id < predict_output.getNumSavedVectors(); vec_id++) {
+  auto [_, predict_output] =
+      _model->predict(test_data, test_labels, predict_cfg);
+  for (uint32_t vec_id = 0; vec_id < predict_output.getNumSavedVectors();
+       vec_id++) {
     BoltVector v = predict_output.getOutputVector(vec_id);
-    auto predictions = v.getThresholdedNeurons(/* activation_threshold = */ threshold, /* return_at_least_one = */ true, /* max_count_to_return = */ 4);
+    auto predictions = v.getThresholdedNeurons(
+        /* activation_threshold = */ threshold,
+        /* return_at_least_one = */ true, /* max_count_to_return = */ 4);
     for (uint32_t i = 0; i < predictions.size(); i++) {
       (*output_file) << predictions.at(i);
       if (i != predictions.size() - 1) {
@@ -123,12 +142,11 @@ void MultiLabelTextClassifier::predict(
     }
     (*output_file) << std::endl;
   }
-  
+
   if (output_file) {
     output_file->close();
   }
 }
-
 
 static constexpr uint64_t ONE_GB = 1 << 30;
 
@@ -184,7 +202,6 @@ uint64_t getMemoryBudget(const std::string& model_size) {
       "'model_size' parameter must be either 'small', 'medium', 'large', or a "
       "gigabyte size of the model, i.e. 5Gb");
 }
-
 
 float getHiddenLayerSparsity(uint64_t layer_size) {
   if (layer_size < 1000) {
@@ -252,6 +269,5 @@ bool canLoadDatasetInMemory(const std::string& filename) {
 
   throw std::runtime_error("Unable to get filesize of '" + filename + "'");
 }
-
 
 }  // namespace thirdai::bolt

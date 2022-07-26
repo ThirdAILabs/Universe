@@ -610,7 +610,7 @@ std::string BoltGraph::summarize(bool print, bool detailed) const {
   for (const auto& node : getNodeTraversalOrder()) {
     node->summarize(summary, detailed);
   }
-  summary << "============================================================\n";
+  summary << "==========================================================\n";
   if (print) {
     std::cout << summary.str() << std::flush;
   }
