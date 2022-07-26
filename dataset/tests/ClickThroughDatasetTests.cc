@@ -58,12 +58,12 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
 
   void SetUp() override {
     for (uint32_t i = 0; i < _num_vectors; i++) {
-      _vectors.push_back(createTestClickThroughVec());
+      _ground_truths_vectors.push_back(createTestClickThroughVec());
     }
 
     std::ofstream output_file = dataset::SafeFileIO::ofstream(_filename);
 
-    for (const auto& vec : _vectors) {
+    for (const auto& vec : _ground_truths_vectors) {
       output_file << vec.label;
       for (uint32_t d : vec.dense_features) {
         if (d == 0) {
@@ -96,23 +96,22 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
     return _num_categorical_features;
   }
 
-  std::vector<TestClickThroughVec> _vectors;
+  std::vector<TestClickThroughVec> _ground_truths_vectors;
 
   std::mt19937 gen;
   std::uniform_int_distribution<uint32_t> _label_dist;
   std::uniform_int_distribution<uint32_t> _dense_feature_dist;
   std::uniform_int_distribution<uint32_t> _categorical_feature_dist;
 
-  void verifyLabelBatch(const bolt::BoltBatch& labels,
-                        uint32_t label_count_base) {
+  void verifySparseLabelBatch(const bolt::BoltBatch& labels,
+                              uint32_t label_count_base) {
     ASSERT_TRUE(labels.getBatchSize() == _batch_size ||
                 labels.getBatchSize() == _num_vectors % _batch_size);
 
     for (uint32_t v = 0; v < labels.getBatchSize(); v++) {
-      // Check labels are correct.
       ASSERT_EQ(labels[v].len, 1);
       ASSERT_EQ(labels[v].active_neurons[0],
-                _vectors.at(label_count_base + v).label);
+                _ground_truths_vectors.at(label_count_base + v).label);
       ASSERT_EQ(labels[v].activations[0], 1.0);
     }
   }
@@ -123,10 +122,10 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
                 dense_inputs.getBatchSize() == _num_vectors % _batch_size);
 
     for (uint32_t v = 0; v < dense_inputs.getBatchSize(); v++) {
-      // CHeck dense features are correct.
       ASSERT_EQ(dense_inputs[v].len, getNumDenseFeatures());
       for (uint32_t i = 0; i < getNumDenseFeatures(); i++) {
-        float val = _vectors.at(vec_count_base + v).dense_features.at(i);
+        float val =
+            _ground_truths_vectors.at(vec_count_base + v).dense_features.at(i);
         ASSERT_EQ(dense_inputs[v].activations[i], val);
       }
     }
@@ -137,11 +136,10 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
                 tokens.getBatchSize() == _num_vectors % _batch_size);
 
     for (uint32_t v = 0; v < tokens.getBatchSize(); v++) {
-      // Check Categorical features are correct.
       ASSERT_EQ(tokens[v].size(), getNumCategoricalFeatures());
       for (uint32_t i = 0; i < tokens[v].size(); i++) {
-        ASSERT_EQ(tokens[v].at(i),
-                  _vectors.at(vec_count_base + v).categorical_features.at(i));
+        ASSERT_EQ(tokens[v].at(i), _ground_truths_vectors.at(vec_count_base + v)
+                                       .categorical_features.at(i));
       }
     }
   }
@@ -157,12 +155,12 @@ class ClickThroughDatasetTestFixture : public ::testing::Test {
 TEST_F(ClickThroughDatasetTestFixture, InMemoryDatasetTestSparseLabel) {
   auto [dense_inputs, tokens, labels] = ClickThroughDatasetLoader::loadDataset(
       _filename, _batch_size, /* num_dense_features= */ getNumDenseFeatures(),
-      /* max_categorical_features= */ getNumCategoricalFeatures(),
+      /* max_num_categorical_features= */ getNumCategoricalFeatures(),
       /* delimiter= */ '\t');
 
   uint32_t label_count = 0;
   for (const auto& batch : *labels) {
-    verifyLabelBatch(batch, label_count);
+    verifySparseLabelBatch(batch, label_count);
     label_count += batch.getBatchSize();
   }
   ASSERT_EQ(label_count, _num_vectors);

@@ -39,30 +39,31 @@ constexpr uint32_t batch_size = 100;
 
 static std::tuple<dataset::BoltDatasetPtr, dataset::BoltTokenDatasetPtr,
                   dataset::BoltDatasetPtr>
-genDlrmDataset(bool noisy_dense_features, bool noisy_categorical_features) {
-  std::mt19937 gen(892734);
+generateDlrmDataset(bool dense_features_are_noise,
+                    bool categorical_features_are_noise, uint32_t seed) {
+  std::mt19937 gen(seed);
   std::uniform_int_distribution<uint32_t> label_dist(0, n_classes - 1);
-  std::normal_distribution<float> data_dist(0,
-                                            noisy_dense_features ? 1.0 : 0.1);
+  std::normal_distribution<float> data_dist(
+      0, dense_features_are_noise ? 1.0 : 0.1);
 
   std::vector<BoltBatch> data_batches;
   std::vector<dataset::BoltTokenBatch> token_batches;
   std::vector<BoltBatch> label_batches;
-  for (uint32_t b = 0; b < n_batches; b++) {
+  for (uint32_t batch_id = 0; batch_id < n_batches; batch_id++) {
     std::vector<BoltVector> labels;
     std::vector<BoltVector> dense_features;
     std::vector<std::vector<uint32_t>> categorical_features;
-    for (uint32_t i = 0; i < batch_size; i++) {
+    for (uint32_t vec_id = 0; vec_id < batch_size; vec_id++) {
       uint32_t label = label_dist(gen);
       BoltVector v(n_classes, true, false);
       std::generate(v.activations, v.activations + n_classes,
                     [&]() { return data_dist(gen); });
-      if (!noisy_dense_features) {
+      if (!dense_features_are_noise) {
         v.activations[label] += 1.0;
       }
       dense_features.push_back(std::move(v));
       categorical_features.push_back(
-          {noisy_categorical_features ? label + label_dist(gen) : label});
+          {categorical_features_are_noise ? label_dist(gen) : label});
       labels.push_back(BoltVector::makeSparseVector({label}, {1.0}));
     }
     data_batches.emplace_back(std::move(dense_features));
@@ -103,48 +104,53 @@ BoltGraph getModel() {
   return model;
 }
 
-float runDlrmTest(bool noisy_dense_features, bool noisy_categorical_features) {
+float runDlrmTest(bool dense_features_are_noise,
+                  bool categorical_features_are_noise) {
   auto model = getModel();
 
-  auto [data, tokens, labels] =
-      genDlrmDataset(noisy_dense_features, noisy_categorical_features);
+  auto [train_data, train_tokens, train_labels] =
+      generateDlrmDataset(dense_features_are_noise,
+                          categorical_features_are_noise, /* seed= */ 4597);
 
   auto train_cfg =
       TrainConfig::makeConfig(/* learning_rate= */ 0.001, /* epochs= */ 2);
 
-  model.train({data}, {tokens}, labels, train_cfg);
+  model.train({train_data}, {train_tokens}, train_labels, train_cfg);
+
+  auto [test_data, test_tokens, test_labels] =
+      generateDlrmDataset(dense_features_are_noise,
+                          categorical_features_are_noise, /* seed= */ 2631);
 
   auto predict_cfg =
       PredictConfig::makeConfig().withMetrics({"categorical_accuracy"});
 
-  auto [test_metrics, _] = model.predict({data}, {tokens}, labels, predict_cfg);
-
-  std::cout << "ACC: " << test_metrics["categorical_accuracy"] << std::endl;
+  auto [test_metrics, _] =
+      model.predict({test_data}, {test_tokens}, test_labels, predict_cfg);
 
   return test_metrics["categorical_accuracy"];
 }
 
 TEST(DagDlrmTest, SimpleDlrmDataset) {
-  float accuracy = runDlrmTest(/*noisy_dense_features= */ false,
-                               /* noisy_categorical_features= */ false);
+  float accuracy = runDlrmTest(/* dense_features_are_noise= */ false,
+                               /* categorical_features_are_noise= */ false);
   ASSERT_GE(accuracy, 0.9);
 }
 
 TEST(DagDlrmTest, NoisyCategoricalFeatures) {
-  float accuracy = runDlrmTest(/*noisy_dense_features= */ false,
-                               /* noisy_categorical_features= */ true);
+  float accuracy = runDlrmTest(/* dense_features_are_noise= */ false,
+                               /* categorical_features_are_noise= */ true);
   ASSERT_GE(accuracy, 0.9);
 }
 
 TEST(DagDlrmTest, NoisyDenseFeatures) {
-  float accuracy = runDlrmTest(/*noisy_dense_features= */ true,
-                               /* noisy_categorical_features= */ false);
+  float accuracy = runDlrmTest(/* dense_features_are_noise= */ true,
+                               /* categorical_features_are_noise= */ false);
   ASSERT_GE(accuracy, 0.9);
 }
 
 TEST(DagDlrmTest, NoisyDenseAndCategoricalFeatures) {
-  float accuracy = runDlrmTest(/*noisy_dense_features= */ true,
-                               /* noisy_categorical_features= */ true);
+  float accuracy = runDlrmTest(/* dense_features_are_noise= */ true,
+                               /* categorical_features_are_noise= */ true);
   ASSERT_LE(accuracy, 0.2);
 }
 

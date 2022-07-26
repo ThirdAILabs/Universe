@@ -13,10 +13,11 @@ class ClickThroughBatchProcessor final
     : public BatchProcessor<bolt::BoltBatch, BoltTokenBatch, bolt::BoltBatch> {
  public:
   ClickThroughBatchProcessor(uint32_t num_dense_features,
-                             uint32_t max_categorical_features,
+                             uint32_t max_num_categorical_features,
                              char delimiter = '\t')
       : _num_dense_features(num_dense_features),
-        _expected_num_cols(num_dense_features + max_categorical_features + 1),
+        _expected_num_cols(num_dense_features + max_num_categorical_features +
+                           1),
         _delimiter(delimiter) {}
 
   std::tuple<bolt::BoltBatch, BoltTokenBatch, bolt::BoltBatch> createBatch(
@@ -54,7 +55,7 @@ class ClickThroughBatchProcessor final
           std::to_string(cols.size()) + " columns.");
     }
 
-    auto label = getLabelVector(cols[0]);
+    auto label = getLabelVector(/* label_str= */ cols[0]);
 
     std::vector<float> dense_features;
     uint32_t feature_idx = 1;
@@ -87,7 +88,8 @@ class ClickThroughBatchProcessor final
   static bolt::BoltVector getLabelVector(const std::string_view& label_str) {
     char* end;
     uint32_t label = std::strtol(label_str.data(), &end, 10);
-    bolt::BoltVector label_vec(1, false, false);
+    bolt::BoltVector label_vec(/* l= */ 1, /* is_dense= */ false,
+                               /* has_gradient= */ false);
     label_vec.active_neurons[0] = label;
     label_vec.activations[0] = 1.0;
     return label_vec;
