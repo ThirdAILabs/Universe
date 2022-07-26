@@ -10,9 +10,8 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <dataset/src/Dataset.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <dataset/src/bolt_datasets/StreamingDataset.h>
+#include <dataset/src/DatasetLoaders.h>
+#include <dataset/src/Datasets.h>
 #include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <limits>

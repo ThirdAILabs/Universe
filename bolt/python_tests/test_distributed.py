@@ -10,7 +10,7 @@ import numpy as np
 from .utils import (
     train_single_node_distributed_network,
     copy_two_layer_network_parameters,
-    gen_training_data,
+    gen_numpy_training_data,
 )
 
 ACCURACY_THRESHOLD = 0.8
@@ -68,17 +68,14 @@ def train_multiple_networks_same_gradients(
         test_x, test_y, metrics=["categorical_accuracy"], verbose=False
     )
 
-    assert (
-        new_acc["categorical_accuracy"] > ACCURACY_THRESHOLD
-        and new_acc["categorical_accuracy"] == old_acc["categorical_accuracy"]
-    )
+    assert new_acc["categorical_accuracy"] == old_acc["categorical_accuracy"]
 
 
 def test_simple_bolt_network_single_node():
     network = build_simple_bolt_network()
 
-    train_x, train_y = gen_training_data()
-    test_x, test_y = gen_training_data(n_samples=100)
+    train_x, train_y = gen_numpy_training_data()
+    test_x, test_y = gen_numpy_training_data(n_samples=100)
 
     train_single_node_distributed_network(network, train_x, train_y, epochs=10)
 
@@ -91,8 +88,8 @@ def test_simple_bolt_network_single_node():
 def test_get_set_weights_single_node():
 
     network = build_simple_bolt_network()
-    train_x, train_y = gen_training_data()
-    test_x, test_y = gen_training_data(n_samples=100)
+    train_x, train_y = gen_numpy_training_data()
+    test_x, test_y = gen_numpy_training_data(n_samples=100)
 
     train_single_node_distributed_network(network, train_x, train_y, epochs=10)
 
@@ -115,8 +112,8 @@ def test_basic_gradient_sharing():
 
     network = build_simple_bolt_network()
 
-    train_x, train_y = gen_training_data()
-    test_x, test_y = gen_training_data(n_samples=100)
+    train_x, train_y = gen_numpy_training_data()
+    test_x, test_y = gen_numpy_training_data(n_samples=100)
 
     num_of_batches = network.prepareNodeForDistributedTraining(
         train_x,
@@ -124,11 +121,10 @@ def test_basic_gradient_sharing():
         rehash=3000,
         rebuild=10000,
         verbose=False,
-        batch_size=10,
     )
 
-    train_x, train_y = gen_training_data()
-    test_x, test_y = gen_training_data(n_samples=100)
+    train_x, train_y = gen_numpy_training_data()
+    test_x, test_y = gen_numpy_training_data(n_samples=100)
 
     untrained_network = build_simple_bolt_network()
 
@@ -138,7 +134,6 @@ def test_basic_gradient_sharing():
         rehash=3000,
         rebuild=10000,
         verbose=False,
-        batch_size=10,
     )
 
     untrained_network.set_weights(

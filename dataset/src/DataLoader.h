@@ -46,6 +46,11 @@ class SimpleFileDataLoader final : public DataLoader {
         lines.push_back(std::move(line));
       }
     }
+
+    if (lines.empty()) {
+      return std::nullopt;
+    }
+
     return std::make_optional(std::move(lines));
   }
 

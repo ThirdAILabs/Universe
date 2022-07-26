@@ -2,11 +2,12 @@
 
 #include <cereal/archives/binary.hpp>
 #include "AutoClassifierUtils.h"
+#include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
+#include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/TabularBlocks.h>
-#include <dataset/src/bolt_datasets/batch_processors/GenericBatchProcessor.h>
-#include <dataset/src/bolt_datasets/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/encodings/categorical/StringCategoricalEncoding.h>
 #include <dataset/src/utils/SafeFileIO.h>
 
@@ -37,7 +38,7 @@ class TabularClassifier {
 
     AutoClassifierUtils::train(
         _model, filename,
-        std::static_pointer_cast<dataset::BatchProcessor<BoltBatch>>(
+        std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             batch_processor),
         /* epochs */ epochs,
         /* learning_rate */ learning_rate);
@@ -55,7 +56,7 @@ class TabularClassifier {
 
     AutoClassifierUtils::predict(
         _model, filename,
-        std::static_pointer_cast<dataset::BatchProcessor<BoltBatch>>(
+        std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             batch_processor),
         output_filename, _metadata->getClassIdToNames());
   }
@@ -89,10 +90,12 @@ class TabularClassifier {
             column_datatypes, _model->getOutputDim());
 
     // TabularMetadataProcessor inherets ComputeBatchProcessor so this doesn't
-    // produce any vectors
-    std::make_shared<dataset::StreamingDataset<BoltBatch>>(data_loader,
-                                                           batch_processor)
-        ->loadInMemory();
+    // produce any vectors, we are just using it to iterate over the dataset.
+    auto compute_dataset =
+        std::make_shared<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
+            data_loader, batch_processor);
+    while (compute_dataset->nextBatchTuple()) {
+    }
 
     return batch_processor->getMetadata();
   }

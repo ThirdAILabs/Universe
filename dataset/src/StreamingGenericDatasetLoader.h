@@ -3,7 +3,7 @@
 #include "DataLoader.h"
 #include "StreamingDataset.h"
 #include <bolt/src/layers/BoltVector.h>
-#include <dataset/src/bolt_datasets/batch_processors/GenericBatchProcessor.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <memory>
 
 namespace thirdai::dataset {
@@ -20,11 +20,12 @@ class StreamingGenericDatasetLoader {
         _streamer(std::make_shared<SimpleFileDataLoader>(filename, batch_size),
                   _processor) {}
 
-  std::optional<BoltDataLabelPair<bolt::BoltBatch>> nextBatch() {
-    return _streamer.nextBatch();
+  std::optional<std::tuple<bolt::BoltBatch, bolt::BoltBatch>> nextBatch() {
+    return _streamer.nextBatchTuple();
   }
 
-  std::pair<std::shared_ptr<InMemoryDataset<bolt::BoltBatch>>, BoltDatasetPtr>
+  std::tuple<std::shared_ptr<InMemoryDataset<bolt::BoltBatch>>,
+             std::shared_ptr<InMemoryDataset<bolt::BoltBatch>>>
   loadInMemory() {
     return _streamer.loadInMemory();
   }
@@ -37,7 +38,7 @@ class StreamingGenericDatasetLoader {
 
  private:
   std::shared_ptr<GenericBatchProcessor> _processor;
-  StreamingDataset<bolt::BoltBatch> _streamer;
+  StreamingDataset<bolt::BoltBatch, bolt::BoltBatch> _streamer;
 };
 
 }  // namespace thirdai::dataset

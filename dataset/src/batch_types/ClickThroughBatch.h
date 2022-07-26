@@ -1,7 +1,6 @@
 #pragma once
 
 #include <bolt/src/layers/BoltVector.h>
-#include <dataset/src/Factory.h>
 #include <iostream>
 #include <vector>
 
