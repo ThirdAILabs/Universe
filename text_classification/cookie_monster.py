@@ -5,8 +5,6 @@ from thirdai.dataset import DataPipeline, blocks, text_encodings
 # import mlflow
 import os
 
-VOCAB_SIZE = 30224
-
 
 class CookieMonster:
     def __init__(
@@ -24,6 +22,7 @@ class CookieMonster:
         self.hidden_sparsity = hidden_sparsity
         self.mlflow_enabled = mlflow_enabled
         self.construct(output_dimension)
+        self.mlm_loader = dataset.MLMDatasetLoader(self.input_dimension)
 
         self.config_file_dir = os.path.dirname(os.path.abspath(__file__))
         self.config_file_name = os.path.join(
@@ -53,28 +52,19 @@ class CookieMonster:
 
         self.model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
-    def set_output_dimension(self, dimension, task):
-        if task == "mlm":
-            dim = VOCAB_SIZE
-        elif task == "classification":
-            dim = dimension
-        else:
-            raise ValueError(
-                'Invalid instruction. Supported instructions are "mlm" and "classification"'
-            )
+    def set_output_dimension(self, dimension):
         save_loc = "./hidden_layer_parameters"
         self.hidden_layer.save_parameters(save_loc)
 
-        self.construct(dim)
+        self.construct(dimension)
         self.hidden_layer.load_parameters(save_loc)
         os.remove(save_loc)
 
-    def load_data(self, instruction, file, batch_size, label_dim):
-        if instruction == "mlm":
+    def load_data(self, task_type, file, batch_size, label_dim):
+        if task_type == "mlm":
             # TODO: Check file format
-            mlm_loader = dataset.MLMDatasetLoader(self.input_dimension)
-            data, label = mlm_loader.load(file, batch_size)
-        elif instruction == "classification":
+            data, label = self.mlm_loader.load(file, batch_size)
+        elif task_type == "classification":
             pipeline = DataPipeline(
                 file,
                 batch_size=batch_size,
@@ -87,7 +77,7 @@ class CookieMonster:
             data, label = pipeline.load_in_memory()
         else:
             raise ValueError(
-                'Invalid instruction. Supported instructions are "mlm" and "classification"'
+                'Invalid task_type. Supported task_types are "mlm" and "classification"'
             )
         return data, label
 
@@ -128,7 +118,7 @@ class CookieMonster:
                     batch_size = config["batch_size"]
                     task = config["task"]
 
-                    self.set_output_dimension(num_classes, task)
+                    self.set_output_dimension(num_classes)
                     if num_classes != self.output_layer.get_dim():
                         raise ValueError("Output dimension is incorrect")
 

@@ -1,4 +1,3 @@
-from click import command
 from ..cookie_monster import *
 import argparse
 
@@ -31,7 +30,7 @@ if "__main__" == __name__:
     if args.command == "classification":
         model = construct_monster(args.output_dim)
     elif args.command == "mlm":
-        model = construct_monster(VOCAB_SIZE)
+        model = construct_monster(30224)
     else:
         raise ValueError("Invalid command. Supported commands are: classification, mlm")
 
