@@ -1,6 +1,6 @@
 from thirdai import bolt, dataset
 import numpy as np
-
+import os
 
 # Constructs a bolt network with a sparse hidden layer. The parameters dim and sparsity are for this sparse hidden layer.
 def build_sparse_hidden_layer_classifier(input_dim, sparse_dim, output_dim, sparsity):

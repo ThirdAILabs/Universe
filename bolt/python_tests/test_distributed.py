@@ -123,8 +123,13 @@ def test_basic_gradient_sharing():
         verbose=False,
     )
 
+<<<<<<< HEAD
     train_x, train_y = gen_numpy_training_data()
     test_x, test_y = gen_numpy_training_data(n_samples=100)
+=======
+    train_x, train_y = gen_training_data()
+    test_x, test_y = gen_training_data(n_samples=100)
+>>>>>>> b0a9d544deb737274e939ed2ea7e4c3be963eacc
 
     untrained_network = build_simple_bolt_network()
 
