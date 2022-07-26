@@ -15,7 +15,9 @@
 namespace thirdai::bolt {
 
 FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
-                                             uint32_t input_dim)
+                                             uint32_t input_dim,
+                                             bool is_distributed)
+
     : _input_dim(input_dim), _num_layers(configs.size()) {
   auto start = std::chrono::high_resolution_clock::now();
 
@@ -28,7 +30,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
     if (auto fully_connected_config =
             std::dynamic_pointer_cast<FullyConnectedLayerConfig>(configs[i])) {
       _layers.push_back(std::make_shared<FullyConnectedLayer>(
-          *fully_connected_config, prev_dim));
+          *fully_connected_config, prev_dim, is_distributed));
       // if ConvConfig
     } else if (auto conv_config =
                    std::dynamic_pointer_cast<ConvLayerConfig>(configs[i])) {

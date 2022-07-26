@@ -10,16 +10,10 @@ namespace thirdai::bolt::python {
 
 void createBoltGraphSubmodule(py::module_& bolt_submodule);
 
-MetricData dagTrainPythonWrapper(
-    BoltGraph& model, const py::object& data,
-    const std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&
-        token_data,
-    const py::object& labels, const TrainConfig& train_config);
-
-py::tuple dagPredictPythonWrapper(
-    BoltGraph& model, const py::object& data,
-    const std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&
-        token_data,
-    const py::object& labels, const PredictConfig& predict_config);
+py::tuple dagPredictPythonWrapper(BoltGraph& model,
+                                  const dataset::BoltDatasetList& data,
+                                  const dataset::BoltTokenDatasetList& tokens,
+                                  const dataset::BoltDatasetPtr& labels,
+                                  const PredictConfig& predict_config);
 
 }  // namespace thirdai::bolt::python

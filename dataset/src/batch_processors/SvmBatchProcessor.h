@@ -1,8 +1,8 @@
 #pragma once
 
 #include <bolt/src/layers/BoltVector.h>
+#include <dataset/src/BatchProcessor.h>
 #include <dataset/src/batch_types/MaskedSentenceBatch.h>
-#include <dataset/src/bolt_datasets/BatchProcessor.h>
 
 namespace thirdai::dataset {
 

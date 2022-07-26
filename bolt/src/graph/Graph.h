@@ -16,9 +16,7 @@
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
-#include <dataset/src/Dataset.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>

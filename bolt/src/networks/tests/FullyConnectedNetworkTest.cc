@@ -4,11 +4,6 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <gtest/gtest.h>
-#include <dataset/src/Dataset.h>
-#include <dataset/src/bolt_datasets/BatchProcessor.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <dataset/src/bolt_datasets/DataLoader.h>
-#include <dataset/src/bolt_datasets/StreamingDataset.h>
 #include <algorithm>
 #include <optional>
 #include <random>
@@ -25,19 +20,19 @@ TEST(FullyConnectedClassificationNetworkTest,
                                     n_classes, ActivationFunction::Softmax)},
                                 n_classes);
 
-  auto data =
+  auto [data, labels] =
       genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+  network.train(data, labels, CategoricalCrossEntropyLoss(),
                 /* learning_rate= */ 0.001, /* epochs= */ 5,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
-  auto test_metrics = network.predict(
-      data.data, data.labels, /* output_active_neurons= */ nullptr,
-      /* output_activations= */ nullptr,
-      /* use_sparse_inference= */ false,
-      /* metric_names= */ {"categorical_accuracy"},
-      /* verbose= */ false);
+  auto test_metrics =
+      network.predict(data, labels, /* output_active_neurons= */ nullptr,
+                      /* output_activations= */ nullptr,
+                      /* use_sparse_inference= */ false,
+                      /* metric_names= */ {"categorical_accuracy"},
+                      /* verbose= */ false);
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.98);
 }
 
@@ -47,14 +42,15 @@ TEST(FullyConnectedClassificationNetworkTest,
                                     n_classes, ActivationFunction::Softmax)},
                                 n_classes);
 
-  auto data = genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
+  auto [data, labels] =
+      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+  network.train(data, labels, CategoricalCrossEntropyLoss(),
                 /* learning_rate= */ 0.001, /* epochs= */ 5,
                 /* rehash= */ 0, /* rebuild= */ 0, /* metric_names= */ {},
                 /* verbose= */ false);
   auto test_metrics = network.predict(
-      data.data, data.labels, /* output_active_neurons= */ nullptr,
+      data, labels, /* output_active_neurons= */ nullptr,
       /* output_activations= */ nullptr, /* use_sparse_inference= */ false,
       /* metric_names= */ {"categorical_accuracy"},
       /* verbose= */ false);
@@ -69,11 +65,11 @@ static void testSimpleDatasetMultiLayerNetworkActivation(
            n_classes, ActivationFunction::Softmax)},
       n_classes);
 
-  auto data =
+  auto [data, labels] =
       genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
 
   auto train_metrics =
-      network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+      network.train(data, labels, CategoricalCrossEntropyLoss(),
                     /* learning_rate */ 0.001, /* epochs */ 2,
                     /* rehash= */ 0, /* rebuild= */ 0,
                     /* metric_names= */ {"mean_squared_error"},
@@ -81,12 +77,12 @@ static void testSimpleDatasetMultiLayerNetworkActivation(
   ASSERT_LT(train_metrics.at("mean_squared_error").back(),
             train_metrics.at("mean_squared_error").front());
 
-  auto test_metrics = network.predict(
-      data.data, data.labels, /* output_active_neurons= */ nullptr,
-      /* output_activations= */ nullptr,
-      /* use_sparse_inference= */ false,
-      /* metric_names= */ {"categorical_accuracy"},
-      /* verbose= */ false);
+  auto test_metrics =
+      network.predict(data, labels, /* output_active_neurons= */ nullptr,
+                      /* output_activations= */ nullptr,
+                      /* use_sparse_inference= */ false,
+                      /* metric_names= */ {"categorical_accuracy"},
+                      /* verbose= */ false);
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
 
@@ -108,11 +104,11 @@ TEST(FullyConnectedClassificationNetworkTest,
                                      n_classes, ActivationFunction::Sigmoid)},
                                 n_classes);
 
-  auto data =
+  auto [data, labels] =
       genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
 
   auto train_metrics =
-      network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+      network.train(data, labels, CategoricalCrossEntropyLoss(),
                     /* learning_rate= */ 0.001, /* epochs= */ 5,
                     /* rehash= */ 0, /* rebuild= */ 0,
                     /* metric_names= */ {"mean_squared_error"},
@@ -121,12 +117,12 @@ TEST(FullyConnectedClassificationNetworkTest,
   ASSERT_LT(train_metrics.at("mean_squared_error").back(),
             train_metrics.at("mean_squared_error").front());
 
-  auto test_metrics = network.predict(
-      data.data, data.labels, /* output_active_neurons= */ nullptr,
-      /* output_activations= */ nullptr,
-      /* use_sparse_inference= */ false,
-      /* metric_names= */ {"categorical_accuracy"},
-      /* verbose= */ true);
+  auto test_metrics =
+      network.predict(data, labels, /* output_active_neurons= */ nullptr,
+                      /* output_activations= */ nullptr,
+                      /* use_sparse_inference= */ false,
+                      /* metric_names= */ {"categorical_accuracy"},
+                      /* verbose= */ true);
   ASSERT_GE(test_metrics["categorical_accuracy"], 0.99);
 }
 
@@ -138,18 +134,19 @@ TEST(FullyConnectedClassificationNetworkTest,
                                      n_classes, ActivationFunction::Softmax)},
                                 n_classes);
 
-  auto data = genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
+  auto [data, labels] =
+      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
 
-  network.train(data.data, data.labels, CategoricalCrossEntropyLoss(),
+  network.train(data, labels, CategoricalCrossEntropyLoss(),
                 /* learning_rate= */ 0.001, /* epochs= */ 2,
                 /* rehash= */ 0, /* rebuild=*/0, /* metric_names= */ {},
                 /* verbose= */ false);
-  auto test_metrics = network.predict(
-      data.data, data.labels, /* output_active_neurons= */ nullptr,
-      /* output_activations= */ nullptr,
-      /* use_sparse_inference= */ false,
-      /* metric_names= */ {"categorical_accuracy"},
-      /* verbose= */ false);
+  auto test_metrics =
+      network.predict(data, labels, /* output_active_neurons= */ nullptr,
+                      /* output_activations= */ nullptr,
+                      /* use_sparse_inference= */ false,
+                      /* metric_names= */ {"categorical_accuracy"},
+                      /* verbose= */ false);
   ASSERT_LE(test_metrics["categorical_accuracy"], 0.2);
 }
 
@@ -247,13 +244,13 @@ class MockBatchProcessor final
 };
 
 std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
-getMockStreamingDataset(dataset::DatasetWithLabels&& dataset) {
+getMockStreamingDataset(dataset::BoltDatasetPtr& data,
+                        dataset::BoltDatasetPtr& labels) {
   std::shared_ptr<dataset::DataLoader> mock_loader =
-      std::make_shared<DummyDataLoader>(dataset.data->numBatches());
+      std::make_shared<DummyDataLoader>(data->numBatches());
 
   std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>
-      mock_processor =
-          std::make_shared<MockBatchProcessor>(dataset.data, dataset.labels);
+      mock_processor = std::make_shared<MockBatchProcessor>(data, labels);
 
   return std::make_shared<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
       mock_loader, mock_processor);
@@ -262,9 +259,9 @@ getMockStreamingDataset(dataset::DatasetWithLabels&& dataset) {
 void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
                                        uint32_t epochs, float acc_threshold) {
   for (uint32_t e = 0; e < epochs; e++) {
-    auto in_mem_data =
+    auto [in_mem_data, in_mem_labels] =
         genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
-    auto stream_data = getMockStreamingDataset(std::move(in_mem_data));
+    auto stream_data = getMockStreamingDataset(in_mem_data, in_mem_labels);
 
     network.trainOnStream(stream_data, CategoricalCrossEntropyLoss(),
                           /* learning_rate= */ 0.001,
@@ -274,9 +271,9 @@ void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
                           /* verbose= */ false);
   }
 
-  auto in_mem_data =
+  auto [in_mem_data, in_mem_labels] =
       genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
-  auto stream_data = getMockStreamingDataset(std::move(in_mem_data));
+  auto stream_data = getMockStreamingDataset(in_mem_data, in_mem_labels);
 
   auto test_metrics =
       network.predictOnStream(stream_data, /* use_sparse_inference= */ false,
