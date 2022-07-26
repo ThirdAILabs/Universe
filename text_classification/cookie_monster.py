@@ -53,6 +53,8 @@ class CookieMonster:
         self.model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     def set_output_dimension(self, dimension):
+        if self.output_layer.get_dim() == dimension:
+            return
         save_loc = "./hidden_layer_parameters"
         self.hidden_layer.save_parameters(save_loc)
 
