@@ -127,7 +127,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            " * num_embedding_lookups: Int (positive) - The number of embedding "
            "lookups to perform for each token.\n"
            " * lookup_size: Int (positive) - How many consutive values to "
-           "select as part of the emebedding for each embedding lookup.\n"
+           "select as part of the embedding for each embedding lookup.\n"
            " * log_embedding_block_size: Int (positive) The log base 2 of the "
            "total size of the embedding block.\n")
       .def("__call__", &EmbeddingNode::addInput, py::arg("token_input_layer"),

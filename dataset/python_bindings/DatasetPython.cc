@@ -264,7 +264,7 @@ void createDatasetSubmodule(py::module_& module) {
   dataset_submodule.def(
       "load_click_through_dataset", &ClickThroughDatasetLoader::loadDataset,
       py::arg("filename"), py::arg("batch_size"),
-      py::arg("num_numerical_features"), py::arg("max_categorical_features"),
+      py::arg("max_num_numerical_features"), py::arg("max_categorical_features"),
       py::arg("delimiter") = '\t',
       "Loads a Clickthrough dataset from a file. To be used with DLRM. \n"
       "Each line of the input file should follow this format:\n"

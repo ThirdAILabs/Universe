@@ -1,4 +1,4 @@
-experiment_identifier = "Criteo Click-Through prediction with DLRM"
+experiment_identifier = "Criteo DLRM"
 model_identifier = "criteo_dlrm"
 dataset_identifier = "criteo_click_through_small"
 
@@ -10,6 +10,7 @@ rebuild_hash_tables = 128000
 learning_rate = 0.0001
 loss_fn = "CategoricalCrossEntropyLoss"
 test_metrics = ["categorical_accuracy"]
+
 
 [[datasets]]
 format = "click"
@@ -28,6 +29,7 @@ batch_size = 256
 num_numerical_features = 15
 max_categorical_features = 23
 delimiter = " "
+
 
 [[nodes]]
 type = "Input"
