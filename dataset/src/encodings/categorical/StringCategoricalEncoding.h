@@ -17,13 +17,14 @@ class StringCategoricalEncoding : public CategoricalEncoding {
       : _encoding_map(std::move(encoding_map)) {}
 
   std::exception_ptr encodeCategory(const std::string_view id,
-                                    SegmentedFeatureVector& vec) final {
+                                    SegmentedFeatureVector& vec,
+                                    uint32_t offset) final {
     std::string class_name(id);
     if (!_encoding_map.count(class_name)) {
       return std::make_exception_ptr(std::invalid_argument(
           "Received unexpected class name: '" + class_name + ".'"));
     }
-    vec.addSparseFeatureToSegment(_encoding_map[class_name], 1.0);
+    vec.addSparseFeatureToSegment(_encoding_map[class_name] + offset, 1.0);
     return nullptr;
   };
 

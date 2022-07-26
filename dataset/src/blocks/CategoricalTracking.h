@@ -49,7 +49,7 @@ class CategoricalTrackingBlock : public Block {
   uint32_t expectedNumColumns() const final { return _expected_num_cols; };
 
  protected:
-  void buildSegment(const std::vector<std::string_view>& input_row,
+  std::exception_ptr buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) final {
     uint32_t tracking_id = _id_map->classToUid(input_row[_id_col]);
     auto timestamp = timestampFromInputRow(input_row);
@@ -72,6 +72,8 @@ class CategoricalTrackingBlock : public Block {
         encode(nbr_id, start_timestamp, end_timestamp, offset, vec);
       }
     }
+
+    return nullptr;
   }
 
  private:

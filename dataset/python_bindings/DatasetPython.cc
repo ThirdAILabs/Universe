@@ -290,7 +290,7 @@ void createDatasetSubmodule(py::module_& module) {
            py::arg("shuffle") = false,
            py::arg("config") = ShuffleBufferConfig(),
            py::arg("has_header") = false, py::arg("delimiter") = ',')
-      .def("next_batch", &StreamingGenericDatasetLoader::nextBatch)
+      .def("next_batch", &StreamingGenericDatasetLoader::nextBatchTuple)
       .def("load_in_memory", &StreamingGenericDatasetLoader::loadInMemory)
       .def("get_max_batch_size",
            &StreamingGenericDatasetLoader::getMaxBatchSize)

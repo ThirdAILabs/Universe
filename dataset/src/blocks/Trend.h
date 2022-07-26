@@ -68,7 +68,7 @@ class TrendBlock : public Block {
   }
 
  protected:
-  void buildSegment(const std::vector<std::string_view>& input_row,
+  std::exception_ptr buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) final {
     std::string id_str(input_row[_id_col]);
     uint32_t id = idHash(id_str);
@@ -86,6 +86,8 @@ class TrendBlock : public Block {
         offset = addFeaturesForId(neighbor_id, timestamp, vec, offset);
       }
     }
+
+    return nullptr;
   }
 
  private:

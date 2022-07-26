@@ -15,22 +15,22 @@ class ShuffleBatchBuffer {
   explicit ShuffleBatchBuffer(uint32_t shuffle_seed)
       : _gen(shuffle_seed), _saw_last_batch(false), _batch_size(0) {}
 
-  void insertBatch(std::pair<bolt::BoltBatch, bolt::BoltBatch>&& batch,
+  void insertBatch(std::tuple<bolt::BoltBatch, bolt::BoltBatch>&& batch,
                    bool shuffle) {
     if (empty()) {
-      _batch_size = batch.first.getBatchSize();
+      _batch_size = std::get<0>(batch).getBatchSize();
       _saw_last_batch = false;
     }
 
-    checkConsistentBatchSize(batch.first.getBatchSize());
+    checkConsistentBatchSize(std::get<0>(batch).getBatchSize());
 
     if (shuffle) {
-      swapShuffle(_input_batches, batch.first, _label_batches, batch.second,
+      swapShuffle(_input_batches, std::get<0>(batch), _label_batches, std::get<1>(batch),
                   _batch_size, _gen);
     }
 
-    _input_batches.insert(std::move(batch.first));
-    _label_batches.insert(std::move(batch.second));
+    _input_batches.insert(std::move(std::get<0>(batch)));
+    _label_batches.insert(std::move(std::get<1>(batch)));
   }
 
   std::optional<std::pair<bolt::BoltBatch, bolt::BoltBatch>> popBatch() {
@@ -46,13 +46,8 @@ class ShuffleBatchBuffer {
     auto input_batches = _input_batches.exportContiguousBuffer();
     auto label_batches = _label_batches.exportContiguousBuffer();
 
-    auto len = input_batches.size() * _batch_size;
-    if (!input_batches.empty()) {
-      len = len - _batch_size + input_batches.back().getBatchSize();
-    }
-
-    return {std::make_shared<BoltDataset>(std::move(input_batches), len),
-            std::make_shared<BoltDataset>(std::move(label_batches), len)};
+    return {std::make_shared<BoltDataset>(std::move(input_batches)),
+            std::make_shared<BoltDataset>(std::move(label_batches))};
   }
 
   inline bool empty() const { return _input_batches.empty(); }

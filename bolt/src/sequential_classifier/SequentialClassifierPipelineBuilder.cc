@@ -1,5 +1,5 @@
 #include <bolt/src/sequential_classifier/SequentialClassifierPipelineBuilder.h>
-#include <bolt/src/utils/AutoTuneUtils.h>
+#include <bolt/src/auto_classifiers/AutoClassifierUtils.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/CategoricalTracking.h>
 #include <dataset/src/blocks/Date.h>
@@ -72,7 +72,7 @@ Blocks SequentialClassifierPipelineBuilder::buildLabelBlocks() {
 size_t SequentialClassifierPipelineBuilder::autotuneShuffleBufferSize() const {
   auto batch_mem =
       BATCH_SIZE * _est_nonzeros * 8;  // 4 bytes for index, 4 bytes for value.
-  if (auto ram = AutoTuneUtils::getSystemRam()) {
+  if (auto ram = AutoClassifierUtils::getSystemRam()) {
     auto mem_allowance = *ram / 2;
     return mem_allowance / batch_mem;
   }

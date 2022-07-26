@@ -1,7 +1,7 @@
 #pragma once
 
 #include "SequentialClassifierSchema.h"
-#include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
+#include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/encodings/categorical/StringToUidMap.h>
 #include <dataset/src/encodings/categorical_history/CategoricalHistoryIndex.h>
 #include <dataset/src/encodings/count_history/CountHistoryIndex.h>

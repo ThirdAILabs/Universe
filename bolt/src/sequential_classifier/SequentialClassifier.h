@@ -6,7 +6,7 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <bolt/src/utils/AutoTuneUtils.h>
+#include <bolt/src/auto_classifiers/AutoClassifierUtils.h>
 #include <chrono>
 #include <cstddef>
 #include <memory>
@@ -37,7 +37,7 @@ class SequentialClassifier {
       _network = buildNetwork(*pipeline);
     }
 
-    if (!AutoTuneUtils::canLoadDatasetInMemory(filename)) {
+    if (!AutoClassifierUtils::canLoadDatasetInMemory(filename)) {
       trainOnStream(filename, epochs, learning_rate, pipeline);
     } else {
       trainInMemory(epochs, learning_rate, pipeline);
@@ -87,9 +87,9 @@ class SequentialClassifier {
 
   FullyConnectedNetwork buildNetwork(
       dataset::StreamingGenericDatasetLoader& pipeline) const {
-    auto hidden_dim = AutoTuneUtils::getHiddenLayerSize(
+    auto hidden_dim = AutoClassifierUtils::getHiddenLayerSize(
         _model_size, pipeline.getLabelDim(), pipeline.getInputDim());
-    auto hidden_sparsity = AutoTuneUtils::getHiddenLayerSparsity(hidden_dim);
+    auto hidden_sparsity = AutoClassifierUtils::getHiddenLayerSparsity(hidden_dim);
 
     SequentialConfigList configs;
     configs.push_back(std::make_shared<FullyConnectedLayerConfig>(

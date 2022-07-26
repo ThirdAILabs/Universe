@@ -1,6 +1,18 @@
 #include "AutoClassifierUtils.h"
 #include <bolt/src/layers/BoltVector.h>
 
+#if defined __linux
+#include <sys/sysinfo.h>
+#endif
+
+#if defined __APPLE__
+#include <sys/sysctl.h>
+#endif
+
+#if _WIN32
+#include <windows.h>
+#endif
+
 namespace thirdai::bolt {
 
 std::shared_ptr<FullyConnectedNetwork> AutoClassifierUtils::createNetwork(

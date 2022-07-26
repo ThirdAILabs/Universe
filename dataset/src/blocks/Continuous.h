@@ -21,13 +21,15 @@ class ContinuousBlock : public Block {
   uint32_t expectedNumColumns() const final { return _column + 1; };
 
  protected:
-  void buildSegment(const std::vector<std::string_view>& input_row,
+  std::exception_ptr buildSegment(const std::vector<std::string_view>& input_row,
                     SegmentedFeatureVector& vec) override {
     auto val_str = input_row.at(_column);
     char* end;
     float val = std::strtof(val_str.data(), &end);
 
     vec.addDenseFeatureToSegment(val);
+
+    return nullptr;
   };
 
  private:
