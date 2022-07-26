@@ -29,9 +29,7 @@ train_data, train_tokens, train_labels = mlm_loader.load(
     filename=TRAIN_DATA, batch_size=BATCH_SIZE
 )
 
-test_data, test_tokens, test_labels = mlm_loader.load(
-    filename=TEST_DATA, batch_size=BATCH_SIZE
-)
+test_data, _, test_labels = mlm_loader.load(filename=TEST_DATA, batch_size=BATCH_SIZE)
 
 train_config = (
     bolt.graph.TrainConfig.make(learning_rate=0.0001, epochs=1)
@@ -43,5 +41,5 @@ train_config = (
 predict_config = bolt.graph.PredictConfig.make().with_metrics(["categorical_accuracy"])
 
 for e in range(20):
-    model.train(train_data, test_tokens, train_labels, train_config)
-    model.predict(test_data, test_tokens, test_labels, predict_config)
+    model.train(train_data, train_labels, train_config)
+    model.predict(test_data, test_labels, predict_config)

@@ -1,0 +1,49 @@
+experiment_identifier = "MLM Switch Layer"
+model_identifier = "mlm_switch"
+dataset_identifier = "wiki_10M"
+
+
+train_metrics = []
+epochs = 10
+reconstruct_hash_functions = 10000
+rebuild_hash_tables = 100000
+learning_rate = 0.0001
+loss_fn = "CategoricalCrossEntropyLoss"
+train_metrics = ["mean_squared_error"]
+test_metrics = ["categorical_accuracy"]
+
+
+[[datasets]]
+format = "mlm_with_tokens"
+type_list = ["train_data", "train_tokens", "train_labels", "test_data", "test_tokens", "test_labels"]
+train_path = "/share/data/BERT/sentences_tokenized_shuffled_trimmed_10M.txt"
+test_path = "/share/data/BERT/sentences_tokenized_shuffled_trimmed_test_100k.txt"
+pairgram_range = 100000
+batch_size = 2048
+
+
+[[nodes]]
+type = "Input"
+name = "input"
+dim = 100000
+
+[[nodes]]
+type = "TokenInput"
+name = "token_input"
+
+[[nodes]]
+type = "Switch"
+name = "hidden"
+preds = ["input", "token_input"]
+dim = 200
+activation = "ReLU"
+n_layers = 100
+
+[[nodes]]
+type = "FullyConnected"
+name = "output"
+pred = "hidden"
+dim = 30224
+activation = 'Softmax'
+sparsity = 0.005
+use_default_sampling = true
