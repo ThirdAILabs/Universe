@@ -107,8 +107,7 @@ class Model {
    */
   InferenceMetricData predictOnStream(
       // Test dataset
-      std::shared_ptr<dataset::StreamingDataset<BATCH_T, BoltBatch>>
-          test_data,
+      std::shared_ptr<dataset::StreamingDataset<BATCH_T, BoltBatch>> test_data,
       // Use sparse inference
       bool use_sparse_inference = false,
       // Metrics to compute

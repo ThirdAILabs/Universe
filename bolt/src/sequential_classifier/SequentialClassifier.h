@@ -1,12 +1,12 @@
 #pragma once
 
 #include "SequentialClassifierPipelineBuilder.h"
+#include <bolt/src/auto_classifiers/AutoClassifierUtils.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <bolt/src/auto_classifiers/AutoClassifierUtils.h>
 #include <chrono>
 #include <cstddef>
 #include <memory>
@@ -89,7 +89,8 @@ class SequentialClassifier {
       dataset::StreamingGenericDatasetLoader& pipeline) const {
     auto hidden_dim = AutoClassifierUtils::getHiddenLayerSize(
         _model_size, pipeline.getLabelDim(), pipeline.getInputDim());
-    auto hidden_sparsity = AutoClassifierUtils::getHiddenLayerSparsity(hidden_dim);
+    auto hidden_sparsity =
+        AutoClassifierUtils::getHiddenLayerSparsity(hidden_dim);
 
     SequentialConfigList configs;
     configs.push_back(std::make_shared<FullyConnectedLayerConfig>(

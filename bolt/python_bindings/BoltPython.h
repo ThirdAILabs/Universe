@@ -13,8 +13,8 @@
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <bolt/src/sequential_classifier/SequentialClassifier.h>
 #include <dataset/python_bindings/DatasetPython.h>
-#include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/DatasetLoaders.h>
+#include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>

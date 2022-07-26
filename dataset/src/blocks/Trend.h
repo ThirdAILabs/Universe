@@ -33,7 +33,6 @@ class TrendBlock : public Block {
         _index(std::move(index)),
         _graph(std::move(graph)),
         _max_n_neighbors(max_n_neighbors) {
-    
     if (_graph != nullptr && _max_n_neighbors == 0) {
       throw std::invalid_argument(
           "Provided a graph but `max_n_neighbors` is "
@@ -43,7 +42,10 @@ class TrendBlock : public Block {
 
     if (lookback % period != 0 || lookahead % period != 0) {
       std::stringstream error_ss;
-      error_ss << "lookback and lookahead arguments must be a multiple of period (lookback = " << lookback << ", lookahead = " << lookahead << ", period = " << period << ").";
+      error_ss << "lookback and lookahead arguments must be a multiple of "
+                  "period (lookback = "
+               << lookback << ", lookahead = " << lookahead
+               << ", period = " << period << ").";
       throw std::invalid_argument(error_ss.str());
     }
 
@@ -76,8 +78,9 @@ class TrendBlock : public Block {
   }
 
  protected:
-  std::exception_ptr buildSegment(const std::vector<std::string_view>& input_row,
-                    SegmentedFeatureVector& vec) final {
+  std::exception_ptr buildSegment(
+      const std::vector<std::string_view>& input_row,
+      SegmentedFeatureVector& vec) final {
     std::string id_str(input_row[_id_col]);
     uint32_t id = idHash(id_str);
     uint32_t timestamp = timestampFromInputRow(input_row);
@@ -146,7 +149,6 @@ class TrendBlock : public Block {
 
     uint32_t idx = 0;
     for (const auto& count : counts) {
-
       if (!std::isnan(count)) {
         vec.addSparseFeatureToSegment(offset + idx, count);
       }

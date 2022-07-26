@@ -1,6 +1,7 @@
 #include "DatasetPython.h"
 #include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/NumpyDataset.h>
+#include <dataset/src/ShuffleBatchBuffer.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -10,8 +11,6 @@
 #include <dataset/src/blocks/DenseArray.h>
 #include <dataset/src/blocks/Text.h>
 #include <dataset/src/blocks/Trend.h>
-#include <dataset/src/ShuffleBatchBuffer.h>
-#include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/encodings/categorical/CategoricalEncodingInterface.h>
 #include <dataset/src/encodings/categorical/ContiguousNumericId.h>
 #include <dataset/src/encodings/text/CharKGram.h>

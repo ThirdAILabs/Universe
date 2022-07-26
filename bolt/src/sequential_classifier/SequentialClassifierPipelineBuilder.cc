@@ -1,5 +1,5 @@
-#include <bolt/src/sequential_classifier/SequentialClassifierPipelineBuilder.h>
 #include <bolt/src/auto_classifiers/AutoClassifierUtils.h>
+#include <bolt/src/sequential_classifier/SequentialClassifierPipelineBuilder.h>
 #include <dataset/src/blocks/Categorical.h>
 #include <dataset/src/blocks/CategoricalTracking.h>
 #include <dataset/src/blocks/Date.h>

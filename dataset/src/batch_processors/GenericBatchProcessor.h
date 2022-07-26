@@ -56,13 +56,12 @@ class GenericBatchProcessor
   std::tuple<bolt::BoltBatch, bolt::BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
     if (rows.empty()) {
-      return std::make_tuple(bolt::BoltBatch(),
-                             bolt::BoltBatch());
+      return std::make_tuple(bolt::BoltBatch(), bolt::BoltBatch());
     }
 
     std::vector<bolt::BoltVector> batch_inputs(rows.size());
     std::vector<bolt::BoltVector> batch_labels(rows.size());
-    
+
     auto first_row = ProcessorUtils::parseCsvRow(rows.at(0), _delimiter);
     for (auto& block : _input_blocks) {
       block->prepareForBatch(first_row);

@@ -25,8 +25,8 @@ class ShuffleBatchBuffer {
     checkConsistentBatchSize(std::get<0>(batch).getBatchSize());
 
     if (shuffle) {
-      swapShuffle(_input_batches, std::get<0>(batch), _label_batches, std::get<1>(batch),
-                  _batch_size, _gen);
+      swapShuffle(_input_batches, std::get<0>(batch), _label_batches,
+                  std::get<1>(batch), _batch_size, _gen);
     }
 
     _input_batches.insert(std::move(std::get<0>(batch)));

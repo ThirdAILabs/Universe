@@ -49,8 +49,9 @@ class CategoricalTrackingBlock : public Block {
   uint32_t expectedNumColumns() const final { return _expected_num_cols; };
 
  protected:
-  std::exception_ptr buildSegment(const std::vector<std::string_view>& input_row,
-                    SegmentedFeatureVector& vec) final {
+  std::exception_ptr buildSegment(
+      const std::vector<std::string_view>& input_row,
+      SegmentedFeatureVector& vec) final {
     uint32_t tracking_id = _id_map->classToUid(input_row[_id_col]);
     auto timestamp = timestampFromInputRow(input_row);
     _index->index(tracking_id, timestamp, input_row[_category_col]);

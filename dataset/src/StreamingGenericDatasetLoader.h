@@ -10,7 +10,8 @@
 
 namespace thirdai::dataset {
 
-class StreamingGenericDatasetLoader : public StreamingDataset<bolt::BoltBatch, bolt::BoltBatch> {
+class StreamingGenericDatasetLoader
+    : public StreamingDataset<bolt::BoltBatch, bolt::BoltBatch> {
  public:
   // The idea is to pass the input loader and generic batch processor into the
   // primary constructor This primary constructor calls the base class
@@ -49,7 +50,8 @@ class StreamingGenericDatasetLoader : public StreamingDataset<bolt::BoltBatch, b
             std::move(input_blocks), std::move(label_blocks), shuffle, config,
             has_header, delimiter) {}
 
-  std::optional<std::tuple<bolt::BoltBatch, bolt::BoltBatch>> nextBatchTuple() final {
+  std::optional<std::tuple<bolt::BoltBatch, bolt::BoltBatch>> nextBatchTuple()
+      final {
     if (_buffer.empty()) {
       prefillShuffleBuffer();
     }
@@ -58,9 +60,11 @@ class StreamingGenericDatasetLoader : public StreamingDataset<bolt::BoltBatch, b
     return _buffer.popBatch();
   }
 
-  std::tuple<std::shared_ptr<InMemoryDataset<bolt::BoltBatch>>, std::shared_ptr<InMemoryDataset<bolt::BoltBatch>>>
+  std::tuple<std::shared_ptr<InMemoryDataset<bolt::BoltBatch>>,
+             std::shared_ptr<InMemoryDataset<bolt::BoltBatch>>>
   loadInMemory() final {
-    while (auto batch = StreamingDataset<bolt::BoltBatch, bolt::BoltBatch>::nextBatchTuple()) {
+    while (auto batch = StreamingDataset<bolt::BoltBatch,
+                                         bolt::BoltBatch>::nextBatchTuple()) {
       _buffer.insertBatch(std::move(batch.value()), _shuffle);
     }
 
@@ -79,7 +83,8 @@ class StreamingGenericDatasetLoader : public StreamingDataset<bolt::BoltBatch, b
   }
 
   void addNextBatchToBuffer() {
-    auto batch = StreamingDataset<bolt::BoltBatch, bolt::BoltBatch>::nextBatchTuple();
+    auto batch =
+        StreamingDataset<bolt::BoltBatch, bolt::BoltBatch>::nextBatchTuple();
     if (batch) {
       _buffer.insertBatch(std::move(batch.value()), _shuffle);
     }

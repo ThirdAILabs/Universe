@@ -28,8 +28,9 @@ class DateBlock : public Block {
   static constexpr uint32_t week_of_month_dim = 5;
   static constexpr uint32_t week_of_year_dim = 49;
 
-  std::exception_ptr buildSegment(const std::vector<std::string_view>& input_row,
-                    SegmentedFeatureVector& vec) final {
+  std::exception_ptr buildSegment(
+      const std::vector<std::string_view>& input_row,
+      SegmentedFeatureVector& vec) final {
     auto time = TimeUtils::timeStringToTimeObject(input_row[_col]);
     uint32_t epoch_time = TimeUtils::timeToEpoch(&time, /* utcdiff = */ 0);
     uint32_t offset = 0;

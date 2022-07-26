@@ -15,8 +15,9 @@ class StringToUidMap : public CategoricalEncoding {
     _class_to_uid.reserve(n_classes + 1);
     _uid_to_class[n_classes] = "out-of-vocab";
   }
-  std::exception_ptr encodeCategory(std::string_view id, SegmentedFeatureVector& vec,
-                      uint32_t offset) final {
+  std::exception_ptr encodeCategory(std::string_view id,
+                                    SegmentedFeatureVector& vec,
+                                    uint32_t offset) final {
     size_t uid = classToUid(id);
     vec.addSparseFeatureToSegment(uid + offset, /* value = */ 1.0);
     return nullptr;
