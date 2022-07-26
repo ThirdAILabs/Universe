@@ -62,7 +62,6 @@ Checks: >
          cert-*-c, -cert-err34-c, -cert-msc30-c, -cert-msc32-c,
          clang-analyzer-*, 
             -clang-analyzer-core.*, -clang-analyzer-security.insecureAPI.rand, -clang-analyzer-optin.cplusplus.VirtualCall,
-            -clang-analyzer-cplusplus.NewDeleteLeaks,
          cppcoreguidelines-*, -cppcoreguidelines-avoid-magic-numbers, -cppcoreguidelines-pro-*, 
             -cppcoreguidelines-avoid-c-arrays, -cppcoreguidelines-init-variables, -cppcoreguidelines-owning-memory, 
             -cppcoreguidelines-special-member-functions, -cppcoreguidelines-non-private-member-variables-in-classes, 
