@@ -24,6 +24,7 @@
 #include <pybind11/stl.h>
 #include <algorithm>
 #include <csignal>
+#include <cstdint>
 #include <exception>
 #include <iostream>
 #include <limits>
@@ -338,6 +339,24 @@ class DistributedPyNetwork final : public DistributedModel {
     return constructPythonInferenceTuple(std::move(py_metric_data), num_samples,
                                          inference_output_dim, activations,
                                          active_neurons);
+  }
+
+  py::array_t<float> getSketchedIndices(uint32_t layer_index, float compression_density=0.1){
+    size_t dim = DistributedModel::getDim(layer_index);
+    size_t prev_dim = (layer_index > 0)
+                          ? DistributedModel::getDim(layer_index - 1)
+                          : DistributedModel::getInputDim();
+
+    int mem_size=(int) compression_density*dim*prev_dim;
+
+    py::capsule free_when_done(
+        mem, [](void* ptr) { delete static_cast<float*>(ptr); });
+    
+    float* mem=DistributedModel::getWeightSketch(layer_index,compression_density);
+
+    return py::array_t<float>({dim, prev_dim},
+                              {prev_dim * sizeof(float), sizeof(float)}, mem,
+                              free_when_done);
   }
 
   py::array_t<float> getWeights(uint32_t layer_index) {

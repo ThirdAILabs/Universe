@@ -104,4 +104,7 @@ uint32_t DistributedModel::getDim(uint32_t layer_index) const {
 
 uint32_t DistributedModel::getInputDim() const { return _input_dim; }
 
+float* DistributedModel::getWeightSketch(uint32_t layer_index, float  compression_density){
+  return _layers.at(layer_index)->getWeightSketch(compression_density);
+}
 }  // namespace thirdai::bolt

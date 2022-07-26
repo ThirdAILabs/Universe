@@ -69,6 +69,8 @@ class SequentialLayer {
     summary << "dim=" << getDim() << "\n";
   }
 
+  virtual int* getSketchedIndices(float compression_density) const =0;
+  virtual float* getSketchedWeights(int* indices, int size_sketch) const=0;
   virtual ~SequentialLayer() = default;
 };
 }  // namespace thirdai::bolt

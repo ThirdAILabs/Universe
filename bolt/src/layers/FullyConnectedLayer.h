@@ -104,6 +104,10 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void setSparsity(float sparsity) final;
 
+  int* getSketchedIndices(float compression_density) const final;
+
+  float* getSketchedWeights(int* indices, int size_sketch) const final;
+
   ActivationFunction getActivationFunction() const { return _act_func; }
 
   const SamplingConfig& getSamplingConfig() const final {

@@ -15,6 +15,7 @@
 #include <dataset/src/bolt_datasets/StreamingDataset.h>
 #include <exceptions/src/Exceptions.h>
 #include <algorithm>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -76,6 +77,8 @@ class DistributedModel : public FullyConnectedNetwork {
   void setWeightGradients(uint32_t layer_index, const float* data);
 
   void setBiasesGradients(uint32_t layer_index, const float* data);
+
+  float* getWeightSketch(uint32_t layer_index,float  compression_density);
 
  private:
   /*

@@ -558,6 +558,32 @@ float* FullyConnectedLayer::getWeights() const {
   return weights_copy;
 }
 
+int* FullyConnectedLayer::getSketchedIndices(float compression_density) const{
+
+  int size_sketch = (int) _dim*_prev_dim*compression_density;
+  int* sketch=new int[size_sketch];
+  float threshold=0.1;
+
+#pragma omp parallel for default(none) shared(sketch,size_sketch,threshold,_prev_dim,_dim)
+  for(int i=0;i<_dim*_prev_dim;i++){
+    if(_weights[i]>threshold){
+      int hash=rand()%size_sketch;
+      sketch[hash]=i;
+    }
+  }
+  return sketch;
+}
+
+float* FullyConnectedLayer::getSketchedWeights(int* sketch, int size_sketch) const{
+  float* weights=new float[size_sketch];
+
+  #pragma omp parallel for default(none) shared(sketch,size_sketch)
+  for(int i=0;i<size_sketch;i++){
+    weights[i]=_weights[sketch[i]];
+  }
+  return weights;
+}
+
 void FullyConnectedLayer::setTrainable(bool trainable) {
   _trainable = trainable;
 }
