@@ -43,6 +43,19 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
     backpropagate<true>(batch_index, inputs[batch_index], output);
   }
 
+  void backpropagateInputForGradients(uint32_t batch_index,
+                                      bolt::BoltBatch& input,
+                                      BoltVector& output) {
+    backpropagate<false>(batch_index, input[batch_index], output);
+  };
+
+  std::pair<std::vector<std::vector<float>>,
+            std::optional<std::vector<std::vector<uint32_t>>>>
+  getInputGradients(
+      std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>& input_dataset,
+      const LossFunction& loss_fn, bool best_index,
+      const std::vector<uint32_t>& required_labels);
+
   void updateParameters(float learning_rate, uint32_t iter) final {
     for (auto& layer : _layers) {
       layer->updateParameters(learning_rate, iter, BETA1, BETA2, EPS);
