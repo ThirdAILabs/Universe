@@ -233,7 +233,7 @@ def construct_switch_node(switch_config):
             dim=config_get(switch_config, "dim"),
             sparsity=sparsity,
             activation=config_get(switch_config, "activation"),
-            n_layers=config_get(switch_config, "n_layers")
+            n_layers=config_get(switch_config, "n_layers"),
         )
 
     return bolt.graph.Switch(
@@ -241,7 +241,7 @@ def construct_switch_node(switch_config):
         sparsity=sparsity,
         activation_function=config_get(switch_config, "activation"),
         sampling_config=get_sampling_config(switch_config),
-        n_layers=config_get(switch_config, "n_layers")
+        n_layers=config_get(switch_config, "n_layers"),
     )
 
 
