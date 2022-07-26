@@ -301,6 +301,30 @@ struct EmbeddingLayerConfig {
         log_embedding_block_size(_log_embedding_block_size) {}
 };
 
+struct NormalizationLayerConfig {
+  bool center;    // specifies if beta_regularizer will be added to z_score
+  bool scale;     // specifies if gamma_regularizer will be multiplied by the
+                  // z_score
+  float epsilon;  // small threshold added to avoid division by zero
+  float beta_regularizer;  // regularizer. Defaults to 0. Can be learned.
+
+  float gamma_regularizer;  // regularizer. Defaults to 1. Can be learned.
+  float beta_initializer;   // Initializer for the beta weight
+  float gamma_initializer;  // Initializer for the gamma weight
+
+  NormalizationLayerConfig(float _beta_regularizer, float _gamma_regularizer,
+                           float _beta_initializer = 0.0,
+                           float _gamma_initializer = 1.0, bool _center = true,
+                           bool _scale = true, float _epsilon = 0.001)
+      : center(_center),
+        scale(_scale),
+        epsilon(_epsilon),
+        beta_regularizer(_beta_regularizer),
+        gamma_regularizer(_gamma_regularizer),
+        beta_initializer(_beta_initializer),
+        gamma_initializer(_gamma_initializer) {}
+};
+
 }  // namespace thirdai::bolt
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedLayerConfig)
