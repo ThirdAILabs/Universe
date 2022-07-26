@@ -15,8 +15,8 @@ test_metrics = ["categorical_accuracy"]
 [[datasets]]
 format = "mlm_with_tokens"
 type_list = ["train_data", "train_tokens", "train_labels", "test_data", "test_tokens", "test_labels"]
-train_path = "/share/data/BERT/sentences_tokenized_shuffled_trimmed_10M.txt"
-test_path = "/share/data/BERT/sentences_tokenized_shuffled_trimmed_test_100k.txt"
+train_path = "BERT/sentences_tokenized_shuffled_trimmed_10M.txt"
+test_path = "BERT/sentences_tokenized_shuffled_trimmed_test_100k.txt"
 pairgram_range = 100000
 batch_size = 2048
 
