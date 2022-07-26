@@ -95,7 +95,7 @@ def log_config_info(config):
 
 
 def find_full_filepath(filename: str) -> str:
-    if (os.path.exists(filename)):
+    if os.path.exists(filename):
         return filename
 
     data_path_file = (
