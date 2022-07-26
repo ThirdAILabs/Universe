@@ -4,6 +4,7 @@
 #include "TokenInput.h"
 #include <bolt/src/graph/Node.h>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -24,6 +25,15 @@ class SwitchNode final : public Node,
     for (uint32_t i = 0; i < n_layers; i++) {
       _layers.push_back(
           std::make_shared<FullyConnectedNode>(dim, sparsity, activation));
+    }
+  }
+
+  SwitchNode(uint32_t dim, float sparsity, const std::string& activation,
+             SamplingConfig sampling_config, uint32_t n_layers)
+      : _layers_used(n_layers, false), _token_input(nullptr) {
+    for (uint32_t i = 0; i < n_layers; i++) {
+      _layers.push_back(std::make_shared<FullyConnectedNode>(
+          dim, sparsity, activation, sampling_config));
     }
   }
 

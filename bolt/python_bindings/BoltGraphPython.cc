@@ -120,9 +120,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 
   py::class_<SwitchNode, std::shared_ptr<SwitchNode>, Node>(graph_submodule,
                                                             "Switch")
-      .def(py::init<uint32_t, const std::string&, uint32_t>(), py::arg("dim"),
+      .def(py::init<uint64_t, const std::string&, uint32_t>(), py::arg("dim"),
            py::arg("activation"), py::arg("n_layers"))
-      .def(py::init<uint32_t, float, const std::string&, uint32_t>(),
+      .def(py::init<uint64_t, float, const std::string&, uint32_t>(),
            py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
            py::arg("n_layers"))
       .def("__call__", &SwitchNode::addPredecessors, py::arg("prev_layer"),
