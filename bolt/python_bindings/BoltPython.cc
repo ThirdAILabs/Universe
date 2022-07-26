@@ -293,6 +293,28 @@ void createBoltSubmodule(py::module_& module) {
            " * detailed: boolean. Optional. When specified to \"True\", "
            "summary will additionally print sampling config details for each "
            "layer in the network.")
+      .def("get_input_gradients", &PyNetwork::getInputGradients,
+           py::arg("input"), py::arg("loss_fn"), py::arg("best_index") = true,
+           py::arg("required_labels") = std::vector<uint32_t>(),
+           "Get the values of input gradients when back propagate "
+           "labels with the highest activation or second highest "
+           "activation or with the required label."
+           "Arguments:\n"
+           " * input: The input is same type as we give for train_data of "
+           "train method."
+           " * loss_fn: LossFunction - The loss function to minimize."
+           " * best_index: Boolean, if set to True, gives gradients correspond "
+           "to "
+           "highest activation, Otherwise gives gradients corresponds to "
+           "second highest activation."
+           " * required_labels: expected labels for each input vector default "
+           "to empty vector, if required_labels is empty then only function "
+           "takes look at the best_index parameter , otherwise gives gradients "
+           "corresponds to those labels."
+           " Returns a tuple consists of (0) list of lists of gradients "
+           "corresponds to the input vectors."
+           " and (1) optional, it only returns the corresponding indices for "
+           "sparse inputs.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
