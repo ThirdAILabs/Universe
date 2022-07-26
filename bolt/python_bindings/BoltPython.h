@@ -107,6 +107,9 @@ class PyNetwork final : public FullyConnectedNetwork {
     auto gradients = FullyConnectedNetwork::getInputGradients(
         data, loss_fn, best_index, required_labels);
 
+    if (gradients.second == std::nullopt) {
+      return py::cast(gradients.first);
+    }
     return py::cast(gradients);
   }
 

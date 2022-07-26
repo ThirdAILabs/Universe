@@ -61,7 +61,7 @@ def test_input_gradients():
     network = initialize_network()
     numpy_inputs, labels = gen_numpy_training_data(4, convert_to_bolt_dataset=False)
     inputs = dataset.from_numpy(numpy_inputs, batch_size=256)
-    gradients, indices = network.get_input_gradients(
+    gradients = network.get_input_gradients(
         inputs,
         bolt.CategoricalCrossEntropyLoss(),
         required_labels=labels,
@@ -115,10 +115,10 @@ def test_return_indices_for_sparse_and_dense_inputs():
     dense_inputs = dataset.from_numpy(dense_numpy_inputs, batch_size=4)
     sparse_inputs = dataset.from_numpy(sparse_numpy_inputs, batch_size=4)
     network = initialize_network()
-    _, dense_inputs_indices = network.get_input_gradients(
+    dense_inputs_gradients = network.get_input_gradients(
         dense_inputs, bolt.CategoricalCrossEntropyLoss()
     )
-    assert not (dense_inputs_indices)
+    assert len(dense_inputs_gradients) == len(dense_numpy_inputs)
     _, sparse_inputs_indices = network.get_input_gradients(
         sparse_inputs, bolt.CategoricalCrossEntropyLoss()
     )

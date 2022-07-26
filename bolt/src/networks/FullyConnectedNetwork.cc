@@ -93,28 +93,30 @@ void FullyConnectedNetwork::forward(uint32_t batch_index,
   }
 }
 
-uint32_t getSecondBestIndex(const float* activations, uint32_t dim) {
+uint32_t getSecondBestId(const BoltVector& vec) {
   float largest_activation = std::numeric_limits<float>::min(),
         second_largest_activation = std::numeric_limits<float>::min();
   uint32_t max_id = 0, second_max_id = 0;
-  if (dim < 2) {
+  if (vec.len < 2) {
     throw std::invalid_argument(
         "The sparse output dimension should be atleast 2 to call "
-        "getSecondBestIndex.");
+        "getSecondBestId.");
   }
-  for (uint32_t i = 0; i < dim; i++) {
-    if (activations[i] > largest_activation) {
+  for (uint32_t i = 0; i < vec.len; i++) {
+    if (vec.activations[i] > largest_activation) {
       second_largest_activation = largest_activation;
       second_max_id = max_id;
-      largest_activation = activations[i];
+      largest_activation = vec.activations[i];
       max_id = i;
-    } else if (activations[i] > second_largest_activation &&
-               activations[i] <= largest_activation) {
-      second_largest_activation = activations[i];
+    } else if (vec.activations[i] > second_largest_activation) {
+      second_largest_activation = vec.activations[i];
       second_max_id = i;
     }
   }
-  return second_max_id;
+  if (vec.isDense()) {
+    return second_max_id;
+  }
+  return vec.active_neurons[second_max_id];
 }
 
 std::pair<std::vector<std::vector<float>>,
@@ -134,7 +136,7 @@ FullyConnectedNetwork::getInputGradients(
   if (!best_index && getInferenceOutputDim(true) < 2) {
     throw std::invalid_argument(
         "The sparse output dimension should be atleast 2 to call "
-        "getSecondBestIndex.");
+        "getSecondBestId.");
   }
   // Because of how the datasets are read we know that all batches will not
   // have a batch size larger than this so we can just set the batch size
@@ -178,9 +180,7 @@ FullyConnectedNetwork::getInputGradients(
         if (best_index) {
           required_index = output[vec_id].getIdWithHighestActivation();
         } else {
-          required_index = getSecondBestIndex(
-              output[vec_id].activations,
-              getInferenceOutputDim(/*using_sparsity = */ true));
+          required_index = getSecondBestId(output[vec_id]);
         }
         batch_label = BoltVector::makeSparseVector(
             std::vector<uint32_t>{required_index}, std::vector<float>{1.0});
