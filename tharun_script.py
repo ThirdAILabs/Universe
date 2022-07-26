@@ -1,17 +1,7 @@
-from thirdai import bolt,dataset
+from thirdai import bolt, dataset
+from thirdai.bolt import graph
 import numpy as np
-import argparse
 from util import data_generator_tst
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--load_factor", default=0.1, type=float)
-parser.add_argument("--K", default=4, type=int)
-parser.add_argument("--L", default=64, type=int)
-parser.add_argument("--rp", default=12, type=int)
-parser.add_argument("--rs", default=64, type=int)
-parser.add_argument("--rh", default=10000, type=int)
-parser.add_argument("--rb", default=50000, type=int)
-args = parser.parse_args()
 
 # layers = [
 #     bolt.FullyConnected(dim=1024, 
@@ -29,7 +19,7 @@ input_layer = bolt.graph.Input(dim=100000)
 
 hidden_layer = bolt.graph.FullyConnected(dim=1024, activation="relu")(input_layer)
 
-output_layer = bolt.graph.FullyConnected(dim=931, sparsity=0.1, activation="sigmoid")(hidden_layer)
+output_layer = bolt.graph.FullyConnected(dim=931, sparsity=0.1, sampling_config=bolt.SamplingConfig(hashes_per_table=4, num_tables=64, range_pow=12, reservoir_size=64), activation="sigmoid")(hidden_layer)
 
 network = bolt.graph.Model(inputs=[input_layer], output=output_layer)
 
@@ -40,12 +30,20 @@ lr = 0.001
 train_data = dataset.load_bolt_svm_dataset("bens_small_train.svm", 2048)
 test_data = dataset.load_bolt_svm_dataset("bens_small_test.svm", 2048)
 
-network.train(train_data[0],train_data[1], loss_fn=bolt.BinaryCrossEntropyLoss(), learning_rate=0.001, epochs=3)
-network.train(train_data[0],train_data[1], loss_fn=bolt.BinaryCrossEntropyLoss(), learning_rate=0.0001, epochs=2)
+# network.train(train_data[0],train_data[1], loss_fn=bolt.BinaryCrossEntropyLoss(), learning_rate=0.001, epochs=3)
+# network.train(train_data[0],train_data[1], loss_fn=bolt.BinaryCrossEntropyLoss(), learning_rate=0.0001, epochs=2)
+
+train_config_1 = graph.TrainConfig.make(learning_rate=lr, epochs=3)
+train_config_2 = graph.TrainConfig.make(learning_rate=lr / 10, epochs=2)
+
+network.train(train_data[0], train_data[1], train_config_1)
+network.train(train_data[0], train_data[1], train_config_2)
 
 # network.predict(test_data, metrics=['categorical_accuracy'])
 
-pred_probs = network.predict(test_data[0],test_data[1])[1]
+predict_config = graph.PredictConfig.make().return_activations().with_metrics(["f_measure(0.5)"])
+
+pred_probs = network.predict(test_data[0], test_data[1], predict_config)[1]
 top_buckets = np.argsort(-pred_probs, axis=-1)[:,:4]
 top_scores = np.zeros(top_buckets.shape, dtype=np.float32)
 
@@ -79,7 +77,7 @@ for j in range(len(top_buckets)):
             s += str(top_buckets[j][temp1][i])
             if i < len(temp1) - 1:
                 s += ", "
-        print(s)
+        #print(s)
 
         temp2 = len(np.intersect1d(top_buckets[j][temp1],labels_batch[0]))
         
@@ -88,7 +86,7 @@ for j in range(len(top_buckets)):
     else:
         # continue
         test_count_2 += 1
-        print(top_buckets[j][0])
+        #print(top_buckets[j][0])
         temp2 = len(np.intersect1d(top_buckets[j][0],labels_batch[0]))
         p_sum += temp2
         r_sum += temp2/len(labels_batch[0])

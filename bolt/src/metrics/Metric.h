@@ -242,13 +242,17 @@ class WeightedMeanAbsolutePercentageError final : public Metric {
  */
 class FMeasure final : public Metric {
  public:
-  explicit FMeasure(float threshold = 0.8) : _threshold(threshold), _tp(0), _fp(0), _fn(0) {}
+  explicit FMeasure(float threshold = 0.8) : _threshold(threshold), _tp(0), _fp(0), _fn(0), _prec_sum(0), _rec_sum(0), _num_samples(0) {}
 
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
     auto predictions = output.getThresholdedNeurons(/* activation_threshold = */ _threshold, /* return_at_least_one = */ true, /* max_count_to_return = */ 4);
+    
+    uint32_t local_tp = 0;
+
     for (uint32_t pred : predictions) {
       if (labels.findActiveNeuronNoTemplate(pred).activation > 0) {
         _tp++;
+        local_tp++;
       } else {
         _fp++;
       }
@@ -262,6 +266,11 @@ class FMeasure final : public Metric {
         }
       }
     }
+
+    MetricUtilities::incrementAtomicFloat(_prec_sum, local_tp / static_cast<float>(predictions.size()));
+    MetricUtilities::incrementAtomicFloat(_rec_sum, local_tp / static_cast<float>(labels.len));
+    _num_samples++;
+
   }
 
   double getMetricAndReset(bool verbose) final {
@@ -269,7 +278,15 @@ class FMeasure final : public Metric {
     double recall = static_cast<double>(_tp) / (_tp + _fn);
     double f_measure = (2 * prec * recall) / (prec + recall);
     if (verbose) {
-      std::cout << "F-Measure: " << f_measure << std::endl;
+      std::cout << "Ben's Precision: " << prec << std::endl;
+      std::cout << "Ben's Recall: " << recall << std::endl;
+      std::cout << "Ben's F-Measure: " << f_measure << std::endl;
+
+      float avg_prec = _prec_sum.load() / _num_samples;
+      float avg_recall = _rec_sum.load() / _num_samples;
+      std::cout << "Tharun's Precision: " << avg_prec  << std::endl;
+      std::cout << "Tharun's Recall: " << avg_recall << std::endl;
+      std::cout << "Tharun's F-Measure: " << (2 * avg_prec * avg_recall) / (avg_prec + avg_recall) << std::endl;
     }
     _tp = 0;
     _fp = 0;
@@ -286,6 +303,10 @@ class FMeasure final : public Metric {
   std::atomic<uint32_t> _tp;
   std::atomic<uint32_t> _fp;
   std::atomic<uint32_t> _fn;
+
+  std::atomic<float> _prec_sum;
+  std::atomic<float> _rec_sum;
+  std::atomic<uint32_t> _num_samples;
 
 };
 
