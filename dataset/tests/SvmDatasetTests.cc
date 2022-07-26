@@ -10,16 +10,20 @@
 
 namespace thirdai::dataset {
 
-const std::string _filename = "./svm_dataset_test_file";
-static const uint32_t _num_vectors = 10000, _batch_size = 256;
+const std::string filename = "./svm_dataset_test_file";
+static constexpr uint32_t num_vectors = 10000;
+static constexpr uint32_t batch_size = 256;
+static constexpr uint32_t num_labels = 10, nonzeros = 100, num_classes = 10000,
+                          max_dim = 100000;
+static constexpr int32_t val_range = 1000;
 
 class SvmDatasetTestFixture : public ::testing::Test {
  public:
   SvmDatasetTestFixture()
       : gen(590240),
-        _label_dist(0, _num_classes - 1),
-        _index_dist(0, _max_dim - 1),
-        _value_dist(-_val_range, _val_range) {}
+        _label_dist(0, num_classes - 1),
+        _index_dist(0, max_dim - 1),
+        _value_dist(-val_range, val_range) {}
 
   struct TestSparseVec {
     std::vector<uint32_t> labels;
@@ -30,13 +34,13 @@ class SvmDatasetTestFixture : public ::testing::Test {
     TestSparseVec vec;
 
     std::unordered_set<uint32_t> label_set;
-    for (uint32_t i = 0; i < _num_labels; i++) {
+    for (uint32_t i = 0; i < num_labels; i++) {
       label_set.insert(_label_dist(gen));
     }
     vec.labels.insert(vec.labels.end(), label_set.begin(), label_set.end());
 
     std::unordered_set<uint32_t> index_set;
-    for (uint32_t i = 0; i < _nonzeros; i++) {
+    for (uint32_t i = 0; i < nonzeros; i++) {
       index_set.insert(_index_dist(gen));
     }
     for (uint32_t i : index_set) {
@@ -48,13 +52,13 @@ class SvmDatasetTestFixture : public ::testing::Test {
   }
 
   void SetUp() override {
-    for (uint32_t i = 0; i < _num_vectors; i++) {
+    for (uint32_t i = 0; i < num_vectors; i++) {
       _vectors.push_back(createTestSparseVec());
     }
 
     std::ofstream output_file =
 
-        dataset::SafeFileIO::ofstream(_filename);
+        dataset::SafeFileIO::ofstream(filename);
 
     uint32_t v = 0;
     for (const auto& vec : _vectors) {
@@ -99,7 +103,7 @@ class SvmDatasetTestFixture : public ::testing::Test {
     output_file.close();
   }
 
-  void TearDown() override { ASSERT_FALSE(std::remove(_filename.c_str())); }
+  void TearDown() override { ASSERT_FALSE(std::remove(filename.c_str())); }
 
   std::vector<TestSparseVec> _vectors;
 
@@ -107,22 +111,17 @@ class SvmDatasetTestFixture : public ::testing::Test {
   std::uniform_int_distribution<uint32_t> _label_dist;
   std::uniform_int_distribution<uint32_t> _index_dist;
   std::uniform_int_distribution<int32_t> _value_dist;
-
- private:
-  static const uint32_t _num_labels = 10, _nonzeros = 100, _num_classes = 10000,
-                        _max_dim = 100000;
-  static const int32_t _val_range = 1000;
 };
 
 TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
-  auto [data, labels] = SvmDatasetLoader::loadDataset(_filename, _batch_size);
+  auto [data, labels] = SvmDatasetLoader::loadDataset(filename, batch_size);
 
   // Check data vectors are correct.
   uint32_t vec_count = 0;
   for (const auto& batch : *data) {
     uint32_t batch_size = batch.getBatchSize();
-    ASSERT_TRUE(batch_size == _batch_size ||
-                batch_size == _num_vectors % _batch_size);
+    ASSERT_TRUE(batch_size == batch_size ||
+                batch_size == num_vectors % batch_size);
 
     for (uint32_t v = 0; v < batch_size; v++) {
       ASSERT_EQ(batch[v].len, _vectors[vec_count].values.size());
@@ -136,13 +135,13 @@ TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
       vec_count++;
     }
   }
-  ASSERT_EQ(vec_count, _num_vectors);
+  ASSERT_EQ(vec_count, num_vectors);
 
   // Check labels are correct.
   uint32_t label_count = 0;
   for (const auto& batch : *labels) {
-    ASSERT_TRUE(batch.getBatchSize() == _batch_size ||
-                batch.getBatchSize() == _num_vectors % _batch_size);
+    ASSERT_TRUE(batch.getBatchSize() == batch_size ||
+                batch.getBatchSize() == num_vectors % batch_size);
 
     for (uint32_t v = 0; v < batch.getBatchSize(); v++) {
       ASSERT_EQ(batch[v].len, _vectors.at(label_count).labels.size());
@@ -156,7 +155,7 @@ TEST_F(SvmDatasetTestFixture, BoltSvmDatasetTest) {
       label_count++;
     }
   }
-  ASSERT_EQ(label_count, _num_vectors);
+  ASSERT_EQ(label_count, num_vectors);
 }
 
 }  // namespace thirdai::dataset
