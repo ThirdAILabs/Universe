@@ -29,8 +29,8 @@ struct SvmDatasetLoader {
 struct ClickThroughDatasetLoader {
   static std::tuple<BoltDatasetPtr, BoltTokenDatasetPtr, BoltDatasetPtr>
   loadDataset(const std::string& filename, uint32_t batch_size,
-              uint32_t num_dense_features, uint32_t max_num_categorical_features,
-              char delimiter) {
+              uint32_t num_dense_features,
+              uint32_t max_num_categorical_features, char delimiter) {
     auto batch_processor = std::make_shared<ClickThroughBatchProcessor>(
         num_dense_features, max_num_categorical_features, delimiter);
 

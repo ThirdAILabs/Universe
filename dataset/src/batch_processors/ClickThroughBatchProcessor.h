@@ -55,7 +55,7 @@ class ClickThroughBatchProcessor final
           std::to_string(cols.size()) + " columns.");
     }
 
-    auto label = getLabelVector(/* label_str= */cols[0]);
+    auto label = getLabelVector(/* label_str= */ cols[0]);
 
     std::vector<float> dense_features;
     uint32_t feature_idx = 1;
