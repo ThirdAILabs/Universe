@@ -87,16 +87,16 @@ MultiLabelTextClassifier::MultiLabelTextClassifier(uint32_t n_classes) {
 
 void MultiLabelTextClassifier::train(const std::string& filename,
                                      uint32_t epochs, float learning_rate) {
-  auto dataset = loadStreamingDataset(filename);
-  // auto dataset = dataset::loadBoltSvmDataset(
-  //     filename, 2048);  // loadStreamingDataset(filename);
+  // auto dataset = loadStreamingDataset(filename);
+  auto dataset = dataset::loadBoltSvmDataset(
+      filename, 2048);  // loadStreamingDataset(filename);
 
   BinaryCrossEntropyLoss loss;
 
   // Assume Wayfair's data can fit in memory
-  auto [train_data, train_labels] = dataset->loadInMemory();
-  // auto train_data = dataset.data;
-  // auto train_labels = dataset.labels;
+  // auto [train_data, train_labels] = dataset->loadInMemory();
+  auto train_data = dataset.data;
+  auto train_labels = dataset.labels;
 
   auto train_cfg = TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
                                            /* epochs= */ epochs);
@@ -107,8 +107,8 @@ void MultiLabelTextClassifier::train(const std::string& filename,
 void MultiLabelTextClassifier::predict(
     const std::string& filename,
     const std::optional<std::string>& output_filename, const float threshold) {
-  auto dataset = loadStreamingDataset(filename);
-  //auto dataset = dataset::loadBoltSvmDataset(filename, 2048);  // loadStreamingDataset(filename);
+  // auto dataset = loadStreamingDataset(filename);
+  auto dataset = dataset::loadBoltSvmDataset(filename, 2048); 
 
   std::optional<std::ofstream> output_file;
   if (output_filename) {
@@ -122,9 +122,9 @@ void MultiLabelTextClassifier::predict(
                                   .withMetrics({metric.str()})
                                   .returnActivations();
 
-  auto [test_data, test_labels] = dataset->loadInMemory();
-  // auto test_data = dataset.data;
-  // auto test_labels = dataset.labels;
+  // auto [test_data, test_labels] = dataset->loadInMemory();
+  auto test_data = dataset.data;
+  auto test_labels = dataset.labels;
 
   auto [_, predict_output] =
       _model->predict(test_data, test_labels, predict_cfg);

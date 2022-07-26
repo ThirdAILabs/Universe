@@ -27,8 +27,8 @@ network.compile(loss=bolt.BinaryCrossEntropyLoss())
 
 lr = 0.001
 
-train_data = dataset.load_bolt_svm_dataset("bens_small_train.svm", 2048)
-test_data = dataset.load_bolt_svm_dataset("bens_small_test.svm", 2048)
+train_data = dataset.load_bolt_svm_dataset("train_unig_big_1.svm", 2048)
+test_data = dataset.load_bolt_svm_dataset("dev_unig_big_1.svm", 2048)
 
 # network.train(train_data[0],train_data[1], loss_fn=bolt.BinaryCrossEntropyLoss(), learning_rate=0.001, epochs=3)
 # network.train(train_data[0],train_data[1], loss_fn=bolt.BinaryCrossEntropyLoss(), learning_rate=0.0001, epochs=2)
@@ -59,7 +59,7 @@ p_sum = 0
 r_sum = 0
 test_count_1 = 0
 test_count_2 = 0
-test_data_generator = data_generator_tst(["bens_small_test.svm"], 1)
+test_data_generator = data_generator_tst(["dev_unig_big_1.svm"], 1)
 
 for j in range(len(top_buckets)):
     _, _, labels_batch = next(test_data_generator)
