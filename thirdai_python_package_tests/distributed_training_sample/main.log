@@ -374,3 +374,59 @@
 2022-07-26 06:13:16,158 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 2.5782129764556885, Python Computation Time: 0.44043540954589844, Communication Time: 2.1569762229919434
 2022-07-26 06:13:16,237 : INFO : DistributedBolt : Accuracy on workers 0: 0.940900
 2022-07-26 06:13:16,316 : INFO : DistributedBolt : Accuracy on workers 1: 0.940900
+2022-07-26 09:32:39,082 : INFO : DistributedBolt : Training has started!
+2022-07-26 09:32:39,518 : INFO : DistributedBolt : Ray Initialized
+2022-07-26 09:34:58,750 : INFO : DistributedBolt : Training has started!
+2022-07-26 09:34:59,153 : INFO : DistributedBolt : Ray Initialized
+2022-07-26 09:35:01,249 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-07-26 09:35:01,265 : INFO : DistributedBolt : 0 processed!, Total Batches: 240
+2022-07-26 09:35:01,408 : INFO : DistributedBolt : 5 processed!, Total Batches: 240
+2022-07-26 09:35:01,537 : INFO : DistributedBolt : 10 processed!, Total Batches: 240
+2022-07-26 09:35:01,666 : INFO : DistributedBolt : 15 processed!, Total Batches: 240
+2022-07-26 09:35:01,793 : INFO : DistributedBolt : 20 processed!, Total Batches: 240
+2022-07-26 09:35:01,923 : INFO : DistributedBolt : 25 processed!, Total Batches: 240
+2022-07-26 09:35:02,043 : INFO : DistributedBolt : 30 processed!, Total Batches: 240
+2022-07-26 09:35:02,156 : INFO : DistributedBolt : 35 processed!, Total Batches: 240
+2022-07-26 09:35:02,272 : INFO : DistributedBolt : 40 processed!, Total Batches: 240
+2022-07-26 09:35:02,391 : INFO : DistributedBolt : 45 processed!, Total Batches: 240
+2022-07-26 09:35:02,514 : INFO : DistributedBolt : 50 processed!, Total Batches: 240
+2022-07-26 09:35:02,631 : INFO : DistributedBolt : 55 processed!, Total Batches: 240
+2022-07-26 09:35:02,747 : INFO : DistributedBolt : 60 processed!, Total Batches: 240
+2022-07-26 09:35:02,865 : INFO : DistributedBolt : 65 processed!, Total Batches: 240
+2022-07-26 09:35:02,982 : INFO : DistributedBolt : 70 processed!, Total Batches: 240
+2022-07-26 09:35:03,100 : INFO : DistributedBolt : 75 processed!, Total Batches: 240
+2022-07-26 09:35:03,217 : INFO : DistributedBolt : 80 processed!, Total Batches: 240
+2022-07-26 09:35:03,342 : INFO : DistributedBolt : 85 processed!, Total Batches: 240
+2022-07-26 09:35:03,471 : INFO : DistributedBolt : 90 processed!, Total Batches: 240
+2022-07-26 09:35:03,587 : INFO : DistributedBolt : 95 processed!, Total Batches: 240
+2022-07-26 09:35:03,706 : INFO : DistributedBolt : 100 processed!, Total Batches: 240
+2022-07-26 09:35:03,822 : INFO : DistributedBolt : 105 processed!, Total Batches: 240
+2022-07-26 09:35:03,938 : INFO : DistributedBolt : 110 processed!, Total Batches: 240
+2022-07-26 09:35:04,059 : INFO : DistributedBolt : 115 processed!, Total Batches: 240
+2022-07-26 09:35:04,172 : INFO : DistributedBolt : 120 processed!, Total Batches: 240
+2022-07-26 09:35:04,291 : INFO : DistributedBolt : 125 processed!, Total Batches: 240
+2022-07-26 09:35:04,416 : INFO : DistributedBolt : 130 processed!, Total Batches: 240
+2022-07-26 09:35:04,537 : INFO : DistributedBolt : 135 processed!, Total Batches: 240
+2022-07-26 09:35:04,655 : INFO : DistributedBolt : 140 processed!, Total Batches: 240
+2022-07-26 09:35:04,770 : INFO : DistributedBolt : 145 processed!, Total Batches: 240
+2022-07-26 09:35:04,888 : INFO : DistributedBolt : 150 processed!, Total Batches: 240
+2022-07-26 09:35:05,006 : INFO : DistributedBolt : 155 processed!, Total Batches: 240
+2022-07-26 09:35:05,125 : INFO : DistributedBolt : 160 processed!, Total Batches: 240
+2022-07-26 09:35:05,245 : INFO : DistributedBolt : 165 processed!, Total Batches: 240
+2022-07-26 09:35:05,364 : INFO : DistributedBolt : 170 processed!, Total Batches: 240
+2022-07-26 09:35:05,493 : INFO : DistributedBolt : 175 processed!, Total Batches: 240
+2022-07-26 09:35:05,609 : INFO : DistributedBolt : 180 processed!, Total Batches: 240
+2022-07-26 09:35:05,720 : INFO : DistributedBolt : 185 processed!, Total Batches: 240
+2022-07-26 09:35:05,833 : INFO : DistributedBolt : 190 processed!, Total Batches: 240
+2022-07-26 09:35:05,948 : INFO : DistributedBolt : 195 processed!, Total Batches: 240
+2022-07-26 09:35:06,065 : INFO : DistributedBolt : 200 processed!, Total Batches: 240
+2022-07-26 09:35:06,183 : INFO : DistributedBolt : 205 processed!, Total Batches: 240
+2022-07-26 09:35:06,296 : INFO : DistributedBolt : 210 processed!, Total Batches: 240
+2022-07-26 09:35:06,413 : INFO : DistributedBolt : 215 processed!, Total Batches: 240
+2022-07-26 09:35:06,535 : INFO : DistributedBolt : 220 processed!, Total Batches: 240
+2022-07-26 09:35:06,652 : INFO : DistributedBolt : 225 processed!, Total Batches: 240
+2022-07-26 09:35:06,768 : INFO : DistributedBolt : 230 processed!, Total Batches: 240
+2022-07-26 09:35:06,883 : INFO : DistributedBolt : 235 processed!, Total Batches: 240
+2022-07-26 09:35:07,001 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 2.6491382122039795, Python Computation Time: 0.4577171802520752, Communication Time: 2.2524380683898926
+2022-07-26 09:35:07,077 : INFO : DistributedBolt : Accuracy on workers 0: 0.943400
+2022-07-26 09:35:07,158 : INFO : DistributedBolt : Accuracy on workers 1: 0.943400
