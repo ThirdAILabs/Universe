@@ -51,8 +51,10 @@ static ActivationFunction getActivationFunction(
   if (lower_name == "tanh") {
     return ActivationFunction::Tanh;
   }
-  throw std::invalid_argument("'" + act_func_name +
-                              "' is not a valid activation function");
+  throw std::invalid_argument(
+      "'" + act_func_name +
+      "' is not a valid activation function. Supported activation functions: "
+      "'relu', 'softmax', 'sigmoid', 'linear', and 'tanh'.");
 }
 
 constexpr float actFuncDerivative(float activation,
@@ -78,44 +80,6 @@ constexpr float actFuncDerivative(float activation,
   // This is impossible to reach, but the compiler gave a warning saying it
   // reached the end of a non void function without it.
   return 0.0;
-}
-
-// Didn't include DensifiedMinhash because its hashSingleDense() method has not
-// been implemented.
-enum class HashFunctionEnum { DWTA, FastSRP, SRP };
-
-static HashFunctionEnum getHashFunction(const std::string& hash_function) {
-  std::string lower_name;
-  for (char c : hash_function) {
-    lower_name.push_back(std::tolower(c));
-  }
-  if (lower_name == "dwta") {
-    return HashFunctionEnum::DWTA;
-  }
-  if (lower_name == "fastsrp") {
-    return HashFunctionEnum::FastSRP;
-  }
-  if (lower_name == "srp") {
-    return HashFunctionEnum::SRP;
-  }
-  throw std::invalid_argument(
-      "'" + hash_function +
-      "' is not a Supported LSH function. Supported Functions are "
-      "SRP, FastSRP, DWTA");
-}
-
-inline std::string getHashString(HashFunctionEnum hash_function) {
-  switch (hash_function) {
-    case HashFunctionEnum::DWTA:
-      return "DWTA";
-    case HashFunctionEnum::SRP:
-      return "SRP";
-    case HashFunctionEnum::FastSRP:
-      return "FastSRP";
-    // Not supposed to reach here but compiler complains
-    default:
-      throw std::invalid_argument("Hash function not supported.");
-  }
 }
 
 }  // namespace thirdai::bolt
