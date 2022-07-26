@@ -28,7 +28,7 @@ class TabularMetadata {
                   std::unordered_map<uint32_t, double> col_to_max_val,
                   std::unordered_map<uint32_t, double> col_to_min_val,
                   uint32_t max_salt_len)
-      : _num_non_empty_bins(10),
+      : _num_non_empty_bins(25),
         _label_col_index(label_col_index),
         _max_salt_len(max_salt_len),
         _column_dtypes(std::move(column_dtypes)),
@@ -80,7 +80,7 @@ class TabularMetadata {
     uint64_t uniqueBin =
         static_cast<uint64_t>(bin) << 32 | static_cast<uint64_t>(col);
     const char* val_to_hash = reinterpret_cast<const char*>(&uniqueBin);
-    return TextEncodingUtils::computeUnigram(val_to_hash, /* len */ 8);
+    return TextEncodingUtils::computeUnigram(val_to_hash, /* len = */ 8);
   }
 
  private:
@@ -201,7 +201,7 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
                                                   col_to_min_val, max_salt_len);
   }
 
-  bool expectsHeader() const final { return false; }
+  bool expectsHeader() const final { return true; }
 
   void processHeader(const std::string& header) final { (void)header; }
 
