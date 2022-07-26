@@ -86,7 +86,9 @@ class BlockTest : public testing::Test {
       Block& block, const std::vector<std::string>& input_row,
       SegmentedFeatureVector& vec) {
     auto input_row_view = toStringViewVec(input_row);
-    block.addVectorSegment(input_row_view, vec);
+    if (auto err = block.addVectorSegment(input_row_view, vec)) {
+      std::rethrow_exception(err);
+    }
   }
 
   /**
