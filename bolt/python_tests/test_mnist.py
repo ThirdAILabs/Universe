@@ -36,17 +36,19 @@ def check_categorical_accuracies(
     returned_metrics, returned_activations, accuracy_threshold
 ):
 
-    assert acc["categorical_accuracy"] >= accuracy_threshold  # ACCURACY_THRESHOLD
+    assert (
+        returned_metrics["categorical_accuracy"] >= accuracy_threshold
+    )  # ACCURACY_THRESHOLD
 
     # This last check is just to make sure that the accuracy computed in c++ matches
     # what we can compute here using the returned activations. This verifies that the
     # returned activations match and that the metrics are computed correctly.
-    predictions = np.argmax(activations, axis=1)
+    predictions = np.argmax(returned_activations, axis=1)
 
     labels = load_mnist_labels()
     acc_computed = np.mean(predictions == labels)
 
-    assert acc_computed == acc["categorical_accuracy"]
+    assert acc_computed == returned_metrics["categorical_accuracy"]
 
 
 def load_mnist():
