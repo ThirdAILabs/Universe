@@ -15,16 +15,14 @@ def map_categories_to_integers(dataframes):
                 df[colname] = pd.factorize(df[colname])[0]
 
 
-def getColDatatypes(df):
-    dtypes = []
-    for col in df.columns:
-        if col == "label":
-            dtypes.append("label")
-        elif is_numeric_dtype(df[col]):
-            dtypes.append("numeric")
-        else:
-            dtypes.append("categorical")
-    return dtypes
+def getColDatatypes(dataset_base_filename):
+    dtypes_file = dataset_base_filename + "/Dtypes.txt"
+    with open(dtypes_file) as file:
+        lines = file.readlines()
+        dtypes = lines[0].split(",")
+        # remove trailing newline character from last elem
+        dtypes[-1] = dtypes[-1][:-1]
+        return dtypes
 
 
 def accuracy(predictions, ytest):
@@ -40,18 +38,21 @@ def log_message(message, out_file):
     out_file.write(message)
 
 
-def prep_data(data_dir):
-    train_data = pd.read_csv(data_dir + "/Train.csv")
-    valid_data = pd.read_csv(data_dir + "/Valid.csv")
-    test_data = pd.read_csv(data_dir + "/Test.csv")
+def prep_data(data_dir, dtypes):
+    train_data = pd.read_csv(data_dir + "/Train.csv", header=None)
+    valid_data = pd.read_csv(data_dir + "/Valid.csv", header=None)
+    test_data = pd.read_csv(data_dir + "/Test.csv", header=None)
 
-    xtrain, ytrain = train_data.drop("label", axis=1), train_data["label"]
-    xvalid, yvalid = valid_data.drop("label", axis=1), valid_data["label"]
-    xtest, ytest = test_data.drop("label", axis=1), test_data["label"]
+    label_col_index = dtypes.index("label")
+    train_label_col = train_data.columns[label_col_index]
+    valid_label_col = valid_data.columns[label_col_index]
+    test_label_col = test_data.columns[label_col_index]
 
-    dtypes = getColDatatypes(train_data)
+    xtrain, ytrain = train_data.drop(train_label_col, axis=1), train_data[train_label_col]
+    xvalid, yvalid = valid_data.drop(valid_label_col, axis=1), valid_data[valid_label_col]
+    xtest, ytest = test_data.drop(test_label_col, axis=1), test_data[test_label_col]
 
-    return xtrain, ytrain, xvalid, yvalid, xtest, ytest, dtypes
+    return xtrain, ytrain, xvalid, yvalid, xtest, ytest
 
 
 def to_numpy(xdata, ydata):
@@ -199,8 +200,10 @@ def main():
     base_dir = "/share/data/tabular_benchmarks/"
     out_file = open("tabular_classifier_results.txt", "w")
     for dataset_name in datasets:
-        xtrain, ytrain, xvalid, yvalid, xtest, ytest, dtypes = prep_data(
-            base_dir + dataset_name
+        data_dir = base_dir + dataset_name
+        dtypes = getColDatatypes(data_dir)
+        xtrain, ytrain, xvalid, yvalid, xtest, ytest = prep_data(
+            data_dir, dtypes
         )
 
         log_message(
@@ -208,7 +211,7 @@ def main():
             out_file,
         )
 
-        train_bolt(dtypes, ytrain, yvalid, ytest, base_dir + dataset_name, out_file)
+        # train_bolt(dtypes, ytrain, yvalid, ytest, data_dir, out_file)
         train_xgboost(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)
         train_tabnet(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)
 

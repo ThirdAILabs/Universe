@@ -201,7 +201,7 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
                                                   col_to_min_val, max_salt_len);
   }
 
-  bool expectsHeader() const final { return true; }
+  bool expectsHeader() const final { return false; }
 
   void processHeader(const std::string& header) final { (void)header; }
 
