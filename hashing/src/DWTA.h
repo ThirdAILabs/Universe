@@ -46,6 +46,8 @@ class DWTAHashFunction final : public HashFunction {
         /* range_pow= */ _log_binsize * _hashes_per_table);
   }
 
+  std::string getName() const final { return "DWTA"; }
+
   ~DWTAHashFunction() = default;
 };
 

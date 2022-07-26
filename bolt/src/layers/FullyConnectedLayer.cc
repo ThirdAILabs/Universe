@@ -635,9 +635,14 @@ void FullyConnectedLayer::removeOptimizer() {
 
 void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
                                             bool detailed) const {
-  (void)detailed;
   summary << "dim=" << _dim << ", sparsity=" << _sparsity << ", act_func=";
   summary << activationFunctionToStr(_act_func);
+
+  if (detailed && _sparsity < 1.0) {
+    summary << " (hash_function=" << _hasher->getName() << ", ";
+    _hash_table->summarize(summary);
+    summary << ")";
+  }
 
   summary << "\n";
 }

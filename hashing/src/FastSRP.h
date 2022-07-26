@@ -23,6 +23,7 @@ class FastSRP final : public HashFunction {
         /* input_dim= */ _dim, /* hashes_per_table= */ _hashes_per_table,
         /* num_tables= */ _num_tables, /* out_mod= */ _range);
   }
+  std::string getName() const final { return "FastSRP"; }
 
  private:
   uint32_t _hashes_per_table, _num_hashes, _log_num_hashes, _dim, _binsize,

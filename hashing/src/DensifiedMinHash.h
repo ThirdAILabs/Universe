@@ -26,6 +26,8 @@ class DensifiedMinHash final : public HashFunction {
         /* range= */ _range);
   }
 
+  std::string getName() const final { return "DensifiedMinhash"; }
+
  private:
   const uint32_t _hashes_per_table, _total_num_hashes, _binsize, _seed;
 };

@@ -12,7 +12,8 @@ namespace thirdai::bolt::tests {
 
 static constexpr uint32_t n_classes = 100;
 
-static void testSimpleDatasetHashFunction(SamplingConfigPtr sampling_config) {
+static void testSimpleDatasetHashFunction(
+    const SamplingConfigPtr& sampling_config) {
   // As we train for more epochs, the model should learn better using these hash
   // functions.
   FullyConnectedNetwork network(

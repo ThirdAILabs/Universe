@@ -49,7 +49,7 @@ def test_simple_bolt_dag_summary():
       ======================= Bolt Model =======================
       input_1 (Input) : dim=10
       input_1 -> fc_1 (FullyConnected): dim=10, sparsity=1, act_func=ReLU
-      fc_1 -> fc_2 (FullyConnected): dim=10, sparsity=0.01, act_func=ReLU
+      fc_1 -> fc_2 (FullyConnected): dim=10, sparsity=0.01, act_func=ReLU (hash_function=DWTA, num_tables=328, range=32768, reservoir_size=4)
       (fc_1, fc_2) -> concat_1 (Concatenate)
       concat_1 -> fc_3 (FullyConnected): dim=100, sparsity=1, act_func=ReLU
       fc_3 -> fc_4 (FullyConnected): dim=10, sparsity=1, act_func=Softmax

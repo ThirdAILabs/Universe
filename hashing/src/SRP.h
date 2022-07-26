@@ -28,6 +28,8 @@ class SparseRandomProjection final : public HashFunction {
         /* num_tables= */ _num_tables);
   }
 
+  std::string getName() const final { return "SRP"; }
+
   ~SparseRandomProjection();
 };
 

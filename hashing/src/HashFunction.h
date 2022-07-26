@@ -88,6 +88,8 @@ class HashFunction {
 
   virtual std::unique_ptr<HashFunction> copyWithNewSeeds() const = 0;
 
+  virtual std::string getName() const = 0;
+
   virtual ~HashFunction() = default;
 
  protected:
