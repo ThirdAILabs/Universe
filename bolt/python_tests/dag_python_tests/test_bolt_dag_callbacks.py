@@ -36,12 +36,14 @@ def test_simple_dag_callbacks():
 
     global epoch_cnt
     epoch_cnt = 0
+
     def epoch_callback():
         global epoch_cnt
         epoch_cnt += 1
 
     global batch_cnt
     batch_cnt = 0
+
     def batch_callback():
         global batch_cnt
         batch_cnt += 1
@@ -73,7 +75,7 @@ def test_dag_callbacks_call_cpp_function():
     global global_model
     global layer_dims
     global layer_sparsities
-    
+
     layer_dims = []
     layer_sparsities = []
     global_model = get_simple_model(n_classes)
