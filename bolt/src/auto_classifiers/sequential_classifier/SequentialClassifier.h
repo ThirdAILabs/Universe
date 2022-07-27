@@ -33,8 +33,8 @@ class SequentialClassifier {
     auto pipeline = _pipeline_builder.buildPipelineForFile(
         filename, /* shuffle = */ true, overwrite_index);
 
-    if (!_network) {
-      _network = buildNetwork(*pipeline);
+    if (_network == nullptr) {
+      _network = AutoClassifierUtils::createNetwork(pipeline->getInputDim(), pipeline->getLabelDim(), _model_size);
     }
 
     if (!AutoClassifierUtils::canLoadDatasetInMemory(filename)) {
@@ -68,7 +68,7 @@ class SequentialClassifier {
     auto pipeline =
         _pipeline_builder.buildPipelineForFile(filename, /* shuffle = */ false,
                                                /* overwrite_index = */ false);
-    if (!_network) {
+    if (_network == nullptr) {
       throw std::runtime_error(
           "[SequentialClassifier::predict] Predict method called before "
           "training the classifier.");
@@ -84,22 +84,6 @@ class SequentialClassifier {
 
  private:
   static constexpr const char* metric_name = "categorical_accuracy";
-
-  FullyConnectedNetwork buildNetwork(
-      dataset::StreamingGenericDatasetLoader& pipeline) const {
-    auto hidden_dim = AutoClassifierUtils::getHiddenLayerSize(
-        _model_size, pipeline.getLabelDim(), pipeline.getInputDim());
-    auto hidden_sparsity =
-        AutoClassifierUtils::getHiddenLayerSparsity(hidden_dim);
-
-    SequentialConfigList configs;
-    configs.push_back(std::make_shared<FullyConnectedLayerConfig>(
-        hidden_dim, hidden_sparsity, ActivationFunction::ReLU));
-    configs.push_back(std::make_shared<FullyConnectedLayerConfig>(
-        pipeline.getLabelDim(), ActivationFunction::Softmax));
-
-    return {configs, pipeline.getInputDim()};
-  }
 
   void trainOnStream(
       std::string& filename, uint32_t epochs, float learning_rate,
@@ -158,7 +142,7 @@ class SequentialClassifier {
 
   SequentialClassifierPipelineBuilder _pipeline_builder;
   std::string _model_size;
-  std::optional<FullyConnectedNetwork> _network;
+  std::shared_ptr<FullyConnectedNetwork> _network;
 };
 
 }  // namespace thirdai::bolt

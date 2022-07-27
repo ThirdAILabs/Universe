@@ -20,7 +20,7 @@ def start_mlflow(config, mlflow_args):
             experiment_name, mlflow_args.run_name, dataset_name, model_name
         )
         log_machine_info()
-        if mlflow_args.upload_artifacts:
+        if not mlflow_args.disable_upload_artifacts:
             mlflow.log_artifact(mlflow_args.config_path)
 
 
@@ -95,6 +95,9 @@ def log_config_info(config):
 
 
 def find_full_filepath(filename: str) -> str:
+    if os.path.exists(filename):
+        return filename
+
     data_path_file = (
         os.path.dirname(os.path.abspath(__file__)) + "/../../dataset_paths.toml"
     )

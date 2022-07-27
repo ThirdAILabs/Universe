@@ -25,9 +25,8 @@ std::shared_ptr<FullyConnectedNetwork> AutoClassifierUtils::createNetwork(
 
   SequentialConfigList configs = {
       std::make_shared<FullyConnectedLayerConfig>(
-          hidden_layer_size, hidden_layer_sparsity, ActivationFunction::ReLU),
-      std::make_shared<FullyConnectedLayerConfig>(n_classes,
-                                                  ActivationFunction::Softmax)};
+          hidden_layer_size, hidden_layer_sparsity, "relu"),
+      std::make_shared<FullyConnectedLayerConfig>(n_classes, "softmax")};
   return std::make_shared<FullyConnectedNetwork>(std::move(configs), input_dim);
 }
 
@@ -65,19 +64,11 @@ void AutoClassifierUtils::train(
     }
 
   } else {
-    /**
-     * We use a no-lint here because clang tidy thinks there's a memory leak
-     * here when we create the shared_ptr in loadInMemory() There are
-     * discussions on stack overflow/github about similar issues being false
-     * positives and our ASAN unit tests that use this function detect no memory
-     * leaks.
-     */
-    auto [train_data, train_labels] = dataset->loadInMemory();  // NOLINT
+    auto [train_data, train_labels] = dataset->loadInMemory();
 
-    model->train(train_data, train_labels, loss, learning_rate, 1);  // NOLINT
+    model->train(train_data, train_labels, loss, learning_rate, 1);
     model->freezeHashTables();
-    model->train(train_data, train_labels, loss, learning_rate,  // NOLINT
-                 epochs - 1);
+    model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
   }
 }
 

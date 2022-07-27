@@ -1,4 +1,5 @@
 #include "MaxFlash.h"
+#include <cassert>
 #include <stdexcept>
 
 namespace thirdai::search {

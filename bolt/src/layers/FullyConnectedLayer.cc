@@ -11,28 +11,29 @@
 namespace thirdai::bolt {
 
 FullyConnectedLayer::FullyConnectedLayer(
-    const FullyConnectedLayerConfig& config, uint64_t prev_dim)
-    : _dim(config.dim),
+    const FullyConnectedLayerConfig& config, uint64_t prev_dim,
+    bool is_distributed)
+    : _dim(config.getDim()),
       _prev_dim(prev_dim),
-      _sparse_dim(config.sparsity * config.dim),
-      _sparsity(config.sparsity),
+      _sparse_dim(config.getSparsity() * config.getDim()),
+      _sparsity(config.getSparsity()),
 
       // trainable parameter not present in config file
       // TODO(Shubh) : should we add a trainable parameter to the config file?
       _trainable(true),
 
-      _act_func(config.act_func),
-      _weights(config.dim * prev_dim),
-      _w_gradient(config.dim * prev_dim, 0),
-      _w_momentum(config.dim * prev_dim, 0),
-      _w_velocity(config.dim * prev_dim, 0),
-      _biases(config.dim),
-      _b_gradient(config.dim, 0),
-      _b_momentum(config.dim, 0),
-      _b_velocity(config.dim, 0),
-      _sampling_config(config.sampling_config),
+      _act_func(config.getActFunc()),
+      _weights(config.getDim() * prev_dim),
+      _w_gradient(config.getDim() * prev_dim, 0),
+      _w_momentum(config.getDim() * prev_dim, 0),
+      _w_velocity(config.getDim() * prev_dim, 0),
+      _biases(config.getDim()),
+      _b_gradient(config.getDim(), 0),
+      _b_momentum(config.getDim(), 0),
+      _b_velocity(config.getDim(), 0),
       _prev_is_active(_prev_dim, false),
-      _is_active(config.dim, false),
+      _is_active(config.getDim(), false),
+      _is_distributed(is_distributed),
       _sampling_mode(LSHSamplingMode::Default) {
   std::random_device rd;
   std::default_random_engine eng(rd());
@@ -42,7 +43,7 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
-    initSparseDatastructures(rd);
+    initSparseDatastructures(config.getSamplingConfig(), rd);
   }
 }
 
@@ -328,7 +329,20 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
   }
 
   // continue if trainable layer
-  if (!_prev_is_dense && !_this_is_dense) {
+  /*
+   * In distributed setting, as of now the updates are dense as we
+   * are averaging the gradient over multiple training examples.
+   *
+   * //NOLINT because, clang was producing error as same function is
+   * being called in two different if-else blocks. However, the content
+   * inside the _is_distributed block might change with time. Hence,
+   * was thinking of having different blocks. It also make is visually
+   * more clear.
+   */
+  if (_is_distributed) {  // NOLINT
+    updateDenseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
+                                     B2_bias_corrected);
+  } else if (!_prev_is_dense && !_this_is_dense) {
     updateSparseSparseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
                                        B2_bias_corrected);
   } else if (!_prev_is_dense && _this_is_dense) {
@@ -428,7 +442,7 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-    if (!_this_is_dense && !_is_active[cur_neuron]) {
+    if ((!_is_distributed) && (!_this_is_dense && !_is_active[cur_neuron])) {
       continue;
     }
 
@@ -481,13 +495,11 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
   _w_gradient[indx] = 0;
 }
 
-inline void FullyConnectedLayer::initSparseDatastructures(
-    std::random_device& rd) {
-  _hasher = assignHashFunction(_sampling_config, _prev_dim);
+void FullyConnectedLayer::initSparseDatastructures(
+    const SamplingConfigPtr& sampling_config, std::random_device& rd) {
+  _hasher = sampling_config->getHashFunction(_prev_dim);
 
-  _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
-      _sampling_config.num_tables, _sampling_config.reservoir_size,
-      1 << _sampling_config.range_pow);
+  _hash_table = sampling_config->getHashTable();
 
   /* Initializing hence, we need to force build the hash tables
    * Hence, force_build is true here in buildHashTablesImpl(force_build)
@@ -533,7 +545,8 @@ void FullyConnectedLayer::reBuildHashFunction() {
   if (!_trainable || _sparsity >= 1.0 || hashTablesFrozen()) {
     return;
   }
-  _hasher = assignHashFunction(_sampling_config, _prev_dim);
+
+  _hasher = _hasher->copyWithNewSeeds();
 }
 
 float* FullyConnectedLayer::getWeights() const {
@@ -569,16 +582,35 @@ void FullyConnectedLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
+void FullyConnectedLayer::setWeightGradients(
+    const float* update_weight_gradient) {
+  std::copy(update_weight_gradient, update_weight_gradient + _dim * _prev_dim,
+            _w_gradient.begin());
+}
+
+void FullyConnectedLayer::setBiasesGradients(
+    const float* update_bias_gradient) {
+  std::copy(update_bias_gradient, update_bias_gradient + _dim,
+            _b_gradient.begin());
+}
+
+float* FullyConnectedLayer::getBiasesGradient() { return _b_gradient.data(); }
+
+float* FullyConnectedLayer::getWeightsGradient() { return _w_gradient.data(); }
+
 void FullyConnectedLayer::setSparsity(float sparsity) {
   deinitSparseDatastructures();
   _sparsity = sparsity;
+
+  _sparse_dim = _sparsity * _dim;
+
   // TODO(josh): Right now this is using the autotuning for DWTA even if this
   // hash function isn't DWTA. Add autotuning for other hash function types.
-  _sampling_config =
-      FullyConnectedLayerConfig(_dim, _sparsity, _act_func).sampling_config;
-  _sparse_dim = _sparsity * _dim;
-  std::random_device rd;
-  initSparseDatastructures(rd);
+  if (_sparsity < 1.0) {
+    auto sampling_config = DWTASamplingConfig::autotune(_dim, _sparsity);
+    std::random_device rd;
+    initSparseDatastructures(sampling_config, rd);
+  }
 }
 
 void FullyConnectedLayer::initOptimizer() {
@@ -606,17 +638,11 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
   summary << "dim=" << _dim << ", sparsity=" << _sparsity << ", act_func=";
   summary << activationFunctionToStr(_act_func);
 
-  if (!detailed) {
-    summary << "\n";
-    return;
+  if (detailed && _sparsity < 1.0) {
+    summary << " (hash_function=" << _hasher->getName() << ", ";
+    _hash_table->summarize(summary);
+    summary << ")";
   }
-
-  summary << " (hashes_per_table=" << _sampling_config.hashes_per_table
-          << ", num_tables=" << _sampling_config.num_tables
-          << ", range_pow=" << _sampling_config.range_pow
-          << ", resevoir_size=" << _sampling_config.reservoir_size
-          << ", hash_function="
-          << getHashString(_sampling_config._hash_function) << ")";
 
   summary << "\n";
 }
