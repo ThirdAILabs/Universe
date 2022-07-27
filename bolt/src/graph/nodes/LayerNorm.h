@@ -25,20 +25,30 @@ namespace thirdai::bolt {
 class LayerNormNode final : public Node,
                             public std::enable_shared_from_this<LayerNormNode> {
  public:
-  explicit LayerNormNode(NodePtr predecessor)
-      : _predecessor(std::move(predecessor)),
-        _compiled(false),
-        _prepared_for_batch_processing(false) {}
+  LayerNormNode()
+      : _predecessor(nullptr),
+        _compiled(false) {}
+
+  std::shared_ptr<LayerNormNode> addPredecessor(NodePtr node) {
+    if (getState() != NodeState::Constructed) {
+      throw exceptions::NodeStateMachineError(
+          "LayerNormNode should have exactly one predecessor."
+          "addPredecessor cannot be called twice.");
+    }
+    _predecessor = std::move(node);
+    return shared_from_this();
+  }
 
   std::shared_ptr<LayerNormNode> setLayerNormNodeConfig(
       bool center, bool scale, float epsilon, float beta_regularizer,
       float gamma_regularizer, float beta_initializer,
       float gamma_initializer) {
-    if (getState() != NodeState::Constructed) {
+
+    if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
           "Cannot set configuration for Normalization Layer before the node is "
-          "constructed."
-          "LayerNormNode must be in a constructed state");
+          "Compiled."
+          "LayerNormNode must be in a compiled state");
     }
 
     _config = (NormalizationLayerConfig(
@@ -105,7 +115,6 @@ class LayerNormNode final : public Node,
           "use_sparsity "
           "in the call to prepareForBatchProcessing is set to False");
     }
-    _prepared_for_batch_processing = true;
   }
 
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
@@ -178,16 +187,16 @@ class LayerNormNode final : public Node,
   std::string type() const final { return std::string("layer_norm"); }
 
   NodeState getState() const final {
-    if (!_config && !_compiled && !_prepared_for_batch_processing) {
+    if (!_predecessor && !_compiled && !_config) {
       return NodeState::Constructed;
     }
-    if (_config && !_compiled && !_prepared_for_batch_processing) {
+    if (_predecessor && !_compiled && !_config) {
       return NodeState::PredecessorsSet;
     }
-    if (_compiled && !_prepared_for_batch_processing) {
+    if (_predecessor && _compiled && !_config) {
       return NodeState::Compiled;
     }
-    if (_prepared_for_batch_processing) {
+    if (_predecessor && _compiled && _config) {
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
@@ -197,7 +206,6 @@ class LayerNormNode final : public Node,
   std::optional<NormalizationLayerConfig> _config;
   NodePtr _predecessor;
   bool _compiled;
-  bool _prepared_for_batch_processing;
 };
 
 }  // namespace thirdai::bolt
