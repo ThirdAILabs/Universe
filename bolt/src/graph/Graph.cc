@@ -179,46 +179,118 @@ void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
   }
 }
 
+uint32_t getSecondBestId(const BoltVector& vec) {
+  float largest_activation = std::numeric_limits<float>::min(),
+        second_largest_activation = std::numeric_limits<float>::min();
+  uint32_t max_id = 0, second_max_id = 0;
+  if (vec.len < 2) {
+    throw std::invalid_argument(
+        "The sparse output dimension should be atleast 2 to call "
+        "getSecondBestId.");
+  }
+  for (uint32_t i = 0; i < vec.len; i++) {
+    if (vec.activations[i] > largest_activation) {
+      second_largest_activation = largest_activation;
+      second_max_id = max_id;
+      largest_activation = vec.activations[i];
+      max_id = i;
+    } else if (vec.activations[i] > second_largest_activation) {
+      second_largest_activation = vec.activations[i];
+      second_max_id = i;
+    }
+  }
+  if (vec.isDense()) {
+    return second_max_id;
+  }
+  return vec.active_neurons[second_max_id];
+}
+
+// TODO (YASH) : ( Extend this getInputGradients for multiple input nodes.)
 std::pair<std::vector<std::vector<float>>,
           std::optional<std::vector<std::vector<uint32_t>>>>
-BoltGraph::getInputGradients(
-    const std::vector<dataset::BoltDatasetPtr>& input_data,
-    const std::vector<dataset::BoltTokenDatasetPtr>& input_tokens,
-    bool best_index, const std::vector<uint32_t>& required_labels) {
-  DatasetContext input_gradients_context(input_data, input_tokens, nullptr);
-  uint32_t input_data_len = 0;
-  for (const auto& input : input_data) {
-    input_data_len += input->len();
+BoltGraph::getInputGradients(const dataset::BoltDatasetPtr& input_data,
+                             const dataset::BoltTokenDatasetPtr& input_tokens,
+                             bool best_index,
+                             const std::vector<uint32_t>& required_labels) {
+  std::vector<dataset::BoltTokenDatasetPtr> temp;
+  if (input_tokens) {
+    temp = {input_tokens};
+  } else {
+    temp = {};
   }
-  for (const auto& token_input : input_tokens) {
-    input_data_len += token_input->len();
-  }
+  DatasetContext input_gradients_context({input_data}, temp, nullptr);
+
+  prepareToProcessBatches(input_gradients_context.batchSize(),
+                          /* use_sparsity=*/true);
+  uint32_t input_data_len = input_data->len();
   verifyCanGetInputGradients(input_gradients_context, required_labels.size(),
                              input_data_len, best_index,
                              _output->numNonzerosInOutput());
 
-  prepareToProcessBatches(input_gradients_context.batchSize(),
-                          /* use_sparsity=*/true);
-
   std::vector<std::vector<float>> input_dataset_grad;
   std::vector<std::vector<uint32_t>> input_dataset_indices;
+  try {
+    for (uint64_t batch_idx = 0;
+         batch_idx < input_gradients_context.numBatches(); batch_idx++) {
+      input_gradients_context.setInputs(batch_idx, _inputs, _token_inputs);
+      for (uint32_t vec_id = 0;
+           vec_id < input_gradients_context.batchSize(batch_idx); vec_id++) {
+        std::vector<float> vec_grad(_inputs[0]->getOutputVector(vec_id).len,
+                                    0.0);
+        // have to ensure that input has gradients not pointing to nullptr and
+        // assign vec_grad data to it.
+        _inputs[0]->getOutputVector(vec_id).gradients = vec_grad.data();
+        // based on required_index is there or not and get the labels and also
+        // forward pass correctly,
+        uint32_t required_index;
+        BoltVector batch_label;
+        if (required_labels.empty()) {
+          forward(vec_id, nullptr);
+          if (best_index) {
+            required_index =
+                _output->getOutputVector(vec_id).getIdWithHighestActivation();
+          } else {
+            required_index = getSecondBestId(_output->getOutputVector(vec_id));
+          }
+          batch_label = BoltVector::makeSparseVector({required_index}, {1.0});
+        } else {
+          required_index =
+              required_labels[batch_idx * input_gradients_context.batchSize(0) +
+                              vec_id];
 
-  try{
-  for (uint64_t batch_idx = 0; batch_idx < input_gradients_context.numBatches();
-       batch_idx++) {
-    input_gradients_context.setInputs(batch_idx, _inputs, _token_inputs);
-    for (uint32_t vec_id = 0;
-         vec_id < input_gradients_context.batchSize(batch_idx); vec_id++) {
-        std::vector<float> vec_grad;
-        // have to ensure that input has gradients not pointing to nullptr and assign vec_grad data to it.
-        // based on required_index is there or not and get the labels and also forward pass correctly,
-        //loss function
+          if (required_index >= _output->outputDim()) {
+            throw std::invalid_argument(
+                "Cannot pass required index " + std::to_string(required_index) +
+                " to getInputGradients for network with output dim " +
+                std::to_string(_output->outputDim()));
+          }
+          batch_label = BoltVector::makeSparseVector({required_index}, {1.0});
+          forward(vec_id, &batch_label);
+        }
+        // copying the indices values if inputs is not dense.
+        if (!_inputs[0]->getOutputVector(vec_id).isDense()) {
+          std::vector<uint32_t> vec_indices(
+              _inputs[0]->getOutputVector(vec_id).active_neurons,
+              _inputs[0]->getOutputVector(vec_id).active_neurons +
+                  _inputs[0]->getOutputVector(vec_id).len);
+          input_dataset_indices.push_back(vec_indices);
+        }
+        // loss function
+        _loss->lossGradients(_output->getOutputVector(vec_id), batch_label,
+                             input_gradients_context.batchSize(batch_idx));
         // backprop it to input.
+        backpropagate(vec_id);
+
+        _inputs[0]->getOutputVector(vec_id).gradients = nullptr;
+        input_dataset_grad.push_back(vec_grad);
         // get the gradients and indices and return it.
+      }
     }
-  }
-  }
-  catch (const std::exception& e) {
+    if (input_dataset_indices.empty()) {
+      return std::make_pair(input_dataset_grad, std::nullopt);
+    }
+    return std::make_pair(input_dataset_grad, input_dataset_indices);
+  } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
     throw;
   }

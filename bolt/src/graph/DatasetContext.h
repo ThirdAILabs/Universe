@@ -51,11 +51,6 @@ class DatasetContext {
     }
   }
 
-  // void prepareInputForGradient(uint32_t batch_idx, uint32_t vec_id,std::vector<float>& vec_grad) {
-  //   // vec_grad.assign(_all_dag_datasets.front()->at(batch_idx)[vec_id].len,0.0);
-  //   // _all_dag_datasets.front()->at(batch_idx)[vec_id].gradients = vec_grad.data();
-  // }
-
   uint64_t batchSize() const { return _all_dag_datasets.front()->batchSize(); }
 
   uint64_t batchSize(uint64_t batch_idx) const {

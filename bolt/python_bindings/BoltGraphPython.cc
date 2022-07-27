@@ -12,6 +12,7 @@
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <dataset/src/batch_types/MaskedSentenceBatch.h>
+#include <optional>
 
 namespace thirdai::bolt::python {
 
@@ -238,6 +239,23 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "See the TrainConfig documentation above.\n\n"
           "Returns a mapping from metric names to an array of their values for "
           "every epoch.")
+      .def(
+          "get_input_gradients",
+          [](BoltGraph& model, const dataset::BoltDatasetPtr& input_data,
+             bool best_index = true,
+             const std::vector<uint32_t>& required_labels =
+                 std::vector<uint32_t>()) {
+            auto gradients = model.getInputGradients(
+                input_data, /* train_tokens = */ nullptr, best_index,
+                required_labels);
+            return gradients;
+          },
+          py::arg("input_data"), py::arg("best_index") = true,
+          py::arg("required_labels") = std::vector<uint32_t>())
+      .def("get_input_gradients", &BoltGraph::getInputGradients,
+           py::arg("input_data"), py::arg("input_tokens"),
+           py::arg("best_index") = true,
+           py::arg("required_labels") = std::vector<uint32_t>())
       // Helper method that covers the common case of inference based off of a
       // single BoltBatch dataset
       .def(

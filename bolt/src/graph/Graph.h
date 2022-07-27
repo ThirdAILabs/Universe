@@ -75,10 +75,10 @@ class BoltGraph {
 
   std::pair<std::vector<std::vector<float>>,
             std::optional<std::vector<std::vector<uint32_t>>>>
-  getInputGradients(
-      const std::vector<dataset::BoltDatasetPtr>& input_data,
-      const std::vector<dataset::BoltTokenDatasetPtr>& input_tokens,
-      bool best_index, const std::vector<uint32_t>& required_labels);
+  getInputGradients(const dataset::BoltDatasetPtr& input_data,
+                    const dataset::BoltTokenDatasetPtr& input_tokens,
+                    bool best_index,
+                    const std::vector<uint32_t>& required_labels);
 
   std::vector<NodePtr> getNodeTraversalOrder() const {
     std::vector<NodePtr> nodes;
