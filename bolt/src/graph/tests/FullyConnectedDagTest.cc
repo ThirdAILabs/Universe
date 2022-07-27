@@ -78,6 +78,31 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
   ASSERT_LE(test_metrics.first["categorical_accuracy"], 0.2);
 }
 
+TEST(FullyConnectedDagTest, SamePredictAndPredictSingleResults) {
+  BoltGraph model = getSingleLayerModel();
+
+  auto [data, labels] =
+      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
+
+  model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
+              getTrainConfig(/* epochs= */ 5));
+
+  PredictConfig config = getPredictConfig().returnActivations();
+
+  auto inference_result = model.predict(/* test_data= */ {data},
+                                        /* test_tokens= */ {}, labels, config);
+
+  for (uint64_t batch_idx = 0; batch_idx < data->numBatches(); batch_idx++) {
+    BoltBatch& batch = data->at(batch_idx);
+    for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
+      BoltVector& input_vector = batch[vec_idx];
+      // call predict single with that bolt vector
+      // get the activations assert that the activations are the same
+      // as the stored activations in inference result
+    }
+  }
+}
+
 static BoltGraph getMultiLayerModel(ActivationFunction hidden_layer_act,
                                     ActivationFunction output_layer_act) {
   auto input_layer = std::make_shared<Input>(n_classes);

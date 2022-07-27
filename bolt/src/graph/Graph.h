@@ -72,6 +72,11 @@ class BoltGraph {
       const dataset::BoltDatasetPtr& test_labels,
       const PredictConfig& predict_config);
 
+  InferenceResult predictSingle(
+      const std::vector<BoltVector>& test_data,
+      const std::vector<std::vector<uint32_t>>& test_tokens,
+      const PredictConfig& predict_config);
+
   std::vector<NodePtr> getNodeTraversalOrder() const {
     std::vector<NodePtr> nodes;
     nodes.insert(nodes.end(), _inputs.begin(), _inputs.end());
