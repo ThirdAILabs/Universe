@@ -316,16 +316,32 @@ class Worker:
         for layer in range(len(self.layers)-1):
             
             shape=(self.layers[layer],self.layers[layer+1])
-            w_gradient=np.zeros(shape[0]*shape[1])
-            b_gradient=np.zeros(shape[1])
+
+            w_indices=np.vstack([node_weights[layer][0] for node_weights in w_sparse_grads])
+            w_values=np.vstack([node_weights[layer][1] for node_weights in w_sparse_grads])
+
+            b_indices=np.vstack([node_biases[layer][0] for node_biases in b_sparse_grads])
+            b_values=np.vstack([node_biases[layer][1] for node_biases in b_sparse_grads])
+
+
+            print(f"shape of w_indices is {w_indices.shape}")
+            print(f"shape of w_values is {w_values.shape}")
+            print(f"shape of b_indices is {b_indices.shape}")
+            print(f"shape of b_values is {b_values.shape}")
             
-            for node_weights in w_sparse_grads:
-                np.add.at(w_gradient,node_weights[layer][0],node_weights[layer][1])
-            for node_biases in b_sparse_grads:
-                np.add.at(b_gradient,node_biases[layer][0],node_biases[layer][1])
+            self.network.set_gradients(layer_index=layer,indices=w_indices,values=w_values,is_set_biases=False)
+            self.network.set_gradients(layer_index=layer,indices=b_indices,values=b_values,is_set_biases=True)
             
-            self.network.set_weights_gradients(layer, w_gradient.reshape(shape[1],shape[0])/num_workers)
-            self.network.set_biases_gradients(layer, b_gradient/num_workers)
+            # w_gradient=np.zeros(shape[0]*shape[1])
+            # b_gradient=np.zeros(shape[1])
+            
+            # for node_weights in w_sparse_grads:
+            #     np.add.at(w_gradient,node_weights[layer][0],node_weights[layer][1])
+            # for node_biases in b_sparse_grads:
+            #     np.add.at(b_gradient,node_biases[layer][0],node_biases[layer][1])
+            
+            # self.network.set_weights_gradients(layer, w_gradient.reshape(shape[1],shape[0])/num_workers)
+            # self.network.set_biases_gradients(layer, b_gradient/num_workers)
         
         return True
 
