@@ -84,6 +84,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "least one node (although this is just an identity function, so "
            "really should be at least two).");
 
+#if THIRDAI_EXPOSE_ALL
   py::class_<SwitchNode, std::shared_ptr<SwitchNode>, Node>(graph_submodule,
                                                             "Switch")
       .def(py::init<uint64_t, const std::string&, uint32_t>(), py::arg("dim"),
@@ -93,8 +94,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("n_layers"))
       .def("__call__", &SwitchNode::addPredecessors, py::arg("prev_layer"),
            py::arg("token_input"));
+#endif
 
-  // TODO(Nick): flesh this out more when adding DLRM
   py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(graph_submodule,
                                                     "Embedding")
       .def(py::init<uint32_t, uint32_t, uint32_t>(),

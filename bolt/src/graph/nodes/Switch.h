@@ -9,6 +9,16 @@
 
 namespace thirdai::bolt {
 
+/**
+ * This class is used in MLM experiments. This node stores N fully connected
+ * layers, and takes in a regular bolt vector input as well as a token. For each
+ * input there should be only a single token in the range [0,N) that indicates
+ * which of the fully connected layers to use for the input. For instance in a
+ * MLM model this was used where the number of layers was equal to the maximum
+ * number of tokens in the sentence and for each input the layer at the index of
+ * the masked token was used. The idea being that it would learn a slightly
+ * different representation for each token in the sentence.
+ */
 class SwitchNode final : public Node,
                          public std::enable_shared_from_this<SwitchNode> {
  public:
