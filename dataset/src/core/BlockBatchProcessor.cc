@@ -1,6 +1,5 @@
 #include "BlockBatchProcessor.h"
 #include <bolt/src/layers/BoltVector.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <sys/types.h>
 #include <algorithm>
@@ -63,14 +62,23 @@ void BlockBatchProcessor::processBatch(
     }
   }
 
-#pragma omp parallel for default(none) shared(batch, initial_num_elems)
+  std::exception_ptr block_err;
+#pragma omp parallel for default(none) \
+    shared(batch, initial_num_elems, block_err)
   for (size_t i = 0; i < batch.size(); ++i) {
-    _input_vectors[initial_num_elems + i] =
-        makeVector(batch[i], _input_blocks, _input_blocks_dense);
+    if (auto err = makeVector(batch[i], _input_vectors[initial_num_elems + i],
+                              _input_blocks, _input_blocks_dense)) {
+#pragma omp critical
+      block_err = err;
+    }
 
     if (_target_vectors) {
-      _target_vectors->at(initial_num_elems + i) =
-          makeVector(batch[i], _target_blocks, _target_blocks_dense);
+      if (auto err =
+              makeVector(batch[i], _target_vectors->at(initial_num_elems + i),
+                         _target_blocks, _target_blocks_dense)) {
+#pragma omp critical
+        block_err = err;
+      }
     }
   }
 }
@@ -128,10 +136,10 @@ BlockBatchProcessor::exportInMemoryDataset(bool shuffle,
     _target_vectors = std::vector<bolt::BoltVector>();
   }
 
-  return {std::make_shared<BoltDataset>(std::move(input_batches), n_exported),
-          target_batches ? std::make_shared<BoltDataset>(
-                               std::move(target_batches.value()), n_exported)
-                         : nullptr};
+  return {std::make_shared<BoltDataset>(std::move(input_batches)),
+          target_batches
+              ? std::make_shared<BoltDataset>(std::move(target_batches.value()))
+              : nullptr};
 }
 
 std::vector<uint32_t> BlockBatchProcessor::makeFinalPositions(
@@ -150,8 +158,8 @@ std::vector<uint32_t> BlockBatchProcessor::makeFinalPositions(
   return positions;
 }
 
-bolt::BoltVector BlockBatchProcessor::makeVector(
-    std::vector<std::string>& sample,
+std::exception_ptr BlockBatchProcessor::makeVector(
+    std::vector<std::string>& sample, bolt::BoltVector& vector,
     std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense) {
   std::shared_ptr<SegmentedFeatureVector> vec_ptr;
 
@@ -170,9 +178,11 @@ bolt::BoltVector BlockBatchProcessor::makeVector(
     for (uint32_t i = 0; i < sample.size(); i++) {
       sample_view[i] = std::string_view(sample[i].c_str(), sample[i].size());
     }
-    block->addVectorSegment(sample_view, *vec_ptr);
+    if (auto err = block->addVectorSegment(sample_view, *vec_ptr)) {
+      return err;
+    }
   }
-
-  return vec_ptr->toBoltVector();
+  vector = vec_ptr->toBoltVector();
+  return nullptr;
 }
 }  // namespace thirdai::dataset

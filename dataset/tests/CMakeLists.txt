@@ -1,7 +1,5 @@
 enable_testing()
 
-add_subdirectory(string)
-add_subdirectory(bolt_dataset)
 add_subdirectory(blocks)
 
 add_executable(
@@ -13,19 +11,6 @@ target_link_libraries(
   svm_dataset_test
   PRIVATE
   gtest_main
-  bolt_datasets_lib
-)
-
-add_executable(
-  csv_dataset_test
-  CsvDatasetTests.cc
-)
-
-target_link_libraries(
-  csv_dataset_test
-  PRIVATE
-  gtest_main
-  bolt_datasets_lib
 )
 
 add_executable(
@@ -35,18 +20,6 @@ add_executable(
 
 target_link_libraries(
   click_through_dataset_test
-  PRIVATE
-  gtest_main
-  bolt_datasets_lib
-)
-
-add_executable(
-  vector_test
-  VectorTest.cc
-)
-
-target_link_libraries(
-  vector_test
   PRIVATE
   gtest_main
 )
@@ -100,8 +73,6 @@ target_link_libraries(
 include(GoogleTest)
 gtest_discover_tests(svm_dataset_test)
 gtest_discover_tests(click_through_dataset_test)
-gtest_discover_tests(vector_test)
-gtest_discover_tests(csv_dataset_test)
 gtest_discover_tests(segmented_feature_vectors_test)
 gtest_discover_tests(block_batch_processor_test)
 gtest_discover_tests(generic_batch_processor_test)

@@ -6,7 +6,7 @@
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/HashTable.h>
-#include <dataset/src/Dataset.h>
+#include <dataset/src/InMemoryDataset.h>
 #include <memory>
 #include <utility>
 
@@ -39,11 +39,10 @@ class MaxFlashArray {
   // into.
   MaxFlashArray(){};
 
-  template <typename BATCH_T>
-  uint64_t addDocument(const BATCH_T& batch);
+  uint64_t addDocument(const bolt::BoltBatch& batch);
 
   std::vector<float> getDocumentScores(
-      const dataset::DenseBatch& query,
+      const bolt::BoltBatch& query,
       const std::vector<uint32_t>& documents_to_query) const;
 
   // Delete copy constructor and assignment

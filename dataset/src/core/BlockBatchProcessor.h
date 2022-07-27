@@ -1,9 +1,8 @@
 #pragma once
 
 #include <bolt/src/layers/BoltVector.h>
-#include <dataset/src/Dataset.h>
+#include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <cstdlib>
 #include <random>
 
@@ -47,8 +46,8 @@ class BlockBatchProcessor {
   /**
    * Encodes a sample as a BoltVector according to the given blocks.
    */
-  static bolt::BoltVector makeVector(
-      std::vector<std::string>& sample,
+  static std::exception_ptr makeVector(
+      std::vector<std::string>& sample, bolt::BoltVector& vector,
       std::vector<std::shared_ptr<Block>>& blocks, bool blocks_dense);
 
   uint32_t _batch_size;

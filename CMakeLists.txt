@@ -169,12 +169,12 @@ endif()
 
 file(
   GLOB BOLT_SOURCES 
+  bolt/src/auto_classifiers/*.cc
+  bolt/src/auto_classifiers/sequential_classifier/*.cc
   bolt/src/graph/*.cc
   bolt/src/layers/*.cc 
   bolt/src/networks/*.cc 
   bolt/src/utils/*.cc 
-  bolt/src/text_classifier/*.cc
-  bolt/src/sequential_classifier/*.cc
 )
 
 file(

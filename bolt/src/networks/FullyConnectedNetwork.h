@@ -6,7 +6,7 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SequentialLayer.h>
-#include <dataset/src/Dataset.h>
+#include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -66,7 +66,7 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
 
   std::pair<std::vector<std::vector<float>>, std::vector<std::vector<float>>>
   getInputGradientsFromStream(
-      const std::shared_ptr<dataset::StreamingDataset<BoltBatch>>& test_data,
+      const std::shared_ptr<dataset::StreamingGenericDatasetLoader>& test_data,
       const LossFunction& loss_fn, bool best_index, uint32_t label_id,
       bool label_given);
 

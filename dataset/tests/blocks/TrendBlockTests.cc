@@ -28,7 +28,7 @@ TEST_F(TrendBlockTests, CorrectOutputWindowSizeOneNoGraph) {
   std::vector<std::shared_ptr<Block>> blocks{std::make_shared<TrendBlock>(
       /* has_count_col = */ true, /* id_col = */ 0,
       /* timestamp_col = */ 1, /* count_col = */ 2,
-      /* lookahead = */ 0, /* lookback = */ 1, /* period = */ 7)};
+      /* lookahead = */ 0, /* lookback = */ 7, /* period = */ 7)};
 
   StringMatrix mock_data{
       {"id_1", "2022-01-01", "0.3"},   // Trivial
@@ -66,7 +66,7 @@ TEST_F(TrendBlockTests, CorrectOutputWindowSizeOneWithGraph) {
   std::vector<std::shared_ptr<Block>> blocks{std::make_shared<TrendBlock>(
       /* has_count_col = */ true, /* id_col = */ 0,
       /* timestamp_col = */ 1, /* count_col = */ 2,
-      /* lookahead = */ 0, /* lookback = */ 1, /* period = */ 7,
+      /* lookahead = */ 0, /* lookback = */ 7, /* period = */ 7,
       std::make_shared<Graph>(std::move(graph)), /* max_n_neighbors = */ 1)};
 
   StringMatrix mock_data{

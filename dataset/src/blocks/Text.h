@@ -46,9 +46,11 @@ class TextBlock : public Block {
   }
 
  protected:
-  void buildSegment(const std::vector<std::string_view>& input_row,
-                    SegmentedFeatureVector& vec) final {
+  std::exception_ptr buildSegment(
+      const std::vector<std::string_view>& input_row,
+      SegmentedFeatureVector& vec) final {
     _encoding->encodeText(input_row.at(_col), vec);
+    return nullptr;
   }
 
  private:

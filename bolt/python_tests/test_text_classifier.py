@@ -3,6 +3,7 @@ import pytest
 import datasets
 import random
 import os
+from .utils import remove_files, compute_accuracy
 
 pytestmark = [pytest.mark.integration, pytest.mark.release]
 
@@ -57,19 +58,6 @@ def trim(sentence):
     return sentence
 
 
-def remove_files():
-    os.remove(TRAIN_FILE)
-    os.remove(TEST_FILE)
-    os.remove(PREDICTION_FILE)
-
-
-def compute_accuracy(test_labels, predictions):
-    assert len(predictions) == len(test_labels)
-    return sum(
-        (label == predict) for (label, predict) in zip(test_labels, predictions)
-    ) / len(predictions)
-
-
 def test_text_classifier_clinc_dataset():
     (n_classes, test_labels) = download_clinc_dataset()
     classifier = bolt.TextClassifier(model_size="1Gb", n_classes=n_classes)
@@ -78,17 +66,12 @@ def test_text_classifier_clinc_dataset():
 
     classifier.predict(test_file=TEST_FILE, output_file=PREDICTION_FILE)
 
-    with open(PREDICTION_FILE) as pred:
-        pred_lines = pred.readlines()
-
-    predictions = [x[:-1] for x in pred_lines]
-
-    remove_files()
-
-    acc = compute_accuracy(test_labels, predictions)
+    acc = compute_accuracy(test_labels, PREDICTION_FILE)
 
     print("Computed Accuracy: ", acc)
     assert acc > 0.7
+
+    remove_files([TRAIN_FILE, TEST_FILE, PREDICTION_FILE])
 
 
 def test_text_classifier_predict_single():
@@ -116,4 +99,4 @@ def test_text_classifier_predict_single():
         )
         assert actual_prediction == expected_predictions[i][:-1]
 
-    remove_files()
+    remove_files([TRAIN_FILE, TEST_FILE, PREDICTION_FILE])

@@ -5,16 +5,16 @@
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "ConversionUtils.h"
+#include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <bolt/src/sequential_classifier/SequentialClassifier.h>
 #include <dataset/python_bindings/DatasetPython.h>
+#include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
@@ -51,18 +51,15 @@ class PyNetwork final : public FullyConnectedNetwork {
   PyNetwork(SequentialConfigList configs, uint64_t input_dim)
       : FullyConnectedNetwork(std::move(configs), input_dim) {}
 
-  MetricData train(const py::object& data, const py::object& labels,
+  MetricData train(dataset::BoltDatasetPtr& data,
+                   const dataset::BoltDatasetPtr& labels,
                    const LossFunction& loss_fn, float learning_rate,
-                   uint32_t epochs, uint32_t batch_size = 0,
-                   uint32_t rehash = 0, uint32_t rebuild = 0,
+                   uint32_t epochs, uint32_t rehash = 0, uint32_t rebuild = 0,
                    const std::vector<std::string>& metric_names = {},
                    bool verbose = false) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
-    auto train_data = convertPyObjectToBoltDataset(data, batch_size, false);
-
-    auto train_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
 
 /**Overriding the SIG_INT exception handler to exit the program once
  * CTRL+C is pressed by the user to interrupt the execution of any long
@@ -92,8 +89,8 @@ class PyNetwork final : public FullyConnectedNetwork {
      */
 
     MetricData metrics = FullyConnectedNetwork::train(
-        train_data.dataset, train_labels.dataset, loss_fn, learning_rate,
-        epochs, rehash, rebuild, metric_names, verbose);
+        data, labels, loss_fn, learning_rate, epochs, rehash, rebuild,
+        metric_names, verbose);
 
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -106,34 +103,25 @@ class PyNetwork final : public FullyConnectedNetwork {
   }
 
   py::list getInputGradients(
-      const py::object& data, const LossFunction& loss_fn,
+      dataset::BoltDatasetPtr& data, const LossFunction& loss_fn,
       bool best_index = true,
-      const std::vector<uint32_t>& required_labels = std::vector<uint32_t>(),
-      uint32_t batch_size = 256) {
-    auto analysis_data = convertPyObjectToBoltDataset(data, batch_size, false);
+      const std::vector<uint32_t>& required_labels = std::vector<uint32_t>()) {
     auto gradients = FullyConnectedNetwork::getInputGradients(
-        analysis_data.dataset, loss_fn, best_index, required_labels);
+        data, loss_fn, best_index, required_labels);
 
     return py::cast(gradients);
   }
 
   py::tuple predict(
-      const py::object& data, const py::object& labels, uint32_t batch_size = 0,
-      bool use_sparse_inference = false,
+      const dataset::BoltDatasetPtr& data,
+      const dataset::BoltDatasetPtr& labels, bool use_sparse_inference = false,
       const std::vector<std::string>& metrics = {}, bool verbose = true,
       uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
     // Redirect to python output.
     py::scoped_ostream_redirect stream(
         std::cout, py::module_::import("sys").attr("stdout"));
 
-    auto test_data = convertPyObjectToBoltDataset(data, batch_size, false);
-
-    BoltDatasetNumpyContext test_labels;
-    if (!labels.is_none()) {
-      test_labels = convertPyObjectToBoltDataset(labels, batch_size, true);
-    }
-
-    uint32_t num_samples = test_data.dataset->len();
+    uint32_t num_samples = data->len();
 
     uint64_t inference_output_dim = getInferenceOutputDim(use_sparse_inference);
     bool output_sparse = inference_output_dim < getOutputDim();
@@ -149,8 +137,8 @@ class PyNetwork final : public FullyConnectedNetwork {
                         &activations, output_sparse);
 
     auto metric_data = FullyConnectedNetwork::predict(
-        test_data.dataset, test_labels.dataset, active_neurons, activations,
-        use_sparse_inference, metrics, verbose, batch_limit);
+        data, labels, active_neurons, activations, use_sparse_inference,
+        metrics, verbose, batch_limit);
 
     py::dict py_metric_data = py::cast(metric_data);
 
@@ -329,8 +317,8 @@ class SentimentClassifier {
   }
 
   float predictSentiment(const std::string& sentence) {
-    BoltVector vec = dataset::python::parseSentenceToBoltVector(
-        sentence, /* seed= */ 341, _model->getInputDim());
+    BoltVector vec = dataset::TextEncodingUtils::computeUnigrams(
+        sentence, _model->getInputDim());
     _model->forward(0, vec, _output, /* labels= */ nullptr);
     return _output.activations[1];
   }

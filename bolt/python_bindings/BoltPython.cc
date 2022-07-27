@@ -1,12 +1,17 @@
 #include "BoltPython.h"
 #include "BoltGraphPython.h"
+#include <bolt/src/auto_classifiers/TabularClassifier.h>
+#include <bolt/src/auto_classifiers/TextClassifier.h>
+#include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
+#include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/Node.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
+#include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <bolt/src/sequential_classifier/SequentialClassifier.h>
-#include <bolt/src/text_classifier/TextClassifier.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
@@ -294,7 +299,6 @@ void createBoltSubmodule(py::module_& module) {
       .def("get_input_gradients", &PyNetwork::getInputGradients,
            py::arg("input"), py::arg("loss_fn"), py::arg("best_index") = true,
            py::arg("required_labels") = std::vector<uint32_t>(),
-           py::arg("batch_size") = 256,
            "Get the values of input gradients when back propagate "
            "labels with the highest activation or second highest "
            "activation or with the required label."
@@ -315,8 +319,7 @@ void createBoltSubmodule(py::module_& module) {
            "vectors.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
-           py::arg("learning_rate"), py::arg("epochs"),
-           py::arg("batch_size") = 0, py::arg("rehash") = 0,
+           py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
            py::arg("rebuild") = 0,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
@@ -391,8 +394,7 @@ void createBoltSubmodule(py::module_& module) {
            "Returns a mapping from metric names to an array their values for "
            "every epoch.")
       .def("predict", &PyNetwork::predict, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("batch_size") = 2048,
-           py::arg("sparse_inference") = false,
+           py::arg("test_labels"), py::arg("sparse_inference") = false,
            py::arg("metrics") = std::vector<std::string>(),
            py::arg("verbose") = true,
            py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
@@ -655,6 +657,52 @@ void createBoltSubmodule(py::module_& module) {
       .def("explain", &PySequentialClassifier::explain, py::arg("filename"),
            py::arg("label_id") = 0, py::arg("label_given") = false,
            py::arg("loss_fn") = CategoricalCrossEntropyLoss());
+
+  py::class_<TabularClassifier>(bolt_submodule, "TabularClassifier")
+      .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
+           py::arg("n_classes"),
+           "Constructs a TabularClassifier with autotuning.\n"
+           "Arguments:\n"
+           " * model_size: string - Either 'small', 'medium', 'large', or a "
+           "size in Gb for the model, for example '6Gb' or '6 Gb'.\n"
+           " * n_classes: int - How many classes or categories are in the "
+           "labels of the dataset.\n")
+      .def("train", &TabularClassifier::train, py::arg("train_file"),
+           py::arg("column_datatypes"), py::arg("epochs"),
+           py::arg("learning_rate"),
+           "Trains the classifier on the given dataset.\n"
+           "Arguments:\n"
+           " * train_file: string - The path to the training dataset to use. "
+           "Data is assumed to be in CSV format with ',' delimiter and no "
+           "header. \n"
+           " * column_datatypes: List of str - How to interpret data types of "
+           "columns"
+           " in the dataset. One of 'numeric', 'categorical', 'label'\n"
+           " * epochs: Int - How many epochs to train for.\n"
+           " * learning_rate: Float - The learning rate to use for training.\n")
+      .def(
+          "predict", &TabularClassifier::predict, py::arg("test_file"),
+          py::arg("output_file") = std::nullopt,
+          "Runs the classifier on the specified test dataset and optionally "
+          "logs the prediction to a file.\n"
+          "Arguments:\n"
+          " * test_file: string - The path to the test dataset to use. Data is "
+          "assumed to be in CSV format with ',' delimiter and no header. \n"
+          " * output_file: string - Optional argument, if this is specified "
+          "then the classifier will output the name of the class/category of "
+          "each prediction this file with one prediction result on each "
+          "line.\n")
+      .def("save", &TabularClassifier::save, py::arg("filename"),
+           "Saves the classifier to a file. The file path must not require any "
+           "folders to be created\n"
+           "Arguments:\n"
+           " * filename: string - The path to the save location of the "
+           "classifier.\n")
+      .def_static(
+          "load", &TabularClassifier::load, py::arg("filename"),
+          "Loads and builds a saved classifier from file.\n"
+          "Arguments:\n"
+          " * filename: string - The location of the saved classifier.\n");
 
   py::class_<SentimentClassifier>(bolt_submodule, "SentimentClassifier")
       .def(py::init<const std::string&>(), py::arg("model_path"))

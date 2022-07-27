@@ -95,11 +95,18 @@ class Block {
    * input_row: input sample; the sequence of strings to encoded.
    * vec: the vector to be concatenated with the vector
    *   encoding of input_row.
+   *
+   * Returns:
+   * exception_ptr: Since blocks can run in parallel in pragma
+   * threads, they can't throw their own exceptions. To fail in a block, return
+   * any exception_ptr and proceed with program execution without failing. The
+   * error should then be caught.
    */
-  void addVectorSegment(const std::vector<std::string_view>& input_row,
-                        SegmentedFeatureVector& vec) {
+  std::exception_ptr addVectorSegment(
+      const std::vector<std::string_view>& input_row,
+      SegmentedFeatureVector& vec) {
     vec.addFeatureSegment(featureDim());
-    buildSegment(input_row, vec);
+    return buildSegment(input_row, vec);
   }
 
   /**
@@ -132,8 +139,9 @@ class Block {
    * WARNING: This function may be called in many threads simultaneously,
    * so it should be thread-safe or robust to data races.
    */
-  virtual void buildSegment(const std::vector<std::string_view>& input_row,
-                            SegmentedFeatureVector& vec) = 0;
+  virtual std::exception_ptr buildSegment(
+      const std::vector<std::string_view>& input_row,
+      SegmentedFeatureVector& vec) = 0;
 };
 
 using Graph = std::unordered_map<std::string, std::vector<std::string>>;

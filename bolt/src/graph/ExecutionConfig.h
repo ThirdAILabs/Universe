@@ -51,8 +51,6 @@ class TrainConfig {
     return MetricAggregator(_metric_names, _verbose);
   }
 
-  const std::optional<uint32_t>& batchSize() const { return _batch_size; }
-
   constexpr bool verbose() const { return _verbose; }
 
   uint32_t getRebuildHashTablesBatchInterval(uint32_t batch_size,

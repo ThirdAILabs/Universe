@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <memory>
+#include <sstream>
 
 namespace thirdai::dataset {
 
@@ -37,6 +38,15 @@ class TrendBlock : public Block {
           "Provided a graph but `max_n_neighbors` is "
           "set to 0. This means "
           "graph information will not be used at all.");
+    }
+
+    if (lookback % period != 0 || lookahead % period != 0) {
+      std::stringstream error_ss;
+      error_ss << "lookback and lookahead arguments must be a multiple of "
+                  "period (lookback = "
+               << lookback << ", lookahead = " << lookahead
+               << ", period = " << period << ").";
+      throw std::invalid_argument(error_ss.str());
     }
 
     _expected_num_cols = expectedNumCols();
@@ -73,8 +83,9 @@ class TrendBlock : public Block {
   }
 
  protected:
-  void buildSegment(const std::vector<std::string_view>& input_row,
-                    SegmentedFeatureVector& vec) final {
+  std::exception_ptr buildSegment(
+      const std::vector<std::string_view>& input_row,
+      SegmentedFeatureVector& vec) final {
     std::string id_str(input_row[_id_col]);
     uint32_t id = idHash(id_str);
     uint32_t timestamp = timestampFromInputRow(input_row);
@@ -91,6 +102,8 @@ class TrendBlock : public Block {
         offset = addFeaturesForId(neighbor_id, timestamp, vec, offset);
       }
     }
+
+    return nullptr;
   }
 
  private:

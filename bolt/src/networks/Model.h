@@ -5,9 +5,7 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
-#include <dataset/src/Dataset.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <dataset/src/bolt_datasets/StreamingDataset.h>
+#include <dataset/src/Datasets.h>
 #include <algorithm>
 #include <limits>
 #include <memory>
@@ -56,7 +54,7 @@ class Model {
    */
   MetricData trainOnStream(
       // Train dataset
-      std::shared_ptr<dataset::StreamingDataset<BATCH_T>> train_data,
+      std::shared_ptr<dataset::StreamingDataset<BATCH_T, BoltBatch>> train_data,
       // Loss function to use
       const LossFunction& loss_fn,
       // Learning rate for training
@@ -109,7 +107,7 @@ class Model {
    */
   InferenceMetricData predictOnStream(
       // Test dataset
-      std::shared_ptr<dataset::StreamingDataset<BATCH_T>> test_data,
+      std::shared_ptr<dataset::StreamingDataset<BATCH_T, BoltBatch>> test_data,
       // Use sparse inference
       bool use_sparse_inference = false,
       // Metrics to compute

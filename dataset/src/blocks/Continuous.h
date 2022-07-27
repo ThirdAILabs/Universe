@@ -26,13 +26,16 @@ class ContinuousBlock : public Block {
   }
 
  protected:
-  void buildSegment(const std::vector<std::string_view>& input_row,
-                    SegmentedFeatureVector& vec) override {
+  std::exception_ptr buildSegment(
+      const std::vector<std::string_view>& input_row,
+      SegmentedFeatureVector& vec) override {
     auto val_str = input_row.at(_column);
     char* end;
     float val = std::strtof(val_str.data(), &end);
 
     vec.addDenseFeatureToSegment(val);
+
+    return nullptr;
   };
 
  private:

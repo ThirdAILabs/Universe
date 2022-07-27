@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
+#include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_types/MaskedSentenceBatch.h>
 #include <dataset/src/blocks/Categorical.h>
-#include <dataset/src/bolt_datasets/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/encodings/categorical/CategoricalMultiLabel.h>
 
 namespace thirdai::dataset {
@@ -24,9 +24,7 @@ TEST(CategoricalMultiLabelTest, TestLabelParsing) {
 
   auto batch = batch_processor.createBatch(rows);
 
-  EXPECT_TRUE(batch.has_value());
-
-  auto [data, labels] = std::move(*batch);
+  auto [data, labels] = std::move(batch);
 
   std::vector<std::vector<uint32_t>> expected_labels = {
       {4, 90, 77, 121, 143, 118, 100},

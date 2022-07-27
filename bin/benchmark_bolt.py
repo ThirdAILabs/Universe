@@ -34,7 +34,7 @@ def main():
         p = Path(config)
         run_name = f"{prefix}_{p.stem}_{cur_date}"
         os.system(
-            f"python3 {bin_directory}/../benchmarks/bolt_benchmarks/bolt.py {config} --disable_upload_artifacts --run_name {run_name}"
+            f"python3 {bin_directory}/../benchmarks/bolt_benchmarks/run_bolt_experiment.py --disable_upload_artifacts --run_name {run_name}  {config} "
         )
 
 

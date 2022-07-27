@@ -221,7 +221,7 @@ std::vector<std::vector<float>> FullyConnectedNetwork::getInputGradients(
 
 std::pair<std::vector<std::vector<float>>, std::vector<std::vector<float>>>
 FullyConnectedNetwork::getInputGradientsFromStream(
-    const std::shared_ptr<dataset::StreamingDataset<BoltBatch>>& test_data,
+    const std::shared_ptr<dataset::StreamingGenericDatasetLoader>& test_data,
     const LossFunction& loss_fn, bool best_index, uint32_t label_id,
     bool label_given) {
   uint32_t batch_size = test_data->getMaxBatchSize();
@@ -231,8 +231,8 @@ FullyConnectedNetwork::getInputGradientsFromStream(
   if (label_given) {
     temp.resize(batch_size, label_id);
   }
-  while (auto batch = test_data->nextBatch()) {
-    getInputGradientsForBatch(batch->first, output, loss_fn, best_index, 0,
+  while (auto batch = test_data->nextBatchTuple()) {
+    getInputGradientsForBatch(std::get<0>(batch.value()), output, loss_fn, best_index, 0,
                               temp, concatenated_grad, true, ratios);
   }
   return std::make_pair(concatenated_grad, ratios);
