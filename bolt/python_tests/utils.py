@@ -86,7 +86,7 @@ def train_single_node_distributed_network(
             network.calculateGradientSingleNode(
                 batch_num, bolt.CategoricalCrossEntropyLoss()
             )
-            network.updateParametersSingleNode(learning_rate)
+            # network.updateParametersSingleNode(learning_rate)
 
 
 # Returns a model with a single node
