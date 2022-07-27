@@ -26,42 +26,27 @@ void createBoltSubmodule(py::module_& module) {
   auto bolt_submodule = module.def_submodule("bolt");
 
 #if THIRDAI_EXPOSE_ALL
-#pragma message("THIRDAI_EXPOSE_ALL is defined")  // NOLINT
-  py::class_<thirdai::bolt::SamplingConfig>(
-      bolt_submodule, "SamplingConfig",
-      "SamplingConfig represents a layer's sampling hyperparameters.")
-      .def(py::init<uint32_t, uint32_t, uint32_t, uint32_t, std::string>(),
-           py::arg("hashes_per_table"), py::arg("num_tables"),
-           py::arg("range_pow"), py::arg("reservoir_size"),
-           py::arg("hash_function") = "DWTA",
-           "Builds a SamplingConfig object. \n\n"
-           "Arguments:\n"
-           " * hashes_per_table: Int - number of hashes to be concatenated in "
-           "each table."
-           " * num_tables: Int - number of hash tables."
-           " * range_pow: Int - hash range as a power of 2. E.g. if hash range "
-           "is 8, range_pow = 3. "
-           " Note that the correct range_pow differs for each hash function. "
-           "For DWTA, range_pow = 3 * hashes_per_table."
-           " For SRP or FastSRP, range_pow = hashes_per_table."
-           " * reservoir_size: Int - maximum number of elements stored in each "
-           "hash bucket."
-           " * hash_function: Pass hash function as string (Optional) - The "
-           "hash function "
-           "used for sparse training and inference. One of DWTA, SRP, or "
-           "FastSRP. Defaults to DWTA.")
-      .def(py::init<>(), "Builds a default SamplingConfig object.")
-      .def_readonly("hashes_per_table", &SamplingConfig::hashes_per_table)
-      .def_readonly("num_tables", &SamplingConfig::num_tables)
-      .def_readonly("range_pow", &SamplingConfig::range_pow)
-      .def_readonly("reservoir_size", &SamplingConfig::reservoir_size)
-      .def_readonly("hash_function", &SamplingConfig::_hash_function);
+#pragma message("THIRDAI_EXPOSE_ALL is defined")                 // NOLINT
+  py::class_<thirdai::bolt::SamplingConfig, SamplingConfigPtr>(  // NOLINT
+      bolt_submodule, "SamplingConfig");
 
+  py::class_<thirdai::bolt::DWTASamplingConfig,
+             std::shared_ptr<DWTASamplingConfig>, SamplingConfig>(
+      bolt_submodule, "DWTASamplingConfig")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
+           py::arg("hashes_per_table"), py::arg("reservoir_size"));
+
+  py::class_<thirdai::bolt::FastSRPSamplingConfig,
+             std::shared_ptr<FastSRPSamplingConfig>, SamplingConfig>(
+      bolt_submodule, "FastSRPSamplingConfig")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(), py::arg("num_tables"),
+           py::arg("hashes_per_table"), py::arg("reservoir_size"));
 #endif
 
   py::enum_<ActivationFunction>(
       bolt_submodule, "ActivationFunctions",
-      "An enum of all available activation functions. To use it, pass it to "
+      "An enum of all available activation functions. To use it, pass "
+      "it to "
       "the 'activation_function' parameter of a LayerConfig object.")
       .value("ReLU", ActivationFunction::ReLU,
              "Rectified Linear Units (ReLU) activation function; "
@@ -140,8 +125,8 @@ void createBoltSubmodule(py::module_& module) {
              thirdai::bolt::SequentialLayerConfig>(
       bolt_submodule, "FullyConnected", "Defines a fully-connected layer.\n")
 #if THIRDAI_EXPOSE_ALL
-      .def(py::init<uint64_t, float, ActivationFunction,
-                    thirdai::bolt::SamplingConfig>(),
+      .def(py::init<uint64_t, float, std::string,
+                    thirdai::bolt::SamplingConfigPtr>(),
            py::arg("dim"), py::arg("sparsity"), py::arg("activation_function"),
            py::arg("sampling_config"),
            "Constructs the FullyConnectedLayerConfig object.\n"
@@ -157,29 +142,6 @@ void createBoltSubmodule(py::module_& module) {
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sampling_config: SamplingConfig - Sampling configuration.")
 #endif
-      .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
-           py::arg("activation_function"),
-           "Constructs a FullyConnectedLayerConfig object.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: ActivationFunctions enum - We support five "
-           "activation functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
-           "Also accepts `getActivationFunction(function_name), e.g. "
-           "`getActivationFunction('ReLU')`")
-      .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
-           py::arg("sparsity"), py::arg("activation_function"),
-           "Constructs a FullyConnectedLayerConfig object.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation_function: ActivationFunctions enum - We support five "
-           "activation functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
-           " * sparsity: Float - The fraction of neurons to use during "
-           "sparse training "
-           "and sparse inference. For example, sparsity=0.05 means the "
-           "layer uses 5% of "
-           "its neurons when processing an individual sample.\n"
-           "Also accepts `getActivationFunction(function_name), e.g. "
-           "`getActivationFunction('ReLU')`")
       .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
            py::arg("sparsity"), py::arg("activation_function"),
            "Constructs a FullyConnectedLayerConfig object.\n"
@@ -211,7 +173,7 @@ void createBoltSubmodule(py::module_& module) {
       "Defines a 2D convolutional layer that convolves over "
       "non-overlapping patches.")
       .def(py::init<uint64_t, float, ActivationFunction,
-                    thirdai::bolt::SamplingConfig,
+                    thirdai::bolt::SamplingConfigPtr,
                     std::pair<uint32_t, uint32_t>, uint32_t>(),
            py::arg("num_filters"), py::arg("sparsity"),
            py::arg("activation_function"), py::arg("sampling_config"),
@@ -251,6 +213,7 @@ void createBoltSubmodule(py::module_& module) {
            "`getActivationFunction('ReLU')`\n"
            " * kernel_size: Pair of ints - 2D dimensions of each patch.\n"
            " * num_patches: Int (positive) - Number of patches.");
+
   py::class_<thirdai::bolt::EmbeddingLayerConfig>(
       bolt_submodule, "Embedding",
       "Defines a space-efficient embedding table lookup layer.")
@@ -293,6 +256,28 @@ void createBoltSubmodule(py::module_& module) {
            " * detailed: boolean. Optional. When specified to \"True\", "
            "summary will additionally print sampling config details for each "
            "layer in the network.")
+      .def("get_input_gradients", &PyNetwork::getInputGradients,
+           py::arg("input"), py::arg("loss_fn"), py::arg("best_index") = true,
+           py::arg("required_labels") = std::vector<uint32_t>(),
+           "Get the values of input gradients when back propagate "
+           "labels with the highest activation or second highest "
+           "activation or with the required label."
+           "Arguments:\n"
+           " * input: The input is same type as we give for train_data of "
+           "train method."
+           " * loss_fn: LossFunction - The loss function to minimize."
+           " * best_index: Boolean, if set to True, gives gradients correspond "
+           "to "
+           "highest activation, Otherwise gives gradients corresponds to "
+           "second highest activation."
+           " * required_labels: expected labels for each input vector default "
+           "to empty vector, if required_labels is empty then only function "
+           "takes look at the best_index parameter , otherwise gives gradients "
+           "corresponds to those labels."
+           " Returns a tuple consists of (0) list of lists of gradients "
+           "corresponds to the input vectors."
+           " and (1) optional, it only returns the corresponding indices for "
+           "sparse inputs.")
       .def("train", &PyNetwork::train, py::arg("train_data"),
            py::arg("train_labels"), py::arg("loss_fn"),
            py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
@@ -473,101 +458,7 @@ void createBoltSubmodule(py::module_& module) {
       .def("get_layer_sparsity", &PyNetwork::getLayerSparsity,
            py::arg("layer_index"),
            "Gets the sparsity of the layer at the given index. The 0th layer "
-           "is the first layer after the input layer.")
-#if THIRDAI_EXPOSE_ALL
-      .def("get_sampling_config", &PyNetwork::getSamplingConfig,
-           py::arg("layer_index"),
-           "Returns the sampling config of the layer at layer_index.")
-#endif
-      ;
-
-  py::class_<PyDLRM>(bolt_submodule, "DLRM",
-                     "DLRM network with space-efficient embedding tables.")
-      .def(py::init<thirdai::bolt::EmbeddingLayerConfig,
-                    std::vector<
-                        std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
-                    std::vector<
-                        std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
-                    uint32_t>(),
-           py::arg("embedding_layer"), py::arg("bottom_mlp"),
-           py::arg("top_mlp"), py::arg("input_dim"),
-           "Constructs a DLRM.\n"
-           "Arguments:\n"
-           " * embedding_layer: EmbeddingLayerConfig - Configuration of the "
-           "embedding layer.\n"
-           " * bottom_mlp: List of SequentialLayerConfig - Configurations of "
-           "the sequence "
-           "of layers in DLRM's bottom MLP.\n"
-           " * top_mlp: List of SequentialLayerConfig - Configurations of the "
-           "sequence of "
-           "layers in DLRM's top MLP.\n"
-           " * input_dim: Int (positive) - Dimension of input vectors in the "
-           "dataset.")
-      .def("train", &PyDLRM::train, py::arg("train_data"),
-           py::arg("train_labels"), py::arg("loss_fn"),
-           py::arg("learning_rate"), py::arg("epochs"), py::arg("rehash") = 0,
-           py::arg("rebuild") = 0,
-           py::arg("metrics") = std::vector<std::string>(),
-           py::arg("verbose") = true,
-           "Trains the network on the given training data.\n"
-           "Arguments:\n"
-           " * train_data: ClickThroughDataset - Training data.\n"
-           " * train_labels: BoltDataset - Training labels.\n"
-           " * loss_fn: LossFunction - The loss function to minimize.\n"
-           " * learning_rate: Float (positive) - Learning rate.\n"
-           " * epochs: Int (positive) - Number of training epochs over the "
-           "training data.\n"
-           " * rehash: Int (positive) - Optional. Number of training samples "
-           "before "
-           "rehashing neurons. "
-           "If not provided, BOLT will autotune this parameter.\n\n"
-           "\t\tBOLT's sparse training works by applying smart hash functions "
-           "to "
-           "all neurons in the "
-           "network, and they have to be rehashed periodically. This parameter "
-           "sets the frequency "
-           "of rehashing.\n"
-           " * rebuild: Int (positive) - Optional. Number of training samples "
-           "before "
-           "rebuilding hash tables "
-           "and generating new smart hash functions. If not provided, BOLT "
-           "will autotune this parameter.\n"
-           " * metrics: List of str - Optional. The metrics to keep track of "
-           "during training. "
-           "See the section on metrics.\n"
-           " * verbose: Boolean - Optional. If set to False, only displays "
-           "progress bar. "
-           "If set to True, prints additional information such as metrics and "
-           "epoch times. "
-           "Set to True by default.\n\n"
-
-           "Returns a mapping from metric names to an array their values for "
-           "every epoch.")
-      .def("predict", &PyDLRM::predict, py::arg("test_data"),
-           py::arg("test_labels"), py::arg("sparse_inference") = false,
-           py::arg("metrics") = std::vector<std::string>(),
-           py::arg("verbose") = true,
-           py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
-           "Predicts the output given the input vectors and evaluates the "
-           "predictions based on the given metrics.\n"
-           "Arguments:\n"
-           " * test_data: ClickThroughDataset - Test data.\n"
-           " * test_labels: BoltDataset - Testing labels.\n"
-           " * metrics: List of str - Optional. The metrics to keep track of "
-           "during training. See the section on metrics.\n"
-           " * sparse_inference: (Bool) - When this is true the model will use "
-           "sparsity in inference. This will lead to faster inference but can "
-           "cause a slight loss in accuracy. This option defaults to false.\n"
-           " * verbose: Boolean - Optional. If set to False, only displays "
-           "progress bar. "
-           "If set to True, prints additional information such as metrics and "
-           "inference times. "
-           "Set to True by default.\n\n"
-
-           "Returns a tuple consisting of (0) a mapping from metric names to "
-           "their values "
-           "and (1) output vectors (predictions) from the network in the form "
-           "of a 2D Numpy matrix of floats.");
+           "is the first layer after the input layer.");
 
   py::class_<TextClassifier>(bolt_submodule, "TextClassifier")
       .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
@@ -612,6 +503,145 @@ void createBoltSubmodule(py::module_& module) {
           "Arguments:\n"
           " * filename: string - The location of the saved classifier.\n");
 
+  py::class_<DistributedPyNetwork>(
+      bolt_submodule, "DistributedNetwork",
+      "Fully connected Distributed neural network.")
+      .def(py::init<std::vector<
+                        std::shared_ptr<thirdai::bolt::SequentialLayerConfig>>,
+                    uint64_t>(),
+           py::arg("layers"), py::arg("input_dim"),
+           "Constructs a neural network for one node.\n"
+           "Arguments:\n"
+           " * layers: List of SequentialLayerConfig - Configurations for the "
+           "sequence of "
+           "layers in the neural network.\n"
+           " * input_dim: Int (positive) - Dimension of input vectors in the "
+           "dataset.")
+      .def("prepareNodeForDistributedTraining",
+           &DistributedPyNetwork::prepareNodeForDistributedTraining,
+           py::arg("train_data"), py::arg("train_labels"),
+           py::arg("rehash") = 0, py::arg("rebuild") = 0,
+           py::arg("verbose") = true,
+           "Initializes the Distributed Training over a node\n"
+           "Arguments:\n"
+           "Trains the network on the given training data.\n"
+           "Arguments:\n"
+           " * train_data: BoltDataset - Training data.\n"
+           " * train_labels: BoltDataset - Training labels.\n"
+           " * rehash: Int (positive) - Optional. Number of training samples "
+           "before "
+           "rehashing neurons. "
+           "If not provided, BOLT will autotune this parameter.\n\n"
+           "\t\tBOLT's sparse training works by applying smart hash functions "
+           "to "
+           "all neurons in the "
+           "network, and they have to be rehashed periodically. This parameter "
+           "sets the frequency "
+           "of rehashing.\n"
+           " * rebuild: Int (positive) - Optional. Number of training samples "
+           "before "
+           "rebuilding hash tables "
+           "and generating new smart hash functions. If not provided, BOLT "
+           "will autotune this parameter.\n"
+           " * metrics: List of str - Optional. The metrics to keep track of "
+           "during training. "
+           "See the section on metrics.\n"
+           " * verbose: Boolean - Optional. If set to False, only displays "
+           " some basic info "
+           "If set to True, prints additional information about training"
+           "Set to True by default.\n\n"
+
+           "Returns number of batches to be processed.")
+      .def("calculateGradientSingleNode",
+           &DistributedPyNetwork::calculateGradientSingleNode,
+           py::arg("batch_idx"), py::arg("loss_fn"),
+           "Calculates the gradient for the network on the given training "
+           "batch.\n"
+           "Arguments:\n"
+           " * batch: Int (positive) The batch number for which gradients are "
+           "needed to be calcualted\n"
+           " * loss_fn: LossFunction - The loss function to minimize.\n"
+
+           "Returns void")
+      .def("updateParametersSingleNode",
+           &DistributedPyNetwork::updateParametersSingleNode,
+           py::arg("learning_rate"),
+           "Updates the parameters for the neural network using the "
+           "gradients values already present\n"
+           "Important: while using this function the updates are always"
+           " DENSE"
+           "Arguments:\n"
+           " * learning rate: Float (positive) - Learning rate.\n"
+
+           "Returns void")
+      .def("predictSingleNode", &DistributedPyNetwork::predictSingleNode,
+           py::arg("test_data"), py::arg("test_labels"),
+           py::arg("sparse_inference") = false,
+           py::arg("metrics") = std::vector<std::string>(),
+           py::arg("verbose") = true,
+           py::arg("batch_limit") = std::numeric_limits<uint32_t>::max(),
+           "Predicts the output given the input vectors and evaluates the "
+           "predictions based on the given metrics.\n"
+           "Arguments:\n"
+           " * test_data: BoltDataset - Test data.\n"
+           " * test_labels: BoltDataset - Testing labels.\n"
+           " * batch_size: (Int) - Testing Batch Size.\n"
+           " * sparse_inference: (Bool) - When this is true the model will use "
+           "sparsity in inference. This will lead to faster inference but can "
+           " * metrics: List of str - Optional. The metrics to keep track of "
+           "during training. See the section on metrics.\n"
+           "cause a slight loss in accuracy. This option defaults to false.\n"
+           " * verbose: Boolean - Optional. If set to False, only displays "
+           "progress bar. "
+           "If set to True, prints additional information such as metrics and "
+           "inference times. "
+           "Set to True by default.\n\n"
+
+           "Returns a tuple consisting of (0) a mapping from metric names to "
+           "their values "
+           "and (1) output vectors (predictions) from the network in the form "
+           "of a 2D Numpy matrix of floats.")
+      .def("get_biases", &DistributedPyNetwork::getBiases,
+           py::arg("layer_index"),
+           "Returns the bias array at the given layer index as a 1D Numpy "
+           "array.")
+      .def("set_biases", &DistributedPyNetwork::setBiases,
+           py::arg("layer_index"), py::arg("new_biases"),
+           "Sets the bias array at the given layer index to the given 1D Numpy "
+           "array.")
+      .def("set_biases_gradients", &DistributedPyNetwork::setBiasesGradients,
+           py::arg("layer_index"), py::arg("new_biases_gradients"),
+           "Sets the bias gradient array at the given layer index to the given"
+           "1D Numpy array.")
+      .def("set_weights_gradients", &DistributedPyNetwork::setWeightGradients,
+           py::arg("layer_index"), py::arg("new_weights_gradients"),
+           "Sets the weights gradient array at the given layer index to the "
+           "given 2D "
+           "Numpy matrix. Throws an error if the dimension of the given weight "
+           "matrix does not match the layer's current weight matrix.")
+      .def("get_biases_gradients", &DistributedPyNetwork::getBiasesGradients,
+           py::arg("layer_index"),
+           "Returns the bias gradient array at the given layer index as a 1D "
+           "Numpy array.")
+      .def("get_weights_gradients", &DistributedPyNetwork::getWeightsGradients,
+           py::arg("layer_index"),
+           "Returns the weight gradient matrix at the given layer index as a "
+           "2D Numpy "
+           "matrix.")
+      .def("get_weights", &DistributedPyNetwork::getWeights,
+           py::arg("layer_index"),
+           "Returns the weight matrix at the given layer index as a 2D Numpy "
+           "matrix.")
+      .def("set_weights", &DistributedPyNetwork::setWeights,
+           py::arg("layer_index"), py::arg("new_weights"),
+           "Sets the weight matrix at the given layer index to the given 2D "
+           "Numpy matrix. Throws an error if the dimension of the given weight "
+           "matrix does not match the layer's current weight matrix.")
+      .def("freeze_hash_tables", &DistributedPyNetwork::freezeHashTables,
+           "Freezes hash tables in the network. If you plan to use sparse "
+           "inference, you may get a significant performance improvement if "
+           "you call this one or two epochs before you finish training. "
+           "Otherwise you should not call this method.");
   py::class_<TabularClassifier>(bolt_submodule, "TabularClassifier")
       .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
            py::arg("n_classes"),
