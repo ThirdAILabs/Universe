@@ -178,32 +178,6 @@ void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
   }
 }
 
-uint32_t getSecondBestId(const BoltVector& vec) {
-  float largest_activation = std::numeric_limits<float>::min(),
-        second_largest_activation = std::numeric_limits<float>::min();
-  uint32_t max_id = 0, second_max_id = 0;
-  if (vec.len < 2) {
-    throw std::invalid_argument(
-        "The sparse output dimension should be atleast 2 to call "
-        "getSecondBestId.");
-  }
-  for (uint32_t i = 0; i < vec.len; i++) {
-    if (vec.activations[i] > largest_activation) {
-      second_largest_activation = largest_activation;
-      second_max_id = max_id;
-      largest_activation = vec.activations[i];
-      max_id = i;
-    } else if (vec.activations[i] > second_largest_activation) {
-      second_largest_activation = vec.activations[i];
-      second_max_id = i;
-    }
-  }
-  if (vec.isDense()) {
-    return second_max_id;
-  }
-  return vec.active_neurons[second_max_id];
-}
-
 // TODO (YASH) : ( Extend this getInputGradients for multiple input nodes.)
 std::pair<std::vector<std::vector<float>>,
           std::optional<std::vector<std::vector<uint32_t>>>>
@@ -249,7 +223,7 @@ BoltGraph::getInputGradients(const dataset::BoltDatasetPtr& input_data,
             required_index =
                 _output->getOutputVector(vec_id).getIdWithHighestActivation();
           } else {
-            required_index = getSecondBestId(_output->getOutputVector(vec_id));
+            required_index = _output->getOutputVector(vec_id).getSecondBestId();
           }
           batch_label = BoltVector::makeSparseVector({required_index}, {1.0});
         } else {
