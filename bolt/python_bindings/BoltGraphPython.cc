@@ -11,57 +11,8 @@
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
-#include <dataset/src/batch_types/MaskedSentenceBatch.h>
 
 namespace thirdai::bolt::python {
-
-/*
-  Checks that the dimensions of the given numpy array match the expected
-  dimensions for both weighs and biases at a given layer.
-  The input vector contains the expected dimensions for the
-  array, the output dimensions for a specific node and (optionally)
-  the output dimensions of the predecessor to that node.
- */
-void checkNumpyArrayDimensions(
-    const std::vector<uint32_t>& dimensions,
-    const py::array_t<float, py::array::c_style | py::array::forcecast>&
-        numpy_array) {
-  bool set_weights = dimensions.size() == 3;
-  uint32_t expected_dim = dimensions[0];
-  uint32_t dim = dimensions[1];
-  std::optional<uint32_t> prev_node_dim =
-      set_weights ? std::make_optional<uint32_t>(dimensions[2]) : std::nullopt;
-
-  uint32_t array_dim = numpy_array.ndim();
-
-  if (array_dim != expected_dim) {
-    throw std::invalid_argument(
-        std::stringstream("Expected weight matrix to have " +
-                          std::to_string(expected_dim) +
-                          "dimensions, received "
-                          "matrix with " +
-                          std::to_string(array_dim) + " dimensions.")
-            .str());
-  }
-
-  if (numpy_array.shape(0) != dim ||
-      (set_weights && numpy_array.shape(1) != prev_node_dim)) {
-    set_weights
-        ? throw std::invalid_argument(
-              std::stringstream("Expected weight matrix to have dim (" +
-                                std::to_string(prev_node_dim.value()) +
-                                "), recieved matrix with dim (" +
-                                std::to_string(numpy_array.shape(0)) + ", " +
-                                std::to_string(numpy_array.shape(1)) + ").")
-                  .str())
-        : throw std::invalid_argument(
-              std::stringstream("Expected weight matrix to have dim " +
-                                std::to_string(dim) +
-                                ", received matrix with dim " +
-                                std::to_string(numpy_array.shape(0)) + ".")
-                  .str());
-  }
-}
 
 void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
@@ -72,17 +23,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
                                      "InferenceOutput");
 
-  py::class_<FullyConnectedNode, std::shared_ptr<FullyConnectedNode>, Node>(
-      graph_submodule, "FullyConnected")
-      .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
-           py::arg("activation"),
-           "Constructs a dense FullyConnectedLayer object.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation: Enum specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-      .def(py::init<uint64_t, std::string>(), py::arg("dim"),
+  py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(graph_submodule,
+                                                              "FullyConnected")
+      .def(py::init<uint64_t, const std::string&>(), py::arg("dim"),
            py::arg("activation"),
            "Constructs a dense FullyConnectedLayer object.\n"
            "Arguments:\n"
@@ -90,18 +33,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            " * activation: String specifying the activation function "
            "to use, no restrictions on case - We support five activation "
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-      .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
-           py::arg("sparsity"), py::arg("activation"),
-           "Constructs a sparse FullyConnectedLayer object with sampling "
-           "parameters autotuned.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * sparsity: Float - What fraction of nuerons to activate during "
-           "training and sparse inference.\n"
-           " * activation: Enum specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-      .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
+      .def(py::init<uint64_t, float, const std::string&>(), py::arg("dim"),
            py::arg("sparsity"), py::arg("activation"),
            "Constructs a sparse FullyConnectedLayer object with sampling "
            "parameters autotuned.\n"
@@ -113,20 +45,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "to use, no restrictions on case - We support five activation "
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
 #if THIRDAI_EXPOSE_ALL
-      .def(py::init<uint64_t, float, ActivationFunction, SamplingConfig>(),
-           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
-           py::arg("sampling_config"),
-           "Constructs a sparse FullyConnectedLayer object.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * sparsity: Float - What fraction of nuerons to activate during "
-           "training and sparse inference.\n"
-           " * activation: Enum specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
-           " * sampling_config (SamplingConfig) - Sampling config object to "
-           "initialize hash tables/functions.")
-      .def(py::init<uint64_t, float, std::string, SamplingConfig>(),
+      .def(py::init<uint64_t, float, const std::string&, SamplingConfigPtr>(),
            py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
            py::arg("sampling_config"),
            "Constructs a sparse FullyConnectedLayer object.\n"
@@ -139,8 +58,6 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sampling_config (SamplingConfig) - Sampling config object to "
            "initialize hash tables/functions.")
-      .def("get_sampling_config", &FullyConnectedNode::getSamplingConfig,
-           "Returns the sampling config of the node.")
 #endif
       .def("__call__", &FullyConnectedNode::addPredecessor,
            py::arg("prev_layer"),
@@ -226,13 +143,19 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "least one node (although this is just an identity function, so "
            "really should be at least two).");
 
-  // TODO(Nick): flesh this out more when adding DLRM
   py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(graph_submodule,
                                                     "Embedding")
       .def(py::init<uint32_t, uint32_t, uint32_t>(),
            py::arg("num_embedding_lookups"), py::arg("lookup_size"),
            py::arg("log_embedding_block_size"),
-           "Constructs an embedding node for the graph.")
+           "Constructs an Embedding layer that can be used in the graph.\n"
+           "Arguments:\n"
+           " * num_embedding_lookups: Int (positive) - The number of embedding "
+           "lookups to perform for each token.\n"
+           " * lookup_size: Int (positive) - How many consutive values to "
+           "select as part of the embedding for each embedding lookup.\n"
+           " * log_embedding_block_size: Int (positive) The log base 2 of the "
+           "total size of the embedding block.\n")
       .def("__call__", &EmbeddingNode::addInput, py::arg("token_input_layer"),
            "Tells the graph which token input to use for this Embedding Node.");
 
