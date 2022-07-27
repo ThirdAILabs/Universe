@@ -587,7 +587,7 @@ void FullyConnectedLayer::getWeightGradientSketch(int* indices, float* gradients
     std::vector<float>sampled_gradients(num_samples,0);
     srand(time(0));
     for(int i=0;i<num_samples;i++){
-      sampled_gradients[i]=_w_gradient[rand()%loop_size];
+      sampled_gradients[i]=std::abs(_w_gradient[rand()%loop_size]);
     }
     int k=static_cast<int>(1.0*num_samples*sketch_size/loop_size);
     //threshold is an estimate for the kth largest element in the gradients matrix
@@ -600,7 +600,7 @@ void FullyConnectedLayer::getWeightGradientSketch(int* indices, float* gradients
       int hash=thirdai::hashing::MurmurHash(std::to_string(i).c_str(), std::to_string(i).length(), seed)%sketch_size;
       gradients[hash]=_w_gradient[i];
     }
-    else if(_w_gradient[i]>threshold){
+    else if(_w_gradient[i]>threshold || -1*_w_gradient[i]>threshold){
       int hash=thirdai::hashing::MurmurHash(std::to_string(i).c_str(), std::to_string(i).length(), seed)%sketch_size;
       indices[hash]=i;
       gradients[hash]=_w_gradient[i];
@@ -618,7 +618,7 @@ void FullyConnectedLayer::getBiasGradientSketch(int* indices, float* gradients, 
     std::vector<float>sampled_gradients(num_samples,0);
     srand(time(0));
     for(int i=0;i<num_samples;i++){
-      sampled_gradients[i]=_b_gradient[rand()%loop_size];
+      sampled_gradients[i]=std::abs(_b_gradient[rand()%loop_size]);
     }
     int k=static_cast<int>(1.0*num_samples*sketch_size/loop_size);
     //threshold is an estimate for the kth largest element in the gradients matrix
@@ -635,7 +635,7 @@ void FullyConnectedLayer::getBiasGradientSketch(int* indices, float* gradients, 
       int hash=thirdai::hashing::MurmurHash(std::to_string(i).c_str(), std::to_string(i).length(), seed)%sketch_size;
       gradients[hash]=_b_gradient[i];
     }
-    else if(_w_gradient[i]>threshold){
+    else if(_b_gradient[i]>threshold || -1*_b_gradient[i]>threshold){
       // std::cout<<"indexed_sketch working\n";
       int hash=thirdai::hashing::MurmurHash(std::to_string(i).c_str(), std::to_string(i).length(), seed)%sketch_size;
       indices[hash]=i;
