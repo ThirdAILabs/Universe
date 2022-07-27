@@ -141,6 +141,24 @@ class FullyConnectedNode final
     _layer->setSparsity(sparsity);
   }
 
+  float* getWeightGradients() const {
+    if (getState() != NodeState::PreparedForBatchProcessing) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a PreparedForBatchProcessing state to "
+          "access weight gradients");
+    }
+    return _layer->getWeightsGradient();
+  }
+
+  float* getBiasGradients() const {
+    if (getState() != NodeState::PreparedForBatchProcessing) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a PreparedForBatchProcessing state to "
+          "access bias gradients");
+    }
+    return _layer->getBiasesGradient();
+  }
+
  private:
   void compileImpl() final {
     assert(_config.has_value());

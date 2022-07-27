@@ -12,6 +12,7 @@
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
+#include <pybind11/detail/common.h>
 
 namespace thirdai::bolt::python {
 
@@ -71,6 +72,36 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("get_sparsity", &FullyConnectedNode::getNodeSparsity)
       .def("set_sparsity", &FullyConnectedNode::setNodeSparsity,
            py::arg("sparsity"))
+      .def(
+          "get_weight_gradients",
+          [](const FullyConnectedNode& layer) {
+            float* gradients = layer.getWeightGradients();
+
+            py::capsule free_when_done(
+                gradients, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+            uint32_t dim = layer.outputDim();
+            uint32_t prev_dim = layer.getPredecessors().at(0)->outputDim();
+
+            return py::array_t<float>({dim, prev_dim},
+                                      {prev_dim * sizeof(float), sizeof(float)},
+                                      gradients, free_when_done);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "get_bias_gradients",
+          [](const FullyConnectedNode& layer) {
+            float* gradients = layer.getBiasGradients();
+
+            py::capsule free_when_done(
+                gradients, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+            uint32_t dim = layer.outputDim();
+
+            return py::array_t<float>({dim}, {sizeof(float)}, gradients,
+                                      free_when_done);
+          },
+          py::return_value_policy::reference_internal)
       .def("get_dim", &FullyConnectedNode::outputDim);
 
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
