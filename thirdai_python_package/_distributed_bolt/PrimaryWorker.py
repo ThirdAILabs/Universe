@@ -3,11 +3,12 @@ import ray
 import time
 from typing import Tuple, Any, Optional, Dict, List
 from .utils import initLogging
+from .Worker import Worker
 
 
 
-@ray.remote(num_cpus=2, max_restarts=2)
-class Supervisor:
+@ray.remote(num_cpus=20, max_restarts=2)
+class PrimaryWorker(Worker):
     """
         This is a ray remote class(Actor). Read about them here. 
         (https://docs.ray.io/en/latest/ray-core/actors.html)
@@ -25,12 +26,18 @@ class Supervisor:
     def __init__(
         self, 
         layers: List, 
-        workers: List
+        config, 
+        no_of_workers,
+
     ):
         self.layers = layers
-        self.workers = workers
-        self.num_of_batches = ray.get(self.workers[0].num_of_batches.remote())
+        super().__init__(self.layers, config, no_of_workers, 0)
     
+    def addWorkers(
+        self,
+        workers: List
+    ):
+        self.workers = workers
 
     def subworkCircularCommunication(
         self, 
@@ -157,4 +164,3 @@ class Supervisor:
 
         self.weights_biases = ray.get(self.workers[0].returnParams.remote())
         return self.weights_biases
-

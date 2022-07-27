@@ -6,7 +6,6 @@ import time
 from typing import Tuple, Any, Optional, Dict, List
 
 
-@ray.remote(num_cpus=20, max_restarts=1)
 class Worker:
     """
         This is a ray remote class(Actor). Read about them here. 
@@ -72,15 +71,15 @@ class Worker:
         self.id = id
 
 
-    def addSupervisor(
+    def addHeadWorker(
         self, 
-        supervisor
+        head_worker
     ):
         """
 
-            This function assigns each of the worker their supervisor
+            This function assigns each of the worker their head_worker
         """
-        self.supervisor = supervisor
+        self.head_worker = head_worker
         
 
     def addFriend(
@@ -168,10 +167,10 @@ class Worker:
             This function is called only when the mode of communication
             is Linear.
 
-            This function is called by the supervisor to compute the 
+            This function is called by the head_worker to compute the 
             averages of the calculated gradients. This functions
             calls 'get_weights_gradient' and 'get_biases_gradients' functions
-            inside bolt to take the gradients and return them to supervisor.
+            inside bolt to take the gradients and return them to head_worker.
         """
         w_gradients = []
         b_gradients = []
@@ -188,7 +187,7 @@ class Worker:
         """
 
             This function will only be called for worker having its id 0.
-            The supervisor will call this function to get the initial random 
+            The head_worker will call this function to get the initial random 
             weights from worker with id 0 and then send those weights to all
             the workers.
 
@@ -207,13 +206,13 @@ class Worker:
     ):
         """
 
-            This function is called by supervisor to all the workers whose id 
+            This function is called by head_worker to all the workers whose id 
             is not equal to 0. This function gets the initialized random weight
             ans biases from worker with id = 0. and sets the weight on all
             the other workers.
 
         """
-        weights, biases = ray.get(self.supervisor.weights_biases.remote())
+        weights, biases = ray.get(self.head_worker.weights_biases.remote())
         for layer in range(len(weights)):
             self.network.set_weights(layer, weights[layer])
             self.network.set_biases(layer, biases[layer])
@@ -227,7 +226,7 @@ class Worker:
             This function is called only when the communication pattern choosen
             is circular.
 
-            This function is called by the supervisor to make set the updated 
+            This function is called by the head_worker to make set the updated 
             gradients to the network.
 
         """
@@ -244,11 +243,12 @@ class Worker:
             This function is called only when the communication pattern choosen
             is linear.
 
-            This function is called by the supervisor to first, get the updated gradients 
-            from the supervisor and then set those updated gradients to the network.
+            This function is called by the head_worker to first, get the updated gradients 
+            from the head_worker and then set those updated gradients to the network.
             
         """
-        w_gradients_updated, b_gradients_updated = ray.get(self.supervisor.gradients_avg.remote())
+        
+        w_gradients_updated, b_gradients_updated = ray.get(self.head_worker.gradients_avg.remote())
         for layer in range(len(w_gradients_updated)):
             self.network.set_weights_gradients(layer, w_gradients_updated[layer])
             self.network.set_biases_gradients(layer, b_gradients_updated[layer])
