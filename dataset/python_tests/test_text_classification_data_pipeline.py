@@ -3,7 +3,8 @@ import os
 from thirdai.dataset import DataPipeline
 from thirdai.dataset import blocks
 from thirdai.dataset import text_encodings
-from thirdai import bolt
+from thirdai import bolt, dataset
+import numpy as np
 
 
 def generate_text_classification_dataset(filename, delim):
@@ -34,23 +35,19 @@ def helper_for_text_classification_data_pipeline(text_encoding, delim):
         bolt.FullyConnected(
             dim=1000,
             sparsity=0.1,
-            activation_function=bolt.ActivationFunctions.ReLU,
+            activation_function="relu",
         ),
-        bolt.FullyConnected(
-            dim=3, activation_function=bolt.ActivationFunctions.Softmax
-        ),
+        bolt.FullyConnected(dim=3, activation_function="softmax"),
     ]
 
     network = bolt.Network(layers=layers, input_dim=pipeline.get_input_dim())
 
-    batch_size = 256
     learning_rate = 0.001
     epochs = 1
     for i in range(epochs):
         network.train(
             train_data=data,
             train_labels=labels,
-            batch_size=batch_size,
             loss_fn=bolt.CategoricalCrossEntropyLoss(),
             learning_rate=learning_rate,
             epochs=1,
@@ -59,7 +56,6 @@ def helper_for_text_classification_data_pipeline(text_encoding, delim):
         metrics, preds = network.predict(
             test_data=data,
             test_labels=labels,
-            batch_size=batch_size,
             metrics=["categorical_accuracy"],
             verbose=False,
         )

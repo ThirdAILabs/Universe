@@ -11,7 +11,20 @@ from typing import Any, Dict
 from sklearn.datasets import load_svmlight_file
 
 
-def start_mlflow(experiment_name, run_name, dataset):
+def start_mlflow(config, mlflow_args):
+    if not mlflow_args.disable_mlflow:
+        experiment_name = config["experiment_identifier"]
+        dataset_name = config["dataset_identifier"]
+        model_name = config["model_identifier"]
+        start_mlflow_helper(
+            experiment_name, mlflow_args.run_name, dataset_name, model_name
+        )
+        log_machine_info()
+        if not mlflow_args.disable_upload_artifacts:
+            mlflow.log_artifact(mlflow_args.config_path)
+
+
+def start_mlflow_helper(experiment_name, run_name, dataset, model_name):
     file_dir = os.path.dirname(os.path.abspath(__file__))
     file_name = os.path.join(file_dir, "../config.toml")
     with open(file_name) as f:
@@ -21,8 +34,34 @@ def start_mlflow(experiment_name, run_name, dataset):
     mlflow.set_experiment(experiment_name)
     mlflow.start_run(
         run_name=run_name,
-        tags={"dataset": dataset},
+        tags={"dataset": dataset, "model": model_name},
     )
+
+
+def log_single_epoch_training_metrics(train_output):
+    # Since train_output is the result of training a single epoch,
+    # we can greatly simplify the logging:
+    mlflow_metrics = {k: v[0] for k, v in train_output.items()}
+    mlflow.log_metrics(mlflow_metrics)
+
+
+def log_prediction_metrics(inference_output):
+    # The metrics data is the first element of the inference output tuple
+    mlflow.log_metrics(inference_output[0])
+
+
+def verify_mlflow_args(parser, mlflow_args):
+    if not mlflow_args.disable_mlflow and not mlflow_args.run_name:
+        parser.print_usage()
+        raise ValueError("Error: --run_name is required when using mlflow logging.")
+
+
+def config_get(config, field):
+    if field not in config:
+        raise ValueError(
+            f'The field "{field}" was expected to be in "{config}" but was not found.'
+        )
+    return config[field]
 
 
 def log_machine_info():
@@ -56,6 +95,9 @@ def log_config_info(config):
 
 
 def find_full_filepath(filename: str) -> str:
+    if os.path.exists(filename):
+        return filename
+
     data_path_file = (
         os.path.dirname(os.path.abspath(__file__)) + "/../../dataset_paths.toml"
     )

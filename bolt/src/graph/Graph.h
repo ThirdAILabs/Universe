@@ -16,9 +16,7 @@
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
-#include <dataset/src/Dataset.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -105,9 +103,6 @@ class BoltGraph {
 
   void processInferenceBatch(uint64_t batch_size, const BoltBatch* batch_labels,
                              MetricAggregator& metrics);
-
-  template <typename BATCH_T>
-  void setInputs(BATCH_T& batch_inputs);
 
   // Computes the forward pass through the graph.
   void forward(uint32_t vec_index, const BoltVector* labels);

@@ -1,6 +1,6 @@
 from hashlib import new
 import numpy as np
-from thirdai import bolt
+from thirdai import bolt, dataset
 import pytest
 import time
 import os
@@ -37,7 +37,7 @@ def build_and_train_mach(
     num_epochs=5,
 ):
 
-    train_x, train_y = generate_random_easy_sparse(
+    train_x_np, train_y_np = generate_random_easy_sparse(
         output_dim=input_and_output_dim,
         num_true_labels_per_example=num_true_labels_per_sample,
         num_examples=num_train,
@@ -55,10 +55,10 @@ def build_and_train_mach(
     )
 
     mach.train(
-        train_x,
-        train_y,
-        learning_rate=learning_rate,
+        train_x_np=train_x_np,
+        train_y_np=train_y_np,
         batch_size=batch_size,
+        learning_rate=learning_rate,
         num_epochs=num_epochs,
     )
 
@@ -92,19 +92,19 @@ def test_mach_save_load():
         num_epochs=5,
     )
 
-    test_x, test_y = generate_random_easy_sparse(
+    test_x_np, test_y_np = generate_random_easy_sparse(
         output_dim=input_and_output_dim,
         num_true_labels_per_example=num_true_labels_per_sample,
         num_examples=num_test,
     )
 
-    result_fast, _ = mach.query_fast(test_x)
-    result_slow, _ = mach.query_slow(test_x)
+    result_fast, _ = mach.query_fast(test_x_np)
+    result_slow, _ = mach.query_slow(test_x_np)
     recall_fast_before_save = get_recall(
-        result_fast, test_y, num_true_labels_per_sample
+        result_fast, test_y_np, num_true_labels_per_sample
     )
     recall_slow_before_save = get_recall(
-        result_slow, test_y, num_true_labels_per_sample
+        result_slow, test_y_np, num_true_labels_per_sample
     )
 
     save_folder_name = "mach_saved_for_test"
@@ -113,10 +113,10 @@ def test_mach_save_load():
     newMach = bolt.Mach.load(save_folder_name)
 
     assert recall_fast_before_save == get_recall(
-        newMach.query_fast(test_x)[0], test_y, num_true_labels_per_sample
+        newMach.query_fast(test_x_np)[0], test_y_np, num_true_labels_per_sample
     )
     assert recall_slow_before_save == get_recall(
-        newMach.query_slow(test_x)[0], test_y, num_true_labels_per_sample
+        newMach.query_slow(test_x_np)[0], test_y_np, num_true_labels_per_sample
     )
 
     shutil.rmtree(save_folder_name)
@@ -139,14 +139,14 @@ def test_mach_random_data():
         num_epochs=5,
     )
 
-    test_x, test_y = generate_random_easy_sparse(
+    test_x_np, test_y_np = generate_random_easy_sparse(
         output_dim=input_and_output_dim,
         num_true_labels_per_example=num_true_labels_per_sample,
         num_examples=num_test,
     )
 
-    result_fast, _ = mach.query_fast(test_x)
-    result_slow, _ = mach.query_slow(test_x)
+    result_fast, _ = mach.query_fast(test_x_np)
+    result_slow, _ = mach.query_slow(test_x_np)
 
-    assert get_recall(result_fast, test_y, num_true_labels_per_sample) > 0.8
-    assert get_recall(result_slow, test_y, num_true_labels_per_sample) > 0.8
+    assert get_recall(result_fast, test_y_np, num_true_labels_per_sample) > 0.8
+    assert get_recall(result_slow, test_y_np, num_true_labels_per_sample) > 0.8

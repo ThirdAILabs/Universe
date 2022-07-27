@@ -32,7 +32,7 @@ def test_switch_dense_to_sparse():
     return both the activations and the indices of those activations.
     """
     dataset_dim = 100
-    examples, labels = gen_training_data(n_classes=dataset_dim, n_samples=1000)
+    examples, labels = gen_numpy_training_data(n_classes=dataset_dim, n_samples=1000)
     classifier = build_sparse_hidden_layer_classifier(
         input_dim=dataset_dim, sparse_dim=100, output_dim=dataset_dim, sparsity=0.01
     )
@@ -94,22 +94,3 @@ def test_decrease_and_increase_sparsity():
     # 0.25 is 2^-2, so we can assert exact equality without math.isclose
     classifier.set_layer_sparsity(layer_index=0, sparsity=0.25)
     assert classifier.get_layer_sparsity(layer_index=0) == 0.25
-
-
-# This is not a release test because the sampling config isn't exposed in a
-# release build.
-def test_decrease_and_increase_sparsity_sampling_config():
-    """
-    Tests that changing the sparsity of an already sparse layer changes the
-    sampling config parameters. Due to the way we autotune, only the number of
-    tables should change if we change the sparsity.
-    """
-    classifier = gen_single_sparse_layer_network(n_classes=1000, sparsity=0.5)
-    sampling_config = classifier.get_sampling_config(layer_index=0)
-    num_tables_high_sparsity = sampling_config.num_tables
-
-    classifier.set_layer_sparsity(layer_index=0, sparsity=0.1)
-    sampling_config = classifier.get_sampling_config(layer_index=0)
-    num_tables_low_sparsity = sampling_config.num_tables
-
-    assert num_tables_low_sparsity < num_tables_high_sparsity

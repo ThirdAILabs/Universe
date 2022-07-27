@@ -5,11 +5,12 @@
 #include <bolt/src/graph/InferenceOutputTracker.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/Concatenate.h>
+#include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
-#include <dataset/src/Dataset.h>
+#include <bolt/src/graph/nodes/TokenInput.h>
+#include <dataset/src/Datasets.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
-#include <dataset/src/batch_types/MaskedSentenceBatch.h>
 
 namespace thirdai::bolt::python {
 
@@ -22,17 +23,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
                                      "InferenceOutput");
 
-  py::class_<FullyConnectedNode, std::shared_ptr<FullyConnectedNode>, Node>(
-      graph_submodule, "FullyConnected")
-      .def(py::init<uint64_t, ActivationFunction>(), py::arg("dim"),
-           py::arg("activation"),
-           "Constructs a dense FullyConnectedLayer object.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * activation: Enum specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-      .def(py::init<uint64_t, std::string>(), py::arg("dim"),
+  py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(graph_submodule,
+                                                              "FullyConnected")
+      .def(py::init<uint64_t, const std::string&>(), py::arg("dim"),
            py::arg("activation"),
            "Constructs a dense FullyConnectedLayer object.\n"
            "Arguments:\n"
@@ -40,18 +33,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            " * activation: String specifying the activation function "
            "to use, no restrictions on case - We support five activation "
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-      .def(py::init<uint64_t, float, ActivationFunction>(), py::arg("dim"),
-           py::arg("sparsity"), py::arg("activation"),
-           "Constructs a sparse FullyConnectedLayer object with sampling "
-           "parameters autotuned.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * sparsity: Float - What fraction of nuerons to activate during "
-           "training and sparse inference.\n"
-           " * activation: Enum specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-      .def(py::init<uint64_t, float, std::string>(), py::arg("dim"),
+      .def(py::init<uint64_t, float, const std::string&>(), py::arg("dim"),
            py::arg("sparsity"), py::arg("activation"),
            "Constructs a sparse FullyConnectedLayer object with sampling "
            "parameters autotuned.\n"
@@ -63,20 +45,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "to use, no restrictions on case - We support five activation "
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
 #if THIRDAI_EXPOSE_ALL
-      .def(py::init<uint64_t, float, ActivationFunction, SamplingConfig>(),
-           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
-           py::arg("sampling_config"),
-           "Constructs a sparse FullyConnectedLayer object.\n"
-           "Arguments:\n"
-           " * dim: Int (positive) - The dimension of the layer.\n"
-           " * sparsity: Float - What fraction of nuerons to activate during "
-           "training and sparse inference.\n"
-           " * activation: Enum specifying the activation function "
-           "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
-           " * sampling_config (SamplingConfig) - Sampling config object to "
-           "initialize hash tables/functions.")
-      .def(py::init<uint64_t, float, std::string, SamplingConfig>(),
+      .def(py::init<uint64_t, float, const std::string&, SamplingConfigPtr>(),
            py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
            py::arg("sampling_config"),
            "Constructs a sparse FullyConnectedLayer object.\n"
@@ -89,8 +58,6 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sampling_config (SamplingConfig) - Sampling config object to "
            "initialize hash tables/functions.")
-      .def("get_sampling_config", &FullyConnectedNode::getSamplingConfig,
-           "Returns the sampling config of the node.")
 #endif
       .def("__call__", &FullyConnectedNode::addPredecessor,
            py::arg("prev_layer"),
@@ -116,16 +83,33 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "least one node (although this is just an identity function, so "
            "really should be at least two).");
 
+  py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(graph_submodule,
+                                                    "Embedding")
+      .def(py::init<uint32_t, uint32_t, uint32_t>(),
+           py::arg("num_embedding_lookups"), py::arg("lookup_size"),
+           py::arg("log_embedding_block_size"),
+           "Constructs an Embedding layer that can be used in the graph.\n"
+           "Arguments:\n"
+           " * num_embedding_lookups: Int (positive) - The number of embedding "
+           "lookups to perform for each token.\n"
+           " * lookup_size: Int (positive) - How many consutive values to "
+           "select as part of the embedding for each embedding lookup.\n"
+           " * log_embedding_block_size: Int (positive) The log base 2 of the "
+           "total size of the embedding block.\n")
+      .def("__call__", &EmbeddingNode::addInput, py::arg("token_input_layer"),
+           "Tells the graph which token input to use for this Embedding Node.");
+
   py::class_<Input, InputPtr, Node>(graph_submodule, "Input")
       .def(py::init<uint32_t>(), py::arg("dim"),
            "Constructs an input layer node for the graph.");
+
+  py::class_<TokenInput, TokenInputPtr, Node>(graph_submodule, "TokenInput")
+      .def(py::init<>(), "Constructs a token input layer node for the graph.");
 
   py::class_<TrainConfig>(graph_submodule, "TrainConfig")
       .def_static("make", &TrainConfig::makeConfig, py::arg("learning_rate"),
                   py::arg("epochs"))
       .def("with_metrics", &TrainConfig::withMetrics, py::arg("metrics"))
-      .def("with_batch_size", &TrainConfig::withBatchSize,
-           py::arg("batch_size"))
       .def("silence", &TrainConfig::silence)
       .def("with_rebuild_hash_tables", &TrainConfig::withRebuildHashTables,
            py::arg("rebuild_hash_tables"))
@@ -148,23 +132,38 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            " * inputs (List[Node]) - The input nodes to the graph. Note that "
            "inputs are mapped to input layers by their index.\n"
            " * output (Node) - The output node of the graph.")
+      .def(py::init<std::vector<InputPtr>, std::vector<TokenInputPtr>,
+                    NodePtr>(),
+           py::arg("inputs"), py::arg("token_inputs"), py::arg("output"),
+           "Constructs a bolt model from a layer graph.\n"
+           "Arguments:\n"
+           " * inputs (List[InputNode]) - The input nodes to the graph. Note "
+           "that "
+           "inputs are mapped to input layers by their index.\n"
+           " * inputs (List[TokenInput]) - The token input nodes to the graph. "
+           "Note that "
+           "token inputs are mapped to token input layers by their index.\n"
+           " * output (Node) - The output node of the graph.")
       .def("compile", &BoltGraph::compile, py::arg("loss"),
            py::arg("print_when_done") = true,
            "Compiles the graph for the given loss function. In this step the "
            "order in which to compute the layers is determined and various "
            "checks are preformed to ensure the model architecture is correct.")
+      // Helper method that covers the common case of training based off of a
+      // single BoltBatch dataset
       .def(
           "train",
-          [](BoltGraph& model, const py::object& data, const py::object& labels,
+          [](BoltGraph& model, const dataset::BoltDatasetPtr& data,
+             const dataset::BoltDatasetPtr& labels,
              const TrainConfig& train_config) {
-            return dagTrainPythonWrapper(model, data, /* token_data= */ nullptr,
-                                         labels, train_config);
+            return model.train({data}, /* train_tokens = */ {}, labels,
+                               train_config);
           },
           py::arg("train_data"), py::arg("train_labels"),
           py::arg("train_config"))
       .def(
-          "train", &dagTrainPythonWrapper, py::arg("train_data"),
-          py::arg("train_labels"), py::arg("train_tokens"),
+          "train", &BoltGraph::train, py::arg("train_data"),
+          py::arg("train_tokens"), py::arg("train_labels"),
           py::arg("train_config"),
           "Trains the network on the given training data.\n"
           "Arguments:\n"
@@ -210,12 +209,15 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "See the TrainConfig documentation above.\n\n"
           "Returns a mapping from metric names to an array of their values for "
           "every epoch.")
+      // Helper method that covers the common case of inference based off of a
+      // single BoltBatch dataset
       .def(
           "predict",
-          [](BoltGraph& model, const py::object& data, const py::object& labels,
+          [](BoltGraph& model, const dataset::BoltDatasetPtr& data,
+             const dataset::BoltDatasetPtr& labels,
              const PredictConfig& predict_config) {
-            return dagPredictPythonWrapper(
-                model, data, /* token_data= */ nullptr, labels, predict_config);
+            return dagPredictPythonWrapper(model, {data}, /* tokens = */ {},
+                                           labels, predict_config);
           },
           py::arg("test_data"), py::arg("test_labels"),
           py::arg("predict_config"))
@@ -276,59 +278,19 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "setting layer sparsity, freezing weights, or saving to a file");
 }
 
-MetricData dagTrainPythonWrapper(
-    BoltGraph& model, const py::object& data,
-    const std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&
-        token_data,
-    const py::object& labels, const TrainConfig& train_config) {
-  auto train_labels =
-      convertPyObjectToBoltDataset(labels, train_config.batchSize(),
-                                   /* is_labels = */ true);
-  auto train_data = convertPyObjectToBoltDataset(data, train_config.batchSize(),
-                                                 /* is_labels = */ false);
-
-  std::vector<
-      std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>>
-      token_inputs;
-  if (token_data != nullptr) {
-    token_inputs = {token_data};
-  }
-  return model.train({train_data.dataset}, token_inputs, train_labels.dataset,
-                     train_config);
-}
-
-py::tuple dagPredictPythonWrapper(
-    BoltGraph& model, const py::object& data,
-    const std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>&
-        token_data,
-    const py::object& labels, const PredictConfig& predict_config) {
-  BoltDatasetNumpyContext test_labels;
-  if (!labels.is_none()) {
-    test_labels = convertPyObjectToBoltDataset(labels, /* batch_size = */ 2048,
-                                               /* is_labels = */ true);
-  }
-
-  std::optional<InferenceResult> result;
-  uint64_t test_data_len;
-
-  auto test_data = convertPyObjectToBoltDataset(data, /* batch_size = */ 2048,
-                                                /* is_labels = */ false);
-  test_data_len = test_data.dataset->len();
-
-  std::vector<
-      std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>>
-      token_inputs;
-  if (token_data != nullptr) {
-    token_inputs = {token_data};
-  }
-  auto [metrics, output] = model.predict({test_data.dataset}, token_inputs,
-                                         test_labels.dataset, predict_config);
+py::tuple dagPredictPythonWrapper(BoltGraph& model,
+                                  const dataset::BoltDatasetList& data,
+                                  const dataset::BoltTokenDatasetList& tokens,
+                                  const dataset::BoltDatasetPtr& labels,
+                                  const PredictConfig& predict_config) {
+  auto [metrics, output] = model.predict(data, tokens, labels, predict_config);
 
   // We need to get these now because we are about to std::move output
   const float* activation_pointer = output.getNonowningActivationPointer();
   const uint32_t* active_neuron_pointer =
       output.getNonowningActiveNeuronPointer();
   uint32_t num_nonzeros = output.numNonzerosInOutput();
+  uint64_t dataset_len = output.numSamples();
 
   // At first, the InferenceOutput object owns the memory for the
   // activation and active_neuron vectors. We want to use it as the
@@ -340,7 +302,7 @@ py::tuple dagPredictPythonWrapper(
   py::object output_handle = py::cast(std::move(output));
 
   return constructPythonInferenceTuple(
-      py::cast(metrics), test_data_len, num_nonzeros,
+      py::cast(metrics), dataset_len, num_nonzeros,
       /* activations = */ activation_pointer,
       /* active_neurons = */ active_neuron_pointer,
       /* activation_handle = */ output_handle,

@@ -3,7 +3,7 @@
 # to run the unit test required to test ctrl+c event
 
 
-from thirdai import bolt
+from thirdai import bolt, dataset
 import numpy as np
 
 
@@ -28,7 +28,9 @@ def get_random_dataset_as_numpy(no_of_training_examples):
         train_data.reshape((no_of_training_examples, dimension_of_input))
     )
     train_labels = np.uint32(train_labels)
-    return train_data, train_labels
+    return dataset.from_numpy(train_data, batch_size=64), dataset.from_numpy(
+        train_labels, batch_size=64
+    )
 
 
 def train_using_random_numpy():
@@ -37,12 +39,8 @@ def train_using_random_numpy():
         no_of_training_examples=100000
     )
     layers = [
-        bolt.FullyConnected(
-            dim=100, sparsity=0.2, activation_function=bolt.ActivationFunctions.ReLU
-        ),
-        bolt.FullyConnected(
-            dim=5, sparsity=1.0, activation_function=bolt.ActivationFunctions.Softmax
-        ),
+        bolt.FullyConnected(dim=100, sparsity=0.2, activation_function="relu"),
+        bolt.FullyConnected(dim=5, sparsity=1.0, activation_function="softmax"),
     ]
 
     network = bolt.Network(layers=layers, input_dim=5)
@@ -50,7 +48,6 @@ def train_using_random_numpy():
     network.train(
         train_data=train_data,
         train_labels=train_labels,
-        batch_size=10,
         loss_fn=bolt.MeanSquaredError(),
         learning_rate=0.0001,
         epochs=10000000,  # Making sure the program doesnot terminates

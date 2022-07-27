@@ -11,7 +11,8 @@
 
 namespace thirdai::bolt {
 
-class EmbeddingNode final : public Node {
+class EmbeddingNode final : public Node,
+                            public std::enable_shared_from_this<EmbeddingNode> {
  public:
   EmbeddingNode(uint32_t num_embedding_lookups, uint32_t lookup_size,
                 uint32_t log_embedding_block_size)
@@ -26,7 +27,7 @@ class EmbeddingNode final : public Node {
     return _config.num_embedding_lookups * _config.lookup_size;
   }
 
-  void addInput(TokenInputPtr input) {
+  std::shared_ptr<EmbeddingNode> addInput(TokenInputPtr input) {
     if (getState() != NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
           "EmbeddingNodes have exactly one TokenInput node as input and the "
@@ -34,6 +35,8 @@ class EmbeddingNode final : public Node {
     }
 
     _token_input = std::move(input);
+
+    return shared_from_this();
   }
 
   bool isInputNode() const final { return false; }
@@ -134,5 +137,7 @@ class EmbeddingNode final : public Node {
 
   TokenInputPtr _token_input;
 };
+
+using EmbeddingNodePtr = std::shared_ptr<EmbeddingNode>;
 
 }  // namespace thirdai::bolt

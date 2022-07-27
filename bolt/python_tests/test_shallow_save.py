@@ -2,7 +2,7 @@ import pytest
 from .utils import build_sparse_hidden_layer_classifier, train_network
 from .utils import (
     gen_single_sparse_layer_network,
-    gen_training_data,
+    gen_numpy_training_data,
     get_categorical_acc,
 )
 
@@ -42,7 +42,7 @@ def test_save_shallow_size():
 
 # Asserts that the saved model and original model gives the same accuracy
 def test_same_accuracy_after_save():
-    examples, labels = gen_training_data(n_classes=100, n_samples=1000)
+    examples, labels = gen_numpy_training_data(n_classes=100, n_samples=1000)
     network = gen_single_sparse_layer_network(n_classes=100)
     train_network(network, examples, labels, 5)
     save_loc = "./bolt_model_save"
@@ -62,7 +62,7 @@ def test_same_accuracy_after_save():
 
 # Checks that both trimmed and checkpointed model gains accuracy after training
 def test_accuracy_gain_after_save():
-    examples, labels = gen_training_data(n_classes=100, n_samples=1000)
+    examples, labels = gen_numpy_training_data(n_classes=100, n_samples=1000)
     network = gen_single_sparse_layer_network(n_classes=100)
     train_network(network, examples, labels, 2)
     save_loc = "./bolt_model_save"

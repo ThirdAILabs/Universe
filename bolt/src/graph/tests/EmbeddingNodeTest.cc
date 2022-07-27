@@ -6,7 +6,6 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <gtest/gtest.h>
-#include <dataset/src/Dataset.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <algorithm>
 #include <numeric>
@@ -64,7 +63,7 @@ TEST(EmbeddingNodeTest, SimpleTokenDataset) {
 
   auto fully_connected_layer = std::make_shared<FullyConnectedNode>(
       /* dim= */ 2,
-      /* activation= */ ActivationFunction::Softmax);
+      /* activation= */ "softmax");
   fully_connected_layer->addPredecessor(embedding_layer);
 
   BoltGraph model(/* inputs= */ {}, /* token_inputs= */ {token_input},

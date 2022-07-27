@@ -6,7 +6,6 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/SequentialLayer.h>
-#include <dataset/src/Dataset.h>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -29,7 +28,8 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   friend class python::SentimentClassifier;
 
  public:
-  FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim);
+  FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim,
+                        bool is_distributed = false);
 
   void initializeNetworkState(uint32_t batch_size, bool use_sparsity) final;
 
@@ -42,6 +42,19 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
                      BoltVector& output) final {
     backpropagate<true>(batch_index, inputs[batch_index], output);
   }
+
+  void backpropagateInputForGradients(uint32_t batch_index,
+                                      bolt::BoltBatch& input,
+                                      BoltVector& output) {
+    backpropagate<false>(batch_index, input[batch_index], output);
+  };
+
+  std::pair<std::vector<std::vector<float>>,
+            std::optional<std::vector<std::vector<uint32_t>>>>
+  getInputGradients(
+      std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>& input_dataset,
+      const LossFunction& loss_fn, bool best_index,
+      const std::vector<uint32_t>& required_labels);
 
   void updateParameters(float learning_rate, uint32_t iter) final {
     for (auto& layer : _layers) {
@@ -112,11 +125,6 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   float getLayerSparsity(uint32_t layer_index) {
     checkLayerIndex(layer_index);
     return _layers.at(layer_index)->getSparsity();
-  }
-
-  const SamplingConfig& getSamplingConfig(uint32_t layer_index) {
-    checkLayerIndex(layer_index);
-    return _layers.at(layer_index)->getSamplingConfig();
   }
 
  private:

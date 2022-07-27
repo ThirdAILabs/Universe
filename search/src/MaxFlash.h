@@ -1,7 +1,7 @@
 #pragma once
 
 #include <hashtable/src/TinyTable.h>
-#include <dataset/src/Dataset.h>
+#include <dataset/src/InMemoryDataset.h>
 #include <memory>
 #include <utility>
 
