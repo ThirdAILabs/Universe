@@ -739,6 +739,11 @@ void createBoltSubmodule(py::module_& module) {
            "Returns the weight gradient matrix at the given layer index as a "
            "2D Numpy "
            "matrix.")
+     
+      .def("get_indexed_sketch",&DistributedPyNetwork::getSketch,py::arg("layer_index"),py::arg("compression_density"),py::arg("is_set_biases"),py::arg("seed"),"Returns a tuple of indices and values")
+      .def("get_unindexed_sketch",&DistributedPyNetwork::getUnindexedSketch,py::arg("layer_index"),py::arg("compression_density"),py::arg("is_set_biases"),py::arg("seed"),"Returns array of values")
+      .def("set_gradients",&DistributedPyNetwork::setGradientsFromTuple,py::arg("layer_index"), py::arg("indices"), py::arg("values"), py::arg("is_set_biases"))
+     
       .def("get_weights", &DistributedPyNetwork::getWeights,
            py::arg("layer_index"),
            "Returns the weight matrix at the given layer index as a 2D Numpy "

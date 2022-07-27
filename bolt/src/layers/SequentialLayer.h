@@ -69,8 +69,11 @@ class SequentialLayer {
     summary << "dim=" << getDim() << "\n";
   }
 
-  virtual int* getSketchedIndices(float compression_density) const =0;
-  virtual float* getSketchedWeights(int* indices, int size_sketch) const=0;
+  virtual void getBiasGradientSketch(int* indices, float* gradients, int sketch_size,bool without_index, int seed) const =0;
+  virtual void setBiasGradientsFromIndicesValues(int* indices_raw_data,float* values_raw_data,int size) =0;
+  virtual void getWeightGradientSketch(int* indices, float* gradients, int sketch_size,bool without_index, int seed) const =0;
+  virtual void setWeightGradientsFromIndicesValues(int* indices_raw_data,float* values_raw_data,int size) =0;
+  
   virtual ~SequentialLayer() = default;
 };
 }  // namespace thirdai::bolt

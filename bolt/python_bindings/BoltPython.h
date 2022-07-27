@@ -341,23 +341,112 @@ class DistributedPyNetwork final : public DistributedModel {
                                          active_neurons);
   }
 
-  py::array_t<float> getSketchedIndices(uint32_t layer_index, float compression_density=0.1){
+  void setGradientsFromTuple(uint32_t layer_index,py::object &indices, py::object &values, bool is_set_biases){
+    
+    
+    std::cout<<"inside the set gradients from tuple function"<<std::endl;
+    
+    if(!thirdai::bolt::python::isNumpyArray(indices) || !thirdai::bolt::python::isNumpyArray(values)){
+      throw std::logic_error("expected numpy arrays but not found");
+    }
+
+    if(!thirdai::bolt::python::checkNumpyDtypeAnyInt(indices)){
+      throw std::logic_error("expected indices array to be of integers");
+    }
+
+    if(!thirdai::bolt::python::checkNumpyDtypeFloat32(values)){
+      throw std::logic_error("expected values array to be of floats");
+    }
+
+    NumpyArray<int> cpp_indices = indices.cast<NumpyArray<int>>();
+    NumpyArray<float> cpp_values = values.cast<NumpyArray<float>>();
+
+    int size=cpp_values.shape(0);
+    int* indices_raw_data=const_cast<int*>(cpp_indices.data());
+    float* values_raw_data = const_cast<float*>(cpp_values.data());
+
+    if(is_set_biases){
+      DistributedModel::setBiasGradientsFromIndicesValues(layer_index,indices_raw_data,values_raw_data,size);
+    }
+    else{
+      DistributedModel::setWeightGradientsFromIndicesValues(layer_index,indices_raw_data,values_raw_data,size);
+    }
+  }
+
+  py::tuple getSketch(uint32_t layer_index,float compression_density, bool is_set_biases, int seed){
+    size_t dim = DistributedModel::getDim(layer_index);
+    size_t prev_dim = (layer_index > 0)
+                          ? DistributedModel::getDim(layer_index - 1)
+                          : DistributedModel::getInputDim();
+    
+    int mem_size;
+    int* indices;
+    float* gradients;
+    
+    if (is_set_biases){
+      mem_size=static_cast<int>(compression_density*dim);
+      indices=new int[mem_size];
+      gradients=new float[mem_size];
+    
+      std::memset(indices,0,sizeof(int)*mem_size);
+      std::memset(gradients,0,sizeof(float)*mem_size);
+      DistributedModel::getBiasGradientSketch(layer_index,indices, gradients,mem_size,/* without_index=*/false,seed);
+    }
+    else{
+      mem_size=static_cast<int>(compression_density*dim*prev_dim);
+      indices=new int[mem_size];
+      gradients=new float[mem_size];
+      
+      std::memset(indices,0,sizeof(int)*mem_size);
+      std::memset(gradients,0,sizeof(float)*mem_size);
+      DistributedModel::getWeightGradientSketch(layer_index,indices, gradients,mem_size,/* without_index=*/false,seed);
+    }
+    
+    py::capsule free_gradients_when_done(
+        gradients, [](void* ptr) { delete static_cast<float*>(ptr); });
+    
+    py::capsule free_indices_when_done(
+        indices, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+    return py::make_tuple(py::array_t<int>({mem_size},
+                              {sizeof(int)}, indices,
+                              free_indices_when_done), py::array_t<float>({mem_size},
+                              {sizeof(float)}, gradients,
+                              free_gradients_when_done));
+  }
+
+  py::array_t<float> getUnindexedSketch(uint32_t layer_index,float compression_density, bool is_set_biases, int seed){
     size_t dim = DistributedModel::getDim(layer_index);
     size_t prev_dim = (layer_index > 0)
                           ? DistributedModel::getDim(layer_index - 1)
                           : DistributedModel::getInputDim();
 
-    int mem_size=(int) compression_density*dim*prev_dim;
-
-    py::capsule free_when_done(
-        mem, [](void* ptr) { delete static_cast<float*>(ptr); });
+    int mem_size;
+    float* gradients;
     
-    float* mem=DistributedModel::getWeightSketch(layer_index,compression_density);
-
-    return py::array_t<float>({dim, prev_dim},
-                              {prev_dim * sizeof(float), sizeof(float)}, mem,
-                              free_when_done);
+    if (is_set_biases){
+      mem_size=static_cast<int>(compression_density*dim);
+      gradients=new float[mem_size];
+    
+      std::memset(gradients,0,sizeof(float)*mem_size);
+      DistributedModel::getBiasGradientSketch(layer_index,nullptr, gradients,mem_size,/* without_index=*/true,seed);
+    }
+    else{
+      mem_size=static_cast<int>(compression_density*dim*prev_dim);
+      gradients=new float[mem_size];
+      
+      std::memset(gradients,0,sizeof(float)*mem_size);
+      DistributedModel::getWeightGradientSketch(layer_index,nullptr, gradients,mem_size,/* without_index=*/true,seed);
+    }
+    
+    py::capsule free_gradients_when_done(
+        gradients, [](void* ptr) { delete static_cast<float*>(ptr); });
+    
+    return py::make_tuple(py::array_t<float>({mem_size},
+                              {sizeof(float)}, gradients,
+                              free_gradients_when_done));
   }
+
 
   py::array_t<float> getWeights(uint32_t layer_index) {
     layerIndexCheck(layer_index, DistributedModel::numLayers());

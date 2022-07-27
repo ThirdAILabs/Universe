@@ -104,7 +104,16 @@ uint32_t DistributedModel::getDim(uint32_t layer_index) const {
 
 uint32_t DistributedModel::getInputDim() const { return _input_dim; }
 
-float* DistributedModel::getWeightSketch(uint32_t layer_index, float  compression_density){
-  return _layers.at(layer_index)->getWeightSketch(compression_density);
+void DistributedModel::getWeightGradientSketch(uint32_t layer_index, int* indices, float* gradients, int sketch_size,bool without_index, int seed){
+  return _layers.at(layer_index)->getWeightGradientSketch(indices,gradients,sketch_size,without_index,seed);
+}
+void DistributedModel::getBiasGradientSketch(uint32_t layer_index, int* indices, float* gradients, int sketch_size,bool without_index, int seed){
+  return _layers.at(layer_index)->getBiasGradientSketch(indices,gradients,sketch_size,without_index,seed);
+}
+void DistributedModel::setWeightGradientsFromIndicesValues(uint32_t layer_index,int* indices_raw_data,float* values_raw_data,int size){
+  _layers.at(layer_index)->setWeightGradientsFromIndicesValues(indices_raw_data,values_raw_data,size);
+}
+void DistributedModel::setBiasGradientsFromIndicesValues(uint32_t layer_index,int* indices_raw_data,float* values_raw_data,int size){
+  _layers.at(layer_index)->setBiasGradientsFromIndicesValues(indices_raw_data,values_raw_data,size);
 }
 }  // namespace thirdai::bolt

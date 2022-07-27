@@ -558,31 +558,92 @@ float* FullyConnectedLayer::getWeights() const {
   return weights_copy;
 }
 
-int* FullyConnectedLayer::getSketchedIndices(float compression_density) const{
+void FullyConnectedLayer::setWeightGradientsFromIndicesValues(int* indices_raw_data,float* values_raw_data,int size) {
+  _w_gradient.clear();
+  _w_gradient.assign(_dim * _prev_dim, 0);
+#pragma omp parallel for default(none) shared(size,indices_raw_data,values_raw_data)
+  for(int i=0;i<size;i++){
+    _w_gradient[indices_raw_data[i]]=values_raw_data[i];
+  }
+}
 
-  int size_sketch = (int) _dim*_prev_dim*compression_density;
-  int* sketch=new int[size_sketch];
-  float threshold=0.1;
+void FullyConnectedLayer::setBiasGradientsFromIndicesValues(int* indices_raw_data,float* values_raw_data,int size) {
+  _b_gradient.clear();
+  _b_gradient.assign(_dim, 0);
+#pragma omp parallel for default(none) shared(size,indices_raw_data,values_raw_data)
+  for(int i=0;i<size;i++){
+    _b_gradient[indices_raw_data[i]]=values_raw_data[i];
+  }
+}
 
-#pragma omp parallel for default(none) shared(sketch,size_sketch,threshold,_prev_dim,_dim)
-  for(int i=0;i<_dim*_prev_dim;i++){
-    if(_weights[i]>threshold){
-      int hash=rand()%size_sketch;
-      sketch[hash]=i;
+void FullyConnectedLayer::getWeightGradientSketch(int* indices, float* gradients, int sketch_size,bool without_index, int seed) const {
+
+  int loop_size=static_cast<int>(_dim*_prev_dim);
+  float threshold=-0.1;
+  
+  if (!without_index){
+    int num_samples=std::min(10000,sketch_size);
+    std::vector<float>sampled_gradients(num_samples,0);
+    srand(time(0));
+    for(int i=0;i<num_samples;i++){
+      sampled_gradients[i]=_w_gradient[rand()%loop_size];
+    }
+    int k=static_cast<int>(1.0*num_samples*sketch_size/loop_size);
+    //threshold is an estimate for the kth largest element in the gradients matrix
+    std::nth_element(sampled_gradients.begin(), sampled_gradients.begin()+num_samples-k, sampled_gradients.end());
+    threshold=sampled_gradients[num_samples-k];
+  }
+  #pragma omp parallel for default(none) shared(without_index,indices, gradients,_w_gradient,sketch_size,threshold,loop_size,std::cout,seed)
+  for(int i=0;i<loop_size;i++){
+    if(without_index){
+      int hash=thirdai::hashing::MurmurHash(std::to_string(i).c_str(), std::to_string(i).length(), seed)%sketch_size;
+      gradients[hash]=_w_gradient[i];
+    }
+    else if(_w_gradient[i]>threshold){
+      int hash=thirdai::hashing::MurmurHash(std::to_string(i).c_str(), std::to_string(i).length(), seed)%sketch_size;
+      indices[hash]=i;
+      gradients[hash]=_w_gradient[i];
     }
   }
-  return sketch;
 }
 
-float* FullyConnectedLayer::getSketchedWeights(int* sketch, int size_sketch) const{
-  float* weights=new float[size_sketch];
+void FullyConnectedLayer::getBiasGradientSketch(int* indices, float* gradients, int sketch_size,bool without_index, int seed) const {
 
-  #pragma omp parallel for default(none) shared(sketch,size_sketch)
-  for(int i=0;i<size_sketch;i++){
-    weights[i]=_weights[sketch[i]];
+  int loop_size=static_cast<int>(_dim);
+  float threshold=-0.1;
+  
+  if (!without_index){
+    int num_samples=std::min(10000,sketch_size);
+    std::vector<float>sampled_gradients(num_samples,0);
+    srand(time(0));
+    for(int i=0;i<num_samples;i++){
+      sampled_gradients[i]=_b_gradient[rand()%loop_size];
+    }
+    int k=static_cast<int>(1.0*num_samples*sketch_size/loop_size);
+    //threshold is an estimate for the kth largest element in the gradients matrix
+    std::nth_element(sampled_gradients.begin(), sampled_gradients.begin()+num_samples-k, sampled_gradients.end());
+    threshold=sampled_gradients[num_samples-k];
   }
-  return weights;
+  
+  std::cout<<"the threshold is "<<threshold<<std::endl;
+
+  #pragma omp parallel for default(none) shared(without_index,indices, gradients,_b_gradient,sketch_size,threshold,loop_size,std::cout,seed)
+  for(int i=0;i<loop_size;i++){
+    if(without_index){
+      // std::cout<<"unindexed_sketch\n";
+      int hash=thirdai::hashing::MurmurHash(std::to_string(i).c_str(), std::to_string(i).length(), seed)%sketch_size;
+      gradients[hash]=_b_gradient[i];
+    }
+    else if(_w_gradient[i]>threshold){
+      // std::cout<<"indexed_sketch working\n";
+      int hash=thirdai::hashing::MurmurHash(std::to_string(i).c_str(), std::to_string(i).length(), seed)%sketch_size;
+      indices[hash]=i;
+      gradients[hash]=_b_gradient[i];
+    }
+  }
+  std::cout<<"done calculating the sketch"<<std::endl;
 }
+
 
 void FullyConnectedLayer::setTrainable(bool trainable) {
   _trainable = trainable;

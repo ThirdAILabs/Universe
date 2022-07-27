@@ -78,8 +78,14 @@ class DistributedModel : public FullyConnectedNetwork {
 
   void setBiasesGradients(uint32_t layer_index, const float* data);
 
-  float* getWeightSketch(uint32_t layer_index,float  compression_density);
+  void getBiasGradientSketch(uint32_t layer_index,int* indices, float* gradients,int sketch_size,bool without_index, int seed);
 
+  void setBiasGradientsFromIndicesValues(uint32_t layer_index,int* indices_raw_data,float* values_raw_data,int size);
+
+  void getWeightGradientSketch(uint32_t layer_index,int* indices, float* gradients,int sketch_size,bool without_index, int seed);
+
+  void setWeightGradientsFromIndicesValues(uint32_t layer_index,int* indices_raw_data,float* values_raw_data,int size);
+ 
  private:
   /*
    outputs here, holds the activations values for output layer,
