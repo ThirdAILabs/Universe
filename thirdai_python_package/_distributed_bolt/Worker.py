@@ -318,10 +318,10 @@ class Worker:
             shape=(self.layers[layer],self.layers[layer+1])
 
             w_indices=np.ravel(np.hstack([node_weights[layer][0] for node_weights in w_sparse_grads]))
-            w_values=np.ravel(np.hstack([node_weights[layer][1] for node_weights in w_sparse_grads]))
+            w_values=np.ravel(np.hstack([node_weights[layer][1]/num_workers for node_weights in w_sparse_grads]))
 
             b_indices=np.ravel(np.hstack([node_biases[layer][0] for node_biases in b_sparse_grads]))
-            b_values=np.ravel(np.hstack([node_biases[layer][1] for node_biases in b_sparse_grads]))
+            b_values=np.ravel(np.hstack([node_biases[layer][1]/num_workers for node_biases in b_sparse_grads]))
 
 
             # print(f"shape of w_indices is {w_indices.shape}")
