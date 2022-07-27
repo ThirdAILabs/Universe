@@ -28,6 +28,6 @@ py-spy record --format raw --output $RAW_OUTPUT_LOC --rate 20 --nolineno --nativ
         $BASEDIR/run_bolt_experiment.py \ 
         $BASEDIR/configs/$1 --disable_mlflow \
 
-$BASEDIR/../deps/flamegraph/flamegraph.pl $RAW_OUTPUT_LOC > $config_identifier.txt
+$BASEDIR/../../deps/flamegraph/flamegraph.pl $RAW_OUTPUT_LOC > $config_identifier.txt
 
 rm $RAW_OUTPUT_LOC
