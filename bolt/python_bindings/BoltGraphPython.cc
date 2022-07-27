@@ -7,6 +7,7 @@
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/graph/nodes/LayerNorm.h>
 #include <dataset/src/Dataset.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <dataset/src/batch_types/MaskedSentenceBatch.h>
@@ -104,6 +105,20 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("set_sparsity", &FullyConnectedNode::setNodeSparsity,
            py::arg("sparsity"))
       .def("get_dim", &FullyConnectedNode::outputDim);
+
+  py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
+      graph_submodule, "LayerNormalization")
+      .def(py::init<>(),
+           "A layer that normalizes activations of the previous layer for each "
+           "sample independently.")
+      .def("__call__", &LayerNormNode::addPredecessor, py::arg("prev_layer"),
+           "Tells the graph which layer should act as input to this "
+           "normalization layer.")
+      .def("set_configurations", &LayerNormNode::setLayerNormNodeConfig,
+           py::arg("center"), py::arg("scale"), py::arg("epsilon"),
+           py::arg("beta_regularizer"), py::arg("gamma_regularizer"),
+           py::arg("beta_initializer"), py::arg("gamma_initializer"),
+           "Sets the parameters required for normalizing the activations");
 
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
       graph_submodule, "Concatenate")
