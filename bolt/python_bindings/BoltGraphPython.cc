@@ -12,7 +12,6 @@
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <pybind11/functional.h>
-#include <pybind11/gil.h>
 
 namespace thirdai::bolt::python {
 
