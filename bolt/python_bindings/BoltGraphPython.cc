@@ -77,30 +77,35 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           [](const FullyConnectedNode& layer) {
             float* gradients = layer.getWeightGradients();
 
-            py::capsule free_when_done(
-                gradients, [](void* ptr) { delete static_cast<float*>(ptr); });
-
             uint32_t dim = layer.outputDim();
             uint32_t prev_dim = layer.getPredecessors().at(0)->outputDim();
 
             return py::array_t<float>({dim, prev_dim},
                                       {prev_dim * sizeof(float), sizeof(float)},
-                                      gradients, free_when_done);
+                                      gradients);
           },
+          /**
+           * This means that the lifetime of the returned object is tied to the
+           * lifetime of the object this method is called on, such that the
+           * parent object cannot be garbage collected will this returned object
+           * is still alive.
+           */
           py::return_value_policy::reference_internal)
       .def(
           "get_bias_gradients",
           [](const FullyConnectedNode& layer) {
             float* gradients = layer.getBiasGradients();
 
-            py::capsule free_when_done(
-                gradients, [](void* ptr) { delete static_cast<float*>(ptr); });
-
             uint32_t dim = layer.outputDim();
 
-            return py::array_t<float>({dim}, {sizeof(float)}, gradients,
-                                      free_when_done);
+            return py::array_t<float>({dim}, {sizeof(float)}, gradients);
           },
+          /**
+           * This means that the lifetime of the returned object is tied to the
+           * lifetime of the object this method is called on, such that the
+           * parent object cannot be garbage collected will this returned object
+           * is still alive.
+           */
           py::return_value_policy::reference_internal)
       .def("get_dim", &FullyConnectedNode::outputDim);
 
