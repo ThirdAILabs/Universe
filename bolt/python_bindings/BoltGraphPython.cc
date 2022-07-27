@@ -280,14 +280,14 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "setting layer sparsity, freezing weights, or saving to a file")
 #if THIRDAI_EXPOSE_ALL
       .def("register_batch_callback",
-           [](BoltGraph& model, DagCallback callback) {
+           [](BoltGraph& model, GraphCallback callback) {
              // From testing we don't need to release the GIL to call the python
              // callback, even if the python function calls back into the C++
              // code.
              model.registerPerBatchCallback(std::move(callback));
            })
       .def("register_epoch_callback",
-           [](BoltGraph& model, DagCallback callback) {
+           [](BoltGraph& model, GraphCallback callback) {
              // From testing we don't need to release the GIL to call the python
              // callback, even if the python function calls back into the C++
              // code.

@@ -25,7 +25,7 @@
 
 namespace thirdai::bolt {
 
-using DagCallback = std::function<void()>;
+using GraphCallback = std::function<void()>;
 
 class BoltGraph {
  public:
@@ -98,12 +98,12 @@ class BoltGraph {
 
   NodePtr getNodeByName(const std::string& node_name) const;
 
-  void registerPerBatchCallback(DagCallback callback) {
-    _per_batch_callback = callback;
+  void registerPerBatchCallback(GraphCallback callback) {
+    _per_batch_callback = std::move(callback);
   }
 
-  void registerPerEpochCallback(DagCallback callback) {
-    _per_epoch_callback = callback;
+  void registerPerEpochCallback(GraphCallback callback) {
+    _per_epoch_callback = std::move(callback);
   }
 
  private:
@@ -196,8 +196,8 @@ class BoltGraph {
   uint32_t _epoch_count;
   uint32_t _batch_cnt;
 
-  std::optional<DagCallback> _per_batch_callback;
-  std::optional<DagCallback> _per_epoch_callback;
+  std::optional<GraphCallback> _per_batch_callback;
+  std::optional<GraphCallback> _per_epoch_callback;
 };
 
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;
