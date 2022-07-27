@@ -60,7 +60,7 @@ class Worker:
         
         self.train_data, self.train_label, self.test_data, self.test_label = data
         
-        self.num_of_batches = self.network.initTrainSingleNode(
+        self.num_of_batches = self.network.prepareNodeForDistributedTraining(
                     self.train_data, 
                     self.train_label,
                     rehash=self.rehash,
