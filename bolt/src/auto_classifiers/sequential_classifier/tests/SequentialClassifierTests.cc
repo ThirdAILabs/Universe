@@ -1,5 +1,5 @@
-#include <bolt/src/sequential_classifier/SequentialClassifier.h>
-#include <bolt/src/sequential_classifier/SequentialClassifierPipelineBuilder.h>
+#include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
+#include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifierPipelineBuilder.h>
 #include <gtest/gtest.h>
 #include <dataset/src/utils/TimeUtils.h>
 #include <cstddef>

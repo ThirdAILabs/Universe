@@ -5,6 +5,6 @@ target_link_libraries(
   sequential_classifier_lib
   PRIVATE
   bolt_network_lib
-  bolt_datasets_lib
+  auto_classifier_lib
   hash_function_lib
 )

@@ -2,6 +2,7 @@
 #include "BoltGraphPython.h"
 #include <bolt/src/auto_classifiers/TabularClassifier.h>
 #include <bolt/src/auto_classifiers/TextClassifier.h>
+#include <bolt/src/auto_classifiers/sequential_classifier/SequentialClassifier.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
@@ -11,7 +12,6 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <bolt/src/sequential_classifier/SequentialClassifier.h>
 #include <dataset/src/blocks/BlockInterface.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
