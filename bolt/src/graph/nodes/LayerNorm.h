@@ -26,8 +26,10 @@ class LayerNormNode final : public Node,
                             public std::enable_shared_from_this<LayerNormNode> {
  public:
   LayerNormNode()
-      : _predecessor(nullptr),
-        _compiled(false) {}
+      : _moments(std::nullopt),
+        _predecessor(nullptr),
+        _compiled(false),
+        _prepared_for_batch_processing(false) {}
 
   std::shared_ptr<LayerNormNode> addPredecessor(NodePtr node) {
     if (getState() != NodeState::Constructed) {
@@ -43,12 +45,10 @@ class LayerNormNode final : public Node,
       bool center, bool scale, float epsilon, float beta_regularizer,
       float gamma_regularizer, float beta_initializer,
       float gamma_initializer) {
-
-    if (getState() != NodeState::Compiled) {
+    if (getState() != NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
           "Cannot set configuration for Normalization Layer before the node is "
-          "Compiled."
-          "LayerNormNode must be in a compiled state");
+          "Constructed.");
     }
 
     _config = (NormalizationLayerConfig(
@@ -65,11 +65,12 @@ class LayerNormNode final : public Node,
 
   bool isInputNode() const final { return _predecessor->isInputNode(); }
 
+  std::optional<std::pair<float, float>> getMoments() { return _moments; }
+
   static bool nodeIsSparse(const NodePtr& node) {
     return node->numNonzerosInOutput() < node->outputDim();
   }
 
- private:
   // Computes the first and second moments {mean, variance} required
   // to normalize the input to this layer.
   static std::pair<float, float> computeNormalizationMoments(
@@ -96,6 +97,8 @@ class LayerNormNode final : public Node,
 
     return std::make_pair(mean, variance);
   }
+
+ private:
   void compileImpl() final { _compiled = true; }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
@@ -106,7 +109,7 @@ class LayerNormNode final : public Node,
   void prepareForBatchProcessingImpl(uint32_t batch_size,
                                      bool use_sparsity) final {
     (void)batch_size;
-
+    _predecessor->prepareForBatchProcessing(batch_size, use_sparsity);
     bool is_sparse = nodeIsSparse(_predecessor);
 
     if (is_sparse && !use_sparsity) {
@@ -115,6 +118,7 @@ class LayerNormNode final : public Node,
           "use_sparsity "
           "in the call to prepareForBatchProcessing is set to False");
     }
+    _prepared_for_batch_processing = true;
   }
 
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
@@ -130,16 +134,15 @@ class LayerNormNode final : public Node,
     uint32_t len = output_vector.len;
 
     assert(len != 0);
-    std::pair<float, float> moments =
-        computeNormalizationMoments(output_vector, !is_sparse);
+    _moments = computeNormalizationMoments(output_vector, !is_sparse);
 
     for (uint32_t neuron_index = 0; neuron_index < len; neuron_index++) {
       auto active_neuron =
           is_sparse ? output_vector.findActiveNeuron<false>(neuron_index)
                     : output_vector.findActiveNeuron<true>(neuron_index);
 
-      auto z_score = (active_neuron.activation - std::get<0>(moments)) /
-                     sqrt(std::get<1>(moments) + _config->epsilon);
+      auto z_score = (active_neuron.activation - _moments->first) /
+                     sqrt(_moments->second + _config->epsilon);
 
       // apply a linear transformation to the z_score using gamma and beta
       // regularizers
@@ -167,7 +170,10 @@ class LayerNormNode final : public Node,
     return _predecessor->getOutputVector(vec_index);
   }
 
-  void cleanupAfterBatchProcessingImpl() final { _config = std::nullopt; }
+  void cleanupAfterBatchProcessingImpl() final {
+    _config = std::nullopt;
+    _prepared_for_batch_processing = false;
+  }
 
   uint32_t numNonzerosInOutputImpl() const final {
     // normalization does not alter the dimensions of the output, so we can
@@ -187,16 +193,16 @@ class LayerNormNode final : public Node,
   std::string type() const final { return std::string("layer_norm"); }
 
   NodeState getState() const final {
-    if (!_predecessor && !_compiled && !_config) {
+    if (!_predecessor && !_compiled && !_prepared_for_batch_processing) {
       return NodeState::Constructed;
     }
-    if (_predecessor && !_compiled && !_config) {
+    if (_predecessor && !_compiled && !_prepared_for_batch_processing) {
       return NodeState::PredecessorsSet;
     }
-    if (_predecessor && _compiled && !_config) {
+    if (_predecessor && _compiled && !_prepared_for_batch_processing) {
       return NodeState::Compiled;
     }
-    if (_predecessor && _compiled && _config) {
+    if (_predecessor && _compiled && _prepared_for_batch_processing) {
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
@@ -204,8 +210,10 @@ class LayerNormNode final : public Node,
   }
 
   std::optional<NormalizationLayerConfig> _config;
+  std::optional<std::pair<float, float>> _moments;
   NodePtr _predecessor;
   bool _compiled;
+  bool _prepared_for_batch_processing;
 };
 
 }  // namespace thirdai::bolt
