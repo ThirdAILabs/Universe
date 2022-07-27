@@ -1,4 +1,5 @@
 #include "FullyConnectedLayer.h"
+#include <hashing/src/MurmurHash.h>
 #include <algorithm>
 #include <cassert>
 #include <cmath>

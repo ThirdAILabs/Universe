@@ -2,7 +2,6 @@ import numpy as np
 import ray
 import time
 from typing import Tuple, Any, Optional, Dict, List
-from .utils import initLogging
 
 
 
@@ -30,7 +29,6 @@ class Supervisor:
         self.layers = layers
         self.workers = workers
         self.num_of_batches = ray.get(self.workers[0].num_of_batches.remote())
-        self.logging = initLogging('Supervisor.log')
     
 
     def subworkCircularCommunication(
@@ -66,10 +64,28 @@ class Supervisor:
             blocking_run = ray.get([w.processRing.remote(update_id, reduce=False) for w in self.workers])
             update_id -= 1
         return True
+    
+    def dragon_compression(self,batch_no,compression_density=0.10):
+
+        start_gradient_computation = time.time()
+        calculateGradients = ray.get([self.workers[id].calculateGradientsLinear.remote(batch_no,compression="DRAGON",compression_density=compression_density) for id in range(len(self.workers))])
+        gradient_computation_time = time.time() - start_gradient_computation
+        start_getting_gradients = time.time()
+        gradients_list = ray.get([self.workers[id].getCalculatedGradients.remote(compression="DRAGON") for id in range(len(self.workers))])
+        getting_gradient_time = time.time() - start_getting_gradients
+        summing_and_averaging_gradients_start_time = time.time()
+        
+        self.w_sparse_grads=[grads[0] for grads in gradients_list]
+        self.b_sparse_grads=[grads[1] for grads in gradients_list]
+
+        summing_and_averaging_gradients_time = time.time() - summing_and_averaging_gradients_start_time
+        return gradient_computation_time, getting_gradient_time, summing_and_averaging_gradients_time
 
     def subworkLinearCommunication(
         self, 
-        batch_no: int
+        batch_no: int,
+        compression= None,
+        compression_density=0.1
     ):
         """
             This function implements the linear way of communicating between the node.
@@ -82,13 +98,18 @@ class Supervisor:
             Args:
                 batch_no: batch number for the particular worker with worker id (id).
         """
+
+        if compression is not None:
+            if compression =="DRAGON":
+                return self.dragon_compression(batch_no,compression_density)
+        
+
         start_gradient_computation = time.time()
         calculateGradients = ray.get([self.workers[id].calculateGradientsLinear.remote(batch_no) for id in range(len(self.workers))])
         gradient_computation_time = time.time() - start_gradient_computation
         start_getting_gradients = time.time()
         gradients_list = ray.get([self.workers[id].getCalculatedGradients.remote() for id in range(len(self.workers))])
         getting_gradient_time = time.time() - start_getting_gradients
-        
         summing_and_averaging_gradients_start_time = time.time()
         
         self.w_gradients_avg = np.array([np.zeros((self.layers[layer_no+1], self.layers[layer_no])) for layer_no in range(len(self.layers)-1)])
@@ -118,6 +139,13 @@ class Supervisor:
         """
         return self.w_gradients_avg, self.b_gradients_avg
 
+    def sparse_grads(
+        self
+    ):
+        return self.w_sparse_grads,self.b_sparse_grads 
+    
+    def num_workers(self):
+        return len(self.workers)
     
     def subworkUpdateParameters(
         self,
@@ -143,6 +171,10 @@ class Supervisor:
         """
         weights_0, biases_0 = ray.get(self.workers[0].returnParams.remote())
         weights_1, biases_1 = ray.get(self.workers[1].returnParams.remote())
+        print('weights 0: ', weights_0)
+        print('weights 1: ', weights_1)
+        print('biases 0: ', biases_0)
+        print('biases 1: ', biases_1)
 
 
     def weights_biases(
@@ -153,9 +185,7 @@ class Supervisor:
             This function is called by all the workers(other than worker with id = 0), here 
             all the workers get the same initialized weights and bias as that of worker with id 0 
         """
-        
-        self.logging.info('Updating weights & bias parameters across nodes')
-
+        print('Updating weights & bias parameters after every epochs')
         self.weights_biases = ray.get(self.workers[0].returnParams.remote())
         return self.weights_biases
 
