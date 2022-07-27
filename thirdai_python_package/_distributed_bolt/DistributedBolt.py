@@ -23,7 +23,7 @@ class DistributedBolt:
         config_filename: str
         ):
 
-        self.logging = initLogging()
+        self.logging = initLogging("logfile_shubh.log")
         self.logging.info('Training has started!')
         
         self.no_of_workers = worker_nodes
