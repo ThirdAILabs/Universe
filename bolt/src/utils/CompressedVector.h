@@ -3,6 +3,7 @@
 #include "hashing/src/MurmurHash.h"
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <vector>
 
@@ -45,7 +46,8 @@ class CompressedVector {
                    uint64_t physical_size,
                    uint64_t block_size = kDefaultBlockSize,
                    uint32_t seed = kDefaultSeed, bool use_sign_bit = true)
-      : CompressedVector(physical_size, 0, block_size, seed, use_sign_bit) {
+      : CompressedVector(physical_size, /*default_value=*/0, block_size, seed,
+                         use_sign_bit) {
     // Do we have BOLT_ASSERT yet?
     assert(physical_size <= input.size());
     assert(physical_size > block_size);
@@ -102,6 +104,8 @@ class CompressedVector {
       uint64_t sign_bit = hashFunction(i) % 2;
       value = sign_bit ? value : -1 * value;
     }
+
+    assert(not std::isnan(value));
 
     return value;
   }
