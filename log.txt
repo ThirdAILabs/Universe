@@ -12,7 +12,7 @@ p: 0.648350411656696
 r: 0.6211603388023474
 f: 0.6344642000419318
 
-multiclassifier.test.py, bens_small_train/test.svm, 5 epochs:
+multiclassifiertest.py, bens_small_train/test.svm, 5 epochs:
 Ben's Precision: 0.652127
 Ben's Recall: 0.605949
 Ben's F-Measure: 0.62819
@@ -27,3 +27,26 @@ f_1: 0.640850878519213
 p: 0.6562143378941342
 r: 0.6285642362139451
 f: 0.6420917540244842
+
+tharun_script.py, train/dev_unig_big_1, 5 epochs:
+Ben's Precision: 0.676362
+Ben's Recall: 0.841901
+Ben's F-Measure: 0.750107
+Tharun's Precision: 0.783541
+Tharun's Recall: 0.86759
+Tharun's F-Measure: 0.823426
+p_1: 0.8413852255872472
+r_1: 0.8047333200648826
+f_1: 0.8226512335077643
+p: 0.7835235538580034
+r: 0.8675860592878255
+f: 0.8234148805610747
+
+multiclassifiertest.py, train/dev_unig_big_1, 5 epochs:
+Ben's Precision: 0.669207
+Ben's Recall: 0.842737
+Ben's F-Measure: 0.746014
+Tharun's Precision: 0.77907
+Tharun's Recall: 0.868018
+Tharun's F-Measure: 0.821142
+
