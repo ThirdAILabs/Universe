@@ -1,7 +1,7 @@
 #!/bin/bash
 # usage ./create_flamegraph.sh <config_identifier>
 # Note where you are calling from does not matter. This tool will create a
-# flamegraph in the calling directory called <config_identifier>.svm.
+# flamegraph in the calling directory called <config_identifier>.svg.
 # Example command lines:
 # ./create_flamegraph.sh mnist_so
 # ./benchmarks/bolt_benchmarks/create_flamegraph.sh amzn670k
@@ -24,8 +24,8 @@ RAW_OUTPUT_LOC=$BASEDIR/raw.txt
 # turns off line numbers so calls from the same function will always get grouped together. 
 # --native enavles profiling of C++ libraries, most importantly our own!
 py-spy record --format raw --output $RAW_OUTPUT_LOC --rate 20 --nolineno --native \
-    -- python3 $BASEDIR/run_bolt_experiment.py $BASEDIR/configs/$1 --disable_mlflow
+    -- python3 $BASEDIR/run_bolt_experiment.py $BASEDIR/configs/$1.txt --disable_mlflow
 
-$BASEDIR/../../deps/flamegraph/flamegraph.pl $RAW_OUTPUT_LOC > $config_identifier.txt
+$BASEDIR/../../deps/flamegraph/flamegraph.pl $RAW_OUTPUT_LOC > $config_identifier.svg
 
 rm $RAW_OUTPUT_LOC
