@@ -1,19 +1,19 @@
-job = "Amazon670k Product Recommendation Distributed Training"
+job = "MNIST Distributed Training"
 
 [dataset]
-train_data = ["/share/pratik/xaa.txt","/share/pratik/xab.txt"]
-test_data = "/share/data/amazon-670k/test_shuffled_noHeader_sampled.txt"
+train_data = ["/share/data/mnist/mnist"]
+test_data = "/share/data/mnist/mnist.t"
 format = "svm"
-input_dim = 135909
+input_dim = 784
 max_test_batches = 20
 
 [params]
 loss_fn = "CategoricalCrossEntropyLoss"
 train_metrics = []
 test_metrics = ["categorical_accuracy"]
-learning_rate = 0.0001
-epochs = 30
-batch_size = 2048
+learning_rate = 0.001
+epochs = 2
+batch_size = 250
 rehash = 6400
 rebuild = 128000
 
@@ -22,9 +22,9 @@ dim = 256
 activation = 'ReLU'
 
 [[layers]]
-dim = 670091
+dim = 10
 activation = 'Softmax'
-sparsity = 0.005
+sparsity = 1
 use_default_sampling = true
 # hashes_per_table = 5
 # num_tables = 128

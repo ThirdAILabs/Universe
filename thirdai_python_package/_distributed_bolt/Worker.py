@@ -195,17 +195,21 @@ class Worker:
                 sampled_x=np.random.choice(x.shape[0],min(x.shape[0],100000))
                 sampled_y=np.random.choice(y.shape[0],min(y.shape[0],100000))
 
-                thresh_x+=self.approximate_topk(x[sampled_x],compression_density)/num_samples
-                thresh_y+=self.approximate_topk(y[sampled_y],compression_density)/num_samples
+                thresh_x+=self.approximate_topk(np.abs(x[sampled_x]),compression_density)/num_samples
+                thresh_y+=self.approximate_topk(np.abs(y[sampled_y]),compression_density)/num_samples
 
         
-            indices_x=np.where(x>thresh_x)[0].astype(int)
-            indices_y=np.where(y>thresh_y)[0].astype(int)
-            np.random.shuffle(indices_x)
-            np.random.shuffle(indices_y)
+            idx=np.where((x>thresh_x) | (x<-1*thresh_x))[0].astype(int)
+            idy=np.where((y>thresh_y) | (y<-1*thresh_y))[0].astype(int)
 
-            indices_x=indices_x[:m_x]
-            indices_y=indices_y[:m_y]
+            indices_x=idx[np.random.choice(idx.shape[0],min(idx.shape[0],m_x))]
+            indices_y=idy[np.random.choice(idy.shape[0],min(idy.shape[0],m_y))]
+
+            # np.random.shuffle(indices_x)
+            # np.random.shuffle(indices_y)
+
+            # indices_x=indices_x[:m_x]
+            # indices_y=indices_y[:m_y]
 
             vals_x=x[indices_x]
             vals_y=y[indices_y]
