@@ -178,44 +178,51 @@ class Worker:
         w_sparse_grad=[]
         b_sparse_grad=[]
 
+        seed=np.random.randint(20)
+
         for layer in range(len(self.layers)-1):
-            x = self.network.get_weights_gradients(layer)
-            y = self.network.get_biases_gradients(layer)
-            x=np.ravel(x)
-            y=np.ravel(y)
+            # x = self.network.get_weights_gradients(layer)
+            # y = self.network.get_biases_gradients(layer)
 
-            m_x=int(compression_density*x.shape[0])
-            m_y=int(compression_density*y.shape[0])
-            thresh_x=0
-            thresh_y=0
+            x=self.network.get_indexed_sketch(layer_index=layer,compression_density=compression_density,is_set_biases=False,seed=seed)
+            y=self.network.get_indexed_sketch(layer_index=layer,compression_density=compression_density,is_set_biases=True,seed=seed)
+            # x=np.ravel(x)
+            # y=np.ravel(y)
 
-            num_samples=2
-            for i in range(num_samples):
+            # m_x=int(compression_density*x.shape[0])
+            # m_y=int(compression_density*y.shape[0])
+            # thresh_x=0
+            # thresh_y=0
 
-                sampled_x=np.random.choice(x.shape[0],min(x.shape[0],100000))
-                sampled_y=np.random.choice(y.shape[0],min(y.shape[0],100000))
+            # num_samples=2
+            # for i in range(num_samples):
 
-                thresh_x+=self.approximate_topk(np.abs(x[sampled_x]),compression_density)/num_samples
-                thresh_y+=self.approximate_topk(np.abs(y[sampled_y]),compression_density)/num_samples
+            #     sampled_x=np.random.choice(x.shape[0],min(x.shape[0],100000))
+            #     sampled_y=np.random.choice(y.shape[0],min(y.shape[0],100000))
+
+            #     thresh_x+=self.approximate_topk(np.abs(x[sampled_x]),compression_density)/num_samples
+            #     thresh_y+=self.approximate_topk(np.abs(y[sampled_y]),compression_density)/num_samples
 
         
-            idx=np.where((x>thresh_x) | (x<-1*thresh_x))[0].astype(int)
-            idy=np.where((y>thresh_y) | (y<-1*thresh_y))[0].astype(int)
+            # idx=np.where((x>thresh_x) | (x<-1*thresh_x))[0].astype(int)
+            # idy=np.where((y>thresh_y) | (y<-1*thresh_y))[0].astype(int)
 
-            indices_x=idx[np.random.choice(idx.shape[0],min(idx.shape[0],m_x))]
-            indices_y=idy[np.random.choice(idy.shape[0],min(idy.shape[0],m_y))]
+            # indices_x=idx[np.random.choice(idx.shape[0],min(idx.shape[0],m_x))]
+            # indices_y=idy[np.random.choice(idy.shape[0],min(idy.shape[0],m_y))]
 
-            # np.random.shuffle(indices_x)
-            # np.random.shuffle(indices_y)
+            # # np.random.shuffle(indices_x)
+            # # np.random.shuffle(indices_y)
 
-            # indices_x=indices_x[:m_x]
-            # indices_y=indices_y[:m_y]
+            # # indices_x=indices_x[:m_x]
+            # # indices_y=indices_y[:m_y]
 
-            vals_x=x[indices_x]
-            vals_y=y[indices_y]
+            # vals_x=x[indices_x]
+            # vals_y=y[indices_y]
 
-            w_sparse_grad.append((indices_x,vals_x))
-            b_sparse_grad.append((indices_y,vals_y))
+            # w_sparse_grad.append((indices_x,vals_x))
+            # b_sparse_grad.append((indices_y,vals_y))
+            w_sparse_grad.append(x)
+            b_sparse_grad.append(y)
         
         return (w_sparse_grad,b_sparse_grad)
 
