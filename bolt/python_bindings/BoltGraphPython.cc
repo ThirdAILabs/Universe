@@ -11,7 +11,6 @@
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
-#include <pybind11/attr.h>
 #include <pybind11/functional.h>
 #include <pybind11/gil.h>
 
