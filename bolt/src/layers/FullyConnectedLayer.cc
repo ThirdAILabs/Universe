@@ -626,7 +626,7 @@ void FullyConnectedLayer::getBiasGradientSketch(int* indices, float* gradients, 
     threshold=sampled_gradients[num_samples-k];
   }
   
-  std::cout<<"the threshold is "<<threshold<<std::endl;
+  // std::cout<<"the threshold is "<<threshold<<std::endl;
 
   #pragma omp parallel for default(none) shared(without_index,indices, gradients,_b_gradient,sketch_size,threshold,loop_size,std::cout,seed)
   for(int i=0;i<loop_size;i++){
@@ -642,7 +642,7 @@ void FullyConnectedLayer::getBiasGradientSketch(int* indices, float* gradients, 
       gradients[hash]=_b_gradient[i];
     }
   }
-  std::cout<<"done calculating the sketch"<<std::endl;
+  // std::cout<<"done calculating the sketch"<<std::endl;
 }
 
 

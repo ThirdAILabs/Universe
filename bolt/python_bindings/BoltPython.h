@@ -344,7 +344,7 @@ class DistributedPyNetwork final : public DistributedModel {
   void setGradientsFromTuple(uint32_t layer_index,py::object &indices, py::object &values, bool is_set_biases){
     
     
-    std::cout<<"inside the set gradients from tuple function"<<std::endl;
+    // std::cout<<"inside the set gradients from tuple function"<<std::endl;
     
     if(!thirdai::bolt::python::isNumpyArray(indices) || !thirdai::bolt::python::isNumpyArray(values)){
       throw std::logic_error("expected numpy arrays but not found");

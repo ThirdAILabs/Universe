@@ -324,10 +324,10 @@ class Worker:
             b_values=np.ravel(np.hstack([node_biases[layer][1] for node_biases in b_sparse_grads]))
 
 
-            print(f"shape of w_indices is {w_indices.shape}")
-            print(f"shape of w_values is {w_values.shape}")
-            print(f"shape of b_indices is {b_indices.shape}")
-            print(f"shape of b_values is {b_values.shape}")
+            # print(f"shape of w_indices is {w_indices.shape}")
+            # print(f"shape of w_values is {w_values.shape}")
+            # print(f"shape of b_indices is {b_indices.shape}")
+            # print(f"shape of b_values is {b_values.shape}")
 
             self.network.set_gradients(layer_index=layer,indices=w_indices,values=w_values,is_set_biases=False)
             self.network.set_gradients(layer_index=layer,indices=b_indices,values=b_values,is_set_biases=True)
