@@ -112,7 +112,7 @@ class Block {
    */
   virtual bool isDense() const = 0;
 
-  virtual std::pair<std::string, uint32_t> giveMessage() const = 0;
+  virtual std::string giveMessage(float gradient_ratio_value,std::unordered_map<uint32_t, std::string> col_num_col_name_map,float row_ratio_sum) const = 0;
 
   /**
    * Returns the minimum number of columns that the block expects

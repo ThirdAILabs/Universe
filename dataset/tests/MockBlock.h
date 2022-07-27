@@ -21,8 +21,9 @@ class MockBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _column + 1; };
 
-  std::pair<std::string, uint32_t> giveMessage() const final {
-    return std::make_pair(std::string("From the MockBlock"), _column);
+  std::string giveMessage(float gradient_ratio_value,std::unordered_map<uint32_t, std::string> col_num_col_name_map,float row_ratio_sum) const final {
+    std::string message = "The Mock column  "+col_num_col_name_map.at(_column)+" is  "+std::to_string(((gradient_ratio_value)/(row_ratio_sum))*100)+"% responsible.";
+    return message;
   }
 
  protected:
