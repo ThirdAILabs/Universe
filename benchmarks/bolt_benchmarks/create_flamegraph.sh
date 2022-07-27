@@ -19,7 +19,7 @@ BASEDIR=$(dirname "$0")
 RAW_OUTPUT_LOC = $BASEDIR/raw.txt
 
 py-spy record \
-    --format raw # This tells py spy to print the raw callstacks instead of generating a flamegraph itself, since flamegraph.pl generates a slightly better one.
+    --format raw \ # This tells py spy to print the raw callstacks instead of generating a flamegraph itself, since flamegraph.pl generates a slightly better one.
     --output $RAW_OUTPUT_LOC \
     --rate 20 \ # Number of samples to collect per second. This is set to 20 since the default of 100 can start printing error messages saying sampling is falling behind
     --nolineno \ # Turns off line numbers, so calls from the same function will always get grouped together 
