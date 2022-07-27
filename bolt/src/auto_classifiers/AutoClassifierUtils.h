@@ -2,7 +2,7 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <dataset/src/bolt_datasets/BatchProcessor.h>
+#include <dataset/src/Datasets.h>
 #include <sys/stat.h>
 #include <fstream>
 #include <iostream>

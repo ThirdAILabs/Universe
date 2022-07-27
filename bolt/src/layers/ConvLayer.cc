@@ -15,7 +15,6 @@ ConvLayer::ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
       _sparse_dim(config.sparsity * config.num_filters * config.num_patches),
       _sparsity(config.sparsity),
       _act_func(config.act_func),
-      _sampling_config(config.sampling_config),
       _num_filters(config.num_filters),
       _num_sparse_filters(config.num_filters * config.sparsity),
       _num_patches(config.num_patches),
@@ -58,13 +57,9 @@ ConvLayer::ConvLayer(const ConvLayerConfig& config, uint64_t prev_dim,
 
   if (_sparsity < 1.0) {
     // hashes input of size _patch_dim
-    _hasher = std::make_unique<hashing::DWTAHashFunction>(
-        _patch_dim, _sampling_config.hashes_per_table,
-        _sampling_config.num_tables, _sampling_config.range_pow);
+    _hasher = config.sampling_config->getHashFunction(_patch_dim);
 
-    _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
-        _sampling_config.num_tables, _sampling_config.reservoir_size,
-        1 << _sampling_config.range_pow);
+    _hash_table = config.sampling_config->getHashTable();
 
     buildHashTables();
 
@@ -333,9 +328,7 @@ void ConvLayer::reBuildHashFunction() {
   if (_sparsity >= 1.0) {
     return;
   }
-  _hasher = std::make_unique<hashing::DWTAHashFunction>(
-      _patch_dim, _sampling_config.hashes_per_table,
-      _sampling_config.num_tables, _sampling_config.range_pow);
+  _hasher = _hasher->copyWithNewSeeds();
 }
 
 void ConvLayer::buildHashTables() {
@@ -386,6 +379,20 @@ void ConvLayer::setWeights(const float* new_weights) {
 void ConvLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
+
+void ConvLayer::setWeightGradients(const float* update_weight_gradient) {
+  std::copy(update_weight_gradient, update_weight_gradient + _dim * _prev_dim,
+            _w_gradient.begin());
+}
+
+void ConvLayer::setBiasesGradients(const float* update_bias_gradient) {
+  std::copy(update_bias_gradient, update_bias_gradient + _dim,
+            _b_gradient.begin());
+}
+
+float* ConvLayer::getBiasesGradient() { return _b_gradient.data(); }
+
+float* ConvLayer::getWeightsGradient() { return _w_gradient.data(); }
 
 // this function is only called from constructor
 void ConvLayer::buildPatchMaps(std::pair<uint32_t, uint32_t> next_kernel_size) {
