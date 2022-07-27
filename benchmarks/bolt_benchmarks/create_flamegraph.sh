@@ -16,17 +16,17 @@
 type py-spy >/dev/null 2>&1 || { echo >&2 "This script requires py-spy but it's not installed.  Aborting."; exit 1; }
 
 BASEDIR=$(dirname "$0")
-RAW_OUTPUT_LOC = $BASEDIR/raw.txt
+RAW_OUTPUT_LOC=$BASEDIR/raw.txt
 
-py-spy record \
-    --format raw \ # This tells py spy to print the raw callstacks instead of generating a flamegraph itself, since flamegraph.pl generates a slightly better one.
-    --output $RAW_OUTPUT_LOC \
-    --rate 20 \ # Number of samples to collect per second. This is set to 20 since the default of 100 can start printing error messages saying sampling is falling behind
-    --nolineno \ # Turns off line numbers, so calls from the same function will always get grouped together 
-    --native \ # Enables profiling of C++ libraries, most notably ours!
-    -- python3 $BASEDIR/bolt_benchmarks/run_bolt_experiment.py \
-        $BASEDIR/bolt_benchmarks/configs/$1 \
-        --disable_mlflow \ # We want to disable mlflow when performance profiling
+# --format raw tells py-spy to print the raw callstacks instead of generating a flamegraph itself, 
+# since flamegraph.pl generates a slightly better one. We limit the sampling rate to 20 because
+# the default of 100 can start printing error messages saying sampling is falling behind. --nolineno
+# turns off line numbers so calls from the same function will always get grouped together. 
+# --native enavles profiling of C++ libraries, most importantly our own!
+py-spy record --format raw --output $RAW_OUTPUT_LOC --rate 20 --nolineno --native \
+    -- python3 \
+        $BASEDIR/run_bolt_experiment.py \ 
+        $BASEDIR/configs/$1 --disable_mlflow \
 
 $BASEDIR/../deps/flamegraph/flamegraph.pl $RAW_OUTPUT_LOC > $config_identifier.txt
 
