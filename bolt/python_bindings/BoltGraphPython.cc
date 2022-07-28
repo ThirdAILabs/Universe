@@ -8,6 +8,7 @@
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/graph/nodes/Switch.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
@@ -142,6 +143,18 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Tells the graph which layers will be concatenated. Must be at "
            "least one node (although this is just an identity function, so "
            "really should be at least two).");
+
+#if THIRDAI_EXPOSE_ALL
+  py::class_<SwitchNode, std::shared_ptr<SwitchNode>, Node>(graph_submodule,
+                                                            "Switch")
+      .def(py::init<uint64_t, const std::string&, uint32_t>(), py::arg("dim"),
+           py::arg("activation"), py::arg("n_layers"))
+      .def(py::init<uint64_t, float, const std::string&, uint32_t>(),
+           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
+           py::arg("n_layers"))
+      .def("__call__", &SwitchNode::addPredecessors, py::arg("prev_layer"),
+           py::arg("token_input"));
+#endif
 
   py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(graph_submodule,
                                                     "Embedding")

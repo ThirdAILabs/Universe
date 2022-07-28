@@ -18,9 +18,13 @@
 
 namespace thirdai::bolt {
 
+class SwitchNode;
+
 class FullyConnectedNode final
     : public Node,
       public std::enable_shared_from_this<FullyConnectedNode> {
+  friend class SwitchNode;
+
  public:
   FullyConnectedNode(uint64_t dim, const std::string& activation)
       : _layer(nullptr),
