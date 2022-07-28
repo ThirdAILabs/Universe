@@ -93,10 +93,9 @@ TEST(FullyConnectedDagTest, SamePredictAndPredictSingleResults) {
 
   PredictConfig config = getPredictConfig().returnActivations();
 
-  InferenceResult all_inference_result =
+  auto [_, all_inference_output] =
       model.predict(/* test_data= */ {data},
                     /* test_tokens= */ {}, labels, config);
-  InferenceOutputTracker all_inference_output = all_inference_result.second;
 
   ASSERT_EQ(all_inference_output.numSamples(), data->len());
 
