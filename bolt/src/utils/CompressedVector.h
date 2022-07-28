@@ -32,9 +32,11 @@ class CompressedVector {
   CompressedVector() {}
 
   // Create a new CompressedVector.
-  CompressedVector(uint64_t physical_size, ELEMENT_TYPE default_value = 0,
-                   uint64_t block_size = kDefaultBlockSize,
-                   uint32_t seed = kDefaultSeed, bool use_sign_bit = true)
+  explicit CompressedVector(uint64_t physical_size,
+                            ELEMENT_TYPE default_value = 0,
+                            uint64_t block_size = kDefaultBlockSize,
+                            uint32_t seed = kDefaultSeed,
+                            bool use_sign_bit = false)
       : _physical_vector(physical_size + block_size, default_value),
         _block_size(block_size),
         _seed(seed),
@@ -45,7 +47,7 @@ class CompressedVector {
   CompressedVector(const std::vector<ELEMENT_TYPE>& input,
                    uint64_t physical_size,
                    uint64_t block_size = kDefaultBlockSize,
-                   uint32_t seed = kDefaultSeed, bool use_sign_bit = true)
+                   uint32_t seed = kDefaultSeed, bool use_sign_bit = false)
       : CompressedVector(physical_size, /*default_value=*/0, block_size, seed,
                          use_sign_bit) {
     // Do we have BOLT_ASSERT yet?
@@ -83,6 +85,12 @@ class CompressedVector {
         // multiple elements, which could overflow the element's type.
       }
     }
+
+    // for (size_t i = 0; i < input.size(); i++) {
+    //   if (input[i] != get(i)) {
+    //     std::cout << i << ": " << input[i] << ", " << get(i) << "\n";
+    //   }
+    // }
   }
 
   // Add a non-compressed vector to this CompressedVector.

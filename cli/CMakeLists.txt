@@ -1,0 +1,3 @@
+
+add_executable(compressed_vector_main CompressedVectorMain.cc)
+target_link_libraries(compressed_vector_main PRIVATE hash_function_lib)

@@ -3,6 +3,7 @@
 #include <bolt/src/layers/LayerUtils.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
+#include <utils/utils.h>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -130,9 +131,18 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
       // this conditional
       uint32_t prev_act_neuron = input.activeNeuronAtIndex<PREV_DENSE>(i);
       assert(prev_act_neuron < _prev_dim);
+      float dact = _weights[act_neuron * _prev_dim + prev_act_neuron] *
+                   input.activations[i];
 
-      act += _weights[act_neuron * _prev_dim + prev_act_neuron] *
-             input.activations[i];
+      if (std::isnan(act + dact)) {
+        BOLT_TRACE(act);
+        BOLT_TRACE(act + dact);
+        BOLT_TRACE(dact);
+        BOLT_TRACE(_weights[act_neuron * _prev_dim + prev_act_neuron]);
+        BOLT_TRACE(input.activations[i]);
+      }
+
+      act += dact;
     }
 
     assert(!std::isnan(act));
@@ -550,7 +560,7 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
                                                       float B1_bias_corrected,
                                                       float B2_bias_corrected) {
 #pragma omp parallel for default(none) \
-    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
+    shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps, std::cerr)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
     if ((!_is_distributed) && (!_this_is_dense && !_is_active[cur_neuron])) {
       continue;
@@ -560,18 +570,27 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
     assert(!std::isnan(grad));
 
     // _b_momentum[cur_neuron] = B1 * _b_momentum[cur_neuron] + (1 - B1) * grad;
-    // _b_velocity[cur_neuron] =
-    //     B2 * _b_velocity[cur_neuron] + (1 - B2) * grad * grad;
+    _b_velocity[cur_neuron] =
+        B2 * _b_velocity[cur_neuron] + (1 - B2) * grad * grad;
     _b_momentum.set(cur_neuron, B1 * _b_momentum[cur_neuron] + (1 - B1) * grad);
-    _b_velocity.set(cur_neuron,
-                    B2 * _b_velocity[cur_neuron] + (1 - B2) * grad * grad);
+    // _b_velocity.set(cur_neuron,
+    //                 B2 * _b_velocity[cur_neuron] + (1 - B2) * grad * grad);
 
     assert(!std::isnan(_b_momentum[cur_neuron]));
     assert(!std::isnan(_b_velocity[cur_neuron]));
 
-    _biases[cur_neuron] +=
+    float dbias =
         lr * (_b_momentum[cur_neuron] / B1_bias_corrected) /
         (std::sqrt(_b_velocity[cur_neuron] / B2_bias_corrected) + eps);
+
+    BOLT_TRACE(dbias);
+    BOLT_TRACE(_b_momentum[cur_neuron]);
+    BOLT_TRACE(_b_velocity[cur_neuron]);
+
+    _biases[cur_neuron] += dbias;
+
+    BOLT_TRACE(_biases[cur_neuron]);
+
     assert(!std::isnan(_biases[cur_neuron]));
 
     _b_gradient[cur_neuron] = 0;
@@ -595,17 +614,34 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
   auto indx = cur_neuron * _prev_dim + prev_neuron;
   float grad = _w_gradient[indx];
   assert(!std::isnan(grad));
+  if (std::isnan(grad)) {
+    BOLT_TRACE(grad);
+  }
 
   // _w_momentum[indx] = B1 * _w_momentum[indx] + (1 - B1) * grad;
-  // _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
+  _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
   _w_momentum.set(indx, B1 * _w_momentum[indx] + (1 - B1) * grad);
-  _w_velocity.set(indx, B2 * _w_velocity[indx] + (1 - B2) * grad * grad);
+  // _w_velocity.set(indx, B2 * _w_velocity[indx] + (1 - B2) * grad * grad);
+
+  BOLT_TRACE(B1);
+  BOLT_TRACE(_w_momentum[indx]);
+  BOLT_TRACE(1 - B1);
+
+  BOLT_TRACE(B2);
+  BOLT_TRACE(1 - B2);
+  BOLT_TRACE(grad * grad);
 
   assert(!std::isnan(_w_momentum[indx]));
   assert(!std::isnan(_w_velocity[indx]));
 
   _weights[indx] += lr * (_w_momentum[indx] / B1_bias_corrected) /
                     (std::sqrt(_w_velocity[indx] / B2_bias_corrected) + eps);
+
+  BOLT_TRACE(lr);
+  BOLT_TRACE(B1_bias_corrected);
+  BOLT_TRACE(B2_bias_corrected);
+
+  BOLT_TRACE(_weights[indx]);
   assert(!std::isnan(_weights[indx]));
 
   _w_gradient[indx] = 0;

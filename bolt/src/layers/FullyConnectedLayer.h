@@ -136,13 +136,15 @@ class FullyConnectedLayer final : public SequentialLayer {
   // using AdamParamsType = std::vector<float>;
 
   AdamParamsType _w_momentum;
-  AdamParamsType _w_velocity;
+  // AdamParamsType _w_velocity;
+  std::vector<float> _w_velocity;
 
   std::vector<float> _biases;
   std::vector<float> _b_gradient;
 
   AdamParamsType _b_momentum;
-  AdamParamsType _b_velocity;
+  // AdamParamsType _b_velocity;
+  std::vector<float> _b_velocity;
 
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
