@@ -12,6 +12,7 @@
 #include <optional>
 #include <sstream>
 #include <stdexcept>
+#include <tuple>
 #include <utility>
 
 namespace thirdai::bolt {
@@ -279,13 +280,14 @@ for (uint32_t vec_id = 0;
     }
   }
 
-std::pair<std::vector<std::vector<float>>, std::vector<std::vector<float>>>
+std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<float>>,std::vector<std::vector<uint32_t>>>
 FullyConnectedNetwork::getInputGradientsFromStream(
     const std::shared_ptr<dataset::StreamingGenericDatasetLoader>& test_data,
     const LossFunction& loss_fn, bool best_index, uint32_t label_id,
     bool label_given) {
   uint32_t batch_size = test_data->getMaxBatchSize();
   std::vector<std::vector<float>> concatenated_grad, ratios;
+  std::vector<std::vector<uint32_t>> input_dataset_indices;
   BoltBatch output = getOutputs(batch_size, true);
   std::vector<uint32_t> temp;
   if (label_given) {
@@ -293,9 +295,9 @@ FullyConnectedNetwork::getInputGradientsFromStream(
   }
   while (auto batch = test_data->nextBatchTuple()) {
     getInputGradientsForBatch(std::get<0>(batch.value()), output, loss_fn, best_index, 0, batch_size,
-                              temp, concatenated_grad, true, ratios);
+                              temp, concatenated_grad, true, ratios,input_dataset_indices);
   }
-  return std::make_pair(concatenated_grad, ratios);
+  return std::make_tuple(concatenated_grad, ratios,input_dataset_indices);
 }
 
 void FullyConnectedNetwork::initializeNetworkState(uint32_t batch_size,

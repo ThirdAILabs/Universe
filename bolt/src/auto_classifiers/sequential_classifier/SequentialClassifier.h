@@ -91,12 +91,14 @@ class SequentialClassifier {
     std::vector<std::vector<std::pair<float, uint32_t>>> temp;
     std::vector<float> ratio_sums;
     // sorting based on ratios.
-    for (auto& gradient : gradients.second) {
+    auto ratio_gradient = std::get<1>(gradients);
+    auto indices_gradients = std::get<2>(gradients);
+    for (uint32_t i=0;i< ratio_gradient.size();i++) {
       std::vector<std::pair<float, uint32_t>> vec;
       float sum = 0;
-      for (uint32_t j = 0; j < gradient.size(); j++) {
-        sum += abs(gradient[j]);
-        vec.push_back(std::make_pair(gradient[j], j));
+      for (uint32_t j = 0; j < ratio_gradient[i].size(); j++) {
+        sum += abs(ratio_gradient[i][j]);
+        vec.push_back(std::make_pair(ratio_gradient[i][j], indices_gradients[i][j]));
       }
       ratio_sums.push_back(sum);
       temp.push_back(vec);
@@ -104,7 +106,7 @@ class SequentialClassifier {
     sortGradients(temp);
     // std::vector<std::shared_ptr<dataset::Block>> blocks;
     std::vector<std::string> messages;
-    std::vector<std::vector<std::string>> total_column_names;
+    // std::vector<std::vector<std::string>> total_column_names;
     //for every vector in input.
     for (uint32_t i = 0;i<temp.size();i++) {
       // blocks.clear();

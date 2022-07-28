@@ -87,7 +87,7 @@ size_t SequentialClassifierPipelineBuilder::autotuneShuffleBufferSize() const {
 void SequentialClassifierPipelineBuilder::addDateFeats(Blocks& blocks) {
   blocks.push_back(
       std::make_shared<dataset::DateBlock>(_schema.timestamp.col_num));
-  offsets.push_back(offsets.back() + 4);
+  offsets.push_back(offsets.back() + blocks.back()->featureDim());
   addNonzeros(4);
 }
 
@@ -100,7 +100,7 @@ void SequentialClassifierPipelineBuilder::addItemIdFeats(Blocks& blocks) {
 
   blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
       item.col_num, _states.item_id_map, item.graph, item.max_neighbors));
-  offsets.push_back(offsets.back() + 1);
+  offsets.push_back(offsets.back() + blocks.back()->featureDim());
   addNonzeros(1);
 }
 
@@ -109,7 +109,7 @@ void SequentialClassifierPipelineBuilder::addTextAttrFeats(Blocks& blocks) {
   for (const auto& text : text_attrs) {
     blocks.push_back(
         std::make_shared<dataset::TextBlock>(text.col_num, /* dim = */ 100000));
-    offsets.push_back(offsets.back() + 20);
+    offsets.push_back(offsets.back() + blocks.back()->featureDim());
     addNonzeros(20);
   }
 }
@@ -125,7 +125,7 @@ void SequentialClassifierPipelineBuilder::addCategoricalAttrFeats(
     }
     blocks.push_back(std::make_shared<dataset::CategoricalBlock>(
         cat.col_num, _states.cat_attr_maps[i]));
-    offsets.push_back(offsets.back() + 1);
+    offsets.push_back(offsets.back() + blocks.back()->featureDim());
     addNonzeros(1);
   }
 }
@@ -180,7 +180,7 @@ void SequentialClassifierPipelineBuilder::addTrackableCatFeats(Blocks& blocks) {
     blocks.push_back(tracking_block);
 
     size_t nonzero_multiplier = item.max_neighbors > 0 ? 2 : 1;
-    offsets.push_back(offsets.back() + nonzero_multiplier * cat.track_last_n);
+    offsets.push_back(offsets.back() + blocks.back()->featureDim());
     addNonzeros(nonzero_multiplier * cat.track_last_n);
   }
 }

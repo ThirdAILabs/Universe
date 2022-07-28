@@ -59,7 +59,7 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
               std::vector<std::vector<float>>()),std::vector<std::vector<uint32_t>>& input_dataset_indices = std::vector<std::vector<uint32_t>>().operator=(
               std::vector<std::vector<uint32_t>>()));
 
-  std::pair<std::vector<std::vector<float>>, std::vector<std::vector<float>>>
+std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<float>>,std::vector<std::vector<uint32_t>>>
   getInputGradientsFromStream(
       const std::shared_ptr<dataset::StreamingGenericDatasetLoader>& test_data,
       const LossFunction& loss_fn, bool best_index, uint32_t label_id,
