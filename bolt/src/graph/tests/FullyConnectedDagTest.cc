@@ -78,6 +78,10 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
   ASSERT_LE(test_metrics.first["categorical_accuracy"], 0.2);
 }
 
+/*
+ * This test asserts that predict(..) and predictSingle(..) return the same
+ * activations with the same set of inputs.
+ */
 TEST(FullyConnectedDagTest, SamePredictAndPredictSingleResults) {
   BoltGraph model = getSingleLayerModel();
 

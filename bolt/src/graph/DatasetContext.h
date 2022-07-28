@@ -116,13 +116,16 @@ class DatasetContext {
 class SingleUnitDatasetContext : public DatasetContext {
  public:
   SingleUnitDatasetContext(std::vector<BoltVector> data,
-                           std::vector<std::vector<uint32_t>> tokens) {
+                           std::vector<std::vector<uint32_t>> tokens)
+      : _labels(nullptr) {
     for (auto vector : data) {
       _data.push_back(BoltBatch({std::move(vector)}));
     }
+
     for (auto vector : tokens) {
       _tokens.push_back(dataset::BoltTokenBatch({std::move(vector)}));
     }
+
     if (_data.empty() && _tokens.empty()) {
       throw std::invalid_argument(
           "Must pass in at least one dataset, but found 0.");
@@ -155,14 +158,11 @@ class SingleUnitDatasetContext : public DatasetContext {
 
   uint64_t numTokenDatasets() const { return _tokens.size(); }
 
-  const dataset::BoltDatasetPtr& labels() const {
-    throw std::invalid_argument("TODO CHANGE");
-    // std::vector<BoltBatch> empty_vec;
-    // return std::make_shared<dataset::BoltDataset>(std::move(empty_vec));
-  }
+  const dataset::BoltDatasetPtr& labels() const { return _labels; }
 
   std::vector<BoltBatch> _data;
   std::vector<dataset::BoltTokenBatch> _tokens;
+  dataset::BoltDatasetPtr _labels;
 };
 
 }  // namespace thirdai::bolt
