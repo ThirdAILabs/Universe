@@ -32,7 +32,6 @@ else()
     -fPIC
     -Wall
     -Wextra
-    -Werror
     -Wno-unused-function
     -pedantic 
     
