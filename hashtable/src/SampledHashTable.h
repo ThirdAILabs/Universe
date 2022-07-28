@@ -4,6 +4,7 @@
 #include <cereal/types/vector.hpp>
 #include "HashTable.h"
 #include <iostream>
+#include <sstream>
 #include <unordered_set>
 #include <vector>
 
@@ -128,6 +129,11 @@ class SampledHashTable final : public HashTable<LABEL_T> {
   uint32_t numTables() const override { return _num_tables; };
 
   inline uint64_t tableRange() const override { return _range; };
+
+  void summarize(std::stringstream& summary) {
+    summary << "num_tables=" << _num_tables << ", range=" << _range
+            << ", reservoir_size=" << _reservoir_size;
+  }
 
   ~SampledHashTable() = default;
 };

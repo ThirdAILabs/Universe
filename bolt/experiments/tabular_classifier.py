@@ -15,13 +15,21 @@ def map_categories_to_integers(dataframes):
                 df[colname] = pd.factorize(df[colname])[0]
 
 
+<<<<<<< HEAD
 def getColDatatypes(dataset_base_filename):
+=======
+def get_col_datatypes(dataset_base_filename):
+>>>>>>> main
     dtypes_file = dataset_base_filename + "/Dtypes.txt"
     with open(dtypes_file) as file:
         lines = file.readlines()
         dtypes = lines[0].split(",")
+<<<<<<< HEAD
         # remove trailing newline character from last elem
         dtypes[-1] = dtypes[-1][:-1]
+=======
+        dtypes[-1] = dtypes[-1].strip("\n")
+>>>>>>> main
         return dtypes
 
 
@@ -207,7 +215,11 @@ def main():
     out_file = open("tabular_classifier_results.txt", "w")
     for dataset_name in datasets:
         data_dir = base_dir + dataset_name
+<<<<<<< HEAD
         dtypes = getColDatatypes(data_dir)
+=======
+        dtypes = get_col_datatypes(data_dir)
+>>>>>>> main
         xtrain, ytrain, xvalid, yvalid, xtest, ytest = prep_data(data_dir, dtypes)
 
         log_message(
@@ -215,7 +227,11 @@ def main():
             out_file,
         )
 
+<<<<<<< HEAD
         # train_bolt(dtypes, ytrain, yvalid, ytest, data_dir, out_file)
+=======
+        train_bolt(dtypes, ytrain, yvalid, ytest, data_dir, out_file)
+>>>>>>> main
         train_xgboost(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)
         train_tabnet(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)
 

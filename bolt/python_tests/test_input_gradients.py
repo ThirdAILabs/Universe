@@ -10,11 +10,11 @@ def build_network():
     layers = [
         bolt.FullyConnected(
             dim=3,
-            activation_function=bolt.ActivationFunctions.ReLU,
+            activation_function="relu",
         ),
         bolt.FullyConnected(
             dim=4,
-            activation_function=bolt.ActivationFunctions.Softmax,
+            activation_function="softmax",
         ),
     ]
     network = bolt.Network(layers=layers, input_dim=4)

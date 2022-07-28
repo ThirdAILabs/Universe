@@ -17,19 +17,16 @@ class ModelWithLayers {
   ModelWithLayers() {
     input = std::make_shared<Input>(n_classes);
 
-    hidden1 = std::make_shared<FullyConnectedNode>(2000, 0.1,
-                                                   ActivationFunction::ReLU);
+    hidden1 = std::make_shared<FullyConnectedNode>(2000, 0.1, "relu");
     hidden1->addPredecessor(input);
 
-    hidden2 = std::make_shared<FullyConnectedNode>(2000, 0.1,
-                                                   ActivationFunction::Softmax);
+    hidden2 = std::make_shared<FullyConnectedNode>(2000, 0.1, "relu");
     hidden2->addPredecessor(input);
 
     concat = std::make_shared<ConcatenateNode>();
     concat->setConcatenatedNodes({hidden1, hidden2});
 
-    output = std::make_shared<FullyConnectedNode>(n_classes,
-                                                  ActivationFunction::Softmax);
+    output = std::make_shared<FullyConnectedNode>(n_classes, "softmax");
     output->addPredecessor(concat);
 
     model = std::make_unique<BoltGraph>(std::vector<InputPtr>{input}, output);

@@ -5,7 +5,8 @@ add_library(bolt_graph_lib Graph.cc)
 target_link_libraries(
   bolt_graph_lib 
   PRIVATE 
-  bolt_network_lib
+  bolt_layer_lib
+  license_wrapper_lib
 )
 
 add_subdirectory(tests)

@@ -44,6 +44,7 @@ class StreamingDataset {
   // This function maps the tuple of batches returned by nextBatch() into a
   // tuple of datasets where each dataset contains a list of batches of the type
   // corresponding to that element of the tuple.
+  // NOLINTNEXTLINE
   std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> loadInMemory() {
     std::tuple<std::vector<BATCH_Ts>...> batch_lists;
 

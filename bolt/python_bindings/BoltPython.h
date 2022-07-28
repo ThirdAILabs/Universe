@@ -9,7 +9,6 @@
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
-#include <bolt/src/networks/DLRM.h>
 #include <bolt/src/networks/DistributedModel.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/python_bindings/DatasetPython.h>
@@ -235,45 +234,6 @@ class PyNetwork final : public FullyConnectedNetwork {
 
   // Private constructor for Cereal. See https://uscilab.github.io/cereal/
   PyNetwork() : FullyConnectedNetwork(){};
-};
-
-class PyDLRM final : public DLRM {
- public:
-  PyDLRM(bolt::EmbeddingLayerConfig embedding_config,
-         SequentialConfigList bottom_mlp_configs,
-         SequentialConfigList top_mlp_configs, uint32_t input_dim)
-      : DLRM(embedding_config, std::move(bottom_mlp_configs),
-             std::move(top_mlp_configs), input_dim) {}
-
-  py::tuple predict(
-      const dataset::ClickThroughDatasetPtr& test_data,
-      const dataset::BoltDatasetPtr& test_labels, bool use_sparse_inference,
-      const std::vector<std::string>& metrics = {}, bool verbose = true,
-      uint32_t batch_limit = std::numeric_limits<uint32_t>::max()) {
-    uint32_t num_samples = test_data->len();
-    uint64_t inference_output_dim = getInferenceOutputDim(use_sparse_inference);
-
-    bool output_sparse = inference_output_dim < getOutputDim();
-
-    // Declare pointers to memory for activations and active neurons, if the
-    // allocation succeeds this will be assigned valid addresses by the
-    // allocateActivations function. Otherwise the nullptr will indicate that
-    // activations are not being computed.
-    uint32_t* active_neurons = nullptr;
-    float* activations = nullptr;
-
-    allocateActivations(num_samples, inference_output_dim, &active_neurons,
-                        &activations, output_sparse);
-
-    auto metric_data =
-        DLRM::predict(test_data, test_labels, active_neurons, activations,
-                      use_sparse_inference, metrics, verbose, batch_limit);
-    py::dict py_metric_data = py::cast(metric_data);
-
-    return constructPythonInferenceTuple(std::move(py_metric_data), num_samples,
-                                         inference_output_dim, activations,
-                                         active_neurons);
-  }
 };
 
 class DistributedPyNetwork final : public DistributedModel {
