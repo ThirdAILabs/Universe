@@ -214,7 +214,7 @@ pybind11_add_module(_thirdai
   ${DATASET_SOURCES}
 )
 
-target_link_libraries(_thirdai PRIVATE OpenMP::OpenMP_CXX)
+target_link_libraries(_thirdai PUBLIC OpenMP::OpenMP_CXX)
 
 if (${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(_thirdai PRIVATE ${CRYPTOPP_LIB})

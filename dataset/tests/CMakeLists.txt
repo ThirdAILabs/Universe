@@ -77,6 +77,7 @@ target_link_libraries(
   generic_batch_processor_test
   PRIVATE
   gtest_main
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(
