@@ -1,7 +1,7 @@
 import pytest
 from thirdai import bolt
 from ..utils import gen_numpy_training_data
-import numpy as np
+import math
 
 
 def get_simple_model(n_classes):
@@ -11,7 +11,7 @@ def get_simple_model(n_classes):
     )
 
     model = bolt.graph.Model(inputs=[input_layer], output=output_layer)
-    model.compile(bolt.CategoricalCrossEntropyLoss())
+    model.compile(bolt.CategoricalCrossEntropyLoss(), print_when_done=False)
     return model
 
 
@@ -22,7 +22,9 @@ def train_simple_model(model, n_classes, n_samples, batch_size, epochs):
         convert_to_bolt_dataset=True,
         batch_size_for_conversion=batch_size,
     )
-    train_cfg = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=epochs)
+    train_cfg = bolt.graph.TrainConfig.make(
+        learning_rate=0.001, epochs=epochs
+    ).silence()
     model.train(data, labels, train_cfg)
 
 
@@ -105,5 +107,7 @@ def test_dag_callbacks_call_cpp_function():
         epochs=epochs,
     )
 
-    assert len(layer_dims) == epochs
-    assert len(layer_sparsities) == (epochs * n_samples / batch_size)
+    assert layer_dims == [n_classes for _ in range(epochs)]
+
+    num_batches = math.ceil(n_samples / batch_size)
+    assert layer_sparsities == [1.0 for _ in range(epochs * num_batches)]
