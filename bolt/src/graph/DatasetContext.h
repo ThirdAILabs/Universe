@@ -41,8 +41,6 @@ class DatasetContext {
     verifyBatchSizes(_all_dag_datasets);
   }
 
-  DatasetContext() = default;
-
   virtual void setInputs(uint64_t batch_idx,
                          const std::vector<InputPtr>& inputs,
                          const std::vector<TokenInputPtr>& token_inputs) {
@@ -73,6 +71,11 @@ class DatasetContext {
   virtual uint64_t numTokenDatasets() const { return _tokens.size(); }
 
   virtual const dataset::BoltDatasetPtr& labels() const { return _labels; }
+
+  virtual ~DatasetContext() = default;
+
+ protected:
+  DatasetContext() = default;
 
  private:
   static void verifyBatchSizes(const dataset::DatasetBaseList& datasets) {
