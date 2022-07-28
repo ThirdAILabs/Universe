@@ -81,6 +81,8 @@ class SegmentedFeatureVector {
    * Converts this vector to a BoltVector.
    */
   virtual bolt::BoltVector toBoltVector() = 0;
+
+  virtual ~SegmentedFeatureVector() = default;
 };
 
 /**
@@ -127,6 +129,8 @@ class Block {
    * to see in each row of the dataset.
    */
   virtual uint32_t expectedNumColumns() const = 0;
+
+  virtual ~Block() = default;
 
  protected:
   /**

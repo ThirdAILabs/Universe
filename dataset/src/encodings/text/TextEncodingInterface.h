@@ -25,6 +25,8 @@ class TextEncoding {
    * The dimension of the encoding.
    */
   virtual uint32_t featureDim() = 0;
+
+  virtual ~TextEncoding() = default;
 };
 
 }  // namespace thirdai::dataset
