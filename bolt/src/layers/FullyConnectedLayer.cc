@@ -564,7 +564,7 @@ void FullyConnectedLayer::setWeightGradientsFromIndicesValues(int* indices_raw_d
   _w_gradient.assign(_dim * _prev_dim, 0);
 #pragma omp parallel for default(none) shared(size,indices_raw_data,values_raw_data)
   for(int i=0;i<size;i++){
-    _w_gradient[indices_raw_data[i]]=values_raw_data[i];
+    _w_gradient[indices_raw_data[i]]+=values_raw_data[i];
   }
 }
 
@@ -573,7 +573,7 @@ void FullyConnectedLayer::setBiasGradientsFromIndicesValues(int* indices_raw_dat
   _b_gradient.assign(_dim, 0);
 #pragma omp parallel for default(none) shared(size,indices_raw_data,values_raw_data)
   for(int i=0;i<size;i++){
-    _b_gradient[indices_raw_data[i]]=values_raw_data[i];
+    _b_gradient[indices_raw_data[i]]+=values_raw_data[i];
   }
 }
 
