@@ -72,7 +72,7 @@ class BoltGraph {
       const dataset::BoltDatasetPtr& test_labels,
       const PredictConfig& predict_config);
 
-  InferenceResult predictSingle(
+  InferenceOutputTracker predictSingle(
       const std::vector<BoltVector>& test_data,
       const std::vector<std::vector<uint32_t>>& test_tokens,
       const PredictConfig& predict_config);

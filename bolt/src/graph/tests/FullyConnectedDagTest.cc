@@ -89,16 +89,31 @@ TEST(FullyConnectedDagTest, SamePredictAndPredictSingleResults) {
 
   PredictConfig config = getPredictConfig().returnActivations();
 
-  auto inference_result = model.predict(/* test_data= */ {data},
-                                        /* test_tokens= */ {}, labels, config);
+  InferenceResult all_inference_result =
+      model.predict(/* test_data= */ {data},
+                    /* test_tokens= */ {}, labels, config);
+  InferenceOutputTracker all_inference_output = all_inference_result.second;
 
+  ASSERT_EQ(all_inference_output.numSamples(), data->len());
+
+  const float* all_activations_ptr =
+      all_inference_output.getNonowningActivationPointer();
+  uint32_t all_activations_idx = 0;
   for (uint64_t batch_idx = 0; batch_idx < data->numBatches(); batch_idx++) {
     BoltBatch& batch = data->at(batch_idx);
     for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-      BoltVector& input_vector = batch[vec_idx];
-      // call predict single with that bolt vector
-      // get the activations assert that the activations are the same
-      // as the stored activations in inference result
+      InferenceOutputTracker single_inference_output =
+          model.predictSingle({std::move(batch[vec_idx])}, {}, config);
+      const float* single_activations_ptr =
+          single_inference_output.getNonowningActivationPointer();
+
+      ASSERT_EQ(single_inference_output.numNonzerosInOutput(), n_classes);
+
+      for (uint32_t i = 0; i < n_classes; i++) {
+        ASSERT_EQ(single_activations_ptr[i],
+                  all_activations_ptr[all_activations_idx]);
+        all_activations_idx++;
+      }
     }
   }
 }

@@ -257,29 +257,36 @@ InferenceOutputTracker BoltGraph::predictSingle(
     const std::vector<BoltVector>& test_data,
     const std::vector<std::vector<uint32_t>>& test_tokens,
     const PredictConfig& predict_config) {
-  verifyCanPredict(
-      predict_context, /* has_labels = */ false,
-      /* returning_activations = */ predict_config.shouldReturnActivations(),
-      /* num_metrics_tracked = */ 0);
-
-  prepareToProcessBatches(/* batch_size = */ 1,
-                          predict_config.sparseInferenceEnabled());
-
-  InferenceOutputTracker outputTracker(_output, predict_config,
-                                       /* total_num_samples = */ 1);
-
   auto test_start = std::chrono::high_resolution_clock::now();
 
-  // TRY
+  SingleUnitDatasetContext single_predict_context(test_data, test_tokens);
 
-  predict_context.setInputs(/* batch_idx = */ 0, _inputs, _token_inputs);
+  verifyCanPredict(single_predict_context, /* has_labels = */ false,
+                   /* returning_activations = */
+                   predict_config.shouldReturnActivations(),
+                   /* num_metrics_tracked = */ 0);
 
-  uint32_t vec_id = 0;
-  forward(vec_id, nullptr);
-  const auto& output = _output->getOutputVector(vec_id);
-  outputTracker.saveOutputBatch(_output, /* batch_size = */ 1);
+  prepareToProcessBatches(single_predict_context.batchSize(),
+                          predict_config.sparseInferenceEnabled());
 
-  // CATCH
+  InferenceOutputTracker outputTracker(
+      _output, predict_config,
+      /* total_num_samples = */ single_predict_context.len());
+
+  // TODO(josh/Nick): This try catch is kind of a hack, we should really use
+  // some sort of RAII training context object whose destructor will
+  // automatically delete the training state
+  try {
+    single_predict_context.setInputs(/* batch_idx = */ 0, _inputs,
+                                     _token_inputs);
+    uint32_t vec_id = 0;
+    forward(vec_id, nullptr);
+    // const auto& output = _output->getOutputVector(vec_id);
+    outputTracker.saveOutputBatch(_output, single_predict_context.batchSize());
+  } catch (const std::exception& e) {
+    cleanupAfterBatchProcessing();
+    throw;
+  }
 
   cleanupAfterBatchProcessing();
 
@@ -294,7 +301,7 @@ InferenceOutputTracker BoltGraph::predictSingle(
               << std::endl;
   }
 
-  return std::move(outputTracker);
+  return outputTracker;
 }
 
 void BoltGraph::processInferenceBatch(uint64_t batch_size,
