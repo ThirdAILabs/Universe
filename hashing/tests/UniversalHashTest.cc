@@ -42,7 +42,7 @@ TEST_F(AvalancheTimedTestSuite, UniversalHashTimeTest) {
 TEST_F(AvalancheTimedTestSuite, UniversalHashStringKeyAvalancheTest) {
   // Allocate 64 bits for both hash outputs.
   uint32_t tabulation_output[2];
-  uint32_t output_bits_counter[48][32] = {0};
+  uint32_t output_bits_counter[48][32] = {};
   for (auto& str_key : str_keys) {
     tabulation_output[0] = universal_hash.gethash(str_key);
     // Compute all possible 1 bit changes (48 bits in a string key input)

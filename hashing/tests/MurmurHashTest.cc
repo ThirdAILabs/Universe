@@ -42,7 +42,7 @@ TEST_F(AvalancheTimedTestSuite, MurmurHashTimeTest) {
 TEST_F(AvalancheTimedTestSuite, MurmurHashStringKeyAvalancheTest) {
   // Allocate 64 bits for both hash outputs.
   uint32_t murmurhash_output[2];
-  uint32_t output_bits_counter[48][32] = {0};
+  uint32_t output_bits_counter[48][32] = {};
   for (auto& str_key : str_keys) {
     murmurhash_output[0] = MurmurHash(
         str_key.c_str(), static_cast<uint32_t>(strlen(str_key.c_str())), seed);
