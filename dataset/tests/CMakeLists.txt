@@ -80,6 +80,17 @@ target_link_libraries(
 )
 
 add_executable(
+  streaming_generic_dataset_loader_tests
+  StreamingGenericDatasetLoaderTests.cc
+)
+
+target_link_libraries(
+  streaming_generic_dataset_loader_tests
+  PRIVATE
+  gtest_main
+)
+
+add_executable(
   categorical_multi_label_test
   CategoricalMultiLabelTest.cc
 )
@@ -112,5 +123,6 @@ gtest_discover_tests(categorical_block_test)
 gtest_discover_tests(text_block_test)
 gtest_discover_tests(block_batch_processor_test)
 gtest_discover_tests(generic_batch_processor_test)
+gtest_discover_tests(streaming_generic_dataset_loader_tests)
 gtest_discover_tests(categorical_multi_label_test)
 gtest_discover_tests(text_processing_tests)
