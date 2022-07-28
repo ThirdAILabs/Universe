@@ -17,8 +17,8 @@ class TabularClassifier {
  public:
   TabularClassifier(const std::string& model_size, uint32_t n_classes)
       : _metadata(nullptr) {
-    _model = AutoClassifierUtils::createNetwork(/* input_dim */ 100000,
-                                                /* n_classes */ n_classes,
+    _model = AutoClassifierUtils::createNetwork(/* input_dim = */ 100000,
+                                                /* n_classes = */ n_classes,
                                                 model_size);
   }
 
@@ -40,8 +40,8 @@ class TabularClassifier {
         _model, filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             batch_processor),
-        /* epochs */ epochs,
-        /* learning_rate */ learning_rate);
+        /* epochs = */ epochs,
+        /* learning_rate = */ learning_rate);
   }
 
   void predict(const std::string& filename,
@@ -111,8 +111,8 @@ class TabularClassifier {
                 _metadata->getClassToIdMap()))};
 
     return std::make_shared<dataset::GenericBatchProcessor>(
-        /* input_blocks */ input_blocks,
-        /* target_blocks */ target_blocks);
+        /* input_blocks = */ input_blocks,
+        /* target_blocks = */ target_blocks);
   }
 
   // Private constructor for cereal
