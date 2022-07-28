@@ -61,11 +61,11 @@ class PrimaryWorker(Worker):
         averaging_gradients_time = 0
         gradient_computation_time = 0
 
-        t1 = time.time()
-        updates = ray.get([self.workers[id].calculateGradientsCircular.remote(batch_no) for id in range(len(self.workers))])
-        gradient_computation_time += time.time() - t1
+        blocking_run = ray.get([self.workers[id].calculateGradientsCircular.remote(batch_no) for id in range(len(self.workers))])
+        gradient_computation_time += sum(i for i,j in blocking_run)/self.total_nodes
+        communication_time += sum(j for i,j in blocking_run)/self.total_nodes
+        
         # First Run
-        # mt = time.time()
         update_id = 0
         for i in range(self.total_nodes-1):
             if i == self.total_nodes - 2:

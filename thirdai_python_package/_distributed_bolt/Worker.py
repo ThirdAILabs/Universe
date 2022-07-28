@@ -120,8 +120,11 @@ class Worker:
                 batch_no: training batch to calculate gradients on.
  
         """
+        start_calculate_grdient_time = time.time()
         self.network.calculateGradientSingleNode(batch_no, self.loss)
+        calculate_gradient_time = time.time() - start_calculate_grdient_time
 
+        start_receive_gradients_time = time.time()
         w_gradients = []
         b_gradients = []
         self.w_partitions = []
@@ -138,7 +141,8 @@ class Worker:
         
         self.w_gradients, self.b_gradients = w_gradients, b_gradients
         
-        return True
+        receive_gradients_time = time.time() - start_receive_gradients_time
+        return calculate_gradient_time, receive_gradients_time
 
     def calculateGradientsLinear(self, 
         batch_no: int
