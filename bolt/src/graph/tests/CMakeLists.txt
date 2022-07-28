@@ -59,6 +59,14 @@ target_link_libraries(
   gtest_main
 )
 
+add_executable(switch_node_test SwitchNodeTest.cc)
+target_link_libraries(
+  switch_node_test
+  PRIVATE
+  bolt_graph_lib
+  gtest_main
+)
+
 add_executable(dag_dlrm_test DlrmTests.cc)
 target_link_libraries(
   dag_dlrm_test
@@ -75,4 +83,5 @@ gtest_discover_tests(graph_reject_inputs_test)
 gtest_discover_tests(state_machine_test)
 gtest_discover_tests(embedding_node_test)
 gtest_discover_tests(save_load_test)
+gtest_discover_tests(switch_node_test)
 gtest_discover_tests(dag_dlrm_test)
