@@ -80,7 +80,7 @@ class TabularMetadata {
     uint64_t uniqueBin =
         static_cast<uint64_t>(bin) << 32 | static_cast<uint64_t>(col);
     const char* val_to_hash = reinterpret_cast<const char*>(&uniqueBin);
-    return TextEncodingUtils::computeUnigram(val_to_hash, /* len */ 8);
+    return TextEncodingUtils::computeUnigram(val_to_hash, /* len = */ 8);
   }
 
  private:

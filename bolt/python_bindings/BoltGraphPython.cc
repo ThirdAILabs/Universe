@@ -9,6 +9,7 @@
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/LayerNorm.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/graph/nodes/Switch.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
@@ -68,10 +69,67 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("filename"))
       .def("load_parameters", &FullyConnectedNode::loadParameters,
            py::arg("filename"))
-      .def("get_sparsity", &FullyConnectedNode::getNodeSparsity)
-      .def("set_sparsity", &FullyConnectedNode::setNodeSparsity,
+      .def("get_sparsity", &FullyConnectedNode::getSparsity)
+      .def("set_sparsity", &FullyConnectedNode::setSparsity,
            py::arg("sparsity"))
-      .def("get_dim", &FullyConnectedNode::outputDim);
+      .def("get_dim", &FullyConnectedNode::outputDim)
+      .def(
+          "set_weights",
+          [](FullyConnectedNode& node,
+             const py::array_t<float, py::array::c_style |
+                                          py::array::forcecast>& new_weights) {
+            uint32_t dim = node.outputDim();
+            uint32_t prev_node_dim = node.getPredecessors()[0]->outputDim();
+            const std::vector<uint32_t> dimensions = {dim, prev_node_dim};
+
+            checkNumpyArrayDimensions(dimensions, new_weights);
+            return node.setWeights(new_weights.data());
+          },
+          py::arg("new_weights"),
+          "Sets the weight matrix for the node to the given Numpy 2D array."
+          "Throws an error if the dimension of the given weight matrix does"
+          "not match that of the node's current weight matrix.")
+      .def(
+          "get_weights",
+          [](FullyConnectedNode& node) {
+            float* mem = node.getWeights();
+
+            py::capsule free_when_done(
+                mem, [](void* ptr) { delete static_cast<float*>(ptr); });
+            size_t dim = node.outputDim();
+            size_t prev_dim = node.getPredecessors()[0]->outputDim();
+
+            return py::array_t<float>({dim, prev_dim},
+                                      {prev_dim * sizeof(float), sizeof(float)},
+                                      mem, free_when_done);
+          },
+          "Returns the weight matrix for the node as a 2D Numpy array.")
+      .def(
+          "get_biases",
+          [](FullyConnectedNode& node) {
+            float* mem = node.getBiases();
+
+            py::capsule free_when_done(
+                mem, [](void* ptr) { delete static_cast<float*>(ptr); });
+            size_t dim = node.outputDim();
+
+            return py::array_t<float>({dim}, {sizeof(float)}, mem,
+                                      free_when_done);
+          },
+          "Returns the bias array for the given node as a 1D Numpy array.")
+      .def(
+          "set_biases",
+          [](FullyConnectedNode& node,
+             const py::array_t<float, py::array::c_style |
+                                          py::array::forcecast>& new_biases) {
+            uint32_t dim = node.outputDim();
+            const std::vector<uint32_t> dimensions = {dim};
+
+            checkNumpyArrayDimensions(dimensions, new_biases);
+            return node.setBiases(new_biases.data());
+          },
+          py::arg("new_biases"),
+          "Sets the bias array to the given 1D Numpy array for the given node");
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       graph_submodule, "LayerNormalization")
@@ -97,6 +155,18 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Tells the graph which layers will be concatenated. Must be at "
            "least one node (although this is just an identity function, so "
            "really should be at least two).");
+
+#if THIRDAI_EXPOSE_ALL
+  py::class_<SwitchNode, std::shared_ptr<SwitchNode>, Node>(graph_submodule,
+                                                            "Switch")
+      .def(py::init<uint64_t, const std::string&, uint32_t>(), py::arg("dim"),
+           py::arg("activation"), py::arg("n_layers"))
+      .def(py::init<uint64_t, float, const std::string&, uint32_t>(),
+           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
+           py::arg("n_layers"))
+      .def("__call__", &SwitchNode::addPredecessors, py::arg("prev_layer"),
+           py::arg("token_input"));
+#endif
 
   py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(graph_submodule,
                                                     "Embedding")
