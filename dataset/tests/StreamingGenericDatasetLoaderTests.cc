@@ -1,6 +1,6 @@
 #include "MockBlock.h"
 #include <gtest/gtest.h>
-#include <dataset/src/bolt_datasets/StreamingGenericDatasetLoader.h>
+#include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <cstdio>
 #include <fstream>
 #include <memory>
@@ -33,21 +33,21 @@ TEST(StreamingGenericDatasetLoaderTests, CanShuffle) {
   writeMockFile();
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ false);
   size_t line = 0;
-  while (auto batch = unshuffled_pipeline.nextBatch()) {
-    for (size_t i = 0; i < batch->first.getBatchSize(); i++) {
-      ASSERT_EQ(batch->first[i].activations[0], static_cast<float>(line));
-      ASSERT_EQ(batch->second[i].activations[0], static_cast<float>(line));
+  while (auto batch = unshuffled_pipeline.nextBatchTuple()) {
+    for (size_t i = 0; i < std::get<0>(*batch).getBatchSize(); i++) {
+      ASSERT_EQ(std::get<0>(*batch)[i].activations[0], static_cast<float>(line));
+      ASSERT_EQ(std::get<1>(*batch)[i].activations[0], static_cast<float>(line));
       line++;
     }
   }
   auto shuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   line = 0;
   size_t n_under_100 = 0;
-  while (auto batch = shuffled_pipeline.nextBatch()) {
-    for (size_t i = 0; i < batch->first.getBatchSize(); i++) {
-      ASSERT_EQ(batch->first[i].activations[0],
-                batch->second[i].activations[0]);
-      if (batch->first[i].activations[0] < 100 && line < 30) {
+  while (auto batch = shuffled_pipeline.nextBatchTuple()) {
+    for (size_t i = 0; i < std::get<0>(*batch).getBatchSize(); i++) {
+      ASSERT_EQ(std::get<0>(*batch)[i].activations[0],
+                std::get<1>(*batch)[i].activations[0]);
+      if (std::get<0>(*batch)[i].activations[0] < 100 && line < 30) {
         n_under_100++;
       }
       line++;
