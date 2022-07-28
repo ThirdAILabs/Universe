@@ -106,8 +106,8 @@ TEST(FullyConnectedDagTest, SamePredictAndPredictSingleResults) {
   for (uint64_t batch_idx = 0; batch_idx < data->numBatches(); batch_idx++) {
     BoltBatch& batch = data->at(batch_idx);
     for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-      InferenceOutputTracker single_inference_output =
-          model.predictSingle({std::move(batch[vec_idx])}, {}, config);
+      InferenceOutputTracker single_inference_output = model.predictSingle(
+          {batch[vec_idx]}, {}, config.sparseInferenceEnabled());
       const float* single_activations_ptr =
           single_inference_output.getNonowningActivationPointer();
 

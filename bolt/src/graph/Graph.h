@@ -75,7 +75,7 @@ class BoltGraph {
   InferenceOutputTracker predictSingle(
       const std::vector<BoltVector>& test_data,
       const std::vector<std::vector<uint32_t>>& test_tokens,
-      const PredictConfig& predict_config);
+      bool use_sparse_inference);
 
   std::vector<NodePtr> getNodeTraversalOrder() const {
     std::vector<NodePtr> nodes;

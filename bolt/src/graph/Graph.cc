@@ -202,7 +202,8 @@ InferenceResult BoltGraph::predict(
                           predict_config.sparseInferenceEnabled());
 
   InferenceOutputTracker outputTracker(
-      _output, predict_config, /* total_num_samples = */ predict_context.len());
+      _output, predict_config.shouldReturnActivations(),
+      /* total_num_samples = */ predict_context.len());
 
   ProgressBar bar(predict_context.numBatches(), predict_config.verbose());
 
@@ -255,22 +256,19 @@ InferenceResult BoltGraph::predict(
 InferenceOutputTracker BoltGraph::predictSingle(
     const std::vector<BoltVector>& test_data,
     const std::vector<std::vector<uint32_t>>& test_tokens,
-    const PredictConfig& predict_config) {
-  auto test_start = std::chrono::high_resolution_clock::now();
-
+    bool use_sparse_inference) {
   SingleUnitDatasetContext single_predict_context(test_data, test_tokens);
 
   verifyCanPredict(single_predict_context, /* has_labels = */ false,
-                   /* returning_activations = */
-                   predict_config.shouldReturnActivations(),
+                   /* returning_activations = */ true,
                    /* num_metrics_tracked = */ 0);
 
   prepareToProcessBatches(single_predict_context.batchSize(),
-                          predict_config.sparseInferenceEnabled());
+                          use_sparse_inference);
 
-  InferenceOutputTracker outputTracker(
-      _output, predict_config,
-      /* total_num_samples = */ single_predict_context.len());
+  InferenceOutputTracker outputTracker(_output, /* save_activations = */ true,
+                                       /* total_num_samples = */
+                                       single_predict_context.len());
 
   // TODO(josh/Nick): This try catch is kind of a hack, we should really use
   // some sort of RAII training context object whose destructor will
@@ -278,8 +276,7 @@ InferenceOutputTracker BoltGraph::predictSingle(
   try {
     single_predict_context.setInputs(/* batch_idx = */ 0, _inputs,
                                      _token_inputs);
-    uint32_t vec_id = 0;
-    forward(vec_id, nullptr);
+    forward(/* vec_id = */ 0, nullptr);
     outputTracker.saveOutputBatch(_output, single_predict_context.batchSize());
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
@@ -287,17 +284,6 @@ InferenceOutputTracker BoltGraph::predictSingle(
   }
 
   cleanupAfterBatchProcessing();
-
-  auto test_end = std::chrono::high_resolution_clock::now();
-  int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
-                          test_end - test_start)
-                          .count();
-
-  if (predict_config.verbose()) {
-    std::cout << std::endl
-              << "Processed sample in " << test_time << " milliseconds"
-              << std::endl;
-  }
 
   return outputTracker;
 }
