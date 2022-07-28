@@ -84,8 +84,6 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   float* getBiases() const final;
 
-  const SamplingConfig& getSamplingConfig() const;
-
   void setTrainable(bool trainable) final;
 
   bool getTrainable() const final;

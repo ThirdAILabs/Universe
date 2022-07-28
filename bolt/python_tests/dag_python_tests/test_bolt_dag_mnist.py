@@ -1,4 +1,4 @@
-from ..test_mnist import ACCURACY_THRESHOLD, load_mnist
+from ..test_mnist import load_mnist
 from thirdai import bolt
 import os
 import pytest
@@ -8,7 +8,6 @@ pytestmark = [pytest.mark.integration]
 
 
 LEARNING_RATE = 0.0001
-BATCH_SIZE = 64
 
 
 def setup_module():
