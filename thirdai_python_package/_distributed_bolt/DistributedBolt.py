@@ -80,7 +80,7 @@ class DistributedBolt:
             Trains the network using the communication type choosen.
             Args:
                 circular: True, if circular communication is required.
-                        False, if linear ccommunication is required.
+                        False, if linear communication is required.
         """
         
         if circular:
@@ -93,6 +93,7 @@ class DistributedBolt:
                     if batch_no%5==0:
                         self.logging.info(str(batch_no) + ' processed!, Total Batches: ' + str(self.num_of_batches))
                     
+
                     gradient_computation_time, getting_gradient_time, summing_and_averaging_gradients_time = ray.get(self.head_worker.subworkCircularCommunication.remote(batch_no))
                     
                     
@@ -109,8 +110,10 @@ class DistributedBolt:
                     self.python_computation_time += summing_and_averaging_gradients_time
                     self.communication_time += getting_gradient_time + gradient_send_time
 
+                    x1 = time.time()
                     self.logging.info('Epoch No: ' + str(epoch) + ', Bolt Computation Time: ' + str(self.bolt_computation_time) + ', Python Computation Time: ' + str(self.python_computation_time) + ', Communication Time: ' + str(self.communication_time))
-                
+                    print(time.time() - x1)
+
                 for i in range(len(self.workers)):
                     acc, _ = ray.get(self.workers[i].predict.remote())
                     self.logging.info('Accuracy on workers %d: %lf', i, acc["categorical_accuracy"])

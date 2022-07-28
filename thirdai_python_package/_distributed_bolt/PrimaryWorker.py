@@ -62,20 +62,20 @@ class PrimaryWorker(Worker):
         gradient_computation_time = 0
 
         blocking_run = ray.get([self.workers[id].calculateGradientsCircular.remote(batch_no) for id in range(len(self.workers))])
-        gradient_computation_time += sum(i for i,j in blocking_run)/self.total_nodes
-        communication_time += sum(j for i,j in blocking_run)/self.total_nodes
+        gradient_computation_time += max(i for i,j in blocking_run)
+        communication_time += max(j for i,j in blocking_run)
         
         # First Run
         update_id = 0
         for i in range(self.total_nodes-1):
             if i == self.total_nodes - 2:
                 blocking_run = ray.get([w.processRing.remote(update_id, avg_gradients=True) for w in self.workers])
-                averaging_gradients_time += sum(i for i,j in blocking_run)/self.total_nodes
-                communication_time += sum(j for i,j in blocking_run)/self.total_nodes
+                averaging_gradients_time += max(i for i,j in blocking_run)
+                communication_time += max(j for i,j in blocking_run)
             else:
                 blocking_run = ray.get([w.processRing.remote(update_id) for w in self.workers])
-                averaging_gradients_time += sum(i for i,j in blocking_run)/self.total_nodes
-                communication_time += sum(j for i,j in blocking_run)/self.total_nodes
+                averaging_gradients_time += max(i for i,j in blocking_run)
+                communication_time += max(j for i,j in blocking_run)
             update_id -= 1
         # print('AllReduce Time:', time.time() - mt)
         # Second Run 
@@ -83,8 +83,8 @@ class PrimaryWorker(Worker):
         update_id = 1
         for i in range(self.total_nodes-1):
             blocking_run = ray.get([w.processRing.remote(update_id, reduce=False) for w in self.workers])
-            averaging_gradients_time += sum(i for i,j in blocking_run)/self.total_nodes
-            communication_time += sum(j for i,j in blocking_run)/self.total_nodes
+            averaging_gradients_time += max(i for i,j in blocking_run)
+            communication_time += max(j for i,j in blocking_run)
             update_id -= 1
         
         # print('AllGather Time:', time.time() - mt)

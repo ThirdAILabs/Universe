@@ -289,9 +289,10 @@ class Worker:
         python_computation_time = 0
         communication_time = 0
 
-        local_update_id = (update_id + self.id - 1)%self.total_nodes
 
         t1 = time.time()
+        local_update_id = (update_id + self.id - 1)%self.total_nodes
+
         get_ray_object = self.friend.receiveArrayPartitions.remote(update_id)
         python_computation_time += time.time() - t1
         # print('Calling the Function Time: ', python_computation_time)
