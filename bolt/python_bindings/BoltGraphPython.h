@@ -24,18 +24,9 @@ using ParameterArray =
 class ParameterReference {
  public:
   ParameterReference(float* params, std::vector<uint32_t> dimensions)
-      : _params(params),
-        _dimensions(std::move(dimensions)),
-        _strides(_dimensions.size()),
-        _total_dim(1) {
+      : _params(params), _dimensions(std::move(dimensions)), _total_dim(1) {
     for (uint64_t dim : _dimensions) {
       _total_dim *= dim;
-    }
-
-    _strides.back() = sizeof(float);
-
-    for (uint32_t i = _dimensions.size() - 1; i > 0; i--) {
-      _strides[i - 1] = _dimensions[i] * _strides[i];
     }
   }
 
@@ -46,11 +37,12 @@ class ParameterReference {
     py::capsule free_when_done(
         params_copy, [](void* ptr) { delete static_cast<float*>(ptr); });
 
-    return ParameterArray(_dimensions, _strides, params_copy, free_when_done);
+    return ParameterArray(_dimensions, getStrides(), params_copy,
+                          free_when_done);
   }
 
   ParameterArray get() const {
-    return ParameterArray(_dimensions, _strides, _params);
+    return ParameterArray(_dimensions, getStrides(), _params);
   }
 
   void set(const ParameterArray& new_params) {
@@ -60,9 +52,18 @@ class ParameterReference {
   }
 
  private:
+  std::vector<uint32_t> getStrides() const {
+    std::vector<uint32_t> strides(_dimensions.size());
+
+    strides.back() = sizeof(float);
+    for (uint32_t i = _dimensions.size() - 1; i > 0; i--) {
+      strides[i - 1] = _dimensions[i] * strides[i];
+    }
+    return strides;
+  }
+
   float* _params;
   std::vector<uint32_t> _dimensions;
-  std::vector<uint64_t> _strides;
   uint64_t _total_dim;
 };
 
