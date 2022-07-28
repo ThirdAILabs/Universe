@@ -4,28 +4,26 @@ import toml
 import os
 import logging
 import sys
- 
 
 
 def load_dataset(
-    config: Dict[str, Any]
-    , total_nodes
-    , id) -> Optional[
-        Tuple[
-            dataset.BoltDataset,  # train_x
-            dataset.BoltDataset,  # train_y
-            dataset.BoltDataset,  # test_x
-            dataset.BoltDataset,  # test_y
-        ]
-    ]:
+    config: Dict[str, Any], total_nodes, id
+) -> Optional[
+    Tuple[
+        dataset.BoltDataset,  # train_x
+        dataset.BoltDataset,  # train_y
+        dataset.BoltDataset,  # test_x
+        dataset.BoltDataset,  # test_y
+    ]
+]:
     """
 
-        Returns datasets as boltdatasets
+    Returns datasets as boltdatasets
     """
-    
+
     train_filename = config["dataset"]["train_data"][id]
     test_filename = config["dataset"]["test_data"]
-    batch_size = int(config["params"]["batch_size"]/total_nodes)
+    batch_size = int(config["params"]["batch_size"] / total_nodes)
     if config["dataset"]["format"].lower() == "svm":
         train_x, train_y = dataset.load_bolt_svm_dataset(train_filename, batch_size)
         test_x, test_y = dataset.load_bolt_svm_dataset(test_filename, batch_size)
@@ -43,12 +41,13 @@ def load_dataset(
         print("Invalid dataset format specified")
         return None
 
+
 def create_fully_connected_layer_configs(
     configs: List[Dict[str, Any]]
 ) -> List[bolt.FullyConnected]:
     """
 
-        Returns Bolt's Fully Connected Network
+    Returns Bolt's Fully Connected Network
     """
     layers = []
     for config in configs:
@@ -81,17 +80,17 @@ def create_fully_connected_layer_configs(
     return layers
 
 
-def initLogging(
-    logger_file: str
-):
+def initLogging(logger_file: str):
     """
-        Initializes logging
+    Initializes logging
     """
     # Logger Init
-    logger = logging.getLogger('DistributedBolt')
+    logger = logging.getLogger("DistributedBolt")
     logger.setLevel(logging.INFO)
     file_handler = logging.FileHandler(logger_file)
-    formatter    = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(message)s')
+    formatter = logging.Formatter(
+        "%(asctime)s : %(levelname)s : %(name)s : %(message)s"
+    )
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
     return logger
