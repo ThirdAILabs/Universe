@@ -8,5 +8,9 @@ target_link_libraries(
   bolt_layer_lib
   license_wrapper_lib
 )
+target_link_libraries(
+    bolt_graph_lib
+    PUBLIC
+    OpenMP::OpenMP_CXX)
 
 add_subdirectory(tests)
