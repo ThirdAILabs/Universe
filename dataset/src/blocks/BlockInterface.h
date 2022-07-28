@@ -126,6 +126,10 @@ class Block {
    */
   virtual uint32_t expectedNumColumns() const = 0;
 
+  virtual void prepareForBatch(const std::vector<std::string_view>& first_row) {
+    (void)first_row;
+  }
+
  protected:
   /**
    * Derived class-specific implementation of how input rows get

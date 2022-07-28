@@ -6,9 +6,10 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
-#include <atomic>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
+#include <vector>
 
 namespace thirdai::dataset {
 
@@ -56,6 +57,14 @@ class GenericBatchProcessor
       const std::vector<std::string>& rows) final {
     std::vector<bolt::BoltVector> batch_inputs(rows.size());
     std::vector<bolt::BoltVector> batch_labels(rows.size());
+
+    auto first_row = ProcessorUtils::parseCsvRow(rows.at(0), _delimiter);
+    for (auto& block : _input_blocks) {
+      block->prepareForBatch(first_row);
+    }
+    for (auto& block : _label_blocks) {
+      block->prepareForBatch(first_row);
+    }
 
     /*
       These variables keep track of the presence of an erroneous input line.
