@@ -20,7 +20,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 
   py::class_<ParameterReference>(graph_submodule, "ParameterReference")
-      .def("copy", &ParameterReference::copy)
+      .def("copy", &ParameterReference::copy,
+           "Returns a copy of the parameters held in the ParameterReference as "
+           "a numpy array.")
       .def("get", &ParameterReference::get,
            /**
             * This means that the lifetime of the returned object is tied to
@@ -28,8 +30,12 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
             * the parent object cannot be garbage collected will this returned
             * object is still alive.
             */
-           py::return_value_policy::reference_internal)
-      .def("set", &ParameterReference::set);
+           py::return_value_policy::reference_internal,
+           "Returns a numpy array which shadows the parameters held in the "
+           "ParameterReference and acts as a reference to them.")
+      .def("set", py::arg("new_params"), &ParameterReference::set,
+           "Takes in a numpy array and copies its contents into the parameters "
+           "held in the ParameterReference object.");
 
   // Needed so python can know that InferenceOutput objects can own memory
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
@@ -93,14 +99,16 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
             const std::vector<uint32_t> dimensions = {dim, prev_node_dim};
             return ParameterReference(node.getWeightsPtr(), dimensions);
           },
-          py::return_value_policy::reference_internal)
+          py::return_value_policy::reference_internal,
+          "Returns a ParameterReference object to the weight matrix.")
       .def(
           "biases",
           [](FullyConnectedNode& node) {
             uint32_t dim = node.outputDim();
             return ParameterReference(node.getBiasesPtr(), {dim});
           },
-          py::return_value_policy::reference)
+          py::return_value_policy::reference,
+          "Returns a ParameterReference object to the bias vector.")
       .def(
           "weight_gradients",
           [](FullyConnectedNode& node) {
@@ -109,14 +117,16 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
             const std::vector<uint32_t> dimensions = {dim, prev_node_dim};
             return ParameterReference(node.getWeightGradientsPtr(), dimensions);
           },
-          py::return_value_policy::reference_internal)
+          py::return_value_policy::reference_internal,
+          "Returns a ParameterReference object to the weight gradients matrix.")
       .def(
           "bias_gradients",
           [](FullyConnectedNode& node) {
             uint32_t dim = node.outputDim();
             return ParameterReference(node.getBiasGradientsPtr(), {dim});
           },
-          py::return_value_policy::reference);
+          py::return_value_policy::reference,
+          "Returns a ParameterReference object to the bias gradients vector.");
 
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
       graph_submodule, "Concatenate")
