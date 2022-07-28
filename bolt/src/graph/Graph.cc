@@ -280,7 +280,6 @@ InferenceOutputTracker BoltGraph::predictSingle(
                                      _token_inputs);
     uint32_t vec_id = 0;
     forward(vec_id, nullptr);
-    // const auto& output = _output->getOutputVector(vec_id);
     outputTracker.saveOutputBatch(_output, single_predict_context.batchSize());
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
