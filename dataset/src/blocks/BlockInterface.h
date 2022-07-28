@@ -2,6 +2,7 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <cstdint>
+#include <memory>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -14,8 +15,7 @@ namespace thirdai::dataset {
  */
 class Block;
 class SegmentedFeatureVectorTest;
-class CategoricalBlockTest;
-class TextBlockTest;
+class BlockTest;
 
 /**
  * Segmented feature vector abstract class.
@@ -33,9 +33,8 @@ class TextBlockTest;
 class SegmentedFeatureVector {
  public:
   friend Block;
-  friend CategoricalBlockTest;
-  friend TextBlockTest;
   friend SegmentedFeatureVectorTest;
+  friend BlockTest;
 
  protected:
   /**

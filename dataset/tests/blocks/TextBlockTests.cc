@@ -1,3 +1,4 @@
+#include "BlockTest.h"
 #include <hashing/src/MurmurHash.h>
 #include <gtest/gtest.h>
 #include <dataset/src/blocks/BlockInterface.h>
@@ -14,9 +15,9 @@
 
 namespace thirdai::dataset {
 
-class TextBlockTest : public testing::Test {
+class TextBlockTest : public BlockTest {
  public:
-  using SentenceMatrix = std::vector<std::vector<std::string>>;
+  using SentenceMatrix = StringMatrix;
   using WordMatrix = std::vector<std::vector<std::vector<std::string>>>;
   static std::pair<SentenceMatrix, WordMatrix> generateRandomStringMatrix(
       uint32_t n_rows, uint32_t n_cols, uint32_t word_length,
@@ -58,45 +59,6 @@ class TextBlockTest : public testing::Test {
       str += alphabet[distribution(rng)];
     }
     return str;
-  }
-
-  static std::vector<SegmentedSparseFeatureVector> makeSegmentedVecs(
-      SentenceMatrix& matrix, std::vector<TextBlock>& blocks) {
-    std::vector<SegmentedSparseFeatureVector> vecs;
-    for (const auto& row : matrix) {
-      SegmentedSparseFeatureVector vec;
-      for (auto& block : blocks) {
-        extendVectorWithBlock(block, row, vec);
-      }
-      vecs.push_back(std::move(vec));
-    }
-    return vecs;
-  }
-
-  /**
-   * Helper function to access extendVector() method of TextBlock,
-   * which is private.
-   */
-  static void extendVectorWithBlock(TextBlock& block,
-                                    const std::vector<std::string>& input_row,
-                                    SegmentedSparseFeatureVector& vec) {
-    std::vector<std::string_view> input_row_view(input_row.size());
-    for (uint32_t i = 0; i < input_row.size(); i++) {
-      input_row_view[i] =
-          std::string_view(input_row[i].c_str(), input_row[i].size());
-    }
-    if (auto err = block.addVectorSegment(input_row_view, vec)) {
-      std::rethrow_exception(err);
-    }
-  }
-
-  /**
-   * Helper function to access entries() method of ExtendableVector,
-   * which is private.
-   */
-  static std::unordered_map<uint32_t, float> vectorEntries(
-      SegmentedFeatureVector& vec) {
-    return vec.entries();
   }
 
   static std::unordered_map<uint32_t, float> getUnigramFeatures(
@@ -150,14 +112,6 @@ class TextBlockTest : public testing::Test {
 
     return feats;
   }
-
-  static uint32_t sumMapValues(std::unordered_map<uint32_t, float>& map) {
-    float sum = 0;
-    for (const auto [_, v] : map) {
-      sum += v;
-    }
-    return static_cast<uint32_t>(sum);
-  }
 };
 
 /**
@@ -177,14 +131,16 @@ TEST_F(TextBlockTest, TestTextBlockWithUniGramPairGramCharTriGram) {
 
   uint32_t dim_for_encodings = 50;
   uint32_t k_chars = 3;
-  std::vector<TextBlock> blocks;
-  blocks.emplace_back(0, std::make_shared<UniGram>(dim_for_encodings));
-  blocks.emplace_back(1, std::make_shared<PairGram>(dim_for_encodings));
-  blocks.emplace_back(2,
-                      std::make_shared<CharKGram>(k_chars, dim_for_encodings));
+  std::vector<std::shared_ptr<Block>> blocks;
+  blocks.emplace_back(std::make_shared<TextBlock>(
+      0, std::make_shared<UniGram>(dim_for_encodings)));
+  blocks.emplace_back(std::make_shared<TextBlock>(
+      1, std::make_shared<PairGram>(dim_for_encodings)));
+  blocks.emplace_back(std::make_shared<TextBlock>(
+      2, std::make_shared<CharKGram>(k_chars, dim_for_encodings)));
 
   std::vector<SegmentedSparseFeatureVector> vecs =
-      makeSegmentedVecs(sentence_matrix, blocks);
+      makeSparseSegmentedVecs(sentence_matrix, blocks);
 
   ASSERT_EQ(sentence_matrix.size(), vecs.size());
   for (uint32_t row = 0; row < sentence_matrix.size(); row++) {
@@ -243,24 +199,28 @@ TEST_F(TextBlockTest, TestEncodingsDeterministic) {
 
   uint32_t dim_for_encodings = 50;
   uint32_t k_chars = 3;
-  std::vector<TextBlock> blocks_1;
-  std::vector<TextBlock> blocks_2;
+  std::vector<std::shared_ptr<Block>> blocks_1;
+  std::vector<std::shared_ptr<Block>> blocks_2;
   // Duplicate each block. They will independently produce features
   // and we can check that the resulting vectors are equal.
-  blocks_1.emplace_back(0, std::make_shared<UniGram>(dim_for_encodings));
-  blocks_2.emplace_back(0, std::make_shared<UniGram>(dim_for_encodings));
-  blocks_1.emplace_back(1, std::make_shared<PairGram>(dim_for_encodings));
-  blocks_2.emplace_back(1, std::make_shared<PairGram>(dim_for_encodings));
-  blocks_1.emplace_back(
-      2, std::make_shared<CharKGram>(k_chars, dim_for_encodings));
-  blocks_2.emplace_back(
-      2, std::make_shared<CharKGram>(k_chars, dim_for_encodings));
+  blocks_1.emplace_back(std::make_shared<TextBlock>(
+      0, std::make_shared<UniGram>(dim_for_encodings)));
+  blocks_2.emplace_back(std::make_shared<TextBlock>(
+      0, std::make_shared<UniGram>(dim_for_encodings)));
+  blocks_1.emplace_back(std::make_shared<TextBlock>(
+      1, std::make_shared<PairGram>(dim_for_encodings)));
+  blocks_2.emplace_back(std::make_shared<TextBlock>(
+      1, std::make_shared<PairGram>(dim_for_encodings)));
+  blocks_1.emplace_back(std::make_shared<TextBlock>(
+      2, std::make_shared<CharKGram>(k_chars, dim_for_encodings)));
+  blocks_2.emplace_back(std::make_shared<TextBlock>(
+      2, std::make_shared<CharKGram>(k_chars, dim_for_encodings)));
 
   std::vector<SegmentedSparseFeatureVector> vecs_1 =
-      makeSegmentedVecs(sentence_matrix, blocks_1);
+      makeSparseSegmentedVecs(sentence_matrix, blocks_1);
 
   std::vector<SegmentedSparseFeatureVector> vecs_2 =
-      makeSegmentedVecs(sentence_matrix, blocks_1);
+      makeSparseSegmentedVecs(sentence_matrix, blocks_1);
 
   for (uint32_t i = 0; i < vecs_1.size(); i++) {
     auto vec_1_entries = vectorEntries(vecs_1[i]);
