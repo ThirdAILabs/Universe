@@ -28,8 +28,8 @@ if (MSVC)
   endif()
   set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /openmp:llvm /w")
 else()
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
   add_compile_options(
-    -fPIC
     -Wall
     -Wextra
     -Wno-unused-function
