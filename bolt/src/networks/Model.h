@@ -197,3 +197,7 @@ class Model {
 };
 
 }  // namespace thirdai::bolt
+
+#define BOLT_MODEL_IMPL
+#include "Model.impl"
+#undef BOLT_MODEL_IMPL

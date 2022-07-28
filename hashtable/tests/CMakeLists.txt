@@ -8,7 +8,6 @@ add_executable(
 target_link_libraries(
   vector_hash_table_test
   PRIVATE
-  hash_table_lib
   gtest_main
 )
 
@@ -20,7 +19,6 @@ add_executable(
 target_link_libraries(
   sampled_hash_table_test
   PRIVATE
-  hash_table_lib
   gtest_main
 )
 
@@ -32,7 +30,6 @@ add_executable(
 target_link_libraries(
   tiny_table_test
   PRIVATE
-  hash_table_lib
   gtest_main
 )
 

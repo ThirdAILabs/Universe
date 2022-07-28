@@ -10,7 +10,6 @@ target_link_libraries(
   maxflash_array_test
   PRIVATE
   hash_function_lib
-  maxflash_lib
   gtest_main
 )
 

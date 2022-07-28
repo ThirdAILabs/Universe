@@ -9,8 +9,13 @@ add_library(
 target_link_libraries(
   lsh_test_helper_lib
   PRIVATE
-  OpenMP::OpenMP_CXX
   gtest_main
+)
+
+target_link_libraries(
+  lsh_test_helper_lib
+  PUBLIC
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(

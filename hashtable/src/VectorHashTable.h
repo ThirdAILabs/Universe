@@ -88,3 +88,7 @@ class VectorHashTable final : public HashTable<LABEL_T> {
 };
 
 }  // namespace thirdai::hashtable
+
+#define VECTOR_HASH_TABLE_IMPL
+#include "VectorHashTable.impl"
+#undef VECTOR_HASH_TABLE_IMPL

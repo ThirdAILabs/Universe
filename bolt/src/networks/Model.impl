@@ -1,3 +1,7 @@
+#ifndef BOLT_MODEL_IMPL
+#error "This file should not be used directly."
+#endif
+
 #include "Model.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/Metric.h>
