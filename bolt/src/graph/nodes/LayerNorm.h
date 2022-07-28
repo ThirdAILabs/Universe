@@ -26,7 +26,14 @@ class LayerNormNode final : public Node,
                             public std::enable_shared_from_this<LayerNormNode> {
  public:
   LayerNormNode()
-      : _moments(std::nullopt),
+      : _config(),
+        _predecessor(nullptr),
+        _compiled(false),
+        _prepared_for_batch_processing(false) {}
+
+  explicit LayerNormNode(NormalizationLayerConfig config)
+      : _config(config),
+        _moments(std::nullopt),
         _predecessor(nullptr),
         _compiled(false),
         _prepared_for_batch_processing(false) {}
@@ -43,8 +50,7 @@ class LayerNormNode final : public Node,
 
   std::shared_ptr<LayerNormNode> setLayerNormNodeConfig(
       bool center, bool scale, float epsilon, float beta_regularizer,
-      float gamma_regularizer, float beta_initializer,
-      float gamma_initializer) {
+      float gamma_regularizer) {
     if (getState() != NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
           "Cannot set configuration for Normalization Layer before the node is "
@@ -54,8 +60,6 @@ class LayerNormNode final : public Node,
     _config = (NormalizationLayerConfig(
         /* beta_regularizer */ beta_regularizer,
         /* gamma_regularizer */ gamma_regularizer,
-        /* beta_initializer */ beta_initializer,
-        /* gamma_initializer */ gamma_initializer,
         /* center */ center, /* scale */ scale, /* epsilon*/ epsilon));
 
     return shared_from_this();
@@ -209,7 +213,7 @@ class LayerNormNode final : public Node,
         "LayerNormNode is in an invalid internal state");
   }
 
-  std::optional<NormalizationLayerConfig> _config;
+  NormalizationLayerConfig _config;
   std::optional<std::pair<float, float>> _moments;
   NodePtr _predecessor;
   bool _compiled;

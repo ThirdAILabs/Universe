@@ -7,8 +7,6 @@ import pytest
 pytestmark = [pytest.mark.integration]
 
 
-LEARNING_RATE = 0.0001
-
 
 def setup_module():
     if not os.path.exists("mnist"):

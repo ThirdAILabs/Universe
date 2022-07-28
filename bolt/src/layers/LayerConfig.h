@@ -168,28 +168,56 @@ struct EmbeddingLayerConfig {
         log_embedding_block_size(_log_embedding_block_size) {}
 };
 
-struct NormalizationLayerConfig {
-  bool center;    // specifies if beta_regularizer will be added to z_score
-  bool scale;     // specifies if gamma_regularizer will be multiplied by the
-                  // z_score
-  float epsilon;  // small threshold added to avoid division by zero
-  float beta_regularizer;  // regularizer. Defaults to 0. Can be learned.
+class NormalizationLayerConfig {
+ public:
+  static NormalizationLayerConfig makeConfig() {
+    return NormalizationLayerConfig();
+  }
 
-  float gamma_regularizer;  // regularizer. Defaults to 1. Can be learned.
-  float beta_initializer;   // Initializer for the beta weight
-  float gamma_initializer;  // Initializer for the gamma weight
+  NormalizationLayerConfig silence() {
+    _verbose = false;
+    return *this;
+  }
 
-  NormalizationLayerConfig(float _beta_regularizer, float _gamma_regularizer,
-                           float _beta_initializer = 0.0,
-                           float _gamma_initializer = 1.0, bool _center = true,
-                           bool _scale = true, float _epsilon = 0.001)
-      : center(_center),
-        scale(_scale),
-        epsilon(_epsilon),
-        beta_regularizer(_beta_regularizer),
-        gamma_regularizer(_gamma_regularizer),
-        beta_initializer(_beta_initializer),
-        gamma_initializer(_gamma_initializer) {}
+  NormalizationLayerConfig& uncentered() {
+    _center = false;
+    return *this;
+  }
+
+  NormalizationLayerConfig& unscaled() {
+    _scale = false;
+    return *this;
+  }
+
+  constexpr bool center() const { return _center; }
+  constexpr bool scale() const { return _scale; }
+  constexpr float beta() const { return _beta_regularizer; }
+  constexpr float gamma() const { return _gamma_regularizer; }
+  constexpr float epsilon() const {return _epsilon;}
+
+ private:
+  explicit NormalizationLayerConfig(float beta_regularizer = 0.0,
+                                    float gamma_regularizer = 1.0,
+                                    bool center = true, bool scale = true,
+                                    float epsilon = 0.001)
+      : _center(center),
+        _scale(scale),
+        _epsilon(epsilon),
+        _beta_regularizer(beta_regularizer),
+        _gamma_regularizer(gamma_regularizer),
+        _verbose(true) {}
+
+  // specifies if beta_regularizer will be added to z_score
+  bool _center;
+  // specifies if gamma_regularizer will be multiplied by the z_score
+  bool _scale;
+  // small threshold added to avoid division by zero
+  float _epsilon;
+  // Regularizer. Defaults to 0.
+  float _beta_regularizer;
+  // Regularizer. Defaults to 1.
+  float _gamma_regularizer;
+  float _verbose;
 };
 
 }  // namespace thirdai::bolt
