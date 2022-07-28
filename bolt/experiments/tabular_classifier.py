@@ -20,8 +20,7 @@ def get_col_datatypes(dataset_base_filename):
     with open(dtypes_file) as file:
         lines = file.readlines()
         dtypes = lines[0].split(",")
-        # remove trailing newline character from last elem
-        dtypes[-1] = dtypes[-1][:-1]
+        dtypes[-1] = dtypes[-1].strip("\n")
         return dtypes
 
 
