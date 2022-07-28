@@ -53,7 +53,7 @@ class DistributedBolt:
             self.layers.append(config['layers'][i]['dim'])
         
         self.workers = [ReplicaWorker.options(max_concurrency=2).remote(self.layers,config, self.no_of_workers, id+1) for id in range(self.no_of_workers-1)]
-        self.head_worker = PrimaryWorker.options(max_concurrency=2).remote(self.layers, config, self.no_of_workers)
+        self.head_worker = PrimaryWorker.options(max_concurrency=self.no_of_workers+1).remote(self.layers, config, self.no_of_workers)
         
         self.workers.insert(0, self.head_worker)
         self.head_worker.addWorkers.remote(self.workers)
@@ -85,19 +85,35 @@ class DistributedBolt:
         
         if circular:
             self.logging.info('Circular communication pattern is choosen')
+            updateWeightsAndBiases = ray.get([self.workers[id+1].receiveParams.remote() for id in range(len(self.workers)-1)])
             for epoch in range(self.epochs):
                 
-                updateWeightsAndBiases = ray.get([self.workers[id+1].receiveParams.remote() for id in range(len(self.workers)-1)])
                 
-                for batch_no in range(int(self.num_of_batches/len(self.workers))):
+                for batch_no in range(int(self.num_of_batches)):
                     if batch_no%5==0:
                         self.logging.info(str(batch_no) + ' processed!, Total Batches: ' + str(self.num_of_batches))
                     
-                    a = ray.get(self.head_worker.subworkCircularCommunication.remote(batch_no))
+                    gradient_computation_time, getting_gradient_time, summing_and_averaging_gradients_time = ray.get(self.head_worker.subworkCircularCommunication.remote(batch_no))
                     
+                    
+                    start_gradients_send_time = time.time() 
                     x = ray.get([self.workers[i].receiveGradientsCircularCommunication.remote() for i in range(len(self.workers))])
+                    gradient_send_time = time.time() - start_gradients_send_time    
                     
+                    start_update_parameters_time = time.time()
                     b = ray.get(self.head_worker.subworkUpdateParameters.remote(self.learning_rate))
+                    update_parameter_time = time.time() - start_update_parameters_time
+                    
+
+                    self.bolt_computation_time += gradient_computation_time + update_parameter_time
+                    self.python_computation_time += summing_and_averaging_gradients_time
+                    self.communication_time += getting_gradient_time + gradient_send_time
+
+                    self.logging.info('Epoch No: ' + str(epoch) + ', Bolt Computation Time: ' + str(self.bolt_computation_time) + ', Python Computation Time: ' + str(self.python_computation_time) + ', Communication Time: ' + str(self.communication_time))
+                
+                for i in range(len(self.workers)):
+                    acc, _ = ray.get(self.workers[i].predict.remote())
+                    self.logging.info('Accuracy on workers %d: %lf', i, acc["categorical_accuracy"])
         else:
             self.logging.info('Linear communication pattern is choosen')
             

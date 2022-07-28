@@ -282,12 +282,21 @@ class Worker:
                     False: Do nothing
 
         """
+        python_computation_time = 0
+        communication_time = 0
+
         local_update_id = (update_id + self.id - 1)%self.total_nodes
 
-
+        t1 = time.time()
         get_ray_object = self.friend.receiveArrayPartitions.remote(update_id)
+        python_computation_time += time.time() - t1
+        # print('Calling the Function Time: ', python_computation_time)
+        t2 = time.time()
         self.friend_weight_gradient_list, self.friend_bias_gradient_list = ray.get(get_ray_object)
-
+        communication_time += time.time() - t2
+        # print('Gradient getting Time:', communication_time)
+        
+        t2 = time.time()
         for i in range(len(self.friend_weight_gradient_list)):
             l_weight_id = self.w_partitions[i] * local_update_id
             r_weight_id = self.w_partitions[i] * (local_update_id + 1)
@@ -316,7 +325,10 @@ class Worker:
                 self.w_gradients[i][l_weight_id:r_weight_id] = self.friend_weight_gradient_list[i]
                 self.b_gradients[i][l_bias_id:r_bias_id] = self.friend_bias_gradient_list[i]
 
-        return True
+        python_computation_time += time.time() - t2
+        # print('[processRing]Python Computation Time: ', python_computation_time, ' Communication Time: ', communication_time)
+        # print('[processRing] Python Computation Time:',python_computation_time, ', Communication Time:',communication_time)
+        return python_computation_time, communication_time
 
     
 
@@ -333,6 +345,8 @@ class Worker:
             Args:
                 update_id: This id is use to calculate the partition to work on.
         """
+        t1 = time.time()
+        python_computation_time = 0
         local_update_id = (update_id + self.id)%self.total_nodes
         
         w_gradient_subarray = []
@@ -356,7 +370,8 @@ class Worker:
             w_gradient_subarray.append(self.w_gradients[i][l_weight_id:r_weight_id])
             b_gradient_subarray.append(self.b_gradients[i][l_bias_id:r_bias_id])
 
-        
+        python_computation_time += time.time() - t1
+        # print('[receiveArrayPartition]Python Computation Time: ', python_computation_time)
         return w_gradient_subarray, b_gradient_subarray
 
     

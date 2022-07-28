@@ -7,21 +7,24 @@ from .Worker import Worker
 
 
 
-@ray.remote(num_cpus=20, max_restarts=2)
+@ray.remote(num_cpus=48, max_restarts=2)
 class ReplicaWorker(Worker):
     """
         This is a ray remote class(Actor). Read about them here. 
         (https://docs.ray.io/en/latest/ray-core/actors.html)
 
-        Supervisor is a ray actor which implements higher level 
-        abstraction on worker nodes. It controls training on 
-        each of the node(which batch number to train) and communication
-        between the worker nodes.
+        ReplicaWorker is a ray actor which inherits all the function
+        of the Worker Class. As the name suggests, it is a replica 
+        worker and will be reproduced on all the node for parallel 
+        computations. 
+
         
         
         Args:
             layers: List of layer dimensions.
-            workers: List of workers(including the worker on head node) running on different nodes.
+            config: Configuration file for the training
+            no_of_workers: Total number of workers
+            id: Id for this worker
     """
     def __init__(
         self, 

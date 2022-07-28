@@ -7,21 +7,23 @@ from .Worker import Worker
 
 
 
-@ray.remote(num_cpus=20, max_restarts=2)
+@ray.remote(num_cpus=48, max_restarts=2)
 class PrimaryWorker(Worker):
     """
         This is a ray remote class(Actor). Read about them here. 
         (https://docs.ray.io/en/latest/ray-core/actors.html)
 
-        Supervisor is a ray actor which implements higher level 
-        abstraction on worker nodes. It controls training on 
-        each of the node(which batch number to train) and communication
+        PrimaryWorker is a ray actor which inherits all the function from 
+        Worker class. Apart from acting as a Worker, it also extends the worker 
+        class to implement functions to control the training. It controls 
+        training on each of the node(which batch number to train) and communication
         between the worker nodes.
         
         
         Args:
             layers: List of layer dimensions.
-            workers: List of workers(including the worker on head node) running on different nodes.
+            config: configuration file
+            workers: number of workers in training
     """
     def __init__(
         self, 
@@ -55,23 +57,39 @@ class PrimaryWorker(Worker):
             Args:
                 batch_no: batch number for the particular worker with worker id (id).
         """
-        updates = ray.get([self.workers[id].calculateGradientsCircular.remote(batch_no) for id in range(len(self.workers))])
+        communication_time = 0
+        averaging_gradients_time = 0
+        gradient_computation_time = 0
 
+        t1 = time.time()
+        updates = ray.get([self.workers[id].calculateGradientsCircular.remote(batch_no) for id in range(len(self.workers))])
+        gradient_computation_time += time.time() - t1
         # First Run
+        # mt = time.time()
         update_id = 0
-        for i in range(self.no_of_workers-1):
-            if i == self.no_of_workers - 2:
+        for i in range(self.total_nodes-1):
+            if i == self.total_nodes - 2:
                 blocking_run = ray.get([w.processRing.remote(update_id, avg_gradients=True) for w in self.workers])
+                averaging_gradients_time += sum(i for i,j in blocking_run)/self.total_nodes
+                communication_time += sum(j for i,j in blocking_run)/self.total_nodes
             else:
                 blocking_run = ray.get([w.processRing.remote(update_id) for w in self.workers])
+                averaging_gradients_time += sum(i for i,j in blocking_run)/self.total_nodes
+                communication_time += sum(j for i,j in blocking_run)/self.total_nodes
             update_id -= 1
-
+        # print('AllReduce Time:', time.time() - mt)
         # Second Run 
+        # mt = time.time()
         update_id = 1
-        for i in range(self.no_of_workers-1):
+        for i in range(self.total_nodes-1):
             blocking_run = ray.get([w.processRing.remote(update_id, reduce=False) for w in self.workers])
+            averaging_gradients_time += sum(i for i,j in blocking_run)/self.total_nodes
+            communication_time += sum(j for i,j in blocking_run)/self.total_nodes
             update_id -= 1
-        return True
+        
+        # print('AllGather Time:', time.time() - mt)
+        return gradient_computation_time, communication_time, averaging_gradients_time
+
 
     def subworkLinearCommunication(
         self, 
@@ -118,9 +136,9 @@ class PrimaryWorker(Worker):
         self
     ):
         """
-            This function is called by the workers to get the gradients back from supervisor.
+            This function is called by the workers to get the gradients back from PrimaryWorker.
             Calling this function returns the averaged gradients which is already calculated 
-            by the supervisor.
+            by the PrimaryWorker.
         """
         return self.w_gradients_avg, self.b_gradients_avg
 
@@ -132,7 +150,7 @@ class PrimaryWorker(Worker):
         """
 
             This function calls every worker to update their parameters(weight and biases) with the
-            updated gradients(which they receive from the supervisor)
+            updated gradients(which they receive from the PrimaryWorker)
 
             Args:
                 learning_rate: learning_rate for the training
