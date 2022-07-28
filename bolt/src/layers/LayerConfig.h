@@ -27,6 +27,8 @@ struct SequentialLayerConfig {
     }
   }
 
+  virtual ~SequentialLayerConfig() = default;
+
  private:
   friend class cereal::access;
   template <class Archive>

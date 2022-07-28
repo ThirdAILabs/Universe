@@ -20,6 +20,8 @@ class DatasetBase {
   virtual uint64_t batchSize(uint64_t batch_idx) const = 0;
 
   virtual uint64_t numBatches() const = 0;
+
+  virtual ~DatasetBase() = default;
 };
 
 using DatasetBasePtr = std::shared_ptr<DatasetBase>;

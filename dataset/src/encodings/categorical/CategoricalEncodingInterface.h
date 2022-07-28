@@ -26,6 +26,8 @@ class CategoricalEncoding {
    * The dimension of the encoding.
    */
   virtual uint32_t featureDim() const = 0;
+
+  virtual ~CategoricalEncoding() = default;
 };
 
 }  // namespace thirdai::dataset
