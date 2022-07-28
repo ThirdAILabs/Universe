@@ -142,76 +142,40 @@ class FullyConnectedNode final
     return shared_from_this();
   }
 
-  float* getBiases() {
+  float* getWeightsPtr() {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state to call getBiases");
+          "FullyConnectedNode must be in a compiled state to call "
+          "getWeightsPtr.");
     }
-    return _layer->getBiases();
+    return _layer->getWeightsPtr();
   }
 
-  float* getWeights() {
+  float* getBiasesPtr() {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state to cal getWeights");
+          "FullyConnectedNode must be in a compiled state to call "
+          "getBiasesPtr.");
     }
-    return _layer->getWeights();
+    return _layer->getBiasesPtr();
   }
 
-  std::shared_ptr<FullyConnectedNode> setWeights(const float* new_weights) {
-    if (getState() != NodeState::Compiled) {
-      throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state to call setWeights");
-    }
-    _layer->setWeights(new_weights);
-    return shared_from_this();
-  }
-
-  std::shared_ptr<FullyConnectedNode> setBiases(const float* new_biases) {
-    if (getState() != NodeState::Compiled) {
-      throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state to call setBiases");
-    }
-    _layer->setBiases(new_biases);
-    return shared_from_this();
-  }
-
-  float* getWeightGradients() const {
+  float* getWeightGradientsPtr() {
     if (getState() != NodeState::PreparedForBatchProcessing) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a PreparedForBatchProcessing state to "
-          "access weight gradients.");
+          "FullyConnectedNode must be in a compiled state to call "
+          "getWeightGradientsPtr.");
     }
-    return _layer->getWeightsGradient();
+    return _layer->getWeightGradientsPtr();
   }
 
-  void setWeightGradients(const float* new_gradients) {
+  float* getBiasGradientsPtr() {
     if (getState() != NodeState::PreparedForBatchProcessing) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a PreparedForBatchProcessing state to "
-          "set weight gradients.");
+          "FullyConnectedNode must be in a compiled state to call "
+          "getBiasGradientsPtr.");
     }
-
-    _layer->setWeightGradients(new_gradients);
-  }
-
-  float* getBiasGradients() const {
-    if (getState() != NodeState::PreparedForBatchProcessing) {
-      throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a PreparedForBatchProcessing state to "
-          "access bias gradients.");
-    }
-    return _layer->getBiasesGradient();
-  }
-
-  void setBiasGradients(const float* new_gradients) {
-    if (getState() != NodeState::PreparedForBatchProcessing) {
-      throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a PreparedForBatchProcessing state to "
-          "set bias gradients.");
-    }
-
-    _layer->setBiasesGradients(new_gradients);
+    return _layer->getBiasGradientsPtr();
   }
 
  private:

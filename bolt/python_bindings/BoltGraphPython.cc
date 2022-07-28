@@ -12,17 +12,30 @@
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
+#include <pybind11/detail/common.h>
 #include <pybind11/functional.h>
 
 namespace thirdai::bolt::python {
 void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 
-  py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
+  py::class_<ParameterReference>(graph_submodule, "ParameterReference")
+      .def("copy", &ParameterReference::copy)
+      .def("get", &ParameterReference::get,
+           /**
+            * This means that the lifetime of the returned object is tied to
+            * the lifetime of the object this method is called on, such that
+            * the parent object cannot be garbage collected will this returned
+            * object is still alive.
+            */
+           py::return_value_policy::reference_internal)
+      .def("set", &ParameterReference::set);
 
   // Needed so python can know that InferenceOutput objects can own memory
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
                                      "InferenceOutput");
+
+  py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
 
   py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(graph_submodule,
                                                               "FullyConnected")
@@ -73,119 +86,37 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("sparsity"))
       .def("get_dim", &FullyConnectedNode::outputDim)
       .def(
-          "set_weights",
-          [](FullyConnectedNode& node,
-             const py::array_t<float, py::array::c_style |
-                                          py::array::forcecast>& new_weights) {
+          "weights",
+          [](FullyConnectedNode& node) {
             uint32_t dim = node.outputDim();
             uint32_t prev_node_dim = node.getPredecessors()[0]->outputDim();
             const std::vector<uint32_t> dimensions = {dim, prev_node_dim};
-
-            checkNumpyArrayDimensions(dimensions, new_weights);
-            return node.setWeights(new_weights.data());
+            return ParameterReference(node.getWeightsPtr(), dimensions);
           },
-          py::arg("new_weights"),
-          "Sets the weight matrix for the node to the given Numpy 2D array."
-          "Throws an error if the dimension of the given weight matrix does"
-          "not match that of the node's current weight matrix.")
+          py::return_value_policy::reference_internal)
       .def(
-          "get_weights",
+          "biases",
           [](FullyConnectedNode& node) {
-            float* mem = node.getWeights();
-
-            py::capsule free_when_done(
-                mem, [](void* ptr) { delete static_cast<float*>(ptr); });
-            size_t dim = node.outputDim();
-            size_t prev_dim = node.getPredecessors()[0]->outputDim();
-
-            return py::array_t<float>({dim, prev_dim},
-                                      {prev_dim * sizeof(float), sizeof(float)},
-                                      mem, free_when_done);
-          },
-          "Returns the weight matrix for the node as a 2D Numpy array.")
-      .def(
-          "get_biases",
-          [](FullyConnectedNode& node) {
-            float* mem = node.getBiases();
-
-            py::capsule free_when_done(
-                mem, [](void* ptr) { delete static_cast<float*>(ptr); });
-            size_t dim = node.outputDim();
-
-            return py::array_t<float>({dim}, {sizeof(float)}, mem,
-                                      free_when_done);
-          },
-          "Returns the bias array for the given node as a 1D Numpy array.")
-      .def(
-          "set_biases",
-          [](FullyConnectedNode& node,
-             const py::array_t<float, py::array::c_style |
-                                          py::array::forcecast>& new_biases) {
             uint32_t dim = node.outputDim();
-            const std::vector<uint32_t> dimensions = {dim};
-
-            checkNumpyArrayDimensions(dimensions, new_biases);
-            return node.setBiases(new_biases.data());
+            return ParameterReference(node.getBiasesPtr(), {dim});
           },
-          py::arg("new_biases"),
-          "Sets the bias array to the given 1D Numpy array for the given "
-          "node")
+          py::return_value_policy::reference)
       .def(
-          "get_weight_gradients",
-          [](const FullyConnectedNode& layer) {
-            float* gradients = layer.getWeightGradients();
-
-            uint32_t dim = layer.outputDim();
-            uint32_t prev_dim = layer.getPredecessors().at(0)->outputDim();
-
-            return py::array_t<float>({dim, prev_dim},
-                                      {prev_dim * sizeof(float), sizeof(float)},
-                                      gradients);
+          "weight_gradients",
+          [](FullyConnectedNode& node) {
+            uint32_t dim = node.outputDim();
+            uint32_t prev_node_dim = node.getPredecessors()[0]->outputDim();
+            const std::vector<uint32_t> dimensions = {dim, prev_node_dim};
+            return ParameterReference(node.getWeightGradientsPtr(), dimensions);
           },
-          /**
-           * This means that the lifetime of the returned object is tied to
-           * the lifetime of the object this method is called on, such that
-           * the parent object cannot be garbage collected will this returned
-           * object is still alive.
-           */
           py::return_value_policy::reference_internal)
       .def(
-          "get_bias_gradients",
-          [](const FullyConnectedNode& layer) {
-            float* gradients = layer.getBiasGradients();
-
-            uint32_t dim = layer.outputDim();
-
-            return py::array_t<float>({dim}, {sizeof(float)}, gradients);
+          "bias_gradients",
+          [](FullyConnectedNode& node) {
+            uint32_t dim = node.outputDim();
+            return ParameterReference(node.getBiasGradientsPtr(), {dim});
           },
-          /**
-           * This means that the lifetime of the returned object is tied to
-           * the lifetime of the object this method is called on, such that
-           * the parent object cannot be garbage collected will this returned
-           * object is still alive.
-           */
-          py::return_value_policy::reference_internal)
-      .def("set_weight_gradients",
-           [](FullyConnectedNode& layer,
-              const py::array_t<float,
-                                py::array::c_style | py::array::forcecast>&
-                  new_gradients) {
-             uint32_t dim = layer.outputDim();
-             uint32_t prev_dim = layer.getPredecessors().at(0)->outputDim();
-             checkNumpyArrayDimensions({dim, prev_dim}, new_gradients);
-
-             layer.setWeightGradients(new_gradients.data());
-           })
-      .def("set_bias_gradients",
-           [](FullyConnectedNode& layer,
-              const py::array_t<float,
-                                py::array::c_style | py::array::forcecast>&
-                  new_gradients) {
-             uint32_t dim = layer.outputDim();
-             checkNumpyArrayDimensions({dim}, new_gradients);
-
-             layer.setBiasGradients(new_gradients.data());
-           });
+          py::return_value_policy::reference);
 
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
       graph_submodule, "Concatenate")
