@@ -68,8 +68,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("filename"))
       .def("load_parameters", &FullyConnectedNode::loadParameters,
            py::arg("filename"))
-      .def("get_sparsity", &FullyConnectedNode::getNodeSparsity)
-      .def("set_sparsity", &FullyConnectedNode::setNodeSparsity,
+      .def("get_sparsity", &FullyConnectedNode::getSparsity)
+      .def("set_sparsity", &FullyConnectedNode::setSparsity,
            py::arg("sparsity"))
       .def("get_dim", &FullyConnectedNode::outputDim)
       .def(
@@ -79,12 +79,10 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
                                           py::array::forcecast>& new_weights) {
             uint32_t dim = node.outputDim();
             uint32_t prev_node_dim = node.getPredecessors()[0]->outputDim();
-            uint32_t expected_dim = 2;
-            const std::vector<uint32_t> dimensions = {expected_dim, dim,
-                                                      prev_node_dim};
+            const std::vector<uint32_t> dimensions = {dim, prev_node_dim};
 
             checkNumpyArrayDimensions(dimensions, new_weights);
-            return node.setNodeWeights(new_weights.data());
+            return node.setWeights(new_weights.data());
           },
           py::arg("new_weights"),
           "Sets the weight matrix for the node to the given Numpy 2D array."
@@ -93,7 +91,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def(
           "get_weights",
           [](FullyConnectedNode& node) {
-            float* mem = node.getNodeWeights();
+            float* mem = node.getWeights();
 
             py::capsule free_when_done(
                 mem, [](void* ptr) { delete static_cast<float*>(ptr); });
@@ -108,7 +106,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def(
           "get_biases",
           [](FullyConnectedNode& node) {
-            float* mem = node.getNodeBiases();
+            float* mem = node.getBiases();
 
             py::capsule free_when_done(
                 mem, [](void* ptr) { delete static_cast<float*>(ptr); });
@@ -124,11 +122,10 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
              const py::array_t<float, py::array::c_style |
                                           py::array::forcecast>& new_biases) {
             uint32_t dim = node.outputDim();
-            uint32_t expected_dim = 2;
-            const std::vector<uint32_t> dimensions = {expected_dim, dim};
+            const std::vector<uint32_t> dimensions = {dim};
 
             checkNumpyArrayDimensions(dimensions, new_biases);
-            return node.setNodeBiases(new_biases.data());
+            return node.setBiases(new_biases.data());
           },
           py::arg("new_biases"),
           "Sets the bias array to the given 1D Numpy array for the given node");

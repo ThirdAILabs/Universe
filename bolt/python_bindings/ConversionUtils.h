@@ -70,48 +70,27 @@ inline void layerIndexCheck(uint32_t layer_index, uint32_t num_layers) {
 }
 
 //  Checks that the dimensions of the given numpy array match the expected
-//  dimensions for both weighs and biases at a given layer.
-//  The input vector contains the expected dimensions for the
-//  array, the output dimensions for a specific node and (optionally)
-//  the output dimensions of the predecessor to that node.
+//  dimensions.
 inline void checkNumpyArrayDimensions(
-    const std::vector<uint32_t>& dimensions,
+    const std::vector<uint32_t>& expected_dimensions,
     const py::array_t<float, py::array::c_style | py::array::forcecast>&
         numpy_array) {
-  bool set_weights = dimensions.size() == 3;
-  uint32_t expected_dim = dimensions[0];
-  uint32_t dim = dimensions[1];
-  std::optional<uint32_t> prev_node_dim =
-      set_weights ? std::make_optional<uint32_t>(dimensions[2]) : std::nullopt;
-
-  uint32_t array_dim = numpy_array.ndim();
-
-  if (array_dim != expected_dim) {
+  uint32_t numpy_array_dim = numpy_array.ndim();
+  if (numpy_array_dim != expected_dimensions.size()) {
     throw std::invalid_argument(
-        std::stringstream("Expected weight matrix to have " +
-                          std::to_string(expected_dim) +
-                          "dimensions, received "
-                          "matrix with " +
-                          std::to_string(array_dim) + " dimensions.")
-            .str());
+        "Expected " + std::to_string(expected_dimensions.size()) +
+        "D numpy array but received " + std::to_string(numpy_array.ndim()) +
+        "D numpy array");
   }
 
-  if (numpy_array.shape(0) != dim ||
-      (set_weights && numpy_array.shape(1) != prev_node_dim)) {
-    set_weights
-        ? throw std::invalid_argument(
-              std::stringstream("Expected weight matrix to have dim (" +
-                                std::to_string(prev_node_dim.value()) +
-                                "), recieved matrix with dim (" +
-                                std::to_string(numpy_array.shape(0)) + ", " +
-                                std::to_string(numpy_array.shape(1)) + ").")
-                  .str())
-        : throw std::invalid_argument(
-              std::stringstream("Expected weight matrix to have dim " +
-                                std::to_string(dim) +
-                                ", received matrix with dim " +
-                                std::to_string(numpy_array.shape(0)) + ".")
-                  .str());
+  for (uint32_t dim_index = 0; dim_index < numpy_array_dim; dim_index++) {
+    if (expected_dimensions[dim_index] != numpy_array.shape(dim_index)) {
+      throw std::invalid_argument(
+          "Expected dimension " + std::to_string(dim_index) + " to be " +
+          std::to_string(expected_dimensions[dim_index]) +
+          " but received dimension " +
+          std::to_string(numpy_array.shape(dim_index)));
+    }
   }
 }
 

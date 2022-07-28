@@ -124,7 +124,7 @@ class FullyConnectedNode final
     _layer = loaded_parameters;
   }
 
-  float getNodeSparsity() {
+  float getSparsity() {
     NodeState node_state = getState();
     if (node_state == NodeState::Constructed ||
         node_state == NodeState::PredecessorsSet) {
@@ -133,48 +133,44 @@ class FullyConnectedNode final
     return _layer->getSparsity();
   }
 
-  std::shared_ptr<FullyConnectedNode> setNodeSparsity(float sparsity) {
+  std::shared_ptr<FullyConnectedNode> setSparsity(float sparsity) {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state");
+          "FullyConnectedNode must be in a compiled state to call setSparsity");
     }
     _layer->setSparsity(sparsity);
     return shared_from_this();
   }
 
-  const SamplingConfig& getSamplingConfig() const {
-    return _layer->getSamplingConfig();
-  }
-
-  float* getNodeBiases() {
+  float* getBiases() {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state");
+          "FullyConnectedNode must be in a compiled state to call getBiases");
     }
     return _layer->getBiases();
   }
 
-  float* getNodeWeights() {
+  float* getWeights() {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state");
+          "FullyConnectedNode must be in a compiled state to cal getWeights");
     }
     return _layer->getWeights();
   }
 
-  std::shared_ptr<FullyConnectedNode> setNodeWeights(const float* new_weights) {
+  std::shared_ptr<FullyConnectedNode> setWeights(const float* new_weights) {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state");
+          "FullyConnectedNode must be in a compiled state to call setWeights");
     }
     _layer->setWeights(new_weights);
     return shared_from_this();
   }
 
-  std::shared_ptr<FullyConnectedNode> setNodeBiases(const float* new_biases) {
+  std::shared_ptr<FullyConnectedNode> setBiases(const float* new_biases) {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state");
+          "FullyConnectedNode must be in a compiled state to call setBiases");
     }
     _layer->setBiases(new_biases);
     return shared_from_this();
