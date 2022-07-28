@@ -11,6 +11,12 @@ target_link_libraries(
   gtest_main
 )
 
+target_link_libraries(
+  vector_hash_table_test
+  PUBLIC
+  OpenMP::OpenMP_CXX
+)
+
 add_executable(
   sampled_hash_table_test
   SampledHashTableTest.cc
@@ -20,6 +26,12 @@ target_link_libraries(
   sampled_hash_table_test
   PRIVATE
   gtest_main
+)
+
+target_link_libraries(
+  sampled_hash_table_test
+  PUBLIC
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(
