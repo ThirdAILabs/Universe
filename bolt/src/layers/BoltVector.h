@@ -32,7 +32,8 @@ struct BoltVector {
       : active_neurons(nullptr),
         activations(nullptr),
         gradients(nullptr),
-        len(0) {}
+        len(0),
+        _owns_data(true) {}
 
   constexpr explicit BoltVector(uint32_t* an, float* a, float* g, uint32_t l)
       : active_neurons(an),

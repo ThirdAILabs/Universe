@@ -18,8 +18,8 @@ uint32_t n_classes = 100;
 
 static BoltGraph getSingleLayerModel() {
   auto input_layer = std::make_shared<Input>(n_classes);
-  auto output_layer = std::make_shared<FullyConnectedNode>(
-      n_classes, ActivationFunction::Softmax);
+  auto output_layer =
+      std::make_shared<FullyConnectedNode>(n_classes, "softmax");
 
   output_layer->addPredecessor(input_layer);
 
@@ -78,8 +78,8 @@ TEST(FullyConnectedDagTest, TrainNoisyDatasetSingleLayerNetwork) {
   ASSERT_LE(test_metrics.first["categorical_accuracy"], 0.2);
 }
 
-static BoltGraph getMultiLayerModel(ActivationFunction hidden_layer_act,
-                                    ActivationFunction output_layer_act) {
+static BoltGraph getMultiLayerModel(const std::string& hidden_layer_act,
+                                    const std::string& output_layer_act) {
   auto input_layer = std::make_shared<Input>(n_classes);
 
   auto hidden_layer = std::make_shared<FullyConnectedNode>(
@@ -95,12 +95,11 @@ static BoltGraph getMultiLayerModel(ActivationFunction hidden_layer_act,
 
   BoltGraph model({input_layer}, output_layer);
 
-  EXPECT_TRUE(output_layer_act == ActivationFunction::Softmax ||
-              output_layer_act == ActivationFunction::Sigmoid);
+  EXPECT_TRUE(output_layer_act == "softmax" || output_layer_act == "sigmoid");
 
-  if (output_layer_act == ActivationFunction::Softmax) {
+  if (output_layer_act == "softmax") {
     model.compile(std::make_shared<CategoricalCrossEntropyLoss>());
-  } else if (output_layer_act == ActivationFunction::Sigmoid) {
+  } else if (output_layer_act == "sigmoid") {
     model.compile(std::make_shared<BinaryCrossEntropyLoss>());
   }
 
@@ -108,7 +107,7 @@ static BoltGraph getMultiLayerModel(ActivationFunction hidden_layer_act,
 }
 
 static void testSimpleDatasetMultiLayerModel(
-    ActivationFunction hidden_layer_act, ActivationFunction output_layer_act,
+    const std::string& hidden_layer_act, const std::string& output_layer_act,
     uint32_t epochs) {
   BoltGraph model = getMultiLayerModel(hidden_layer_act, output_layer_act);
 
@@ -130,23 +129,19 @@ static void testSimpleDatasetMultiLayerModel(
 }
 
 TEST(FullyConnectedDagTest, TrainSimpleDatasetMultiLayerNetworkRelu) {
-  testSimpleDatasetMultiLayerModel(
-      ActivationFunction::ReLU, ActivationFunction::Softmax, /* epochs= */ 2);
+  testSimpleDatasetMultiLayerModel("relu", "softmax", /* epochs= */ 2);
 }
 
 TEST(FullyConnectedDagTest, TrainSimpleDatasetMultiLayerNetworkTanh) {
-  testSimpleDatasetMultiLayerModel(
-      ActivationFunction::Tanh, ActivationFunction::Softmax, /* epochs= */ 2);
+  testSimpleDatasetMultiLayerModel("tanh", "softmax", /* epochs= */ 2);
 }
 
 TEST(FullyConnectedDagTest, TrainSimpleDatasetMultiLayerNetworkSigmoid) {
-  testSimpleDatasetMultiLayerModel(
-      ActivationFunction::ReLU, ActivationFunction::Sigmoid, /* epochs= */ 5);
+  testSimpleDatasetMultiLayerModel("relu", "sigmoid", /* epochs= */ 5);
 }
 
 TEST(FullyConnectedDagTest, TrainNoisyDatasetMultiLayerNetwork) {
-  BoltGraph model =
-      getMultiLayerModel(ActivationFunction::ReLU, ActivationFunction::Softmax);
+  BoltGraph model = getMultiLayerModel("relu", "softmax");
 
   auto [data, labels] =
       genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);

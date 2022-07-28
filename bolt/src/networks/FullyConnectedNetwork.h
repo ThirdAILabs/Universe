@@ -29,7 +29,8 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   friend class python::SentimentClassifier;
 
  public:
-  FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim);
+  FullyConnectedNetwork(SequentialConfigList configs, uint32_t input_dim,
+                        bool is_distributed = false);
 
   void initializeNetworkState(uint32_t batch_size, bool use_sparsity) final;
 
@@ -50,25 +51,26 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   };
 
   void getInputGradientsForBatch(
-      BoltBatch& batch_input, BoltBatch& output, const LossFunction& loss_fn,
-      bool best_index, uint32_t batch_id,
-      const std::vector<uint32_t>& required_labels,
-      std::vector<std::vector<float>>& concatenated_grad,
-      bool want_ratios = false,
-      std::vector<std::vector<float>>& ratios =
-          std::vector<std::vector<float>>().operator=(
-              std::vector<std::vector<float>>()));
-
-  std::vector<std::vector<float>> getInputGradients(
-      std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>& batch_input,
-      const LossFunction& loss_fn, bool best_index,
-      const std::vector<uint32_t>& required_labels);
+       BoltBatch& input_dataset, BoltBatch& output, const LossFunction& loss_fn,
+    bool best_index, uint32_t batch_id, uint32_t general_batch_size,
+    const std::vector<uint32_t>& required_labels,
+    std::vector<std::vector<float>>& input_dataset_grad, bool want_ratios = false,
+    std::vector<std::vector<float>>& ratios = std::vector<std::vector<float>>().operator=(
+              std::vector<std::vector<float>>()),std::vector<std::vector<uint32_t>>& input_dataset_indices = std::vector<std::vector<uint32_t>>().operator=(
+              std::vector<std::vector<uint32_t>>()));
 
   std::pair<std::vector<std::vector<float>>, std::vector<std::vector<float>>>
   getInputGradientsFromStream(
       const std::shared_ptr<dataset::StreamingGenericDatasetLoader>& test_data,
       const LossFunction& loss_fn, bool best_index, uint32_t label_id,
       bool label_given);
+
+  std::pair<std::vector<std::vector<float>>,
+            std::optional<std::vector<std::vector<uint32_t>>>>
+  getInputGradients(
+      std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>& input_dataset,
+      const LossFunction& loss_fn, bool best_index,
+      const std::vector<uint32_t>& required_labels);
 
   void updateParameters(float learning_rate, uint32_t iter) final {
     for (auto& layer : _layers) {
@@ -139,11 +141,6 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   float getLayerSparsity(uint32_t layer_index) {
     checkLayerIndex(layer_index);
     return _layers.at(layer_index)->getSparsity();
-  }
-
-  const SamplingConfig& getSamplingConfig(uint32_t layer_index) {
-    checkLayerIndex(layer_index);
-    return _layers.at(layer_index)->getSamplingConfig();
   }
 
  private:

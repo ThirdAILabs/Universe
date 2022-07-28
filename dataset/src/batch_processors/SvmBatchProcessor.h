@@ -2,7 +2,6 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/BatchProcessor.h>
-#include <dataset/src/batch_types/MaskedSentenceBatch.h>
 
 namespace thirdai::dataset {
 
@@ -31,7 +30,7 @@ class SvmBatchProcessor final : public UnaryBoltBatchProcessor {
     } while ((*start++) == ',');
 
     float label_val = _softmax_for_multiclass ? 1.0 / labels.size() : 1.0;
-    BoltVector labels_vec = BoltVector::makeSparseVector(
+    bolt::BoltVector labels_vec = bolt::BoltVector::makeSparseVector(
         labels, std::vector<float>(labels.size(), label_val));
 
     // Parse the vector itself. The elements are given in <index>:<value>
@@ -52,7 +51,8 @@ class SvmBatchProcessor final : public UnaryBoltBatchProcessor {
       }
     } while (*start != '\n' && start < line_end);
 
-    BoltVector data_vec = BoltVector::makeSparseVector(indices, values);
+    bolt::BoltVector data_vec =
+        bolt::BoltVector::makeSparseVector(indices, values);
 
     return std::make_pair(std::move(data_vec), std::move(labels_vec));
   }
