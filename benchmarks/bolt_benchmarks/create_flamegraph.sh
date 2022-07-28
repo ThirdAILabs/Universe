@@ -13,19 +13,14 @@
 # for more information
 
 # See https://stackoverflow.com/questions/592620/how-can-i-check-if-a-program-exists-from-a-bash-script
-type py-spy >/dev/null 2>&1 || { echo >&2 "This script requires py-spy but it's not installed.  Aborting."; exit 1; }
+type perf >/dev/null 2>&1 || { echo >&2 "This script requires perf but it's not installed.  Aborting."; exit 1; }
 
 BASEDIR=$(dirname "$0")
-RAW_OUTPUT_LOC=$BASEDIR/raw.txt
 
-# --format raw tells py-spy to print the raw callstacks instead of generating a flamegraph itself, 
-# since flamegraph.pl generates a slightly better one. We limit the sampling rate to 20 because
-# the default of 100 can start printing error messages saying sampling is falling behind. --nolineno
-# turns off line numbers so calls from the same function will always get grouped together. 
-# --native enavles profiling of C++ libraries, most importantly our own!
-py-spy record --format raw --output $RAW_OUTPUT_LOC --rate 20 --nolineno --native \
-    -- python3 $BASEDIR/run_bolt_experiment.py $BASEDIR/configs/$1.txt --disable_mlflow
+perf record -F 99 --call-graph dwarf python3 $BASEDIR/run_bolt_experiment.py $BASEDIR/configs/$1.txt --disable_mlflow
+perf script > out.perf
 
-$BASEDIR/../../deps/flamegraph/flamegraph.pl $RAW_OUTPUT_LOC > $1.svg
+$BASEDIR/../../deps/flamegraph/stackcollapse-perf.pl out.perf | $BASEDIR/../../deps/flamegraph/flamegraph.pl  > $1.svg
 
-rm $RAW_OUTPUT_LOC
+rm out.perf
+rm perf.data
