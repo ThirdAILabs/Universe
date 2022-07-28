@@ -159,7 +159,8 @@ class DistributedBolt:
                         )
 
                     if scheduler and epoch < 2:
-                        self.logging.info("Scheduler is true and full gradients enabled")
+                        if batch_no==0:
+                            self.logging.info("Scheduler is true and full gradients enabled")
                         (
                             gradient_computation_time,
                             getting_gradient_time,
@@ -183,7 +184,8 @@ class DistributedBolt:
                         gradient_send_time = time.time() - start_gradients_send_time
 
                     elif scheduler and epoch < 10:
-                        self.logging.info("Scheduler is true and full compression density ")
+                        if batch_no==0:
+                            self.logging.info("Scheduler is true and full compression density ")
                         (
                             gradient_computation_time,
                             getting_gradient_time,
@@ -207,7 +209,8 @@ class DistributedBolt:
                         gradient_send_time = time.time() - start_gradients_send_time
 
                     elif scheduler:
-                        self.logging.info("Scheduler is true and half compression density")
+                        if batch_no==0:
+                            self.logging.info("Scheduler is true and half compression density")
                         (
                             gradient_computation_time,
                             getting_gradient_time,
@@ -230,7 +233,8 @@ class DistributedBolt:
                         )
                         gradient_send_time = time.time() - start_gradients_send_time
                     else:
-                        self.logging.info("Scheduler is false")
+                        if batch_no==0:
+                            self.logging.info("Scheduler is false")
                         (
                             gradient_computation_time,
                             getting_gradient_time,
