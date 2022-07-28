@@ -55,10 +55,6 @@ class GenericBatchProcessor
 
   std::tuple<bolt::BoltBatch, bolt::BoltBatch> createBatch(
       const std::vector<std::string>& rows) final {
-    if (rows.empty()) {
-      return std::make_tuple(bolt::BoltBatch(), bolt::BoltBatch());
-    }
-
     std::vector<bolt::BoltVector> batch_inputs(rows.size());
     std::vector<bolt::BoltVector> batch_labels(rows.size());
 
