@@ -86,20 +86,8 @@ def test_get_set_weights():
 @pytest.mark.unit
 def test_bad_numpy_array_dim():
     dataset_dim = 100
-    train_data, train_labels = gen_numpy_training_data(
-        n_classes=dataset_dim, n_samples=10000, batch_size_for_conversion=BATCH_SIZE
-    )
 
     model = build_simple_model(num_classes=dataset_dim, sparsity=0.4)
-
-    train_config = bolt.graph.TrainConfig.make(
-        learning_rate=LEARNING_RATE, epochs=5
-    ).silence()
-    model.train(
-        train_data=train_data, train_labels=train_labels, train_config=train_config
-    )
-
-    untrained_model = build_simple_model(num_classes=dataset_dim, sparsity=0.4)
 
     hidden_layer = model.get_layer("fc_1")
 
@@ -114,10 +102,10 @@ def test_bad_numpy_array_dim():
         ValueError,
         match=f".*Expected dimension {axis} to be {dataset_dim} but received dimension {bad_dim}",
     ):
-        untrained_model.get_layer("fc_1").set_weights(new_weights=padded_weights)
+        model.get_layer("fc_1").set_weights(new_weights=padded_weights)
 
     with pytest.raises(
         ValueError,
         match=f".*Expected {hidden_layer_biases.ndim}D numpy array but received {padded_weights.ndim}D numpy array",
     ):
-        untrained_model.get_layer("fc_1").set_biases(new_biases=padded_weights)
+        model.get_layer("fc_1").set_biases(new_biases=padded_weights)
