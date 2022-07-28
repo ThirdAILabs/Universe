@@ -5,12 +5,12 @@
 # Example command lines:
 # ./create_flamegraph.sh mnist_so
 # ./benchmarks/bolt_benchmarks/create_flamegraph.sh amzn670k
-# You need to have built with debug symbold (Debug or RelWithDebInfo)
-# and py-spy needs to be installed (with pip3 install py-spy). You also need to
+# You need to have built with debug symbols (Debug or RelWithDebInfo)
+# and perf needs to be installed (so you need to
 # be running on linux). There must be a config file
 # benchmarks/bolt_benchmarks/configs/<config_identifier>.txt
 # See https://www.notion.so/Performance-Profiling-a4ccf598339845a7a2d618e9ad019e88
-# for more information
+# for more information.
 
 # See https://stackoverflow.com/questions/592620/how-can-i-check-if-a-program-exists-from-a-bash-script
 type perf >/dev/null 2>&1 || { echo >&2 "This script requires perf but it's not installed.  Aborting."; exit 1; }
