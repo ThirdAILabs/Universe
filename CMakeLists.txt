@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.4...3.18)
 
-if (NOT WIN32)
-  set(CMAKE_CXX_COMPILER "g++")
-  set(CMAKE_C_COMPILER "gcc")
-  message("Not using MSVC (we should not be on Windows then), forcing GCC and G++")
-else()
+if(WIN32)
   # Set this to use static linking by default, see
   # https://cmake.org/cmake/help/latest/prop_tgt/MSVC_RUNTIME_LIBRARY.html
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -33,7 +29,6 @@ if (MSVC)
   set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /GR /EHs /O2 /openmp:llvm /w")
 else()
   add_compile_options(
-    -fopenmp
     -fPIC
     -Wall
     -Wextra
@@ -72,9 +67,6 @@ else()
     $<$<CONFIG:RelWithAsan>:-fno-omit-frame-pointer>
   )
 
-  add_link_options(
-    -fopenmp
-  )
 endif()
 
 # Add feature flags passed in from python
@@ -222,6 +214,8 @@ pybind11_add_module(_thirdai
   ${WRAPPER_SOURCES}
   ${DATASET_SOURCES}
 )
+
+target_link_libraries(_thirdai PRIVATE OpenMP::OpenMP_CXX)
 
 if (${LICENSE_BUILD_FLAG_FOUND})
   target_link_libraries(_thirdai PRIVATE ${CRYPTOPP_LIB})
