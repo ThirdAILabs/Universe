@@ -12,7 +12,6 @@
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
-#include <pybind11/detail/common.h>
 #include <pybind11/functional.h>
 
 namespace thirdai::bolt::python {
@@ -33,7 +32,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::return_value_policy::reference_internal,
            "Returns a numpy array which shadows the parameters held in the "
            "ParameterReference and acts as a reference to them.")
-      .def("set", py::arg("new_params"), &ParameterReference::set,
+      .def("set", &ParameterReference::set, py::arg("new_params"),
            "Takes in a numpy array and copies its contents into the parameters "
            "held in the ParameterReference object.");
 
