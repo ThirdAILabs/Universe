@@ -10,7 +10,6 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
-#include <dataset/src/batch_types/MaskedSentenceBatch.h>
 #include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <chrono>
@@ -253,6 +252,56 @@ InferenceResult BoltGraph::predict(
   return {std::move(metric_vals), std::move(outputTracker)};
 }
 
+InferenceOutputTracker BoltGraph::predictSingle(
+    const std::vector<BoltVector>& test_data,
+    const std::vector<std::vector<uint32_t>>& test_tokens,
+    const PredictConfig& predict_config) {
+  auto test_start = std::chrono::high_resolution_clock::now();
+
+  SingleUnitDatasetContext single_predict_context(test_data, test_tokens);
+
+  verifyCanPredict(single_predict_context, /* has_labels = */ false,
+                   /* returning_activations = */
+                   predict_config.shouldReturnActivations(),
+                   /* num_metrics_tracked = */ 0);
+
+  prepareToProcessBatches(single_predict_context.batchSize(),
+                          predict_config.sparseInferenceEnabled());
+
+  InferenceOutputTracker outputTracker(
+      _output, predict_config,
+      /* total_num_samples = */ single_predict_context.len());
+
+  // TODO(josh/Nick): This try catch is kind of a hack, we should really use
+  // some sort of RAII training context object whose destructor will
+  // automatically delete the training state
+  try {
+    single_predict_context.setInputs(/* batch_idx = */ 0, _inputs,
+                                     _token_inputs);
+    uint32_t vec_id = 0;
+    forward(vec_id, nullptr);
+    outputTracker.saveOutputBatch(_output, single_predict_context.batchSize());
+  } catch (const std::exception& e) {
+    cleanupAfterBatchProcessing();
+    throw;
+  }
+
+  cleanupAfterBatchProcessing();
+
+  auto test_end = std::chrono::high_resolution_clock::now();
+  int64_t test_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+                          test_end - test_start)
+                          .count();
+
+  if (predict_config.verbose()) {
+    std::cout << std::endl
+              << "Processed sample in " << test_time << " milliseconds"
+              << std::endl;
+  }
+
+  return outputTracker;
+}
+
 void BoltGraph::processInferenceBatch(uint64_t batch_size,
                                       const BoltBatch* batch_labels,
                                       MetricAggregator& metrics) {
@@ -272,33 +321,6 @@ void BoltGraph::processInferenceBatch(uint64_t batch_size,
       metrics.processSample(output, labels);
     }
   }
-}
-
-// This syntax means that we are implmenting the function for the specific case
-// in which BATCH_T is equivalent to BoltBatch.
-template <>
-void BoltGraph::setInputs(BoltBatch& batch_inputs) {
-  // If we are using a BoltBatch then there is only one input. This is
-  // checked in the verifyInputForGraph() function.
-  _inputs[0]->setInputs(&batch_inputs);
-}
-
-// This syntax means that we are implmenting the function for the specific case
-// in which BATCH_T is equivalent to BoltTokenBatch.
-template <>
-void BoltGraph::setInputs(dataset::BoltTokenBatch& batch_inputs) {
-  // If we are using a BoltTokenBatch then there is only one token input. This
-  // is checked in the verifyInputForGraph() function.
-  _token_inputs[0]->setTokenInputs(&batch_inputs);
-}
-
-// This syntax means that we are implmenting the function for the specific case
-// in which BATCH_T is equivalent to BoltTokenBatch.
-template <>
-void BoltGraph::setInputs(dataset::MaskedSentenceBatch& batch_inputs) {
-  // If we are using a BoltTokenBatch then there is only one token input. This
-  // is checked in the verifyInputForGraph() function.
-  _inputs[0]->setInputs(batch_inputs.getVectors());
 }
 
 void BoltGraph::forward(uint32_t vec_index, const BoltVector* labels) {
@@ -500,8 +522,8 @@ void BoltGraph::freezeHashTables(bool insert_labels_if_not_found) {
 
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {
-  archive(_nodes, _output, _inputs, _internal_fully_connected_layers, _loss,
-          _epoch_count, _batch_cnt);
+  archive(_nodes, _output, _inputs, _token_inputs,
+          _internal_fully_connected_layers, _loss, _epoch_count, _batch_cnt);
 }
 
 void BoltGraph::save(const std::string& filename) {

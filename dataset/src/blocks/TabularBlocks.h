@@ -58,7 +58,7 @@ class TabularPairGram : public Block {
                                                            _output_range);
 
     TextEncodingUtils::sumRepeatedIndices(
-        pairgram_hashes, /* base_value= */ 1.0,
+        pairgram_hashes, /* base_value = */ 1.0,
         [&](uint32_t pairgram, float value) {
           vec.addSparseFeatureToSegment(pairgram, value);
         });

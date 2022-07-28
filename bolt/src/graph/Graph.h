@@ -72,6 +72,11 @@ class BoltGraph {
       const dataset::BoltDatasetPtr& test_labels,
       const PredictConfig& predict_config);
 
+  InferenceOutputTracker predictSingle(
+      const std::vector<BoltVector>& test_data,
+      const std::vector<std::vector<uint32_t>>& test_tokens,
+      const PredictConfig& predict_config);
+
   std::vector<NodePtr> getNodeTraversalOrder() const {
     std::vector<NodePtr> nodes;
     nodes.insert(nodes.end(), _inputs.begin(), _inputs.end());
@@ -103,9 +108,6 @@ class BoltGraph {
 
   void processInferenceBatch(uint64_t batch_size, const BoltBatch* batch_labels,
                              MetricAggregator& metrics);
-
-  template <typename BATCH_T>
-  void setInputs(BATCH_T& batch_inputs);
 
   // Computes the forward pass through the graph.
   void forward(uint32_t vec_index, const BoltVector* labels);

@@ -13,7 +13,7 @@ namespace thirdai::bolt {
 /**
  * This class stores information about the datasets passed into train or
  * predict. This is to provide a simple interface to interact with the datasets,
- * and also performs checks that they all have the same lenght, batch size, etc.
+ * and also performs checks that they all have the same length, batch size, etc.
  * Finally it provides methods for obtaining the length and batch size of the
  * datasets once they are verified to be correct.
  */
@@ -41,8 +41,11 @@ class DatasetContext {
     verifyBatchSizes(_all_dag_datasets);
   }
 
-  void setInputs(uint64_t batch_idx, const std::vector<InputPtr>& inputs,
-                 const std::vector<TokenInputPtr>& token_inputs) {
+  DatasetContext() = default;
+
+  virtual void setInputs(uint64_t batch_idx,
+                         const std::vector<InputPtr>& inputs,
+                         const std::vector<TokenInputPtr>& token_inputs) {
     for (uint32_t i = 0; i < inputs.size(); i++) {
       inputs[i]->setInputs(&_data[i]->at(batch_idx));
     }
@@ -51,23 +54,25 @@ class DatasetContext {
     }
   }
 
-  uint64_t batchSize() const { return _all_dag_datasets.front()->batchSize(); }
+  virtual uint64_t batchSize() const {
+    return _all_dag_datasets.front()->batchSize();
+  }
 
-  uint64_t batchSize(uint64_t batch_idx) const {
+  virtual uint64_t batchSize(uint64_t batch_idx) const {
     return _all_dag_datasets.front()->batchSize(batch_idx);
   }
 
-  uint64_t len() const { return _all_dag_datasets.front()->len(); }
+  virtual uint64_t len() const { return _all_dag_datasets.front()->len(); }
 
-  uint64_t numBatches() const {
+  virtual uint64_t numBatches() const {
     return _all_dag_datasets.front()->numBatches();
   }
 
-  uint64_t numVectorDatasets() const { return _data.size(); }
+  virtual uint64_t numVectorDatasets() const { return _data.size(); }
 
-  uint64_t numTokenDatasets() const { return _tokens.size(); }
+  virtual uint64_t numTokenDatasets() const { return _tokens.size(); }
 
-  const auto& labels() const { return _labels; }
+  virtual const dataset::BoltDatasetPtr& labels() const { return _labels; }
 
  private:
   static void verifyBatchSizes(const dataset::DatasetBaseList& datasets) {
@@ -102,6 +107,62 @@ class DatasetContext {
   std::vector<dataset::BoltTokenDatasetPtr> _tokens;
   dataset::BoltDatasetPtr _labels;
   std::vector<dataset::DatasetBasePtr> _all_dag_datasets;
+};
+
+/**
+ * This class provides the same interface as DatasetContext but is constructed
+ * assuming a single sample input.
+ */
+class SingleUnitDatasetContext : public DatasetContext {
+ public:
+  SingleUnitDatasetContext(std::vector<BoltVector> data,
+                           std::vector<std::vector<uint32_t>> tokens)
+      : _labels(nullptr) {
+    for (auto vector : data) {
+      _data.push_back(BoltBatch({std::move(vector)}));
+    }
+
+    for (auto vector : tokens) {
+      _tokens.push_back(dataset::BoltTokenBatch({std::move(vector)}));
+    }
+
+    if (_data.empty() && _tokens.empty()) {
+      throw std::invalid_argument(
+          "Must pass in at least one dataset, but found 0.");
+    }
+  }
+
+  void setInputs(uint64_t batch_idx, const std::vector<InputPtr>& inputs,
+                 const std::vector<TokenInputPtr>& token_inputs) {
+    (void)batch_idx;
+    for (uint32_t i = 0; i < inputs.size(); i++) {
+      inputs[i]->setInputs(&_data[i]);
+    }
+    for (uint32_t i = 0; i < token_inputs.size(); i++) {
+      token_inputs[i]->setTokenInputs(&_tokens[i]);
+    }
+  }
+
+  uint64_t batchSize() const { return 1; }
+
+  uint64_t batchSize(uint64_t batch_idx) const {
+    (void)batch_idx;
+    return 1;
+  }
+
+  uint64_t len() const { return 1; }
+
+  uint64_t numBatches() const { return 1; }
+
+  uint64_t numVectorDatasets() const { return _data.size(); }
+
+  uint64_t numTokenDatasets() const { return _tokens.size(); }
+
+  const dataset::BoltDatasetPtr& labels() const { return _labels; }
+
+  std::vector<BoltBatch> _data;
+  std::vector<dataset::BoltTokenBatch> _tokens;
+  dataset::BoltDatasetPtr _labels;
 };
 
 }  // namespace thirdai::bolt

@@ -2,7 +2,7 @@ from thirdai import bolt
 import pytest
 import os
 import pandas as pd
-from .utils import remove_files, compute_accuracy
+from .utils import remove_files, compute_accuracy_with_file
 
 CENSUS_INCOME_BASE_DOWNLOAD_URL = (
     "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/"
@@ -61,7 +61,7 @@ def test_tabular_classifier_census_income_dataset():
 
     classifier.predict(test_file=TEST_FILE, output_file=PREDICTION_FILE)
 
-    acc = compute_accuracy(test_labels, PREDICTION_FILE)
+    acc = compute_accuracy_with_file(test_labels, PREDICTION_FILE)
 
     print("Computed Accuracy: ", acc)
     assert acc > 0.79
