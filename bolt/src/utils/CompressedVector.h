@@ -127,7 +127,8 @@ class CompressedVector {
       uint64_t sign_bit = hashFunction(i) % 2;
       current_value += sign_bit ? value : -1 * value;
     } else {
-      current_value += value;
+      // current_value += value;
+      current_value = value;
     }
   }
 
