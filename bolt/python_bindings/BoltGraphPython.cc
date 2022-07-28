@@ -91,6 +91,15 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            * is still alive.
            */
           py::return_value_policy::reference_internal)
+      .def("set_weight_gradients",
+           [](FullyConnectedNode& layer,
+              const py::array_t<float,
+                                py::array::c_style | py::array::forcecast>&
+                  new_gradients) {
+             // Check dimensions
+
+             layer.setWeightGradients(new_gradients.data());
+           })
       .def(
           "get_bias_gradients",
           [](const FullyConnectedNode& layer) {
@@ -107,6 +116,15 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            * is still alive.
            */
           py::return_value_policy::reference_internal)
+      .def("set_bias_gradients",
+           [](FullyConnectedNode& layer,
+              const py::array_t<float,
+                                py::array::c_style | py::array::forcecast>&
+                  new_gradients) {
+             // Check dimensions
+
+             layer.setBiasGradients(new_gradients.data());
+           })
       .def("get_dim", &FullyConnectedNode::outputDim);
 
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(

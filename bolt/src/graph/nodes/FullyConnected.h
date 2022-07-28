@@ -145,18 +145,38 @@ class FullyConnectedNode final
     if (getState() != NodeState::PreparedForBatchProcessing) {
       throw exceptions::NodeStateMachineError(
           "FullyConnectedNode must be in a PreparedForBatchProcessing state to "
-          "access weight gradients");
+          "access weight gradients.");
     }
     return _layer->getWeightsGradient();
+  }
+
+  void setWeightGradients(const float* new_gradients) {
+    if (getState() != NodeState::PreparedForBatchProcessing) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a PreparedForBatchProcessing state to "
+          "set weight gradients.");
+    }
+
+    _layer->setWeightGradients(new_gradients);
   }
 
   float* getBiasGradients() const {
     if (getState() != NodeState::PreparedForBatchProcessing) {
       throw exceptions::NodeStateMachineError(
           "FullyConnectedNode must be in a PreparedForBatchProcessing state to "
-          "access bias gradients");
+          "access bias gradients.");
     }
     return _layer->getBiasesGradient();
+  }
+
+  void setBiasGradients(const float* new_gradients) {
+    if (getState() != NodeState::PreparedForBatchProcessing) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a PreparedForBatchProcessing state to "
+          "set bias gradients.");
+    }
+
+    _layer->setBiasesGradients(new_gradients);
   }
 
  private:
