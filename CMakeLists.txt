@@ -32,6 +32,7 @@ else()
   add_compile_options(
     -Wall
     -Wextra
+    -Werror
     -Wno-unused-function
     -pedantic 
     
