@@ -13,6 +13,7 @@
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
+#include <pybind11/functional.h>
 
 namespace thirdai::bolt::python {
 
@@ -360,7 +361,24 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "assigned name. As such, must be called after compile. You can "
            "determine which layer is which by printing a graph summary. "
            "Possible operations to perform on the returned object include "
-           "setting layer sparsity, freezing weights, or saving to a file");
+           "setting layer sparsity, freezing weights, or saving to a file")
+#if THIRDAI_EXPOSE_ALL
+      .def("register_batch_callback",
+           [](BoltGraph& model, GraphCallback callback) {
+             // From testing we don't need to release the GIL to call the python
+             // callback, even if the python function calls back into the C++
+             // code.
+             model.registerPerBatchCallback(std::move(callback));
+           })
+      .def("register_epoch_callback",
+           [](BoltGraph& model, GraphCallback callback) {
+             // From testing we don't need to release the GIL to call the python
+             // callback, even if the python function calls back into the C++
+             // code.
+             model.registerPerEpochCallback(std::move(callback));
+           })
+#endif
+      ;
 }
 
 py::tuple dagPredictPythonWrapper(BoltGraph& model,
