@@ -211,8 +211,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            " * inputs (List[InputNode]) - The input nodes to the graph. Note "
            "that "
            "inputs are mapped to input layers by their index.\n"
-           " * inputs (List[TokenInput]) - The token input nodes to the "
-           "graph. "
+           " * inputs (List[TokenInput]) - The token input nodes to the graph. "
            "Note that "
            "token inputs are mapped to token input layers by their index.\n"
            " * output (Node) - The output node of the graph.")
@@ -233,60 +232,54 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           },
           py::arg("train_data"), py::arg("train_labels"),
           py::arg("train_config"))
-      .def("train", &BoltGraph::train, py::arg("train_data"),
-           py::arg("train_tokens"), py::arg("train_labels"),
-           py::arg("train_config"),
-           "Trains the network on the given training data.\n"
-           "Arguments:\n"
-           " * train_data: PyObject - Training data. This can be one of "
-           "three things. First, it can be a BoltDataset as loaded by "
-           "thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset. Second, it can be a dense "
-           "numpy array of float32 where each row in the array is interpreted "
-           "as a vector. Thid, it can be a sparse dataset represented by a "
-           " tuple of three numpy arrays (indices, values, offsets), where "
-           "indices and offsets are uint32 and values are float32. In this "
-           "case "
-           "indices is a 1D array of all the nonzero indices concatenated, "
-           "values is a 1D array of all the nonzero values concatenated, and "
-           "offsets are the start positions in the indices and values array "
-           "of "
-           "each vector plus one extra element at the end of the array "
-           "representing the total number of nonzeros. This is so that "
-           "indices[offsets[i], offsets[i + 1]] contains the indices of the "
-           "ith "
-           "vector and values[offsets[i], offsets[i+1] contains the values of "
-           "the ith vector. For example, if we have the vectors "
-           "{0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, 0.0, 4.0}, then the indices "
-           "array is {1, 3, 3}, the values array is {1.5, 9.0, 4.0} and the "
-           "offsets array is {0, 2, 3}.\n"
-           " * train_labels: PyObject - Training labels. This can be one of "
-           "three things. First it can be a BoltDataset as loaded by "
-           "thirdai.dataset.load_bolt_svm_dataset or "
-           "thirdai.dataset.load_bolt_csv_dataset. Second, it can be a dense "
-           "numpy array of float32 where each row in the array is interpreted "
-           "as a label vector. Thid, it can be a set of sparse vectors (each "
-           "vector is a label vector) represented as three numpy arrays "
-           "(indices, values, offsets) where indices and offsets are uint32 "
-           "and values are float32. In this case indices is a 1D array of all "
-           "the nonzero indices concatenated, values is a 1D array of all the "
-           "nonzero values concatenated, and offsets are the start positions "
-           "in the indices and values array of each vector plus one extra "
-           "element at the end of the array representing the total number of "
-           "nonzeros. This is so that indices[offsets[i], offsets[i + 1]] "
-           "contains the indices of the ith vector and values[offsets[i], "
-           "offsets[i+1] contains the values of the ith vector. For example, "
-           "if "
-           "we have the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, 0.0, "
-           "4.0}, "
-           "then the indices array is {1, 3, 3}, the values array is {1.5, "
-           "9.0, 4.0}, and the offsets array is {0, 2, 3}.\n"
-           " * train_config: TrainConfig - the additional training "
-           "parameters. "
-           "See the TrainConfig documentation above.\n\n"
-           "Returns a mapping from metric names to an array of their values "
-           "for "
-           "every epoch.")
+      .def(
+          "train", &BoltGraph::train, py::arg("train_data"),
+          py::arg("train_tokens"), py::arg("train_labels"),
+          py::arg("train_config"),
+          "Trains the network on the given training data.\n"
+          "Arguments:\n"
+          " * train_data: PyObject - Training data. This can be one of "
+          "three things. First, it can be a BoltDataset as loaded by "
+          "thirdai.dataset.load_bolt_svm_dataset or "
+          "thirdai.dataset.load_bolt_csv_dataset. Second, it can be a dense "
+          "numpy array of float32 where each row in the array is interpreted "
+          "as a vector. Thid, it can be a sparse dataset represented by a "
+          " tuple of three numpy arrays (indices, values, offsets), where "
+          "indices and offsets are uint32 and values are float32. In this case "
+          "indices is a 1D array of all the nonzero indices concatenated, "
+          "values is a 1D array of all the nonzero values concatenated, and "
+          "offsets are the start positions in the indices and values array of "
+          "each vector plus one extra element at the end of the array "
+          "representing the total number of nonzeros. This is so that "
+          "indices[offsets[i], offsets[i + 1]] contains the indices of the ith "
+          "vector and values[offsets[i], offsets[i+1] contains the values of "
+          "the ith vector. For example, if we have the vectors "
+          "{0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, 0.0, 4.0}, then the indices "
+          "array is {1, 3, 3}, the values array is {1.5, 9.0, 4.0} and the "
+          "offsets array is {0, 2, 3}.\n"
+          " * train_labels: PyObject - Training labels. This can be one of "
+          "three things. First it can be a BoltDataset as loaded by "
+          "thirdai.dataset.load_bolt_svm_dataset or "
+          "thirdai.dataset.load_bolt_csv_dataset. Second, it can be a dense "
+          "numpy array of float32 where each row in the array is interpreted "
+          "as a label vector. Thid, it can be a set of sparse vectors (each "
+          "vector is a label vector) represented as three numpy arrays "
+          "(indices, values, offsets) where indices and offsets are uint32 "
+          "and values are float32. In this case indices is a 1D array of all "
+          "the nonzero indices concatenated, values is a 1D array of all the "
+          "nonzero values concatenated, and offsets are the start positions "
+          "in the indices and values array of each vector plus one extra "
+          "element at the end of the array representing the total number of "
+          "nonzeros. This is so that indices[offsets[i], offsets[i + 1]] "
+          "contains the indices of the ith vector and values[offsets[i], "
+          "offsets[i+1] contains the values of the ith vector. For example, if "
+          "we have the vectors {0.0, 1.5, 0.0, 9.0} and {0.0, 0.0, 0.0, 4.0}, "
+          "then the indices array is {1, 3, 3}, the values array is {1.5, "
+          "9.0, 4.0}, and the offsets array is {0, 2, 3}.\n"
+          " * train_config: TrainConfig - the additional training parameters. "
+          "See the TrainConfig documentation above.\n\n"
+          "Returns a mapping from metric names to an array of their values for "
+          "every epoch.")
       // Helper method that covers the common case of inference based off of a
       // single BoltBatch dataset
       .def(
@@ -299,27 +292,26 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           },
           py::arg("test_data"), py::arg("test_labels"),
           py::arg("predict_config"))
-      .def("predict", &dagPredictPythonWrapper, py::arg("test_data"),
-           py::arg("test_tokens"), py::arg("test_labels"),
-           py::arg("predict_config"),
-           "Predicts the output given the input vectors and evaluates the "
-           "predictions based on the given metrics.\n"
-           "Arguments:\n"
-           " * test_data: PyObject - Test data, in the same one of 3 formats "
-           "as "
-           "accepted by the train method (a BoltDataset, a dense numpy array, "
-           "or a tuple of dense numpy arrays representing a sparse dataset)\n"
-           " * test_labels: PyObject - Test labels, in the same format as "
-           "test_data. This can also additionally be passed as None, in which "
-           "case no metrics can be computed.\n"
-           " * predict_config: PredictConfig - the additional prediction "
-           "parameters. See the PredictConfig documentation above.\n\n"
-           "Returns a tuple, where the first element is a mapping from metric "
-           "names to their values. The second element, the output activation "
-           "matrix, is only present if dont_return_activations was not "
-           "called. "
-           "The third element, the active neuron matrix, is only present if "
-           "we are returning activations AND the ouptut is sparse.")
+      .def(
+          "predict", &dagPredictPythonWrapper, py::arg("test_data"),
+          py::arg("test_tokens"), py::arg("test_labels"),
+          py::arg("predict_config"),
+          "Predicts the output given the input vectors and evaluates the "
+          "predictions based on the given metrics.\n"
+          "Arguments:\n"
+          " * test_data: PyObject - Test data, in the same one of 3 formats as "
+          "accepted by the train method (a BoltDataset, a dense numpy array, "
+          "or a tuple of dense numpy arrays representing a sparse dataset)\n"
+          " * test_labels: PyObject - Test labels, in the same format as "
+          "test_data. This can also additionally be passed as None, in which "
+          "case no metrics can be computed.\n"
+          " * predict_config: PredictConfig - the additional prediction "
+          "parameters. See the PredictConfig documentation above.\n\n"
+          "Returns a tuple, where the first element is a mapping from metric "
+          "names to their values. The second element, the output activation "
+          "matrix, is only present if dont_return_activations was not called. "
+          "The third element, the active neuron matrix, is only present if "
+          "we are returning activations AND the ouptut is sparse.")
       .def("save", &BoltGraph::save, py::arg("filename"))
       .def_static("load", &BoltGraph::load, py::arg("filename"))
       .def("__str__",
@@ -336,17 +328,17 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "insert_labels_if_not_found is true then if the output layer is "
            "sparse it will insert the training labels into the hash hash "
            "tables if they are not found for a given input.")
-      .def("summary", &BoltGraph::summarize, py::arg("print") = true,
-           py::arg("detailed") = false,
-           "Returns a summary of the network.\n"
-           "Arguments:\n"
-           " * print: boolean. Optional, default True. When specified to "
-           "\"True\", "
-           "summary will print the network summary in addition to returning "
-           "it. "
-           "* detailed: boolean. Optional, default False. When specified to "
-           "\"True\", summary will additionally return/print sampling config "
-           "details for each layer in the network.")
+      .def(
+          "summary", &BoltGraph::summarize, py::arg("print") = true,
+          py::arg("detailed") = false,
+          "Returns a summary of the network.\n"
+          "Arguments:\n"
+          " * print: boolean. Optional, default True. When specified to "
+          "\"True\", "
+          "summary will print the network summary in addition to returning it. "
+          "* detailed: boolean. Optional, default False. When specified to "
+          "\"True\", summary will additionally return/print sampling config "
+          "details for each layer in the network.")
       // TODO(josh/nick): These are temporary until we have a better story
       // for converting numpy to BoltGraphs
       .def("get_layer", &BoltGraph::getNodeByName, py::arg("layer_name"),
