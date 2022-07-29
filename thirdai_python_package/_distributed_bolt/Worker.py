@@ -66,6 +66,8 @@ class Worker:
                     rebuild=self.rebuild,
                     verbose=False)
         
+        self.total_nodes = total_nodes
+        
 
 
     def addHeadWorker(
