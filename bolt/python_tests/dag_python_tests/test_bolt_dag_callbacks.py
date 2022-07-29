@@ -70,6 +70,11 @@ def test_simple_dag_callbacks():
 
 @pytest.mark.unit
 def test_dag_callbacks_call_cpp_function():
+    # This test copies the weight and bias paramters from a single layer network. Then
+    # it adds a callback which gets the gradients from the network and applies them to
+    # the parameters. This is an approximation of the gradient descent on the parameters
+    # (see comment below), and checks that getting and using gradients works correctly
+    # and that we can use callbacks along with the state and parameters of the model.
     epochs = 5
     n_samples = 1000
     batch_size = 100
@@ -82,8 +87,8 @@ def test_dag_callbacks_call_cpp_function():
 
     model = get_simple_model(n_classes)
     layer_dims = []
-    weights = model.get_layer("fc_1").weights().copy()
-    biases = model.get_layer("fc_1").biases().copy()
+    weights = model.get_layer("fc_1").weights.copy()
+    biases = model.get_layer("fc_1").biases.copy()
 
     def epoch_callback():
         global model
@@ -97,8 +102,15 @@ def test_dag_callbacks_call_cpp_function():
         global weights
         global biases
 
-        w_grads = model.get_layer("fc_1").weight_gradients().get()
+        w_grads = model.get_layer("fc_1").weight_gradients.get()
         b_grads = model.get_layer("fc_1").bias_gradients().get()
+        # This is a different learning rate than used in train because we are using
+        # simple gradient updates here instead of ADAM.
+        #
+        # Additionally this optimization is a bit hacky because the update strategy
+        # is different meaning the parameters will diverge so the computed gradients
+        # are not technically correct, but the dataset is simple enough that it still
+        # works as a simple check.
         weights += 0.01 * w_grads
         biases += 0.01 * b_grads
 

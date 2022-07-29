@@ -24,10 +24,8 @@ using ParameterArray =
 class ParameterReference {
  public:
   ParameterReference(float* params, std::vector<uint32_t> dimensions)
-      : _params(params), _dimensions(std::move(dimensions)), _total_dim(1) {
-    for (uint64_t dim : _dimensions) {
-      _total_dim *= dim;
-    }
+      : _params(params), _dimensions(std::move(dimensions)) {
+    _total_dim = dimensionProduct(_dimensions);
   }
 
   ParameterArray copy() const {
@@ -37,13 +35,10 @@ class ParameterReference {
     py::capsule free_when_done(
         params_copy, [](void* ptr) { delete static_cast<float*>(ptr); });
 
-    return ParameterArray(_dimensions, getStrides(), params_copy,
-                          free_when_done);
+    return ParameterArray(_dimensions, params_copy, free_when_done);
   }
 
-  ParameterArray get() const {
-    return ParameterArray(_dimensions, getStrides(), _params);
-  }
+  ParameterArray get() const { return ParameterArray(_dimensions, _params); }
 
   void set(const ParameterArray& new_params) {
     checkNumpyArrayDimensions(_dimensions, new_params);
@@ -52,14 +47,12 @@ class ParameterReference {
   }
 
  private:
-  std::vector<uint32_t> getStrides() const {
-    std::vector<uint32_t> strides(_dimensions.size());
-
-    strides.back() = sizeof(float);
-    for (uint32_t i = _dimensions.size() - 1; i > 0; i--) {
-      strides[i - 1] = _dimensions[i] * strides[i];
+  static uint64_t dimensionProduct(const std::vector<uint32_t>& dimensions) {
+    uint64_t product = 1;
+    for (uint32_t dim : dimensions) {
+      product *= dim;
     }
-    return strides;
+    return product;
   }
 
   float* _params;

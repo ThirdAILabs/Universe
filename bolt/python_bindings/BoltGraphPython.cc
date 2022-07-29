@@ -31,7 +31,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
             */
            py::return_value_policy::reference_internal,
            "Returns a numpy array which shadows the parameters held in the "
-           "ParameterReference and acts as a reference to them.")
+           "ParameterReference and acts as a reference to them, modifying this "
+           "array will modify the parameters.")
       .def("set", &ParameterReference::set, py::arg("new_params"),
            "Takes in a numpy array and copies its contents into the parameters "
            "held in the ParameterReference object.");
@@ -86,11 +87,12 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("filename"))
       .def("load_parameters", &FullyConnectedNode::loadParameters,
            py::arg("filename"))
+      // TODO(Nick, Josh): sparsity can be def_property
       .def("get_sparsity", &FullyConnectedNode::getSparsity)
       .def("set_sparsity", &FullyConnectedNode::setSparsity,
            py::arg("sparsity"))
       .def("get_dim", &FullyConnectedNode::outputDim)
-      .def(
+      .def_property_readonly(
           "weights",
           [](FullyConnectedNode& node) {
             uint32_t dim = node.outputDim();
@@ -100,7 +102,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           },
           py::return_value_policy::reference_internal,
           "Returns a ParameterReference object to the weight matrix.")
-      .def(
+      .def_property_readonly(
           "biases",
           [](FullyConnectedNode& node) {
             uint32_t dim = node.outputDim();
@@ -108,7 +110,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           },
           py::return_value_policy::reference,
           "Returns a ParameterReference object to the bias vector.")
-      .def(
+      .def_property_readonly(
           "weight_gradients",
           [](FullyConnectedNode& node) {
             uint32_t dim = node.outputDim();
@@ -118,7 +120,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           },
           py::return_value_policy::reference_internal,
           "Returns a ParameterReference object to the weight gradients matrix.")
-      .def(
+      .def_property_readonly(
           "bias_gradients",
           [](FullyConnectedNode& node) {
             uint32_t dim = node.outputDim();
