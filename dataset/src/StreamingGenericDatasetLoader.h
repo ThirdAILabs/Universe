@@ -21,7 +21,7 @@ class StreamingGenericDatasetLoader
       std::shared_ptr<DataLoader> loader,
       std::shared_ptr<GenericBatchProcessor> processor, bool shuffle = false,
       ShuffleBufferConfig config = ShuffleBufferConfig())
-      : StreamingDataset(std::move(loader), processor),
+      : StreamingDataset(loader, processor),
         _processor(std::move(processor)),
         _buffer(config.seed, loader->getMaxBatchSize()),
         _shuffle(shuffle),
