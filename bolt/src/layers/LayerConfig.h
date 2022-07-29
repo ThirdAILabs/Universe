@@ -170,6 +170,16 @@ struct EmbeddingLayerConfig {
 
 class NormalizationLayerConfig {
  public:
+  explicit NormalizationLayerConfig(float beta_regularizer = 0.0,
+                                    float gamma_regularizer = 1.0,
+                                    bool center = true, bool scale = true,
+                                    float epsilon = 0.001)
+      : _center(center),
+        _scale(scale),
+        _epsilon(epsilon),
+        _beta_regularizer(beta_regularizer),
+        _gamma_regularizer(gamma_regularizer),
+        _verbose(true) {}
   static NormalizationLayerConfig makeConfig() {
     return NormalizationLayerConfig();
   }
@@ -193,20 +203,9 @@ class NormalizationLayerConfig {
   constexpr bool scale() const { return _scale; }
   constexpr float beta() const { return _beta_regularizer; }
   constexpr float gamma() const { return _gamma_regularizer; }
-  constexpr float epsilon() const {return _epsilon;}
+  constexpr float epsilon() const { return _epsilon; }
 
  private:
-  explicit NormalizationLayerConfig(float beta_regularizer = 0.0,
-                                    float gamma_regularizer = 1.0,
-                                    bool center = true, bool scale = true,
-                                    float epsilon = 0.001)
-      : _center(center),
-        _scale(scale),
-        _epsilon(epsilon),
-        _beta_regularizer(beta_regularizer),
-        _gamma_regularizer(gamma_regularizer),
-        _verbose(true) {}
-
   // specifies if beta_regularizer will be added to z_score
   bool _center;
   // specifies if gamma_regularizer will be multiplied by the z_score
