@@ -66,9 +66,6 @@ class Worker:
                     rebuild=self.rebuild,
                     verbose=False)
         
-        
-        self.total_nodes = total_nodes
-        self.id = id
 
 
     def addHeadWorker(
@@ -292,7 +289,6 @@ class Worker:
 
         local_update_id = (update_id + self.id - 1)%self.total_nodes
 
-        get_ray_object = self.friend.receiveArrayPartitions.remote(update_id)
         t2 = time.time()
         get_ray_object = self.friend.receiveArrayPartitions.remote(update_id)
         self.friend_weight_gradient_list, self.friend_bias_gradient_list, python_computation_time_receive_array = ray.get(get_ray_object)
@@ -330,8 +326,6 @@ class Worker:
                 self.b_gradients[i][l_bias_id:r_bias_id] = self.friend_bias_gradient_list[i]
 
         python_computation_time += time.time() - t2
-        # print('[processRing]Python Computation Time: ', python_computation_time, ' Communication Time: ', communication_time)
-        # print('[processRing] Python Computation Time:',python_computation_time, ', Communication Time:',communication_time)
         return python_computation_time, communication_time
 
     
