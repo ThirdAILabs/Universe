@@ -182,16 +182,16 @@ void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
 std::pair<std::vector<std::vector<float>>,
           std::optional<std::vector<std::vector<uint32_t>>>>
 BoltGraph::getInputGradients(const dataset::BoltDatasetPtr& input_data,
-                             const dataset::BoltTokenDatasetPtr& input_tokens,
+                             const dataset::BoltTokenDatasetPtr& input_token,
                              bool best_index,
                              const std::vector<uint32_t>& required_labels) {
-  std::vector<dataset::BoltTokenDatasetPtr> temp;
-  if (input_tokens) {
-    temp = {input_tokens};
+  std::vector<dataset::BoltTokenDatasetPtr> input_tokens;
+  if (input_token) {
+    input_tokens = {input_token};
   } else {
-    temp = {};
+    input_tokens = {};
   }
-  DatasetContext input_gradients_context({input_data}, temp, nullptr);
+  DatasetContext input_gradients_context({input_data}, input_tokens, nullptr);
 
   prepareToProcessBatches(input_gradients_context.batchSize(),
                           /* use_sparsity=*/true);
@@ -230,7 +230,6 @@ BoltGraph::getInputGradients(const dataset::BoltDatasetPtr& input_data,
           required_index =
               required_labels[batch_idx * input_gradients_context.batchSize(0) +
                               vec_id];
-
           if (required_index >= _output->outputDim()) {
             throw std::invalid_argument(
                 "Cannot pass required index " + std::to_string(required_index) +
@@ -259,14 +258,16 @@ BoltGraph::getInputGradients(const dataset::BoltDatasetPtr& input_data,
         // get the gradients and indices and return it.
       }
     }
-    if (input_dataset_indices.empty()) {
-      return std::make_pair(input_dataset_grad, std::nullopt);
-    }
-    return std::make_pair(input_dataset_grad, input_dataset_indices);
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
     throw;
   }
+  cleanupAfterBatchProcessing();
+
+  if (input_dataset_indices.empty()) {
+    return std::make_pair(input_dataset_grad, std::nullopt);
+  }
+  return std::make_pair(input_dataset_grad, input_dataset_indices);
 }
 
 InferenceResult BoltGraph::predict(

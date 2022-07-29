@@ -229,14 +229,14 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
              bool best_index = true,
              const std::vector<uint32_t>& required_labels =
                  std::vector<uint32_t>()) {
-            auto gradients = model.getInputGradients(
-                input_data, /* train_tokens = */ nullptr, best_index,
+            auto gradients = dagGetInputGradientsWrapper(
+                model, input_data, /* input_tokens = */ nullptr, best_index,
                 required_labels);
             return gradients;
           },
           py::arg("input_data"), py::arg("best_index") = true,
           py::arg("required_labels") = std::vector<uint32_t>())
-      .def("get_input_gradients", &BoltGraph::getInputGradients,
+      .def("get_input_gradients", &dagGetInputGradientsWrapper,
            py::arg("input_data"), py::arg("input_tokens"),
            py::arg("best_index") = true,
            py::arg("required_labels") = std::vector<uint32_t>())
@@ -338,6 +338,19 @@ py::tuple dagPredictPythonWrapper(BoltGraph& model,
       /* active_neurons = */ active_neuron_pointer,
       /* activation_handle = */ output_handle,
       /* active_neuron_handle = */ output_handle);
+}
+
+py::tuple dagGetInputGradientsWrapper(
+    BoltGraph& model, const dataset::BoltDatasetPtr& input_data,
+    const dataset::BoltTokenDatasetPtr& input_tokens, bool best_index,
+    const std::vector<uint32_t>& required_labels) {
+  auto gradients = model.getInputGradients(input_data, input_tokens, best_index,
+                                           required_labels);
+
+  if (gradients.second == std::nullopt) {
+    return py::cast(gradients.first);
+  }
+  return py::cast(gradients);
 }
 
 }  // namespace thirdai::bolt::python
