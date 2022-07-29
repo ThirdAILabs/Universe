@@ -81,7 +81,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   selectActiveNeurons<DENSE, PREV_DENSE>(input, output, labels);
 
   float max_act = 0;
-  uint32_t len_out = DENSE ? _dim : _sparse_dim;
+  uint32_t len_out = outputLength<DENSE>();
   std::fill_n(output.gradients, len_out, 0);
 
   _prev_is_dense = PREV_DENSE;
@@ -221,7 +221,7 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
   assert((output.active_neurons == nullptr && DENSE) ||
          (output.active_neurons != nullptr && !DENSE));
 
-  uint32_t len_out = DENSE ? _dim : _sparse_dim;
+  uint32_t len_out = outputLength<DENSE>();
 
   for (uint64_t n = 0; n < len_out; n++) {
     assert(!std::isnan(output.gradients[n]));
@@ -260,7 +260,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
 
   std::unordered_set<uint32_t> active_set;
 
-  uint32_t label_len = labels != nullptr ? labels->len : 0;
+  uint32_t label_len = labels->isDense() ? labels->len : 0;
   for (uint32_t i = 0; i < label_len; i++) {
     assert(labels->active_neurons[i] < _dim);
     active_set.insert(labels->active_neurons[i]);

@@ -131,6 +131,15 @@ class FullyConnectedLayer final : public SequentialLayer {
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
   std::vector<uint32_t> _rand_neurons;
 
+  template <bool DENSE>
+  constexpr uint32_t outputLength() const {
+    if constexpr (DENSE) {
+      return _dim;
+    } else {
+      return _sparse_dim;
+    }
+  }
+
   using ActiveNeuronsPair =
       std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
 
