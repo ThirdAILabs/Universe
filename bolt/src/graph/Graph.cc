@@ -253,10 +253,12 @@ InferenceResult BoltGraph::predict(
   return {std::move(metric_vals), std::move(outputTracker)};
 }
 
-InferenceOutputTracker BoltGraph::predictSingle(
-    const std::vector<BoltVector>& test_data,
-    const std::vector<std::vector<uint32_t>>& test_tokens,
-    bool use_sparse_inference) {
+// Predicts on a single sample input for performance. Always returns
+// activations and doesn't calculate metrics.
+std::pair<const std::vector<float>, const std::optional<std::vector<uint32_t>>>
+BoltGraph::predictSingle(const std::vector<BoltVector>& test_data,
+                         const std::vector<std::vector<uint32_t>>& test_tokens,
+                         bool use_sparse_inference) {
   SingleUnitDatasetContext single_predict_context(test_data, test_tokens);
 
   verifyCanPredict(single_predict_context, /* has_labels = */ false,
@@ -285,7 +287,8 @@ InferenceOutputTracker BoltGraph::predictSingle(
 
   cleanupAfterBatchProcessing();
 
-  return outputTracker;
+  return std::make_pair(outputTracker.getActivations().value(),
+                        outputTracker.getActiveNeurons());
 }
 
 void BoltGraph::processInferenceBatch(uint64_t batch_size,

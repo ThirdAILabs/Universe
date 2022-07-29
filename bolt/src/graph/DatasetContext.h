@@ -118,8 +118,8 @@ class DatasetContext {
  */
 class SingleUnitDatasetContext : public DatasetContext {
  public:
-  SingleUnitDatasetContext(std::vector<BoltVector> data,
-                           std::vector<std::vector<uint32_t>> tokens)
+  SingleUnitDatasetContext(const std::vector<BoltVector>& data,
+                           const std::vector<std::vector<uint32_t>>& tokens)
       : _labels(nullptr) {
     for (auto vector : data) {
       _data.push_back(BoltBatch({std::move(vector)}));
@@ -136,7 +136,7 @@ class SingleUnitDatasetContext : public DatasetContext {
   }
 
   void setInputs(uint64_t batch_idx, const std::vector<InputPtr>& inputs,
-                 const std::vector<TokenInputPtr>& token_inputs) {
+                 const std::vector<TokenInputPtr>& token_inputs) override {
     (void)batch_idx;
     for (uint32_t i = 0; i < inputs.size(); i++) {
       inputs[i]->setInputs(&_data[i]);
@@ -146,22 +146,22 @@ class SingleUnitDatasetContext : public DatasetContext {
     }
   }
 
-  uint64_t batchSize() const { return 1; }
+  uint64_t batchSize() const override { return 1; }
 
-  uint64_t batchSize(uint64_t batch_idx) const {
+  uint64_t batchSize(uint64_t batch_idx) const override {
     (void)batch_idx;
     return 1;
   }
 
-  uint64_t len() const { return 1; }
+  uint64_t len() const override { return 1; }
 
-  uint64_t numBatches() const { return 1; }
+  uint64_t numBatches() const override { return 1; }
 
-  uint64_t numVectorDatasets() const { return _data.size(); }
+  uint64_t numVectorDatasets() const override { return _data.size(); }
 
-  uint64_t numTokenDatasets() const { return _tokens.size(); }
+  uint64_t numTokenDatasets() const override { return _tokens.size(); }
 
-  const dataset::BoltDatasetPtr& labels() const { return _labels; }
+  const dataset::BoltDatasetPtr& labels() const override { return _labels; }
 
   std::vector<BoltBatch> _data;
   std::vector<dataset::BoltTokenBatch> _tokens;

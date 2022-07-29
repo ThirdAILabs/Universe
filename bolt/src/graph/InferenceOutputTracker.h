@@ -88,6 +88,14 @@ class InferenceOutputTracker {
     return _active_neurons->data();
   }
 
+  const std::optional<std::vector<float>>& getActivations() const {
+    return _activations;
+  }
+
+  const std::optional<std::vector<uint32_t>>& getActiveNeurons() const {
+    return _active_neurons;
+  }
+
   uint32_t numNonzerosInOutput() const { return _num_nonzeros_per_sample; }
 
   uint32_t numSamples() const { return _num_samples; }
