@@ -131,9 +131,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
       graph_submodule, "Concatenate")
-      .def(py::init<>(),
-           "A layer that concatenates an arbitrary number of layers "
-           "together.\n")
+      .def(
+          py::init<>(),
+          "A layer that concatenates an arbitrary number of layers together.\n")
       .def("__call__", &ConcatenateNode::setConcatenatedNodes,
            py::arg("input_layers"),
            "Tells the graph which layers will be concatenated. Must be at "
@@ -159,16 +159,14 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("log_embedding_block_size"),
            "Constructs an Embedding layer that can be used in the graph.\n"
            "Arguments:\n"
-           " * num_embedding_lookups: Int (positive) - The number of "
-           "embedding "
+           " * num_embedding_lookups: Int (positive) - The number of embedding "
            "lookups to perform for each token.\n"
            " * lookup_size: Int (positive) - How many consutive values to "
            "select as part of the embedding for each embedding lookup.\n"
            " * log_embedding_block_size: Int (positive) The log base 2 of the "
            "total size of the embedding block.\n")
       .def("__call__", &EmbeddingNode::addInput, py::arg("token_input_layer"),
-           "Tells the graph which token input to use for this Embedding "
-           "Node.");
+           "Tells the graph which token input to use for this Embedding Node.");
 
   py::class_<Input, InputPtr, Node>(graph_submodule, "Input")
       .def(py::init<uint32_t>(), py::arg("dim"),
@@ -350,16 +348,16 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
 #if THIRDAI_EXPOSE_ALL
       .def("register_batch_callback",
            [](BoltGraph& model, GraphCallback callback) {
-             // From testing we don't need to release the GIL to call the
-             // python callback, even if the python function calls back into
-             // the C++ code.
+             // From testing we don't need to release the GIL to call the python
+             // callback, even if the python function calls back into the C++
+             // code.
              model.registerPerBatchCallback(std::move(callback));
            })
       .def("register_epoch_callback",
            [](BoltGraph& model, GraphCallback callback) {
-             // From testing we don't need to release the GIL to call the
-             // python callback, even if the python function calls back into
-             // the C++ code.
+             // From testing we don't need to release the GIL to call the python
+             // callback, even if the python function calls back into the C++
+             // code.
              model.registerPerEpochCallback(std::move(callback));
            })
 #endif
