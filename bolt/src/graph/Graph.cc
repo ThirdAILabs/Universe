@@ -201,8 +201,11 @@ InferenceResult BoltGraph::predict(
   prepareToProcessBatches(predict_context.batchSize(),
                           predict_config.sparseInferenceEnabled());
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
   InferenceOutputTracker outputTracker(
       _output, predict_config, /* total_num_samples = */ predict_context.len());
+#pragma GCC diagnostic pop
 
   ProgressBar bar(predict_context.numBatches(), predict_config.verbose());
 
