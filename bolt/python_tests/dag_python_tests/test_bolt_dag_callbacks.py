@@ -103,7 +103,7 @@ def test_dag_callbacks_call_cpp_function():
         global biases
 
         w_grads = model.get_layer("fc_1").weight_gradients.get()
-        b_grads = model.get_layer("fc_1").bias_gradients().get()
+        b_grads = model.get_layer("fc_1").bias_gradients.get()
         # This is a different learning rate than used in train because we are using
         # simple gradient updates here instead of ADAM.
         #
