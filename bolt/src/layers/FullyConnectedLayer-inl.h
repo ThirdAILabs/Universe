@@ -106,7 +106,7 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
       assert(!std::isnan(output.activations[n]));
     }
   }
-};
+}
 
 template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
