@@ -278,7 +278,7 @@ BoltGraph::predictSingle(const std::vector<BoltVector>& test_data,
   try {
     single_predict_context.setInputs(/* batch_idx = */ 0, _inputs,
                                      _token_inputs);
-    forward(/* vec_id = */ 0, nullptr);
+    forward(/* vec_index = */ 0, nullptr);
     outputTracker.saveOutputBatch(_output, single_predict_context.batchSize());
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
