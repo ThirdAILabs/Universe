@@ -570,11 +570,11 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
     assert(!std::isnan(grad));
 
     // _b_momentum[cur_neuron] = B1 * _b_momentum[cur_neuron] + (1 - B1) * grad;
-    _b_velocity[cur_neuron] =
-        B2 * _b_velocity[cur_neuron] + (1 - B2) * grad * grad;
+    // _b_velocity[cur_neuron] =
+    //     B2 * _b_velocity[cur_neuron] + (1 - B2) * grad * grad;
     _b_momentum.set(cur_neuron, B1 * _b_momentum[cur_neuron] + (1 - B1) * grad);
-    // _b_velocity.set(cur_neuron,
-    //                 B2 * _b_velocity[cur_neuron] + (1 - B2) * grad * grad);
+    _b_velocity.set(cur_neuron,
+                    B2 * _b_velocity[cur_neuron] + (1 - B2) * grad * grad);
 
     assert(!std::isnan(_b_momentum[cur_neuron]));
     assert(!std::isnan(_b_velocity[cur_neuron]));
@@ -619,9 +619,9 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
   }
 
   // _w_momentum[indx] = B1 * _w_momentum[indx] + (1 - B1) * grad;
-  _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
+  // _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
   _w_momentum.set(indx, B1 * _w_momentum[indx] + (1 - B1) * grad);
-  // _w_velocity.set(indx, B2 * _w_velocity[indx] + (1 - B2) * grad * grad);
+  _w_velocity.set(indx, B2 * _w_velocity[indx] + (1 - B2) * grad * grad);
 
   BOLT_TRACE(B1);
   BOLT_TRACE(_w_momentum[indx]);
