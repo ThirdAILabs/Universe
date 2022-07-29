@@ -23,7 +23,7 @@ class StreamingGenericDatasetLoader
       ShuffleBufferConfig config = ShuffleBufferConfig())
       : StreamingDataset(std::move(loader), processor),
         _processor(std::move(processor)),
-        _buffer(config.seed),
+        _buffer(config.seed, loader->getMaxBatchSize()),
         _shuffle(shuffle),
         _buffer_size(config.buffer_size) {}
 

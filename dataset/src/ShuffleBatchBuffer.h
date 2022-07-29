@@ -2,7 +2,7 @@
 
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/Datasets.h>
-#include <dataset/src/utils/CircularBuffer.h>
+#include <dataset/src/utils/CircularQueue.h>
 #include <ctime>
 #include <optional>
 #include <random>
@@ -12,25 +12,19 @@ namespace thirdai::dataset {
 
 class ShuffleBatchBuffer {
  public:
-  explicit ShuffleBatchBuffer(uint32_t shuffle_seed)
-      : _gen(shuffle_seed), _saw_last_batch(false), _batch_size(0) {}
+  explicit ShuffleBatchBuffer(uint32_t shuffle_seed, size_t batch_size)
+      : _gen(shuffle_seed), _saw_last_batch(false), _batch_size(batch_size) {}
 
   void insertBatch(std::tuple<bolt::BoltBatch, bolt::BoltBatch>&& batch,
                    bool shuffle) {
-    if (empty()) {
-      _batch_size = std::get<0>(batch).getBatchSize();
-      _saw_last_batch = false;
-    }
-
     checkConsistentBatchSize(std::get<0>(batch).getBatchSize());
-
-    if (shuffle) {
-      swapShuffle(_input_batches, std::get<0>(batch), _label_batches,
-                  std::get<1>(batch), _batch_size, _gen);
-    }
 
     _input_batches.insert(std::move(std::get<0>(batch)));
     _label_batches.insert(std::move(std::get<1>(batch)));
+
+    if (shuffle) {
+      swapShuffle(_input_batches, _label_batches, _batch_size, _gen);
+    }
   }
 
   std::optional<std::pair<bolt::BoltBatch, bolt::BoltBatch>> popBatch() {
@@ -53,45 +47,53 @@ class ShuffleBatchBuffer {
   inline bool empty() const { return _input_batches.empty(); }
 
  private:
-  inline void checkConsistentBatchSize(size_t batch_size) {
+  inline void checkConsistentBatchSize(size_t new_batch_size) {
     if (_saw_last_batch) {
       throw std::runtime_error(
           "[ShuffleBatchBuffer::insertBatch] Attempted to insert batch after "
-          "last batch (batch with smaller number of vectors).");
+          "last batch (batch with smaller size than expected is treated as "
+          "the last batch).");
     }
 
-    if (batch_size > _batch_size) {
+    if (new_batch_size > _batch_size) {
       std::stringstream error_ss;
       error_ss << "[ShuffleBatchBuffer::insertBatch] Attempted to insert "
-                  "batch with more vectors than expected (expected = "
-               << _batch_size << " actual = " << batch_size << ").";
+                  "batch that is larger than expected (expected size = "
+               << _batch_size << " actual = " << new_batch_size << ").";
       throw std::runtime_error(error_ss.str());
     }
 
-    if (batch_size < _batch_size) {
+    if (new_batch_size < _batch_size) {
       _saw_last_batch = true;
     }
   }
 
-  static inline void swapShuffle(CircularBuffer<bolt::BoltBatch>& input_batches,
-                                 bolt::BoltBatch& new_input_batch,
-                                 CircularBuffer<bolt::BoltBatch>& label_batches,
-                                 bolt::BoltBatch& new_label_batch,
+  static inline void swapShuffle(CircularQueue<bolt::BoltBatch>& input_batches,
+                                 CircularQueue<bolt::BoltBatch>& label_batches,
                                  size_t expected_batch_size,
                                  std::mt19937& gen) {
-    for (size_t i = 0; i < new_input_batch.getBatchSize(); i++) {
-      size_t rand_range = input_batches.size() * expected_batch_size +
-                          new_input_batch.getBatchSize();
-      std::uniform_int_distribution<> dist(0, rand_range);
+    assert(input_batches.size() > 0);
+    size_t n_old_vecs = (input_batches.size() - 1) * expected_batch_size;
+    size_t n_vecs = n_old_vecs + input_batches.last().getBatchSize();
+    std::uniform_int_distribution<> dist(0, n_vecs);
+
+    for (size_t i = 0; i < input_batches.last().getBatchSize(); i++) {
       size_t swap_with = dist(gen);
-      if (swap_with < input_batches.size() * expected_batch_size) {
+      /*
+        Only swap with vectors in old batches for two reasons:
+        1. Swapping with elements in the same batch is effectively a no-op
+           since vectors in the same batch are processed by bolt in parallel
+        2. This ensures that each element in the new batch to has an equal 
+           probability of being swapped out of this batch.
+      */
+      if (swap_with < n_old_vecs) {
         size_t swap_batch_pos = swap_with / expected_batch_size;
         size_t swap_vec_idx = swap_with % expected_batch_size;
 
         swapVecs(input_batches.at(swap_batch_pos)[swap_vec_idx],
-                 new_input_batch[i]);
+                 input_batches.last()[i]);
         swapVecs(label_batches.at(swap_batch_pos)[swap_vec_idx],
-                 new_label_batch[i]);
+                 label_batches.last()[i]);
       }
     }
   }
@@ -108,14 +110,16 @@ class ShuffleBatchBuffer {
   bool _saw_last_batch;
   size_t _batch_size;
 
-  CircularBuffer<bolt::BoltBatch> _input_batches;
-  CircularBuffer<bolt::BoltBatch> _label_batches;
+  CircularQueue<bolt::BoltBatch> _input_batches;
+  CircularQueue<bolt::BoltBatch> _label_batches;
 };
 
 struct ShuffleBufferConfig {
   ShuffleBufferConfig() : buffer_size(1000), seed(time(NULL)) {}
+
   explicit ShuffleBufferConfig(size_t buffer_size)
       : buffer_size(buffer_size), seed(time(NULL)) {}
+  
   ShuffleBufferConfig(size_t buffer_size, uint32_t seed)
       : buffer_size(buffer_size), seed(seed) {}
 
