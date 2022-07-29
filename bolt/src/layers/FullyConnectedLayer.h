@@ -132,7 +132,7 @@ class FullyConnectedLayer final : public SequentialLayer {
   std::vector<uint32_t> _rand_neurons;
 
   template <bool DENSE>
-  constexpr uint32_t outputLength() const {
+  constexpr uint32_t nonzerosInOutput() const {
     if constexpr (DENSE) {
       return _dim;
     } else {
