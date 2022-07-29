@@ -290,16 +290,15 @@ class Worker:
         communication_time = 0
 
 
-        t1 = time.time()
         local_update_id = (update_id + self.id - 1)%self.total_nodes
 
         get_ray_object = self.friend.receiveArrayPartitions.remote(update_id)
-        python_computation_time += time.time() - t1
-        # print('Calling the Function Time: ', python_computation_time)
         t2 = time.time()
-        self.friend_weight_gradient_list, self.friend_bias_gradient_list = ray.get(get_ray_object)
-        communication_time += time.time() - t2
-        # print('Gradient getting Time:', communication_time)
+        get_ray_object = self.friend.receiveArrayPartitions.remote(update_id)
+        self.friend_weight_gradient_list, self.friend_bias_gradient_list, python_computation_time_receive_array = ray.get(get_ray_object)
+        communication_time += time.time() - t2 - python_computation_time_receive_array
+        
+        python_computation_time += python_computation_time_receive_array
         
         t2 = time.time()
         for i in range(len(self.friend_weight_gradient_list)):
@@ -376,8 +375,7 @@ class Worker:
             b_gradient_subarray.append(self.b_gradients[i][l_bias_id:r_bias_id])
 
         python_computation_time += time.time() - t1
-        # print('[receiveArrayPartition]Python Computation Time: ', python_computation_time)
-        return w_gradient_subarray, b_gradient_subarray
+        return w_gradient_subarray, b_gradient_subarray, python_computation_time
 
     
 
