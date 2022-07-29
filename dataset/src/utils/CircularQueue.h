@@ -36,7 +36,7 @@ class CircularQueue {
       _insert_idx = 0;
     } else {
       _buffer[_insert_idx] = std::move(new_elem);
-      _insert_idx = rotate(_insert_idx);
+      _insert_idx = rotateRight(_insert_idx, /* by = */ 1);
     }
     _size++;
   }
@@ -50,7 +50,7 @@ class CircularQueue {
     }
 
     ELEMENT_T elem = std::move(_buffer[_pop_idx]);
-    _pop_idx = rotate(_pop_idx);
+    _pop_idx = rotateRight(_pop_idx, /* by = */ 1);
     _size--;
     _n_popped++;
 
@@ -64,7 +64,18 @@ class CircularQueue {
     if (i >= _size) {
       throw std::invalid_argument("[CircularQueue::at] Index out of range.");
     }
-    size_t index = (_pop_idx + i) % _buffer.size();
+    size_t index = rotateRight(_pop_idx, /* by = */ i);
+    return _buffer[index];
+  }
+
+  /**
+   * Returns the last element in the queue.
+   */
+  ELEMENT_T& last() {
+    if (_size == 0) {
+      throw std::runtime_error("[CircularQueue::last] Queue is emtpy.");
+    }
+    size_t index = rotateRight(_pop_idx, /* by = */ _size - 1);
     return _buffer[index];
   }
 
@@ -108,8 +119,8 @@ class CircularQueue {
     return _size == _buffer.size();
   }
 
-  size_t rotate(size_t idx) {
-    return (idx + 1) % _buffer.size();
+  size_t rotateRight(size_t idx, size_t by) {
+    return (idx + by) % _buffer.size();
   }
 
   std::vector<ELEMENT_T> _buffer;
