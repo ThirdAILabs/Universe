@@ -1,8 +1,9 @@
+#pragma once
+#
 #ifndef SEARCH_MAXFLASHARRAY_IMPL
 #error "This file should not be used directly."
 #endif
 
-#include "MaxFlashArray.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/HashTable.h>
@@ -10,10 +11,6 @@
 #include <utility>
 
 namespace thirdai::search {
-
-template class MaxFlashArray<uint8_t>;
-template class MaxFlashArray<uint16_t>;
-template class MaxFlashArray<uint32_t>;
 
 template <typename LABEL_T>
 MaxFlashArray<LABEL_T>::MaxFlashArray(hashing::HashFunction* function,

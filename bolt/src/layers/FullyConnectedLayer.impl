@@ -1,3 +1,5 @@
+#pragma once
+
 namespace thirdai::bolt {
 
 template <bool DENSE, bool PREV_DENSE>

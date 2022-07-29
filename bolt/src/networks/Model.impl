@@ -1,8 +1,9 @@
+#pragma once 
+
 #ifndef BOLT_MODEL_IMPL
 #error "This file should not be used directly."
 #endif
 
-#include "Model.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/utils/ProgressBar.h>
@@ -14,7 +15,6 @@
 
 namespace thirdai::bolt {
 
-template class Model<bolt::BoltBatch>;
 
 template <typename BATCH_T>
 MetricData Model<BATCH_T>::train(
