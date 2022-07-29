@@ -6,10 +6,8 @@
 #include <dataset/src/blocks/BlockInterface.h>
 #include <dataset/src/utils/SegmentedFeatureVector.h>
 #include <algorithm>
-#include <optional>
 #include <sstream>
 #include <stdexcept>
-#include <vector>
 
 namespace thirdai::dataset {
 
