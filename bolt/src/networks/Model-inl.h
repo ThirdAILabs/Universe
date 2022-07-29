@@ -1,8 +1,4 @@
-#pragma once 
-
-#ifndef BOLT_MODEL_IMPL
-#error "This file should not be used directly."
-#endif
+#pragma once
 
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/metrics/Metric.h>
@@ -14,7 +10,6 @@
 #include <stdexcept>
 
 namespace thirdai::bolt {
-
 
 template <typename BATCH_T>
 MetricData Model<BATCH_T>::train(

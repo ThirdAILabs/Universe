@@ -198,6 +198,4 @@ class Model {
 
 }  // namespace thirdai::bolt
 
-#define BOLT_MODEL_IMPL
 #include "Model-inl.h"
-#undef BOLT_MODEL_IMPL

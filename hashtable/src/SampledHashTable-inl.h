@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef SAMPLED_HASH_TABLE_IMPL
-#error "This file should not be used directly."
-#endif
 #include <cassert>
 #include <random>
 
