@@ -67,6 +67,7 @@ class Worker:
                     verbose=False)
         
         self.total_nodes = total_nodes
+        self.id = id
         
 
 
