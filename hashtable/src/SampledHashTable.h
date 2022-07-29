@@ -141,7 +141,7 @@ class SampledHashTable final : public HashTable<LABEL_T> {
 }  // namespace thirdai::hashtable
 
 #define SAMPLED_HASH_TABLE_IMPL
-#include "SampledHashTable.impl"
+#include "SampledHashTable-inl.h"
 #undef SAMPLED_HASH_TABLE_IMPL
 
 CEREAL_REGISTER_TYPE(thirdai::hashtable::SampledHashTable<uint16_t>)

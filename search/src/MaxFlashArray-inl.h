@@ -1,9 +1,5 @@
 #pragma once
 #
-#ifndef SEARCH_MAXFLASHARRAY_IMPL
-#error "This file should not be used directly."
-#endif
-
 #include <bolt/src/layers/BoltVector.h>
 #include <hashing/src/HashFunction.h>
 #include <hashtable/src/HashTable.h>

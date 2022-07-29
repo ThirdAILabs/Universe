@@ -251,7 +251,7 @@ class FullyConnectedLayer final : public SequentialLayer {
 
 }  // namespace thirdai::bolt
 
-#include "FullyConnectedLayer.impl"
+#include "FullyConnectedLayer-inl.h"
 
 CEREAL_REGISTER_TYPE(thirdai::bolt::FullyConnectedLayer)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(thirdai::bolt::SequentialLayer,

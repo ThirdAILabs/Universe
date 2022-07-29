@@ -69,6 +69,4 @@ class MaxFlashArray {
 
 }  // namespace thirdai::search
 
-#define SEARCH_MAXFLASHARRAY_IMPL
-#include "MaxFlashArray.impl"
-#undef SEARCH_MAXFLASHARRAY_IMPL
+#include "MaxFlashArray-inl.h"
