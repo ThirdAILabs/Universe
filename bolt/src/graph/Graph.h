@@ -25,6 +25,8 @@
 
 namespace thirdai::bolt {
 
+using GraphCallback = std::function<void()>;
+
 class BoltGraph {
  public:
   /*
@@ -45,7 +47,9 @@ class BoltGraph {
         _inputs(std::move(inputs)),
         _token_inputs(std::move(token_inputs)),
         _epoch_count(0),
-        _batch_cnt(0) {
+        _batch_cnt(0),
+        _per_batch_callback(std::nullopt),
+        _per_epoch_callback(std::nullopt) {
     thirdai::licensing::LicenseWrapper::checkLicense();
   }
 
@@ -100,6 +104,14 @@ class BoltGraph {
 
   NodePtr getNodeByName(const std::string& node_name) const;
 
+  void registerPerBatchCallback(GraphCallback callback) {
+    _per_batch_callback = std::move(callback);
+  }
+
+  void registerPerEpochCallback(GraphCallback callback) {
+    _per_epoch_callback = std::move(callback);
+  }
+
  private:
   // Private constructor for cereal.
   BoltGraph() { thirdai::licensing::LicenseWrapper::checkLicense(); }
@@ -153,6 +165,18 @@ class BoltGraph {
 
   bool graphCompiled() const { return _loss != nullptr; }
 
+  void perBatchCallback() {
+    if (_per_batch_callback) {
+      _per_batch_callback.value()();
+    }
+  }
+
+  void perEpochCallback() {
+    if (_per_epoch_callback) {
+      _per_epoch_callback.value()();
+    }
+  }
+
   // List of nodes(layers) in the order in which they should be computed.
   std::vector<NodePtr> _nodes;
 
@@ -177,6 +201,9 @@ class BoltGraph {
 
   uint32_t _epoch_count;
   uint32_t _batch_cnt;
+
+  std::optional<GraphCallback> _per_batch_callback;
+  std::optional<GraphCallback> _per_epoch_callback;
 };
 
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;
