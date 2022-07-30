@@ -35,8 +35,10 @@ TEST(StreamingGenericDatasetLoaderTests, CanShuffle) {
   size_t line = 0;
   while (auto batch = unshuffled_pipeline.nextBatchTuple()) {
     for (size_t i = 0; i < std::get<0>(*batch).getBatchSize(); i++) {
-      ASSERT_EQ(std::get<0>(*batch)[i].activations[0], static_cast<float>(line));
-      ASSERT_EQ(std::get<1>(*batch)[i].activations[0], static_cast<float>(line));
+      ASSERT_EQ(std::get<0>(*batch)[i].activations[0],
+                static_cast<float>(line));
+      ASSERT_EQ(std::get<1>(*batch)[i].activations[0],
+                static_cast<float>(line));
       line++;
     }
   }

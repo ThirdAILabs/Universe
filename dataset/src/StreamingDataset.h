@@ -45,7 +45,8 @@ class StreamingDataset {
   // tuple of datasets where each dataset contains a list of batches of the type
   // corresponding to that element of the tuple.
   // NOLINTNEXTLINE
-  virtual std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...> loadInMemory() {
+  virtual std::tuple<std::shared_ptr<InMemoryDataset<BATCH_Ts>>...>
+  loadInMemory() {
     std::tuple<std::vector<BATCH_Ts>...> batch_lists;
 
     uint64_t len = 0;

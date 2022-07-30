@@ -6,6 +6,7 @@
 #include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
+#include <cstddef>
 #include <memory>
 
 namespace thirdai::dataset {
@@ -13,20 +14,9 @@ namespace thirdai::dataset {
 class StreamingGenericDatasetLoader
     : public StreamingDataset<bolt::BoltBatch, bolt::BoltBatch> {
  public:
-  // The idea is to pass the input loader and generic batch processor into the
-  // primary constructor This primary constructor calls the base class
-  // constructor.
-
-  StreamingGenericDatasetLoader(
-      std::shared_ptr<DataLoader> loader,
-      std::shared_ptr<GenericBatchProcessor> processor, bool shuffle = false,
-      ShuffleBufferConfig config = ShuffleBufferConfig())
-      : StreamingDataset(loader, processor),
-        _processor(std::move(processor)),
-        _buffer(config.seed, loader->getMaxBatchSize()),
-        _shuffle(shuffle),
-        _buffer_size(config.buffer_size) {}
-
+  /**
+   * This constructor accepts a pointer to any data loader.
+   */
   StreamingGenericDatasetLoader(
       std::shared_ptr<DataLoader> loader,
       std::vector<std::shared_ptr<Block>> input_blocks,
@@ -40,6 +30,10 @@ class StreamingGenericDatasetLoader
                                                     has_header, delimiter),
             shuffle, config) {}
 
+  /**
+   * This constructor does not accept a data loader and
+   * defaults to a simple file loader.
+   */
   StreamingGenericDatasetLoader(
       std::string filename, std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks, uint32_t batch_size,
@@ -63,11 +57,8 @@ class StreamingGenericDatasetLoader
   std::tuple<std::shared_ptr<InMemoryDataset<bolt::BoltBatch>>,
              std::shared_ptr<InMemoryDataset<bolt::BoltBatch>>>
   loadInMemory() final {
-    while (auto batch = StreamingDataset<bolt::BoltBatch,
-                                         bolt::BoltBatch>::nextBatchTuple()) {
-      _buffer.insertBatch(std::move(batch.value()), _shuffle);
+    while (addNextBatchToBuffer()) {
     }
-
     return _buffer.exportBuffer();
   }
 
@@ -76,24 +67,44 @@ class StreamingGenericDatasetLoader
   uint32_t getLabelDim() { return _processor->getLabelDim(); }
 
  private:
+  /**
+   * Private constructor that takes in a pointer to
+   * GenericBatchProcessor so we can pass this pointer to both
+   * the base class constructor and this class's member variable
+   * initializer.
+   */
+  StreamingGenericDatasetLoader(
+      std::shared_ptr<DataLoader> loader,
+      std::shared_ptr<GenericBatchProcessor> processor, bool shuffle = false,
+      ShuffleBufferConfig config = ShuffleBufferConfig())
+      : StreamingDataset(loader, processor),
+        _processor(std::move(processor)),
+        _buffer(config.seed, loader->getMaxBatchSize()),
+        _shuffle(shuffle),
+        _batch_buffer_size(config.n_batches) {}
+
   void prefillShuffleBuffer() {
-    for (size_t i = 0; i < _buffer_size - 1; i++) {
-      addNextBatchToBuffer();
+    size_t n_prefill_batches = _batch_buffer_size - 1;
+    size_t n_added = 0;
+    while (n_added < n_prefill_batches && addNextBatchToBuffer()) {
+      n_added++;
     }
   }
 
-  void addNextBatchToBuffer() {
+  bool addNextBatchToBuffer() {
     auto batch =
         StreamingDataset<bolt::BoltBatch, bolt::BoltBatch>::nextBatchTuple();
     if (batch) {
       _buffer.insertBatch(std::move(batch.value()), _shuffle);
+      return true;
     }
+    return false;
   }
 
   std::shared_ptr<GenericBatchProcessor> _processor;
   ShuffleBatchBuffer _buffer;
   bool _shuffle;
-  size_t _buffer_size;
+  size_t _batch_buffer_size;
 };
 
 }  // namespace thirdai::dataset

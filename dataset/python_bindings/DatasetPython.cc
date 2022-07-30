@@ -243,7 +243,7 @@ void createDatasetSubmodule(py::module_& module) {
            "dataset.");
 
   py::class_<ShuffleBufferConfig>(dataset_submodule, "ShuffleBufferConfig")
-      .def(py::init<size_t, uint32_t>(), py::arg("buffer_size") = 1000,
+      .def(py::init<size_t, uint32_t>(), py::arg("n_batches") = 1000,
            py::arg("seed") = time(NULL));
 
   py::class_<StreamingGenericDatasetLoader>(dataset_submodule, "DataPipeline")

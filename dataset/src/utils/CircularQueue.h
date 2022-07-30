@@ -10,7 +10,7 @@ namespace thirdai::dataset {
 
 /**
  * A circular queue that dynamically grows until the first element is popped.
- * At that point, it becomes a bounded circular queue with a size limit 
+ * At that point, it becomes a bounded circular queue with a size limit
  * equal to the size at the time when the first element was popped.
  */
 template <typename ELEMENT_T>
@@ -19,16 +19,17 @@ class CircularQueue {
   CircularQueue() : _insert_idx(0), _pop_idx(0), _size(0), _n_popped(0) {}
 
   /**
-   * Inserts an element into the circular queue. If the queue is full and 
-   * no element had been popped, the circular buffer gets resized. 
-   * If the first element had been popped, the queue's size is bounded, 
+   * Inserts an element into the circular queue. If the queue is full and
+   * no element had been popped, the circular buffer gets resized.
+   * If the first element had been popped, the queue's size is bounded,
    * so this method throws an error if the queue is full.
    */
   void insert(ELEMENT_T&& new_elem) {
     if (bufferIsFull() && _n_popped > 0) {
       throw std::runtime_error(
-          "[CircularQueue::insert] Attempted to insert into a full bounded queue. "
-          "A CircularQueue's size is bounded once an element has been popped.");
+          "[CircularQueue::insert] Attempted to insert into a full bounded "
+          "queue. A CircularQueue's size is bounded once an element has been "
+          "popped.");
     }
 
     if (bufferIsFull()) {
@@ -115,9 +116,7 @@ class CircularQueue {
   }
 
  private:
-  bool bufferIsFull() {
-    return _size == _buffer.size();
-  }
+  bool bufferIsFull() { return _size == _buffer.size(); }
 
   size_t rotateRight(size_t idx, size_t by) {
     return (idx + by) % _buffer.size();

@@ -83,7 +83,7 @@ class ShuffleBatchBuffer {
         Only swap with vectors in old batches for two reasons:
         1. Swapping with elements in the same batch is effectively a no-op
            since vectors in the same batch are processed by bolt in parallel
-        2. This ensures that each element in the new batch to has an equal 
+        2. This ensures that each element in the new batch to has an equal
            probability of being swapped out of this batch.
       */
       if (swap_with < n_old_vecs) {
@@ -115,15 +115,15 @@ class ShuffleBatchBuffer {
 };
 
 struct ShuffleBufferConfig {
-  ShuffleBufferConfig() : buffer_size(1000), seed(time(NULL)) {}
+  ShuffleBufferConfig() : n_batches(1000), seed(time(NULL)) {}
 
   explicit ShuffleBufferConfig(size_t buffer_size)
-      : buffer_size(buffer_size), seed(time(NULL)) {}
-  
-  ShuffleBufferConfig(size_t buffer_size, uint32_t seed)
-      : buffer_size(buffer_size), seed(seed) {}
+      : n_batches(buffer_size), seed(time(NULL)) {}
 
-  size_t buffer_size;
+  ShuffleBufferConfig(size_t buffer_size, uint32_t seed)
+      : n_batches(buffer_size), seed(seed) {}
+
+  size_t n_batches;
   uint32_t seed;
 };
 
