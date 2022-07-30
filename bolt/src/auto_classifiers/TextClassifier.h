@@ -44,11 +44,12 @@ class TextClassifier {
   std::string predictSingle(const std::string& sentence) {
     BoltVector pairgrams_vec = dataset::TextEncodingUtils::computePairgrams(
         /* sentence = */ sentence, /* output_range = */ _input_dim);
+
     BoltVector output = BoltVector(/* l = */ _n_classes, /* is_dense = */ true);
-    _model->initializeNetworkState(/* batch_size = */ 1,
-                                   /* use_sparsity = */ true);
-    _model->forward(/* batch_index = */ 0, /* input = */ pairgrams_vec, output,
-                    /* labels = */ nullptr);
+    auto [values, indices] =
+        _model->predictSingle({output}, {},
+                              /* use_sparse_inference = */ true);
+
     return _batch_processor->getClassName(
         /* class_id = */ output.getIdWithHighestActivation());
   }
