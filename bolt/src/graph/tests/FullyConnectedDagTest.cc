@@ -93,10 +93,9 @@ TEST(FullyConnectedDagTest, SamePredictAndPredictSingleResults) {
 
   PredictConfig config = getPredictConfig().returnActivations();
 
-  InferenceResult all_inference_result =
+  auto [_, all_inference_output] =
       model.predict(/* test_data= */ {data},
                     /* test_tokens= */ {}, labels, config);
-  InferenceOutputTracker all_inference_output = all_inference_result.second;
 
   ASSERT_EQ(all_inference_output.numSamples(), data->len());
 
@@ -106,15 +105,13 @@ TEST(FullyConnectedDagTest, SamePredictAndPredictSingleResults) {
   for (uint64_t batch_idx = 0; batch_idx < data->numBatches(); batch_idx++) {
     BoltBatch& batch = data->at(batch_idx);
     for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-      InferenceOutputTracker single_inference_output =
-          model.predictSingle({std::move(batch[vec_idx])}, {}, config);
-      const float* single_activations_ptr =
-          single_inference_output.getNonowningActivationPointer();
+      auto [single_activations, _] = model.predictSingle(
+          {batch[vec_idx]}, {}, config.sparseInferenceEnabled());
 
-      ASSERT_EQ(single_inference_output.numNonzerosInOutput(), n_classes);
+      ASSERT_EQ(single_activations.size(), n_classes);
 
       for (uint32_t i = 0; i < n_classes; i++) {
-        ASSERT_EQ(single_activations_ptr[i],
+        ASSERT_EQ(single_activations[i],
                   all_activations_ptr[all_activations_idx]);
         all_activations_idx++;
       }

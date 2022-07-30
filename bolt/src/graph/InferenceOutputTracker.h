@@ -10,8 +10,7 @@ class InferenceOutputTracker {
  public:
   // Should only be called after the output_node has been prepared for batch
   // processing
-  InferenceOutputTracker(const NodePtr& output_node,
-                         const PredictConfig& config,
+  InferenceOutputTracker(const NodePtr& output_node, bool save_activations,
                          uint32_t total_num_samples)
       : _num_nonzeros_per_sample(output_node->getOutputVector(0).len),
         _num_samples(total_num_samples),
@@ -19,7 +18,6 @@ class InferenceOutputTracker {
     // So the linter won't complain in Release mode
     (void)_num_samples;
 
-    bool save_activations = config.shouldReturnActivations();
     bool output_sparse = !output_node->getOutputVector(0).isDense();
     bool save_active_neurons = save_activations && output_sparse;
     uint64_t total_output_length = _num_nonzeros_per_sample * _num_samples;
@@ -88,6 +86,14 @@ class InferenceOutputTracker {
       return nullptr;
     }
     return _active_neurons->data();
+  }
+
+  const std::optional<std::vector<float>>& getActivations() const {
+    return _activations;
+  }
+
+  const std::optional<std::vector<uint32_t>>& getActiveNeurons() const {
+    return _active_neurons;
   }
 
   uint32_t numNonzerosInOutput() const { return _num_nonzeros_per_sample; }
