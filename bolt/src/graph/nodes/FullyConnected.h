@@ -142,38 +142,40 @@ class FullyConnectedNode final
     return shared_from_this();
   }
 
-  float* getBiases() {
+  float* getWeightsPtr() {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state to call getBiases");
+          "FullyConnectedNode must be in a compiled state to call "
+          "getWeightsPtr.");
     }
-    return _layer->getBiases();
+    return _layer->getWeightsPtr();
   }
 
-  float* getWeights() {
+  float* getBiasesPtr() {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state to cal getWeights");
+          "FullyConnectedNode must be in a compiled state to call "
+          "getBiasesPtr.");
     }
-    return _layer->getWeights();
+    return _layer->getBiasesPtr();
   }
 
-  std::shared_ptr<FullyConnectedNode> setWeights(const float* new_weights) {
-    if (getState() != NodeState::Compiled) {
+  float* getWeightGradientsPtr() {
+    if (getState() != NodeState::PreparedForBatchProcessing) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state to call setWeights");
+          "FullyConnectedNode must be in a compiled state to call "
+          "getWeightGradientsPtr.");
     }
-    _layer->setWeights(new_weights);
-    return shared_from_this();
+    return _layer->getWeightGradientsPtr();
   }
 
-  std::shared_ptr<FullyConnectedNode> setBiases(const float* new_biases) {
-    if (getState() != NodeState::Compiled) {
+  float* getBiasGradientsPtr() {
+    if (getState() != NodeState::PreparedForBatchProcessing) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state to call setBiases");
+          "FullyConnectedNode must be in a compiled state to call "
+          "getBiasGradientsPtr.");
     }
-    _layer->setBiases(new_biases);
-    return shared_from_this();
+    return _layer->getBiasGradientsPtr();
   }
 
  private:

@@ -80,6 +80,14 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   uint32_t getSparseDim() const final { return _sparse_dim; }
 
+  float* getWeightsPtr() { return _weights.data(); }
+
+  float* getBiasesPtr() { return _biases.data(); }
+
+  float* getWeightGradientsPtr() { return _w_gradient.data(); }
+
+  float* getBiasGradientsPtr() { return _b_gradient.data(); }
+
   float* getWeights() const final;
 
   float* getBiases() const final;
@@ -146,6 +154,15 @@ class FullyConnectedLayer final : public SequentialLayer {
   std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
   std::vector<uint32_t> _rand_neurons;
+
+  template <bool DENSE>
+  constexpr uint32_t nonzerosInOutput() const {
+    if constexpr (DENSE) {
+      return _dim;
+    } else {
+      return _sparse_dim;
+    }
+  }
 
   using ActiveNeuronsPair =
       std::pair<std::vector<uint64_t>, std::vector<uint64_t>>;
