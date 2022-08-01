@@ -287,10 +287,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
              bool best_index = true,
              const std::vector<uint32_t>& required_labels =
                  std::vector<uint32_t>()) {
-            auto gradients = dagGetInputGradientsWrapper(
-                model, input_data, /* input_token = */ nullptr, best_index,
-                required_labels);
-            return gradients;
+            return dagGetInputGradientsWrapper(model, input_data,
+                                               /* input_token = */ nullptr,
+                                               best_index, required_labels);
           },
           py::arg("input_data"), py::arg("best_index") = true,
           py::arg("required_labels") = std::vector<uint32_t>())
