@@ -11,6 +11,7 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/DistributedModel.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <_types/_uint32_t.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/utils/SafeFileIO.h>
@@ -408,6 +409,101 @@ class DistributedPyNetwork final : public DistributedModel {
 
     return py::array_t<float>({dim, prev_dim},
                               {prev_dim * sizeof(float), sizeof(float)}, mem);
+  }
+
+  void setGradientsFromIndicesValues(uint32_t layer_index, py::object& indices,
+                                     py::object& values, bool set_biases) {
+    // std::cout<<"inside the set gradients from tuple function"<<std::endl;
+
+    if (!thirdai::bolt::python::isNumpyArray(indices)) {
+      throw std::logic_error(
+          "Expected numpy array of Indices but another datatype found");
+    }
+
+    if (!thirdai::bolt::python::isNumpyArray(values)) {
+      throw std::logic_error(
+          "Expected numpy array of Values but another datatype found");
+    }
+
+    if (!thirdai::bolt::python::checkNumpyDtypeUint64(indices)) {
+      throw std::logic_error(
+          "Expected Indices array to be a numpy array of unsigned 64-bit "
+          "integers(uint64) but another datatype found");
+    }
+
+    if (!thirdai::bolt::python::checkNumpyDtypeFloat32(values)) {
+      throw std::logic_error(
+          "Expected Values array to be a numpy array of 32-bit floats "
+          "(float32) but another datatype found");
+    }
+
+    using thirdai::dataset::python::NumpyArray;
+
+    NumpyArray<uint64_t> cpp_indices = indices.cast<NumpyArray<uint64_t>>();
+    NumpyArray<float> cpp_values = values.cast<NumpyArray<float>>();
+
+    if (cpp_values.shape(0) != cpp_indices.shape(0)) {
+      throw std::logic_error(
+          "The size of the values and indices array do not match.");
+    }
+
+    uint64_t size = static_cast<uint64_t>(cpp_values.shape(0));
+    uint64_t* indices_raw_data = const_cast<uint64_t*>(cpp_indices.data());
+    float* values_raw_data = const_cast<float*>(cpp_values.data());
+
+    if (set_biases) {
+      DistributedModel::setBiasGradientsFromIndicesValues(
+          layer_index, indices_raw_data, values_raw_data, size);
+    } else {
+      DistributedModel::setWeightGradientsFromIndicesValues(
+          layer_index, indices_raw_data, values_raw_data, size);
+    }
+  }
+
+  py::tuple getIndexedSketchGradients(uint32_t layer_index,
+                                      float compression_density,
+                                      bool sketch_biases,
+                                      int seed_for_hashing) {
+    size_t dim = DistributedModel::getDim(layer_index);
+    size_t prev_dim = (layer_index > 0)
+                          ? DistributedModel::getDim(layer_index - 1)
+                          : DistributedModel::getInputDim();
+
+    uint64_t mem_size;
+    uint64_t* indices;
+    float* gradients;
+
+    if (sketch_biases) {
+      mem_size = static_cast<uint64_t>(compression_density * dim);
+      indices = new uint64_t[mem_size];
+      gradients = new float[mem_size];
+
+      std::memset(indices, 0, sizeof(uint64_t) * mem_size);
+      std::memset(gradients, 0, sizeof(float) * mem_size);
+      DistributedModel::getBiasGradientSketch(layer_index, indices, gradients,
+                                              mem_size, seed_for_hashing);
+    } else {
+      mem_size = static_cast<uint64_t>(compression_density * dim * prev_dim);
+      indices = new uint64_t[mem_size];
+      gradients = new float[mem_size];
+
+      std::memset(indices, 0, sizeof(uint64_t) * mem_size);
+      std::memset(gradients, 0, sizeof(float) * mem_size);
+      DistributedModel::getWeightGradientSketch(layer_index, indices, gradients,
+                                                mem_size, seed_for_hashing);
+    }
+
+    py::capsule free_gradients_when_done(
+        gradients, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+    py::capsule free_indices_when_done(
+        indices, [](void* ptr) { delete static_cast<float*>(ptr); });
+
+    return py::make_tuple(
+        py::array_t<uint64_t>({mem_size}, {sizeof(uint64_t)}, indices,
+                              free_indices_when_done),
+        py::array_t<float>({mem_size}, {sizeof(float)}, gradients,
+                           free_gradients_when_done));
   }
 };
 

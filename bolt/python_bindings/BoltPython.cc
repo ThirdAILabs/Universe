@@ -641,7 +641,21 @@ void createBoltSubmodule(py::module_& module) {
            "Freezes hash tables in the network. If you plan to use sparse "
            "inference, you may get a significant performance improvement if "
            "you call this one or two epochs before you finish training. "
-           "Otherwise you should not call this method.");
+           "Otherwise you should not call this method.")
+      .def("get_indexed_sketch_for_gradients",
+           &DistributedPyNetwork::getIndexedSketchGradients,
+           py::arg("layer_index"), py::arg("compression_density"),
+           py::arg("sketch_biases"), py::arg("seed_for_hashing"),
+           "Sketches the top-k gradients into an array of values and returns a "
+           "tuple of (sketched_indices,sketched_gradients)")
+      .def("set_gradients_from_indices_values",
+           &DistributedPyNetwork::setGradientsFromIndicesValues,
+           py::arg("layer_index"), py::arg("indices"), py::arg("values"),
+           py::arg("set_biases"),
+           "Resets the gradient matrix to zero and then sets the index of the "
+           "gradient matrix from the indices in the indices array with their "
+           "corresponding value in the values array");
+
   py::class_<TabularClassifier>(bolt_submodule, "TabularClassifier")
       .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),
            py::arg("n_classes"),

@@ -86,6 +86,48 @@ class ConvLayer final : public SequentialLayer {
         "Cannot currently set the sparsity of a convolutional layer.");
   }
 
+  void getBiasGradientSketch(uint64_t* indices, float* gradients,
+                             uint64_t sketch_size,
+                             int seed_for_hashing) const final {
+    (void)indices;
+    (void)gradients;
+    (void)sketch_size;
+    (void)seed_for_hashing;
+    throw thirdai::exceptions::NotImplemented(
+        "getBiasGradientSketch not implemented for ConvLayer");
+  }
+
+  void getWeightGradientSketch(uint64_t* indices, float* gradients,
+                               uint64_t sketch_size,
+                               int seed_for_hashing) const final {
+    (void)indices;
+    (void)gradients;
+    (void)sketch_size;
+    (void)seed_for_hashing;
+    throw thirdai::exceptions::NotImplemented(
+        "getWeightGradientSketch not implemented for ConvLayer");
+  }
+
+  void setBiasGradientsFromIndicesValues(uint64_t* indices_raw_data,
+                                         float* values_raw_data,
+                                         uint64_t sketch_size) final {
+    (void)indices_raw_data;
+    (void)values_raw_data;
+    (void)sketch_size;
+    throw thirdai::exceptions::NotImplemented(
+        "setBiasGradientsFromIndicesValues not implemented for ConvLayer");
+  }
+
+  void setWeightGradientsFromIndicesValues(uint64_t* indices_raw_data,
+                                           float* values_raw_data,
+                                           uint64_t sketch_size) final {
+    (void)indices_raw_data;
+    (void)values_raw_data;
+    (void)sketch_size;
+    throw thirdai::exceptions::NotImplemented(
+        "setWeightGradientsFromIndicesValues not implemented for ConvLayer");
+  }
+
  private:
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output);

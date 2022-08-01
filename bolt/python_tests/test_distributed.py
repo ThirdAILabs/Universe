@@ -11,26 +11,10 @@ from .utils import (
     train_single_node_distributed_network,
     copy_two_layer_network_parameters,
     gen_numpy_training_data,
+    build_simple_distributed_bolt_network,
 )
 
 ACCURACY_THRESHOLD = 0.8
-
-
-def build_simple_bolt_network(sparsity=1, n_classes=10):
-    layers = [
-        bolt.FullyConnected(
-            dim=50,
-            sparsity=1,
-            activation_function="relu",
-        ),
-        bolt.FullyConnected(
-            dim=n_classes,
-            sparsity=sparsity,
-            activation_function="softmax",
-        ),
-    ]
-    network = bolt.DistributedNetwork(layers=layers, input_dim=n_classes)
-    return network
 
 
 def train_multiple_networks_same_gradients(
@@ -72,7 +56,7 @@ def train_multiple_networks_same_gradients(
 
 
 def test_simple_bolt_network_single_node():
-    network = build_simple_bolt_network()
+    network = build_simple_distributed_bolt_network(sparsity=1.0, n_classes=10)
 
     train_x, train_y = gen_numpy_training_data()
     test_x, test_y = gen_numpy_training_data(n_samples=100)
@@ -87,7 +71,7 @@ def test_simple_bolt_network_single_node():
 
 def test_get_set_weights_single_node():
 
-    network = build_simple_bolt_network()
+    network = build_simple_distributed_bolt_network(sparsity=1.0, n_classes=10)
     train_x, train_y = gen_numpy_training_data()
     test_x, test_y = gen_numpy_training_data(n_samples=100)
 
@@ -98,7 +82,9 @@ def test_get_set_weights_single_node():
     )
     assert original_acc["categorical_accuracy"] >= ACCURACY_THRESHOLD
 
-    untrained_network = build_simple_bolt_network()
+    untrained_network = build_simple_distributed_bolt_network(
+        sparsity=1.0, n_classes=10
+    )
 
     copy_two_layer_network_parameters(network, untrained_network)
 
@@ -110,7 +96,7 @@ def test_get_set_weights_single_node():
 
 def test_get_set_weights_single_node():
 
-    network = build_simple_bolt_network()
+    network = build_simple_distributed_bolt_network(sparsity=1.0, n_classes=10)
 
     train_x, train_y = gen_numpy_training_data()
     test_x, test_y = gen_numpy_training_data(n_samples=100)
@@ -126,7 +112,9 @@ def test_get_set_weights_single_node():
     train_x, train_y = gen_numpy_training_data()
     test_x, test_y = gen_numpy_training_data(n_samples=100)
 
-    untrained_network = build_simple_bolt_network()
+    untrained_network = build_simple_distributed_bolt_network(
+        sparsity=1.0, n_classes=10
+    )
 
     num_of_batches = untrained_network.prepareNodeForDistributedTraining(
         train_x,
