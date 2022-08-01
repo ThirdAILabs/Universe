@@ -5,7 +5,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 import numpy as np
 from thirdai import bolt
 
-from utils import (
+from .utils import (
     gen_single_sparse_layer_network,
     gen_numpy_training_data,
     get_categorical_acc,
