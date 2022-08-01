@@ -42,7 +42,7 @@ class AutoClassifierUtils {
   static uint32_t getHiddenLayerSize(const std::string& model_size,
                                      uint64_t n_classes, uint64_t input_dim);
 
-  static float getHiddenLayerSparsity(uint64_t layer_size);
+  static float getLayerSparsity(uint64_t layer_size);
 
   static uint64_t getMemoryBudget(const std::string& model_size);
 

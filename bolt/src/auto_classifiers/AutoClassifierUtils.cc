@@ -21,12 +21,16 @@ std::shared_ptr<FullyConnectedNetwork> AutoClassifierUtils::createNetwork(
       AutoClassifierUtils::getHiddenLayerSize(model_size, n_classes, input_dim);
 
   float hidden_layer_sparsity =
-      AutoClassifierUtils::getHiddenLayerSparsity(hidden_layer_size);
+      AutoClassifierUtils::getLayerSparsity(hidden_layer_size);
+  
+  float output_layer_sparsity =
+      AutoClassifierUtils::getLayerSparsity(n_classes);
 
   SequentialConfigList configs = {
       std::make_shared<FullyConnectedLayerConfig>(
           hidden_layer_size, hidden_layer_sparsity, "relu"),
-      std::make_shared<FullyConnectedLayerConfig>(n_classes, "softmax")};
+      std::make_shared<FullyConnectedLayerConfig>(
+          n_classes, output_layer_sparsity, "softmax")};
   return std::make_shared<FullyConnectedNetwork>(std::move(configs), input_dim);
 }
 
@@ -134,7 +138,7 @@ uint32_t AutoClassifierUtils::getHiddenLayerSize(const std::string& model_size,
   return hidden_layer_size;
 }
 
-float AutoClassifierUtils::getHiddenLayerSparsity(uint64_t layer_size) {
+float AutoClassifierUtils::getLayerSparsity(uint64_t layer_size) {
   if (layer_size < 1000) {
     return 0.2;
   }
