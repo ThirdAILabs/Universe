@@ -3,10 +3,6 @@
 #include <random>
 
 namespace thirdai::hashtable {
-template class SampledHashTable<uint8_t>;
-template class SampledHashTable<uint16_t>;
-template class SampledHashTable<uint32_t>;
-template class SampledHashTable<uint64_t>;
 
 template <typename LABEL_T>
 SampledHashTable<LABEL_T>::SampledHashTable(uint64_t num_tables,
@@ -178,5 +174,10 @@ void SampledHashTable<LABEL_T>::clearTables() {
     }
   }
 }
+
+template class SampledHashTable<uint8_t>;
+template class SampledHashTable<uint16_t>;
+template class SampledHashTable<uint32_t>;
+template class SampledHashTable<uint64_t>;
 
 }  // namespace thirdai::hashtable

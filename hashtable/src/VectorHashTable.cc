@@ -5,15 +5,6 @@
 
 namespace thirdai::hashtable {
 
-template class VectorHashTable<uint8_t, true>;
-template class VectorHashTable<uint16_t, true>;
-template class VectorHashTable<uint32_t, true>;
-template class VectorHashTable<uint64_t, true>;
-template class VectorHashTable<uint8_t, false>;
-template class VectorHashTable<uint16_t, false>;
-template class VectorHashTable<uint32_t, false>;
-template class VectorHashTable<uint64_t, false>;
-
 template <typename LABEL_T, bool USE_RESERVOIR>
 void VectorHashTable<LABEL_T, USE_RESERVOIR>::insert(uint64_t n,
                                                      LABEL_T const* labels,
@@ -106,5 +97,14 @@ void VectorHashTable<LABEL_T, USE_RESERVOIR>::sortBuckets() {
     std::sort(_buckets[index].begin(), _buckets[index].end());
   }
 }
+
+template class VectorHashTable<uint8_t, true>;
+template class VectorHashTable<uint16_t, true>;
+template class VectorHashTable<uint32_t, true>;
+template class VectorHashTable<uint64_t, true>;
+template class VectorHashTable<uint8_t, false>;
+template class VectorHashTable<uint16_t, false>;
+template class VectorHashTable<uint32_t, false>;
+template class VectorHashTable<uint64_t, false>;
 
 }  // namespace thirdai::hashtable
