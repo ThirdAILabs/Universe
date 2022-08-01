@@ -10,8 +10,6 @@
 
 namespace thirdai::bolt {
 
-template class Model<bolt::BoltBatch>;
-
 template <typename BATCH_T>
 MetricData Model<BATCH_T>::train(
     std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
@@ -350,5 +348,7 @@ uint32_t Model<BATCH_T>::getRebuildBatch(uint32_t rebuild, uint32_t batch_size,
   rebuild = rebuild != 0 ? rebuild : (data_len / 4);
   return std::max<uint32_t>(rebuild / batch_size, 1);
 }
+
+template class Model<bolt::BoltBatch>;
 
 }  // namespace thirdai::bolt
