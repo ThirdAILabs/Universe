@@ -42,12 +42,11 @@ class TextClassifier {
   }
 
   std::string predictSingle(const std::string& sentence) {
-    BoltVector pairgrams_vec = dataset::TextEncodingUtils::computePairgrams(
+    BoltVector input = dataset::TextEncodingUtils::computePairgrams(
         /* sentence = */ sentence, /* output_range = */ _input_dim);
 
-    BoltVector output = BoltVector(/* l = */ _n_classes, /* is_dense = */ true);
-    auto [values, indices] =
-        _model->predictSingle({output}, {},
+    BoltVector output =
+        _model->predictSingle({input}, {},
                               /* use_sparse_inference = */ true);
 
     return _batch_processor->getClassName(

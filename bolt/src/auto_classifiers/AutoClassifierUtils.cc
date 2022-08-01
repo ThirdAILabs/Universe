@@ -67,15 +67,23 @@ void AutoClassifierUtils::train(
 
   auto [train_data, train_labels] = dataset->loadInMemory();
 
-  TrainConfig config =
+  TrainConfig first_epoch_config =
       TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
-                              /* epochs= */ epochs)
+                              /* epochs= */ 1)
           // .withMetrics({"categorical_accuracy"}) // TODO DO WE NEED THIS?
           .silence();
 
-  model->train({train_data}, {}, train_labels, config);
+  // TODO(david, nick) verify this freeze hash tables if needed
+  model->train({train_data}, {}, train_labels, first_epoch_config);
+  model->freezeHashTables(/* insert_labels_if_not_found */ true);
 
-  // TODO DO WE NEED THE FREEZE HASH TABLES THING?
+  TrainConfig remaining_epochs_config =
+      TrainConfig::makeConfig(/* learning_rate= */
+                              learning_rate,
+                              /* epochs= */ epochs - 1)
+          // .withMetrics({"categorical_accuracy"}) // TODO DO WE NEED THIS?
+          .silence();
+  model->train({train_data}, {}, train_labels, remaining_epochs_config);
 }
 
 void AutoClassifierUtils::predict(
@@ -86,22 +94,6 @@ void AutoClassifierUtils::predict(
     const std::vector<std::string>& class_id_to_class_name) {
   auto dataset = loadStreamingDataset(filename, batch_processor);
 
-  std::optional<std::ofstream> output_file;
-  if (output_filename) {
-    output_file = dataset::SafeFileIO::ofstream(*output_filename);
-  }
-
-  auto print_predictions_callback = [&](const BoltBatch& outputs,
-                                        uint32_t batch_size) {
-    if (!output_file) {
-      return;
-    }
-    for (uint32_t batch_id = 0; batch_id < batch_size; batch_id++) {
-      uint32_t class_id = outputs[batch_id].getIdWithHighestActivation();
-      (*output_file) << class_id_to_class_name[class_id] << std::endl;
-    }
-  };
-
   auto [test_data, test_labels] = dataset->loadInMemory();
 
   PredictConfig config = PredictConfig::makeConfig()
@@ -109,10 +101,23 @@ void AutoClassifierUtils::predict(
                              .withMetrics({"categorical_accuracy"})
                              .silence();
 
-  model->predict({test_data}, {}, test_labels, config);
+  InferenceResult result = model->predict({test_data}, {}, test_labels, config);
 
-  if (output_file) {
-    output_file->close();
+  if (output_filename) {
+    std::ofstream output_file = dataset::SafeFileIO::ofstream(*output_filename);
+
+    auto print_predictions_callback = [&](const BoltBatch& outputs,
+                                          uint32_t batch_size) {
+      if (!output_file) {
+        return;
+      }
+      for (uint32_t batch_id = 0; batch_id < batch_size; batch_id++) {
+        uint32_t class_id = outputs[batch_id].getIdWithHighestActivation();
+        output_file << class_id_to_class_name[class_id] << std::endl;
+      }
+    };
+
+    output_file.close();
   }
 }
 
