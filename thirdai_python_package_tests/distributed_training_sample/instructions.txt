@@ -1,5 +1,8 @@
 For running the distributed bolt, first we need to start a ray cluster
 
+Below Cluster Initialization would only work for Custom Clusters, for standard clusters like AWS, GCP, Azure and Aliyun. See https://docs.ray.io/en/latest/cluster/cloud.html.
+
+
 First install all the required module by running the following command(to be done on all the node):
         - Have the Distributed bolt module built on those node 
         - Run the command: pip install -r requirements.txt
@@ -28,6 +31,7 @@ Manual Cluster Initialization:
                 - On head node, run the command 'ray start --head --port=6379'
                 - On worker nodes, run the command 'ray start --address=<head_node_ip>:6379'
                
+
 
 To check whether cluster have started run command on terminal 'ray status'
         - See Node Status
