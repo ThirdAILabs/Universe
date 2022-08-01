@@ -5,18 +5,11 @@ import textwrap
 import yaml
 import getpass
 import ray
-
-def init_cluster_config():
-
-    config = {'cluster_name': 'default', 'min_workers': 1, 'initial_workers': 1, 'max_workers': 2, 'autoscaling_mode': 'default', 'target_utilization_fraction': 0.8, 'idle_timeout_minutes': 5,
-     'provider': {'type': 'local', 'head_ip': None, 'worker_ips': []}, 'auth': {'ssh_user': ''}, 'file_mounts': {}, 'initialization_commands': [],
-      'setup_commands': ["pip install 'ray[default]'"], 'head_setup_commands': [], 'worker_setup_commands': [], 'head_start_ray_commands': ['ray stop', 'ray start --head --port=6379'],
-       'worker_start_ray_commands': ['ray stop', 'ray start --address=$RAY_HEAD_IP:6379']}
-    return config
+import warnings
 
 
 def start_cluster(
-    nodes_ips
+    config_yaml_file
 ) -> None:
     """ Start a ray cluster with the node ips provided.
 
@@ -29,24 +22,33 @@ def start_cluster(
     
 
    
-    config = init_cluster_config()
-    print(nodes_ips)
-    yaml_file = 'setup.yaml'
-    with open(yaml_file, 'w') as file:
-        user = getpass.getuser()
-        
-        config['auth']['ssh_user'] = user
-        config['provider']['head_ip'] = nodes_ips[0]
-        config['min_workers'] = 1
-        config['max_workers'] = len(nodes_ips)
-
-        if len(nodes_ips) > 1:
-            config['provider']['worker_ips'] = nodes_ips[1:len(nodes_ips)]
-        else:
-            Warning(textwrap.dedent("""
-                No worker ips provided.
+    yaml_file = config_yaml_file
+    user = getpass.getuser()
+    with open(yaml_file, 'r') as file:
+        config =  yaml.safe_load(file)
+        if 'ssh_private_key' not in config['auth']:
+            warnings.warn(textwrap.dedent("""
+                ssh_private_key field, not given. Make sure
+                you have the id_rsa copied on all the nodes.
+                Else uncomment the ssh_private_key
             """))
-        yaml.dump(config, file)
+
+
+        number_of_worker_nodes = len(config['provider']['worker_ips'])
+        if config['min_workers'] < 0:
+            warnings.warn(textwrap.dedent("""
+                min_workers >= 0
+            """))
+        
+        if config['max_workers'] < number_of_worker_nodes:
+            warnings.warn(textwrap.dedent("""
+                max_worker field in config is less than
+                number of worker node provided. Autoscalar 
+                would only start number of worker reported in
+                max_workers field. Other worker need to be initialized
+                manually.
+            """))
+
     
 
     system_path = os.environ['PATH']
@@ -68,24 +70,9 @@ def start_cluster(
         ray.init()
     
     os.system('ray stop')
-    os.system('ray up setup.yaml')
-    os.system('rm setup.yaml')
-
-    connect_address = nodes_ips[0] + ":6379"
-    subprocess.run(["sh", "make_cluster.sh", " ".join(nodes_ips[1:len(nodes_ips)]), connect_address])
+    os.system('ray up cluster_configuration.yaml')
 
 if __name__ == "__main__":
-    total_nodes = len(sys.argv) - 1
-
-    if total_nodes == 0:
-        raise Exception(textwrap.dedent("""
-            No ips has been passed as an argument.
-            Pass nodes ip as argument to this python file.
-            Run "python3 start_cluster.py <head_node_ip> <worker1_node_ip> <worker2_node_ip> <worker3_node_ip> ...." 
-        """))
+    config_yaml_file = sys.argv[1]
     
-    node_ip_list = []
-    for i in range(1, total_nodes+1):
-        node_ip_list.append(sys.argv[i])
-    
-    start_cluster(node_ip_list)
+    start_cluster(config_yaml_file)
