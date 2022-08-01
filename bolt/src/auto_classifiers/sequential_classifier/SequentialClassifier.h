@@ -91,7 +91,7 @@ class SequentialClassifier {
     CategoricalCrossEntropyLoss loss;
 
     for (uint32_t e = 0; e < epochs; e++) {
-      _network->trainOnStream(pipeline, loss, learning_rate);
+      _network->trainOnStream(pipeline, loss, learning_rate, /* rehash_batch = */ 20, /* rebuild_batch = */ 100, /* metric_names = */ {metric_name});
 
       /*
         Create new stream for next epoch with new data loader.
@@ -119,9 +119,9 @@ class SequentialClassifier {
               << " training samples into memory in " << duration << " seconds."
               << std::endl;
 
-    _network->train(train_data, train_labels, loss, learning_rate, 1);
+    _network->train(train_data, train_labels, loss, learning_rate, 1, /* rehash = */ 0, /* rebuild = */ 0, /* metric_names = */ {metric_name});
     _network->freezeHashTables();
-    _network->train(train_data, train_labels, loss, learning_rate, epochs - 1);
+    _network->train(train_data, train_labels, loss, learning_rate, epochs - 1, /* rehash = */ 0, /* rebuild = */ 0, /* metric_names = */ {metric_name});
   }
 
   static uint32_t getPrediction(const BoltVector& output) {
