@@ -280,7 +280,7 @@ BoltVector BoltGraph::predictSingle(
                                      _token_inputs);
     forward(/* vec_index = */ 0, nullptr);
     const BoltVector& output_vec = _output->getOutputVector(
-        /* vec_id_in_batch = */ 0);
+        /* vec_index = */ 0);
     BoltVector vector_copy(output_vec);
     cleanupAfterBatchProcessing();
     return vector_copy;
