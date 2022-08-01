@@ -269,8 +269,7 @@ BoltVector BoltGraph::predictSingle(
                    /* returning_activations = */ true,
                    /* num_metrics_tracked = */ 0);
 
-  prepareToProcessBatches(single_predict_context.batchSize(),
-                          use_sparse_inference);
+  prepareToProcessBatches(/* batch_size = */ 1, use_sparse_inference);
 
   // TODO(josh/Nick): This try catch is kind of a hack, we should really use
   // some sort of RAII training context object whose destructor will
@@ -279,11 +278,10 @@ BoltVector BoltGraph::predictSingle(
     single_predict_context.setInputs(/* batch_idx = */ 0, _inputs,
                                      _token_inputs);
     forward(/* vec_index = */ 0, nullptr);
-    const BoltVector& output_vec = _output->getOutputVector(
+    BoltVector output_copy = _output->getOutputVector(
         /* vec_index = */ 0);
-    BoltVector vector_copy(output_vec);
     cleanupAfterBatchProcessing();
-    return vector_copy;
+    return output_copy;
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
     throw;
@@ -437,7 +435,7 @@ void BoltGraph::verifyCanTrain(const DatasetContext& train_context) {
   verifyInputForGraph(train_context);
 }
 
-void BoltGraph::verifyCanPredict(const DatasetContext& predict_context,
+void BoltGraph::verifyCanPredict(const DatasetContextBase& predict_context,
                                  bool has_labels, bool returning_activations,
                                  uint32_t num_metrics_tracked) {
   if (!graphCompiled()) {
@@ -456,7 +454,7 @@ void BoltGraph::verifyCanPredict(const DatasetContext& predict_context,
   verifyInputForGraph(predict_context);
 }
 
-void BoltGraph::verifyInputForGraph(const DatasetContext& context) {
+void BoltGraph::verifyInputForGraph(const DatasetContextBase& context) {
   if (context.numVectorDatasets() != _inputs.size()) {
     throw std::invalid_argument(
         "Wrong number of dataset inputs, expected " +

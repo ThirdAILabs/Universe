@@ -139,11 +139,11 @@ class BoltGraph {
 
   void verifyCanTrain(const DatasetContext& train_context);
 
-  void verifyCanPredict(const DatasetContext& predict_context, bool has_labels,
-                        bool returning_activations,
+  void verifyCanPredict(const DatasetContextBase& predict_context,
+                        bool has_labels, bool returning_activations,
                         uint32_t num_metrics_tracked);
 
-  void verifyInputForGraph(const DatasetContext& context);
+  void verifyInputForGraph(const DatasetContextBase& context);
 
   void verifyGraphProperties();
 
