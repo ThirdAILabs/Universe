@@ -11,6 +11,7 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/DistributedModel.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
+#include <_types/_uint64_t.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/utils/SafeFileIO.h>
@@ -410,6 +411,19 @@ class DistributedPyNetwork final : public DistributedModel {
                               {prev_dim * sizeof(float), sizeof(float)}, mem);
   }
 
+  void static checkIndexOutOfRange(uint64_t* indices, uint64_t max_index,
+                                   uint64_t size_of_indices_array) {
+    for (uint64_t i = 0; i < size_of_indices_array; i++) {
+      if (indices[i] >= max_index) {
+        std::string exception_message =
+            "Array index " + std::to_string(indices[i]) +
+            " out of bounds for gradient matrix with maximum index " +
+            std::to_string(max_index);
+        throw std::out_of_range(exception_message);
+      }
+    }
+  }
+
   void setGradientsFromIndicesValues(uint32_t layer_index, py::object& indices,
                                      py::object& values, bool set_biases) {
     // std::cout<<"inside the set gradients from tuple function"<<std::endl;
@@ -451,9 +465,17 @@ class DistributedPyNetwork final : public DistributedModel {
     float* values_raw_data = const_cast<float*>(cpp_values.data());
 
     if (set_biases) {
+      checkIndexOutOfRange(indices_raw_data,
+                           DistributedModel::getDim(layer_index), size);
       DistributedModel::setBiasGradientsFromIndicesValues(
           layer_index, indices_raw_data, values_raw_data, size);
     } else {
+      checkIndexOutOfRange(
+          indices_raw_data,
+          DistributedModel::getDim(layer_index) *
+              ((layer_index > 0) ? DistributedModel::getDim(layer_index - 1)
+                                 : DistributedModel::getInputDim()),
+          size);
       DistributedModel::setWeightGradientsFromIndicesValues(
           layer_index, indices_raw_data, values_raw_data, size);
     }

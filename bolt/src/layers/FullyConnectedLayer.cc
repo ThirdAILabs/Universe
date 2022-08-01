@@ -1,6 +1,5 @@
 #include "FullyConnectedLayer.h"
 #include <hashing/src/MurmurHash.h>
-#include <_types/_uint64_t.h>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -8,8 +7,6 @@
 #include <exception>
 #include <numeric>
 #include <random>
-#include <stdexcept>
-#include <string>
 #include <unordered_map>
 
 namespace thirdai::bolt {
@@ -664,17 +661,8 @@ void FullyConnectedLayer::setWeightGradientsFromIndicesValues(
   _w_gradient.clear();
   _w_gradient.assign(_dim * _prev_dim, 0);
 
-  uint64_t max_index = _dim * _prev_dim;
-
   // not using pragma because of race condition
   for (uint64_t i = 0; i < sketch_size; i++) {
-    if (indices_raw_data[i] >= max_index) {
-      std::string exception_message =
-          "Array index " + std::to_string(indices_raw_data[i]) +
-          " out of bounds for gradient matrix with maximum index " +
-          std::to_string(max_index);
-      throw std::out_of_range(exception_message);
-    }
     _w_gradient[indices_raw_data[i]] += values_raw_data[i];
   }
 }
@@ -684,17 +672,8 @@ void FullyConnectedLayer::setBiasGradientsFromIndicesValues(
   _b_gradient.clear();
   _b_gradient.assign(_dim, 0);
 
-  uint64_t max_index = _dim;
-
   // not using pragma because of race condition
   for (uint64_t i = 0; i < sketch_size; i++) {
-    if (indices_raw_data[i] >= max_index) {
-      std::string exception_message =
-          "Array index " + std::to_string(indices_raw_data[i]) +
-          " out of bounds for gradient matrix with maximum index " +
-          std::to_string(max_index);
-      throw std::out_of_range(exception_message);
-    }
     _b_gradient[indices_raw_data[i]] += values_raw_data[i];
   }
 }
