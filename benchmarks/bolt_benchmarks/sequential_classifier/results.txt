@@ -1,0 +1,40 @@
+Initializing Bolt network...
+========= Bolt Network =========
+InputLayer (Layer 0): dim=615970
+FullyConnectedLayer (Layer 1): dim=2178, sparsity=0.1, act_func=ReLU
+FullyConnectedLayer (Layer 2): dim=3, sparsity=1, act_func=Softmax
+================================
+Initialized Network in 31 seconds
+Loaded 98074929 training samples into memory in 1036 seconds.
+
+Epoch 1:
+[==================================================] 100%
+Processed 47889 training batches in 5206 seconds
+Accuracy: 0.680828 (66772121/98074929)
+
+Epoch 2:
+[==================================================] 100%
+Processed 47889 training batches in 5262 seconds
+Accuracy: 0.704268 (69071051/98074929)
+
+Epoch 3:
+[==================================================] 100%
+Processed 47889 training batches in 5360 seconds
+Accuracy: 0.711714 (69801287/98074929)
+
+Epoch 4:
+[==================================================] 100%
+Processed 47889 training batches in 5509 seconds
+Accuracy: 0.718617 (70478267/98074929)
+
+Epoch 5:
+[==================================================] 100%
+Processed 47889 training batches in 5514 seconds
+Accuracy: 0.725953 (71197802/98074929)
+
+Processing test streaming dataset...
+Processed streaming dataset in 58 seconds.
+Accuracy: 0.681939 (1640458/2405578)
+Accuracy with temporal feats: 0.6819392442703247
+
+

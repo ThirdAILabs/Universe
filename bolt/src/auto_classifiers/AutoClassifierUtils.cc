@@ -139,6 +139,9 @@ uint32_t AutoClassifierUtils::getHiddenLayerSize(const std::string& model_size,
 }
 
 float AutoClassifierUtils::getLayerSparsity(uint64_t layer_size) {
+  if (layer_size < 200) {
+    return 1.0;
+  }
   if (layer_size < 1000) {
     return 0.2;
   }

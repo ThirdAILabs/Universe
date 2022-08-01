@@ -10,11 +10,6 @@ def seq_without_temporal_feats():
         lookback=10,  # num days to look back
         # Optional:
         period=1,  # expected num days between each record; period for clubbing data points together
-        text=["title"],
-        categorical=[
-            ("release_year", 150),
-            ("movie", 17770)
-        ],
     )
 
 def seq_with_temporal_feats():
@@ -27,11 +22,6 @@ def seq_with_temporal_feats():
         lookback=14,  # num days to look back
         # Optional:
         period=1,  # expected num days between each record; period for clubbing data points together
-        text=["title"],
-        categorical=[
-            ("release_year", 150),
-            ("movie", 17770)
-        ],
         trackable_qty=[""],
         trackable_cat=[("movie", 17770, 20)],
     )
