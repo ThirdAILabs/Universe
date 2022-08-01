@@ -7,10 +7,6 @@
 
 namespace thirdai::search {
 
-template class MaxFlashArray<uint8_t>;
-template class MaxFlashArray<uint16_t>;
-template class MaxFlashArray<uint32_t>;
-
 template <typename LABEL_T>
 MaxFlashArray<LABEL_T>::MaxFlashArray(hashing::HashFunction* function,
                                       uint32_t hashes_per_table,
@@ -49,16 +45,6 @@ uint64_t MaxFlashArray<LABEL_T>::addDocument(const bolt::BoltBatch& batch) {
   return _maxflash_array.size() - 1;
 }
 
-template std::vector<float> MaxFlashArray<uint8_t>::getDocumentScores(
-    const bolt::BoltBatch& query,
-    const std::vector<uint32_t>& documents_to_query) const;
-template std::vector<float> MaxFlashArray<uint16_t>::getDocumentScores(
-    const bolt::BoltBatch& query,
-    const std::vector<uint32_t>& documents_to_query) const;
-template std::vector<float> MaxFlashArray<uint32_t>::getDocumentScores(
-    const bolt::BoltBatch& query,
-    const std::vector<uint32_t>& documents_to_query) const;
-
 template <typename LABEL_T>
 std::vector<float> MaxFlashArray<LABEL_T>::getDocumentScores(
     const bolt::BoltBatch& query,
@@ -88,10 +74,17 @@ std::vector<float> MaxFlashArray<LABEL_T>::getDocumentScores(
   return result;
 }
 
+template class MaxFlashArray<uint8_t>;
+template class MaxFlashArray<uint16_t>;
+template class MaxFlashArray<uint32_t>;
+
 template <typename LABEL_T>
 template <typename BATCH_T>
 std::vector<uint32_t> MaxFlashArray<LABEL_T>::hash(const BATCH_T& batch) const {
   return _hash_function->hashBatchParallel(batch);
 }
+
+template std::vector<uint32_t> MaxFlashArray<bolt::BoltBatch>::hash(
+    const bolt::BoltBatch& batch) const;
 
 }  // namespace thirdai::search
