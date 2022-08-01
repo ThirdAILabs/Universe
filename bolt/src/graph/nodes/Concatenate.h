@@ -55,7 +55,7 @@ class ConcatenateNode final
   uint32_t outputDim() const final {
     if (getState() == NodeState::Constructed) {
       throw exceptions::NodeStateMachineError(
-          "Cannot get the foutput dim for this concatenation layer because the "
+          "Cannot get the output dim for this concatenation layer because the "
           "incoming concatenated nodes have not been set yet");
     }
     return _graph_state->concatenated_dense_dim;
