@@ -1,4 +1,3 @@
-from turtle import update
 from thirdai import bolt, dataset
 import numpy as np
 import os
