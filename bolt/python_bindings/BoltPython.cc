@@ -661,6 +661,7 @@ void createBoltSubmodule(py::module_& module) {
           py::arg("trackable_cat") = std::vector<py::tuple>())
       .def("train", &PySequentialClassifier::train, py::arg("filename"),
            py::arg("epochs"), py::arg("learning_rate"),
+           py::arg("validation_filename") = std::nullopt,
            py::arg("overwrite_index") = false)
       .def("predict", &PySequentialClassifier::predict, py::arg("filename"),
            py::arg("output_filename") = std::nullopt);

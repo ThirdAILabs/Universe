@@ -29,7 +29,7 @@ class SequentialClassifierPipelineBuilder {
                                       char delimiter);
 
   std::shared_ptr<dataset::StreamingGenericDatasetLoader> buildPipelineForFile(
-      std::string& filename, bool shuffle, bool overwrite_index);
+      const std::string& filename, bool shuffle, bool overwrite_index);
 
   PersistentPipelineStates _states;
 

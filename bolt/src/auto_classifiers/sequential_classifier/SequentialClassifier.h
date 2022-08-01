@@ -28,19 +28,27 @@ class SequentialClassifier {
       : _pipeline_builder(std::move(schema), delimiter),
         _model_size(std::move(model_size)) {}
 
-  void train(std::string filename, uint32_t epochs, float learning_rate,
+  void train(std::string train_filename, uint32_t epochs, float learning_rate, 
+             const std::optional<std::string>& validation_filename = std::nullopt,
              bool overwrite_index = false) {
     auto pipeline = _pipeline_builder.buildPipelineForFile(
-        filename, /* shuffle = */ true, overwrite_index);
+        train_filename, /* shuffle = */ true, overwrite_index);
+
+
+    std::shared_ptr<dataset::StreamingGenericDatasetLoader> validation_pipeline;
+    if (validation_filename) {
+      validation_pipeline = _pipeline_builder.buildPipelineForFile(
+        *validation_filename, /* shuffle = */ false, /* overwrite_index = */ false);
+    }
 
     if (_network == nullptr) {
       _network = AutoClassifierUtils::createNetwork(pipeline->getInputDim(), pipeline->getLabelDim(), _model_size);
     }
 
-    if (!AutoClassifierUtils::canLoadDatasetInMemory(filename)) {
-      trainOnStream(filename, epochs, learning_rate, pipeline);
+    if (!AutoClassifierUtils::canLoadDatasetInMemory(train_filename)) {
+      trainOnStream(train_filename, epochs, learning_rate, pipeline, validation_filename, validation_pipeline);
     } else {
-      trainInMemory(epochs, learning_rate, pipeline);
+      trainInMemory(epochs, learning_rate, pipeline, validation_pipeline);
     }
   }
 
@@ -87,11 +95,18 @@ class SequentialClassifier {
 
   void trainOnStream(
       std::string& filename, uint32_t epochs, float learning_rate,
-      std::shared_ptr<dataset::StreamingGenericDatasetLoader>& pipeline) {
+      std::shared_ptr<dataset::StreamingGenericDatasetLoader>& pipeline,
+      const std::optional<std::string>& validation_filename,
+      std::shared_ptr<dataset::StreamingGenericDatasetLoader>& validation_pipeline) {
     CategoricalCrossEntropyLoss loss;
 
     for (uint32_t e = 0; e < epochs; e++) {
       _network->trainOnStream(pipeline, loss, learning_rate, /* rehash_batch = */ 20, /* rebuild_batch = */ 100, /* metric_names = */ {metric_name});
+      if (validation_pipeline != nullptr) {
+        std::vector<std::string> metrics{metric_name};
+        _network->predictOnStream(
+            validation_pipeline, /* use_sparse_inference = */ true, metrics);
+      }
 
       /*
         Create new stream for next epoch with new data loader.
@@ -102,16 +117,30 @@ class SequentialClassifier {
       pipeline =
           _pipeline_builder.buildPipelineForFile(filename, /* shuffle = */ true,
                                                  /* overwrite_index = */ true);
+      
+      if (validation_pipeline != nullptr) {
+        validation_pipeline =
+            _pipeline_builder.buildPipelineForFile(*validation_filename, /* shuffle = */ false,
+                                                  /* overwrite_index = */ false);
+      }
     }
   }
 
   void trainInMemory(
       uint32_t epochs, float learning_rate,
-      std::shared_ptr<dataset::StreamingGenericDatasetLoader>& pipeline) {
+      std::shared_ptr<dataset::StreamingGenericDatasetLoader>& pipeline,
+      std::shared_ptr<dataset::StreamingGenericDatasetLoader>& validation_pipeline) {
     CategoricalCrossEntropyLoss loss;
 
     auto start = std::chrono::high_resolution_clock::now();
     auto [train_data, train_labels] = pipeline->loadInMemory();
+    dataset::BoltDatasetPtr valid_data = nullptr;
+    dataset::BoltDatasetPtr valid_labels = nullptr;
+    if (validation_pipeline != nullptr) {
+      auto [v_data, v_labels] = validation_pipeline->loadInMemory();
+      valid_data = std::move(v_data);
+      valid_labels = std::move(v_labels);
+    }
     auto end = std::chrono::high_resolution_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
@@ -120,8 +149,17 @@ class SequentialClassifier {
               << std::endl;
 
     _network->train(train_data, train_labels, loss, learning_rate, 1, /* rehash = */ 0, /* rebuild = */ 0, /* metric_names = */ {metric_name});
+    std::vector<std::string> metrics{metric_name};
+    if (valid_data != nullptr && valid_labels != nullptr) {
+      _network->predict(valid_data, valid_labels, nullptr, nullptr, /* use_sparse_inference = */ true, metrics);
+    }
     _network->freezeHashTables();
-    _network->train(train_data, train_labels, loss, learning_rate, epochs - 1, /* rehash = */ 0, /* rebuild = */ 0, /* metric_names = */ {metric_name});
+    for (uint32_t i = 0; i < epochs - 1; i++) {
+      _network->train(train_data, train_labels, loss, learning_rate, 1, /* rehash = */ 0, /* rebuild = */ 0, /* metric_names = */ {metric_name});
+      if (valid_data != nullptr && valid_labels != nullptr) {
+        _network->predict(valid_data, valid_labels, nullptr, nullptr, /* use_sparse_inference = */ true, metrics);
+      }
+    }
   }
 
   static uint32_t getPrediction(const BoltVector& output) {
