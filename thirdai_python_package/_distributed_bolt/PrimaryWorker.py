@@ -61,25 +61,69 @@ class PrimaryWorker(Worker):
         averaging_gradients_time = 0
         gradient_computation_time = 0
 
+        # Here we are asking every worker to calculate their gradients and return 
+        # once they all calculate their gradients
         blocking_run = ray.get([self.workers[id].calculateGradientsCircular.remote(batch_no) for id in range(len(self.workers))])
         gradient_computation_time += max(i for i,j in blocking_run)
         communication_time += max(j for i,j in blocking_run)
         
+
+        # The following code implements the two loops for Baidu's All-Reduce and All-Gather. 
+        # In the first run, each of the worker passes their partition to next worker
+        
+        # For update_id = 0 (offset)
+        # Before a reducing run                             After a reducing run
+        # [a1, b1, c1, d1, e1] -> node 1,   ---------->     [a1, b1, c1, d1, e1+e5] -> node 1,   
+        # [a2, b2, c2, d2, e2] -> node 2,   ---------->     [a1+a2, b2, c2, d2, e2] -> node 2,
+        # [a3, b3, c3, d3, e3] -> node 3,   ---------->     [a3, b3+b2, c3, d3, e3] -> node 3,
+        # [a4, b4, c4, d4, e4] -> node 4,   ---------->     [a4, b4, c4+c3, d4, e4] -> node 4,
+        # [a5, b5, c5, d5, e5] -> node 5    ---------->     [a5, b5, c5, d5+d4, e5] -> node 5,
+        # Here, each of the a{i}'s is a partition of the array
+
+        # We do these runs n-1 times as a resule we get
+        # [a1, b1, c1, d1, e1] -> node 1,   ---------->     [a1,            b1+b2+b3+b4+b5, c1,             d1,             e1            ] -> node 1,   
+        # [a2, b2, c2, d2, e2] -> node 2,   ---------->     [a1,            b2,             c1+c2+c3+c4+c5, d2,             e2            ] -> node 2,
+        # [a3, b3, c3, d3, e3] -> node 3,   ---------->     [a3,            b3,             c3,             d1+d2+d3+d4+d5, e3            ] -> node 3,
+        # [a4, b4, c4, d4, e4] -> node 4,   ---------->     [a4,            b4,             c4,             d4,             e1+e2+e3+e4+e5] -> node 4,
+        # [a5, b5, c5, d5, e5] -> node 5    ---------->     [a1+a2+a3+a4+a5,b5,             c5,             d5,             e5            ] -> node 5,
+
+        # avg_gradients flag also averages the gradient in the last run
+
         # First Run
         update_id = 0
         for i in range(self.total_nodes-1):
             if i == self.total_nodes - 2:
                 blocking_run = ray.get([w.processRing.remote(update_id, avg_gradients=True) for w in self.workers])
+
                 averaging_gradients_time += max(i for i,j in blocking_run)
                 communication_time += max(j for i,j in blocking_run)
             else:
                 blocking_run = ray.get([w.processRing.remote(update_id) for w in self.workers])
+                
                 averaging_gradients_time += max(i for i,j in blocking_run)
                 communication_time += max(j for i,j in blocking_run)
             update_id -= 1
-        # print('AllReduce Time:', time.time() - mt)
+        
+        # In the Second run, each of the worker passes their partition to next worker
+        
+        # For update_id = 1 (offset)
+        # Before a gathering run                            After a gathering run
+        # [a1, b1, c1, d1, e1] -> node 1,   ---------->     [a5, b1, c1, d1, e1] -> node 1,   
+        # [a2, b2, c2, d2, e2] -> node 2,   ---------->     [a2, b1, c2, d2, e2] -> node 2,
+        # [a3, b3, c3, d3, e3] -> node 3,   ---------->     [a3, b3, c2, d3, e3] -> node 3,
+        # [a4, b4, c4, d4, e4] -> node 4,   ---------->     [a4, b4, c4, d3, e4] -> node 4,
+        # [a5, b5, c5, d5, e5] -> node 5    ---------->     [a5, b5, c5, d5, e4] -> node 5,
+        # Here, each of the a{i}'s is a partition of the array
+
+
+        # We do these runs n-1 times as a resule we get
+        # [a1,            b1+b2+b3+b4+b5, c1,             d1,             e1            ] -> node 1,   ---------->     [a1+a2+a3+a4+a5,b1+b2+b3+b4+b5,c1+c2+c3+c4+c5,d1+d2+d3+d4+d5,e1+e2+e3+e4+e5] -> node 1,   
+        # [a1,            b2,             c1+c2+c3+c4+c5, d2,             e2            ] -> node 2,   ---------->     [a1+a2+a3+a4+a5,b1+b2+b3+b4+b5,c1+c2+c3+c4+c5,d1+d2+d3+d4+d5,e1+e2+e3+e4+e5] -> node 2,
+        # [a3,            b3,             c3,             d1+d2+d3+d4+d5, e3            ] -> node 3,   ---------->     [a1+a2+a3+a4+a5,b1+b2+b3+b4+b5,c1+c2+c3+c4+c5,d1+d2+d3+d4+d5,e1+e2+e3+e4+e5] -> node 3,
+        # [a4,            b4,             c4,             d4,             e1+e2+e3+e4+e5] -> node 4,   ---------->     [a1+a2+a3+a4+a5,b1+b2+b3+b4+b5,c1+c2+c3+c4+c5,d1+d2+d3+d4+d5,e1+e2+e3+e4+e5] -> node 4,
+        # [a1+a2+a3+a4+a5,b5,             c5,             d5,             e5            ] -> node 5,   ---------->     [a1+a2+a3+a4+a5,b1+b2+b3+b4+b5,c1+c2+c3+c4+c5,d1+d2+d3+d4+d5,e1+e2+e3+e4+e5] -> node 5,
+        
         # Second Run 
-        # mt = time.time()
         update_id = 1
         for i in range(self.total_nodes-1):
             blocking_run = ray.get([w.processRing.remote(update_id, reduce=False) for w in self.workers])
@@ -87,7 +131,6 @@ class PrimaryWorker(Worker):
             communication_time += max(j for i,j in blocking_run)
             update_id -= 1
         
-        # print('AllGather Time:', time.time() - mt)
         return gradient_computation_time, communication_time, averaging_gradients_time
 
 
@@ -115,16 +158,17 @@ class PrimaryWorker(Worker):
         
         summing_and_averaging_gradients_start_time = time.time()
         
+
+        # Here we are initializing the w_average_gradients for storing the sum
         self.w_gradients_avg = np.array([np.zeros((self.layers[layer_no+1], self.layers[layer_no])) for layer_no in range(len(self.layers)-1)])
         self.b_gradients_avg = np.array([np.zeros((self.layers[layer_no+1])) for layer_no in range(len(self.layers)-1)])
-        
-        node_id = 0
+
+        # summing all the gradients
         for w_gradients,b_gradients in gradients_list:
             self.w_gradients_avg += w_gradients
             self.b_gradients_avg += b_gradients
-            node_id+=1
         
-        
+        # averaging the gradients
         self.w_gradients_avg = np.divide(self.w_gradients_avg, len(self.workers))
         self.b_gradients_avg = np.divide(self.b_gradients_avg, len(self.workers))
         

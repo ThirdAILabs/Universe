@@ -28,8 +28,7 @@ class DistributedBolt:
         
         self.no_of_workers = worker_nodes
 
-        current_working_directory = os.getcwd()
-        runtime_env = {"working_dir": current_working_directory, "pip": ["toml", "typing", "typing_extensions", 'psutil'], "env_vars": {"OMP_NUM_THREADS": "100"}}
+        runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(self.get_num_cpus())}}
         
         
         ray.init(address='auto', runtime_env=runtime_env)
@@ -70,7 +69,13 @@ class DistributedBolt:
         self.python_computation_time = 0
         self.communication_time = 0
 
-
+    def get_num_cpus():
+        try:
+            import multiprocessing
+            return multiprocessing.cpu_count()
+        except (ImportError, NotImplementedError):
+            print('Could not find num_cpus, setting num_cpus to DEFAULT=100')
+            return 100
 
     def train(
         self, 

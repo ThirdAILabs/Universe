@@ -28,27 +28,27 @@ class Worker:
         total_nodes: int, 
         id: int
     ):
-        self.layers = layers
-        self.bolt_layers = create_fully_connected_layer_configs(config["layers"])
-        self.input_dim = config["dataset"]["input_dim"]
-        self.network = bolt.DistributedNetwork(layers=self.bolt_layers, input_dim=self.input_dim)
-        self.rehash = config["params"]["rehash"]
-        self.rebuild = config["params"]["rebuild"]
-        use_sparse_inference = "sparse_inference_epoch" in config["params"].keys()
 
-
-        if use_sparse_inference:
-            sparse_inference_epoch = config["params"]["sparse_inference_epoch"]
-        else:
-            sparse_inference_epoch = None
+        # getting training and testing data 
         if len(config["dataset"]["train_data"]) != total_nodes:
             raise ValueError("Give n trainging examples for n nodes.")
 
         data = load_dataset(config, total_nodes, id)
         if data is None:
             raise ValueError("Unable to load a dataset. Please check the config")
-        
-        
+
+        self.train_data, self.train_label, self.test_data, self.test_label = data
+
+
+        # initializing Distributed Network 
+        self.bolt_layers = create_fully_connected_layer_configs(config["layers"])
+        self.input_dim = config["dataset"]["input_dim"]
+        self.network = bolt.DistributedNetwork(layers=self.bolt_layers, input_dim=self.input_dim)
+
+
+        #get variables for initializing training
+        self.rehash = config["params"]["rehash"]
+        self.rebuild = config["params"]["rebuild"]
         if config["params"]["loss_fn"].lower() == "categoricalcrossentropyloss":
             self.loss = bolt.CategoricalCrossEntropyLoss()
         elif config["params"]["loss_fn"].lower() == "meansquarederror":
@@ -57,8 +57,7 @@ class Worker:
             print("'{}' is not a valid loss function".format(config["params"]["loss_fn"]))
 
         
-        self.train_data, self.train_label, self.test_data, self.test_label = data
-        
+        #prepare node for training
         self.num_of_batches = self.network.prepareNodeForDistributedTraining(
                     self.train_data, 
                     self.train_label,
@@ -66,6 +65,9 @@ class Worker:
                     rebuild=self.rebuild,
                     verbose=False)
         
+
+        # Set up variables
+        self.layers = layers
         self.total_nodes = total_nodes
         self.id = id
         
@@ -107,10 +109,10 @@ class Worker:
 
             This functions calls the API 'calculateGradientSingleNode',
             which calculates the gradients for the network managed by
-            this particular worker. The calculateGradientSingleNode
-            calculates the gradient for the particular training batch 
-            with batch no. batch_no and with loss function specified
-            in the config.
+            this particular worker. The calculateGradientSingleNode trains
+            the network and calculates the gradient for the particular 
+            training batch with batch no. batch_no and with loss function
+            specified in the config.
 
             This function also defines the partition size which defines the
             size of block of gradients which are communicated between a worker 
@@ -153,10 +155,10 @@ class Worker:
 
             This functions calls the API 'calculateGradientSingleNode',
             which calculates the gradients for the network managed by
-            this particular worker. The calculateGradientSingleNode
-            calculates the gradient for the particular training batch 
-            with batch no. batch_no and with loss function specified
-            in the config.
+            this particular worker. The calculateGradientSingleNode trains
+            the network and calculates the gradient for the particular 
+            training batch with batch no. batch_no and with loss function
+            specified in the config.
 
             Args:
                 batch_no: training batch to calculate gradients on.
@@ -290,7 +292,7 @@ class Worker:
         communication_time = 0
 
 
-        local_update_id = (update_id + self.id - 1)%self.total_nodes
+        partition_id = (update_id + self.id - 1)%self.total_nodes
 
         t2 = time.time()
         get_ray_object = self.friend.receiveArrayPartitions.remote(update_id)
@@ -301,32 +303,34 @@ class Worker:
         
         t2 = time.time()
         for i in range(len(self.friend_weight_gradient_list)):
-            l_weight_id = self.w_partitions[i] * local_update_id
-            r_weight_id = self.w_partitions[i] * (local_update_id + 1)
-            if len(self.w_gradients[i]) - r_weight_id < self.w_partitions[i]:
-                r_weight_id = len(self.w_gradients[i])
 
-            l_bias_id = self.b_partitions[i] * local_update_id
-            r_bias_id = self.b_partitions[i] * (local_update_id + 1)
-            if len(self.b_gradients[i]) - r_bias_id < self.w_partitions[i]:
-                r_bias_id = len(self.b_gradients[i])
+            # Getting the indices of the partition to work on
+            l_weight_idx = self.w_partitions[i] * partition_id
+            r_weight_idx = self.w_partitions[i] * (partition_id + 1)
+            if len(self.w_gradients[i]) - r_weight_idx < self.w_partitions[i]:
+                r_weight_idx = len(self.w_gradients[i])
+
+            l_bias_idx = self.b_partitions[i] * partition_id
+            r_bias_idx = self.b_partitions[i] * (partition_id + 1)
+            if len(self.b_gradients[i]) - r_bias_idx < self.w_partitions[i]:
+                r_bias_idx = len(self.b_gradients[i])
 
             assert self.w_partitions[i] > 0, f'weight partions has value {self.w_partitions[i]}'
             assert self.b_partitions[i] > 0, f'bias partions has value {self.b_partitions[i]}'
-            assert r_weight_id-l_weight_id >= self.w_partitions[i], f'weight update index range are less than {self.w_partitions[i]}'
-            assert r_bias_id-l_bias_id >= self.b_partitions[i], f'bias update index range are less than {self.b_partitions[i]}'
+            assert r_weight_idx-l_weight_idx >= self.w_partitions[i], f'weight update index range are less than {self.w_partitions[i]}'
+            assert r_bias_idx-l_bias_idx >= self.b_partitions[i], f'bias update index range are less than {self.b_partitions[i]}'
 
 
             # arrays should be numpy arrays for the following operation, otherwise it will just get appened to the list
             if reduce:
-                self.w_gradients[i][l_weight_id:r_weight_id] += self.friend_weight_gradient_list[i]
-                self.b_gradients[i][l_bias_id:r_bias_id] += self.friend_bias_gradient_list[i]
+                self.w_gradients[i][l_weight_idx:r_weight_idx] += self.friend_weight_gradient_list[i]
+                self.b_gradients[i][l_bias_idx:r_bias_idx] += self.friend_bias_gradient_list[i]
                 if avg_gradients:
-                    self.w_gradients[i][l_weight_id:r_weight_id] = self.w_gradients[i][l_weight_id:r_weight_id]/self.total_nodes
-                    self.b_gradients[i][l_bias_id:r_bias_id] = self.b_gradients[i][l_bias_id:r_bias_id]/self.total_nodes
+                    self.w_gradients[i][l_weight_idx:r_weight_idx] = self.w_gradients[i][l_weight_idx:r_weight_idx]/self.total_nodes
+                    self.b_gradients[i][l_bias_idx:r_bias_idx] = self.b_gradients[i][l_bias_idx:r_bias_idx]/self.total_nodes
             else:
-                self.w_gradients[i][l_weight_id:r_weight_id] = self.friend_weight_gradient_list[i]
-                self.b_gradients[i][l_bias_id:r_bias_id] = self.friend_bias_gradient_list[i]
+                self.w_gradients[i][l_weight_idx:r_weight_idx] = self.friend_weight_gradient_list[i]
+                self.b_gradients[i][l_bias_idx:r_bias_idx] = self.friend_bias_gradient_list[i]
 
         python_computation_time += time.time() - t2
         return python_computation_time, communication_time
@@ -348,28 +352,28 @@ class Worker:
         """
         t1 = time.time()
         python_computation_time = 0
-        local_update_id = (update_id + self.id)%self.total_nodes
+        partition_id = (update_id + self.id)%self.total_nodes
         
         w_gradient_subarray = []
         b_gradient_subarray = []
         for i in range(len(self.w_partitions)):
-            l_weight_id = self.w_partitions[i] * local_update_id
-            r_weight_id = self.w_partitions[i] * (local_update_id + 1)
-            if len(self.w_gradients[i]) - r_weight_id < self.w_partitions[i]:
-                r_weight_id = len(self.w_gradients[i])
+            l_weight_idx = self.w_partitions[i] * partition_id
+            r_weight_idx = self.w_partitions[i] * (partition_id + 1)
+            if len(self.w_gradients[i]) - r_weight_idx < self.w_partitions[i]:
+                r_weight_idx = len(self.w_gradients[i])
 
-            l_bias_id = self.b_partitions[i] * local_update_id
-            r_bias_id = self.b_partitions[i] * (local_update_id + 1)
-            if len(self.b_gradients[i]) - r_bias_id < self.b_partitions[i]:
-                r_bias_id = len(self.b_gradients[i])
+            l_bias_idx = self.b_partitions[i] * partition_id
+            r_bias_idx = self.b_partitions[i] * (partition_id + 1)
+            if len(self.b_gradients[i]) - r_bias_idx < self.b_partitions[i]:
+                r_bias_idx = len(self.b_gradients[i])
 
             assert self.w_partitions[i] > 0, f'weight partions has value {self.w_partitions[i]}'
             assert self.b_partitions[i] > 0, f'bias partions has value {self.b_partitions[i]}'
-            assert r_weight_id-l_weight_id >= self.w_partitions[i], f'weight update index range are less than {self.w_partitions[i]}'
-            assert r_bias_id-l_bias_id >= self.b_partitions[i], f'bias update index range are less than {self.b_partitions[i]}'
+            assert r_weight_idx-l_weight_idx >= self.w_partitions[i], f'weight update index range are less than {self.w_partitions[i]}'
+            assert r_bias_idx-l_bias_idx >= self.b_partitions[i], f'bias update index range are less than {self.b_partitions[i]}'
 
-            w_gradient_subarray.append(self.w_gradients[i][l_weight_id:r_weight_id])
-            b_gradient_subarray.append(self.b_gradients[i][l_bias_id:r_bias_id])
+            w_gradient_subarray.append(self.w_gradients[i][l_weight_idx:r_weight_idx])
+            b_gradient_subarray.append(self.b_gradients[i][l_bias_idx:r_bias_idx])
 
         python_computation_time += time.time() - t1
         return w_gradient_subarray, b_gradient_subarray, python_computation_time
