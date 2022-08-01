@@ -11,7 +11,6 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/DistributedModel.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <_types/_uint64_t.h>
 #include <dataset/python_bindings/DatasetPython.h>
 #include <dataset/src/DatasetLoaders.h>
 #include <dataset/src/utils/SafeFileIO.h>
