@@ -259,10 +259,10 @@ InferenceResult BoltGraph::predict(
 
 // Predicts on a single sample input for performance. Always returns
 // activations and doesn't calculate metrics.
-std::pair<const std::vector<float>, const std::optional<std::vector<uint32_t>>>
-BoltGraph::predictSingle(const std::vector<BoltVector>& test_data,
-                         const std::vector<std::vector<uint32_t>>& test_tokens,
-                         bool use_sparse_inference) {
+BoltVector BoltGraph::predictSingle(
+    const std::vector<BoltVector>& test_data,
+    const std::vector<std::vector<uint32_t>>& test_tokens,
+    bool use_sparse_inference) {
   SingleUnitDatasetContext single_predict_context(test_data, test_tokens);
 
   verifyCanPredict(single_predict_context, /* has_labels = */ false,
@@ -272,10 +272,6 @@ BoltGraph::predictSingle(const std::vector<BoltVector>& test_data,
   prepareToProcessBatches(single_predict_context.batchSize(),
                           use_sparse_inference);
 
-  InferenceOutputTracker outputTracker(_output, /* save_activations = */ true,
-                                       /* total_num_samples = */
-                                       single_predict_context.len());
-
   // TODO(josh/Nick): This try catch is kind of a hack, we should really use
   // some sort of RAII training context object whose destructor will
   // automatically delete the training state
@@ -283,16 +279,15 @@ BoltGraph::predictSingle(const std::vector<BoltVector>& test_data,
     single_predict_context.setInputs(/* batch_idx = */ 0, _inputs,
                                      _token_inputs);
     forward(/* vec_index = */ 0, nullptr);
-    outputTracker.saveOutputBatch(_output, single_predict_context.batchSize());
+    const BoltVector& output_vec = _output->getOutputVector(
+        /* vec_id_in_batch = */ 0);
+    BoltVector vector_copy(output_vec);
+    cleanupAfterBatchProcessing();
+    return vector_copy;
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
     throw;
   }
-
-  cleanupAfterBatchProcessing();
-
-  return std::make_pair(outputTracker.getActivations().value(),
-                        outputTracker.getActiveNeurons());
 }
 
 void BoltGraph::processInferenceBatch(uint64_t batch_size,

@@ -101,17 +101,17 @@ TEST(FullyConnectedDagTest, SamePredictAndPredictSingleResults) {
 
   const float* all_activations_ptr =
       all_inference_output.getNonowningActivationPointer();
+
   uint32_t all_activations_idx = 0;
   for (uint64_t batch_idx = 0; batch_idx < data->numBatches(); batch_idx++) {
     BoltBatch& batch = data->at(batch_idx);
     for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-      auto [single_activations, _] = model.predictSingle(
+      BoltVector output_vec = model.predictSingle(
           {batch[vec_idx]}, {}, config.sparseInferenceEnabled());
 
-      ASSERT_EQ(single_activations.size(), n_classes);
-
+      ASSERT_EQ(output_vec.len, n_classes);
       for (uint32_t i = 0; i < n_classes; i++) {
-        ASSERT_EQ(single_activations[i],
+        ASSERT_EQ(output_vec.activations[i],
                   all_activations_ptr[all_activations_idx]);
         all_activations_idx++;
       }
