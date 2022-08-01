@@ -19,7 +19,7 @@ SequentialClassifierPipelineBuilder::SequentialClassifierPipelineBuilder(
 
 std::shared_ptr<dataset::StreamingGenericDatasetLoader>
 SequentialClassifierPipelineBuilder::buildPipelineForFile(
-    std::string& filename, bool shuffle, bool overwrite_index) {
+    const std::string& filename, bool shuffle, bool overwrite_index) {
   _est_nonzeros = 0;
 
   auto loader =
