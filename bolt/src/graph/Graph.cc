@@ -182,13 +182,16 @@ void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
   }
 }
 
-// TODO (YASH) : ( Extend this getInputGradients for multiple input nodes.)
+// TODO (YASH) : ( Extend this getInputGradients for multiple inputs.)
 std::pair<std::vector<std::vector<float>>,
           std::optional<std::vector<std::vector<uint32_t>>>>
 BoltGraph::getInputGradients(const dataset::BoltDatasetPtr& input_data,
                              const dataset::BoltTokenDatasetPtr& input_token,
                              bool best_index,
                              const std::vector<uint32_t>& required_labels) {
+  // when we are passing nullptr , datasetcontext is taking {nullptr} as one
+  // token_input. so have to do this conversion, this will be changed when we
+  // extend this for multiple inputs.
   std::vector<dataset::BoltTokenDatasetPtr> input_tokens;
   if (input_token) {
     input_tokens = {input_token};
@@ -196,6 +199,10 @@ BoltGraph::getInputGradients(const dataset::BoltDatasetPtr& input_data,
     input_tokens = {};
   }
   DatasetContext input_gradients_context({input_data}, input_tokens, nullptr);
+
+  // Because of how the datasets are read we know that all batches will not
+  // have a batch size larger than this so we can just set the batch size
+  // here.
 
   prepareToProcessBatches(input_gradients_context.batchSize(),
                           /* use_sparsity=*/true);
@@ -214,12 +221,22 @@ BoltGraph::getInputGradients(const dataset::BoltDatasetPtr& input_data,
            vec_id < input_gradients_context.batchSize(batch_idx); vec_id++) {
         std::vector<float> vec_grad(_inputs[0]->getOutputVector(vec_id).len,
                                     0.0);
-        // have to ensure that input has gradients not pointing to nullptr and
-        // assign vec_grad data to it.
+        // Assigning the vec_grad data() to gradients so that we dont have to
+        // worry about initializing and then freeing the memory.
         _inputs[0]->getOutputVector(vec_id).gradients = vec_grad.data();
-        // based on required_index is there or not and get the labels and also
-        // forward pass correctly,
         uint32_t required_index;
+        /*
+        If the required_labels are empty, then we have to find the
+        required_index by output activations, for that we need to do forward
+        pass before creating the batch_label, but if the required_labels are not
+        empty and for some ,If the required label position is not present in the
+        output active neurons , then calculating the gradients with respect to
+        that label doesnot make sense, because loss is only calculated with
+        respect to active neurons, to ensure that output has active neuron at
+        the position of required label we are creating batch_label before
+        forward pass and passing to it, because forward pass ensures to have
+        active neurons at the metioned label index.
+        */
         BoltVector batch_label;
         if (required_labels.empty()) {
           forward(vec_id, nullptr);
@@ -243,7 +260,6 @@ BoltGraph::getInputGradients(const dataset::BoltDatasetPtr& input_data,
           batch_label = BoltVector::makeSparseVector({required_index}, {1.0});
           forward(vec_id, &batch_label);
         }
-        // copying the indices values if inputs is not dense.
         if (!_inputs[0]->getOutputVector(vec_id).isDense()) {
           std::vector<uint32_t> vec_indices(
               _inputs[0]->getOutputVector(vec_id).active_neurons,
@@ -251,15 +267,16 @@ BoltGraph::getInputGradients(const dataset::BoltDatasetPtr& input_data,
                   _inputs[0]->getOutputVector(vec_id).len);
           input_dataset_indices.push_back(vec_indices);
         }
-        // loss function
         _loss->lossGradients(_output->getOutputVector(vec_id), batch_label,
                              input_gradients_context.batchSize(batch_idx));
-        // backprop it to input.
         backpropagate(vec_id);
+
+        // We reset the gradients to nullptr here to prevent the bolt vector
+        // from freeing the memory which is owned by the std::vector we used to
+        // store the gradients
 
         _inputs[0]->getOutputVector(vec_id).gradients = nullptr;
         input_dataset_grad.push_back(vec_grad);
-        // get the gradients and indices and return it.
       }
     }
   } catch (const std::exception& e) {
@@ -514,7 +531,7 @@ void BoltGraph::verifyCanGetInputGradients(
   if (!best_index && num_output_nonzeros < 2) {
     throw std::invalid_argument(
         "The sparse output dimension should be atleast 2 to call "
-        "getSecondBestIndex.");
+        "getSecondBestId.");
   }
   verifyInputForGraph(input_gradients_context);
 }

@@ -279,6 +279,8 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           "See the TrainConfig documentation above.\n\n"
           "Returns a mapping from metric names to an array of their values for "
           "every epoch.")
+      // Helper method that covers the common case of getting input gradients
+      // based off of a single BoltBatch dataset
       .def(
           "get_input_gradients",
           [](BoltGraph& model, const dataset::BoltDatasetPtr& input_data,
@@ -286,16 +288,34 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
              const std::vector<uint32_t>& required_labels =
                  std::vector<uint32_t>()) {
             auto gradients = dagGetInputGradientsWrapper(
-                model, input_data, /* input_tokens = */ nullptr, best_index,
+                model, input_data, /* input_token = */ nullptr, best_index,
                 required_labels);
             return gradients;
           },
           py::arg("input_data"), py::arg("best_index") = true,
           py::arg("required_labels") = std::vector<uint32_t>())
       .def("get_input_gradients", &dagGetInputGradientsWrapper,
-           py::arg("input_data"), py::arg("input_tokens"),
+           py::arg("input_data"), py::arg("input_token"),
            py::arg("best_index") = true,
-           py::arg("required_labels") = std::vector<uint32_t>())
+           py::arg("required_labels") = std::vector<uint32_t>(),
+           "Get the values of input gradients when back propagate "
+           "labels with the highest activation or second highest "
+           "activation or with the required label."
+           "Arguments:\n"
+           " * input_data: The input is same type as we give for train_data of "
+           "train method."
+           " * best_index: Boolean, if set to True, gives gradients correspond "
+           "to "
+           "highest activation, Otherwise gives gradients corresponds to "
+           "second highest activation."
+           " * required_labels: expected labels for each input vector default "
+           "to empty vector, if required_labels is empty then only function "
+           "takes look at the best_index parameter , otherwise gives gradients "
+           "corresponds to those labels."
+           " Returns a tuple consists of (0) list of lists of gradients "
+           "corresponds to the input vectors."
+           " and (1) optional, it only returns the corresponding indices for "
+           "sparse inputs.")
       // Helper method that covers the common case of inference based off of a
       // single BoltBatch dataset
       .def(
@@ -415,9 +435,9 @@ py::tuple dagPredictPythonWrapper(BoltGraph& model,
 
 py::tuple dagGetInputGradientsWrapper(
     BoltGraph& model, const dataset::BoltDatasetPtr& input_data,
-    const dataset::BoltTokenDatasetPtr& input_tokens, bool best_index,
+    const dataset::BoltTokenDatasetPtr& input_token, bool best_index,
     const std::vector<uint32_t>& required_labels) {
-  auto gradients = model.getInputGradients(input_data, input_tokens, best_index,
+  auto gradients = model.getInputGradients(input_data, input_token, best_index,
                                            required_labels);
 
   if (gradients.second == std::nullopt) {

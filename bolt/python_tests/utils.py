@@ -177,3 +177,16 @@ def compute_accuracy_with_file(test_labels, pred_file):
     return sum(
         (prediction == answer) for (prediction, answer) in zip(predictions, test_labels)
     ) / len(predictions)
+
+
+def gen_random_weights_simple_network(seed, input_output_layer_dim, hidden_layer_dim):
+    np.random.seed(seed)
+    w1 = np.random.randn(hidden_layer_dim, input_output_layer_dim).astype(np.float32)
+    w2 = np.random.randn(input_output_layer_dim, hidden_layer_dim).astype(np.float32)
+    return w1, w2
+
+
+def gen_random_bias_simple_network(output_layer_dim, hidden_layer_dim):
+    b1 = np.random.randn(hidden_layer_dim).astype(np.float32)
+    b2 = np.random.randn(output_layer_dim).astype(np.float32)
+    return b1, b2

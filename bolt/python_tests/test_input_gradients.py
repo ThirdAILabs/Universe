@@ -1,7 +1,11 @@
 from thirdai import bolt, dataset
 import numpy as np
 import pytest
-from .utils import gen_numpy_training_data
+from .utils import (
+    gen_numpy_training_data,
+    gen_random_weights_simple_network,
+    gen_random_bias_simple_network,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.release]
 
@@ -21,22 +25,9 @@ def build_network():
     return network
 
 
-def gen_random_weights():
-    np.random.seed(17)
-    w1 = np.random.randn(3, 4).astype(np.float32)
-    w2 = np.random.randn(4, 3).astype(np.float32)
-    return w1, w2
-
-
-def gen_random_bias():
-    b1 = np.random.randn(3).astype(np.float32)
-    b2 = np.random.randn(4).astype(np.float32)
-    return b1, b2
-
-
 def set_network_weights_and_biases(network):
-    w1, w2 = gen_random_weights()
-    b1, b2 = gen_random_bias()
+    w1, w2 = gen_random_weights_simple_network(17, 4, 3)
+    b1, b2 = gen_random_bias_simple_network(4, 3)
     network.set_weights(0, w1)
     network.set_biases(0, b1)
     network.set_weights(1, w2)
