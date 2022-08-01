@@ -3,86 +3,71 @@
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/LayerNorm.h>
+#include <bolt/src/layers/LayerConfig.h>
+#include <bolt/src/networks/tests/BoltNetworkTestUtils.h>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
 namespace thirdai::bolt::tests {
 
 static uint32_t n_classes = 100;
-static float hidden_layer_sparsity = 0.25;
+static uint32_t batch_size = 32;
 
-static BoltGraph buildSingleHiddenLayerModel(bool sparse_hidden_layer) {
+using NodeGraphTuple = std::tuple<std::shared_ptr<LayerNormNode>, BoltGraph>;
+
+static NodeGraphTuple buildSingleNormNodeModel() {
   auto input = std::make_shared<Input>(/* expected_input_dim */ n_classes);
   auto hidden_layer = std::make_shared<FullyConnectedNode>(2000, 1.0, "ReLU");
   hidden_layer->addPredecessor(input);
 
+  NormalizationLayerConfig layer_norm_config =
+      NormalizationLayerConfig::makeConfig();
+  auto normalization_layer = std::make_shared<LayerNormNode>(layer_norm_config);
+  normalization_layer->addPredecessor(hidden_layer);
+
   auto output = std::make_shared<FullyConnectedNode>(
       /* expected_dim */ n_classes, "Softmax");
-  output->addPredecessor(hidden_layer);
+  output->addPredecessor(normalization_layer);
 
   BoltGraph model({input}, output);
   model.compile(std::make_shared<CategoricalCrossEntropyLoss>());
 
-  if (sparse_hidden_layer) {
-    LayerNameManager name_manager;
-    hidden_layer->setSparsity(hidden_layer_sparsity);
-  }
-
-  return model;
+  return std::make_tuple(normalization_layer, model);
 }
 
-// template <bool SPARSE>
-// void testLayerNormNodeForwardPass() {
-//   BoltGraph model = buildSingleHiddenLayerModel(SPARSE);
+void testLayerNormNodeForwardAndBackwardPass() {
+  auto [layer_norm_node, model] = buildSingleNormNodeModel();
 
-//   std::shared_ptr<LayerNormNode> layer_norm_node =
-//       std::make_shared<LayerNormNode>();
+  auto [data, labels] =
+      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
+  TrainConfig train_config =
+      TrainConfig::makeConfig(/* learning_rate= */ 0.001, /* epochs= */ 5)
+          .withMetrics({"mean_squared_error"})
+          .withBatchSize(batch_size)
+          .silence();
 
-//   layer_norm_node->setLayerNormNodeConfig(
-//       /* center */ true,
-//       /* scale */ true,
-//       /* epsilon */ 0.001,
-//       /* beta_regularizer */ 0.5,
-//       /* gamma_regularizer */ 0.15,
-//       /* beta_initializer */ 0,
-//       /* gamma_initializer */ 1);
+  model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
+              train_config);
 
-//   auto pred_node = model.getNodeByName("fc_1");
-//   layer_norm_node->addPredecessor(pred_node);
-//   LayerNameManager name_manager;
+  auto pred_node = layer_norm_node->getPredecessors()[0];
+  ASSERT_EQ(pred_node->outputDim(), layer_norm_node->outputDim());
 
-//   layer_norm_node->compile(name_manager);
+  // for (uint32_t vec_index = 0; vec_index < batch_size; vec_index++) {
+  //   auto computed_moments = layer_norm_node->getMoments(/*vec_index= */ vec_index);
 
-//   layer_norm_node->prepareForBatchProcessing(/* batch_size = */ 32,
-//                                              /*use_sparsity */ SPARSE);
+  //   ASSERT_NE(computed_moments, std::nullopt);
+  // }
 
-//   auto pre_normalized_vector =
-//       layer_norm_node->getOutputVector(/* vec_index */ 1);
+  BoltVector& output_vector = layer_norm_node->getOutputVector(/* vec_index= */ 1);
 
-//   layer_norm_node->forward(/* vec_index */ 1, /* labels */ nullptr);
+  for (uint32_t neuron_index = 0; neuron_index < output_vector.len; neuron_index++) {
+    ASSERT_NE(output_vector.gradients[neuron_index], 0.0);
+  }
+}
 
-//   BoltVector& output = layer_norm_node->getOutputVector(/* vec_index */ 1);
+TEST(LayerNormNodeTest, LayerNormalizationTest) {
+  testLayerNormNodeForwardAndBackwardPass();
+}
 
-//   auto computed_moments = layer_norm_node->getMoments();
-//   auto expected_moments = LayerNormNode::computeNormalizationMoments(
-//       pre_normalized_vector, !SPARSE);
-
-//   ASSERT_EQ(!output.isDense(), SPARSE);
-//   ASSERT_EQ(pred_node->outputDim(), layer_norm_node->outputDim());
-
-//   // Check that the mean for the activations is what's expected
-//   ASSERT_FLOAT_EQ(computed_moments->first, expected_moments.first);
-
-//   // Check that the variance for the activations is what's expected
-//   ASSERT_FLOAT_EQ(computed_moments->second, expected_moments.second);
-// }
-
-// TEST(LayerNormNodeTest, DenseLayerNormalizationTest) {
-//   testLayerNormNodeForwardPass<false>();
-// }
-
-// TEST(LayerNormNodeTest, SparseLayerNormalizationTest) {
-//   testLayerNormNodeForwardPass<true>();
-// }
 
 }  // namespace thirdai::bolt::tests

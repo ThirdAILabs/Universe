@@ -27,17 +27,15 @@ class LayerNormNode final : public Node,
  public:
   LayerNormNode()
       : _config(std::make_shared<NormalizationLayerConfig>()),
-        _outputs(std::nullopt),
+        _layer_norm_state(std::nullopt),
         _node_to_normalize(nullptr),
-        _compiled(false),
-        _prepared_for_batch_processing(false) {}
+        _compiled(false) {}
 
   explicit LayerNormNode(const NormalizationLayerConfig& config)
       : _config(std::make_shared<NormalizationLayerConfig>(config)),
-        _outputs(std::nullopt),
+        _layer_norm_state(std::nullopt),
         _node_to_normalize(nullptr),
-        _compiled(false),
-        _prepared_for_batch_processing(false) {}
+        _compiled(false) {}
 
   std::shared_ptr<LayerNormNode> addPredecessor(NodePtr node) {
     if (getState() != NodeState::Constructed) {
@@ -79,6 +77,13 @@ class LayerNormNode final : public Node,
     return std::make_pair(mean, variance);
   }
 
+  std::optional<std::pair<float, float>> getMoments(uint32_t vec_index) {
+    if (!_layer_norm_state.has_value()) {
+      return std::nullopt;
+    }
+    return _layer_norm_state->moments[vec_index];
+  }
+
  private:
   void compileImpl() final { _compiled = true; }
 
@@ -92,17 +97,23 @@ class LayerNormNode final : public Node,
     (void)use_sparsity;
     bool is_dense = _node_to_normalize->numNonzerosInOutput() ==
                     _node_to_normalize->outputDim();
-    _outputs = BoltBatch(outputDim(), batch_size, is_dense);
+
+    BoltBatch batch = BoltBatch(outputDim(), batch_size, is_dense);
+    std::vector<std::pair<float, float>> moments(batch_size,
+                                                 std::make_pair(0.0, 0.0));
+
+    _layer_norm_state = LayerNormState(/* outputs = */ std::move(batch),
+                                       /* moments = */ std::move(moments));
+
     for (uint32_t index_in_batch = 0; index_in_batch < batch_size;
          index_in_batch++) {
-      auto prev_output_vector_at_index =
-          _node_to_normalize->getOutputVector(index_in_batch);
-      std::copy(prev_output_vector_at_index.gradients,
-                prev_output_vector_at_index.gradients + batch_size,
-                getOutputVectorImpl(index_in_batch).gradients);
-    }
+      const BoltVector& output_vector = getOutputVectorImpl(index_in_batch);
 
-    _prepared_for_batch_processing = true;
+      assert(output_vector.len != 0);
+      auto moments = computeNormalizationMoments(output_vector);
+
+      _layer_norm_state->moments.push_back(moments);
+    }
   }
 
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
@@ -114,12 +125,10 @@ class LayerNormNode final : public Node,
     const BoltVector& output_vector = getOutputVectorImpl(vec_index);
     std::vector<float> normalized_activations = {0};
 
-    uint32_t len = output_vector.len;
+    auto moments = _layer_norm_state->moments[vec_index];
 
-    assert(len != 0);
-    auto moments = computeNormalizationMoments(output_vector);
-
-    for (uint32_t neuron_index = 0; neuron_index < len; neuron_index++) {
+    for (uint32_t neuron_index = 0; neuron_index < output_vector.len;
+         neuron_index++) {
       float activation = output_vector.activations[neuron_index];
 
       auto z_score = (activation - moments.first) /
@@ -136,15 +145,35 @@ class LayerNormNode final : public Node,
               output_vector.activations);
   }
 
+  // Computes the derivative of the normalization function
+  float normDerivative(float activation, uint32_t vec_length,
+                       uint32_t vec_index) {
+    assert(getState() == NodeState::PreparedForBatchProcessing);
+
+    float mean = _layer_norm_state->moments[vec_index].first;
+    float variance = _layer_norm_state->moments[vec_index].second;
+
+    float centered_activation = pow((activation - mean), 2.0);
+    auto denominator = pow(vec_length, 2.0) * variance * sqrt(variance);
+
+    auto gradient =
+        ((vec_length - 1) * (variance * vec_length - centered_activation)) /
+        denominator;
+    gradient *= _config->gamma();
+
+    return gradient;
+  }
+
   void backpropagateImpl(uint32_t vec_index) final {
     BoltVector& output_vector = getOutputVectorImpl(vec_index);
+    uint32_t len = output_vector.len;
 
-    // The gradients should be (1/sigma for each activation)
     for (uint32_t neuron_index = 0; neuron_index < output_vector.len;
          neuron_index++) {
       auto activation = output_vector.activations[neuron_index];
 
-      output_vector.activations[]
+      output_vector.gradients[neuron_index] =
+          normDerivative(activation, len, vec_index);
     }
   }
 
@@ -155,12 +184,11 @@ class LayerNormNode final : public Node,
 
   BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
     assert(getState() == NodeState::PreparedForBatchProcessing);
-    return (*_outputs)[vec_index];
+    return _layer_norm_state->outputs[vec_index];
   }
 
   void cleanupAfterBatchProcessingImpl() final {
-    _outputs = std::nullopt;
-    _prepared_for_batch_processing = false;
+    _layer_norm_state = std::nullopt;
   }
 
   uint32_t numNonzerosInOutputImpl() const final {
@@ -173,37 +201,55 @@ class LayerNormNode final : public Node,
 
   void summarizeImpl(std::stringstream& summary, bool detailed) const final {
     summary << _node_to_normalize->name() << " -> " << name()
-            << " (LayerNorm): ";
-    (void)detailed;
+            << " (LayerNorm) ";
+    if (detailed) {
+      summary << "(center=" << _config->center()
+              << ", scale=" << _config->scale();
+      summary << ", epsilon=" << _config->epsilon()
+              << ", beta_regularizer=" << _config->beta();
+      summary << ", gamma_regularizer=" << _config->gamma();
+      summary << ")";
+    }
+    summary << "\n";
   }
 
   std::string type() const final { return std::string("layer_norm"); }
 
   NodeState getState() const final {
-    if (!_node_to_normalize && !_compiled && !_prepared_for_batch_processing) {
+    if (!_node_to_normalize && !_compiled && !_layer_norm_state) {
       return NodeState::Constructed;
     }
-    if (_node_to_normalize && !_compiled && !_prepared_for_batch_processing) {
+    if (_node_to_normalize && !_compiled && !_layer_norm_state) {
       return NodeState::PredecessorsSet;
     }
-    if (_node_to_normalize && _compiled && !_prepared_for_batch_processing) {
+    if (_node_to_normalize && _compiled && !_layer_norm_state) {
       return NodeState::Compiled;
     }
-    if (_node_to_normalize && _compiled && _prepared_for_batch_processing) {
+    if (_node_to_normalize && _compiled && _layer_norm_state) {
       return NodeState::PreparedForBatchProcessing;
     }
     throw exceptions::NodeStateMachineError(
         "LayerNormNode is in an invalid internal state");
   }
 
+  struct LayerNormState {
+    explicit LayerNormState(BoltBatch outputs,
+                            std::vector<std::pair<float, float>> moments)
+        : outputs(std::move(outputs)), moments(std::move(moments)) {}
+
+    BoltBatch outputs;
+    // The jth element in the vector corresponds to the (mean, variance) pair
+    // for the jth vector in the batch
+    std::vector<std::pair<float, float>> moments;
+  };
+
   std::shared_ptr<NormalizationLayerConfig> _config;
 
-  // This field will be optional except for when the node is in the state of
-  // NodeState::PreparedForBatchProcessing
-  std::optional<BoltBatch> _outputs;
+  // This field will be optional except for when the node is in the batch
+  // processing state
+  std::optional<LayerNormState> _layer_norm_state;
   NodePtr _node_to_normalize;
   bool _compiled;
-  bool _prepared_for_batch_processing;
 };
 
 }  // namespace thirdai::bolt

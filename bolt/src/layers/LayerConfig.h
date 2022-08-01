@@ -173,7 +173,7 @@ class NormalizationLayerConfig {
   explicit NormalizationLayerConfig(float beta_regularizer = 0.0,
                                     float gamma_regularizer = 1.0,
                                     bool center = true, bool scale = true,
-                                    float epsilon = 0.001)
+                                    float epsilon = 0.00001)
       : _center(center),
         _scale(scale),
         _epsilon(epsilon),
