@@ -101,16 +101,26 @@ void AutoClassifierUtils::predict(
                              .withMetrics({"categorical_accuracy"})
                              .silence();
 
-  InferenceResult result = model->predict({test_data}, {}, test_labels, config);
+  if (output_filename) {
+    config.returnActivations();
+  }
+
+  auto [_, result] = model->predict({test_data}, {}, test_labels, config);
 
   if (output_filename) {
     std::ofstream output_file = dataset::SafeFileIO::ofstream(*output_filename);
+    uint32_t all_activations_idx = 0;
+    for (uint64_t batch_idx = 0; batch_idx < test_data->numBatches();
+         batch_idx++) {
+      BoltBatch& batch = test_data->at(batch_idx);
+      for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
+        for (uint32_t i = 0; i < n_classes; i++) {
+        }
+      }
+    }
 
     auto print_predictions_callback = [&](const BoltBatch& outputs,
                                           uint32_t batch_size) {
-      if (!output_file) {
-        return;
-      }
       for (uint32_t batch_id = 0; batch_id < batch_size; batch_id++) {
         uint32_t class_id = outputs[batch_id].getIdWithHighestActivation();
         output_file << class_id_to_class_name[class_id] << std::endl;
