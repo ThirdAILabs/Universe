@@ -22,6 +22,8 @@ class SamplingConfig {
   virtual std::unique_ptr<hashtable::SampledHashTable<uint32_t>> getHashTable()
       const = 0;
 
+  virtual ~SamplingConfig() = default;
+
  protected:
   static uint32_t clip(uint32_t input, uint32_t low, uint32_t high) {
     if (input < low) {
