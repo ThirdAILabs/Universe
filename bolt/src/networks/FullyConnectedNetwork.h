@@ -51,15 +51,20 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   };
 
   void getInputGradientsForBatch(
-       BoltBatch& input_dataset, BoltBatch& output, const LossFunction& loss_fn,
-    bool best_index, uint32_t batch_id, uint32_t general_batch_size,
-    const std::vector<uint32_t>& required_labels,
-    std::vector<std::vector<float>>& input_dataset_grad, bool want_ratios = false,
-    std::vector<std::vector<float>>& ratios = std::vector<std::vector<float>>().operator=(
-              std::vector<std::vector<float>>()),std::vector<std::vector<uint32_t>>& input_dataset_indices = std::vector<std::vector<uint32_t>>().operator=(
+      BoltBatch& input_dataset, BoltBatch& output, const LossFunction& loss_fn,
+      bool best_index, uint32_t batch_id, uint32_t general_batch_size,
+      const std::vector<uint32_t>& required_labels,
+      std::vector<std::vector<float>>& input_dataset_grad,
+      bool want_ratios = false,
+      std::vector<std::vector<float>>& ratios =
+          std::vector<std::vector<float>>().operator=(
+              std::vector<std::vector<float>>()),
+      std::vector<std::vector<uint32_t>>& input_dataset_indices =
+          std::vector<std::vector<uint32_t>>().operator=(
               std::vector<std::vector<uint32_t>>()));
 
-std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<float>>,std::vector<std::vector<uint32_t>>>
+  std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<float>>,
+             std::vector<std::vector<uint32_t>>>
   getInputGradientsFromStream(
       const std::shared_ptr<dataset::StreamingGenericDatasetLoader>& test_data,
       const LossFunction& loss_fn, bool best_index, uint32_t label_id,

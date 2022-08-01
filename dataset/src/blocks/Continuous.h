@@ -20,9 +20,19 @@ class ContinuousBlock : public Block {
 
   uint32_t expectedNumColumns() const final { return _column + 1; };
 
-  std::string giveMessage(float gradient_ratio_value,std::unordered_map<uint32_t, std::string> col_num_col_name_map,float row_ratio_sum) const final {
-    std::string message = "The Continuous column  "+col_num_col_name_map.at(_column)+" is  "+std::to_string(((gradient_ratio_value)/(row_ratio_sum))*100)+"% responsible.";
-    return message;
+  std::string giveMessage(
+      float gradient_ratio_value,
+      std::unordered_map<uint32_t, std::string> col_num_col_name_map,
+      float row_ratio_sum, bool to_print_message) const final {
+    if (to_print_message) {
+      std::cout << "The Continuous column  " +
+                       col_num_col_name_map.at(_column) + " is  " +
+                       std::to_string(
+                           ((gradient_ratio_value) / (row_ratio_sum)) * 100) +
+                       "% responsible."
+                << std::endl;
+    }
+    return col_num_col_name_map.at(_column);
   }
 
  protected:

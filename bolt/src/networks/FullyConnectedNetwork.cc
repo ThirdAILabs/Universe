@@ -151,9 +151,13 @@ FullyConnectedNetwork::getInputGradients(
   for (uint64_t batch_id = 0; batch_id < num_batches; batch_id++) {
     BoltBatch output = getOutputs(input_dataset->at(batch_id).getBatchSize(),
                                   /*use_sparsity= */ true);
-  getInputGradientsForBatch(input_dataset->at(batch_id), output, loss_fn, best_index,
-                              batch_id, input_dataset->at(0).getBatchSize(), required_labels, input_dataset_grad,false,std::vector<std::vector<float>>().operator=(
-              std::vector<std::vector<float>>()),input_dataset_indices);
+    getInputGradientsForBatch(input_dataset->at(batch_id), output, loss_fn,
+                              best_index, batch_id,
+                              input_dataset->at(0).getBatchSize(),
+                              required_labels, input_dataset_grad, false,
+                              std::vector<std::vector<float>>().operator=(
+                                  std::vector<std::vector<float>>()),
+                              input_dataset_indices);
   }
   if (input_dataset_indices.empty()) {
     return std::make_pair(input_dataset_grad, std::nullopt);
@@ -198,73 +202,69 @@ void FullyConnectedNetwork::getInputGradientsForBatch(
     bool best_index, uint32_t batch_id, uint32_t general_batch_size,
     const std::vector<uint32_t>& required_labels,
     std::vector<std::vector<float>>& input_dataset_grad, bool want_ratios,
-    std::vector<std::vector<float>>& ratios,std::vector<std::vector<uint32_t>>& input_dataset_indices) {
-for (uint32_t vec_id = 0;
-         vec_id < input_dataset.getBatchSize(); vec_id++) {
-      std::vector<float> vec_grad(input_dataset[vec_id].len, 0.0),ratio_grad;
-      // Assigning the vec_grad data() to gradients so that we dont have to
-      // worry about initializing and then freeing the memory.
-      input_dataset[vec_id].gradients = vec_grad.data();
-      uint32_t required_index;
-      /*
-      we are taking the second best index to know how change in input vector
-      values affects the prediction to flip to second highest activation. And
-      required_labels is essential because for some of the cases we know the
-      correct output labels, and best index is used to explain the
-      prediction.
-      */
-      /*
-      If the required_labels are empty, then we have to find the required_index
-      by output activations, for that we need to do forward pass before creating
-      the batch_label, but if the required_labels are not empty and for some ,If
-      the required label position is not present in the output active neurons ,
-      then calculating the gradients with respect to that label doesnot make
-      sense, because loss is only calculated with respect to active neurons, to
-      ensure that output has active neuron at the position of required label we
-      are creating batch_label before forward pass and passing to it, because
-      forward pass ensures to have active neurons at the metioned label index.
-      */
-      BoltVector batch_label;
-      if (required_labels.empty()) {
-        forward(vec_id, input_dataset, output[vec_id],
-                /*labels = */ nullptr);
-        if (best_index) {
-          required_index = output[vec_id].getIdWithHighestActivation();
-        } else {
-          required_index = getSecondBestId(output[vec_id]);
-        }
-        batch_label = BoltVector::makeSparseVector(
-            std::vector<uint32_t>{required_index}, std::vector<float>{1.0});
+    std::vector<std::vector<float>>& ratios,
+    std::vector<std::vector<uint32_t>>& input_dataset_indices) {
+  for (uint32_t vec_id = 0; vec_id < input_dataset.getBatchSize(); vec_id++) {
+    std::vector<float> vec_grad(input_dataset[vec_id].len, 0.0), ratio_grad;
+    // Assigning the vec_grad data() to gradients so that we dont have to
+    // worry about initializing and then freeing the memory.
+    input_dataset[vec_id].gradients = vec_grad.data();
+    uint32_t required_index;
+    /*
+    we are taking the second best index to know how change in input vector
+    values affects the prediction to flip to second highest activation. And
+    required_labels is essential because for some of the cases we know the
+    correct output labels, and best index is used to explain the
+    prediction.
+    */
+    /*
+    If the required_labels are empty, then we have to find the required_index
+    by output activations, for that we need to do forward pass before creating
+    the batch_label, but if the required_labels are not empty and for some ,If
+    the required label position is not present in the output active neurons ,
+    then calculating the gradients with respect to that label doesnot make
+    sense, because loss is only calculated with respect to active neurons, to
+    ensure that output has active neuron at the position of required label we
+    are creating batch_label before forward pass and passing to it, because
+    forward pass ensures to have active neurons at the metioned label index.
+    */
+    BoltVector batch_label;
+    if (required_labels.empty()) {
+      forward(vec_id, input_dataset, output[vec_id],
+              /*labels = */ nullptr);
+      if (best_index) {
+        required_index = output[vec_id].getIdWithHighestActivation();
       } else {
-        required_index =
-            required_labels[batch_id * general_batch_size +
-                            vec_id];
-        if (required_index >= getOutputDim()) {
-          throw std::invalid_argument(
-              "Cannot pass required index " + std::to_string(required_index) +
-              " to getInputGradients for network with output dim " +
-              std::to_string(getOutputDim()));
-        }
-        batch_label = BoltVector::makeSparseVector(
-            std::vector<uint32_t>{required_index}, std::vector<float>{1.0});
-        forward(vec_id, input_dataset, output[vec_id],
-                /*labels = */ &batch_label);
+        required_index = getSecondBestId(output[vec_id]);
       }
-      if (!input_dataset[vec_id].isDense()) {
-        std::vector<uint32_t> vec_indices(
-            input_dataset[vec_id].active_neurons,
-            input_dataset[vec_id].active_neurons +
-                input_dataset[vec_id].len);
-        input_dataset_indices.push_back(vec_indices);
+      batch_label = BoltVector::makeSparseVector(
+          std::vector<uint32_t>{required_index}, std::vector<float>{1.0});
+    } else {
+      required_index = required_labels[batch_id * general_batch_size + vec_id];
+      if (required_index >= getOutputDim()) {
+        throw std::invalid_argument(
+            "Cannot pass required index " + std::to_string(required_index) +
+            " to getInputGradients for network with output dim " +
+            std::to_string(getOutputDim()));
       }
+      batch_label = BoltVector::makeSparseVector(
+          std::vector<uint32_t>{required_index}, std::vector<float>{1.0});
+      forward(vec_id, input_dataset, output[vec_id],
+              /*labels = */ &batch_label);
+    }
+    if (!input_dataset[vec_id].isDense()) {
+      std::vector<uint32_t> vec_indices(
+          input_dataset[vec_id].active_neurons,
+          input_dataset[vec_id].active_neurons + input_dataset[vec_id].len);
+      input_dataset_indices.push_back(vec_indices);
+    }
 
-      loss_fn.lossGradients(output[vec_id], batch_label,
-                            input_dataset.getBatchSize());
+    loss_fn.lossGradients(output[vec_id], batch_label,
+                          input_dataset.getBatchSize());
 
-      backpropagateInputForGradients(vec_id, input_dataset,
-                                     output[vec_id]);
+    backpropagateInputForGradients(vec_id, input_dataset, output[vec_id]);
 
-      if (want_ratios) {
+    if (want_ratios) {
       for (uint32_t i = 0; i < input_dataset[vec_id].len; i++) {
         ratio_grad.push_back((input_dataset[vec_id].gradients[i]) /
                              input_dataset[vec_id].activations[i]);
@@ -272,15 +272,16 @@ for (uint32_t vec_id = 0;
       ratios.push_back(ratio_grad);
     }
 
-      // We reset the gradients to nullptr here to prevent the bolt vector from
-      // freeing the memory which is owned by the std::vector we used to store
-      // the gradients
-      input_dataset[vec_id].gradients = nullptr;
-      input_dataset_grad.push_back(vec_grad);
-    }
+    // We reset the gradients to nullptr here to prevent the bolt vector from
+    // freeing the memory which is owned by the std::vector we used to store
+    // the gradients
+    input_dataset[vec_id].gradients = nullptr;
+    input_dataset_grad.push_back(vec_grad);
   }
+}
 
-std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<float>>,std::vector<std::vector<uint32_t>>>
+std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<float>>,
+           std::vector<std::vector<uint32_t>>>
 FullyConnectedNetwork::getInputGradientsFromStream(
     const std::shared_ptr<dataset::StreamingGenericDatasetLoader>& test_data,
     const LossFunction& loss_fn, bool best_index, uint32_t label_id,
@@ -294,10 +295,11 @@ FullyConnectedNetwork::getInputGradientsFromStream(
     temp.resize(batch_size, label_id);
   }
   while (auto batch = test_data->nextBatchTuple()) {
-    getInputGradientsForBatch(std::get<0>(batch.value()), output, loss_fn, best_index, 0, batch_size,
-                              temp, concatenated_grad, true, ratios,input_dataset_indices);
+    getInputGradientsForBatch(
+        std::get<0>(batch.value()), output, loss_fn, best_index, 0, batch_size,
+        temp, concatenated_grad, true, ratios, input_dataset_indices);
   }
-  return std::make_tuple(concatenated_grad, ratios,input_dataset_indices);
+  return std::make_tuple(concatenated_grad, ratios, input_dataset_indices);
 }
 
 void FullyConnectedNetwork::initializeNetworkState(uint32_t batch_size,

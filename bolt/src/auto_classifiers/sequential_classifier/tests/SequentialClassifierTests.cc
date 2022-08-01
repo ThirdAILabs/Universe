@@ -198,10 +198,10 @@ TEST_F(SequentialClassifierTests, Explainability) {
 
   auto temp = seq_bolt.explain(simple_trend_test_dataset);
 
-  for (auto& i : temp[0]) {
-    std::cout << i<<std::endl;
-  }
-  std::cout << std::endl;
+  // for (auto& i : temp.first) {
+  //   std::cout << i << std::endl;
+  // }
+  // std::cout << std::endl;
 
   ASSERT_EQ(1.0, 1.0);
 

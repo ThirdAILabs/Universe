@@ -13,6 +13,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace thirdai::bolt {
@@ -36,7 +37,8 @@ class SequentialClassifier {
                         .first;
 
     if (_network == nullptr) {
-      _network = AutoClassifierUtils::createNetwork(pipeline->getInputDim(), pipeline->getLabelDim(), _model_size);
+      _network = AutoClassifierUtils::createNetwork(
+          pipeline->getInputDim(), pipeline->getLabelDim(), _model_size);
     }
 
     if (!AutoClassifierUtils::canLoadDatasetInMemory(filename)) {
@@ -46,7 +48,7 @@ class SequentialClassifier {
     }
   }
 
-  //sort the given gradients based on absolute value of first.
+  // sort the given gradients based on absolute value of first.
   static void sortGradients(
       std::vector<std::vector<std::pair<float, uint32_t>>>& gradients) {
     auto func = [](std::pair<float, uint32_t> pair1,
@@ -58,34 +60,28 @@ class SequentialClassifier {
     }
   }
 
-  // given set of blocks get messages from blocks by calling their method.
-  // static std::vector<std::pair<std::string, uint32_t>> getMessagesFromBlocks(
-  //     const std::vector<std::shared_ptr<dataset::Block>>& blocks) {
-  //   std::vector<std::pair<std::string, uint32_t>> temp;
-  //   temp.clear();
-  //   for (const auto& block : blocks) {
-  //     temp.push_back(block->giveMessage());
-  //   }
-  //   return temp;
-  // }
-
   // given an index, get the corresponding block it belongs.
-  static std::shared_ptr<dataset::Block> getBlock(
+  static std::pair<std::shared_ptr<dataset::Block>, uint32_t> getBlock(
       std::vector<std::shared_ptr<dataset::Block>> blocks,
       std::vector<uint32_t> offsets, uint32_t index) {
     auto iter = std::upper_bound(offsets.begin(), offsets.end(), index);
-    return blocks[iter - offsets.begin() - 1];
+    return std::make_pair(blocks[iter - offsets.begin() - 1],
+                          (index - offsets[iter - offsets.begin() - 1]));
   }
 
-  std::vector<std::string> explain(
-      std::string filename, uint32_t label_id = 0, bool label_given = false,
-      const LossFunction& loss_fn = CategoricalCrossEntropyLoss()) {
+  std::tuple<std::vector<std::vector<std::string>>,
+             std::vector<std::vector<float>>,
+             std::vector<std::vector<uint32_t>>>
+  explain(std::string filename, uint32_t label_id = 0, bool label_given = false,
+          const LossFunction& loss_fn = CategoricalCrossEntropyLoss()) {
     auto pipeline =
         _pipeline_builder.buildPipelineForFile(filename, /* shuffle = */
                                                false,
                                                /* overwrite_index = */
                                                false);
-    //gradients is a pair , first is gradients and second is ratios(gradient/base val)
+    // gradients is a tuple , first is gradients and second is
+    // ratios(gradient/base val) and third is indices in input vector(for sparse
+    // inputs).
     auto gradients = _network->getInputGradientsFromStream(
         pipeline.first, loss_fn, false, label_id, label_given);
     std::vector<std::vector<std::pair<float, uint32_t>>> temp;
@@ -93,55 +89,42 @@ class SequentialClassifier {
     // sorting based on ratios.
     auto ratio_gradient = std::get<1>(gradients);
     auto indices_gradients = std::get<2>(gradients);
-    for (uint32_t i=0;i< ratio_gradient.size();i++) {
+    for (uint32_t i = 0; i < ratio_gradient.size(); i++) {
       std::vector<std::pair<float, uint32_t>> vec;
       float sum = 0;
       for (uint32_t j = 0; j < ratio_gradient[i].size(); j++) {
         sum += abs(ratio_gradient[i][j]);
-        vec.push_back(std::make_pair(ratio_gradient[i][j], indices_gradients[i][j]));
+        vec.push_back(
+            std::make_pair(ratio_gradient[i][j], indices_gradients[i][j]));
       }
       ratio_sums.push_back(sum);
       temp.push_back(vec);
     }
     sortGradients(temp);
-    // std::vector<std::shared_ptr<dataset::Block>> blocks;
-    std::vector<std::string> messages;
-    // std::vector<std::vector<std::string>> total_column_names;
-    //for every vector in input.
-    for (uint32_t i = 0;i<temp.size();i++) {
-      // blocks.clear();
-      //for every value in that input vector get the block corresponds to it.
+    std::vector<std::vector<std::string>> all_column_names;
+    std::vector<std::vector<float>> all_gradient_percent_ratio;
+    std::vector<std::vector<uint32_t>> all_indices_within_block;
+    // for every vector in input.
+    for (uint32_t i = 0; i < temp.size(); i++) {
+      // for every value in that input vector get the block corresponds to it.
+      std::vector<std::string> column_names;
+      std::vector<float> gradient_percent_ratio;
+      std::vector<uint32_t> indices_within_block;
       for (const auto& col : temp[i]) {
-        auto block = 
+        auto block =
             getBlock(pipeline.second, _pipeline_builder.offsets, col.second);
-        messages.push_back(block->giveMessage(col.first,_pipeline_builder._schema.num_to_name,ratio_sums[i]));
+        indices_within_block.push_back(block.second);
+        column_names.push_back(block.first->giveMessage(
+            col.first, _pipeline_builder._schema.num_to_name, ratio_sums[i],
+            false));
+        gradient_percent_ratio.push_back((col.first / ratio_sums[i]) * 100);
       }
-      //from that blocks get messgaes.
-      // auto messages = getMessagesFromBlocks(blocks);
-      // std::vector<std::string> column_names;
-      // // so for each message get the column name corresponds to column num
-      // for (const auto& message : messages) {
-      //   std::string col_name =
-      //       _pipeline_builder._schema.num_to_name.at(message.second);
-      //   column_names.push_back(col_name);
-      //   // std::cout << col_name << " : reason " << message.first << std::endl;
-      //   // std::cout << col_name << " ";
-      // }
-      // total_column_names.push_back(column_names);
+      all_column_names.push_back(column_names);
+      all_gradient_percent_ratio.push_back(gradient_percent_ratio);
+      all_indices_within_block.push_back(indices_within_block);
     }
-    // make a tuple out of ratios and column names and corresponding gradients.
-    // std::vector<std::vector<std::tuple<float, std::string, float>>> result;
-    // for (uint32_t i = 0; i < total_column_names.size(); i++) {
-    //   std::vector<std::tuple<float, std::string, float>> res;
-    //   for (uint32_t j = 0; j < total_column_names[i].size(); j++) {
-    //     auto k = temp[i][j].second;
-    //     res.push_back(std::make_tuple(
-    //         temp[i][j].first, total_column_names[i][j], gradients.first[i][k]));
-    //   }
-    //   result.push_back(res);
-    // }
-    // return result;
-    return messages;
+    return std::make_tuple(all_column_names, all_gradient_percent_ratio,
+                           all_indices_within_block);
   }
 
   float predict(
