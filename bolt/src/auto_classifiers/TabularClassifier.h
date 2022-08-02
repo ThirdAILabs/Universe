@@ -85,19 +85,20 @@ class TabularClassifier {
     std::shared_ptr<dataset::DataLoader> data_loader =
         std::make_shared<dataset::SimpleFileDataLoader>(filename, batch_size);
 
-    std::shared_ptr<dataset::TabularMetadataProcessor> batch_processor =
-        std::make_shared<dataset::TabularMetadataProcessor>(
-            column_datatypes, _model->getOutputDim());
+    std::shared_ptr<dataset::TabularMetadataProcessor>
+        metadata_batch_processor =
+            std::make_shared<dataset::TabularMetadataProcessor>(
+                column_datatypes, _model->getOutputDim());
 
     // TabularMetadataProcessor inherets ComputeBatchProcessor so this doesn't
     // produce any vectors, we are just using it to iterate over the dataset.
     auto compute_dataset =
         std::make_shared<dataset::StreamingDataset<BoltBatch, BoltBatch>>(
-            data_loader, batch_processor);
+            data_loader, metadata_batch_processor);
     while (compute_dataset->nextBatchTuple()) {
     }
 
-    return batch_processor->getMetadata();
+    return metadata_batch_processor->getMetadata();
   }
 
   std::shared_ptr<dataset::GenericBatchProcessor> makeTabularBatchProcessor() {
