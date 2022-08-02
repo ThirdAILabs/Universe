@@ -34,7 +34,7 @@ static std::string activationFunctionToStr(ActivationFunction act_func) {
 }
 
 // an approximation for top-k threshold by random sampling
-static float getThresholdForTopK(const std::vector<float>& values,
+inline float getThresholdForTopK(const std::vector<float>& values,
                                  uint64_t sketch_size,
                                  uint64_t max_samples_for_random_sampling) {
   uint64_t num_samples = std::min(max_samples_for_random_sampling, sketch_size);
@@ -55,7 +55,7 @@ static float getThresholdForTopK(const std::vector<float>& values,
   return threshold;
 }
 
-static void getDragonSketch(const std::vector<float>& full_gradient,
+inline void getDragonSketch(const std::vector<float>& full_gradient,
                             uint64_t* indices, float* gradients,
                             int seed_for_hashing, float threshold,
                             uint64_t sketch_size,

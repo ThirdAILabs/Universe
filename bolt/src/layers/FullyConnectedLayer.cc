@@ -694,6 +694,7 @@ void FullyConnectedLayer::getBiasGradientSketch(uint64_t* indices,
                                                 uint64_t sketch_size,
                                                 int seed_for_hashing) const {
   float threshold = 0.1;
+  
   threshold = thirdai::bolt::getThresholdForTopK(
       _b_gradient, sketch_size, /*max_samples_for_random_sampling=*/10'000);
   thirdai::bolt::getDragonSketch(_b_gradient, indices, gradients,
