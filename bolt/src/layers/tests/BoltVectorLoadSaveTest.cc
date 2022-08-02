@@ -1,5 +1,6 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/details/helpers.hpp>
+#include "BoltVectorTestUtils.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <gtest/gtest.h>
 #include <algorithm>
@@ -56,22 +57,6 @@ BoltVector makeDataNonOwningBoltVector(std::vector<uint32_t>& active_neurons,
                     activations.size());
 }
 
-void assertBoltVectorsAreEqual(const BoltVector& a, const BoltVector& b) {
-  EXPECT_EQ(a.len, b.len);
-  EXPECT_EQ(a.isDense(), b.isDense());
-  EXPECT_EQ(a.hasGradients(), b.hasGradients());
-
-  for (uint32_t i = 0; i < a.len; i++) {
-    if (!a.isDense()) {
-      ASSERT_EQ(a.active_neurons[i], b.active_neurons[i]);
-    }
-    ASSERT_EQ(a.activations[i], b.activations[i]);
-    if (a.hasGradients()) {
-      ASSERT_EQ(a.gradients[i], b.gradients[i]);
-    }
-  }
-}
-
 void testDataOwningBoltVector(const std::vector<uint32_t>& active_neurons,
                               const std::vector<float>& activations,
                               const std::vector<float>& gradients) {
@@ -82,7 +67,7 @@ void testDataOwningBoltVector(const std::vector<uint32_t>& active_neurons,
 
   BoltVector deserialized_vector = deserializeBoltVector(serialized);
 
-  assertBoltVectorsAreEqual(vector, deserialized_vector);
+  BoltVectorTestUtils::assertBoltVectorsAreEqual(vector, deserialized_vector);
 }
 
 void testDataNonOwningBoltVector(std::vector<uint32_t>& active_neurons,
@@ -95,7 +80,7 @@ void testDataNonOwningBoltVector(std::vector<uint32_t>& active_neurons,
 
   BoltVector deserialized_vector = deserializeBoltVector(serialized);
 
-  assertBoltVectorsAreEqual(vector, deserialized_vector);
+  BoltVectorTestUtils::assertBoltVectorsAreEqual(vector, deserialized_vector);
 }
 
 TEST(BoltVectorSerialization, SaveLoadSparseBoltVectorWithGradients) {
