@@ -209,7 +209,6 @@ TEST_F(TabularClassifierTestFixture, TestLoadSave) {
   std::string SAVE_LOCATION = "tabularSaveLocation";
   tab_model->save(SAVE_LOCATION);
   auto new_model = TabularClassifier::load(SAVE_LOCATION);
-  //   std::remove(SAVE_LOCATION.c_str());
 
   ASSERT_NO_THROW(  // NOLINT since clang-tidy doesn't like ASSERT_NO_THROW
       new_model->predict(
@@ -221,6 +220,8 @@ TEST_F(TabularClassifierTestFixture, TestLoadSave) {
                                                           labels);
 
   ASSERT_EQ(before_load_save_accuracy, after_load_save_accuracy);
+
+  // TODO remove files
 }
 
 }  // namespace thirdai::bolt
