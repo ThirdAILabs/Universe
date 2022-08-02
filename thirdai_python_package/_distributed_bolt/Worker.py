@@ -169,16 +169,16 @@ class Worker:
             # x = self.network.get_weights_gradients(layer)
             # y = self.network.get_biases_gradients(layer)
 
-            x = self.network.get_indexed_sketch(
+            x = self.network.get_indexed_sketch_for_gradients(
                 layer_index=layer,
                 compression_density=compression_density,
-                is_set_biases=False,
+                sketch_biases=False,
                 seed=seed,
             )
-            y = self.network.get_indexed_sketch(
+            y = self.network.get_indexed_sketch_for_gradients(
                 layer_index=layer,
                 compression_density=compression_density,
-                is_set_biases=True,
+                sketch_biases=True,
                 seed=seed,
             )
             # x=np.ravel(x)
@@ -328,17 +328,17 @@ class Worker:
             # print(f"shape of b_indices is {b_indices.shape}")
             # print(f"shape of b_values is {b_values.shape}")
 
-            self.network.set_gradients(
+            self.set_gradients_from_indices_values(
                 layer_index=layer,
                 indices=w_indices,
                 values=w_values,
-                is_set_biases=False,
+                set_biases=False,
             )
-            self.network.set_gradients(
+            self.set_gradients_from_indices_values(
                 layer_index=layer,
                 indices=b_indices,
                 values=b_values,
-                is_set_biases=True,
+                set_biases=True,
             )
 
             # w_gradient=np.zeros(shape[0]*shape[1])
