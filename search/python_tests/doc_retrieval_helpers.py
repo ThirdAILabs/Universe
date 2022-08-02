@@ -34,11 +34,9 @@ def get_build_and_run_functions_random(num_docs=100, num_queries=100):
     doc_word_ids = [
         random.sample(range(vocab_size), words_per_doc) for _ in range(num_docs)
     ]
-
     doc_offsets = np.random.normal(
         size=(num_docs, words_per_doc, data_dim), scale=within_word_std
     )
-
     docs = []
     for i in range(num_docs):
         doc = []
@@ -51,7 +49,6 @@ def get_build_and_run_functions_random(num_docs=100, num_queries=100):
         random.sample(range(vocab_size), words_per_query_random)
         for _ in range(num_queries)
     ]
-
     query_same_word_ids = [
         ids[:words_per_query_from_doc] for ids in doc_word_ids[:num_queries]
     ]
@@ -70,7 +67,6 @@ def get_build_and_run_functions_random(num_docs=100, num_queries=100):
     index_func = lambda: _build_index_random(
         docs, hashes_per_table, num_tables, data_dim, word_centers
     )
-
     query_func = lambda index: _do_queries_random(index, queries, num_docs)
 
     return index_func, query_func
