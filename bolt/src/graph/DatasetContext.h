@@ -35,7 +35,7 @@ class DatasetContextBase {
  * batch size, etc. Finally it provides methods for obtaining the length and
  * batch size of the datasets once they are verified to be correct.
  */
-class DatasetContext : public DatasetContextBase {
+class DatasetContext final : public DatasetContextBase {
  public:
   DatasetContext(std::vector<dataset::BoltDatasetPtr> data,
                  std::vector<dataset::BoltTokenDatasetPtr> tokens,
@@ -126,11 +126,10 @@ class DatasetContext : public DatasetContextBase {
  * This class provides the interface from DatasetContextBase but is constructed
  * assuming a single sample input for inference.
  */
-class SingleUnitDatasetContext : public DatasetContextBase {
+class SingleUnitDatasetContext final : public DatasetContextBase {
  public:
   SingleUnitDatasetContext(const std::vector<BoltVector>& data,
-                           const std::vector<std::vector<uint32_t>>& tokens)
-      : _labels(nullptr) {
+                           const std::vector<std::vector<uint32_t>>& tokens) {
     for (auto vector : data) {
       _data.push_back(BoltBatch({std::move(vector)}));
     }
@@ -162,7 +161,6 @@ class SingleUnitDatasetContext : public DatasetContextBase {
 
   std::vector<BoltBatch> _data;
   std::vector<dataset::BoltTokenBatch> _tokens;
-  dataset::BoltDatasetPtr _labels;
 };
 
 }  // namespace thirdai::bolt
