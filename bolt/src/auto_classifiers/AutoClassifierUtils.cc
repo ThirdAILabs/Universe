@@ -71,8 +71,7 @@ void AutoClassifierUtils::train(
   TrainConfig first_epoch_config =
       TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
                               /* epochs= */ 1)
-          // .withMetrics({"categorical_accuracy"}) // TODO DO WE NEED THIS?
-          .silence();
+          .withMetrics({"categorical_accuracy"});
 
   // TODO(david, nick) verify this freeze hash tables if needed
   model->train({train_data}, {}, train_labels, first_epoch_config);
@@ -82,8 +81,8 @@ void AutoClassifierUtils::train(
       TrainConfig::makeConfig(/* learning_rate= */
                               learning_rate,
                               /* epochs= */ epochs - 1)
-          // .withMetrics({"categorical_accuracy"}) // TODO DO WE NEED THIS?
-          .silence();
+          .withMetrics({"categorical_accuracy"});
+
   model->train({train_data}, {}, train_labels, remaining_epochs_config);
 }
 
