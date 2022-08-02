@@ -1,7 +1,9 @@
 #pragma once
 
+#include <bolt/src/graph/Graph.h>
+#include <bolt/src/graph/nodes/FullyConnected.h>
+#include <bolt/src/graph/nodes/Input.h>
 #include <bolt/src/layers/BoltVector.h>
-#include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/src/Datasets.h>
 #include <sys/stat.h>
 #include <fstream>
@@ -14,7 +16,7 @@ namespace thirdai::bolt {
 
 class AutoClassifierUtils {
  public:
-  static std::shared_ptr<FullyConnectedNetwork> createNetwork(
+  static std::shared_ptr<BoltGraph> createNetwork(
       uint64_t input_dim, uint32_t n_classes, const std::string& model_size);
 
   static std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
@@ -25,15 +27,13 @@ class AutoClassifierUtils {
       uint32_t batch_size = 256);
 
   static void train(
-      std::shared_ptr<FullyConnectedNetwork>& model,
-      const std::string& filename,
+      std::shared_ptr<BoltGraph>& model, const std::string& filename,
       const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
           batch_processor,
       uint32_t epochs, float learning_rate);
 
   static void predict(
-      std::shared_ptr<FullyConnectedNetwork>& model,
-      const std::string& filename,
+      std::shared_ptr<BoltGraph>& model, const std::string& filename,
       const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
           batch_processor,
       const std::optional<std::string>& output_filename,

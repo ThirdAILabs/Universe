@@ -184,7 +184,8 @@ InferenceResult BoltGraph::predict(
     const std::vector<dataset::BoltDatasetPtr>& test_data,
     const std::vector<dataset::BoltTokenDatasetPtr>& test_tokens,
     const dataset::BoltDatasetPtr& test_labels,
-    const PredictConfig& predict_config) {
+    const PredictConfig& predict_config,
+    std::optional<std::function<void(const BoltVector&)>> output_callback) {
   DatasetContext predict_context(test_data, test_tokens, test_labels);
 
   bool has_labels = (test_labels != nullptr);
@@ -228,6 +229,8 @@ InferenceResult BoltGraph::predict(
       processInferenceBatch(batch_size, batch_labels, metrics);
 
       bar.increment();
+
+      processOutputCallback(output_callback, batch_size);
 
       outputTracker.saveOutputBatch(_output, batch_size);
     }
@@ -306,6 +309,19 @@ void BoltGraph::processInferenceBatch(uint64_t batch_size,
     if (batch_labels) {
       const auto& labels = (*batch_labels)[vec_id];
       metrics.processSample(output, labels);
+    }
+  }
+}
+
+void BoltGraph::processOutputCallback(
+    std::optional<std::function<void(const BoltVector&)>> output_callback,
+    uint32_t batch_size) {
+  if (output_callback) {
+    for (uint32_t vec_id_in_batch = 0; vec_id_in_batch < batch_size;
+         vec_id_in_batch++) {
+      const auto& current_output_vec =
+          _output->getOutputVector(vec_id_in_batch);
+      output_callback.value()(current_output_vec);
     }
   }
 }
