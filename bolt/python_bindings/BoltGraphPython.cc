@@ -135,7 +135,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       graph_submodule, "LayerNormalization")
       .def(py::init<>(), "Constructs a normalization layer object.")
-      .def(py::init<const NormalizationLayerConfig>(),
+      .def(py::init<const NormalizationLayerConfig&>(),
            py::arg("layer_norm_config"),
            "Constructs a normalization layer object"
            "Arguments:\n"
@@ -194,6 +194,12 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   py::class_<NormalizationLayerConfig>(graph_submodule, "LayerNormConfig")
       .def_static("make", &NormalizationLayerConfig::makeConfig)
       .def("silence", &NormalizationLayerConfig::silence)
+      .def("center", &NormalizationLayerConfig::setCenteringFactor,
+           py::arg("beta_regularizer"),
+           "Sets the centering factor for the normalization configuration")
+      .def("scale", &NormalizationLayerConfig::setScalingFactor,
+           py::arg("gamma_regularizer"),
+           "Sets the scaling factor the the normalization configuration.")
       .def("uncentered", &NormalizationLayerConfig::uncentered)
       .def("unscaled", &NormalizationLayerConfig::unscaled);
 

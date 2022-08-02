@@ -184,7 +184,17 @@ class NormalizationLayerConfig {
     return NormalizationLayerConfig();
   }
 
-  NormalizationLayerConfig silence() {
+  NormalizationLayerConfig& setCenteringFactor(float centering_factor) {
+    _beta_regularizer = centering_factor;
+    return *this;
+  }
+
+  NormalizationLayerConfig& setScalingFactor(float scaling_factor) {
+    _gamma_regularizer = scaling_factor;
+    return *this;
+  }
+
+  NormalizationLayerConfig& silence() {
     _verbose = false;
     return *this;
   }

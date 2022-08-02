@@ -52,15 +52,11 @@ void testLayerNormNodeForwardAndBackwardPass() {
   auto pred_node = layer_norm_node->getPredecessors()[0];
   ASSERT_EQ(pred_node->outputDim(), layer_norm_node->outputDim());
 
-  // for (uint32_t vec_index = 0; vec_index < batch_size; vec_index++) {
-  //   auto computed_moments = layer_norm_node->getMoments(/*vec_index= */ vec_index);
-
-  //   ASSERT_NE(computed_moments, std::nullopt);
-  // }
-
-  BoltVector& output_vector = layer_norm_node->getOutputVector(/* vec_index= */ 1);
-
-  for (uint32_t neuron_index = 0; neuron_index < output_vector.len; neuron_index++) {
+  BoltVector& output_vector =
+      layer_norm_node->getOutputVector(/* vec_index= */ 1);
+      
+  for (uint32_t neuron_index = 0; neuron_index < output_vector.len;
+       neuron_index++) {
     ASSERT_NE(output_vector.gradients[neuron_index], 0.0);
   }
 }
@@ -68,6 +64,5 @@ void testLayerNormNodeForwardAndBackwardPass() {
 TEST(LayerNormNodeTest, LayerNormalizationTest) {
   testLayerNormNodeForwardAndBackwardPass();
 }
-
 
 }  // namespace thirdai::bolt::tests
