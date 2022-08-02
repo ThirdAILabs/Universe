@@ -75,38 +75,6 @@ class ConvLayer final : public SequentialLayer {
 
   float getSparsity() const final { return _sparsity; }
 
-  void getBiasGradientSketch(int* indices, float* gradients, int sketch_size, bool without_index, int seed) const final{
-    (void) indices;
-    (void) gradients;
-    (void) sketch_size;
-    (void) without_index;
-    (void) seed;
-    throw thirdai::exceptions::NotImplemented("getGradientSketch not implemented for ConvLayer");
-  }
-
-  void getWeightGradientSketch(int* indices, float* gradients, int sketch_size, bool without_index, int seed) const final{
-    (void) indices;
-    (void) gradients;
-    (void) sketch_size;
-    (void) without_index;
-    (void) seed;
-    throw thirdai::exceptions::NotImplemented("getGradientSketch not implemented for ConvLayer");
-  }
-
-  void setBiasGradientsFromIndicesValues(int* indices_raw_data,float* values_raw_data,int size) final{
-    (void) indices_raw_data;
-    (void) values_raw_data;
-    (void) size;
-    throw thirdai::exceptions::NotImplemented("setGradientsFromIndicesValues not implemented for ConvLayer");
-  }
-
-  void setWeightGradientsFromIndicesValues(int* indices_raw_data,float* values_raw_data,int size) final{
-    (void) indices_raw_data;
-    (void) values_raw_data;
-    (void) size;
-    throw thirdai::exceptions::NotImplemented("setGradientsFromIndicesValues not implemented for ConvLayer");
-  }
-  
   void setSparsity(float sparsity) final {
     (void)sparsity;
     // This is currently unimplemented because it would duplicate code from
