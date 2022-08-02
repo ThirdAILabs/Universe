@@ -67,11 +67,10 @@ void AutoClassifierUtils::train(
 
   // The case has yet to come up where loading the dataset in
   // memory is a concern. Additionally, supporting streaming datasets in the DAG
-  // api would require a lot of messy refactoring. When the case comes where we
-  // can't fit a dataset in memory and need to train, we can do a chunked
-  // training on the dataset, loading in bits at a time (TODO(david, nick)).
-  // In the meantime, the user can simply implement this chunked processing
-  // themselves by training on sections of the dataset.
+  // api would require a lot of messy refactoring. When the problem does come up
+  // we can prioritize that and come up with a good solution in another PR
+  // (TODO(david, nick)). In the meantime, the user can simply implement this
+  // chunked processing themselves by training on sections of the dataset.
   if (!canLoadDatasetInMemory(filename)) {
     throw std::invalid_argument("Cannot load dataset in memory.");
   }
