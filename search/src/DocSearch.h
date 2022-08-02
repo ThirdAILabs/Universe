@@ -93,11 +93,7 @@ class DocSearch {
   // and we updated it.
   bool addDocument(const bolt::BoltBatch& embeddings, const std::string& doc_id,
                    const std::string& doc_text) {
-    std::cout << "  -> Entering addDocument" << std::endl;
-
     std::vector<uint32_t> centroid_ids = getNearestCentroids(embeddings, 1);
-    std::cout << "  -> Reached line: " << __LINE__ << std::endl;
-
     return addDocumentWithCentroids(embeddings, centroid_ids, doc_id, doc_text);
   }
 
@@ -107,10 +103,7 @@ class DocSearch {
                                 const std::vector<uint32_t>& centroid_ids,
                                 const std::string& doc_id,
                                 const std::string& doc_text) {
-    std::cout << "Entering addDocumentWithCentroids" << std::endl;
     bool deletedOldDoc = deleteDocument(doc_id);
-
-    std::cout << "  -> Reached line: " << __LINE__ << std::endl;
 
     // The document array assigned the new document to an "internal_id" when
     // we add it, which now becomes the integer representing this document in
@@ -119,23 +112,15 @@ class DocSearch {
     // next available smallest positive integer that from now on uniquely
     // identifies the document.
     uint32_t internal_id = _document_array->addDocument(embeddings);
-    std::cout << "  -> Reached line: " << __LINE__ << std::endl;
-
     _largest_internal_id = std::max(_largest_internal_id, internal_id);
-    std::cout << "  -> Reached line: " << __LINE__ << std::endl;
 
     for (uint32_t centroid_id : centroid_ids) {
       _centroid_id_to_internal_id.at(centroid_id).push_back(internal_id);
     }
-    std::cout << "  -> Reached line: " << __LINE__ << std::endl;
 
     _doc_id_to_doc_text[doc_id] = doc_text;
 
-    std::cout << "  -> Reached line: " << __LINE__ << std::endl;
-
     _doc_id_to_internal_id[doc_id] = internal_id;
-
-    std::cout << "  -> Reached line: " << __LINE__ << std::endl;
 
     // We need to call resize here instead of simply push_back because the
     // internal_id we get assigned might not necessarily be equal to the
@@ -145,11 +130,7 @@ class DocSearch {
     if (internal_id >= _internal_id_to_doc_id.size()) {
       _internal_id_to_doc_id.resize(internal_id + 1);
     }
-    std::cout << "  -> Reached line: " << __LINE__ << std::endl;
-
     _internal_id_to_doc_id.at(internal_id) = doc_id;
-
-    std::cout << "  -> Reached line: " << __LINE__ << std::endl;
 
     return !deletedOldDoc;
   }

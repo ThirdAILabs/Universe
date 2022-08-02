@@ -294,7 +294,6 @@ inline BoltDatasetPtr numpyToBoltVectorDataset(const py::object& data,
   verifyBatchSize(batch_size);
   if (isNumpyArray(data)) {
     if (isNumpyFloat32(data)) {
-      std::cout << "Calling denseNumpyToBoltVectorDataset" << std::endl;
       return denseNumpyToBoltVectorDataset(data.cast<NumpyArray<float>>(),
                                            batch_size);
     }
