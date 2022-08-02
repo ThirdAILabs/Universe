@@ -24,7 +24,7 @@ TEST_F(CategoricalTrackingBlockTests, CorrectOutputNoGraph) {
       /* n_ids = */ 3, /* n_categories = */ 5, /* buffer_size = */ 5);
   CategoricalTrackingBlock block(/* id_col = */ 0, /* timestamp_col = */ 1,
                                  /* category_col = */ 2, /* lookahead = */ 0,
-                                 /* lookback = */ 2, id_map, index);
+                                 /* include_current = */ true, id_map, index);
 
   for (auto& row : mock_data) {
     SegmentedSparseFeatureVector vec;
@@ -80,7 +80,7 @@ TEST_F(CategoricalTrackingBlockTests, CorrectOutputWithGraph) {
       /* n_ids = */ 3, /* n_categories = */ 6, /* buffer_size = */ 5);
   CategoricalTrackingBlock block(/* id_col = */ 0, /* timestamp_col = */ 1,
                                  /* category_col = */ 2, /* lookahead = */ 0,
-                                 /* lookback = */ 2, id_map, index, graph_ptr,
+                                 /* include_current = */ true, id_map, index, graph_ptr,
                                  /* max_n_neighbors = */ 1);
 
   for (auto& row : mock_data) {
