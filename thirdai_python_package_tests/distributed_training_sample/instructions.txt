@@ -45,7 +45,7 @@ Once cluster is started to start training
 
         -        head = DistributedBolt(1 /** number of workers you want to use, should be less than or equal to the number of ips in the cluster**/, config_filename/** configuration file **/) 
 
-        -        head.train(False/** True=> circular communication or False=> Linear Communication**/) Prefer Linear Communication for usage upto 3 nodes.
+        -        head.train(False/** True=> circular communication or False=> Linear Communication**/, num_cpus_per_node=k(set number of cpus here manually)) 
         
         -        print(head.predict()) /**Return is same as network.predict()**/
 
@@ -55,3 +55,5 @@ IMPORTANT
 1. head_node_ip should be the first input of ray cluster
 2. Make sure you have the Distributed_Bolt_V1 branch is built on everynode(head node and worker node) you are running.
 3. Set up password less ssh between nodes(for easier usage)
+4. If the num_cpus_per_node is not set, DistributedBolt will automatically get the number of cpus available on the 
+   current and initialize the worker node with that count.
