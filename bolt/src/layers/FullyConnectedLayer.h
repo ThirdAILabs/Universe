@@ -36,6 +36,7 @@ class Optimizer {
                       float B2_bias_corrected, float eps) = 0;
 
   virtual void reset() = 0;
+  virtual ~Optimizer() = default;
 };
 
 class Adam : public Optimizer {
