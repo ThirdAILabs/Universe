@@ -70,6 +70,11 @@ void AutoClassifierUtils::train(
   // api would require a lot of messy refactoring. When the case comes where we
   // can't fit a dataset in memory and need to train, we can do a chunked
   // training on the dataset, loading in bits at a time (TODO(david, nick)).
+  // In the meantime, the user can simply implement this chunked processing
+  // themselves by training on sections of the dataset.
+  if (!canLoadDatasetInMemory(filename)) {
+    throw std::invalid_argument("Cannot load dataset in memory.");
+  }
   auto [train_data, train_labels] = dataset->loadInMemory();
 
   TrainConfig first_epoch_config =
