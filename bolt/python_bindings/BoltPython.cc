@@ -666,7 +666,27 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("output_filename") = std::nullopt)
       .def("explain", &PySequentialClassifier::explain, py::arg("filename"),
            py::arg("label_id") = 0, py::arg("label_given") = false,
-           py::arg("loss_fn") = CategoricalCrossEntropyLoss());
+           py::arg("loss_fn") = CategoricalCrossEntropyLoss(),
+           "Explains the percentage contribution or affect that each value in "
+           "input vector has on the target column on its desired label."
+           "Arguments:\n"
+           " * filename: filename or file path contains rows which need "
+           "explanation with respect to a target column."
+           " * label_id: the id which is used to make required_labels for "
+           "getInputGradients for all the input vectors."
+           " * label_given: Boolean, the function only creates the "
+           "required_labels if boolean is set to true, otherwise the gradient "
+           "calculation is based on output id with highest activation."
+           " * loss_fn: Loss function to minimize. "
+           " Returns a tuple consists of (0) list of lists of column names "
+           "corresponding to that value in the input vector."
+           " (1) list of lists of percentage explanation with sign for each "
+           "value in input vector, sign indicates in which direction its "
+           "affecting the target column or how those values should be changed "
+           "to get the desired output on target column."
+           " (2) list of lists of indices values within each block of the "
+           "input, this is very helpful to get into minute details of "
+           "explanation. ");
 
   py::class_<TabularClassifier>(bolt_submodule, "TabularClassifier")
       .def(py::init<const std::string&, uint32_t>(), py::arg("model_size"),

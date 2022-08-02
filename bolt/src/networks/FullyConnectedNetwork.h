@@ -66,7 +66,7 @@ class FullyConnectedNetwork : public Model<bolt::BoltBatch> {
   std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<float>>,
              std::vector<std::vector<uint32_t>>>
   getInputGradientsFromStream(
-      const std::shared_ptr<dataset::StreamingGenericDatasetLoader>& test_data,
+      const std::shared_ptr<dataset::StreamingGenericDatasetLoader>& input_data,
       const LossFunction& loss_fn, bool best_index, uint32_t label_id,
       bool label_given);
 
