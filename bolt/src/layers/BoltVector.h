@@ -108,7 +108,8 @@ struct BoltVector {
 
   // TODO(nicholas): delete copy constructor/assignment and make load dataset
   // return smart pointer
-  BoltVector(const BoltVector& other) : len(other.len), _owns_data(true) {
+  BoltVector(const BoltVector& other) noexcept
+      : len(other.len), _owns_data(true) {
     if (other.active_neurons != nullptr) {
       active_neurons = new uint32_t[len];
       std::copy(other.active_neurons, other.active_neurons + len,
@@ -128,7 +129,7 @@ struct BoltVector {
     }
   }
 
-  BoltVector(BoltVector&& other)
+  BoltVector(BoltVector&& other) noexcept
       : active_neurons(other.active_neurons),
         activations(other.activations),
         gradients(other.gradients),
@@ -142,7 +143,7 @@ struct BoltVector {
 
   // TODO(nicholas): delete copy constructor/assignment and make load dataset
   // return smart pointer
-  BoltVector& operator=(const BoltVector& other) {
+  BoltVector& operator=(const BoltVector& other) noexcept {
     if (&other == this) {
       return *this;
     }
@@ -172,7 +173,7 @@ struct BoltVector {
     return *this;
   }
 
-  BoltVector& operator=(BoltVector&& other) {
+  BoltVector& operator=(BoltVector&& other) noexcept {
     this->len = other.len;
     freeMemory();
 
@@ -257,7 +258,7 @@ struct BoltVector {
     return ss.str();
   }
 
-  ~BoltVector() { freeMemory(); }
+  ~BoltVector() noexcept { freeMemory(); }
 
  private:
   /**
