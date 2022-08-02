@@ -65,7 +65,11 @@ void AutoClassifierUtils::train(
     uint32_t epochs, float learning_rate) {
   auto dataset = loadStreamingDataset(filename, batch_processor);
 
-  // TODO(david, nick): add training case for if dataset cant fit in memory
+  // The case has yet to come up where loading the dataset in
+  // memory is a concern. Additionally, supporting streaming datasets in the DAG
+  // api would require a lot of messy refactoring. When the case comes where we
+  // can't fit a dataset in memory and need to train, we can do a chunked
+  // training on the dataset, loading in bits at a time (TODO(david, nick)).
   auto [train_data, train_labels] = dataset->loadInMemory();
 
   TrainConfig first_epoch_config =
@@ -73,7 +77,7 @@ void AutoClassifierUtils::train(
                               /* epochs= */ 1)
           .withMetrics({"categorical_accuracy"});
 
-  // TODO(david, nick) verify this freeze hash tables if needed
+  // TODO(david) verify freeze hash tables is good for tabular/other cases
   model->train({train_data}, {}, train_labels, first_epoch_config);
   model->freezeHashTables(/* insert_labels_if_not_found */ true);
 
@@ -94,6 +98,13 @@ void AutoClassifierUtils::predict(
     const std::vector<std::string>& class_id_to_class_name) {
   auto dataset = loadStreamingDataset(filename, batch_processor);
 
+  auto [test_data, test_labels] = dataset->loadInMemory();
+
+  PredictConfig config = PredictConfig::makeConfig()
+                             .enableSparseInference()
+                             .withMetrics({"categorical_accuracy"})
+                             .silence();
+
   std::optional<std::ofstream> output_file;
   if (output_filename) {
     output_file = dataset::SafeFileIO::ofstream(*output_filename);
@@ -107,16 +118,8 @@ void AutoClassifierUtils::predict(
     (*output_file) << class_id_to_class_name[class_id] << std::endl;
   };
 
-  // TODO(david, nick) verify this freeze hash tables if needed
-  auto [test_data, test_labels] = dataset->loadInMemory();
-
-  PredictConfig config = PredictConfig::makeConfig()
-                             .enableSparseInference()
-                             .withMetrics({"categorical_accuracy"})
-                             .silence();
-
-  auto [_, result] = model->predict({test_data}, {}, test_labels, config,
-                                    print_predictions_callback);
+  model->predict({test_data}, {}, test_labels, config,
+                 print_predictions_callback);
 
   if (output_file) {
     output_file->close();
