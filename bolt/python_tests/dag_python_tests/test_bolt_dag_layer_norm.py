@@ -20,7 +20,7 @@ def get_simple_model(num_classes, sparsity=1.0):
         .center(beta_regularizer=0.0025)
         .scale(gamma_regularizer=0.9)
     )
-    
+
     normalization_layer = bolt.graph.LayerNormalization(
         layer_norm_config=layer_norm_config
     )(hidden_layer)
