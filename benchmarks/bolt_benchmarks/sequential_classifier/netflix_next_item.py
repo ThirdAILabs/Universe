@@ -2,7 +2,7 @@ from thirdai import bolt
 
 def seq_without_temporal_feats():
     return bolt.SequentialClassifier(
-        size="10Gb",
+        size="medium",
         item=("user", 480189),
         timestamp="date",
         target=("movie", 17770),
@@ -14,7 +14,7 @@ def seq_without_temporal_feats():
 
 def seq_with_temporal_feats():
     return bolt.SequentialClassifier(
-        size="10Gb",
+        size="large",
         item=("user", 480189),
         timestamp="date",
         target=("movie", 17770),
@@ -27,7 +27,7 @@ def seq_with_temporal_feats():
     )
 
 def train_and_evaluate(seq, suffix):
-    seq.train("/share/data/netflix/netflix_train.csv-binary-class", epochs=5, learning_rate=0.0001)
+    seq.train("/share/data/netflix/netflix_train.csv-binary-class", epochs=1, learning_rate=0.0001)
     return seq.predict("/share/data/netflix/netflix_test.csv-binary-class", "netflix_predictions_next_item_" + suffix + ".txt")
 
 def main():
