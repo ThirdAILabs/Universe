@@ -13,7 +13,7 @@ class CategoricalTrackingBlock : public Block {
  public:
   CategoricalTrackingBlock(size_t id_col, size_t timestamp_col,
                            size_t category_col, uint32_t lookahead,
-                           uint32_t lookback,
+                           bool include_current,
                            std::shared_ptr<StringToUidMap> id_map,
                            std::shared_ptr<CategoricalHistoryIndex> index,
                            GraphPtr graph = nullptr, size_t max_n_neighbors = 0)
@@ -21,7 +21,7 @@ class CategoricalTrackingBlock : public Block {
         _timestamp_col(timestamp_col),
         _category_col(category_col),
         _lookahead(lookahead),
-        _lookback(lookback),
+        _include_current(include_current),
         _id_map(std::move(id_map)),
         _index(std::move(index)),
         _graph(std::move(graph)),
@@ -54,11 +54,12 @@ class CategoricalTrackingBlock : public Block {
       SegmentedFeatureVector& vec) final {
     uint32_t tracking_id = _id_map->classToUid(input_row[_id_col]);
     auto timestamp = timestampFromInputRow(input_row);
-    _index->index(tracking_id, timestamp, input_row[_category_col]);
+    if (_include_current) {
+      _index->index(tracking_id, timestamp, input_row[_category_col]);
+    }
 
     uint32_t end_timestamp = timestamp - _lookahead;
-    uint32_t start_timestamp = end_timestamp - _lookback;
-    encode(tracking_id, start_timestamp, end_timestamp, /* offset = */ 0, vec);
+    encode(tracking_id, end_timestamp, /* offset = */ 0, vec);
 
     std::string tracking_id_str(input_row[_id_col]);
     uint32_t offset = _index->featureDim();
@@ -70,8 +71,12 @@ class CategoricalTrackingBlock : public Block {
                                        neighbors[i].size());
 
         uint32_t nbr_id = _id_map->classToUid(neighbor_view);
-        encode(nbr_id, start_timestamp, end_timestamp, offset, vec);
+        encode(nbr_id, end_timestamp, offset, vec);
       }
+    }
+
+    if (!_include_current) {
+      _index->index(tracking_id, timestamp, input_row[_category_col]);
     }
 
     return nullptr;
@@ -92,14 +97,14 @@ class CategoricalTrackingBlock : public Block {
     return TimeUtils::timeToEpoch(&time, 0) / TimeUtils::SECONDS_IN_DAY;
   }
 
-  void encode(uint32_t tracking_id, uint32_t start_timestamp,
+  void encode(uint32_t tracking_id,
               uint32_t end_timestamp, uint32_t offset,
               SegmentedFeatureVector& vec) {
     for (uint32_t i = _index->startIdx(tracking_id);
          i < _index->endIdx(tracking_id); i++) {
       const auto cat_history = _index->view()[i];
       if (cat_history.timestamp <= end_timestamp &&
-          cat_history.timestamp > start_timestamp) {
+          cat_history.timestamp != 0) {
         vec.addSparseFeatureToSegment(cat_history.uid + offset, 1.0);
       }
     }
@@ -110,7 +115,7 @@ class CategoricalTrackingBlock : public Block {
   size_t _category_col;
   uint32_t _expected_num_cols;
   uint32_t _lookahead;
-  uint32_t _lookback;
+  bool _include_current;
   std::shared_ptr<StringToUidMap> _id_map;
   std::shared_ptr<CategoricalHistoryIndex> _index;
   GraphPtr _graph;
