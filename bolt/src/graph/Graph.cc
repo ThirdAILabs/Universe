@@ -263,7 +263,8 @@ BoltVector BoltGraph::predictSingle(
     const std::vector<BoltVector>&& test_data,
     const std::vector<std::vector<uint32_t>>&& test_tokens,
     bool use_sparse_inference) {
-  SingleUnitDatasetContext single_predict_context(test_data, test_tokens);
+  SingleUnitDatasetContext single_predict_context(std::move(test_data),
+                                                  std::move(test_tokens));
 
   verifyCanPredict(single_predict_context, /* has_labels = */ false,
                    /* returning_activations = */ true,
