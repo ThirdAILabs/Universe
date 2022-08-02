@@ -54,7 +54,7 @@ void testLayerNormNodeForwardAndBackwardPass() {
 
   BoltVector& output_vector =
       layer_norm_node->getOutputVector(/* vec_index= */ 1);
-      
+
   for (uint32_t neuron_index = 0; neuron_index < output_vector.len;
        neuron_index++) {
     ASSERT_NE(output_vector.gradients[neuron_index], 0.0);

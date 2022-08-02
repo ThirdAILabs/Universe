@@ -234,7 +234,6 @@ InferenceResult BoltGraph::predict(
     cleanupAfterBatchProcessing();
     throw;
   }
-
   cleanupAfterBatchProcessing();
 
   auto test_end = std::chrono::high_resolution_clock::now();
