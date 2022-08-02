@@ -26,12 +26,12 @@ std::shared_ptr<BoltGraph> AutoClassifierUtils::createNetwork(
 
   auto hidden_layer = std::make_shared<FullyConnectedNode>(
       /* dim= */ hidden_layer_size, /* sparsity= */ hidden_layer_sparsity,
-      /* activation= */ ActivationFunction::ReLU);
+      /* activation= */ "relu");
 
   hidden_layer->addPredecessor(input_layer);
 
   auto output_layer = std::make_shared<FullyConnectedNode>(
-      /* dim= */ n_classes, /* activation= */ ActivationFunction::Softmax);
+      /* dim= */ n_classes, /* activation= */ "softmax");
 
   output_layer->addPredecessor(hidden_layer);
 
@@ -65,6 +65,7 @@ void AutoClassifierUtils::train(
     uint32_t epochs, float learning_rate) {
   auto dataset = loadStreamingDataset(filename, batch_processor);
 
+  // TODO(david, nick): add training case for if dataset cant fit in memory
   auto [train_data, train_labels] = dataset->loadInMemory();
 
   TrainConfig first_epoch_config =
@@ -94,6 +95,20 @@ void AutoClassifierUtils::predict(
     const std::vector<std::string>& class_id_to_class_name) {
   auto dataset = loadStreamingDataset(filename, batch_processor);
 
+  std::optional<std::ofstream> output_file;
+  if (output_filename) {
+    output_file = dataset::SafeFileIO::ofstream(*output_filename);
+  }
+
+  auto print_predictions_callback = [&](const BoltVector& output) {
+    if (!output_file) {
+      return;
+    }
+    uint32_t class_id = output.getIdWithHighestActivation();
+    (*output_file) << class_id_to_class_name[class_id] << std::endl;
+  };
+
+  // TODO(david, nick) verify this freeze hash tables if needed
   auto [test_data, test_labels] = dataset->loadInMemory();
 
   PredictConfig config = PredictConfig::makeConfig()
@@ -101,33 +116,11 @@ void AutoClassifierUtils::predict(
                              .withMetrics({"categorical_accuracy"})
                              .silence();
 
-  if (output_filename) {
-    config.returnActivations();
-  }
+  auto [_, result] = model->predict({test_data}, {}, test_labels, config,
+                                    print_predictions_callback);
 
-  auto [_, result] = model->predict({test_data}, {}, test_labels, config);
-
-  if (output_filename) {
-    std::ofstream output_file = dataset::SafeFileIO::ofstream(*output_filename);
-    uint32_t all_activations_idx = 0;
-    for (uint64_t batch_idx = 0; batch_idx < test_data->numBatches();
-         batch_idx++) {
-      BoltBatch& batch = test_data->at(batch_idx);
-      for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
-        for (uint32_t i = 0; i < n_classes; i++) {
-        }
-      }
-    }
-
-    auto print_predictions_callback = [&](const BoltBatch& outputs,
-                                          uint32_t batch_size) {
-      for (uint32_t batch_id = 0; batch_id < batch_size; batch_id++) {
-        uint32_t class_id = outputs[batch_id].getIdWithHighestActivation();
-        output_file << class_id_to_class_name[class_id] << std::endl;
-      }
-    };
-
-    output_file.close();
+  if (output_file) {
+    output_file->close();
   }
 }
 
@@ -169,7 +162,7 @@ float AutoClassifierUtils::getHiddenLayerSparsity(uint64_t layer_size) {
   return 0.005;
 }
 
-static constexpr uint64_t ONE_GB = 1 << 30;
+constexpr uint64_t ONE_GB = 1 << 30;
 
 uint64_t AutoClassifierUtils::getMemoryBudget(const std::string& model_size) {
   std::regex small_re("[Ss]mall");
@@ -221,8 +214,7 @@ uint64_t AutoClassifierUtils::getMemoryBudget(const std::string& model_size) {
 
   throw std::invalid_argument(
       "'model_size' parameter must be either 'small', 'medium', 'large', or "
-      "a "
-      "gigabyte size of the model, i.e. 5Gb");
+      "a gigabyte size of the model, i.e. 5Gb");
 }
 
 std::optional<uint64_t> AutoClassifierUtils::getSystemRam() {
