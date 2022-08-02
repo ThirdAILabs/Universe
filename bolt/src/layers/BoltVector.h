@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/cereal.hpp>
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -228,6 +230,8 @@ struct BoltVector {
 
   constexpr bool isDense() const { return this->active_neurons == nullptr; }
 
+  constexpr bool hasGradients() const { return gradients != nullptr; }
+
   std::string toString() const {
     std::stringstream ss;
     ss << "[";
@@ -281,6 +285,46 @@ struct BoltVector {
       delete[] this->active_neurons;
       delete[] this->activations;
       delete[] this->gradients;
+    }
+  }
+
+  friend class cereal::access;
+  template <class Archive>
+  void save(Archive& archive) const {
+    archive(len);
+    bool is_sparse = !isDense();
+    bool has_gradients = hasGradients();
+    archive(is_sparse, has_gradients);
+
+    if (is_sparse) {
+      archive(cereal::binary_data(active_neurons, len * sizeof(uint32_t)));
+    }
+
+    archive(cereal::binary_data(activations, len * sizeof(float)));
+
+    if (has_gradients) {
+      archive(cereal::binary_data(gradients, len * sizeof(float)));
+    }
+  }
+
+  template <class Archive>
+  void load(Archive& archive) {
+    archive(len);
+
+    bool is_sparse, has_gradients;
+    archive(is_sparse, has_gradients);
+
+    if (is_sparse) {
+      active_neurons = new uint32_t[len];
+      archive(cereal::binary_data(active_neurons, len * sizeof(uint32_t)));
+    }
+
+    activations = new float[len];
+    archive(cereal::binary_data(activations, len * sizeof(float)));
+
+    if (has_gradients) {
+      gradients = new float[len];
+      archive(cereal::binary_data(gradients, len * sizeof(float)));
     }
   }
 };
