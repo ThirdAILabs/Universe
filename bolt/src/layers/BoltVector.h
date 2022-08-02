@@ -106,10 +106,7 @@ struct BoltVector {
     return vector;
   }
 
-  // TODO(nicholas): delete copy constructor/assignment and make load dataset
-  // return smart pointer
-  BoltVector(const BoltVector& other) noexcept
-      : len(other.len), _owns_data(true) {
+  BoltVector(const BoltVector& other) : len(other.len), _owns_data(true) {
     if (other.active_neurons != nullptr) {
       active_neurons = new uint32_t[len];
       std::copy(other.active_neurons, other.active_neurons + len,
@@ -141,9 +138,7 @@ struct BoltVector {
     other.len = 0;
   }
 
-  // TODO(nicholas): delete copy constructor/assignment and make load dataset
-  // return smart pointer
-  BoltVector& operator=(const BoltVector& other) noexcept {
+  BoltVector& operator=(const BoltVector& other) {
     if (&other == this) {
       return *this;
     }
