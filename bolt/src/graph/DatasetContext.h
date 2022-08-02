@@ -128,8 +128,8 @@ class DatasetContext final : public DatasetContextBase {
  */
 class SingleUnitDatasetContext final : public DatasetContextBase {
  public:
-  SingleUnitDatasetContext(const std::vector<BoltVector>&& data,
-                           const std::vector<std::vector<uint32_t>>&& tokens) {
+  SingleUnitDatasetContext(std::vector<BoltVector>&& data,
+                           std::vector<std::vector<uint32_t>>&& tokens) {
     for (auto vector : data) {
       _data.push_back(BoltBatch({std::move(vector)}));
     }
