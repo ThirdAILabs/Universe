@@ -14,7 +14,7 @@ class AutoClassifierTestUtils {
       const std::vector<std::string>& true_labels) {
     std::ifstream file = dataset::SafeFileIO::ifstream(pred_filename);
 
-    uint32_t correct_count = 0;
+    float correct_count = 0;
     uint32_t label_idx = 0;
     std::string line;
     while (std::getline(file, line)) {
@@ -30,6 +30,15 @@ class AutoClassifierTestUtils {
       label_idx++;
     }
     return correct_count / true_labels.size();
+  }
+
+  static void setTempFileContents(const std::string& filename,
+                                  std::vector<std::string>& lines) {
+    std::ofstream file = dataset::SafeFileIO::ofstream(filename);
+    for (const auto& line : lines) {
+      file << line << "\n";
+    }
+    file.close();
   }
 };
 
