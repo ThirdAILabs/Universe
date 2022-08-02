@@ -260,8 +260,8 @@ InferenceResult BoltGraph::predict(
 // Predicts on a single sample input for performance. Always returns
 // activations and doesn't calculate metrics.
 BoltVector BoltGraph::predictSingle(
-    const std::vector<BoltVector>&& test_data,
-    const std::vector<std::vector<uint32_t>>&& test_tokens,
+    std::vector<BoltVector>&& test_data,
+    std::vector<std::vector<uint32_t>>&& test_tokens,
     bool use_sparse_inference) {
   SingleUnitDatasetContext single_predict_context(std::move(test_data),
                                                   std::move(test_tokens));
