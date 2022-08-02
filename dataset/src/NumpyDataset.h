@@ -82,8 +82,6 @@ inline BoltDatasetPtr denseNumpyToBoltVectorDataset(
         "vector) or 1D (each element is treated as a row).");
   }
 
-  std::cout << "  -> Reached line: " << __LINE__ << std::endl;
-
   uint64_t num_examples = static_cast<uint64_t>(examples_buf.shape.at(0));
 
   // If it is a 1D array then we know the dimension is 1.
@@ -93,7 +91,6 @@ inline BoltDatasetPtr denseNumpyToBoltVectorDataset(
   float* examples_raw_data = static_cast<float*>(examples_buf.ptr);
 
   // Build batches
-  std::cout << "  -> Reached line: " << __LINE__ << std::endl;
 
   uint64_t num_batches = (num_examples + batch_size - 1) / batch_size;
   std::vector<bolt::BoltBatch> batches;
@@ -112,10 +109,8 @@ inline BoltDatasetPtr denseNumpyToBoltVectorDataset(
 
     batches.emplace_back(std::move(batch_vectors));
   }
-  std::cout << "  -> Reached line: " << __LINE__ << std::endl;
 
   std::vector<py::object> objects_to_keep_alive = {examples};
-  std::cout << "  -> Reached line: " << __LINE__ << std::endl;
 
   return std::make_shared<WrappedNumpyVectors>(
       std::move(batches), std::move(objects_to_keep_alive));
