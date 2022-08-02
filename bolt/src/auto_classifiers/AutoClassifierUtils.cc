@@ -77,7 +77,7 @@ void AutoClassifierUtils::train(
                               /* epochs= */ 1)
           .withMetrics({"categorical_accuracy"});
 
-  // TODO(david) verify freeze hash tables is good for tabular/other cases
+  // TODO(david) verify freezing hash tables is good for tabular/other cases
   model->train({train_data}, {}, train_labels, first_epoch_config);
   model->freezeHashTables(/* insert_labels_if_not_found */ true);
 
