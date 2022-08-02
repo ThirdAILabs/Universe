@@ -93,7 +93,11 @@ class DocSearch {
   // and we updated it.
   bool addDocument(const bolt::BoltBatch& embeddings, const std::string& doc_id,
                    const std::string& doc_text) {
+    std::cout << "  -> Entering addDocument" << std::endl;
+
     std::vector<uint32_t> centroid_ids = getNearestCentroids(embeddings, 1);
+    std::cout << "  -> Reached line: " << __LINE__ << std::endl;
+
     return addDocumentWithCentroids(embeddings, centroid_ids, doc_id, doc_text);
   }
 
