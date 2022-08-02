@@ -94,11 +94,13 @@ inline BoltDatasetPtr denseNumpyToBoltVectorDataset(
 
   uint64_t num_batches = (num_examples + batch_size - 1) / batch_size;
   std::vector<bolt::BoltBatch> batches;
-  // batches.reserve(num_batches);
+  std::cout << "Calling reserve (" << num_batches << ")" << std::endl;
+  batches.reserve(num_batches);
 
   for (uint32_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     std::vector<bolt::BoltVector> batch_vectors;
-    // batch_vectors.reserve(batch_size);
+    std::cout << "Calling reserve (" << batch_size << ")" << std::endl;
+    batch_vectors.reserve(batch_size);
 
     uint64_t start_vec_idx = batch_idx * batch_size;
     uint64_t end_vec_idx = std::min(start_vec_idx + batch_size, num_examples);

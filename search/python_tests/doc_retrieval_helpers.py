@@ -52,7 +52,6 @@ def get_build_and_run_functions_random(num_docs=100, num_queries=100):
     query_same_word_ids = [
         ids[:words_per_query_from_doc] for ids in doc_word_ids[:num_queries]
     ]
-
     query_word_ids = [a + b for a, b in zip(query_same_word_ids, query_random_word_ids)]
     query_offsets = np.random.normal(
         size=(num_queries, words_per_query, data_dim), scale=within_word_std
