@@ -5,7 +5,6 @@
 #include <hashing/src/FastSRP.h>
 #include <hashing/src/MurmurHash.h>
 #include <hashing/src/SRP.h>
-#include <_types/_uint64_t.h>
 #include <sys/types.h>
 #include <cctype>
 #include <stdexcept>
