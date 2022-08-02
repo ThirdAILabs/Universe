@@ -14,11 +14,11 @@ def seq_without_temporal_feats():
 
 def seq_with_temporal_feats():
     return bolt.SequentialClassifier(
-        size="large",
+        size="medium",
         item=("user", 480189),
         timestamp="date",
         target=("movie", 17770),
-        lookahead=1,  # num days to predict ahead. This is 1 instead of 0 so the trackable categories feature doesnt include the current rating. However I think I should modify it so that it always doesnt include the current category, so if we want to include the current category we should just add a "current" categorical feature. Or autotune it somehow. Figure this out!!!
+        lookahead=0,  # num days to predict ahead. This is 1 instead of 0 so the trackable categories feature doesnt include the current rating. However I think I should modify it so that it always doesnt include the current category, so if we want to include the current category we should just add a "current" categorical feature. Or autotune it somehow. Figure this out!!!
         lookback=14,  # num days to look back
         # Optional:
         period=1,  # expected num days between each record; period for clubbing data points together
