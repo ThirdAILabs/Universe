@@ -94,9 +94,11 @@ inline BoltDatasetPtr denseNumpyToBoltVectorDataset(
 
   uint64_t num_batches = (num_examples + batch_size - 1) / batch_size;
   std::vector<bolt::BoltBatch> batches;
+  batches.reserve(num_batches);
 
   for (uint32_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     std::vector<bolt::BoltVector> batch_vectors;
+    batch_vectors.reserve(batch_size);
 
     uint64_t start_vec_idx = batch_idx * batch_size;
     uint64_t end_vec_idx = std::min(start_vec_idx + batch_size, num_examples);
@@ -153,11 +155,13 @@ numpyTokensToBoltDataset(const NumpyArray<uint32_t>& tokens,
   std::vector<
       std::conditional_t<CONVERT_TO_VECTORS, bolt::BoltBatch, BoltTokenBatch>>
       batches;
+  batches.reserve(num_batches);
 
   for (uint64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     std::vector<std::conditional_t<CONVERT_TO_VECTORS, bolt::BoltVector,
                                    std::vector<uint32_t>>>
         current_token_batch;
+    current_token_batch.reserve(batch_size);
 
     uint64_t start_vector = batch_idx * batch_size;
     uint64_t end_vector =
@@ -239,9 +243,11 @@ inline BoltDatasetPtr numpyArraysToSparseBoltDataset(
 
   uint64_t num_batches = (num_examples + batch_size - 1) / batch_size;
   std::vector<bolt::BoltBatch> batches;
+  batches.reserve(num_batches);
 
   for (uint64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     std::vector<bolt::BoltVector> batch_vectors;
+    batch_vectors.reserve(batch_size);
 
     uint64_t start_vec_idx = batch_idx * batch_size;
     uint64_t end_vec_idx = std::min(start_vec_idx + batch_size, num_examples);
