@@ -85,7 +85,7 @@ class SequentialClassifier {
     std::vector<std::string> metrics{metric_name};
 
     auto res = _network->predictOnStream(
-        pipeline, /* use_sparse_inference = */ true, metrics,
+        pipeline, useSparseInference(pipeline), metrics,
         classification_print_predictions_callback);
     return res[metric_name];
   }
@@ -105,7 +105,7 @@ class SequentialClassifier {
       if (validation_pipeline != nullptr) {
         std::vector<std::string> metrics{metric_name};
         _network->predictOnStream(
-            validation_pipeline, /* use_sparse_inference = */ true, metrics);
+            validation_pipeline, useSparseInference(pipeline), metrics);
       }
 
       /*
@@ -151,13 +151,13 @@ class SequentialClassifier {
     _network->train(train_data, train_labels, loss, learning_rate, 1, /* rehash = */ 0, /* rebuild = */ 0, /* metric_names = */ {metric_name});
     std::vector<std::string> metrics{metric_name};
     if (valid_data != nullptr && valid_labels != nullptr) {
-      _network->predict(valid_data, valid_labels, nullptr, nullptr, /* use_sparse_inference = */ true, metrics);
+      _network->predict(valid_data, valid_labels, nullptr, nullptr, useSparseInference(pipeline), metrics);
     }
     _network->freezeHashTables();
     for (uint32_t i = 0; i < epochs - 1; i++) {
       _network->train(train_data, train_labels, loss, learning_rate, 1, /* rehash = */ 0, /* rebuild = */ 0, /* metric_names = */ {metric_name});
       if (valid_data != nullptr && valid_labels != nullptr) {
-        _network->predict(valid_data, valid_labels, nullptr, nullptr, /* use_sparse_inference = */ true, metrics);
+        _network->predict(valid_data, valid_labels, nullptr, nullptr, useSparseInference(pipeline), metrics);
       }
     }
   }
@@ -176,6 +176,10 @@ class SequentialClassifier {
       }
     }
     return pred;
+  }
+
+  bool useSparseInference(const std::shared_ptr<dataset::StreamingGenericDatasetLoader>& pipeline) {
+    return pipeline->getLabelDim() < 200;
   }
 
   SequentialClassifierPipelineBuilder _pipeline_builder;
