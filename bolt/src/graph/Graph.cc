@@ -10,7 +10,6 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/utils/ProgressBar.h>
-#include <dataset/src/batch_types/MaskedSentenceBatch.h>
 #include <exceptions/src/Exceptions.h>
 #include <algorithm>
 #include <chrono>
@@ -113,6 +112,8 @@ MetricData BoltGraph::train(
         bar.increment();
       }
 
+      perEpochCallback();
+
       auto train_end = std::chrono::high_resolution_clock::now();
       int64_t epoch_time = std::chrono::duration_cast<std::chrono::seconds>(
                                train_end - train_start)
@@ -162,6 +163,8 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
     metrics.processSample(_output->getOutputVector(vec_id),
                           batch_labels[vec_id]);
   }
+
+  perBatchCallback();
 
   ++_batch_cnt;
   updateParameters(learning_rate, _batch_cnt);
@@ -272,33 +275,6 @@ void BoltGraph::processInferenceBatch(uint64_t batch_size,
       metrics.processSample(output, labels);
     }
   }
-}
-
-// This syntax means that we are implmenting the function for the specific case
-// in which BATCH_T is equivalent to BoltBatch.
-template <>
-void BoltGraph::setInputs(BoltBatch& batch_inputs) {
-  // If we are using a BoltBatch then there is only one input. This is
-  // checked in the verifyInputForGraph() function.
-  _inputs[0]->setInputs(&batch_inputs);
-}
-
-// This syntax means that we are implmenting the function for the specific case
-// in which BATCH_T is equivalent to BoltTokenBatch.
-template <>
-void BoltGraph::setInputs(dataset::BoltTokenBatch& batch_inputs) {
-  // If we are using a BoltTokenBatch then there is only one token input. This
-  // is checked in the verifyInputForGraph() function.
-  _token_inputs[0]->setTokenInputs(&batch_inputs);
-}
-
-// This syntax means that we are implmenting the function for the specific case
-// in which BATCH_T is equivalent to BoltTokenBatch.
-template <>
-void BoltGraph::setInputs(dataset::MaskedSentenceBatch& batch_inputs) {
-  // If we are using a BoltTokenBatch then there is only one token input. This
-  // is checked in the verifyInputForGraph() function.
-  _inputs[0]->setInputs(batch_inputs.getVectors());
 }
 
 void BoltGraph::forward(uint32_t vec_index, const BoltVector* labels) {

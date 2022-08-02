@@ -2,7 +2,6 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <bolt/src/utils/ProgressBar.h>
-#include <dataset/src/batch_types/ClickThroughBatch.h>
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -46,7 +45,7 @@ void DistributedModel::calculateGradientSingleNode(
   const BoltBatch& batch_labels = _train_labels->at(batch_idx);
 
 #pragma omp parallel for default(none) \
-    shared(batch_inputs, batch_labels, _outputs, loss_fn)
+    shared(batch_inputs, batch_labels, loss_fn)
   for (uint32_t vec_id = 0; vec_id < batch_inputs.getBatchSize(); vec_id++) {
     forward(vec_id, batch_inputs, _outputs[vec_id], &batch_labels[vec_id]);
 
@@ -54,12 +53,11 @@ void DistributedModel::calculateGradientSingleNode(
                           batch_inputs.getBatchSize());
     backpropagate(vec_id, batch_inputs, _outputs[vec_id]);
   }
-
 }
 
 void DistributedModel::updateParametersSingleNode(float learning_rate) {
-  DistributedModel::updateParameters(learning_rate, ++_batch_iter);
-  DistributedModel::updateSampling(_rehash_batch, _rebuild_batch);
+  updateParameters(learning_rate, ++_batch_iter);
+  updateSampling(_rehash_batch, _rebuild_batch);
 }
 
 uint32_t DistributedModel::numLayers() const { return _num_layers; }
@@ -104,16 +102,40 @@ uint32_t DistributedModel::getDim(uint32_t layer_index) const {
 
 uint32_t DistributedModel::getInputDim() const { return _input_dim; }
 
-void DistributedModel::getWeightGradientSketch(uint32_t layer_index, int* indices, float* gradients, int sketch_size,bool without_index, int seed){
-  return _layers.at(layer_index)->getWeightGradientSketch(indices,gradients,sketch_size,without_index,seed);
+void DistributedModel::getWeightGradientSketch(uint32_t layer_index,
+                                               uint64_t* indices,
+                                               float* gradients,
+                                               uint64_t sketch_size,
+                                               int seed_for_hashing) {
+  return _layers.at(layer_index)
+      ->getWeightGradientSketch(indices, gradients, sketch_size,
+                                seed_for_hashing);
 }
-void DistributedModel::getBiasGradientSketch(uint32_t layer_index, int* indices, float* gradients, int sketch_size,bool without_index, int seed){
-  return _layers.at(layer_index)->getBiasGradientSketch(indices,gradients,sketch_size,without_index,seed);
+
+void DistributedModel::getBiasGradientSketch(uint32_t layer_index,
+                                             uint64_t* indices,
+                                             float* gradients,
+                                             uint64_t sketch_size,
+                                             int seed_for_hashing) {
+  return _layers.at(layer_index)
+      ->getBiasGradientSketch(indices, gradients, sketch_size,
+                              seed_for_hashing);
 }
-void DistributedModel::setWeightGradientsFromIndicesValues(uint32_t layer_index,int* indices_raw_data,float* values_raw_data,int size){
-  _layers.at(layer_index)->setWeightGradientsFromIndicesValues(indices_raw_data,values_raw_data,size);
+
+void DistributedModel::setWeightGradientsFromIndicesValues(
+    uint32_t layer_index, uint64_t* indices_raw_data, float* values_raw_data,
+    uint64_t sketch_size) {
+  _layers.at(layer_index)
+      ->setWeightGradientsFromIndicesValues(indices_raw_data, values_raw_data,
+                                            sketch_size);
 }
-void DistributedModel::setBiasGradientsFromIndicesValues(uint32_t layer_index,int* indices_raw_data,float* values_raw_data,int size){
-  _layers.at(layer_index)->setBiasGradientsFromIndicesValues(indices_raw_data,values_raw_data,size);
+
+void DistributedModel::setBiasGradientsFromIndicesValues(
+    uint32_t layer_index, uint64_t* indices_raw_data, float* values_raw_data,
+    uint64_t sketch_size) {
+  _layers.at(layer_index)
+      ->setBiasGradientsFromIndicesValues(indices_raw_data, values_raw_data,
+                                          sketch_size);
 }
+
 }  // namespace thirdai::bolt

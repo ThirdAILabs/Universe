@@ -132,6 +132,7 @@ void EmbeddingLayer::buildLayerSummary(std::stringstream& summary) const {
   summary << " num_embedding_lookups=" << _num_lookups_per_token;
   summary << ", lookup_size=" << _lookup_size_bytes;
   summary << ", log_embedding_block_size=" << _log_embedding_block_size;
+  summary << "\n";
 }
 
 std::vector<std::pair<uint64_t, uint64_t>>

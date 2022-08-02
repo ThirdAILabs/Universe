@@ -3,11 +3,15 @@
 #include <cereal/types/vector.hpp>
 #include <hashing/src/DWTA.h>
 #include <hashing/src/FastSRP.h>
+#include <hashing/src/MurmurHash.h>
 #include <hashing/src/SRP.h>
+#include <_types/_uint64_t.h>
+#include <sys/types.h>
 #include <cctype>
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace thirdai::bolt {
 
@@ -28,6 +32,52 @@ static std::string activationFunctionToStr(ActivationFunction act_func) {
   }
   throw std::logic_error(
       "Invalid activation function passed to activationFunctionToStr.");
+}
+
+// an approximation for top-k threshold by random sampling
+static float getThresholdForTopK(const std::vector<float>& values,
+                                 uint64_t sketch_size,
+                                 uint64_t max_samples_for_random_sampling) {
+  uint64_t num_samples = std::min(max_samples_for_random_sampling, sketch_size);
+  uint64_t topK =
+      static_cast<uint64_t>(1.0 * num_samples * sketch_size / values.size());
+  std::vector<float> sampled_gradients(num_samples, 0);
+  srand(time(0));
+  for (uint64_t i = 0; i < num_samples; i++) {
+    sampled_gradients[i] = std::abs(values[rand() % values.size()]);
+  }
+
+  // threshold is an estimate for the kth largest element in the gradients
+  // matrix
+  std::nth_element(sampled_gradients.begin(),
+                   sampled_gradients.begin() + num_samples - topK,
+                   sampled_gradients.end());
+  float threshold = sampled_gradients[num_samples - topK];
+  return threshold;
+}
+
+static void getDragonSketch(const std::vector<float>& full_gradient,
+                            uint64_t* indices, float* gradients,
+                            int seed_for_hashing, float threshold,
+                            uint64_t sketch_size,
+                            bool unbiased_sketch = false) {
+  uint64_t loop_size = full_gradient.size();
+
+  if (!unbiased_sketch) {
+#pragma omp parallel for default(none)                                \
+    shared(indices, gradients, full_gradient, sketch_size, threshold, \
+           loop_size, seed_for_hashing)
+    for (uint64_t i = 0; i < loop_size; i++) {
+      if (std::abs(full_gradient[i]) > threshold) {
+        int hash = thirdai::hashing::MurmurHash(std::to_string(i).c_str(),
+                                                std::to_string(i).length(),
+                                                seed_for_hashing) %
+                   sketch_size;
+        indices[hash] = i;
+        gradients[hash] = full_gradient[i];
+      }
+    }
+  }
 }
 
 static ActivationFunction getActivationFunction(
@@ -51,8 +101,10 @@ static ActivationFunction getActivationFunction(
   if (lower_name == "tanh") {
     return ActivationFunction::Tanh;
   }
-  throw std::invalid_argument("'" + act_func_name +
-                              "' is not a valid activation function");
+  throw std::invalid_argument(
+      "'" + act_func_name +
+      "' is not a valid activation function. Supported activation functions: "
+      "'relu', 'softmax', 'sigmoid', 'linear', and 'tanh'.");
 }
 
 constexpr float actFuncDerivative(float activation,
@@ -79,73 +131,5 @@ constexpr float actFuncDerivative(float activation,
   // reached the end of a non void function without it.
   return 0.0;
 }
-
-// Didn't include DensifiedMinhash because its hashSingleDense() method has not
-// been implemented.
-enum class HashFunctionEnum { DWTA, FastSRP, SRP };
-
-static HashFunctionEnum getHashFunction(const std::string& hash_function) {
-  std::string lower_name;
-  for (char c : hash_function) {
-    lower_name.push_back(std::tolower(c));
-  }
-  if (lower_name == "dwta") {
-    return HashFunctionEnum::DWTA;
-  }
-  if (lower_name == "fastsrp") {
-    return HashFunctionEnum::FastSRP;
-  }
-  if (lower_name == "srp") {
-    return HashFunctionEnum::SRP;
-  }
-  throw std::invalid_argument(
-      "'" + hash_function +
-      "' is not a Supported LSH function. Supported Functions are "
-      "SRP, FastSRP, DWTA");
-}
-
-inline std::string getHashString(HashFunctionEnum hash_function) {
-  switch (hash_function) {
-    case HashFunctionEnum::DWTA:
-      return "DWTA";
-    case HashFunctionEnum::SRP:
-      return "SRP";
-    case HashFunctionEnum::FastSRP:
-      return "FastSRP";
-    // Not supposed to reach here but compiler complains
-    default:
-      throw std::invalid_argument("Hash function not supported.");
-  }
-}
-
-struct SamplingConfig {
-  uint32_t hashes_per_table, num_tables, range_pow, reservoir_size;
-  HashFunctionEnum _hash_function;
-
-  SamplingConfig()
-      : hashes_per_table(0),
-        num_tables(0),
-        range_pow(0),
-        reservoir_size(0),
-        _hash_function(HashFunctionEnum::DWTA) {}
-
-  SamplingConfig(uint32_t hashes_per_table, uint32_t num_tables,
-                 uint32_t range_pow, uint32_t reservoir_size,
-                 const std::string& hash_function = "DWTA")
-      : hashes_per_table(hashes_per_table),
-        num_tables(num_tables),
-        range_pow(range_pow),
-        reservoir_size(reservoir_size),
-        _hash_function(getHashFunction(hash_function)) {}
-
- private:
-  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& archive) {
-    archive(hashes_per_table, num_tables, range_pow, reservoir_size,
-            _hash_function);
-  }
-};
 
 }  // namespace thirdai::bolt

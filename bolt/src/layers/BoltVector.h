@@ -32,7 +32,8 @@ struct BoltVector {
       : active_neurons(nullptr),
         activations(nullptr),
         gradients(nullptr),
-        len(0) {}
+        len(0),
+        _owns_data(true) {}
 
   constexpr explicit BoltVector(uint32_t* an, float* a, float* g, uint32_t l)
       : active_neurons(an),
@@ -188,6 +189,15 @@ struct BoltVector {
     return *this;
   }
 
+  template <bool DENSE>
+  constexpr uint32_t activeNeuronAtIndex(uint32_t index) const {
+    if constexpr (DENSE) {
+      return index;
+    } else {
+      return active_neurons[index];
+    }
+  }
+
   friend std::ostream& operator<<(std::ostream& out, const BoltVector& state) {
     bool dense = state.active_neurons == nullptr;
     for (uint32_t i = 0; i < state.len; i++) {
@@ -207,7 +217,7 @@ struct BoltVector {
    */
   template <bool DENSE>
   FoundActiveNeuron findActiveNeuron(uint32_t active_neuron) const {
-    if (DENSE) {
+    if constexpr (DENSE) {
       return {active_neuron, activations[active_neuron]};
     }
     return findSparseActiveNeuron(active_neuron);

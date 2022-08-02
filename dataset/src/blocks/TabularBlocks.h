@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BlockInterface.h"
-#include <dataset/src/bolt_datasets/batch_processors/TabularMetadataProcessor.h>
+#include <dataset/src/batch_processors/TabularMetadataProcessor.h>
 #include <dataset/src/encodings/text/TextEncodingUtils.h>
 #include <exception>
 
@@ -58,7 +58,7 @@ class TabularPairGram : public Block {
                                                            _output_range);
 
     TextEncodingUtils::sumRepeatedIndices(
-        pairgram_hashes, /* base_value= */ 1.0,
+        pairgram_hashes, /* base_value = */ 1.0,
         [&](uint32_t pairgram, float value) {
           vec.addSparseFeatureToSegment(pairgram, value);
         });

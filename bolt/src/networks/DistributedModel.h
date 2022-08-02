@@ -10,12 +10,10 @@
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <dataset/src/Dataset.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
-#include <dataset/src/bolt_datasets/StreamingDataset.h>
+#include <dataset/src/DatasetLoaders.h>
+#include <dataset/src/Datasets.h>
 #include <exceptions/src/Exceptions.h>
 #include <algorithm>
-#include <cstdint>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -78,14 +76,24 @@ class DistributedModel : public FullyConnectedNetwork {
 
   void setBiasesGradients(uint32_t layer_index, const float* data);
 
-  void getBiasGradientSketch(uint32_t layer_index,int* indices, float* gradients,int sketch_size,bool without_index, int seed);
+  void getBiasGradientSketch(uint32_t layer_index, uint64_t* indices,
+                             float* gradients, uint64_t sketch_size,
+                             int seed_for_hashing);
 
-  void setBiasGradientsFromIndicesValues(uint32_t layer_index,int* indices_raw_data,float* values_raw_data,int size);
+  void getWeightGradientSketch(uint32_t layer_index, uint64_t* indices,
+                               float* gradients, uint64_t sketch_size,
+                               int seed_for_hashing);
 
-  void getWeightGradientSketch(uint32_t layer_index,int* indices, float* gradients,int sketch_size,bool without_index, int seed);
+  void setBiasGradientsFromIndicesValues(uint32_t layer_index,
+                                         uint64_t* indices_raw_data,
+                                         float* values_raw_data,
+                                         uint64_t sketch_size);
 
-  void setWeightGradientsFromIndicesValues(uint32_t layer_index,int* indices_raw_data,float* values_raw_data,int size);
- 
+  void setWeightGradientsFromIndicesValues(uint32_t layer_index,
+                                           uint64_t* indices_raw_data,
+                                           float* values_raw_data,
+                                           uint64_t sketch_size);
+
  private:
   /*
    outputs here, holds the activations values for output layer,

@@ -92,6 +92,8 @@ class InferenceOutputTracker {
 
   uint32_t numNonzerosInOutput() const { return _num_nonzeros_per_sample; }
 
+  uint32_t numSamples() const { return _num_samples; }
+
   // This will only return a valid value AFTER the object has been constructed,
   // so don't call it from the constructor
   bool activationsSaved() const { return _activations.has_value(); }

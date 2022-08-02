@@ -118,8 +118,46 @@ class ConvLayer final : public SequentialLayer {
         "Cannot currently set the sparsity of a convolutional layer.");
   }
 
-  const SamplingConfig& getSamplingConfig() const final {
-    return _sampling_config;
+  void getBiasGradientSketch(uint64_t* indices, float* gradients,
+                             uint64_t sketch_size,
+                             int seed_for_hashing) const final {
+    (void)indices;
+    (void)gradients;
+    (void)sketch_size;
+    (void)seed_for_hashing;
+    throw thirdai::exceptions::NotImplemented(
+        "getBiasGradientSketch not implemented for ConvLayer");
+  }
+
+  void getWeightGradientSketch(uint64_t* indices, float* gradients,
+                               uint64_t sketch_size,
+                               int seed_for_hashing) const final {
+    (void)indices;
+    (void)gradients;
+    (void)sketch_size;
+    (void)seed_for_hashing;
+    throw thirdai::exceptions::NotImplemented(
+        "getWeightGradientSketch not implemented for ConvLayer");
+  }
+
+  void setBiasGradientsFromIndicesValues(uint64_t* indices_raw_data,
+                                         float* values_raw_data,
+                                         uint64_t sketch_size) final {
+    (void)indices_raw_data;
+    (void)values_raw_data;
+    (void)sketch_size;
+    throw thirdai::exceptions::NotImplemented(
+        "setBiasGradientsFromIndicesValues not implemented for ConvLayer");
+  }
+
+  void setWeightGradientsFromIndicesValues(uint64_t* indices_raw_data,
+                                           float* values_raw_data,
+                                           uint64_t sketch_size) final {
+    (void)indices_raw_data;
+    (void)values_raw_data;
+    (void)sketch_size;
+    throw thirdai::exceptions::NotImplemented(
+        "setWeightGradientsFromIndicesValues not implemented for ConvLayer");
   }
 
  private:
@@ -159,8 +197,7 @@ class ConvLayer final : public SequentialLayer {
 
   std::vector<bool> _is_active;
 
-  SamplingConfig _sampling_config;
-  std::unique_ptr<hashing::DWTAHashFunction> _hasher;
+  std::unique_ptr<hashing::HashFunction> _hasher;
   std::unique_ptr<hashtable::SampledHashTable<uint32_t>> _hash_table;
   std::vector<uint32_t> _rand_neurons;
 
@@ -180,9 +217,9 @@ class ConvLayer final : public SequentialLayer {
   void serialize(Archive& archive) {
     archive(_dim, _prev_dim, _sparse_dim, _sparsity, _act_func, _weights,
             _w_gradient, _w_momentum, _w_velocity, _biases, _b_gradient,
-            _b_momentum, _b_velocity, _is_active, _sampling_config, _hasher,
-            _hash_table, _rand_neurons, _patch_dim, _sparse_patch_dim,
-            _num_patches, _num_filters, _num_sparse_filters, _prev_num_filters,
+            _b_momentum, _b_velocity, _is_active, _hasher, _hash_table,
+            _rand_neurons, _patch_dim, _sparse_patch_dim, _num_patches,
+            _num_filters, _num_sparse_filters, _prev_num_filters,
             _prev_num_sparse_filters, _kernel_size, _in_to_out, _out_to_in);
   }
 

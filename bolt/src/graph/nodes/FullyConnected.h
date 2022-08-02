@@ -18,18 +18,31 @@
 
 namespace thirdai::bolt {
 
+class SwitchNode;
+
 class FullyConnectedNode final
     : public Node,
       public std::enable_shared_from_this<FullyConnectedNode> {
+  friend class SwitchNode;
+
  public:
-  // This pattern means that any valid constructor for a
-  // FullyConnectedLayerConfig can be used to initialize the
-  // FullyConnectedLayerNode, and that the args are directly forwarded to the
-  // constructor for the config.
-  template <typename... Args>
-  explicit FullyConnectedNode(Args&&... args)
+  FullyConnectedNode(uint64_t dim, const std::string& activation)
       : _layer(nullptr),
-        _config(FullyConnectedLayerConfig(std::forward<Args>(args)...)),
+        _config(FullyConnectedLayerConfig(dim, activation)),
+        _predecessor(nullptr) {}
+
+  FullyConnectedNode(uint64_t dim, float sparsity,
+                     const std::string& activation)
+      : _layer(nullptr),
+        _config(FullyConnectedLayerConfig(dim, sparsity, activation)),
+        _predecessor(nullptr) {}
+
+  FullyConnectedNode(uint64_t dim, float sparsity,
+                     const std::string& activation,
+                     SamplingConfigPtr sampling_config)
+      : _layer(nullptr),
+        _config(FullyConnectedLayerConfig(dim, sparsity, activation,
+                                          std::move(sampling_config))),
         _predecessor(nullptr) {}
 
   std::shared_ptr<FullyConnectedNode> addPredecessor(NodePtr node) {
@@ -58,7 +71,7 @@ class FullyConnectedNode final
     NodeState node_state = getState();
     if (node_state == NodeState::Constructed ||
         node_state == NodeState::PredecessorsSet) {
-      return _config->act_func;
+      return _config->getActFunc();
     }
     return _layer->getActivationFunction();
   }
@@ -111,7 +124,7 @@ class FullyConnectedNode final
     _layer = loaded_parameters;
   }
 
-  float getNodeSparsity() {
+  float getSparsity() {
     NodeState node_state = getState();
     if (node_state == NodeState::Constructed ||
         node_state == NodeState::PredecessorsSet) {
@@ -120,16 +133,49 @@ class FullyConnectedNode final
     return _layer->getSparsity();
   }
 
-  void setNodeSparsity(float sparsity) {
+  std::shared_ptr<FullyConnectedNode> setSparsity(float sparsity) {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state");
+          "FullyConnectedNode must be in a compiled state to call setSparsity");
     }
     _layer->setSparsity(sparsity);
+    return shared_from_this();
   }
 
-  const SamplingConfig& getSamplingConfig() const {
-    return _layer->getSamplingConfig();
+  float* getWeightsPtr() {
+    if (getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call "
+          "getWeightsPtr.");
+    }
+    return _layer->getWeightsPtr();
+  }
+
+  float* getBiasesPtr() {
+    if (getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call "
+          "getBiasesPtr.");
+    }
+    return _layer->getBiasesPtr();
+  }
+
+  float* getWeightGradientsPtr() {
+    if (getState() != NodeState::PreparedForBatchProcessing) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call "
+          "getWeightGradientsPtr.");
+    }
+    return _layer->getWeightGradientsPtr();
+  }
+
+  float* getBiasGradientsPtr() {
+    if (getState() != NodeState::PreparedForBatchProcessing) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call "
+          "getBiasGradientsPtr.");
+    }
+    return _layer->getBiasGradientsPtr();
   }
 
  private:
@@ -227,6 +273,8 @@ class FullyConnectedNode final
 
   NodePtr _predecessor;
 };
+
+using FullyConnectedNodePtr = std::shared_ptr<FullyConnectedNode>;
 
 }  // namespace thirdai::bolt
 

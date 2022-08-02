@@ -2,9 +2,8 @@
 #include "MockBlock.h"
 #include <bolt/src/layers/BoltVector.h>
 #include <gtest/gtest.h>
-#include <dataset/src/Dataset.h>
+#include <dataset/src/Datasets.h>
 #include <dataset/src/blocks/BlockInterface.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
 #include <dataset/src/core/BlockBatchProcessor.h>
 #include <sys/types.h>
 #include <algorithm>

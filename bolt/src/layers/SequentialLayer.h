@@ -61,19 +61,28 @@ class SequentialLayer {
 
   virtual void setSparsity(float sparsity) = 0;
 
-  virtual const SamplingConfig& getSamplingConfig() const = 0;
-
   virtual void buildLayerSummary(std::stringstream& summary,
                                  bool detailed) const {
     (void)detailed;
     summary << "dim=" << getDim() << "\n";
   }
 
-  virtual void getBiasGradientSketch(int* indices, float* gradients, int sketch_size,bool without_index, int seed) const =0;
-  virtual void setBiasGradientsFromIndicesValues(int* indices_raw_data,float* values_raw_data,int size) =0;
-  virtual void getWeightGradientSketch(int* indices, float* gradients, int sketch_size,bool without_index, int seed) const =0;
-  virtual void setWeightGradientsFromIndicesValues(int* indices_raw_data,float* values_raw_data,int size) =0;
-  
+  virtual void getBiasGradientSketch(uint64_t* indices, float* gradients,
+                                     uint64_t sketch_size,
+                                     int seed_for_hashing) const = 0;
+
+  virtual void getWeightGradientSketch(uint64_t* indices, float* gradients,
+                                       uint64_t sketch_size,
+                                       int seed_for_hashing) const = 0;
+
+  virtual void setBiasGradientsFromIndicesValues(uint64_t* indices_raw_data,
+                                                 float* values_raw_data,
+                                                 uint64_t sketch_size) = 0;
+
+  virtual void setWeightGradientsFromIndicesValues(uint64_t* indices_raw_data,
+                                                   float* values_raw_data,
+                                                   uint64_t sketch_size) = 0;
+
   virtual ~SequentialLayer() = default;
 };
 }  // namespace thirdai::bolt
