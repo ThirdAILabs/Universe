@@ -16,6 +16,10 @@ class SaveLoadInMemoryDatasetTestFixture : public testing::Test {
         _activations_gradients_dist(0.0, _max_activation_or_gradient),
         _rand(/* seed= */ 24092) {}
 
+  void TearDown() override {
+    ASSERT_FALSE(std::remove(_save_filename.c_str()));
+  }
+
   BoltDatasetPtr generateRandomDataset(uint64_t n_batches,
                                        uint64_t batch_size) {
     std::vector<bolt::BoltBatch> batches;
@@ -36,6 +40,8 @@ class SaveLoadInMemoryDatasetTestFixture : public testing::Test {
 
     return std::make_shared<BoltDataset>(std::move(batches));
   }
+
+  std::string _save_filename = "./dataset_serialized";
 
  private:
   bolt::BoltVector generateVector(uint32_t len, bool is_dense,
@@ -72,9 +78,9 @@ TEST_F(SaveLoadInMemoryDatasetTestFixture, SaveLoadBoltDataset) {
   auto dataset =
       generateRandomDataset(/* n_batches= */ 50, /* batch_size= */ 20);
 
-  auto handle = dataset->save("./dataset_serialized");
+  dataset->save(_save_filename);
 
-  auto reloaded_dataset = handle.reload();
+  auto reloaded_dataset = BoltDataset::load(_save_filename);
 
   for (uint64_t batch_idx = 0; batch_idx < dataset->numBatches(); batch_idx++) {
     EXPECT_EQ(dataset->batchSize(batch_idx),

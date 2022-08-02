@@ -116,27 +116,13 @@ class InMemoryDataset : public DatasetBase {
     return deserialize_into;
   }
 
-  class SerializedDatasetHandle {
-   public:
-    explicit SerializedDatasetHandle(std::string filename)
-        : _filename(std::move(filename)) {}
-
-    std::shared_ptr<InMemoryDataset<BATCH_T>> reload() {
-      return InMemoryDataset<BATCH_T>::load(_filename);
-    }
-
-   private:
-    std::string _filename;
-  };
-
-  SerializedDatasetHandle save(const std::string& filename) {
+  void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
     cereal::BinaryOutputArchive oarchive(filestream);
     oarchive(*this);
-
-    return SerializedDatasetHandle(filename);
   }
+
   InMemoryDataset() : _len(0), _batch_size(0) {}
 
  private:

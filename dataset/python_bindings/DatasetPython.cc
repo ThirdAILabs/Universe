@@ -289,11 +289,6 @@ void createDatasetSubmodule(py::module_& module) {
       "Returns a tuple containing a BoltDataset, BoltTokenDataset to store the "
       "dense and categorical features, and a BoltDataset storing the labels.");
 
-  py::class_<InMemoryDataset<bolt::BoltBatch>::SerializedDatasetHandle>(
-      dataset_submodule, "SerializedBoltDatasetHandle")
-      .def("reload",
-           &InMemoryDataset<bolt::BoltBatch>::SerializedDatasetHandle::reload);
-
   py::class_<BoltDataset, BoltDatasetPtr>(dataset_submodule, "BoltDataset")
       // We need to explicitly static cast these methods because there are
       // multiple candidate "at" methods (one const and one not const)
