@@ -27,46 +27,74 @@ def get_build_and_run_functions_random(num_docs=100, num_queries=100):
     np.random.seed(42)
     random.seed(42)
 
+    print("Starting...", flush=True)
+
     # Generate word centers
     word_centers = np.random.normal(size=(vocab_size, data_dim), scale=between_word_std)
+    print("Centered...", flush=True)
 
     # Generates docs
     doc_word_ids = [
         random.sample(range(vocab_size), words_per_doc) for _ in range(num_docs)
     ]
+
+    print("IDS...", flush=True)
+
     doc_offsets = np.random.normal(
         size=(num_docs, words_per_doc, data_dim), scale=within_word_std
     )
+
+    print("Offsets...", flush=True)
+
     docs = []
     for i in range(num_docs):
         doc = []
         for j in range(words_per_doc):
             doc.append(doc_offsets[i][j] + word_centers[doc_word_ids[i][j]])
         docs.append(doc)
+    print("Docs...", flush=True)
+
 
     # Generate queries. GT for query i is doc i
     query_random_word_ids = [
         random.sample(range(vocab_size), words_per_query_random)
         for _ in range(num_queries)
     ]
+
+    print("Queries 1...", flush=True)
+
     query_same_word_ids = [
         ids[:words_per_query_from_doc] for ids in doc_word_ids[:num_queries]
     ]
+
+    print("Queries 2...", flush=True)
+
     query_word_ids = [a + b for a, b in zip(query_same_word_ids, query_random_word_ids)]
     query_offsets = np.random.normal(
         size=(num_queries, words_per_query, data_dim), scale=within_word_std
     )
     queries = []
+
+    print("Queries 3...", flush=True)
+
     for i in range(num_queries):
         query = []
         for j in range(words_per_query):
             query.append(query_offsets[i][j] + word_centers[query_word_ids[i][j]])
         queries.append(query)
 
+    print("Queries 4...", flush=True)
+
+
     index_func = lambda: _build_index_random(
         docs, hashes_per_table, num_tables, data_dim, word_centers
     )
+
+    print("Index func...", flush=True)
+
     query_func = lambda index: _do_queries_random(index, queries, num_docs)
+
+    print("Query func...", flush=True)
 
     return index_func, query_func
 
