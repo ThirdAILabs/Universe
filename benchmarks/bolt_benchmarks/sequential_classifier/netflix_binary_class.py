@@ -37,7 +37,7 @@ def seq_with_temporal_feats():
     )
 
 def train_and_evaluate(seq, suffix):
-    seq.train("/share/data/netflix/netflix_train.csv-binary-class", epochs=5, learning_rate=0.0001)
+    seq.train("/share/data/netflix/netflix_train.csv-binary-class", epochs=20, learning_rate=0.0001, validation_filename="/share/data/netflix/netflix_test.csv-binary-class")
     return seq.predict("/share/data/netflix/netflix_test.csv-binary-class", "netflix_predictions_binary_" + suffix + ".txt")
 
 def main():
