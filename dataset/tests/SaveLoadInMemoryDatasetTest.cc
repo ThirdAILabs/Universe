@@ -1,4 +1,5 @@
 #include <bolt/src/layers/BoltVector.h>
+#include <bolt/src/layers/tests/BoltVectorTestUtils.h>
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/InMemoryDataset.h>
@@ -49,7 +50,7 @@ class SaveLoadInMemoryDatasetTestFixture : public testing::Test {
     std::generate(vector.activations, vector.activations + len,
                   [&]() { return _activations_gradients_dist(_rand); });
 
-    if (!is_dense) {
+    if (has_gradient) {
       std::generate(vector.gradients, vector.gradients + len,
                     [&]() { return _activations_gradients_dist(_rand); });
     }
@@ -74,6 +75,17 @@ TEST_F(SaveLoadInMemoryDatasetTestFixture, SaveLoadBoltDataset) {
   auto handle = dataset->save("./dataset_serialized");
 
   auto reloaded_dataset = handle.reload();
+
+  for (uint64_t batch_idx = 0; batch_idx < dataset->numBatches(); batch_idx++) {
+    EXPECT_EQ(dataset->batchSize(batch_idx),
+              reloaded_dataset->batchSize(batch_idx));
+    for (uint64_t vec_idx = 0; vec_idx < dataset->batchSize(batch_idx);
+         vec_idx++) {
+      bolt::tests::BoltVectorTestUtils::assertBoltVectorsAreEqual(
+          dataset->at(batch_idx)[vec_idx],
+          reloaded_dataset->at(batch_idx)[vec_idx]);
+    }
+  }
 }
 
 }  // namespace thirdai::dataset
