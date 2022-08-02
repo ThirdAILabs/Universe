@@ -104,6 +104,10 @@ void AutoClassifierUtils::predict(
     const std::vector<std::string>& class_id_to_class_name) {
   auto dataset = loadStreamingDataset(filename, batch_processor);
 
+  // see comment above in train(..) about loading in memory
+  if (!canLoadDatasetInMemory(filename)) {
+    throw std::invalid_argument("Cannot load dataset in memory.");
+  }
   auto [test_data, test_labels] = dataset->loadInMemory();
 
   PredictConfig config = PredictConfig::makeConfig()
