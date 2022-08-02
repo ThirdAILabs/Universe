@@ -107,7 +107,7 @@ TEST(FullyConnectedDagTest, SamePredictAndPredictSingleResults) {
     BoltBatch& batch = data->at(batch_idx);
     for (uint32_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
       BoltVector output_vec = model.predictSingle(
-          {batch[vec_idx]}, {}, config.sparseInferenceEnabled());
+          {std::move(batch[vec_idx])}, {}, config.sparseInferenceEnabled());
 
       ASSERT_EQ(output_vec.len, n_classes);
       for (uint32_t i = 0; i < n_classes; i++) {

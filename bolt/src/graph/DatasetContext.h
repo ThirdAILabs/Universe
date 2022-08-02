@@ -11,13 +11,31 @@
 namespace thirdai::bolt {
 
 /**
- * This class stores information about the datasets passed into train or
- * predict. This is to provide a simple interface to interact with the datasets,
- * and also performs checks that they all have the same length, batch size, etc.
- * Finally it provides methods for obtaining the length and batch size of the
- * datasets once they are verified to be correct.
+ * This class provides an interface to interact with dataset objects,
+ * particularly as a common interface for the SingleUnitDatasetContext and the
+ * DatasetContext objects
  */
-class DatasetContext {
+class DatasetContextBase {
+ public:
+  virtual void setInputs(uint64_t batch_idx,
+                         const std::vector<InputPtr>& inputs,
+                         const std::vector<TokenInputPtr>& token_inputs) = 0;
+
+  virtual uint64_t numVectorDatasets() const = 0;
+
+  virtual uint64_t numTokenDatasets() const = 0;
+
+  virtual ~DatasetContextBase() = default;
+};
+
+/**
+ * This class stores information about the datasets passed into train or
+ * predict. This is to provide a simple interface to interact with the
+ * datasets, and also performs checks that they all have the same length,
+ * batch size, etc. Finally it provides methods for obtaining the length and
+ * batch size of the datasets once they are verified to be correct.
+ */
+class DatasetContext final : public DatasetContextBase {
  public:
   DatasetContext(std::vector<dataset::BoltDatasetPtr> data,
                  std::vector<dataset::BoltTokenDatasetPtr> tokens,
@@ -41,9 +59,8 @@ class DatasetContext {
     verifyBatchSizes(_all_dag_datasets);
   }
 
-  virtual void setInputs(uint64_t batch_idx,
-                         const std::vector<InputPtr>& inputs,
-                         const std::vector<TokenInputPtr>& token_inputs) {
+  void setInputs(uint64_t batch_idx, const std::vector<InputPtr>& inputs,
+                 const std::vector<TokenInputPtr>& token_inputs) override {
     for (uint32_t i = 0; i < inputs.size(); i++) {
       inputs[i]->setInputs(&_data[i]->at(batch_idx));
     }
@@ -66,16 +83,11 @@ class DatasetContext {
     return _all_dag_datasets.front()->numBatches();
   }
 
-  virtual uint64_t numVectorDatasets() const { return _data.size(); }
+  uint64_t numVectorDatasets() const override { return _data.size(); }
 
-  virtual uint64_t numTokenDatasets() const { return _tokens.size(); }
+  uint64_t numTokenDatasets() const override { return _tokens.size(); }
 
-  virtual const dataset::BoltDatasetPtr& labels() const { return _labels; }
-
-  virtual ~DatasetContext() = default;
-
- protected:
-  DatasetContext() = default;
+  const dataset::BoltDatasetPtr& labels() const { return _labels; }
 
  private:
   static void verifyBatchSizes(const dataset::DatasetBaseList& datasets) {
@@ -113,14 +125,13 @@ class DatasetContext {
 };
 
 /**
- * This class provides the same interface as DatasetContext but is constructed
- * assuming a single sample input.
+ * This class provides the interface from DatasetContextBase but is constructed
+ * assuming a single sample input for inference.
  */
-class SingleUnitDatasetContext : public DatasetContext {
+class SingleUnitDatasetContext final : public DatasetContextBase {
  public:
-  SingleUnitDatasetContext(const std::vector<BoltVector>& data,
-                           const std::vector<std::vector<uint32_t>>& tokens)
-      : _labels(nullptr) {
+  SingleUnitDatasetContext(std::vector<BoltVector>&& data,
+                           std::vector<std::vector<uint32_t>>&& tokens) {
     for (auto vector : data) {
       _data.push_back(BoltBatch({std::move(vector)}));
     }
@@ -146,26 +157,12 @@ class SingleUnitDatasetContext : public DatasetContext {
     }
   }
 
-  uint64_t batchSize() const override { return 1; }
-
-  uint64_t batchSize(uint64_t batch_idx) const override {
-    (void)batch_idx;
-    return 1;
-  }
-
-  uint64_t len() const override { return 1; }
-
-  uint64_t numBatches() const override { return 1; }
-
   uint64_t numVectorDatasets() const override { return _data.size(); }
 
   uint64_t numTokenDatasets() const override { return _tokens.size(); }
 
-  const dataset::BoltDatasetPtr& labels() const override { return _labels; }
-
   std::vector<BoltBatch> _data;
   std::vector<dataset::BoltTokenBatch> _tokens;
-  dataset::BoltDatasetPtr _labels;
 };
 
 }  // namespace thirdai::bolt
