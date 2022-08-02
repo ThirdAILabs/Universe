@@ -26,16 +26,12 @@ FullyConnectedLayer::FullyConnectedLayer(
       // trainable parameter not present in config file
       // TODO(Shubh) : should we add a trainable parameter to the config file?
       _trainable(true),
-
       _act_func(config.getActFunc()),
       _weights(config.getDim() * prev_dim),
       _w_gradient(config.getDim() * prev_dim, 0),
-      _w_momentum(config.getDim() * prev_dim, 0),
-      _w_velocity(config.getDim() * prev_dim, 0),
       _biases(config.getDim()),
       _b_gradient(config.getDim(), 0),
-      _b_momentum(config.getDim(), 0),
-      _b_velocity(config.getDim(), 0),
+      _optimizer(std::make_unique<Adam>(config, prev_dim)),
       _prev_is_active(_prev_dim, false),
       _is_active(config.getDim(), false),
       _is_distributed(is_distributed),
@@ -569,28 +565,11 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
     float grad = _b_gradient[cur_neuron];
     assert(!std::isnan(grad));
 
-    // _b_momentum[cur_neuron] = B1 * _b_momentum[cur_neuron] + (1 - B1) * grad;
-    // _b_velocity[cur_neuron] =
-    //     B2 * _b_velocity[cur_neuron] + (1 - B2) * grad * grad;
-    _b_momentum.set(cur_neuron, B1 * _b_momentum[cur_neuron] + (1 - B1) * grad);
-    _b_velocity.set(cur_neuron,
-                    B2 * _b_velocity[cur_neuron] + (1 - B2) * grad * grad);
-
-    assert(!std::isnan(_b_momentum[cur_neuron]));
-    assert(!std::isnan(_b_velocity[cur_neuron]));
-
-    float dbias =
-        lr * (_b_momentum[cur_neuron] / B1_bias_corrected) /
-        (std::sqrt(_b_velocity[cur_neuron] / B2_bias_corrected) + eps);
-
-    BOLT_TRACE(dbias);
-    BOLT_TRACE(_b_momentum[cur_neuron]);
-    BOLT_TRACE(_b_velocity[cur_neuron]);
-
-    _biases[cur_neuron] += dbias;
+    _biases[cur_neuron] +=
+        _optimizer->dBias(lr, cur_neuron, grad, B1, B2, B1_bias_corrected,
+                          B2_bias_corrected, eps);
 
     BOLT_TRACE(_biases[cur_neuron]);
-
     assert(!std::isnan(_biases[cur_neuron]));
 
     _b_gradient[cur_neuron] = 0;
@@ -618,24 +597,8 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
     BOLT_TRACE(grad);
   }
 
-  // _w_momentum[indx] = B1 * _w_momentum[indx] + (1 - B1) * grad;
-  // _w_velocity[indx] = B2 * _w_velocity[indx] + (1 - B2) * grad * grad;
-  _w_momentum.set(indx, B1 * _w_momentum[indx] + (1 - B1) * grad);
-  _w_velocity.set(indx, B2 * _w_velocity[indx] + (1 - B2) * grad * grad);
-
-  BOLT_TRACE(B1);
-  BOLT_TRACE(_w_momentum[indx]);
-  BOLT_TRACE(1 - B1);
-
-  BOLT_TRACE(B2);
-  BOLT_TRACE(1 - B2);
-  BOLT_TRACE(grad * grad);
-
-  assert(!std::isnan(_w_momentum[indx]));
-  assert(!std::isnan(_w_velocity[indx]));
-
-  _weights[indx] += lr * (_w_momentum[indx] / B1_bias_corrected) /
-                    (std::sqrt(_w_velocity[indx] / B2_bias_corrected) + eps);
+  _weights[indx] += _optimizer->dWeight(
+      lr, indx, grad, B1, B2, B1_bias_corrected, B2_bias_corrected, eps);
 
   BOLT_TRACE(lr);
   BOLT_TRACE(B1_bias_corrected);
@@ -763,26 +726,6 @@ void FullyConnectedLayer::setSparsity(float sparsity) {
     std::random_device rd;
     initSparseDatastructures(sampling_config, rd);
   }
-}
-
-void FullyConnectedLayer::initOptimizer() {
-  _w_gradient.assign(_dim * _prev_dim, 0);
-  _w_momentum.assign(_dim * _prev_dim, 0);
-  _w_velocity.assign(_dim * _prev_dim, 0);
-
-  _b_gradient.assign(_dim, 0);
-  _b_momentum.assign(_dim, 0);
-  _b_velocity.assign(_dim, 0);
-}
-
-void FullyConnectedLayer::removeOptimizer() {
-  _w_gradient.clear();
-  _w_momentum.clear();
-  _w_velocity.clear();
-
-  _b_gradient.clear();
-  _b_momentum.clear();
-  _b_velocity.clear();
 }
 
 void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
