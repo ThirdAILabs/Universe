@@ -593,16 +593,9 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
   auto indx = cur_neuron * _prev_dim + prev_neuron;
   float grad = _w_gradient[indx];
   assert(!std::isnan(grad));
-  if (std::isnan(grad)) {
-    BOLT_TRACE(grad);
-  }
 
   _weights[indx] += _optimizer->dWeight(
       lr, indx, grad, B1, B2, B1_bias_corrected, B2_bias_corrected, eps);
-
-  BOLT_TRACE(lr);
-  BOLT_TRACE(B1_bias_corrected);
-  BOLT_TRACE(B2_bias_corrected);
 
   BOLT_TRACE(_weights[indx]);
   assert(!std::isnan(_weights[indx]));

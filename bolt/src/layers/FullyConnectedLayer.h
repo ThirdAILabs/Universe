@@ -134,6 +134,12 @@ class CompressedAdam : public Optimizer {
 
   float dBias(float lr, uint64_t cur_neuron, float grad, float B1, float B2,
               float B1_bias_corrected, float B2_bias_corrected, float eps) {
+    if (std::isnan(grad)) {
+      BOLT_TRACE(grad);
+    }
+    BOLT_TRACE(lr);
+    BOLT_TRACE(B1_bias_corrected);
+    BOLT_TRACE(B2_bias_corrected);
     _b_momentum.set(cur_neuron, B1 * _b_momentum[cur_neuron] + (1 - B1) * grad);
     _b_velocity.set(cur_neuron,
                     B2 * _b_velocity[cur_neuron] + (1 - B2) * grad * grad);
