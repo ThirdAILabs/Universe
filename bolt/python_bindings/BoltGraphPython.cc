@@ -16,15 +16,33 @@
 #include <pybind11/functional.h>
 
 namespace thirdai::bolt::python {
-
 void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 
-  py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
+  py::class_<ParameterReference>(graph_submodule, "ParameterReference")
+      .def("copy", &ParameterReference::copy,
+           "Returns a copy of the parameters held in the ParameterReference as "
+           "a numpy array.")
+      .def("get", &ParameterReference::get,
+           /**
+            * This means that the lifetime of the returned object is tied to
+            * the lifetime of the object this method is called on, such that
+            * the parent object cannot be garbage collected will this returned
+            * object is still alive.
+            */
+           py::return_value_policy::reference_internal,
+           "Returns a numpy array which shadows the parameters held in the "
+           "ParameterReference and acts as a reference to them, modifying this "
+           "array will modify the parameters.")
+      .def("set", &ParameterReference::set, py::arg("new_params"),
+           "Takes in a numpy array and copies its contents into the parameters "
+           "held in the ParameterReference object.");
 
   // Needed so python can know that InferenceOutput objects can own memory
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
                                      "InferenceOutput");
+
+  py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
 
   py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(graph_submodule,
                                                               "FullyConnected")
@@ -70,67 +88,47 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("filename"))
       .def("load_parameters", &FullyConnectedNode::loadParameters,
            py::arg("filename"))
+      // TODO(Nick, Josh): sparsity can be def_property
       .def("get_sparsity", &FullyConnectedNode::getSparsity)
       .def("set_sparsity", &FullyConnectedNode::setSparsity,
            py::arg("sparsity"))
       .def("get_dim", &FullyConnectedNode::outputDim)
-      .def(
-          "set_weights",
-          [](FullyConnectedNode& node,
-             const py::array_t<float, py::array::c_style |
-                                          py::array::forcecast>& new_weights) {
+      .def_property_readonly(
+          "weights",
+          [](FullyConnectedNode& node) {
             uint32_t dim = node.outputDim();
             uint32_t prev_node_dim = node.getPredecessors()[0]->outputDim();
             const std::vector<uint32_t> dimensions = {dim, prev_node_dim};
-
-            checkNumpyArrayDimensions(dimensions, new_weights);
-            return node.setWeights(new_weights.data());
+            return ParameterReference(node.getWeightsPtr(), dimensions);
           },
-          py::arg("new_weights"),
-          "Sets the weight matrix for the node to the given Numpy 2D array."
-          "Throws an error if the dimension of the given weight matrix does"
-          "not match that of the node's current weight matrix.")
-      .def(
-          "get_weights",
+          py::return_value_policy::reference_internal,
+          "Returns a ParameterReference object to the weight matrix.")
+      .def_property_readonly(
+          "biases",
           [](FullyConnectedNode& node) {
-            float* mem = node.getWeights();
-
-            py::capsule free_when_done(
-                mem, [](void* ptr) { delete static_cast<float*>(ptr); });
-            size_t dim = node.outputDim();
-            size_t prev_dim = node.getPredecessors()[0]->outputDim();
-
-            return py::array_t<float>({dim, prev_dim},
-                                      {prev_dim * sizeof(float), sizeof(float)},
-                                      mem, free_when_done);
-          },
-          "Returns the weight matrix for the node as a 2D Numpy array.")
-      .def(
-          "get_biases",
-          [](FullyConnectedNode& node) {
-            float* mem = node.getBiases();
-
-            py::capsule free_when_done(
-                mem, [](void* ptr) { delete static_cast<float*>(ptr); });
-            size_t dim = node.outputDim();
-
-            return py::array_t<float>({dim}, {sizeof(float)}, mem,
-                                      free_when_done);
-          },
-          "Returns the bias array for the given node as a 1D Numpy array.")
-      .def(
-          "set_biases",
-          [](FullyConnectedNode& node,
-             const py::array_t<float, py::array::c_style |
-                                          py::array::forcecast>& new_biases) {
             uint32_t dim = node.outputDim();
-            const std::vector<uint32_t> dimensions = {dim};
-
-            checkNumpyArrayDimensions(dimensions, new_biases);
-            return node.setBiases(new_biases.data());
+            return ParameterReference(node.getBiasesPtr(), {dim});
           },
-          py::arg("new_biases"),
-          "Sets the bias array to the given 1D Numpy array for the given node");
+          py::return_value_policy::reference,
+          "Returns a ParameterReference object to the bias vector.")
+      .def_property_readonly(
+          "weight_gradients",
+          [](FullyConnectedNode& node) {
+            uint32_t dim = node.outputDim();
+            uint32_t prev_node_dim = node.getPredecessors()[0]->outputDim();
+            const std::vector<uint32_t> dimensions = {dim, prev_node_dim};
+            return ParameterReference(node.getWeightGradientsPtr(), dimensions);
+          },
+          py::return_value_policy::reference_internal,
+          "Returns a ParameterReference object to the weight gradients matrix.")
+      .def_property_readonly(
+          "bias_gradients",
+          [](FullyConnectedNode& node) {
+            uint32_t dim = node.outputDim();
+            return ParameterReference(node.getBiasGradientsPtr(), {dim});
+          },
+          py::return_value_policy::reference,
+          "Returns a ParameterReference object to the bias gradients vector.");
 
   py::class_<LayerNormNode, std::shared_ptr<LayerNormNode>, Node>(
       graph_submodule, "LayerNormalization")
