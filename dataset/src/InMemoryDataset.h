@@ -1,6 +1,12 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 #include "utils/SafeFileIO.h"
+#include <bolt/src/layers/BoltVector.h>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -13,6 +19,8 @@ namespace thirdai::dataset {
 
 class DatasetBase {
  public:
+  DatasetBase() {}
+
   virtual uint64_t len() const = 0;
 
   virtual uint64_t batchSize() const = 0;
@@ -20,6 +28,13 @@ class DatasetBase {
   virtual uint64_t batchSize(uint64_t batch_idx) const = 0;
 
   virtual uint64_t numBatches() const = 0;
+
+ private:
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    (void)archive;
+  }
 };
 
 using DatasetBasePtr = std::shared_ptr<DatasetBase>;
@@ -91,10 +106,54 @@ class InMemoryDataset : public DatasetBase {
     return _batches[batch_idx].getBatchSize();
   }
 
+  static std::shared_ptr<InMemoryDataset<BATCH_T>> load(
+      const std::string& filename) {
+    std::ifstream filestream =
+        dataset::SafeFileIO::ifstream(filename, std::ios::binary);
+    cereal::BinaryInputArchive iarchive(filestream);
+    auto deserialize_into = std::make_shared<InMemoryDataset<BATCH_T>>();
+    iarchive(*deserialize_into);
+    return deserialize_into;
+  }
+
+  class SerializedDatasetHandle {
+   public:
+    explicit SerializedDatasetHandle(std::string filename)
+        : _filename(std::move(filename)) {}
+
+    std::shared_ptr<InMemoryDataset<BATCH_T>> reload() {
+      return InMemoryDataset<BATCH_T>::load(_filename);
+    }
+
+   private:
+    std::string _filename;
+  };
+
+  SerializedDatasetHandle save(const std::string& filename) {
+    std::ofstream filestream =
+        dataset::SafeFileIO::ofstream(filename, std::ios::binary);
+    cereal::BinaryOutputArchive oarchive(filestream);
+    oarchive(*this);
+
+    return SerializedDatasetHandle(filename);
+  }
+  InMemoryDataset() : _len(0), _batch_size(0) {}
+
  private:
+  // Private constructor for cereal.
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<DatasetBase>(this), _batches, _len, _batch_size);
+  }
+
   std::vector<BATCH_T> _batches;
   uint64_t _len;
   uint64_t _batch_size;
 };
 
 }  // namespace thirdai::dataset
+
+CEREAL_REGISTER_TYPE(
+    thirdai::dataset::InMemoryDataset<thirdai::bolt::BoltBatch>)

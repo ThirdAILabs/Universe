@@ -2,6 +2,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/cereal.hpp>
+#include <cereal/types/vector.hpp>
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -337,6 +338,12 @@ class BoltBatch {
  private:
   std::vector<BoltVector> _vectors;
 
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_vectors);
+  }
+
  public:
   BoltBatch() {}
 
@@ -401,18 +408,6 @@ class BoltBatch {
   BoltBatch& operator=(const BoltBatch& other) = delete;
 
   BoltBatch& operator=(BoltBatch&& other) = default;
-
-  friend std::ostream& operator<<(std::ostream& out, const BoltBatch& state) {
-    std::cout << "-------------------------------------------------------------"
-              << std::endl;
-    for (uint32_t i = 0; i < state._vectors.size(); i++) {
-      std::cout << "Vector: " << i << ":\n"
-                << state._vectors.at(i) << std::endl;
-    }
-    std::cout << "-------------------------------------------------------------"
-              << std::endl;
-    return out;
-  }
 };
 
 }  // namespace thirdai::bolt
