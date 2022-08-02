@@ -165,7 +165,7 @@ void SequentialClassifierPipelineBuilder::addTrackableCatFeats(Blocks& blocks) {
     }
     auto tracking_block = std::make_shared<dataset::CategoricalTrackingBlock>(
         item.col_num, _schema.timestamp.col_num, cat.col_num, config.lookahead,
-        /* include_current = */ _schema.target.col_num == cat.col_num, 
+        /* include_current = */ _schema.target.col_num != cat.col_num, 
         _states.item_id_map, _states.trackable_categories[i],
         item.graph, item.max_neighbors);
     blocks.push_back(tracking_block);

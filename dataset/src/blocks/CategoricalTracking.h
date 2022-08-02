@@ -26,6 +26,7 @@ class CategoricalTrackingBlock : public Block {
         _index(std::move(index)),
         _graph(std::move(graph)),
         _max_n_neighbors(max_n_neighbors) {
+    std::cout << "[Categorical Tracking Block] include_current = " << include_current << std::endl;
     if (_graph != nullptr && _max_n_neighbors == 0) {
       throw std::invalid_argument(
           "Provided a graph but `max_n_neighbors` is set to 0. This means "
