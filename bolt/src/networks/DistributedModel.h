@@ -94,6 +94,24 @@ class DistributedModel : public FullyConnectedNetwork {
                                            float* values_raw_data,
                                            uint64_t sketch_size);
 
+  void getUnbiasedBiasGradientSketch(uint32_t layer_index, int* indices,
+                                     uint64_t sketch_size,
+                                     int seed_for_hashing,
+                                     bool pregenerate_distribution);
+
+  void getUnbiasedWeightGradientSketch(uint32_t layer_index, int* indices,
+                                       uint64_t sketch_size,
+                                       int seed_for_hashing,
+                                       bool pregenerate_distribution);
+
+  void setUnbiasedBiasGradientsFromIndicesValues(uint32_t layer_index,
+                                                 int* indices_raw_data,
+                                                 uint64_t sketch_size);
+
+  void setUnbiasedWeightGradientsFromIndicesValues(uint32_t layer_index,
+                                                   int* indices_raw_data,
+                                                   uint64_t sketch_size);
+
  private:
   /*
    outputs here, holds the activations values for output layer,

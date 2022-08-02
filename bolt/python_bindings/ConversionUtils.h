@@ -180,6 +180,10 @@ inline bool checkNumpyDtypeFloat32(const py::object& obj) {
   return checkNumpyDtype(obj, "float32");
 }
 
+inline bool checkNumpyDtypeInt32(const py::object& obj) {
+  return checkNumpyDtype(obj, "int32");
+}
+
 inline bool checkNumpyDtypeAnyInt(const py::object& obj) {
   return checkNumpyDtype(obj, "int32") || checkNumpyDtype(obj, "uint32") ||
          checkNumpyDtype(obj, "int64") || checkNumpyDtype(obj, "uint64");

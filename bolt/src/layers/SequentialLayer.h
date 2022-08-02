@@ -82,6 +82,22 @@ class SequentialLayer {
   virtual void setWeightGradientsFromIndicesValues(uint64_t* indices_raw_data,
                                                    float* values_raw_data,
                                                    uint64_t sketch_size) = 0;
+  
+  virtual void getUnbiasedBiasGradientSketch(int* indices,
+                                     uint64_t sketch_size,
+                                     int seed_for_hashing,
+                                     bool pregenerate_distribution) const = 0;
+
+  virtual void getUnbiasedWeightGradientSketch(int* indices,
+                                       uint64_t sketch_size,
+                                       int seed_for_hashing,
+                                       bool pregenerate_distribution) const = 0;
+
+  virtual void setUnbiasedBiasGradientsFromIndicesValues(int* indices_raw_data,
+                                                 uint64_t sketch_size) = 0;
+
+  virtual void setUnbiasedWeightGradientsFromIndicesValues(int* indices_raw_data,
+                                                   uint64_t sketch_size) = 0;
 
   virtual ~SequentialLayer() = default;
 };

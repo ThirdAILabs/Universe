@@ -648,6 +648,13 @@ void createBoltSubmodule(py::module_& module) {
            py::arg("sketch_biases"), py::arg("seed_for_hashing"),
            "Sketches the top-k gradients into an array of values and returns a "
            "tuple of (sketched_indices,sketched_gradients)")
+      .def("get_unbiased_indexed_sketch_for_gradients",
+           &DistributedPyNetwork::getUnbiasedIndexedSketchGradients,
+           py::arg("layer_index"), py::arg("compression_density"),
+           py::arg("sketch_biases"), py::arg("seed_for_hashing"),
+           py::arg("pregenerate_distribution"),
+           "Sketches the top-k gradients into an array of values and returns a "
+           "tuple of (sketched_indices,sketched_gradients)")
       .def("set_gradients_from_indices_values",
            &DistributedPyNetwork::setGradientsFromIndicesValues,
            py::arg("layer_index"), py::arg("indices"), py::arg("values"),

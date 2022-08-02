@@ -138,4 +138,36 @@ void DistributedModel::setBiasGradientsFromIndicesValues(
                                           sketch_size);
 }
 
+void DistributedModel::getUnbiasedWeightGradientSketch(uint32_t layer_index,
+                                                       int* indices,
+                                                       uint64_t sketch_size,
+                                                       int seed_for_hashing,
+                                                       bool pregenerate_distribution) {
+  return _layers.at(layer_index)
+      ->getUnbiasedWeightGradientSketch(indices, sketch_size, seed_for_hashing,pregenerate_distribution);
+}
+
+void DistributedModel::getUnbiasedBiasGradientSketch(uint32_t layer_index,
+                                                     int* indices,
+                                                     uint64_t sketch_size,
+                                                     int seed_for_hashing,
+                                                     bool pregenerate_distribution) {
+  return _layers.at(layer_index)
+      ->getUnbiasedBiasGradientSketch(indices, sketch_size, seed_for_hashing,pregenerate_distribution);
+}
+
+void DistributedModel::setUnbiasedWeightGradientsFromIndicesValues(
+    uint32_t layer_index, int* indices_raw_data, uint64_t sketch_size) {
+  _layers.at(layer_index)
+      ->setUnbiasedWeightGradientsFromIndicesValues(indices_raw_data,
+                                                    sketch_size);
+}
+
+void DistributedModel::setUnbiasedBiasGradientsFromIndicesValues(
+    uint32_t layer_index, int* indices_raw_data, uint64_t sketch_size) {
+  _layers.at(layer_index)
+      ->setUnbiasedBiasGradientsFromIndicesValues(indices_raw_data,
+                                                  sketch_size);
+}
+
 }  // namespace thirdai::bolt

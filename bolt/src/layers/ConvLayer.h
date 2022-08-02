@@ -128,6 +128,46 @@ class ConvLayer final : public SequentialLayer {
         "setWeightGradientsFromIndicesValues not implemented for ConvLayer");
   }
 
+  void getUnbiasedBiasGradientSketch(int* indices,
+                                       uint64_t sketch_size,
+                                       int seed_for_hashing,
+                                       bool pregenerate_distribution) const final {
+    (void)indices;
+    (void)sketch_size;
+    (void)seed_for_hashing;
+    (void) pregenerate_distribution;
+    throw thirdai::exceptions::NotImplemented(
+        "getBiasGradientSketch not implemented for ConvLayer");
+  }
+
+  void getUnbiasedWeightGradientSketch(int* indices,
+                                       uint64_t sketch_size,
+                                       int seed_for_hashing,
+                                       bool pregenerate_distribution) const final {
+    (void)indices;
+    (void)sketch_size;
+    (void)seed_for_hashing;
+    (void) pregenerate_distribution;
+    throw thirdai::exceptions::NotImplemented(
+        "getWeightGradientSketch not implemented for ConvLayer");
+  }
+
+  void setUnbiasedBiasGradientsFromIndicesValues(int* indices_raw_data,
+                                                 uint64_t sketch_size) final {
+    (void)indices_raw_data;
+    (void)sketch_size;
+    throw thirdai::exceptions::NotImplemented(
+        "setBiasGradientsFromIndicesValues not implemented for ConvLayer");
+  }
+
+  void setUnbiasedWeightGradientsFromIndicesValues(int* indices_raw_data,
+                                                 uint64_t sketch_size) final {
+    (void)indices_raw_data;
+    (void)sketch_size;
+    throw thirdai::exceptions::NotImplemented(
+        "setWeightGradientsFromIndicesValues not implemented for ConvLayer");
+  }
+
  private:
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output);
