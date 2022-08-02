@@ -44,8 +44,11 @@ class PyDocSearch final : public DocSearch {
       const py::array_t<float, py::array::c_style | py::array::forcecast>&
           embeddings,
       const std::vector<uint32_t>& doc_centroid_ids) {
+    std::cout << "Constructing wrapped numpy dataset" << std::endl;
     auto single_batch_dataset = dataset::numpy::numpyToBoltVectorDataset(
         embeddings, /* batch_size = */ std::numeric_limits<uint64_t>::max());
+    std::cout << "Finished constructing wrapped numpy dataset" << std::endl;
+
     return DocSearch::addDocumentWithCentroids(
         single_batch_dataset->at(0), doc_centroid_ids, doc_id, doc_text);
   }
