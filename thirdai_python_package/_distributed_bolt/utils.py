@@ -67,7 +67,7 @@ def create_fully_connected_layer_configs(
                 activation_function=bolt.getActivationFunction(
                     config.get("activation")
                 ),
-                sampling_config=bolt.SamplingConfig(
+                sampling_config=bolt.DWTASamplingConfig(
                     hashes_per_table=config.get("hashes_per_table", 0),
                     num_tables=config.get("num_tables", 0),
                     range_pow=config.get("range_pow", 0),

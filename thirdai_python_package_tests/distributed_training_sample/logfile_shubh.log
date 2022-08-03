@@ -10829,3 +10829,9 @@
 2022-07-28 12:50:25,039 : INFO : DistributedBolt : Epoch No: 19, Bolt Computation Time: 4486.49987411499, Python Computation Time: 545.7628991603851, Communication Time: 13511.569737195969
 2022-07-28 12:50:30,765 : INFO : DistributedBolt : Epoch No: 19, Bolt Computation Time: 4489.519775390625, Python Computation Time: 545.7629842758179, Communication Time: 13514.273517131805
 2022-07-28 12:50:34,851 : INFO : DistributedBolt : Epoch No: 19, Bolt Computation Time: 4490.9697070121765, Python Computation Time: 545.7630662918091, Communication Time: 13516.90693283081
+2022-08-02 12:45:19,051 : INFO : DistributedBolt : Training has started!
+2022-08-02 12:45:19,445 : INFO : DistributedBolt : Ray Initialized
+2022-08-02 12:45:19,446 : INFO : DistributedBolt : Config Done
+2022-08-02 12:54:33,885 : INFO : DistributedBolt : Training has started!
+2022-08-02 12:54:34,281 : INFO : DistributedBolt : Ray Initialized
+2022-08-02 12:54:34,282 : INFO : DistributedBolt : Config Done
