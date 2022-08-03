@@ -86,8 +86,8 @@ class ConvLayer final : public SequentialLayer {
         "Cannot currently set the sparsity of a convolutional layer.");
   }
 
-  void getBiasGradientSketch(uint64_t* indices, float* gradients,
-                             uint64_t sketch_size,
+  void getBiasGradientSketch(uint32_t* indices, float* gradients,
+                             uint32_t sketch_size,
                              int seed_for_hashing) const final {
     (void)indices;
     (void)gradients;
@@ -97,8 +97,8 @@ class ConvLayer final : public SequentialLayer {
         "getBiasGradientSketch not implemented for ConvLayer");
   }
 
-  void getWeightGradientSketch(uint64_t* indices, float* gradients,
-                               uint64_t sketch_size,
+  void getWeightGradientSketch(uint32_t* indices, float* gradients,
+                               uint32_t sketch_size,
                                int seed_for_hashing) const final {
     (void)indices;
     (void)gradients;
@@ -108,9 +108,9 @@ class ConvLayer final : public SequentialLayer {
         "getWeightGradientSketch not implemented for ConvLayer");
   }
 
-  void setBiasGradientsFromIndicesValues(uint64_t* indices_raw_data,
+  void setBiasGradientsFromIndicesValues(uint32_t* indices_raw_data,
                                          float* values_raw_data,
-                                         uint64_t sketch_size) final {
+                                         uint32_t sketch_size) final {
     (void)indices_raw_data;
     (void)values_raw_data;
     (void)sketch_size;
@@ -118,9 +118,9 @@ class ConvLayer final : public SequentialLayer {
         "setBiasGradientsFromIndicesValues not implemented for ConvLayer");
   }
 
-  void setWeightGradientsFromIndicesValues(uint64_t* indices_raw_data,
+  void setWeightGradientsFromIndicesValues(uint32_t* indices_raw_data,
                                            float* values_raw_data,
-                                           uint64_t sketch_size) final {
+                                           uint32_t sketch_size) final {
     (void)indices_raw_data;
     (void)values_raw_data;
     (void)sketch_size;

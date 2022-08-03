@@ -112,21 +112,21 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void setSparsity(float sparsity) final;
 
-  void getWeightGradientSketch(uint64_t* indices, float* gradients,
-                               uint64_t sketch_size,
+  void getWeightGradientSketch(uint32_t* indices, float* gradients,
+                               uint32_t sketch_size,
                                int seed_for_hashing) const final;
 
-  void getBiasGradientSketch(uint64_t* indices, float* gradients,
-                             uint64_t sketch_size,
+  void getBiasGradientSketch(uint32_t* indices, float* gradients,
+                             uint32_t sketch_size,
                              int seed_for_hashing) const final;
 
-  void setWeightGradientsFromIndicesValues(uint64_t* indices_raw_data,
+  void setWeightGradientsFromIndicesValues(uint32_t* indices_raw_data,
                                            float* values_raw_data,
-                                           uint64_t sketch_size) final;
+                                           uint32_t sketch_size) final;
 
-  void setBiasGradientsFromIndicesValues(uint64_t* indices_raw_data,
+  void setBiasGradientsFromIndicesValues(uint32_t* indices_raw_data,
                                          float* values_raw_data,
-                                         uint64_t sketch_size) final;
+                                         uint32_t sketch_size) final;
 
   ActivationFunction getActivationFunction() const { return _act_func; }
 
