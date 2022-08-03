@@ -18,3 +18,5 @@ contain complete documentation for each of the submodules within thirdai.
    thirdaisearch
    thirdaibolt
 
+   api/library_index
+
