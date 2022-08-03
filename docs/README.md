@@ -3,7 +3,7 @@
 Through doxygen + breathe + exhale + sphinx, we generate docs for our C++
 library and also the Python library.
 
-```
+```bash
 python3 -m venv env #  Create a virtual environment
 ./env/bin/activate  #  Activate virtual environment
 
@@ -37,4 +37,14 @@ make html
 (cd _build/html && python3 -m http.server 8080)
 
 # Navigate to localhost:8080 and you should be able to see the generated documentation.
+```
+
+# Building UML
+
+Use vanilla doxygen with the supplied `Doxyfile.in`.
+
+```bash
+doxygen Doxyfile.in
+(cd build/doc && python3 -m http.server 8080)
+# Navigate to localhost:8080 on your browser.
 ```
