@@ -91,7 +91,7 @@ class SequentialClassifier {
   }
 
  private:
-  static constexpr const char* metric_name = "categorical_accuracy";
+  static constexpr const char* metric_name = "precision_at_10";
 
   void trainOnStream(
       std::string& filename, uint32_t epochs, float learning_rate,
