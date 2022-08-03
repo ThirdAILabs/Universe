@@ -6,9 +6,7 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
-#include <dataset/src/bolt_datasets/DataLoader.h>
-#include <dataset/src/bolt_datasets/StreamingDataset.h>
-#include <dataset/src/bolt_datasets/batch_processors/TextClassificationProcessor.h>
+#include <dataset/src/batch_processors/TextClassificationProcessor.h>
 #include <dataset/src/utils/SafeFileIO.h>
 
 namespace thirdai::bolt {
@@ -28,7 +26,7 @@ class TextClassifier {
              float learning_rate) {
     AutoClassifierUtils::train(
         _model, filename,
-        std::static_pointer_cast<dataset::BatchProcessor<BoltBatch>>(
+        std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             _batch_processor),
         /* epochs */ epochs,
         /* learning_rate */ learning_rate);
@@ -38,13 +36,13 @@ class TextClassifier {
                const std::optional<std::string>& output_filename) {
     AutoClassifierUtils::predict(
         _model, filename,
-        std::static_pointer_cast<dataset::BatchProcessor<BoltBatch>>(
+        std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             _batch_processor),
         output_filename, _batch_processor->getClassIdToNames());
   }
 
   std::string predictSingle(const std::string& sentence) {
-    BoltVector pairgrams_vec = dataset::PairgramHasher::computePairgrams(
+    BoltVector pairgrams_vec = dataset::TextEncodingUtils::computePairgrams(
         /*sentence = */ sentence, /*output_range = */ _model->getInputDim());
     BoltVector output =
         BoltVector(/*l = */ _model->getOutputDim(), /*is_dense = */ true);

@@ -6,6 +6,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/vector.hpp>
+#include "DatasetContext.h"
 #include "ExecutionConfig.h"
 #include "InferenceOutputTracker.h"
 #include "Node.h"
@@ -15,8 +16,7 @@
 #include <bolt/src/layers/FullyConnectedLayer.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
-#include <dataset/src/Dataset.h>
-#include <dataset/src/bolt_datasets/BoltDatasets.h>
+#include <dataset/src/batch_types/BoltTokenBatch.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -24,6 +24,8 @@
 #include <vector>
 
 namespace thirdai::bolt {
+
+using GraphCallback = std::function<void()>;
 
 class BoltGraph {
  public:
@@ -45,7 +47,9 @@ class BoltGraph {
         _inputs(std::move(inputs)),
         _token_inputs(std::move(token_inputs)),
         _epoch_count(0),
-        _batch_cnt(0) {
+        _batch_cnt(0),
+        _per_batch_callback(std::nullopt),
+        _per_epoch_callback(std::nullopt) {
     thirdai::licensing::LicenseWrapper::checkLicense();
   }
 
@@ -60,23 +64,21 @@ class BoltGraph {
   */
   void compile(std::shared_ptr<LossFunction> loss, bool print_when_done = true);
 
-  template <typename BATCH_T>
   MetricData train(
-      // Train dataset
-      std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& train_data,
-      // Train labels
+      const std::vector<dataset::BoltDatasetPtr>& train_data,
+      const std::vector<dataset::BoltTokenDatasetPtr>& train_tokens,
       const dataset::BoltDatasetPtr& train_labels,
-      // Other train parameters
       const TrainConfig& train_config);
 
-  template <typename BATCH_T>
   InferenceResult predict(
-      // Test dataset
-      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
-      // Test labels
+      const std::vector<dataset::BoltDatasetPtr>& test_data,
+      const std::vector<dataset::BoltTokenDatasetPtr>& test_tokens,
       const dataset::BoltDatasetPtr& test_labels,
-      // Other prediction parameters
       const PredictConfig& predict_config);
+
+  BoltVector predictSingle(std::vector<BoltVector>&& test_data,
+                           std::vector<std::vector<uint32_t>>&& test_tokens,
+                           bool use_sparse_inference);
 
   std::vector<NodePtr> getNodeTraversalOrder() const {
     std::vector<NodePtr> nodes;
@@ -100,22 +102,23 @@ class BoltGraph {
 
   NodePtr getNodeByName(const std::string& node_name) const;
 
+  void registerPerBatchCallback(GraphCallback callback) {
+    _per_batch_callback = std::move(callback);
+  }
+
+  void registerPerEpochCallback(GraphCallback callback) {
+    _per_epoch_callback = std::move(callback);
+  }
+
  private:
   // Private constructor for cereal.
   BoltGraph() { thirdai::licensing::LicenseWrapper::checkLicense(); }
 
-  template <typename BATCH_T>
-  void processTrainingBatch(BATCH_T& batch_inputs,
-                            const BoltBatch& batch_labels, float learning_rate,
+  void processTrainingBatch(const BoltBatch& batch_labels, float learning_rate,
                             MetricAggregator& metrics);
 
-  template <typename BATCH_T>
-  void processInferenceBatch(BATCH_T& batch_inputs,
-                             const BoltBatch* batch_labels,
+  void processInferenceBatch(uint64_t batch_size, const BoltBatch* batch_labels,
                              MetricAggregator& metrics);
-
-  template <typename BATCH_T>
-  void setInputs(BATCH_T& batch_inputs);
 
   // Computes the forward pass through the graph.
   void forward(uint32_t vec_index, const BoltVector* labels);
@@ -133,20 +136,13 @@ class BoltGraph {
 
   std::unordered_map<NodePtr, int32_t> getSuccessorCounts() const;
 
-  template <typename BATCH_T>
-  void verifyCanPredict(
-      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& test_data,
-      bool has_labels, bool returning_activations,
-      uint32_t num_metrics_tracked);
+  void verifyCanTrain(const DatasetContext& train_context);
 
-  template <typename BATCH_T>
-  void verifyInputForGraph(
-      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset);
+  void verifyCanPredict(const DatasetContextBase& predict_context,
+                        bool has_labels, bool returning_activations,
+                        uint32_t num_metrics_tracked);
 
-  template <typename BATCH_T>
-  void verifyDataLabelCorrespondance(
-      const std::shared_ptr<dataset::InMemoryDataset<BATCH_T>>& dataset,
-      const dataset::BoltDatasetPtr& train_labels);
+  void verifyInputForGraph(const DatasetContextBase& context);
 
   void verifyGraphProperties();
 
@@ -166,6 +162,18 @@ class BoltGraph {
   void serialize(Archive& archive);
 
   bool graphCompiled() const { return _loss != nullptr; }
+
+  void perBatchCallback() {
+    if (_per_batch_callback) {
+      _per_batch_callback.value()();
+    }
+  }
+
+  void perEpochCallback() {
+    if (_per_epoch_callback) {
+      _per_epoch_callback.value()();
+    }
+  }
 
   // List of nodes(layers) in the order in which they should be computed.
   std::vector<NodePtr> _nodes;
@@ -191,6 +199,9 @@ class BoltGraph {
 
   uint32_t _epoch_count;
   uint32_t _batch_cnt;
+
+  std::optional<GraphCallback> _per_batch_callback;
+  std::optional<GraphCallback> _per_epoch_callback;
 };
 
 using BoltGraphPtr = std::shared_ptr<BoltGraph>;

@@ -19,22 +19,13 @@ class UniGram : public TextEncoding {
 
   void encodeText(const std::string_view text,
                   SegmentedFeatureVector& vec) final {
-    // TODO(Geordie): Do we need to make lower case?
-    std::string lower_case_text = TextEncodingUtils::makeLowerCase(text);
+    std::vector<uint32_t> unigrams =
+        TextEncodingUtils::computeRawUnigramsWithRange(text, _dim);
 
-    std::vector<uint32_t> uni_grams;
-
-    TextEncodingUtils::forEachWordHash(
-        lower_case_text,
-        [&](uint32_t word_hash) { uni_grams.push_back(word_hash % _dim); });
-
-    // Deduplication adds an overhead of around 10% but helps to reduce
-    // number of entries in the sparse vector, which can in turn make BOLT
-    // run faster.
-    // We do this instead of using a map because at this scale, sorting and
-    // deduplicating is still faster than map's O(1) insertions. Additionally,
-    // iterating over a map is slow
-    TextEncodingUtils::sumRepeatedIndices(uni_grams, 1.0, vec);
+    TextEncodingUtils::sumRepeatedIndices(
+        unigrams, /* base_value= */ 1.0, [&](uint32_t unigram, float value) {
+          vec.addSparseFeatureToSegment(unigram, value);
+        });
   }
 
   uint32_t featureDim() final { return _dim; }

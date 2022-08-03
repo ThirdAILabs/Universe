@@ -9,13 +9,17 @@
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
+#include <utility>
 
 namespace thirdai::bolt {
 
 FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
-                                             uint32_t input_dim)
+                                             uint32_t input_dim,
+                                             bool is_distributed)
+
     : _input_dim(input_dim), _num_layers(configs.size()) {
   auto start = std::chrono::high_resolution_clock::now();
   
@@ -28,7 +32,7 @@ FullyConnectedNetwork::FullyConnectedNetwork(SequentialConfigList configs,
     if (auto fully_connected_config =
             std::dynamic_pointer_cast<FullyConnectedLayerConfig>(configs[i])) {
       _layers.push_back(std::make_shared<FullyConnectedLayer>(
-          *fully_connected_config, prev_dim));
+          *fully_connected_config, prev_dim, is_distributed));
       // if ConvConfig
     } else if (auto conv_config =
                    std::dynamic_pointer_cast<ConvLayerConfig>(configs[i])) {
@@ -89,6 +93,139 @@ void FullyConnectedNetwork::forward(uint32_t batch_index,
                           nullptr);
     }
   }
+}
+
+uint32_t getSecondBestId(const BoltVector& vec) {
+  float largest_activation = std::numeric_limits<float>::min(),
+        second_largest_activation = std::numeric_limits<float>::min();
+  uint32_t max_id = 0, second_max_id = 0;
+  if (vec.len < 2) {
+    throw std::invalid_argument(
+        "The sparse output dimension should be atleast 2 to call "
+        "getSecondBestId.");
+  }
+  for (uint32_t i = 0; i < vec.len; i++) {
+    if (vec.activations[i] > largest_activation) {
+      second_largest_activation = largest_activation;
+      second_max_id = max_id;
+      largest_activation = vec.activations[i];
+      max_id = i;
+    } else if (vec.activations[i] > second_largest_activation) {
+      second_largest_activation = vec.activations[i];
+      second_max_id = i;
+    }
+  }
+  if (vec.isDense()) {
+    return second_max_id;
+  }
+  return vec.active_neurons[second_max_id];
+}
+
+std::pair<std::vector<std::vector<float>>,
+          std::optional<std::vector<std::vector<uint32_t>>>>
+FullyConnectedNetwork::getInputGradients(
+    std::shared_ptr<dataset::InMemoryDataset<BoltBatch>>& input_dataset,
+    const LossFunction& loss_fn, bool best_index,
+    const std::vector<uint32_t>& required_labels) {
+  uint64_t num_batches = input_dataset->numBatches();
+  if (!required_labels.empty() &&
+      (required_labels.size() != input_dataset->len())) {
+    throw std::invalid_argument("Length of required_labels " +
+                                std::to_string(required_labels.size()) +
+                                "does not match length of provided dataset." +
+                                std::to_string(input_dataset->len()));
+  }
+  if (!best_index && getInferenceOutputDim(true) < 2) {
+    throw std::invalid_argument(
+        "The sparse output dimension should be atleast 2 to call "
+        "getSecondBestId.");
+  }
+  // Because of how the datasets are read we know that all batches will not
+  // have a batch size larger than this so we can just set the batch size
+  // here.
+  initializeNetworkState(input_dataset->at(0).getBatchSize(),
+                         /*use_sparsity= */ true);
+  std::vector<std::vector<float>> input_dataset_grad;
+  std::vector<std::vector<uint32_t>> input_dataset_indices;
+  for (uint64_t batch_id = 0; batch_id < num_batches; batch_id++) {
+    BoltBatch output = getOutputs(input_dataset->at(batch_id).getBatchSize(),
+                                  /*use_sparsity= */ true);
+    for (uint32_t vec_id = 0;
+         vec_id < input_dataset->at(batch_id).getBatchSize(); vec_id++) {
+      std::vector<float> vec_grad(input_dataset->at(batch_id)[vec_id].len, 0.0);
+      // Assigning the vec_grad data() to gradients so that we dont have to
+      // worry about initializing and then freeing the memory.
+      input_dataset->at(batch_id)[vec_id].gradients = vec_grad.data();
+      uint32_t required_index;
+      /*
+      we are taking the second best index to know how change in input vector
+      values affects the prediction to flip to second highest activation. And
+      required_labels is essential because for some of the cases we know the
+      correct output labels, and best index is used to explain the
+      prediction.
+      */
+      /*
+      If the required_labels are empty, then we have to find the required_index
+      by output activations, for that we need to do forward pass before creating
+      the batch_label, but if the required_labels are not empty and for some ,If
+      the required label position is not present in the output active neurons ,
+      then calculating the gradients with respect to that label doesnot make
+      sense, because loss is only calculated with respect to active neurons, to
+      ensure that output has active neuron at the position of required label we
+      are creating batch_label before forward pass and passing to it, because
+      forward pass ensures to have active neurons at the metioned label index.
+      */
+      BoltVector batch_label;
+      if (required_labels.empty()) {
+        forward(vec_id, input_dataset->at(batch_id), output[vec_id],
+                /*labels = */ nullptr);
+        if (best_index) {
+          required_index = output[vec_id].getIdWithHighestActivation();
+        } else {
+          required_index = getSecondBestId(output[vec_id]);
+        }
+        batch_label = BoltVector::makeSparseVector(
+            std::vector<uint32_t>{required_index}, std::vector<float>{1.0});
+      } else {
+        required_index =
+            required_labels[batch_id * input_dataset->at(0).getBatchSize() +
+                            vec_id];
+        if (required_index >= getOutputDim()) {
+          throw std::invalid_argument(
+              "Cannot pass required index " + std::to_string(required_index) +
+              " to getInputGradients for network with output dim " +
+              std::to_string(getOutputDim()));
+        }
+        batch_label = BoltVector::makeSparseVector(
+            std::vector<uint32_t>{required_index}, std::vector<float>{1.0});
+        forward(vec_id, input_dataset->at(batch_id), output[vec_id],
+                /*labels = */ &batch_label);
+      }
+      if (!input_dataset->at(batch_id)[vec_id].isDense()) {
+        std::vector<uint32_t> vec_indices(
+            input_dataset->at(batch_id)[vec_id].active_neurons,
+            input_dataset->at(batch_id)[vec_id].active_neurons +
+                input_dataset->at(batch_id)[vec_id].len);
+        input_dataset_indices.push_back(vec_indices);
+      }
+
+      loss_fn.lossGradients(output[vec_id], batch_label,
+                            input_dataset->at(batch_id).getBatchSize());
+
+      backpropagateInputForGradients(vec_id, input_dataset->at(batch_id),
+                                     output[vec_id]);
+
+      // We reset the gradients to nullptr here to prevent the bolt vector from
+      // freeing the memory which is owned by the std::vector we used to store
+      // the gradients
+      input_dataset->at(batch_id)[vec_id].gradients = nullptr;
+      input_dataset_grad.push_back(vec_grad);
+    }
+  }
+  if (input_dataset_indices.empty()) {
+    return std::make_pair(input_dataset_grad, std::nullopt);
+  }
+  return std::make_pair(input_dataset_grad, input_dataset_indices);
 }
 
 template void FullyConnectedNetwork::backpropagate<true>(uint32_t, BoltVector&,

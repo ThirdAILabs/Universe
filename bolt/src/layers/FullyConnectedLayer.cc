@@ -11,28 +11,29 @@
 namespace thirdai::bolt {
 
 FullyConnectedLayer::FullyConnectedLayer(
-    const FullyConnectedLayerConfig& config, uint64_t prev_dim)
-    : _dim(config.dim),
+    const FullyConnectedLayerConfig& config, uint64_t prev_dim,
+    bool is_distributed)
+    : _dim(config.getDim()),
       _prev_dim(prev_dim),
-      _sparse_dim(config.sparsity * config.dim),
-      _sparsity(config.sparsity),
+      _sparse_dim(config.getSparsity() * config.getDim()),
+      _sparsity(config.getSparsity()),
 
       // trainable parameter not present in config file
       // TODO(Shubh) : should we add a trainable parameter to the config file?
       _trainable(true),
 
-      _act_func(config.act_func),
-      _weights(config.dim * prev_dim),
-      _w_gradient(config.dim * prev_dim, 0),
-      _w_momentum(config.dim * prev_dim, 0),
-      _w_velocity(config.dim * prev_dim, 0),
-      _biases(config.dim),
-      _b_gradient(config.dim, 0),
-      _b_momentum(config.dim, 0),
-      _b_velocity(config.dim, 0),
-      _sampling_config(config.sampling_config),
+      _act_func(config.getActFunc()),
+      _weights(config.getDim() * prev_dim),
+      _w_gradient(config.getDim() * prev_dim, 0),
+      _w_momentum(config.getDim() * prev_dim, 0),
+      _w_velocity(config.getDim() * prev_dim, 0),
+      _biases(config.getDim()),
+      _b_gradient(config.getDim(), 0),
+      _b_momentum(config.getDim(), 0),
+      _b_velocity(config.getDim(), 0),
       _prev_is_active(_prev_dim, false),
-      _is_active(config.dim, false),
+      _is_active(config.getDim(), false),
+      _is_distributed(is_distributed),
       _sampling_mode(LSHSamplingMode::Default) {
   std::random_device rd;
   std::default_random_engine eng(rd());
@@ -42,24 +43,24 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
-    initSparseDatastructures(rd);
+    initSparseDatastructures(config.getSamplingConfig(), rd);
   }
 }
 
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
                                   const BoltVector* labels) {
-  if (output.active_neurons == nullptr) {
-    if (input.len == _prev_dim) {
+  if (output.isDense()) {
+    if (input.isDense()) {
       // TODO(Nicholas): Re-implement this case with dense matrix library
-      forwardImpl<true, true>(input, output, labels);
+      forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/true>(input, output, labels);
     } else {
-      forwardImpl<true, false>(input, output, labels);
+      forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/false>(input, output, labels);
     }
   } else {
-    if (input.len == _prev_dim) {
-      forwardImpl<false, true>(input, output, labels);
+    if (input.isDense()) {
+      forwardImpl</*DENSE=*/false, /*PREV_DENSE=*/true>(input, output, labels);
     } else {
-      forwardImpl<false, false>(input, output, labels);
+      forwardImpl</*DENSE=*/false, /*PREV_DENSE=*/false>(input, output, labels);
     }
   }
 }
@@ -68,11 +69,11 @@ template <bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::forwardImpl(const BoltVector& input,
                                       BoltVector& output,
                                       const BoltVector* labels) {
-  assert((input.len < _prev_dim && !PREV_DENSE) ||
+  assert((input.len <= _prev_dim && !PREV_DENSE) ||
          (input.len == _prev_dim && PREV_DENSE));
   assert((input.active_neurons == nullptr && PREV_DENSE) ||
          (input.active_neurons != nullptr && !PREV_DENSE));
-  assert((output.len < _dim && !DENSE) || (output.len == _dim && DENSE));
+  assert((output.len <= _dim && !DENSE) || (output.len == _dim && DENSE));
   assert((output.active_neurons == nullptr && DENSE) ||
          (output.active_neurons != nullptr && !DENSE));
   assert(labels == nullptr || labels->len > 0);
@@ -80,13 +81,13 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   selectActiveNeurons<DENSE, PREV_DENSE>(input, output, labels);
 
   float max_act = 0;
-  uint32_t len_out = DENSE ? _dim : _sparse_dim;
+  uint32_t len_out = nonzerosInOutput<DENSE>();
   std::fill_n(output.gradients, len_out, 0);
 
   _prev_is_dense = PREV_DENSE;
   _this_is_dense = DENSE;
 
-  if (!DENSE && !PREV_DENSE) {
+  if constexpr (!DENSE && !PREV_DENSE) {
     std::unique_ptr<ActiveNeuronsPair> active_pairs =
         std::make_unique<ActiveNeuronsPair>(std::vector<uint64_t>(),
                                             std::vector<uint64_t>());
@@ -100,14 +101,14 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
     _active_pairs.push_back(std::move(active_pairs));
   }
 
-  if (!DENSE) {
+  if constexpr (!DENSE) {
     for (uint64_t n = 0; n < len_out; n++) {
       uint64_t act_neuron = output.active_neurons[n];
       _is_active[act_neuron] = true;
     }
   }
 
-  if (!PREV_DENSE) {
+  if constexpr (!PREV_DENSE) {
     for (uint64_t i = 0; i < input.len; i++) {
       uint64_t act_neuron = input.active_neurons[i];
       _prev_is_active[act_neuron] = true;
@@ -117,14 +118,16 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   for (uint64_t n = 0; n < len_out; n++) {
     // Because DENSE is known at compile time the compiler can remove this
     // conditional
-    uint64_t act_neuron = DENSE ? n : output.active_neurons[n];
+    uint64_t act_neuron = output.activeNeuronAtIndex<DENSE>(n);
     assert(act_neuron < _dim);
+
     float act = _biases[act_neuron];
     for (uint64_t i = 0; i < input.len; i++) {
       // Because PREV_DENSE is known at compile time the compiler can remove
       // this conditional
-      uint32_t prev_act_neuron = PREV_DENSE ? i : input.active_neurons[i];
+      uint32_t prev_act_neuron = input.activeNeuronAtIndex<PREV_DENSE>(i);
       assert(prev_act_neuron < _prev_dim);
+
       act += _weights[act_neuron * _prev_dim + prev_act_neuron] *
              input.activations[i];
     }
@@ -171,14 +174,14 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
 }
 
 void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
-  if (output.active_neurons == nullptr) {
-    if (input.len == _prev_dim) {
+  if (output.isDense()) {
+    if (input.isDense()) {
       backpropagateImpl<false, true, true>(input, output);
     } else {
       backpropagateImpl<false, true, false>(input, output);
     }
   } else {
-    if (input.len == _prev_dim) {
+    if (input.isDense()) {
       backpropagateImpl<false, false, true>(input, output);
     } else {
       backpropagateImpl<false, false, false>(input, output);
@@ -188,17 +191,21 @@ void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
 
 void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
                                                   BoltVector& output) {
-  if (output.active_neurons == nullptr) {
-    if (input.len == _prev_dim) {
-      backpropagateImpl<true, true, true>(input, output);
+  if (output.isDense()) {
+    if (input.isDense()) {
+      backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true, /*PREV_DENSE=*/true>(
+          input, output);
     } else {
-      backpropagateImpl<true, true, false>(input, output);
+      backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true,
+                        /*PREV_DENSE=*/false>(input, output);
     }
   } else {
-    if (input.len == _prev_dim) {
-      backpropagateImpl<true, false, true>(input, output);
+    if (input.isDense()) {
+      backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/false,
+                        /*PREV_DENSE=*/true>(input, output);
     } else {
-      backpropagateImpl<true, false, false>(input, output);
+      backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/false,
+                        /*PREV_DENSE=*/false>(input, output);
     }
   }
 }
@@ -206,15 +213,15 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
 template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
                                             BoltVector& output) {
-  assert((input.len < _prev_dim && !PREV_DENSE) ||
+  assert((input.len <= _prev_dim && !PREV_DENSE) ||
          (input.len == _prev_dim && PREV_DENSE));
   assert((input.active_neurons == nullptr && PREV_DENSE) ||
          (input.active_neurons != nullptr && !PREV_DENSE));
-  assert((output.len < _dim && !DENSE) || (output.len == _dim && DENSE));
+  assert((output.len <= _dim && !DENSE) || (output.len == _dim && DENSE));
   assert((output.active_neurons == nullptr && DENSE) ||
          (output.active_neurons != nullptr && !DENSE));
 
-  uint32_t len_out = DENSE ? _dim : _sparse_dim;
+  uint32_t len_out = nonzerosInOutput<DENSE>();
 
   for (uint64_t n = 0; n < len_out; n++) {
     assert(!std::isnan(output.gradients[n]));
@@ -222,16 +229,18 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
     assert(!std::isnan(output.gradients[n]));
     // Because DENSE is known at compile time the compiler can remove this
     // conditional
-    uint32_t act_neuron = DENSE ? n : output.active_neurons[n];
+    uint32_t act_neuron = output.activeNeuronAtIndex<DENSE>(n);
     assert(act_neuron < _dim);
+
     for (uint64_t i = 0; i < input.len; i++) {
       // Because PREV_DENSE is known at compile time the compiler can remove
       // this conditional
-      uint32_t prev_act_neuron = PREV_DENSE ? i : input.active_neurons[i];
+      uint32_t prev_act_neuron = input.activeNeuronAtIndex<PREV_DENSE>(i);
       assert(prev_act_neuron < _prev_dim);
+
       _w_gradient[act_neuron * _prev_dim + prev_act_neuron] +=
           output.gradients[n] * input.activations[i];
-      if (!FIRST_LAYER) {
+      if constexpr (!FIRST_LAYER) {
         input.gradients[i] +=
             output.gradients[n] *
             _weights[act_neuron * _prev_dim + prev_act_neuron];
@@ -245,7 +254,7 @@ template <bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                                               BoltVector& output,
                                               const BoltVector* labels) {
-  if (DENSE) {
+  if constexpr (DENSE) {
     return;
   }
 
@@ -258,7 +267,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
   }
 
   std::vector<uint32_t> hashes(_hasher->numTables());
-  if (PREV_DENSE) {
+  if constexpr (PREV_DENSE) {
     _hasher->hashSingleDense(input.activations, input.len, hashes.data());
   } else {
     _hasher->hashSingleSparse(input.active_neurons, input.activations,
@@ -328,7 +337,20 @@ void FullyConnectedLayer::updateParameters(float lr, uint32_t iter, float B1,
   }
 
   // continue if trainable layer
-  if (!_prev_is_dense && !_this_is_dense) {
+  /*
+   * In distributed setting, as of now the updates are dense as we
+   * are averaging the gradient over multiple training examples.
+   *
+   * //NOLINT because, clang was producing error as same function is
+   * being called in two different if-else blocks. However, the content
+   * inside the _is_distributed block might change with time. Hence,
+   * was thinking of having different blocks. It also make is visually
+   * more clear.
+   */
+  if (_is_distributed) {  // NOLINT
+    updateDenseDenseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
+                                     B2_bias_corrected);
+  } else if (!_prev_is_dense && !_this_is_dense) {
     updateSparseSparseWeightParameters(lr, B1, B2, eps, B1_bias_corrected,
                                        B2_bias_corrected);
   } else if (!_prev_is_dense && _this_is_dense) {
@@ -428,7 +450,7 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
 #pragma omp parallel for default(none) \
     shared(lr, B1, B1_bias_corrected, B2, B2_bias_corrected, eps)
   for (uint64_t cur_neuron = 0; cur_neuron < _dim; cur_neuron++) {
-    if (!_this_is_dense && !_is_active[cur_neuron]) {
+    if ((!_is_distributed) && (!_this_is_dense && !_is_active[cur_neuron])) {
       continue;
     }
 
@@ -481,13 +503,11 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
   _w_gradient[indx] = 0;
 }
 
-inline void FullyConnectedLayer::initSparseDatastructures(
-    std::random_device& rd) {
-  _hasher = assignHashFunction(_sampling_config, _prev_dim);
+void FullyConnectedLayer::initSparseDatastructures(
+    const SamplingConfigPtr& sampling_config, std::random_device& rd) {
+  _hasher = sampling_config->getHashFunction(_prev_dim);
 
-  _hash_table = std::make_unique<hashtable::SampledHashTable<uint32_t>>(
-      _sampling_config.num_tables, _sampling_config.reservoir_size,
-      1 << _sampling_config.range_pow);
+  _hash_table = sampling_config->getHashTable();
 
   /* Initializing hence, we need to force build the hash tables
    * Hence, force_build is true here in buildHashTablesImpl(force_build)
@@ -533,7 +553,8 @@ void FullyConnectedLayer::reBuildHashFunction() {
   if (!_trainable || _sparsity >= 1.0 || hashTablesFrozen()) {
     return;
   }
-  _hasher = assignHashFunction(_sampling_config, _prev_dim);
+
+  _hasher = _hasher->copyWithNewSeeds();
 }
 
 float* FullyConnectedLayer::getWeights() const {
@@ -569,16 +590,35 @@ void FullyConnectedLayer::setBiases(const float* new_biases) {
   std::copy(new_biases, new_biases + _dim, _biases.begin());
 }
 
+void FullyConnectedLayer::setWeightGradients(
+    const float* update_weight_gradient) {
+  std::copy(update_weight_gradient, update_weight_gradient + _dim * _prev_dim,
+            _w_gradient.begin());
+}
+
+void FullyConnectedLayer::setBiasesGradients(
+    const float* update_bias_gradient) {
+  std::copy(update_bias_gradient, update_bias_gradient + _dim,
+            _b_gradient.begin());
+}
+
+float* FullyConnectedLayer::getBiasesGradient() { return _b_gradient.data(); }
+
+float* FullyConnectedLayer::getWeightsGradient() { return _w_gradient.data(); }
+
 void FullyConnectedLayer::setSparsity(float sparsity) {
   deinitSparseDatastructures();
   _sparsity = sparsity;
+
+  _sparse_dim = _sparsity * _dim;
+
   // TODO(josh): Right now this is using the autotuning for DWTA even if this
   // hash function isn't DWTA. Add autotuning for other hash function types.
-  _sampling_config =
-      FullyConnectedLayerConfig(_dim, _sparsity, _act_func).sampling_config;
-  _sparse_dim = _sparsity * _dim;
-  std::random_device rd;
-  initSparseDatastructures(rd);
+  if (_sparsity < 1.0) {
+    auto sampling_config = DWTASamplingConfig::autotune(_dim, _sparsity);
+    std::random_device rd;
+    initSparseDatastructures(sampling_config, rd);
+  }
 }
 
 void FullyConnectedLayer::initOptimizer() {
@@ -606,17 +646,11 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
   summary << "dim=" << _dim << ", sparsity=" << _sparsity << ", act_func=";
   summary << activationFunctionToStr(_act_func);
 
-  if (!detailed) {
-    summary << "\n";
-    return;
+  if (detailed && _sparsity < 1.0) {
+    summary << " (hash_function=" << _hasher->getName() << ", ";
+    _hash_table->summarize(summary);
+    summary << ")";
   }
-
-  summary << " (hashes_per_table=" << _sampling_config.hashes_per_table
-          << ", num_tables=" << _sampling_config.num_tables
-          << ", range_pow=" << _sampling_config.range_pow
-          << ", resevoir_size=" << _sampling_config.reservoir_size
-          << ", hash_function="
-          << getHashString(_sampling_config._hash_function) << ")";
 
   summary << "\n";
 }

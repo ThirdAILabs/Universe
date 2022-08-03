@@ -41,6 +41,14 @@ class SequentialLayer {
 
   virtual float* getBiases() const = 0;
 
+  virtual void setWeightGradients(const float* update_weight_gradient) = 0;
+
+  virtual void setBiasesGradients(const float* update_bias_gradient) = 0;
+
+  virtual float* getBiasesGradient() = 0;
+
+  virtual float* getWeightsGradient() = 0;
+
   virtual void setTrainable(bool trainable) = 0;
 
   virtual void setWeights(const float* new_weights) = 0;
@@ -52,8 +60,6 @@ class SequentialLayer {
   virtual float getSparsity() const = 0;
 
   virtual void setSparsity(float sparsity) = 0;
-
-  virtual const SamplingConfig& getSamplingConfig() const = 0;
 
   virtual void buildLayerSummary(std::stringstream& summary,
                                  bool detailed) const {

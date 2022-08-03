@@ -5,6 +5,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/optional.hpp>
 #include <bolt/src/graph/Node.h>
+#include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <dataset/src/utils/SafeFileIO.h>
 #include <exceptions/src/Exceptions.h>
@@ -17,18 +18,31 @@
 
 namespace thirdai::bolt {
 
+class SwitchNode;
+
 class FullyConnectedNode final
     : public Node,
       public std::enable_shared_from_this<FullyConnectedNode> {
+  friend class SwitchNode;
+
  public:
-  // This pattern means that any valid constructor for a
-  // FullyConnectedLayerConfig can be used to initialize the
-  // FullyConnectedLayerNode, and that the args are directly forwarded to the
-  // constructor for the config.
-  template <typename... Args>
-  explicit FullyConnectedNode(Args&&... args)
+  FullyConnectedNode(uint64_t dim, const std::string& activation)
       : _layer(nullptr),
-        _config(std::forward<Args>(args)...),
+        _config(FullyConnectedLayerConfig(dim, activation)),
+        _predecessor(nullptr) {}
+
+  FullyConnectedNode(uint64_t dim, float sparsity,
+                     const std::string& activation)
+      : _layer(nullptr),
+        _config(FullyConnectedLayerConfig(dim, sparsity, activation)),
+        _predecessor(nullptr) {}
+
+  FullyConnectedNode(uint64_t dim, float sparsity,
+                     const std::string& activation,
+                     SamplingConfigPtr sampling_config)
+      : _layer(nullptr),
+        _config(FullyConnectedLayerConfig(dim, sparsity, activation,
+                                          std::move(sampling_config))),
         _predecessor(nullptr) {}
 
   std::shared_ptr<FullyConnectedNode> addPredecessor(NodePtr node) {
@@ -42,11 +56,25 @@ class FullyConnectedNode final
     return shared_from_this();
   }
 
-  uint32_t outputDim() const final { return _config.dim; }
+  uint32_t outputDim() const final {
+    NodeState node_state = getState();
+    if (node_state == NodeState::Constructed ||
+        node_state == NodeState::PredecessorsSet) {
+      return _config->getDim();
+    }
+    return _layer->getDim();
+  }
 
   bool isInputNode() const final { return false; }
 
-  ActivationFunction getActivationFunction() const { return _config.act_func; }
+  ActivationFunction getActivationFunction() const {
+    NodeState node_state = getState();
+    if (node_state == NodeState::Constructed ||
+        node_state == NodeState::PredecessorsSet) {
+      return _config->getActFunc();
+    }
+    return _layer->getActivationFunction();
+  }
 
   void saveParameters(const std::string& filename) const {
     std::ofstream filestream =
@@ -96,12 +124,66 @@ class FullyConnectedNode final
     _layer = loaded_parameters;
   }
 
-  float getSparsity() { return _config.getSparsity(); }
+  float getSparsity() {
+    NodeState node_state = getState();
+    if (node_state == NodeState::Constructed ||
+        node_state == NodeState::PredecessorsSet) {
+      return _config->getSparsity();
+    }
+    return _layer->getSparsity();
+  }
+
+  std::shared_ptr<FullyConnectedNode> setSparsity(float sparsity) {
+    if (getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call setSparsity");
+    }
+    _layer->setSparsity(sparsity);
+    return shared_from_this();
+  }
+
+  float* getWeightsPtr() {
+    if (getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call "
+          "getWeightsPtr.");
+    }
+    return _layer->getWeightsPtr();
+  }
+
+  float* getBiasesPtr() {
+    if (getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call "
+          "getBiasesPtr.");
+    }
+    return _layer->getBiasesPtr();
+  }
+
+  float* getWeightGradientsPtr() {
+    if (getState() != NodeState::PreparedForBatchProcessing) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call "
+          "getWeightGradientsPtr.");
+    }
+    return _layer->getWeightGradientsPtr();
+  }
+
+  float* getBiasGradientsPtr() {
+    if (getState() != NodeState::PreparedForBatchProcessing) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call "
+          "getBiasGradientsPtr.");
+    }
+    return _layer->getBiasGradientsPtr();
+  }
 
  private:
   void compileImpl() final {
-    _layer = std::make_shared<FullyConnectedLayer>(_config,
+    assert(_config.has_value());
+    _layer = std::make_shared<FullyConnectedLayer>(_config.value(),
                                                    _predecessor->outputDim());
+    _config = std::nullopt;
   }
 
   std::vector<std::shared_ptr<FullyConnectedLayer>>
@@ -176,20 +258,23 @@ class FullyConnectedNode final
 
   // Private constructor for cereal. Must create dummy config since no default
   // constructor exists for layer config.
-  FullyConnectedNode() : _config(/* dim= */ 0, ActivationFunction::Linear) {}
+  FullyConnectedNode() : _config(std::nullopt) {}
 
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
     archive(cereal::base_class<Node>(this), _layer, _config, _predecessor);
   }
-
+  // One of _layer and _config will always be nullptr/nullopt while the
+  // other will contain data
   std::shared_ptr<FullyConnectedLayer> _layer;
-  FullyConnectedLayerConfig _config;
+  std::optional<FullyConnectedLayerConfig> _config;
   std::optional<BoltBatch> _outputs;
 
   NodePtr _predecessor;
 };
+
+using FullyConnectedNodePtr = std::shared_ptr<FullyConnectedNode>;
 
 }  // namespace thirdai::bolt
 

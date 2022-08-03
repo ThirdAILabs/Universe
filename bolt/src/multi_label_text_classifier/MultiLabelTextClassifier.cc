@@ -89,7 +89,7 @@ void MultiLabelTextClassifier::train(const std::string& filename,
                                      uint32_t epochs, float learning_rate) {
   // auto dataset = loadStreamingDataset(filename);
   auto dataset = dataset::loadBoltSvmDataset(
-      filename, 2048);  // loadStreamingDataset(filename);
+      filename, 2048);
 
   BinaryCrossEntropyLoss loss;
 

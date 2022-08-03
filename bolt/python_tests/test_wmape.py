@@ -1,4 +1,4 @@
-from thirdai import bolt
+from thirdai import bolt, dataset
 import numpy as np
 import pytest
 
@@ -15,31 +15,38 @@ def train_bolt_with_wmape(
         bolt.FullyConnected(
             dim=1000,
             sparsity=0.1,
-            activation_function=bolt.ActivationFunctions.ReLU,
+            activation_function="relu",
         ),
-        bolt.FullyConnected(dim=1, activation_function=bolt.ActivationFunctions.Linear),
+        bolt.FullyConnected(dim=1, activation_function="linear"),
     ]
 
     network = bolt.Network(layers=layers, input_dim=10)
+
+    data = dataset.from_numpy(
+        (x_idxs.astype("uint32"), x_vals.astype("float32"), x_offsets.astype("uint32")),
+        batch_size=64,
+    )
+    labels = dataset.from_numpy(
+        (y_idxs.astype("uint32"), y_vals.astype("float32"), y_offsets.astype("uint32")),
+        batch_size=64,
+    )
 
     batch_size = 256
     learning_rate = 0.001
     epochs = 10
     for i in range(epochs):
         network.train(
-            train_data=(x_idxs, x_vals, x_offsets),
-            train_labels=(y_idxs, y_vals, y_offsets),
-            batch_size=batch_size,
+            train_data=data,
+            train_labels=labels,
             loss_fn=bolt.WeightedMeanAbsolutePercentageError(),
             learning_rate=learning_rate,
             epochs=1,
             verbose=False,
         )
         metrics, _ = network.predict(
-            test_data=(x_idxs, x_vals, x_offsets),
-            test_labels=(y_idxs, y_vals, y_offsets),
+            test_data=data,
+            test_labels=labels,
             sparse_inference=True,
-            batch_size=batch_size,
             metrics=["weighted_mean_absolute_percentage_error"],
             verbose=False,
         )
