@@ -379,14 +379,16 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
       .def("numTrainingBatch", &DistributedGraph::num_of_training_batch)
       .def(
           "predict",
-          [](BoltGraph& model, const dataset::BoltDatasetPtr& data,
+          [](DistributedGraph& model, const dataset::BoltDatasetPtr& data,
              const dataset::BoltDatasetPtr& labels,
              const PredictConfig& predict_config) {
             return dagPredictPythonWrapper<DistributedGraph>(
                 model, {data}, /* tokens = */ {}, labels, predict_config);
           },
           py::arg("test_data"), py::arg("test_labels"),
-          py::arg("predict_config"));
+          py::arg("predict_config"))
+      .def("get_layer", &DistributedGraph::getNodeByName,
+           py::arg("layer_name"));
 }
 
 template <typename Model_T>

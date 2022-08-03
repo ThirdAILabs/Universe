@@ -4,10 +4,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.release]
 
 from thirdai import bolt, dataset
 from ..utils import gen_numpy_training_data
+import numpy as np
 
-def build_single_node_bolt_dag_model(train_data, train_labels, sparsity=1, num_classes):
-    data = dataset.from_numpy(train_data, batch_size=64)
-    labels = dataset.from_numpy(train_labels, batch_size=64)
+def build_single_node_bolt_dag_model(train_data, train_labels, sparsity, num_classes):
+    # data = dataset.from_numpy(train_data, batch_size=64)
+    # labels = dataset.from_numpy(train_labels, batch_size=64)
 
     input_layer = bolt.graph.Input(dim=num_classes)
     hidden_layer = bolt.graph.FullyConnected(
@@ -26,16 +27,14 @@ def build_single_node_bolt_dag_model(train_data, train_labels, sparsity=1, num_c
         .with_rebuild_hash_tables(3000)
         .with_reconstruct_hash_functions(10000)
     )
-    model = bolt.graph.DistributedModel(inputs=[input_layer], output=output_layer, train_data=data, train_labels=labels, train_config=train_config)
+    model = bolt.graph.DistributedModel(inputs=[input_layer], output=output_layer, train_data=[train_data], train_labels=train_labels, train_config=train_config)
     model.compile(loss=bolt.CategoricalCrossEntropyLoss())
 
     return model
 
 def test_distributed_training_with_bolt():
-    train_x, train_y = gen_numpy_training_data()
-
-    train_x_a, train_x_b = np.split(train_x, 2)
-    train_y_a, train_y_b = np.split(train_y, 2)
+    train_x_a, train_y_a = gen_numpy_training_data()
+    train_x_b, train_y_b = gen_numpy_training_data()
 
     model_a = build_single_node_bolt_dag_model(train_data=train_x_a, train_labels=train_y_a, sparsity=0.1, num_classes=10)
     model_b = build_single_node_bolt_dag_model(train_data=train_x_b, train_labels=train_y_b, sparsity=0.1, num_classes=10)

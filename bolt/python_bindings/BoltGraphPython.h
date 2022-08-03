@@ -13,11 +13,16 @@ namespace thirdai::bolt::python {
 void createBoltGraphSubmodule(py::module_& bolt_submodule);
 
 template <typename Model_T>
-py::tuple dagPredictPythonWrapper(BoltGraph& model,
+py::tuple dagPredictPythonWrapper(Model_T& model,
                                   const dataset::BoltDatasetList& data,
                                   const dataset::BoltTokenDatasetList& tokens,
                                   const dataset::BoltDatasetPtr& labels,
                                   const PredictConfig& predict_config);
+
+py::tuple dagPredictPythonWrapperDistributed(
+    DistributedGraph& model, const dataset::BoltDatasetList& data,
+    const dataset::BoltTokenDatasetList& tokens,
+    const dataset::BoltDatasetPtr& labels, const PredictConfig& predict_config);
 
 using ParameterArray =
     py::array_t<float, py::array::c_style | py::array::forcecast>;
