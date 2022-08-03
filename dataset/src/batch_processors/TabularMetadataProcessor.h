@@ -273,7 +273,7 @@ class TabularMetadataProcessor : public ComputeBatchProcessor {
     }
   }
 
-  void verifyNumColumns(const std::vector<std::string>& values) {
+  void verifyNumColumns(const std::vector<std::string_view>& values) {
     if (values.size() != _metadata->numColumns()) {
       throw std::invalid_argument("Csv format error. Expected " +
                                   std::to_string(_metadata->numColumns()) +
