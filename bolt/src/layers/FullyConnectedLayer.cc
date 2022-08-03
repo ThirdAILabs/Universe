@@ -186,10 +186,38 @@ void eigenSoftmax(Eigen::Map<Eigen::VectorXf>& outputs) {
   outputs.array() /= sum;
 }
 
+void softmax(BoltVector& output) {
+  float max_act = 0;
+  for (uint32_t i = 0; i < output.len; i++) {
+    if (output.activations[i] > max_act) {
+      max_act = output.activations[i];
+    }
+  }
+  float total = 0;
+  for (uint64_t n = 0; n < output.len; n++) {
+    output.activations[n] = std::exp(output.activations[n] - max_act);
+    total += output.activations[n];
+  }
+  for (uint64_t n = 0; n < output.len; n++) {
+    output.activations[n] /= (total + EPS);
+    assert(!std::isnan(output.activations[n]));
+  }
+}
+
+void relu(BoltVector& output) {
+  for (uint32_t i = 0; i < output.len; i++) {
+    if (output.activations[i] < 0.0) {
+      output.activations[i] = 0;
+    }
+  }
+}
+
 void FullyConnectedLayer::eigenForward(const BoltVector& input,
                                        BoltVector& output) {
   _prev_is_dense = true;
   _this_is_dense = true;
+  std::fill_n(output.gradients, output.len, 0);
+
   Eigen::Map<
       Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
       eigen_weights(_weights.data(), _dim, _prev_dim);
@@ -202,8 +230,6 @@ void FullyConnectedLayer::eigenForward(const BoltVector& input,
 
   eigen_output = eigen_weights * eigen_input;
   eigen_output += eigen_biases;
-
-  // eigen_output = eigen_output.array().max(0.0);
 
   switch (_act_func) {
     case ActivationFunction::ReLU:
