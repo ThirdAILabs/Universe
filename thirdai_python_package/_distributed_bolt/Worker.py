@@ -328,13 +328,13 @@ class Worker:
             # print(f"shape of b_indices is {b_indices.shape}")
             # print(f"shape of b_values is {b_values.shape}")
 
-            self.set_gradients_from_indices_values(
+            self.network.set_gradients_from_indices_values(
                 layer_index=layer,
                 indices=w_indices,
                 values=w_values,
                 set_biases=False,
             )
-            self.set_gradients_from_indices_values(
+            self.network.set_gradients_from_indices_values(
                 layer_index=layer,
                 indices=b_indices,
                 values=b_values,

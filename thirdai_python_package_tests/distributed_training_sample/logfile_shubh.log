@@ -10947,3 +10947,74 @@
 2022-08-03 08:03:39,430 : INFO : DistributedBolt : Accuracy on workers 1: 0.940300
 2022-08-03 08:03:39,430 : INFO : DistributedBolt : 0 processed!, Total Batches: 24
 2022-08-03 08:03:39,430 : INFO : DistributedBolt : Scheduler is true and full compression density 
+2022-08-03 08:09:12,120 : INFO : DistributedBolt : Training has started!
+2022-08-03 08:09:12,517 : INFO : DistributedBolt : Ray Initialized
+2022-08-03 08:09:12,517 : INFO : DistributedBolt : Config Done
+2022-08-03 08:09:14,171 : INFO : DistributedBolt : Compression is DRAGON with the density 0.1
+2022-08-03 08:09:14,171 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-08-03 08:09:14,199 : INFO : DistributedBolt : 0 processed!, Total Batches: 24
+2022-08-03 08:09:14,200 : INFO : DistributedBolt : Scheduler is true and full gradients enabled
+2022-08-03 08:09:14,282 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.03385186195373535, Python Computation Time: 0.0036940574645996094, Communication Time: 0.0426175594329834
+2022-08-03 08:09:14,350 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.05543708801269531, Python Computation Time: 0.006883382797241211, Communication Time: 0.08342099189758301
+2022-08-03 08:09:14,411 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.07589411735534668, Python Computation Time: 0.009118080139160156, Communication Time: 0.12005090713500977
+2022-08-03 08:09:14,474 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.09556317329406738, Python Computation Time: 0.010942697525024414, Communication Time: 0.15949654579162598
+2022-08-03 08:09:14,532 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.11495780944824219, Python Computation Time: 0.012755155563354492, Communication Time: 0.19460844993591309
+2022-08-03 08:09:14,532 : INFO : DistributedBolt : 5 processed!, Total Batches: 24
+2022-08-03 08:09:14,594 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.13509845733642578, Python Computation Time: 0.014676570892333984, Communication Time: 0.23289108276367188
+2022-08-03 08:09:14,656 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.15629267692565918, Python Computation Time: 0.015951156616210938, Communication Time: 0.2706258296966553
+2022-08-03 08:09:14,723 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.17769432067871094, Python Computation Time: 0.020331621170043945, Communication Time: 0.30882835388183594
+2022-08-03 08:09:14,785 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.19759774208068848, Python Computation Time: 0.022737503051757812, Communication Time: 0.3462228775024414
+2022-08-03 08:09:14,848 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.2188398838043213, Python Computation Time: 0.024263381958007812, Communication Time: 0.38438940048217773
+2022-08-03 08:09:14,848 : INFO : DistributedBolt : 10 processed!, Total Batches: 24
+2022-08-03 08:09:14,909 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.2379436492919922, Python Computation Time: 0.02582693099975586, Communication Time: 0.42334914207458496
+2022-08-03 08:09:14,968 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.25671839714050293, Python Computation Time: 0.02710103988647461, Communication Time: 0.45977091789245605
+2022-08-03 08:09:15,030 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.27608704566955566, Python Computation Time: 0.02864241600036621, Communication Time: 0.4993140697479248
+2022-08-03 08:09:15,088 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.2949495315551758, Python Computation Time: 0.03009963035583496, Communication Time: 0.5355474948883057
+2022-08-03 08:09:15,145 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.3140225410461426, Python Computation Time: 0.031221628189086914, Communication Time: 0.5702102184295654
+2022-08-03 08:09:15,145 : INFO : DistributedBolt : 15 processed!, Total Batches: 24
+2022-08-03 08:09:15,202 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.33315420150756836, Python Computation Time: 0.032866716384887695, Communication Time: 0.6052441596984863
+2022-08-03 08:09:15,259 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.35171031951904297, Python Computation Time: 0.03415870666503906, Communication Time: 0.6401710510253906
+2022-08-03 08:09:15,316 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.37138891220092773, Python Computation Time: 0.03583645820617676, Communication Time: 0.6741540431976318
+2022-08-03 08:09:15,372 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.3904726505279541, Python Computation Time: 0.0371851921081543, Communication Time: 0.7076327800750732
+2022-08-03 08:09:15,429 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.4093503952026367, Python Computation Time: 0.03869795799255371, Communication Time: 0.7420454025268555
+2022-08-03 08:09:15,429 : INFO : DistributedBolt : 20 processed!, Total Batches: 24
+2022-08-03 08:09:15,487 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.42944836616516113, Python Computation Time: 0.040143489837646484, Communication Time: 0.7769975662231445
+2022-08-03 08:09:15,546 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.44878077507019043, Python Computation Time: 0.04173922538757324, Communication Time: 0.8133563995361328
+2022-08-03 08:09:15,605 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.46933603286743164, Python Computation Time: 0.04321169853210449, Communication Time: 0.8487589359283447
+2022-08-03 08:09:15,668 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 0.4900205135345459, Python Computation Time: 0.04500102996826172, Communication Time: 0.8872261047363281
+2022-08-03 08:09:15,702 : INFO : DistributedBolt : Accuracy on workers 0: 0.906500
+2022-08-03 08:09:15,742 : INFO : DistributedBolt : Accuracy on workers 1: 0.906500
+2022-08-03 08:09:15,742 : INFO : DistributedBolt : 0 processed!, Total Batches: 24
+2022-08-03 08:09:15,742 : INFO : DistributedBolt : Scheduler is true and full gradients enabled
+2022-08-03 08:09:15,802 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.5104575157165527, Python Computation Time: 0.04653787612915039, Communication Time: 0.9233262538909912
+2022-08-03 08:09:15,866 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.5357239246368408, Python Computation Time: 0.04802083969116211, Communication Time: 0.9582579135894775
+2022-08-03 08:09:15,924 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.5562984943389893, Python Computation Time: 0.04951357841491699, Communication Time: 0.9925055503845215
+2022-08-03 08:09:15,980 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.5755500793457031, Python Computation Time: 0.05096149444580078, Communication Time: 1.0259795188903809
+2022-08-03 08:09:16,038 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.5942296981811523, Python Computation Time: 0.052288055419921875, Communication Time: 1.0619494915008545
+2022-08-03 08:09:16,038 : INFO : DistributedBolt : 5 processed!, Total Batches: 24
+2022-08-03 08:09:16,095 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.6135456562042236, Python Computation Time: 0.05374956130981445, Communication Time: 1.0957233905792236
+2022-08-03 08:09:16,153 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.6322293281555176, Python Computation Time: 0.055048227310180664, Communication Time: 1.1319103240966797
+2022-08-03 08:09:16,208 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.6509056091308594, Python Computation Time: 0.05644512176513672, Communication Time: 1.1654043197631836
+2022-08-03 08:09:16,266 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.6693434715270996, Python Computation Time: 0.058017730712890625, Communication Time: 1.2011785507202148
+2022-08-03 08:09:16,322 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.6877803802490234, Python Computation Time: 0.059590816497802734, Communication Time: 1.2355060577392578
+2022-08-03 08:09:16,322 : INFO : DistributedBolt : 10 processed!, Total Batches: 24
+2022-08-03 08:09:16,379 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.7064652442932129, Python Computation Time: 0.060950517654418945, Communication Time: 1.2704501152038574
+2022-08-03 08:09:16,434 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.7248215675354004, Python Computation Time: 0.06240344047546387, Communication Time: 1.3040993213653564
+2022-08-03 08:09:16,492 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.7430360317230225, Python Computation Time: 0.0639503002166748, Communication Time: 1.340686321258545
+2022-08-03 08:09:16,548 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.7618844509124756, Python Computation Time: 0.0652773380279541, Communication Time: 1.374253749847412
+2022-08-03 08:09:16,605 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.7803447246551514, Python Computation Time: 0.06660294532775879, Communication Time: 1.410212516784668
+2022-08-03 08:09:16,605 : INFO : DistributedBolt : 15 processed!, Total Batches: 24
+2022-08-03 08:09:16,660 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.798494815826416, Python Computation Time: 0.06815671920776367, Communication Time: 1.4434962272644043
+2022-08-03 08:09:16,721 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.8181254863739014, Python Computation Time: 0.06946706771850586, Communication Time: 1.4817299842834473
+2022-08-03 08:09:16,781 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.8375723361968994, Python Computation Time: 0.07090115547180176, Communication Time: 1.5191638469696045
+2022-08-03 08:09:16,840 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.8562021255493164, Python Computation Time: 0.07246184349060059, Communication Time: 1.5562283992767334
+2022-08-03 08:09:16,900 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.8747191429138184, Python Computation Time: 0.07382059097290039, Communication Time: 1.5936987400054932
+2022-08-03 08:09:16,900 : INFO : DistributedBolt : 20 processed!, Total Batches: 24
+2022-08-03 08:09:16,956 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.8926229476928711, Python Computation Time: 0.07519817352294922, Communication Time: 1.629131555557251
+2022-08-03 08:09:17,013 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.9106936454772949, Python Computation Time: 0.07655143737792969, Communication Time: 1.6651086807250977
+2022-08-03 08:09:17,070 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.9286684989929199, Python Computation Time: 0.07799386978149414, Communication Time: 1.700713872909546
+2022-08-03 08:09:17,128 : INFO : DistributedBolt : Epoch No: 1, Bolt Computation Time: 0.9477458000183105, Python Computation Time: 0.07943129539489746, Communication Time: 1.7361631393432617
+2022-08-03 08:09:17,160 : INFO : DistributedBolt : Accuracy on workers 0: 0.944500
+2022-08-03 08:09:17,200 : INFO : DistributedBolt : Accuracy on workers 1: 0.944500
+2022-08-03 08:09:17,200 : INFO : DistributedBolt : 0 processed!, Total Batches: 24
+2022-08-03 08:09:17,200 : INFO : DistributedBolt : Scheduler is true and full compression density 
