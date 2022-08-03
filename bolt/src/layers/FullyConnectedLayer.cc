@@ -657,103 +657,48 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
 }
 
 void FullyConnectedLayer::setWeightGradientsFromIndicesValues(
-    uint64_t* indices_raw_data, float* values_raw_data, uint64_t sketch_size) {
+    uint32_t* indices_raw_data, float* values_raw_data, uint32_t sketch_size) {
   _w_gradient.clear();
   _w_gradient.assign(_dim * _prev_dim, 0);
 
   // not using pragma because of race condition
-  for (uint64_t i = 0; i < sketch_size; i++) {
+  for (uint32_t i = 0; i < sketch_size; i++) {
     _w_gradient[indices_raw_data[i]] += values_raw_data[i];
   }
 }
 
 void FullyConnectedLayer::setBiasGradientsFromIndicesValues(
-    uint64_t* indices_raw_data, float* values_raw_data, uint64_t sketch_size) {
+    uint32_t* indices_raw_data, float* values_raw_data, uint32_t sketch_size) {
   _b_gradient.clear();
   _b_gradient.assign(_dim, 0);
 
   // not using pragma because of race condition
-  for (uint64_t i = 0; i < sketch_size; i++) {
+  for (uint32_t i = 0; i < sketch_size; i++) {
     _b_gradient[indices_raw_data[i]] += values_raw_data[i];
   }
 }
 
-void FullyConnectedLayer::getWeightGradientSketch(uint64_t* indices,
+void FullyConnectedLayer::getWeightGradientSketch(uint32_t* indices,
                                                   float* gradients,
-                                                  uint64_t sketch_size,
+                                                  uint32_t sketch_size,
                                                   int seed_for_hashing) const {
-  uint64_t loop_size = static_cast<uint64_t>(_dim * _prev_dim);
   float threshold = 0.1;
-
-  {
-    // approximating the threshold by random sampling
-    int num_samples = std::min(static_cast<uint64_t>(10000), sketch_size);
-    std::vector<float> sampled_gradients(num_samples, 0);
-    srand(time(0));
-    for (int i = 0; i < num_samples; i++) {
-      sampled_gradients[i] = std::abs(_w_gradient[rand() % loop_size]);
-    }
-    int k = static_cast<int>(1.0 * num_samples * sketch_size / loop_size);
-    // threshold is an estimate for the kth largest element in the gradients
-    // matrix
-    std::nth_element(sampled_gradients.begin(),
-                     sampled_gradients.begin() + num_samples - k,
-                     sampled_gradients.end());
-    threshold = sampled_gradients[num_samples - k];
-  }
-
-#pragma omp parallel for default(none)                                         \
-    shared(indices, gradients, _w_gradient, sketch_size, threshold, loop_size, \
-           std::cout, seed_for_hashing)
-  for (uint64_t i = 0; i < loop_size; i++) {
-    if (_w_gradient[i] > threshold || -1 * _w_gradient[i] > threshold) {
-      int hash = thirdai::hashing::MurmurHash(std::to_string(i).c_str(),
-                                              std::to_string(i).length(),
-                                              seed_for_hashing) %
-                 sketch_size;
-      indices[hash] = i;
-      gradients[hash] = _w_gradient[i];
-    }
-  }
+  threshold = thirdai::bolt::getThresholdForTopK(
+      _w_gradient, sketch_size, /*max_samples_for_random_sampling=*/10'000);
+  thirdai::bolt::getDragonSketch(_w_gradient, indices, gradients,
+                                 seed_for_hashing, threshold, sketch_size);
 }
 
-void FullyConnectedLayer::getBiasGradientSketch(uint64_t* indices,
+void FullyConnectedLayer::getBiasGradientSketch(uint32_t* indices,
                                                 float* gradients,
-                                                uint64_t sketch_size,
+                                                uint32_t sketch_size,
                                                 int seed_for_hashing) const {
-  uint64_t loop_size = static_cast<uint64_t>(_dim);
   float threshold = 0.1;
 
-  {
-    // approximating the threshold by random sampling
-    int num_samples = std::min(static_cast<uint64_t>(10000), sketch_size);
-    std::vector<float> sampled_gradients(num_samples, 0);
-    srand(time(0));
-    for (int i = 0; i < num_samples; i++) {
-      sampled_gradients[i] = std::abs(_b_gradient[rand() % loop_size]);
-    }
-    int k = static_cast<int>(1.0 * num_samples * sketch_size / loop_size);
-    // threshold is an estimate for the kth largest element in the gradients
-    // matrix
-    std::nth_element(sampled_gradients.begin(),
-                     sampled_gradients.begin() + num_samples - k,
-                     sampled_gradients.end());
-    threshold = sampled_gradients[num_samples - k];
-  }
-
-#pragma omp parallel for default(none)                                         \
-    shared(indices, gradients, _b_gradient, sketch_size, threshold, loop_size, \
-           std::cout, seed_for_hashing)
-  for (uint64_t i = 0; i < loop_size; i++) {
-    if (_b_gradient[i] > threshold || -1 * _b_gradient[i] > threshold) {
-      int hash = thirdai::hashing::MurmurHash(std::to_string(i).c_str(),
-                                              std::to_string(i).length(),
-                                              seed_for_hashing) %
-                 sketch_size;
-      indices[hash] = i;
-      gradients[hash] = _b_gradient[i];
-    }
-  }
+  threshold = thirdai::bolt::getThresholdForTopK(
+      _b_gradient, sketch_size, /*max_samples_for_random_sampling=*/10'000);
+  thirdai::bolt::getDragonSketch(_b_gradient, indices, gradients,
+                                 seed_for_hashing, threshold, sketch_size);
 }
 
 }  // namespace thirdai::bolt

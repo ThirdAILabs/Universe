@@ -412,9 +412,9 @@ class DistributedPyNetwork final : public DistributedModel {
                               {prev_dim * sizeof(float), sizeof(float)}, mem);
   }
 
-  void static checkIndexOutOfRange(uint64_t* indices, uint64_t max_index,
-                                   uint64_t size_of_indices_array) {
-    for (uint64_t i = 0; i < size_of_indices_array; i++) {
+  void static checkIndexOutOfRange(uint32_t* indices, uint32_t max_index,
+                                   uint32_t size_of_indices_array) {
+    for (uint32_t i = 0; i < size_of_indices_array; i++) {
       if (indices[i] >= max_index) {
         std::string exception_message =
             "Array index " + std::to_string(indices[i]) +
@@ -452,10 +452,10 @@ class DistributedPyNetwork final : public DistributedModel {
           "Expected numpy array of Values but another datatype found");
     }
 
-    if (!thirdai::bolt::python::checkNumpyDtypeUint64(indices)) {
+    if (!thirdai::bolt::python::checkNumpyDtypeUint32(indices)) {
       throw std::logic_error(
           "Expected Indices array to be a numpy array of unsigned 64-bit "
-          "integers(uint64) but another datatype found");
+          "integers(uint32) but another datatype found");
     }
 
     if (!thirdai::bolt::python::checkNumpyDtypeFloat32(values)) {
@@ -466,7 +466,7 @@ class DistributedPyNetwork final : public DistributedModel {
 
     using thirdai::dataset::python::NumpyArray;
 
-    NumpyArray<uint64_t> cpp_indices = indices.cast<NumpyArray<uint64_t>>();
+    NumpyArray<uint32_t> cpp_indices = indices.cast<NumpyArray<uint32_t>>();
     NumpyArray<float> cpp_values = values.cast<NumpyArray<float>>();
 
     if (cpp_values.shape(0) != cpp_indices.shape(0)) {
@@ -474,8 +474,8 @@ class DistributedPyNetwork final : public DistributedModel {
           "The size of the values and indices array do not match.");
     }
 
-    uint64_t size = static_cast<uint64_t>(cpp_values.shape(0));
-    uint64_t* indices_raw_data = const_cast<uint64_t*>(cpp_indices.data());
+    uint32_t size = static_cast<uint32_t>(cpp_values.shape(0));
+    uint32_t* indices_raw_data = const_cast<uint32_t*>(cpp_indices.data());
     float* values_raw_data = const_cast<float*>(cpp_values.data());
 
     if (set_biases) {
@@ -504,25 +504,25 @@ class DistributedPyNetwork final : public DistributedModel {
                           ? DistributedModel::getDim(layer_index - 1)
                           : DistributedModel::getInputDim();
 
-    uint64_t mem_size;
-    uint64_t* indices;
+    uint32_t mem_size;
+    uint32_t* indices;
     float* gradients;
 
     if (sketch_biases) {
-      mem_size = static_cast<uint64_t>(compression_density * dim);
-      indices = new uint64_t[mem_size];
+      mem_size = static_cast<uint32_t>(compression_density * dim);
+      indices = new uint32_t[mem_size];
       gradients = new float[mem_size];
 
-      std::memset(indices, 0, sizeof(uint64_t) * mem_size);
+      std::memset(indices, 0, sizeof(uint32_t) * mem_size);
       std::memset(gradients, 0, sizeof(float) * mem_size);
       DistributedModel::getBiasGradientSketch(layer_index, indices, gradients,
                                               mem_size, seed_for_hashing);
     } else {
-      mem_size = static_cast<uint64_t>(compression_density * dim * prev_dim);
-      indices = new uint64_t[mem_size];
+      mem_size = static_cast<uint32_t>(compression_density * dim * prev_dim);
+      indices = new uint32_t[mem_size];
       gradients = new float[mem_size];
 
-      std::memset(indices, 0, sizeof(uint64_t) * mem_size);
+      std::memset(indices, 0, sizeof(uint32_t) * mem_size);
       std::memset(gradients, 0, sizeof(float) * mem_size);
       DistributedModel::getWeightGradientSketch(layer_index, indices, gradients,
                                                 mem_size, seed_for_hashing);
@@ -535,7 +535,7 @@ class DistributedPyNetwork final : public DistributedModel {
         gradients, [](void* ptr) { delete static_cast<float*>(ptr); });
 
     return py::make_tuple(
-        py::array_t<uint64_t>({mem_size}, {sizeof(uint64_t)}, indices,
+        py::array_t<uint32_t>({mem_size}, {sizeof(uint32_t)}, indices,
                               free_indices_when_done),
         py::array_t<float>({mem_size}, {sizeof(float)}, gradients,
                            free_gradients_when_done));
@@ -573,7 +573,7 @@ class DistributedPyNetwork final : public DistributedModel {
     py::capsule free_indices_when_done(
         indices, [](void* ptr) { delete static_cast<uint64_t*>(ptr); });
 
-    py::array_t<int>({mem_size}, {sizeof(uint64_t)}, indices,
+    return py::array_t<int>({mem_size}, {sizeof(uint64_t)}, indices,
                      free_indices_when_done);
   }
 

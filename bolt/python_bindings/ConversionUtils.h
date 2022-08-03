@@ -189,8 +189,8 @@ inline bool checkNumpyDtypeAnyInt(const py::object& obj) {
          checkNumpyDtype(obj, "int64") || checkNumpyDtype(obj, "uint64");
 }
 
-inline bool checkNumpyDtypeUint64(const py::object& obj) {
-  return checkNumpyDtype(obj, "uint64");
+inline bool checkNumpyDtypeUint32(const py::object& obj) {
+  return checkNumpyDtype(obj, "uint32");
 }
 
 }  // namespace thirdai::bolt::python

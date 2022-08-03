@@ -30,8 +30,8 @@ def test_dragon_compression():
         layer_index=0, indices=indices, values=values, set_biases=False
     )
 
-    network_weights = network.get_weights_gradients(0).flatten()
-    np.add.at(network_weights, indices, -1 * values)
-    norm_after_subtracting_gradients = np.linalg.norm(network_weights)
+    network_weight_gradients = network.get_weights_gradients(0).flatten()
+    np.add.at(network_weight_gradients, indices, -1 * values)
+    norm_after_subtracting_gradients = np.linalg.norm(network_weight_gradients)
 
     assert norm_after_subtracting_gradients == 0
