@@ -140,6 +140,10 @@ setup(
     ext_modules=[CMakeExtension("thirdai._thirdai")],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
+    install_requires=[
+        "numpy",
+        "typing_extensions"
+    ],
     extras_require={
         "test": ["pytest"],
     },
