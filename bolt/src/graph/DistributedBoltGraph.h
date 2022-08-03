@@ -21,7 +21,7 @@ class DistributedGraph {
                    std::shared_ptr<LossFunction> loss, bool print_when_done)
       : DistributedBoltGraph(BoltGraph(std::move(inputs), std::move(output))),
         train_context(DatasetContext(train_data, {}, train_labels)),
-        train_config(train_config),
+        learning_rate(train_config.learningRate()),
         metrics(train_config.getMetricAggregator()),
         rebuild_hash_tables_batch(
             train_config.getRebuildHashTablesBatchInterval(
@@ -51,7 +51,7 @@ class DistributedGraph {
 
   BoltGraph DistributedBoltGraph;
   DatasetContext train_context;
-  const TrainConfig& train_config;
+  float learning_rate;
   MetricAggregator metrics;
 
   uint32_t rebuild_hash_tables_batch;

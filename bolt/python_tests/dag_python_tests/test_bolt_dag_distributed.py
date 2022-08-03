@@ -62,13 +62,22 @@ def test_distributed_training_with_bolt():
     model_b.get_layer("fc_2").weights.set(model_a.get_layer("fc_2").weights.get())
     model_b.get_layer("fc_2").biases.set(model_a.get_layer("fc_2").biases.get())
 
-    epochs = 1
+    # assert (model_a.get_layer("fc_1").weights.get()==model_b.get_layer("fc_1").weights.get()).all()
+
+    epochs = 5
     for epoch in range(epochs):
         for batch_num in range(num_of_batches):
             model_a.calculateGraidentSingleNode(batch_num)
             model_b.calculateGraidentSingleNode(batch_num)
 
             # average the gradients
+            avg_weight_gradients_fc_1 = model_a.get_layer(
+                "fc_1"
+            ).weight_gradients.copy()
+            avg_weight_gradients_fc_2 = model_a.get_layer(
+                "fc_2"
+            ).weight_gradients.copy()
+
             avg_bias_gradients_fc_1 = model_a.get_layer("fc_1").bias_gradients.copy()
             avg_bias_gradients_fc_2 = model_a.get_layer("fc_2").bias_gradients.copy()
 
@@ -146,10 +155,6 @@ def test_distributed_training_with_bolt():
     )
     ACCURACY_GREATER_THAN_THRESHOLD = metrics_model_a[0]["categorical_accuracy"] > 0.8
 
-    print(
-        metrics_model_a[0]["categorical_accuracy"],
-        metrics_model_b[0]["categorical_accuracy"],
-    )
     assert (
         FC_1_WEIGHTS and FC_2_WEIGHTS and FC_1_BIASES and FC_2_BIASES
     ), "Model Parameters are not the same across two models after training"

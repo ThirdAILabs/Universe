@@ -20,7 +20,7 @@ void DistributedGraph::calculateGradientSingleNode(uint32_t batch_idx) {
 
 void DistributedGraph::updateParametersSingleNode() {
   DistributedBoltGraph.updateParametersandSampling(
-      train_config.learningRate(), rebuild_hash_tables_batch,
+      learning_rate, rebuild_hash_tables_batch,
       reconstruct_hash_functions_batch);
 }
 uint64_t DistributedGraph::num_of_training_batch() const {
