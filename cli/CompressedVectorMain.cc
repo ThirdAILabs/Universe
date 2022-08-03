@@ -79,11 +79,12 @@ int main(int argc, char** argv) {
   app.add_option("--use-sign-bit", options.use_sign_bit, "");
   // clang-format on
 
-  CLI11_PARSE(app, argc, argv);
   try {
-    thirdai::bolt::cli::runReconstructionAnalysis(options);
-  } catch (...) {
-    std::cout << "Exception thrown." << std::endl;
+    app.parse(argc, argv);
+  } catch (const CLI::ParseError& e) {
+    exit(app.exit(e));
   }
+
+  thirdai::bolt::cli::runReconstructionAnalysis(options);
   return 0;
 }
