@@ -205,8 +205,7 @@ void FullyConnectedLayer::eigenForward(const BoltVector& input,
   eigen_output.noalias() = eigen_weights * eigen_input;
 
   eigen_biases.array().addTo(eigen_output);
-  // eigen_output += eigen_biases;
-
+  
   switch (_act_func) {
     case ActivationFunction::ReLU:
       eigen_output = eigen_output.array().max(0.0);
@@ -322,16 +321,20 @@ void FullyConnectedLayer::eigenBackpropagate(BoltVector& input,
   Eigen::Map<Eigen::VectorXf> eigen_bias_grad(_b_gradient.data(), _dim);
 
   Eigen::Map<Eigen::VectorXf> eigen_input(input.activations, input.len);
-  Eigen::Map<Eigen::VectorXf> eigen_input_grad(input.gradients, input.len);
   Eigen::Map<Eigen::VectorXf> eigen_output_grad(output.gradients, output.len);
 
-  eigen_weight_grad.noalias() += eigen_output_grad * eigen_input.transpose();
+  eigen_weight_grad += eigen_output_grad * eigen_input.transpose();
+  eigen_output_grad.array().addTo(eigen_bias_grad);
 
   if constexpr (!FIRST_LAYER) {
+    Eigen::Map<
+        Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+        eigen_weights(_weights.data(), _dim, _prev_dim);
+
+    Eigen::Map<Eigen::VectorXf> eigen_input_grad(input.gradients, input.len);
+
     eigen_input_grad.noalias() = eigen_output_grad.transpose() * eigen_weights;
   }
-
-  eigen_output_grad.array().addTo(eigen_bias_grad);
 }
 
 template <bool DENSE, bool PREV_DENSE>
