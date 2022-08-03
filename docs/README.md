@@ -1,37 +1,40 @@
-
 # Building the docs
-There are different types of documentation you can build.
-## HTML
-First, you will have to install the theme we are currently using:
+
+Through doxygen + breathe + exhale + sphinx, we generate docs for our C++
+library and also the Python library.
+
 ```
-pip3 install sphinx-rtd-theme
-```
-Then run 
-```
+python3 -m venv env #  Create a virtual environment
+./env/bin/activate  #  Activate virtual environment
+
+# Install required packages into virtual environment
+python3 -m pip install -r requirements.txt
+
+
+# Build and install thirdai (to avoid license issues).
+# thirdai installed is required to generate module documentation.
+
+# wheel is required to build binary distributions.
+python3 -m pip install wheel 
+
+# Build the ThirdAI wheel
+# Use feature flags to expose all (remove licensing issues).
+cd ../
+THIRDAI_FEATURE_FLAGS=THIRDAI_EXPOSE_ALL \
+    python3 setup.py bdist_wheel
+
+# TODO(anyone): Simplify using requirements already in setup.py
+python3 -m pip install -r requirements.txt
+python3 -m pip install dist/*.whl
+
+# Now that the package (thirdai) and requirements (for docs and thirdai) are
+# installed, we can proceed to generate documentation.
+
+cd docs 
 make html
+
+# By now, the documentation generated should be available in _build/html folder.
+(cd _build/html && python3 -m http.server 8080)
+
+# Navigate to localhost:8080 and you should be able to see the generated documentation.
 ```
-in this folder. The generated html files will be in docs/_build/html, and you
-can view them by opening docs/_build/html/index.html in a web browser.
-<!-- TODO: Host these html docs on a website. -->
-## Markdown
-First, you will have to install the sphinx markdown builder:
-```
-pip3 install sphinx-markdown-builder
-```
-Then run
-```
-make markdown
-```
-and the markdown files will be in docs/_build/markdown. 
-<!-- TODO: Copy the markdown files to our demo repo to make them public, once the
-bolt documentation is done. -->
-## Anything else (man, json, etc,)
-To get a list of possible target, run 
-'''
-make
-'''
-Then choose a target you want to run 
-'''
-make target
-''''
-and the results will be in _build/target.
