@@ -101,13 +101,10 @@ MetricData BoltGraph::train(
         train_context.setInputs(batch_idx, _inputs, _token_inputs);
 
         const BoltBatch& batch_labels = train_context.labels()->at(batch_idx);
-        processTrainingBatch(batch_labels, train_config.learningRate(),
-                             metrics);
-
-        updateSampling(
-            /* rebuild_hash_tables_batch= */ rebuild_hash_tables_batch,
-            /* reconstruct_hash_functions_batch= */
-            reconstruct_hash_functions_batch);
+        processTrainingBatch(batch_labels, metrics);
+        updateParametersandSampling(train_config.learningRate(),
+                                    rebuild_hash_tables_batch,
+                                    reconstruct_hash_functions_batch);
 
         bar.increment();
       }
@@ -143,7 +140,6 @@ MetricData BoltGraph::train(
 }
 
 void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
-                                     float learning_rate,
                                      MetricAggregator& metrics) {
   assert(graphCompiled());
   batch_labels.verifyExpectedDimension(
@@ -165,9 +161,17 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
   }
 
   perBatchCallback();
+}
 
+void BoltGraph::updateParametersandSampling(
+    float learning_rate, uint32_t rebuild_hash_tables_batch,
+    uint32_t reconstruct_hash_functions_batch) {
   ++_batch_cnt;
   updateParameters(learning_rate, _batch_cnt);
+  updateSampling(
+      /* rebuild_hash_tables_batch= */ rebuild_hash_tables_batch,
+      /* reconstruct_hash_functions_batch= */
+      reconstruct_hash_functions_batch);
 }
 
 void BoltGraph::updateSampling(uint32_t rebuild_hash_tables_batch,
@@ -306,6 +310,12 @@ void BoltGraph::cleanupAfterBatchProcessing() {
 void BoltGraph::updateParameters(float learning_rate, uint32_t batch_cnt) {
   for (auto& node : _nodes) {
     node->updateParameters(learning_rate, batch_cnt);
+  }
+}
+
+void BoltGraph::isDistributedTraining() {
+  for (auto& node : _nodes) {
+    node->isDistributedTraining();
   }
 }
 

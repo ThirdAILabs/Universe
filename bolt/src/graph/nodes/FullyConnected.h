@@ -83,6 +83,8 @@ class FullyConnectedNode final
     oarchive(*_layer);
   }
 
+  void isDistributedTraining() final { _layer->isDistributedTraining(); }
+
   void loadParameters(const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);

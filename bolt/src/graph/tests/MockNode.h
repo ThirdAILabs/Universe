@@ -16,6 +16,8 @@ class MockNode : public Node {
 
   MOCK_METHOD(bool, isInputNode, (), (const override));
 
+  MOCK_METHOD(void, isDistributedTraining, (), (override));
+
  private:
   MOCK_METHOD(void, compileImpl, (), (override));
 
@@ -63,6 +65,8 @@ class MockNodeWithOutput : public MockNode {
   }
 
   uint32_t outputDim() const final { return _output_dim; }
+
+  void isDistributedTraining() final {}
 
   NodeState getState() const final {
     return NodeState::PreparedForBatchProcessing;

@@ -29,6 +29,11 @@ class TokenInput : public Node {
 
   bool isInputNode() const final { return true; }
 
+  void isDistributedTraining() final {
+    throw exceptions::NotImplemented(
+        "Distributed Training is not Implemented for Token Input Node.");
+  }
+
  private:
   void compileImpl() final { _compiled = true; }
 

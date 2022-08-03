@@ -1,5 +1,6 @@
 #include "BoltGraphPython.h"
 #include "ConversionUtils.h"
+#include <bolt/src/graph/DistributedBoltGraph.h>
 #include <bolt/src/graph/ExecutionConfig.h>
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/graph/InferenceOutputTracker.h>
@@ -285,13 +286,13 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           [](BoltGraph& model, const dataset::BoltDatasetPtr& data,
              const dataset::BoltDatasetPtr& labels,
              const PredictConfig& predict_config) {
-            return dagPredictPythonWrapper(model, {data}, /* tokens = */ {},
-                                           labels, predict_config);
+            return dagPredictPythonWrapper<BoltGraph>(
+                model, {data}, /* tokens = */ {}, labels, predict_config);
           },
           py::arg("test_data"), py::arg("test_labels"),
           py::arg("predict_config"))
       .def(
-          "predict", &dagPredictPythonWrapper, py::arg("test_data"),
+          "predict", &dagPredictPythonWrapper<BoltGraph>, py::arg("test_data"),
           py::arg("test_tokens"), py::arg("test_labels"),
           py::arg("predict_config"),
           "Predicts the output given the input vectors and evaluates the "
@@ -362,9 +363,34 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            })
 #endif
       ;
+
+  py::class_<DistributedGraph>(graph_submodule, "DistributedModel")
+      .def(py::init<std::vector<InputPtr>, NodePtr,
+                    const std::vector<dataset::BoltDatasetPtr>&,
+                    const dataset::BoltDatasetPtr&, const TrainConfig&>(),
+           py::arg("inputs"), py::arg("output"), py::arg("train_data"),
+           py::arg("train_labels"), py::arg("train_config"))
+      .def("compile", &DistributedGraph::compile, py::arg("loss"),
+           py::arg("print_when_done") = true)
+      .def("calculateGraidentSingleNode",
+           &DistributedGraph::calculateGradientSingleNode, py::arg("batch_idx"))
+      .def("updateParameterSingleNode",
+           &DistributedGraph::updateParametersSingleNode)
+      .def("numTrainingBatch", &DistributedGraph::num_of_training_batch)
+      .def(
+          "predict",
+          [](BoltGraph& model, const dataset::BoltDatasetPtr& data,
+             const dataset::BoltDatasetPtr& labels,
+             const PredictConfig& predict_config) {
+            return dagPredictPythonWrapper<DistributedGraph>(
+                model, {data}, /* tokens = */ {}, labels, predict_config);
+          },
+          py::arg("test_data"), py::arg("test_labels"),
+          py::arg("predict_config"));
 }
 
-py::tuple dagPredictPythonWrapper(BoltGraph& model,
+template <typename Model_T>
+py::tuple dagPredictPythonWrapper(Model_T& model,
                                   const dataset::BoltDatasetList& data,
                                   const dataset::BoltTokenDatasetList& tokens,
                                   const dataset::BoltDatasetPtr& labels,

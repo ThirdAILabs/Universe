@@ -12,6 +12,7 @@ namespace thirdai::bolt::python {
 
 void createBoltGraphSubmodule(py::module_& bolt_submodule);
 
+template <typename Model_T>
 py::tuple dagPredictPythonWrapper(BoltGraph& model,
                                   const dataset::BoltDatasetList& data,
                                   const dataset::BoltTokenDatasetList& tokens,

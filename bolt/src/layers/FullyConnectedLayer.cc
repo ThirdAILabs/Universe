@@ -47,6 +47,8 @@ FullyConnectedLayer::FullyConnectedLayer(
   }
 }
 
+void FullyConnectedLayer::isDistributedTraining() { _is_distributed = true; }
+
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
                                   const BoltVector* labels) {
   if (output.isDense()) {
