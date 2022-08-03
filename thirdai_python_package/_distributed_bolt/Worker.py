@@ -173,13 +173,13 @@ class Worker:
                 layer_index=layer,
                 compression_density=compression_density,
                 sketch_biases=False,
-                seed=seed,
+                seed_for_hashing=seed,
             )
             y = self.network.get_indexed_sketch_for_gradients(
                 layer_index=layer,
                 compression_density=compression_density,
                 sketch_biases=True,
-                seed=seed,
+                seed_for_hashing=seed,
             )
             # x=np.ravel(x)
             # y=np.ravel(y)
