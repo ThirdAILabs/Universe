@@ -302,7 +302,7 @@ class PrecisionAt : public Metric {
   double getMetricAndReset(bool verbose) final {
     double metric = static_cast<double>(_correct) / _count;
     if (verbose) {
-      std::cout << "Precision at " << K << ": " << std::setprecision(3) << _correct / _count
+      std::cout << "Precision at " << K << ": " << std::setprecision(3) << metric
                 << std::endl;
     }
     _correct = 0;

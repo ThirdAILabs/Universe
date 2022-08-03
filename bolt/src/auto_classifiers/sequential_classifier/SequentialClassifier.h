@@ -153,7 +153,9 @@ class SequentialClassifier {
     if (valid_data != nullptr && valid_labels != nullptr) {
       _network->predict(valid_data, valid_labels, nullptr, nullptr, useSparseInference(pipeline), metrics);
     }
-    _network->freezeHashTables();
+    if (useSparseInference(pipeline)) {
+      _network->freezeHashTables();
+    }
     for (uint32_t i = 0; i < epochs - 1; i++) {
       _network->train(train_data, train_labels, loss, learning_rate, 1, /* rehash = */ 0, /* rebuild = */ 0, /* metric_names = */ {metric_name});
       if (valid_data != nullptr && valid_labels != nullptr) {
