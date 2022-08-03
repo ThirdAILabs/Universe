@@ -180,6 +180,8 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
 
 void FullyConnectedLayer::eigenForward(const BoltVector& input,
                                        BoltVector& output) {
+  _prev_is_dense = true;
+  _prev_is_dense = true;
   Eigen::Map<
       Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
       eigen_weights(_weights.data(), _dim, _prev_dim);
