@@ -35,14 +35,14 @@ static std::string activationFunctionToStr(ActivationFunction act_func) {
 
 // an approximation for top-k threshold by random sampling
 inline float getThresholdForTopK(const std::vector<float>& values,
-                                 uint64_t sketch_size,
-                                 uint64_t max_samples_for_random_sampling) {
-  uint64_t num_samples = std::min(max_samples_for_random_sampling, sketch_size);
-  uint64_t topK =
-      static_cast<uint64_t>(1.0 * num_samples * sketch_size / values.size());
+                                 uint32_t sketch_size,
+                                 uint32_t max_samples_for_random_sampling) {
+  uint32_t num_samples = std::min(max_samples_for_random_sampling, sketch_size);
+  uint32_t topK =
+      static_cast<uint32_t>(1.0 * num_samples * sketch_size / values.size());
   std::vector<float> sampled_gradients(num_samples, 0);
   srand(time(0));
-  for (uint64_t i = 0; i < num_samples; i++) {
+  for (uint32_t i = 0; i < num_samples; i++) {
     sampled_gradients[i] = std::abs(values[rand() % values.size()]);
   }
 
@@ -56,17 +56,17 @@ inline float getThresholdForTopK(const std::vector<float>& values,
 }
 
 inline void getDragonSketch(const std::vector<float>& full_gradient,
-                            uint64_t* indices, float* gradients,
+                            uint32_t* indices, float* gradients,
                             int seed_for_hashing, float threshold,
-                            uint64_t sketch_size,
+                            uint32_t sketch_size,
                             bool unbiased_sketch = false) {
-  uint64_t loop_size = full_gradient.size();
+  uint32_t loop_size = full_gradient.size();
 
   if (!unbiased_sketch) {
 #pragma omp parallel for default(none)                                \
     shared(indices, gradients, full_gradient, sketch_size, threshold, \
            loop_size, seed_for_hashing)
-    for (uint64_t i = 0; i < loop_size; i++) {
+    for (uint32_t i = 0; i < loop_size; i++) {
       if (std::abs(full_gradient[i]) > threshold) {
         int hash = thirdai::hashing::MurmurHash(std::to_string(i).c_str(),
                                                 std::to_string(i).length(),

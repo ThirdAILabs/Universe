@@ -657,30 +657,30 @@ void FullyConnectedLayer::buildLayerSummary(std::stringstream& summary,
 }
 
 void FullyConnectedLayer::setWeightGradientsFromIndicesValues(
-    uint64_t* indices_raw_data, float* values_raw_data, uint64_t sketch_size) {
+    uint32_t* indices_raw_data, float* values_raw_data, uint32_t sketch_size) {
   _w_gradient.clear();
   _w_gradient.assign(_dim * _prev_dim, 0);
 
   // not using pragma because of race condition
-  for (uint64_t i = 0; i < sketch_size; i++) {
+  for (uint32_t i = 0; i < sketch_size; i++) {
     _w_gradient[indices_raw_data[i]] += values_raw_data[i];
   }
 }
 
 void FullyConnectedLayer::setBiasGradientsFromIndicesValues(
-    uint64_t* indices_raw_data, float* values_raw_data, uint64_t sketch_size) {
+    uint32_t* indices_raw_data, float* values_raw_data, uint32_t sketch_size) {
   _b_gradient.clear();
   _b_gradient.assign(_dim, 0);
 
   // not using pragma because of race condition
-  for (uint64_t i = 0; i < sketch_size; i++) {
+  for (uint32_t i = 0; i < sketch_size; i++) {
     _b_gradient[indices_raw_data[i]] += values_raw_data[i];
   }
 }
 
-void FullyConnectedLayer::getWeightGradientSketch(uint64_t* indices,
+void FullyConnectedLayer::getWeightGradientSketch(uint32_t* indices,
                                                   float* gradients,
-                                                  uint64_t sketch_size,
+                                                  uint32_t sketch_size,
                                                   int seed_for_hashing) const {
   float threshold = 0.1;
   threshold = thirdai::bolt::getThresholdForTopK(
@@ -689,9 +689,9 @@ void FullyConnectedLayer::getWeightGradientSketch(uint64_t* indices,
                                  seed_for_hashing, threshold, sketch_size);
 }
 
-void FullyConnectedLayer::getBiasGradientSketch(uint64_t* indices,
+void FullyConnectedLayer::getBiasGradientSketch(uint32_t* indices,
                                                 float* gradients,
-                                                uint64_t sketch_size,
+                                                uint32_t sketch_size,
                                                 int seed_for_hashing) const {
   float threshold = 0.1;
   
