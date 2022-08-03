@@ -16,8 +16,9 @@ BoltVector getVectorWithRandomActivations(uint32_t length) {
   std::vector<float> values(length);
   std::vector<uint32_t> active_neurons(length);
 
-  std::default_random_engine generator;
-  static std::uniform_real_distribution<float> distribution(-5.0, 5.0);
+  std::random_device rd;
+  std::default_random_engine generator(rd());
+  std::uniform_real_distribution<float> distribution(-5.0, 5.0);
 
   for (uint32_t index = 0; index < length; index++) {
     active_neurons.push_back(index);
@@ -79,7 +80,7 @@ void testVectorNormComputation(const std::vector<uint32_t>& input_dense_dims,
   }
 }
 
-TEST(NodeUtilsTest, ComputeL1PNorm) {
+TEST(NodeUtilsTest, ComputeL1Norm) {
   BoltVector node_1_output = getVectorWithRandomActivations(len);
   BoltVector node_2_output = getVectorWithRandomActivations(len);
 

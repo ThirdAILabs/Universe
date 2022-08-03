@@ -102,9 +102,9 @@ class NodeProperties {
         double accumulator = static_cast<double>(abs(*activations));
         for (uint32_t activation_index = 0; activation_index < len;
              activation_index++) {
-          accumulator =
-              std::max<double>(accumulator,
-                       fabs(static_cast<double>(activations[activation_index])));
+          accumulator = std::max<double>(
+              accumulator,
+              fabs(static_cast<double>(activations[activation_index])));
         }
         return accumulator;
       }
