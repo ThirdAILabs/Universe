@@ -47,6 +47,9 @@ wheelhouse
 # Output files
 *.svg
 
+#Python_tests notebooks 
+./bolt/python_tests/*.ipynb
+
 # -- Begin vim .gitignore
 # Swap
 [._]*.s[a-v][a-z]
