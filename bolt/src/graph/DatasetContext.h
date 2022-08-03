@@ -69,17 +69,15 @@ class DatasetContext final : public DatasetContextBase {
     }
   }
 
-  virtual uint64_t batchSize() const {
-    return _all_dag_datasets.front()->batchSize();
-  }
+  uint64_t batchSize() const { return _all_dag_datasets.front()->batchSize(); }
 
-  virtual uint64_t batchSize(uint64_t batch_idx) const {
+  uint64_t batchSize(uint64_t batch_idx) const {
     return _all_dag_datasets.front()->batchSize(batch_idx);
   }
 
-  virtual uint64_t len() const { return _all_dag_datasets.front()->len(); }
+  uint64_t len() const { return _all_dag_datasets.front()->len(); }
 
-  virtual uint64_t numBatches() const {
+  uint64_t numBatches() const {
     return _all_dag_datasets.front()->numBatches();
   }
 

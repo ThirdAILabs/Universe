@@ -78,11 +78,6 @@ class BoltGraph {
       std::optional<std::function<void(const BoltVector&)>> output_callback =
           std::nullopt);
 
-  BoltVector predictSingle(
-      const std::vector<BoltVector>& test_data,
-      const std::vector<std::vector<uint32_t>>& test_tokens,
-      bool use_sparse_inference);
-
   BoltVector predictSingle(std::vector<BoltVector>&& test_data,
                            std::vector<std::vector<uint32_t>>&& test_tokens,
                            bool use_sparse_inference);
