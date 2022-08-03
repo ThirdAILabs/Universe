@@ -29,11 +29,11 @@ author = " Josh Engels, Benito Geordie, Vihan Lakshman, Tharun Medini, Nicholas 
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "sphinx.ext.mathjax",
-    "sphinx.ext.todo",
     "breathe",
     "exhale",
     "recommonmark",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.todo",
     "sphinx.ext.autodoc",
     "sphinxarg.ext",
 ]
@@ -74,8 +74,8 @@ breathe_default_project = "thirdai"
 doxygen_config = """
 INPUT                = ../bolt ../hashtable ../hashing ../search ../datasets ../exceptions
 EXCLUDE             += ../deps
-EXCLUDE             += env
-EXCLUDE_PATTERNS     = *.md *.txt **/tests/** **/python_bindings/** **/python_tests/**
+EXCLUDE             += env ../search/experimental ../bolt/experiments
+EXCLUDE_PATTERNS     = *.md *.txt **/tests/** **/python_bindings/** **/python_tests/** 
 FILE_PATTERNS       += *.cu
 EXTENSION_MAPPING   += cu=C++ inc=C++
 ENABLE_PREPROCESSING = YES
