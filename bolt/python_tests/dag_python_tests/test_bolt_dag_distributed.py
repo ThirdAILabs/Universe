@@ -55,9 +55,6 @@ def test_distributed_training_with_bolt():
             model_b.calculateGraidentSingleNode(batch_num)
 
             #average the gradients
-            avg_weight_gradients_fc_1 = model_a.get_layer("fc_1").weight_gradients.copy()
-            avg_weight_gradients_fc_2 = model_a.get_layer("fc_2").weight_gradients.copy()
-
             avg_bias_gradients_fc_1 = model_a.get_layer("fc_1").bias_gradients.copy()
             avg_bias_gradients_fc_2 = model_a.get_layer("fc_2").bias_gradients.copy()
 
@@ -67,22 +64,11 @@ def test_distributed_training_with_bolt():
             avg_bias_gradients_fc_1 += model_b.get_layer("fc_1").bias_gradients.copy()
             avg_bias_gradients_fc_2 += model_b.get_layer("fc_2").bias_gradients.copy()
 
+
             avg_weight_gradients_fc_1 /= 2
             avg_weight_gradients_fc_2 /= 2
             avg_bias_gradients_fc_1 /= 2
             avg_bias_gradients_fc_2 /= 2
-
-            A = model_a.get_layer("fc_1").weight_gradients.get()
-            B = model_b.get_layer("fc_1").weight_gradients.get()
-            C = avg_weight_gradients_fc_1
-            D = model_a.get_layer("fc_1").weights.get()
-            E = model_b.get_layer("fc_1").weights.get()
-
-            print('A: ', A)
-            print('B: ', B)
-            print('C: ', C)
-            print('D: ', D)
-            print('E: ', E)
 
             model_a.get_layer("fc_1").weight_gradients.set(avg_weight_gradients_fc_1)
             model_a.get_layer("fc_2").weight_gradients.set(avg_weight_gradients_fc_2)
@@ -93,6 +79,9 @@ def test_distributed_training_with_bolt():
             model_b.get_layer("fc_2").weight_gradients.set(avg_weight_gradients_fc_2)
             model_b.get_layer("fc_1").bias_gradients.set(avg_bias_gradients_fc_1)
             model_b.get_layer("fc_2").bias_gradients.set(avg_bias_gradients_fc_2)
+
+            assert (model_a.get_layer("fc_1").weight_gradients.get()==avg_weight_gradients_fc_1).all(), 'Model A gradients are not equal to average'
+            assert (model_b.get_layer("fc_1").weight_gradients.get()==avg_weight_gradients_fc_1).all(), 'Model B gradients are not equal to average'
 
             model_a.updateParametersSingleNode()
             model_b.updateParametersSingleNode()
@@ -119,7 +108,7 @@ def test_distributed_training_with_bolt():
 
     print(metrics_model_a[0]["categorical_accuracy"], metrics_model_b[0]["categorical_accuracy"])
     assert (FC_1_WEIGHTS and FC_2_WEIGHTS and FC_1_BIASES and FC_2_BIASES), "Model Parameters are not the same across two models after training"
-    assert (SAME_ACCURACY and ACCURACY_GREATER_THAN_THRESHOLD), "Accuracy is less than threashold."
+    assert (SAME_ACCURACY and ACCURACY_GREATER_THAN_THRESHOLD), "Accuracy is less than threshold."
 
 
 

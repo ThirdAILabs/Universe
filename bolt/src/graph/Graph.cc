@@ -341,6 +341,7 @@ void BoltGraph::cleanupAfterBatchProcessing() {
 }
 
 void BoltGraph::updateParameters(float learning_rate, uint32_t batch_cnt) {
+  std::cout << "Updating Parameters!!" << std::endl;
   for (auto& node : _nodes) {
     node->updateParameters(learning_rate, batch_cnt);
   }
