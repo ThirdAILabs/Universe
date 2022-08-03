@@ -11,14 +11,9 @@
 
 namespace thirdai::bolt {
 
-void DistributedGraph::compile(std::shared_ptr<LossFunction> loss,
-                               bool print_when_done) {
-  DistributedBoltGraph.compile(std::move(loss), print_when_done);
-}
 void DistributedGraph::calculateGradientSingleNode(uint32_t batch_idx) {
   train_context.setInputs(batch_idx, DistributedBoltGraph._inputs,
                           DistributedBoltGraph._token_inputs);
-
   const BoltBatch& batch_labels = train_context.labels()->at(batch_idx);
   DistributedBoltGraph.processTrainingBatch(batch_labels, metrics);
 }
@@ -37,6 +32,7 @@ InferenceResult DistributedGraph::predict(
     const std::vector<dataset::BoltTokenDatasetPtr>& test_tokens,
     const dataset::BoltDatasetPtr& test_labels,
     const PredictConfig& predict_config) {
+  DistributedBoltGraph.cleanupAfterBatchProcessing();
   return DistributedBoltGraph.predict(test_data, test_tokens, test_labels,
                                       predict_config);
 }

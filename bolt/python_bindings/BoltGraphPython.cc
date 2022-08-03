@@ -367,14 +367,14 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   py::class_<DistributedGraph>(graph_submodule, "DistributedModel")
       .def(py::init<std::vector<InputPtr>, NodePtr,
                     const std::vector<dataset::BoltDatasetPtr>&,
-                    const dataset::BoltDatasetPtr&, const TrainConfig&>(),
+                    const dataset::BoltDatasetPtr&, const TrainConfig&,
+                    std::shared_ptr<LossFunction>, bool>(),
            py::arg("inputs"), py::arg("output"), py::arg("train_data"),
-           py::arg("train_labels"), py::arg("train_config"))
-      .def("compile", &DistributedGraph::compile, py::arg("loss"),
+           py::arg("train_labels"), py::arg("train_config"), py::arg("loss"),
            py::arg("print_when_done") = true)
       .def("calculateGraidentSingleNode",
            &DistributedGraph::calculateGradientSingleNode, py::arg("batch_idx"))
-      .def("updateParameterSingleNode",
+      .def("updateParametersSingleNode",
            &DistributedGraph::updateParametersSingleNode)
       .def("numTrainingBatch", &DistributedGraph::num_of_training_batch)
       .def(

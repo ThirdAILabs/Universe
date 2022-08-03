@@ -145,7 +145,7 @@ class FullyConnectedNode final
   }
 
   float* getWeightsPtr() {
-    if (getState() != NodeState::Compiled) {
+    if (getState() != NodeState::PreparedForBatchProcessing) {
       throw exceptions::NodeStateMachineError(
           "FullyConnectedNode must be in a compiled state to call "
           "getWeightsPtr.");
@@ -154,7 +154,7 @@ class FullyConnectedNode final
   }
 
   float* getBiasesPtr() {
-    if (getState() != NodeState::Compiled) {
+    if (getState() != NodeState::PreparedForBatchProcessing) {
       throw exceptions::NodeStateMachineError(
           "FullyConnectedNode must be in a compiled state to call "
           "getBiasesPtr.");

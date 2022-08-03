@@ -17,7 +17,8 @@ class DistributedGraph {
   DistributedGraph(std::vector<InputPtr> inputs, NodePtr output,
                    const std::vector<dataset::BoltDatasetPtr>& train_data,
                    const dataset::BoltDatasetPtr& train_labels,
-                   const TrainConfig& train_config)
+                   const TrainConfig& train_config,
+                   std::shared_ptr<LossFunction> loss, bool print_when_done)
       : DistributedBoltGraph(BoltGraph(std::move(inputs), std::move(output))),
         train_context(DatasetContext(train_data, {}, train_labels)),
         train_config(train_config),
@@ -28,12 +29,13 @@ class DistributedGraph {
         reconstruct_hash_functions_batch(
             train_config.getReconstructHashFunctionsBatchInterval(
                 train_context.batchSize(), train_context.len())) {
+    DistributedBoltGraph.compile(std::move(loss), print_when_done);
+    DistributedBoltGraph.verifyCanTrain(train_context);
     DistributedBoltGraph.prepareToProcessBatches(train_context.batchSize(),
                                                  /* use_sparsity=*/true);
     DistributedBoltGraph.isDistributedTraining();
   }
 
-  void compile(std::shared_ptr<LossFunction> loss, bool print_when_done);
   void calculateGradientSingleNode(uint32_t batch_idx);
 
   void updateParametersSingleNode();
