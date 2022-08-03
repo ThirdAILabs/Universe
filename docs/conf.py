@@ -72,10 +72,10 @@ breathe_projects = {"thirdai": "./doxygen/xml"}
 breathe_default_project = "thirdai"
 
 doxygen_config = """
-INPUT                = ../bolt ../hashtable ../hashing ../search 
+INPUT                = ../bolt ../hashtable ../hashing ../search ../datasets ../exceptions
 EXCLUDE             += ../deps
-EXCLUDE             += ../**/tests ../**/python_bindings ../**/python_tests
-EXCLUDE_PATTERNS     = *.md *.txt
+EXCLUDE             += env
+EXCLUDE_PATTERNS     = *.md *.txt **/tests/** **/python_bindings/** **/python_tests/**
 FILE_PATTERNS       += *.cu
 EXTENSION_MAPPING   += cu=C++ inc=C++
 ENABLE_PREPROCESSING = YES
