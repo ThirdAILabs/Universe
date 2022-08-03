@@ -179,37 +179,11 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   }
 }
 
-void eigenSoftmax(Eigen::Map<Eigen::VectorXf>& outputs) {
+static void eigenSoftmax(Eigen::Map<Eigen::VectorXf>& outputs) {
   float max_act = outputs.maxCoeff();
   outputs = (outputs.array() - max_act).exp();
   float sum = outputs.sum() + EPS;
   outputs.array() /= sum;
-}
-
-void softmax(BoltVector& output) {
-  float max_act = 0;
-  for (uint32_t i = 0; i < output.len; i++) {
-    if (output.activations[i] > max_act) {
-      max_act = output.activations[i];
-    }
-  }
-  float total = 0;
-  for (uint64_t n = 0; n < output.len; n++) {
-    output.activations[n] = std::exp(output.activations[n] - max_act);
-    total += output.activations[n];
-  }
-  for (uint64_t n = 0; n < output.len; n++) {
-    output.activations[n] /= (total + EPS);
-    assert(!std::isnan(output.activations[n]));
-  }
-}
-
-void relu(BoltVector& output) {
-  for (uint32_t i = 0; i < output.len; i++) {
-    if (output.activations[i] < 0.0) {
-      output.activations[i] = 0;
-    }
-  }
 }
 
 void FullyConnectedLayer::eigenForward(const BoltVector& input,
@@ -228,8 +202,10 @@ void FullyConnectedLayer::eigenForward(const BoltVector& input,
 
   Eigen::Map<Eigen::VectorXf> eigen_biases(_biases.data(), _dim);
 
-  eigen_output = eigen_weights * eigen_input;
-  eigen_output += eigen_biases;
+  eigen_output.noalias() = eigen_weights * eigen_input;
+
+  eigen_biases.array().addTo(eigen_output);
+  // eigen_output += eigen_biases;
 
   switch (_act_func) {
     case ActivationFunction::ReLU:
@@ -253,7 +229,8 @@ void FullyConnectedLayer::eigenForward(const BoltVector& input,
 void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
   if (output.isDense()) {
     if (input.isDense()) {
-      backpropagateImpl<false, true, true>(input, output);
+      // backpropagateImpl<false, true, true>(input, output);
+      eigenBackpropagate<false>(input, output);
     } else {
       backpropagateImpl<false, true, false>(input, output);
     }
@@ -270,8 +247,9 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
                                                   BoltVector& output) {
   if (output.isDense()) {
     if (input.isDense()) {
-      backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true, /*PREV_DENSE=*/true>(
-          input, output);
+      // backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true,
+      // /*PREV_DENSE=*/true>(input, output);
+      eigenBackpropagate<true>(input, output);
     } else {
       backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true,
                         /*PREV_DENSE=*/false>(input, output);
@@ -325,6 +303,35 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
     }
     _b_gradient[act_neuron] += output.gradients[n];
   }
+}
+
+template <bool FIRST_LAYER>
+void FullyConnectedLayer::eigenBackpropagate(BoltVector& input,
+                                             BoltVector& output) {
+  for (uint32_t n = 0; n < output.len; n++) {
+    output.gradients[n] *= actFuncDerivative(output.activations[n], _act_func);
+  }
+
+  Eigen::Map<
+      Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+      eigen_weights(_weights.data(), _dim, _prev_dim);
+  Eigen::Map<
+      Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+      eigen_weight_grad(_w_gradient.data(), _dim, _prev_dim);
+
+  Eigen::Map<Eigen::VectorXf> eigen_bias_grad(_b_gradient.data(), _dim);
+
+  Eigen::Map<Eigen::VectorXf> eigen_input(input.activations, input.len);
+  Eigen::Map<Eigen::VectorXf> eigen_input_grad(input.gradients, input.len);
+  Eigen::Map<Eigen::VectorXf> eigen_output_grad(output.gradients, output.len);
+
+  eigen_weight_grad.noalias() += eigen_output_grad * eigen_input.transpose();
+
+  if constexpr (!FIRST_LAYER) {
+    eigen_input_grad.noalias() = eigen_output_grad.transpose() * eigen_weights;
+  }
+
+  eigen_output_grad.array().addTo(eigen_bias_grad);
 }
 
 template <bool DENSE, bool PREV_DENSE>
