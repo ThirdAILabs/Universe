@@ -73,7 +73,7 @@ class Adam : public Optimizer {
     return dbias;
   }
 
-  void reset() {
+  void reset() final {
     _w_momentum.assign(_dim * _prev_dim, 0);
     _w_velocity.assign(_dim * _prev_dim, 0);
 
@@ -101,6 +101,8 @@ class Adam : public Optimizer {
   uint64_t _dim;
   uint64_t _prev_dim;
 };
+
+std::unique_ptr<Optimizer> make_optimizer(uint64_t dim, uint64_t& prev_dim);
 
 class CompressedAdam : public Optimizer {
  public:
@@ -158,7 +160,7 @@ class CompressedAdam : public Optimizer {
     return dbias;
   }
 
-  void reset() {
+  void reset() final {
     _w_momentum.assign(_dim * _prev_dim, 0);
     _w_velocity.assign(_dim * _prev_dim, 0);
 
@@ -410,7 +412,7 @@ class FullyConnectedLayer final : public SequentialLayer {
     // existed prior to this is probably a stopgap solution as well, as there
     // were no serializations involved. Further investigation to work with
     // cereal nuances and resume training state might be worthwhile.
-    _optimizer = std::make_unique<Adam>(_dim, _prev_dim);
+    _optimizer = make_optimizer(_dim, _prev_dim);
     _w_gradient.assign(_dim * _prev_dim, 0);
     _b_gradient.assign(_dim, 0);
   }
