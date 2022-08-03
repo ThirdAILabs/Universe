@@ -207,6 +207,8 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   inline void deinitSparseDatastructures();
 
+  void eigenForward(const BoltVector& input, BoltVector& output);
+
   template <bool DENSE, bool PREV_DENSE>
   void forwardImpl(const BoltVector& input, BoltVector& output,
                    const BoltVector* labels);

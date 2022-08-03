@@ -1,4 +1,7 @@
 #include "FullyConnectedLayer.h"
+#include <wrappers/src/EigenDenseWrapper.h>
+#include <Eigen/src/Core/Map.h>
+#include <Eigen/src/Core/util/Constants.h>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -52,7 +55,9 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
   if (output.isDense()) {
     if (input.isDense()) {
       // TODO(Nicholas): Re-implement this case with dense matrix library
-      forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/true>(input, output, labels);
+      // forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/true>(input, output,
+      // labels);
+      eigenForward(input, output);
     } else {
       forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/false>(input, output, labels);
     }
@@ -171,6 +176,24 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
       assert(!std::isnan(output.activations[n]));
     }
   }
+}
+
+void FullyConnectedLayer::eigenForward(const BoltVector& input,
+                                       BoltVector& output) {
+  Eigen::Map<
+      Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+      eigen_weights(_weights.data(), _dim, _prev_dim);
+
+  Eigen::Map<Eigen::VectorXf> eigen_input(input.activations, input.len);
+
+  Eigen::Map<Eigen::VectorXf> eigen_output(output.activations, output.len);
+
+  Eigen::Map<Eigen::VectorXf> eigen_biases(_biases.data(), _dim);
+
+  eigen_output = eigen_weights * eigen_input;
+  eigen_output += eigen_biases;
+
+  eigen_output = eigen_output.array().max(0.0);
 }
 
 void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
