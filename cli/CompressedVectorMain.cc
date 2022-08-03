@@ -12,8 +12,8 @@ struct Options {
   uint64_t uncompressed_size = 100000;
   uint64_t compressed_size = 10000;
   uint64_t block_size = 64;
-  float mean = 0.0f;
-  float stddev = 1.0f;
+  float mean = 0.0;
+  float stddev = 1.0;
   uint64_t step_size = 10000;
   bool use_sign_bit = false;
 };
@@ -80,6 +80,10 @@ int main(int argc, char** argv) {
   // clang-format on
 
   CLI11_PARSE(app, argc, argv);
-  thirdai::bolt::cli::runReconstructionAnalysis(options);
+  try {
+    thirdai::bolt::cli::runReconstructionAnalysis(options);
+  } catch (...) {
+    std::cout << "Exception thrown." << std::endl;
+  }
   return 0;
 }
