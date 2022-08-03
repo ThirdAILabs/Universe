@@ -1,5 +1,6 @@
 #include "FullyConnectedLayer.h"
 #include <wrappers/src/EigenDenseWrapper.h>
+#include <bolt/src/layers/LayerUtils.h>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/util/Constants.h>
 #include <algorithm>
@@ -178,10 +179,17 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   }
 }
 
+void eigenSoftmax(Eigen::Map<Eigen::VectorXf>& outputs) {
+  float max_act = outputs.maxCoeff();
+  outputs = (outputs.array() - max_act).exp();
+  float sum = outputs.sum() + EPS;
+  outputs.array() /= sum;
+}
+
 void FullyConnectedLayer::eigenForward(const BoltVector& input,
                                        BoltVector& output) {
   _prev_is_dense = true;
-  _prev_is_dense = true;
+  _this_is_dense = true;
   Eigen::Map<
       Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
       eigen_weights(_weights.data(), _dim, _prev_dim);
@@ -195,7 +203,25 @@ void FullyConnectedLayer::eigenForward(const BoltVector& input,
   eigen_output = eigen_weights * eigen_input;
   eigen_output += eigen_biases;
 
-  eigen_output = eigen_output.array().max(0.0);
+  // eigen_output = eigen_output.array().max(0.0);
+
+  switch (_act_func) {
+    case ActivationFunction::ReLU:
+      eigen_output = eigen_output.array().max(0.0);
+      break;
+    case ActivationFunction::Softmax:
+      eigenSoftmax(eigen_output);
+      break;
+    case ActivationFunction::Linear:
+      break;
+    case ActivationFunction::Sigmoid:
+      eigen_output = 1 + (-eigen_output.array()).exp();
+      eigen_output = eigen_output.array().rsqrt();
+      break;
+    case ActivationFunction::Tanh:
+      eigen_output = eigen_output.array().tanh();
+      break;
+  }
 }
 
 void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
@@ -323,8 +349,8 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     _hash_table->queryBySet(hashes.data(), active_set);
   }
   if (active_set.size() < _sparse_dim) {
-    // here we use hashes[0] as our random number because rand() is not thread
-    // safe and we want to have deterministic outcomes
+    // here we use hashes[0] as our random number because rand() is not
+    // thread safe and we want to have deterministic outcomes
     uint32_t rand_offset = (hashes[0]) % _dim;
     while (active_set.size() < _sparse_dim) {
       active_set.insert(_rand_neurons[rand_offset++]);
