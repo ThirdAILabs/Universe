@@ -533,7 +533,6 @@ class Worker:
         acc = self.network.predictSingleNode(
             self.test_data,
             self.test_label,
-            self.num_of_batches,
             False,
             ["categorical_accuracy"],
             verbose=False,
