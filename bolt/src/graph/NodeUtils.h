@@ -17,11 +17,11 @@ enum class LPNorm {
 static std::string LPNormToStr(LPNorm norm) {
   switch (norm) {
     case LPNorm::L1:
-      return "L1";
+      return "l-1";
     case LPNorm::Euclidean:
-      return "Euclidean";
+      return "euclidean";
     case LPNorm::LInfinity:
-      return "LInfinity";
+      return "l-infinity";
   }
   throw std::logic_error("Invalid norm passed to the call to LPNormToStr");
 }
@@ -32,54 +32,19 @@ static LPNorm getNorm(const std::string& norm_order) {
     lower_case_norm_order.push_back(std::tolower(c));
   }
 
-  if (lower_case_norm_order == "l1") {
+  if (lower_case_norm_order == "l-1") {
     return LPNorm::L1;
   }
   if (lower_case_norm_order == "euclidean") {
     return LPNorm::Euclidean;
   }
-  if (lower_case_norm_order == "linfinity") {
+  if (lower_case_norm_order == "l-infinity") {
     return LPNorm::LInfinity;
   }
-
   throw std::invalid_argument("" + norm_order +
                               " is not a valid Norm. Valid LP norms include "
                               "L-1 norm, Euclidean norm and L-infinity norm.");
 }
-
-static double computeNorm(const float* activations, uint32_t len, LPNorm norm) {
-  switch (norm) {
-    case LPNorm::L1: {
-      double accumulator = 0.0;
-      for (uint32_t activation_index = 0; activation_index < len;
-           activation_index++) {
-        accumulator += abs(activations[activation_index]);
-      }
-      return accumulator;
-    }
-    case LPNorm::Euclidean: {
-      double accumulator = 0.0;
-      for (uint32_t activation_index = 0; activation_index < len;
-           activation_index++) {
-        accumulator += activations[activation_index];
-      }
-      return sqrt(accumulator);
-    }
-    case LPNorm::LInfinity: {
-      double accumulator = static_cast<double>(abs(*activations));
-      for (uint32_t activation_index = 0; activation_index < len;
-           activation_index++) {
-        accumulator =
-            std::max(accumulator,
-                     abs(static_cast<double>(activations[activation_index])));
-      }
-    }
-  }
-  throw std::invalid_argument("" + LPNormToStr(norm) +
-                              " is not a valid Norm. Valid norms include L-1 "
-                              "norm, Euclidean norm and L-infinity norm.");
-}
-
 
 class NodeProperties {
  public:
@@ -113,6 +78,42 @@ class NodeProperties {
 
  private:
   NodeProperties() {}
+
+  static double computeNorm(const float* activations, uint32_t len,
+                            LPNorm norm) {
+    switch (norm) {
+      case LPNorm::L1: {
+        double accumulator = 0.0;
+        for (uint32_t activation_index = 0; activation_index < len;
+             activation_index++) {
+          accumulator += abs(activations[activation_index]);
+        }
+        return accumulator;
+      }
+      case LPNorm::Euclidean: {
+        double accumulator = 0.0;
+        for (uint32_t activation_index = 0; activation_index < len;
+             activation_index++) {
+          accumulator += pow(activations[activation_index], 2.0);
+        }
+        return sqrt(accumulator);
+      }
+      case LPNorm::LInfinity: {
+        double accumulator = static_cast<double>(abs(*activations));
+        for (uint32_t activation_index = 0; activation_index < len;
+             activation_index++) {
+          accumulator =
+              std::max(accumulator,
+                       abs(static_cast<double>(activations[activation_index])));
+        }
+        return accumulator;
+      }
+    }
+    throw std::invalid_argument(
+        "" + LPNormToStr(norm) +
+        " is not a valid LP Norm. Valid norms include L-1 "
+        "norm, Euclidean norm and L-infinity norm.");
+  }
 };
 
 }  // namespace thirdai::bolt
