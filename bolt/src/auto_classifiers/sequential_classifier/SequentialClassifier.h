@@ -24,9 +24,11 @@ class SequentialClassifier {
 
  public:
   explicit SequentialClassifier(SequentialClassifierSchema schema,
-                                std::string model_size, char delimiter = ',')
+                                std::string model_size, char delimiter = ',',
+                                std::vector<std::string> metrics = {"categorical_accuracy"})
       : _pipeline_builder(std::move(schema), delimiter),
-        _model_size(std::move(model_size)) {}
+        _model_size(std::move(model_size)),
+        _metrics(std::move(metrics)) {}
 
   void train(std::string train_filename, uint32_t epochs, float learning_rate, 
              const std::optional<std::string>& validation_filename = std::nullopt,
@@ -52,7 +54,7 @@ class SequentialClassifier {
     }
   }
 
-  float predict(
+  InferenceMetricData predict(
       std::string filename,
       const std::optional<std::string>& output_filename = std::nullopt) {
     std::optional<std::ofstream> output_file;
@@ -82,16 +84,12 @@ class SequentialClassifier {
           "training the classifier.");
     }
 
-    std::vector<std::string> metrics{metric_name};
-
-    auto res = _network->predictOnStream(
-        pipeline, useSparseInference(pipeline), metrics,
+    return _network->predictOnStream(
+        pipeline, useSparseInference(pipeline), _metrics,
         classification_print_predictions_callback);
-    return res[metric_name];
   }
 
  private:
-  static constexpr const char* metric_name = "precision_at_10";
 
   void trainOnStream(
       std::string& filename, uint32_t epochs, float learning_rate,
@@ -101,11 +99,10 @@ class SequentialClassifier {
     CategoricalCrossEntropyLoss loss;
 
     for (uint32_t e = 0; e < epochs; e++) {
-      _network->trainOnStream(pipeline, loss, learning_rate, /* rehash_batch = */ 20, /* rebuild_batch = */ 100, /* metric_names = */ {metric_name});
+      _network->trainOnStream(pipeline, loss, learning_rate, /* rehash_batch = */ 20, /* rebuild_batch = */ 100, _metrics);
       if (validation_pipeline != nullptr) {
-        std::vector<std::string> metrics{metric_name};
         _network->predictOnStream(
-            validation_pipeline, useSparseInference(pipeline), metrics);
+            validation_pipeline, useSparseInference(pipeline), _metrics);
       }
 
       /*
@@ -148,18 +145,17 @@ class SequentialClassifier {
               << " training samples into memory in " << duration << " seconds."
               << std::endl;
 
-    _network->train(train_data, train_labels, loss, learning_rate, 1, /* rehash = */ 0, /* rebuild = */ 0, /* metric_names = */ {metric_name});
-    std::vector<std::string> metrics{metric_name};
+    _network->train(train_data, train_labels, loss, learning_rate, 1, /* rehash = */ 0, /* rebuild = */ 0, _metrics);
     if (valid_data != nullptr && valid_labels != nullptr) {
-      _network->predict(valid_data, valid_labels, nullptr, nullptr, useSparseInference(pipeline), metrics);
+      _network->predict(valid_data, valid_labels, nullptr, nullptr, useSparseInference(pipeline), _metrics);
     }
     if (useSparseInference(pipeline)) {
       _network->freezeHashTables();
     }
     for (uint32_t i = 0; i < epochs - 1; i++) {
-      _network->train(train_data, train_labels, loss, learning_rate, 1, /* rehash = */ 0, /* rebuild = */ 0, /* metric_names = */ {metric_name});
+      _network->train(train_data, train_labels, loss, learning_rate, 1, /* rehash = */ 0, /* rebuild = */ 0, _metrics);
       if (valid_data != nullptr && valid_labels != nullptr) {
-        _network->predict(valid_data, valid_labels, nullptr, nullptr, useSparseInference(pipeline), metrics);
+        _network->predict(valid_data, valid_labels, nullptr, nullptr, useSparseInference(pipeline), _metrics);
       }
     }
   }
@@ -180,13 +176,14 @@ class SequentialClassifier {
     return pred;
   }
 
-  bool useSparseInference(const std::shared_ptr<dataset::StreamingGenericDatasetLoader>& pipeline) {
+  static bool useSparseInference(const std::shared_ptr<dataset::StreamingGenericDatasetLoader>& pipeline) {
     return pipeline->getLabelDim() < 200;
   }
 
   SequentialClassifierPipelineBuilder _pipeline_builder;
   std::string _model_size;
   std::shared_ptr<FullyConnectedNetwork> _network;
+  std::vector<std::string> _metrics;
 };
 
 }  // namespace thirdai::bolt

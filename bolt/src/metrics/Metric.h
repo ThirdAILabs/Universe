@@ -4,11 +4,13 @@
 #include <bolt/src/metrics/MetricHelpers.h>
 #include <algorithm>
 #include <atomic>
+#include <cstdlib>
 #include <functional>
 #include <iomanip>
 #include <limits>
 #include <memory>
 #include <queue>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -283,31 +285,48 @@ class RootMeanSquaredError final : public Metric {
   std::atomic<uint64_t> _count;
 };
 
-template<uint32_t K>
 class PrecisionAt : public Metric {
  public:
-  PrecisionAt(): _correct(0), _count(0) {}
+  explicit PrecisionAt(uint32_t k): _k(k), _correct(0), _count(0) {}
 
   void computeMetric(const BoltVector& output, const BoltVector& labels) final {
     auto top_k = output.isDense() 
-        ? topK</* DENSE= */true>(output) 
-        : topK</* DENSE= */false>(output);
+        ? topK</* DENSE= */true>(output, _k) 
+        : topK</* DENSE= */false>(output, _k);
     auto correct = labels.isDense()
         ? countCorrectInTopK</* DENSE= */ true>(std::move(top_k), labels)
         : countCorrectInTopK</* DENSE= */ false>(std::move(top_k), labels);
     _correct.fetch_add(correct);
-    _count.fetch_add(K);
+    _count.fetch_add(_k);
   }
 
   double getMetricAndReset(bool verbose) final {
     double metric = static_cast<double>(_correct) / _count;
     if (verbose) {
-      std::cout << "Precision at " << K << ": " << std::setprecision(3) << metric
+      std::cout << "Precision at " << _k << ": " << std::setprecision(3) << metric
                 << std::endl;
     }
     _correct = 0;
     _count = 0;
     return metric;
+  }
+
+  static constexpr const char* name = "precision_at_";
+
+  std::string getName() final { 
+    std::stringstream name_ss;
+    name_ss << name << _k;
+    return name_ss.str(); 
+  }
+
+  static inline bool isPrecisionAtK(const std::string& name) {
+    return name.substr(0, 13) == name;
+  }
+
+  static inline bool getK(const std::string& name) {
+    auto k = name.substr(13);
+    char* end_ptr;
+    return std::strtol(k.data(), &end_ptr, 10);
   }
  
  private:
@@ -315,12 +334,12 @@ class PrecisionAt : public Metric {
   using top_k_t = std::priority_queue<val_idx_pair_t, std::vector<val_idx_pair_t>, std::greater<val_idx_pair_t>>;
 
   template<bool DENSE>
-  static inline top_k_t topK(const BoltVector& output) {
+  static inline top_k_t topK(const BoltVector& output, uint32_t k) {
     top_k_t top_k;
-    for (uint32_t pos = 0; pos < std::min(K, output.len); pos++) {
+    for (uint32_t pos = 0; pos < std::min(k, output.len); pos++) {
       top_k.push(std::move(valueIndexPair<DENSE>(output, pos)));
     }
-    for (uint32_t pos = K; pos < output.len; pos++) {
+    for (uint32_t pos = k; pos < output.len; pos++) {
       auto val_idx_pair = valueIndexPair<DENSE>(output, pos);
       if (val_idx_pair > top_k.top()) {
         top_k.pop();
@@ -350,22 +369,9 @@ class PrecisionAt : public Metric {
     return correct;
   }
 
+  uint32_t _k;
   std::atomic_uint64_t _correct;
   std::atomic_uint64_t _count;
-};
-
-class PrecisionAt10 final : public PrecisionAt<10> {
- public:
-  static constexpr const char* name = "precision_at_10";
-
-  std::string getName() final { return name; }
-};
-
-class PrecisionAt100 final : public PrecisionAt<100> {
- public:
-  static constexpr const char* name = "precision_at_100";
-
-  std::string getName() final { return name; }
 };
 
 using MetricData = std::unordered_map<std::string, std::vector<double>>;

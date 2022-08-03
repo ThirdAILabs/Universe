@@ -174,7 +174,7 @@ TEST_F(SequentialClassifierTests, SimpleTrendClassification) {
   seq_bolt.train(simple_trend_train_dataset, /* epochs = */ 1,
                  /* learning_rate = */ 0.0001);
   auto acc = seq_bolt.predict(simple_trend_test_dataset, "predictions.txt");
-  ASSERT_GT(acc, 0.8);
+  ASSERT_GT(acc["categorical_accuracy"], 0.8);
 
   removeSimpleTrendClassificationDataset();
 }
