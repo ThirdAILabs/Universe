@@ -31,7 +31,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _w_gradient(config.getDim() * prev_dim, 0),
       _biases(config.getDim()),
       _b_gradient(config.getDim(), 0),
-      _optimizer(std::make_unique<Adam>(config, prev_dim)),
+      _optimizer(std::make_unique<Adam>(config.getDim(), prev_dim)),
       _prev_is_active(_prev_dim, false),
       _is_active(config.getDim(), false),
       _is_distributed(is_distributed),

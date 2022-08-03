@@ -41,12 +41,12 @@ class Optimizer {
 
 class Adam : public Optimizer {
  public:
-  Adam(const FullyConnectedLayerConfig& config, uint64_t prev_dim)
-      : _w_momentum(config.getDim() * prev_dim, 0),
-        _w_velocity(config.getDim() * prev_dim, 0),
-        _b_momentum(config.getDim(), 0),
-        _b_velocity(config.getDim(), 0),
-        _dim(config.getDim()),
+  Adam(uint64_t dim, uint64_t prev_dim)
+      : _w_momentum(dim * prev_dim, 0),
+        _w_velocity(dim * prev_dim, 0),
+        _b_momentum(dim, 0),
+        _b_velocity(dim, 0),
+        _dim(dim),
         _prev_dim(prev_dim) {
     reset();
   }
@@ -102,12 +102,12 @@ class Adam : public Optimizer {
 
 class CompressedAdam : public Optimizer {
  public:
-  CompressedAdam(const FullyConnectedLayerConfig& config, uint64_t prev_dim)
-      : _w_momentum(config.getDim() * prev_dim, 0),
-        _w_velocity(config.getDim() * prev_dim, 0),
-        _b_momentum(config.getDim(), 0),
-        _b_velocity(config.getDim(), 0),
-        _dim(config.getDim()),
+  CompressedAdam(uint64_t dim, uint64_t prev_dim)
+      : _w_momentum(dim * prev_dim, 0),
+        _w_velocity(dim * prev_dim, 0),
+        _b_momentum(dim, 0),
+        _b_velocity(dim, 0),
+        _dim(dim),
         _prev_dim(prev_dim) {
     reset();
   };
@@ -402,7 +402,11 @@ class FullyConnectedLayer final : public SequentialLayer {
      * likely require adding an additional node state for uninitialized
      * optimizers so that we have memory safety.
      */
-    _optimizer->reset();
+    // TODO(jerin-thirdai): This is stopgap solution, the initOptimizer() which
+    // existed prior to this is probably a stopgap solution as well, as there
+    // were no serializations involved. Further investigation to work with
+    // cereal nuances and resume training state might be worthwhile.
+    _optimizer = std::make_unique<Adam>(_dim, _prev_dim);
     _w_gradient.assign(_dim * _prev_dim, 0);
     _b_gradient.assign(_dim, 0);
   }
