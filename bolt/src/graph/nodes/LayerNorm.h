@@ -57,27 +57,6 @@ class LayerNormNode final : public Node,
     return false;
   }
 
-  // Computes the first and second moments {mean, variance} required
-  // to normalize the input to this layer.
-  static std::pair<float, float> computeNormalizationMoments(
-      const BoltVector& bolt_vector) {
-    uint32_t len = bolt_vector.len;
-    float mean = 0, variance = 0;
-
-    for (uint32_t neuron_index = 0; neuron_index < len; neuron_index++) {
-      mean += bolt_vector.activations[neuron_index];
-    }
-    mean /= len;
-    for (uint32_t neuron_index = 0; neuron_index < len; neuron_index++) {
-      float activation = bolt_vector.activations[neuron_index];
-
-      variance += pow((activation - mean), 2.0);
-    }
-    variance /= len;
-
-    return std::make_pair(mean, variance);
-  }
-
  private:
   void compileImpl() final { _compiled = true; }
 
@@ -97,6 +76,27 @@ class LayerNormNode final : public Node,
                   /* is_dense= */ is_dense);
 
     _layer_norm_state = LayerNormState(batch);
+  }
+
+  // Computes the first and second moments {mean, variance} required
+  // to normalize the input to this layer.
+  static std::pair<float, float> computeNormalizationMoments(
+      const BoltVector& bolt_vector) {
+    uint32_t len = bolt_vector.len;
+    float mean = 0, variance = 0;
+
+    for (uint32_t neuron_index = 0; neuron_index < len; neuron_index++) {
+      mean += bolt_vector.activations[neuron_index];
+    }
+    mean /= len;
+    for (uint32_t neuron_index = 0; neuron_index < len; neuron_index++) {
+      float activation = bolt_vector.activations[neuron_index];
+
+      variance += pow((activation - mean), 2.0);
+    }
+    variance /= len;
+
+    return std::make_pair(mean, variance);
   }
 
   void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
