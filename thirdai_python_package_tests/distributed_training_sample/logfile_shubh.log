@@ -12669,3 +12669,10 @@
 2022-08-04 11:44:09,500 : INFO : DistributedBolt : Accuracy on workers 1: 0.343700
 2022-08-04 11:44:09,500 : INFO : DistributedBolt : 0 processed!, Total Batches: 2
 2022-08-04 11:44:09,500 : INFO : DistributedBolt : Scheduler is false
+2022-08-04 11:51:28,432 : INFO : DistributedBolt : Training has started!
+2022-08-04 11:51:28,917 : INFO : DistributedBolt : Ray Initialized
+2022-08-04 11:51:28,918 : INFO : DistributedBolt : Config Done
+2022-08-04 11:51:31,561 : INFO : DistributedBolt : Compression is UNBIASED_DRAGON with the density 0.1
+2022-08-04 11:51:31,561 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-08-04 11:51:31,589 : INFO : DistributedBolt : 0 processed!, Total Batches: 2
+2022-08-04 11:51:31,589 : INFO : DistributedBolt : Scheduler is false

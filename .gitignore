@@ -53,6 +53,9 @@ wheelhouse
 #Python_tests notebooks 
 ./bolt/python_tests/*.ipynb
 
+#logfiles 
+thirdai_python_package_tests/distributed_training_sample/*.log
+
 # -- Begin vim .gitignore
 # Swap
 [._]*.s[a-v][a-z]
