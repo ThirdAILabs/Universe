@@ -40,23 +40,16 @@ def build_single_node_bolt_dag_model(train_data, train_labels, sparsity, num_cla
     )
     return model
 
+
 def avg_gradients(model_a, model_b):
-    avg_weight_gradients_fc_1 = model_a.get_layer(
-                "fc_1"
-            ).weight_gradients.copy()
-    avg_weight_gradients_fc_2 = model_a.get_layer(
-        "fc_2"
-    ).weight_gradients.copy()
+    avg_weight_gradients_fc_1 = model_a.get_layer("fc_1").weight_gradients.copy()
+    avg_weight_gradients_fc_2 = model_a.get_layer("fc_2").weight_gradients.copy()
 
     avg_bias_gradients_fc_1 = model_a.get_layer("fc_1").bias_gradients.copy()
     avg_bias_gradients_fc_2 = model_a.get_layer("fc_2").bias_gradients.copy()
 
-    avg_weight_gradients_fc_1 += model_b.get_layer(
-        "fc_1"
-    ).weight_gradients.copy()
-    avg_weight_gradients_fc_2 += model_b.get_layer(
-        "fc_2"
-    ).weight_gradients.copy()
+    avg_weight_gradients_fc_1 += model_b.get_layer("fc_1").weight_gradients.copy()
+    avg_weight_gradients_fc_2 += model_b.get_layer("fc_2").weight_gradients.copy()
 
     avg_bias_gradients_fc_1 += model_b.get_layer("fc_1").bias_gradients.copy()
     avg_bias_gradients_fc_2 += model_b.get_layer("fc_2").bias_gradients.copy()
@@ -65,7 +58,13 @@ def avg_gradients(model_a, model_b):
     avg_weight_gradients_fc_2 /= 2
     avg_bias_gradients_fc_1 /= 2
     avg_bias_gradients_fc_2 /= 2
-    return avg_weight_gradients_fc_1, avg_weight_gradients_fc_2, avg_bias_gradients_fc_1, avg_bias_gradients_fc_2
+    return (
+        avg_weight_gradients_fc_1,
+        avg_weight_gradients_fc_2,
+        avg_bias_gradients_fc_1,
+        avg_bias_gradients_fc_2,
+    )
+
 
 def check_models(model_a, model_b, train_x, train_y):
 
@@ -134,7 +133,10 @@ def test_distributed_training_with_bolt():
     model_b.get_layer("fc_2").weights.set(model_a.get_layer("fc_2").weights.get())
     model_b.get_layer("fc_2").biases.set(model_a.get_layer("fc_2").biases.get())
 
-    assert (model_a.get_layer("fc_1").weights.get()==model_b.get_layer("fc_1").weights.get()).all()
+    assert (
+        model_a.get_layer("fc_1").weights.get()
+        == model_b.get_layer("fc_1").weights.get()
+    ).all()
 
     epochs = 5
     for epoch in range(epochs):
@@ -142,7 +144,12 @@ def test_distributed_training_with_bolt():
             model_a.calculateGraidentSingleNode(batch_num)
             model_b.calculateGraidentSingleNode(batch_num)
 
-            avg_weight_gradients_fc_1, avg_weight_gradients_fc_2, avg_bias_gradients_fc_1, avg_bias_gradients_fc_2 = avg_gradients(model_a=model_a, model_b=model_b)
+            (
+                avg_weight_gradients_fc_1,
+                avg_weight_gradients_fc_2,
+                avg_bias_gradients_fc_1,
+                avg_bias_gradients_fc_2,
+            ) = avg_gradients(model_a=model_a, model_b=model_b)
 
             model_a.get_layer("fc_1").weight_gradients.set(avg_weight_gradients_fc_1)
             model_a.get_layer("fc_2").weight_gradients.set(avg_weight_gradients_fc_2)
