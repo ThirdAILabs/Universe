@@ -205,7 +205,7 @@ void FullyConnectedLayer::eigenForward(const BoltVector& input,
   eigen_output.noalias() = eigen_weights * eigen_input;
 
   eigen_biases.array().addTo(eigen_output);
-  
+
   switch (_act_func) {
     case ActivationFunction::ReLU:
       eigen_output = eigen_output.array().max(0.0);
@@ -228,8 +228,8 @@ void FullyConnectedLayer::eigenForward(const BoltVector& input,
 void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
   if (output.isDense()) {
     if (input.isDense()) {
-      // backpropagateImpl<false, true, true>(input, output);
-      eigenBackpropagate<false>(input, output);
+      backpropagateImpl<false, true, true>(input, output);
+      // eigenBackpropagate<false>(input, output);
     } else {
       backpropagateImpl<false, true, false>(input, output);
     }
@@ -246,9 +246,9 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
                                                   BoltVector& output) {
   if (output.isDense()) {
     if (input.isDense()) {
-      // backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true,
-      // /*PREV_DENSE=*/true>(input, output);
-      eigenBackpropagate<true>(input, output);
+      backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true, /*PREV_DENSE=*/true>(
+          input, output);
+      // eigenBackpropagate<true>(input, output);
     } else {
       backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true,
                         /*PREV_DENSE=*/false>(input, output);
@@ -280,6 +280,14 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
   for (uint64_t n = 0; n < len_out; n++) {
     assert(!std::isnan(output.gradients[n]));
     output.gradients[n] *= actFuncDerivative(output.activations[n], _act_func);
+
+    if (output.gradients[n] == 0.0) {
+      // Neurons with gradients of 0 will not propagate gradients to weights or
+      // the previous layer. We will also likely have a number of 0 gradients
+      // with ReLU.
+      continue;
+    }
+
     assert(!std::isnan(output.gradients[n]));
     // Because DENSE is known at compile time the compiler can remove this
     // conditional
