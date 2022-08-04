@@ -67,7 +67,7 @@ def to_numpy(xdata, ydata):
     return xdata, ydata
 
 
-def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
+def train_bolt(dtypes, ytrain, yvalid, ytest, xtest, dataset_base_filename, out_file):
     bolt_train_file = dataset_base_filename + "/Train.csv"
     bolt_valid_file = dataset_base_filename + "/Valid.csv"
     bolt_test_file = dataset_base_filename + "/Test.csv"
@@ -107,10 +107,13 @@ def train_bolt(dtypes, ytrain, yvalid, ytest, dataset_base_filename, out_file):
 
     end = time.time()
 
+    single_xtest = xtest.iloc[0]
+    single_xtest_dict = {i: str(single_xtest[i]) for i in range(len(single_xtest))}
     start_inference = time.time()
-    tc.predict(bolt_test_file)
+    tc.predict_single(single_xtest_dict)
     end_inference = time.time()
-    inference_time = (end_inference - start_inference) / len(ytest)
+    inference_time = (end_inference - start_inference)
+
 
     log_message(
         f"BOLT Accuracy: {best_test_accuracy}, Total Training Time: {end - start}, Single Inference Time: {inference_time}\n",
@@ -138,10 +141,12 @@ def train_xgboost(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file):
 
     end_training = time.time()
 
+    single_xtest = xtest[0:1]
+    print(single_xtest.columns)
     start_inference = time.time()
-    predictions = model.predict(xtest)
+    predictions = model.predict(single_xtest)
     end_inference = time.time()
-    inference_time = (end_inference - start_inference) / len(predictions)
+    inference_time = (end_inference - start_inference)
 
     log_message(
         f"XGBoost Accuracy: {accuracy(predictions, ytest)}, Total Training Time: {end_training - start_training}, Single Inference Time: {inference_time}\n",
@@ -163,10 +168,11 @@ def train_tabnet(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file):
 
     end_training = time.time()
 
+    single_xtest = xtest[0:1]
     start_inference = time.time()
-    predictions = model.predict(xtest)
+    predictions = model.predict(single_xtest)
     end_inference = time.time()
-    inference_time = (end_inference - start_inference) / len(predictions)
+    inference_time = (end_inference - start_inference)
 
     log_message(
         f"TabNet Accuracy: {accuracy(predictions, ytest)}, Total Training Time: {end_training - start_training}, Single Inference Time: {inference_time}\n",
@@ -214,7 +220,7 @@ def main():
             out_file,
         )
 
-        train_bolt(dtypes, ytrain, yvalid, ytest, data_dir, out_file)
+        train_bolt(dtypes, ytrain, yvalid, ytest, xtest, data_dir, out_file)
         train_xgboost(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)
         train_tabnet(xtrain, ytrain, xvalid, yvalid, xtest, ytest, out_file)
 
