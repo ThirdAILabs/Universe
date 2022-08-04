@@ -178,6 +178,8 @@ class Worker:
                     layers, compression_density=compression_density, sketch_biases=True
                 )
             )
+        print(f"compression density is {compression_density}")
+        print(f"the thresholds are {w_threshold} {b_threshold}")
         self.w_threshold = w_threshold
         self.b_threshold = b_threshold
 
