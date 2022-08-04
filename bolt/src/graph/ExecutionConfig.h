@@ -131,7 +131,7 @@ class PredictConfig {
   }
 
   PredictConfig& withOutputCallback(
-      std::function<void(const BoltVector&)> output_callback) {
+      const std::function<void(const BoltVector&)>& output_callback) {
     _output_callback = output_callback;
     return *this;
   }
