@@ -14,7 +14,9 @@ namespace thirdai::bolt {
 class TextClassifier {
  public:
   TextClassifier(const std::string& model_size, uint32_t n_classes)
-      : _input_dim(100000), _n_classes(n_classes) {
+      :  // TODO make this value a default for pairgrams/autoclassifiers
+        _input_dim(100000),
+        _n_classes(n_classes) {
     _model = AutoClassifierUtils::createNetwork(
         /* input_dim= */ _input_dim,
         /* n_classes= */ n_classes, model_size);
