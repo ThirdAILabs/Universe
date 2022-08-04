@@ -56,17 +56,13 @@ def create_fully_connected_layer_configs(
             layer = bolt.FullyConnected(
                 dim=config.get("dim"),
                 sparsity=config.get("sparsity", 1.0),
-                activation_function=
-                    config.get("activation")
-                ,
+                activation_function=config.get("activation"),
             )
         else:
             layer = bolt.FullyConnected(
                 dim=config.get("dim"),
                 sparsity=config.get("sparsity", 1.0),
-                activation_function=
-                    config.get("activation")
-                ,
+                activation_function=config.get("activation"),
                 sampling_config=bolt.DWTASamplingConfig(
                     hashes_per_table=config.get("hashes_per_table", 0),
                     num_tables=config.get("num_tables", 0),

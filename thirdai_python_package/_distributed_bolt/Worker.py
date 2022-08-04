@@ -150,6 +150,12 @@ class Worker:
                 compression_density=compression_density
             )
             # print(f"worker id {self.id} after calculate gradients {self.w_sparse_grad}")
+
+        if compression == "UNBIASED_DRAGON":
+            self.w_sparse_grad, self.b_sparse_grad = self.getUnbiasedDragonGradients(
+                compression_density=compression_density
+            )
+
         return True
 
     def approximate_topk(self, weights, top_frac):
@@ -157,17 +163,77 @@ class Worker:
         vals = np.partition(weights, n)[-n:]
         return np.min(vals)
 
+    def getUnbiasedThresholdDragon(self, compression_density):
+        w_threshold = []
+        b_threshold = []
+
+        for layers in range(len(self.layers) - 1):
+            w_threshold.append(
+                self.network.get_unbiased_threshold_for_gradients(
+                    layers, compression_density=compression_density, sketch_biases=False
+                )
+            )
+            b_threshold.append(
+                self.network.get_unbiased_threshold_for_gradients(
+                    layers, compression_density=compression_density, sketch_biases=True
+                )
+            )
+        self.w_threshold = w_threshold
+        self.b_threshold = b_threshold
+
+        return (self.w_threshold, self.b_threshold)
+
+    def setUnbiasedThresholdDragon(self, threshold):
+        
+        self.w_threshold=[0]*(len(self.layers)-1)
+        self.b_threshold=[0]*(len(self.layers)-1)
+
+        num_workers=len(threshold)
+        assert num_workers==ray.get(self.supervisor.num_workers.remote())
+
+        for workers in range(num_workers):
+            for layers in range(len(self.layers)-1):
+                self.w_threshold[layers]+=threshold[workers][0][layers]/num_workers
+                self.b_threshold[layers]+=threshold[workers][1][layers]/num_workers
+        
+
+    def getUnbiasedDragonGradients(self, compression_density):
+        w_sparse_grad = []
+        b_sparse_grad = []
+
+        seed = np.random.randint(1000)
+
+        for layer in range(len(self.layers) - 1):
+            x = self.network.get_unbiased_indexed_sketch_for_gradients(
+                layer_index=layer,
+                compression_density=compression_density,
+                sketch_biases=False,
+                seed_for_hashing=seed,
+                pregenerate_distribution=True,
+                threshold=self.w_threshold[layer],
+            )
+
+            y = self.network.get_unbiased_indexed_sketch_for_gradients(
+                layer_index=layer,
+                compression_density=compression_density,
+                sketch_biases=True,
+                seed_for_hashing=seed,
+                pregenerate_distribution=True,
+                threshold=self.b_threshold[layer],
+            )
+
+            w_sparse_grad.append(x)
+            b_sparse_grad.append(y)
+
+        return (w_sparse_grad, b_sparse_grad)
+
     def getDragonGradients(self, compression_density):
-        # print(f"calculating the dragon gradients for the workerid {self.id}")
-        start = time.time()
         w_sparse_grad = []
         b_sparse_grad = []
 
         seed = np.random.randint(20)
 
         for layer in range(len(self.layers) - 1):
-            # x = self.network.get_weights_gradients(layer)
-            # y = self.network.get_biases_gradients(layer)
 
             x = self.network.get_indexed_sketch_for_gradients(
                 layer_index=layer,
@@ -181,40 +247,6 @@ class Worker:
                 sketch_biases=True,
                 seed_for_hashing=seed,
             )
-            # x=np.ravel(x)
-            # y=np.ravel(y)
-
-            # m_x=int(compression_density*x.shape[0])
-            # m_y=int(compression_density*y.shape[0])
-            # thresh_x=0
-            # thresh_y=0
-
-            # num_samples=2
-            # for i in range(num_samples):
-
-            #     sampled_x=np.random.choice(x.shape[0],min(x.shape[0],100000))
-            #     sampled_y=np.random.choice(y.shape[0],min(y.shape[0],100000))
-
-            #     thresh_x+=self.approximate_topk(np.abs(x[sampled_x]),compression_density)/num_samples
-            #     thresh_y+=self.approximate_topk(np.abs(y[sampled_y]),compression_density)/num_samples
-
-            # idx=np.where((x>thresh_x) | (x<-1*thresh_x))[0].astype(int)
-            # idy=np.where((y>thresh_y) | (y<-1*thresh_y))[0].astype(int)
-
-            # indices_x=idx[np.random.choice(idx.shape[0],min(idx.shape[0],m_x))]
-            # indices_y=idy[np.random.choice(idy.shape[0],min(idy.shape[0],m_y))]
-
-            # # np.random.shuffle(indices_x)
-            # # np.random.shuffle(indices_y)
-
-            # # indices_x=indices_x[:m_x]
-            # # indices_y=indices_y[:m_y]
-
-            # vals_x=x[indices_x]
-            # vals_y=y[indices_y]
-
-            # w_sparse_grad.append((indices_x,vals_x))
-            # b_sparse_grad.append((indices_y,vals_y))
             w_sparse_grad.append(x)
             b_sparse_grad.append(y)
 
@@ -230,8 +262,11 @@ class Worker:
         calls 'get_weights_gradient' and 'get_biases_gradients' functions
         inside bolt to take the gradients and return them to supervisor.
         """
-        if compression is not None and compression == "DRAGON":
-            return self.w_sparse_grad, self.b_sparse_grad
+        if compression is not None:
+            if compression == "DRAGON":
+                return self.w_sparse_grad, self.b_sparse_grad
+            if compression == "UNBIASED_DRAGON":
+                return self.w_sparse_grad, self.b_sparse_grad
 
         w_gradients = []
         b_gradients = []
@@ -292,6 +327,28 @@ class Worker:
 
     def receiveDragonGradients(self):
 
+        w_sparse_grads, b_sparse_grads = ray.get(self.supervisor.sparse_grads.remote())
+
+        for layer in range(len(self.layers) - 1):
+            shape = (self.layers[layer], self.layers[layer + 1])
+
+            w_values = np.ravel(
+                np.hstack([node_weights[layer] for node_weights in w_sparse_grads])
+            )
+            b_values = np.ravel(
+                np.hstack([node_biases[layer] for node_biases in b_sparse_grads])
+            )
+
+            self.network.set_unbiased_gradients_from_indices_values(
+                layer_index=layer, indices=w_values, set_biases=False, threshold=self.w_threshold[layer]
+            )
+            self.network.set_unbiased_gradients_from_indices_values(
+                layer_index=layer, indices=b_values, set_biases=True, threshold=self.b_threshold[layer]
+            )
+        return True
+
+    def receiveDragonGradients(self):
+
         num_workers = ray.get(self.supervisor.num_workers.remote())
 
         w_sparse_grads, b_sparse_grads = ray.get(self.supervisor.sparse_grads.remote())
@@ -310,7 +367,6 @@ class Worker:
                     ]
                 )
             )
-
             b_indices = np.ravel(
                 np.hstack([node_biases[layer][0] for node_biases in b_sparse_grads])
             )
@@ -322,12 +378,6 @@ class Worker:
                     ]
                 )
             )
-
-            # print(f"shape of w_indices is {w_indices.shape}")
-            # print(f"shape of w_values is {w_values.shape}")
-            # print(f"shape of b_indices is {b_indices.shape}")
-            # print(f"shape of b_values is {b_values.shape}")
-
             self.network.set_gradients_from_indices_values(
                 layer_index=layer,
                 indices=w_indices,
@@ -340,18 +390,6 @@ class Worker:
                 values=b_values,
                 set_biases=True,
             )
-
-            # w_gradient=np.zeros(shape[0]*shape[1])
-            # b_gradient=np.zeros(shape[1])
-
-            # for node_weights in w_sparse_grads:
-            #     np.add.at(w_gradient,node_weights[layer][0],node_weights[layer][1])
-            # for node_biases in b_sparse_grads:
-            #     np.add.at(b_gradient,node_biases[layer][0],node_biases[layer][1])
-
-            # self.network.set_weights_gradients(layer, w_gradient.reshape(shape[1],shape[0])/num_workers)
-            # self.network.set_biases_gradients(layer, b_gradient/num_workers)
-
         return True
 
     def receiveGradientsLinearCommunication(self, compression=None):
@@ -367,6 +405,10 @@ class Worker:
 
         if compression == "DRAGON":
             self.receiveDragonGradients()
+            return True
+
+        if compression == "UNBIASED_DRAGON":
+            self.receiveUnbiasedDragonGradients()
             return True
 
         w_gradients_updated, b_gradients_updated = ray.get(

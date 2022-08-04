@@ -159,8 +159,10 @@ class DistributedBolt:
                         )
 
                     if scheduler and epoch < 2:
-                        if batch_no==0:
-                            self.logging.info("Scheduler is true and full gradients enabled")
+                        if batch_no == 0:
+                            self.logging.info(
+                                "Scheduler is true and full gradients enabled"
+                            )
                         (
                             gradient_computation_time,
                             getting_gradient_time,
@@ -184,8 +186,10 @@ class DistributedBolt:
                         gradient_send_time = time.time() - start_gradients_send_time
 
                     elif scheduler and epoch < 10:
-                        if batch_no==0:
-                            self.logging.info("Scheduler is true and full compression density ")
+                        if batch_no == 0:
+                            self.logging.info(
+                                "Scheduler is true and full compression density "
+                            )
                         (
                             gradient_computation_time,
                             getting_gradient_time,
@@ -209,8 +213,10 @@ class DistributedBolt:
                         gradient_send_time = time.time() - start_gradients_send_time
 
                     elif scheduler:
-                        if batch_no==0:
-                            self.logging.info("Scheduler is true and half compression density")
+                        if batch_no == 0:
+                            self.logging.info(
+                                "Scheduler is true and half compression density"
+                            )
                         (
                             gradient_computation_time,
                             getting_gradient_time,
@@ -219,7 +225,7 @@ class DistributedBolt:
                             self.supervisor.subworkLinearCommunication.remote(
                                 batch_no,
                                 compression=compression,
-                                compression_density=compression_density/2,
+                                compression_density=compression_density / 2,
                             )
                         )
                         start_gradients_send_time = time.time()
@@ -233,7 +239,7 @@ class DistributedBolt:
                         )
                         gradient_send_time = time.time() - start_gradients_send_time
                     else:
-                        if batch_no==0:
+                        if batch_no == 0:
                             self.logging.info("Scheduler is false")
                         (
                             gradient_computation_time,
