@@ -1,5 +1,8 @@
 #include "DatasetPython.h"
+#include <bolt/src/layers/BoltVector.h>
 #include <dataset/src/DatasetLoaders.h>
+#include <dataset/src/Datasets.h>
+#include <dataset/src/InMemoryDataset.h>
 #include <dataset/src/NumpyDataset.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
 #include <dataset/src/batch_processors/MaskedSentenceBatchProcessor.h>
@@ -297,7 +300,9 @@ void createDatasetSubmodule(py::module_& module) {
            static_cast<bolt::BoltBatch& (BoltDataset::*)(uint64_t i)>(
                &BoltDataset::at),
            py::arg("i"), py::return_value_policy::reference)
-      .def("__len__", &BoltDataset::numBatches);
+      .def("__len__", &BoltDataset::numBatches)
+      .def("save", &BoltDataset::save, py::arg("filename"))
+      .def_static("load", &BoltDataset::load, py::arg("filename"));
 
   py::class_<BoltTokenDataset, BoltTokenDatasetPtr>(  // NOLINT
       dataset_submodule, "BoltTokenDataset");
