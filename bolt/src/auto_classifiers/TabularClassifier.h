@@ -60,6 +60,44 @@ class TabularClassifier {
         output_filename, _metadata->getClassIdToNames());
   }
 
+  std::string predictSingle(
+      std::unordered_map<uint32_t, std::string>& col_to_values_map) {
+    std::vector<uint32_t> unigram_hashes;
+    for (uint32_t col = 0; col < _metadata->numColumns(); col++) {
+      if (col_to_values_map.count(col)) {
+        switch (_metadata->getColType(col)) {
+          case dataset::TabularDataType::Numeric: {
+            std::exception_ptr err;
+            uint32_t unigram = _metadata->getNumericHashValue(
+                col, col_to_values_map[col], err);
+            if (err) {
+              std::rethrow_exception(err);
+            }
+            unigram_hashes.push_back(unigram);
+            break;
+          }
+          case dataset::TabularDataType::Categorical: {
+            uint32_t unigram =
+                _metadata->getStringHashValue(col_to_values_map[col], col);
+            unigram_hashes.push_back(unigram);
+            break;
+          }
+          case dataset::TabularDataType::Label: {
+            break;
+          }
+        }
+      }
+    }
+    BoltVector input = dataset::TextEncodingUtils::computePairgramsFromUnigrams(
+        unigram_hashes, _input_dim);
+
+    BoltVector output =
+        _model->predictSingle({input}, {},
+                              /* use_sparse_inference = */ true);
+
+    return _metadata->getClassIdToNames()[output.getIdWithHighestActivation()];
+  }
+
   void save(const std::string& filename) {
     std::ofstream filestream =
         dataset::SafeFileIO::ofstream(filename, std::ios::binary);
