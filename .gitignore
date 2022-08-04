@@ -30,6 +30,9 @@ thirdai.egg-info
 # Ignore all .der key files
 *.der
 
+#ignoring files written for test purposes
+bolt/python_tests/delete*
+
 # Docs
 docs/_*
 

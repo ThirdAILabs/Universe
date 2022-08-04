@@ -7,6 +7,9 @@
 #include <hashing/src/SRP.h>
 #include <sys/types.h>
 #include <cctype>
+#include <cstdlib>
+#include <ctime>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -74,6 +77,92 @@ inline void getDragonSketch(const std::vector<float>& full_gradient,
                    sketch_size;
         indices[hash] = i;
         gradients[hash] = full_gradient[i];
+      }
+    }
+  }
+}
+
+inline void getUnbiasedSketch(const std::vector<float>& full_gradient,
+                              int* indices, int sketch_size,
+                              int seed_for_hashing,
+                              bool pregenerate_distribution, float threshold) {
+  int loop_size = static_cast<int>(full_gradient.size());
+
+  (void)threshold;
+  (void)sketch_size;
+  (void)indices;
+  (void)seed_for_hashing;
+  (void)full_gradient;
+
+  std::vector<int> random_numbers;
+  int range_pregenerated_numbers;
+
+  if (pregenerate_distribution) {
+    std::cout << "Pregenerate distribution is true" << std::endl;
+    int pregenerated_numbers = 10'000;
+    range_pregenerated_numbers = 2048;
+    std::mt19937 gen(time(0));
+    std::uniform_int_distribution<> distrib(0, range_pregenerated_numbers);
+
+    random_numbers.assign(pregenerated_numbers, 0);
+
+#pragma omp parallel for default(none) \
+    shared(random_numbers, pregenerated_numbers, distrib, gen)
+    for (int i = 0; i < pregenerated_numbers; i++) {
+      random_numbers[i] = distrib(gen);
+    }
+  }
+
+  std::cout << "Pregenerated numbers are done " << std::endl;
+
+  std::mt19937 index(rand() % 1000);
+  int reset_index_after = 1000;
+  int current_index_reps = 1000;
+  int current_index = 0;
+
+  /*
+  // #pragma omp parallel for default(none) \
+  //     shared(full_gradient, indices, sketch_size, seed_for_hashing, \
+  //            pregenerate_distribution, threshold, loop_size, random_numbers,
+  \
+  //            range_pregenerated_numbers, index) \
+  //         firstprivate(reset_index_after, current_index_reps, current_index)
+  */
+
+  for (int i = 0; i < loop_size; i++) {
+    if (std::abs(full_gradient[i]) > threshold) {
+      int hash = thirdai::hashing::MurmurHash(std::to_string(i).c_str(),
+                                              std::to_string(i).length(),
+                                              seed_for_hashing) %
+                 sketch_size;
+      indices[hash] = i * ((full_gradient[i] > 0) - (full_gradient[i] < 0));
+    } else {
+      if (pregenerate_distribution) {
+        if (current_index_reps >= reset_index_after) {
+          current_index = index() % random_numbers.size();
+          current_index_reps = 0;
+        }
+        if (random_numbers[current_index] <=
+            static_cast<int>(range_pregenerated_numbers *
+                             std::abs(full_gradient[i]) / threshold)) {
+          int hash = thirdai::hashing::MurmurHash(std::to_string(i).c_str(),
+                                                  std::to_string(i).length(),
+                                                  seed_for_hashing) %
+                     sketch_size;
+          indices[hash] = i * ((full_gradient[i] > 0) - (full_gradient[i] < 0));
+          current_index = (current_index + 1) % random_numbers.size();
+          current_index_reps++;
+        }
+      } else {
+        std::bernoulli_distribution coinflip(std::abs(full_gradient[i]) /
+                                             threshold);
+        if (coinflip(index)) {
+          int hash = thirdai::hashing::MurmurHash(std::to_string(i).c_str(),
+                                                  std::to_string(i).length(),
+                                                  seed_for_hashing) %
+                     sketch_size;
+          indices[hash] = i * ((full_gradient[i] > 0) - (full_gradient[i] < 0));
+        }
       }
     }
   }

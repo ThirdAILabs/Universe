@@ -541,44 +541,70 @@ class DistributedPyNetwork final : public DistributedModel {
                            free_gradients_when_done));
   }
 
-  py::array_t<int> getUnbiasedIndexedSketchGradients(uint32_t layer_index,
-                                                     float compression_density,
-                                                     bool sketch_biases,
-                                                     int seed_for_hashing,
-                                                     bool pregenerate_distribution) {
+  py::array_t<int> getUnbiasedIndexedSketchGradients(
+      uint32_t layer_index, float compression_density, bool sketch_biases,
+      int seed_for_hashing, bool pregenerate_distribution, float threshold) {
     size_t dim = DistributedModel::getDim(layer_index);
     size_t prev_dim = (layer_index > 0)
                           ? DistributedModel::getDim(layer_index - 1)
                           : DistributedModel::getInputDim();
 
-    uint64_t mem_size;
+    int mem_size;
     int* indices;
 
     if (sketch_biases) {
-      mem_size = static_cast<uint64_t>(compression_density * dim);
+      mem_size = static_cast<int>(compression_density * dim);
       indices = new int[mem_size];
 
-      std::memset(indices, 0, sizeof(uint64_t) * mem_size);
+      std::memset(indices, 0, sizeof(int) * mem_size);
       DistributedModel::getUnbiasedBiasGradientSketch(
-          layer_index, indices, mem_size, seed_for_hashing, pregenerate_distribution);
+          layer_index, indices, mem_size, seed_for_hashing,
+          pregenerate_distribution, threshold);
     } else {
-      mem_size = static_cast<uint64_t>(compression_density * dim * prev_dim);
+      mem_size = static_cast<int>(compression_density * dim * prev_dim);
       indices = new int[mem_size];
+      std::memset(indices, 0, sizeof(int) * mem_size);
 
-      std::memset(indices, 0, sizeof(uint64_t) * mem_size);
+      std::cout << "Sketch is set with zeros" << std::endl;
+
       DistributedModel::getUnbiasedWeightGradientSketch(
-          layer_index, indices, mem_size, seed_for_hashing, pregenerate_distribution);
+          layer_index, indices, mem_size, seed_for_hashing,
+          pregenerate_distribution, threshold);
     }
 
     py::capsule free_indices_when_done(
-        indices, [](void* ptr) { delete static_cast<uint64_t*>(ptr); });
+        indices, [](void* ptr) { delete static_cast<int*>(ptr); });
 
-    return py::array_t<int>({mem_size}, {sizeof(uint64_t)}, indices,
-                     free_indices_when_done);
+    return py::array_t<int>({mem_size}, {sizeof(int)}, indices,
+                            free_indices_when_done);
+  }
+
+  float getUnbiasedThresholdForGradient(uint32_t layer_index,
+                                        float compression_density,
+                                        bool sketch_biases) {
+    int mem_size;
+    size_t dim = DistributedModel::getDim(layer_index);
+    size_t prev_dim = (layer_index > 0)
+                          ? DistributedModel::getDim(layer_index - 1)
+                          : DistributedModel::getInputDim();
+
+    float threshold = 0.01;
+    if (sketch_biases) {
+      mem_size = static_cast<int>(compression_density * dim);
+      std::cout << "mem_size " << mem_size << std::endl;
+      threshold = DistributedModel::_layers.at(layer_index)
+                      ->getUnbiasedBiasThresholdForGradient(mem_size);
+    } else {
+      mem_size = static_cast<int>(compression_density * dim * prev_dim);
+      threshold = DistributedModel::_layers.at(layer_index)
+                      ->getUnbiasedWeightThresholdForGradient(mem_size);
+    }
+    return threshold;
   }
 
   void setUnbiasedGradientsFromIndices(uint32_t layer_index,
-                                       py::object& indices, bool set_biases) {
+                                       py::object& indices, bool set_biases,
+                                       float threshold) {
     // std::cout<<"inside the set gradients from tuple function"<<std::endl;
 
     if (!thirdai::bolt::python::isNumpyArray(indices)) {
@@ -597,13 +623,13 @@ class DistributedPyNetwork final : public DistributedModel {
     NumpyArray<int> cpp_indices = indices.cast<NumpyArray<int>>();
 
     int* indices_raw_data = const_cast<int*>(cpp_indices.data());
-    uint64_t size = static_cast<uint64_t>(cpp_indices.shape(0));
+    int size = static_cast<int>(cpp_indices.shape(0));
 
     if (set_biases) {
       checkSignedIndexOutOfRange(indices_raw_data,
                                  DistributedModel::getDim(layer_index), size);
       DistributedModel::setUnbiasedBiasGradientsFromIndicesValues(
-          layer_index, indices_raw_data, size);
+          layer_index, indices_raw_data, size, threshold);
     } else {
       checkSignedIndexOutOfRange(
           indices_raw_data,
@@ -612,7 +638,7 @@ class DistributedPyNetwork final : public DistributedModel {
                                  : DistributedModel::getInputDim()),
           size);
       DistributedModel::setUnbiasedWeightGradientsFromIndicesValues(
-          layer_index, indices_raw_data, size);
+          layer_index, indices_raw_data, size, threshold);
     }
   }
 };
