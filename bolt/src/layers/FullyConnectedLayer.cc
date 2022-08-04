@@ -223,6 +223,9 @@ void FullyConnectedLayer::eigenDenseDenseForward(const BoltVector& input,
 void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
   if (output.isDense()) {
     if (input.isDense()) {
+      // This eigen dense dense optimized version seems to give speedup in
+      // certain cases but not all, so it is here as an experimental feature
+      // that can be enabled when desired.
 #if THIRDAI_USE_EIGEN_FOR_BACKPROPAGATE
       eigenDenseDenseBackpropagate<false>(input, output);
 #else
@@ -244,6 +247,9 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
                                                   BoltVector& output) {
   if (output.isDense()) {
     if (input.isDense()) {
+      // This eigen dense dense optimized version seems to give speedup in
+      // certain cases but not all, so it is here as an experimental feature
+      // that can be enabled when desired.
 #if THIRDAI_USE_EIGEN_FOR_BACKPROP
       eigenDenseDenseBackpropagate<true>(input, output);
 #else
