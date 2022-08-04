@@ -74,16 +74,6 @@ class Supervisor:
     def unbiased_dragon_compression(self, batch_no, compression_density=0.10):
 
         start_gradient_computation = time.time()
-        calculateGradients = ray.get(
-            [
-                self.workers[id].calculateGradientsLinear.remote(
-                    batch_no,
-                    compression="UNBIASED_DRAGON",
-                    compression_density=compression_density,
-                )
-                for id in range(len(self.workers))
-            ]
-        )
 
         threshold=ray.get(
             [
@@ -95,6 +85,17 @@ class Supervisor:
         ray.get(
             [
                 self.workers[id].setUnbiasedThresholdDragon(threshold)
+                for id in range(len(self.workers))
+            ]
+        )
+        
+        calculateGradients = ray.get(
+            [
+                self.workers[id].calculateGradientsLinear.remote(
+                    batch_no,
+                    compression="UNBIASED_DRAGON",
+                    compression_density=compression_density,
+                )
                 for id in range(len(self.workers))
             ]
         )
