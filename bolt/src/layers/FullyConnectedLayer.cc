@@ -15,11 +15,6 @@
 
 namespace thirdai::bolt {
 
-std::unique_ptr<Optimizer> make_optimizer(uint64_t dim, uint64_t& prev_dim) {
-  // return std::make_unique<Adam>(dim, prev_dim),
-  return std::make_unique<CompressedAdam>(dim, prev_dim);
-}
-
 FullyConnectedLayer::FullyConnectedLayer(
     const FullyConnectedLayerConfig& config, uint64_t prev_dim,
     bool is_distributed)
@@ -36,7 +31,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _w_gradient(config.getDim() * prev_dim, 0),
       _biases(config.getDim()),
       _b_gradient(config.getDim(), 0),
-      _optimizer(make_optimizer(config.getDim(), prev_dim)),
+      _optimizer(::thirdai::optim::make_optimizer(config.getDim(), prev_dim)),
       _prev_is_active(_prev_dim, false),
       _is_active(config.getDim(), false),
       _is_distributed(is_distributed),
