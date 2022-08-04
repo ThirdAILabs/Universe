@@ -128,6 +128,28 @@ class FullyConnectedLayer final : public SequentialLayer {
                                          float* values_raw_data,
                                          uint32_t sketch_size) final;
 
+  void getUnbiasedBiasGradientSketch(int* indices, int sketch_size,
+                                     int seed_for_hashing,
+                                     bool pregenerate_distribution,
+                                     float threshold) const final;
+
+  void getUnbiasedWeightGradientSketch(int* indices, int sketch_size,
+                                       int seed_for_hashing,
+                                       bool pregenerate_distribution,
+                                       float threshold) const final;
+
+  void setUnbiasedBiasGradientsFromIndicesValues(int* indices_raw_data,
+                                                 int sketch_size,
+                                                 float threshold) final;
+
+  void setUnbiasedWeightGradientsFromIndicesValues(int* indices_raw_data,
+                                                   int sketch_size,
+                                                   float threshold) final;
+
+  float getUnbiasedBiasThresholdForGradient(int sketch_size) const final;
+
+  float getUnbiasedWeightThresholdForGradient(int sketch_size) const final;
+
   ActivationFunction getActivationFunction() const { return _act_func; }
 
   void buildLayerSummary(std::stringstream& summary,
