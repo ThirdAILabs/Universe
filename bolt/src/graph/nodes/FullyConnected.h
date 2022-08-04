@@ -83,7 +83,7 @@ class FullyConnectedNode final
     oarchive(*_layer);
   }
 
-  void isDistributedTraining() final { _layer->isDistributedTraining(); }
+  void enableDistributedTraining() { _layer->enableDistributedTraining(); }
 
   void loadParameters(const std::string& filename) {
     std::ifstream filestream =

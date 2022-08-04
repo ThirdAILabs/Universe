@@ -40,85 +40,35 @@ def build_single_node_bolt_dag_model(train_data, train_labels, sparsity, num_cla
     )
     return model
 
-
-def test_distributed_training_with_bolt():
-    train_x, train_y = gen_numpy_training_data(convert_to_bolt_dataset=False)
-
-    train_x_a, train_x_b = np.split(train_x, 2)
-    train_y_a, train_y_b = np.split(train_y, 2)
-
-    model_a = build_single_node_bolt_dag_model(
-        train_data=train_x_a, train_labels=train_y_a, sparsity=0.2, num_classes=10
-    )
-    model_b = build_single_node_bolt_dag_model(
-        train_data=train_x_b, train_labels=train_y_b, sparsity=0.2, num_classes=10
-    )
-
-    num_of_batches = min(model_a.numTrainingBatch(), model_b.numTrainingBatch())
-
-    # update same parameters across both the model
-    model_b.get_layer("fc_1").weights.set(model_a.get_layer("fc_1").weights.get())
-    model_b.get_layer("fc_1").biases.set(model_a.get_layer("fc_1").biases.get())
-    model_b.get_layer("fc_2").weights.set(model_a.get_layer("fc_2").weights.get())
-    model_b.get_layer("fc_2").biases.set(model_a.get_layer("fc_2").biases.get())
-
-    # assert (model_a.get_layer("fc_1").weights.get()==model_b.get_layer("fc_1").weights.get()).all()
-
-    epochs = 5
-    for epoch in range(epochs):
-        for batch_num in range(num_of_batches):
-            model_a.calculateGraidentSingleNode(batch_num)
-            model_b.calculateGraidentSingleNode(batch_num)
-
-            # average the gradients
-            avg_weight_gradients_fc_1 = model_a.get_layer(
+def avg_gradients(model_a, model_b):
+    avg_weight_gradients_fc_1 = model_a.get_layer(
                 "fc_1"
             ).weight_gradients.copy()
-            avg_weight_gradients_fc_2 = model_a.get_layer(
-                "fc_2"
-            ).weight_gradients.copy()
+    avg_weight_gradients_fc_2 = model_a.get_layer(
+        "fc_2"
+    ).weight_gradients.copy()
 
-            avg_bias_gradients_fc_1 = model_a.get_layer("fc_1").bias_gradients.copy()
-            avg_bias_gradients_fc_2 = model_a.get_layer("fc_2").bias_gradients.copy()
+    avg_bias_gradients_fc_1 = model_a.get_layer("fc_1").bias_gradients.copy()
+    avg_bias_gradients_fc_2 = model_a.get_layer("fc_2").bias_gradients.copy()
 
-            avg_weight_gradients_fc_1 += model_b.get_layer(
-                "fc_1"
-            ).weight_gradients.copy()
-            avg_weight_gradients_fc_2 += model_b.get_layer(
-                "fc_2"
-            ).weight_gradients.copy()
+    avg_weight_gradients_fc_1 += model_b.get_layer(
+        "fc_1"
+    ).weight_gradients.copy()
+    avg_weight_gradients_fc_2 += model_b.get_layer(
+        "fc_2"
+    ).weight_gradients.copy()
 
-            avg_bias_gradients_fc_1 += model_b.get_layer("fc_1").bias_gradients.copy()
-            avg_bias_gradients_fc_2 += model_b.get_layer("fc_2").bias_gradients.copy()
+    avg_bias_gradients_fc_1 += model_b.get_layer("fc_1").bias_gradients.copy()
+    avg_bias_gradients_fc_2 += model_b.get_layer("fc_2").bias_gradients.copy()
 
-            avg_weight_gradients_fc_1 /= 2
-            avg_weight_gradients_fc_2 /= 2
-            avg_bias_gradients_fc_1 /= 2
-            avg_bias_gradients_fc_2 /= 2
+    avg_weight_gradients_fc_1 /= 2
+    avg_weight_gradients_fc_2 /= 2
+    avg_bias_gradients_fc_1 /= 2
+    avg_bias_gradients_fc_2 /= 2
+    return avg_weight_gradients_fc_1, avg_weight_gradients_fc_2, avg_bias_gradients_fc_1, avg_bias_gradients_fc_2
 
-            model_a.get_layer("fc_1").weight_gradients.set(avg_weight_gradients_fc_1)
-            model_a.get_layer("fc_2").weight_gradients.set(avg_weight_gradients_fc_2)
-            model_a.get_layer("fc_1").bias_gradients.set(avg_bias_gradients_fc_1)
-            model_a.get_layer("fc_2").bias_gradients.set(avg_bias_gradients_fc_2)
+def check_models(model_a, model_b, train_x, train_y):
 
-            model_b.get_layer("fc_1").weight_gradients.set(avg_weight_gradients_fc_1)
-            model_b.get_layer("fc_2").weight_gradients.set(avg_weight_gradients_fc_2)
-            model_b.get_layer("fc_1").bias_gradients.set(avg_bias_gradients_fc_1)
-            model_b.get_layer("fc_2").bias_gradients.set(avg_bias_gradients_fc_2)
-
-            assert (
-                model_a.get_layer("fc_1").weight_gradients.get()
-                == avg_weight_gradients_fc_1
-            ).all(), "Model A gradients are not equal to average"
-            assert (
-                model_b.get_layer("fc_1").weight_gradients.get()
-                == avg_weight_gradients_fc_1
-            ).all(), "Model B gradients are not equal to average"
-
-            model_a.updateParametersSingleNode()
-            model_b.updateParametersSingleNode()
-
-    # checks
     FC_1_WEIGHTS = (
         model_a.get_layer("fc_1").weights.get()
         == model_b.get_layer("fc_1").weights.get()
@@ -161,3 +111,62 @@ def test_distributed_training_with_bolt():
     assert (
         SAME_ACCURACY and ACCURACY_GREATER_THAN_THRESHOLD
     ), "Accuracy is less than threshold."
+
+
+def test_distributed_training_with_bolt():
+    train_x, train_y = gen_numpy_training_data(convert_to_bolt_dataset=False)
+
+    train_x_a, train_x_b = np.split(train_x, 2)
+    train_y_a, train_y_b = np.split(train_y, 2)
+
+    model_a = build_single_node_bolt_dag_model(
+        train_data=train_x_a, train_labels=train_y_a, sparsity=0.2, num_classes=10
+    )
+    model_b = build_single_node_bolt_dag_model(
+        train_data=train_x_b, train_labels=train_y_b, sparsity=0.2, num_classes=10
+    )
+
+    num_of_batches = min(model_a.numTrainingBatch(), model_b.numTrainingBatch())
+
+    # update same parameters across both the model
+    model_b.get_layer("fc_1").weights.set(model_a.get_layer("fc_1").weights.get())
+    model_b.get_layer("fc_1").biases.set(model_a.get_layer("fc_1").biases.get())
+    model_b.get_layer("fc_2").weights.set(model_a.get_layer("fc_2").weights.get())
+    model_b.get_layer("fc_2").biases.set(model_a.get_layer("fc_2").biases.get())
+
+    assert (model_a.get_layer("fc_1").weights.get()==model_b.get_layer("fc_1").weights.get()).all()
+
+    epochs = 5
+    for epoch in range(epochs):
+        for batch_num in range(num_of_batches):
+            model_a.calculateGraidentSingleNode(batch_num)
+            model_b.calculateGraidentSingleNode(batch_num)
+
+            avg_weight_gradients_fc_1, avg_weight_gradients_fc_2, avg_bias_gradients_fc_1, avg_bias_gradients_fc_2 = avg_gradients(model_a=model_a, model_b=model_b)
+
+            model_a.get_layer("fc_1").weight_gradients.set(avg_weight_gradients_fc_1)
+            model_a.get_layer("fc_2").weight_gradients.set(avg_weight_gradients_fc_2)
+            model_a.get_layer("fc_1").bias_gradients.set(avg_bias_gradients_fc_1)
+            model_a.get_layer("fc_2").bias_gradients.set(avg_bias_gradients_fc_2)
+
+            model_b.get_layer("fc_1").weight_gradients.set(avg_weight_gradients_fc_1)
+            model_b.get_layer("fc_2").weight_gradients.set(avg_weight_gradients_fc_2)
+            model_b.get_layer("fc_1").bias_gradients.set(avg_bias_gradients_fc_1)
+            model_b.get_layer("fc_2").bias_gradients.set(avg_bias_gradients_fc_2)
+
+            assert (
+                model_a.get_layer("fc_1").weight_gradients.get()
+                == avg_weight_gradients_fc_1
+            ).all(), "Model A gradients are not equal to average Gradients"
+            assert (
+                model_b.get_layer("fc_1").weight_gradients.get()
+                == avg_weight_gradients_fc_1
+            ).all(), "Model B gradients are not equal to average Gradients"
+
+            model_a.updateParametersSingleNode()
+            model_b.updateParametersSingleNode()
+
+    model_a.finishTraining()
+    model_b.finishTraining()
+
+    check_models(model_a=model_a, model_b=model_b, train_x=train_x, train_y=train_y)

@@ -102,7 +102,7 @@ MetricData BoltGraph::train(
 
         const BoltBatch& batch_labels = train_context.labels()->at(batch_idx);
         processTrainingBatch(batch_labels, metrics);
-        updateParametersandSampling(train_config.learningRate(),
+        updateParametersAndSampling(train_config.learningRate(),
                                     rebuild_hash_tables_batch,
                                     reconstruct_hash_functions_batch);
 
@@ -163,7 +163,7 @@ void BoltGraph::processTrainingBatch(const BoltBatch& batch_labels,
   perBatchCallback();
 }
 
-void BoltGraph::updateParametersandSampling(
+void BoltGraph::updateParametersAndSampling(
     float learning_rate, uint32_t rebuild_hash_tables_batch,
     uint32_t reconstruct_hash_functions_batch) {
   ++_batch_cnt;
@@ -346,9 +346,9 @@ void BoltGraph::updateParameters(float learning_rate, uint32_t batch_cnt) {
   }
 }
 
-void BoltGraph::isDistributedTraining() {
-  for (auto& node : _nodes) {
-    node->isDistributedTraining();
+void BoltGraph::enableDistributedTraining() {
+  for (NodePtr& node : _nodes) {
+    dynamic_cast<FullyConnectedNode*>(node.get())->enableDistributedTraining();
   }
 }
 

@@ -64,11 +64,6 @@ class EmbeddingNode final : public Node,
         "EmbeddingNode is in an invalid internal state");
   }
 
-  void isDistributedTraining() final {
-    throw exceptions::NotImplemented(
-        "Distributed Training is not Implemented for Embedding Network.");
-  }
-
  private:
   void compileImpl() final {
     _embedding_layer = std::make_shared<EmbeddingLayer>(_config);

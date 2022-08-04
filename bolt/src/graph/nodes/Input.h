@@ -43,8 +43,6 @@ class Input final : public Node {
 
   bool isInputNode() const final { return true; }
 
-  void isDistributedTraining() final {}
-
  private:
   void compileImpl() final {
     if (_expected_input_dim == 0) {

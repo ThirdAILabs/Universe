@@ -47,8 +47,6 @@ FullyConnectedLayer::FullyConnectedLayer(
   }
 }
 
-void FullyConnectedLayer::isDistributedTraining() { _is_distributed = true; }
-
 void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
                                   const BoltVector* labels) {
   if (output.isDense()) {
@@ -457,7 +455,6 @@ inline void FullyConnectedLayer::updateBiasParameters(float lr, float B1,
     }
 
     float grad = _b_gradient[cur_neuron];
-
     assert(!std::isnan(grad));
 
     _b_momentum[cur_neuron] = B1 * _b_momentum[cur_neuron] + (1 - B1) * grad;
@@ -492,7 +489,6 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
     float eps, float B1_bias_corrected, float B2_bias_corrected) {
   auto indx = cur_neuron * _prev_dim + prev_neuron;
   float grad = _w_gradient[indx];
-
   assert(!std::isnan(grad));
 
   _w_momentum[indx] = B1 * _w_momentum[indx] + (1 - B1) * grad;
@@ -502,7 +498,6 @@ inline void FullyConnectedLayer::updateSingleWeightParameters(
 
   _weights[indx] += lr * (_w_momentum[indx] / B1_bias_corrected) /
                     (std::sqrt(_w_velocity[indx] / B2_bias_corrected) + eps);
-
   assert(!std::isnan(_weights[indx]));
 
   _w_gradient[indx] = 0;

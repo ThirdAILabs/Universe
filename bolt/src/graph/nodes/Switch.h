@@ -65,11 +65,6 @@ class SwitchNode final : public Node,
     return shared_from_this();
   }
 
-  void isDistributedTraining() final {
-    throw exceptions::NotImplemented(
-        "Distributed Training is not Implemented for MLM.");
-  }
-
  private:
   void compileImpl() final {
     for (auto& layer : _layers) {

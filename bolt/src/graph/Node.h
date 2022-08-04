@@ -114,7 +114,6 @@ class Node {
   // Returns the output dimension of the node. This is used for subsequent nodes
   // during compilation.
   virtual uint32_t outputDim() const = 0;
-  virtual void isDistributedTraining() = 0;
 
   /*
    * Returns the number of nonzeros this node will have in its output. If the

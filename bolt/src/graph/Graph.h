@@ -25,11 +25,11 @@
 
 namespace thirdai::bolt {
 
-class DistributedGraph;
+class DistributedTrainingContext;
 using GraphCallback = std::function<void()>;
 
 class BoltGraph {
-  friend class DistributedGraph;
+  friend class DistributedTrainingContext;
 
  public:
   /*
@@ -135,7 +135,7 @@ class BoltGraph {
 
   void updateParameters(float learning_rate, uint32_t batch_cnt);
 
-  void updateParametersandSampling(float learning_rate,
+  void updateParametersAndSampling(float learning_rate,
                                    uint32_t rebuild_hash_tables_batch,
                                    uint32_t reconstruct_hash_functions_batch);
 
@@ -156,7 +156,10 @@ class BoltGraph {
   void updateSampling(uint32_t rebuild_hash_tables_batch,
                       uint32_t reconstruct_hash_functions_batch);
 
-  void isDistributedTraining();
+  // This function make sure that the parameter updates are dense
+  // in distributed setting even when the training is sparse
+  void enableDistributedTraining();
+
   constexpr bool checkBatchInterval(uint32_t num_batches) const {
     return (_batch_cnt % num_batches) == (num_batches - 1);
   }
