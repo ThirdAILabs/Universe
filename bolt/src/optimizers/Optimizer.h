@@ -156,7 +156,7 @@ class CompressedAdam : public Optimizer {
   }
 
  private:
-  using AdamParamsType = ::thirdai::bolt::CompressedVector<float>;
+  using AdamParamsType = ::thirdai::bolt::BiasedSketch<float>;
   AdamParamsType _w_momentum;
   AdamParamsType _w_velocity;
   AdamParamsType _b_momentum;
