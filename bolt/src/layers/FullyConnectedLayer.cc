@@ -55,9 +55,6 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
                                   const BoltVector* labels) {
   if (output.isDense()) {
     if (input.isDense()) {
-      // TODO(Nicholas): Re-implement this case with dense matrix library
-      // forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/true>(input, output,
-      // labels);
       eigenForward(input, output);
     } else {
       forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/false>(input, output, labels);
@@ -228,8 +225,11 @@ void FullyConnectedLayer::eigenForward(const BoltVector& input,
 void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
   if (output.isDense()) {
     if (input.isDense()) {
+#if THIRDAI_USE_EIGEN_FOR_BACKPROPAGATE
+      eigenBackpropagate<false>(input, output);
+#else
       backpropagateImpl<false, true, true>(input, output);
-      // eigenBackpropagate<false>(input, output);
+#endif
     } else {
       backpropagateImpl<false, true, false>(input, output);
     }
@@ -246,9 +246,12 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
                                                   BoltVector& output) {
   if (output.isDense()) {
     if (input.isDense()) {
+#if THIRDAI_USE_EIGEN_FOR_BACKPROP
+      eigenBackpropagate<true>(input, output);
+#else
       backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true, /*PREV_DENSE=*/true>(
           input, output);
-      // eigenBackpropagate<true>(input, output);
+#endif
     } else {
       backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true,
                         /*PREV_DENSE=*/false>(input, output);
