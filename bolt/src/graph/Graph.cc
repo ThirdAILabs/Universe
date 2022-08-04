@@ -184,9 +184,7 @@ InferenceResult BoltGraph::predict(
     const std::vector<dataset::BoltDatasetPtr>& test_data,
     const std::vector<dataset::BoltTokenDatasetPtr>& test_tokens,
     const dataset::BoltDatasetPtr& test_labels,
-    const PredictConfig& predict_config,
-    const std::optional<std::function<void(const BoltVector&)>>&
-        output_callback) {
+    const PredictConfig& predict_config) {
   DatasetContext predict_context(test_data, test_tokens, test_labels);
 
   bool has_labels = (test_labels != nullptr);
@@ -231,7 +229,7 @@ InferenceResult BoltGraph::predict(
 
       bar.increment();
 
-      processOutputCallback(output_callback, batch_size);
+      processOutputCallback(predict_config.outputCallback(), batch_size);
 
       outputTracker.saveOutputBatch(_output, batch_size);
     }
@@ -524,6 +522,9 @@ void BoltGraph::freezeHashTables(bool insert_labels_if_not_found) {
     }
   }
 }
+
+template void BoltGraph::serialize(cereal::BinaryInputArchive&);
+template void BoltGraph::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {

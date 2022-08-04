@@ -110,11 +110,6 @@ void AutoClassifierUtils::predict(
   }
   auto [test_data, test_labels] = dataset->loadInMemory();
 
-  PredictConfig config = PredictConfig::makeConfig()
-                             .enableSparseInference()
-                             .withMetrics({"categorical_accuracy"})
-                             .silence();
-
   std::optional<std::ofstream> output_file;
   if (output_filename) {
     output_file = dataset::SafeFileIO::ofstream(*output_filename);
@@ -128,8 +123,13 @@ void AutoClassifierUtils::predict(
     (*output_file) << class_id_to_class_name[class_id] << std::endl;
   };
 
-  model->predict({test_data}, {}, test_labels, config,
-                 print_predictions_callback);
+  PredictConfig config = PredictConfig::makeConfig()
+                             .enableSparseInference()
+                             .withMetrics({"categorical_accuracy"})
+                             .withOutputCallback(print_predictions_callback)
+                             .silence();
+
+  model->predict({test_data}, {}, test_labels, config);
 
   if (output_file) {
     output_file->close();
