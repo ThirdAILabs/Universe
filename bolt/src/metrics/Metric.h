@@ -4,12 +4,18 @@
 #include <bolt/src/metrics/MetricHelpers.h>
 #include <algorithm>
 #include <atomic>
+#include <cstdlib>
+#include <functional>
 #include <iomanip>
 #include <limits>
 #include <memory>
+#include <queue>
+#include <sstream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
+#include <utility>
 
 namespace thirdai::bolt {
 
@@ -277,6 +283,95 @@ class RootMeanSquaredError final : public Metric {
  private:
   std::atomic<float> _sum_of_squared_errors;
   std::atomic<uint64_t> _count;
+};
+
+class PrecisionAt : public Metric {
+ public:
+  explicit PrecisionAt(uint32_t k): _k(k), _correct(0), _count(0) {}
+
+  void computeMetric(const BoltVector& output, const BoltVector& labels) final {
+    auto top_k = output.isDense() 
+        ? topK</* DENSE= */true>(output, _k) 
+        : topK</* DENSE= */false>(output, _k);
+    auto correct = labels.isDense()
+        ? countCorrectInTopK</* DENSE= */ true>(std::move(top_k), labels)
+        : countCorrectInTopK</* DENSE= */ false>(std::move(top_k), labels);
+    _correct.fetch_add(correct);
+    _count.fetch_add(_k);
+  }
+
+  double getMetricAndReset(bool verbose) final {
+    double metric = static_cast<double>(_correct) / _count;
+    if (verbose) {
+      std::cout << "Precision at " << _k << ": " << std::setprecision(3) << metric
+                << std::endl;
+    }
+    _correct = 0;
+    _count = 0;
+    return metric;
+  }
+
+  static constexpr const char* name = "precision_at_";
+
+  std::string getName() final { 
+    std::stringstream name_ss;
+    name_ss << name << _k;
+    return name_ss.str(); 
+  }
+
+  static inline bool isPrecisionAtK(const std::string& metric_name) {
+    return metric_name.substr(0, 13) == name;
+  }
+
+  static inline uint32_t getK(const std::string& metric_name) {
+    auto k = metric_name.substr(13);
+    char* end_ptr;
+    return std::strtol(k.data(), &end_ptr, 10);
+  }
+ 
+ private:
+  using val_idx_pair_t = std::pair<float, uint32_t>; 
+  using top_k_t = std::priority_queue<val_idx_pair_t, std::vector<val_idx_pair_t>, std::greater<val_idx_pair_t>>;
+
+  template<bool DENSE>
+  static inline top_k_t topK(const BoltVector& output, uint32_t k) {
+    top_k_t top_k;
+    for (uint32_t pos = 0; pos < std::min(k, output.len); pos++) {
+      top_k.push(std::move(valueIndexPair<DENSE>(output, pos)));
+    }
+    for (uint32_t pos = k; pos < output.len; pos++) {
+      auto val_idx_pair = valueIndexPair<DENSE>(output, pos);
+      if (val_idx_pair > top_k.top()) {
+        top_k.pop();
+        top_k.push(std::move(val_idx_pair));
+      }
+    }
+    return top_k;
+  }
+
+  template<bool DENSE>
+  static inline val_idx_pair_t valueIndexPair(const BoltVector& output, uint32_t pos) {
+    if (DENSE) {
+      return {output.activations[pos], pos};
+    }
+    return {output.activations[pos], output.active_neurons[pos]};
+  }
+
+  template<bool DENSE>
+  static inline uint32_t countCorrectInTopK(top_k_t&& top_k, const BoltVector& labels) {
+    uint32_t correct = 0;
+    for (uint32_t i = 0; i < top_k.size(); i++) {
+      if (labels.findActiveNeuron<DENSE>(/* active_neuron= */ top_k.top().second).activation > 0) {
+        correct++;
+      }
+      top_k.pop();
+    }
+    return correct;
+  }
+
+  uint32_t _k;
+  std::atomic_uint64_t _correct;
+  std::atomic_uint64_t _count;
 };
 
 using MetricData = std::unordered_map<std::string, std::vector<double>>;

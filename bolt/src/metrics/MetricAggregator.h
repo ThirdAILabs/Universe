@@ -27,6 +27,8 @@ class MetricAggregator {
         _metrics.push_back(std::make_shared<MeanSquaredErrorMetric>());
       } else if (name == RootMeanSquaredError::name) {
         _metrics.push_back(std::make_shared<RootMeanSquaredError>());
+      } else if (PrecisionAt::isPrecisionAtK(name)) {
+        _metrics.push_back(std::make_shared<PrecisionAt>(PrecisionAt::getK(name)));
       } else {
         throw std::invalid_argument("'" + name + "' is not a valid metric.");
       }

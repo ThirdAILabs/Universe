@@ -10,6 +10,7 @@ def seq_without_temporal_feats():
         lookback=10,  # num days to look back
         # Optional:
         period=1,  # expected num days between each record; period for clubbing data points together
+        metrics=["categorical_accuracy", "precision_at_10", "precision_at_25", "precision_at_50", "precision_at_100"]
     )
 
 def seq_with_temporal_feats():
@@ -24,10 +25,12 @@ def seq_with_temporal_feats():
         period=1,  # expected num days between each record; period for clubbing data points together
         trackable_qty=[""],
         trackable_cat=[("movie", 17770, 20)],
+        metrics=["categorical_accuracy", "precision_at_10", "precision_at_25", "precision_at_50", "precision_at_100"]
     )
 
 def train_and_evaluate(seq, suffix):
-    seq.train("/share/data/netflix/netflix_train.csv-binary-class", epochs=1, learning_rate=0.0001)
+    seq.train("/share/data/netflix/netflix_train.csv-binary-class", epochs=5, learning_rate=0.0001,
+              validation_filename="/share/data/netflix/netflix_test.csv-binary-class")
     return seq.predict("/share/data/netflix/netflix_test.csv-binary-class", "netflix_predictions_next_item_" + suffix + ".txt")
 
 def main():
