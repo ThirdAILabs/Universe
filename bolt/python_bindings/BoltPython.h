@@ -448,13 +448,13 @@ class PySequentialClassifier : public SequentialClassifier {
                          const std::vector<py::tuple>& categorical = {},
                          const std::vector<std::string>& trackable_qty = {},
                          const std::vector<py::tuple>& trackable_cat = {},
-                         const std::vector<std::string>& metrics = {"categorical_accuracy"})
+                         const std::vector<std::string> metrics = {"categorical_accuracy"})
       : SequentialClassifier(
             {toItem(item), toTimestamp(timestamp), toTarget(target),
              toTrackConfig(lookahead, lookback, period), toText(text),
              toCategoricals(categorical), toTrackableQtys(trackable_qty),
              toTrackableCats(trackable_cat)},
-            size, /* delimiter = */ ',', metrics) {}
+            size, /* delimiter = */ ',', std::move(metrics)) {}
 
  private:
   static Item toItem(const py::tuple& tuple) {

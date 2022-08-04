@@ -319,12 +319,12 @@ class PrecisionAt : public Metric {
     return name_ss.str(); 
   }
 
-  static inline bool isPrecisionAtK(const std::string& name) {
-    return name.substr(0, 13) == name;
+  static inline bool isPrecisionAtK(const std::string& metric_name) {
+    return metric_name.substr(0, 13) == name;
   }
 
-  static inline bool getK(const std::string& name) {
-    auto k = name.substr(13);
+  static inline uint32_t getK(const std::string& metric_name) {
+    auto k = metric_name.substr(13);
     char* end_ptr;
     return std::strtol(k.data(), &end_ptr, 10);
   }

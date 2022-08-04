@@ -653,7 +653,7 @@ void createBoltSubmodule(py::module_& module) {
               const py::tuple&, uint32_t, uint32_t, uint32_t,
               const std::vector<std::string>&, const std::vector<py::tuple>&,
               const std::vector<std::string>&, const std::vector<py::tuple>&,
-              const std::vector<std::string>&>(),
+              const std::vector<std::string>>(),
           py::arg("size"), py::arg("item"), py::arg("timestamp"),
           py::arg("target"), py::arg("lookahead"), py::arg("lookback"),
           py::arg("period") = 1, py::arg("text") = std::vector<std::string>(),

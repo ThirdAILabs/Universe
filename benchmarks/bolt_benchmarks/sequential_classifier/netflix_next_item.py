@@ -10,6 +10,7 @@ def seq_without_temporal_feats():
         lookback=10,  # num days to look back
         # Optional:
         period=1,  # expected num days between each record; period for clubbing data points together
+        metrics=["categorical_accuracy", "precision_at_10", "precision_at_25", "precision_at_50", "precision_at_100"]
     )
 
 def seq_with_temporal_feats():
