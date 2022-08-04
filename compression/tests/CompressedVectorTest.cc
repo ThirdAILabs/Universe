@@ -1,4 +1,4 @@
-#include <bolt/src/utils/CompressedVector.h>
+#include "compression/src/CompressedVector.h"
 #include <gtest/gtest.h>
 #include <cmath>
 #include <functional>

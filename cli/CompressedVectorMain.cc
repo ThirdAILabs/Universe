@@ -1,6 +1,6 @@
 #include "CLI11.hpp"
-#include <bolt/src/utils/CompressedVector.h>
 #include <gtest/gtest.h>
+#include <compression/src/CompressedVector.h>
 #include <cmath>
 #include <functional>
 #include <iostream>

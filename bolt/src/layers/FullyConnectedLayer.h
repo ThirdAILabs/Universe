@@ -8,7 +8,6 @@
 #include "LayerUtils.h"
 #include "SequentialLayer.h"
 #include "bolt/src/optimizers/Optimizer.h"
-#include "bolt/src/utils/CompressedVector.h"
 #include "utils/utils.h"
 #include <hashing/src/DWTA.h>
 #include <hashtable/src/SampledHashTable.h>

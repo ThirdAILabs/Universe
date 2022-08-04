@@ -1,5 +1,6 @@
+#pragma once
 
-#include "bolt/src/utils/CompressedVector.h"
+#include "compression/src/CompressedVector.h"
 #include "utils/utils.h"
 
 namespace thirdai::optim {
