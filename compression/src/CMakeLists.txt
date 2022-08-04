@@ -1,2 +1,3 @@
 
 add_library(compression_lib CompressedVector.cc)
+target_link_libraries(compression_lib PUBLIC hash_function_lib)
