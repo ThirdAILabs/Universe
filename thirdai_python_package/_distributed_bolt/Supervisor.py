@@ -77,18 +77,18 @@ class Supervisor:
 
         threshold=ray.get(
             [
-                self.workers[id].getUnbiasedThresholdDragon(compression_density=compression_density)
+                self.workers[id].getUnbiasedThresholdDragon.remote(compression_density=compression_density)
                 for id in range(len(self.workers))
             ]
         )
 
         ray.get(
             [
-                self.workers[id].setUnbiasedThresholdDragon(threshold)
+                self.workers[id].setUnbiasedThresholdDragon.remote(threshold)
                 for id in range(len(self.workers))
             ]
         )
-        
+
         calculateGradients = ray.get(
             [
                 self.workers[id].calculateGradientsLinear.remote(
