@@ -189,8 +189,7 @@ class Worker:
         self.b_threshold=[0]*(len(self.layers)-1)
 
         num_workers=len(threshold)
-        assert num_workers==ray.get(self.supervisor.num_workers.remote())
-
+        
         for workers in range(num_workers):
             for layers in range(len(self.layers)-1):
                 self.w_threshold[layers]+=threshold[workers][0][layers]/num_workers

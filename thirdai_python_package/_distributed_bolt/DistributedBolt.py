@@ -60,7 +60,7 @@ class DistributedBolt:
         self.logging.info("Config Done")
 
         self.workers = [
-            Worker.options(max_concurrency=2).remote(
+            Worker.options(max_concurrency=4).remote(
                 self.layers, config, self.no_of_workers, id
             )
             for id in range(self.no_of_workers)
