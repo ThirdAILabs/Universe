@@ -681,7 +681,7 @@ void createBoltSubmodule(py::module_& module) {
            "Given a mapping from column names to values, predict the output "
            "class of that row. \n"
            "Arguments:\n"
-           " * col_to_values_map: Dict from int to string representing an "
+           " * col_to_values_map: Dict from string to string representing an "
            "input sample.\n")
       .def("save", &TabularClassifier::save, py::arg("filename"),
            "Saves the classifier to a file. The file path must not require any "

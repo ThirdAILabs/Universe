@@ -61,8 +61,9 @@ class TabularClassifier {
   }
 
   std::string predictSingle(
-      std::unordered_map<uint32_t, std::string>& col_to_values_map) {
+      std::unordered_map<std::string, std::string>& col_to_values_map) {
     std::vector<uint32_t> unigram_hashes;
+    _metadata->getColFromName();
     for (uint32_t col = 0; col < _metadata->numColumns(); col++) {
       if (col_to_values_map.count(col)) {
         switch (_metadata->getColType(col)) {

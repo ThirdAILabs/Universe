@@ -54,6 +54,8 @@ class TabularMetadata {
 
   TabularDataType getColType(uint32_t col) const { return _column_dtypes[col]; }
 
+  uint32_t getColFromName(const std::string& col_name) {}
+
   uint32_t numClasses() const { return _class_id_to_class.size(); }
 
   bool containsClassName(const std::string& str_value) const {
