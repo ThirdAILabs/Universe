@@ -15,6 +15,14 @@ def get_predict_config():
     )
 
 
+def get_layer_norm_config():
+    return (
+        bolt.graph.LayerNormConfig.make()
+        .center(beta_regularizer=0.0025)
+        .scale(gamma_regularizer=0.9)
+    )
+
+
 class ModelWithLayers:
     def __init__(self, n_classes):
         self.input_layer = bolt.graph.Input(dim=n_classes)
@@ -27,7 +35,15 @@ class ModelWithLayers:
             dim=2000, sparsity=0.15, activation="relu"
         )(self.input_layer)
 
-        self.concat = bolt.graph.Concatenate()([self.hidden1, self.hidden2])
+        self.normalize_hidden1 = bolt.graph.LayerNormalization(
+            layer_norm_config=get_layer_norm_config()
+        )(self.hidden1)
+
+        self.normalize_hidden2 = bolt.graph.LayerNormalization(
+            layer_norm_config=get_layer_norm_config()
+        )(self.hidden2)
+
+        self.concat = bolt.graph.Concatenate()([self.normalize_hidden1, self.hidden2])
 
         self.output = bolt.graph.FullyConnected(dim=n_classes, activation="softmax")(
             self.concat

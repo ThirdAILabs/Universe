@@ -53,7 +53,7 @@ class LayerNormNode final : public Node,
   uint32_t outputDim() const final { return _node_to_normalize->outputDim(); }
 
   bool isInputNode() const final {
-    // _node_to_normalize should not be an input node
+    // This should not be an input node
     return false;
   }
 
@@ -158,7 +158,10 @@ class LayerNormNode final : public Node,
       float grad =
           normDerivative(output_vector_activation, mean, variance, len);
 
-      input_vector.gradients[neuron_index] += grad;
+      assert(!std::isnan(grad));
+      output_vector.gradients[neuron_index] = grad;
+      input_vector.gradients[neuron_index] +=
+          sqrt(variance) / (_config->gamma() + _config->epsilon());
     }
   }
 
@@ -225,6 +228,13 @@ class LayerNormNode final : public Node,
 
     BoltBatch outputs;
   };
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Node>(this), _config, _node_to_normalize,
+            _compiled);
+  }
 
   std::shared_ptr<NormalizationLayerConfig> _config;
 
