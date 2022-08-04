@@ -63,29 +63,25 @@ class TabularClassifier {
   std::string predictSingle(
       std::unordered_map<std::string, std::string>& col_to_values_map) {
     std::vector<uint32_t> unigram_hashes;
-    _metadata->getColFromName();
-    for (uint32_t col = 0; col < _metadata->numColumns(); col++) {
-      if (col_to_values_map.count(col)) {
-        switch (_metadata->getColType(col)) {
-          case dataset::TabularDataType::Numeric: {
-            std::exception_ptr err;
-            uint32_t unigram = _metadata->getNumericHashValue(
-                col, col_to_values_map[col], err);
-            if (err) {
-              std::rethrow_exception(err);
-            }
-            unigram_hashes.push_back(unigram);
-            break;
+    for (auto [col_name, value] : col_to_values_map) {
+      uint32_t col = _metadata->getColFromName(col_name);
+      switch (_metadata->getColType(col)) {
+        case dataset::TabularDataType::Numeric: {
+          std::exception_ptr err;
+          uint32_t unigram = _metadata->getNumericHashValue(col, value, err);
+          if (err) {
+            std::rethrow_exception(err);
           }
-          case dataset::TabularDataType::Categorical: {
-            uint32_t unigram =
-                _metadata->getStringHashValue(col_to_values_map[col], col);
-            unigram_hashes.push_back(unigram);
-            break;
-          }
-          case dataset::TabularDataType::Label: {
-            break;
-          }
+          unigram_hashes.push_back(unigram);
+          break;
+        }
+        case dataset::TabularDataType::Categorical: {
+          uint32_t unigram = _metadata->getStringHashValue(value, col);
+          unigram_hashes.push_back(unigram);
+          break;
+        }
+        case dataset::TabularDataType::Label: {
+          break;
         }
       }
     }

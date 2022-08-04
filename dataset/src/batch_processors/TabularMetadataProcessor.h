@@ -53,13 +53,18 @@ class TabularMetadata {
   void setColumnNames(
       std::unordered_map<uint32_t, std::string> col_to_col_name) {
     _col_to_col_name = col_to_col_name;
+    for (auto [col, col_name] : _col_to_col_name) {
+      _col_name_to_col[col_name] = col;
+    }
   }
 
   uint32_t numColumns() const { return _column_dtypes.size(); }
 
   TabularDataType getColType(uint32_t col) const { return _column_dtypes[col]; }
 
-  uint32_t getColFromName(const std::string& col_name) {}
+  uint32_t getColFromName(const std::string& col_name) {
+    return _col_name_to_col[col_name];
+  }
 
   uint32_t numClasses() const { return _class_id_to_class.size(); }
 
@@ -161,6 +166,7 @@ class TabularMetadata {
   std::unordered_map<std::string, uint32_t> _class_to_class_id;
   std::vector<std::string> _class_id_to_class;
   std::unordered_map<uint32_t, std::string> _col_to_col_name;
+  std::unordered_map<std::string, uint32_t> _col_name_to_col;
 };
 
 class TabularMetadataProcessor : public ComputeBatchProcessor {
