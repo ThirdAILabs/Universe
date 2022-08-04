@@ -55,7 +55,7 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
                                   const BoltVector* labels) {
   if (output.isDense()) {
     if (input.isDense()) {
-      eigenForward(input, output);
+      eigenDenseDenseForward(input, output);
     } else {
       forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/false>(input, output, labels);
     }
@@ -183,8 +183,8 @@ static void eigenSoftmax(Eigen::Map<Eigen::VectorXf>& outputs) {
   outputs.array() /= sum;
 }
 
-void FullyConnectedLayer::eigenForward(const BoltVector& input,
-                                       BoltVector& output) {
+void FullyConnectedLayer::eigenDenseDenseForward(const BoltVector& input,
+                                                 BoltVector& output) {
   _prev_is_dense = true;
   _this_is_dense = true;
   std::fill_n(output.gradients, output.len, 0);
@@ -192,12 +192,10 @@ void FullyConnectedLayer::eigenForward(const BoltVector& input,
   Eigen::Map<
       Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
       eigen_weights(_weights.data(), _dim, _prev_dim);
+  Eigen::Map<Eigen::VectorXf> eigen_biases(_biases.data(), _dim);
 
   Eigen::Map<Eigen::VectorXf> eigen_input(input.activations, input.len);
-
   Eigen::Map<Eigen::VectorXf> eigen_output(output.activations, output.len);
-
-  Eigen::Map<Eigen::VectorXf> eigen_biases(_biases.data(), _dim);
 
   eigen_output.noalias() = eigen_weights * eigen_input;
 
@@ -226,7 +224,7 @@ void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
   if (output.isDense()) {
     if (input.isDense()) {
 #if THIRDAI_USE_EIGEN_FOR_BACKPROPAGATE
-      eigenBackpropagate<false>(input, output);
+      eigenDenseDenseBackpropagate<false>(input, output);
 #else
       backpropagateImpl<false, true, true>(input, output);
 #endif
@@ -247,7 +245,7 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
   if (output.isDense()) {
     if (input.isDense()) {
 #if THIRDAI_USE_EIGEN_FOR_BACKPROP
-      eigenBackpropagate<true>(input, output);
+      eigenDenseDenseBackpropagate<true>(input, output);
 #else
       backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true, /*PREV_DENSE=*/true>(
           input, output);
@@ -316,8 +314,8 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
 }
 
 template <bool FIRST_LAYER>
-void FullyConnectedLayer::eigenBackpropagate(BoltVector& input,
-                                             BoltVector& output) {
+void FullyConnectedLayer::eigenDenseDenseBackpropagate(BoltVector& input,
+                                                       BoltVector& output) {
   for (uint32_t n = 0; n < output.len; n++) {
     output.gradients[n] *= actFuncDerivative(output.activations[n], _act_func);
   }

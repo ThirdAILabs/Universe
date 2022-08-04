@@ -211,13 +211,13 @@ class FullyConnectedLayer final : public SequentialLayer {
   void forwardImpl(const BoltVector& input, BoltVector& output,
                    const BoltVector* labels);
 
-  void eigenForward(const BoltVector& input, BoltVector& output);
+  void eigenDenseDenseForward(const BoltVector& input, BoltVector& output);
 
   template <bool FIRST_LAYER, bool DENSE, bool PREV_DENSE>
   void backpropagateImpl(BoltVector& input, BoltVector& output);
 
   template <bool FIRST_LAYER>
-  void eigenBackpropagate(BoltVector& input, BoltVector& output);
+  void eigenDenseDenseBackpropagate(BoltVector& input, BoltVector& output);
 
   template <bool DENSE, bool PREV_DENSE>
   void selectActiveNeurons(const BoltVector& input, BoltVector& output,
