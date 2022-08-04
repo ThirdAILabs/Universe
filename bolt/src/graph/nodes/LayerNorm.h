@@ -92,7 +92,7 @@ class LayerNormNode final : public Node,
     for (uint32_t neuron_index = 0; neuron_index < len; neuron_index++) {
       float activation = bolt_vector.activations[neuron_index];
 
-      variance += pow((activation - mean), 2.0);
+      variance += (activation - mean) * (activation - mean);
     }
     variance /= len;
 
@@ -107,35 +107,34 @@ class LayerNormNode final : public Node,
 
     const BoltVector& input_vector =
         _node_to_normalize->getOutputVector(vec_index);
-    std::vector<float> normalized_activations = {0};
 
-    auto moments = computeNormalizationMoments(input_vector);
+    auto [mean, variance] = computeNormalizationMoments(input_vector);
 
     for (uint32_t neuron_index = 0; neuron_index < input_vector.len;
          neuron_index++) {
       float activation = input_vector.activations[neuron_index];
 
-      auto z_score = (activation - moments.first) /
-                     sqrt(moments.second + _config->epsilon());
+      auto z_score = (activation - mean) / sqrt(variance + _config->epsilon());
 
       // apply a linear transformation to the z_score using gamma and beta
       // regularizers
       z_score += (_config->center()) ? _config->beta() : 0;
       z_score *= (_config->scale()) ? _config->gamma() : 1;
-      normalized_activations.push_back(z_score);
+      _layer_norm_state->outputs[vec_index].activations[neuron_index] = z_score;
     }
-
-    std::copy(normalized_activations.begin(), normalized_activations.end(),
-              _layer_norm_state->outputs[vec_index].activations);
   }
 
   // Computes the derivative of the normalization function
+  // For activation x, the normalization is given by
+  // f(x) = [(x - mu)/(sigma + epsilon)] * gamma + beta
+  // For a layer with n activations, the partial derivative is expressed by
+  // gamma * (n-1) * [(n*sigma^2) - [(x-mu)^2]] / (n^2* sigma^3)
   float normDerivative(float activation, float mean, float variance,
                        uint32_t vec_length) {
     assert(getState() == NodeState::PreparedForBatchProcessing);
 
-    float centered_activation = pow((activation - mean), 2.0);
-    auto denominator = pow(vec_length, 2.0) * variance * sqrt(variance);
+    float centered_activation = (activation - mean) * (activation - mean);
+    auto denominator = (vec_length * vec_length) * variance * sqrt(variance);
 
     auto gradient =
         ((vec_length - 1) * (variance * vec_length - centered_activation)) /
@@ -149,27 +148,29 @@ class LayerNormNode final : public Node,
     BoltVector& input_vector = _node_to_normalize->getOutputVector(vec_index);
     BoltVector& output_vector = getOutputVectorImpl(vec_index);
 
-    auto moments = computeNormalizationMoments(input_vector);
+    auto [mean, variance] = computeNormalizationMoments(input_vector);
 
     uint32_t len = input_vector.len;
 
     for (uint32_t neuron_index = 0; neuron_index < input_vector.len;
          neuron_index++) {
-      auto previous_activation = input_vector.activations[neuron_index];
-      float grad = normDerivative(previous_activation, moments.first,
-                                  moments.second, len);
+      auto output_vector_activation = output_vector.activations[neuron_index];
+      float grad =
+          normDerivative(output_vector_activation, mean, variance, len);
 
-      output_vector.gradients[neuron_index] = grad;
+      input_vector.gradients[neuron_index] += grad;
     }
   }
 
   void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
+    // TODO(blaise): Since _gamma_regularizer and _beta_regularizer are
+    // trainable parameters, we should add an implementation for updating these
+    // parameters
     (void)learning_rate;
     (void)batch_cnt;
   }
 
   BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
-    (void)vec_index;
     assert(getState() == NodeState::PreparedForBatchProcessing);
     return (_layer_norm_state->outputs)[vec_index];
   }

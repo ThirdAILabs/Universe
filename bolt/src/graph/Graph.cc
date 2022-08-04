@@ -476,6 +476,8 @@ void BoltGraph::verifyGraphProperties() {
 
   GraphPropertyChecks::verifyOutputIsNotConcatLayer(_output);
 
+  GraphPropertyChecks::verifyOutputIsNotNormalizationLayer(_output);
+
   GraphPropertyChecks::verifySoftmaxIsUsedWithCategoricalCrossEntropy(_output,
                                                                       _loss);
 

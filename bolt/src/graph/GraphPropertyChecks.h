@@ -4,6 +4,7 @@
 #include <bolt/src/graph/nodes/Concatenate.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/graph/nodes/LayerNorm.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 
 namespace thirdai::bolt {
@@ -21,6 +22,13 @@ class GraphPropertyChecks {
     if (dynamic_cast<ConcatenateNode*>(output.get())) {
       throw exceptions::GraphCompilationFailure(
           "Output node cannot be a Concatenate node.");
+    }
+  }
+
+  static void verifyOutputIsNotNormalizationLayer(const NodePtr& output) {
+    if (dynamic_cast<LayerNormNode*>(output.get())) {
+      throw exceptions::GraphCompilationFailure(
+          "Output node cannot be a normalization node");
     }
   }
 

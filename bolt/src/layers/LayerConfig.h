@@ -222,9 +222,15 @@ class NormalizationLayerConfig {
   bool _scale;
   // small threshold added to avoid division by zero
   float _epsilon;
-  // Regularizer. Defaults to 0.
+
+  // If scale or center are enabled, the node will scale the normalized outputs
+  // by broadcasting them with a trainable variable _gamma_regularizer, and
+  // center the outputs by broadcasting with a trainable variable
+  // _beta_regularizer. _gamma regularizer defaults to 1 and _beta_regularizer
+  // defaults to 0 so that centering and scaling have not effect before training
+  // begins.
+
   float _beta_regularizer;
-  // Regularizer. Defaults to 1.
   float _gamma_regularizer;
   float _verbose;
 };
