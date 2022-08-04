@@ -168,16 +168,16 @@ class Worker:
         b_threshold = []
 
         for layers in range(len(self.layers) - 1):
-            w_threshold.append(
-                self.network.get_unbiased_threshold_for_gradients(
-                    layers, compression_density=compression_density, sketch_biases=False
-                )
+            
+            wt=self.network.get_unbiased_threshold_for_gradients(
+                layers, compression_density=compression_density, sketch_biases=False
             )
-            b_threshold.append(
-                self.network.get_unbiased_threshold_for_gradients(
-                    layers, compression_density=compression_density, sketch_biases=True
-                )
+            
+            bt=self.network.get_unbiased_threshold_for_gradients(
+                layers, compression_density=compression_density, sketch_biases=True
             )
+            print(f"weight threshold for layer {layers} is {wt} and bias threshold is {bt} with the compression density {compression_density}")
+            
         print(f"compression density is {compression_density}")
         print(f"the thresholds are {w_threshold} {b_threshold}")
         self.w_threshold = w_threshold
@@ -194,8 +194,8 @@ class Worker:
         
         for workers in range(num_workers):
             for layers in range(len(self.layers)-1):
-                self.w_threshold[layers]+=max(threshold[workers][0][layers],0.01)/num_workers
-                self.b_threshold[layers]+=max(threshold[workers][1][layers],0.01)/num_workers
+                self.w_threshold[layers]+=max(threshold[workers][0][layers],0.001)/num_workers
+                self.b_threshold[layers]+=max(threshold[workers][1][layers],0.001)/num_workers
         
 
     def getUnbiasedDragonGradients(self, compression_density):

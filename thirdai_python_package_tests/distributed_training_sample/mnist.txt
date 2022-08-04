@@ -12,8 +12,8 @@ loss_fn = "CategoricalCrossEntropyLoss"
 train_metrics = []
 test_metrics = ["categorical_accuracy"]
 learning_rate = 0.001
-epochs = 5
-batch_size = 2500
+epochs = 20
+batch_size = 30000
 rehash = 6400
 rebuild = 128000
 
