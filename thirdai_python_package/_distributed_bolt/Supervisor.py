@@ -107,7 +107,7 @@ class Supervisor:
                 for id in range(len(self.workers))
             ]
         )
-        
+
         getting_gradient_time = time.time() - start_getting_gradients
         summing_and_averaging_gradients_start_time = time.time()
 
@@ -178,7 +178,7 @@ class Supervisor:
             if compression == "DRAGON":
                 return self.dragon_compression(batch_no, compression_density)
             if compression == "UNBIASED_DRAGON":
-                return self.unbiased_dragon_comprssion(batch_no,compression_density)
+                return self.unbiased_dragon_compression(batch_no,compression_density)
         
 
         start_gradient_computation = time.time()
