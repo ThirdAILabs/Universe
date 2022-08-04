@@ -568,7 +568,7 @@ class DistributedPyNetwork final : public DistributedModel {
       indices = new int[mem_size];
       std::memset(indices, 0, sizeof(int) * mem_size);
 
-      std::cout << "Sketch is set with zeros" << std::endl;
+      // std::cout << "Sketch is set with zeros" << std::endl;
 
       DistributedModel::getUnbiasedWeightGradientSketch(
           layer_index, indices, mem_size, seed_for_hashing,

@@ -98,7 +98,7 @@ inline void getUnbiasedSketch(const std::vector<float>& full_gradient,
   int range_pregenerated_numbers;
 
   if (pregenerate_distribution) {
-    std::cout << "Pregenerate distribution is true" << std::endl;
+    // std::cout << "Pregenerate distribution is true" << std::endl;
     int pregenerated_numbers = 10'000;
     range_pregenerated_numbers = 2048;
     std::mt19937 gen(time(0));
@@ -113,7 +113,7 @@ inline void getUnbiasedSketch(const std::vector<float>& full_gradient,
     }
   }
 
-  std::cout << "Pregenerated numbers are done " << std::endl;
+  // std::cout << "Pregenerated numbers are done " << std::endl;
 
   std::mt19937 index(rand() % 1000);
   int reset_index_after = 1000;

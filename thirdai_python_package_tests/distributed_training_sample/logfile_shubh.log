@@ -11344,3 +11344,10 @@
 2022-08-04 10:27:27,278 : INFO : DistributedBolt : Linear communication pattern is choosen
 2022-08-04 10:27:27,305 : INFO : DistributedBolt : 0 processed!, Total Batches: 24
 2022-08-04 10:27:27,306 : INFO : DistributedBolt : Scheduler is false
+2022-08-04 10:35:43,488 : INFO : DistributedBolt : Training has started!
+2022-08-04 10:35:43,974 : INFO : DistributedBolt : Ray Initialized
+2022-08-04 10:35:43,975 : INFO : DistributedBolt : Config Done
+2022-08-04 10:35:46,496 : INFO : DistributedBolt : Compression is UNBIASED_DRAGON with the density 0.2
+2022-08-04 10:35:46,496 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-08-04 10:35:46,539 : INFO : DistributedBolt : 0 processed!, Total Batches: 24
+2022-08-04 10:35:46,539 : INFO : DistributedBolt : Scheduler is false

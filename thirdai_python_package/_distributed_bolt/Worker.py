@@ -324,7 +324,7 @@ class Worker:
             self.network.set_biases_gradients(layer, self.b_gradients[layer])
         return True
 
-    def receiveDragonGradients(self):
+    def receiveUnbiasedDragonGradients(self):
 
         w_sparse_grads, b_sparse_grads = ray.get(self.supervisor.sparse_grads.remote())
 
