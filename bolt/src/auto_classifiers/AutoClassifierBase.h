@@ -37,7 +37,7 @@ class AutoClassifierBase {
                            bool use_sparse_inference);
 
  private:
-  std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
+  static std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
   loadStreamingDataset(
       const std::string& filename,
       const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
@@ -47,11 +47,11 @@ class AutoClassifierBase {
   uint32_t getHiddenLayerSize(const std::string& model_size, uint64_t n_classes,
                               uint64_t input_dim);
 
-  float getHiddenLayerSparsity(uint64_t layer_size);
+  static float getHiddenLayerSparsity(uint64_t layer_size);
 
   uint64_t getMemoryBudget(const std::string& model_size);
 
-  std::optional<uint64_t> getSystemRam();
+  static std::optional<uint64_t> getSystemRam();
 
   bool canLoadDatasetInMemory(const std::string& filename);
 
@@ -65,7 +65,7 @@ class AutoClassifierBase {
     archive(_model);
   }
 
-  std::shared_ptr<BoltGraph> _model;
+  BoltGraphPtr _model;
 };
 
 }  // namespace thirdai::bolt

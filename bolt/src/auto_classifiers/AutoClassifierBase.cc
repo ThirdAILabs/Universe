@@ -35,8 +35,8 @@ AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
 
   output_layer->addPredecessor(hidden_layer);
 
-  std::shared_ptr<BoltGraph> _model = std::make_shared<BoltGraph>(
-      std::vector<InputPtr>{input_layer}, output_layer);
+  _model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
+                                       output_layer);
 
   _model->compile(std::make_shared<CategoricalCrossEntropyLoss>());
 }
