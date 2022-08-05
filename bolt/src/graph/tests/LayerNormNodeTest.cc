@@ -7,6 +7,7 @@
 #include <bolt/src/networks/tests/BoltNetworkTestUtils.h>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <iostream>
 
 namespace thirdai::bolt::tests {
 
@@ -54,12 +55,24 @@ void testLayerNormNodeForwardAndBackwardPass() {
             model.getNodeByName("layer_norm_1")->outputDim());
 
   BoltVector& output_vector =
-      model.getNodeByName("layer_norm_1")->getOutputVector(/* vec_index= */ 1);
+      model.getNodeByName("layer_norm_1")->getOutputVector(/* vec_index= */ 2);
+  
+  BoltVector& input_vector = model.getNodeByName("fc_1")->getOutputVector(/* vec_index= */ 1);
 
-  for (uint32_t neuron_index = 0; neuron_index < output_vector.len;
-       neuron_index++) {
-    ASSERT_NE(output_vector.gradients[neuron_index], 0.0);
+  for (uint32_t i = 0; i < input_vector.len; i++) {
+    std::cout << " input_grad = " << input_vector.gradients[i] << std::endl;
   }
+
+  for (uint32_t i = 0; i < output_vector.len; i++) {
+    std::cout << " output_grad = " << output_vector.gradients[i] << std::endl;
+  }
+
+  // for (uint32_t neuron_index = 0; neuron_index < output_vector.len;
+  //      neuron_index++) {
+  //   ASSERT_NE(output_vector.gradients[neuron_index], 0.0);
+  // }
+
+  ASSERT_EQ(1, 2);
 }
 
 TEST(LayerNormNodeTest, LayerNormalizationTest) {

@@ -159,9 +159,10 @@ class LayerNormNode final : public Node,
           normDerivative(output_vector_activation, mean, variance, len);
 
       assert(!std::isnan(grad));
-      output_vector.gradients[neuron_index] = grad;
-      input_vector.gradients[neuron_index] +=
-          sqrt(variance) / (_config->gamma() + _config->epsilon());
+      std::cout << "GRAD FROM FUNCTION BACKPROP" << grad << std::endl;
+      output_vector.gradients[neuron_index] *= grad;
+      input_vector.gradients[neuron_index] =
+          output_vector.gradients[neuron_index];
     }
   }
 
