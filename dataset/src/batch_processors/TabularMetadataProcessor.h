@@ -63,6 +63,9 @@ class TabularMetadata {
   TabularDataType getColType(uint32_t col) const { return _column_dtypes[col]; }
 
   uint32_t getColFromName(const std::string& col_name) {
+    if (!_col_name_to_col.count(col_name)) {
+      throw std::invalid_argument("Recieved invalid column name: " + col_name);
+    }
     return _col_name_to_col[col_name];
   }
 
