@@ -50,7 +50,8 @@ class StreamingGenericDatasetLoader
   StreamingGenericDatasetLoader(
       std::string filename, std::vector<std::shared_ptr<Block>> input_blocks,
       std::vector<std::shared_ptr<Block>> label_blocks, uint32_t batch_size,
-      bool shuffle = false, DatasetShuffleConfig config = DatasetShuffleConfig(),
+      bool shuffle = false,
+      DatasetShuffleConfig config = DatasetShuffleConfig(),
       bool has_header = false, char delimiter = ',')
       : StreamingGenericDatasetLoader(
             std::make_shared<SimpleFileDataLoader>(filename, batch_size),

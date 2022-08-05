@@ -12,32 +12,30 @@ namespace thirdai::dataset {
 
 class StreamingGenericDatasetLoaderTests : public ::testing::Test {
  public:
-  void SetUp() override {
-    writeMockFile();
-  }
+  void SetUp() override { writeMockFile(); }
 
-  void TearDown() override { 
-    ASSERT_FALSE(remove(MOCK_FILE)); 
-  }
+  void TearDown() override { ASSERT_FALSE(remove(MOCK_FILE)); }
 
-  static StreamingGenericDatasetLoader makeMockPipeline(bool shuffle, uint32_t seed = 0) {
+  static StreamingGenericDatasetLoader makeMockPipeline(bool shuffle,
+                                                        uint32_t seed = 0) {
     auto mock_block =
         std::make_shared<MockBlock>(/* column = */ 0, /* dense = */ true);
-    
-    /* 
-      2 input blocks vs 1 label block to distinguish 
+
+    /*
+      2 input blocks vs 1 label block to distinguish
       between input and label vectors.
     */
     std::vector<std::shared_ptr<Block>> input_blocks({mock_block, mock_block});
     std::vector<std::shared_ptr<Block>> label_blocks({mock_block});
 
-    return {MOCK_FILE, input_blocks, label_blocks,
-            batch_size, shuffle, 
-            DatasetShuffleConfig(n_batches_in_shuffle_buffer, seed)};
+    return {
+        MOCK_FILE,    input_blocks,
+        label_blocks, batch_size,
+        shuffle,      DatasetShuffleConfig(n_batches_in_shuffle_buffer, seed)};
   }
 
-  static std::tuple<BoltDatasetPtr, BoltDatasetPtr>
-  streamToInMemoryDataset(StreamingGenericDatasetLoader&& pipeline) {
+  static std::tuple<BoltDatasetPtr, BoltDatasetPtr> streamToInMemoryDataset(
+      StreamingGenericDatasetLoader&& pipeline) {
     std::vector<bolt::BoltBatch> input_batches;
     std::vector<bolt::BoltBatch> label_batches;
     while (auto batch = pipeline.nextBatchTuple()) {
@@ -50,14 +48,16 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
             std::make_shared<BoltDataset>(std::move(label_batches))};
   }
 
-  static void assertCorrectVectors(std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset) {
+  static void assertCorrectVectors(
+      std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset) {
     auto [inputs, labels] = dataset;
     std::vector<bool> found(inputs->len());
 
     for (size_t batch_idx = 0; batch_idx < inputs->numBatches(); batch_idx++) {
       auto& input_batch = inputs->at(batch_idx);
       auto& label_batch = labels->at(batch_idx);
-      for (size_t vec_idx = 0; vec_idx < input_batch.getBatchSize(); vec_idx++) {
+      for (size_t vec_idx = 0; vec_idx < input_batch.getBatchSize();
+           vec_idx++) {
         auto& input_vec = input_batch[vec_idx];
         auto& label_vec = label_batch[vec_idx];
 
@@ -66,10 +66,9 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
         ASSERT_EQ(input_vec.activations[0], input_vec.activations[1]);
         ASSERT_EQ(input_vec.activations[0], label_vec.activations[0]);
         found[static_cast<size_t>(input_vec.activations[0])] = true;
-    
-      }  
+      }
     }
-    
+
     for (auto found_i : found) {
       ASSERT_TRUE(found_i);
     }
@@ -83,13 +82,13 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
 
     for (size_t batch_idx = 0; batch_idx < inputs->numBatches(); batch_idx++) {
       auto& input_batch = inputs->at(batch_idx);
-      for (size_t vec_idx = 0; vec_idx < input_batch.getBatchSize(); vec_idx++) {
-    
+      for (size_t vec_idx = 0; vec_idx < input_batch.getBatchSize();
+           vec_idx++) {
         if (input_batch[vec_idx].activations[0] != cur_expected_value) {
           return false;
         }
         cur_expected_value++;
-      }  
+      }
     }
     return true;
   }
@@ -99,21 +98,23 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     auto [inputs_1, _1] = dataset_1;
     auto [inputs_2, _2] = dataset_2;
 
-    for (size_t batch_idx = 0; batch_idx < inputs_1->numBatches(); batch_idx++) {
+    for (size_t batch_idx = 0; batch_idx < inputs_1->numBatches();
+         batch_idx++) {
       auto& input_batch_1 = inputs_1->at(batch_idx);
       auto& input_batch_2 = inputs_2->at(batch_idx);
-      for (size_t vec_idx = 0; vec_idx < input_batch_1.getBatchSize(); vec_idx++) {
-    
-        if (input_batch_1[vec_idx].activations[0] != input_batch_2[vec_idx].activations[0]) {
+      for (size_t vec_idx = 0; vec_idx < input_batch_1.getBatchSize();
+           vec_idx++) {
+        if (input_batch_1[vec_idx].activations[0] !=
+            input_batch_2[vec_idx].activations[0]) {
           return false;
         }
-
-      }  
+      }
     }
     return true;
   }
 
-  static void assertShuffledEnough(std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset) {
+  static void assertShuffledEnough(
+      std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset) {
     auto [inputs, _] = dataset;
 
     for (size_t batch_idx = 0; batch_idx < inputs->numBatches(); batch_idx++) {
@@ -126,7 +127,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
       if (batch_idx > 0) {
         ASSERT_TRUE(containsVectorsFromEarlierBatch(batch, batch_idx));
       }
-      
+
       if (batch_idx < inputs->numBatches() - 1) {
         ASSERT_TRUE(containsVectorsFromLaterBatch(batch, batch_idx));
       }
@@ -142,21 +143,23 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     file.close();
   }
 
-  static size_t countOriginalVectors(bolt::BoltBatch& batch, uint32_t batch_idx) {
+  static size_t countOriginalVectors(bolt::BoltBatch& batch,
+                                     uint32_t batch_idx) {
     float original_value_range_start = batch_idx * batch.getBatchSize();
     float original_value_range_end = (batch_idx + 1) * batch.getBatchSize();
     size_t count = 0;
     for (size_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
       auto value = batch[vec_idx].activations[0];
-      if (value >= original_value_range_start
-          && value < original_value_range_end) {
-        count++;     
+      if (value >= original_value_range_start &&
+          value < original_value_range_end) {
+        count++;
       }
     }
     return count;
   }
 
-  static bool containsVectorsFromEarlierBatch(bolt::BoltBatch& batch, uint32_t batch_idx) {
+  static bool containsVectorsFromEarlierBatch(bolt::BoltBatch& batch,
+                                              uint32_t batch_idx) {
     float original_value_range_start = batch_idx * batch.getBatchSize();
     for (size_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
       auto value = batch[vec_idx].activations[0];
@@ -166,8 +169,9 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     }
     return false;
   }
-  
-  static bool containsVectorsFromLaterBatch(bolt::BoltBatch& batch, uint32_t batch_idx) {
+
+  static bool containsVectorsFromLaterBatch(bolt::BoltBatch& batch,
+                                            uint32_t batch_idx) {
     float original_value_range_end = (batch_idx + 1) * batch.getBatchSize();
     for (size_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
       auto value = batch[vec_idx].activations[0];
@@ -183,9 +187,8 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
   static constexpr uint32_t mock_file_lines = 5000;
 
   static constexpr uint32_t batch_size = 100;
-  
-  static constexpr uint32_t n_batches_in_shuffle_buffer = 10;
 
+  static constexpr uint32_t n_batches_in_shuffle_buffer = 10;
 };
 
 TEST_F(StreamingGenericDatasetLoaderTests, CorrectUnshuffledInMemoryData) {
@@ -202,21 +205,24 @@ TEST_F(StreamingGenericDatasetLoaderTests, CorrectUnshuffledStreamedData) {
   ASSERT_TRUE(isOrdered(streamed_data));
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests, CorrectVectorsInShuffledInMemoryData) {
+TEST_F(StreamingGenericDatasetLoaderTests,
+       CorrectVectorsInShuffledInMemoryData) {
   auto shuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto in_memory_data = shuffled_pipeline.loadInMemory();
   assertCorrectVectors(in_memory_data);
   ASSERT_FALSE(isOrdered(in_memory_data));
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests, CorrectVectorsInShuffledStreamedData) {
+TEST_F(StreamingGenericDatasetLoaderTests,
+       CorrectVectorsInShuffledStreamedData) {
   auto shuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto streamed_data = streamToInMemoryDataset(std::move(shuffled_pipeline));
   assertCorrectVectors(streamed_data);
   ASSERT_FALSE(isOrdered(streamed_data));
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests, ShuffledInMemoryDataSameSeedSameOrder) {
+TEST_F(StreamingGenericDatasetLoaderTests,
+       ShuffledInMemoryDataSameSeedSameOrder) {
   uint32_t seed = 10;
   auto shuffled_pipeline_1 = makeMockPipeline(/* shuffle = */ true, seed);
   auto shuffled_pipeline_2 = makeMockPipeline(/* shuffle = */ true, seed);
@@ -225,38 +231,51 @@ TEST_F(StreamingGenericDatasetLoaderTests, ShuffledInMemoryDataSameSeedSameOrder
   ASSERT_TRUE(sameOrder(in_memory_data_1, in_memory_data_2));
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests, ShuffledStreamedDataSameSeedSameOrder) {
+TEST_F(StreamingGenericDatasetLoaderTests,
+       ShuffledStreamedDataSameSeedSameOrder) {
   uint32_t seed = 10;
   auto shuffled_pipeline_1 = makeMockPipeline(/* shuffle = */ true, seed);
   auto shuffled_pipeline_2 = makeMockPipeline(/* shuffle = */ true, seed);
-  auto streamed_data_1 = streamToInMemoryDataset(std::move(shuffled_pipeline_1));
-  auto streamed_data_2 = streamToInMemoryDataset(std::move(shuffled_pipeline_2));
+  auto streamed_data_1 =
+      streamToInMemoryDataset(std::move(shuffled_pipeline_1));
+  auto streamed_data_2 =
+      streamToInMemoryDataset(std::move(shuffled_pipeline_2));
   ASSERT_TRUE(sameOrder(streamed_data_1, streamed_data_2));
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests, ShuffledInMemoryDataDifferentSeedDifferentOrder) {
-  auto shuffled_pipeline_1 = makeMockPipeline(/* shuffle = */ true, /* seed = */ 1);
-  auto shuffled_pipeline_2 = makeMockPipeline(/* shuffle = */ true, /* seed = */ 2);
+TEST_F(StreamingGenericDatasetLoaderTests,
+       ShuffledInMemoryDataDifferentSeedDifferentOrder) {
+  auto shuffled_pipeline_1 =
+      makeMockPipeline(/* shuffle = */ true, /* seed = */ 1);
+  auto shuffled_pipeline_2 =
+      makeMockPipeline(/* shuffle = */ true, /* seed = */ 2);
   auto in_memory_data_1 = shuffled_pipeline_1.loadInMemory();
   auto in_memory_data_2 = shuffled_pipeline_2.loadInMemory();
   ASSERT_FALSE(sameOrder(in_memory_data_1, in_memory_data_2));
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests, ShuffledStreamedDataDifferentSeedDifferentOrder) {
-  auto shuffled_pipeline_1 = makeMockPipeline(/* shuffle = */ true, /* seed = */ 1);
-  auto shuffled_pipeline_2 = makeMockPipeline(/* shuffle = */ true, /* seed = */ 2);
-  auto streamed_data_1 = streamToInMemoryDataset(std::move(shuffled_pipeline_1));
-  auto streamed_data_2 = streamToInMemoryDataset(std::move(shuffled_pipeline_2));
+TEST_F(StreamingGenericDatasetLoaderTests,
+       ShuffledStreamedDataDifferentSeedDifferentOrder) {
+  auto shuffled_pipeline_1 =
+      makeMockPipeline(/* shuffle = */ true, /* seed = */ 1);
+  auto shuffled_pipeline_2 =
+      makeMockPipeline(/* shuffle = */ true, /* seed = */ 2);
+  auto streamed_data_1 =
+      streamToInMemoryDataset(std::move(shuffled_pipeline_1));
+  auto streamed_data_2 =
+      streamToInMemoryDataset(std::move(shuffled_pipeline_2));
   ASSERT_FALSE(sameOrder(streamed_data_1, streamed_data_2));
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests, ShuffledInMemoryDataIsShuffledEnough) {
+TEST_F(StreamingGenericDatasetLoaderTests,
+       ShuffledInMemoryDataIsShuffledEnough) {
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto in_memory_data = unshuffled_pipeline.loadInMemory();
   assertShuffledEnough(in_memory_data);
 }
 
-TEST_F(StreamingGenericDatasetLoaderTests, ShuffledStreamedDataIsShuffledEnough) {
+TEST_F(StreamingGenericDatasetLoaderTests,
+       ShuffledStreamedDataIsShuffledEnough) {
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto streamed_data = streamToInMemoryDataset(std::move(unshuffled_pipeline));
   assertShuffledEnough(streamed_data);

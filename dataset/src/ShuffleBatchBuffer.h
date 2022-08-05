@@ -13,7 +13,9 @@ namespace thirdai::dataset {
 class ShuffleBatchBuffer {
  public:
   explicit ShuffleBatchBuffer(uint32_t shuffle_seed, size_t batch_size)
-      : _gen(shuffle_seed), _reached_end_of_dataset(false), _batch_size(batch_size) {}
+      : _gen(shuffle_seed),
+        _reached_end_of_dataset(false),
+        _batch_size(batch_size) {}
 
   void insertBatch(std::tuple<bolt::BoltBatch, bolt::BoltBatch>&& batch,
                    bool shuffle) {
@@ -29,7 +31,9 @@ class ShuffleBatchBuffer {
 
   std::optional<std::pair<bolt::BoltBatch, bolt::BoltBatch>> popBatch() {
     assert(_input_batches.empty() == _label_batches.empty());
-    if (_input_batches.empty()) { return {}; }
+    if (_input_batches.empty()) {
+      return {};
+    }
 
     auto input_batch = std::move(_input_batches.front());
     auto label_batch = std::move(_label_batches.front());
@@ -38,7 +42,8 @@ class ShuffleBatchBuffer {
     return {{std::move(input_batch), std::move(label_batch)}};
   }
 
-  std::pair<std::vector<bolt::BoltBatch>, std::vector<bolt::BoltBatch>> exportBuffer() {
+  std::pair<std::vector<bolt::BoltBatch>, std::vector<bolt::BoltBatch>>
+  exportBuffer() {
     // We don't reserve vector size to avoid 2X memory overhead.
     std::vector<bolt::BoltBatch> input_batch_vector;
     std::vector<bolt::BoltBatch> label_batch_vector;
@@ -98,8 +103,10 @@ class ShuffleBatchBuffer {
         size_t swap_batch_idx = swap_with / expected_batch_size;
         size_t swap_vec_idx = swap_with % expected_batch_size;
 
-        std::swap(input_batches.at(swap_batch_idx)[swap_vec_idx], input_batches.back()[i]);
-        std::swap(label_batches.at(swap_batch_idx)[swap_vec_idx], label_batches.back()[i]);
+        std::swap(input_batches.at(swap_batch_idx)[swap_vec_idx],
+                  input_batches.back()[i]);
+        std::swap(label_batches.at(swap_batch_idx)[swap_vec_idx],
+                  label_batches.back()[i]);
       }
     }
   }
