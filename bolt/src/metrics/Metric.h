@@ -297,13 +297,15 @@ class PrecisionAt : public Metric {
         ? countCorrectInTopK</* DENSE= */ true>(std::move(top_k), labels)
         : countCorrectInTopK</* DENSE= */ false>(std::move(top_k), labels);
     _correct.fetch_add(correct);
-    _count.fetch_add(_k);
+    _count.fetch_add(1);
   }
 
   double getMetricAndReset(bool verbose) final {
+    std::cout << _correct << " correct" << std::endl;
+    std::cout << _count << " total" << std::endl;
     double metric = static_cast<double>(_correct) / _count;
     if (verbose) {
-      std::cout << "Precision at " << _k << ": " << std::setprecision(3) << metric
+      std::cout << "Hit ratio at " << _k << ": " << std::setprecision(3) << metric
                 << std::endl;
     }
     _correct = 0;
@@ -311,7 +313,7 @@ class PrecisionAt : public Metric {
     return metric;
   }
 
-  static constexpr const char* name = "precision_at_";
+  static constexpr const char* name = "hit_ratio_";
 
   std::string getName() final { 
     std::stringstream name_ss;
@@ -320,11 +322,11 @@ class PrecisionAt : public Metric {
   }
 
   static inline bool isPrecisionAtK(const std::string& metric_name) {
-    return metric_name.substr(0, 13) == name;
+    return metric_name.substr(0, 10) == name;
   }
 
   static inline uint32_t getK(const std::string& metric_name) {
-    auto k = metric_name.substr(13);
+    auto k = metric_name.substr(10);
     char* end_ptr;
     return std::strtol(k.data(), &end_ptr, 10);
   }
