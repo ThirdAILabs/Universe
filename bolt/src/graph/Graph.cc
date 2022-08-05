@@ -231,7 +231,7 @@ InferenceResult BoltGraph::predict(
 
       bar.increment();
 
-      processOutputCallback(output_callback, batch_size);
+      processOutputCallback(predict_config.outputCallback(), batch_size);
 
       outputTracker.saveOutputBatch(_output, batch_size);
     }
@@ -524,6 +524,9 @@ void BoltGraph::freezeHashTables(bool insert_labels_if_not_found) {
     }
   }
 }
+
+template void BoltGraph::serialize(cereal::BinaryInputArchive&);
+template void BoltGraph::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {

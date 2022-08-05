@@ -144,9 +144,9 @@ class TabularMetadata {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_num_non_empty_bins, _label_col_index, _column_dtypes,
-            _col_to_max_val, _col_to_min_val, _class_to_class_id,
-            _class_id_to_class, _col_to_col_name);
+    archive(_num_non_empty_bins, _label_col_index, _max_salt_len,
+            _column_dtypes, _col_to_max_val, _col_to_min_val,
+            _class_to_class_id, _class_id_to_class, _col_to_col_name);
   }
 
   // one additional bin is reserved for empty values
