@@ -44,7 +44,18 @@ class SequentialClassifier {
     }
 
     if (_network == nullptr) {
-      _network = AutoClassifierUtils::createNetwork(pipeline->getInputDim(), pipeline->getLabelDim(), _model_size);
+      // TODO: Autotune because this is hardcoded.
+      uint32_t hidden_layer_size = 500;
+      float hidden_layer_sparsity = 0.2;
+      float output_layer_sparsity = 0.05;
+
+      SequentialConfigList configs = {
+        std::make_shared<FullyConnectedLayerConfig>(
+            hidden_layer_size, hidden_layer_sparsity, "relu"),
+        std::make_shared<FullyConnectedLayerConfig>(
+            pipeline->getLabelDim(), output_layer_sparsity, "softmax")};
+      _network =  std::make_shared<FullyConnectedNetwork>(std::move(configs), pipeline->getInputDim());
+      // _network = AutoClassifierUtils::createNetwork(pipeline->getInputDim(), pipeline->getLabelDim(), _model_size);
     }
 
     if (!AutoClassifierUtils::canLoadDatasetInMemory(train_filename)) {
