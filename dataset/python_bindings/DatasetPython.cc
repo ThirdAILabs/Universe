@@ -242,18 +242,18 @@ void createDatasetSubmodule(py::module_& module) {
            "shuffling the "
            "dataset.");
 
-  py::class_<ShuffleBufferConfig>(dataset_submodule, "ShuffleBufferConfig")
+  py::class_<DatasetShuffleConfig>(dataset_submodule, "ShuffleBufferConfig")
       .def(py::init<size_t, uint32_t>(), py::arg("n_batches") = 1000,
            py::arg("seed") = time(NULL));
 
   py::class_<StreamingGenericDatasetLoader>(dataset_submodule, "DataPipeline")
       .def(py::init<std::string, std::vector<std::shared_ptr<Block>>,
                     std::vector<std::shared_ptr<Block>>, uint32_t, bool,
-                    ShuffleBufferConfig, bool, char>(),
+                    DatasetShuffleConfig, bool, char>(),
            py::arg("filename"), py::arg("input_blocks"),
            py::arg("label_blocks"), py::arg("batch_size"),
            py::arg("shuffle") = false,
-           py::arg("config") = ShuffleBufferConfig(),
+           py::arg("config") = DatasetShuffleConfig(),
            py::arg("has_header") = false, py::arg("delimiter") = ',')
       .def("next_batch", &StreamingGenericDatasetLoader::nextBatchTuple)
       .def("load_in_memory", &StreamingGenericDatasetLoader::loadInMemory)
