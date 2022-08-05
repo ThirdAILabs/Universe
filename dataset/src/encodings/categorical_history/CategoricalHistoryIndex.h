@@ -25,7 +25,7 @@ class AtomicCircularBuffers {
 
   void insert(uint32_t buffer_idx, ELEMENT_T&& new_elem) {
     auto insert_idx = _insert_idxs[buffer_idx].fetch_add(1);
-    _buffer[buffer_idx * _size + (insert_idx % _buffer.size())] =
+    _buffer[buffer_idx * _size + (insert_idx % _size)] =
         std::move(new_elem);
   }
 
