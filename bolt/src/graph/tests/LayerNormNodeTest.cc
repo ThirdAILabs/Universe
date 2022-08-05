@@ -50,7 +50,8 @@ void testLayerNormNodeForwardAndBackwardPass() {
               train_config);
 
   auto pred_node = model.getNodeByName("layer_norm_1")->getPredecessors()[0];
-  ASSERT_EQ(pred_node->outputDim(), model.getNodeByName("layer_norm_1")->outputDim());
+  ASSERT_EQ(pred_node->outputDim(),
+            model.getNodeByName("layer_norm_1")->outputDim());
 
   BoltVector& output_vector =
       model.getNodeByName("layer_norm_1")->getOutputVector(/* vec_index= */ 1);
