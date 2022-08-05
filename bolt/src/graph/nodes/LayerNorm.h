@@ -174,7 +174,7 @@ class LayerNormNode final : public Node,
   }
 
   BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
-    assert(getState() == NodeState::PreparedForBatchProcessing);
+    //assert(getState() == NodeState::PreparedForBatchProcessing);
     return (_layer_norm_state->outputs)[vec_index];
   }
 

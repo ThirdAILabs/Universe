@@ -49,11 +49,11 @@ void testLayerNormNodeForwardAndBackwardPass() {
   model.train(/* train_data= */ {data}, /* train_tokens= */ {}, labels,
               train_config);
 
-  auto pred_node = layer_norm_node->getPredecessors()[0];
-  ASSERT_EQ(pred_node->outputDim(), layer_norm_node->outputDim());
+  auto pred_node = model.getNodeByName("layer_norm_1")->getPredecessors()[0];
+  ASSERT_EQ(pred_node->outputDim(), model.getNodeByName("layer_norm_1")->outputDim());
 
   BoltVector& output_vector =
-      layer_norm_node->getOutputVector(/* vec_index= */ 1);
+      model.getNodeByName("layer_norm_1")->getOutputVector(/* vec_index= */ 1);
 
   for (uint32_t neuron_index = 0; neuron_index < output_vector.len;
        neuron_index++) {
