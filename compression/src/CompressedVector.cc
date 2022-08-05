@@ -1,4 +1,5 @@
 #include "CompressedVector.h"
+#include <iostream>
 
 namespace thirdai::bolt {
 
@@ -61,9 +62,6 @@ template <class ELEMENT_TYPE>
 ELEMENT_TYPE BiasedSketch<ELEMENT_TYPE>::get(uint64_t i) const {
   uint64_t idx = findIndexInPhysicalVector(i);
   ELEMENT_TYPE value = _physical_vector[idx];
-
-  assert(not std::isnan(value));
-
   return value;
 }
 
@@ -72,8 +70,7 @@ template <class ELEMENT_TYPE>
 void BiasedSketch<ELEMENT_TYPE>::set(uint64_t i, ELEMENT_TYPE value) {
   uint64_t idx = findIndexInPhysicalVector(i);
   ELEMENT_TYPE& current_value = _physical_vector[idx];
-  // current_value += value;
-  current_value = value;
+  current_value += value;
 }
 
 template <class ELEMENT_TYPE>
