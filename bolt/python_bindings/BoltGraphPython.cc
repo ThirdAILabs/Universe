@@ -8,20 +8,40 @@
 #include <bolt/src/graph/nodes/Embedding.h>
 #include <bolt/src/graph/nodes/FullyConnected.h>
 #include <bolt/src/graph/nodes/Input.h>
+#include <bolt/src/graph/nodes/Switch.h>
 #include <bolt/src/graph/nodes/TokenInput.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
+#include <pybind11/functional.h>
 
 namespace thirdai::bolt::python {
-
 void createBoltGraphSubmodule(py::module_& bolt_submodule) {
   auto graph_submodule = bolt_submodule.def_submodule("graph");
 
-  py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
+  py::class_<ParameterReference>(graph_submodule, "ParameterReference")
+      .def("copy", &ParameterReference::copy,
+           "Returns a copy of the parameters held in the ParameterReference as "
+           "a numpy array.")
+      .def("get", &ParameterReference::get,
+           /**
+            * This means that the lifetime of the returned object is tied to
+            * the lifetime of the object this method is called on, such that
+            * the parent object cannot be garbage collected will this returned
+            * object is still alive.
+            */
+           py::return_value_policy::reference_internal,
+           "Returns a numpy array which shadows the parameters held in the "
+           "ParameterReference and acts as a reference to them, modifying this "
+           "array will modify the parameters.")
+      .def("set", &ParameterReference::set, py::arg("new_params"),
+           "Takes in a numpy array and copies its contents into the parameters "
+           "held in the ParameterReference object.");
 
   // Needed so python can know that InferenceOutput objects can own memory
   py::class_<InferenceOutputTracker>(graph_submodule,  // NOLINT
                                      "InferenceOutput");
+
+  py::class_<Node, NodePtr>(graph_submodule, "Node");  // NOLINT
 
   py::class_<FullyConnectedNode, FullyConnectedNodePtr, Node>(graph_submodule,
                                                               "FullyConnected")
@@ -67,10 +87,47 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            py::arg("filename"))
       .def("load_parameters", &FullyConnectedNode::loadParameters,
            py::arg("filename"))
-      .def("get_sparsity", &FullyConnectedNode::getNodeSparsity)
-      .def("set_sparsity", &FullyConnectedNode::setNodeSparsity,
+      // TODO(Nick, Josh): sparsity can be def_property
+      .def("get_sparsity", &FullyConnectedNode::getSparsity)
+      .def("set_sparsity", &FullyConnectedNode::setSparsity,
            py::arg("sparsity"))
-      .def("get_dim", &FullyConnectedNode::outputDim);
+      .def("get_dim", &FullyConnectedNode::outputDim)
+      .def_property_readonly(
+          "weights",
+          [](FullyConnectedNode& node) {
+            uint32_t dim = node.outputDim();
+            uint32_t prev_node_dim = node.getPredecessors()[0]->outputDim();
+            const std::vector<uint32_t> dimensions = {dim, prev_node_dim};
+            return ParameterReference(node.getWeightsPtr(), dimensions);
+          },
+          py::return_value_policy::reference_internal,
+          "Returns a ParameterReference object to the weight matrix.")
+      .def_property_readonly(
+          "biases",
+          [](FullyConnectedNode& node) {
+            uint32_t dim = node.outputDim();
+            return ParameterReference(node.getBiasesPtr(), {dim});
+          },
+          py::return_value_policy::reference,
+          "Returns a ParameterReference object to the bias vector.")
+      .def_property_readonly(
+          "weight_gradients",
+          [](FullyConnectedNode& node) {
+            uint32_t dim = node.outputDim();
+            uint32_t prev_node_dim = node.getPredecessors()[0]->outputDim();
+            const std::vector<uint32_t> dimensions = {dim, prev_node_dim};
+            return ParameterReference(node.getWeightGradientsPtr(), dimensions);
+          },
+          py::return_value_policy::reference_internal,
+          "Returns a ParameterReference object to the weight gradients matrix.")
+      .def_property_readonly(
+          "bias_gradients",
+          [](FullyConnectedNode& node) {
+            uint32_t dim = node.outputDim();
+            return ParameterReference(node.getBiasGradientsPtr(), {dim});
+          },
+          py::return_value_policy::reference,
+          "Returns a ParameterReference object to the bias gradients vector.");
 
   py::class_<ConcatenateNode, std::shared_ptr<ConcatenateNode>, Node>(
       graph_submodule, "Concatenate")
@@ -82,6 +139,18 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "Tells the graph which layers will be concatenated. Must be at "
            "least one node (although this is just an identity function, so "
            "really should be at least two).");
+
+#if THIRDAI_EXPOSE_ALL
+  py::class_<SwitchNode, std::shared_ptr<SwitchNode>, Node>(graph_submodule,
+                                                            "Switch")
+      .def(py::init<uint64_t, const std::string&, uint32_t>(), py::arg("dim"),
+           py::arg("activation"), py::arg("n_layers"))
+      .def(py::init<uint64_t, float, const std::string&, uint32_t>(),
+           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
+           py::arg("n_layers"))
+      .def("__call__", &SwitchNode::addPredecessors, py::arg("prev_layer"),
+           py::arg("token_input"));
+#endif
 
   py::class_<EmbeddingNode, EmbeddingNodePtr, Node>(graph_submodule,
                                                     "Embedding")
@@ -275,7 +344,24 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "assigned name. As such, must be called after compile. You can "
            "determine which layer is which by printing a graph summary. "
            "Possible operations to perform on the returned object include "
-           "setting layer sparsity, freezing weights, or saving to a file");
+           "setting layer sparsity, freezing weights, or saving to a file")
+#if THIRDAI_EXPOSE_ALL
+      .def("register_batch_callback",
+           [](BoltGraph& model, GraphCallback callback) {
+             // From testing we don't need to release the GIL to call the python
+             // callback, even if the python function calls back into the C++
+             // code.
+             model.registerPerBatchCallback(std::move(callback));
+           })
+      .def("register_epoch_callback",
+           [](BoltGraph& model, GraphCallback callback) {
+             // From testing we don't need to release the GIL to call the python
+             // callback, even if the python function calls back into the C++
+             // code.
+             model.registerPerEpochCallback(std::move(callback));
+           })
+#endif
+      ;
 }
 
 py::tuple dagPredictPythonWrapper(BoltGraph& model,

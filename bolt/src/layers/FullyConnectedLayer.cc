@@ -1,4 +1,8 @@
 #include "FullyConnectedLayer.h"
+#include <wrappers/src/EigenDenseWrapper.h>
+#include <bolt/src/layers/LayerUtils.h>
+#include <Eigen/src/Core/Map.h>
+#include <Eigen/src/Core/util/Constants.h>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -51,16 +55,15 @@ void FullyConnectedLayer::forward(const BoltVector& input, BoltVector& output,
                                   const BoltVector* labels) {
   if (output.isDense()) {
     if (input.isDense()) {
-      // TODO(Nicholas): Re-implement this case with dense matrix library
-      forwardImpl<true, true>(input, output, labels);
+      eigenDenseDenseForward(input, output);
     } else {
-      forwardImpl<true, false>(input, output, labels);
+      forwardImpl</*DENSE=*/true, /*PREV_DENSE=*/false>(input, output, labels);
     }
   } else {
     if (input.isDense()) {
-      forwardImpl<false, true>(input, output, labels);
+      forwardImpl</*DENSE=*/false, /*PREV_DENSE=*/true>(input, output, labels);
     } else {
-      forwardImpl<false, false>(input, output, labels);
+      forwardImpl</*DENSE=*/false, /*PREV_DENSE=*/false>(input, output, labels);
     }
   }
 }
@@ -81,13 +84,13 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   selectActiveNeurons<DENSE, PREV_DENSE>(input, output, labels);
 
   float max_act = 0;
-  uint32_t len_out = DENSE ? _dim : _sparse_dim;
+  uint32_t len_out = nonzerosInOutput<DENSE>();
   std::fill_n(output.gradients, len_out, 0);
 
   _prev_is_dense = PREV_DENSE;
   _this_is_dense = DENSE;
 
-  if (!DENSE && !PREV_DENSE) {
+  if constexpr (!DENSE && !PREV_DENSE) {
     std::unique_ptr<ActiveNeuronsPair> active_pairs =
         std::make_unique<ActiveNeuronsPair>(std::vector<uint64_t>(),
                                             std::vector<uint64_t>());
@@ -101,14 +104,14 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
     _active_pairs.push_back(std::move(active_pairs));
   }
 
-  if (!DENSE) {
+  if constexpr (!DENSE) {
     for (uint64_t n = 0; n < len_out; n++) {
       uint64_t act_neuron = output.active_neurons[n];
       _is_active[act_neuron] = true;
     }
   }
 
-  if (!PREV_DENSE) {
+  if constexpr (!PREV_DENSE) {
     for (uint64_t i = 0; i < input.len; i++) {
       uint64_t act_neuron = input.active_neurons[i];
       _prev_is_active[act_neuron] = true;
@@ -118,14 +121,16 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   for (uint64_t n = 0; n < len_out; n++) {
     // Because DENSE is known at compile time the compiler can remove this
     // conditional
-    uint64_t act_neuron = DENSE ? n : output.active_neurons[n];
+    uint64_t act_neuron = output.activeNeuronAtIndex<DENSE>(n);
     assert(act_neuron < _dim);
+
     float act = _biases[act_neuron];
     for (uint64_t i = 0; i < input.len; i++) {
       // Because PREV_DENSE is known at compile time the compiler can remove
       // this conditional
-      uint32_t prev_act_neuron = PREV_DENSE ? i : input.active_neurons[i];
+      uint32_t prev_act_neuron = input.activeNeuronAtIndex<PREV_DENSE>(i);
       assert(prev_act_neuron < _prev_dim);
+
       act += _weights[act_neuron * _prev_dim + prev_act_neuron] *
              input.activations[i];
     }
@@ -171,10 +176,61 @@ void FullyConnectedLayer::forwardImpl(const BoltVector& input,
   }
 }
 
+static void eigenSoftmax(Eigen::Map<Eigen::VectorXf>& outputs) {
+  float max_act = outputs.maxCoeff();
+  outputs = (outputs.array() - max_act).exp();
+  float sum = outputs.sum() + EPS;
+  outputs.array() /= sum;
+}
+
+void FullyConnectedLayer::eigenDenseDenseForward(const BoltVector& input,
+                                                 BoltVector& output) {
+  _prev_is_dense = true;
+  _this_is_dense = true;
+  std::fill_n(output.gradients, output.len, 0);
+
+  Eigen::Map<
+      Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+      eigen_weights(_weights.data(), _dim, _prev_dim);
+  Eigen::Map<Eigen::VectorXf> eigen_biases(_biases.data(), _dim);
+
+  Eigen::Map<Eigen::VectorXf> eigen_input(input.activations, input.len);
+  Eigen::Map<Eigen::VectorXf> eigen_output(output.activations, output.len);
+
+  eigen_output.noalias() = eigen_weights * eigen_input;
+
+  eigen_biases.array().addTo(eigen_output);
+
+  switch (_act_func) {
+    case ActivationFunction::ReLU:
+      eigen_output = eigen_output.array().max(0.0);
+      break;
+    case ActivationFunction::Softmax:
+      eigenSoftmax(eigen_output);
+      break;
+    case ActivationFunction::Linear:
+      break;
+    case ActivationFunction::Sigmoid:
+      eigen_output = 1 + (-eigen_output.array()).exp();
+      eigen_output = eigen_output.array().rsqrt();
+      break;
+    case ActivationFunction::Tanh:
+      eigen_output = eigen_output.array().tanh();
+      break;
+  }
+}
+
 void FullyConnectedLayer::backpropagate(BoltVector& input, BoltVector& output) {
   if (output.isDense()) {
     if (input.isDense()) {
+      // This eigen dense dense optimized version seems to give speedup in
+      // certain cases but not all, so it is here as an experimental feature
+      // that can be enabled when desired.
+#if THIRDAI_USE_EIGEN_FOR_BACKPROPAGATE
+      eigenDenseDenseBackpropagate<false>(input, output);
+#else
       backpropagateImpl<false, true, true>(input, output);
+#endif
     } else {
       backpropagateImpl<false, true, false>(input, output);
     }
@@ -191,15 +247,26 @@ void FullyConnectedLayer::backpropagateInputLayer(BoltVector& input,
                                                   BoltVector& output) {
   if (output.isDense()) {
     if (input.isDense()) {
-      backpropagateImpl<true, true, true>(input, output);
+      // This eigen dense dense optimized version seems to give speedup in
+      // certain cases but not all, so it is here as an experimental feature
+      // that can be enabled when desired.
+#if THIRDAI_USE_EIGEN_FOR_BACKPROP
+      eigenDenseDenseBackpropagate<true>(input, output);
+#else
+      backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true, /*PREV_DENSE=*/true>(
+          input, output);
+#endif
     } else {
-      backpropagateImpl<true, true, false>(input, output);
+      backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/true,
+                        /*PREV_DENSE=*/false>(input, output);
     }
   } else {
     if (input.isDense()) {
-      backpropagateImpl<true, false, true>(input, output);
+      backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/false,
+                        /*PREV_DENSE=*/true>(input, output);
     } else {
-      backpropagateImpl<true, false, false>(input, output);
+      backpropagateImpl</*IS_INPUT=*/true, /*DENSE=*/false,
+                        /*PREV_DENSE=*/false>(input, output);
     }
   }
 }
@@ -215,24 +282,34 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
   assert((output.active_neurons == nullptr && DENSE) ||
          (output.active_neurons != nullptr && !DENSE));
 
-  uint32_t len_out = DENSE ? _dim : _sparse_dim;
+  uint32_t len_out = nonzerosInOutput<DENSE>();
 
   for (uint64_t n = 0; n < len_out; n++) {
     assert(!std::isnan(output.gradients[n]));
     output.gradients[n] *= actFuncDerivative(output.activations[n], _act_func);
+
+    if (output.gradients[n] == 0.0) {
+      // Neurons with gradients of 0 will not propagate gradients to weights or
+      // the previous layer. We will also likely have a number of 0 gradients
+      // with ReLU.
+      continue;
+    }
+
     assert(!std::isnan(output.gradients[n]));
     // Because DENSE is known at compile time the compiler can remove this
     // conditional
-    uint32_t act_neuron = DENSE ? n : output.active_neurons[n];
+    uint32_t act_neuron = output.activeNeuronAtIndex<DENSE>(n);
     assert(act_neuron < _dim);
+
     for (uint64_t i = 0; i < input.len; i++) {
       // Because PREV_DENSE is known at compile time the compiler can remove
       // this conditional
-      uint32_t prev_act_neuron = PREV_DENSE ? i : input.active_neurons[i];
+      uint32_t prev_act_neuron = input.activeNeuronAtIndex<PREV_DENSE>(i);
       assert(prev_act_neuron < _prev_dim);
+
       _w_gradient[act_neuron * _prev_dim + prev_act_neuron] +=
           output.gradients[n] * input.activations[i];
-      if (!FIRST_LAYER) {
+      if constexpr (!FIRST_LAYER) {
         input.gradients[i] +=
             output.gradients[n] *
             _weights[act_neuron * _prev_dim + prev_act_neuron];
@@ -242,11 +319,44 @@ void FullyConnectedLayer::backpropagateImpl(BoltVector& input,
   }
 }
 
+template <bool FIRST_LAYER>
+void FullyConnectedLayer::eigenDenseDenseBackpropagate(BoltVector& input,
+                                                       BoltVector& output) {
+  for (uint32_t n = 0; n < output.len; n++) {
+    output.gradients[n] *= actFuncDerivative(output.activations[n], _act_func);
+  }
+
+  Eigen::Map<
+      Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+      eigen_weights(_weights.data(), _dim, _prev_dim);
+  Eigen::Map<
+      Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+      eigen_weight_grad(_w_gradient.data(), _dim, _prev_dim);
+
+  Eigen::Map<Eigen::VectorXf> eigen_bias_grad(_b_gradient.data(), _dim);
+
+  Eigen::Map<Eigen::VectorXf> eigen_input(input.activations, input.len);
+  Eigen::Map<Eigen::VectorXf> eigen_output_grad(output.gradients, output.len);
+
+  eigen_weight_grad += eigen_output_grad * eigen_input.transpose();
+  eigen_output_grad.array().addTo(eigen_bias_grad);
+
+  if constexpr (!FIRST_LAYER) {
+    Eigen::Map<
+        Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+        eigen_weights(_weights.data(), _dim, _prev_dim);
+
+    Eigen::Map<Eigen::VectorXf> eigen_input_grad(input.gradients, input.len);
+
+    eigen_input_grad.noalias() = eigen_output_grad.transpose() * eigen_weights;
+  }
+}
+
 template <bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                                               BoltVector& output,
                                               const BoltVector* labels) {
-  if (DENSE) {
+  if constexpr (DENSE) {
     return;
   }
 
@@ -259,7 +369,7 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
   }
 
   std::vector<uint32_t> hashes(_hasher->numTables());
-  if (PREV_DENSE) {
+  if constexpr (PREV_DENSE) {
     _hasher->hashSingleDense(input.activations, input.len, hashes.data());
   } else {
     _hasher->hashSingleSparse(input.active_neurons, input.activations,

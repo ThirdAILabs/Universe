@@ -1,5 +1,5 @@
 from thirdai import bolt, dataset
-import numpy as np
+from thirdai.dataset import DataPipeline, blocks, text_encodings
 
 # Uncomment the following line when used on a machine with valid mlflow credentials
 # import mlflow
@@ -22,6 +22,7 @@ class CookieMonster:
         self.hidden_sparsity = hidden_sparsity
         self.mlflow_enabled = mlflow_enabled
         self.construct(output_dimension)
+        self.mlm_loader = dataset.MLMDatasetLoader(self.input_dimension)
 
         self.config_file_dir = os.path.dirname(os.path.abspath(__file__))
         self.config_file_name = os.path.join(
@@ -61,6 +62,27 @@ class CookieMonster:
         self.hidden_layer.load_parameters(save_loc)
         os.remove(save_loc)
 
+    def load_data(self, task_type, file, batch_size, label_dim):
+        if task_type == "mlm":
+            # TODO: Check file format
+            data, label = self.mlm_loader.load(file, batch_size)
+        elif task_type == "classification":
+            pipeline = DataPipeline(
+                file,
+                batch_size=batch_size,
+                input_blocks=[
+                    blocks.Text(1, text_encodings.PairGram(self.input_dimension))
+                ],
+                label_blocks=[blocks.Categorical(0, label_dim)],
+                delimiter=",",
+            )
+            data, label = pipeline.load_in_memory()
+        else:
+            raise ValueError(
+                'Invalid task_type. Supported task_types are "mlm" and "classification"'
+            )
+        return data, label
+
     def eat_corpus(
         self,
         path_to_config_directory,
@@ -69,7 +91,7 @@ class CookieMonster:
     ):
         """
         Given a directory containing only .txt config files, this function trains each dataset with the parameters specified in each config file.
-        Each config file must contain the following parameters: train_file, test_file, num_classes, batch_size, epochs, learning_rate.
+        Each config file must contain the following parameters: train_file, test_file, num_classes, batch_size, epochs, learning_rate, task.
         """
         import toml
 
@@ -96,6 +118,7 @@ class CookieMonster:
                     test_file = config["test_file"]
                     num_classes = config["num_classes"]
                     batch_size = config["batch_size"]
+                    task = config["task"]
 
                     self.set_output_dimension(num_classes)
                     if num_classes != self.output_layer.get_dim():
@@ -103,13 +126,6 @@ class CookieMonster:
 
                     epochs = config["epochs"]
                     learning_rate = config["learning_rate"]
-
-                    train_x, train_y = dataset.load_bolt_svm_dataset(
-                        train_file, batch_size
-                    )
-                    test_x, test_y = dataset.load_bolt_svm_dataset(
-                        test_file, batch_size
-                    )
 
                     train_config = bolt.graph.TrainConfig.make(
                         learning_rate=learning_rate, epochs=1
@@ -119,6 +135,13 @@ class CookieMonster:
                         .with_metrics(["categorical_accuracy"])
                         .silence()
                     )
+                    train_x, train_y = self.load_data(
+                        task, train_file, batch_size, num_classes
+                    )
+                    test_x, test_y = self.load_data(
+                        task, test_file, batch_size, num_classes
+                    )
+
                     for i in range(epochs):
                         self.model.train(train_x, train_y, train_config=train_config)
                         if verbose:

@@ -1,4 +1,4 @@
-#include "AutoClassifierUtils.h"
+#include "AutoClassifierBase.h"
 #include <bolt/src/layers/BoltVector.h>
 
 #if defined __linux
@@ -15,22 +15,120 @@
 
 namespace thirdai::bolt {
 
-std::shared_ptr<FullyConnectedNetwork> AutoClassifierUtils::createNetwork(
-    uint64_t input_dim, uint32_t n_classes, const std::string& model_size) {
+AutoClassifierBase::AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
+                                       const std::string& model_size) {
   uint32_t hidden_layer_size =
       getHiddenLayerSize(model_size, n_classes, input_dim);
 
   float hidden_layer_sparsity = getHiddenLayerSparsity(hidden_layer_size);
 
-  SequentialConfigList configs = {
-      std::make_shared<FullyConnectedLayerConfig>(
-          hidden_layer_size, hidden_layer_sparsity, "relu"),
-      std::make_shared<FullyConnectedLayerConfig>(n_classes, "softmax")};
-  return std::make_shared<FullyConnectedNetwork>(std::move(configs), input_dim);
+  auto input_layer = std::make_shared<Input>(input_dim);
+
+  auto hidden_layer = std::make_shared<FullyConnectedNode>(
+      /* dim= */ hidden_layer_size, /* sparsity= */ hidden_layer_sparsity,
+      /* activation= */ "relu");
+
+  hidden_layer->addPredecessor(input_layer);
+
+  auto output_layer = std::make_shared<FullyConnectedNode>(
+      /* dim= */ n_classes, /* activation= */ "softmax");
+
+  output_layer->addPredecessor(hidden_layer);
+
+  _model = std::make_shared<BoltGraph>(std::vector<InputPtr>{input_layer},
+                                       output_layer);
+
+  _model->compile(std::make_shared<CategoricalCrossEntropyLoss>());
+}
+
+void AutoClassifierBase::train(
+    const std::string& filename,
+    const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
+        batch_processor,
+    uint32_t epochs, float learning_rate) {
+  auto dataset = loadStreamingDataset(filename, batch_processor);
+
+  // The case has yet to come up where loading the dataset in
+  // memory is a concern. Additionally, supporting streaming datasets in the DAG
+  // api would require a lot of messy refactoring. When the problem does come up
+  // we can prioritize that and come up with a good solution in another PR
+  // (TODO(david, nick)). In the meantime, the user can simply implement this
+  // chunked processing themselves by training on sections of the dataset.
+  if (!canLoadDatasetInMemory(filename)) {
+    throw std::invalid_argument("Cannot load dataset in memory.");
+  }
+  auto [train_data, train_labels] = dataset->loadInMemory();
+
+  TrainConfig first_epoch_config =
+      TrainConfig::makeConfig(/* learning_rate= */ learning_rate,
+                              /* epochs= */ 1)
+          .withMetrics({"categorical_accuracy"});
+
+  // TODO(david) verify freezing hash tables is good for autoclassifier
+  // training. The only way we can really test this is when we have a validation
+  // based early stop callback already implemented.
+  _model->train({train_data}, {}, train_labels, first_epoch_config);
+  _model->freezeHashTables(/* insert_labels_if_not_found */ true);
+
+  TrainConfig remaining_epochs_config =
+      TrainConfig::makeConfig(/* learning_rate= */
+                              learning_rate,
+                              /* epochs= */ epochs - 1)
+          .withMetrics({"categorical_accuracy"});
+
+  _model->train({train_data}, {}, train_labels, remaining_epochs_config);
+}
+
+void AutoClassifierBase::predict(
+    const std::string& filename,
+    const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
+        batch_processor,
+    const std::optional<std::string>& output_filename,
+    const std::vector<std::string>& class_id_to_class_name) {
+  auto dataset = loadStreamingDataset(filename, batch_processor);
+
+  // see comment above in train(..) about loading in memory
+  if (!canLoadDatasetInMemory(filename)) {
+    throw std::invalid_argument("Cannot load dataset in memory.");
+  }
+  auto [test_data, test_labels] = dataset->loadInMemory();
+
+  std::optional<std::ofstream> output_file;
+  if (output_filename) {
+    output_file = dataset::SafeFileIO::ofstream(*output_filename);
+  }
+
+  auto print_predictions_callback = [&](const BoltVector& output) {
+    if (!output_file) {
+      return;
+    }
+    uint32_t class_id = output.getIdWithHighestActivation();
+    (*output_file) << class_id_to_class_name[class_id] << std::endl;
+  };
+
+  PredictConfig config = PredictConfig::makeConfig()
+                             .enableSparseInference()
+                             .withMetrics({"categorical_accuracy"})
+                             .withOutputCallback(print_predictions_callback)
+                             .silence();
+
+  _model->predict({test_data}, {}, test_labels, config);
+
+  if (output_file) {
+    output_file->close();
+  }
+}
+
+BoltVector AutoClassifierBase::predictSingle(
+    std::vector<BoltVector>&& test_data,
+    std::vector<std::vector<uint32_t>>&& test_tokens,
+    bool use_sparse_inference) {
+  return _model->predictSingle(std::move(test_data), std::move(test_tokens),
+                               use_sparse_inference);
 }
 
 std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
-AutoClassifierUtils::loadStreamingDataset(
+AutoClassifierBase::loadStreamingDataset(
     const std::string& filename,
     const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
         batch_processor,
@@ -44,76 +142,9 @@ AutoClassifierUtils::loadStreamingDataset(
   return dataset;
 }
 
-void AutoClassifierUtils::train(
-    std::shared_ptr<FullyConnectedNetwork>& model, const std::string& filename,
-    const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
-        batch_processor,
-    uint32_t epochs, float learning_rate) {
-  auto dataset = loadStreamingDataset(filename, batch_processor);
-
-  CategoricalCrossEntropyLoss loss;
-
-  if (!canLoadDatasetInMemory(filename)) {
-    for (uint32_t e = 0; e < epochs; e++) {
-      // Train on streaming dataset
-      model->trainOnStream(dataset, loss, learning_rate);
-
-      // Create new stream for next epoch with new data loader.
-      dataset = loadStreamingDataset(filename, batch_processor);
-    }
-
-  } else {
-    auto [train_data, train_labels] = dataset->loadInMemory();
-
-    model->train(train_data, train_labels, loss, learning_rate, 1);
-    model->freezeHashTables();
-    model->train(train_data, train_labels, loss, learning_rate, epochs - 1);
-  }
-}
-
-void AutoClassifierUtils::predict(
-    std::shared_ptr<FullyConnectedNetwork>& model, const std::string& filename,
-    const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
-        batch_processor,
-    const std::optional<std::string>& output_filename,
-    const std::vector<std::string>& class_id_to_class_name) {
-  auto dataset = loadStreamingDataset(filename, batch_processor);
-
-  std::optional<std::ofstream> output_file;
-  if (output_filename) {
-    output_file = dataset::SafeFileIO::ofstream(*output_filename);
-  }
-
-  auto print_predictions_callback = [&](const BoltBatch& outputs,
-                                        uint32_t batch_size) {
-    if (!output_file) {
-      return;
-    }
-    for (uint32_t batch_id = 0; batch_id < batch_size; batch_id++) {
-      uint32_t class_id = outputs[batch_id].getIdWithHighestActivation();
-      (*output_file) << class_id_to_class_name[class_id] << std::endl;
-    }
-  };
-
-  /*
-    We are using predict with the stream directly because we only need a
-    single pass through the dataset, so this is more memory efficient, and we
-    don't have to worry about storing the activations in memory to compute the
-    predictions, and can instead compute the predictions using the
-    back_callback.
-  */
-  model->predictOnStream(dataset, /* use_sparse_inference= */ true,
-                         /* metric_names= */ {"categorical_accuracy"},
-                         print_predictions_callback);
-
-  if (output_file) {
-    output_file->close();
-  }
-}
-
-uint32_t AutoClassifierUtils::getHiddenLayerSize(const std::string& model_size,
-                                                 uint64_t n_classes,
-                                                 uint64_t input_dim) {
+uint32_t AutoClassifierBase::getHiddenLayerSize(const std::string& model_size,
+                                                uint64_t n_classes,
+                                                uint64_t input_dim) {
   /*
     Estimated num parameters = (input_dim + n_classes) * hidden_dim
 
@@ -133,7 +164,7 @@ uint32_t AutoClassifierUtils::getHiddenLayerSize(const std::string& model_size,
   return hidden_layer_size;
 }
 
-float AutoClassifierUtils::getHiddenLayerSparsity(uint64_t layer_size) {
+float AutoClassifierBase::getHiddenLayerSparsity(uint64_t layer_size) {
   if (layer_size < 1000) {
     return 0.2;
   }
@@ -149,9 +180,9 @@ float AutoClassifierUtils::getHiddenLayerSparsity(uint64_t layer_size) {
   return 0.005;
 }
 
-static constexpr uint64_t ONE_GB = 1 << 30;
+constexpr uint64_t ONE_GB = 1 << 30;
 
-uint64_t AutoClassifierUtils::getMemoryBudget(const std::string& model_size) {
+uint64_t AutoClassifierBase::getMemoryBudget(const std::string& model_size) {
   std::regex small_re("[Ss]mall");
   std::regex medium_re("[Mm]edium");
   std::regex large_re("[Ll]arge");
@@ -201,11 +232,10 @@ uint64_t AutoClassifierUtils::getMemoryBudget(const std::string& model_size) {
 
   throw std::invalid_argument(
       "'model_size' parameter must be either 'small', 'medium', 'large', or "
-      "a "
-      "gigabyte size of the model, i.e. 5Gb");
+      "a gigabyte size of the model, i.e. 5Gb");
 }
 
-std::optional<uint64_t> AutoClassifierUtils::getSystemRam() {
+std::optional<uint64_t> AutoClassifierBase::getSystemRam() {
 #if defined __linux__
   // https://stackoverflow.com/questions/349889/how-do-you-determine-the-amount-of-linux-system-ram-in-c
   struct sysinfo mem_info;
@@ -231,7 +261,7 @@ std::optional<uint64_t> AutoClassifierUtils::getSystemRam() {
   return std::nullopt;
 }
 
-bool AutoClassifierUtils::canLoadDatasetInMemory(const std::string& filename) {
+bool AutoClassifierBase::canLoadDatasetInMemory(const std::string& filename) {
   auto total_ram = getSystemRam().value();
 
 #if defined(__APPLE__) || defined(__linux__)
