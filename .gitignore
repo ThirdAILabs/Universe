@@ -1,0 +1,72 @@
+# VSCode settings
+.vscode
+.cache
+compile_commands.json
+
+# CMake Build and Testing output
+__pycache__
+build
+thirdai.egg-info
+
+# Mac stuff
+.DS_Store
+
+# Ignore .serialized files
+*.serialized 
+# Don't ignore the single license.serialized file in docker/product/slim
+# or the serialized files in licensing/python_tests
+# TODO(josh): Change this to a more permanent solution (it's going to fail 
+# in 90 days).
+!docker/product/slim/license.serialized
+!licensing/python_tests/*.serialized
+
+# Ignore zipped files
+*.bz2
+*.gz
+
+# Python builds
+*egg-info*
+
+# Ignore all .der key files
+*.der
+
+# Docs
+docs/_*
+
+# Wheels
+dist
+wheelhouse
+
+# Shared libraries
+*.so
+
+# Data files
+*.svm
+*.csv
+
+# Output files
+*.svg
+
+# -- Begin vim .gitignore
+# Swap
+[._]*.s[a-v][a-z]
+!*.svg  # comment out if you don't need vector files
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Session
+Session.vim
+Sessionx.vim
+
+# Temporary
+Testing
+.netrwhist
+*~
+# Auto-generated tag files
+tags
+# Persistent undo
+[._]*.un~
+
+# -- End vim .gitignore
