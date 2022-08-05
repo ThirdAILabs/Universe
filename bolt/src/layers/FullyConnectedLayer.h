@@ -80,6 +80,14 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   uint32_t getSparseDim() const final { return _sparse_dim; }
 
+  float* getWeightsPtr() { return _weights.data(); }
+
+  float* getBiasesPtr() { return _biases.data(); }
+
+  float* getWeightGradientsPtr() { return _w_gradient.data(); }
+
+  float* getBiasGradientsPtr() { return _b_gradient.data(); }
+
   float* getWeights() const final;
 
   float* getBiases() const final;

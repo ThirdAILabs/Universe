@@ -74,14 +74,11 @@ class BoltGraph {
       const std::vector<dataset::BoltDatasetPtr>& test_data,
       const std::vector<dataset::BoltTokenDatasetPtr>& test_tokens,
       const dataset::BoltDatasetPtr& test_labels,
-      const PredictConfig& predict_config,
-      std::optional<std::function<void(const BoltVector&)>> output_callback =
-          std::nullopt);
+      const PredictConfig& predict_config);
 
-  BoltVector predictSingle(
-      const std::vector<BoltVector>& test_data,
-      const std::vector<std::vector<uint32_t>>& test_tokens,
-      bool use_sparse_inference);
+  BoltVector predictSingle(std::vector<BoltVector>&& test_data,
+                           std::vector<std::vector<uint32_t>>&& test_tokens,
+                           bool use_sparse_inference);
 
   std::vector<NodePtr> getNodeTraversalOrder() const {
     std::vector<NodePtr> nodes;
@@ -124,7 +121,8 @@ class BoltGraph {
                              MetricAggregator& metrics);
 
   void processOutputCallback(
-      std::optional<std::function<void(const BoltVector&)>> output_callback,
+      const std::optional<std::function<void(const BoltVector&)>>&
+          output_callback,
       uint32_t batch_size);
 
   // Computes the forward pass through the graph.
@@ -145,11 +143,11 @@ class BoltGraph {
 
   void verifyCanTrain(const DatasetContext& train_context);
 
-  void verifyCanPredict(const DatasetContext& predict_context, bool has_labels,
-                        bool returning_activations,
+  void verifyCanPredict(const DatasetContextBase& predict_context,
+                        bool has_labels, bool returning_activations,
                         uint32_t num_metrics_tracked);
 
-  void verifyInputForGraph(const DatasetContext& context);
+  void verifyInputForGraph(const DatasetContextBase& context);
 
   void verifyGraphProperties();
 

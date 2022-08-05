@@ -184,8 +184,7 @@ InferenceResult BoltGraph::predict(
     const std::vector<dataset::BoltDatasetPtr>& test_data,
     const std::vector<dataset::BoltTokenDatasetPtr>& test_tokens,
     const dataset::BoltDatasetPtr& test_labels,
-    const PredictConfig& predict_config,
-    std::optional<std::function<void(const BoltVector&)>> output_callback) {
+    const PredictConfig& predict_config) {
   DatasetContext predict_context(test_data, test_tokens, test_labels);
 
   bool has_labels = (test_labels != nullptr);
@@ -230,7 +229,7 @@ InferenceResult BoltGraph::predict(
 
       bar.increment();
 
-      processOutputCallback(output_callback, batch_size);
+      processOutputCallback(predict_config.outputCallback(), batch_size);
 
       outputTracker.saveOutputBatch(_output, batch_size);
     }
@@ -263,17 +262,17 @@ InferenceResult BoltGraph::predict(
 // Predicts on a single sample input for performance. Always returns
 // activations and doesn't calculate metrics.
 BoltVector BoltGraph::predictSingle(
-    const std::vector<BoltVector>& test_data,
-    const std::vector<std::vector<uint32_t>>& test_tokens,
+    std::vector<BoltVector>&& test_data,
+    std::vector<std::vector<uint32_t>>&& test_tokens,
     bool use_sparse_inference) {
-  SingleUnitDatasetContext single_predict_context(test_data, test_tokens);
+  SingleUnitDatasetContext single_predict_context(std::move(test_data),
+                                                  std::move(test_tokens));
 
   verifyCanPredict(single_predict_context, /* has_labels = */ false,
                    /* returning_activations = */ true,
                    /* num_metrics_tracked = */ 0);
 
-  prepareToProcessBatches(single_predict_context.batchSize(),
-                          use_sparse_inference);
+  prepareToProcessBatches(/* batch_size = */ 1, use_sparse_inference);
 
   // TODO(josh/Nick): This try catch is kind of a hack, we should really use
   // some sort of RAII training context object whose destructor will
@@ -282,11 +281,10 @@ BoltVector BoltGraph::predictSingle(
     single_predict_context.setInputs(/* batch_idx = */ 0, _inputs,
                                      _token_inputs);
     forward(/* vec_index = */ 0, nullptr);
-    const BoltVector& output_vec = _output->getOutputVector(
+    BoltVector output_copy = _output->getOutputVector(
         /* vec_index = */ 0);
-    BoltVector vector_copy(output_vec);
     cleanupAfterBatchProcessing();
-    return vector_copy;
+    return output_copy;
   } catch (const std::exception& e) {
     cleanupAfterBatchProcessing();
     throw;
@@ -315,7 +313,8 @@ void BoltGraph::processInferenceBatch(uint64_t batch_size,
 }
 
 void BoltGraph::processOutputCallback(
-    std::optional<std::function<void(const BoltVector&)>> output_callback,
+    const std::optional<std::function<void(const BoltVector&)>>&
+        output_callback,
     uint32_t batch_size) {
   if (output_callback) {
     for (uint32_t vec_id_in_batch = 0; vec_id_in_batch < batch_size;
@@ -453,7 +452,7 @@ void BoltGraph::verifyCanTrain(const DatasetContext& train_context) {
   verifyInputForGraph(train_context);
 }
 
-void BoltGraph::verifyCanPredict(const DatasetContext& predict_context,
+void BoltGraph::verifyCanPredict(const DatasetContextBase& predict_context,
                                  bool has_labels, bool returning_activations,
                                  uint32_t num_metrics_tracked) {
   if (!graphCompiled()) {
@@ -472,7 +471,7 @@ void BoltGraph::verifyCanPredict(const DatasetContext& predict_context,
   verifyInputForGraph(predict_context);
 }
 
-void BoltGraph::verifyInputForGraph(const DatasetContext& context) {
+void BoltGraph::verifyInputForGraph(const DatasetContextBase& context) {
   if (context.numVectorDatasets() != _inputs.size()) {
     throw std::invalid_argument(
         "Wrong number of dataset inputs, expected " +
@@ -523,6 +522,9 @@ void BoltGraph::freezeHashTables(bool insert_labels_if_not_found) {
     }
   }
 }
+
+template void BoltGraph::serialize(cereal::BinaryInputArchive&);
+template void BoltGraph::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {

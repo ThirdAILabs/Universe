@@ -14,30 +14,35 @@
 
 namespace thirdai::bolt {
 
-class AutoClassifierUtils {
+class AutoClassifierBase {
  public:
-  static std::shared_ptr<BoltGraph> createNetwork(
-      uint64_t input_dim, uint32_t n_classes, const std::string& model_size);
+  AutoClassifierBase(uint64_t input_dim, uint32_t n_classes,
+                     const std::string& model_size);
 
+  void train(
+      const std::string& filename,
+      const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
+          batch_processor,
+      uint32_t epochs, float learning_rate);
+
+  void predict(
+      const std::string& filename,
+      const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
+          batch_processor,
+      const std::optional<std::string>& output_filename,
+      const std::vector<std::string>& class_id_to_class_name);
+
+  BoltVector predictSingle(std::vector<BoltVector>&& test_data,
+                           std::vector<std::vector<uint32_t>>&& test_tokens,
+                           bool use_sparse_inference);
+
+ private:
   static std::shared_ptr<dataset::StreamingDataset<BoltBatch, BoltBatch>>
   loadStreamingDataset(
       const std::string& filename,
       const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
           batch_processor,
       uint32_t batch_size = 256);
-
-  static void train(
-      std::shared_ptr<BoltGraph>& model, const std::string& filename,
-      const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
-          batch_processor,
-      uint32_t epochs, float learning_rate);
-
-  static void predict(
-      std::shared_ptr<BoltGraph>& model, const std::string& filename,
-      const std::shared_ptr<dataset::BatchProcessor<BoltBatch, BoltBatch>>&
-          batch_processor,
-      const std::optional<std::string>& output_filename,
-      const std::vector<std::string>& class_id_to_class_name);
 
   static uint32_t getHiddenLayerSize(const std::string& model_size,
                                      uint64_t n_classes, uint64_t input_dim);
@@ -49,6 +54,18 @@ class AutoClassifierUtils {
   static std::optional<uint64_t> getSystemRam();
 
   static bool canLoadDatasetInMemory(const std::string& filename);
+
+  // Private constructor for cereal
+  AutoClassifierBase() {}
+
+  // Tell Cereal what to serialize. See https://uscilab.github.io/cereal/
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_model);
+  }
+
+  BoltGraphPtr _model;
 };
 
 }  // namespace thirdai::bolt
