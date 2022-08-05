@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cereal/archives/binary.hpp>
-#include "AutoClassifierUtils.h"
+#include "AutoClassifierBase.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -14,10 +14,10 @@ namespace thirdai::bolt {
 class TextClassifier {
  public:
   TextClassifier(const std::string& model_size, uint32_t n_classes)
-      :  // TODO make this value a default for pairgrams/autoclassifiers
+      :  // TODO(david) make this value a default for pairgrams/autoclassifiers
         _input_dim(100000),
         _n_classes(n_classes) {
-    _model = AutoClassifierUtils::createNetwork(
+    _classifier = std::make_unique<AutoClassifierBase>(
         /* input_dim= */ _input_dim,
         /* n_classes= */ n_classes, model_size);
     _batch_processor =
@@ -26,8 +26,8 @@ class TextClassifier {
 
   void train(const std::string& filename, uint32_t epochs,
              float learning_rate) {
-    AutoClassifierUtils::train(
-        _model, filename,
+    _classifier->train(
+        filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             _batch_processor),
         /* epochs= */ epochs,
@@ -36,8 +36,8 @@ class TextClassifier {
 
   void predict(const std::string& filename,
                const std::optional<std::string>& output_filename) {
-    AutoClassifierUtils::predict(
-        _model, filename,
+    _classifier->predict(
+        filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             _batch_processor),
         output_filename, _batch_processor->getClassIdToNames());
@@ -48,8 +48,8 @@ class TextClassifier {
         /* sentence = */ sentence, /* output_range = */ _input_dim);
 
     BoltVector output =
-        _model->predictSingle({input}, {},
-                              /* use_sparse_inference = */ true);
+        _classifier->predictSingle({input}, {},
+                                   /* use_sparse_inference = */ true);
 
     return _batch_processor->getClassName(
         /* class_id = */ output.getIdWithHighestActivation());
@@ -79,12 +79,12 @@ class TextClassifier {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_input_dim, _n_classes, _model, _batch_processor);
+    archive(_input_dim, _n_classes, _classifier, _batch_processor);
   }
 
   uint32_t _input_dim;
   uint32_t _n_classes;
-  std::shared_ptr<BoltGraph> _model;
+  std::unique_ptr<AutoClassifierBase> _classifier;
   std::shared_ptr<dataset::TextClassificationProcessor> _batch_processor;
 };
 

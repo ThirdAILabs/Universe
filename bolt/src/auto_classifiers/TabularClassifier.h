@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cereal/archives/binary.hpp>
-#include "AutoClassifierUtils.h"
+#include "AutoClassifierBase.h"
 #include <bolt/src/graph/Graph.h>
 #include <dataset/src/batch_processors/GenericBatchProcessor.h>
 #include <dataset/src/batch_processors/TabularMetadataProcessor.h>
@@ -16,9 +16,9 @@ class TabularClassifier {
  public:
   TabularClassifier(const std::string& model_size, uint32_t n_classes)
       : _input_dim(100000), _n_classes(n_classes), _metadata(nullptr) {
-    _model = AutoClassifierUtils::createNetwork(/* input_dim = */ _input_dim,
-                                                /* n_classes = */ _n_classes,
-                                                model_size);
+    _classifier = std::make_unique<AutoClassifierBase>(
+        /* input_dim = */ _input_dim,
+        /* n_classes = */ _n_classes, model_size);
   }
 
   void train(const std::string& filename,
@@ -35,8 +35,8 @@ class TabularClassifier {
     std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
         makeTabularBatchProcessor();
 
-    AutoClassifierUtils::train(
-        _model, filename,
+    _classifier->train(
+        filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             batch_processor),
         /* epochs = */ epochs,
@@ -53,8 +53,8 @@ class TabularClassifier {
     std::shared_ptr<dataset::GenericBatchProcessor> batch_processor =
         makeTabularBatchProcessor();
 
-    AutoClassifierUtils::predict(
-        _model, filename,
+    _classifier->predict(
+        filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             batch_processor),
         output_filename, _metadata->getClassIdToNames());
@@ -120,13 +120,13 @@ class TabularClassifier {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_input_dim, _n_classes, _metadata, _model);
+    archive(_input_dim, _n_classes, _metadata, _classifier);
   }
 
   uint32_t _input_dim;
   uint32_t _n_classes;
   std::shared_ptr<dataset::TabularMetadata> _metadata;
-  std::shared_ptr<BoltGraph> _model;
+  std::unique_ptr<AutoClassifierBase> _classifier;
 };
 
 }  // namespace thirdai::bolt
