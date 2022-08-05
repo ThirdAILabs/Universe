@@ -2,7 +2,6 @@
 
 #include <cereal/archives/binary.hpp>
 #include "AutoClassifierBase.h"
-#include "AutoClassifierUtils.h"
 #include <bolt/src/graph/Graph.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
@@ -15,8 +14,7 @@ namespace thirdai::bolt {
 class TextClassifier {
  public:
   TextClassifier(const std::string& model_size, uint32_t n_classes)
-      :  // TODO(david) make this value a default for
-         // pairgrams/autoclassifiers
+      :  // TODO(david) make this value a default for pairgrams/autoclassifiers
         _input_dim(100000),
         _n_classes(n_classes) {
     _classifier = std::make_unique<AutoClassifierBase>(

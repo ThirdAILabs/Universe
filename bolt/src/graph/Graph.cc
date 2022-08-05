@@ -184,9 +184,7 @@ InferenceResult BoltGraph::predict(
     const std::vector<dataset::BoltDatasetPtr>& test_data,
     const std::vector<dataset::BoltTokenDatasetPtr>& test_tokens,
     const dataset::BoltDatasetPtr& test_labels,
-    const PredictConfig& predict_config,
-    const std::optional<std::function<void(const BoltVector&)>>&
-        output_callback) {
+    const PredictConfig& predict_config) {
   DatasetContext predict_context(test_data, test_tokens, test_labels);
 
   bool has_labels = (test_labels != nullptr);
