@@ -75,8 +75,10 @@ void runReconstructionAnalysis(const Options& options) {
 
     float error = single_vector_reconstruction_error(compressed_vector.get(),
                                                      uncompressed_vector);
-    std::cout << "Reconstruction error@compressed_size(" << compressed_size
-              << "): " << error << std::endl;
+    std::cout << "Reconstruction Error | "
+              << (options.use_sign_bit ? "Biased " : "Unbiased")
+              << " sketch: (N: " << options.uncompressed_size
+              << ", m: " << compressed_size << "): " << error << std::endl;
   }
 }
 
