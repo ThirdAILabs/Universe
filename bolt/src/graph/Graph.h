@@ -120,6 +120,11 @@ class BoltGraph {
   void processInferenceBatch(uint64_t batch_size, const BoltBatch* batch_labels,
                              MetricAggregator& metrics);
 
+  void processOutputCallback(
+      const std::optional<std::function<void(const BoltVector&)>>&
+          output_callback,
+      uint32_t batch_size);
+
   // Computes the forward pass through the graph.
   void forward(uint32_t vec_index, const BoltVector* labels);
 

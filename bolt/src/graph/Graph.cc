@@ -229,6 +229,8 @@ InferenceResult BoltGraph::predict(
 
       bar.increment();
 
+      processOutputCallback(predict_config.outputCallback(), batch_size);
+
       outputTracker.saveOutputBatch(_output, batch_size);
     }
   } catch (const std::exception& e) {
@@ -306,6 +308,20 @@ void BoltGraph::processInferenceBatch(uint64_t batch_size,
     if (batch_labels) {
       const auto& labels = (*batch_labels)[vec_id];
       metrics.processSample(output, labels);
+    }
+  }
+}
+
+void BoltGraph::processOutputCallback(
+    const std::optional<std::function<void(const BoltVector&)>>&
+        output_callback,
+    uint32_t batch_size) {
+  if (output_callback) {
+    for (uint32_t vec_id_in_batch = 0; vec_id_in_batch < batch_size;
+         vec_id_in_batch++) {
+      const auto& current_output_vec =
+          _output->getOutputVector(vec_id_in_batch);
+      output_callback.value()(current_output_vec);
     }
   }
 }
@@ -506,6 +522,9 @@ void BoltGraph::freezeHashTables(bool insert_labels_if_not_found) {
     }
   }
 }
+
+template void BoltGraph::serialize(cereal::BinaryInputArchive&);
+template void BoltGraph::serialize(cereal::BinaryOutputArchive&);
 
 template <class Archive>
 void BoltGraph::serialize(Archive& archive) {
