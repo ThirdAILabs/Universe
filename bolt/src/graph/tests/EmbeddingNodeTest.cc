@@ -35,7 +35,7 @@ TEST(EmbeddingNodeTest, SimpleTokenDataset) {
                   /* output= */ fully_connected_layer);
   model.compile(std::make_shared<CategoricalCrossEntropyLoss>());
 
-  auto [data, labels] = TestDatasetGenerators::generateSimplTokenDataset(
+  auto [data, labels] = TestDatasetGenerators::generateSimpleTokenDataset(
       /* n_batches= */ num_batches, /* batch_size= */ batch_size,
       /* seed= */ seed);
 

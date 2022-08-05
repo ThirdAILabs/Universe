@@ -7,6 +7,8 @@
 namespace thirdai::bolt::tests {
 
 struct TestDatasetGenerators {
+  // Creates a categorical dataset where the inputs are the one hot encoded
+  // vectors of the labels, with some small amount of noise added.
   static std::tuple<dataset::BoltDatasetPtr, dataset::BoltDatasetPtr>
   generateSimpleVectorDataset(uint32_t n_classes, uint32_t n_batches,
                               uint32_t batch_size, bool noisy_dataset) {
@@ -45,8 +47,8 @@ struct TestDatasetGenerators {
   static std::tuple<
       std::shared_ptr<dataset::InMemoryDataset<dataset::BoltTokenBatch>>,
       dataset::BoltDatasetPtr>
-  generateSimplTokenDataset(uint32_t n_batches, uint32_t batch_size,
-                            uint32_t seed) {
+  generateSimpleTokenDataset(uint32_t n_batches, uint32_t batch_size,
+                             uint32_t seed) {
     uint32_t dataset_size = n_batches * batch_size;
 
     std::vector<uint32_t> tokens(dataset_size);
@@ -78,6 +80,11 @@ struct TestDatasetGenerators {
         std::make_shared<dataset::BoltDataset>(std::move(labels)));
   }
 
+  // Creates a simple token and vector dataset in which the vector inputs are
+  // one hot encoded vectors of the labels with some noise added, and the token
+  // inputs are the labels themselves. The noise parameters allow for either one
+  // of the inputs to be completely randomized to test that a model can learn
+  // just from one of the inputs.
   static std::tuple<dataset::BoltDatasetPtr, dataset::BoltTokenDatasetPtr,
                     dataset::BoltDatasetPtr>
   generateDlrmDataset(uint32_t n_classes, uint32_t n_batches,

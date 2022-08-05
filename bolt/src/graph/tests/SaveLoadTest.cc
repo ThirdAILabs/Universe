@@ -130,7 +130,7 @@ TEST(SaveLoadDAGTest, SaveFullyConnectedParameters) {
 }
 
 TEST(SaveLoadDAGTest, SaveLoadEmbeddingLayer) {
-  auto [data, labels] = TestDatasetGenerators::generateSimplTokenDataset(
+  auto [data, labels] = TestDatasetGenerators::generateSimpleTokenDataset(
       /* n_batches= */ n_batches, /* batch_size= */ batch_size,
       /* seed= */ 29042);
 
