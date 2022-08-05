@@ -44,16 +44,16 @@ class AutoClassifierBase {
           batch_processor,
       uint32_t batch_size = 256);
 
-  uint32_t getHiddenLayerSize(const std::string& model_size, uint64_t n_classes,
-                              uint64_t input_dim);
+  static uint32_t getHiddenLayerSize(const std::string& model_size,
+                                     uint64_t n_classes, uint64_t input_dim);
 
   static float getHiddenLayerSparsity(uint64_t layer_size);
 
-  uint64_t getMemoryBudget(const std::string& model_size);
+  static uint64_t getMemoryBudget(const std::string& model_size);
 
   static std::optional<uint64_t> getSystemRam();
 
-  bool canLoadDatasetInMemory(const std::string& filename);
+  static bool canLoadDatasetInMemory(const std::string& filename);
 
   // Private constructor for cereal
   AutoClassifierBase() {}
