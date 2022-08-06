@@ -594,7 +594,7 @@ class DistributedPyNetwork final : public DistributedModel {
     float threshold = 0.01;
     if (sketch_biases) {
       mem_size = static_cast<int>(compression_density * dim);
-      std::cout << "mem_size " << mem_size << std::endl;
+      // std::cout << "mem_size " << mem_size << std::endl;
       threshold = DistributedModel::_layers.at(layer_index)
                       ->getUnbiasedBiasThresholdForGradient(mem_size);
     } else {

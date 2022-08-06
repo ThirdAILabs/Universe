@@ -13374,3 +13374,11 @@
 2022-08-06 06:45:33,945 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 11.458667755126953, Python Computation Time: 0.00026345252990722656, Communication Time: 10.693142414093018
 2022-08-06 06:45:40,076 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 15.021387338638306, Python Computation Time: 0.0003437995910644531, Communication Time: 13.25954794883728
 2022-08-06 06:45:40,077 : INFO : DistributedBolt : 5 processed!, Total Batches: 120
+2022-08-06 06:52:33,189 : INFO : DistributedBolt : Training has started!
+2022-08-06 06:52:33,609 : INFO : DistributedBolt : Ray Initialized
+2022-08-06 06:52:33,611 : INFO : DistributedBolt : Config Done
+2022-08-06 06:52:45,638 : INFO : DistributedBolt : Compression is UNBIASED_DRAGON with the density 0.1
+2022-08-06 06:52:45,638 : INFO : DistributedBolt : Linear communication pattern is choosen
+2022-08-06 06:52:55,571 : INFO : DistributedBolt : 0 processed!, Total Batches: 120
+2022-08-06 06:52:55,571 : INFO : DistributedBolt : Scheduler is false
+2022-08-06 06:53:00,540 : INFO : DistributedBolt : Epoch No: 0, Bolt Computation Time: 2.4198052883148193, Python Computation Time: 1.1205673217773438e-05, Communication Time: 2.545891523361206
