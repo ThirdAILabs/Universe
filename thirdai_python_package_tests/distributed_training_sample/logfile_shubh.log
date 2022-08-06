@@ -17675,3 +17675,6 @@
 2022-08-06 13:20:57,011 : INFO : DistributedBolt : 105 processed!, Total Batches: 120
 2022-08-06 13:21:01,688 : INFO : DistributedBolt : Epoch No: 28, Bolt Computation Time: 8346.149355888367, Python Computation Time: 0.26961755752563477, Communication Time: 8860.789613246918
 2022-08-06 13:21:07,616 : INFO : DistributedBolt : Epoch No: 28, Bolt Computation Time: 8349.529485702515, Python Computation Time: 0.2696824073791504, Communication Time: 8863.335609912872
+2022-08-06 13:26:45,237 : INFO : DistributedBolt : Training has started!
+2022-08-06 13:26:45,664 : INFO : DistributedBolt : Ray Initialized
+2022-08-06 13:26:45,665 : INFO : DistributedBolt : Config Done
