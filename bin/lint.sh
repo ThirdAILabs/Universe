@@ -31,7 +31,7 @@ find . -type f -name "*.cc" \
 { 
   while read fname; do 
     echo $fname 
-    clang-tidy --quiet $fname
+    parallel clang-tidy --quiet $fname
     NUM_FAILED+=$?
   done
 
