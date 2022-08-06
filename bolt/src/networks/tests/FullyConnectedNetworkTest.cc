@@ -1,4 +1,4 @@
-#include "BoltNetworkTestUtils.h"
+#include <bolt/src/graph/tests/TestDatasetGenerators.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
@@ -13,6 +13,8 @@
 namespace thirdai::bolt::tests {
 
 static constexpr uint32_t n_classes = 100;
+static constexpr uint32_t n_batches = 100;
+static constexpr uint32_t batch_size = 100;
 
 TEST(FullyConnectedClassificationNetworkTest,
      TrainSimpleDatasetSingleLayerNetwork) {
@@ -20,8 +22,9 @@ TEST(FullyConnectedClassificationNetworkTest,
       {std::make_shared<FullyConnectedLayerConfig>(n_classes, "softmax")},
       n_classes);
 
-  auto [data, labels] =
-      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
+  auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+      /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+      /* batch_size= */ batch_size, /* noisy_dataset= */ false);
 
   network.train(data, labels, CategoricalCrossEntropyLoss(),
                 /* learning_rate= */ 0.001, /* epochs= */ 5,
@@ -42,8 +45,9 @@ TEST(FullyConnectedClassificationNetworkTest,
       {std::make_shared<FullyConnectedLayerConfig>(n_classes, "softmax")},
       n_classes);
 
-  auto [data, labels] =
-      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
+  auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+      /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+      /* batch_size= */ batch_size, /* noisy_dataset= */ true);
 
   network.train(data, labels, CategoricalCrossEntropyLoss(),
                 /* learning_rate= */ 0.001, /* epochs= */ 5,
@@ -64,8 +68,9 @@ static void testSimpleDatasetMultiLayerNetworkActivation(
        std::make_shared<FullyConnectedLayerConfig>(n_classes, "softmax")},
       n_classes);
 
-  auto [data, labels] =
-      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
+  auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+      /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+      /* batch_size= */ batch_size, /* noisy_dataset= */ false);
 
   auto train_metrics =
       network.train(data, labels, CategoricalCrossEntropyLoss(),
@@ -102,8 +107,9 @@ TEST(FullyConnectedClassificationNetworkTest,
        std::make_shared<FullyConnectedLayerConfig>(n_classes, "sigmoid")},
       n_classes);
 
-  auto [data, labels] =
-      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
+  auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+      /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+      /* batch_size= */ batch_size, /* noisy_dataset= */ false);
 
   auto train_metrics =
       network.train(data, labels, CategoricalCrossEntropyLoss(),
@@ -131,8 +137,9 @@ TEST(FullyConnectedClassificationNetworkTest,
        std::make_shared<FullyConnectedLayerConfig>(n_classes, "softmax")},
       n_classes);
 
-  auto [data, labels] =
-      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ true);
+  auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+      /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+      /* batch_size= */ batch_size, /* noisy_dataset= */ true);
 
   network.train(data, labels, CategoricalCrossEntropyLoss(),
                 /* learning_rate= */ 0.001, /* epochs= */ 2,
@@ -257,7 +264,9 @@ void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
                                        uint32_t epochs, float acc_threshold) {
   for (uint32_t e = 0; e < epochs; e++) {
     auto [in_mem_data, in_mem_labels] =
-        genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
+        TestDatasetGenerators::generateSimpleVectorDataset(
+            /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+            /* batch_size= */ batch_size, /* noisy_dataset= */ false);
     auto stream_data = getMockStreamingDataset(in_mem_data, in_mem_labels);
 
     network.trainOnStream(stream_data, CategoricalCrossEntropyLoss(),
@@ -269,7 +278,9 @@ void testFullyConnectedNetworkOnStream(FullyConnectedNetwork& network,
   }
 
   auto [in_mem_data, in_mem_labels] =
-      genDataset(/* n_classes= */ n_classes, /* noisy_dataset= */ false);
+      TestDatasetGenerators::generateSimpleVectorDataset(
+          /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+          /* batch_size= */ batch_size, /* noisy_dataset= */ false);
   auto stream_data = getMockStreamingDataset(in_mem_data, in_mem_labels);
 
   auto test_metrics =
