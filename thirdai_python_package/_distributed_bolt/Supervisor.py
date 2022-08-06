@@ -91,7 +91,7 @@ class Supervisor:
             ]
         )
 
-        print("calculating the gradients")
+        # print("calculating the gradients")
         calculateGradients = ray.get(
             [
                 self.workers[id].calculateGradientsLinear.remote(
@@ -103,7 +103,7 @@ class Supervisor:
             ]
         )
 
-        print("getting the gradients")
+        # print("getting the gradients")
 
         gradient_computation_time = time.time() - start_gradient_computation
         start_getting_gradients = time.time()
