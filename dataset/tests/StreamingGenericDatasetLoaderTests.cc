@@ -50,7 +50,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
 
   static void assertCorrectVectors(
       std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset) {
-    auto [inputs, labels] = dataset;
+    const auto& [inputs, labels] = dataset;
     std::vector<bool> found(inputs->len());
 
     for (size_t batch_idx = 0; batch_idx < inputs->numBatches(); batch_idx++) {
@@ -75,7 +75,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
   }
 
   static bool isOrdered(std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset) {
-    auto [inputs, _] = dataset;
+    const auto& [inputs, _] = dataset;
 
     // Expected activation of i-th vector = i.
     float cur_expected_value = 0.0;
@@ -95,8 +95,8 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
 
   static bool sameOrder(std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset_1,
                         std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset_2) {
-    auto [inputs_1, _1] = dataset_1;
-    auto [inputs_2, _2] = dataset_2;
+    const auto& [inputs_1, _1] = dataset_1;
+    const auto& [inputs_2, _2] = dataset_2;
 
     for (size_t batch_idx = 0; batch_idx < inputs_1->numBatches();
          batch_idx++) {
@@ -115,7 +115,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
 
   static void assertShuffledEnough(
       std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset) {
-    auto [inputs, _] = dataset;
+    const auto& [inputs, _] = dataset;
 
     for (size_t batch_idx = 0; batch_idx < inputs->numBatches(); batch_idx++) {
       auto& batch = inputs->at(batch_idx);
