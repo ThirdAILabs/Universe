@@ -75,15 +75,15 @@ class Supervisor:
 
         start_gradient_computation = time.time()
 
-        print("getting the thresholds")
+        # print("getting the thresholds")
         threshold=ray.get(
             [
                 self.workers[id].getUnbiasedThresholdDragon.remote(compression_density=compression_density)
                 for id in range(len(self.workers))
             ]
         )
-        print(f"the thresholds are {threshold}")
-        print("Setting the thresholds")
+        # print(f"the thresholds are {threshold}")
+        # print("Setting the thresholds")
         ray.get(
             [
                 self.workers[id].setUnbiasedThresholdDragon.remote(threshold)

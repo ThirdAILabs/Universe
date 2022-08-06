@@ -176,12 +176,12 @@ class Worker:
             bt=self.network.get_unbiased_threshold_for_gradients(
                 layers, compression_density=compression_density, sketch_biases=True
             )
-            print(f"weight threshold for layer {layers} is {wt} and bias threshold is {bt} with the compression density {compression_density}")
+            # print(f"weight threshold for layer {layers} is {wt} and bias threshold is {bt} with the compression density {compression_density}")
             w_threshold.append(wt)
             b_threshold.append(bt)
         
-        print(f"compression density is {compression_density}")
-        print(f"the thresholds are {w_threshold} {b_threshold}")
+        # print(f"compression density is {compression_density}")
+        # print(f"the thresholds are {w_threshold} {b_threshold}")
         self.w_threshold = w_threshold
         self.b_threshold = b_threshold
 
