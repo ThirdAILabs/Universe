@@ -295,7 +295,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
           py::arg("input_data"), py::arg("explain_prediction") = true,
           py::arg("neurons_to_explain") = std::vector<uint32_t>())
       .def("get_input_gradients", &dagGetInputGradientsWrapper,
-           py::arg("input_data"), py::arg("input_token"),
+           py::arg("input_data"), py::arg("input_tokens"),
            py::arg("explain_prediction") = true,
            py::arg("neurons_to_explain") = std::vector<uint32_t>(),
            "Get the values of input gradients when back propagate "
