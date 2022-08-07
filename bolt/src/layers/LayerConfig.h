@@ -161,11 +161,21 @@ struct EmbeddingLayerConfig {
   uint32_t lookup_size;
   uint32_t log_embedding_block_size;
 
+  // Public constructor, needed for cereal to construct optional, should not be
+  // used otherwise.
+  EmbeddingLayerConfig() {}
+
   EmbeddingLayerConfig(uint32_t _num_embedding_lookups, uint32_t _lookup_size,
                        uint32_t _log_embedding_block_size)
       : num_embedding_lookups(_num_embedding_lookups),
         lookup_size(_lookup_size),
         log_embedding_block_size(_log_embedding_block_size) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(num_embedding_lookups, lookup_size, log_embedding_block_size);
+  }
 };
 
 }  // namespace thirdai::bolt

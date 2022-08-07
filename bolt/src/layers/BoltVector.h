@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/cereal.hpp>
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -132,8 +134,6 @@ struct BoltVector {
     return vector;
   }
 
-  // TODO(nicholas): delete copy constructor/assignment and make load dataset
-  // return smart pointer
   BoltVector(const BoltVector& other) : len(other.len), _owns_data(true) {
     if (other.active_neurons != nullptr) {
       active_neurons = new uint32_t[len];
@@ -154,7 +154,7 @@ struct BoltVector {
     }
   }
 
-  BoltVector(BoltVector&& other)
+  BoltVector(BoltVector&& other) noexcept
       : active_neurons(other.active_neurons),
         activations(other.activations),
         gradients(other.gradients),
@@ -166,8 +166,6 @@ struct BoltVector {
     other.len = 0;
   }
 
-  // TODO(nicholas): delete copy constructor/assignment and make load dataset
-  // return smart pointer
   BoltVector& operator=(const BoltVector& other) {
     if (&other == this) {
       return *this;
@@ -198,7 +196,7 @@ struct BoltVector {
     return *this;
   }
 
-  BoltVector& operator=(BoltVector&& other) {
+  BoltVector& operator=(BoltVector&& other) noexcept {
     this->len = other.len;
     freeMemory();
 
@@ -258,6 +256,8 @@ struct BoltVector {
 
   constexpr bool isDense() const { return this->active_neurons == nullptr; }
 
+  constexpr bool hasGradients() const { return gradients != nullptr; }
+
   std::string toString() const {
     std::stringstream ss;
     ss << "[";
@@ -283,7 +283,7 @@ struct BoltVector {
     return ss.str();
   }
 
-  ~BoltVector() { freeMemory(); }
+  ~BoltVector() noexcept { freeMemory(); }
 
  private:
   /**
@@ -313,11 +313,57 @@ struct BoltVector {
       delete[] this->gradients;
     }
   }
+
+  friend class cereal::access;
+  template <class Archive>
+  void save(Archive& archive) const {
+    archive(len);
+    bool is_sparse = !isDense();
+    bool has_gradients = hasGradients();
+    archive(is_sparse, has_gradients);
+
+    if (is_sparse) {
+      archive(cereal::binary_data(active_neurons, len * sizeof(uint32_t)));
+    }
+
+    archive(cereal::binary_data(activations, len * sizeof(float)));
+
+    if (has_gradients) {
+      archive(cereal::binary_data(gradients, len * sizeof(float)));
+    }
+  }
+
+  template <class Archive>
+  void load(Archive& archive) {
+    archive(len);
+
+    bool is_sparse, has_gradients;
+    archive(is_sparse, has_gradients);
+
+    if (is_sparse) {
+      active_neurons = new uint32_t[len];
+      archive(cereal::binary_data(active_neurons, len * sizeof(uint32_t)));
+    }
+
+    activations = new float[len];
+    archive(cereal::binary_data(activations, len * sizeof(float)));
+
+    if (has_gradients) {
+      gradients = new float[len];
+      archive(cereal::binary_data(gradients, len * sizeof(float)));
+    }
+  }
 };
 
 class BoltBatch {
  private:
   std::vector<BoltVector> _vectors;
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(_vectors);
+  }
 
  public:
   BoltBatch() {}
@@ -383,18 +429,6 @@ class BoltBatch {
   BoltBatch& operator=(const BoltBatch& other) = delete;
 
   BoltBatch& operator=(BoltBatch&& other) = default;
-
-  friend std::ostream& operator<<(std::ostream& out, const BoltBatch& state) {
-    std::cout << "-------------------------------------------------------------"
-              << std::endl;
-    for (uint32_t i = 0; i < state._vectors.size(); i++) {
-      std::cout << "Vector: " << i << ":\n"
-                << state._vectors.at(i) << std::endl;
-    }
-    std::cout << "-------------------------------------------------------------"
-              << std::endl;
-    return out;
-  }
 };
 
 }  // namespace thirdai::bolt
