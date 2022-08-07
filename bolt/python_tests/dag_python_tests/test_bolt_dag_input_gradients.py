@@ -67,7 +67,7 @@ def test_bolt_dag_single_input_gradients():
     For every vector in input,we modify the vector at every position(by adding EPS), and we check the above assertion.
     """
     for input_num in range(len(numpy_inputs)):
-        modified_numpy_vectors = []
+        perturbed_vectors = []
         for i in range(len(numpy_inputs[input_num])):
             """
             We are making a copy because in python assign operation makes two variables to point
@@ -75,16 +75,16 @@ def test_bolt_dag_single_input_gradients():
             """
             vec = np.array(numpy_inputs[input_num])
             vec[i] = vec[i] + 0.001
-            modified_numpy_vectors.append(vec)
-        modified_numpy_vectors = np.array(modified_numpy_vectors)
-        modified_vectors = dataset.from_numpy(modified_numpy_vectors, batch_size=5)
-        _, vecs_act = model.predict(
-            modified_vectors, None, predict_config=predict_config
+            perturbed_vectors.append(vec)
+        perturbed_vectors = np.array(perturbed_vectors)
+        perturbed_dataset = dataset.from_numpy(perturbed_vectors, batch_size=5)
+        _, perturbed_activations = model.predict(
+            perturbed_dataset, None, predict_config=predict_config
         )
         act_difference_at_required_label = [
-            np.array(vec_act[numpy_labels[input_num]])
-            - np.array(act[input_num][numpy_labels[input_num]])
-            for vec_act in vecs_act
+            perturbed_act[numpy_labels[input_num]]
+            - act[input_num][numpy_labels[input_num]]
+            for perturbed_act in perturbed_activations
         ]
         assert np.array_equal(
             np.argsort(act_difference_at_required_label),

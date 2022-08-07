@@ -17,7 +17,6 @@
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/MetricAggregator.h>
 #include <dataset/src/batch_types/BoltTokenBatch.h>
-#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -77,15 +76,21 @@ class BoltGraph {
       const dataset::BoltDatasetPtr& test_labels,
       const PredictConfig& predict_config);
 
-  std::pair<std::vector<std::vector<float>>,
-            std::optional<std::vector<std::vector<uint32_t>>>>
+  std::pair<std::optional<std::vector<std::vector<uint32_t>>>,
+            std::vector<std::vector<float>>>
   getInputGradients(const dataset::BoltDatasetPtr& input_data,
                     const dataset::BoltTokenDatasetPtr& input_tokens,
-                    bool best_index,
-                    const std::vector<uint32_t>& required_labels);
+                    bool explain_prediction,
+                    const std::vector<uint32_t>& neurons_to_explain);
   BoltVector predictSingle(std::vector<BoltVector>&& test_data,
                            std::vector<std::vector<uint32_t>>&& test_tokens,
                            bool use_sparse_inference);
+
+  BoltVector getLabelVectorExplainPrediction(uint32_t vec_id,
+                                             bool explain_prediction);
+
+  BoltVector getLabelVectorNeuronsToExplain(uint32_t required_index,
+                                            uint32_t vec_id);
 
   std::vector<NodePtr> getNodeTraversalOrder() const {
     std::vector<NodePtr> nodes;

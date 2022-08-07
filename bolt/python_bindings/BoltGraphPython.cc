@@ -311,10 +311,10 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "to empty vector, if required_labels is empty then only function "
            "takes look at the best_index parameter , otherwise gives gradients "
            "corresponds to those labels."
-           " Returns a tuple consists of (0) list of lists of gradients "
-           "corresponds to the input vectors."
-           " and (1) optional, it only returns the corresponding indices for "
-           "sparse inputs.")
+           " Returns a tuple consists of (0) optional, it only returns the "
+           "corresponding indices for sparse inputs."
+           " and (1) list of lists of gradients "
+           "corresponds to the input vectors.")
       // Helper method that covers the common case of inference based off of a
       // single BoltBatch dataset
       .def(
@@ -439,8 +439,8 @@ py::tuple dagGetInputGradientsWrapper(
   auto gradients = model.getInputGradients(input_data, input_token, best_index,
                                            required_labels);
 
-  if (gradients.second == std::nullopt) {
-    return py::cast(gradients.first);
+  if (gradients.first == std::nullopt) {
+    return py::cast(gradients.second);
   }
   return py::cast(gradients);
 }
