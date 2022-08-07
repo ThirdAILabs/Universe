@@ -15,7 +15,6 @@
 #include <algorithm>
 #include <chrono>
 #include <csignal>
-#include <cstddef>
 #include <exception>
 #include <optional>
 #include <ostream>
