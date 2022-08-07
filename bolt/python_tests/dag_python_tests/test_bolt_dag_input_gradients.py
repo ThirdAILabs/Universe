@@ -55,7 +55,7 @@ def test_bolt_dag_single_input_gradients():
     labels = dataset.from_numpy(numpy_labels, batch_size=10)
     train_config = bolt.graph.TrainConfig.make(learning_rate=0.001, epochs=5).silence()
     model.train(input_data, labels, train_config)
-    gradients = model.get_input_gradients(input_data, required_labels=numpy_labels)
+    gradients = model.get_input_gradients(input_data, neurons_to_explain=numpy_labels)
     predict_config = (
         bolt.graph.PredictConfig.make()
         .enable_sparse_inference()
