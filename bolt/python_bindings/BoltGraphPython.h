@@ -21,7 +21,7 @@ py::tuple dagPredictPythonWrapper(BoltGraph& model,
 
 py::tuple dagGetInputGradientsWrapper(
     BoltGraph& model, const dataset::BoltDatasetPtr& input_data,
-    const dataset::BoltTokenDatasetPtr& input_token, bool best_index = true,
+    const dataset::BoltTokenDatasetPtr& input_tokens, bool best_index = true,
     const std::vector<uint32_t>& required_labels = std::vector<uint32_t>());
 using ParameterArray =
     py::array_t<float, py::array::c_style | py::array::forcecast>;

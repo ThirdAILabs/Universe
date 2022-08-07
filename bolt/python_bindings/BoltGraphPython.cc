@@ -288,7 +288,7 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
              const std::vector<uint32_t>& required_labels =
                  std::vector<uint32_t>()) {
             return dagGetInputGradientsWrapper(model, input_data,
-                                               /* input_token = */ nullptr,
+                                               /* input_tokens = */ nullptr,
                                                best_index, required_labels);
           },
           py::arg("input_data"), py::arg("best_index") = true,
@@ -434,9 +434,9 @@ py::tuple dagPredictPythonWrapper(BoltGraph& model,
 
 py::tuple dagGetInputGradientsWrapper(
     BoltGraph& model, const dataset::BoltDatasetPtr& input_data,
-    const dataset::BoltTokenDatasetPtr& input_token, bool best_index,
+    const dataset::BoltTokenDatasetPtr& input_tokens, bool best_index,
     const std::vector<uint32_t>& required_labels) {
-  auto gradients = model.getInputGradients(input_data, input_token, best_index,
+  auto gradients = model.getInputGradients(input_data, input_tokens, best_index,
                                            required_labels);
 
   if (gradients.first == std::nullopt) {
