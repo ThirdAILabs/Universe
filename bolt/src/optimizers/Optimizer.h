@@ -168,8 +168,8 @@ class CompressedAdam : public Optimizer {
 
 inline std::unique_ptr<Optimizer> make_optimizer(uint64_t dim,
                                                  uint64_t& prev_dim) {
-  // return std::make_unique<Adam>(dim, prev_dim),
-  return std::make_unique<CompressedAdam>(dim, prev_dim);
+  return std::make_unique<Adam>(dim, prev_dim),
+  // return std::make_unique<CompressedAdam>(dim, prev_dim);
 }
 
 }  // namespace thirdai::optim
