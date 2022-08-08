@@ -89,8 +89,8 @@ class TabularClassifier {
         unigram_hashes, _input_dim);
 
     BoltVector output =
-        _model->predictSingle({input}, {},
-                              /* use_sparse_inference = */ true);
+        _classifier->predictSingle({input}, {},
+                                   /* use_sparse_inference = */ true);
 
     return _metadata->getClassIdToNames()[output.getIdWithHighestActivation()];
   }
