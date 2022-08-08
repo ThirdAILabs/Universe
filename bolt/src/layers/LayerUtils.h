@@ -132,14 +132,12 @@ inline void getUnbiasedSketch(const std::vector<float>& full_gradient,
   int current_index_reps = 1000;
   int current_index = 0;
 
-  /*
-  // #pragma omp parallel for default(none) \
-  //     shared(full_gradient, indices, sketch_size, seed_for_hashing, \
-  //            pregenerate_distribution, threshold, loop_size, random_numbers,
+#pragma omp parallel for default(none) \
+  shared(full_gradient, indices, sketch_size, seed_for_hashing, \
+  pregenerate_distribution, threshold, loop_size, random_numbers,
   \
-  //            range_pregenerated_numbers, index) \
-  //         firstprivate(reset_index_after, current_index_reps, current_index)
-  */
+  range_pregenerated_numbers, index) \
+  firstprivate(reset_index_after, current_index_reps, current_index)
 
   for (int i = 0; i < loop_size; i++) {
     if (std::abs(full_gradient[i]) > threshold) {

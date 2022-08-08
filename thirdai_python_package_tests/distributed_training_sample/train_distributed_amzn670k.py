@@ -3,7 +3,7 @@ from thirdai.distributed_bolt import DistributedBolt
 import sys
 config_filename = "./amzn670k_distributed.txt"
 # config_filename = "./mnist.txt"
-head = DistributedBolt(2, config_filename, pregenerate=False)
+head = DistributedBolt(2, config_filename, pregenerate=True)
 if sys.argv[1]=="None":
     head.train(
         circular=False, compression=None, compression_density=0.10, scheduler=True
