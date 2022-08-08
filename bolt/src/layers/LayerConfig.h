@@ -180,6 +180,7 @@ class NormalizationLayerConfig {
         _beta_regularizer(beta_regularizer),
         _gamma_regularizer(gamma_regularizer),
         _verbose(true) {}
+
   static NormalizationLayerConfig makeConfig() {
     return NormalizationLayerConfig();
   }

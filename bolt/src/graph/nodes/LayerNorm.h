@@ -159,10 +159,8 @@ class LayerNormNode final : public Node,
           normDerivative(output_vector_activation, mean, variance, len);
 
       assert(!std::isnan(grad));
-      std::cout << "GRAD FROM FUNCTION BACKPROP" << grad << std::endl;
-      output_vector.gradients[neuron_index] *= grad;
-      input_vector.gradients[neuron_index] =
-          output_vector.gradients[neuron_index];
+      output_vector.gradients[neuron_index] = grad;
+      input_vector.gradients[neuron_index] += grad;
     }
   }
 
@@ -175,7 +173,6 @@ class LayerNormNode final : public Node,
   }
 
   BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
-    // assert(getState() == NodeState::PreparedForBatchProcessing);
     return (_layer_norm_state->outputs)[vec_index];
   }
 
