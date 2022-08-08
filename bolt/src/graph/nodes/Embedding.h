@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
 #include "TokenInput.h"
 #include <bolt/src/graph/Node.h>
 #include <bolt/src/layers/BoltVector.h>
@@ -17,14 +20,20 @@ class EmbeddingNode final : public Node,
   EmbeddingNode(uint32_t num_embedding_lookups, uint32_t lookup_size,
                 uint32_t log_embedding_block_size)
       : _embedding_layer(nullptr),
-        _config(/* num_embedding_lookups= */ num_embedding_lookups,
-                /* lookup_size= */ lookup_size,
-                /* log_embedding_block_size= */ log_embedding_block_size),
+        _config(EmbeddingLayerConfig(
+            /* num_embedding_lookups= */ num_embedding_lookups,
+            /* lookup_size= */ lookup_size,
+            /* log_embedding_block_size= */ log_embedding_block_size)),
         _outputs(std::nullopt),
         _token_input(nullptr) {}
 
   uint32_t outputDim() const final {
-    return _config.num_embedding_lookups * _config.lookup_size;
+    NodeState node_state = getState();
+    if (node_state == NodeState::Constructed ||
+        node_state == NodeState::PredecessorsSet) {
+      return _config->num_embedding_lookups * _config->lookup_size;
+    }
+    return _embedding_layer->getEmbeddingDim();
   }
 
   std::shared_ptr<EmbeddingNode> addInput(TokenInputPtr input) {
@@ -66,7 +75,9 @@ class EmbeddingNode final : public Node,
 
  private:
   void compileImpl() final {
-    _embedding_layer = std::make_shared<EmbeddingLayer>(_config);
+    assert(_config.has_value());
+    _embedding_layer = std::make_shared<EmbeddingLayer>(_config.value());
+    _config = std::nullopt;
   }
 
   void prepareForBatchProcessingImpl(uint32_t batch_size,
@@ -125,11 +136,21 @@ class EmbeddingNode final : public Node,
     _embedding_layer->buildLayerSummary(summary);
   }
 
+  // Private constructor for cereal.
+  EmbeddingNode() : _config(std::nullopt), _outputs(std::nullopt) {}
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Node>(this), _embedding_layer, _config,
+            _token_input);
+  }
+
   // This field will be a nullptr except for when the node is in the
   // PrepareForBatchProcessing state.
   std::shared_ptr<EmbeddingLayer> _embedding_layer;
 
-  EmbeddingLayerConfig _config;
+  std::optional<EmbeddingLayerConfig> _config;
 
   // This field will be std::nullopt except for when the node is in the
   // PrepareForBatchProcessing state.
@@ -141,3 +162,5 @@ class EmbeddingNode final : public Node,
 using EmbeddingNodePtr = std::shared_ptr<EmbeddingNode>;
 
 }  // namespace thirdai::bolt
+
+CEREAL_REGISTER_TYPE(thirdai::bolt::EmbeddingNode)

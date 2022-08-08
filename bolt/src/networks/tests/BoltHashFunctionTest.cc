@@ -1,4 +1,4 @@
-#include "BoltNetworkTestUtils.h"
+#include <bolt/src/graph/tests/TestDatasetGenerators.h>
 #include <bolt/src/layers/LayerConfig.h>
 #include <bolt/src/layers/LayerUtils.h>
 #include <bolt/src/networks/FullyConnectedNetwork.h>
@@ -11,6 +11,8 @@
 namespace thirdai::bolt::tests {
 
 static constexpr uint32_t n_classes = 100;
+static constexpr uint32_t n_batches = 100;
+static constexpr uint32_t batch_size = 100;
 
 static void testSimpleDatasetHashFunction(
     const SamplingConfigPtr& sampling_config) {
@@ -25,8 +27,9 @@ static void testSimpleDatasetHashFunction(
        std::make_shared<FullyConnectedLayerConfig>(n_classes, "softmax")},
       n_classes);
 
-  auto [data, labels] =
-      genDataset(/* n_classes= */ n_classes, /* noisy_dataset = */ false);
+  auto [data, labels] = TestDatasetGenerators::generateSimpleVectorDataset(
+      /* n_classes= */ n_classes, /* n_batches= */ n_batches,
+      /* batch_size= */ batch_size, /* noisy_dataset= */ false);
 
   // train the network for two epochs
   network.train(data, labels, CategoricalCrossEntropyLoss(),
