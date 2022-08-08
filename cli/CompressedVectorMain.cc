@@ -11,9 +11,9 @@ namespace thirdai::bolt::cli {
 struct Options {
   uint64_t uncompressed_size = 100000;
   uint64_t compressed_size = 10000;
-  uint64_t block_size = 64;
+  uint64_t block_size = 1;
   float mean = 0.0;
-  float stddev = 1.0;
+  float stddev = 2.0;
   uint64_t step_size = 10000;
   bool use_sign_bit = false;
 };
@@ -23,14 +23,12 @@ float single_vector_reconstruction_error(
     const CompressedVector<ELEMENT_TYPE>* compressed_vector,
     const std::vector<ELEMENT_TYPE>& large_vector) {
   float error = 0;
-  size_t num_elements = large_vector.size();
-  for (size_t i = 0; i < num_elements; i++) {
-    float diff =
-        static_cast<float>(large_vector[i] - compressed_vector->get(i));
+  for (size_t i = 0; i < large_vector.size(); i++) {
+    float diff = large_vector[i] - compressed_vector->get(i);
     error += diff * diff;  // Squared error.
   }
 
-  error = std::sqrt(error) / static_cast<float>(num_elements);
+  error = std::sqrt(error) / static_cast<float>(large_vector.size());
   return error;
 }
 
@@ -53,6 +51,8 @@ void runReconstructionAnalysis(const Options& options) {
   std::generate(uncompressed_vector.begin(), uncompressed_vector.end(),
                 generator);
 
+  // Construction to make a CompressedVector parameterized by size.
+  // The remaining parameters are captured by references.
   auto make_compressed_vector = [&](uint64_t compressed_size) {
     std::unique_ptr<CompressedVector<float>> cv{nullptr};
     if (options.use_sign_bit) {
@@ -76,7 +76,7 @@ void runReconstructionAnalysis(const Options& options) {
     float error = single_vector_reconstruction_error(compressed_vector.get(),
                                                      uncompressed_vector);
     std::cout << "Reconstruction Error | "
-              << (options.use_sign_bit ? "Biased " : "Unbiased")
+              << (options.use_sign_bit ? "Unbiased " : "Biased")
               << " sketch: (N: " << options.uncompressed_size
               << ", m: " << compressed_size << "): " << error << std::endl;
   }

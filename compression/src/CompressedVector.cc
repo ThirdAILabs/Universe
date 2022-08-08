@@ -14,6 +14,17 @@ inline uint32_t hashFunction(uint64_t value, uint32_t seed) {
   return hash_value;
 }
 
+template <class ELEMENT_TYPE>
+void debugCompressed(const std::vector<ELEMENT_TYPE>& original,
+                     CompressedVector<ELEMENT_TYPE>* compressed) {
+  for (size_t i = 0; i < original.size(); i++) {
+    if (original[i] != compressed->get(i)) {
+      std::cout << i << ": " << original[i] << ", " << compressed->get(i)
+                << "\n";
+    }
+  }
+}
+
 }  // namespace
 
 // Create a new BiasedSketch.
@@ -146,17 +157,8 @@ UnbiasedSketch<ELEMENT_TYPE>::UnbiasedSketch(
       } else {
         _physical_vector[index] -= input[j];
       }
-
-      // TODO(jerin): What happens if overflow? We are using sum to store
-      // multiple elements, which could overflow the element's type.
     }
   }
-
-  // for (size_t i = 0; i < input.size(); i++) {
-  //   if (input[i] != get(i)) {
-  //     std::cout << i << ": " << input[i] << ", " << get(i) << "\n";
-  //   }
-  // }
 }
 
 template <class ELEMENT_TYPE>
