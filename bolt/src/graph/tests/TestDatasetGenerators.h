@@ -2,6 +2,7 @@
 
 #include <dataset/src/Datasets.h>
 #include <algorithm>
+#include <numeric>
 #include <random>
 
 namespace thirdai::bolt::tests {
@@ -53,7 +54,7 @@ struct TestDatasetGenerators {
 
     std::vector<uint32_t> tokens(dataset_size);
 
-    std::iota(tokens.begin(), tokens.end(), 1);
+    iota(tokens.begin(), tokens.end(), 1);
     std::shuffle(tokens.begin(), tokens.end(), std::mt19937(seed));
 
     std::vector<dataset::BoltTokenBatch> data;
