@@ -1,11 +1,11 @@
 #pragma once
 
 #include <cereal/archives/binary.hpp>
-#include "AutoClassifierUtils.h"
+#include "AutoClassifierBase.h"
+#include <bolt/src/graph/Graph.h>
 #include <bolt/src/layers/BoltVector.h>
 #include <bolt/src/loss_functions/LossFunctions.h>
 #include <bolt/src/metrics/Metric.h>
-#include <bolt/src/networks/FullyConnectedNetwork.h>
 #include <dataset/src/batch_processors/TextClassificationProcessor.h>
 #include <dataset/src/utils/SafeFileIO.h>
 
@@ -13,45 +13,46 @@ namespace thirdai::bolt {
 
 class TextClassifier {
  public:
-  TextClassifier(const std::string& model_size, uint32_t n_classes) {
-    uint32_t input_dim = 100000;
-    _model = AutoClassifierUtils::createNetwork(
-        /* input_dim */ input_dim,
-        /* n_classes */ n_classes, model_size);
+  TextClassifier(const std::string& model_size, uint32_t n_classes)
+      :  // TODO(david) make this value a default for pairgrams/autoclassifiers
+        _input_dim(100000),
+        _n_classes(n_classes) {
+    _classifier = std::make_unique<AutoClassifierBase>(
+        /* input_dim= */ _input_dim,
+        /* n_classes= */ n_classes, model_size);
     _batch_processor =
-        std::make_shared<dataset::TextClassificationProcessor>(input_dim);
+        std::make_shared<dataset::TextClassificationProcessor>(_input_dim);
   }
 
   void train(const std::string& filename, uint32_t epochs,
              float learning_rate) {
-    AutoClassifierUtils::train(
-        _model, filename,
+    _classifier->train(
+        filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             _batch_processor),
-        /* epochs */ epochs,
-        /* learning_rate */ learning_rate);
+        /* epochs= */ epochs,
+        /* learning_rate= */ learning_rate);
   }
 
   void predict(const std::string& filename,
                const std::optional<std::string>& output_filename) {
-    AutoClassifierUtils::predict(
-        _model, filename,
+    _classifier->predict(
+        filename,
         std::static_pointer_cast<dataset::BatchProcessor<BoltBatch, BoltBatch>>(
             _batch_processor),
         output_filename, _batch_processor->getClassIdToNames());
   }
 
   std::string predictSingle(const std::string& sentence) {
-    BoltVector pairgrams_vec = dataset::TextEncodingUtils::computePairgrams(
-        /*sentence = */ sentence, /*output_range = */ _model->getInputDim());
+    BoltVector input = dataset::TextEncodingUtils::computePairgrams(
+        /* sentence = */ sentence, /* output_range = */ _input_dim);
+
     BoltVector output =
-        BoltVector(/*l = */ _model->getOutputDim(), /*is_dense = */ true);
-    _model->initializeNetworkState(/*batch_size = */ 1,
-                                   /*use_sparsity = */ true);
-    _model->forward(/*batch_index = */ 0, /*input = */ pairgrams_vec, output,
-                    /*labels = */ nullptr);
+        _classifier->predictSingle({input}, {},
+                                   /* use_sparse_inference = */ true);
+
     return _batch_processor->getClassName(
-        /*class_id = */ output.getIdWithHighestActivation());
+        /* class_id = */ output.getIdWithHighestActivation());
   }
 
   void save(const std::string& filename) {
@@ -78,10 +79,12 @@ class TextClassifier {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& archive) {
-    archive(_model, _batch_processor);
+    archive(_input_dim, _n_classes, _classifier, _batch_processor);
   }
 
-  std::shared_ptr<FullyConnectedNetwork> _model;
+  uint32_t _input_dim;
+  uint32_t _n_classes;
+  std::unique_ptr<AutoClassifierBase> _classifier;
   std::shared_ptr<dataset::TextClassificationProcessor> _batch_processor;
 };
 
