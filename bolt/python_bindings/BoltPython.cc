@@ -667,7 +667,8 @@ void createBoltSubmodule(py::module_& module) {
       .def("explain", &PySequentialClassifier::explain, py::arg("filename"),
            py::arg("label_id") = 0, py::arg("label_given") = false,
            py::arg("loss_fn") = CategoricalCrossEntropyLoss(),
-           "Explains the percentage contribution or affect that each value in "
+           "Explains the percentage contribution or affect that each non zero "
+           "value in "
            "input vector has on the target column on its desired label."
            "Arguments:\n"
            " * filename: filename or file path contains rows which need "
