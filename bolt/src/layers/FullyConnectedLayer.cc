@@ -48,6 +48,7 @@ FullyConnectedLayer::FullyConnectedLayer(
   std::generate(_biases.begin(), _biases.end(), [&]() { return dist(eng); });
 
   if (_sparsity < 1.0) {
+    enableRandomDropout();
     initSparseDatastructures(config.getSamplingConfig(), rd);
   }
 }
