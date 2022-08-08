@@ -134,8 +134,7 @@ inline void getUnbiasedSketch(const std::vector<float>& full_gradient,
 
 #pragma omp parallel for default(none) \
   shared(full_gradient, indices, sketch_size, seed_for_hashing, \
-  pregenerate_distribution, threshold, loop_size, random_numbers,
-  \
+  pregenerate_distribution, threshold, loop_size, random_numbers,\
   range_pregenerated_numbers, index) \
   firstprivate(reset_index_after, current_index_reps, current_index)
 
