@@ -73,6 +73,8 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void buildHashTables() final;
 
+  void enableRandomDropout();
+
   void reBuildHashFunction() final;
 
   uint32_t getDim() const final { return _dim; }
@@ -123,6 +125,7 @@ class FullyConnectedLayer final : public SequentialLayer {
  private:
   uint64_t _dim, _prev_dim, _sparse_dim;
   float _sparsity;
+  bool _random_dropouts;
   bool _trainable;
   ActivationFunction _act_func;
 

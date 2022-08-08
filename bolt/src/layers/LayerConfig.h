@@ -43,6 +43,7 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
   uint64_t _dim;
   float _sparsity;
   ActivationFunction _activation_fn;
+  bool _random_dropouts;
   SamplingConfigPtr _sampling_config;
 
  public:
@@ -50,20 +51,24 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
   FullyConnectedLayerConfig() {}
 
   FullyConnectedLayerConfig(uint64_t dim, const std::string& activation)
-      : FullyConnectedLayerConfig(dim, /* sparsity= */ 1.0, activation) {}
-
-  FullyConnectedLayerConfig(uint64_t dim, float sparsity,
-                            const std::string& activation)
-      : FullyConnectedLayerConfig(dim, sparsity, activation,
-                                  DWTASamplingConfig::autotune(dim, sparsity)) {
+      : FullyConnectedLayerConfig(dim, /* sparsity= */ 1.0, activation, false) {
   }
 
   FullyConnectedLayerConfig(uint64_t dim, float sparsity,
                             const std::string& activation,
-                            SamplingConfigPtr sampling_config)
+                            bool random_dropout = false)
+      : FullyConnectedLayerConfig(dim, sparsity, activation,
+                                  DWTASamplingConfig::autotune(dim, sparsity),
+                                  random_dropout) {}
+
+  FullyConnectedLayerConfig(uint64_t dim, float sparsity,
+                            const std::string& activation,
+                            SamplingConfigPtr sampling_config,
+                            bool random_dropout = false)
       : _dim(dim),
         _sparsity(sparsity),
         _activation_fn(getActivationFunction(activation)),
+        _random_dropouts(random_dropout),
         _sampling_config(std::move(sampling_config)) {
     if (_sparsity <= 0.0 || _sparsity > 1.0) {
       throw std::invalid_argument(
@@ -85,6 +90,8 @@ class FullyConnectedLayerConfig final : public SequentialLayerConfig {
   const SamplingConfigPtr& getSamplingConfig() const {
     return _sampling_config;
   }
+
+  bool shouldRandomDropout() const { return _random_dropouts; }
 
  private:
   static uint32_t clip(uint32_t input, uint32_t low, uint32_t high) {

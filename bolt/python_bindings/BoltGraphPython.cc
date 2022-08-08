@@ -53,8 +53,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            " * activation: String specifying the activation function "
            "to use, no restrictions on case - We support five activation "
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
-      .def(py::init<uint64_t, float, const std::string&>(), py::arg("dim"),
-           py::arg("sparsity"), py::arg("activation"),
+      .def(py::init<uint64_t, float, const std::string&, bool>(),
+           py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
+           py::arg("random_dropout") = false,
            "Constructs a sparse FullyConnectedLayer object with sampling "
            "parameters autotuned.\n"
            "Arguments:\n"
@@ -63,11 +64,14 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "training and sparse inference.\n"
            " * activation: String specifying the activation function "
            "to use, no restrictions on case - We support five activation "
-           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n")
+           "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n",
+           " * random_dropout (Bool) - Speedup the training by eliminating "
+           "hashing. However, could be bad for accuracy.")
 #if THIRDAI_EXPOSE_ALL
-      .def(py::init<uint64_t, float, const std::string&, SamplingConfigPtr>(),
+      .def(py::init<uint64_t, float, const std::string&, SamplingConfigPtr,
+                    bool>(),
            py::arg("dim"), py::arg("sparsity"), py::arg("activation"),
-           py::arg("sampling_config"),
+           py::arg("sampling_config"), py::arg("random_dropout") = false,
            "Constructs a sparse FullyConnectedLayer object.\n"
            "Arguments:\n"
            " * dim: Int (positive) - The dimension of the layer.\n"
@@ -77,7 +81,9 @@ void createBoltGraphSubmodule(py::module_& bolt_submodule) {
            "to use, no restrictions on case - We support five activation "
            "functions: ReLU, Softmax, Tanh, Sigmoid, and Linear.\n"
            " * sampling_config (SamplingConfig) - Sampling config object to "
-           "initialize hash tables/functions.")
+           "initialize hash tables/functions."
+           " * random_dropout (Bool) - Speedup the training by eliminating "
+           "hashing. However, could be bad for accuracy.")
 #endif
       .def("__call__", &FullyConnectedNode::addPredecessor,
            py::arg("prev_layer"),

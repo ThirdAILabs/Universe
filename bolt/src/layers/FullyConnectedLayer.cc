@@ -21,6 +21,7 @@ FullyConnectedLayer::FullyConnectedLayer(
       _prev_dim(prev_dim),
       _sparse_dim(config.getSparsity() * config.getDim()),
       _sparsity(config.getSparsity()),
+      _random_dropouts(config.shouldRandomDropout()),
 
       // trainable parameter not present in config file
       // TODO(Shubh) : should we add a trainable parameter to the config file?
@@ -352,6 +353,8 @@ void FullyConnectedLayer::eigenDenseDenseBackpropagate(BoltVector& input,
   }
 }
 
+void FullyConnectedLayer::enableRandomDropout() { _random_dropouts = true; }
+
 template <bool DENSE, bool PREV_DENSE>
 void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
                                               BoltVector& output,
@@ -367,42 +370,50 @@ void FullyConnectedLayer::selectActiveNeurons(const BoltVector& input,
     assert(labels->active_neurons[i] < _dim);
     active_set.insert(labels->active_neurons[i]);
   }
-
   std::vector<uint32_t> hashes(_hasher->numTables());
-  if constexpr (PREV_DENSE) {
-    _hasher->hashSingleDense(input.activations, input.len, hashes.data());
-  } else {
-    _hasher->hashSingleSparse(input.active_neurons, input.activations,
-                              input.len, hashes.data());
-  }
+  if (_random_dropouts) {
+    if constexpr (PREV_DENSE) {
+      _hasher->hashSingleDense(input.activations, input.len, hashes.data());
+    } else {
+      _hasher->hashSingleSparse(input.active_neurons, input.activations,
+                                input.len, hashes.data());
+    }
 
-  if (_sampling_mode == LSHSamplingMode::FreezeHashTablesWithInsertions) {
-    /**
-     * QueryBySet just returns a set of the elements in the given buckets of the
-     * hash table.
-     *
-     * QueryAndInsertForInference returns the set of elements in the given
-     * buckets but will also insert the labels (during training only) for the
-     * vector into the buckets the vector maps to if they are not already
-     * present in the buckets. The intuition is that during sparse inference
-     * this will help force the hash tables to map vectors towards buckets that
-     * contain their correct labels. This is specific to the output layer.
-     *
-     * We call QueryAndInsertForInference if the following conditions are met:
-     *   1. We have sparse inference enabled.
-     *   2. Activation = Softmax or Sigmoid, meaning it's a classification task,
-     *      and that the given layer is the last layer, as this is the only
-     *      place where we use these activation functions.
-     */
-    _hash_table->queryAndInsertForInference(hashes.data(), active_set,
-                                            _sparse_dim);
-  } else {
-    _hash_table->queryBySet(hashes.data(), active_set);
+    if (_sampling_mode == LSHSamplingMode::FreezeHashTablesWithInsertions) {
+      /**
+       * QueryBySet just returns a set of the elements in the given buckets of
+       * the hash table.
+       *
+       * QueryAndInsertForInference returns the set of elements in the given
+       * buckets but will also insert the labels (during training only) for the
+       * vector into the buckets the vector maps to if they are not already
+       * present in the buckets. The intuition is that during sparse inference
+       * this will help force the hash tables to map vectors towards buckets
+       * that contain their correct labels. This is specific to the output
+       * layer.
+       *
+       * We call QueryAndInsertForInference if the following conditions are met:
+       *   1. We have sparse inference enabled.
+       *   2. Activation = Softmax or Sigmoid, meaning it's a classification
+       * task, and that the given layer is the last layer, as this is the only
+       *      place where we use these activation functions.
+       */
+      _hash_table->queryAndInsertForInference(hashes.data(), active_set,
+                                              _sparse_dim);
+    } else {
+      _hash_table->queryBySet(hashes.data(), active_set);
+    }
   }
   if (active_set.size() < _sparse_dim) {
     // here we use hashes[0] as our random number because rand() is not thread
     // safe and we want to have deterministic outcomes
-    uint32_t rand_offset = (hashes[0]) % _dim;
+
+    uint32_t rand_offset;
+    if (_random_dropouts) {
+      rand_offset = 1000000007 % _dim;
+    } else {
+      rand_offset = (hashes[0]) % _dim;
+    }
     while (active_set.size() < _sparse_dim) {
       active_set.insert(_rand_neurons[rand_offset++]);
       rand_offset = rand_offset % _dim;

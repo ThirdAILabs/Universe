@@ -32,17 +32,20 @@ class FullyConnectedNode final
         _predecessor(nullptr) {}
 
   FullyConnectedNode(uint64_t dim, float sparsity,
-                     const std::string& activation)
+                     const std::string& activation, bool random_dropout = false)
       : _layer(nullptr),
-        _config(FullyConnectedLayerConfig(dim, sparsity, activation)),
+        _config(FullyConnectedLayerConfig(dim, sparsity, activation,
+                                          random_dropout)),
         _predecessor(nullptr) {}
 
   FullyConnectedNode(uint64_t dim, float sparsity,
                      const std::string& activation,
-                     SamplingConfigPtr sampling_config)
+                     SamplingConfigPtr sampling_config,
+                     bool random_dropout = false)
       : _layer(nullptr),
         _config(FullyConnectedLayerConfig(dim, sparsity, activation,
-                                          std::move(sampling_config))),
+                                          std::move(sampling_config),
+                                          random_dropout)),
         _predecessor(nullptr) {}
 
   std::shared_ptr<FullyConnectedNode> addPredecessor(NodePtr node) {
