@@ -18,9 +18,13 @@
 
 namespace thirdai::bolt {
 
+class SwitchNode;
+
 class FullyConnectedNode final
     : public Node,
       public std::enable_shared_from_this<FullyConnectedNode> {
+  friend class SwitchNode;
+
  public:
   FullyConnectedNode(uint64_t dim, const std::string& activation)
       : _layer(nullptr),
@@ -79,6 +83,8 @@ class FullyConnectedNode final
     oarchive(*_layer);
   }
 
+  void enableDistributedTraining() { _layer->enableDistributedTraining(); }
+
   void loadParameters(const std::string& filename) {
     std::ifstream filestream =
         dataset::SafeFileIO::ifstream(filename, std::ios::binary);
@@ -120,7 +126,7 @@ class FullyConnectedNode final
     _layer = loaded_parameters;
   }
 
-  float getNodeSparsity() {
+  float getSparsity() {
     NodeState node_state = getState();
     if (node_state == NodeState::Constructed ||
         node_state == NodeState::PredecessorsSet) {
@@ -129,12 +135,53 @@ class FullyConnectedNode final
     return _layer->getSparsity();
   }
 
-  void setNodeSparsity(float sparsity) {
+  std::shared_ptr<FullyConnectedNode> setSparsity(float sparsity) {
     if (getState() != NodeState::Compiled) {
       throw exceptions::NodeStateMachineError(
-          "FullyConnectedNode must be in a compiled state");
+          "FullyConnectedNode must be in a compiled state to call setSparsity");
     }
     _layer->setSparsity(sparsity);
+    return shared_from_this();
+  }
+
+  float* getWeightsPtr() {
+    if (getState() != NodeState::PreparedForBatchProcessing &&
+        getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call "
+          "getWeightsPtr.");
+    }
+    return _layer->getWeightsPtr();
+  }
+
+  float* getBiasesPtr() {
+    if (getState() != NodeState::PreparedForBatchProcessing &&
+        getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call "
+          "getBiasesPtr.");
+    }
+    return _layer->getBiasesPtr();
+  }
+
+  float* getWeightGradientsPtr() {
+    if (getState() != NodeState::PreparedForBatchProcessing &&
+        getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call "
+          "getWeightGradientsPtr.");
+    }
+    return _layer->getWeightGradientsPtr();
+  }
+
+  float* getBiasGradientsPtr() {
+    if (getState() != NodeState::PreparedForBatchProcessing &&
+        getState() != NodeState::Compiled) {
+      throw exceptions::NodeStateMachineError(
+          "FullyConnectedNode must be in a compiled state to call "
+          "getBiasGradientsPtr.");
+    }
+    return _layer->getBiasGradientsPtr();
   }
 
  private:

@@ -1,23 +1,16 @@
 from cookie_monster import *
 import pytest
-import sys
-
 
 pytestmark = [pytest.mark.unit]
 
 
 def setup_module():
-    if not os.path.exists("mnist"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.bz2 --output mnist.bz2"
-        )
-        os.system("bzip2 -d mnist.bz2")
-
-    if not os.path.exists("mnist.t"):
-        os.system(
-            "curl https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/mnist.t.bz2 --output mnist.t.bz2"
-        )
-        os.system("bzip2 -d mnist.t.bz2")
+    with open("string_mlm.txt", "w") as f:
+        f.write("This is a test sentence\n")
+        f.write("To train the model on mlm tasks\n")
+    with open("string_classification.csv", "w") as f:
+        f.write("0,This is a positive sentence\n")
+        f.write("1,To train the model on classification tasks\n")
 
 
 def test_new_dimension():
@@ -26,8 +19,8 @@ def test_new_dimension():
     )
     model.set_output_dimension(10)
     assert model.output_layer.get_dim() == 10
-    model.set_output_dimension(8)
-    assert model.output_layer.get_dim() == 8
+    model.set_output_dimension(30224)
+    assert model.output_layer.get_dim() == 30224
 
 
 def test_train():

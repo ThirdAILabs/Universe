@@ -1,0 +1,43 @@
+experiment_identifier = "MLM Fully Connected"
+model_identifier = "mlm_fc"
+dataset_identifier = "wiki_10M"
+
+
+epochs = 10
+reconstruct_hash_functions = 10000
+rebuild_hash_tables = 100000
+learning_rate = 0.0001
+loss_fn = "CategoricalCrossEntropyLoss"
+train_metrics = ["mean_squared_error"]
+test_metrics = ["categorical_accuracy"]
+
+
+[[datasets]]
+format = "mlm_without_tokens"
+type_list = ["train_data", "train_labels", "test_data", "test_labels"]
+train_path = "BERT/sentences_tokenized_shuffled_trimmed_10M.txt"
+test_path = "BERT/sentences_tokenized_shuffled_trimmed_test_100k.txt"
+pairgram_range = 100000
+batch_size = 2048
+
+
+[[nodes]]
+type = "Input"
+name = "input"
+dim = 100000
+
+[[nodes]]
+type = "FullyConnected"
+name = "hidden"
+pred = "input"
+dim = 200
+activation = "ReLU"
+
+[[nodes]]
+type = "FullyConnected"
+name = "output"
+pred = "hidden"
+dim = 30224
+activation = 'Softmax'
+sparsity = 0.005
+use_default_sampling = true

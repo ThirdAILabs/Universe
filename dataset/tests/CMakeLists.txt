@@ -59,6 +59,17 @@ target_link_libraries(
 )
 
 add_executable(
+  streaming_generic_dataset_loader_tests
+  StreamingGenericDatasetLoaderTests.cc
+)
+
+target_link_libraries(
+  streaming_generic_dataset_loader_tests
+  PRIVATE
+  gtest_main
+)
+
+add_executable(
   text_processing_tests
   TextProcessingTests.cc
 )
@@ -71,6 +82,16 @@ target_link_libraries(
   hash_function_lib
 )
 
+add_executable(
+  save_load_dataset_test
+  SaveLoadInMemoryDatasetTest.cc
+)
+target_link_libraries(
+  save_load_dataset_test
+  PRIVATE
+  gtest_main
+)
+
 include(GoogleTest)
 gtest_discover_tests(svm_dataset_test)
 gtest_discover_tests(click_through_dataset_test)
@@ -78,3 +99,5 @@ gtest_discover_tests(segmented_feature_vectors_test)
 gtest_discover_tests(block_batch_processor_test)
 gtest_discover_tests(generic_batch_processor_test)
 gtest_discover_tests(text_processing_tests)
+gtest_discover_tests(save_load_dataset_test)
+gtest_discover_tests(streaming_generic_dataset_loader_tests)

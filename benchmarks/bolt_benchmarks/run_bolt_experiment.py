@@ -57,7 +57,10 @@ def load_and_compile_model(model_config):
             pred_nodes = [get_node_by_name(pred_name) for pred_name in pred_names]
             for pred_name in pred_names:
                 nodes_with_no_successor.remove(pred_name)
-            node(pred_nodes)
+            if config_get(node_config, "type") == "Switch":
+                node(pred_nodes[0], pred_nodes[1])
+            else:
+                node(pred_nodes)
         else:
             raise ValueError(
                 "Node should either be an Input/TokenInput or specify pred/preds"
@@ -102,6 +105,14 @@ def load_all_datasets(dataset_config):
             loaded_datasets = load_svm_dataset(single_dataset_config)
         elif format == "click":
             loaded_datasets = load_click_through_dataset(single_dataset_config)
+        elif format == "mlm_with_tokens":
+            loaded_datasets = load_mlm_datasets(
+                single_dataset_config, return_tokens=True
+            )
+        elif format == "mlm_without_tokens":
+            loaded_datasets = load_mlm_datasets(
+                single_dataset_config, return_tokens=False
+            )
         else:
             raise ValueError(f"{format} is an unrecognized dataformat")
 
@@ -172,6 +183,16 @@ def run_experiment(model, datasets, experiment_config, use_mlflow):
         model.save(config_get(experiment_config, "save"))
 
 
+def get_sampling_config(layer_config):
+    return bolt.SamplingConfig(
+        hashes_per_table=config_get(layer_config, "hashes_per_table"),
+        num_tables=config_get(layer_config, "num_tables"),
+        range_pow=config_get(layer_config, "range_pow"),
+        reservoir_size=config_get(layer_config, "reservoir_size"),
+        hash_function=layer_config.get("hash_function", "DWTA"),
+    )
+
+
 def construct_fully_connected_node(fc_config):
     use_default_sampling = fc_config.get("use_default_sampling", False)
     sparsity = fc_config.get("sparsity", 1)
@@ -187,13 +208,7 @@ def construct_fully_connected_node(fc_config):
         dim=config_get(fc_config, "dim"),
         sparsity=sparsity,
         activation_function=config_get(fc_config, "activation"),
-        sampling_config=bolt.SamplingConfig(
-            hashes_per_table=config_get(fc_config, "hashes_per_table"),
-            num_tables=config_get(fc_config, "num_tables"),
-            range_pow=config_get(fc_config, "range_pow"),
-            reservoir_size=config_get(fc_config, "reservoir_size"),
-            hash_function=fc_config.get("hash_function", "DWTA"),
-        ),
+        sampling_config=get_sampling_config(fc_config),
     )
 
 
@@ -209,6 +224,27 @@ def construct_embedding_node(embedding_config):
     )
 
 
+def construct_switch_node(switch_config):
+    use_default_sampling = switch_config.get("use_default_sampling", False)
+    sparsity = switch_config.get("sparsity", 1)
+
+    if use_default_sampling or sparsity == 1:
+        return bolt.graph.Switch(
+            dim=config_get(switch_config, "dim"),
+            sparsity=sparsity,
+            activation=config_get(switch_config, "activation"),
+            n_layers=config_get(switch_config, "n_layers"),
+        )
+
+    return bolt.graph.Switch(
+        dim=config_get(switch_config, "dim"),
+        sparsity=sparsity,
+        activation_function=config_get(switch_config, "activation"),
+        sampling_config=get_sampling_config(switch_config),
+        n_layers=config_get(switch_config, "n_layers"),
+    )
+
+
 def construct_node(node_config):
     node_type = config_get(node_config, "type")
     if node_type == "Input":
@@ -221,6 +257,8 @@ def construct_node(node_config):
         return bolt.graph.TokenInput()
     if node_type == "Embedding":
         return construct_embedding_node(node_config)
+    if node_type == "Switch":
+        return construct_switch_node(node_config)
     raise ValueError(f"{node_type} is not a valid node type.")
 
 
@@ -253,6 +291,29 @@ def load_click_through_dataset(dataset_config):
         max_categorical_features=config_get(dataset_config, "max_categorical_features"),
         delimiter=config_get(dataset_config, "delimiter"),
     )
+
+
+def load_mlm_datasets(dataset_config, return_tokens):
+    # We load the train and test data at the same time because the need to use
+    # the same loader to ensure that the words in the vocabulary are mapped to
+    # the same output neuron.
+    train_path = find_full_filepath(config_get(dataset_config, "train_path"))
+    test_path = find_full_filepath(config_get(dataset_config, "test_path"))
+
+    mlm_loader = dataset.MLMDatasetLoader(
+        pairgram_range=config_get(dataset_config, "pairgram_range")
+    )
+
+    batch_size = config_get(dataset_config, "batch_size")
+
+    train_data = mlm_loader.load(filename=train_path, batch_size=batch_size)
+
+    test_data = mlm_loader.load(filename=test_path, batch_size=batch_size)
+
+    if return_tokens:
+        return train_data + test_data
+
+    return train_data[0], train_data[2], test_data[0], test_data[2]
 
 
 # Because of how our experiment works, we always set num_epochs=1 and return

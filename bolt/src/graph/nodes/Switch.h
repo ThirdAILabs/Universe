@@ -1,0 +1,172 @@
+#pragma once
+
+#include "FullyConnected.h"
+#include "TokenInput.h"
+#include <bolt/src/graph/Node.h>
+#include <memory>
+#include <utility>
+#include <vector>
+
+namespace thirdai::bolt {
+
+/**
+ * This class is used in MLM experiments. This node stores N fully connected
+ * layers, and takes in a regular bolt vector input as well as a token. For each
+ * input there should be only a single token in the range [0,N) that indicates
+ * which of the fully connected layers to use for the input. For instance in a
+ * MLM model this was used where the number of layers was equal to the maximum
+ * number of tokens in the sentence and for each input the layer at the index of
+ * the masked token was used. The idea being that it would learn a slightly
+ * different representation for each token in the sentence.
+ */
+class SwitchNode final : public Node,
+                         public std::enable_shared_from_this<SwitchNode> {
+ public:
+  SwitchNode(uint32_t dim, const std::string& activation, uint32_t n_layers)
+      : _layers_used(n_layers, false), _token_input(nullptr) {
+    for (uint32_t i = 0; i < n_layers; i++) {
+      _layers.push_back(std::make_shared<FullyConnectedNode>(dim, activation));
+    }
+  }
+
+  SwitchNode(uint32_t dim, float sparsity, const std::string& activation,
+             uint32_t n_layers)
+      : _layers_used(n_layers, false), _token_input(nullptr) {
+    for (uint32_t i = 0; i < n_layers; i++) {
+      _layers.push_back(
+          std::make_shared<FullyConnectedNode>(dim, sparsity, activation));
+    }
+  }
+
+  SwitchNode(uint32_t dim, float sparsity, const std::string& activation,
+             SamplingConfigPtr sampling_config, uint32_t n_layers)
+      : _layers_used(n_layers, false), _token_input(nullptr) {
+    for (uint32_t i = 0; i < n_layers; i++) {
+      _layers.push_back(std::make_shared<FullyConnectedNode>(
+          dim, sparsity, activation, sampling_config));
+    }
+  }
+
+  uint32_t outputDim() const final {
+    // All layers are constructed identically so we can use _layers[0] here.
+    return _layers.at(0)->outputDim();
+  }
+
+  bool isInputNode() const final { return false; }
+
+  std::shared_ptr<SwitchNode> addPredecessors(NodePtr predecessor,  // NOLINT
+                                              TokenInputPtr token_input) {
+    for (auto& layer : _layers) {
+      layer->addPredecessor(predecessor);
+    }
+
+    _token_input = std::move(token_input);
+
+    return shared_from_this();
+  }
+
+ private:
+  void compileImpl() final {
+    for (auto& layer : _layers) {
+      // We use compile impl because the state is checked when compile() is
+      // called on the switch node and we don't want to name each individual
+      // sub-layer.
+      layer->compileImpl();
+    }
+  }
+
+  std::vector<std::shared_ptr<FullyConnectedLayer>>
+  getInternalFullyConnectedLayersImpl() const final {
+    std::vector<std::shared_ptr<FullyConnectedLayer>> fc_layers;
+    for (const auto& layer : _layers) {
+      // Each layer only has one internal FullyConnectedLayer.
+      fc_layers.push_back(layer->getInternalFullyConnectedLayers().at(0));
+    }
+    return fc_layers;
+  }
+
+  void prepareForBatchProcessingImpl(uint32_t batch_size,
+                                     bool use_sparsity) final {
+    for (auto& layer : _layers) {
+      layer->prepareForBatchProcessing(batch_size, use_sparsity);
+    }
+  }
+
+  uint32_t numNonzerosInOutputImpl() const final {
+    // All layers are constructed identically so we can use _layers[0] here.
+    return _layers.at(0)->numNonzerosInOutput();
+  }
+
+  void forwardImpl(uint32_t vec_index, const BoltVector* labels) final {
+    uint32_t active_layer = getActiveLayer(vec_index);
+    _layers.at(active_layer)->forward(vec_index, labels);
+  }
+
+  void backpropagateImpl(uint32_t vec_index) final {
+    uint32_t active_layer = getActiveLayer(vec_index);
+    _layers_used[active_layer] = true;
+    _layers.at(active_layer)->backpropagate(vec_index);
+  }
+
+  void updateParametersImpl(float learning_rate, uint32_t batch_cnt) final {
+    for (uint32_t i = 0; i < _layers.size(); i++) {
+      if (_layers_used[i]) {
+        _layers[i]->updateParameters(learning_rate, batch_cnt);
+        _layers_used[i] = false;
+      }
+    }
+  }
+
+  BoltVector& getOutputVectorImpl(uint32_t vec_index) final {
+    uint32_t active_layer = getActiveLayer(vec_index);
+    return _layers.at(active_layer)->getOutputVector(vec_index);
+  }
+
+  void cleanupAfterBatchProcessingImpl() final {
+    for (auto& layer : _layers) {
+      layer->cleanupAfterBatchProcessing();
+    }
+  }
+
+  void summarizeImpl(std::stringstream& summary, bool detailed) const final {
+    summary << _layers.at(0)->getPredecessorsImpl().at(0)->name();
+    summary << " -> " << name() << " (SwitchLayer): n_layers=";
+    summary << _layers.size() << ", ";
+    _layers.at(0)->getInternalFullyConnectedLayers().at(0)->buildLayerSummary(
+        summary, detailed);
+  }
+
+  std::string type() const final { return "switch"; }
+
+  std::vector<NodePtr> getPredecessorsImpl() const final {
+    // All layers are constructed identically so we can use _layers[0] here.
+    auto predecessors = _layers.at(0)->getPredecessors();
+    predecessors.push_back(_token_input);
+    return predecessors;
+  }
+
+  NodeState getState() const final {
+    // All layers are constructed identically and all method are called on all
+    // layers, so we can use _layers[0] here.
+    return _layers.at(0)->getState();
+  }
+
+  uint32_t getActiveLayer(uint32_t vec_index) {
+    // There will only be one token indicating which layer to use.
+    assert(_token_input->getTokens(vec_index).size() == 1);
+    return _token_input->getTokens(vec_index).at(0);
+  }
+
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& archive) {
+    archive(cereal::base_class<Node>(this), _layers, _layers_used,
+            _token_input);
+  }
+
+  std::vector<std::shared_ptr<FullyConnectedNode>> _layers;
+  std::vector<bool> _layers_used;
+  TokenInputPtr _token_input;
+};
+
+}  // namespace thirdai::bolt

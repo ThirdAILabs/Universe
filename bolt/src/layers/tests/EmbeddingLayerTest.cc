@@ -27,7 +27,7 @@ class EmbeddingLayerTestFixture : public ::testing::Test {
   }
 
   uint32_t getEmbeddingBlockSize() const {
-    return _layer->_embedding_block_size_bytes;
+    return _layer->_embedding_block_size;
   }
 
   uint64_t getHashLocFromLayer(uint32_t token, uint32_t lookup_index) const {

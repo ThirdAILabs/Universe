@@ -68,6 +68,32 @@ inline void layerIndexCheck(uint32_t layer_index, uint32_t num_layers) {
     throw std::invalid_argument(err.str());
   }
 }
+
+//  Checks that the dimensions of the given numpy array match the expected
+//  dimensions.
+inline void checkNumpyArrayDimensions(
+    const std::vector<uint32_t>& expected_dimensions,
+    const py::array_t<float, py::array::c_style | py::array::forcecast>&
+        numpy_array) {
+  uint32_t numpy_array_dim = numpy_array.ndim();
+  if (numpy_array_dim != expected_dimensions.size()) {
+    throw std::invalid_argument(
+        "Expected " + std::to_string(expected_dimensions.size()) +
+        "D numpy array but received " + std::to_string(numpy_array.ndim()) +
+        "D numpy array");
+  }
+
+  for (uint32_t dim_index = 0; dim_index < numpy_array_dim; dim_index++) {
+    if (expected_dimensions[dim_index] != numpy_array.shape(dim_index)) {
+      throw std::invalid_argument(
+          "Expected dimension " + std::to_string(dim_index) + " to be " +
+          std::to_string(expected_dimensions[dim_index]) +
+          " but received dimension " +
+          std::to_string(numpy_array.shape(dim_index)));
+    }
+  }
+}
+
 // Takes in the activations arrays (if they were allocated) and returns the
 // python tuple containing the metrics computed, along with the activations
 // and active neurons if those are not nullptrs. Note that just the
