@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
+#include <cmath>
 #include <cstdio>
 #include <fstream>
 #include <memory>
@@ -40,7 +41,6 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     std::vector<bolt::BoltBatch> label_batches;
     while (auto batch = pipeline.nextBatchTuple()) {
       auto [input_batch, label_batch] = std::move(batch.value());
-      std::cout << input_batch.getBatchSize();
       input_batches.push_back(std::move(input_batch));
       label_batches.push_back(std::move(label_batch));
     }
@@ -114,15 +114,26 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
   }
 
   static void assertShuffledEnough(
-      std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset) {
+      std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset,
+      size_t expected_n_vectors_in_buffer) {
     const auto& [inputs, _] = dataset;
 
     for (size_t batch_idx = 0; batch_idx < inputs->numBatches(); batch_idx++) {
       auto& batch = inputs->at(batch_idx);
 
+      /*
+        If this shuffling method works then we shouldn't
+        have too many vectors originally in this batch.
+        We provide a generous band of 0.4-2.5X expected
+        value to keep the test simple but not flaky.
+      */
       auto original_vectors_count = countOriginalVectors(batch, batch_idx);
-      size_t threshold = 2 * batch.getBatchSize() / n_batches_in_shuffle_buffer;
-      ASSERT_LE(original_vectors_count, threshold);
+      auto expected_n_original_vectors =
+          expectedNumOriginalVectors(batch, expected_n_vectors_in_buffer);
+      ASSERT_LE(original_vectors_count,
+                std::ceil(2.5 * expected_n_original_vectors));
+      ASSERT_GT(original_vectors_count,
+                std::floor(0.4 * expected_n_original_vectors));
 
       if (batch_idx > 0) {
         ASSERT_TRUE(containsVectorsFromEarlierBatch(batch, batch_idx));
@@ -145,8 +156,9 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
 
   static size_t countOriginalVectors(bolt::BoltBatch& batch,
                                      uint32_t batch_idx) {
-    float original_value_range_start = batch_idx * batch.getBatchSize();
-    float original_value_range_end = (batch_idx + 1) * batch.getBatchSize();
+    float original_value_range_start = batch_idx * batch_size;
+    float original_value_range_end =
+        original_value_range_start + batch.getBatchSize();
     size_t count = 0;
     for (size_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
       auto value = batch[vec_idx].activations[0];
@@ -158,9 +170,16 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     return count;
   }
 
+  static size_t expectedNumOriginalVectors(
+      bolt::BoltBatch& batch, size_t expected_n_vectors_in_buffer) {
+    float probability_stay_in_batch =
+        static_cast<float>(batch.getBatchSize()) / expected_n_vectors_in_buffer;
+    return batch.getBatchSize() * probability_stay_in_batch;
+  }
+
   static bool containsVectorsFromEarlierBatch(bolt::BoltBatch& batch,
                                               uint32_t batch_idx) {
-    float original_value_range_start = batch_idx * batch.getBatchSize();
+    float original_value_range_start = batch_idx * batch_size;
     for (size_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
       auto value = batch[vec_idx].activations[0];
       if (value < original_value_range_start) {
@@ -172,7 +191,8 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
 
   static bool containsVectorsFromLaterBatch(bolt::BoltBatch& batch,
                                             uint32_t batch_idx) {
-    float original_value_range_end = (batch_idx + 1) * batch.getBatchSize();
+    float original_value_range_end =
+        batch_idx * batch_size + batch.getBatchSize();
     for (size_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
       auto value = batch[vec_idx].activations[0];
       if (value >= original_value_range_end) {
@@ -182,11 +202,17 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     return false;
   }
 
+ protected:
   static constexpr const char* MOCK_FILE = "mock.txt";
 
-  static constexpr uint32_t mock_file_lines = 5000;
+  /*
+    The last batch will be smaller.
+    This tests that our method works even when the last
+    batch is smaller.
+  */
+  static constexpr uint32_t mock_file_lines = 5100;
 
-  static constexpr uint32_t batch_size = 100;
+  static constexpr uint32_t batch_size = 200;
 
   static constexpr uint32_t n_batches_in_shuffle_buffer = 10;
 };
@@ -271,14 +297,16 @@ TEST_F(StreamingGenericDatasetLoaderTests,
        ShuffledInMemoryDataIsShuffledEnough) {
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto in_memory_data = unshuffled_pipeline.loadInMemory();
-  assertShuffledEnough(in_memory_data);
+  assertShuffledEnough(in_memory_data,
+                       /* expected_n_vectors_in_buffer = */ mock_file_lines);
 }
 
 TEST_F(StreamingGenericDatasetLoaderTests,
        ShuffledStreamedDataIsShuffledEnough) {
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto streamed_data = streamToInMemoryDataset(std::move(unshuffled_pipeline));
-  assertShuffledEnough(streamed_data);
+  auto expected_n_vectors_in_buffer = n_batches_in_shuffle_buffer * batch_size;
+  assertShuffledEnough(streamed_data, expected_n_vectors_in_buffer);
 }
 
 }  // namespace thirdai::dataset

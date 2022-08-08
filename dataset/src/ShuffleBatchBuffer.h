@@ -4,9 +4,11 @@
 #include <dataset/src/Datasets.h>
 #include <ctime>
 #include <deque>
+#include <iterator>
 #include <optional>
 #include <random>
 #include <sstream>
+#include <stdexcept>
 
 namespace thirdai::dataset {
 
@@ -19,7 +21,8 @@ class ShuffleBatchBuffer {
 
   void insertBatch(std::tuple<bolt::BoltBatch, bolt::BoltBatch>&& batch,
                    bool shuffle) {
-    checkConsistentBatchSize(std::get<0>(batch).getBatchSize());
+    checkConsistentBatchSize(std::get<0>(batch).getBatchSize(),
+                             std::get<1>(batch).getBatchSize());
 
     _input_batches.push_back(std::move(std::get<0>(batch)));
     _label_batches.push_back(std::move(std::get<1>(batch)));
@@ -44,16 +47,21 @@ class ShuffleBatchBuffer {
 
   std::pair<std::vector<bolt::BoltBatch>, std::vector<bolt::BoltBatch>>
   exportBuffer() {
-    // We don't reserve vector size to avoid 2X memory overhead.
-    std::vector<bolt::BoltBatch> input_batch_vector;
-    std::vector<bolt::BoltBatch> label_batch_vector;
+    /*
+      This doesn't double our memory footprint since the
+      batches are moved;
+      the amount of memory allocated to the underlying
+      vectors remains the same.
+    */
+    std::vector<bolt::BoltBatch> input_batch_vector(
+        std::make_move_iterator(_input_batches.begin()),
+        std::make_move_iterator(_input_batches.end()));
+    std::vector<bolt::BoltBatch> label_batch_vector(
+        std::make_move_iterator(_label_batches.begin()),
+        std::make_move_iterator(_label_batches.end()));
 
-    while (!_input_batches.empty()) {
-      input_batch_vector.push_back(std::move(_input_batches.front()));
-      label_batch_vector.push_back(std::move(_label_batches.front()));
-      _input_batches.pop_front();
-      _label_batches.pop_front();
-    }
+    _input_batches.clear();
+    _label_batches.clear();
 
     return {std::move(input_batch_vector), std::move(label_batch_vector)};
   }
@@ -61,22 +69,33 @@ class ShuffleBatchBuffer {
   inline bool empty() const { return _input_batches.empty(); }
 
  private:
-  inline void checkConsistentBatchSize(size_t new_batch_size) {
+  inline void checkConsistentBatchSize(size_t new_input_batch_size,
+                                       size_t new_label_batch_size) {
+    if (new_input_batch_size != new_label_batch_size) {
+      std::stringstream error_ss;
+      error_ss
+          << "[ShuffleBatchBuffer::insertBatch] Attempted to instert input and "
+             "label batches with different sizes (input batch size = "
+          << new_input_batch_size
+          << ", label batch size = " << new_label_batch_size << ").";
+      throw std::runtime_error(error_ss.str());
+    }
+
     if (_reached_end_of_dataset) {
       throw std::runtime_error(
           "[ShuffleBatchBuffer::insertBatch] Attempted to insert batch after "
           "reaching the end of the dataset.");
     }
 
-    if (new_batch_size > _batch_size) {
+    if (new_input_batch_size > _batch_size) {
       std::stringstream error_ss;
       error_ss << "[ShuffleBatchBuffer::insertBatch] Attempted to insert "
                   "batch that is larger than expected (expected size = "
-               << _batch_size << " actual = " << new_batch_size << ").";
+               << _batch_size << " actual = " << new_input_batch_size << ").";
       throw std::runtime_error(error_ss.str());
     }
 
-    if (new_batch_size < _batch_size) {
+    if (new_input_batch_size < _batch_size) {
       _reached_end_of_dataset = true;
     }
   }
