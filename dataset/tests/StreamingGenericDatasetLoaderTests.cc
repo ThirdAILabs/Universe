@@ -156,7 +156,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
       vectors further than the length of the shuffle buffer.
     */
     ASSERT_GT(max_vector_displacement, n_batches_in_shuffle_buffer);
-    
+
     // Sanity check
     size_t n_batches_in_dataset =
         (mock_file_lines + batch_size - 1) / batch_size;
@@ -214,8 +214,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     return false;
   }
 
-  static uint32_t maxVectorDisplacement(bolt::BoltBatch& batch,
-                                           int batch_idx) {
+  static uint32_t maxVectorDisplacement(bolt::BoltBatch& batch, int batch_idx) {
     // Defined as the number of batches between a vector's
     // original batch and its final batch.
     uint32_t max_displacement = 0;
