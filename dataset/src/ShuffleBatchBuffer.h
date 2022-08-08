@@ -107,7 +107,8 @@ class ShuffleBatchBuffer {
     assert(input_batches.size() > 0);
     size_t n_old_vecs = (input_batches.size() - 1) * expected_batch_size;
     size_t n_vecs = n_old_vecs + input_batches.back().getBatchSize();
-    std::uniform_int_distribution<> dist(0, n_vecs);
+    std::uniform_int_distribution<> dist(
+        0, n_vecs - 1);  // Accepts a closed interval
 
     for (size_t i = 0; i < input_batches.back().getBatchSize(); i++) {
       size_t swap_with = dist(gen);

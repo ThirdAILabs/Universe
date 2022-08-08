@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <dataset/src/Datasets.h>
 #include <dataset/src/StreamingGenericDatasetLoader.h>
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <fstream>
@@ -114,27 +115,27 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
   }
 
   static void assertShuffledEnough(
-      std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset,
-      size_t expected_n_vectors_in_buffer) {
+      std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset) {
     const auto& [inputs, _] = dataset;
+
+    /*
+      Defined as the number of batches between a vector's
+      original batch and its final batch.
+    */
+    uint32_t max_vector_displacement = 0;
 
     for (size_t batch_idx = 0; batch_idx < inputs->numBatches(); batch_idx++) {
       auto& batch = inputs->at(batch_idx);
 
       /*
-        If this shuffling method works then we shouldn't
-        have too many or too little vectors originally 
-        in this batch. We provide a generous band of 
-        0.4-2.5X expected value to keep the test simple 
-        but not flaky.
+        If this shuffling method works then we should
+        have a fair share of vectors from this batch,
+        from previous batches, and from future batches.
       */
+
       auto original_vectors_count = countOriginalVectors(batch, batch_idx);
-      auto expected_n_original_vectors =
-          expectedNumOriginalVectors(batch, expected_n_vectors_in_buffer);
       ASSERT_LE(original_vectors_count,
-                std::ceil(2.5 * expected_n_original_vectors));
-      ASSERT_GT(original_vectors_count,
-                std::floor(0.4 * expected_n_original_vectors));
+                0.2 * batch.getBatchSize());  // 0.2 is eyeballed.
 
       if (batch_idx > 0) {
         ASSERT_TRUE(containsVectorsFromEarlierBatch(batch, batch_idx));
@@ -143,7 +144,16 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
       if (batch_idx < inputs->numBatches() - 1) {
         ASSERT_TRUE(containsVectorsFromLaterBatch(batch, batch_idx));
       }
+
+      max_vector_displacement = std::max(
+          max_vector_displacement, getMaxVectorDisplacement(batch, batch_idx));
     }
+
+    ASSERT_GT(max_vector_displacement, n_batches_in_shuffle_buffer);
+    // Sanity check that we have valid measurements.
+    size_t n_batches_in_dataset =
+        (mock_file_lines + batch_size - 1) / batch_size;
+    ASSERT_LT(max_vector_displacement, n_batches_in_dataset);
   }
 
  private:
@@ -161,6 +171,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     float original_value_range_end =
         original_value_range_start + batch.getBatchSize();
     size_t count = 0;
+
     for (size_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
       auto value = batch[vec_idx].activations[0];
       if (value >= original_value_range_start &&
@@ -169,13 +180,6 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
       }
     }
     return count;
-  }
-
-  static size_t expectedNumOriginalVectors(
-      bolt::BoltBatch& batch, size_t expected_n_vectors_in_buffer) {
-    float probability_stay_in_batch =
-        static_cast<float>(batch.getBatchSize()) / expected_n_vectors_in_buffer;
-    return batch.getBatchSize() * probability_stay_in_batch;
   }
 
   static bool containsVectorsFromEarlierBatch(bolt::BoltBatch& batch,
@@ -201,6 +205,21 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
       }
     }
     return false;
+  }
+
+  static uint32_t getMaxVectorDisplacement(bolt::BoltBatch& batch,
+                                           int batch_idx) {
+    // Defined as the number of batches between a vector's
+    // original batch and its final batch.
+    uint32_t max_displacement = 0;
+
+    for (size_t vec_idx = 0; vec_idx < batch.getBatchSize(); vec_idx++) {
+      auto value = batch[vec_idx].activations[0];
+      int origin_batch_idx = value / batch_size;
+      uint32_t displacement = std::abs(origin_batch_idx - batch_idx);
+      max_displacement = std::max(displacement, max_displacement);
+    }
+    return max_displacement;
   }
 
  protected:
@@ -298,16 +317,14 @@ TEST_F(StreamingGenericDatasetLoaderTests,
        ShuffledInMemoryDataIsShuffledEnough) {
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto in_memory_data = unshuffled_pipeline.loadInMemory();
-  assertShuffledEnough(in_memory_data,
-                       /* expected_n_vectors_in_buffer = */ mock_file_lines);
+  assertShuffledEnough(in_memory_data);
 }
 
 TEST_F(StreamingGenericDatasetLoaderTests,
        ShuffledStreamedDataIsShuffledEnough) {
   auto unshuffled_pipeline = makeMockPipeline(/* shuffle = */ true);
   auto streamed_data = streamToInMemoryDataset(std::move(unshuffled_pipeline));
-  auto expected_n_vectors_in_buffer = n_batches_in_shuffle_buffer * batch_size;
-  assertShuffledEnough(streamed_data, expected_n_vectors_in_buffer);
+  assertShuffledEnough(streamed_data);
 }
 
 }  // namespace thirdai::dataset
