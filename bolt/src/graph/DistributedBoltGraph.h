@@ -41,6 +41,7 @@ class DistributedTrainingContext {
   void calculateGradientSingleNode(uint32_t batch_idx);
 
   void updateParametersSingleNode();
+
   uint64_t numTrainingBatches() const;
 
   void finishTraining();
@@ -48,6 +49,8 @@ class DistributedTrainingContext {
   NodePtr getNodeByName(const std::string& node_name) const;
 
   BoltGraph _bolt_graph;
+
+ private:
   DatasetContext _train_context;
   float _learning_rate;
   MetricAggregator _metrics;

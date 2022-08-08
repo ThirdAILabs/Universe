@@ -47,6 +47,7 @@ class FullyConnectedLayer final : public SequentialLayer {
 
   void updateParameters(float lr, uint32_t iter, float B1, float B2,
                         float eps) final;
+
   void enableDistributedTraining() { _is_distributed = true; };
 
   BoltBatch createBatchState(const uint32_t batch_size,

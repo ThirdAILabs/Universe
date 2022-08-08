@@ -364,7 +364,13 @@ void BoltGraph::updateParameters(float learning_rate, uint32_t batch_cnt) {
 
 void BoltGraph::enableDistributedTraining() {
   for (NodePtr& node : _nodes) {
-    dynamic_cast<FullyConnectedNode*>(node.get())->enableDistributedTraining();
+    FullyConnectedNode* fc_node = dynamic_cast<FullyConnectedNode*>(node.get());
+    if (fc_node != nullptr) {
+      fc_node->enableDistributedTraining();
+    } else {
+      throw thirdai::exceptions::NotImplemented(
+          "Only Implemented for Fully Connected Node");
+    }
   }
 }
 
