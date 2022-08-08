@@ -126,14 +126,16 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
       auto& batch = inputs->at(batch_idx);
 
       /*
-        If this shuffling method works then we should
-        have a fair share of vectors from this batch,
-        from previous batches, and from future batches.
+        The probability that a vector stays in its
+        original batch is ~roughly~ 1 / number of
+        batches in shuffle buffer. We set the length
+        of the buffer to 10, so we expect ~10% of the
+        batch to be its original contents.
       */
-
+      const float percent_original_vectors_threshold = 0.2;
       auto original_vectors_count = countOriginalVectors(batch, batch_idx);
       ASSERT_LE(original_vectors_count,
-                0.2 * batch.getBatchSize());  // 0.2 is eyeballed.
+                percent_original_vectors_threshold * batch.getBatchSize());
 
       if (batch_idx > 0) {
         ASSERT_TRUE(containsVectorsFromEarlierBatch(batch, batch_idx));
@@ -144,17 +146,18 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
       }
 
       max_vector_displacement = std::max(
-          max_vector_displacement, getMaxVectorDisplacement(batch, batch_idx));
+          max_vector_displacement, maxVectorDisplacement(batch, batch_idx));
     }
 
     /*
       To ensure adequate mixing of samples so that a model
       does not "forget" what earlier samples look like,
-      out shuffling mechanism must be able to displace
+      our shuffling mechanism must be able to displace
       vectors further than the length of the shuffle buffer.
     */
     ASSERT_GT(max_vector_displacement, n_batches_in_shuffle_buffer);
-    // Sanity check that we have valid measurements.
+    
+    // Sanity check
     size_t n_batches_in_dataset =
         (mock_file_lines + batch_size - 1) / batch_size;
     ASSERT_LT(max_vector_displacement, n_batches_in_dataset);
@@ -211,7 +214,7 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
     return false;
   }
 
-  static uint32_t getMaxVectorDisplacement(bolt::BoltBatch& batch,
+  static uint32_t maxVectorDisplacement(bolt::BoltBatch& batch,
                                            int batch_idx) {
     // Defined as the number of batches between a vector's
     // original batch and its final batch.
