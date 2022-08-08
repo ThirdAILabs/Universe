@@ -19,7 +19,7 @@ class DistributedBolt:
         config_filename: The name of the config file which is going to be used for training.
     """
 
-    def __init__(self, worker_nodes: int, config_filename: str):
+    def __init__(self, worker_nodes: int, config_filename: str, pregenerate: bool):
 
         self.logging = initLogging("logfile_shubh.log")
         self.logging.info("Training has started!")
@@ -61,7 +61,7 @@ class DistributedBolt:
 
         self.workers = [
             Worker.options(max_concurrency=4).remote(
-                self.layers, config, self.no_of_workers, id
+                self.layers, config, pregenerate, self.no_of_workers, id
             )
             for id in range(self.no_of_workers)
         ]
@@ -151,7 +151,7 @@ class DistributedBolt:
             )
             for epoch in range(self.epochs):
                 for batch_no in range(self.num_of_batches):
-                    if batch_no % 20 == 0:
+                    if batch_no % 5 == 0:
                         self.logging.info(
                             str(batch_no)
                             + " processed!, Total Batches: "
@@ -278,16 +278,15 @@ class DistributedBolt:
                     self.communication_time += (
                         getting_gradient_time + gradient_send_time
                     )
-                    if batch_no%10==0:
-                        self.logging.info(
-                            "Epoch No: "
-                            + str(epoch)
-                            + ", Bolt Computation Time: "
-                            + str(self.bolt_computation_time)
-                            + ", Python Computation Time: "
-                            + str(self.python_computation_time)
-                            + ", Communication Time: "
-                            + str(self.communication_time)
+                    self.logging.info(
+                        "Epoch No: "
+                        + str(epoch)
+                        + ", Bolt Computation Time: "
+                        + str(self.bolt_computation_time)
+                        + ", Python Computation Time: "
+                        + str(self.python_computation_time)
+                        + ", Communication Time: "
+                        + str(self.communication_time)
                     )
                 for i in range(len(self.workers)):
                     acc, _ = ray.get(self.workers[i].predict.remote())

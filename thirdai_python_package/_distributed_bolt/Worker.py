@@ -7,7 +7,7 @@ from typing import Tuple, Any, Optional, Dict, List
 import time
 
 
-@ray.remote(num_cpus=40, max_restarts=1)
+@ray.remote(num_cpus=20, max_restarts=1)
 class Worker:
     """
     This is a ray remote class(Actor). Read about them here.
@@ -24,9 +24,10 @@ class Worker:
         id: id of this particular worker
     """
 
-    def __init__(self, layers: List, config, total_nodes: int, id: int):
+    def __init__(self, layers: List, config, pregenerate, total_nodes: int, id: int):
         print("Worker Started")
         self.layers = layers
+        self.pregenerate=pregenerate
         self.bolt_layers = create_fully_connected_layer_configs(config["layers"])
         self.input_dim = config["dataset"]["input_dim"]
         self.network = bolt.DistributedNetwork(
@@ -152,6 +153,7 @@ class Worker:
             # print(f"worker id {self.id} after calculate gradients {self.w_sparse_grad}")
 
         if compression == "UNBIASED_DRAGON":
+            self.calculateUnbiasedThresholdDragon(compression_density)
             self.w_sparse_grad, self.b_sparse_grad = self.getUnbiasedDragonGradients(
                 compression_density=compression_density
             )
@@ -163,7 +165,7 @@ class Worker:
         vals = np.partition(weights, n)[-n:]
         return np.min(vals)
 
-    def getUnbiasedThresholdDragon(self, compression_density):
+    def calculateUnbiasedThresholdDragon(self, compression_density):
         w_threshold = []
         b_threshold = []
 
@@ -187,8 +189,13 @@ class Worker:
 
         return (self.w_threshold, self.b_threshold)
 
+    def getUnbiasedThresholdDragon(self):
+        return (self.w_threshold,self.b_threshold)
+    
     def setUnbiasedThresholdDragon(self, threshold):
         
+        # print(threshold)
+
         self.w_threshold=[0]*(len(self.layers)-1)
         self.b_threshold=[0]*(len(self.layers)-1)
 
@@ -196,9 +203,10 @@ class Worker:
         
         for workers in range(num_workers):
             for layers in range(len(self.layers)-1):
-                self.w_threshold[layers]+=max(threshold[workers][0][layers],0.00001)/num_workers
-                self.b_threshold[layers]+=max(threshold[workers][1][layers],0.00001)/num_workers
+                self.w_threshold[layers]+=threshold[workers][0][layers]/num_workers
+                self.b_threshold[layers]+=threshold[workers][1][layers]/num_workers
         
+        # print(f"weight threshold {self.w_threshold} \n bias threshold {self.b_threshold}")
 
     def getUnbiasedDragonGradients(self, compression_density):
         w_sparse_grad = []
@@ -212,7 +220,7 @@ class Worker:
                 compression_density=compression_density,
                 sketch_biases=False,
                 seed_for_hashing=seed,
-                pregenerate_distribution=True,
+                pregenerate_distribution=self.pregenerate,
                 threshold=self.w_threshold[layer],
             )
 
@@ -221,9 +229,11 @@ class Worker:
                 compression_density=compression_density,
                 sketch_biases=True,
                 seed_for_hashing=seed,
-                pregenerate_distribution=True,
+                pregenerate_distribution=self.pregenerate,
                 threshold=self.b_threshold[layer],
             )
+
+            # print(f"weight gradient is {x} bias gradient is {y}")
 
             w_sparse_grad.append(x)
             b_sparse_grad.append(y)

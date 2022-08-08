@@ -43,7 +43,11 @@ inline float getThresholdForTopK(const std::vector<float>& values,
   uint32_t num_samples = std::min(max_samples_for_random_sampling, sketch_size);
   uint32_t topK =
       static_cast<uint32_t>(1.0 * num_samples * sketch_size / values.size());
+  
+  // std::cout<<"value of num_samples: "<<num_samples<<" value of topK: "<<topK<<std::endl;
+
   std::vector<float> sampled_gradients(num_samples, 0);
+
   srand(time(0));
   for (uint32_t i = 0; i < num_samples; i++) {
     sampled_gradients[i] = std::abs(values[rand() % values.size()]);
@@ -51,10 +55,18 @@ inline float getThresholdForTopK(const std::vector<float>& values,
 
   // threshold is an estimate for the kth largest element in the gradients
   // matrix
+
+  // std::cout<<"printing the sampled gradients"<<std::endl;
   std::nth_element(sampled_gradients.begin(),
                    sampled_gradients.begin() + num_samples - topK,
                    sampled_gradients.end());
+  // for(int i=0;i<std::min(static_cast<int>(sampled_gradients.size()),20);i++){
+  //   std::cout<<sampled_gradients[sampled_gradients.size()-i-1]<<" ";
+  // }
+  // std::cout<<std::endl;
   float threshold = sampled_gradients[num_samples - topK];
+  // std::cout<<"the value of threshold is: "<<threshold<<std::endl;
+
   return threshold;
 }
 

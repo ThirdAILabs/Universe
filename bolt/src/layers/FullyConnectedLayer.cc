@@ -743,12 +743,14 @@ void FullyConnectedLayer::setUnbiasedWeightGradientsFromIndicesValues(
 
 float FullyConnectedLayer::getUnbiasedBiasThresholdForGradient(
     int sketch_size) const {
+  // std::cout<<"printing for the biases"<<std::endl;
   return thirdai::bolt::getThresholdForTopK(
       _b_gradient, sketch_size, /*max_samples_for_random_sampling=*/10'000);
 }
 
 float FullyConnectedLayer::getUnbiasedWeightThresholdForGradient(
     int sketch_size) const {
+  // std::cout<<"printing for the weights"<<std::endl;
   return thirdai::bolt::getThresholdForTopK(
       _w_gradient, sketch_size, /*max_samples_for_random_sampling=*/10'000);
 }
