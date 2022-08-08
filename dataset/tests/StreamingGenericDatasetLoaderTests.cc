@@ -123,9 +123,10 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
 
       /*
         If this shuffling method works then we shouldn't
-        have too many vectors originally in this batch.
-        We provide a generous band of 0.4-2.5X expected
-        value to keep the test simple but not flaky.
+        have too many or too little vectors originally 
+        in this batch. We provide a generous band of 
+        0.4-2.5X expected value to keep the test simple 
+        but not flaky.
       */
       auto original_vectors_count = countOriginalVectors(batch, batch_idx);
       auto expected_n_original_vectors =
