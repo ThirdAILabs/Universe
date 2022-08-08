@@ -10,7 +10,7 @@ if sys.argv[1]=="None":
     )
 else:
     head.train(
-        circular=False, compression=sys.argv[1], compression_density=0.10, scheduler=False
+        circular=False, compression=sys.argv[1], compression_density=0.20, scheduler=False
     )
 acc, _ = head.predict()
 print(acc["categorical_accuracy"])
