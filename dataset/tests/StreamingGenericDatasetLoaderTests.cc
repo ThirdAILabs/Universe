@@ -118,10 +118,8 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
       std::tuple<BoltDatasetPtr, BoltDatasetPtr>& dataset) {
     const auto& [inputs, _] = dataset;
 
-    /*
-      Defined as the number of batches between a vector's
-      original batch and its final batch.
-    */
+    // Defined as the number of batches between a vector's
+    // original batch and its final batch.
     uint32_t max_vector_displacement = 0;
 
     for (size_t batch_idx = 0; batch_idx < inputs->numBatches(); batch_idx++) {
@@ -149,6 +147,12 @@ class StreamingGenericDatasetLoaderTests : public ::testing::Test {
           max_vector_displacement, getMaxVectorDisplacement(batch, batch_idx));
     }
 
+    /*
+      To ensure adequate mixing of samples so that a model
+      does not "forget" what earlier samples look like,
+      out shuffling mechanism must be able to displace
+      vectors further than the length of the shuffle buffer.
+    */
     ASSERT_GT(max_vector_displacement, n_batches_in_shuffle_buffer);
     // Sanity check that we have valid measurements.
     size_t n_batches_in_dataset =
