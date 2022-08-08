@@ -17,45 +17,10 @@ class BlockTest : public testing::Test {
    * string matrix and feature blocks.
    */
   static std::vector<SegmentedSparseFeatureVector> makeSparseSegmentedVecs(
-      StringMatrix& matrix, std::vector<std::shared_ptr<Block>>& blocks,
-      size_t batch_interval = 0) {
+      StringMatrix& matrix, std::vector<std::shared_ptr<Block>>& blocks) {
     std::vector<SegmentedSparseFeatureVector> vecs;
-    size_t i = 0;
     for (const auto& row : matrix) {
-      i++;
-      if (i == batch_interval) {
-        for (auto& block : blocks) {
-          block->prepareForBatch(toStringViewVec(row));
-        }
-        i = 0;
-      }
       SegmentedSparseFeatureVector vec;
-      for (auto& block : blocks) {
-        addVectorSegmentWithBlock(*block, row, vec);
-      }
-      vecs.push_back(std::move(vec));
-    }
-    return vecs;
-  }
-
-  /**
-   * Builds dense segmented vectors according to the supplied
-   * string matrix and feature blocks.
-   */
-  static std::vector<SegmentedDenseFeatureVector> makeDenseSegmentedVecs(
-      StringMatrix& matrix, std::vector<std::shared_ptr<Block>>& blocks,
-      size_t batch_interval = 0) {
-    std::vector<SegmentedDenseFeatureVector> vecs;
-    size_t i = 0;
-    for (const auto& row : matrix) {
-      i++;
-      if (i == batch_interval) {
-        for (auto& block : blocks) {
-          block->prepareForBatch(toStringViewVec(row));
-        }
-        i = 0;
-      }
-      SegmentedDenseFeatureVector vec;
       for (auto& block : blocks) {
         addVectorSegmentWithBlock(*block, row, vec);
       }
