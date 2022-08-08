@@ -1,7 +1,11 @@
 job = "Amazon670k Product Recommendation Distributed Training"
 
 [dataset]
+<<<<<<< HEAD
 train_data = ["/share/pratik/xaa","/share/pratik/xab","/share/pratik/xac","/share/pratik/xad","/share/pratik/xae","/share/pratik/xaf","/share/pratik/xag","/share/pratik/xah"]
+=======
+train_data = ["/share/pratik/xaa.txt","/share/pratik/xab.txt"]
+>>>>>>> 43210961db5709b41bd2f44cefb45e4569313de6
 test_data = "/share/data/amazon-670k/test_shuffled_noHeader_sampled.txt"
 format = "svm"
 input_dim = 135909
