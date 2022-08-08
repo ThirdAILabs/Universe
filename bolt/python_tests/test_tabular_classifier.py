@@ -1,4 +1,3 @@
-from tkinter.tix import COLUMN
 from thirdai import bolt
 import pytest
 import os
@@ -39,35 +38,32 @@ def setup_module():
         os.system(
             f"curl {CENSUS_INCOME_BASE_DOWNLOAD_URL}adult.data --output {TRAIN_FILE}"
         )
-        reformat_train_csv()
+        with open(TRAIN_FILE, "r") as file:
+            data = file.readlines()
+        with open(TRAIN_FILE, "w") as file:
+            # write column names as the header
+            file.write(",".join(COLUMN_NAMES) + "\n")
+            file.writelines([line for line in data])
+
     if not os.path.exists(TEST_FILE):
         os.system(
             f"curl {CENSUS_INCOME_BASE_DOWNLOAD_URL}adult.test --output {TEST_FILE}"
         )
-        reformat_test_csv()
+        with open(TEST_FILE, "r") as fin:
+            data = fin.read().splitlines(True)
+        with open(TEST_FILE, "w") as fout:
+            # write column names as the header
+            fout.write(",".join(COLUMN_NAMES) + "\n")
+            # for some reason each of the labels end with a "." in the test set
+            # loop through data[1:] since the first line is bogus
+            fout.writelines([line.replace(".", "") for line in data[1:]])
 
 
-def reformat_train_csv():
-    with open(TRAIN_FILE, "r") as file:
-        data = file.readlines()
-    with open(TRAIN_FILE, "w") as file:
-        # write column names as the header
-        file.write(",".join(COLUMN_NAMES) + "\n")
-        file.writelines([line for line in data])
+def teardown_module():
+    remove_files([TRAIN_FILE, TEST_FILE, PREDICTION_FILE])
 
 
-def reformat_test_csv():
-    with open(TEST_FILE, "r") as fin:
-        data = fin.read().splitlines(True)
-    with open(TEST_FILE, "w") as fout:
-        # write column names as the header
-        fout.write(",".join(COLUMN_NAMES) + "\n")
-        # for some reason each of the labels end with a "." in the test set
-        # loop through data[1:] since the first line is bogus
-        fout.writelines([line.replace(".", "") for line in data[1:]])
-
-
-def download_census_income_dataset():
+def get_census_income_metadata():
     df = pd.read_csv(TEST_FILE)
     n_classes = df[df.columns[-1]].nunique()
     column_datatypes = []
@@ -84,7 +80,7 @@ def download_census_income_dataset():
 
 
 def test_tabular_classifier_census_income_dataset():
-    (n_classes, column_datatypes, test_labels) = download_census_income_dataset()
+    (n_classes, column_datatypes, test_labels) = get_census_income_metadata()
     classifier = bolt.TabularClassifier(model_size="medium", n_classes=n_classes)
 
     classifier.train(
@@ -101,8 +97,6 @@ def test_tabular_classifier_census_income_dataset():
     print("Computed Accuracy: ", acc)
     assert acc > 0.77
 
-    remove_files([TRAIN_FILE, TEST_FILE, PREDICTION_FILE])
-
 
 def create_single_test_samples():
     with open(TEST_FILE, "r") as file:
@@ -118,14 +112,13 @@ def create_single_test_samples():
             for col in range(len(values)):
                 single_sample[COLUMN_NAMES[col]] = values[col]
             samples.append(single_sample)
-        print(samples[0])
 
     return samples
 
 
 def test_tabular_classifier_predict_single():
-    (n_classes, column_datatypes, _) = download_census_income_dataset()
-    classifier = bolt.TabularClassifier(model_size="medium", n_classes=2)
+    (n_classes, column_datatypes, _) = get_census_income_metadata()
+    classifier = bolt.TabularClassifier(model_size="medium", n_classes=n_classes)
 
     classifier.train(
         train_file=TRAIN_FILE,
@@ -142,11 +135,6 @@ def test_tabular_classifier_predict_single():
 
     single_test_samples = create_single_test_samples()
 
-    i = 0
     for sample, expected_prediction in zip(single_test_samples, expected_predictions):
         actual_prediction = classifier.predict_single(sample)
-        print(i)
-        i+=1
         assert actual_prediction == expected_prediction
-
-    remove_files([TRAIN_FILE, TEST_FILE, PREDICTION_FILE])
