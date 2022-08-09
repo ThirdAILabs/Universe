@@ -111,7 +111,7 @@ class TabularClassifier {
 
     return std::make_shared<dataset::GenericBatchProcessor>(
         /* input_blocks = */ input_blocks,
-        /* target_blocks = */ target_blocks);
+        /* target_blocks = */ target_blocks, /* has_header = */ true);
   }
 
   // Private constructor for cereal

@@ -40,8 +40,7 @@ def download_census_income_dataset():
             column_datatypes.append("categorical")
     column_datatypes.append("label")
 
-    # theres no header so add the first column name as part of the labels
-    test_labels = [df.columns[-1]] + list(df[df.columns[-1]])
+    test_labels = list(df[df.columns[-1]])
 
     return n_classes, column_datatypes, test_labels
 
