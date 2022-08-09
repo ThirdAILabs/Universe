@@ -12,9 +12,7 @@ def start_cluster(config_yaml_file) -> None:
     """Start a ray cluster with the node ips provided.
 
     Args:
-        node_ips: List of node ips to start cluster on.
-        The list must be in this order:
-        [<head_node_ip> <worker1_node_ip> <worker2_node_ip> <worker3_node_ip> ....]
+        config_yaml_file: Configuration file for starting a cluster.
 
     """
 
@@ -35,7 +33,7 @@ def start_cluster(config_yaml_file) -> None:
 
         number_of_worker_nodes = len(config["provider"]["worker_ips"])
         if config["min_workers"] < 0:
-            warnings.warn(
+            raise ValueError(
                 textwrap.dedent(
                     """
                 min_workers >= 0

@@ -12,9 +12,8 @@ def stop_cluster(config_yaml_file) -> None:
     """Start a ray cluster with the node ips provided.
 
     Args:
-        node_ips: List of node ips to start cluster on.
-        The list must be in this order:
-        [<head_node_ip> <worker1_node_ip> <worker2_node_ip> <worker3_node_ip> ....]
+        config_yaml_file: Configuration File for stopping the clster.
+        (File should be same as the file which started the cluster.)
 
     """
 

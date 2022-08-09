@@ -67,5 +67,5 @@ tags
 
 # -- End vim .gitignore
 
-#Ignore log files
+# Ignore log files
 *.log

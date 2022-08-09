@@ -33,7 +33,7 @@ jobs:
         run: bin/build.py
 
       - name: Install necessary python pacakges
-        run: pip3 install numpy pytest toml mmh3 datasets torch transformers 'ray[default]'
+        run: python3 -m pip install numpy pytest toml mmh3 datasets torch transformers 'ray[default]'
 
       - name: Run python unit tests
         run: bin/python-test.sh -m unit

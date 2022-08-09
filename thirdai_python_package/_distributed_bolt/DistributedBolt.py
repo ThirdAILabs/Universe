@@ -2,17 +2,19 @@ import ray
 import os
 import toml
 import textwrap
-from .PrimaryWorker import PrimaryWorker
-from .ReplicaWorker import ReplicaWorker
+from .primary_worker import PrimaryWorker
+from .replica_worker import ReplicaWorker
 import time as time
-from .utils import initLogging
+from .utils import init_logging
 from typing import Tuple, Any, Optional, Dict, List
 
 
 class DistributedBolt:
     """
     Implements all the user level Distributed Bolt APIs to the users.
-    Args:
+
+
+    Arguments:
         worker_nodes: Number of workers to start training on.
             This number should be less than equal to the number of nodes(including the head node) training
             is started.
@@ -23,20 +25,26 @@ class DistributedBolt:
 
     def __init__(
         self,
-        worker_nodes: int,
+        no_of_workers: int,
         config_filename: str,
         num_cpus_per_node: Optional[int] = -1,
     ):
 
-        self.logging = initLogging("DistributedBolt.log")
+        self.logging = init_logging("DistributedBolt.log")
         self.logging.info("Training has started!")
 
-        config = toml.load(config_filename)
-        if len(config["dataset"]["train_data"]) != worker_nodes:
-            raise ValueError("Give n trainging examples for n nodes.")
+        try:
+            config = toml.load(config_filename)
+        except Exception:
+            self.logging.error("Could not load the toml file! " + 'Config File Location:' + config_filename)
 
-        self.no_of_workers = worker_nodes
 
+        if len(config["dataset"]["train_data"]) != no_of_workers:            
+            raise ValueError(f"Received {len(config["dataset"]["train_data"])} training datasets. Expected {worker_nodes} datasets, one for each node.")
+
+        self.no_of_workers = no_of_workers
+
+        self.logging.info('Setting OMP_NUM_THREADS to ' + str(self.get_num_cpus()))
         runtime_env = {"env_vars": {"OMP_NUM_THREADS": str(self.get_num_cpus())}}
 
         ray.init(address="auto", runtime_env=runtime_env)
@@ -64,17 +72,17 @@ class DistributedBolt:
         if num_cpus_per_node is not -1:
             num_cpus = num_cpus_per_node
         self.workers = [
-            ReplicaWorker.options(num_cpus=num_cpus, max_concurrency=2).remote(
+            ReplicaWorker.options(num_cpus=num_cpus, max_concurrency=100).remote(
                 self.layers, config, self.no_of_workers, id + 1
             )
             for id in range(self.no_of_workers - 1)
         ]
         self.head_worker = PrimaryWorker.options(
-            num_cpus=num_cpus, max_concurrency=self.no_of_workers + 1
+            num_cpus=num_cpus, max_concurrency=100
         ).remote(self.layers, config, self.no_of_workers)
 
         self.workers.insert(0, self.head_worker)
-        self.head_worker.addWorkers.remote(self.workers)
+        self.head_worker.add_workers.remote(self.workers)
 
         self.num_of_batches = min(
             ray.get(
@@ -85,10 +93,10 @@ class DistributedBolt:
             )
         )
 
-        for i in range(len(self.workers)):
-            y = ray.get(self.workers[i].addHeadWorker.remote(self.head_worker))
-            y = ray.get(
-                self.workers[i].addFriend.remote(
+        for worker in self.worker:
+            ray.get(self.workers[i].add_head_worker.remote(self.head_worker))
+            ray.get(
+                self.workers[i].add_friend.remote(
                     self.workers[(i - 1) % (len(self.workers))]
                 )
             )
@@ -98,17 +106,22 @@ class DistributedBolt:
         self.communication_time = 0
 
     def get_num_cpus(self):
+    """
+        Returns the number of CPUs present on the machine
+    """
         try:
             import multiprocessing
 
             return multiprocessing.cpu_count()
-        except (ImportError, NotImplementedError):
-            print("Could not find num_cpus, setting num_cpus to DEFAULT=100")
-            return 48
+        except (ImportError):
+            print("Could not find num_cpus, setting num_cpus to DEFAULT=1")
+            return 1
 
-    def train(self, circular: Optional[bool] = False) -> None:
+    def train(self, circular: Optional[bool] = True) -> None:
         """
         Trains the network using the communication type choosen.
+
+
         Args:
             circular: True, if circular communication is required.
                     False, if linear communication is required.
@@ -116,10 +129,10 @@ class DistributedBolt:
 
         if circular:
             self.logging.info("Circular communication pattern is choosen")
-            updateWeightsAndBiases = ray.get(
+            ray.get(
                 [
-                    self.workers[id + 1].receiveParams.remote()
-                    for id in range(len(self.workers) - 1)
+                    worker.receive_params.remote()
+                    for worker in self.workers
                 ]
             )
             for epoch in range(self.epochs):
@@ -131,23 +144,21 @@ class DistributedBolt:
                         getting_gradient_time,
                         summing_and_averaging_gradients_time,
                     ) = ray.get(
-                        self.head_worker.subworkCircularCommunication.remote(batch_no)
+                        self.head_worker.subwork_circular_communication.remote(batch_no)
                     )
 
                     start_gradients_send_time = time.time()
-                    x = ray.get(
+                    ray.get(
                         [
-                            self.workers[
-                                i
-                            ].receiveGradientsCircularCommunication.remote()
-                            for i in range(len(self.workers))
+                            worker.receive_gradients_circular_communication.remote()
+                            for worker in self.workers
                         ]
                     )
                     gradient_send_time = time.time() - start_gradients_send_time
 
                     start_update_parameters_time = time.time()
-                    b = ray.get(
-                        self.head_worker.subworkUpdateParameters.remote(
+                    ray.get(
+                        self.head_worker.subwork_update_parameters.remote(
                             self.learning_rate
                         )
                     )
@@ -174,8 +185,8 @@ class DistributedBolt:
                         + str(self.communication_time)
                     )
 
-                for i in range(len(self.workers)):
-                    acc, _ = ray.get(self.workers[i].predict.remote())
+                for worker in self.workers:
+                    acc, _ = ray.get(worker.predict.remote())
                     self.logging.info(
                         "Accuracy on workers %d: %lf", i, acc["categorical_accuracy"]
                     )
@@ -184,8 +195,8 @@ class DistributedBolt:
 
             updateWeightsAndBiases = ray.get(
                 [
-                    self.workers[id + 1].receiveParams.remote()
-                    for id in range(len(self.workers) - 1)
+                    worker.receive_params.remote()
+                    for worker in self.workers
                 ]
             )
 
@@ -198,21 +209,21 @@ class DistributedBolt:
                         getting_gradient_time,
                         summing_and_averaging_gradients_time,
                     ) = ray.get(
-                        self.head_worker.subworkLinearCommunication.remote(batch_no)
+                        self.head_worker.subwork_linear_communication.remote(batch_no)
                     )
 
                     start_gradients_send_time = time.time()
-                    x = ray.get(
+                    ray.get(
                         [
-                            w.receiveGradientsLinearCommunication.remote()
-                            for w in self.workers
+                            worker.receive_gradients_linear_communication.remote()
+                            for worker in self.workers
                         ]
                     )
                     gradient_send_time = time.time() - start_gradients_send_time
 
                     start_update_parameters_time = time.time()
-                    b = ray.get(
-                        self.head_worker.subworkUpdateParameters.remote(
+                    ray.get(
+                        self.head_worker.subwork_update_parameters.remote(
                             self.learning_rate
                         )
                     )
@@ -239,8 +250,8 @@ class DistributedBolt:
                         + str(self.communication_time)
                     )
 
-                for i in range(len(self.workers)):
-                    acc, _ = ray.get(self.workers[i].predict.remote())
+                for worker in self.workers:
+                    acc, _ = ray.get(worker.predict.remote())
                     self.logging.info(
                         "Accuracy on workers %d: %lf", i, acc["categorical_accuracy"]
                     )

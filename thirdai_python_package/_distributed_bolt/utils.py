@@ -4,7 +4,7 @@ import logging
 
 
 def load_dataset(
-    config: Dict[str, Any], total_nodes, id
+    config: Dict[str, Any], total_nodes, training_partition_data_id
 ) -> Optional[
     Tuple[
         dataset.BoltDataset,  # train_x
@@ -14,11 +14,16 @@ def load_dataset(
     ]
 ]:
     """
-
     Returns datasets as boltdatasets
+
+
+    Arguments:
+        config: Configuration file for the training
+        total_nodes: Total number of nodes to train on.
+        id: Id of the node, which want the dataset
     """
 
-    train_filename = config["dataset"]["train_data"][id]
+    train_filename = config["dataset"]["train_data"][training_partition_data_id]
     test_filename = config["dataset"]["test_data"]
     batch_size = int(config["params"]["batch_size"] / total_nodes)
     if config["dataset"]["format"].lower() == "svm":
@@ -35,16 +40,17 @@ def load_dataset(
         )
         return train_x, train_y, test_x, test_y
     else:
-        print("Invalid dataset format specified")
-        return None
+        raise ValueError("Invalid dataset format specified")
 
 
 def create_fully_connected_layer_configs(
     configs: List[Dict[str, Any]]
 ) -> List[bolt.FullyConnected]:
     """
-
     Returns Bolt's Fully Connected Network
+
+    Arguments: 
+        configs: Configuration file for training
     """
     layers = []
     for config in configs:
@@ -77,9 +83,9 @@ def create_fully_connected_layer_configs(
     return layers
 
 
-def initLogging(logger_file: str):
+def init_logging(logger_file: str):
     """
-    Initializes logging
+    Returns logger from a logger file
     """
     # Logger Init
     logger = logging.getLogger(logger_file)

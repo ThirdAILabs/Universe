@@ -1,5 +1,5 @@
 from thirdai._thirdai import bolt, dataset
-from .utils import create_fully_connected_layer_configs, load_dataset, initLogging
+from .utils import create_fully_connected_layer_configs, load_dataset
 
 
 class Model:
@@ -8,10 +8,12 @@ class Model:
     which workers are running. Currently, It only supports FullyConnectedNetwork.
     However, It could easily be extended to other models too.
 
+
     Arguments:
         config: Configuration File for the network
         total_nodes: Total number of workers
         layers: array containing dimensions for each layer
+        id: Model Id.
     """
 
     def __init__(self, config, total_nodes, layers, id):
@@ -52,17 +54,18 @@ class Model:
             verbose=False,
         )
 
-    def calculateGradients(self, batch_no):
+    def calculate_gradients(self, batch_no):
         """
         This function trains the network and calculate gradients for the
         network of the model for the batch id, batch_no
 
-        Argument:
+
+        Arguments:
             batch_no: batch number of data to train the model
         """
         self.network.calculateGradientSingleNode(batch_no, self.loss)
 
-    def getCalculatedGradients(self):
+    def get_calculated_gradients(self):
         """
         This function returns the gradients from the network.
         """
@@ -75,10 +78,11 @@ class Model:
             b_gradients.append(y)
         return (w_gradients, b_gradients)
 
-    def setGradients(self, w_gradients, b_gradients):
+    def set_gradients(self, w_gradients, b_gradients):
         """
         This function set the gradient in the current network with the updated
         gradients provided.
+
 
         Arguments:
             w_gradients: weight gradients to update the network with
@@ -88,7 +92,7 @@ class Model:
             self.network.set_weights_gradients(layer, w_gradients[layer])
             self.network.set_biases_gradients(layer, b_gradients[layer])
 
-    def getParameters(self):
+    def get_parameters(self):
         """
         This function returns the weight and bias parameters from the network
         """
@@ -101,10 +105,11 @@ class Model:
             biases.append(y)
         return weights, biases
 
-    def setParameters(self, weights, biases):
+    def set_parameters(self, weights, biases):
         """
         This function set the weight and bias parameter in the current network with
         the updated weights provided.
+
 
         Arguments:
             weights: weights parameter to update the network with
@@ -114,10 +119,11 @@ class Model:
             self.network.set_weights(layer, weights[layer])
             self.network.set_biases(layer, biases[layer])
 
-    def updateParameters(self, learning_rate):
+    def update_parameters(self, learning_rate):
         """
         This function update the network parameters using the gradients stored and
         learning rate provided.
+
 
         Argument:
             learning_rate: Learning Rate for the network

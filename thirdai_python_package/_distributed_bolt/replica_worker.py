@@ -2,7 +2,6 @@ import numpy as np
 import ray
 import time
 from typing import Tuple, Any, Optional, Dict, List
-from .utils import initLogging
 from .Worker import Worker
 
 
@@ -16,7 +15,6 @@ class ReplicaWorker(Worker):
     of the Worker Class. As the name suggests, it is a replica
     worker and will be reproduced on all the node for parallel
     computations.
-
 
 
     Args:

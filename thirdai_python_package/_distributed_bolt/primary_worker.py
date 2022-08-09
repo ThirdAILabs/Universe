@@ -2,7 +2,6 @@ import numpy as np
 import ray
 import time
 from typing import Tuple, Any, Optional, Dict, List
-from .utils import initLogging
 from .Worker import Worker
 
 
@@ -19,7 +18,7 @@ class PrimaryWorker(Worker):
     between the worker nodes.
 
 
-    Args:
+    Arguments:
         layers: List of layer dimensions.
         config: configuration file
         workers: number of workers in training
@@ -34,20 +33,18 @@ class PrimaryWorker(Worker):
         self.layers = layers
         super().__init__(self.layers, config, no_of_workers, 0)
 
-    def addWorkers(self, workers: List):
+    def add_workers(self, workers: List):
         self.workers = workers
 
-    def subworkCircularCommunication(self, batch_no: int):
+    def subwork_circular_communication(self, batch_no: int):
         """
-
         This function first call the workers to compute the gradients on their network
         and then implements Baidu's All Ring All Reduce algorithm for communication.
         Read more about that here:
         https://andrew.gibiansky.com/blog/machine-learning/baidu-allreduce/.
 
 
-
-        Args:
+        Arguments:
             batch_no: batch number for the particular worker with worker id (id).
         """
         communication_time = 0
@@ -58,8 +55,8 @@ class PrimaryWorker(Worker):
         # once they all calculate their gradients
         blocking_run = ray.get(
             [
-                self.workers[id].calculateGradientsCircular.remote(batch_no)
-                for id in range(len(self.workers))
+                worker.calculate_gradients_circular.remote(batch_no)
+                for worker in self.workers
             ]
         )
         gradient_computation_time += max(i for i, j in blocking_run)
@@ -88,12 +85,12 @@ class PrimaryWorker(Worker):
 
         # First Run
         update_id = 0
-        for i in range(self.total_nodes - 1):
+        for nodes in range(self.total_nodes - 1):
             if i == self.total_nodes - 2:
                 blocking_run = ray.get(
                     [
-                        w.processRing.remote(update_id, avg_gradients=True)
-                        for w in self.workers
+                        worker.process_ring.remote(update_id, avg_gradients=True)
+                        for worker in self.workers
                     ]
                 )
 
@@ -101,7 +98,7 @@ class PrimaryWorker(Worker):
                 communication_time += max(j for i, j in blocking_run)
             else:
                 blocking_run = ray.get(
-                    [w.processRing.remote(update_id) for w in self.workers]
+                    [worker.process_ring.remote(update_id) for worker in self.workers]
                 )
 
                 averaging_gradients_time += max(i for i, j in blocking_run)
@@ -128,9 +125,9 @@ class PrimaryWorker(Worker):
 
         # Second Run
         update_id = 1
-        for i in range(self.total_nodes - 1):
+        for nodes in range(self.total_nodes - 1):
             blocking_run = ray.get(
-                [w.processRing.remote(update_id, reduce=False) for w in self.workers]
+                [worker.process_ring.remote(update_id, reduce=False) for worker in self.workers]
             )
             averaging_gradients_time += max(i for i, j in blocking_run)
             communication_time += max(j for i, j in blocking_run)
@@ -138,7 +135,7 @@ class PrimaryWorker(Worker):
 
         return gradient_computation_time, communication_time, averaging_gradients_time
 
-    def subworkLinearCommunication(self, batch_no: int):
+    def subwork_linear_communication(self, batch_no: int):
         """
         This function implements the linear way of communicating between the node.
         In this way of communication, each of the worker calculates their gradients,
@@ -146,23 +143,22 @@ class PrimaryWorker(Worker):
         averages it and and send the gradients back to the workers.
 
 
-
-        Args:
+        Arguments:
             batch_no: batch number for the particular worker with worker id (id).
         """
         start_gradient_computation = time.time()
-        calculateGradients = ray.get(
+        ray.get(
             [
-                self.workers[id].calculateGradientsLinear.remote(batch_no)
-                for id in range(len(self.workers))
+                worker.calculate_gradients_linear.remote(batch_no)
+                for worker in self.workers
             ]
         )
         gradient_computation_time = time.time() - start_gradient_computation
         start_getting_gradients = time.time()
         gradients_list = ray.get(
             [
-                self.workers[id].getCalculatedGradients.remote()
-                for id in range(len(self.workers))
+                worker.get_calculated_gradients.remote()
+                for worker in self.workers
             ]
         )
         getting_gradient_time = time.time() - start_getting_gradients
@@ -209,17 +205,17 @@ class PrimaryWorker(Worker):
         """
         return self.w_gradients_avg, self.b_gradients_avg
 
-    def subworkUpdateParameters(self, learning_rate: float):
+    def subwork_update_parameters(self, learning_rate: float):
         """
 
         This function calls every worker to update their parameters(weight and biases) with the
         updated gradients(which they receive from the PrimaryWorker)
 
-        Args:
+        Arguments:
             learning_rate: learning_rate for the training
         """
-        check_update_parameter = ray.get(
-            [w.updateParameters.remote(learning_rate) for w in self.workers]
+        ray.get(
+            [worker.update_parameters.remote(learning_rate) for worker in self.workers]
         )
         return True
 
@@ -227,8 +223,8 @@ class PrimaryWorker(Worker):
         """
         This is a debug function to see whether the parameters are set accurately or not.
         """
-        weights_0, biases_0 = ray.get(self.workers[0].returnParams.remote())
-        weights_1, biases_1 = ray.get(self.workers[1].returnParams.remote())
+        weights_0, biases_0 = ray.get(self.workers[0].return_params.remote())
+        weights_1, biases_1 = ray.get(self.workers[1].return_params.remote())
 
     def weights_biases(self):
         """
@@ -239,5 +235,5 @@ class PrimaryWorker(Worker):
 
         print("Updating weights & bias parameters across nodes")
 
-        self.weights_biases = ray.get(self.workers[0].returnParams.remote())
+        self.weights_biases = ray.get(self.workers[0].return_params.remote())
         return self.weights_biases
