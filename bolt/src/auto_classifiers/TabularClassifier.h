@@ -80,7 +80,7 @@ class TabularClassifier {
           break;
         }
         case dataset::TabularDataType::Label: {
-          // single inference won't specify the column so we skip it
+          // single inference won't specify the label so we skip it
           col++;
           break;
         }
